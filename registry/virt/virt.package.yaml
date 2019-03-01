@@ -1,0 +1,4 @@
+packageName: virtoperator
+channels:
+- name: alpha
+  currentCSV: virtoperator.v0.14.0

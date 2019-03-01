@@ -1,0 +1,10 @@
+---
+
+apiVersion: operators.coreos.com/v1alpha2
+kind: OperatorGroup
+metadata:
+ name: kubevirt-operatorgroup
+ namespace: kubevirt
+spec:
+ targetNamespaces:
+   - kubevirt

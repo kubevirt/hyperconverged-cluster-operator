@@ -1,0 +1,4 @@
+packageName: cdi
+channels:
+- name: alpha
+  currentCSV: cdi.v1.5.2

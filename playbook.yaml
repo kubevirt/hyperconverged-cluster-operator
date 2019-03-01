@@ -1,0 +1,47 @@
+---
+
+- hosts: localhost
+  vars:
+    state: present
+    namespace: kubevirt
+  tasks:
+
+  - assert:
+      that: "registry_image is defined"
+      fail_msg: Must define the registry_image to use
+
+  - name: Kubevirt namespace state={{ state }}
+    k8s:
+      state: "{{ state }}"
+      definition:
+        kind: Namespace
+        metadata:
+          name: "{{ namespace }}"
+
+  - name: Kubevirt operatorgroup state={{ state }}
+    k8s:
+      state: "{{ state }}"
+      definition:
+        apiVersion: operators.coreos.com/v1alpha2
+        kind: OperatorGroup
+        metadata:
+         name: kubevirt-operatorgroup
+         namespace: "{{ namespace }}"
+        spec:
+         targetNamespaces:
+           - "{{ namespace }}"
+
+  - name: Kubevirt Operators Catalog Source state={{ state }}
+    k8s:
+      state: "{{ state }}"
+      definition:
+        apiVersion: operators.coreos.com/v1alpha1
+        kind: CatalogSource
+        metadata:
+          name: kubevirt-operators
+          namespace: openshift-operator-lifecycle-manager
+        spec:
+          sourceType: grpc
+          image: "{{ registry_image }}"
+          displayName: KubeVirt Operators
+          publisher: Red Hat
