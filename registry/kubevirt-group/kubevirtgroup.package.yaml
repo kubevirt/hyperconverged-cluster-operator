@@ -1,4 +1,0 @@
-packageName: kubevirtgroup
-channels:
-- name: alpha
-  currentCSV: kubevirtgroup.v0.0.1

@@ -1,11 +1,11 @@
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
-  name: kubevirtgroup.v0.0.1
+  name: kubevirt.v0.0.1
   annotations:
     tectonic-visibility: ocs
 spec:
-  displayName: KubeVirt Group
+  displayName: KubeVirt
   description: |-
     Install all of the KubeVirt components with one Subscription.
   keywords: ['kubevirt', 'virtualization', 'virt']
@@ -51,7 +51,7 @@ spec:
     strategy: deployment
     spec:
       permissions:
-      - serviceAccountName: kubevirt
+      - serviceAccountName: kubevirt-operator
         rules:
         - apiGroups:
           - kubevirt.io
@@ -66,28 +66,179 @@ spec:
           - list
           - watch
           - deletecollection
+        - apiGroups:
+          - virt.kubevirt.io
+          resources:
+          - "*"
+          verbs:
+          - "*"
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - clusterrole
+          - clusterrolebindings
+          - role
+          - rolebindings
+          - serviceaccounts
+          verbs:
+          - get
+          - create
+          - delete
+          - patch
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          - services
+          - endpoints
+          - persistentvolumeclaims
+          - events
+          - configmaps
+          - secrets
+          verbs:
+          - "*"
+        - apiGroups:
+          - "apps"
+          resources:
+          - deployments
+          - daemonsets
+          - replicasets
+          - statefulsets
+          verbs:
+          - '*'
+      - serviceAccountName: cdi-operator
+        rules:
+        - apiGroups:
+          - cdi.kubevirt.io
+          resources:
+          - "*"
+          verbs:
+          - "*"
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          - services
+          - endpoints
+          - persistentvolumeclaims
+          - events
+          - configmaps
+          - secrets
+          verbs:
+          - "*"
+        - apiGroups:
+          - apps
+          resources:
+          - deployments
+          - daemonsets
+          - replicasets
+          - statefulsets
+          verbs:
+          - "*"
 
       deployments:
-      - name: kubevirt
+      - name: virt-operator
         spec:
           replicas: 1
           selector:
             matchLabels:
-              name: kubevirt
+              operator.kubevirt.io: virt-operator
+          template:
+            metadata:
+              annotations:
+                scheduler.alpha.kubernetes.io/critical-pod: ""
+                scheduler.alpha.kubernetes.io/tolerations: |
+                  [
+                    {
+                      "key": "CriticalAddonsOnly",
+                      "operator": "Exists"
+                    }
+                  ]
+              labels:
+                operator.kubevirt.io: virt-operator
+                prometheus.kubevirt.io: ""
+            spec:
+              serviceAccountName: kubevirt-operator
+              containers:
+              - name: virt-operator
+                image: &image docker.io/kubevirt/virt-operator:v0.14.0
+                ports:
+                - containerPort: 8443
+                  name: "metrics"
+                  protocol: "TCP"
+                command:
+                - virt-operator
+                - --port
+                - "8443"
+                - -v
+                - "2"
+                imagePullPolicy: IfNotPresent
+                readinessProbe:
+                  httpGet:
+                    scheme: HTTPS
+                    port: "metrics"
+                    path: "/metrics"
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                env:
+                # WATCH_NAMESPACE is removed in the latest version of the virt-operator deployment def.
+                - name: WATCH_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                # OPERATOR_NAME is removed in the latest version of the virt-operator deployment def.
+                - name: OPERATOR_NAME
+                  value: "virt-operator"
+                - name: OPERATOR_IMAGE
+                  value: *image
+              securityContext:
+                runAsNonRoot: true
+      - name: cdi-operator
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              name: cdi-operator
           template:
             metadata:
               labels:
-                name: kubevirt
+                name: cdi-operator
             spec:
-              serviceAccountName: kubevirt
+              serviceAccountName: cdi-operator
               containers:
-              - name: nginx
-                image: twalter/openshift-nginx
+              - name: cdi-operator
+                image: kubevirt/cdi-operator:latest
                 ports:
-                - containerPort: 80
+                - containerPort: 60000
+                  name: metrics
+                imagePullPolicy: Always
+                env:
+                - name: DEPLOY_CLUSTER_RESOURCES
+                  value: 'true'
+                - name: DOCKER_REPO
+                  value: kubevirt
+                - name: DOCKER_TAG
+                  value: latest
+                - name: CONTROLLER_IMAGE
+                  value: cdi-controller
+                - name: IMPORTER_IMAGE
+                  value: cdi-importer
+                - name: CLONER_IMAGE
+                  value: cdi-cloner
+                - name: APISERVER_IMAGE
+                  value: cdi-apiserver
+                - name: UPLOAD_PROXY_IMAGE
+                  value: cdi-uploadproxy
+                - name: UPLOAD_SERVER_IMAGE
+                  value: cdi-uploadserver
+                - name: VERBOSITY
+                  value: '1'
+                - name: PULL_POLICY
+                  value: IfNotPresent
 
   customresourcedefinitions:
-    required:
+    owned:
     - name: kubevirts.kubevirt.io
       version: v1alpha3
       kind: KubeVirt
