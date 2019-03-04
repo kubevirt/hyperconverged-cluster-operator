@@ -10,7 +10,7 @@ spec:
     Install all of the KubeVirt components with one Subscription.
   keywords: ['kubevirt', 'virtualization', 'virt']
   maturity: alpha
-  version: 0.1.0
+  version: 0.0.1
   maintainers:
   - name: RedHat
     email: dzager@redhat.com
