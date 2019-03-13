@@ -253,16 +253,16 @@
   version = "v1.3.0"
 
 [[projects]]
-  digest = "1:0fbdc0dfdabfa16d50dd7151b7efe3189ffb0df68fa9866dc35240bfea39ad92"
+  digest = "1:1d39c063244ad17c4b18e8da1551163b6ffb52bd1640a49a8ec5c3b7bf4dbd5d"
   name = "github.com/json-iterator/go"
   packages = ["."]
   pruneopts = "NT"
-  revision = "0ff49de124c6f76f8494e194af75bde0f1a49a29"
-  version = "v1.1.6"
+  revision = "1624edc4454b8682399def8740d46db5e4362ba4"
+  version = "v1.1.5"
 
 [[projects]]
   branch = "master"
-  digest = "1:1832b664bdd6ff3139a8590c907044d7d440cd10fa46979d89fe98a11b75b256"
+  digest = "1:4925ec3736ef6c299cfcf61597782e3d66ec13114f7476019d04c742a7be55d0"
   name = "github.com/mailru/easyjson"
   packages = [
     "buffer",
@@ -270,7 +270,7 @@
     "jwriter",
   ]
   pruneopts = "NT"
-  revision = "1de009706dbeb9d05f18586f0735fcdb7c524481"
+  revision = "6243d8e04c3f819e79757e8bc3faa15c3cb27003"
 
 [[projects]]
   digest = "1:56dbf15e091bf7926cb33a57cb6bdfc658fc6d3498d2f76f10a97ce7856f1fde"
@@ -306,7 +306,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:c751741bceab00b61de99a53d825bd7b2b20063b9d8eef136f3612184e6f220d"
+  digest = "1:7a2a167f59c55033c3eca3f4e59fd9d9247861aab655d022b1466d04de71c175"
   name = "github.com/operator-framework/operator-sdk"
   packages = [
     "pkg/k8sutil",
@@ -316,7 +316,7 @@
     "version",
   ]
   pruneopts = "NT"
-  revision = "524e2bb923bd4f083d7d1ad9599e499440adddfb"
+  revision = "153a59c0a501dc17198e3e769c0103c78eb206c6"
 
 [[projects]]
   digest = "1:93b1d84c5fa6d1ea52f4114c37714cddd84d5b78f151b62bb101128dd51399bf"
@@ -464,11 +464,11 @@
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
   pruneopts = "NT"
-  revision = "a1f597ede03a7bef967a422b5b3a5bd08805a01e"
+  revision = "c2843e01d9a2bc60bb26ad24e09734fdc2d9ec58"
 
 [[projects]]
   branch = "master"
-  digest = "1:0283c491ba780b75eae02455cc5864fb21498f34ccde0cf81f66dea359f4e9d2"
+  digest = "1:e4b8752f1341b29443bcc664ab1653602b02c87562ad156f26f66c04cef7946c"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -479,7 +479,7 @@
     "idna",
   ]
   pruneopts = "NT"
-  revision = "5c2c250b6a70e39b74bb544433a348a892b10530"
+  revision = "d8887717615a059821345a5c23649351b52a1c0b"
 
 [[projects]]
   branch = "master"
@@ -540,7 +540,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:c76fe639f6b01b74b8d5bbe7f342c0b6cad3178a27aa6dc3366a08fd4fa3fe3d"
+  digest = "1:998490da66915d7d012e665f3a0517320a5ed204f9330e7d110aa87bc5945e9c"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
@@ -557,7 +557,7 @@
     "internal/semver",
   ]
   pruneopts = "NT"
-  revision = "e65039ee4138194d75ebaa2da35887260d5e15b2"
+  revision = "5c2858a9cfe5880270ceee8da4391f3c44612b47"
 
 [[projects]]
   digest = "1:902ffa11f1d8c19c12b05cabffe69e1a16608ad03a8899ebcb9c6bde295660ae"
@@ -843,6 +843,30 @@
   revision = "0cf8f7e6ed1d2e3d47d02e3b6e559369af24d803"
 
 [[projects]]
+  digest = "1:62337f178a8d8d664cfdbbb86edd6f9dc984e572ec1e60df09c43c28fc16db06"
+  name = "kubevirt.io/containerized-data-importer"
+  packages = [
+    ".",
+    "pkg/apis/core",
+    "pkg/apis/core/v1alpha1",
+  ]
+  pruneopts = "NT"
+  revision = "1faa7fd21a437486b3e1835153171fd6f4d5327e"
+  version = "v1.6.0"
+
+[[projects]]
+  digest = "1:3f60395db15af527df06f667360f5b996e9db03e9bcd8fce76a82450667cc77d"
+  name = "kubevirt.io/kubevirt"
+  packages = [
+    ".",
+    "pkg/api/v1",
+    "pkg/precond",
+  ]
+  pruneopts = "NT"
+  revision = "432f91f3a2bdb3c2624377ad327270c9e146d845"
+  version = "v0.15.0"
+
+[[projects]]
   digest = "1:06035489efbd51ccface65fc878ceeb849aba05b2f9443c8993f363fc96e80ac"
   name = "sigs.k8s.io/controller-runtime"
   packages = [
@@ -851,15 +875,26 @@
     "pkg/client",
     "pkg/client/apiutil",
     "pkg/client/config",
+    "pkg/controller",
+    "pkg/controller/controllerutil",
+    "pkg/event",
+    "pkg/handler",
+    "pkg/internal/controller",
+    "pkg/internal/controller/metrics",
     "pkg/internal/recorder",
     "pkg/leaderelection",
     "pkg/manager",
     "pkg/metrics",
     "pkg/patch",
+    "pkg/predicate",
+    "pkg/reconcile",
     "pkg/recorder",
     "pkg/runtime/inject",
     "pkg/runtime/log",
+    "pkg/runtime/scheme",
     "pkg/runtime/signals",
+    "pkg/source",
+    "pkg/source/internal",
     "pkg/webhook/admission",
     "pkg/webhook/admission/types",
     "pkg/webhook/internal/metrics",
@@ -896,13 +931,18 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/go-openapi/spec",
     "github.com/operator-framework/operator-sdk/pkg/k8sutil",
     "github.com/operator-framework/operator-sdk/pkg/leader",
     "github.com/operator-framework/operator-sdk/pkg/log/zap",
     "github.com/operator-framework/operator-sdk/pkg/metrics",
     "github.com/operator-framework/operator-sdk/version",
     "github.com/spf13/pflag",
+    "k8s.io/apimachinery/pkg/api/errors",
+    "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/runtime",
+    "k8s.io/apimachinery/pkg/runtime/schema",
+    "k8s.io/apimachinery/pkg/types",
     "k8s.io/client-go/plugin/pkg/client/auth/gcp",
     "k8s.io/code-generator/cmd/client-gen",
     "k8s.io/code-generator/cmd/conversion-gen",
@@ -912,10 +952,21 @@
     "k8s.io/code-generator/cmd/lister-gen",
     "k8s.io/gengo/args",
     "k8s.io/kube-openapi/cmd/openapi-gen",
+    "k8s.io/kube-openapi/pkg/common",
+    "kubevirt.io/containerized-data-importer",
+    "kubevirt.io/kubevirt",
+    "kubevirt.io/kubevirt/pkg/api/v1",
+    "sigs.k8s.io/controller-runtime/pkg/client",
     "sigs.k8s.io/controller-runtime/pkg/client/config",
+    "sigs.k8s.io/controller-runtime/pkg/controller",
+    "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil",
+    "sigs.k8s.io/controller-runtime/pkg/handler",
     "sigs.k8s.io/controller-runtime/pkg/manager",
+    "sigs.k8s.io/controller-runtime/pkg/reconcile",
     "sigs.k8s.io/controller-runtime/pkg/runtime/log",
+    "sigs.k8s.io/controller-runtime/pkg/runtime/scheme",
     "sigs.k8s.io/controller-runtime/pkg/runtime/signals",
+    "sigs.k8s.io/controller-runtime/pkg/source",
     "sigs.k8s.io/controller-tools/pkg/crd/generator",
   ]
   solver-name = "gps-cdcl"

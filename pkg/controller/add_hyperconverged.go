@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"github.com/kubevirt/hyperconverged-cluster-operator/hyperconverged-cluster-operator/pkg/controller/hyperconverged"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/hyperconverged"
 )
 
 func init() {

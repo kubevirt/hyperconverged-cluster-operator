@@ -13,9 +13,9 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/kubevirt/hyperconverged-cluster-operator/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1.HyperConverged":       schema_pkg_apis_hco_v1alpha1_HyperConverged(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1.HyperConvergedSpec":   schema_pkg_apis_hco_v1alpha1_HyperConvergedSpec(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1.HyperConvergedStatus": schema_pkg_apis_hco_v1alpha1_HyperConvergedStatus(ref),
+		"github.com/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1.HyperConverged":       schema_pkg_apis_hco_v1alpha1_HyperConverged(ref),
+		"github.com/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1.HyperConvergedSpec":   schema_pkg_apis_hco_v1alpha1_HyperConvergedSpec(ref),
+		"github.com/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1.HyperConvergedStatus": schema_pkg_apis_hco_v1alpha1_HyperConvergedStatus(ref),
 	}
 }
 
@@ -46,19 +46,19 @@ func schema_pkg_apis_hco_v1alpha1_HyperConverged(ref common.ReferenceCallback) c
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kubevirt/hyperconverged-cluster-operator/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1.HyperConvergedSpec"),
+							Ref: ref("github.com/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1.HyperConvergedSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kubevirt/hyperconverged-cluster-operator/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1.HyperConvergedStatus"),
+							Ref: ref("github.com/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1.HyperConvergedStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1.HyperConvergedSpec", "github.com/kubevirt/hyperconverged-cluster-operator/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1.HyperConvergedStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1.HyperConvergedSpec", "github.com/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1.HyperConvergedStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 

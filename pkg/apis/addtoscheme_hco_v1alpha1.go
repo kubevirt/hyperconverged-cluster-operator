@@ -1,7 +1,7 @@
 package apis
 
 import (
-	"github.com/kubevirt/hyperconverged-cluster-operator/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1"
 )
 
 func init() {

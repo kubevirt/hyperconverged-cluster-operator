@@ -7,8 +7,8 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/hyperconverged-cluster-operator/pkg/apis"
-	"github.com/kubevirt/hyperconverged-cluster-operator/hyperconverged-cluster-operator/pkg/controller"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/leader"

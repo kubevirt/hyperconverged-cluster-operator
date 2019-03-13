@@ -12,7 +12,7 @@ import (
 	"golang.org/x/tools/internal/lsp/source"
 )
 
-func (s *server) cacheAndDiagnose(ctx context.Context, uri string, content string) {
+func (s *server) cacheAndDiagnose(ctx context.Context, uri protocol.DocumentURI, content string) {
 	sourceURI, err := fromProtocolURI(uri)
 	if err != nil {
 		return // handle error?
@@ -31,7 +31,7 @@ func (s *server) cacheAndDiagnose(ctx context.Context, uri string, content strin
 		}
 		for filename, diagnostics := range reports {
 			s.client.PublishDiagnostics(ctx, &protocol.PublishDiagnosticsParams{
-				URI:         string(source.ToURI(filename)),
+				URI:         protocol.DocumentURI(source.ToURI(filename)),
 				Diagnostics: toProtocolDiagnostics(ctx, s.view, diagnostics),
 			})
 		}

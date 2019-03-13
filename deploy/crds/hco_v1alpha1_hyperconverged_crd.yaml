@@ -9,6 +9,8 @@ spec:
     listKind: HyperConvergedList
     plural: hyperconvergeds
     singular: hyperconverged
+    shortNames:
+    - hco
   scope: Namespaced
   subresources:
     status: {}

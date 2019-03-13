@@ -8,9 +8,7 @@ import (
 	"context"
 	"go/ast"
 	"go/token"
-	"go/types"
 
-	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -20,6 +18,7 @@ import (
 type View interface {
 	GetFile(ctx context.Context, uri URI) (File, error)
 	SetContent(ctx context.Context, uri URI, content []byte) error
+	GetAnalysisCache() *AnalysisCache
 	FileSet() *token.FileSet
 }
 
@@ -30,20 +29,9 @@ type View interface {
 type File interface {
 	GetAST(ctx context.Context) *ast.File
 	GetFileSet(ctx context.Context) *token.FileSet
-	GetPackage(ctx context.Context) Package
+	GetPackage(ctx context.Context) *packages.Package
 	GetToken(ctx context.Context) *token.File
 	GetContent(ctx context.Context) []byte
-}
-
-// Package represents a Go package that has been type-checked. It maintains
-// only the relevant fields of a *go/packages.Package.
-type Package interface {
-	GetFilenames() []string
-	GetSyntax() []*ast.File
-	GetErrors() []packages.Error
-	GetTypes() *types.Package
-	GetTypesInfo() *types.Info
-	GetActionGraph(ctx context.Context, a *analysis.Analyzer) (*Action, error)
 }
 
 // Range represents a start and end position.

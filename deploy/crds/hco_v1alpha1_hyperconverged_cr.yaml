@@ -1,7 +1,4 @@
 apiVersion: hco.kubevirt.io/v1alpha1
 kind: HyperConverged
 metadata:
-  name: example-hyperconverged
-spec:
-  # Add fields here
-  size: 3
+  name: hyperconverged-cluster

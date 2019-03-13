@@ -14,7 +14,6 @@ import (
 	"strings"
 	"sync"
 
-	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/packages"
 	"golang.org/x/tools/internal/lsp/source"
 )
@@ -53,7 +52,7 @@ func (v *View) parse(ctx context.Context, uri source.URI) error {
 	}
 	// Type-check package.
 	pkg, err := v.typeCheck(f.meta.pkgPath)
-	if pkg == nil || pkg.GetTypes() == nil {
+	if pkg == nil || pkg.Types == nil {
 		return err
 	}
 	// Add every file in this package to our cache.
@@ -66,8 +65,8 @@ func (v *View) parse(ctx context.Context, uri source.URI) error {
 	return nil
 }
 
-func (v *View) cachePackage(pkg *Package) {
-	for _, file := range pkg.GetSyntax() {
+func (v *View) cachePackage(pkg *packages.Package) {
+	for _, file := range pkg.Syntax {
 		// TODO: If a file is in multiple packages, which package do we store?
 		if !file.Pos().IsValid() {
 			log.Printf("invalid position for file %v", file.Name)
@@ -203,10 +202,10 @@ func (v *View) Import(pkgPath string) (*types.Package, error) {
 	if e.err != nil {
 		return nil, e.err
 	}
-	return e.pkg.types, nil
+	return e.pkg.Types, nil
 }
 
-func (v *View) typeCheck(pkgPath string) (*Package, error) {
+func (v *View) typeCheck(pkgPath string) (*packages.Package, error) {
 	meta, ok := v.mcache.packages[pkgPath]
 	if !ok {
 		return nil, fmt.Errorf("no metadata for %v", pkgPath)
@@ -218,13 +217,15 @@ func (v *View) typeCheck(pkgPath string) (*Package, error) {
 	} else {
 		typ = types.NewPackage(meta.pkgPath, meta.name)
 	}
-	pkg := &Package{
-		id:      meta.id,
-		pkgPath: meta.pkgPath,
-		files:   meta.files,
-		imports: make(map[string]*Package),
-		types:   typ,
-		typesInfo: &types.Info{
+	pkg := &packages.Package{
+		ID:              meta.id,
+		Name:            meta.name,
+		PkgPath:         meta.pkgPath,
+		CompiledGoFiles: meta.files,
+		Imports:         make(map[string]*packages.Package),
+		Fset:            v.Config.Fset,
+		Types:           typ,
+		TypesInfo: &types.Info{
 			Types:      make(map[ast.Expr]types.TypeAndValue),
 			Defs:       make(map[*ast.Ident]types.Object),
 			Uses:       make(map[*ast.Ident]types.Object),
@@ -232,7 +233,8 @@ func (v *View) typeCheck(pkgPath string) (*Package, error) {
 			Selections: make(map[*ast.SelectorExpr]*types.Selection),
 			Scopes:     make(map[ast.Node]*types.Scope),
 		},
-		analyses: make(map[*analysis.Analyzer]*analysisEntry),
+		// TODO(rstambler): Get real TypeSizes from go/packages (golang.org/issues/30139).
+		TypesSizes: &types.StdSizes{},
 	}
 	appendError := func(err error) {
 		v.appendPkgError(pkg, err)
@@ -241,30 +243,29 @@ func (v *View) typeCheck(pkgPath string) (*Package, error) {
 	for _, err := range errs {
 		appendError(err)
 	}
-	pkg.syntax = files
+	pkg.Syntax = files
 	cfg := &types.Config{
 		Error:    appendError,
 		Importer: v,
 	}
-	check := types.NewChecker(cfg, v.Config.Fset, pkg.types, pkg.typesInfo)
-	check.Files(pkg.syntax)
+	check := types.NewChecker(cfg, v.Config.Fset, pkg.Types, pkg.TypesInfo)
+	check.Files(pkg.Syntax)
 
-	// Set imports of package to correspond to cached packages.
-	// We lock the package cache, but we shouldn't get any inconsistencies
-	// because we are still holding the lock on the view.
+	// Set imports of package to correspond to cached packages. This is
+	// necessary for go/analysis, but once we merge its approach with the
+	// current caching system, we can eliminate this.
 	v.pcache.mu.Lock()
-	defer v.pcache.mu.Unlock()
-
 	for importPath := range meta.children {
 		if importEntry, ok := v.pcache.packages[importPath]; ok {
-			pkg.imports[importPath] = importEntry.pkg
+			pkg.Imports[importPath] = importEntry.pkg
 		}
 	}
+	v.pcache.mu.Unlock()
 
 	return pkg, nil
 }
 
-func (v *View) appendPkgError(pkg *Package, err error) {
+func (v *View) appendPkgError(pkg *packages.Package, err error) {
 	if err == nil {
 		return
 	}
@@ -292,7 +293,7 @@ func (v *View) appendPkgError(pkg *Package, err error) {
 			Kind: packages.TypeError,
 		})
 	}
-	pkg.errors = append(pkg.errors, errs...)
+	pkg.Errors = append(pkg.Errors, errs...)
 }
 
 // We use a counting semaphore to limit
