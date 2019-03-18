@@ -1,0 +1,20 @@
+#!/bin/bash
+
+TEMP_DIR=`mktemp -d`
+
+KUBEVIRT_MANIFEST_VERSION="v0.15.0"
+CDI_MANIFEST_VERSION="v1.6.0"
+
+function kubevirt_sed {
+    sed -i "s|          image: \&image docker\.io\/kubevirt\/virt-operator:${KUBEVIRT_MANIFEST_VERSION}|          image: ${CONTAINER_REGISTRY}\/virt-operator:${KUBEVIRT_VERSION}|g" ${TEMP_DIR}/kubevirt-operator.yaml
+}
+
+function cdi_sed {
+    sed -i "s|          image: kubevirt\/cdi-operator:${CDI_MANIFEST_VERSION}|          image: ${CONTAINER_REGISTRY}\/cdi-operator:${CDI_VERSION}|g" ${TEMP_DIR}/cdi-operator.yaml
+}
+
+# Deploy upstream operators
+OPERATOR_MANIFESTS="https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_MANIFEST_VERSION}/kubevirt-operator.yaml
+https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_MANIFEST_VERSION}/kubevirt-cr.yaml
+https://github.com/kubevirt/containerized-data-importer/releases/download/${CDI_MANIFEST_VERSION}/cdi-operator.yaml
+https://github.com/kubevirt/containerized-data-importer/releases/download/${CDI_MANIFEST_VERSION}/cdi-operator-cr.yaml"
