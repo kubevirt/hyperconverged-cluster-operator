@@ -16,8 +16,10 @@ ifeq (${CMD},kubectl)
 	# Switch namespace to kubevirt
 	kubectl config set-context ${CURRENT_CONTEXT} --namespace=kubevirt;
 else
+	# Create projects
 	oc new-project kubevirt;
 	oc new-project cdi;
+	# Switch project to kubevirt
 	oc project kubevirt;
 endif
 	# Deploy HCO manifests
@@ -34,7 +36,7 @@ ifeq (${CMD},kubectl)
 	# Switch namespace to kubevirt
 	kubectl config set-context ${CURRENT_CONTEXT} --namespace=kubevirt;
 else
-	# Switch namespace to kubevirt
+	# Switch project to kubevirt
 	oc project kubevirt;
 endif
 	# Delete kubevirt-operator
@@ -44,3 +46,4 @@ endif
 	${CMD} delete -f deploy/crds/hco_v1alpha1_hyperconverged_crd.yaml;
 	# Delete cdi-operator
 	${CMD} delete -f ${CDI_OPERATOR_URL};
+	
