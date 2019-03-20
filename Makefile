@@ -44,3 +44,4 @@ endif
 	${CMD} delete -f deploy/crds/hco_v1alpha1_hyperconverged_crd.yaml;
 	# Delete cdi-operator
 	${CMD} delete -f ${CDI_OPERATOR_URL};
+	
