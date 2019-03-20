@@ -1,0 +1,5 @@
+{{.HCO.Deployment}}
+{{if .Converged}}
+{{.KubeVirt.Deployment}}
+{{.CDI.Deployment}}
+{{end}}

@@ -1,0 +1,111 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  name: kubevirt-hyperconverged-operator.v{{.CsvVersion}}
+  namespace: placeholder
+  annotations:
+    capabilities: "Full Lifecycle"
+    categories: "Virtualization"
+    alm-examples: |
+      [
+        {
+          "apiVersion":"kubevirt.io/v1alpha3",
+          "kind":"KubeVirt",
+          "metadata": {
+            "name":"kubevirt",
+            "namespace":"kubevirt"
+          },
+          "spec": {
+            "imagePullPolicy":"Always"
+          }
+        }
+      ]
+    description: Creates and maintains a HyperConverged KubeVirt Deployment
+spec:
+  displayName: KubeVirt HyperConverged Cluster Operator
+  description: |
+    KubeVirt is a cluster add-on that provides a way to run virtualized workloads alongside containerized workload in a Kubernetes / OpenShift native way.
+
+    _The KubeVirt Operator does not support updates yet._
+  keywords:
+    - KubeVirt
+    - Virtualization
+  version: {{.CsvVersion}}
+  maturity: alpha
+  maintainers:
+    - name: KubeVirt project
+      email: kubevirt-dev@googlegroups.com
+  provider:
+    name: KubeVirt project
+  links:
+    - name: KubeVirt
+      url: https://kubevirt.io
+    - name: Source Code
+      url: https://github.com/kubevirt/hyperconverged-cluster-operator
+  # TODO: Get a logo
+  icon: []
+    # - base64data: .KubeVirtLogo
+    #   mediatype: image/png
+  labels:
+    alm-owner-kubevirt: kubevirt-hyperconverged
+    operated-by: kubevirt-hyperconverged
+  selector:
+    matchLabels:
+      alm-owner-kubevirt: kubevirt-hyperconverged
+      operated-by: kubevirt-hyperconverged
+  installModes:
+    - type: OwnNamespace
+      supported: true
+    - type: SingleNamespace
+      supported: true
+    - type: MultiNamespace
+      supported: true
+    - type: AllNamespaces
+      supported: true
+  install:
+    strategy: deployment
+    spec:
+      clusterPermissions:
+        - serviceAccountName: hyperconverged-cluster-operator
+          rules:
+{{.HCO.Rules}}
+{{if .Converged}}
+        - serviceAccountName: kubevirt-operator
+          rules:
+{{.KubeVirt.Rules}}
+        - serviceAccountName: cdi-operator
+          rules:
+{{.CDI.Rules}}
+{{end}}
+      deployments:
+        - name: hco-operator
+          spec:
+{{.HCO.DeploymentSpec}}
+{{if .Converged}}
+        - name: virt-operator
+          spec:
+{{.KubeVirt.DeploymentSpec}}
+        - name: cdi-operator
+          spec:
+{{.CDI.DeploymentSpec}}
+{{end}}
+  customresourcedefinitions:
+    owned:
+      - name: {{.HCO.CRD.ObjectMeta.Name}}
+        version: {{.HCO.CRD.Spec.Version}}
+        kind: {{.HCO.CRD.Spec.Names.Kind}}
+        displayName: KubeVirt HyperConverged Cluster Operator Deployment
+        description: Represents the deployment of a KubeVirt HyperConverged Cluster Operator
+{{if not .Converged}}
+    required:
+{{end}}
+      - name: {{.KubeVirt.CRD.ObjectMeta.Name}}
+        version: {{.KubeVirt.CRD.Spec.Version}}
+        kind: {{.KubeVirt.CRD.Spec.Names.Kind}}
+        displayName: KubeVirt deployment
+        description: Represents a KubeVirt deployment.
+      - name: {{.CDI.CRD.ObjectMeta.Name}}
+        version: {{.CDI.CRD.Spec.Version}}
+        kind: {{.CDI.CRD.Spec.Names.Kind}}
+        displayName: CDI Application
+        description: Represents an instance of a CDI application
