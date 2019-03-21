@@ -2,18 +2,21 @@
 
 TEMP_DIR=`mktemp -d`
 
+# Use upstream manifests with downstream containers
 KUBEVIRT_MANIFEST_VERSION="v0.15.0"
 CDI_MANIFEST_VERSION="v1.6.0"
 
-CDI_CONTAINER_REGISTRY="${CONTAINER_REGISTRY}"
-KUBEVIRT_CONTAINER_REGISTRY="${CONTAINER_REGISTRY}"
+CDI_CONTAINER_REGISTRY="${CDI_CONTAINER_REGISTRY:-docker.io/kubevirt}"
+KUBEVIRT_CONTAINER_REGISTRY="${KUBEVIRT_CONTAINER_REGISTRY:-docker.io/kubevirt}"
+
+CDI_OPERATOR_NAME="${CDI_OPERATOR_NAME:-cdi-operator}"
 
 function kubevirt_sed {
     sed -i "s|          image: \&image docker\.io\/kubevirt\/virt-operator:${KUBEVIRT_MANIFEST_VERSION}|          image: \&image ${KUBEVIRT_CONTAINER_REGISTRY}\/virt-operator:${KUBEVIRT_VERSION}|g" ${TEMP_DIR}/kubevirt-operator.yaml
 }
 
 function cdi_sed {
-    sed -i "s|          image: kubevirt\/cdi-operator:${CDI_MANIFEST_VERSION}|          image: ${CDI_CONTAINER_REGISTRY}\/cdi-operator:${CDI_VERSION}|g" ${TEMP_DIR}/cdi-operator.yaml
+    sed -i "s|          image: kubevirt\/cdi-operator:${CDI_MANIFEST_VERSION}|          image: ${CDI_CONTAINER_REGISTRY}\/${CDI_OPERATOR_NAME}:${CDI_VERSION}|g" ${TEMP_DIR}/cdi-operator.yaml
 }
 
 # Deploy upstream operators
