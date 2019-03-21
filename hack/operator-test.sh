@@ -34,6 +34,9 @@ set -x
 
 oc create -f ${TEMP_DIR}/
 
+echo "Give resources time to show up"
+sleep 10
+
 VIRT_POD=`oc get pods -n kubevirt | grep virt-operator | head -1 | awk '{ print $1 }'`
 CDI_POD=`oc get pods -n cdi | grep cdi-operator | head -1 | awk '{ print $1 }'`
 oc wait pod $VIRT_POD --for condition=Ready -n kubevirt
@@ -42,5 +45,5 @@ oc wait pod $CDI_POD --for condition=Ready -n cdi
 oc create -f ${TEMP_DIR}/crs
 
 echo "Let the API server process the CRs"
-sleep 5
+sleep 10
 oc wait kubevirt kubevirt --for condition=Ready -n kubevirt
