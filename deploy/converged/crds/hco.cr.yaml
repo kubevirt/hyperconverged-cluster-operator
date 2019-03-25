@@ -1,7 +1,8 @@
+---
 apiVersion: hco.kubevirt.io/v1alpha1
 kind: HyperConverged
 metadata:
   name: hyperconverged-cluster
 spec:
-  KubeVirtImagePullPolicy: IfNotPresent
   CDIImagePullPolicy: IfNotPresent
+  KubeVirtImagePullPolicy: IfNotPresent

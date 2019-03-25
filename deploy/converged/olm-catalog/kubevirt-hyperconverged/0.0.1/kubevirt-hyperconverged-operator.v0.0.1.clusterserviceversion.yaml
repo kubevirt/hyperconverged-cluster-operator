@@ -1,0 +1,865 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  name: kubevirt-hyperconverged-operator.v0.0.1
+  namespace: placeholder
+  annotations:
+    capabilities: "Full Lifecycle"
+    categories: "Virtualization"
+    alm-examples: |
+      [
+        {
+          "apiVersion":"kubevirt.io/v1alpha3",
+          "kind":"KubeVirt",
+          "metadata": {
+            "name":"kubevirt",
+            "namespace":"kubevirt"
+          },
+          "spec": {
+            "imagePullPolicy":"Always"
+          }
+        }
+      ]
+    description: Creates and maintains a HyperConverged KubeVirt Deployment
+spec:
+  displayName: KubeVirt HyperConverged Cluster Operator
+  description: |
+    KubeVirt is a cluster add-on that provides a way to run virtualized workloads alongside containerized workload in a Kubernetes / OpenShift native way.
+
+    _The KubeVirt Operator does not support updates yet._
+  keywords:
+    - KubeVirt
+    - Virtualization
+  version: 0.0.1
+  maturity: alpha
+  maintainers:
+    - name: KubeVirt project
+      email: kubevirt-dev@googlegroups.com
+  provider:
+    name: KubeVirt project
+  links:
+    - name: KubeVirt
+      url: https://kubevirt.io
+    - name: Source Code
+      url: https://github.com/kubevirt/hyperconverged-cluster-operator
+  # TODO: Get a logo
+  icon: []
+    # - base64data: .KubeVirtLogo
+    #   mediatype: image/png
+  labels:
+    alm-owner-kubevirt: kubevirt-hyperconverged
+    operated-by: kubevirt-hyperconverged
+  selector:
+    matchLabels:
+      alm-owner-kubevirt: kubevirt-hyperconverged
+      operated-by: kubevirt-hyperconverged
+  installModes:
+    - type: OwnNamespace
+      supported: true
+    - type: SingleNamespace
+      supported: true
+    - type: MultiNamespace
+      supported: true
+    - type: AllNamespaces
+      supported: true
+  install:
+    strategy: deployment
+    spec:
+      clusterPermissions:
+        - serviceAccountName: hyperconverged-cluster-operator
+          rules:
+            - apiGroups:
+              - hco.kubevirt.io
+              resources:
+              - '*'
+              verbs:
+              - '*'
+            - apiGroups:
+              - kubevirt.io
+              resources:
+              - kubevirts
+              verbs:
+              - create
+              - get
+              - list
+              - watch
+              - patch
+              - update
+            - apiGroups:
+              - cdi.kubevirt.io
+              resources:
+              - '*'
+              verbs:
+              - '*'
+            - apiGroups:
+              - ""
+              resources:
+              - configmaps
+              - pods
+              - serviceaccounts
+              - services
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - update
+              - delete
+            - apiGroups:
+              - batch
+              resources:
+              - jobs
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+            - apiGroups:
+              - apps
+              resources:
+              - deployments
+              - daemonsets
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+            - apiGroups:
+              - rbac.authorization.k8s.io
+              resources:
+              - clusterroles
+              - clusterrolebindings
+              - roles
+              - rolebindings
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+            - apiGroups:
+              - apiextensions.k8s.io
+              resources:
+              - customresourcedefinitions
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+            - apiGroups:
+              - security.openshift.io
+              resources:
+              - securitycontextconstraints
+              verbs:
+              - get
+              - list
+              - watch
+            - apiGroups:
+              - security.openshift.io
+              resourceNames:
+              - privileged
+              resources:
+              - securitycontextconstraints
+              verbs:
+              - get
+              - patch
+              - update
+
+
+        - serviceAccountName: kubevirt-operator
+          rules:
+            - apiGroups:
+              - kubevirt.io
+              resources:
+              - kubevirts
+              verbs:
+              - get
+              - list
+              - watch
+              - patch
+              - update
+            - apiGroups:
+              - ""
+              resources:
+              - serviceaccounts
+              - services
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - update
+              - delete
+            - apiGroups:
+              - batch
+              resources:
+              - jobs
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+            - apiGroups:
+              - apps
+              resources:
+              - deployments
+              - daemonsets
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+            - apiGroups:
+              - rbac.authorization.k8s.io
+              resources:
+              - clusterroles
+              - clusterrolebindings
+              - roles
+              - rolebindings
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+            - apiGroups:
+              - apiextensions.k8s.io
+              resources:
+              - customresourcedefinitions
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+            - apiGroups:
+              - security.openshift.io
+              resources:
+              - securitycontextconstraints
+              verbs:
+              - get
+              - list
+              - watch
+            - apiGroups:
+              - security.openshift.io
+              resourceNames:
+              - privileged
+              resources:
+              - securitycontextconstraints
+              verbs:
+              - get
+              - patch
+              - update
+            - apiGroups:
+              - admissionregistration.k8s.io
+              resources:
+              - validatingwebhookconfigurations
+              - mutatingwebhookconfigurations
+              verbs:
+              - get
+              - create
+              - update
+            - apiGroups:
+              - apiregistration.k8s.io
+              resources:
+              - apiservices
+              verbs:
+              - get
+              - create
+              - update
+            - apiGroups:
+              - ""
+              resources:
+              - pods
+              verbs:
+              - get
+              - list
+            - apiGroups:
+              - ""
+              resources:
+              - pods/exec
+              verbs:
+              - create
+            - apiGroups:
+              - kubevirt.io
+              resources:
+              - virtualmachines
+              - virtualmachineinstances
+              - virtualmachineinstancemigrations
+              verbs:
+              - get
+              - list
+              - watch
+              - delete
+            - apiGroups:
+              - kubevirt.io
+              resources:
+              - virtualmachineinstancepresets
+              verbs:
+              - watch
+              - list
+            - apiGroups:
+              - ""
+              resourceNames:
+              - extension-apiserver-authentication
+              resources:
+              - configmaps
+              verbs:
+              - get
+              - list
+              - watch
+            - apiGroups:
+              - ""
+              resources:
+              - limitranges
+              verbs:
+              - watch
+              - list
+            - apiGroups:
+              - ""
+              resources:
+              - secrets
+              verbs:
+              - get
+              - list
+              - delete
+              - update
+              - create
+            - apiGroups:
+              - ""
+              resources:
+              - configmaps
+              verbs:
+              - get
+              - list
+              - watch
+            - apiGroups:
+              - ""
+              resources:
+              - pods
+              - configmaps
+              - endpoints
+              verbs:
+              - get
+              - list
+              - watch
+              - delete
+              - update
+              - create
+            - apiGroups:
+              - ""
+              resources:
+              - events
+              verbs:
+              - update
+              - create
+              - patch
+            - apiGroups:
+              - ""
+              resources:
+              - pods/finalizers
+              verbs:
+              - update
+            - apiGroups:
+              - ""
+              resources:
+              - nodes
+              verbs:
+              - get
+              - list
+              - watch
+              - update
+              - patch
+            - apiGroups:
+              - ""
+              resources:
+              - persistentvolumeclaims
+              verbs:
+              - get
+              - list
+              - watch
+            - apiGroups:
+              - kubevirt.io
+              resources:
+              - '*'
+              verbs:
+              - '*'
+            - apiGroups:
+              - cdi.kubevirt.io
+              resources:
+              - '*'
+              verbs:
+              - '*'
+            - apiGroups:
+              - k8s.cni.cncf.io
+              resources:
+              - network-attachment-definitions
+              verbs:
+              - get
+              - list
+              - watch
+            - apiGroups:
+              - kubevirt.io
+              resources:
+              - virtualmachineinstances
+              verbs:
+              - update
+              - list
+              - watch
+            - apiGroups:
+              - ""
+              resources:
+              - secrets
+              - persistentvolumeclaims
+              verbs:
+              - get
+            - apiGroups:
+              - ""
+              resources:
+              - nodes
+              verbs:
+              - patch
+            - apiGroups:
+              - ""
+              resources:
+              - events
+              verbs:
+              - create
+              - patch
+            - apiGroups:
+              - ""
+              resources:
+              - configmaps
+              verbs:
+              - get
+              - list
+              - watch
+            - apiGroups:
+              - subresources.kubevirt.io
+              resources:
+              - version
+              verbs:
+              - get
+              - list
+            - apiGroups:
+              - subresources.kubevirt.io
+              resources:
+              - virtualmachineinstances/console
+              - virtualmachineinstances/vnc
+              verbs:
+              - get
+            - apiGroups:
+              - subresources.kubevirt.io
+              resources:
+              - virtualmachines/restart
+              verbs:
+              - put
+              - update
+            - apiGroups:
+              - kubevirt.io
+              resources:
+              - virtualmachines
+              - virtualmachineinstances
+              - virtualmachineinstancepresets
+              - virtualmachineinstancereplicasets
+              verbs:
+              - get
+              - delete
+              - create
+              - update
+              - patch
+              - list
+              - watch
+              - deletecollection
+            - apiGroups:
+              - subresources.kubevirt.io
+              resources:
+              - virtualmachineinstances/console
+              - virtualmachineinstances/vnc
+              verbs:
+              - get
+            - apiGroups:
+              - subresources.kubevirt.io
+              resources:
+              - virtualmachines/restart
+              verbs:
+              - put
+              - update
+            - apiGroups:
+              - kubevirt.io
+              resources:
+              - virtualmachines
+              - virtualmachineinstances
+              - virtualmachineinstancepresets
+              - virtualmachineinstancereplicasets
+              verbs:
+              - get
+              - delete
+              - create
+              - update
+              - patch
+              - list
+              - watch
+            - apiGroups:
+              - kubevirt.io
+              resources:
+              - virtualmachines
+              - virtualmachineinstances
+              - virtualmachineinstancepresets
+              - virtualmachineinstancereplicasets
+              verbs:
+              - get
+              - list
+              - watch
+            - apiGroups:
+              - authentication.k8s.io
+              resources:
+              - tokenreviews
+              verbs:
+              - create
+            - apiGroups:
+              - authorization.k8s.io
+              resources:
+              - subjectaccessreviews
+              verbs:
+              - create
+
+        - serviceAccountName: cdi-operator
+          rules:
+            - apiGroups:
+              - cdi.kubevirt.io
+              resources:
+              - '*'
+              verbs:
+              - '*'
+            - apiGroups:
+              - ""
+              resources:
+              - events
+              verbs:
+              - create
+              - update
+              - patch
+            - apiGroups:
+              - ""
+              resources:
+              - persistentvolumeclaims
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - update
+              - patch
+              - delete
+            - apiGroups:
+              - ""
+              resources:
+              - persistentvolumeclaims/finalizers
+              - pods/finalizers
+              verbs:
+              - update
+            - apiGroups:
+              - ""
+              resources:
+              - pods
+              - services
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+            - apiGroups:
+              - ""
+              resources:
+              - secrets
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+            - apiGroups:
+              - ""
+              resources:
+              - namespaces
+              verbs:
+              - get
+              - list
+            - apiGroups:
+              - extensions
+              resources:
+              - ingresses
+              verbs:
+              - get
+              - list
+              - watch
+            - apiGroups:
+              - ""
+              resources:
+              - configmaps
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - update
+            - apiGroups:
+              - storage.k8s.io
+              resources:
+              - storageclasses
+              verbs:
+              - get
+              - list
+            - apiGroups:
+              - route.openshift.io
+              resources:
+              - routes
+              verbs:
+              - get
+              - list
+              - watch
+            - apiGroups:
+              - ""
+              resources:
+              - serviceaccounts
+              - services
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - update
+              - delete
+            - apiGroups:
+              - batch
+              resources:
+              - jobs
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+            - apiGroups:
+              - apps
+              resources:
+              - deployments
+              - daemonsets
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+            - apiGroups:
+              - rbac.authorization.k8s.io
+              resources:
+              - clusterroles
+              - clusterrolebindings
+              - roles
+              - rolebindings
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+            - apiGroups:
+              - apiextensions.k8s.io
+              resources:
+              - customresourcedefinitions
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+            - apiGroups:
+              - security.openshift.io
+              resources:
+              - securitycontextconstraints
+              verbs:
+              - get
+              - list
+              - watch
+            - apiGroups:
+              - security.openshift.io
+              resourceNames:
+              - privileged
+              resources:
+              - securitycontextconstraints
+              verbs:
+              - get
+              - patch
+              - update
+
+
+      deployments:
+        - name: hco-operator
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                name: hyperconverged-cluster-operator
+            strategy: {}
+            template:
+              metadata:
+                labels:
+                  name: hyperconverged-cluster-operator
+              spec:
+                containers:
+                - command:
+                  - hyperconverged-cluster-operator
+                  env:
+                  - name: OPERATOR_IMAGE
+                    value: rthallisey/hyperconverged-cluster-operator:latest
+                  - name: OPERATOR_NAME
+                    value: hyperconverged-cluster-operator
+                  - name: POD_NAME
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.name
+                  - name: WATCH_NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.namespace
+                  image: rthallisey/hyperconverged-cluster-operator:latest
+                  imagePullPolicy: Always
+                  name: hyperconverged-cluster-operator
+                  resources: {}
+                serviceAccountName: hyperconverged-cluster-operator
+
+
+        - name: virt-operator
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                kubevirt.io: virt-operator
+            strategy: {}
+            template:
+              metadata:
+                annotations:
+                  scheduler.alpha.kubernetes.io/critical-pod: ""
+                  scheduler.alpha.kubernetes.io/tolerations: '[{"key":"CriticalAddonsOnly","operator":"Exists"}]'
+                labels:
+                  kubevirt.io: virt-operator
+                  prometheus.kubevirt.io: ""
+                name: virt-operator
+              spec:
+                containers:
+                - command:
+                  - virt-operator
+                  - --port
+                  - "8443"
+                  - -v
+                  - "2"
+                  env:
+                  - name: OPERATOR_IMAGE
+                    value: kubevirt/virt-operator:latest
+                  - name: WATCH_NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.annotations['olm.targetNamespaces']
+                  image: kubevirt/virt-operator:latest
+                  imagePullPolicy: IfNotPresent
+                  name: virt-operator
+                  ports:
+                  - containerPort: 8443
+                    name: metrics
+                    protocol: TCP
+                  readinessProbe:
+                    httpGet:
+                      path: /metrics
+                      port: 8443
+                      scheme: HTTPS
+                    initialDelaySeconds: 5
+                    timeoutSeconds: 10
+                  resources: {}
+                securityContext:
+                  runAsNonRoot: true
+                serviceAccountName: kubevirt-operator
+
+        - name: cdi-operator
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                name: cdi-operator
+            strategy: {}
+            template:
+              metadata:
+                labels:
+                  name: cdi-operator
+              spec:
+                containers:
+                - env:
+                  - name: OPERATOR_IMAGE
+                    value: kubevirt/cdi-operator:v1.5.2
+                  - name: OPERATOR_NAME
+                    value: cdi-operator
+                  - name: POD_NAME
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.name
+                  - name: WATCH_NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.namespace
+                  - name: DEPLOY_CLUSTER_RESOURCES
+                    value: "true"
+                  - name: DOCKER_REPO
+                    value: kubevirt
+                  - name: DOCKER_TAG
+                    value: latest
+                  - name: CONTROLLER_IMAGE
+                    value: cdi-controller
+                  - name: IMPORTER_IMAGE
+                    value: cdi-importer
+                  - name: CLONER_IMAGE
+                    value: cdi-cloner
+                  - name: APISERVER_IMAGE
+                    value: cdi-apiserver
+                  - name: UPLOAD_PROXY_IMAGE
+                    value: cdi-uploadproxy
+                  - name: UPLOAD_SERVER_IMAGE
+                    value: cdi-uploadserver
+                  - name: VERBOSITY
+                    value: "1"
+                  - name: PULL_POLICY
+                    value: IfNotPresent
+                  image: kubevirt/cdi-operator:v1.5.2
+                  imagePullPolicy: Always
+                  name: cdi-operator
+                  ports:
+                  - containerPort: 60000
+                    name: metrics
+                    protocol: TCP
+                  resources: {}
+                serviceAccountName: cdi-operator
+
+
+  customresourcedefinitions:
+    owned:
+      - name: hyperconvergeds.hco.kubevirt.io
+        version: v1alpha1
+        kind: HyperConverged
+        displayName: KubeVirt HyperConverged Cluster Operator Deployment
+        description: Represents the deployment of a KubeVirt HyperConverged Cluster Operator
+
+      - name: kubevirts.kubevirt.io
+        version: v1alpha3
+        kind: KubeVirt
+        displayName: KubeVirt deployment
+        description: Represents a KubeVirt deployment.
+      - name: cdis.cdi.kubevirt.io
+        version: v1alpha1
+        kind: CDI
+        displayName: CDI Application
+        description: Represents an instance of a CDI application

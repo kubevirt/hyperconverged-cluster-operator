@@ -1,0 +1,227 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  name: kubevirt-hyperconverged-operator.v0.0.1
+  namespace: placeholder
+  annotations:
+    capabilities: "Full Lifecycle"
+    categories: "Virtualization"
+    alm-examples: |
+      [
+        {
+          "apiVersion":"kubevirt.io/v1alpha3",
+          "kind":"KubeVirt",
+          "metadata": {
+            "name":"kubevirt",
+            "namespace":"kubevirt"
+          },
+          "spec": {
+            "imagePullPolicy":"Always"
+          }
+        }
+      ]
+    description: Creates and maintains a HyperConverged KubeVirt Deployment
+spec:
+  displayName: KubeVirt HyperConverged Cluster Operator
+  description: |
+    KubeVirt is a cluster add-on that provides a way to run virtualized workloads alongside containerized workload in a Kubernetes / OpenShift native way.
+
+    _The KubeVirt Operator does not support updates yet._
+  keywords:
+    - KubeVirt
+    - Virtualization
+  version: 0.0.1
+  maturity: alpha
+  maintainers:
+    - name: KubeVirt project
+      email: kubevirt-dev@googlegroups.com
+  provider:
+    name: KubeVirt project
+  links:
+    - name: KubeVirt
+      url: https://kubevirt.io
+    - name: Source Code
+      url: https://github.com/kubevirt/hyperconverged-cluster-operator
+  # TODO: Get a logo
+  icon: []
+    # - base64data: .KubeVirtLogo
+    #   mediatype: image/png
+  labels:
+    alm-owner-kubevirt: kubevirt-hyperconverged
+    operated-by: kubevirt-hyperconverged
+  selector:
+    matchLabels:
+      alm-owner-kubevirt: kubevirt-hyperconverged
+      operated-by: kubevirt-hyperconverged
+  installModes:
+    - type: OwnNamespace
+      supported: true
+    - type: SingleNamespace
+      supported: true
+    - type: MultiNamespace
+      supported: true
+    - type: AllNamespaces
+      supported: true
+  install:
+    strategy: deployment
+    spec:
+      clusterPermissions:
+        - serviceAccountName: hyperconverged-cluster-operator
+          rules:
+            - apiGroups:
+              - hco.kubevirt.io
+              resources:
+              - '*'
+              verbs:
+              - '*'
+            - apiGroups:
+              - kubevirt.io
+              resources:
+              - kubevirts
+              verbs:
+              - create
+              - get
+              - list
+              - watch
+              - patch
+              - update
+            - apiGroups:
+              - cdi.kubevirt.io
+              resources:
+              - '*'
+              verbs:
+              - '*'
+            - apiGroups:
+              - ""
+              resources:
+              - configmaps
+              - pods
+              - serviceaccounts
+              - services
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - update
+              - delete
+            - apiGroups:
+              - batch
+              resources:
+              - jobs
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+            - apiGroups:
+              - apps
+              resources:
+              - deployments
+              - daemonsets
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+            - apiGroups:
+              - rbac.authorization.k8s.io
+              resources:
+              - clusterroles
+              - clusterrolebindings
+              - roles
+              - rolebindings
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+            - apiGroups:
+              - apiextensions.k8s.io
+              resources:
+              - customresourcedefinitions
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+            - apiGroups:
+              - security.openshift.io
+              resources:
+              - securitycontextconstraints
+              verbs:
+              - get
+              - list
+              - watch
+            - apiGroups:
+              - security.openshift.io
+              resourceNames:
+              - privileged
+              resources:
+              - securitycontextconstraints
+              verbs:
+              - get
+              - patch
+              - update
+
+
+      deployments:
+        - name: hco-operator
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                name: hyperconverged-cluster-operator
+            strategy: {}
+            template:
+              metadata:
+                labels:
+                  name: hyperconverged-cluster-operator
+              spec:
+                containers:
+                - command:
+                  - hyperconverged-cluster-operator
+                  env:
+                  - name: OPERATOR_IMAGE
+                    value: rthallisey/hyperconverged-cluster-operator:latest
+                  - name: OPERATOR_NAME
+                    value: hyperconverged-cluster-operator
+                  - name: POD_NAME
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.name
+                  - name: WATCH_NAMESPACE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.namespace
+                  image: rthallisey/hyperconverged-cluster-operator:latest
+                  imagePullPolicy: Always
+                  name: hyperconverged-cluster-operator
+                  resources: {}
+                serviceAccountName: hyperconverged-cluster-operator
+
+
+  customresourcedefinitions:
+    owned:
+      - name: hyperconvergeds.hco.kubevirt.io
+        version: v1alpha1
+        kind: HyperConverged
+        displayName: KubeVirt HyperConverged Cluster Operator Deployment
+        description: Represents the deployment of a KubeVirt HyperConverged Cluster Operator
+
+    required:
+
+      - name: kubevirts.kubevirt.io
+        version: v1alpha3
+        kind: KubeVirt
+        displayName: KubeVirt deployment
+        description: Represents a KubeVirt deployment.
+      - name: cdis.cdi.kubevirt.io
+        version: v1alpha1
+        kind: CDI
+        displayName: CDI Application
+        description: Represents an instance of a CDI application
