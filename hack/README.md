@@ -10,6 +10,8 @@ this script.
 The ```config``` file contains configurable options.
 
 **Launch**
+The script requires `python-jinja2`. ```yum install -y python-jinja2```
+
 ```bash
 ./hack/operator-test.sh
 ```
