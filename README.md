@@ -55,8 +55,9 @@ Build and push the converged HCO operator-registry image.
 
 ```bash
 cd deploy/converged
-docker build --no-cache -t docker.io/<docker_org>/hco-registry:example -f Dockerfile .
-docker push docker.io/<docker_org>/hco-registry:example
+export HCO_DOCKER_ORG=<docker_org>
+docker build --no-cache -t docker.io/$HCO_DOCKER_ORG/hco-registry:example -f Dockerfile .
+docker push docker.io/$HCO_DOCKER_ORG/hco-registry:example
 ```
 
 Create the namespace for the HCO.
@@ -85,7 +86,7 @@ metadata:
   namespace: openshift-operator-lifecycle-manager
 spec:
   sourceType: grpc
-  image: docker.io/<docker_org>/hco-registry:example
+  image: docker.io/$HCO_DOCKER_ORG/hco-registry:example
   displayName: KubeVirt HyperConverged
   publisher: Red Hat
 EOF
