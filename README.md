@@ -66,7 +66,7 @@ oc create ns kubevirt-hyperconverged
 
 Create an OperatorGroup.
 ```bash
-cat <<EOF | kubectl create -f
+cat <<EOF | kubectl create -f -
 apiVersion: operators.coreos.com/v1alpha2
 kind: OperatorGroup
 metadata:
@@ -77,7 +77,7 @@ EOF
 
 Create a Catalog Source.
 ```bash
-cat <<EOF | kubectl create -f
+cat <<EOF | kubectl create -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
@@ -93,7 +93,7 @@ EOF
 
 Create a subscription.
 ```bash
-cat <<EOF | kubectl create -f
+cat <<EOF | kubectl create -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
