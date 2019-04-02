@@ -11,7 +11,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func GetCDIDeployment(repository string, tag string, imagePullPolicy string) *appsv1.Deployment {
+func GetDeployment(repository string, tag string, imagePullPolicy string) *appsv1.Deployment {
 	name := "cdi-operator"
 	image := fmt.Sprintf("%s/%s:%s", repository, name, tag)
 	deployment := &appsv1.Deployment{
@@ -128,7 +128,7 @@ func GetCDIDeployment(repository string, tag string, imagePullPolicy string) *ap
 	return deployment
 }
 
-func GetCDIClusterRole() *rbacv1.ClusterRole {
+func GetClusterRole() *rbacv1.ClusterRole {
 	name := "cdi-operator"
 	role := &rbacv1.ClusterRole{
 		TypeMeta: metav1.TypeMeta{
@@ -405,7 +405,7 @@ func GetCDIClusterRole() *rbacv1.ClusterRole {
 	return role
 }
 
-func GetCDICrd() *extv1beta1.CustomResourceDefinition {
+func GetCrd() *extv1beta1.CustomResourceDefinition {
 	crd := &extv1beta1.CustomResourceDefinition{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apiextensions.k8s.io/v1beta1",

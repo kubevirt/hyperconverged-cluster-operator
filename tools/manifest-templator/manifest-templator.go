@@ -34,6 +34,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	cdicomponents "github.com/kubevirt/hyperconverged-cluster-operator/pkg/cdicomponents"
+	cnacomponents "github.com/kubevirt/hyperconverged-cluster-operator/pkg/cnacomponents"
 	hcocomponents "github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	kvcomponents "kubevirt.io/kubevirt/pkg/virt-operator/creation/components"
@@ -60,6 +61,7 @@ type templateData struct {
 	HCO             *operatorData
 	KubeVirt        *operatorData
 	CDI             *operatorData
+	CNA             *operatorData
 }
 
 func check(err error) {
@@ -250,7 +252,7 @@ func getCDI(data *templateData) {
 	writer := strings.Builder{}
 
 	// Get CDI Deployment
-	cdideployment := cdicomponents.GetCDIDeployment(
+	cdideployment := cdicomponents.GetDeployment(
 		"kubevirt",
 		"v1.5.2",
 		"Always",
@@ -267,7 +269,7 @@ func getCDI(data *templateData) {
 
 	// Get CDI ClusterRole
 	writer = strings.Builder{}
-	clusterRole := cdicomponents.GetCDIClusterRole()
+	clusterRole := cdicomponents.GetClusterRole()
 	marshallObject(clusterRole, &writer)
 	clusterRoleString := writer.String()
 
@@ -282,7 +284,7 @@ func getCDI(data *templateData) {
 
 	// Get HCO CRD
 	writer = strings.Builder{}
-	crd := cdicomponents.GetCDICrd()
+	crd := cdicomponents.GetCrd()
 	marshallObject(crd, &writer)
 	crdString := writer.String()
 
@@ -295,6 +297,57 @@ func getCDI(data *templateData) {
 		CRDString:         crdString,
 	}
 	data.CDI = &cdiData
+}
+
+func getCNA(data *templateData) {
+	writer := strings.Builder{}
+
+	// Get CNA Deployment
+	cnadeployment := cnacomponents.GetDeployment(
+		"kubevirt",
+		"latest",
+		"Always",
+	)
+	err := marshallObject(cnadeployment, &writer)
+	check(err)
+	deployment := writer.String()
+
+	// Get CNA DeploymentSpec for CSV
+	writer = strings.Builder{}
+	err = marshallObject(cnadeployment.Spec, &writer)
+	check(err)
+	deploymentSpec := fixResourceString(writer.String(), 12)
+
+	// Get CNA ClusterRole
+	writer = strings.Builder{}
+	clusterRole := cnacomponents.GetClusterRole()
+	marshallObject(clusterRole, &writer)
+	clusterRoleString := writer.String()
+
+	// Get the Rules out of CNA's ClusterRole
+	writer = strings.Builder{}
+	cnarules := clusterRole.Rules
+	for _, rule := range cnarules {
+		err := marshallObject(rule, &writer)
+		check(err)
+	}
+	rules := fixResourceString(writer.String(), 14)
+
+	// Get CNA CRD
+	writer = strings.Builder{}
+	crd := cnacomponents.GetCrd()
+	marshallObject(crd, &writer)
+	crdString := writer.String()
+
+	cnaData := operatorData{
+		Deployment:        deployment,
+		DeploymentSpec:    deploymentSpec,
+		ClusterRoleString: clusterRoleString,
+		Rules:             rules,
+		CRD:               crd,
+		CRDString:         crdString,
+	}
+	data.CNA = &cnaData
 }
 
 func main() {
@@ -324,6 +377,8 @@ func main() {
 	getKubeVirt(&data)
 	// Load in all CDI Resources
 	getCDI(&data)
+	// Load in all CNA Resources
+	getCNA(&data)
 
 	if *inputFile == "" {
 		panic("Must specify input file")

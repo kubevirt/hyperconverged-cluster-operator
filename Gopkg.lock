@@ -82,6 +82,21 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:8374d4f7516cfe85e562346ed77422697372146898bda4224bfaba21558001cb"
+  name = "github.com/go-kit/kit"
+  packages = ["log"]
+  pruneopts = "NT"
+  revision = "fe6fe28ba0d54b39f27e79cddba4911b7e4fffc7"
+
+[[projects]]
+  digest = "1:738c75300725db7262825a96ba5b6a8a737f0faa93d9dadcf3977504034877e0"
+  name = "github.com/go-logfmt/logfmt"
+  packages = ["."]
+  pruneopts = "NT"
+  revision = "07c9b44f60d7ffdfb7d8efe1ad539965737836dc"
+  version = "v0.4.0"
+
+[[projects]]
   digest = "1:d421af4c4fe51d399667d573982d663fe1fa67020a88d3ae43466ebfe8e2b5c9"
   name = "github.com/go-logr/logr"
   packages = ["."]
@@ -130,6 +145,14 @@
   version = "v0.19.0"
 
 [[projects]]
+  digest = "1:91358b3a314c1ddfd4d6445ca9c1fb846842c31c153e626730594b3c95f73f4a"
+  name = "github.com/go-stack/stack"
+  packages = ["."]
+  pruneopts = "NT"
+  revision = "2fee6af1a9795aafbe0253a0cfbdf668e1fb8a9a"
+  version = "v1.8.0"
+
+[[projects]]
   digest = "1:9059915429f7f3a5f18cfa6b7cab9a28721d7ac6db4079a62044aa229eb7f2a8"
   name = "github.com/gobuffalo/envy"
   packages = ["."]
@@ -163,6 +186,14 @@
   packages = ["lru"]
   pruneopts = "NT"
   revision = "5b532d6fd5efaf7fa130d4e859a2fde0fc3a9e1b"
+
+[[projects]]
+  digest = "1:3bc9b1450cb2386fcd3b9dad1b9a59ea877fe14ddf3c66bda4670f5e91b61b3f"
+  name = "github.com/golang/mock"
+  packages = ["gomock"]
+  pruneopts = "NT"
+  revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
+  version = "v1.2.0"
 
 [[projects]]
   digest = "1:d7212166c4b7f30a20fb3de70ab7e36564900b2e36360ffd31958b5af8fed025"
@@ -215,6 +246,14 @@
   version = "v0.2.0"
 
 [[projects]]
+  digest = "1:0f9fbe4a905d2923bcd2131de2ecf0040aeac9037ecab5195e14ef8db9b495c1"
+  name = "github.com/gorilla/websocket"
+  packages = ["."]
+  pruneopts = "NT"
+  revision = "66b9c49e59c6c48f0ffce28c2d8b8a5678502c6d"
+  version = "v1.4.0"
+
+[[projects]]
   branch = "master"
   digest = "1:bb7bd892abcb75ef819ce2efab9d54d22b7e38dc05ffac55428bb0578b52912b"
   name = "github.com/gregjones/httpcache"
@@ -259,6 +298,28 @@
   pruneopts = "NT"
   revision = "0ff49de124c6f76f8494e194af75bde0f1a49a29"
   version = "v1.1.6"
+
+[[projects]]
+  branch = "master"
+  digest = "1:b16200bc30132e631a8a66be61a3571097555364260775cae06ed2a3d5ecc2b0"
+  name = "github.com/k8snetworkplumbingwg/network-attachment-definition-client"
+  packages = [
+    "pkg/apis/k8s.cni.cncf.io",
+    "pkg/apis/k8s.cni.cncf.io/v1",
+    "pkg/client/clientset/versioned",
+    "pkg/client/clientset/versioned/scheme",
+    "pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1",
+  ]
+  pruneopts = "NT"
+  revision = "386d141f4c94392047e2361a44ad1573a577e666"
+
+[[projects]]
+  branch = "master"
+  digest = "1:f91bb67d051a94cf6ab2cf07eee0550432afc31655838d42cdec258db4b348f0"
+  name = "github.com/kr/logfmt"
+  packages = ["."]
+  pruneopts = "NT"
+  revision = "b84e30acd515aadc4b783ad4ff83aff3299bdfe0"
 
 [[projects]]
   digest = "1:dfb8920d67d05ab4440a474e1404bd4602955e1bdcfe063f7825a429d4828ecc"
@@ -315,6 +376,44 @@
   pruneopts = "NT"
   revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
   version = "1.0.1"
+
+[[projects]]
+  digest = "1:9f353a779b8b118229dfc1541e41d72d1a3a6f2d13756f5fe66daeb0f52191ab"
+  name = "github.com/onsi/gomega"
+  packages = [
+    ".",
+    "format",
+    "internal/assertion",
+    "internal/asyncassertion",
+    "internal/oraclematcher",
+    "internal/testingtsupport",
+    "matchers",
+    "matchers/support/goraph/bipartitegraph",
+    "matchers/support/goraph/edge",
+    "matchers/support/goraph/node",
+    "matchers/support/goraph/util",
+    "types",
+  ]
+  pruneopts = "NT"
+  revision = "90e289841c1ed79b7a598a7cd9959750cb5e89e2"
+  version = "v1.5.0"
+
+[[projects]]
+  digest = "1:66dec43174af7bc882f832dbc67257f31c724245565cc059d188fb7ae08b9e7f"
+  name = "github.com/openshift/api"
+  packages = ["security/v1"]
+  pruneopts = "NT"
+  revision = "5ad8479f64f1b60ee9c62ce8ef1fe6638838725e"
+
+[[projects]]
+  digest = "1:7a400f10664543108f603f64a5228112995fb64c89881bb148f56af5989df030"
+  name = "github.com/openshift/client-go"
+  packages = [
+    "security/clientset/versioned/scheme",
+    "security/clientset/versioned/typed/security/v1",
+  ]
+  pruneopts = "NT"
+  revision = "431ec9a26e5021f35fa41ee9a89842db9bfdb370"
 
 [[projects]]
   branch = "master"
@@ -479,6 +578,9 @@
   packages = [
     "context",
     "context/ctxhttp",
+    "html",
+    "html/atom",
+    "html/charset",
     "http/httpguts",
     "http2",
     "http2/hpack",
@@ -518,12 +620,24 @@
   packages = [
     "collate",
     "collate/build",
+    "encoding",
+    "encoding/charmap",
+    "encoding/htmlindex",
+    "encoding/internal",
+    "encoding/internal/identifier",
+    "encoding/japanese",
+    "encoding/korean",
+    "encoding/simplifiedchinese",
+    "encoding/traditionalchinese",
+    "encoding/unicode",
     "internal/colltab",
     "internal/gen",
     "internal/tag",
     "internal/triegen",
     "internal/ucd",
+    "internal/utf8internal",
     "language",
+    "runes",
     "secure/bidirule",
     "transform",
     "unicode/bidi",
@@ -645,6 +759,9 @@
   packages = [
     "pkg/apis/apiextensions",
     "pkg/apis/apiextensions/v1beta1",
+    "pkg/client/clientset/clientset",
+    "pkg/client/clientset/clientset/scheme",
+    "pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
   ]
   pruneopts = "NT"
   revision = "0fe22c71c47604641d9aa352c785b7912c200562"
@@ -751,6 +868,7 @@
     "third_party/forked/golang/template",
     "tools/auth",
     "tools/cache",
+    "tools/cache/testing",
     "tools/clientcmd",
     "tools/clientcmd/api",
     "tools/clientcmd/api/latest",
@@ -852,6 +970,20 @@
     ".",
     "pkg/apis/core",
     "pkg/apis/core/v1alpha1",
+    "pkg/apis/upload",
+    "pkg/apis/upload/v1alpha1",
+    "pkg/client/clientset/versioned",
+    "pkg/client/clientset/versioned/scheme",
+    "pkg/client/clientset/versioned/typed/core/v1alpha1",
+    "pkg/client/clientset/versioned/typed/upload/v1alpha1",
+    "pkg/client/informers/externalversions",
+    "pkg/client/informers/externalversions/core",
+    "pkg/client/informers/externalversions/core/v1alpha1",
+    "pkg/client/informers/externalversions/internalinterfaces",
+    "pkg/client/informers/externalversions/upload",
+    "pkg/client/informers/externalversions/upload/v1alpha1",
+    "pkg/client/listers/core/v1alpha1",
+    "pkg/client/listers/upload/v1alpha1",
   ]
   pruneopts = "NT"
   revision = "1faa7fd21a437486b3e1835153171fd6f4d5327e"
@@ -864,7 +996,27 @@
   packages = [
     ".",
     "pkg/api/v1",
+    "pkg/cloud-init",
+    "pkg/config",
+    "pkg/container-disk",
+    "pkg/controller",
+    "pkg/emptydisk",
+    "pkg/ephemeral-disk",
+    "pkg/ephemeral-disk-utils",
+    "pkg/ignition",
+    "pkg/kubecli",
+    "pkg/log",
     "pkg/precond",
+    "pkg/rest",
+    "pkg/testutils",
+    "pkg/util",
+    "pkg/util/net/dns",
+    "pkg/util/subresources",
+    "pkg/version",
+    "pkg/virt-launcher/virtwrap/api",
+    "pkg/virt-operator/creation/components",
+    "pkg/virt-operator/creation/rbac",
+    "pkg/virt-operator/util",
   ]
   pruneopts = "NT"
   revision = "2932e4217df6c1615c66e09cc8b3d590bd8de974"
@@ -935,6 +1087,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/ghodss/yaml",
     "github.com/go-openapi/spec",
     "github.com/kubevirt/cluster-network-addons-operator/pkg/apis",
     "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1alpha1",
@@ -945,9 +1098,13 @@
     "github.com/operator-framework/operator-sdk/pkg/metrics",
     "github.com/operator-framework/operator-sdk/version",
     "github.com/spf13/pflag",
+    "k8s.io/api/apps/v1",
     "k8s.io/api/core/v1",
+    "k8s.io/api/rbac/v1",
+    "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
     "k8s.io/apimachinery/pkg/api/errors",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
+    "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
     "k8s.io/apimachinery/pkg/types",
@@ -965,6 +1122,8 @@
     "kubevirt.io/containerized-data-importer/pkg/apis/core/v1alpha1",
     "kubevirt.io/kubevirt",
     "kubevirt.io/kubevirt/pkg/api/v1",
+    "kubevirt.io/kubevirt/pkg/virt-operator/creation/components",
+    "kubevirt.io/kubevirt/pkg/virt-operator/creation/rbac",
     "sigs.k8s.io/controller-runtime/pkg/client",
     "sigs.k8s.io/controller-runtime/pkg/client/config",
     "sigs.k8s.io/controller-runtime/pkg/controller",

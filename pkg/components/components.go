@@ -109,20 +109,26 @@ func GetClusterRole() *rbacv1.ClusterRole {
 					"kubevirt.io",
 				},
 				Resources: []string{
-					"kubevirts",
+					"*",
 				},
 				Verbs: []string{
-					"create",
-					"get",
-					"list",
-					"watch",
-					"patch",
-					"update",
+					"*",
 				},
 			},
 			{
 				APIGroups: []string{
 					"cdi.kubevirt.io",
+				},
+				Resources: []string{
+					"*",
+				},
+				Verbs: []string{
+					"*",
+				},
+			},
+			{
+				APIGroups: []string{
+					"networkaddonsoperator.network.kubevirt.io",
 				},
 				Resources: []string{
 					"*",
@@ -212,6 +218,8 @@ func GetClusterRole() *rbacv1.ClusterRole {
 					"watch",
 					"create",
 					"delete",
+					"patch",
+					"update",
 				},
 			},
 			{

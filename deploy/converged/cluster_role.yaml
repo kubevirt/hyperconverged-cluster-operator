@@ -15,16 +15,17 @@ rules:
 - apiGroups:
   - kubevirt.io
   resources:
-  - kubevirts
+  - '*'
   verbs:
-  - create
-  - get
-  - list
-  - watch
-  - patch
-  - update
+  - '*'
 - apiGroups:
   - cdi.kubevirt.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - networkaddonsoperator.network.kubevirt.io
   resources:
   - '*'
   verbs:
@@ -87,6 +88,8 @@ rules:
   - watch
   - create
   - delete
+  - patch
+  - update
 - apiGroups:
   - security.openshift.io
   resources:

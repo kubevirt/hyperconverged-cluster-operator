@@ -29,8 +29,9 @@ oc project kubevirt-hyperconverged
 Launch all of the CRDs.
 ```bash
 oc create -f deploy/converged/crds/hco.crd.yaml
-oc create -f deploy/converged/crds/cdi.crd.yaml
 oc create -f deploy/converged/crds/kubevirt.crd.yaml
+oc create -f deploy/converged/crds/cdi.crd.yaml
+oc create -f deploy/converged/crds/cna.crd.yaml
 ```
 
 Launch all of the Service Accounts, Cluster Role(Binding)s, and Operators.
@@ -105,14 +106,6 @@ spec:
   name: kubevirt-hyperconverged
   source: hco-catalogsource
   sourceNamespace: openshift-operator-lifecycle-manager
-```
-
-Launch the Cluster Network Addons operator.
-```bash
-oc create -f https://github.com/kubevirt/cluster-network-addons-operator/releases/download/v0.1.0/cluster-network-addons-operator_00_namespace.yaml
-oc create -f https://github.com/kubevirt/cluster-network-addons-operator/releases/download/v0.1.0/cluster-network-addons-operator_01_crd.yaml
-oc create -f https://github.com/kubevirt/cluster-network-addons-operator/releases/download/v0.1.0/cluster-network-addons-operator_02_rbac.yaml
-oc create -f https://github.com/kubevirt/cluster-network-addons-operator/releases/download/v0.1.0/cluster-network-addons-operator_03_deployment.yaml
 ```
 
 Create an HCO CustomResource, which creates the KubeVirt CR, launching KubeVirt.
