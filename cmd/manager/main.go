@@ -12,6 +12,7 @@ import (
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util/k8s"
 
 	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/leader"
@@ -88,6 +89,7 @@ func main() {
 	mgr, err := manager.New(cfg, manager.Options{
 		Namespace:          namespace,
 		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
+		MapperProvider:     k8s.NewDynamicRESTMapper,
 	})
 	if err != nil {
 		log.Error(err, "")
