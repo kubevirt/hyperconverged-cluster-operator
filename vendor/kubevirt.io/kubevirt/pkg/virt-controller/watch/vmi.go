@@ -90,6 +90,10 @@ const (
 	SuccessfulMigrationReason = "SuccessfulMigration"
 	// FailedMigrationReason is added when a migration attempt fails
 	FailedMigrationReason = "FailedMigration"
+	// SuccessfulAbortMigrationReason is added when an attempt to abort migration completes successfully
+	SuccessfulAbortMigrationReason = "SuccessfulAbortMigration"
+	// FailedAbortMigrationReason is added when an attempt to abort migration fails
+	FailedAbortMigrationReason = "FailedAbortMigration"
 )
 
 func NewVMIController(templateService services.TemplateService,
@@ -424,7 +428,10 @@ func isPodReady(pod *k8sv1.Pod) bool {
 				return false
 			}
 		} else {
-			if containerStatus.Ready == false {
+			// When using istio the istio-proxy container will not be ready
+			// until there is a service pointing to this pod.
+			// We need to start the VM anyway
+			if containerStatus.Name != "istio-proxy" && containerStatus.Ready == false {
 				return false
 			}
 		}

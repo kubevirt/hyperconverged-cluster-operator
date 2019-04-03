@@ -18,11 +18,10 @@ required = [
   version = "=v1.6.0"
 
 [[override]]
-  # TODO: Update once OLM integration PR is merged
+  # TODO: Update once OLM integration is released
   name = "kubevirt.io/kubevirt"
   #version = "=v0.15.0"
-  branch = "olm"
-  source = "github.com/slintes/kubevirt"
+  branch = "master"
 
 [[override]]
   name = "github.com/go-kit/kit"

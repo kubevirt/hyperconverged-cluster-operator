@@ -990,8 +990,8 @@
   version = "v1.6.0"
 
 [[projects]]
-  branch = "olm"
-  digest = "1:344bb92ba665418da1f9a7f15ce678ea3ac5a0cf4ede144ea23d8a6bbdd72967"
+  branch = "master"
+  digest = "1:5d983fe8bc34237116177d4ff41a2bbdb6349bf1dc68adb96572321da45f484f"
   name = "kubevirt.io/kubevirt"
   packages = [
     ".",
@@ -1019,8 +1019,7 @@
     "pkg/virt-operator/util",
   ]
   pruneopts = "NT"
-  revision = "2932e4217df6c1615c66e09cc8b3d590bd8de974"
-  source = "github.com/slintes/kubevirt"
+  revision = "1b37e172244825e903636135fe4dae2a3d039af1"
 
 [[projects]]
   digest = "1:06035489efbd51ccface65fc878ceeb849aba05b2f9443c8993f363fc96e80ac"

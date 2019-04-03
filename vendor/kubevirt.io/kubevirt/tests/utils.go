@@ -1156,6 +1156,16 @@ func cleanNamespaces() {
 
 		// Remove all Migration Objects
 		PanicOnError(virtCli.RestClient().Delete().Namespace(namespace).Resource("virtualmachineinstancemigrations").Do().Error())
+		migrations, err := virtCli.VirtualMachineInstanceMigration(namespace).List(&metav1.ListOptions{})
+		PanicOnError(err)
+		for _, migration := range migrations.Items {
+			if controller.HasFinalizer(&migration, v1.VirtualMachineInstanceMigrationFinalizer) {
+				_, err := virtCli.VirtualMachineInstanceMigration(namespace).Patch(migration.Name, types.JSONPatchType, []byte("[{ \"op\": \"remove\", \"path\": \"/metadata/finalizers\" }]"))
+				if !errors.IsNotFound(err) {
+					PanicOnError(err)
+				}
+			}
+		}
 
 	}
 }
@@ -1392,25 +1402,6 @@ func AddPVCDisk(vmi *v1.VirtualMachineInstance, name string, bus string, claimNa
 		VolumeSource: v1.VolumeSource{
 			PersistentVolumeClaim: &k8sv1.PersistentVolumeClaimVolumeSource{
 				ClaimName: claimName,
-			},
-		},
-	})
-
-	return vmi
-}
-
-func AddEphemeralFloppy(vmi *v1.VirtualMachineInstance, name string, image string) *v1.VirtualMachineInstance {
-	vmi.Spec.Domain.Devices.Disks = append(vmi.Spec.Domain.Devices.Disks, v1.Disk{
-		Name: name,
-		DiskDevice: v1.DiskDevice{
-			Floppy: &v1.FloppyTarget{},
-		},
-	})
-	vmi.Spec.Volumes = append(vmi.Spec.Volumes, v1.Volume{
-		Name: name,
-		VolumeSource: v1.VolumeSource{
-			ContainerDisk: &v1.ContainerDiskSource{
-				Image: image,
 			},
 		},
 	})
@@ -1923,6 +1914,15 @@ func WaitForVirtualMachineToDisappearWithTimeout(vmi *v1.VirtualMachineInstance,
 	}, seconds, 1*time.Second).Should(BeTrue())
 }
 
+func WaitForMigrationToDisappearWithTimeout(migration *v1.VirtualMachineInstanceMigration, seconds int) {
+	virtClient, err := kubecli.GetKubevirtClient()
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	EventuallyWithOffset(1, func() bool {
+		_, err := virtClient.VirtualMachineInstanceMigration(migration.Namespace).Get(migration.Name, &metav1.GetOptions{})
+		return errors.IsNotFound(err)
+	}, seconds, 1*time.Second).Should(BeTrue())
+}
+
 func WaitForSuccessfulVMIStart(vmi runtime.Object) string {
 	return waitForVMIStart(vmi, 180, false)
 }
@@ -2256,11 +2256,7 @@ func ExecuteCommandOnPodV2(virtCli kubecli.KubevirtClient, pod *k8sv1.Pod, conta
 		Tty:    false,
 	})
 
-	if err != nil {
-		return "", "", err
-	}
-
-	return stdoutBuf.String(), stderrBuf.String(), nil
+	return stdoutBuf.String(), stderrBuf.String(), err
 }
 
 func GetRunningVirtualMachineInstanceDomainXML(virtClient kubecli.KubevirtClient, vmi *v1.VirtualMachineInstance) (string, error) {
@@ -2847,7 +2843,7 @@ func GetNodeWithHugepages(virtClient kubecli.KubevirtClient, hugepages k8sv1.Res
 }
 
 func GetAllSchedulableNodes(virtClient kubecli.KubevirtClient) *k8sv1.NodeList {
-	nodes, err := virtClient.CoreV1().Nodes().List(metav1.ListOptions{LabelSelector: "kubevirt.io/schedulable=true"})
+	nodes, err := virtClient.CoreV1().Nodes().List(metav1.ListOptions{LabelSelector: v1.NodeSchedulable + "=" + "true"})
 	Expect(err).ToNot(HaveOccurred(), "Should list compute nodes")
 	return nodes
 }
@@ -2954,7 +2950,7 @@ func KubevirtFailHandler(message string, callerSkip ...int) {
 		return
 	}
 
-	for _, ns := range []string{KubeVirtInstallNamespace, metav1.NamespaceSystem, NamespaceTestDefault} {
+	for _, ns := range []string{KubeVirtInstallNamespace, ContainerizedDataImporterNamespace, metav1.NamespaceSystem, NamespaceTestDefault} {
 		// Get KubeVirt and CDI specific pods information
 		labels := []string{"kubevirt.io", "cdi.kubevirt.io"}
 		allPods := []k8sv1.Pod{}
@@ -3124,8 +3120,8 @@ func StartVirtualMachine(vm *v1.VirtualMachine) *v1.VirtualMachine {
 	return updatedVM
 }
 
-func HasCDI() bool {
-	hasCDI := false
+func HasFeature(feature string) bool {
+	hasFeature := false
 	virtClient, err := kubecli.GetKubevirtClient()
 	PanicOnError(err)
 	options := metav1.GetOptions{}
@@ -3133,15 +3129,23 @@ func HasCDI() bool {
 	if err == nil {
 		val, ok := cfgMap.Data[virtconfig.FeatureGatesKey]
 		if !ok {
-			return hasCDI
+			return hasFeature
 		}
-		hasCDI = strings.Contains(val, "DataVolumes")
+		hasFeature = strings.Contains(val, feature)
 	} else {
 		if !errors.IsNotFound(err) {
 			PanicOnError(err)
 		}
 	}
-	return hasCDI
+	return hasFeature
+}
+
+func HasCDI() bool {
+	return HasFeature("DataVolumes")
+}
+
+func HasLiveMigration() bool {
+	return HasFeature("LiveMigration")
 }
 
 func StartTCPServer(vmi *v1.VirtualMachineInstance, port int) {
@@ -3196,4 +3200,23 @@ func GetVmPodName(virtCli kubecli.KubevirtClient, vmi *v1.VirtualMachineInstance
 	Expect(podName).ToNot(BeEmpty())
 
 	return podName
+}
+
+func AppendEmptyDisk(vmi *v1.VirtualMachineInstance, diskName, busName, diskSize string) {
+	vmi.Spec.Domain.Devices.Disks = append(vmi.Spec.Domain.Devices.Disks, v1.Disk{
+		Name: diskName,
+		DiskDevice: v1.DiskDevice{
+			Disk: &v1.DiskTarget{
+				Bus: busName,
+			},
+		},
+	})
+	vmi.Spec.Volumes = append(vmi.Spec.Volumes, v1.Volume{
+		Name: diskName,
+		VolumeSource: v1.VolumeSource{
+			EmptyDisk: &v1.EmptyDiskSource{
+				Capacity: resource.MustParse(diskSize),
+			},
+		},
+	})
 }
