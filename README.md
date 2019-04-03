@@ -106,6 +106,7 @@ spec:
   name: kubevirt-hyperconverged
   source: hco-catalogsource
   sourceNamespace: openshift-operator-lifecycle-manager
+EOF
 ```
 
 Create an HCO CustomResource, which creates the KubeVirt CR, launching KubeVirt.
