@@ -84,7 +84,7 @@ func GetDeployment(repository string, tag string, imagePullPolicy string) *appsv
 								},
 								{
 									Name:  "DOCKER_TAG",
-									Value: "latest",
+									Value: tag,
 								},
 								{
 									Name:  "CONTROLLER_IMAGE",
