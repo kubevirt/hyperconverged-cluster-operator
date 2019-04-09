@@ -6,10 +6,10 @@ import (
 	networkaddons "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1alpha1"
 	networkaddonsnames "github.com/kubevirt/cluster-network-addons-operator/pkg/names"
 	hcov1alpha1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/config"
 	cdi "kubevirt.io/containerized-data-importer/pkg/apis/core/v1alpha1"
 	kubevirt "kubevirt.io/kubevirt/pkg/api/v1"
 
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,12 +25,6 @@ import (
 )
 
 var log = logf.Log.WithName("controller_hyperconverged")
-
-var (
-	KubeVirtImagePullPolicy      = "IfNotPresent"
-	CDIImagePullPolicy           = "IfNotPresent"
-	NetworkAddonsImagePullPolicy = "IfNotPresent"
-)
 
 // Add creates a new HyperConverged Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -104,7 +98,10 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 	reqLogger.Info("Reconciling HyperConverged operator")
 
 	// Fetch the HyperConverged instance
-	instance := &hcov1alpha1.HyperConverged{}
+	spec := &hcov1alpha1.HyperConvergedSpec{}
+	instance := &hcov1alpha1.HyperConverged{
+		Spec: spec,
+	}
 	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -117,23 +114,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	if instance.Spec.KubeVirtImagePullPolicy != "" {
-		reqLogger := log.WithValues("imagePullPolicy", instance.Spec.KubeVirtImagePullPolicy)
-		reqLogger.Info("HCO CR contains KubeVirt Image Pull Policy")
-		KubeVirtImagePullPolicy = instance.Spec.KubeVirtImagePullPolicy
-	}
-
-	if instance.Spec.CDIImagePullPolicy != "" {
-		reqLogger := log.WithValues("imagePullPolicy", instance.Spec.CDIImagePullPolicy)
-		reqLogger.Info("HCO CR contains CDI Image Pull Policy")
-		CDIImagePullPolicy = instance.Spec.CDIImagePullPolicy
-	}
-
-	if instance.Spec.NetworkAddonsImagePullPolicy != "" {
-		reqLogger := log.WithValues("imagePullPolicy", instance.Spec.NetworkAddonsImagePullPolicy)
-		reqLogger.Info("HCO CR contains Network Addons Image Pull Policy")
-		NetworkAddonsImagePullPolicy = instance.Spec.NetworkAddonsImagePullPolicy
-	}
+	instance.Spec = config.NewHCOSpec(instance.Spec.Version, instance.Spec.ContainerRegistry, instance.Spec.ImagePullPolicy)
 
 	// Define a new KubeVirt object
 	virtCR := newKubeVirtForCR(instance)
@@ -224,9 +205,7 @@ func newKubeVirtForCR(cr *hcov1alpha1.HyperConverged) *kubevirt.KubeVirt {
 			Name:   "kubevirt-" + cr.Name,
 			Labels: labels,
 		},
-		Spec: kubevirt.KubeVirtSpec{
-			ImagePullPolicy: v1.PullPolicy(KubeVirtImagePullPolicy),
-		},
+		Spec: config.NewKubeVirtSpec(cr.Spec),
 	}
 }
 
@@ -240,9 +219,7 @@ func newCDIForCR(cr *hcov1alpha1.HyperConverged) *cdi.CDI {
 			Name:   "cdi-" + cr.Name,
 			Labels: labels,
 		},
-		Spec: cdi.CDISpec{
-			ImagePullPolicy: v1.PullPolicy(CDIImagePullPolicy),
-		},
+		Spec: config.NewCdiSpec(cr.Spec),
 	}
 }
 
@@ -256,10 +233,6 @@ func newNetworkAddonsForCR(cr *hcov1alpha1.HyperConverged) *networkaddons.Networ
 			Name:   networkaddonsnames.OPERATOR_CONFIG,
 			Labels: labels,
 		},
-		Spec: networkaddons.NetworkAddonsConfigSpec{
-			Multus:          &networkaddons.Multus{},
-			LinuxBridge:     &networkaddons.LinuxBridge{},
-			ImagePullPolicy: NetworkAddonsImagePullPolicy,
-		},
+		Spec: config.NewNetworkAddonsSpec(cr.Spec),
 	}
 }

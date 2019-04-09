@@ -1,30 +1,26 @@
 package v1alpha1
 
 import (
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // HyperConvergedSpec defines the desired state of HyperConverged
 // +k8s:openapi-gen=true
 type HyperConvergedSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-	KubeVirtImagePullPolicy      string `json:"KubeVirtImagePullPolicy,omitempty"`
-	CDIImagePullPolicy           string `json:"CDIImagePullPolicy,omitempty"`
-	NetworkAddonsImagePullPolicy string `json:"NetworkAddonsImagePullPolicy,omitempty"`
+	// Version of all the components under the HCO
+	Version string `json:"Version"`
+
+	// Always, IfNotPresent, Never
+	ImagePullPolicy v1.PullPolicy `json:"ImagePullPolicy,omitempty"`
+
+	// Registry container are pulled from: quay.io/kubevirt
+	ContainerRegistry string `json:"ContainerRegistry"`
 }
 
 // HyperConvergedStatus defines the observed state of HyperConverged
 // +k8s:openapi-gen=true
-type HyperConvergedStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-}
+type HyperConvergedStatus struct{}
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -34,7 +30,7 @@ type HyperConverged struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   HyperConvergedSpec   `json:"spec,omitempty"`
+	Spec   *HyperConvergedSpec  `json:"spec,omitempty"`
 	Status HyperConvergedStatus `json:"status,omitempty"`
 }
 

@@ -16,8 +16,9 @@ metadata:
             "namespace":"kubevirt-hyperconverged"
           },
           "spec": {
-            "CDIImagePullPolicy":"IfNotPresent",
-            "KubeVirtImagePullPolicy":"IfNotPresent"
+            "Version":"2.0",
+            "ContainerRegistry":"quay.io/kubevirt",
+            "ImagePullPolicy":"IfNotPresent"
           }
         }
       ]
