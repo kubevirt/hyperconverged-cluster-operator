@@ -10,6 +10,7 @@ import (
 	hcov1alpha1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1"
 	cdi "kubevirt.io/containerized-data-importer/pkg/apis/core/v1alpha1"
 	kubevirt "kubevirt.io/kubevirt/pkg/api/v1"
+	kwebuis "github.com/kubevirt/web-ui-operator/pkg/apis/kubevirt/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -92,6 +93,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 	err = c.Watch(&source.Kind{Type: &sspv1.KubevirtTemplateValidator{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &hcov1alpha1.HyperConverged{},
+	})
+	if err != nil {
+		return err
+	}
+	err = c.Watch(&source.Kind{Type: &kwebuis.KWebUI{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &hcov1alpha1.HyperConverged{},
 	})
@@ -232,6 +240,23 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		return result, err
 	}
 
+	// Define a new KWebUI object
+	kwebuiCR := newKWebUIForCR(instance)
+
+	// Set HyperConverged instance as the owner and controller
+	if err := controllerutil.SetControllerReference(instance, kwebuiCR, r.scheme); err != nil {
+		return reconcile.Result{}, err
+	}
+
+	// Check if this KWebUI CR already exists
+	foundKwebui := &kwebuis.KWebUI{}
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: kwebuiCR.Name, Namespace: ""}, foundKwebui)
+	result, err = manageComponentCR(err, kwebuiCR, "KWebUI", r.client)
+
+	// KWebUI failed to create, requeue
+	if err != nil {
+		return result, err
+	}
 	return result, nil
 }
 
@@ -343,3 +368,29 @@ func newKubevirtTemplateValidatorForCR(cr *hcov1alpha1.HyperConverged) *sspv1.Ku
 		},
 	}
 }
+
+func def(s string, defVal string) string {
+	if s == "" {
+		return defVal
+	}
+	return s
+}
+
+// newKWebUIForCR returns a KWebUI CR
+func newKWebUIForCR(cr *hcov1alpha1.HyperConverged) *kwebuis.KWebUI {
+	labels := map[string]string{
+		"app": cr.Name,
+	}
+	return &kwebuis.KWebUI{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "kubevirt-web-ui-" + cr.Name,
+			Labels: labels,
+		},
+		Spec: kwebuis.KWebUISpec {
+			Version: "latest", // TODO: image tag name
+			RegistryUrl: "", // TODO: use ContainerRegistry  ; https://github.com/kubevirt/hyperconverged-cluster-operator/pull/22/files
+			RegistryNamespace: "", // keep blank, already in ContainerRegistry
+			OpenshiftMasterDefaultSubdomain: cr.Spec.KWebUIMasterDefaultSubdomain, // set if provided, otherwise keep empty
+			PublicMasterHostname: cr.Spec.KWebUIPublicMasterHostname, // set if provided, otherwise keep empty
+			Branding: def(cr.Spec.KWebUIBranding, "okdvirt"),
+			ImagePullPolicy: "IfNotPresent",
