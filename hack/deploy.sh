@@ -22,17 +22,19 @@ source hack/common.sh
 # create namespaces
 "${CMD}" create ns kubevirt
 "${CMD}" create ns cdi
+"${CMD}" create ns kubevirt-hyperconverged
+"${CMD}" create ns cluster-network-addons-operator
 
 if [ "${CMD}" == "kubectl" ]; then
     # switch namespace to kubevirt
-    kubectl config set-context $(kubectl config current-context) --namespace=kubevirt
+    kubectl config set-context $(kubectl config current-context) --namespace=kubevirt-hyperconverged
 else
     # Switch project to kubevirt
-    oc project kubevirt;
+    oc project kubevirt-hyperconverged
 fi
 # Deploy HCO manifests
-"${CMD}" create -f deploy/
-"${CMD}" create -f deploy/crds/hco_v1alpha1_hyperconverged_crd.yaml
+"${CMD}" create -f deploy/standard/crds/hco.crd.yaml
+"${CMD}" create -f deploy/standard/
 
 # Create kubevirt-operator
 "${CMD}" create -f "${KUBEVIRT_OPERATOR_URL}" || true
@@ -40,8 +42,13 @@ fi
 # Create cdi-operator
 "${CMD}" create -f "${CDI_OPERATOR_URL}" || true
 
+# Create cluster-network-addons-operator
+"${CMD}" create -f "${CNA_URL_PREFIX}"/network-addons-config.crd.yaml
+"${CMD}" create -f "${CNA_URL_PREFIX}"/operator.yaml
+"${CMD}" create -f "${CNA_URL_PREFIX}"/network-addons-config-example.cr.yaml
+
 # Create an HCO CustomResource
-"${CMD}" create -f deploy/crds/hco_v1alpha1_hyperconverged_cr.yaml
+"${CMD}" create -f deploy/standard/crds/hco.cr.yaml
 
 # Wait for all the operators to be ready
 "${CMD}" wait deployment/hyperconverged-cluster-operator --for=condition=available

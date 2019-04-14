@@ -19,14 +19,22 @@
 
 source hack/common.sh
 
-# Remove HCO manifests
-"${CMD}" delete -f deploy/
-"${CMD}" delete -f deploy/crds/hco_v1alpha1_hyperconverged_crd.yaml
+# Remove HCO
+"${CMD}" delete -f deploy/standard/crds/hco.cr.yaml --wait=false
+"${CMD}" wait --for=delete hyperconverged.hco.kubevirt.io/hyperconverged-cluster
+"${CMD}" delete -f deploy/standard/crds/hco.crd.yaml --wait=false
+"${CMD}" delete -f deploy/standard/
+"${CMD}" delete ns kubevirt-hyperconverged
 
 # Delete kubevirt-operator
-"${CMD}" delete -n kubevirt apiservice v1alpha3.subresources.kubevirt.io
+"${CMD}" delete -n kubevirt apiservice v1alpha3.kubevirt.io --wait=false
 "${CMD}" delete -f "${KUBEVIRT_OPERATOR_URL}"
 
-# Delete cdi-operator
-"${CMD}" delete -n cdi apiservice v1alpha1.cdi.kubevirt.io
+# # Delete cdi-operator
+"${CMD}" delete -n cdi apiservice v1alpha1.cdi.kubevirt.io --wait=false
 "${CMD}" delete -f "${CDI_OPERATOR_URL}"
+
+# Delete cna-operator
+"${CMD}" delete -f "${CNA_URL_PREFIX}"/network-addons-config.crd.yaml
+"${CMD}" delete -f "${CNA_URL_PREFIX}"/operator.yaml
+"${CMD}" delete ns cluster-network-addons-operator

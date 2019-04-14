@@ -3,3 +3,5 @@ start:
 
 clean:
 	./hack/clean.sh
+
+.PHONY: start clean
