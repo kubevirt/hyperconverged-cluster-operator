@@ -54,7 +54,7 @@ for template in $templates; do
 		--namespace=${NAMESPACE} \
 		--csv-version=${CSV_VERSION} \
 		--container-prefix=${CONTAINER_PREFIX} \
-    --cna-container-prefix=${CNA_CONTAINER_PREFIX} \
+		--cna-container-prefix=${CNA_CONTAINER_PREFIX} \
 		--container-tag=${CONTAINER_TAG} \
 		--image-pull-policy=${IMAGE_PULL_POLICY} \
 		--input-file=${infile} \
