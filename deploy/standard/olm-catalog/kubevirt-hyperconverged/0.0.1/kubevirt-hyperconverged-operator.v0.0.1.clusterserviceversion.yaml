@@ -19,10 +19,6 @@ metadata:
           "metadata": {
             "name": "kubevirt-hyperconverged",
             "namespace": "kubevirt-hyperconverged"
-          },
-          "spec": {
-            "CDIImagePullPolicy": "IfNotPresent",
-            "KubeVirtImagePullPolicy": "IfNotPresent"
           }
         },
         {
@@ -30,9 +26,6 @@ metadata:
           "kind": "CDI",
           "metadata": {
             "name": "cdi"
-          },
-          "specs": {
-            "imagePullPolicy": "IfNotPresent"
           }
         },
         {
@@ -41,9 +34,6 @@ metadata:
           "metadata": {
             "name": "kubevirt",
             "namespace": "kubevirt"
-          },
-          "specs": {
-            "imagePullPolicy": "IfNotPresent"
           }
         },
         {
@@ -51,13 +41,6 @@ metadata:
           "kind": "NetworkAddonsConfig",
           "metadata": {
             "name": "cluster"
-          },
-          "specs": {
-            "imagePullPolicy": "IfNotPresent",
-            "kubeMacPool": {},
-            "linuxBridge": {},
-            "multus": {},
-            "sriov": {}
           }
         }
       ]
