@@ -28,7 +28,7 @@ kubectl create ns kubevirt-hyperconverged
 
 Switch to the HCO namespace.
 ```bash
-kubectl project kubevirt-hyperconverged
+kubectl config set-context $(kubectl config current-context) --namespace=kubevirt-hyperconverged
 ```
 
 Launch all of the CRDs.
