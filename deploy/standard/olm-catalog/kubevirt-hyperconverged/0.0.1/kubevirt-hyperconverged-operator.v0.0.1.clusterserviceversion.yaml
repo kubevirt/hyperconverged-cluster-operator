@@ -18,8 +18,8 @@ metadata:
           "kind": "HyperConverged",
           "metadata": {
             "name": "kubevirt-hyperconverged",
-            "namespace": "kubevirt-hyperconverged"
-          }
+            "namespace": "kubevirt-hyperconverged",
+          },
         },
         {
           "apiVersion": "cdi.kubevirt.io/v1alpha1",
