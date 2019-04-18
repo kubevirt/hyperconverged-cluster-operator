@@ -190,7 +190,7 @@ spec:
         - name: SRIOV_NETWORK_NAME
           value: sriov-network
         - name: SRIOV_NETWORK_TYPE
-          value: sriov
+          value: cnv-sriov
         - name: KUBEMACPOOL_IMAGE
           value: quay.io/schseba/mac-controller:latest
         - name: OPERATOR_IMAGE
