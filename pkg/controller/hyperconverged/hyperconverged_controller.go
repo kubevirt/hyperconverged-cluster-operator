@@ -8,9 +8,9 @@ import (
 	networkaddons "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1alpha1"
 	networkaddonsnames "github.com/kubevirt/cluster-network-addons-operator/pkg/names"
 	hcov1alpha1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1"
+	kwebuis "github.com/kubevirt/web-ui-operator/pkg/apis/kubevirt/v1alpha1"
 	cdi "kubevirt.io/containerized-data-importer/pkg/apis/core/v1alpha1"
 	kubevirt "kubevirt.io/kubevirt/pkg/api/v1"
-	kwebuis "github.com/kubevirt/web-ui-operator/pkg/apis/kubevirt/v1alpha1"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -386,11 +386,14 @@ func newKWebUIForCR(cr *hcov1alpha1.HyperConverged) *kwebuis.KWebUI {
 			Name:   "kubevirt-web-ui-" + cr.Name,
 			Labels: labels,
 		},
-		Spec: kwebuis.KWebUISpec {
-			Version: "latest", // TODO: image tag name
-			RegistryUrl: "", // TODO: use ContainerRegistry  ; https://github.com/kubevirt/hyperconverged-cluster-operator/pull/22/files
-			RegistryNamespace: "", // keep blank, already in ContainerRegistry
+		Spec: kwebuis.KWebUISpec{
+			Version:                         "latest",                             // TODO: image tag name, use Version ; https://github.com/kubevirt/hyperconverged-cluster-operator/pull/22/files
+			RegistryUrl:                     "",                                   // TODO: use ContainerRegistry  ; https://github.com/kubevirt/hyperconverged-cluster-operator/pull/22/files
+			RegistryNamespace:               "",                                   // keep blank, already in ContainerRegistry
 			OpenshiftMasterDefaultSubdomain: cr.Spec.KWebUIMasterDefaultSubdomain, // set if provided, otherwise keep empty
-			PublicMasterHostname: cr.Spec.KWebUIPublicMasterHostname, // set if provided, otherwise keep empty
-			Branding: def(cr.Spec.KWebUIBranding, "okdvirt"),
-			ImagePullPolicy: "IfNotPresent",
+			PublicMasterHostname:            cr.Spec.KWebUIPublicMasterHostname,   // set if provided, otherwise keep empty
+			Branding:                        KWebUIBranding,
+			ImagePullPolicy:                 "IfNotPresent",
+		},
+	}
+}
