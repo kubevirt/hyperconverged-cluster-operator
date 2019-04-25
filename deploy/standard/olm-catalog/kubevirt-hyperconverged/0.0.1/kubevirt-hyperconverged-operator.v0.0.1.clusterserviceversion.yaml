@@ -12,31 +12,9 @@ metadata:
           "apiVersion":"hco.kubevirt.io/v1alpha1",
           "kind":"HyperConverged",
           "metadata": {
-            "name": "kubevirt-hyperconverged",
-            "namespace": "kubevirt-hyperconverged",
+            "name":"kubevirt-hyperconverged",
+            "namespace":"kubevirt-hyperconverged",
           },
-        },
-        {
-          "apiVersion": "cdi.kubevirt.io/v1alpha1",
-          "kind": "CDI",
-          "metadata": {
-            "name": "cdi"
-          }
-        },
-        {
-          "apiVersion": "kubevirt.io/v1alpha3",
-          "kind": "KubeVirt",
-          "metadata": {
-            "name": "kubevirt",
-            "namespace": "kubevirt"
-          }
-        },
-        {
-          "apiVersion": "networkaddonsoperator.network.kubevirt.io/v1alpha1",
-          "kind": "NetworkAddonsConfig",
-          "metadata": {
-            "name": "cluster"
-          }
         }
       ]
     description: Creates and maintains a HyperConverged KubeVirt Deployment
@@ -281,3 +259,23 @@ spec:
         kind: NetworkAddonsConfig
         displayName: Cluster Network Addons
         description: Cluster Network Addons
+      - name: kwebuis.kubevirt.io
+        version: v1alpha1
+        kind: KWebUI
+        displayName: Web User Interface
+        description: KubeVirt Web User Interface
+      - name: kubevirtcommontemplatesbundles.kubevirt.io
+        version: v1
+        kind: KubevirtCommonTemplatesBundle
+        displayName: KubeVirt Common Templates
+        description: KubeVirt Common Templates
+      - name: kubevirtnodelabellerbundles.kubevirt.io
+        version: v1
+        kind: KubevirtNodeLabellerBundle
+        displayName: KubeVirt Node Labeller Bundler
+        description: KubeVirt Node Labeller Bundler
+      - name: kubevirttemplatevalidators.kubevirt.io
+        version: v1
+        kind: KubevirtTemplateValidator
+        displayName: KubeVirt Template Validator
+        description: KubeVirt Template Validator
