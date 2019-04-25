@@ -5,16 +5,19 @@ metadata:
   namespace: placeholder
   annotations:
     capabilities: "Full Lifecycle"
-    categories: "Virtualization"
-    alm-examples: |
+    categories: "OpenShift Optional"
+    certified: "false"
+    support: "false"
+    repository: https://github.com/kubevirt/hyperconverged-cluster-operator
+    alm-examples: >-
       [
         {
-          "apiVersion":"hco.kubevirt.io/v1alpha1",
-          "kind":"HyperConverged",
+          "apiVersion": "hco.kubevirt.io/v1alpha1",
+          "kind": "HyperConverged",
           "metadata": {
-            "name":"kubevirt-hyperconverged",
-            "namespace":"kubevirt-hyperconverged",
-          },
+            "name": "kubevirt-hyperconverged",
+            "namespace": "kubevirt-hyperconverged",
+          }
         }
       ]
     description: Creates and maintains a HyperConverged KubeVirt Deployment
@@ -279,3 +282,8 @@ spec:
         kind: KubevirtTemplateValidator
         displayName: KubeVirt Template Validator
         description: KubeVirt Template Validator
+      - name: nodemaintenances.kubevirt.io
+        version: v1alpha1
+        kind: NodeMaintenance
+        displayName: Node Maintenance
+        description: Node Maintenance

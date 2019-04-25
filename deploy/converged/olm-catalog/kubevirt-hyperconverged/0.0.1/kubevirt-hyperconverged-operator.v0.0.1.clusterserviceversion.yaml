@@ -5,16 +5,76 @@ metadata:
   namespace: placeholder
   annotations:
     capabilities: "Full Lifecycle"
-    categories: "Virtualization"
-    alm-examples: |
+    categories: "OpenShift Optional"
+    certified: "false"
+    support: "false"
+    repository: https://github.com/kubevirt/hyperconverged-cluster-operator
+    alm-examples: >-
       [
         {
-          "apiVersion":"hco.kubevirt.io/v1alpha1",
-          "kind":"HyperConverged",
+          "apiVersion": "hco.kubevirt.io/v1alpha1",
+          "kind": "HyperConverged",
           "metadata": {
-            "name":"kubevirt-hyperconverged",
-            "namespace":"kubevirt-hyperconverged",
-          },
+            "name": "kubevirt-hyperconverged",
+            "namespace": "kubevirt-hyperconverged",
+          }
+        },
+        {
+          "apiVersion": "cdi.kubevirt.io/v1alpha1",
+          "kind": "CDI",
+          "metadata": {
+            "name": "cdi"
+          }
+        },
+        {
+          "apiVersion": "kubevirt.io/v1alpha3",
+          "kind": "KubeVirt",
+          "metadata": {
+            "name": "kubevirt",
+            "namespace": "kubevirt"
+          }
+        },
+        {
+          "apiVersion": "networkaddonsoperator.network.kubevirt.io/v1alpha1",
+          "kind": "NetworkAddonsConfig",
+          "metadata": {
+            "name": "network-addons"
+          }
+        },
+        {
+          "apiVersion": "kwebuis.kubevirt.io/v1alpha1",
+          "kind": "KWebUI",
+          "metadata": {
+            "name": "web-ui"
+          }
+        },
+        {
+          "apiVersion": "kubevirtcommontemplatesbundles.kubevirt.io/v1",
+          "kind": "KubevirtCommonTemplatesBundle",
+          "metadata": {
+            "name": "common-templates"
+          }
+        },
+        {
+          "apiVersion": "kubevirtnodelabellerbundles.kubevirt.io/v1",
+          "kind": "KubevirtNodeLabellerBundle",
+          "metadata": {
+            "name": "node-labeller"
+          }
+        },
+        {
+          "apiVersion": "kubevirttemplatevalidators.kubevirt.io/v1",
+          "kind": "KubevirtTemplateValidator",
+          "metadata": {
+            "name": "template-validator"
+          }
+        },
+        {
+          "apiVersion": "nodemaintenances.kubevirt.io/v1alpha1",
+          "kind": "NodeMaintenance",
+          "metadata": {
+            "name": "node-maintenance"
+          }
         }
       ]
     description: Creates and maintains a HyperConverged KubeVirt Deployment
@@ -1205,7 +1265,7 @@ spec:
                 serviceAccountName: kubevirt-ssp-operator
                 containers:
                   - name: kubevirt-ssp-operator
-                    image: quay.io/redhat-operators/kubevirt-ssp-operator:latest
+                    image: quay.io/fromani/kubevirt-ssp-operator-container:latest
                     ports:
                     - containerPort: 60000
                       name: metrics
@@ -1246,7 +1306,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: node-maintenance-operator
-                image: quay.io/kubevirt/node-maintenance-operator:v0.2.0
+                image: quay.io/kubevirt/node-maintenance-operator:latest
                 imagePullPolicy: Always
                 name: node-maintenance-operator
                 resources: {}
@@ -1298,3 +1358,8 @@ spec:
         kind: KubevirtTemplateValidator
         displayName: KubeVirt Template Validator
         description: KubeVirt Template Validator
+      - name: nodemaintenances.kubevirt.io
+        version: v1alpha1
+        kind: NodeMaintenance
+        displayName: Node Maintenance
+        description: Node Maintenance
