@@ -374,7 +374,6 @@ func getCNA(data *templateData) {
 	data.CNA = &cnaData
 }
 
-// TODO: implement kwebuicomponents in kubevirt-web-ui-operator and update vendor folder
 func getKWWEBUI(data *templateData) {
 	writer := strings.Builder{}
 
@@ -382,7 +381,7 @@ func getKWWEBUI(data *templateData) {
 	kwebuideployment := kwebuicomponents.GetDeployment(
 		data.Namespace,
 		data.ContainerPrefix,
-		"latest", // TODO: can it be configured?
+		data.ContainerTag,
 		data.ImagePullPolicy,
 	)
 	err := marshallObject(kwebuideployment, &writer)
