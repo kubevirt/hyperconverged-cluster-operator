@@ -55,18 +55,19 @@ type operatorData struct {
 }
 
 type templateData struct {
-	Converged          bool
-	Namespace          string
-	CsvVersion         string
-	ContainerPrefix    string
-	CnaContainerPrefix string
-	ContainerTag       string
-	ImagePullPolicy    string
-	HCO                *operatorData
-	KubeVirt           *operatorData
-	CDI                *operatorData
-	CNA                *operatorData
-	KWEBUI             *operatorData
+	Converged            bool
+	Namespace            string
+	CsvVersion           string
+	ContainerPrefix      string
+	CnaContainerPrefix   string
+	WebuiContainerPrefix string
+	ContainerTag         string
+	ImagePullPolicy      string
+	HCO                  *operatorData
+	KubeVirt             *operatorData
+	CDI                  *operatorData
+	CNA                  *operatorData
+	KWEBUI               *operatorData
 }
 
 func check(err error) {
@@ -380,7 +381,7 @@ func getKWWEBUI(data *templateData) {
 	// Get KWEBUI Deployment
 	kwebuideployment := kwebuicomponents.GetDeployment(
 		data.Namespace,
-		data.ContainerPrefix,
+		data.WebuiContainerPrefix,
 		data.ContainerTag,
 		data.ImagePullPolicy,
 	)
@@ -449,6 +450,7 @@ func main() {
 	csvVersion := flag.String("csv-version", "0.0.1", "")
 	containerPrefix := flag.String("container-prefix", "kubevirt", "")
 	cnaContainerPrefix := flag.String("cna-container-prefix", *containerPrefix, "")
+	webuiContainerPrefix := flag.String("webui-container-prefix", *containerPrefix, "")
 	containerTag := flag.String("container-tag", "latest", "")
 	imagePullPolicy := flag.String("image-pull-policy", "IfNotPresent", "")
 	inputFile := flag.String("input-file", "", "")
@@ -457,13 +459,14 @@ func main() {
 	pflag.Parse()
 
 	data := templateData{
-		Converged:          *converged,
-		Namespace:          *namespace,
-		CsvVersion:         *csvVersion,
-		ContainerPrefix:    *containerPrefix,
-		CnaContainerPrefix: *cnaContainerPrefix,
-		ContainerTag:       *containerTag,
-		ImagePullPolicy:    *imagePullPolicy,
+		Converged:            *converged,
+		Namespace:            *namespace,
+		CsvVersion:           *csvVersion,
+		ContainerPrefix:      *containerPrefix,
+		CnaContainerPrefix:   *cnaContainerPrefix,
+		WebuiContainerPrefix: *webuiContainerPrefix,
+		ContainerTag:         *containerTag,
+		ImagePullPolicy:      *imagePullPolicy,
 	}
 
 	// Load in all HCO Resources
