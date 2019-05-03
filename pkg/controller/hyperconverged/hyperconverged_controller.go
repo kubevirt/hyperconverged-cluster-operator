@@ -184,7 +184,6 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// Define a new CDI object
 	cdiCR := newCDIForCR(instance)
-	cdiCR.ObjectMeta.Namespace = request.Namespace
 
 	// Set HyperConverged instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, cdiCR, r.scheme); err != nil {
@@ -193,7 +192,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// Check if this CDI CR already exists
 	foundCDI := &cdi.CDI{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: cdiCR.Name, Namespace: cdiCR.Namespace}, foundCDI)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: cdiCR.Name, Namespace: ""}, foundCDI)
 	result, err = manageComponentResource(err, cdiCR, "CDI", r.client)
 
 	// CDI failed to create, requeue
@@ -225,35 +224,48 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 	if err := controllerutil.SetControllerReference(instance, kubevirtCommonTemplatesBundleCR, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
+
 	// Check if this CR already exists
 	foundKubevirtCommonTemplatesBundle := &sspv1.KubevirtCommonTemplatesBundle{}
+
 	err = r.client.Get(context.TODO(), types.NamespacedName{Name: kubevirtCommonTemplatesBundleCR.Name, Namespace: kubevirtCommonTemplatesBundleCR.Namespace}, foundKubevirtCommonTemplatesBundle)
 	result, err = manageComponentResource(err, kubevirtCommonTemplatesBundleCR, "KubevirtCommonTemplatesBundle", r.client)
 	// object failed to create, requeue
 	if err != nil {
 		return result, err
 	}
+
+	// Define a new kubevirtNodeLabellerBundleCR object
 	kubevirtNodeLabellerBundleCR := newKubevirtNodeLabellerBundleForCR(instance)
+	kubevirtNodeLabellerBundleCR.ObjectMeta.Namespace = request.Namespace
+
 	// Set HyperConverged instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, kubevirtNodeLabellerBundleCR, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
+
 	// Check if this CR already exists
 	foundKubevirtNodeLabellerBundle := &sspv1.KubevirtNodeLabellerBundle{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: kubevirtNodeLabellerBundleCR.Name, Namespace: ""}, foundKubevirtNodeLabellerBundle)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: kubevirtNodeLabellerBundleCR.Name, Namespace: kubevirtNodeLabellerBundleCR.Namespace}, foundKubevirtNodeLabellerBundle)
 	result, err = manageComponentResource(err, kubevirtNodeLabellerBundleCR, "KubevirtNodeLabellerBundle", r.client)
+
 	// object failed to create, requeue
 	if err != nil {
 		return result, err
 	}
+
+	// Define a new kubevirtTemplateValidatorCR object
 	kubevirtTemplateValidatorCR := newKubevirtTemplateValidatorForCR(instance)
+	kubevirtTemplateValidatorCR.ObjectMeta.Namespace = request.Namespace
+
 	// Set HyperConverged instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, kubevirtTemplateValidatorCR, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
+
 	// Check if this CR already exists
 	foundKubevirtTemplateValidator := &sspv1.KubevirtTemplateValidator{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: kubevirtTemplateValidatorCR.Name, Namespace: ""}, foundKubevirtTemplateValidator)
+	err = r.client.Get(context.TODO(), types.NamespacedName{Name: kubevirtTemplateValidatorCR.Name, Namespace: kubevirtTemplateValidatorCR.Namespace}, foundKubevirtTemplateValidator)
 	result, err = manageComponentResource(err, kubevirtTemplateValidatorCR, "KubevirtTemplateValidator", r.client)
 	// object failed to create, requeue
 	if err != nil {
