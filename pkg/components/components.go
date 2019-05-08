@@ -304,7 +304,8 @@ func GetCR() *hcov1alpha1.HyperConverged {
 			Kind:       "HyperConverged",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "hyperconverged-cluster",
+			Name:      "hyperconverged-cluster",
+			Namespace: "kubevirt-hyperconverged",
 		},
 	}
 }
