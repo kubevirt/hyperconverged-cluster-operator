@@ -12,7 +12,7 @@
   packages = [
     "pkg/apis",
     "pkg/apis/kubevirt/v1",
-    "pkg/versions"
+    "pkg/versions",
   ]
   revision = "dac8207d7df2668263ae5e7ce3611cba43fe78c4"
   version = "v1.0.0"
@@ -47,7 +47,7 @@
     "pkg/apis/monitoring",
     "pkg/apis/monitoring/v1",
     "pkg/client/versioned/scheme",
-    "pkg/client/versioned/typed/monitoring/v1"
+    "pkg/client/versioned/typed/monitoring/v1",
   ]
   revision = "72ec4b9b16ef11700724dc71fec77112536eed40"
   version = "v0.26.0"
@@ -62,7 +62,7 @@
   name = "github.com/emicklei/go-restful"
   packages = [
     ".",
-    "log"
+    "log",
   ]
   revision = "b9bbc5664f49b6deec52393bd68f39830687a347"
   version = "v2.9.3"
@@ -136,7 +136,7 @@
   name = "github.com/gogo/protobuf"
   packages = [
     "proto",
-    "sortkeys"
+    "sortkeys",
   ]
   revision = "ba06b47c162d49f2af050fb4c75bcbc86a159d5c"
   version = "v1.2.1"
@@ -166,7 +166,7 @@
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
-    "ptypes/timestamp"
+    "ptypes/timestamp",
   ]
   revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
   version = "v1.3.1"
@@ -194,7 +194,7 @@
   packages = [
     "OpenAPIv2",
     "compiler",
-    "extensions"
+    "extensions",
   ]
   revision = "7c663266750e7d82587642f65e60bc4083f1f84e"
   version = "v0.2.0"
@@ -210,7 +210,7 @@
   name = "github.com/gregjones/httpcache"
   packages = [
     ".",
-    "diskcache"
+    "diskcache",
   ]
   revision = "3befbb6ad0cc97d4c25d851e9528915809e1a22f"
 
@@ -218,7 +218,7 @@
   name = "github.com/hashicorp/golang-lru"
   packages = [
     ".",
-    "simplelru"
+    "simplelru",
   ]
   revision = "7087cb70de9f7a8bc0a10c375cb0d2280a8edf9c"
   version = "v0.5.1"
@@ -249,7 +249,7 @@
     "pkg/apis/k8s.cni.cncf.io/v1",
     "pkg/client/clientset/versioned",
     "pkg/client/clientset/versioned/scheme",
-    "pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1"
+    "pkg/client/clientset/versioned/typed/k8s.cni.cncf.io/v1",
   ]
   revision = "386d141f4c94392047e2361a44ad1573a577e666"
 
@@ -265,33 +265,20 @@
     "pkg/apis",
     "pkg/apis/networkaddonsoperator/v1alpha1",
     "pkg/components",
-    "pkg/names"
+    "pkg/names",
   ]
   revision = "d3c2d622b5e44abbe08b11274040e7a01ed550a7"
   version = "0.5.0"
-
-[[projects]]
-  name = "github.com/kubevirt/hyperconverged-cluster-operator"
-  packages = [
-    "pkg/apis",
-    "pkg/apis/hco/v1alpha1",
-    "pkg/cdicomponents",
-    "pkg/components",
-    "pkg/controller",
-    "pkg/controller/hyperconverged"
-  ]
-  revision = "635a71af855d4de76f5fce67129248cf92ed0077"
-  version = "v0.2"
 
 [[projects]]
   name = "github.com/kubevirt/web-ui-operator"
   packages = [
     "pkg/apis",
     "pkg/apis/kubevirt/v1alpha1",
-    "pkg/components"
+    "pkg/components",
   ]
-  revision = "33a02f2998ab6e91a684211fca4983e0a89e6a3f"
-  version = "v0.1.6"
+  revision = "9b9a38ee703205fb456fde5e449e6539385f6093"
+  version = "v0.1.7"
 
 [[projects]]
   branch = "master"
@@ -299,7 +286,7 @@
   packages = [
     "buffer",
     "jlexer",
-    "jwriter"
+    "jwriter",
   ]
   revision = "1ea4449da9834f4d333f1cc461c374aea217d249"
 
@@ -341,7 +328,7 @@
     "matchers/support/goraph/edge",
     "matchers/support/goraph/node",
     "matchers/support/goraph/util",
-    "types"
+    "types",
   ]
   revision = "90e289841c1ed79b7a598a7cd9959750cb5e89e2"
   version = "v1.5.0"
@@ -355,7 +342,7 @@
   name = "github.com/openshift/client-go"
   packages = [
     "security/clientset/versioned/scheme",
-    "security/clientset/versioned/typed/security/v1"
+    "security/clientset/versioned/typed/security/v1",
   ]
   revision = "431ec9a26e5021f35fa41ee9a89842db9bfdb370"
 
@@ -367,7 +354,7 @@
     "pkg/leader",
     "pkg/log/zap",
     "pkg/metrics",
-    "version"
+    "version",
   ]
   revision = "9550d6d509c22f6e483ea503d078fc5ec6eaef1a"
 
@@ -400,7 +387,7 @@
   packages = [
     "prometheus",
     "prometheus/internal",
-    "prometheus/promhttp"
+    "prometheus/promhttp",
   ]
   revision = "505eaef017263e299324067d40ca2c48f6a2cf50"
   version = "v0.9.2"
@@ -416,7 +403,7 @@
   packages = [
     "expfmt",
     "internal/bitbucket.org/ww/goautoneg",
-    "model"
+    "model",
   ]
   revision = "a82f4c12f983cc2649298185f296632953e50d3e"
   version = "v0.3.0"
@@ -432,7 +419,7 @@
   packages = [
     "modfile",
     "module",
-    "semver"
+    "semver",
   ]
   revision = "438578804ca6f31be148c27683afc419ce47c06e"
   version = "v1.3.0"
@@ -441,7 +428,7 @@
   name = "github.com/spf13/afero"
   packages = [
     ".",
-    "mem"
+    "mem",
   ]
   revision = "588a75ec4f32903aa5e39a2619ba6a4631e28424"
   version = "v1.2.2"
@@ -472,7 +459,7 @@
     "internal/bufferpool",
     "internal/color",
     "internal/exit",
-    "zapcore"
+    "zapcore",
   ]
   revision = "27376062155ad36be76b0f12cf1572a221d3a48c"
   version = "v1.10.0"
@@ -495,7 +482,7 @@
     "http/httpguts",
     "http2",
     "http2/hpack",
-    "idna"
+    "idna",
   ]
   revision = "4829fb13d2c62012c17688fa7f629f371014946d"
 
@@ -507,7 +494,7 @@
     "google",
     "internal",
     "jws",
-    "jwt"
+    "jwt",
   ]
   revision = "9f3314589c9a9136388751d9adae6b0ed400978a"
 
@@ -516,7 +503,7 @@
   name = "golang.org/x/sys"
   packages = [
     "unix",
-    "windows"
+    "windows",
   ]
   revision = "d89cdac9e8725f2aefce25fcbfef41134c9ad412"
 
@@ -551,7 +538,7 @@
     "unicode/cldr",
     "unicode/norm",
     "unicode/rangetable",
-    "width"
+    "width",
   ]
   revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
   version = "v0.3.2"
@@ -576,7 +563,7 @@
     "internal/fastwalk",
     "internal/gopathwalk",
     "internal/module",
-    "internal/semver"
+    "internal/semver",
   ]
   revision = "b9fed7929fc1d5f8c3daa266389c35f3ee124473"
 
@@ -592,7 +579,7 @@
     "internal/modules",
     "internal/remote_api",
     "internal/urlfetch",
-    "urlfetch"
+    "urlfetch",
   ]
   revision = "54a98f90d1c46b7731eb8fb305d2a321c30ef610"
   version = "v1.5.0"
@@ -644,7 +631,7 @@
     "settings/v1alpha1",
     "storage/v1",
     "storage/v1alpha1",
-    "storage/v1beta1"
+    "storage/v1beta1",
   ]
   revision = "05914d821849570fba9eacfb29466f2d8d3cd229"
 
@@ -655,7 +642,7 @@
     "pkg/apis/apiextensions/v1beta1",
     "pkg/client/clientset/clientset",
     "pkg/client/clientset/clientset/scheme",
-    "pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
+    "pkg/client/clientset/clientset/typed/apiextensions/v1beta1",
   ]
   revision = "0fe22c71c47604641d9aa352c785b7912c200562"
 
@@ -704,7 +691,7 @@
     "pkg/version",
     "pkg/watch",
     "third_party/forked/golang/json",
-    "third_party/forked/golang/reflect"
+    "third_party/forked/golang/reflect",
   ]
   revision = "2b1284ed4c93a43499e781493253e2ac5959c4fd"
 
@@ -853,7 +840,7 @@
     "util/integer",
     "util/jsonpath",
     "util/retry",
-    "util/workqueue"
+    "util/workqueue",
   ]
   revision = "8d9ed539ba3134352c586810e749e58df4e94e4f"
 
@@ -881,8 +868,9 @@
     "cmd/lister-gen",
     "cmd/lister-gen/args",
     "cmd/lister-gen/generators",
-    "pkg/util"
+    "pkg/util",
   ]
+  pruneopts = "T"
   revision = "c2090bec4d9b1fb25de3812f868accc2bc9ecbae"
 
 [[projects]]
@@ -896,8 +884,9 @@
     "generator",
     "namer",
     "parser",
-    "types"
+    "types",
   ]
+  pruneopts = "T"
   revision = "e17681d19d3ac4837a019ece36c2a0ec31ffe985"
 
 [[projects]]
@@ -915,7 +904,7 @@
     "pkg/generators",
     "pkg/generators/rules",
     "pkg/util/proto",
-    "pkg/util/sets"
+    "pkg/util/sets",
   ]
   revision = "0cf8f7e6ed1d2e3d47d02e3b6e559369af24d803"
 
@@ -938,7 +927,7 @@
     "pkg/client/informers/externalversions/upload",
     "pkg/client/informers/externalversions/upload/v1alpha1",
     "pkg/client/listers/core/v1alpha1",
-    "pkg/client/listers/upload/v1alpha1"
+    "pkg/client/listers/upload/v1alpha1",
   ]
   revision = "1be9eb724352693820646f998c944cb43099e6d3"
   version = "v1.9.0"
@@ -969,7 +958,7 @@
     "pkg/virt-launcher/virtwrap/api",
     "pkg/virt-operator/creation/components",
     "pkg/virt-operator/creation/rbac",
-    "pkg/virt-operator/util"
+    "pkg/virt-operator/util",
   ]
   revision = "d925dfdde3a7ac8634c528c1933b6747015f4635"
   version = "v0.17.0-alpha.0"
@@ -1005,7 +994,7 @@
     "pkg/webhook/admission",
     "pkg/webhook/admission/types",
     "pkg/webhook/internal/metrics",
-    "pkg/webhook/types"
+    "pkg/webhook/types",
   ]
   revision = "12d98582e72927b6cd0123e2b4e819f9341ce62c"
   version = "v0.1.10"
@@ -1018,7 +1007,7 @@
     "pkg/internal/codegen",
     "pkg/internal/codegen/parse",
     "pkg/internal/general",
-    "pkg/util"
+    "pkg/util",
   ]
   revision = "950a0e88e4effb864253b3c7504b326cc83b9d11"
   version = "v0.1.8"
@@ -1032,6 +1021,62 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f6695f8523980bfb84b9f114aa334472699759ab5fc594d5d50f79930861cc0d"
+  input-imports = [
+    "github.com/MarSik/kubevirt-ssp-operator/pkg/apis",
+    "github.com/MarSik/kubevirt-ssp-operator/pkg/apis/kubevirt/v1",
+    "github.com/MarSik/kubevirt-ssp-operator/pkg/versions",
+    "github.com/ghodss/yaml",
+    "github.com/go-openapi/spec",
+    "github.com/kubevirt/cluster-network-addons-operator/pkg/apis",
+    "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1alpha1",
+    "github.com/kubevirt/cluster-network-addons-operator/pkg/components",
+    "github.com/kubevirt/cluster-network-addons-operator/pkg/names",
+    "github.com/kubevirt/web-ui-operator/pkg/apis",
+    "github.com/kubevirt/web-ui-operator/pkg/apis/kubevirt/v1alpha1",
+    "github.com/kubevirt/web-ui-operator/pkg/components",
+    "github.com/operator-framework/operator-sdk/pkg/k8sutil",
+    "github.com/operator-framework/operator-sdk/pkg/leader",
+    "github.com/operator-framework/operator-sdk/pkg/log/zap",
+    "github.com/operator-framework/operator-sdk/pkg/metrics",
+    "github.com/operator-framework/operator-sdk/version",
+    "github.com/spf13/pflag",
+    "k8s.io/api/apps/v1",
+    "k8s.io/api/core/v1",
+    "k8s.io/api/rbac/v1",
+    "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1",
+    "k8s.io/apimachinery/pkg/api/errors",
+    "k8s.io/apimachinery/pkg/apis/meta/v1",
+    "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured",
+    "k8s.io/apimachinery/pkg/runtime",
+    "k8s.io/apimachinery/pkg/runtime/schema",
+    "k8s.io/client-go/plugin/pkg/client/auth/gcp",
+    "k8s.io/code-generator/cmd/client-gen",
+    "k8s.io/code-generator/cmd/conversion-gen",
+    "k8s.io/code-generator/cmd/deepcopy-gen",
+    "k8s.io/code-generator/cmd/defaulter-gen",
+    "k8s.io/code-generator/cmd/informer-gen",
+    "k8s.io/code-generator/cmd/lister-gen",
+    "k8s.io/gengo/args",
+    "k8s.io/kube-openapi/cmd/openapi-gen",
+    "k8s.io/kube-openapi/pkg/common",
+    "kubevirt.io/containerized-data-importer",
+    "kubevirt.io/containerized-data-importer/pkg/apis/core/v1alpha1",
+    "kubevirt.io/kubevirt",
+    "kubevirt.io/kubevirt/pkg/api/v1",
+    "kubevirt.io/kubevirt/pkg/virt-operator/creation/components",
+    "kubevirt.io/kubevirt/pkg/virt-operator/creation/rbac",
+    "sigs.k8s.io/controller-runtime/pkg/client",
+    "sigs.k8s.io/controller-runtime/pkg/client/config",
+    "sigs.k8s.io/controller-runtime/pkg/controller",
+    "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil",
+    "sigs.k8s.io/controller-runtime/pkg/handler",
+    "sigs.k8s.io/controller-runtime/pkg/manager",
+    "sigs.k8s.io/controller-runtime/pkg/reconcile",
+    "sigs.k8s.io/controller-runtime/pkg/runtime/log",
+    "sigs.k8s.io/controller-runtime/pkg/runtime/scheme",
+    "sigs.k8s.io/controller-runtime/pkg/runtime/signals",
+    "sigs.k8s.io/controller-runtime/pkg/source",
+    "sigs.k8s.io/controller-tools/pkg/crd/generator",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

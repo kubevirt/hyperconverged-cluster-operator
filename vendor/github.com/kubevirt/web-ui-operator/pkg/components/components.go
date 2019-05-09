@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -11,6 +12,14 @@ import (
 )
 
 const Name = "kubevirt-web-ui-operator"
+
+func getBaseTag(tag string) string {
+	last := strings.LastIndex(tag, "-")
+	if last < 0 {
+		last = len(tag)
+	}
+	return tag[0:last]
+}
 
 func GetDeployment(namespace string, repository string, tag string, imagePullPolicy string) *appsv1.Deployment {
 	image := fmt.Sprintf("%s/%s:%s", repository, Name, tag)
@@ -75,6 +84,10 @@ func GetDeployment(namespace string, repository string, tag string, imagePullPol
 								{
 									Name:  "OPERATOR_TAG",
 									Value: tag,
+								},
+								{
+									Name:  "WEBUI_TAG",
+									Value: getBaseTag(tag),
 								},
 								{
 									Name:  "BRANDING",

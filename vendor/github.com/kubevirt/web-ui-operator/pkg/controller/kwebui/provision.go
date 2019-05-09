@@ -174,7 +174,7 @@ func generateInventory(instance *kubevirtv1alpha1.KWebUI, namespace string, acti
 
 	registryUrl := Def(instance.Spec.RegistryUrl, os.Getenv("OPERATOR_REGISTRY"), "quay.io/kubevirt")
 	registryNamespace := Def(instance.Spec.RegistryNamespace, "", "")
-	version := Def(instance.Spec.Version, os.Getenv("OPERATOR_TAG"),"v1.4")
+	version := Def(instance.Spec.Version, os.Getenv("WEBUI_TAG"),"v1.4")
 	branding := Def(instance.Spec.Branding, os.Getenv("BRANDING"), "okdvirt")
 	imagePullPolicy := Def(instance.Spec.ImagePullPolicy, os.Getenv("IMAGE_PULL_POLICY"), "IfNotPresent")
 
