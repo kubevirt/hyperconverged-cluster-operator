@@ -517,6 +517,42 @@ metadata:
   name: cdi-operator
 rules:
 - apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - roles
+  - rolebindings
+  - clusterrolebindings
+  - clusterroles
+  verbs:
+  - '*'
+- apiGroups:
+  - security.openshift.io
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - '*'
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  - services
+  verbs:
+  - '*'
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  - pods
+  - persistentvolumeclaims
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
   - cdi.kubevirt.io
   resources:
   - '*'
@@ -527,21 +563,10 @@ rules:
   resources:
   - events
   verbs:
-  - create
-  - update
-  - patch
-- apiGroups:
-  - ""
-  resources:
-  - persistentvolumeclaims
-  verbs:
   - get
-  - list
-  - watch
   - create
   - update
   - patch
-  - delete
 - apiGroups:
   - ""
   resources:
@@ -569,6 +594,9 @@ rules:
   - list
   - watch
   - create
+  - delete
+  - update
+  - patch
 - apiGroups:
   - ""
   resources:
@@ -578,12 +606,17 @@ rules:
   - list
 - apiGroups:
   - extensions
+  - ""
   resources:
   - ingresses
+  - pods
+  - services
   verbs:
   - get
   - list
   - watch
+  - create
+  - delete
 - apiGroups:
   - ""
   resources:
@@ -594,6 +627,8 @@ rules:
   - watch
   - create
   - update
+  - delete
+  - patch
 - apiGroups:
   - storage.k8s.io
   resources:
@@ -603,34 +638,45 @@ rules:
   - list
 - apiGroups:
   - route.openshift.io
+  - apiregistration.k8s.io
   resources:
   - routes
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  - services
+  - apiservices
   verbs:
   - get
   - list
   - watch
   - create
   - update
-  - delete
+  - patch
+- apiGroups:
+  - route.openshift.io
+  resources:
+  - routes/custom-host
+  verbs:
+  - create
+  - update
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - validatingwebhookconfigurations
+  verbs:
+  - get
+  - create
+  - update
+  - list
 - apiGroups:
   - batch
   resources:
   - jobs
   verbs:
   - get
+  - update
   - list
   - watch
   - create
   - delete
+  - patch
 - apiGroups:
   - apps
   resources:
@@ -642,19 +688,7 @@ rules:
   - watch
   - create
   - delete
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - clusterroles
-  - clusterrolebindings
-  - roles
-  - rolebindings
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - delete
+  - update
 - apiGroups:
   - apiextensions.k8s.io
   resources:
@@ -665,14 +699,8 @@ rules:
   - watch
   - create
   - delete
-- apiGroups:
-  - security.openshift.io
-  resources:
-  - securitycontextconstraints
-  verbs:
-  - get
-  - list
-  - watch
+  - patch
+  - update
 - apiGroups:
   - security.openshift.io
   resourceNames:
