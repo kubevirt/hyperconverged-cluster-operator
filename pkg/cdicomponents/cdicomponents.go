@@ -144,6 +144,62 @@ func GetClusterRole() *rbacv1.ClusterRole {
 		Rules: []rbacv1.PolicyRule{
 			{
 				APIGroups: []string{
+					"rbac.authorization.k8s.io",
+				},
+				Resources: []string{
+					"roles",
+					"rolebindings",
+					"clusterrolebindings",
+					"clusterroles",
+				},
+				Verbs: []string{
+					"*",
+				},
+			},
+			{
+				APIGroups: []string{
+					"security.openshift.io",
+				},
+				Resources: []string{
+					"securitycontextconstraints",
+				},
+				Verbs: []string{
+					"*",
+				},
+			},
+			{
+				APIGroups: []string{
+					"",
+				},
+				Resources: []string{
+					"serviceaccounts",
+					"services",
+				},
+				Verbs: []string{
+					"*",
+				},
+			},
+			{
+				APIGroups: []string{
+					"",
+				},
+				Resources: []string{
+					"nodes",
+					"pods",
+					"persistentvolumeclaims",
+				},
+				Verbs: []string{
+					"get",
+					"list",
+					"watch",
+					"create",
+					"update",
+					"patch",
+					"delete",
+				},
+			},
+			{
+				APIGroups: []string{
 					"cdi.kubevirt.io",
 				},
 				Resources: []string{
@@ -161,26 +217,10 @@ func GetClusterRole() *rbacv1.ClusterRole {
 					"events",
 				},
 				Verbs: []string{
-					"create",
-					"update",
-					"patch",
-				},
-			},
-			{
-				APIGroups: []string{
-					"",
-				},
-				Resources: []string{
-					"persistentvolumeclaims",
-				},
-				Verbs: []string{
 					"get",
-					"list",
-					"watch",
 					"create",
 					"update",
 					"patch",
-					"delete",
 				},
 			},
 			{
@@ -223,6 +263,9 @@ func GetClusterRole() *rbacv1.ClusterRole {
 					"list",
 					"watch",
 					"create",
+					"delete",
+					"update",
+					"patch",
 				},
 			},
 			{
@@ -240,14 +283,19 @@ func GetClusterRole() *rbacv1.ClusterRole {
 			{
 				APIGroups: []string{
 					"extensions",
+					"",
 				},
 				Resources: []string{
 					"ingresses",
+					"pods",
+					"services",
 				},
 				Verbs: []string{
 					"get",
 					"list",
 					"watch",
+					"create",
+					"delete",
 				},
 			},
 			{
@@ -263,6 +311,8 @@ func GetClusterRole() *rbacv1.ClusterRole {
 					"watch",
 					"create",
 					"update",
+					"delete",
+					"patch",
 				},
 			},
 			{
@@ -280,23 +330,11 @@ func GetClusterRole() *rbacv1.ClusterRole {
 			{
 				APIGroups: []string{
 					"route.openshift.io",
+					"apiregistration.k8s.io",
 				},
 				Resources: []string{
 					"routes",
-				},
-				Verbs: []string{
-					"get",
-					"list",
-					"watch",
-				},
-			},
-			{
-				APIGroups: []string{
-					"",
-				},
-				Resources: []string{
-					"serviceaccounts",
-					"services",
+					"apiservices",
 				},
 				Verbs: []string{
 					"get",
@@ -304,7 +342,33 @@ func GetClusterRole() *rbacv1.ClusterRole {
 					"watch",
 					"create",
 					"update",
-					"delete",
+					"patch",
+				},
+			},
+			{
+				APIGroups: []string{
+					"route.openshift.io",
+				},
+				Resources: []string{
+					"routes/custom-host",
+				},
+				Verbs: []string{
+					"create",
+					"update",
+				},
+			},
+			{
+				APIGroups: []string{
+					"admissionregistration.k8s.io",
+				},
+				Resources: []string{
+					"validatingwebhookconfigurations",
+				},
+				Verbs: []string{
+					"get",
+					"create",
+					"update",
+					"list",
 				},
 			},
 			{
@@ -316,10 +380,12 @@ func GetClusterRole() *rbacv1.ClusterRole {
 				},
 				Verbs: []string{
 					"get",
+					"update",
 					"list",
 					"watch",
 					"create",
 					"delete",
+					"patch",
 				},
 			},
 			{
@@ -336,24 +402,7 @@ func GetClusterRole() *rbacv1.ClusterRole {
 					"watch",
 					"create",
 					"delete",
-				},
-			},
-			{
-				APIGroups: []string{
-					"rbac.authorization.k8s.io",
-				},
-				Resources: []string{
-					"clusterroles",
-					"clusterrolebindings",
-					"roles",
-					"rolebindings",
-				},
-				Verbs: []string{
-					"get",
-					"list",
-					"watch",
-					"create",
-					"delete",
+					"update",
 				},
 			},
 			{
@@ -369,19 +418,8 @@ func GetClusterRole() *rbacv1.ClusterRole {
 					"watch",
 					"create",
 					"delete",
-				},
-			},
-			{
-				APIGroups: []string{
-					"security.openshift.io",
-				},
-				Resources: []string{
-					"securitycontextconstraints",
-				},
-				Verbs: []string{
-					"get",
-					"list",
-					"watch",
+					"patch",
+					"update",
 				},
 			},
 			{
@@ -402,6 +440,7 @@ func GetClusterRole() *rbacv1.ClusterRole {
 			},
 		},
 	}
+
 	return role
 }
 
