@@ -9,6 +9,7 @@ services:
 
 script:
 - make build
+- make test
 
 # Keeping this around from kubevirt/kubevirt for updating in the future
 # deploy:
