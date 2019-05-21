@@ -7,6 +7,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("HyperconvergedController", func() {
@@ -20,32 +22,28 @@ var _ = Describe("HyperconvergedController", func() {
 		Context("KubeVirt Config CR", func() {
 			It("should have metadata", func() {
 				cr := newKubeVirtConfigForCR(instance)
-				Expect(cr.ObjectMeta.Name).To(Equal("kubevirt-config"))
-				Expect(cr.ObjectMeta.Labels).To(Equal(appLabel))
+				checkMetadataNameAndLabel(cr.ObjectMeta, "kubevirt-config", appLabel)
 			})
 		})
 
 		Context("KubeVirt CR", func() {
 			It("should have metadata", func() {
 				cr := newKubeVirtForCR(instance)
-				Expect(cr.ObjectMeta.Name).To(Equal("kubevirt-" + instance.Name))
-				Expect(cr.ObjectMeta.Labels).To(Equal(appLabel))
+				checkMetadataNameAndLabel(cr.ObjectMeta, "kubevirt-"+instance.Name, appLabel)
 			})
 		})
 
 		Context("CDI CR", func() {
 			It("should have metadata", func() {
 				cr := newCDIForCR(instance)
-				Expect(cr.ObjectMeta.Name).To(Equal("cdi-" + instance.Name))
-				Expect(cr.ObjectMeta.Labels).To(Equal(appLabel))
+				checkMetadataNameAndLabel(cr.ObjectMeta, "cdi-"+instance.Name, appLabel)
 			})
 		})
 
 		Context("Network Addons CR", func() {
 			It("should have metadata and spec", func() {
 				cr := newNetworkAddonsForCR(instance)
-				Expect(cr.ObjectMeta.Name).To(Equal(networkaddonsnames.OPERATOR_CONFIG))
-				Expect(cr.ObjectMeta.Labels).To(Equal(appLabel))
+				checkMetadataNameAndLabel(cr.ObjectMeta, networkaddonsnames.OPERATOR_CONFIG, appLabel)
 				Expect(cr.Spec.Multus).To(Equal(&networkaddons.Multus{}))
 				Expect(cr.Spec.LinuxBridge).To(Equal(&networkaddons.LinuxBridge{}))
 				Expect(cr.Spec.KubeMacPool).To(Equal(&networkaddons.KubeMacPool{}))
@@ -55,8 +53,7 @@ var _ = Describe("HyperconvergedController", func() {
 		Context("KubeVirt Common Template Bundle CR", func() {
 			It("should have metadata", func() {
 				cr := newKubevirtCommonTemplateBundleForCR(instance)
-				Expect(cr.ObjectMeta.Name).To(Equal("common-templates-" + instance.Name))
-				Expect(cr.ObjectMeta.Labels).To(Equal(appLabel))
+				checkMetadataNameAndLabel(cr.ObjectMeta, "common-templates-"+instance.Name, appLabel)
 				Expect(cr.ObjectMeta.Namespace).To(Equal("openshift"))
 			})
 		})
@@ -64,22 +61,21 @@ var _ = Describe("HyperconvergedController", func() {
 		Context("KubeVirt Node Labeller Bundle CR", func() {
 			It("should have metadata", func() {
 				cr := newKubevirtNodeLabellerBundleForCR(instance)
-				Expect(cr.ObjectMeta.Name).To(Equal("node-labeller-" + instance.Name))
-				Expect(cr.ObjectMeta.Labels).To(Equal(appLabel))
+				checkMetadataNameAndLabel(cr.ObjectMeta, "node-labeller-"+instance.Name, appLabel)
 			})
 		})
 
 		Context("KubeVirt Template Validator CR", func() {
 			It("should have metadata", func() {
 				cr := newKubevirtTemplateValidatorForCR(instance)
-				Expect(cr.ObjectMeta.Name).To(Equal("template-validator-" + instance.Name))
-				Expect(cr.ObjectMeta.Labels).To(Equal(appLabel))
+				checkMetadataNameAndLabel(cr.ObjectMeta, "template-validator-"+instance.Name, appLabel)
 			})
 		})
 
 		Context("KubeVirt Web UI CR", func() {
 			It("should have metadata and spec", func() {
 				cr := newKWebUIForCR(instance)
+				checkMetadataNameAndLabel(cr.ObjectMeta, "kubevirt-web-ui-"+instance.Name, appLabel)
 				Expect(cr.ObjectMeta.Name).To(Equal("kubevirt-web-ui-" + instance.Name))
 				Expect(cr.ObjectMeta.Labels).To(Equal(appLabel))
 				Expect(cr.Spec.OpenshiftMasterDefaultSubdomain).To(Equal(instance.Spec.KWebUIMasterDefaultSubdomain))
@@ -89,3 +85,8 @@ var _ = Describe("HyperconvergedController", func() {
 		})
 	})
 })
+
+func checkMetadataNameAndLabel(metadata metav1.ObjectMeta, expectedName string, expectedLabel map[string]string) {
+	Expect(metadata.Name).To(Equal(expectedName))
+	Expect(metadata.Labels).To(Equal(expectedLabel))
+}
