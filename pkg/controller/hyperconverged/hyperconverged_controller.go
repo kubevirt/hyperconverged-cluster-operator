@@ -2,23 +2,24 @@ package hyperconverged
 
 import (
 	"context"
-	"time"
+	"fmt"
+	"reflect"
+	"sync"
 
 	sspv1 "github.com/MarSik/kubevirt-ssp-operator/pkg/apis/kubevirt/v1"
+	"github.com/go-logr/logr"
 	networkaddons "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1alpha1"
-	networkaddonsnames "github.com/kubevirt/cluster-network-addons-operator/pkg/names"
 	hcov1alpha1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1"
 	kwebuis "github.com/kubevirt/web-ui-operator/pkg/apis/kubevirt/v1alpha1"
 	cdi "kubevirt.io/containerized-data-importer/pkg/apis/core/v1alpha1"
 	kubevirt "kubevirt.io/kubevirt/pkg/api/v1"
 
 	"encoding/json"
-	corev1 "k8s.io/api/core/v1"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -121,325 +122,93 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	// Handle finalizers
-	if instance.ObjectMeta.DeletionTimestamp.IsZero() {
-		// Add the finalizer if it's not there
-		if !contains(instance.ObjectMeta.Finalizers, FinalizerName) {
-			instance.ObjectMeta.Finalizers = append(instance.ObjectMeta.Finalizers, FinalizerName)
-			// Need to requeue because finalizer update does not change metadata.generation
-			return reconcile.Result{}, r.client.Update(context.TODO(), instance)
-		}
-	} else {
-		// If HyperConverged is to be removed and it contains its finalizer, perform cleanup of cluster-wide resources
-		if contains(instance.ObjectMeta.Finalizers, FinalizerName) {
-			result, err := manageComponentResourceRemoval(newNetworkAddonsForCR(instance), r.client, instance)
+	return r.reconcileUpdate(reqLogger, instance, request)
+}
+
+// ResultFromCRCreate holds the result and error from creating a CR
+type ResultFromCRCreate struct {
+	result reconcile.Result
+	err    error
+}
+
+func (r *ReconcileHyperConverged) reconcileUpdate(logger logr.Logger, cr *hcov1alpha1.HyperConverged, request reconcile.Request) (reconcile.Result, error) {
+	c := make(chan ResultFromCRCreate)
+	var wg sync.WaitGroup
+
+	resources := r.getAllResources(cr, request)
+	for _, desiredRuntimeObj := range resources {
+		wg.Add(1)
+		go func(desiredRuntimeObj runtime.Object) {
+			defer wg.Done()
+			desiredMetaObj := desiredRuntimeObj.(metav1.Object)
+
+			// use reflection to create default instance of desiredRuntimeObj type
+			typ := reflect.ValueOf(desiredRuntimeObj).Elem().Type()
+			currentRuntimeObj := reflect.New(typ).Interface().(runtime.Object)
+
+			key := client.ObjectKey{
+				Namespace: desiredMetaObj.GetNamespace(),
+				Name:      desiredMetaObj.GetName(),
+			}
+			err := r.client.Get(context.TODO(), key, currentRuntimeObj)
+
 			if err != nil {
-				log.Error(err, "Failed during NetworkAddonsConfig cleanup")
-				return result, nil
+				if !errors.IsNotFound(err) {
+					c <- ResultFromCRCreate{result: reconcile.Result{}, err: err}
+				}
+
+				if err = controllerutil.SetControllerReference(cr, desiredMetaObj, r.scheme); err != nil {
+					c <- ResultFromCRCreate{result: reconcile.Result{}, err: err}
+				}
+
+				// TODO: common-templates and cdi fails the Get check above and appears to still be missing.
+				// But in reality, when you try to Create it, the client reports back that
+				// the resource already exists. Need to investigate why.
+				// Before the refactor, the code didn't check if a resource already exists. It just
+				// tried to create it, and will skip if the Create indicated that it already exists.
+				if err = r.client.Create(context.TODO(), desiredRuntimeObj); err != nil {
+					if err != nil && errors.IsAlreadyExists(err) {
+						logger.Info("Skip reconcile: tried create but resource already exists", "key", key)
+						c <- ResultFromCRCreate{result: reconcile.Result{}, err: nil}
+					} else if err != nil {
+						c <- ResultFromCRCreate{result: reconcile.Result{}, err: err}
+					}
+				} else {
+					logger.Info("Resource created",
+						"namespace", desiredMetaObj.GetNamespace(),
+						"name", desiredMetaObj.GetName(),
+						"type", fmt.Sprintf("%T", desiredMetaObj))
+				}
+			} else {
+				logger.Info("Skip reconcile: resource already exists", "key", key)
+				c <- ResultFromCRCreate{result: reconcile.Result{}, err: nil}
 			}
+		}(desiredRuntimeObj)
+	}
 
-			// Remove the finalizer
-			instance.ObjectMeta.Finalizers = drop(instance.ObjectMeta.Finalizers, FinalizerName)
+	go func() {
+		wg.Wait()
+		close(c)
+	}()
 
-			// Remove foregroundDeletion finalizer if it is the last one to unblock resource removal
-			if len(instance.ObjectMeta.Finalizers) == 1 && contains(instance.ObjectMeta.Finalizers, foregroundDeletionFinalizer) {
-				instance.ObjectMeta.Finalizers = drop(instance.ObjectMeta.Finalizers, foregroundDeletionFinalizer)
-			}
-
-			// Need to requeue because finalizer update does not change metadata.generation
-			return reconcile.Result{}, r.client.Update(context.TODO(), instance)
+	var result reconcile.Result
+	var crErr error
+	var hasError bool
+	// Loop through the results, until an error is found. Once an error is found, don't change result or crErr, but
+	// drain the results channel. If no errors are found, return the last result.
+	for r := range c {
+		if hasError {
+			continue
+		}
+		result = r.result
+		crErr = r.err
+		if crErr != nil {
+			logger.Error(crErr, "Error during CR creation", "result", result)
+			hasError = true
 		}
 	}
 
-	// Define KubeVirt's configuration ConfigMap first
-	kvConfig := newKubeVirtConfigForCR(instance)
-	kvConfig.ObjectMeta.Namespace = request.Namespace
-
-	// Set HyperConverged instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, kvConfig, r.scheme); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	// Create the KubeVirt ConfigMap if it doesn't already exist
-	result, err := manageComponentResource(kvConfig, "KubeVirtConfig", r.client)
-
-	// KubeVirt ConfigMap failed to create, requeue
-	if err != nil {
-		return result, err
-	}
-
-	// Define a new KubeVirt object
-	virtCR := newKubeVirtForCR(instance)
-	virtCR.ObjectMeta.Namespace = request.Namespace
-
-	// Set HyperConverged instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, virtCR, r.scheme); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	// Create the KubeVirt CR if it doesn't already exist
-	result, err = manageComponentResource(virtCR, "KubeVirt", r.client)
-
-	// KubeVirt failed to create, requeue
-	if err != nil {
-		return result, err
-	}
-
-	// Define a new CDI object
-	cdiCR := newCDIForCR(instance)
-	cdiCR.ObjectMeta.Namespace = request.Namespace
-
-	// Set HyperConverged instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, cdiCR, r.scheme); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	// Create the CDI CR if it doesn't already exist
-	result, err = manageComponentResource(cdiCR, "CDI", r.client)
-
-	// CDI failed to create, requeue
-	if err != nil {
-		return result, err
-	}
-
-	// Define a new NetworkAddonsConfig object
-	networkAddonsCR := newNetworkAddonsForCR(instance)
-
-	// Create the NetworkAddonsConfig CR if it doesn't already exist
-	result, err = manageComponentResource(networkAddonsCR, "NetworkAddonsConfig", r.client)
-
-	// NetworkAddonsConfig failed to create, requeue
-	if err != nil {
-		return result, err
-	}
-
-	// Define new SSP objects
-	kubevirtCommonTemplatesBundleCR := newKubevirtCommonTemplateBundleForCR(instance)
-
-	// Set HyperConverged instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, kubevirtCommonTemplatesBundleCR, r.scheme); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	// Create the KubevirtCommonTemplatesBundle CR if it doesn't already exist
-	result, err = manageComponentResource(kubevirtCommonTemplatesBundleCR, "KubevirtCommonTemplatesBundle", r.client)
-	// object failed to create, requeue
-	if err != nil {
-		return result, err
-	}
-
-	// Define a new kubevirtNodeLabellerBundleCR object
-	kubevirtNodeLabellerBundleCR := newKubevirtNodeLabellerBundleForCR(instance)
-	kubevirtNodeLabellerBundleCR.ObjectMeta.Namespace = request.Namespace
-
-	// Set HyperConverged instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, kubevirtNodeLabellerBundleCR, r.scheme); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	// Create the KubevirtNodeLabellerBundle CR if it doesn't already exist
-	result, err = manageComponentResource(kubevirtNodeLabellerBundleCR, "KubevirtNodeLabellerBundle", r.client)
-	// object failed to create, requeue
-	if err != nil {
-		return result, err
-	}
-
-	// Define a new kubevirtNodeLabellerBundleCR object
-	kubevirtTemplateValidatorCR := newKubevirtTemplateValidatorForCR(instance)
-	kubevirtTemplateValidatorCR.ObjectMeta.Namespace = request.Namespace
-
-	// Set HyperConverged instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, kubevirtTemplateValidatorCR, r.scheme); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	// Create the KubevirtTemplateValidator CR if it doesn't already exist
-	result, err = manageComponentResource(kubevirtTemplateValidatorCR, "KubevirtTemplateValidator", r.client)
-	// object failed to create, requeue
-	if err != nil {
-		return result, err
-	}
-
-	// Define a new KWebUI object
-	kwebuiCR := newKWebUIForCR(instance)
-
-	// Set HyperConverged instance as the owner and controller
-	if err := controllerutil.SetControllerReference(instance, kwebuiCR, r.scheme); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	// Create the KWebUI CR if it doesn't already exist
-	result, err = manageComponentResource(kwebuiCR, "KWebUI", r.client)
-
-	// KWebUI failed to create, requeue
-	if err != nil {
-		return result, err
-	}
-
-	// Everything went fine, automatically reconcile after after a minute without observed activity to
-	// make sure that even deployed objects without owner reference will be re-created if removed.
-	// TODO djzager: What I think we should do is to lock down the HCO CR to a specified name
-	// (via environment variable on the operator deployment) and a specified namespace (can use the
-	// downward API to set an environment variable on the operator deployment getting the namespace
-	// where the operator was deployed).
-	return reconcile.Result{RequeueAfter: time.Minute}, nil
-}
-
-func manageComponentResource(o runtime.Object, kind string, c client.Client) (reconcile.Result, error) {
-	err := c.Create(context.TODO(), o)
-	if err != nil && errors.IsAlreadyExists(err) {
-		log.Info("Skip reconcile: resource already exists", "Kind", kind)
-		return reconcile.Result{}, nil
-	} else if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	log.Info("Creating new resource", "Kind", kind)
 	return reconcile.Result{}, nil
-}
-
-func manageComponentResourceRemoval(o interface{}, c client.Client, cr *hcov1alpha1.HyperConverged) (reconcile.Result, error) {
-	resource, err := toUnstructured(o)
-	if err != nil {
-		log.Error(err, "Failed to convert object to Unstructured")
-		return reconcile.Result{}, err
-	}
-
-	err = c.Get(context.TODO(), types.NamespacedName{Name: resource.GetName(), Namespace: resource.GetNamespace()}, resource)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			log.Info("Resource doesn't exist, there is nothing to remove", "Kind", resource.GetObjectKind())
-			return reconcile.Result{}, nil
-		}
-		return reconcile.Result{}, err
-	}
-
-	labels := resource.GetLabels()
-	if app, labelExists := labels["app"]; !labelExists || app != cr.Name {
-		log.Info("Existing resource wasn't deployed by HCO, ignoring", "Kind", resource.GetObjectKind())
-		return reconcile.Result{}, nil
-	}
-
-	err = c.Delete(context.TODO(), resource)
-	return reconcile.Result{}, err
-}
-
-func newKubeVirtConfigForCR(cr *hcov1alpha1.HyperConverged) *corev1.ConfigMap {
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-	return &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "kubevirt-config",
-			Labels: labels,
-		},
-		Data: map[string]string{
-			"feature-gates": "DataVolumes,SRIOV,LiveMigration,CPUManager,CPUNodeDiscovery",
-		},
-	}
-}
-
-// newKubeVirtForCR returns a KubeVirt CR
-func newKubeVirtForCR(cr *hcov1alpha1.HyperConverged) *kubevirt.KubeVirt {
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-	return &kubevirt.KubeVirt{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "kubevirt-" + cr.Name,
-			Labels: labels,
-		},
-	}
-}
-
-// newCDIForCr returns a CDI CR
-func newCDIForCR(cr *hcov1alpha1.HyperConverged) *cdi.CDI {
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-	return &cdi.CDI{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "cdi-" + cr.Name,
-			Labels: labels,
-		},
-	}
-}
-
-// newNetworkAddonsForCR returns a NetworkAddonsConfig CR
-func newNetworkAddonsForCR(cr *hcov1alpha1.HyperConverged) *networkaddons.NetworkAddonsConfig {
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-	return &networkaddons.NetworkAddonsConfig{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "NetworkAddonsConfig",
-			APIVersion: "networkaddonsoperator.network.kubevirt.io/v1alpha1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   networkaddonsnames.OPERATOR_CONFIG,
-			Labels: labels,
-		},
-		Spec: networkaddons.NetworkAddonsConfigSpec{
-			Multus:      &networkaddons.Multus{},
-			LinuxBridge: &networkaddons.LinuxBridge{},
-			KubeMacPool: &networkaddons.KubeMacPool{},
-		},
-	}
-}
-
-func newKubevirtCommonTemplateBundleForCR(cr *hcov1alpha1.HyperConverged) *sspv1.KubevirtCommonTemplatesBundle {
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-	return &sspv1.KubevirtCommonTemplatesBundle{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "common-templates-" + cr.Name,
-			Labels:    labels,
-			Namespace: "openshift",
-		},
-	}
-}
-
-func newKubevirtNodeLabellerBundleForCR(cr *hcov1alpha1.HyperConverged) *sspv1.KubevirtNodeLabellerBundle {
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-	return &sspv1.KubevirtNodeLabellerBundle{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "node-labeller-" + cr.Name,
-			Labels: labels,
-		},
-	}
-}
-
-func newKubevirtTemplateValidatorForCR(cr *hcov1alpha1.HyperConverged) *sspv1.KubevirtTemplateValidator {
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-	return &sspv1.KubevirtTemplateValidator{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "template-validator-" + cr.Name,
-			Labels: labels,
-		},
-	}
-}
-
-func newKWebUIForCR(cr *hcov1alpha1.HyperConverged) *kwebuis.KWebUI {
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-	return &kwebuis.KWebUI{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "kubevirt-web-ui-" + cr.Name,
-			Labels: labels,
-		},
-		// Missing CR values will be set via ENV variables of the web-ui-operator
-		Spec: kwebuis.KWebUISpec{
-			OpenshiftMasterDefaultSubdomain: cr.Spec.KWebUIMasterDefaultSubdomain, // set if provided, otherwise keep empty
-			PublicMasterHostname:            cr.Spec.KWebUIPublicMasterHostname,   // set if provided, otherwise keep empty
-			Version:                         "automatic",                          // special value to determine version dynamically from env variables; empty or missing value is reserved for deprovision
-		},
-	}
 }
 
 func contains(l []string, s string) bool {
