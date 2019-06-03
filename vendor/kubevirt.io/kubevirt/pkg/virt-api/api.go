@@ -25,11 +25,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
-	"path/filepath"
 	"sync"
 
-	restful "github.com/emicklei/go-restful"
+	"github.com/emicklei/go-restful"
 	restfulspec "github.com/emicklei/go-restful-openapi"
 	"github.com/go-openapi/spec"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -46,6 +44,7 @@ import (
 	aggregatorclient "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
 
 	v1 "kubevirt.io/kubevirt/pkg/api/v1"
+	"kubevirt.io/kubevirt/pkg/controller"
 	"kubevirt.io/kubevirt/pkg/healthz"
 	"kubevirt.io/kubevirt/pkg/kubecli"
 	"kubevirt.io/kubevirt/pkg/log"
@@ -109,17 +108,11 @@ type virtAPIApp struct {
 	authorizor       rest.VirtApiAuthorizor
 	certsDirectory   string
 
-	signingCertBytes           []byte
-	certBytes                  []byte
-	keyBytes                   []byte
-	clientCABytes              []byte
-	requestHeaderClientCABytes []byte
-	certFile                   string
-	keyFile                    string
-	clientCAFile               string
-	signingCertFile            string
-	namespace                  string
-	tlsConfig                  *tls.Config
+	signingCertBytes []byte
+	certBytes        []byte
+	keyBytes         []byte
+	namespace        string
+	tlsConfig        *tls.Config
 }
 
 var _ service.Service = &virtAPIApp{}
@@ -212,6 +205,22 @@ func (app *virtAPIApp) composeSubresources() {
 		Returns(http.StatusOK, "OK", nil).
 		Returns(http.StatusNotFound, "Not Found", nil))
 
+	subws.Route(subws.PUT(rest.ResourcePath(subresourcesvmGVR)+rest.SubResourcePath("start")).
+		To(subresourceApp.StartVMRequestHandler).
+		Param(rest.NamespaceParam(subws)).Param(rest.NameParam(subws)).
+		Operation("start").
+		Doc("Start a VirtualMachine object.").
+		Returns(http.StatusOK, "OK", nil).
+		Returns(http.StatusNotFound, "Not Found", nil))
+
+	subws.Route(subws.PUT(rest.ResourcePath(subresourcesvmGVR)+rest.SubResourcePath("stop")).
+		To(subresourceApp.StopVMRequestHandler).
+		Param(rest.NamespaceParam(subws)).Param(rest.NameParam(subws)).
+		Operation("stop").
+		Doc("Stop a VirtualMachine object.").
+		Returns(http.StatusOK, "OK", nil).
+		Returns(http.StatusNotFound, "Not Found", nil))
+
 	subws.Route(subws.GET(rest.ResourcePath(subresourcesvmiGVR) + rest.SubResourcePath("console")).
 		To(subresourceApp.ConsoleRequestHandler).
 		Param(rest.NamespaceParam(subws)).Param(rest.NameParam(subws)).
@@ -266,6 +275,14 @@ func (app *virtAPIApp) composeSubresources() {
 				},
 				{
 					Name:       "virtualmachines/restart",
+					Namespaced: true,
+				},
+				{
+					Name:       "virtualmachines/start",
+					Namespaced: true,
+				},
+				{
+					Name:       "virtualmachines/stop",
 					Namespaced: true,
 				},
 				{
@@ -383,23 +400,18 @@ func deserializeStrings(in string) ([]string, error) {
 	return ret, nil
 }
 
-func (app *virtAPIApp) getClientCert() error {
-	authConfigMap, err := app.virtCli.CoreV1().ConfigMaps(metav1.NamespaceSystem).Get("extension-apiserver-authentication", metav1.GetOptions{})
+func (app *virtAPIApp) readRequestHeader() error {
+	authConfigMap, err := app.virtCli.CoreV1().ConfigMaps(metav1.NamespaceSystem).Get(util.ExtensionAPIServerAuthenticationConfigMap, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
 
-	clientCA, ok := authConfigMap.Data["client-ca-file"]
+	// The request-header CA is mandatory. It can be retrieved from the configmap as we do here, or it must be provided
+	// via flag on start of this apiserver. Since we don't do the latter, the former is mandatory for us
+	// see https://github.com/kubernetes-incubator/apiserver-builder-alpha/blob/master/docs/concepts/auth.md#requestheader-authentication
+	_, ok := authConfigMap.Data[util.RequestHeaderClientCAFileKey]
 	if !ok {
-		return fmt.Errorf("client-ca-file value not found in auth config map.")
-	}
-	app.clientCABytes = []byte(clientCA)
-
-	// request-header-ca-file doesn't always exist in all deployments.
-	// set it if the value is set though.
-	requestHeaderClientCA, ok := authConfigMap.Data["requestheader-client-ca-file"]
-	if ok {
-		app.requestHeaderClientCABytes = []byte(requestHeaderClientCA)
+		return fmt.Errorf("requestheader-client-ca-file not found in extension-apiserver-authentication ConfigMap")
 	}
 
 	// This config map also contains information about what
@@ -918,80 +930,65 @@ func (app *virtAPIApp) createSubresourceApiservice() error {
 	return nil
 }
 
-func (app *virtAPIApp) setupTLS(fs Filesystem) error {
+func (app *virtAPIApp) setupTLS(caManager ClientCAManager) error {
 
-	app.keyFile = filepath.Join(app.certsDirectory, "/key.pem")
-	app.certFile = filepath.Join(app.certsDirectory, "/cert.pem")
-	app.signingCertFile = filepath.Join(app.certsDirectory, "/signingCert.pem")
-	app.clientCAFile = filepath.Join(app.certsDirectory, "/clientCA.crt")
-
-	// Write the certs to disk
-	err := fs.WriteFile(app.clientCAFile, app.clientCABytes, 0600)
+	certPair, err := tls.X509KeyPair(app.certBytes, app.keyBytes)
 	if err != nil {
-		return err
-	}
-
-	if len(app.requestHeaderClientCABytes) != 0 {
-		f, err := fs.OpenFile(app.clientCAFile, os.O_APPEND|os.O_WRONLY, 0600)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-
-		_, err = f.Write(app.requestHeaderClientCABytes)
-		if err != nil {
-			return err
-		}
-	}
-
-	err = fs.WriteFile(app.keyFile, app.keyBytes, 0600)
-	if err != nil {
-		return err
-	}
-	err = fs.WriteFile(app.certFile, app.certBytes, 0600)
-	if err != nil {
-		return err
-	}
-	err = fs.WriteFile(app.signingCertFile, app.signingCertBytes, 0600)
-	if err != nil {
-		return err
-	}
-
-	// create the client CA pool.
-	// This ensures we're talking to the k8s api server
-	pool, err := cert.NewPool(app.clientCAFile)
-	if err != nil {
-		return err
+		return fmt.Errorf("some special error: %b", err)
 	}
 
 	app.tlsConfig = &tls.Config{
-		ClientCAs: pool,
-		// A VerifyClientCertIfGiven request means we're not guaranteed
-		// a client has been authenticated unless they provide a peer
-		// cert.
-		//
-		// Make sure to verify in subresource endpoint that peer cert
-		// was provided before processing request. If the peer cert is
-		// given on the connection, then we can be guaranteed that it
-		// was signed by the client CA in our pool.
-		//
-		// There is another ClientAuth type called 'RequireAndVerifyClientCert'
-		// We can't use this type here because during the aggregated api status
-		// check it attempts to hit '/' on our api endpoint to verify an http
-		// response is given. That status request won't send a peer cert regardless
-		// if the TLS handshake requests it. As a result, the TLS handshake fails
-		// and our aggregated endpoint never becomes available.
-		ClientAuth: tls.VerifyClientCertIfGiven,
+		Certificates: []tls.Certificate{certPair},
+		GetConfigForClient: func(hi *tls.ClientHelloInfo) (*tls.Config, error) {
+
+			pool, err := caManager.GetCurrent()
+			if err != nil {
+				log.Log.Reason(err).Error("Failed to get requestheader client CA")
+				return nil, err
+			}
+			config := &tls.Config{
+				Certificates: []tls.Certificate{certPair},
+				ClientCAs:    pool,
+				// A VerifyClientCertIfGiven request means we're not guaranteed
+				// a client has been authenticated unless they provide a peer
+				// cert.
+				//
+				// Make sure to verify in subresource endpoint that peer cert
+				// was provided before processing request. If the peer cert is
+				// given on the connection, then we can be guaranteed that it
+				// was signed by the client CA in our pool.
+				//
+				// There is another ClientAuth type called 'RequireAndVerifyClientCert'
+				// We can't use this type here because during the aggregated api status
+				// check it attempts to hit '/' on our api endpoint to verify an http
+				// response is given. That status request won't send a peer cert regardless
+				// if the TLS handshake requests it. As a result, the TLS handshake fails
+				// and our aggregated endpoint never becomes available.
+				ClientAuth: tls.VerifyClientCertIfGiven,
+			}
+
+			config.BuildNameToCertificate()
+			return config, nil
+		},
 	}
 	app.tlsConfig.BuildNameToCertificate()
 	return nil
 }
 
-func (app *virtAPIApp) startTLS() error {
+func (app *virtAPIApp) startTLS(stopCh <-chan struct{}) error {
 
 	errors := make(chan error)
 
-	err := app.setupTLS(IOUtil{})
+	informerFactory := controller.NewKubeInformerFactory(app.virtCli.RestClient(), app.virtCli, app.namespace)
+
+	authConfigMapInformer := informerFactory.ApiAuthConfigMap()
+	informerFactory.Start(stopCh)
+
+	cache.WaitForCacheSync(stopCh, authConfigMapInformer.HasSynced)
+
+	caManager := NewClientCAManager(authConfigMapInformer.GetStore())
+
+	err := app.setupTLS(caManager)
 	if err != nil {
 		return err
 	}
@@ -1005,7 +1002,7 @@ func (app *virtAPIApp) startTLS() error {
 			TLSConfig: app.tlsConfig,
 		}
 
-		errors <- server.ListenAndServeTLS(app.certFile, app.keyFile)
+		errors <- server.ListenAndServeTLS("", "")
 	}()
 
 	// wait for server to exit
@@ -1014,7 +1011,7 @@ func (app *virtAPIApp) startTLS() error {
 
 func (app *virtAPIApp) Run() {
 	// get client Cert
-	err := app.getClientCert()
+	err := app.readRequestHeader()
 	if err != nil {
 		panic(err)
 	}
@@ -1054,7 +1051,7 @@ func (app *virtAPIApp) Run() {
 	}
 
 	// start TLS server
-	err = app.startTLS()
+	err = app.startTLS(stopChan)
 	if err != nil {
 		panic(err)
 	}

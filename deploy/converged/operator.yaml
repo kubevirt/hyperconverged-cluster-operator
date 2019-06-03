@@ -46,11 +46,12 @@ metadata:
     kubevirt.io: virt-operator
   name: virt-operator
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       kubevirt.io: virt-operator
-  strategy: {}
+  strategy:
+    type: RollingUpdate
   template:
     metadata:
       annotations:
@@ -99,7 +100,10 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  labels:
+    operator.cdi.kubevirt.io: ""
   name: cdi-operator
+  namespace: kubevirt-hyperconverged
 spec:
   replicas: 1
   selector:
@@ -114,24 +118,12 @@ spec:
     spec:
       containers:
       - env:
-        - name: OPERATOR_IMAGE
-          value: kubevirt/cdi-operator:v1.7.0
-        - name: OPERATOR_NAME
-          value: cdi-operator
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        - name: WATCH_NAMESPACE
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
         - name: DEPLOY_CLUSTER_RESOURCES
           value: "true"
         - name: DOCKER_REPO
           value: kubevirt
         - name: DOCKER_TAG
-          value: v1.7.0
+          value: v1.9.1
         - name: CONTROLLER_IMAGE
           value: cdi-controller
         - name: IMPORTER_IMAGE
@@ -140,16 +132,16 @@ spec:
           value: cdi-cloner
         - name: APISERVER_IMAGE
           value: cdi-apiserver
-        - name: UPLOAD_PROXY_IMAGE
-          value: cdi-uploadproxy
         - name: UPLOAD_SERVER_IMAGE
           value: cdi-uploadserver
+        - name: UPLOAD_PROXY_IMAGE
+          value: cdi-uploadproxy
         - name: VERBOSITY
           value: "1"
         - name: PULL_POLICY
           value: IfNotPresent
-        image: kubevirt/cdi-operator:v1.7.0
-        imagePullPolicy: Always
+        image: kubevirt/cdi-operator:v1.9.1
+        imagePullPolicy: IfNotPresent
         name: cdi-operator
         ports:
         - containerPort: 60000
@@ -179,22 +171,24 @@ spec:
       containers:
       - env:
         - name: MULTUS_IMAGE
-          value: docker.io/nfvpe/multus:latest
+          value: quay.io/kubevirt/cluster-network-addon-multus:v3.2.0-1.gitbf61002
         - name: LINUX_BRIDGE_IMAGE
-          value: quay.io/kubevirt/cni-default-plugins:latest
+          value: quay.io/kubevirt/cni-default-plugins:v0.1.0
+        - name: LINUX_BRIDGE_MARKER_IMAGE
+          value: quay.io/kubevirt/bridge-marker:0.1.0
         - name: SRIOV_DP_IMAGE
-          value: quay.io/booxter/sriov-device-plugin:latest
+          value: quay.io/kubevirt/cluster-network-addon-sriov-device-plugin:v2.0.0-1.git9a20829
         - name: SRIOV_CNI_IMAGE
-          value: docker.io/nfvpe/sriov-cni:latest
+          value: quay.io/kubevirt/cluster-network-addon-sriov-cni:v1.1.0-1.git9e4c973
         - name: SRIOV_ROOT_DEVICES
         - name: SRIOV_NETWORK_NAME
           value: sriov-network
         - name: SRIOV_NETWORK_TYPE
           value: sriov
         - name: KUBEMACPOOL_IMAGE
-          value: quay.io/kubevirt/kubemacpool:v0.2.0
+          value: quay.io/kubevirt/kubemacpool:v0.3.0
         - name: OPERATOR_IMAGE
-          value: quay.io/kubevirt/cluster-network-addons-operator:0.5.0
+          value: quay.io/kubevirt/cluster-network-addons-operator:0.7.0
         - name: OPERATOR_NAME
           value: cluster-network-addons-operator
         - name: OPERATOR_NAMESPACE
@@ -206,7 +200,7 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         - name: WATCH_NAMESPACE
-        image: quay.io/kubevirt/cluster-network-addons-operator:0.5.0
+        image: quay.io/kubevirt/cluster-network-addons-operator:0.7.0
         imagePullPolicy: IfNotPresent
         name: cluster-network-addons-operator
         resources: {}
@@ -236,10 +230,12 @@ spec:
             name: metrics
           imagePullPolicy: Always
           env:
-            - name: WATCH_NAMESPACE
+            - name: POD_NAME
               valueFrom:
                 fieldRef:
-                  fieldPath: metadata.namespace
+                  fieldPath: metadata.name
+            - name: WATCH_NAMESPACE
+              value: ""
             - name: OPERATOR_NAME
               value: "kubevirt-ssp-operator"
 
@@ -272,7 +268,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: node-maintenance-operator
-          image: quay.io/kubevirt/node-maintenance-operator:v0.2.0
+          image: quay.io/kubevirt/node-maintenance-operator:v0.3.0
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE
@@ -305,6 +301,16 @@ spec:
       - env:
         - name: OPERATOR_NAME
           value: kubevirt-web-ui-operator
+        - name: OPERATOR_REGISTRY
+          value: quay.io/kubevirt
+        - name: OPERATOR_TAG
+          value: latest
+        - name: WEBUI_TAG
+          value: latest
+        - name: BRANDING
+          value: okdvirt
+        - name: IMAGE_PULL_POLICY
+          value: IfNotPresent
         - name: OPERATOR_NAMESPACE
           valueFrom:
             fieldRef:
@@ -317,7 +323,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: kubevirt/kubevirt-web-ui-operator:latest
+        image: quay.io/kubevirt/kubevirt-web-ui-operator:latest
         imagePullPolicy: IfNotPresent
         name: kubevirt-web-ui-operator
         ports:

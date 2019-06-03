@@ -27,10 +27,12 @@ spec:
             name: metrics
           imagePullPolicy: Always
           env:
-            - name: WATCH_NAMESPACE
+            - name: POD_NAME
               valueFrom:
                 fieldRef:
-                  fieldPath: metadata.namespace
+                  fieldPath: metadata.name
+            - name: WATCH_NAMESPACE
+              value: ""
             - name: OPERATOR_NAME
               value: "kubevirt-ssp-operator"
 
@@ -63,7 +65,7 @@ spec:
         effect: NoSchedule
       containers:
         - name: node-maintenance-operator
-          image: quay.io/kubevirt/node-maintenance-operator:v0.2.0
+          image: quay.io/kubevirt/node-maintenance-operator:v0.3.0
           imagePullPolicy: Always
           env:
             - name: WATCH_NAMESPACE

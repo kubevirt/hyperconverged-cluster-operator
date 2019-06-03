@@ -34,12 +34,12 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	cnacomponents "github.com/kubevirt/cluster-network-addons-operator/pkg/components"
-	cdicomponents "github.com/kubevirt/hyperconverged-cluster-operator/pkg/cdicomponents"
 	hcocomponents "github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
+	kwebuicomponents "github.com/kubevirt/web-ui-operator/pkg/components"
 	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	cdicomponents "kubevirt.io/containerized-data-importer/pkg/operator/resources/operator"
 	kvcomponents "kubevirt.io/kubevirt/pkg/virt-operator/creation/components"
 	kvrbac "kubevirt.io/kubevirt/pkg/virt-operator/creation/rbac"
-	kwebuicomponents "github.com/kubevirt/web-ui-operator/pkg/components"
 )
 
 type operatorData struct {
@@ -55,18 +55,19 @@ type operatorData struct {
 }
 
 type templateData struct {
-	Converged          bool
-	Namespace          string
-	CsvVersion         string
-	ContainerPrefix    string
-	CnaContainerPrefix string
-	ContainerTag       string
-	ImagePullPolicy    string
-	HCO                *operatorData
-	KubeVirt           *operatorData
-	CDI                *operatorData
-	CNA                *operatorData
-	KWEBUI             *operatorData
+	Converged            bool
+	Namespace            string
+	CsvVersion           string
+	ContainerPrefix      string
+	CnaContainerPrefix   string
+	WebuiContainerPrefix string
+	ContainerTag         string
+	ImagePullPolicy      string
+	HCO                  *operatorData
+	KubeVirt             *operatorData
+	CDI                  *operatorData
+	CNA                  *operatorData
+	KWEBUI               *operatorData
 }
 
 func check(err error) {
@@ -145,7 +146,7 @@ func getHCO(data *templateData) {
 
 	// Get HCO Deployment
 	hcodeployment := hcocomponents.GetDeployment(
-		"rthallisey",
+		"docker.io",
 		"latest",
 		"Always",
 	)
@@ -257,12 +258,16 @@ func getCDI(data *templateData) {
 	writer := strings.Builder{}
 
 	// Get CDI Deployment
-	cdideployment := cdicomponents.GetDeployment(
+	cdideployment, err := cdicomponents.NewCdiOperatorDeployment(
+		data.Namespace,
 		"kubevirt",
-		"v1.7.0",
-		"Always",
-	)
-	err := marshallObject(cdideployment, &writer)
+		"v1.9.1",
+		"IfNotPresent",
+		"1",
+		(&cdicomponents.CdiImages{}).FillDefaults())
+
+	check(err)
+	err = marshallObject(cdideployment, &writer)
 	check(err)
 	deployment := writer.String()
 
@@ -274,7 +279,7 @@ func getCDI(data *templateData) {
 
 	// Get CDI ClusterRole
 	writer = strings.Builder{}
-	clusterRole := cdicomponents.GetClusterRole()
+	clusterRole := cdicomponents.NewCdiOperatorClusterRole()
 	marshallObject(clusterRole, &writer)
 	clusterRoleString := writer.String()
 
@@ -289,7 +294,7 @@ func getCDI(data *templateData) {
 
 	// Get HCO CRD
 	writer = strings.Builder{}
-	crd := cdicomponents.GetCrd()
+	crd := cdicomponents.NewCdiCrd()
 	marshallObject(crd, &writer)
 	crdString := writer.String()
 
@@ -311,7 +316,7 @@ func getCNA(data *templateData) {
 	cnadeployment := cnacomponents.GetDeployment(
 		data.Namespace,
 		data.CnaContainerPrefix,
-		"0.5.0",
+		"0.7.0",
 		data.ImagePullPolicy,
 		(&cnacomponents.AddonsImages{}).FillDefaults(),
 	)
@@ -374,15 +379,14 @@ func getCNA(data *templateData) {
 	data.CNA = &cnaData
 }
 
-// TODO: implement kwebuicomponents in kubevirt-web-ui-operator and update vendor folder
 func getKWWEBUI(data *templateData) {
 	writer := strings.Builder{}
 
 	// Get KWEBUI Deployment
 	kwebuideployment := kwebuicomponents.GetDeployment(
 		data.Namespace,
-		data.ContainerPrefix,
-		"latest", // TODO: can it be configured?
+		data.WebuiContainerPrefix,
+		data.ContainerTag,
 		data.ImagePullPolicy,
 	)
 	err := marshallObject(kwebuideployment, &writer)
@@ -450,6 +454,7 @@ func main() {
 	csvVersion := flag.String("csv-version", "0.0.1", "")
 	containerPrefix := flag.String("container-prefix", "kubevirt", "")
 	cnaContainerPrefix := flag.String("cna-container-prefix", *containerPrefix, "")
+	webuiContainerPrefix := flag.String("webui-container-prefix", *containerPrefix, "")
 	containerTag := flag.String("container-tag", "latest", "")
 	imagePullPolicy := flag.String("image-pull-policy", "IfNotPresent", "")
 	inputFile := flag.String("input-file", "", "")
@@ -458,13 +463,14 @@ func main() {
 	pflag.Parse()
 
 	data := templateData{
-		Converged:          *converged,
-		Namespace:          *namespace,
-		CsvVersion:         *csvVersion,
-		ContainerPrefix:    *containerPrefix,
-		CnaContainerPrefix: *cnaContainerPrefix,
-		ContainerTag:       *containerTag,
-		ImagePullPolicy:    *imagePullPolicy,
+		Converged:            *converged,
+		Namespace:            *namespace,
+		CsvVersion:           *csvVersion,
+		ContainerPrefix:      *containerPrefix,
+		CnaContainerPrefix:   *cnaContainerPrefix,
+		WebuiContainerPrefix: *webuiContainerPrefix,
+		ContainerTag:         *containerTag,
+		ImagePullPolicy:      *imagePullPolicy,
 	}
 
 	// Load in all HCO Resources

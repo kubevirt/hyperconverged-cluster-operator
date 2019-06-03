@@ -27,12 +27,14 @@ import (
 	secv1 "github.com/openshift/api/security/v1"
 	"k8s.io/client-go/informers"
 
+	admissionregistrationv1beta1 "k8s.io/api/admissionregistration/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	k8sv1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	extclient "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
@@ -77,6 +79,9 @@ type KubeInformerFactory interface {
 
 	// Watches VirtualMachineInstanceMigration objects
 	VirtualMachineInstanceMigration() cache.SharedIndexInformer
+
+	// Watches for k8s extensions api configmap
+	ApiAuthConfigMap() cache.SharedIndexInformer
 
 	// Watches for ConfigMap objects
 	ConfigMap() cache.SharedIndexInformer
@@ -137,6 +142,9 @@ type KubeInformerFactory interface {
 
 	// KubeVirt infrastructure pods
 	OperatorPod() cache.SharedIndexInformer
+
+	// Webhooks created/managed by virt operator
+	OperatorValidationWebhook() cache.SharedIndexInformer
 
 	K8SInformerFactory() informers.SharedInformerFactory
 }
@@ -275,6 +283,15 @@ func (f *kubeInformerFactory) DummyDataVolume() cache.SharedIndexInformer {
 	return f.getInformer("fakeDataVolumeInformer", func() cache.SharedIndexInformer {
 		informer, _ := testutils.NewFakeInformerFor(&cdiv1.DataVolume{})
 		return informer
+	})
+}
+
+func (f *kubeInformerFactory) ApiAuthConfigMap() cache.SharedIndexInformer {
+	return f.getInformer("extensionsConfigMapInformer", func() cache.SharedIndexInformer {
+		restClient := f.clientSet.CoreV1().RESTClient()
+		fieldSelector := fields.OneTermEqualSelector("metadata.name", "extension-apiserver-authentication")
+		lw := cache.NewListWatchFromClient(restClient, "configmaps", metav1.NamespaceSystem, fieldSelector)
+		return cache.NewSharedIndexInformer(lw, &k8sv1.ConfigMap{}, f.defaultResync, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 	})
 }
 
@@ -475,6 +492,18 @@ func (f *kubeInformerFactory) OperatorPod() cache.SharedIndexInformer {
 
 		lw := NewListWatchFromClient(f.clientSet.CoreV1().RESTClient(), "pods", k8sv1.NamespaceAll, fields.Everything(), labelSelector)
 		return cache.NewSharedIndexInformer(lw, &k8sv1.Pod{}, f.defaultResync, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+	})
+}
+
+func (f *kubeInformerFactory) OperatorValidationWebhook() cache.SharedIndexInformer {
+	return f.getInformer("operatorWebhookInformer", func() cache.SharedIndexInformer {
+		labelSelector, err := labels.Parse(OperatorLabel)
+		if err != nil {
+			panic(err)
+		}
+
+		lw := NewListWatchFromClient(f.clientSet.AdmissionregistrationV1beta1().RESTClient(), "validatingwebhookconfigurations", k8sv1.NamespaceAll, fields.Everything(), labelSelector)
+		return cache.NewSharedIndexInformer(lw, &admissionregistrationv1beta1.ValidatingWebhookConfiguration{}, f.defaultResync, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 	})
 }
 

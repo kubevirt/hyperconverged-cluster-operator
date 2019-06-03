@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -11,6 +12,14 @@ import (
 )
 
 const Name = "kubevirt-web-ui-operator"
+
+func getBaseTag(tag string) string {
+	last := strings.LastIndex(tag, "-")
+	if last < 0 {
+		last = len(tag)
+	}
+	return tag[0:last]
+}
 
 func GetDeployment(namespace string, repository string, tag string, imagePullPolicy string) *appsv1.Deployment {
 	image := fmt.Sprintf("%s/%s:%s", repository, Name, tag)
@@ -69,6 +78,26 @@ func GetDeployment(namespace string, repository string, tag string, imagePullPol
 									Value: Name,
 								},
 								{
+									Name:  "OPERATOR_REGISTRY",
+									Value: repository,
+								},
+								{
+									Name:  "OPERATOR_TAG",
+									Value: tag,
+								},
+								{
+									Name:  "WEBUI_TAG",
+									Value: getBaseTag(tag),
+								},
+								{
+									Name:  "BRANDING",
+									Value: "okdvirt", // or openshiftvirt
+								},
+								{
+									Name:  "IMAGE_PULL_POLICY",
+									Value: imagePullPolicy,
+								},
+								{
 									Name: "OPERATOR_NAMESPACE",
 									ValueFrom: &corev1.EnvVarSource{
 										FieldRef: &corev1.ObjectFieldSelector{
@@ -85,7 +114,7 @@ func GetDeployment(namespace string, repository string, tag string, imagePullPol
 									},
 								},
 								{
-									Name:  "WATCH_NAMESPACE",
+									Name: "WATCH_NAMESPACE",
 									ValueFrom: &corev1.EnvVarSource{
 										FieldRef: &corev1.ObjectFieldSelector{
 											FieldPath: "metadata.namespace",
@@ -102,6 +131,10 @@ func GetDeployment(namespace string, repository string, tag string, imagePullPol
 	return deployment
 }
 
+
+// The GetRole() is probably not needed since the use of `components.go` implicates operator's deployment for cluster-scope (within HCO).
+// To avoid confusion: If deployed independently using the deploy/*.yaml files, the operator is namespace-scoped.
+// TODO: validate the statement above and optionally remove this GetRole() function.
 func GetRole(namespace string) *rbacv1.Role {
 	role := &rbacv1.Role{
 		TypeMeta: metav1.TypeMeta{
@@ -239,7 +272,14 @@ func GetClusterRole() *rbacv1.ClusterRole {
 			{
 				APIGroups: []string{
 					"oauth.openshift.io",
+                                        "project.openshift.io",
+                                        "template.openshift.io",
+                                        "route.openshift.io",
 					"apiextensions.k8s.io",
+					"kubevirt.io",
+					"extensions",
+					"apps",
+                                        "monitoring.coreos.com",
 				},
 				Resources: []string{
 					"*",
@@ -254,6 +294,17 @@ func GetClusterRole() *rbacv1.ClusterRole {
 				},
 				Resources: []string{
 					"configmaps",
+					"pods",
+					"namespaces",
+					"services",
+					"endpoints",
+					"persistentvolumeclaims",
+					"events",
+					"secrets",
+					"replicationcontrollers",
+					"serviceaccounts",
+					"statefulsets",
+
 				},
 				Verbs: []string{
 					"*",

@@ -1,13 +1,70 @@
 QUAY_USERNAME ?=
 QUAY_PASSWORD ?=
+SOURCE_DIRS   = cmd pkg
+SOURCES       := $(shell find . -name '*.go' -not -path "*/vendor/*")
+IMAGE_REGISTRY ?= docker.io
+IMAGE_TAG ?= latest
+OPERATOR_IMAGE ?= rthallisey/hyperconverged-cluster-operator
+
+build: $(SOURCES) ## Build binary from source
+	go build -i -ldflags="-s -w" -o _out/hyperconverged-cluster-operator ./cmd/manager > /dev/null
+
+clean: ## Clean up the working environment
+	@rm -rf _out/
 
 start:
 	./hack/deploy.sh
 
-clean:
+hack-clean: ## Run ./hack/clean.sh
 	./hack/clean.sh
+
+docker-build: docker-build-operator
+
+docker-build-operator:
+	docker build -f build/Dockerfile -t $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG) .
+
+docker-push: docker-push-operator
+
+docker-push-operator:
+	docker push $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG)
+
+cluster-up:
+	./cluster/up.sh
+
+cluster-down:
+	./cluster/down.sh
+
+cluster-sync:
+	./cluster/sync.sh
+
+cluster-clean:
+	CMD="./cluster/kubectl.sh" ./hack/clean.sh
 
 stageRegistry:
 	@REGISTRY_NAMESPACE=redhat-operators-stage ./hack/quay-registry.sh $(QUAY_USERNAME) $(QUAY_PASSWORD)
 
-.PHONY: start clean
+help: ## Show this help screen
+	@echo 'Usage: make <OPTIONS> ... <TARGETS>'
+	@echo ''
+	@echo 'Available targets are:'
+	@echo ''
+	@grep -E '^[ a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@echo ''
+
+
+.PHONY: start \
+		clean \
+		build \
+		help \
+		hack-clean \
+		docker-build \
+		docker-build-operator \
+		docker-push \
+		docker-push-operator \
+		cluster-up \
+		cluster-down \
+		cluster-sync \
+		cluster-clean \
+		stageRegistry
+

@@ -217,7 +217,7 @@ func newApiServerClusterRole() *rbacv1.ClusterRole {
 					"virtualmachineinstancemigrations",
 				},
 				Verbs: []string{
-					"get", "list", "watch", "delete",
+					"get", "list", "watch", "patch",
 				},
 			},
 			{
@@ -237,9 +237,6 @@ func newApiServerClusterRole() *rbacv1.ClusterRole {
 				},
 				Resources: []string{
 					"configmaps",
-				},
-				ResourceNames: []string{
-					"extension-apiserver-authentication",
 				},
 				Verbs: []string{
 					"get", "list", "watch",

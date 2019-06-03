@@ -121,10 +121,67 @@ spec:
   install:
     strategy: deployment
     spec:
+{{if .Converged}}
       permissions:
         - serviceAccountName: cluster-network-addons-operator
           rules:
 {{.CNA.Rules}}
+        - serviceAccountName: kubevirt-ssp-operator
+          rules:
+          - apiGroups:
+            - ""
+            resources:
+            - pods
+            - services
+            - endpoints
+            - persistentvolumeclaims
+            - events
+            - configmaps
+            - secrets
+            - replicationcontrollers
+            - serviceaccounts
+            - templates
+            verbs:
+            - '*'
+          - apiGroups:
+            - extensions
+            - apps
+            resources:
+            - deployments
+            - replicasets
+            verbs:
+            - '*'
+          - apiGroups:
+            - ""
+            resources:
+            - namespaces
+            verbs:
+            - get
+          - apiGroups:
+            - apps
+            resources:
+            - deployments
+            - daemonsets
+            - replicasets
+            - statefulsets
+            verbs:
+            - '*'
+          - apiGroups:
+            - monitoring.coreos.com
+            resources:
+            - servicemonitors
+            verbs:
+            - get
+            - create
+          - apiGroups:
+            - kubevirt.io
+            - template.openshift.io
+            - route.openshift.io
+            resources:
+            - '*'
+            verbs:
+            - '*'
+{{end}}
       clusterPermissions:
         - serviceAccountName: hyperconverged-cluster-operator
           rules:
@@ -233,8 +290,6 @@ spec:
             - securitycontextconstraints
             verbs:
             - '*'
-            resourceName:
-            - privileged
 
         - serviceAccountName: node-maintenance-operator
           rules:
@@ -344,49 +399,51 @@ spec:
                       name: metrics
                     imagePullPolicy: Always
                     env:
-                      - name: WATCH_NAMESPACE
+                      - name: POD_NAME
                         valueFrom:
                           fieldRef:
-                            fieldPath: metadata.namespace
+                            fieldPath: metadata.name
+                      - name: WATCH_NAMESPACE
+                        value: ""
                       - name: OPERATOR_NAME
                         value: "kubevirt-ssp-operator"
 
         - name: node-maintenance-operator
           spec:
-          replicas: 1
-          selector:
-            matchLabels:
-              name: node-maintenance-operator
-          strategy: {}
-          template:
-            metadata:
-              labels:
+            replicas: 1
+            selector:
+              matchLabels:
                 name: node-maintenance-operator
-            spec:
-              affinity:
-                nodeAffinity:
-                  requiredDuringSchedulingIgnoredDuringExecution:
-                    nodeSelectorTerms:
-                    - matchExpressions:
-                      - key: node-role.kubernetes.io/master
-                        operator: Exists
-              containers:
-              - env:
-                - name: WATCH_NAMESPACE
-                - name: POD_NAME
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.name
-                - name: OPERATOR_NAME
-                  value: node-maintenance-operator
-                image: quay.io/kubevirt/node-maintenance-operator:v0.2.0
-                imagePullPolicy: Always
-                name: node-maintenance-operator
-                resources: {}
-              serviceAccountName: node-maintenance-operator
-              tolerations:
-              - effect: NoSchedule
-                key: node-role.kubernetes.io/master
+            strategy: {}
+            template:
+              metadata:
+                labels:
+                  name: node-maintenance-operator
+              spec:
+                affinity:
+                  nodeAffinity:
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                      nodeSelectorTerms:
+                      - matchExpressions:
+                        - key: node-role.kubernetes.io/master
+                          operator: Exists
+                containers:
+                - env:
+                  - name: WATCH_NAMESPACE
+                  - name: POD_NAME
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.name
+                  - name: OPERATOR_NAME
+                    value: node-maintenance-operator
+                  image: quay.io/kubevirt/node-maintenance-operator:v0.3.0
+                  imagePullPolicy: Always
+                  name: node-maintenance-operator
+                  resources: {}
+                serviceAccountName: node-maintenance-operator
+                tolerations:
+                - effect: NoSchedule
+                  key: node-role.kubernetes.io/master
 {{end}}
   customresourcedefinitions:
     owned:

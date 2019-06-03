@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	extenstionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
-	kubevirtv1alpha1 "kubevirt.io/web-ui-operator/pkg/apis/kubevirt/v1alpha1"
+	kubevirtv1alpha1 "github.com/kubevirt/web-ui-operator/pkg/apis/kubevirt/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
@@ -29,6 +30,9 @@ const PhaseDeprovisionFailed = "DEPROVISION_FAILED"
 const PhaseOtherError = "OTHER_ERROR"
 const PhaseNoDeployment = "NOT_DEPLOYED"
 const PhaseOwnerReferenceFailed = "OWNER_REFERENCE_FAILED"
+
+
+const VersionAutomatic = "automatic"
 
 func ReconcileExistingDeployment(r *ReconcileKWebUI, request reconcile.Request, instance *kubevirtv1alpha1.KWebUI, deployment *extenstionsv1beta1.Deployment) (reconcile.Result, error) {
 	existingVersion := ""
@@ -104,7 +108,7 @@ func freshProvision(r *ReconcileKWebUI, request reconcile.Request, instance *kub
 	// Kubevirt-web-ui deployment is not present yet
 	log.Info("kubevirt-web-ui Deployment is not present. Ansible playbook will be executed to provision it.")
 	updateStatus(r, request, PhaseFreshProvision, fmt.Sprintf("Target version: %s", instance.Spec.Version))
-	res, err := runPlaybookWithSetup(request.Namespace, instance, "provision")
+	res, err := runPlaybookWithSetup(getWebUINamespace(), instance, "provision")
 	if err == nil {
 		setOwnerReference(r, request, instance)
 		updateStatus(r, request, PhaseProvisioned, "Provision finished.")
@@ -117,7 +121,7 @@ func freshProvision(r *ReconcileKWebUI, request reconcile.Request, instance *kub
 func deprovision(r *ReconcileKWebUI, request reconcile.Request, instance *kubevirtv1alpha1.KWebUI) (reconcile.Result, error) {
 	log.Info("Existing kubevirt-web-ui deployment is about to be deprovisioned.")
 	updateStatus(r, request, PhaseDeprovision, "")
-	res, err := runPlaybookWithSetup(request.Namespace, instance, "deprovision")
+	res, err := runPlaybookWithSetup(getWebUINamespace(), instance, "deprovision")
 	if err == nil {
 		updateStatus(r, request, PhaseDeprovisioned, "Deprovision finished.")
 	} else {
@@ -156,10 +160,29 @@ func loginClient(namespace string) (string, error) {
 	}
 	err = RunCommand(cmd, args, env, args)
 	if err != nil {
+		log.Error(err, "Failed to switch to the project. Trying to create it.", "Namespace", namespace)
+
+		cmd, args = "oc", []string{
+			"new-project",
+			namespace,
+		}
+		err = RunCommand(cmd, args, env, args)
+		if err != nil {
+			log.Error(err, "Failed to create project for the web-ui.", "Namespace", namespace)
+		}
+
 		return "", err
 	}
 
 	return configFile, nil
+}
+
+func getWebUIVersion(versionInCR string) string {
+	return Def(versionInCR, os.Getenv("WEBUI_TAG"),"v1.4")
+}
+
+func getWebUINamespace() string {
+	return "kubevirt-web-ui"
 }
 
 func generateInventory(instance *kubevirtv1alpha1.KWebUI, namespace string, action string) (string, error) {
@@ -172,16 +195,22 @@ func generateInventory(instance *kubevirtv1alpha1.KWebUI, namespace string, acti
 	}
 	defer f.Close()
 
+	registryUrl := Def(instance.Spec.RegistryUrl, os.Getenv("OPERATOR_REGISTRY"), "quay.io/kubevirt")
+	registryNamespace := Def(instance.Spec.RegistryNamespace, "", "")
+	version := getWebUIVersion(instance.Spec.Version)
+	branding := Def(instance.Spec.Branding, os.Getenv("BRANDING"), "okdvirt")
+	imagePullPolicy := Def(instance.Spec.ImagePullPolicy, os.Getenv("IMAGE_PULL_POLICY"), "IfNotPresent")
+
 	f.WriteString("[OSEv3:children]\nmasters\n\n")
 	f.WriteString("[OSEv3:vars]\n")
 	f.WriteString("platform=openshift\n")
 	f.WriteString(strings.Join([]string{"apb_action=", action, "\n"}, ""))
-	f.WriteString(strings.Join([]string{"registry_url=", Def(instance.Spec.RegistryUrl, "quay.io"), "\n"}, ""))
-	f.WriteString(strings.Join([]string{"registry_namespace=", Def(instance.Spec.RegistryNamespace, "kubevirt"), "\n"}, ""))
-	f.WriteString(strings.Join([]string{"docker_tag=", Def(instance.Spec.Version, "v1.4"), "\n"}, ""))
-	f.WriteString(strings.Join([]string{"kubevirt_web_ui_namespace=", Def(namespace, "kubevirt-web-ui"), "\n"}, ""))
-	f.WriteString(strings.Join([]string{"kubevirt_web_ui_branding=", Def(instance.Spec.Branding, "okdvirt"), "\n"}, ""))
-	f.WriteString(strings.Join([]string{"image_pull_policy=", Def(instance.Spec.ImagePullPolicy, "IfNotPresent"), "\n"}, ""))
+	f.WriteString(strings.Join([]string{"registry_url=", registryUrl, "\n"}, ""))
+	f.WriteString(strings.Join([]string{"registry_namespace=", registryNamespace, "\n"}, ""))
+	f.WriteString(strings.Join([]string{"docker_tag=", version, "\n"}, ""))
+	f.WriteString(strings.Join([]string{"kubevirt_web_ui_namespace=", Def(namespace, "kubevirt-web-ui", ""), "\n"}, ""))
+	f.WriteString(strings.Join([]string{"kubevirt_web_ui_branding=", branding, "\n"}, ""))
+	f.WriteString(strings.Join([]string{"image_pull_policy=", imagePullPolicy, "\n"}, ""))
 	if action == "deprovision" {
 		f.WriteString("preserve_namespace=true\n")
 	}
@@ -206,7 +235,7 @@ func generateInventory(instance *kubevirtv1alpha1.KWebUI, namespace string, acti
 
 func setOwnerReference(r *ReconcileKWebUI, request reconcile.Request, instance *kubevirtv1alpha1.KWebUI) error {
 	deployment := &extenstionsv1beta1.Deployment{}
-	err := r.client.Get(context.TODO(), types.NamespacedName{Name: "console", Namespace: request.Namespace}, deployment)
+	err := r.client.Get(context.TODO(), types.NamespacedName{Name: "console", Namespace: getWebUINamespace()}, deployment)
 	if err != nil {
 		msg := "Failed to retrieve the just created kubevirt-web-ui Deployment object to set owner reference."
 		log.Error(err, msg)
@@ -250,4 +279,34 @@ func updateStatus(r *ReconcileKWebUI, request reconcile.Request, phase string, m
 	if err != nil {
 		log.Error(err, fmt.Sprintf("Failed to update KWebUI status. Intended to write phase: '%s', message: %s", phase, msg))
 	}
+}
+
+func updateVersion(r *ReconcileKWebUI, request reconcile.Request, newVersion string) {
+	for counter := 0; counter < 5 ; counter++ {
+		err := updateVersionWorker(r, request, newVersion)
+		if err == nil {
+			return
+		}
+		log.Info("Failed to write new version to the kwebui CR, rescheduling ...")
+		time.Sleep(2 * time.Second)
+	}
+	log.Info("Failed to write new version to the kwebui CR after multiple attempts, giving up.")
+}
+
+func updateVersionWorker(r *ReconcileKWebUI, request reconcile.Request, newVersion string) error {
+	instance := &kubevirtv1alpha1.KWebUI{}
+	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
+	if err != nil {
+		log.Error(err, fmt.Sprintf("Failed to get KWebUI object to update status info. Intended to write new version: '%s'", newVersion))
+		return err
+	}
+
+	instance.Spec.Version = newVersion
+	err = r.client.Update(context.TODO(), instance)
+	if err != nil {
+		log.Error(err, fmt.Sprintf("Failed to update KWebUI version. Intended to write version: '%s'", newVersion))
+		return err
+	}
+
+	return nil
 }

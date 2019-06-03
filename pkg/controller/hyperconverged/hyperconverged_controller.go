@@ -4,7 +4,6 @@ import (
 	"context"
 
 	sspv1 "github.com/MarSik/kubevirt-ssp-operator/pkg/apis/kubevirt/v1"
-	sspversions "github.com/MarSik/kubevirt-ssp-operator/pkg/versions"
 	networkaddons "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1alpha1"
 	networkaddonsnames "github.com/kubevirt/cluster-network-addons-operator/pkg/names"
 	hcov1alpha1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1"
@@ -16,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -153,10 +151,8 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	// Check if this KubeVirt ConfigMap already exists
-	foundKVConfig := &corev1.ConfigMap{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: kvConfig.Name, Namespace: kvConfig.Namespace}, foundKVConfig)
-	result, err := manageComponentResource(err, kvConfig, "KubeVirtConfig", r.client)
+	// Create the KubeVirt ConfigMap if it doesn't already exist
+	result, err := manageComponentResource(kvConfig, "KubeVirtConfig", r.client)
 
 	// KubeVirt ConfigMap failed to create, requeue
 	if err != nil {
@@ -172,10 +168,8 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	// Check if this KubeVirt CR already exists
-	foundKubeVirt := &kubevirt.KubeVirt{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: virtCR.Name, Namespace: virtCR.Namespace}, foundKubeVirt)
-	result, err = manageComponentResource(err, virtCR, "KubeVirt", r.client)
+	// Create the KubeVirt CR if it doesn't already exist
+	result, err = manageComponentResource(virtCR, "KubeVirt", r.client)
 
 	// KubeVirt failed to create, requeue
 	if err != nil {
@@ -191,10 +185,8 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	// Check if this CDI CR already exists
-	foundCDI := &cdi.CDI{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: cdiCR.Name, Namespace: cdiCR.Namespace}, foundCDI)
-	result, err = manageComponentResource(err, cdiCR, "CDI", r.client)
+	// Create the CDI CR if it doesn't already exist
+	result, err = manageComponentResource(cdiCR, "CDI", r.client)
 
 	// CDI failed to create, requeue
 	if err != nil {
@@ -209,10 +201,8 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	// Check if this NetworkAddonsConfig CR already exists
-	foundNetworkAddons := &networkaddons.NetworkAddonsConfig{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: networkAddonsCR.Name, Namespace: ""}, foundNetworkAddons)
-	result, err = manageComponentResource(err, networkAddonsCR, "NetworkAddonsConfig", r.client)
+	// Create the NetworkAddonsConfig CR if it doesn't already exist
+	result, err = manageComponentResource(networkAddonsCR, "NetworkAddonsConfig", r.client)
 
 	// NetworkAddonsConfig failed to create, requeue
 	if err != nil {
@@ -221,40 +211,46 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// Define new SSP objects
 	kubevirtCommonTemplatesBundleCR := newKubevirtCommonTemplateBundleForCR(instance)
+
 	// Set HyperConverged instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, kubevirtCommonTemplatesBundleCR, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
-	// Check if this CR already exists
-	foundKubevirtCommonTemplatesBundle := &sspv1.KubevirtCommonTemplatesBundle{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: kubevirtCommonTemplatesBundleCR.Name, Namespace: kubevirtCommonTemplatesBundleCR.Namespace}, foundKubevirtCommonTemplatesBundle)
-	result, err = manageComponentResource(err, kubevirtCommonTemplatesBundleCR, "KubevirtCommonTemplatesBundle", r.client)
+
+	// Create the KubevirtCommonTemplatesBundle CR if it doesn't already exist
+	result, err = manageComponentResource(kubevirtCommonTemplatesBundleCR, "KubevirtCommonTemplatesBundle", r.client)
 	// object failed to create, requeue
 	if err != nil {
 		return result, err
 	}
+
+	// Define a new kubevirtNodeLabellerBundleCR object
 	kubevirtNodeLabellerBundleCR := newKubevirtNodeLabellerBundleForCR(instance)
+	kubevirtNodeLabellerBundleCR.ObjectMeta.Namespace = request.Namespace
+
 	// Set HyperConverged instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, kubevirtNodeLabellerBundleCR, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
-	// Check if this CR already exists
-	foundKubevirtNodeLabellerBundle := &sspv1.KubevirtNodeLabellerBundle{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: kubevirtNodeLabellerBundleCR.Name, Namespace: ""}, foundKubevirtNodeLabellerBundle)
-	result, err = manageComponentResource(err, kubevirtNodeLabellerBundleCR, "KubevirtNodeLabellerBundle", r.client)
+
+	// Create the KubevirtNodeLabellerBundle CR if it doesn't already exist
+	result, err = manageComponentResource(kubevirtNodeLabellerBundleCR, "KubevirtNodeLabellerBundle", r.client)
 	// object failed to create, requeue
 	if err != nil {
 		return result, err
 	}
+
+	// Define a new kubevirtNodeLabellerBundleCR object
 	kubevirtTemplateValidatorCR := newKubevirtTemplateValidatorForCR(instance)
+	kubevirtTemplateValidatorCR.ObjectMeta.Namespace = request.Namespace
+
 	// Set HyperConverged instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, kubevirtTemplateValidatorCR, r.scheme); err != nil {
 		return reconcile.Result{}, err
 	}
-	// Check if this CR already exists
-	foundKubevirtTemplateValidator := &sspv1.KubevirtTemplateValidator{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: kubevirtTemplateValidatorCR.Name, Namespace: ""}, foundKubevirtTemplateValidator)
-	result, err = manageComponentResource(err, kubevirtTemplateValidatorCR, "KubevirtTemplateValidator", r.client)
+
+	// Create the KubevirtTemplateValidator CR if it doesn't already exist
+	result, err = manageComponentResource(kubevirtTemplateValidatorCR, "KubevirtTemplateValidator", r.client)
 	// object failed to create, requeue
 	if err != nil {
 		return result, err
@@ -268,10 +264,8 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	// Check if this KWebUI CR already exists
-	foundKwebui := &kwebuis.KWebUI{}
-	err = r.client.Get(context.TODO(), types.NamespacedName{Name: kwebuiCR.Name, Namespace: ""}, foundKwebui)
-	result, err = manageComponentResource(err, kwebuiCR, "KWebUI", r.client)
+	// Create the KWebUI CR if it doesn't already exist
+	result, err = manageComponentResource(kwebuiCR, "KWebUI", r.client)
 
 	// KWebUI failed to create, requeue
 	if err != nil {
@@ -280,23 +274,16 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 	return result, nil
 }
 
-func manageComponentResource(err error, o runtime.Object, kind string, c client.Client) (reconcile.Result, error) {
-	if err != nil && errors.IsNotFound(err) {
-		log.Info("Creating new resource", "Kind", kind)
-		err = c.Create(context.TODO(), o)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-
-		// Resource created successfully - don't requeue
+func manageComponentResource(o runtime.Object, kind string, c client.Client) (reconcile.Result, error) {
+	err := c.Create(context.TODO(), o)
+	if err != nil && errors.IsAlreadyExists(err) {
+		log.Info("Skip reconcile: resource already exists", "Kind", kind)
 		return reconcile.Result{}, nil
 	} else if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// Resource already exists - don't requeue
-	log.Info("Skip reconcile: resource already exists", "Kind", kind)
-
+	log.Info("Creating new resource", "Kind", kind)
 	return reconcile.Result{}, nil
 }
 
@@ -310,7 +297,7 @@ func newKubeVirtConfigForCR(cr *hcov1alpha1.HyperConverged) *corev1.ConfigMap {
 			Labels: labels,
 		},
 		Data: map[string]string{
-			"feature-gates": "DataVolumes,SRIOV,LiveMigration,CPUManager",
+			"feature-gates": "DataVolumes,SRIOV,LiveMigration,CPUManager,CPUNodeDiscovery",
 		},
 	}
 }
@@ -369,9 +356,6 @@ func newKubevirtCommonTemplateBundleForCR(cr *hcov1alpha1.HyperConverged) *sspv1
 			Labels:    labels,
 			Namespace: "openshift",
 		},
-		Spec: sspv1.VersionSpec{
-			Version: sspversions.TagForVersion(sspversions.KubevirtCommonTemplates),
-		},
 	}
 }
 
@@ -383,9 +367,6 @@ func newKubevirtNodeLabellerBundleForCR(cr *hcov1alpha1.HyperConverged) *sspv1.K
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "node-labeller-" + cr.Name,
 			Labels: labels,
-		},
-		Spec: sspv1.VersionSpec{
-			Version: sspversions.TagForVersion(sspversions.KubevirtNodeLabeller),
 		},
 	}
 }
@@ -399,13 +380,9 @@ func newKubevirtTemplateValidatorForCR(cr *hcov1alpha1.HyperConverged) *sspv1.Ku
 			Name:   "template-validator-" + cr.Name,
 			Labels: labels,
 		},
-		Spec: sspv1.VersionSpec{
-			Version: sspversions.TagForVersion(sspversions.KubevirtTemplateValidator),
-		},
 	}
 }
 
-// newKWebUIForCR returns a KWebUI CR
 func newKWebUIForCR(cr *hcov1alpha1.HyperConverged) *kwebuis.KWebUI {
 	labels := map[string]string{
 		"app": cr.Name,
@@ -415,14 +392,11 @@ func newKWebUIForCR(cr *hcov1alpha1.HyperConverged) *kwebuis.KWebUI {
 			Name:   "kubevirt-web-ui-" + cr.Name,
 			Labels: labels,
 		},
+		// Missing CR values will be set via ENV variables of the web-ui-operator
 		Spec: kwebuis.KWebUISpec{
-			Version:                         "latest",                             // TODO: image tag name, use Version ; https://github.com/kubevirt/hyperconverged-cluster-operator/pull/22/files
-			RegistryUrl:                     "",                                   // TODO: use ContainerRegistry  ; https://github.com/kubevirt/hyperconverged-cluster-operator/pull/22/files
-			RegistryNamespace:               "",                                   // keep blank, already in ContainerRegistry
 			OpenshiftMasterDefaultSubdomain: cr.Spec.KWebUIMasterDefaultSubdomain, // set if provided, otherwise keep empty
 			PublicMasterHostname:            cr.Spec.KWebUIPublicMasterHostname,   // set if provided, otherwise keep empty
-			Branding:                        "okdvirt",                            // either okdvirt or openshiftvirt; hardcoded due to the "config-less" requirement, needs to be patched for non-upstream builds
-			ImagePullPolicy:                 "IfNotPresent",
+			Version:                         "automatic",                          // special value to determine version dynamically from env variables; empty or missing value is reserved for deprovision
 		},
 	}
 }

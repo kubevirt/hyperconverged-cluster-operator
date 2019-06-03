@@ -21,6 +21,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	utils "kubevirt.io/containerized-data-importer/pkg/operator/resources/utils"
 )
 
 const (
@@ -35,7 +36,7 @@ func createUploadProxyResources(args *FactoryArgs) []runtime.Object {
 }
 
 func createUploadProxyService() *corev1.Service {
-	service := createService(uploadProxyResourceName, "cdi.kubevirt.io", uploadProxyResourceName)
+	service := utils.CreateService(uploadProxyResourceName, cdiLabel, uploadProxyResourceName)
 	service.Spec.Ports = []corev1.ServicePort{
 		{
 			Port: 443,
@@ -50,8 +51,8 @@ func createUploadProxyService() *corev1.Service {
 }
 
 func createUploadProxyDeployment(repo, image, tag, verbosity, pullPolicy string) *appsv1.Deployment {
-	deployment := createDeployment(uploadProxyResourceName, "cdi.kubevirt.io", uploadProxyResourceName, "", int32(1))
-	container := createContainer(uploadProxyResourceName, repo, image, tag, verbosity, corev1.PullPolicy(pullPolicy))
+	deployment := utils.CreateDeployment(uploadProxyResourceName, cdiLabel, uploadProxyResourceName, "", int32(1))
+	container := utils.CreateContainer(uploadProxyResourceName, repo, image, tag, verbosity, corev1.PullPolicy(pullPolicy))
 	container.Env = []corev1.EnvVar{
 		{
 			Name: "APISERVER_PUBLIC_KEY",
@@ -120,6 +121,21 @@ func createUploadProxyDeployment(repo, image, tag, verbosity, pullPolicy string)
 			},
 		},
 	}
+	container.ReadinessProbe = &corev1.Probe{
+		Handler: corev1.Handler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path: "/healthz",
+				Port: intstr.IntOrString{
+					Type:   intstr.Int,
+					IntVal: 8443,
+				},
+				Scheme: corev1.URISchemeHTTPS,
+			},
+		},
+		InitialDelaySeconds: 2,
+		PeriodSeconds:       5,
+	}
 	deployment.Spec.Template.Spec.Containers = []corev1.Container{container}
+
 	return deployment
 }
