@@ -93,6 +93,7 @@ spec:
     - Virtualization
   version: {{.CsvVersion}}
   maturity: alpha
+  replaces: kubevirt-hyperconverged-operator.v{{.ReplacesVersion}}
   maintainers:
     - name: KubeVirt project
       email: kubevirt-dev@googlegroups.com

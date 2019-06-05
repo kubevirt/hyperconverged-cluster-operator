@@ -58,6 +58,7 @@ type templateData struct {
 	Converged            bool
 	Namespace            string
 	CsvVersion           string
+	ReplacesVersion      string
 	ContainerPrefix      string
 	CnaContainerPrefix   string
 	WebuiContainerPrefix string
@@ -451,7 +452,8 @@ func getKWWEBUI(data *templateData) {
 func main() {
 	converged := flag.Bool("converged", false, "")
 	namespace := flag.String("namespace", "kubevirt-hyperconverged", "")
-	csvVersion := flag.String("csv-version", "0.0.1", "")
+	csvVersion := flag.String("csv-version", "0.0.2", "")
+	replacesVersion := flag.String("replaces-version", "0.0.1", "")
 	containerPrefix := flag.String("container-prefix", "kubevirt", "")
 	cnaContainerPrefix := flag.String("cna-container-prefix", *containerPrefix, "")
 	webuiContainerPrefix := flag.String("webui-container-prefix", *containerPrefix, "")
@@ -466,6 +468,7 @@ func main() {
 		Converged:            *converged,
 		Namespace:            *namespace,
 		CsvVersion:           *csvVersion,
+		ReplacesVersion:      *replacesVersion,
 		ContainerPrefix:      *containerPrefix,
 		CnaContainerPrefix:   *cnaContainerPrefix,
 		WebuiContainerPrefix: *webuiContainerPrefix,

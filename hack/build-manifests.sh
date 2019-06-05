@@ -11,7 +11,11 @@ STD_DEPLOY_DIR="${DEPLOY_DIR}/standard"
 CONVERGED_DEPLOY_DIR="${DEPLOY_DIR}/converged"
 
 NAMESPACE="${NAMESPACE:-kubevirt-hyperconverged}"
+
+# REPLACES_VERSION is the old CSV_VERSION
+REPLACES_VERSION="${REPLACES_VERSION:-0.0.1}"
 CSV_VERSION="${CSV_VERSION:-0.0.2}"
+
 CONTAINER_PREFIX="${CONTAINER_PREFIX:-kubevirt}"
 CNA_CONTAINER_PREFIX="${CNA_CONTAINER_PREFIX:-quay.io/kubevirt}"
 WEBUI_CONTAINER_PREFIX="${WEBUI_CONTAINER_PREFIX:-quay.io/kubevirt}"
@@ -34,6 +38,7 @@ for template in $templates; do
 		${PROJECT_ROOT}/tools/manifest-templator/manifest-templator \
 		--namespace=${NAMESPACE} \
 		--csv-version=${CSV_VERSION} \
+		--replaces-version=${REPLACES_VERSION} \
 		--container-prefix=${CONTAINER_PREFIX} \
 		--container-tag=${CONTAINER_TAG} \
 		--image-pull-policy=${IMAGE_PULL_POLICY} \
@@ -54,6 +59,7 @@ for template in $templates; do
 		--converged \
 		--namespace=${NAMESPACE} \
 		--csv-version=${CSV_VERSION} \
+		--replaces-version=${REPLACES_VERSION} \
 		--container-prefix=${CONTAINER_PREFIX} \
 		--cna-container-prefix=${CNA_CONTAINER_PREFIX} \
 		--webui-container-prefix=${WEBUI_CONTAINER_PREFIX} \
