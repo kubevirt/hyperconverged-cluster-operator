@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"sync"
 
 	sspv1 "github.com/MarSik/kubevirt-ssp-operator/pkg/apis/kubevirt/v1"
 	"github.com/go-logr/logr"
@@ -132,79 +131,58 @@ type ResultFromCRCreate struct {
 }
 
 func (r *ReconcileHyperConverged) reconcileUpdate(logger logr.Logger, cr *hcov1alpha1.HyperConverged, request reconcile.Request) (reconcile.Result, error) {
-	c := make(chan ResultFromCRCreate)
-	var wg sync.WaitGroup
+	results := []ResultFromCRCreate{}
 
 	resources := r.getAllResources(cr, request)
 	for _, desiredRuntimeObj := range resources {
-		wg.Add(1)
-		go func(desiredRuntimeObj runtime.Object) {
-			defer wg.Done()
-			desiredMetaObj := desiredRuntimeObj.(metav1.Object)
+		desiredMetaObj := desiredRuntimeObj.(metav1.Object)
 
-			// use reflection to create default instance of desiredRuntimeObj type
-			typ := reflect.ValueOf(desiredRuntimeObj).Elem().Type()
-			currentRuntimeObj := reflect.New(typ).Interface().(runtime.Object)
+		// use reflection to create default instance of desiredRuntimeObj type
+		typ := reflect.ValueOf(desiredRuntimeObj).Elem().Type()
+		currentRuntimeObj := reflect.New(typ).Interface().(runtime.Object)
 
-			key := client.ObjectKey{
-				Namespace: desiredMetaObj.GetNamespace(),
-				Name:      desiredMetaObj.GetName(),
+		key := client.ObjectKey{
+			Namespace: desiredMetaObj.GetNamespace(),
+			Name:      desiredMetaObj.GetName(),
+		}
+		err := r.client.Get(context.TODO(), key, currentRuntimeObj)
+
+		if err != nil {
+			if !errors.IsNotFound(err) {
+				results = append(results, ResultFromCRCreate{result: reconcile.Result{}, err: err})
 			}
-			err := r.client.Get(context.TODO(), key, currentRuntimeObj)
 
-			if err != nil {
-				if !errors.IsNotFound(err) {
-					c <- ResultFromCRCreate{result: reconcile.Result{}, err: err}
-				}
+			if err = controllerutil.SetControllerReference(cr, desiredMetaObj, r.scheme); err != nil {
+				results = append(results, ResultFromCRCreate{result: reconcile.Result{}, err: err})
+			}
 
-				if err = controllerutil.SetControllerReference(cr, desiredMetaObj, r.scheme); err != nil {
-					c <- ResultFromCRCreate{result: reconcile.Result{}, err: err}
-				}
-
-				// TODO: common-templates and cdi fails the Get check above and appears to still be missing.
-				// But in reality, when you try to Create it, the client reports back that
-				// the resource already exists. Need to investigate why.
-				// Before the refactor, the code didn't check if a resource already exists. It just
-				// tried to create it, and will skip if the Create indicated that it already exists.
-				if err = r.client.Create(context.TODO(), desiredRuntimeObj); err != nil {
-					if err != nil && errors.IsAlreadyExists(err) {
-						logger.Info("Skip reconcile: tried create but resource already exists", "key", key)
-						c <- ResultFromCRCreate{result: reconcile.Result{}, err: nil}
-					} else if err != nil {
-						c <- ResultFromCRCreate{result: reconcile.Result{}, err: err}
-					}
-				} else {
-					logger.Info("Resource created",
-						"namespace", desiredMetaObj.GetNamespace(),
-						"name", desiredMetaObj.GetName(),
-						"type", fmt.Sprintf("%T", desiredMetaObj))
+			// TODO: common-templates and cdi fails the Get check above and appears to still be missing.
+			// But in reality, when you try to Create it, the client reports back that
+			// the resource already exists. Need to investigate why.
+			// Before the refactor, the code didn't check if a resource already exists. It just
+			// tried to create it, and will skip if the Create indicated that it already exists.
+			if err = r.client.Create(context.TODO(), desiredRuntimeObj); err != nil {
+				if err != nil && errors.IsAlreadyExists(err) {
+					logger.Info("Skip reconcile: tried create but resource already exists", "key", key)
+					results = append(results, ResultFromCRCreate{result: reconcile.Result{}, err: nil})
+				} else if err != nil {
+					results = append(results, ResultFromCRCreate{result: reconcile.Result{}, err: err})
 				}
 			} else {
-				logger.Info("Skip reconcile: resource already exists", "key", key)
-				c <- ResultFromCRCreate{result: reconcile.Result{}, err: nil}
+				logger.Info("Resource created",
+					"namespace", desiredMetaObj.GetNamespace(),
+					"name", desiredMetaObj.GetName(),
+					"type", fmt.Sprintf("%T", desiredMetaObj))
 			}
-		}(desiredRuntimeObj)
+		} else {
+			logger.Info("Skip reconcile: resource already exists", "key", key)
+			results = append(results, ResultFromCRCreate{result: reconcile.Result{}, err: nil})
+		}
 	}
 
-	go func() {
-		wg.Wait()
-		close(c)
-	}()
-
-	var result reconcile.Result
-	var crErr error
-	var hasError bool
-	// Loop through the results, until an error is found. Once an error is found, don't change result or crErr, but
-	// drain the results channel. If no errors are found, return the last result.
-	for r := range c {
-		if hasError {
-			continue
-		}
-		result = r.result
-		crErr = r.err
-		if crErr != nil {
-			logger.Error(crErr, "Error during CR creation", "result", result)
-			hasError = true
+	for _, r := range results {
+		if r.err != nil {
+			return r.result, r.err
 		}
 	}
 
