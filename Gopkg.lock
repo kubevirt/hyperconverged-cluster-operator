@@ -360,6 +360,20 @@
   version = "0.9.0"
 
 [[projects]]
+  digest = "1:f2eaf47d7baf06d199dab1949ae663be6f0ace26893f54c9b8450168254613a3"
+  name = "github.com/kubevirt/hyperconverged-cluster-operator"
+  packages = [
+    "pkg/apis",
+    "pkg/apis/hco/v1alpha1",
+    "pkg/components",
+    "pkg/controller",
+    "pkg/controller/hyperconverged",
+  ]
+  pruneopts = "NT"
+  revision = "bd774f762bf8e8d39b5d6de8bbe16ae4cc9d60bc"
+  version = "v0.2.1"
+
+[[projects]]
   digest = "1:31621e431cec2ff26dd381b51ce2806e320cf3db6c25e373054f49049880aa59"
   name = "github.com/kubevirt/web-ui-operator"
   packages = [
@@ -1259,6 +1273,11 @@
     "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1alpha1",
     "github.com/kubevirt/cluster-network-addons-operator/pkg/components",
     "github.com/kubevirt/cluster-network-addons-operator/pkg/names",
+    "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis",
+    "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1",
+    "github.com/kubevirt/hyperconverged-cluster-operator/pkg/components",
+    "github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller",
+    "github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/hyperconverged",
     "github.com/kubevirt/web-ui-operator/pkg/apis",
     "github.com/kubevirt/web-ui-operator/pkg/apis/kubevirt/v1alpha1",
     "github.com/kubevirt/web-ui-operator/pkg/components",

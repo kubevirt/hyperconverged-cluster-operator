@@ -14,16 +14,26 @@ type HyperConvergedSpec struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 	KWebUIMasterDefaultSubdomain string `json:"KWebUIMasterDefaultSubdomain,omitempty"` // optional, required if openshift-console project is missing
-	KWebUIPublicMasterHostname   string `json:"KWebUIPublicMasterHostname,omitempty"` // optional, required if openshift-console project is missing
+	KWebUIPublicMasterHostname   string `json:"KWebUIPublicMasterHostname,omitempty"`   // optional, required if openshift-console project is missing
 }
+
+// HyperConvergedPhase is a label for the phase of a HCO deployment at the current time.
+// ---
+// +k8s:openapi-gen=true
+type HyperConvergedPhase string
 
 // HyperConvergedStatus defines the observed state of HyperConverged
 // +k8s:openapi-gen=true
 type HyperConvergedStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+	Phase HyperConvergedPhase `json:"phase,omitempty"`
 }
+
+const (
+	InstallingPhase  HyperConvergedPhase = "Creating component CRs"
+	ReconcilingPhase HyperConvergedPhase = "Recreating missing CRs"
+	RunningPhase     HyperConvergedPhase = "Running"
+	FailedPhase      HyperConvergedPhase = "Failed"
+)
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 

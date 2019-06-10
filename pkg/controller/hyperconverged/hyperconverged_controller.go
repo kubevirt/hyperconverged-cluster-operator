@@ -2,6 +2,7 @@ package hyperconverged
 
 import (
 	"context"
+	"fmt"
 
 	sspv1 "github.com/MarSik/kubevirt-ssp-operator/pkg/apis/kubevirt/v1"
 	networkaddons "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1alpha1"
@@ -76,6 +77,24 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 var _ reconcile.Reconciler = &ReconcileHyperConverged{}
 
+func (r *ReconcileHyperConverged) updatePhase(instance *hcov1alpha1.HyperConverged, phase hcov1alpha1.HyperConvergedPhase, request reconcile.Request, failedOperation string) error {
+	err := r.client.Get(context.TODO(), request.NamespacedName, instance)
+	if err != nil {
+		return err
+	}
+	instance.Status.Phase = phase
+	err = r.client.Status().Update(context.TODO(), instance)
+	if err != nil {
+		log.Error(err, "Update Phase: ", string(phase), " failed")
+		return err
+	}
+
+	if phase == hcov1alpha1.FailedPhase {
+		log.Info(fmt.Sprintf("Failed to reconcile: %s", failedOperation))
+	}
+	return nil
+}
+
 // ReconcileHyperConverged reconciles a HyperConverged object
 type ReconcileHyperConverged struct {
 	// This client, initialized using mgr.Client() above, is a split client
@@ -106,6 +125,11 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
 	}
+	if string(instance.Status.Phase) == "" {
+		r.updatePhase(instance, hcov1alpha1.InstallingPhase, request, "")
+	} else {
+		r.updatePhase(instance, hcov1alpha1.ReconcilingPhase, request, "")
+	}
 
 	// Define KubeVirt's configuration ConfigMap first
 	kvConfig := newKubeVirtConfigForCR(instance)
@@ -113,6 +137,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// Set HyperConverged instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, kvConfig, r.scheme); err != nil {
+		r.updatePhase(instance, hcov1alpha1.FailedPhase, request, "Set HyperConverged instance as the owner and controller")
 		return reconcile.Result{}, err
 	}
 
@@ -121,6 +146,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// KubeVirt ConfigMap failed to create, requeue
 	if err != nil {
+		r.updatePhase(instance, hcov1alpha1.FailedPhase, request, "KubeVirt ConfigMap failed to create")
 		return result, err
 	}
 
@@ -130,6 +156,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// Set HyperConverged instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, virtCR, r.scheme); err != nil {
+		r.updatePhase(instance, hcov1alpha1.FailedPhase, request, "Set HyperConverged instance as the owner and controller")
 		return reconcile.Result{}, err
 	}
 
@@ -138,6 +165,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// KubeVirt failed to create, requeue
 	if err != nil {
+		r.updatePhase(instance, hcov1alpha1.FailedPhase, request, "KubeVirt failed to create")
 		return result, err
 	}
 
@@ -147,6 +175,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// Set HyperConverged instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, cdiCR, r.scheme); err != nil {
+		r.updatePhase(instance, hcov1alpha1.FailedPhase, request, "Set HyperConverged instance as the owner and controller")
 		return reconcile.Result{}, err
 	}
 
@@ -155,6 +184,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// CDI failed to create, requeue
 	if err != nil {
+		r.updatePhase(instance, hcov1alpha1.FailedPhase, request, "CDI failed to create")
 		return result, err
 	}
 
@@ -163,6 +193,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// Set HyperConverged instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, networkAddonsCR, r.scheme); err != nil {
+		r.updatePhase(instance, hcov1alpha1.FailedPhase, request, "Set HyperConverged instance as the owner and controller")
 		return reconcile.Result{}, err
 	}
 
@@ -171,6 +202,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// NetworkAddonsConfig failed to create, requeue
 	if err != nil {
+		r.updatePhase(instance, hcov1alpha1.FailedPhase, request, "NetworkAddonsConfig failed to create")
 		return result, err
 	}
 
@@ -179,6 +211,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// Set HyperConverged instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, kubevirtCommonTemplatesBundleCR, r.scheme); err != nil {
+		r.updatePhase(instance, hcov1alpha1.FailedPhase, request, "Set HyperConverged instance as the owner and controller")
 		return reconcile.Result{}, err
 	}
 
@@ -186,6 +219,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 	result, err = manageComponentResource(kubevirtCommonTemplatesBundleCR, "KubevirtCommonTemplatesBundle", r.client)
 	// object failed to create, requeue
 	if err != nil {
+		r.updatePhase(instance, hcov1alpha1.FailedPhase, request, "KubevirtCommonTemplatesBundle failed to create")
 		return result, err
 	}
 
@@ -195,6 +229,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// Set HyperConverged instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, kubevirtNodeLabellerBundleCR, r.scheme); err != nil {
+		r.updatePhase(instance, hcov1alpha1.FailedPhase, request, "Set HyperConverged instance as the owner and controller")
 		return reconcile.Result{}, err
 	}
 
@@ -202,6 +237,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 	result, err = manageComponentResource(kubevirtNodeLabellerBundleCR, "KubevirtNodeLabellerBundle", r.client)
 	// object failed to create, requeue
 	if err != nil {
+		r.updatePhase(instance, hcov1alpha1.FailedPhase, request, "Create the KubevirtNodeLabellerBundle")
 		return result, err
 	}
 
@@ -211,6 +247,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// Set HyperConverged instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, kubevirtTemplateValidatorCR, r.scheme); err != nil {
+		r.updatePhase(instance, hcov1alpha1.FailedPhase, request, "Set HyperConverged instance as the owner and controller")
 		return reconcile.Result{}, err
 	}
 
@@ -218,6 +255,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 	result, err = manageComponentResource(kubevirtTemplateValidatorCR, "KubevirtTemplateValidator", r.client)
 	// object failed to create, requeue
 	if err != nil {
+		r.updatePhase(instance, hcov1alpha1.FailedPhase, request, "Create the KubevirtTemplateValidator CR")
 		return result, err
 	}
 
@@ -226,6 +264,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// Set HyperConverged instance as the owner and controller
 	if err := controllerutil.SetControllerReference(instance, kwebuiCR, r.scheme); err != nil {
+		r.updatePhase(instance, hcov1alpha1.FailedPhase, request, "Set HyperConverged instance as the owner and controller")
 		return reconcile.Result{}, err
 	}
 
@@ -234,8 +273,11 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// KWebUI failed to create, requeue
 	if err != nil {
+		r.updatePhase(instance, hcov1alpha1.FailedPhase, request, "KWebUI failed to create")
 		return result, err
 	}
+
+	r.updatePhase(instance, hcov1alpha1.RunningPhase, request, "")
 	return result, nil
 }
 
