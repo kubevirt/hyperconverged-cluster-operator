@@ -17,7 +17,7 @@ services:
 script:
 - make build
 - make test
-- $GOPATH/bin/goveralls -service=travis-ci -coverprofile=/hyperconverged.coverprofile 
+- $GOPATH/bin/goveralls -service=travis-ci -coverprofile=pkg/controller/hyperconverged/hyperconverged.coverprofile
 
 # Keeping this around from kubevirt/kubevirt for updating in the future
 # deploy:
