@@ -1,3 +1,6 @@
+
+[![Coverage Status](https://img.shields.io/coveralls/rwsu/hyperconverged-cluster-operator/master.svg)](https://coveralls.io/github/rwsu/hyperconverged-cluster-operator?branch=master)
+
 # Hyperconverged Cluster Operator
 
 The goal of the hyperconverged-cluster-operator (HCO) is to provide a single
