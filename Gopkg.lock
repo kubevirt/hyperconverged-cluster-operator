@@ -943,8 +943,8 @@
     "pkg/operator/resources/operator",
     "pkg/operator/resources/utils"
   ]
-  revision = "52e7187df6a915975493bd452987cf9380efa9f6"
-  version = "v1.9.1"
+  revision = "dd3d5d75fece6c7f12483c4561cbc5cdfa717a00"
+  version = "v1.9.2"
 
 [[projects]]
   name = "kubevirt.io/kubevirt"
