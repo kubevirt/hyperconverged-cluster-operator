@@ -1,5 +1,5 @@
 
-[![Coverage Status](https://img.shields.io/coveralls/rwsu/hyperconverged-cluster-operator/master.svg)](https://coveralls.io/github/rwsu/hyperconverged-cluster-operator?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/rwsu/hyperconverged-cluster-operator/badge.svg?branch=master)](https://coveralls.io/github/rwsu/hyperconverged-cluster-operator?branch=master)
 
 # Hyperconverged Cluster Operator
 
