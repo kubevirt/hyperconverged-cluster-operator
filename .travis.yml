@@ -1,10 +1,13 @@
 language: go
 go:
-- "1.10.x"
+- "1.12.x"
 sudo: required
 dist: trusty
 
-install:
+go_import_path: github.com/kubevirt/hyperconverged-cluster-operator
+
+install: 
+    - go get -v github.com/mattn/goveralls
     - go get -v github.com/onsi/ginkgo/ginkgo
     - go get -v github.com/onsi/gomega
     - go get -v -t ./...
@@ -16,6 +19,7 @@ services:
 script:
 - make build
 - make test
+- $GOPATH/bin/goveralls -service=travis-ci -coverprofile=pkg/controller/hyperconverged/hyperconverged.coverprofile
 
 # Keeping this around from kubevirt/kubevirt for updating in the future
 # deploy:
