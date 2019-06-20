@@ -19,11 +19,11 @@ func (r *ReconcileHyperConverged) getAllResources(cr *hcov1alpha1.HyperConverged
 	return []runtime.Object{
 		newKubeVirtConfigForCR(cr, request.Namespace),
 		newKubeVirtForCR(cr, request.Namespace),
-		newCDIForCR(cr, request.Namespace),
+		newCDIForCR(cr, ""),
 		newNetworkAddonsForCR(cr, ""),
-		newKubevirtCommonTemplateBundleForCR(cr, ""),
-		newKubevirtNodeLabellerBundleForCR(cr, request.Namespace),
-		newKubevirtTemplateValidatorForCR(cr, request.Namespace),
+		newKubeVirtCommonTemplateBundleForCR(cr, "openshift"),
+		newKubeVirtNodeLabellerBundleForCR(cr, request.Namespace),
+		newKubeVirtTemplateValidatorForCR(cr, request.Namespace),
 		newKWebUIForCR(cr, ""),
 	}
 }
@@ -91,7 +91,7 @@ func newNetworkAddonsForCR(cr *hcov1alpha1.HyperConverged, namespace string) *ne
 	}
 }
 
-func newKubevirtCommonTemplateBundleForCR(cr *hcov1alpha1.HyperConverged, namespace string) *sspv1.KubevirtCommonTemplatesBundle {
+func newKubeVirtCommonTemplateBundleForCR(cr *hcov1alpha1.HyperConverged, namespace string) *sspv1.KubevirtCommonTemplatesBundle {
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -104,7 +104,7 @@ func newKubevirtCommonTemplateBundleForCR(cr *hcov1alpha1.HyperConverged, namesp
 	}
 }
 
-func newKubevirtNodeLabellerBundleForCR(cr *hcov1alpha1.HyperConverged, namespace string) *sspv1.KubevirtNodeLabellerBundle {
+func newKubeVirtNodeLabellerBundleForCR(cr *hcov1alpha1.HyperConverged, namespace string) *sspv1.KubevirtNodeLabellerBundle {
 	labels := map[string]string{
 		"app": cr.Name,
 	}
@@ -117,7 +117,7 @@ func newKubevirtNodeLabellerBundleForCR(cr *hcov1alpha1.HyperConverged, namespac
 	}
 }
 
-func newKubevirtTemplateValidatorForCR(cr *hcov1alpha1.HyperConverged, namespace string) *sspv1.KubevirtTemplateValidator {
+func newKubeVirtTemplateValidatorForCR(cr *hcov1alpha1.HyperConverged, namespace string) *sspv1.KubevirtTemplateValidator {
 	labels := map[string]string{
 		"app": cr.Name,
 	}

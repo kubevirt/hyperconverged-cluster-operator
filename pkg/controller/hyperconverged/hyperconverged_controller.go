@@ -121,72 +121,115 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
-	return r.reconcileUpdate(reqLogger, instance, request)
-}
-
-// ResultFromCRCreate holds the result and error from creating a CR
-type ResultFromCRCreate struct {
-	result reconcile.Result
-	err    error
-}
-
-func (r *ReconcileHyperConverged) reconcileUpdate(logger logr.Logger, cr *hcov1alpha1.HyperConverged, request reconcile.Request) (reconcile.Result, error) {
-	results := []ResultFromCRCreate{}
-
-	resources := r.getAllResources(cr, request)
-	for _, desiredRuntimeObj := range resources {
-		desiredMetaObj := desiredRuntimeObj.(metav1.Object)
-
-		// use reflection to create default instance of desiredRuntimeObj type
-		typ := reflect.ValueOf(desiredRuntimeObj).Elem().Type()
-		currentRuntimeObj := reflect.New(typ).Interface().(runtime.Object)
-
-		key := client.ObjectKey{
-			Namespace: desiredMetaObj.GetNamespace(),
-			Name:      desiredMetaObj.GetName(),
-		}
-		err := r.client.Get(context.TODO(), key, currentRuntimeObj)
-
+	for _, f := range []func(*hcov1alpha1.HyperConverged, logr.Logger, reconcile.Request) error{
+		r.ensureKubeVirtConfig,
+		r.ensureKubeVirt,
+		r.ensureCDI,
+		r.ensureNetworkAddons,
+		r.ensureKubeVirtCommonTemplatebundle,
+		r.ensureKubeVirtNodeLabellerBundle,
+		r.ensureKubeVirtTemplateValidator,
+		r.ensureKWebUI,
+	} {
+		err = f(instance, reqLogger, request)
 		if err != nil {
-			if !errors.IsNotFound(err) {
-				results = append(results, ResultFromCRCreate{result: reconcile.Result{}, err: err})
-			}
-
-			if err = controllerutil.SetControllerReference(cr, desiredMetaObj, r.scheme); err != nil {
-				results = append(results, ResultFromCRCreate{result: reconcile.Result{}, err: err})
-			}
-
-			// TODO: common-templates and cdi fails the Get check above and appears to still be missing.
-			// But in reality, when you try to Create it, the client reports back that
-			// the resource already exists. Need to investigate why.
-			// Before the refactor, the code didn't check if a resource already exists. It just
-			// tried to create it, and will skip if the Create indicated that it already exists.
-			if err = r.client.Create(context.TODO(), desiredRuntimeObj); err != nil {
-				if err != nil && errors.IsAlreadyExists(err) {
-					logger.Info("Skip reconcile: tried create but resource already exists", "key", key)
-					results = append(results, ResultFromCRCreate{result: reconcile.Result{}, err: nil})
-				} else if err != nil {
-					results = append(results, ResultFromCRCreate{result: reconcile.Result{}, err: err})
-				}
-			} else {
-				logger.Info("Resource created",
-					"namespace", desiredMetaObj.GetNamespace(),
-					"name", desiredMetaObj.GetName(),
-					"type", fmt.Sprintf("%T", desiredMetaObj))
-			}
-		} else {
-			logger.Info("Skip reconcile: resource already exists", "key", key)
-			results = append(results, ResultFromCRCreate{result: reconcile.Result{}, err: nil})
-		}
-	}
-
-	for _, r := range results {
-		if r.err != nil {
-			return r.result, r.err
+			return reconcile.Result{}, err
 		}
 	}
 
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileHyperConverged) ensureKubeVirtConfig(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
+	kubevirtConfig := newKubeVirtConfigForCR(instance, request.Namespace)
+	return r.ensureResourceExists(instance, logger, request, kubevirtConfig)
+}
+
+func (r *ReconcileHyperConverged) ensureKubeVirt(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
+	kubevirt := newKubeVirtForCR(instance, request.Namespace)
+	return r.ensureResourceExists(instance, logger, request, kubevirt)
+}
+
+func (r *ReconcileHyperConverged) ensureCDI(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
+	cdi := newCDIForCR(instance, request.Namespace)
+	return r.ensureResourceExists(instance, logger, request, cdi)
+}
+
+func (r *ReconcileHyperConverged) ensureNetworkAddons(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
+	networkAddons := newNetworkAddonsForCR(instance, request.Namespace)
+	return r.ensureResourceExists(instance, logger, request, networkAddons)
+}
+
+func (r *ReconcileHyperConverged) ensureKubeVirtCommonTemplatebundle(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
+	kubevirtCommonTemplateBundle := newKubeVirtCommonTemplateBundleForCR(instance, request.Namespace)
+	return r.ensureResourceExists(instance, logger, request, kubevirtCommonTemplateBundle)
+}
+
+func (r *ReconcileHyperConverged) ensureKubeVirtNodeLabellerBundle(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
+	kubevirtNodeLabellerBundle := newKubeVirtNodeLabellerBundleForCR(instance, request.Namespace)
+	return r.ensureResourceExists(instance, logger, request, kubevirtNodeLabellerBundle)
+}
+
+func (r *ReconcileHyperConverged) ensureKubeVirtTemplateValidator(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
+	kubevirtTemplateValidator := newKubeVirtTemplateValidatorForCR(instance, request.Namespace)
+	return r.ensureResourceExists(instance, logger, request, kubevirtTemplateValidator)
+}
+
+func (r *ReconcileHyperConverged) ensureKWebUI(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
+	kWebUI := newKWebUIForCR(instance, request.Namespace)
+	return r.ensureResourceExists(instance, logger, request, kWebUI)
+}
+
+func (r *ReconcileHyperConverged) ensureResourceExists(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request, desiredRuntimeObj runtime.Object) error {
+	desiredMetaObj := desiredRuntimeObj.(metav1.Object)
+
+	// use reflection to create a new default instance of desiredRuntimeObj type
+	// which is only used as a temporary variable for r.client.Get
+	typ := reflect.ValueOf(desiredRuntimeObj).Elem().Type()
+	currentRuntimeObj := reflect.New(typ).Interface().(runtime.Object)
+
+	key := client.ObjectKey{
+		Namespace: desiredMetaObj.GetNamespace(),
+		Name:      desiredMetaObj.GetName(),
+	}
+	err := r.client.Get(context.TODO(), key, currentRuntimeObj)
+
+	if err == nil {
+		logger.Info("Skip reconcile: resource already exists", "key", key)
+		return nil
+	} else {
+		// anything other than a "not found" error, don't create the resource, simply
+		// return the error
+		if !errors.IsNotFound(err) {
+			return err
+		}
+
+		// set the reference for the object that is about to be created
+		if err = controllerutil.SetControllerReference(instance, desiredMetaObj, r.scheme); err != nil {
+			return err
+		}
+
+		// TODO: common-templates fails the Get check above and appears to still be missing.
+		// But in reality, when you try to Create it, the client reports back that
+		// the resource already exists. Need to investigate why.
+		// Before the refactor, the code didn't check if a resource already exists. It just
+		// tried to create it, and will skip if the Create indicated that it already exists.
+		if err = r.client.Create(context.TODO(), desiredRuntimeObj); err != nil {
+			if err != nil && errors.IsAlreadyExists(err) {
+				logger.Info("Skip reconcile: tried create but resource already exists", "key", key)
+				return nil
+			} else if err != nil {
+				return err
+			}
+		} else {
+			logger.Info("Resource created",
+				"namespace", desiredMetaObj.GetNamespace(),
+				"name", desiredMetaObj.GetName(),
+				"type", fmt.Sprintf("%T", desiredMetaObj))
+		}
+	}
+
+	return nil
 }
 
 func contains(l []string, s string) bool {

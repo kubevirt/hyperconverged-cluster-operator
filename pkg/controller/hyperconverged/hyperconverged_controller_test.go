@@ -93,21 +93,21 @@ var _ = Describe("HyperconvergedController", func() {
 
 		Context("KubeVirt Common Template Bundle CR", func() {
 			It("should have metadata and namespace should be openshift", func() {
-				cr := newKubevirtCommonTemplateBundleForCR(instance, "")
+				cr := newKubeVirtCommonTemplateBundleForCR(instance, "openshift")
 				checkMetadata(cr.ObjectMeta, "common-templates-"+instance.Name, appLabel, "openshift")
 			})
 		})
 
 		Context("KubeVirt Node Labeller Bundle CR", func() {
 			It("should have metadata", func() {
-				cr := newKubevirtNodeLabellerBundleForCR(instance, namespace)
+				cr := newKubeVirtNodeLabellerBundleForCR(instance, namespace)
 				checkMetadata(cr.ObjectMeta, "node-labeller-"+instance.Name, appLabel, namespace)
 			})
 		})
 
 		Context("KubeVirt Template Validator CR", func() {
 			It("should have metadata", func() {
-				cr := newKubevirtTemplateValidatorForCR(instance, namespace)
+				cr := newKubeVirtTemplateValidatorForCR(instance, namespace)
 				checkMetadata(cr.ObjectMeta, "template-validator-"+instance.Name, appLabel, namespace)
 			})
 		})
