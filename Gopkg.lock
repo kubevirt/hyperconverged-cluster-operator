@@ -1092,8 +1092,8 @@
     "pkg/operator/resources/utils",
   ]
   pruneopts = "NT"
-  revision = "dd3d5d75fece6c7f12483c4561cbc5cdfa717a00"
-  version = "v1.9.2"
+  revision = "e1d07c4bab891baa010ad0c690132bada66a81fe"
+  version = "v1.9.3"
 
 [[projects]]
   digest = "1:022e674c513c6f84d0b89fefb64b3703407474e70f97e3bc5ecabf6bc9ebcd92"
