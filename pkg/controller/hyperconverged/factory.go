@@ -14,17 +14,20 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
+const UndefinedNamespace string = ""
+const OpenshiftNamespace string = "openshift"
+
 // The set of resources managed by the HCO
 func (r *ReconcileHyperConverged) getAllResources(cr *hcov1alpha1.HyperConverged, request reconcile.Request) []runtime.Object {
 	return []runtime.Object{
 		newKubeVirtConfigForCR(cr, request.Namespace),
 		newKubeVirtForCR(cr, request.Namespace),
-		newCDIForCR(cr, ""),
-		newNetworkAddonsForCR(cr, ""),
-		newKubeVirtCommonTemplateBundleForCR(cr, "openshift"),
+		newCDIForCR(cr, UndefinedNamespace),
+		newNetworkAddonsForCR(cr, UndefinedNamespace),
+		newKubeVirtCommonTemplateBundleForCR(cr, OpenshiftNamespace),
 		newKubeVirtNodeLabellerBundleForCR(cr, request.Namespace),
 		newKubeVirtTemplateValidatorForCR(cr, request.Namespace),
-		newKWebUIForCR(cr, ""),
+		newKWebUIForCR(cr, UndefinedNamespace),
 	}
 }
 
@@ -99,7 +102,7 @@ func newKubeVirtCommonTemplateBundleForCR(cr *hcov1alpha1.HyperConverged, namesp
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "common-templates-" + cr.Name,
 			Labels:    labels,
-			Namespace: "openshift",
+			Namespace: OpenshiftNamespace,
 		},
 	}
 }

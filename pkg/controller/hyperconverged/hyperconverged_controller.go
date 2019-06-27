@@ -151,17 +151,17 @@ func (r *ReconcileHyperConverged) ensureKubeVirt(instance *hcov1alpha1.HyperConv
 }
 
 func (r *ReconcileHyperConverged) ensureCDI(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
-	cdi := newCDIForCR(instance, request.Namespace)
+	cdi := newCDIForCR(instance, UndefinedNamespace)
 	return r.ensureResourceExists(instance, logger, request, cdi)
 }
 
 func (r *ReconcileHyperConverged) ensureNetworkAddons(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
-	networkAddons := newNetworkAddonsForCR(instance, request.Namespace)
+	networkAddons := newNetworkAddonsForCR(instance, UndefinedNamespace)
 	return r.ensureResourceExists(instance, logger, request, networkAddons)
 }
 
 func (r *ReconcileHyperConverged) ensureKubeVirtCommonTemplatebundle(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
-	kubevirtCommonTemplateBundle := newKubeVirtCommonTemplateBundleForCR(instance, request.Namespace)
+	kubevirtCommonTemplateBundle := newKubeVirtCommonTemplateBundleForCR(instance, OpenshiftNamespace)
 	return r.ensureResourceExists(instance, logger, request, kubevirtCommonTemplateBundle)
 }
 
@@ -176,7 +176,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtTemplateValidator(instance *hcov
 }
 
 func (r *ReconcileHyperConverged) ensureKWebUI(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
-	kWebUI := newKWebUIForCR(instance, request.Namespace)
+	kWebUI := newKWebUIForCR(instance, UndefinedNamespace)
 	return r.ensureResourceExists(instance, logger, request, kWebUI)
 }
 
