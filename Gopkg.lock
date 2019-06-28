@@ -1066,7 +1066,7 @@
   revision = "0cf8f7e6ed1d2e3d47d02e3b6e559369af24d803"
 
 [[projects]]
-  digest = "1:945d532b66e225a81808e5743b03ff5be0eb5848f88c54521970c4aa7771cc98"
+  digest = "1:25b0ee8b649475c39489c4c71d58fcd97c5b77d42fa808bf1037b8cdf54f061a"
   name = "kubevirt.io/containerized-data-importer"
   packages = [
     ".",
@@ -1096,7 +1096,7 @@
   version = "v1.9.3"
 
 [[projects]]
-  digest = "1:022e674c513c6f84d0b89fefb64b3703407474e70f97e3bc5ecabf6bc9ebcd92"
+  digest = "1:cb8efaf39495f42fa183e949ebb4daaa053b22b14572c97611b0855ca77b6bab"
   name = "kubevirt.io/kubevirt"
   packages = [
     ".",
@@ -1125,8 +1125,8 @@
     "pkg/virt-operator/util",
   ]
   pruneopts = "NT"
-  revision = "cd41be9b3eff3148e7265fa21847cca0091b1f77"
-  version = "v0.17.3"
+  revision = "adfdb8c07830b99fc79d2fd1d004e862ef70979e"
+  version = "v0.17.4"
 
 [[projects]]
   digest = "1:06035489efbd51ccface65fc878ceeb849aba05b2f9443c8993f363fc96e80ac"
