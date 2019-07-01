@@ -209,11 +209,9 @@ func (r *ReconcileHyperConverged) ensureResourceExists(instance *hcov1alpha1.Hyp
 			return err
 		}
 
-		// TODO: common-templates fails the Get check above and appears to still be missing.
-		// But in reality, when you try to Create it, the client reports back that
-		// the resource already exists. Need to investigate why.
-		// Before the refactor, the code didn't check if a resource already exists. It just
-		// tried to create it, and will skip if the Create indicated that it already exists.
+		// Note: common-templates fails the Get check above and appears to still be missing.
+		// The check fails because request.Namespace is "kubevirt-hyperconverged", and 
+		// common-templates is installed in the "openshift" namespace.
 		if err = r.client.Create(context.TODO(), desiredRuntimeObj); err != nil {
 			if err != nil && errors.IsAlreadyExists(err) {
 				logger.Info("Skip reconcile: tried create but resource already exists", "key", key)
