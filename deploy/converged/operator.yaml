@@ -237,7 +237,7 @@ spec:
             - name: WATCH_NAMESPACE
               value: ""
             - name: VIRT_LAUNCHER_TAG
-              value: v0.17.0
+              value: v0.17.4
             - name: OPERATOR_NAME
               value: "kubevirt-ssp-operator"
 
