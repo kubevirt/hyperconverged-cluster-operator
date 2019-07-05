@@ -78,7 +78,7 @@ metadata:
     categories: OpenShift Optional
     certified: 'false'
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:latest
-    createdAt: 2019-07-03 15:06:06.790826134 -0400 EDT m=+0.028448462
+    createdAt: 2019-07-05 12:16:40.070725188 +0200 CEST m=+0.018573660
     description: Creates and maintains a HyperConverged KubeVirt Deployment
     repository: https://github.com/kubevirt/hyperconverged-cluster-operator
     support: 'false'
@@ -1372,7 +1372,7 @@ spec:
                   - name: OPERATOR_TAG
                     value: v0.1.10
                   - name: WEBUI_TAG
-                    value: v0.1.10
+                    value: v2.0.0-14.8
                   - name: BRANDING
                     value: okdvirt
                   - name: IMAGE_PULL_POLICY

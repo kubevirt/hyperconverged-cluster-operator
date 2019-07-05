@@ -310,7 +310,7 @@ spec:
         - name: OPERATOR_TAG
           value: v0.1.10
         - name: WEBUI_TAG
-          value: v0.1.10
+          value: v2.0.0-14.8
         - name: BRANDING
           value: okdvirt
         - name: IMAGE_PULL_POLICY
