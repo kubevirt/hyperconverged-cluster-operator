@@ -20,9 +20,12 @@ import (
 
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/tools/go/analysis"
+	"golang.org/x/tools/internal/lsp/telemetry/trace"
 )
 
 func analyze(ctx context.Context, v View, pkgs []Package, analyzers []*analysis.Analyzer) ([]*Action, error) {
+	ctx, ts := trace.StartSpan(ctx, "source.analyze")
+	defer ts.End()
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
@@ -42,7 +45,7 @@ func analyze(ctx context.Context, v View, pkgs []Package, analyzers []*analysis.
 	}
 
 	// Execute the graph in parallel.
-	if err := execAll(ctx, v.FileSet(), roots); err != nil {
+	if err := execAll(ctx, v.Session().Cache().FileSet(), roots); err != nil {
 		return nil, err
 	}
 	return roots, nil
@@ -80,7 +83,7 @@ type packageFactKey struct {
 }
 
 func (act *Action) String() string {
-	return fmt.Sprintf("%s@%s", act.Analyzer, act.Pkg)
+	return fmt.Sprintf("%s@%s", act.Analyzer, act.Pkg.PkgPath())
 }
 
 func execAll(ctx context.Context, fset *token.FileSet, actions []*Action) error {
@@ -112,7 +115,7 @@ func (act *Action) execOnce(ctx context.Context, fset *token.FileSet) error {
 	var failed []string
 	for _, dep := range act.Deps {
 		if dep.err != nil {
-			failed = append(failed, dep.String())
+			failed = append(failed, fmt.Sprintf("%s: %v", dep.String(), dep.err))
 		}
 	}
 	if failed != nil {
@@ -155,11 +158,13 @@ func (act *Action) execOnce(ctx context.Context, fset *token.FileSet) error {
 		ExportObjectFact:  act.exportObjectFact,
 		ImportPackageFact: act.importPackageFact,
 		ExportPackageFact: act.exportPackageFact,
+		AllObjectFacts:    act.allObjectFacts,
+		AllPackageFacts:   act.allPackageFacts,
 	}
 	act.pass = pass
 
-	if len(act.Pkg.GetErrors()) > 0 && !pass.Analyzer.RunDespiteErrors {
-		act.err = fmt.Errorf("analysis skipped due to errors in package")
+	if act.Pkg.IsIllTyped() && !pass.Analyzer.RunDespiteErrors {
+		act.err = fmt.Errorf("analysis skipped due to errors in package: %v", act.Pkg.GetErrors())
 	} else {
 		act.result, act.err = pass.Analyzer.Run(pass)
 		if act.err == nil {
@@ -252,6 +257,15 @@ func (act *Action) exportObjectFact(obj types.Object, fact analysis.Fact) {
 	act.objectFacts[key] = fact // clobber any existing entry
 }
 
+// allObjectFacts implements Pass.AllObjectFacts.
+func (act *Action) allObjectFacts() []analysis.ObjectFact {
+	facts := make([]analysis.ObjectFact, 0, len(act.objectFacts))
+	for k := range act.objectFacts {
+		facts = append(facts, analysis.ObjectFact{Object: k.obj, Fact: act.objectFacts[k]})
+	}
+	return facts
+}
+
 // importPackageFact implements Pass.ImportPackageFact.
 // Given a non-nil pointer ptr of type *T, where *T satisfies Fact,
 // fact copies the fact value to *ptr.
@@ -283,4 +297,13 @@ func factType(fact analysis.Fact) reflect.Type {
 		log.Fatalf("invalid Fact type: got %T, want pointer", t)
 	}
 	return t
+}
+
+// allObjectFacts implements Pass.AllObjectFacts.
+func (act *Action) allPackageFacts() []analysis.PackageFact {
+	facts := make([]analysis.PackageFact, 0, len(act.packageFacts))
+	for k := range act.packageFacts {
+		facts = append(facts, analysis.PackageFact{Package: k.pkg, Fact: act.packageFacts[k]})
+	}
+	return facts
 }

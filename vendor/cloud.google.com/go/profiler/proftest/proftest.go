@@ -26,6 +26,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"text/template"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -38,6 +39,39 @@ import (
 const (
 	monitorWriteScope = "https://www.googleapis.com/auth/monitoring.write"
 )
+
+// BaseStartupTmpl is the common part of the startup script that
+// can be shared by multiple tests.
+var BaseStartupTmpl = template.Must(template.New("startupScript").Parse(`
+{{ define "prologue" -}}
+#! /bin/bash
+(
+# Signal any unexpected error.
+trap 'echo "{{.ErrorString}}"' ERR
+
+# Shut down the VM in 5 minutes after this script exits
+# to stop accounting the VM for billing and cores quota.
+trap "sleep 300 && poweroff" EXIT
+
+retry() {
+  for i in {1..3}; do
+    "${@}" && return 0
+  done
+  return 1
+}
+
+# Fail on any error.
+set -eo pipefail
+
+# Display commands being run
+set -x
+{{- end }}
+
+{{ define "epilogue" -}}
+# Write output to serial port 2 with timestamp.
+) 2>&1 | while read line; do echo "$(date): ${line}"; done >/dev/ttyS1
+{{- end }}
+`))
 
 // TestRunner has common elements used for testing profiling agents on a range
 // of environments.
@@ -93,6 +127,9 @@ type InstanceConfig struct {
 	Name          string
 	StartupScript string
 	MachineType   string
+	ImageProject  string
+	ImageFamily   string
+	Scopes        []string
 }
 
 // ClusterConfig is configuration for starting single GKE cluster for profiling
@@ -165,12 +202,21 @@ func (pr *ProfileResponse) HasSourceFile(filename string) error {
 	return fmt.Errorf("failed to find filename %s in profile", filename)
 }
 
-// StartInstance starts a GCE Instance with name, zone, and projectId specified
-// by the inst, and which runs the startup script specified in inst.
+// StartInstance starts a GCE Instance with configs specified by inst,
+// and which runs the startup script specified in inst. If image project
+// is not specified, it defaults to "debian-cloud". If image family is
+// not specified, it defaults to "debian-9".
 func (tr *GCETestRunner) StartInstance(ctx context.Context, inst *InstanceConfig) error {
-	img, err := tr.ComputeService.Images.GetFromFamily("debian-cloud", "debian-9").Context(ctx).Do()
+	imageProject, imageFamily := inst.ImageProject, inst.ImageFamily
+	if imageProject == "" {
+		imageProject = "debian-cloud"
+	}
+	if imageFamily == "" {
+		imageFamily = "debian-9"
+	}
+	img, err := tr.ComputeService.Images.GetFromFamily(imageProject, imageFamily).Context(ctx).Do()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get image from family %q in project %q: %v", imageFamily, imageProject, err)
 	}
 
 	op, err := tr.ComputeService.Instances.Insert(inst.ProjectID, inst.Zone, &compute.Instance{
@@ -199,10 +245,8 @@ func (tr *GCETestRunner) StartInstance(ctx context.Context, inst *InstanceConfig
 			}},
 		},
 		ServiceAccounts: []*compute.ServiceAccount{{
-			Email: "default",
-			Scopes: []string{
-				monitorWriteScope,
-			},
+			Email:  "default",
+			Scopes: append(inst.Scopes, monitorWriteScope),
 		}},
 	}).Do()
 

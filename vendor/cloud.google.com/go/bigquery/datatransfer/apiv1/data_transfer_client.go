@@ -35,19 +35,20 @@ import (
 
 // CallOptions contains the retry settings for each method of Client.
 type CallOptions struct {
-	GetDataSource        []gax.CallOption
-	ListDataSources      []gax.CallOption
-	CreateTransferConfig []gax.CallOption
-	UpdateTransferConfig []gax.CallOption
-	DeleteTransferConfig []gax.CallOption
-	GetTransferConfig    []gax.CallOption
-	ListTransferConfigs  []gax.CallOption
-	ScheduleTransferRuns []gax.CallOption
-	GetTransferRun       []gax.CallOption
-	DeleteTransferRun    []gax.CallOption
-	ListTransferRuns     []gax.CallOption
-	ListTransferLogs     []gax.CallOption
-	CheckValidCreds      []gax.CallOption
+	GetDataSource           []gax.CallOption
+	ListDataSources         []gax.CallOption
+	CreateTransferConfig    []gax.CallOption
+	UpdateTransferConfig    []gax.CallOption
+	DeleteTransferConfig    []gax.CallOption
+	GetTransferConfig       []gax.CallOption
+	ListTransferConfigs     []gax.CallOption
+	ScheduleTransferRuns    []gax.CallOption
+	GetTransferRun          []gax.CallOption
+	DeleteTransferRun       []gax.CallOption
+	ListTransferRuns        []gax.CallOption
+	ListTransferLogs        []gax.CallOption
+	CheckValidCreds         []gax.CallOption
+	StartManualTransferRuns []gax.CallOption
 }
 
 func defaultClientOptions() []option.ClientOption {
@@ -73,19 +74,20 @@ func defaultCallOptions() *CallOptions {
 		},
 	}
 	return &CallOptions{
-		GetDataSource:        retry[[2]string{"default", "idempotent"}],
-		ListDataSources:      retry[[2]string{"default", "idempotent"}],
-		CreateTransferConfig: retry[[2]string{"default", "non_idempotent"}],
-		UpdateTransferConfig: retry[[2]string{"default", "non_idempotent"}],
-		DeleteTransferConfig: retry[[2]string{"default", "idempotent"}],
-		GetTransferConfig:    retry[[2]string{"default", "idempotent"}],
-		ListTransferConfigs:  retry[[2]string{"default", "idempotent"}],
-		ScheduleTransferRuns: retry[[2]string{"default", "non_idempotent"}],
-		GetTransferRun:       retry[[2]string{"default", "idempotent"}],
-		DeleteTransferRun:    retry[[2]string{"default", "idempotent"}],
-		ListTransferRuns:     retry[[2]string{"default", "idempotent"}],
-		ListTransferLogs:     retry[[2]string{"default", "idempotent"}],
-		CheckValidCreds:      retry[[2]string{"default", "idempotent"}],
+		GetDataSource:           retry[[2]string{"default", "idempotent"}],
+		ListDataSources:         retry[[2]string{"default", "idempotent"}],
+		CreateTransferConfig:    retry[[2]string{"default", "non_idempotent"}],
+		UpdateTransferConfig:    retry[[2]string{"default", "non_idempotent"}],
+		DeleteTransferConfig:    retry[[2]string{"default", "idempotent"}],
+		GetTransferConfig:       retry[[2]string{"default", "idempotent"}],
+		ListTransferConfigs:     retry[[2]string{"default", "idempotent"}],
+		ScheduleTransferRuns:    retry[[2]string{"default", "non_idempotent"}],
+		GetTransferRun:          retry[[2]string{"default", "idempotent"}],
+		DeleteTransferRun:       retry[[2]string{"default", "idempotent"}],
+		ListTransferRuns:        retry[[2]string{"default", "idempotent"}],
+		ListTransferLogs:        retry[[2]string{"default", "idempotent"}],
+		CheckValidCreds:         retry[[2]string{"default", "idempotent"}],
+		StartManualTransferRuns: retry[[2]string{"default", "non_idempotent"}],
 	}
 }
 
@@ -201,6 +203,7 @@ func (c *Client) ListDataSources(ctx context.Context, req *datatransferpb.ListDa
 	}
 	it.pageInfo, it.nextFunc = iterator.NewPageInfo(fetch, it.bufLen, it.takeBuf)
 	it.pageInfo.MaxSize = int(req.PageSize)
+	it.pageInfo.Token = req.PageToken
 	return it
 }
 
@@ -305,6 +308,7 @@ func (c *Client) ListTransferConfigs(ctx context.Context, req *datatransferpb.Li
 	}
 	it.pageInfo, it.nextFunc = iterator.NewPageInfo(fetch, it.bufLen, it.takeBuf)
 	it.pageInfo.MaxSize = int(req.PageSize)
+	it.pageInfo.Token = req.PageToken
 	return it
 }
 
@@ -312,6 +316,7 @@ func (c *Client) ListTransferConfigs(ctx context.Context, req *datatransferpb.Li
 // For each date - or whatever granularity the data source supports - in the
 // range, one transfer run is created.
 // Note that runs are created per UTC time in the time range.
+// DEPRECATED: use StartManualTransferRuns instead.
 func (c *Client) ScheduleTransferRuns(ctx context.Context, req *datatransferpb.ScheduleTransferRunsRequest, opts ...gax.CallOption) (*datatransferpb.ScheduleTransferRunsResponse, error) {
 	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "parent", req.GetParent()))
 	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
@@ -393,6 +398,7 @@ func (c *Client) ListTransferRuns(ctx context.Context, req *datatransferpb.ListT
 	}
 	it.pageInfo, it.nextFunc = iterator.NewPageInfo(fetch, it.bufLen, it.takeBuf)
 	it.pageInfo.MaxSize = int(req.PageSize)
+	it.pageInfo.Token = req.PageToken
 	return it
 }
 
@@ -431,6 +437,7 @@ func (c *Client) ListTransferLogs(ctx context.Context, req *datatransferpb.ListT
 	}
 	it.pageInfo, it.nextFunc = iterator.NewPageInfo(fetch, it.bufLen, it.takeBuf)
 	it.pageInfo.MaxSize = int(req.PageSize)
+	it.pageInfo.Token = req.PageToken
 	return it
 }
 
@@ -448,6 +455,26 @@ func (c *Client) CheckValidCreds(ctx context.Context, req *datatransferpb.CheckV
 	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
 		var err error
 		resp, err = c.client.CheckValidCreds(ctx, req, settings.GRPC...)
+		return err
+	}, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+// StartManualTransferRuns start manual transfer runs to be executed now with schedule_time equal to
+// current time. The transfer runs can be created for a time range where the
+// run_time is between start_time (inclusive) and end_time (exclusive), or for
+// a specific run_time.
+func (c *Client) StartManualTransferRuns(ctx context.Context, req *datatransferpb.StartManualTransferRunsRequest, opts ...gax.CallOption) (*datatransferpb.StartManualTransferRunsResponse, error) {
+	md := metadata.Pairs("x-goog-request-params", fmt.Sprintf("%s=%v", "parent", req.GetParent()))
+	ctx = insertMetadata(ctx, c.xGoogMetadata, md)
+	opts = append(c.CallOptions.StartManualTransferRuns[0:len(c.CallOptions.StartManualTransferRuns):len(c.CallOptions.StartManualTransferRuns)], opts...)
+	var resp *datatransferpb.StartManualTransferRunsResponse
+	err := gax.Invoke(ctx, func(ctx context.Context, settings gax.CallSettings) error {
+		var err error
+		resp, err = c.client.StartManualTransferRuns(ctx, req, settings.GRPC...)
 		return err
 	}, opts...)
 	if err != nil {

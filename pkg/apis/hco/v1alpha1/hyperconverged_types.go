@@ -14,7 +14,7 @@ type HyperConvergedSpec struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 	KWebUIMasterDefaultSubdomain string `json:"KWebUIMasterDefaultSubdomain,omitempty"` // optional, required if openshift-console project is missing
-	KWebUIPublicMasterHostname   string `json:"KWebUIPublicMasterHostname,omitempty"` // optional, required if openshift-console project is missing
+	KWebUIPublicMasterHostname   string `json:"KWebUIPublicMasterHostname,omitempty"`   // optional, required if openshift-console project is missing
 }
 
 // HyperConvergedStatus defines the observed state of HyperConverged
@@ -23,6 +23,19 @@ type HyperConvergedStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
+	OperatorVersion string `json:"operatorVersion,omitempty"`
+	ObservedVersion string `json:"observedVersion,omitempty"`
+	TargetVersion   string `json:"targetVersion,omitempty"`
+	// Conditions      []NetworkAddonsCondition `json:"conditions,omitempty" optional:"true"`
+	Containers []Container `json:"containers,omitempty"`
+}
+
+type Container struct {
+	Namespace  string `json:"namespace"`
+	ParentKind string `json:"parentKind"`
+	ParentName string `json:"parentName"`
+	Name       string `json:"name"`
+	Image      string `json:"image"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

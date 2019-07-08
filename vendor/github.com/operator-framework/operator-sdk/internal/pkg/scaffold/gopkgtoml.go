@@ -62,7 +62,7 @@ required = [
 
 [[override]]
   name = "sigs.k8s.io/controller-tools"
-  version = "=v0.1.8"
+  revision = "9d55346c2bde73fb3326ac22eac2e5210a730207"
 
 [[override]]
   name = "k8s.io/api"
@@ -95,8 +95,8 @@ required = [
 [[constraint]]
   name = "github.com/operator-framework/operator-sdk"
   # The version rule is used for a specific release and the master branch for in between releases.
-  branch = "master" #osdk_branch_annotation
-  # version = "=v0.7.0" #osdk_version_annotation
+  # branch = "master" #osdk_branch_annotation
+  version = "=v0.8.0" #osdk_version_annotation
 
 [prune]
   go-tests = true

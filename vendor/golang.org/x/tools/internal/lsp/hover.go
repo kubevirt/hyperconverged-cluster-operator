@@ -6,8 +6,6 @@ package lsp
 
 import (
 	"context"
-	"fmt"
-
 	"golang.org/x/tools/internal/lsp/protocol"
 	"golang.org/x/tools/internal/lsp/source"
 	"golang.org/x/tools/internal/span"
@@ -15,8 +13,8 @@ import (
 
 func (s *Server) hover(ctx context.Context, params *protocol.TextDocumentPositionParams) (*protocol.Hover, error) {
 	uri := span.NewURI(params.TextDocument.URI)
-	view := s.findView(ctx, uri)
-	f, m, err := newColumnMap(ctx, view, uri)
+	view := s.session.ViewOf(uri)
+	f, m, err := getGoFile(ctx, view, uri)
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +30,7 @@ func (s *Server) hover(ctx context.Context, params *protocol.TextDocumentPositio
 	if err != nil {
 		return nil, err
 	}
-	hover, err := ident.Hover(ctx, nil, s.enhancedHover, s.preferredContentFormat == protocol.Markdown)
+	hover, err := ident.Hover(ctx, s.preferredContentFormat == protocol.Markdown, s.hoverKind)
 	if err != nil {
 		return nil, err
 	}
@@ -51,20 +49,4 @@ func (s *Server) hover(ctx context.Context, params *protocol.TextDocumentPositio
 		},
 		Range: &rng,
 	}, nil
-}
-
-func markupContent(decl, doc string, kind protocol.MarkupKind) protocol.MarkupContent {
-	result := protocol.MarkupContent{
-		Kind: kind,
-	}
-	switch kind {
-	case protocol.PlainText:
-		result.Value = decl
-	case protocol.Markdown:
-		result.Value = "```go\n" + decl + "\n```"
-	}
-	if doc != "" {
-		result.Value = fmt.Sprintf("%s\n%s", doc, result.Value)
-	}
-	return result
 }

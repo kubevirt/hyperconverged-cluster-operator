@@ -111,7 +111,7 @@ type ContextsClient struct {
 //
 // For more information about contexts, see the
 // Dialogflow
-// documentation (at https://cloud.google.com/dialogflow-enterprise/docs/contexts-overview).
+// documentation (at https://cloud.google.com/dialogflow/docs/contexts-overview).
 func NewContextsClient(ctx context.Context, opts ...option.ClientOption) (*ContextsClient, error) {
 	conn, err := transport.DialGRPC(ctx, append(defaultContextsClientOptions(), opts...)...)
 	if err != nil {
@@ -182,6 +182,7 @@ func (c *ContextsClient) ListContexts(ctx context.Context, req *dialogflowpb.Lis
 	}
 	it.pageInfo, it.nextFunc = iterator.NewPageInfo(fetch, it.bufLen, it.takeBuf)
 	it.pageInfo.MaxSize = int(req.PageSize)
+	it.pageInfo.Token = req.PageToken
 	return it
 }
 

@@ -63,10 +63,9 @@ func defaultCallOptions() *CallOptions {
 		{"default", "idempotent"}: {
 			gax.WithRetry(func() gax.Retryer {
 				return gax.OnCodes([]codes.Code{
-					codes.DeadlineExceeded,
 					codes.Unavailable,
 				}, gax.Backoff{
-					Initial:    1000 * time.Millisecond,
+					Initial:    250 * time.Millisecond,
 					Max:        32000 * time.Millisecond,
 					Multiplier: 1.3,
 				})
@@ -77,7 +76,7 @@ func defaultCallOptions() *CallOptions {
 				return gax.OnCodes([]codes.Code{
 					codes.Unavailable,
 				}, gax.Backoff{
-					Initial:    1000 * time.Millisecond,
+					Initial:    250 * time.Millisecond,
 					Max:        32000 * time.Millisecond,
 					Multiplier: 1.3,
 				})
@@ -249,6 +248,7 @@ func (c *Client) ListSessions(ctx context.Context, req *spannerpb.ListSessionsRe
 	}
 	it.pageInfo, it.nextFunc = iterator.NewPageInfo(fetch, it.bufLen, it.takeBuf)
 	it.pageInfo.MaxSize = int(req.PageSize)
+	it.pageInfo.Token = req.PageToken
 	return it
 }
 

@@ -40,7 +40,7 @@ exist under the root-path.
 for PROJECT file, take its path as working directory, and fetch domain info from the file.
 `,
 	Example: "crd generate --domain k8s.io",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		fmt.Println("Writing CRD files...")
 		if err := g.ValidateAndInitFields(); err != nil {
 			log.Fatal(err)
@@ -66,5 +66,7 @@ func GeneratorForFlags(f *flag.FlagSet) *crdgenerator.Generator {
 	// TODO: Do we need this? Is there a possibility that a crd is namespace scoped?
 	f.StringVar(&g.Namespace, "namespace", "", "CRD namespace, treat it as root scoped if not set")
 	f.BoolVar(&g.SkipMapValidation, "skip-map-validation", true, "if set to true, skip generating validation schema for map type in CRD.")
+	f.StringVar(&g.APIsPath, "apis-path", "pkg/apis", "the path to search for apis relative to the current directory")
+	f.StringVar(&g.APIsPkg, "apis-pkg", "", "the absolute Go pkg name for current project's api pkg.")
 	return g
 }

@@ -7,55 +7,93 @@ package lsp
 import (
 	"bytes"
 	"context"
+	"fmt"
 
 	"golang.org/x/tools/internal/jsonrpc2"
 	"golang.org/x/tools/internal/lsp/protocol"
+	"golang.org/x/tools/internal/lsp/source"
+	"golang.org/x/tools/internal/lsp/telemetry/trace"
 	"golang.org/x/tools/internal/span"
 )
+
+func (s *Server) didOpen(ctx context.Context, params *protocol.DidOpenTextDocumentParams) error {
+	uri := span.NewURI(params.TextDocument.URI)
+	text := []byte(params.TextDocument.Text)
+
+	// Open the file.
+	s.session.DidOpen(ctx, uri, text)
+
+	// Run diagnostics on the newly-changed file.
+	view := s.session.ViewOf(uri)
+	go func() {
+		ctx := view.BackgroundContext()
+		s.Diagnostics(ctx, view, uri)
+	}()
+	return nil
+}
 
 func (s *Server) didChange(ctx context.Context, params *protocol.DidChangeTextDocumentParams) error {
 	if len(params.ContentChanges) < 1 {
 		return jsonrpc2.NewErrorf(jsonrpc2.CodeInternalError, "no content changes provided")
 	}
 
-	var text string
-	switch s.textDocumentSyncKind {
-	case protocol.Incremental:
-		var err error
-		text, err = s.applyChanges(ctx, params)
-		if err != nil {
-			return err
+	uri := span.NewURI(params.TextDocument.URI)
+
+	// Check if the client sent the full content of the file.
+	// We accept a full content change even if the server expected incremental changes.
+	text, isFullChange := fullChange(params.ContentChanges)
+
+	// We only accept an incremental change if the server expected it.
+	if !isFullChange {
+		switch s.textDocumentSyncKind {
+		case protocol.Full:
+			return fmt.Errorf("expected a full content change, received incremental changes for %s", uri)
+		case protocol.Incremental:
+			// Determine the new file content.
+			var err error
+			text, err = s.applyChanges(ctx, uri, params.ContentChanges)
+			if err != nil {
+				return err
+			}
 		}
-	case protocol.Full:
-		// We expect the full content of file, i.e. a single change with no range.
-		change := params.ContentChanges[0]
-		if change.RangeLength != 0 {
-			return jsonrpc2.NewErrorf(jsonrpc2.CodeInternalError, "unexpected change range provided")
-		}
-		text = change.Text
 	}
-	s.log.Debugf(ctx, "didChange: %s", params.TextDocument.URI)
-	return s.cacheAndDiagnose(ctx, span.NewURI(params.TextDocument.URI), text)
+	// Cache the new file content and send fresh diagnostics.
+	view := s.session.ViewOf(uri)
+	if err := view.SetContent(ctx, uri, []byte(text)); err != nil {
+		return err
+	}
+	// Run diagnostics on the newly-changed file.
+	go func() {
+		ctx := view.BackgroundContext()
+		//TODO: connect the remote span?
+		ctx, ts := trace.StartSpan(ctx, "lsp:background-worker")
+		defer ts.End()
+		s.Diagnostics(ctx, view, uri)
+	}()
+	return nil
 }
 
-func (s *Server) applyChanges(ctx context.Context, params *protocol.DidChangeTextDocumentParams) (string, error) {
-	if len(params.ContentChanges) == 1 && params.ContentChanges[0].Range == nil {
-		// If range is empty, we expect the full content of file, i.e. a single change with no range.
-		change := params.ContentChanges[0]
-		if change.RangeLength != 0 {
-			return "", jsonrpc2.NewErrorf(jsonrpc2.CodeInternalError, "unexpected change range provided")
-		}
-		return change.Text, nil
+func fullChange(changes []protocol.TextDocumentContentChangeEvent) (string, bool) {
+	if len(changes) > 1 {
+		return "", false
 	}
+	// The length of the changes must be 1 at this point.
+	if changes[0].Range == nil && changes[0].RangeLength == 0 {
+		return changes[0].Text, true
+	}
+	return "", false
+}
 
-	uri := span.NewURI(params.TextDocument.URI)
-	view := s.findView(ctx, uri)
-	file, m, err := newColumnMap(ctx, view, uri)
+func (s *Server) applyChanges(ctx context.Context, uri span.URI, changes []protocol.TextDocumentContentChangeEvent) (string, error) {
+	content, _, err := s.session.GetFile(uri).Read(ctx)
 	if err != nil {
 		return "", jsonrpc2.NewErrorf(jsonrpc2.CodeInternalError, "file not found")
 	}
-	content := file.GetContent(ctx)
-	for _, change := range params.ContentChanges {
+	fset := s.session.Cache().FileSet()
+	for _, change := range changes {
+		// Update column mapper along with the content.
+		m := protocol.NewColumnMapper(uri, uri.Filename(), fset, nil, content)
+
 		spn, err := m.RangeSpan(*change.Range)
 		if err != nil {
 			return "", err
@@ -64,7 +102,7 @@ func (s *Server) applyChanges(ctx context.Context, params *protocol.DidChangeTex
 			return "", jsonrpc2.NewErrorf(jsonrpc2.CodeInternalError, "invalid range for content change")
 		}
 		start, end := spn.Start().Offset(), spn.End().Offset()
-		if end <= start {
+		if end < start {
 			return "", jsonrpc2.NewErrorf(jsonrpc2.CodeInternalError, "invalid range for content change")
 		}
 		var buf bytes.Buffer
@@ -77,11 +115,50 @@ func (s *Server) applyChanges(ctx context.Context, params *protocol.DidChangeTex
 }
 
 func (s *Server) didSave(ctx context.Context, params *protocol.DidSaveTextDocumentParams) error {
-	return nil // ignore
+	s.session.DidSave(span.NewURI(params.TextDocument.URI))
+	return nil
 }
 
 func (s *Server) didClose(ctx context.Context, params *protocol.DidCloseTextDocumentParams) error {
 	uri := span.NewURI(params.TextDocument.URI)
-	view := s.findView(ctx, uri)
-	return view.SetContent(ctx, uri, nil)
+	s.session.DidClose(uri)
+	view := s.session.ViewOf(uri)
+	if err := view.SetContent(ctx, uri, nil); err != nil {
+		return err
+	}
+	clear := []span.URI{uri} // by default, clear the closed URI
+	defer func() {
+		for _, uri := range clear {
+			if err := s.publishDiagnostics(ctx, view, uri, []source.Diagnostic{}); err != nil {
+				s.session.Logger().Errorf(ctx, "failed to clear diagnostics for %s: %v", uri, err)
+			}
+		}
+	}()
+	// If the current file was the only open file for its package,
+	// clear out all diagnostics for the package.
+	f, err := view.GetFile(ctx, uri)
+	if err != nil {
+		s.session.Logger().Errorf(ctx, "no file for %s: %v", uri, err)
+		return nil
+	}
+	// For non-Go files, don't return any diagnostics.
+	gof, ok := f.(source.GoFile)
+	if !ok {
+		s.session.Logger().Errorf(ctx, "closing a non-Go file, no diagnostics to clear")
+		return nil
+	}
+	pkg := gof.GetPackage(ctx)
+	if pkg == nil {
+		s.session.Logger().Errorf(ctx, "no package available for %s", uri)
+		return nil
+	}
+	for _, filename := range pkg.GetFilenames() {
+		// If other files from this package are open, don't clear.
+		if s.session.IsOpen(span.NewURI(filename)) {
+			clear = nil
+			return nil
+		}
+		clear = append(clear, span.FileURI(filename))
+	}
+	return nil
 }
