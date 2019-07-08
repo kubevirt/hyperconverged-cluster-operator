@@ -11,40 +11,40 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const name = "hyperconverged-cluster-operator"
+
 func GetDeployment(repository string, tag string, imagePullPolicy string) *appsv1.Deployment {
-	hco_name := "hyperconverged-cluster-operator"
-	registry_name := repository + "/kubevirt/" + hco_name
-	image := fmt.Sprintf("%s:%s", registry_name, tag)
+	image := fmt.Sprintf("%s/%s:%s", repository, name, tag)
 	deployment := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
 			Kind:       "Deployment",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: hco_name,
+			Name: name,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: int32Ptr(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"name": hco_name,
+					"name": name,
 				},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"name": hco_name,
+						"name": name,
 					},
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: hco_name,
+					ServiceAccountName: name,
 					Containers: []corev1.Container{
 						{
-							Name:            hco_name,
+							Name:            name,
 							Image:           image,
 							ImagePullPolicy: corev1.PullPolicy(imagePullPolicy),
 							// TODO: command being name is artifact of operator-sdk usage
-							Command: []string{hco_name},
+							Command: []string{name},
 							ReadinessProbe: &corev1.Probe{
 								Handler: corev1.Handler{
 									Exec: &corev1.ExecAction{
@@ -65,7 +65,7 @@ func GetDeployment(repository string, tag string, imagePullPolicy string) *appsv
 								},
 								{
 									Name:  "OPERATOR_NAME",
-									Value: hco_name,
+									Value: name,
 								},
 								{
 									Name: "POD_NAME",
@@ -94,7 +94,6 @@ func GetDeployment(repository string, tag string, imagePullPolicy string) *appsv
 }
 
 func GetClusterRole() *rbacv1.ClusterRole {
-	name := "hyperconverged-cluster-operator"
 	role := &rbacv1.ClusterRole{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "rbac.authorization.k8s.io/v1",

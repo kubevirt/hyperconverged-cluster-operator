@@ -31,7 +31,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/spf13/pflag"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	cnacomponents "github.com/kubevirt/cluster-network-addons-operator/pkg/components"
@@ -58,21 +58,41 @@ type operatorData struct {
 }
 
 type templateData struct {
-	Converged            bool
-	Namespace            string
-	CsvVersion           string
-	ContainerPrefix      string
-	CnaContainerPrefix   string
-	WebuiContainerPrefix string
-	ImagePullPolicy      string
-	CreatedAt            string
-	HCO                  *operatorData
-	KubeVirt             *operatorData
-	CDI                  *operatorData
-	CNA                  *operatorData
-	KWEBUI               *operatorData
-	SSP                  *operatorData
-	NMO                  *operatorData
+	Converged                 bool
+	Namespace                 string
+	CsvVersion                string
+	ContainerPrefix           string
+	CnaContainerPrefix        string
+	KubevirtContainerPrefix   string
+	CdiContainerPrefix        string
+	WebuiContainerPrefix      string
+	HcoContainerPrefix        string
+	SspContainerPrefix        string
+	NmoContainerPrefix        string
+	ImagePullPolicy           string
+	CreatedAt                 string
+	CnaSriovNetworkType       string
+	CnaMultusImage            string
+	CnaLinuxBridgeCniImage    string
+	CnaLinuxBridgeMarkerImage string
+	CnaSriovDpImage           string
+	CnaSriovCniImage          string
+	CnaKubeMacPoolImage       string
+	CnaNMStateHandlerImage    string
+	CdiOperatorName           string
+	CdiControllerImage        string
+	CdiImporterImage          string
+	CdiClonerImage            string
+	CdiAPIServerImage         string
+	CdiUploadProxyImage       string
+	CdiUploadServerImage      string
+	HCO                       *operatorData
+	KubeVirt                  *operatorData
+	CDI                       *operatorData
+	CNA                       *operatorData
+	KWEBUI                    *operatorData
+	SSP                       *operatorData
+	NMO                       *operatorData
 }
 
 func check(err error) {
@@ -151,7 +171,7 @@ func getHCO(data *templateData) {
 
 	// Get HCO Deployment
 	hcodeployment := hcocomponents.GetDeployment(
-		"quay.io",
+		data.HcoContainerPrefix,
 		data.HCO.OperatorTag,
 		"Always",
 	)
@@ -207,7 +227,7 @@ func getKubeVirt(data *templateData) {
 	// Get KubeVirt Operator Deployment
 	kvdeployment, err := kvcomponents.NewOperatorDeployment(
 		"kubevirt",
-		data.ContainerPrefix,
+		data.KubevirtContainerPrefix,
 		data.KubeVirt.OperatorTag,
 		v1.PullPolicy(data.ImagePullPolicy),
 		"2",
@@ -256,14 +276,27 @@ func getKubeVirt(data *templateData) {
 func getCDI(data *templateData) {
 	writer := strings.Builder{}
 
+	cdiImages := (&cdicomponents.CdiImages{}).FillDefaults()
+
+	// Change the operator and images names for Downstream build
+	if data.CdiControllerImage != "" {
+		cdiImages.ControllerImage = data.CdiControllerImage
+		cdiImages.ImporterImage = data.CdiImporterImage
+		cdiImages.ClonerImage = data.CdiClonerImage
+		cdiImages.APIServerImage = data.CdiAPIServerImage
+		cdiImages.UplodaProxyImage = data.CdiUploadProxyImage
+		cdiImages.UplodaServerImage = data.CdiUploadServerImage
+		cdiImages.OperatorImage = data.CdiOperatorName
+	}
 	// Get CDI Deployment
 	cdideployment, err := cdicomponents.NewCdiOperatorDeployment(
 		data.Namespace,
-		"kubevirt",
-		"v1.9.1",
-		"IfNotPresent",
+		data.CdiContainerPrefix,
+		data.CDI.OperatorTag,
+		data.ImagePullPolicy,
 		"1",
-		(&cdicomponents.CdiImages{}).FillDefaults())
+		cdiImages,
+	)
 
 	check(err)
 	err = marshallObject(cdideployment, &writer)
@@ -291,7 +324,7 @@ func getCDI(data *templateData) {
 	}
 	rules := fixResourceString(writer.String(), 14)
 
-	// Get HCO CRD
+	// Get CDI CRD
 	writer = strings.Builder{}
 	crd := cdicomponents.NewCdiCrd()
 	marshallObject(crd, &writer)
@@ -308,14 +341,30 @@ func getCDI(data *templateData) {
 func getCNA(data *templateData) {
 	writer := strings.Builder{}
 
+	cnaImages := (&cnacomponents.AddonsImages{}).FillDefaults()
+	cnaNetworkAttachmentDefinition := (&cnacomponents.NetworkAttachmentDefinition{}).FillDefaults()
+
+	//var cnaImages cnacomponents.AddonsImages
+	if data.CnaMultusImage != "" {
+		cnaImages.KubeMacPool = data.CnaKubeMacPoolImage
+		cnaImages.LinuxBridgeCni = data.CnaLinuxBridgeCniImage
+		cnaImages.LinuxBridgeMarker = data.CnaLinuxBridgeMarkerImage
+		cnaImages.Multus = data.CnaMultusImage
+		cnaImages.NMStateHandler = data.CnaNMStateHandlerImage
+		cnaImages.SriovCni = data.CnaSriovCniImage
+		cnaImages.SriovDp = data.CnaSriovDpImage
+		cnaNetworkAttachmentDefinition.SriovType = data.CnaSriovNetworkType
+	}
+
 	// Get CNA Deployment
 	cnadeployment := cnacomponents.GetDeployment(
-		"0.11.0",
+		data.CNA.OperatorTag,
 		data.Namespace,
 		data.CnaContainerPrefix,
-		"0.11.0",
+		data.CNA.OperatorTag,
 		data.ImagePullPolicy,
-		(&cnacomponents.AddonsImages{}).FillDefaults(),
+		cnaImages,
+		cnaNetworkAttachmentDefinition,
 	)
 	err := marshallObject(cnadeployment, &writer)
 	check(err)
@@ -445,10 +494,32 @@ func main() {
 	namespace := flag.String("namespace", "kubevirt-hyperconverged", "")
 	csvVersion := flag.String("csv-version", "0.0.1", "")
 	containerPrefix := flag.String("container-prefix", "kubevirt", "")
+	hcoContainerPrefix := flag.String("hco-container-prefix", *containerPrefix, "")
+	kubevirtContainerPrefix := flag.String("kubevirt-container-prefix", *containerPrefix, "")
+	cdiContainerPrefix := flag.String("cdi-container-prefix", *containerPrefix, "")
 	cnaContainerPrefix := flag.String("cna-container-prefix", *containerPrefix, "")
 	webuiContainerPrefix := flag.String("webui-container-prefix", *containerPrefix, "")
+	sspContainerPrefix := flag.String("ssp-container-prefix", *containerPrefix, "")
+	nmoContainerPrefix := flag.String("nmo-container-prefix", *containerPrefix, "")
 	imagePullPolicy := flag.String("image-pull-policy", "IfNotPresent", "")
 	inputFile := flag.String("input-file", "", "")
+
+	cnaSriovNetworkType := flag.String("cna-sriov-netowrk-type", "", "")
+	cnaMultusImage := flag.String("cna-multus-image", "", "")
+	cnaLinuxBridgeCniImage := flag.String("cna-linux-bridge-cni-image", "", "")
+	cnaLinuxBridgeMarkerImage := flag.String("cna-linux-bridge-marker-image", "", "")
+	cnaSriovDpImage := flag.String("cna-sriov-dp-image", "", "")
+	cnaSriovCniImage := flag.String("cna-sriov-cni-image", "", "")
+	cnaKubeMacPoolImage := flag.String("cna-kube-mac-pool-image", "", "")
+	cnaNMStateHandlerImage := flag.String("cna-nm-state-handler-image", "", "")
+
+	cdiOperatorName := flag.String("cdi-operator-name", "", "")
+	cdiControllerImage := flag.String("cdi-controller-image", "", "")
+	cdiImporterImage := flag.String("cdi-importer-image", "", "")
+	cdiClonerImage := flag.String("cdi-cloner-image", "", "")
+	cdiAPIServerImage := flag.String("cdi-api-server-image", "", "")
+	cdiUploadProxyImage := flag.String("cdi-upload-proxy-image", "", "")
+	cdiUploadServerImage := flag.String("cdi-upload-server-image", "", "")
 
 	containerTag := flag.String("container-tag", "latest", "")
 	hcoTag := flag.String("hco-tag", *containerTag, "")
@@ -465,13 +536,35 @@ func main() {
 	pflag.Parse()
 
 	data := templateData{
-		Converged:            *converged,
-		Namespace:            *namespace,
-		CsvVersion:           *csvVersion,
-		ContainerPrefix:      *containerPrefix,
-		CnaContainerPrefix:   *cnaContainerPrefix,
-		WebuiContainerPrefix: *webuiContainerPrefix,
-		ImagePullPolicy:      *imagePullPolicy,
+		Converged:               *converged,
+		Namespace:               *namespace,
+		CsvVersion:              *csvVersion,
+		ContainerPrefix:         *containerPrefix,
+		HcoContainerPrefix:      *hcoContainerPrefix,
+		KubevirtContainerPrefix: *kubevirtContainerPrefix,
+		CdiContainerPrefix:      *cdiContainerPrefix,
+		CnaContainerPrefix:      *cnaContainerPrefix,
+		SspContainerPrefix:      *sspContainerPrefix,
+		NmoContainerPrefix:      *nmoContainerPrefix,
+		WebuiContainerPrefix:    *webuiContainerPrefix,
+		ImagePullPolicy:         *imagePullPolicy,
+
+		CnaSriovNetworkType:       *cnaSriovNetworkType,
+		CnaMultusImage:            *cnaMultusImage,
+		CnaLinuxBridgeCniImage:    *cnaLinuxBridgeCniImage,
+		CnaLinuxBridgeMarkerImage: *cnaLinuxBridgeMarkerImage,
+		CnaSriovDpImage:           *cnaSriovDpImage,
+		CnaSriovCniImage:          *cnaSriovCniImage,
+		CnaKubeMacPoolImage:       *cnaKubeMacPoolImage,
+		CnaNMStateHandlerImage:    *cnaNMStateHandlerImage,
+
+		CdiOperatorName:      *cdiOperatorName,
+		CdiControllerImage:   *cdiControllerImage,
+		CdiImporterImage:     *cdiImporterImage,
+		CdiClonerImage:       *cdiClonerImage,
+		CdiAPIServerImage:    *cdiAPIServerImage,
+		CdiUploadProxyImage:  *cdiUploadProxyImage,
+		CdiUploadServerImage: *cdiUploadServerImage,
 
 		HCO:      &operatorData{OperatorTag: *hcoTag, ComponentTag: *hcoTag},
 		KubeVirt: &operatorData{OperatorTag: *kubevirtTag, ComponentTag: *kubevirtTag},
