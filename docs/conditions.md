@@ -111,14 +111,14 @@ We'll use a series of lifecycle inspired prefixes paired with postfixes to
 standardize values for `Reason`.
 
 |         | -Failed  | -Succeeded | -Invalid | -InProgress |
-| :------------- |:-------------:|:-----:|:-----:|
+| :------------- |:-------------:|:-----:|:-----:|:-----:|
 | Install- | InstallFailed | InstallSucceeded | InstallInvalid | InstallInProgress |
 | Upgrade- | UpgradeFailed | UpgradeSucceded | UpgradeInvalid | UpgradeInProgress |
 | Heal- | HealFailed | HealSucceeded | HealInvalid | HealInProgress |
 | Configuration- | ConfigurationFailed | ConfigurationSucceeded | ConfigurationInvalid | ConfigurationInProgress |
 
 |         | -Failed  | -Succeeded | -Invalid | -InProgress |
-| :------------- |:-------------:|:-----:|:-----:|
+| :------------- |:-------------:|:-----:|:-----:|:-----:|
 | Meaning | The attempted operation **Failed** and the error is clear to the operator | The attempted operation **Succeeded** |  The attempted operation is missing something or is **Invalid** at this time | The attempted operation is **InProgress** |
 
 ## Message
@@ -142,6 +142,7 @@ The HCO's `ConditionType`s will always represent the _worst_ `Status` and the
 _most recently viewed_ `Reason`.
 
 The _worst_ `Status` for each `ConditionType`:
+
 | Condition   | Status  |
 | :------------- |:-------------:|
 | OperatorAvailable | False |
