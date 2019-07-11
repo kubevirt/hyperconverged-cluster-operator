@@ -5,6 +5,8 @@ Conditions are..
 	   observation are not a priori known or would not apply to all
 	   instances of a given Kind._
 
+Kubernetes conditions [documentation](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#spec-and-status).
+
 The HCO’s CR is a representation of the underlying component operators.  If the
 object exists, then all components exist.  If the object doesn’t exist, all
 components don’t exist.  However, the CR existence doesn’t help us with the
@@ -12,8 +14,37 @@ state where the operators exist, but are they healthy?  This is where conditions
 on the HCO’s CR will answer this question by providing the observed health of
 the underlying components.
 
-## Condition List
+## Condition Struct
 We can use some of the CVO's [conditions](https://github.com/openshift/api/blob/master/config/v1/types_cluster_operator.go#L121-L133) to standardize across components.
+
+Here's how the Condition struct will look...
+
+```go
+type OperatorStatusCondition struct {
+   // type specifies the state of the operator's reconciliation functionality.
+   Type ConditionType `json:"type"`
+
+   // status of the condition, one either True or False.
+   Status ConditionStatus `json:"status"`
+
+   // lastTransitionTime is the time of the last update to the current status object.
+   LastTransitionTime metav1.Time `json:"lastTransitionTime"`
+
+   // reason is the reason for the condition's last transition.  Reasons are CamelCase
+   Reason string `json:"reason,omitempty"`
+
+   // message provides additional information about the current condition.
+   // This is only to be consumed by humans.
+   Message string `json:"message,omitempty"`
+}
+```
+
+## ConditionType
+`ConditionType` _specifies the state of the operator's reconciliation functionality_.
+`ConditionType`s use `ConditionStatus` to report state.  The `ConditionStatus`es
+we will use are either `True` or `False`.  The `ConditionStatus` object can also
+be `Unknown`, but we won't use it because it's not clear what `Unknown` means in
+terms of an application's lifecycle.
 
 #### OperatorAvailable
 ```
@@ -71,3 +102,25 @@ operator when it is in the middle of imporant work.
 
 See this [issue](https://github.com/operator-framework/operator-lifecycle-manager/issues/922) for why we only want to report a readiness probe on the HCO
 instead of on all component operators.
+
+## Reason
+`Reason` is _a one-word CamelCase reason for the condition's last transition_.
+
+We'll use a series of lifecycle inspired prefixes paired with postfixes to
+standardize values for `Reason`.
+
+|         | -Failed  | -Succeeded | -Invalid | -InProgress |
+| :------------- |:-------------:|:-----:|:-----:|
+| Install- | InstallFailed | InstallSucceeded | InstallInvalid | InstallInProgress |
+| Upgrade- | UpgradeFailed | UpgradeSucceded | UpgradeInvalid | UpgradeInProgress |
+| Heal- | HealFailed | HealSucceeded | HealInvalid | HealInProgress |
+| Configuration- | ConfigurationFailed | ConfigurationSucceeded | ConfigurationInvalid | ConfigurationInProgress |
+
+|         | -Failed  | -Succeeded | -Invalid | -InProgress |
+| :------------- |:-------------:|:-----:|:-----:|
+| Meaning | The attempted operation **Failed** and the error is clear to the operator | The attempted operation **Succeeded** |  The attempted operation is missing something or is **Invalid** at this time | The attempted operation is **InProgress** |
+
+## Message
+`Message` is a _human-readable message indicating details about last transition_.
+
+Explain why your CR has `Reason`.
