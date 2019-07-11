@@ -355,7 +355,7 @@
   revision = "b84e30acd515aadc4b783ad4ff83aff3299bdfe0"
 
 [[projects]]
-  digest = "1:26a6f33fcbb5c0dd9c1bb612396e2c501bc6dca68f757a8cc94794315d26814c"
+  digest = "1:f9e91a5c5b3d455f68d699f1ae335d47ed5e902f31548310af4935dd2e03aea1"
   name = "github.com/kubevirt/cluster-network-addons-operator"
   packages = [
     "pkg/apis",
@@ -364,8 +364,8 @@
     "pkg/names",
   ]
   pruneopts = "NT"
-  revision = "02e17a1e1bc426f8d00cace60b03ecc90eadff4a"
-  version = "0.9.0"
+  revision = "000d66f1517399319cb196825858426c6b767801"
+  version = "0.11.0"
 
 [[projects]]
   digest = "1:cd0803a0952719000a8071b796430ed671d94d83f8cd3f7e25a8004cbad13ae5"
@@ -497,6 +497,7 @@
     "pkg/leader",
     "pkg/log/zap",
     "pkg/metrics",
+    "pkg/ready",
     "version",
   ]
   pruneopts = "NT"
@@ -1281,6 +1282,7 @@
     "github.com/operator-framework/operator-sdk/pkg/leader",
     "github.com/operator-framework/operator-sdk/pkg/log/zap",
     "github.com/operator-framework/operator-sdk/pkg/metrics",
+    "github.com/operator-framework/operator-sdk/pkg/ready",
     "github.com/operator-framework/operator-sdk/version",
     "github.com/spf13/pflag",
     "k8s.io/api/apps/v1",
