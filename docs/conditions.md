@@ -43,8 +43,9 @@ type OperatorStatusCondition struct {
 `ConditionType` _specifies the state of the operator's reconciliation functionality_.
 `ConditionType`s use `ConditionStatus` to report state.  The `ConditionStatus`es
 we will use are either `True` or `False`.  The `ConditionStatus` object can also
-be `Unknown`, but we won't use it because it's not clear what `Unknown` means in
-terms of an application's lifecycle.
+be `Unknown`, but only the HCO will use `Unknown` because it's not clear what
+`Unknown` means in terms of an application's lifecycle.  The HCO can assume
+`Unknown` for conditions while operators are starting up.
 
 #### OperatorAvailable
 ```
@@ -124,3 +125,25 @@ standardize values for `Reason`.
 `Message` is a _human-readable message indicating details about last transition_.
 
 Explain why your CR has `Reason`.
+
+
+## HCO conditions
+It's important to point out that the `ConditionTypes` on the HCO don't represent
+the condition the HCO is in, rather the condition of the component CRs.
+
+The HCO will use the same `ConditionType`s and `Reason`s, but it will be the
+only operator to use `Unknown` for `Status`.  If the HCO notices that a component
+CR is missing condition fields, the HCO will assume the status of
+`OperatorAvailable = false`, `OperatorProgressing = unknown` and
+`OperatorDegraded = unknown`.  If the HCO also detects there is no `Reason` value
+too, then it will assume `Reason = "InstallInvalid"`.
+
+The HCO's `ConditionType`s will always represent the _worst_ `Status` and the
+_most recently viewed_ `Reason`.
+
+The _worst_ `Status` for each `ConditionType`:
+| Condition   | Status  |
+| :------------- |:-------------:|
+| OperatorAvailable | False |
+| OperatorProgressing | False |
+| OperatorDegraded | True |
