@@ -8,15 +8,18 @@ Conditions are..
 Kubernetes conditions [documentation](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#spec-and-status).
 
 The HCO’s CR is a representation of the all the underlying component operators'
-state.  If the the HCO's CR exists, then all component CRs exist, and all
-applications exist.  If the object doesn’t exist, all component CRs don’t exist,
-and all applications don't exist.  However, the CR existence doesn’t help us with the
-state where the operators exist, but are they healthy?  This is where conditions
-on the HCO’s CR and component operator CRs will answer this question by
-reflecting the last known condition of the underlying applications.
+state.  In theory, if the HCO's CR exists, then all component CRs _should_
+exist, and all applications _should_ exist.  If the object doesn’t exist, then
+all component CRs _should not_ exist, and all applications _should not_ exist.
+However, the CR existence can only can tell us if the application should exist and
+doesn't help us observe the application's health. This is where the HCO and
+component operators will use conditions on their CRs to reflect the health of
+the underlying application.  Component operators store conditions that are
+watched by the HCO and the HCO will store conditions that reflect the
+[worst state](https://github.com/kubevirt/hyperconverged-cluster-operator/blob/master/docs/conditions.md#hco-conditions) of all component operator conditions.
 
 ## Condition Struct
-We can use some of the CVO's [conditions](https://github.com/openshift/api/blob/master/config/v1/types_cluster_operator.go#L121-L133) to standardize across components.
+We can use some of the CVO's [conditions](https://github.com/openshift/api/blob/b1bcdbc/config/v1/types_cluster_operator.go#L123-L134) to standardize across components.
 
 Here's how the Condition struct will look...
 
