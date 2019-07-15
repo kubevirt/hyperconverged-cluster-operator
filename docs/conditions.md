@@ -7,12 +7,13 @@ Conditions are..
 
 Kubernetes conditions [documentation](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#spec-and-status).
 
-The HCO’s CR is a representation of the underlying component operators.  If the
-object exists, then all components exist.  If the object doesn’t exist, all
-components don’t exist.  However, the CR existence doesn’t help us with the
+The HCO’s CR is a representation of the all the underlying component operators'
+state.  If the the HCO's CR exists, then all component CRs exist, and all
+applications exist.  If the object doesn’t exist, all component CRs don’t exist,
+and all applications don't exist.  However, the CR existence doesn’t help us with the
 state where the operators exist, but are they healthy?  This is where conditions
-on the HCO’s CR will answer this question by providing the observed health of
-the underlying components.
+on the HCO’s CR and component operator CRs will answer this question by
+reflecting the last known condition of the underlying applications.
 
 ## Condition Struct
 We can use some of the CVO's [conditions](https://github.com/openshift/api/blob/master/config/v1/types_cluster_operator.go#L121-L133) to standardize across components.
@@ -20,8 +21,9 @@ We can use some of the CVO's [conditions](https://github.com/openshift/api/blob/
 Here's how the Condition struct will look...
 
 ```go
-type OperatorStatusCondition struct {
-   // type specifies the state of the operator's reconciliation functionality.
+type ApplicationStatusCondition struct {
+   // type specifies the state of the operator's reconciliation functionality,
+   // which reflects the state of the application
    Type ConditionType `json:"type"`
 
    // status of the condition, one either True or False.
@@ -40,18 +42,18 @@ type OperatorStatusCondition struct {
 ```
 
 ## ConditionType
-`ConditionType` _specifies the state of the operator's reconciliation functionality_.
-`ConditionType`s use `ConditionStatus` to report state.  The `ConditionStatus`es
-we will use are either `True` or `False`.  The `ConditionStatus` object can also
-be `Unknown`, but only the HCO will use `Unknown` because it's not clear what
-`Unknown` means in terms of an application's lifecycle.  The HCO can assume
-`Unknown` for conditions while operators are starting up.
+`ConditionType` _specifies the state of the operator's reconciliation functionality,
+which reflects the state of the application_. `ConditionType`s use `ConditionStatus`
+to report state.  The `ConditionStatus`es we will use are either `True` or `False`.
+The `ConditionStatus` object can also be `Unknown`, but only the HCO will use
+`Unknown` because it's not clear what `Unknown` means in terms of an application's
+lifecycle.  The HCO can assume `Unknown` for conditions, while operators are starting up.
 
-#### OperatorAvailable
+#### ApplicationAvailable
 ```
-	OperatorAvailable ClusterStatusConditionType = "Available"
+	ApplicationAvailable ClusterStatusConditionType = "Available"
 ```
-OperatorAvailable indicates that the binary maintained by the operator
+ApplicationAvailable indicates that the binary maintained by the operator
 (eg: openshift-apiserver for the openshift-apiserver-operator), is functional
 and available in the cluster.
 
@@ -63,11 +65,11 @@ Progressing indicates that the operator is actively making changes to the binary
 maintained by the operator (eg: openshift-apiserver for the
 openshift-apiserver-operator).
 
-#### OperatorDegraded
+#### ApplicationDegraded
 ```
-	OperatorDegraded ClusterStatusConditionType = "Degraded"
+	ApplicationDegraded ClusterStatusConditionType = "Degraded"
 ```
-Degraded indicates that the component operator is not functioning completely.
+Degraded indicates that the application is not functioning completely.
 An example of a degraded state would be if there should be 5 copies of the
 component running but only 4 are running. It may still be available, but it is
 degraded.
@@ -76,24 +78,24 @@ degraded.
 
 | Condition        | Status           | Status  | Status  |
 | :------------- |:-------------:|:-----:|:-----:|
-| OperatorAvailable | True | True | True |
+| ApplicationAvailable | True | True | True |
 | OperatorProgressing | False | True | True |
-| OperatorDegraded | False | False | True |
-| Meaning | Component is 100% healthy and the Operator is idle | Component is functional but, either upgrading or healing | Component is functioning below capacity and an upgrade or heal is in progress |
+| ApplicationDegraded | False | False | True |
+| Meaning | Application is 100% healthy and the Operator is idle | Application is functional but, either upgrading or healing | Application is functioning below capacity and an upgrade or heal is in progress |
 
 | Condition        | Status           | Status  |
 | :------------- |:-------------:|:-----:|
-| OperatorAvailable | False | False |
+| ApplicationAvailable | False | False |
 | OperatorProgressing | False | True |
-| OperatorDegraded | True | True |
-| Meaning | Component and operator are in a failed state that requires human intervention.  Failed upgrade or failed heal | Component is in a failed state and an operator is healing |
+| ApplicationDegraded | True | True |
+| Meaning | Application and/or operator are in a failed state that requires human intervention.  Failed upgrade or failed heal | Application is in a failed state and an operator is healing |
 
 | Condition        | Status           |
 | :------------- |:-------------:|
-| OperatorAvailable | False |
+| ApplicationAvailable | False |
 | OperatorProgressing | True |
-| OperatorDegraded | False |
-| Meaning | Operator is deploying the component |
+| ApplicationDegraded | False |
+| Meaning | Operator is deploying the application |
 
 ## Readiness Probe
 With a standardized set of conditions, the HCO should report the health of the
@@ -134,8 +136,8 @@ the condition the HCO is in, rather the condition of the component CRs.
 The HCO will use the same `ConditionType`s and `Reason`s, but it will be the
 only operator to use `Unknown` for `Status`.  If the HCO notices that a component
 CR is missing condition fields, the HCO will assume the status of
-`OperatorAvailable = false`, `OperatorProgressing = unknown` and
-`OperatorDegraded = unknown`.  If the HCO also detects there is no `Reason` value
+`ApplicationAvailable = false`, `OperatorProgressing = unknown` and
+`ApplicationDegraded = unknown`.  If the HCO also detects there is no `Reason` value
 too, then it will assume `Reason = "InstallInvalid"`.
 
 The HCO's `ConditionType`s will always represent the _worst_ `Status` and the
@@ -145,6 +147,6 @@ The _worst_ `Status` for each `ConditionType`:
 
 | Condition   | Status  |
 | :------------- |:-------------:|
-| OperatorAvailable | False |
+| ApplicationAvailable | False |
 | OperatorProgressing | False |
-| OperatorDegraded | True |
+| ApplicationDegraded | True |
