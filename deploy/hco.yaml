@@ -7,18 +7,6 @@ metadata:
 apiVersion: operators.coreos.com/v1
 kind: CatalogSourceConfig
 metadata:
-  name: hco-catalogsource-config
-  namespace: kubevirt-hyperconverged
-spec:
-  targetNamespace: kubevirt-hyperconverged
-  packages: hco-operatorhub
-  csDisplayName: Community Operators
-  csPublisher: Community
-
----
-apiVersion: operators.coreos.com/v1
-kind: CatalogSourceConfig
-metadata:
   name: installed-community-kubevirt-hyperconverged
   namespace: openshift-marketplace
 spec:
