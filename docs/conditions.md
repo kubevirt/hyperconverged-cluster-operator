@@ -139,5 +139,5 @@ The _worst_ `Status` for each `ConditionType`:
 | Condition   | Status  |
 | :------------- |:-------------:|
 | ApplicationAvailable | False |
-| OperatorProgressing | False |
+| OperatorProgressing | True |
 | ApplicationDegraded | True |
