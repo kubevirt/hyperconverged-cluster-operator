@@ -112,25 +112,13 @@ instead of on all component operators.
 ## Reason
 `Reason` is _a one-word CamelCase reason for the condition's last transition_.
 
-We'll use a series of lifecycle inspired prefixes paired with postfixes to
-standardize values for `Reason`.
-
-|         | -Failed  | -Succeeded | -Invalid | -InProgress |
-| :------------- |:-------------:|:-----:|:-----:|:-----:|
-| Install- | InstallFailed | InstallSucceeded | InstallInvalid | InstallInProgress |
-| Upgrade- | UpgradeFailed | UpgradeSucceded | UpgradeInvalid | UpgradeInProgress |
-| Heal- | HealFailed | HealSucceeded | HealInvalid | HealInProgress |
-| Configuration- | ConfigurationFailed | ConfigurationSucceeded | ConfigurationInvalid | ConfigurationInProgress |
-
-|         | -Failed  | -Succeeded | -Invalid | -InProgress |
-| :------------- |:-------------:|:-----:|:-----:|:-----:|
-| Meaning | The attempted operation **Failed** and the error is clear to the operator | The attempted operation **Succeeded** |  The attempted operation is missing something or is **Invalid** at this time | The attempted operation is **InProgress** |
+Components will be responsible for reporting `Reason`, which will explain their
+condition.
 
 ## Message
 `Message` is a _human-readable message indicating details about last transition_.
 
 Explain why your CR has `Reason`.
-
 
 ## HCO conditions
 It's important to point out that the `ConditionTypes` on the HCO don't represent
@@ -144,7 +132,7 @@ CR is missing condition fields, the HCO will assume the status of
 too, then it will assume `Reason = "InstallInvalid"`.
 
 The HCO's `ConditionType`s will always represent the _worst_ `Status` and the
-_most recently viewed_ `Reason`.
+corresponding `Reason`.
 
 The _worst_ `Status` for each `ConditionType`:
 
