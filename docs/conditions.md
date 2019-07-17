@@ -18,6 +18,13 @@ the underlying application.  Component operators store conditions that are
 watched by the HCO and the HCO will store conditions that reflect the
 [worst state](https://github.com/kubevirt/hyperconverged-cluster-operator/blob/master/docs/conditions.md#hco-conditions) of all component operator conditions.
 
+## Outlook Model
+There's a long running [discussion](https://github.com/kubernetes/kubernetes/issues/7856) in the Kubernetes
+community about the use of Phases, Conditions, and using controllers as
+state machines that hasn't been resolved.  This design document follows the
+"outlook" approach described in this [comment](https://github.com/kubernetes/kubernetes/issues/7856#issuecomment-99667941), which
+we'll use until the Kubernetes community has a resolution we can adopt.
+
 ## Condition Struct
 We can use some of the CVO's [conditions](https://github.com/openshift/api/blob/b1bcdbc/config/v1/types_cluster_operator.go#L123-L134) to standardize across components.
 
