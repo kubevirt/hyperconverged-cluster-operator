@@ -71,11 +71,11 @@ metadata:
     categories: OpenShift Optional
     certified: 'false'
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:latest
-    createdAt: 2019-07-16 16:35:09.376495024 -0400 EDT m=+0.028392606
+    createdAt: 2019-07-16 16:32:12.362745164 -0400 EDT m=+0.033046436
     description: Creates and maintains a HyperConverged KubeVirt Deployment
     repository: https://github.com/kubevirt/hyperconverged-cluster-operator
     support: 'false'
-  name: kubevirt-hyperconverged-operator.v0.0.1
+  name: kubevirt-hyperconverged-operator.v0.0.2
   namespace: placeholder
 spec:
   displayName: KubeVirt HyperConverged Cluster Operator
@@ -148,8 +148,9 @@ spec:
   keywords:
     - KubeVirt
     - Virtualization
-  version: 0.0.1
+  version: 0.0.2
   maturity: alpha
+  replaces: kubevirt-hyperconverged-operator.v0.0.1
   maintainers:
     - name: KubeVirt project
       email: kubevirt-dev@googlegroups.com
