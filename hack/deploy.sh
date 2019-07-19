@@ -46,12 +46,10 @@ fi
 # Create cluster-network-addons-operator
 "${CMD}" create -f "${CNA_URL_PREFIX}"/network-addons-config.crd.yaml
 "${CMD}" create -f "${CNA_URL_PREFIX}"/operator.yaml
-"${CMD}" create -f "${CNA_URL_PREFIX}"/network-addons-config-example.cr.yaml
 
 # Create ssp-operator
 "${CMD}" create -f "${SSP_URL_PREFIX}"/kubevirt-ssp-operator-crd.yaml
 "${CMD}" create -f "${SSP_URL_PREFIX}"/kubevirt-ssp-operator.yaml
-"${CMD}" create -f "${SSP_URL_PREFIX}"/kubevirt-ssp-operator-cr.yaml
 
 # Create an HCO CustomResource
 "${CMD}" create -f deploy/crds/hco.cr.yaml
