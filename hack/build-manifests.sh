@@ -11,7 +11,6 @@ REPLACES_VERSION="${REPLACES_VERSION:-0.0.1}"
 CSV_VERSION="${CSV_VERSION:-0.0.2}"
 
 NAMESPACE="${NAMESPACE:-kubevirt-hyperconverged}"
-CSV_VERSION="${CSV_VERSION:-0.0.1}"
 DEPLOY_DIR="${PROJECT_ROOT}/deploy"
 CSV_DIR="${DEPLOY_DIR}/olm-catalog/kubevirt-hyperconverged/${CSV_VERSION}"
 
