@@ -38,6 +38,7 @@ function debug(){
 	echo "------------- $err"
 	"${CMD}" logs $("${CMD}" get pods -n kubevirt-hyperconverged | grep $err | head -1 | awk '{ print $1 }')
     done
+    exit 1
 }
 
 # Deploy local manifests
@@ -49,7 +50,10 @@ function debug(){
 
 # Wait for the HCO to be ready
 sleep 20
-for op in cdi-operator cluster-network-addons-operator kubevirt-ssp-operator node-maintenance-operator virt-operator hyperconverged-cluster-operator; do
+
+"${CMD}" wait deployment/hyperconverged-cluster-operator --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${op}"
+
+for op in cdi-operator cluster-network-addons-operator kubevirt-ssp-operator node-maintenance-operator virt-operator; do
     "${CMD}" wait deployment/"${op}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${op}"
 done
 
@@ -57,7 +61,7 @@ done
 sleep 30
 "${CMD}" wait pod $("${CMD}" get pods | grep hyperconverged-cluster-operator | awk '{ print $1 }') --for=condition=Ready --timeout="360s"
 
-for dep in cdi-apiserver cdi-deployment cdi-uploadproxy virt-api virt-controller virt-template-validator; do
+for dep in cdi-apiserver cdi-deployment cdi-uploadproxy virt-api virt-controller; do
     "${CMD}" wait deployment/"${dep}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${dep}"
 done
 
@@ -65,6 +69,7 @@ if [ -z "$CONTAINER_ERRORED" ]; then
     echo "SUCCESS"
     exit 0
 else
+    CONTAINER_ERRORED+='hyperconverged-cluster-operator'
     debug
     "${CMD}" get pods -n kubevirt-hyperconverged
 fi
