@@ -40,26 +40,30 @@ function debug(){
     done
 }
 
-trap "debug $CONTAINER_ERRORED" EXIT
+trap "debug $CONTAINER_ERRORED" 1
 
 # Deploy local manifests
 "${CMD}" create -f deploy/cluster_role.yaml
 "${CMD}" create -f deploy/service_account.yaml
 "${CMD}" create -f deploy/cluster_role_binding.yaml
-"${CMD}" create -f deploy/crds/hco.crd.yaml
+"${CMD}" create -f deploy/crds/
 "${CMD}" create -f deploy/operator.yaml
-./deploy/deploy.sh
 
 # Wait for the HCO to be ready
 sleep 20
 for op in cdi-operator cluster-network-addons-operator kubevirt-ssp-operator node-maintenance-operator virt-operator hyperconverged-cluster-operator; do
     "${CMD}" wait deployment/"${op}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${op}"
 done
+
+"${CMD}" create -f deploy/hco.cr.yaml
+
 for dep in cdi-apiserver cdi-deployment cdi-uploadproxy virt-api virt-controller virt-template-validator; do
     "${CMD}" wait deployment/"${dep}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${dep}"
 done
 
-if [ ! -z "${CONTAINER_ERRORED}"]; then
+if [ -z "$CONTAINER_ERRORED" ]; then
+    echo "SUCCESS"
+    exit 0
+else
     exit 1
 fi
-echo "SUCCESS"
