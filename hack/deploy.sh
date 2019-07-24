@@ -55,7 +55,7 @@ done
 
 "${CMD}" create -f deploy/hco.cr.yaml
 sleep 30
-oc wait pod $(oc get pods | grep hyperconverged-cluster-operator | awk '{ print $1 }') --for=condition=Ready --timeout="360s"
+"${CMD}" wait pod $("${CMD}" get pods | grep hyperconverged-cluster-operator | awk '{ print $1 }') --for=condition=Ready --timeout="360s"
 
 for dep in cdi-apiserver cdi-deployment cdi-uploadproxy virt-api virt-controller virt-template-validator; do
     "${CMD}" wait deployment/"${dep}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${dep}"
@@ -66,5 +66,5 @@ if [ -z "$CONTAINER_ERRORED" ]; then
     exit 0
 else
     debug
-    oc get pods -n kubevirt-hyperconverged
+    "${CMD}" get pods -n kubevirt-hyperconverged
 fi
