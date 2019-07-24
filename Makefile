@@ -10,10 +10,10 @@ REGISTRY_NAMESPACE ?=
 build: $(SOURCES) ## Build binary from source
 	go build -i -ldflags="-s -w" -o _out/hyperconverged-cluster-operator ./cmd/manager
 
-install: build
-	cp _out/hyperconverged-cluster-operator ${GOBIN}
+install: build ## Install binaries into the GOBIN folder to make it easier discoverable for openshift ci image streams
+	cp _out/hyperconverged-cluster-operator /go/bin/
 
-okd-e2e:
+okd-e2e: ## Test target for e2e tests against latest openshift releases
 	echo "nothing yet"
 
 clean: ## Clean up the working environment
