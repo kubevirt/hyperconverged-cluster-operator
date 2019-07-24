@@ -10,6 +10,12 @@ REGISTRY_NAMESPACE ?=
 build: $(SOURCES) ## Build binary from source
 	go build -i -ldflags="-s -w" -o _out/hyperconverged-cluster-operator ./cmd/manager
 
+install: build
+	cp _out/hyperconverged-cluster-operator ${GOBIN}
+
+okd-e2e:
+	echo "nothing yet"
+
 clean: ## Clean up the working environment
 	@rm -rf _out/
 
