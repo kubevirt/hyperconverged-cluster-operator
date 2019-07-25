@@ -13,9 +13,6 @@ build: $(SOURCES) ## Build binary from source
 install:
 	go install ./cmd/...
 
-okd-e2e: ## Test target for e2e tests against latest openshift releases
-	echo "nothing yet"
-
 clean: ## Clean up the working environment
 	@rm -rf _out/
 

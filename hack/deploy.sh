@@ -19,6 +19,21 @@
 
 source hack/common.sh
 
+# if this is set we run on okd ci
+if [ -n "${IMAGE_FORMAT}" ]; then
+
+    # Cleanup previously generated manifests
+    rm -rf _out/
+
+    # Copy release manifests as a base for generated ones, this should make it possible to upgrade
+    cp -r deploy _out/
+
+    component=hyperconveged-cluster-operator
+    HCO_IMAGE=`eval echo ${IMAGE_FORMAT}`
+
+    sed -i "s#image: quay.io/kubevirt/hyperconverged-cluster-operator:latest#image: ${HCO_IMAGE}#g" _out/operator.yaml
+fi
+
 # create namespaces
 "${CMD}" create ns kubevirt-hyperconverged
 
