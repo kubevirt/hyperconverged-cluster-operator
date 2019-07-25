@@ -5,7 +5,14 @@ SOURCES            := $(shell find . -name '*.go' -not -path "*/vendor/*")
 IMAGE_REGISTRY     ?= quay.io
 IMAGE_TAG          ?= latest
 OPERATOR_IMAGE     ?= kubevirt/hyperconverged-cluster-operator
+REGISTRY_IMAGE     ?= kubevirt/hyperconverged-cluster-operator-registry
 REGISTRY_NAMESPACE ?=
+
+E2E_TEST_EXTRA_ARGS ?=
+E2E_TEST_ARGS ?= $(strip -test.v -test.timeout 2h -ginkgo.v $(E2E_TEST_EXTRA_ARGS))
+E2E_SUITES = test/e2e/lifecycle
+
+OPERATOR_SDK := go run ./vendor/github.com/operator-framework/operator-sdk/cmd/operator-sdk
 
 build: $(SOURCES) ## Build binary from source
 	go build -i -ldflags="-s -w" -o _out/hyperconverged-cluster-operator ./cmd/manager
@@ -24,6 +31,9 @@ docker-build: docker-build-operator docker-build-operator-courier
 docker-build-operator:
 	docker build -f build/Dockerfile -t $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG) .
 
+docker-build-registry:
+	cd deploy/converged && docker build -f Dockerfile -t $(IMAGE_REGISTRY)/$(REGISTRY_IMAGE):$(IMAGE_TAG) .
+
 docker-build-operator-courier:
 	docker build -f hack/operator-courier/Dockerfile -t hco-courier .
 
@@ -31,6 +41,9 @@ docker-push: docker-push-operator
 
 docker-push-operator:
 	docker push $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG)
+
+docker-push-registry:
+	docker push $(IMAGE_REGISTRY)/$(REGISTRY_IMAGE):$(IMAGE_TAG)
 
 cluster-up:
 	./cluster/up.sh
@@ -67,6 +80,15 @@ test-unit:
 
 test: test-unit
 
+$(E2E_SUITES):
+	$(OPERATOR_SDK) test \
+		local \
+		./$@ \
+		--namespace kubevirt-hyperconverged \
+		--no-setup \
+		--kubeconfig ./cluster/.kubeconfig \
+		--go-test-flags "$(E2E_TEST_ARGS)"
+
 .PHONY: start \
 		clean \
 		build \
@@ -81,4 +103,5 @@ test: test-unit
 		cluster-sync \
 		cluster-clean \
 		stageRegistry \
-		functest
+		functest \
+		$(E2E_SUITES)
