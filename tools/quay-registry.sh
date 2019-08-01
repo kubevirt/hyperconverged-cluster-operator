@@ -68,7 +68,7 @@ cat <<EOF | oc create -f -
 apiVersion: operators.coreos.com/v1
 kind: CatalogSourceConfig
 metadata:
-  name: hco-catalogsource-config
+  name: "${APP_REGISTRY_NAMESPACE}"
   namespace: "${MARKETPLACE_NAMESPACE}"
 spec:
   targetNamespace: kubevirt-hyperconverged
