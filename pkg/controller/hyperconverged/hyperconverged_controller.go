@@ -2,30 +2,27 @@ package hyperconverged
 
 import (
 	"context"
-	"fmt"
-	"reflect"
-
-	sspv1 "github.com/MarSik/kubevirt-ssp-operator/pkg/apis/kubevirt/v1"
-	"github.com/go-logr/logr"
-	networkaddons "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1alpha1"
-	hcov1alpha1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1"
-	kubevirt "kubevirt.io/client-go/api/v1"
-	cdi "kubevirt.io/containerized-data-importer/pkg/apis/core/v1alpha1"
-
 	"encoding/json"
 
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	sspv1 "github.com/MarSik/kubevirt-ssp-operator/pkg/apis/kubevirt/v1"
+	networkaddons "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1alpha1"
+	hcov1alpha1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1"
+	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
+	corev1 "k8s.io/api/core/v1"
+	kubevirt "kubevirt.io/client-go/api/v1"
+	cdi "kubevirt.io/containerized-data-importer/pkg/apis/core/v1alpha1"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
 
 var log = logf.Log.WithName("controller_hyperconverged")
@@ -93,8 +90,9 @@ var _ reconcile.Reconciler = &ReconcileHyperConverged{}
 type ReconcileHyperConverged struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client client.Client
-	scheme *runtime.Scheme
+	client     client.Client
+	scheme     *runtime.Scheme
+	conditions []conditionsv1.Condition
 }
 
 // Reconcile reads that state of the cluster for a HyperConverged object and makes changes based on the state read
@@ -120,113 +118,140 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{}, err
 	}
 
+	// Add conditions if there are none
+	if instance.Status.Conditions == nil {
+		initConditions(&instance.Status.Conditions)
+
+		err = r.client.Status().Update(context.TODO(), instance)
+		if err != nil {
+			reqLogger.Error(err, "Failed to add conditions to status")
+			return reconcile.Result{}, err
+		}
+	}
+
+	// Create happy conditions
+	initHappyConditions(&r.conditions)
+
 	for _, f := range []func(*hcov1alpha1.HyperConverged, logr.Logger, reconcile.Request) error{
 		r.ensureKubeVirtConfig,
 		r.ensureKubeVirt,
 		r.ensureCDI,
 		r.ensureNetworkAddons,
-		r.ensureKubeVirtCommonTemplatebundle,
+		r.ensureKubeVirtCommonTemplateBundle,
 		r.ensureKubeVirtNodeLabellerBundle,
 		r.ensureKubeVirtTemplateValidator,
 		r.ensureKubeVirtMetricsAggregation,
 	} {
 		err = f(instance, reqLogger, request)
 		if err != nil {
+			initReconcileFailureConditions(&instance.Status.Conditions)
+			// don't want to overwrite the actual reconcile failure
+			uErr := r.client.Status().Update(context.TODO(), instance)
+			if uErr != nil {
+				reqLogger.Error(uErr, "Failed to update conditions")
+			}
 			return reconcile.Result{}, err
 		}
 	}
 
-	return reconcile.Result{}, nil
+	reqLogger.Info("Reconcile complete")
+	return reconcile.Result{}, r.syncConditions(instance)
 }
 
-func (r *ReconcileHyperConverged) ensureKubeVirtConfig(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
-	kubevirtConfig := newKubeVirtConfigForCR(instance, request.Namespace)
-	return r.ensureResourceExists(instance, logger, request, kubevirtConfig)
+func initConditions(conditions *[]conditionsv1.Condition) {
+	reason := "Init"
+	message := "Initializing cluster."
+	conditionsv1.SetStatusCondition(conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionAvailable,
+		Status:  corev1.ConditionFalse,
+		Reason:  reason,
+		Message: message,
+	})
+	conditionsv1.SetStatusCondition(conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionProgressing,
+		Status:  corev1.ConditionTrue,
+		Reason:  reason,
+		Message: message,
+	})
+	conditionsv1.SetStatusCondition(conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionDegraded,
+		Status:  corev1.ConditionFalse,
+		Reason:  reason,
+		Message: message,
+	})
+	conditionsv1.SetStatusCondition(conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionUpgradeable,
+		Status:  corev1.ConditionUnknown,
+		Reason:  reason,
+		Message: message,
+	})
 }
 
-func (r *ReconcileHyperConverged) ensureKubeVirt(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
-	kubevirt := newKubeVirtForCR(instance, request.Namespace)
-	return r.ensureResourceExists(instance, logger, request, kubevirt)
+func initHappyConditions(conditions *[]conditionsv1.Condition) {
+	reason := "ReconcileComplete"
+	message := "Successfully rolled out cluster."
+	conditionsv1.SetStatusCondition(conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionAvailable,
+		Status:  corev1.ConditionTrue,
+		Reason:  reason,
+		Message: message,
+	})
+	conditionsv1.SetStatusCondition(conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionProgressing,
+		Status:  corev1.ConditionFalse,
+		Reason:  reason,
+		Message: message,
+	})
+	conditionsv1.SetStatusCondition(conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionDegraded,
+		Status:  corev1.ConditionFalse,
+		Reason:  reason,
+		Message: message,
+	})
+	conditionsv1.SetStatusCondition(conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionUpgradeable,
+		Status:  corev1.ConditionTrue,
+		Reason:  reason,
+		Message: message,
+	})
 }
 
-func (r *ReconcileHyperConverged) ensureCDI(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
-	cdi := newCDIForCR(instance, UndefinedNamespace)
-	return r.ensureResourceExists(instance, logger, request, cdi)
+func initReconcileFailureConditions(conditions *[]conditionsv1.Condition) {
+	reason := "ReconcileFailed"
+	message := "Failed to complete reconcile."
+	conditionsv1.SetStatusCondition(conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionAvailable,
+		Status:  corev1.ConditionFalse,
+		Reason:  reason,
+		Message: message,
+	})
+	conditionsv1.SetStatusCondition(conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionProgressing,
+		Status:  corev1.ConditionTrue,
+		Reason:  reason,
+		Message: message,
+	})
+	conditionsv1.SetStatusCondition(conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionDegraded,
+		Status:  corev1.ConditionTrue,
+		Reason:  reason,
+		Message: message,
+	})
+	conditionsv1.SetStatusCondition(conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionUpgradeable,
+		Status:  corev1.ConditionUnknown,
+		Reason:  reason,
+		Message: message,
+	})
 }
 
-func (r *ReconcileHyperConverged) ensureNetworkAddons(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
-	networkAddons := newNetworkAddonsForCR(instance, UndefinedNamespace)
-	return r.ensureResourceExists(instance, logger, request, networkAddons)
-}
-
-func (r *ReconcileHyperConverged) ensureKubeVirtCommonTemplatebundle(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
-	kubevirtCommonTemplateBundle := newKubeVirtCommonTemplateBundleForCR(instance, OpenshiftNamespace)
-	return r.ensureResourceExists(instance, logger, request, kubevirtCommonTemplateBundle)
-}
-
-func (r *ReconcileHyperConverged) ensureKubeVirtNodeLabellerBundle(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
-	kubevirtNodeLabellerBundle := newKubeVirtNodeLabellerBundleForCR(instance, request.Namespace)
-	return r.ensureResourceExists(instance, logger, request, kubevirtNodeLabellerBundle)
-}
-
-func (r *ReconcileHyperConverged) ensureKubeVirtTemplateValidator(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
-	kubevirtTemplateValidator := newKubeVirtTemplateValidatorForCR(instance, request.Namespace)
-	return r.ensureResourceExists(instance, logger, request, kubevirtTemplateValidator)
-}
-
-func (r *ReconcileHyperConverged) ensureKubeVirtMetricsAggregation(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
-	kubevirtMetricsAggregation := newKubeVirtMetricsAggregationForCR(instance, request.Namespace)
-	return r.ensureResourceExists(instance, logger, request, kubevirtMetricsAggregation)
-}
-
-func (r *ReconcileHyperConverged) ensureResourceExists(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request, desiredRuntimeObj runtime.Object) error {
-	desiredMetaObj := desiredRuntimeObj.(metav1.Object)
-
-	// use reflection to create a new default instance of desiredRuntimeObj type
-	// which is only used as a temporary variable for r.client.Get
-	typ := reflect.ValueOf(desiredRuntimeObj).Elem().Type()
-	currentRuntimeObj := reflect.New(typ).Interface().(runtime.Object)
-
-	key := client.ObjectKey{
-		Namespace: desiredMetaObj.GetNamespace(),
-		Name:      desiredMetaObj.GetName(),
+func (r *ReconcileHyperConverged) syncConditions(instance *hcov1alpha1.HyperConverged) error {
+	conditions := &instance.Status.Conditions
+	for _, condition := range r.conditions {
+		// this will allow us to preserve the lastTransitionTime timestamp
+		conditionsv1.SetStatusCondition(conditions, condition)
 	}
-	err := r.client.Get(context.TODO(), key, currentRuntimeObj)
-
-	if err == nil {
-		logger.Info("Skip reconcile: resource already exists", "key", key)
-		return nil
-	} else {
-		// anything other than a "not found" error, don't create the resource, simply
-		// return the error
-		if !errors.IsNotFound(err) {
-			return err
-		}
-
-		// set the reference for the object that is about to be created
-		if err = controllerutil.SetControllerReference(instance, desiredMetaObj, r.scheme); err != nil {
-			return err
-		}
-
-		// Note: common-templates fails the Get check above and appears to still be missing.
-		// The check fails because request.Namespace is "kubevirt-hyperconverged", and
-		// common-templates is installed in the "openshift" namespace.
-		if err = r.client.Create(context.TODO(), desiredRuntimeObj); err != nil {
-			if err != nil && errors.IsAlreadyExists(err) {
-				logger.Info("Skip reconcile: tried create but resource already exists", "key", key)
-				return nil
-			} else if err != nil {
-				return err
-			}
-		} else {
-			logger.Info("Resource created",
-				"namespace", desiredMetaObj.GetNamespace(),
-				"name", desiredMetaObj.GetName(),
-				"type", fmt.Sprintf("%T", desiredMetaObj))
-		}
-	}
-
-	return nil
+	return r.client.Status().Update(context.TODO(), instance)
 }
 
 func contains(l []string, s string) bool {
