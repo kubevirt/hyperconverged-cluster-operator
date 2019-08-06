@@ -195,6 +195,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		r.ensureKubeVirtTemplateValidator,
 		r.ensureKubeVirtMetricsAggregation,
 		r.ensureMachineRemediationOperator,
+		r.ensureIMSConfig,
 	} {
 		err = f(instance, reqLogger, request)
 		if err != nil {
@@ -832,6 +833,15 @@ func newKubeVirtMetricsAggregationForCR(cr *hcov1alpha1.HyperConverged, namespac
 			Namespace: namespace,
 		},
 	}
+}
+
+func (r *ReconcileHyperConverged) ensureIMSConfig(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
+	imsConfig := newIMSConfig(instance, request.Namespace)
+	return r.ensureResourceExists(instance, logger, request, imsConfig)
+}
+
+func (r *ReconcileHyperConverged) ensureResourceExists(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request, desiredRuntimeObj runtime.Object) error {
+	desiredMetaObj := desiredRuntimeObj.(metav1.Object)
 }
 
 func (r *ReconcileHyperConverged) ensureKubeVirtMetricsAggregation(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
