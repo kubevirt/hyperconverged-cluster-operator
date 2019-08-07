@@ -17,8 +17,8 @@
     "pkg/apis/kubevirt/v1",
   ]
   pruneopts = "NT"
-  revision = "0bce6df5905863d8184564ff73a6ef1d754c1be2"
-  version = "v1.0.7"
+  revision = "8c63d46884f4c39f95daf87e2af482842358cd26"
+  version = "v1.0.8"
 
 [[projects]]
   digest = "1:0a111edd8693fd977f42a0c4f199a0efb13c20aec9da99ad8830c7bb6a87e8d6"
@@ -407,7 +407,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:724513c35b864a9dc125ac445eddcb06cbd4c9e1948f01fd75557ef9da43cb6c"
+  digest = "1:cee96849fa06ee5adf6d3abbf6fcff9ab9d1d62d9cc03c44bb239238b86f64ca"
   name = "github.com/operator-framework/operator-sdk"
   packages = [
     "pkg/k8sutil",
@@ -419,7 +419,7 @@
     "version",
   ]
   pruneopts = "NT"
-  revision = "6c7039c373244e8e485edd447adbf6b86bffeda6"
+  revision = "222f6cbcefeb68b9307e7b5e8025214d6c84f767"
 
 [[projects]]
   digest = "1:93b1d84c5fa6d1ea52f4114c37714cddd84d5b78f151b62bb101128dd51399bf"
@@ -657,7 +657,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7f48066248ce596d302519dc3449e161d80d10ff2fde10491e1e94dd50aed5a6"
+  digest = "1:126034cef0ec0ab13deaf3506e618f207b0f3f48731741bc9d613018430914fe"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
@@ -674,7 +674,7 @@
     "internal/semver",
   ]
   pruneopts = "NT"
-  revision = "88ddfcebc769cb7884c38d144ee893cfb4519053"
+  revision = "cae9aa54349647754b22764599d5c8110e09e95b"
 
 [[projects]]
   digest = "1:25a3797e84a65cc761261eb04134cc03bc64861ef37d1242d92b199bd955800f"
