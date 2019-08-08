@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	// "github.com/operator-framework/operator-sdk/pkg/ready"
+	"github.com/operator-framework/operator-sdk/pkg/ready"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -244,6 +244,15 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 			Reason:  reconcileCompleted,
 			Message: reconcileCompletedMessage,
 		})
+
+		// If no operator whose conditions we are watching reports an error, then it is safe
+		// to set readiness.
+		r := ready.NewFileReady()
+		err = r.Set()
+		if err != nil {
+			reqLogger.Error(err, "Failed to mark operator ready")
+			return reconcile.Result{}, err
+		}
 	} else {
 		// If any component operator reports negatively we want to write that to
 		// the instance while preserving it's lastTransitionTime.
@@ -258,15 +267,15 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 			conditionsv1.SetStatusCondition(&instance.Status.Conditions, condition)
 		}
 
-		// If for any reason we marked ourselves !upgradeable...then set readiness to false
-		// if conditionsv1.IsStatusConditionTrue(instance.Status.Conditions, conditionsv1.ConditionUpgradeable) {
-		// 	r := ready.NewFileReady()
-		// 	err = r.Unset()
-		// 	if err != nil {
-		// 		reqLogger.Error(err, "Failed to mark operator unready")
-		// 		return reconcile.Result{}, err
-		// 	}
-		// }
+		// If for any reason we marked ourselves !upgradeable...then unset readiness
+		if conditionsv1.IsStatusConditionFalse(instance.Status.Conditions, conditionsv1.ConditionUpgradeable) {
+			r := ready.NewFileReady()
+			err = r.Unset()
+			if err != nil {
+				reqLogger.Error(err, "Failed to mark operator unready")
+				return reconcile.Result{}, err
+			}
+		}
 	}
 	return reconcile.Result{}, r.client.Status().Update(context.TODO(), instance)
 }
