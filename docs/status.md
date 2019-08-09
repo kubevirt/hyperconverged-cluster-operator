@@ -24,7 +24,7 @@ In this first implementation the goals are:
 
 **NOTE**
 
-Conditions consist of number of fields including Type, Status, etc. For the
+Conditions consist of a number of fields including Type, Status, etc. For the
 remainder of this document we will be merging the Type and Status, so the
 Available condition type with status set to false will simply be written as
 !Available.

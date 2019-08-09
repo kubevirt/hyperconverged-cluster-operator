@@ -78,11 +78,6 @@ func GetDeployment(repository string, tag string, imagePullPolicy string) *appsv
 								{
 									Name:  "WATCH_NAMESPACE",
 									Value: "",
-									// ValueFrom: &corev1.EnvVarSource{
-									// 	FieldRef: &corev1.ObjectFieldSelector{
-									// 		FieldPath: "",
-									// 	},
-									// },
 								},
 							},
 						},

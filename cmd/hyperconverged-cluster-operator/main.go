@@ -14,6 +14,7 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/log/zap"
 	"github.com/operator-framework/operator-sdk/pkg/metrics"
 	"github.com/operator-framework/operator-sdk/pkg/ready"
+	"github.com/operator-framework/operator-sdk/pkg/restmapper"
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
