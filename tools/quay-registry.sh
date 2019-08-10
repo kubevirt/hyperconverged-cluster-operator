@@ -11,7 +11,7 @@ PACKAGE="${PACKAGE:-hco-operatorhub}"
 APP_REGISTRY_NAMESPACE="${APP_REGISTRY_NAMESPACE:-kubevirt-hyperconverged}"
 TARGET_NAMESPACE="${TARGET_NAMESPACE:-kubevirt-hyperconverged}"
 
-# Latest version from: https://quay.io/application/kubevirt-hyperconverged/hco-operatorhub
+# Latest version from: https://quay.io/application/kubevirt-hyperconverged/kubevirt-hyperconverged
 PACKAGE_VERSION="${PACKAGE_VERSION:-0.0.3}"
 
 if [ "${CLUSTER}" == "KUBERNETES" ]; then
