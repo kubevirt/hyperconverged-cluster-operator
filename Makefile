@@ -22,7 +22,7 @@ start:
 quay-token:
 	@./tools/token.sh $(QUAY_USERNAME) $(QUAY_PASSWORD)
 
-bundle-push: docker-build-operator-courier
+bundle-push: container-build-operator-courier
 	@QUAY_USERNAME=$(QUAY_USERNAME) QUAY_PASSWORD=$(QUAY_PASSWORD) ./tools/operator-courier/push.sh
 
 hack-clean: ## Run ./hack/clean.sh
