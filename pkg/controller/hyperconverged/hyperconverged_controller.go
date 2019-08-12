@@ -774,6 +774,59 @@ func (r *ReconcileHyperConverged) ensureKubeVirtNodeLabellerBundle(instance *hco
 	return r.client.Status().Update(context.TODO(), instance)
 }
 
+func newIMSConfigForCR(cr *hcov1alpha1.HyperConverged, namespace string) *corev1.ConfigMap {
+	labels := map[string]string{
+		"app": cr.Name,
+	}
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "v2v-vmware",
+			Labels:    labels,
+			Namespace: namespace,
+		},
+		Data: map[string]string{
+			"v2v-conversion-image":              "registry.redhat.io/container-native-virtualization/kubevirt-v2v-conversion:v2.0.0",
+			"kubevirt-vmware-image":             "registry.redhat.io/container-native-virtualization/kubevirt-vmware:v2.0.0",
+			"kubevirt-vmware-image-pull-policy": "IfNotPresent",
+		},
+	}
+}
+
+func (r *ReconcileHyperConverged) ensureIMSConfig(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
+	imsConfig := newIMSConfigForCR(instance, request.Namespace)
+	if err := controllerutil.SetControllerReference(instance, imsConfig, r.scheme); err != nil {
+		return err
+	}
+
+	key, err := client.ObjectKeyFromObject(imsConfig)
+	if err != nil {
+		logger.Error(err, "Failed to get object key for IMS Configmap")
+	}
+
+	found := &corev1.ConfigMap{}
+	err = r.client.Get(context.TODO(), key, found)
+	if err != nil && errors.IsNotFound(err) {
+		logger.Info("Creating IMS Configmap")
+		return r.client.Create(context.TODO(), imsConfig)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	logger.Info("IMS Configmap already exists", "validator.Namespace", found.Namespace, "validator.Name", found.Name)
+
+	// Add it to the list of RelatedObjects if found
+	objectRef, err := reference.GetReference(r.scheme, found)
+	if err != nil {
+		return err
+	}
+	objectreferencesv1.SetObjectReference(&instance.Status.RelatedObjects, *objectRef)
+
+	// TODO: Handle conditions
+	return r.client.Status().Update(context.TODO(), instance)
+}
+
 func newKubeVirtTemplateValidatorForCR(cr *hcov1alpha1.HyperConverged, namespace string) *sspv1.KubevirtTemplateValidator {
 	labels := map[string]string{
 		"app": cr.Name,
@@ -833,15 +886,6 @@ func newKubeVirtMetricsAggregationForCR(cr *hcov1alpha1.HyperConverged, namespac
 			Namespace: namespace,
 		},
 	}
-}
-
-func (r *ReconcileHyperConverged) ensureIMSConfig(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
-	imsConfig := newIMSConfig(instance, request.Namespace)
-	return r.ensureResourceExists(instance, logger, request, imsConfig)
-}
-
-func (r *ReconcileHyperConverged) ensureResourceExists(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request, desiredRuntimeObj runtime.Object) error {
-	desiredMetaObj := desiredRuntimeObj.(metav1.Object)
 }
 
 func (r *ReconcileHyperConverged) ensureKubeVirtMetricsAggregation(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
@@ -939,6 +983,7 @@ func (r *ReconcileHyperConverged) getAllResources(cr *hcov1alpha1.HyperConverged
 		newKubeVirtNodeLabellerBundleForCR(cr, request.Namespace),
 		newKubeVirtTemplateValidatorForCR(cr, request.Namespace),
 		newMachineRemediationOperatorForCR(cr, request.Namespace),
+		newIMSConfigForCR(cr, request.Namespace),
 	}
 }
 
