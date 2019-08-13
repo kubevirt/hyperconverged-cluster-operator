@@ -3,14 +3,15 @@ package hyperconverged
 import (
 	"context"
 	"encoding/json"
+	e "errors"
 	"fmt"
-
 	"github.com/go-logr/logr"
 	"github.com/operator-framework/operator-sdk/pkg/ready"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/reference"
+	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -785,14 +786,22 @@ func newIMSConfigForCR(cr *hcov1alpha1.HyperConverged, namespace string) *corev1
 			Namespace: namespace,
 		},
 		Data: map[string]string{
-			"v2v-conversion-image":              "registry.redhat.io/container-native-virtualization/kubevirt-v2v-conversion:v2.0.0",
-			"kubevirt-vmware-image":             "registry.redhat.io/container-native-virtualization/kubevirt-vmware:v2.0.0",
+			"v2v-conversion-image":              os.Getenv("CONVERSION_CONTAINER"),
+			"kubevirt-vmware-image":             os.Getenv("VMWARE_CONTAINER"),
 			"kubevirt-vmware-image-pull-policy": "IfNotPresent",
 		},
 	}
 }
 
 func (r *ReconcileHyperConverged) ensureIMSConfig(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
+	if os.Getenv("CONVERSION_CONTAINER") == "" {
+		return e.New("ims-conversion-container not specified")
+	}
+
+	if os.Getenv("VMWARE_CONTAINER") == "" {
+		return e.New("ims-vmware-container not specified")
+	}
+
 	imsConfig := newIMSConfigForCR(instance, request.Namespace)
 	if err := controllerutil.SetControllerReference(instance, imsConfig, r.scheme); err != nil {
 		return err

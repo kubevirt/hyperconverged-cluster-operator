@@ -58,22 +58,24 @@ type operatorData struct {
 }
 
 type templateData struct {
-	Converged          bool
-	Namespace          string
-	CsvVersion         string
-	ReplacesVersion    string
-	Replaces           bool
-	ContainerPrefix    string
-	CnaContainerPrefix string
-	ImagePullPolicy    string
-	CreatedAt          string
-	HCO                *operatorData
-	KubeVirt           *operatorData
-	CDI                *operatorData
-	CNA                *operatorData
-	SSP                *operatorData
-	NMO                *operatorData
-	MRO                *operatorData
+	Converged           bool
+	Namespace           string
+	CsvVersion          string
+	ReplacesVersion     string
+	Replaces            bool
+	ContainerPrefix     string
+	CnaContainerPrefix  string
+	ImagePullPolicy     string
+	CreatedAt           string
+	ConversionContainer string
+	VMWareContainer     string
+	HCO                 *operatorData
+	KubeVirt            *operatorData
+	CDI                 *operatorData
+	CNA                 *operatorData
+	SSP                 *operatorData
+	NMO                 *operatorData
+	MRO                 *operatorData
 }
 
 func check(err error) {
@@ -155,6 +157,8 @@ func getHCO(data *templateData) {
 		"quay.io",
 		data.HCO.OperatorTag,
 		"Always",
+		data.ConversionContainer,
+		data.VMWareContainer,
 	)
 	err := marshallObject(hcodeployment, &writer)
 	check(err)
@@ -432,6 +436,8 @@ func main() {
 	replacesVersion := flag.String("replaces-version", "0.0.1", "")
 	containerPrefix := flag.String("container-prefix", "kubevirt", "")
 	cnaContainerPrefix := flag.String("cna-container-prefix", *containerPrefix, "")
+	imsConversionContainer := flag.String("ims-convserion-container", "", "")
+	imsVMWareContainer := flag.String("ims-vmware-container", "", "")
 	imagePullPolicy := flag.String("image-pull-policy", "IfNotPresent", "")
 	inputFile := flag.String("input-file", "", "")
 
@@ -453,15 +459,17 @@ func main() {
 		Replaces = false
 	}
 
-	data := &templateData{
-		Converged:          *converged,
-		Namespace:          *namespace,
-		CsvVersion:         *csvVersion,
-		ReplacesVersion:    *replacesVersion,
-		Replaces:           Replaces,
-		ContainerPrefix:    *containerPrefix,
-		CnaContainerPrefix: *cnaContainerPrefix,
-		ImagePullPolicy:    *imagePullPolicy,
+	data := templateData{
+		Converged:           *converged,
+		Namespace:           *namespace,
+		CsvVersion:          *csvVersion,
+		ReplacesVersion:     *replacesVersion,
+		Replaces:            Replaces,
+		ContainerPrefix:     *containerPrefix,
+		CnaContainerPrefix:  *cnaContainerPrefix,
+		ImagePullPolicy:     *imagePullPolicy,
+		ConversionContainer: *imsConversionContainer,
+		VMWareContainer:     *imsVMWareContainer,
 
 		HCO:      &operatorData{OperatorTag: *hcoTag, ComponentTag: *hcoTag},
 		KubeVirt: &operatorData{OperatorTag: *kubevirtTag, ComponentTag: *kubevirtTag},
