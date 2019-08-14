@@ -78,8 +78,8 @@ metadata:
           "spec": {
             "nodeName": "nodename",
             "reason": "node maintenance reason"
-          }{{end}}
-        },
+          }
+        },{{end}}
         {
           "apiVersion": "kubevirt.io/v1alpha1",
           "kind": "V2VVmware",
