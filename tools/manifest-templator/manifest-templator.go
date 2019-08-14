@@ -436,7 +436,7 @@ func main() {
 	replacesVersion := flag.String("replaces-version", "0.0.1", "")
 	containerPrefix := flag.String("container-prefix", "kubevirt", "")
 	cnaContainerPrefix := flag.String("cna-container-prefix", *containerPrefix, "")
-	imsConversionContainer := flag.String("ims-convserion-container", "", "")
+	imsConversionContainer := flag.String("ims-conversion-container", "", "")
 	imsVMWareContainer := flag.String("ims-vmware-container", "", "")
 	imagePullPolicy := flag.String("image-pull-policy", "IfNotPresent", "")
 	inputFile := flag.String("input-file", "", "")
