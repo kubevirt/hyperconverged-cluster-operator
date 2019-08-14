@@ -62,7 +62,9 @@ function buildFlags {
 	--csv-version=${CSV_VERSION} \
 	--container-prefix=${CONTAINER_PREFIX} \
 	--replaces-version=${REPLACES_VERSION} \
-	--image-pull-policy=${IMAGE_PULL_POLICY}"
+	--image-pull-policy=${IMAGE_PULL_POLICY} \
+    --ims-conversion-container=${CONVERSION_CONTAINER} \
+    --ims-vmware-container=${VMWARE_CONTAINER}"
 
 	if [ -z "${CONTAINER_TAG}" ]; then
 		versions
