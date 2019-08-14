@@ -824,7 +824,7 @@ func (r *ReconcileHyperConverged) ensureIMSConfig(instance *hcov1alpha1.HyperCon
 		return err
 	}
 
-	logger.Info("IMS Configmap already exists", "validator.Namespace", found.Namespace, "validator.Name", found.Name)
+	logger.Info("IMS Configmap already exists", "imsConfigMap.Namespace", found.Namespace, "imsConfigMap.Name", found.Name)
 
 	// Add it to the list of RelatedObjects if found
 	objectRef, err := reference.GetReference(r.scheme, found)
