@@ -418,6 +418,7 @@ func main() {
 		CNA:      &operatorData{OperatorTag: *networkAddonsTag, ComponentTag: *networkAddonsTag},
 		SSP:      &operatorData{OperatorTag: *sspTag, ComponentTag: *sspTag},
 		NMO:      &operatorData{OperatorTag: *nmoTag, ComponentTag: *nmoTag},
+		MRO:      &operatorData{OperatorTag: *mroTag, ComponentTag: *mroTag},
 	}
 	data.CreatedAt = time.Now().String()
 
