@@ -789,7 +789,6 @@ func newIMSConfigForCR(cr *hcov1alpha1.HyperConverged, namespace string) *corev1
 		Data: map[string]string{
 			"v2v-conversion-image":              os.Getenv("CONVERSION_CONTAINER"),
 			"kubevirt-vmware-image":             os.Getenv("VMWARE_CONTAINER"),
-			"vddk-init-image":                   "kubevirt-vmware/vddk-init:latest",
 			"kubevirt-vmware-image-pull-policy": "IfNotPresent",
 		},
 	}
