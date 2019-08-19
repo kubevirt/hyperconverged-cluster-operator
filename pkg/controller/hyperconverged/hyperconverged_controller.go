@@ -960,7 +960,7 @@ func (r *ReconcileHyperConverged) ensureMachineRemediationOperator(instance *hco
 
 	found := &mrv1alpha1.MachineRemediationOperator{}
 	err = r.client.Get(context.TODO(), key, found)
-	if err != nil && errors.IsNotFound(err) {
+	if err != nil && apierrors.IsNotFound(err) {
 		logger.Info("Creating MachineRemediationOperator")
 		return r.client.Create(context.TODO(), mro)
 	}
