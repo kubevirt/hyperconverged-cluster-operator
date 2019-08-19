@@ -459,7 +459,7 @@ func main() {
 		Replaces = false
 	}
 
-	data := templateData{
+	data := &templateData{
 		Converged:           *converged,
 		Namespace:           *namespace,
 		CsvVersion:          *csvVersion,
