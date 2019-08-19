@@ -295,6 +295,7 @@ func newKubeVirtConfigForCR(cr *hcov1alpha1.HyperConverged, namespace string) *c
 		},
 		Data: map[string]string{
 			"feature-gates": "DataVolumes,SRIOV,LiveMigration,CPUManager,CPUNodeDiscovery",
+			"smbios": "Family: Red Hat Enterprise Linux - Advanced Virtualization\nManufacturer: Red Hat\nProduct: CNV SKU-Number = "2.2.0""
 		},
 	}
 }
