@@ -1412,7 +1412,7 @@ spec:
                   runAsNonRoot: true
                 serviceAccountName: cdi-operator
 
-        - name: cluster-network-addons-operator
+        - name: cluster-network-addons-operator-v012
           spec:
             replicas: 1
             selector:
