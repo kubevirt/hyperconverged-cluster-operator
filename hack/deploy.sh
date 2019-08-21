@@ -56,6 +56,14 @@ else
     ${CMD} config set-context $(${CMD} config current-context) --namespace=kubevirt-hyperconverged
 fi
 
+function status(){
+    "${CMD}" get hco -n kubevirt-hyperconverged -o yaml
+    "${CMD}" get pods -n kubevirt-hyperconverged
+    "${CMD}" get hco hyperconverged-cluster -n kubevirt-hyperconverged -o=jsonpath='{range .status.conditions[*]}{.type}{"\t"}{.status}{"\t"}{.message}{"\n"}{end}'
+}
+
+trap status EXIT
+
 CONTAINER_ERRORED=""
 function debug(){
     echo "Found pods with errors ${CONTAINER_ERRORED}"
@@ -90,6 +98,7 @@ done
 
 "${CMD}" create -f _out/hco.cr.yaml
 sleep 30
+
 "${CMD}" wait pod $("${CMD}" get pods | grep hyperconverged-cluster-operator | awk '{ print $1 }') --for=condition=Ready --timeout="360s"
 
 for dep in cdi-apiserver cdi-deployment cdi-uploadproxy virt-api virt-controller; do
