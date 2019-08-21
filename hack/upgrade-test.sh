@@ -27,6 +27,9 @@ for NODE in $CLUSTER_NODES; do
     ./cluster-up/ssh.sh $NODE 'sudo sysctl -w user.max_user_namespaces=1024'
 done
 
+./cluster-up/kubectl.sh wait deployment packageserver --for condition=Available -n openshift-operator-lifecycle-manager --timeout="1200s"
+./cluster-up/kubectl.sh wait deployment catalog-operator --for condition=Available -n openshift-operator-lifecycle-manager --timeout="1200s"
+
 ./cluster-up/kubectl.sh create ns kubevirt-hyperconverged
 
 cat <<EOF | ./cluster-up/kubectl.sh create -f -
@@ -84,7 +87,8 @@ EOF
 
 # Allow time for the install plan to be created a for the
 # hco-operator to be created. Otherwise kubectl wait will report EOF.
-sleep 30
+./hack/retry.sh 20 30 "./cluster-up/kubectl.sh get subscription -n kubevirt-hyperconverged | grep -v EOF"
+./hack/retry.sh 20 30 "./cluster-up/kubectl.sh get pods -n kubevirt-hyperconverged | grep hco-operator"
 
 HCO_OPERATOR_POD=`./cluster-up/kubectl.sh get pods -n kubevirt-hyperconverged | grep hco-operator | head -1 | awk '{ print $1 }'`
 ./cluster-up/kubectl.sh wait pod $HCO_OPERATOR_POD --for condition=Ready -n kubevirt-hyperconverged --timeout="600s"
@@ -153,7 +157,7 @@ CATALOG_OPERATOR_POD=`./cluster-up/kubectl.sh get pods -n openshift-operator-lif
 sleep 10
 HCO_OPERATOR_POD=`./cluster-up/kubectl.sh get pods -n kubevirt-hyperconverged | grep hco-operator | head -1 | awk '{ print $1 }'`
 ./cluster-up/kubectl.sh wait pod $HCO_OPERATOR_POD --for condition=Ready -n kubevirt-hyperconverged --timeout="600s"
-./hack/retry.sh 15 60 "./cluster-up/kubectl.sh get subscriptions -n kubevirt-hyperconverged -o yaml | grep currentCSV | grep v100.0.0"
+./hack/retry.sh 30 60 "./cluster-up/kubectl.sh get subscriptions -n kubevirt-hyperconverged -o yaml | grep currentCSV | grep v100.0.0"
 ./hack/retry.sh 2 30 "./cluster-up/kubectl.sh get subscriptions -n kubevirt-hyperconverged -o yaml | grep installedCSV | grep v100.0.0"
 
 # Verify hco-operator has updated to the new version from the local registry
