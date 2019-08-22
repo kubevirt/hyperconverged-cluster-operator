@@ -57,7 +57,7 @@ Build and push the HCO's registry image.
 
 ```bash
 export REGISTRY_NAMESPACE=<container_org>
-export CONTAINER_TAG=example
+export TAG=example
 make bundleRegistry
 ```
 
@@ -87,7 +87,7 @@ metadata:
   namespace: openshift-marketplace
 spec:
   sourceType: grpc
-  image: docker.io/$REGISTRY_NAMESPACE/hco-registry:$CONTAINER_TAG
+  image: docker.io/$REGISTRY_NAMESPACE/hco-registry:$TAG
   displayName: KubeVirt HyperConverged
   publisher: Red Hat
 EOF
