@@ -2,6 +2,13 @@
 
 set -euxo pipefail
 
+function debug(){
+    kubectl hco -n kubevirt-hyperconverged -o yaml
+    kubectl get pods -n kubevirt-hyperconverged
+}
+
+trap debug EXIT
+
 # Install HCO
 bash deploy.sh
 
