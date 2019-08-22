@@ -83,8 +83,9 @@ fi
 sleep 20
 
 function status(){
-    kubectl hco -n kubevirt-hyperconverged -o yaml
-    kubectl get pods -n kubevirt-hyperconverged
+    "${CMD}" get hco -n kubevirt-hyperconverged -o yaml
+    "${CMD}" get pods -n kubevirt-hyperconverged
+    "${CMD}" get hco hyperconverged-cluster -n kubevirt-hyperconverged -o=jsonpath='{range .status.conditions[*]}{.type}{"\t"}{.status}{"\t"}{.message}{"\n"}{end}'
 }
 
 trap status EXIT
