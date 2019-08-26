@@ -23,23 +23,11 @@ source hack/common.sh
 "${CMD}" delete -f deploy/hco.cr.yaml --wait=false --ignore-not-found || true
 "${CMD}" wait --for=delete hyperconverged.hco.kubevirt.io/hyperconverged-cluster || true
 "${CMD}" delete -f deploy/crds/hco.crd.yaml --wait=false --ignore-not-found || true
-"${CMD}" delete -f deploy/ --ignore-not-found || true
+
+# Remove other settings
+"${CMD}" delete -f deploy/cluster_role_binding.yaml --wait=false --ignore-not-found || true
+"${CMD}" delete -f deploy/cluster_role.yaml --wait=false --ignore-not-found || true
+"${CMD}" delete -f deploy/service_account.yaml --wait=false --ignore-not-found || true
+
+# Delete namespace at the end
 "${CMD}" delete ns kubevirt-hyperconverged --ignore-not-found || true
-
-# Delete kubevirt-operator
-"${CMD}" delete -n kubevirt apiservice v1alpha3.kubevirt.io --wait=false --ignore-not-found || true
-"${CMD}" delete -f "${KUBEVIRT_OPERATOR_URL}" --ignore-not-found || true
-
-# Delete cdi-operator
-"${CMD}" delete -n cdi apiservice v1alpha1.cdi.kubevirt.io --wait=false --ignore-not-found || true
-"${CMD}" delete -f "${CDI_OPERATOR_URL}" --ignore-not-found || true
-
-# Delete cna-operator
-"${CMD}" delete -f "${CNA_URL_PREFIX}"/network-addons-config.crd.yaml --ignore-not-found || true
-"${CMD}" delete -f "${CNA_URL_PREFIX}"/operator.yaml --ignore-not-found || true
-"${CMD}" delete ns cluster-network-addons-operator --ignore-not-found || true
-
-# Delete ssp-operator
-"${CMD}" delete -f "${SSP_URL_PREFIX}"/kubevirt-ssp-operator-crd.yaml --ignore-not-found || true
-"${CMD}" delete -f "${SSP_URL_PREFIX}"/kubevirt-ssp-operator.yaml --ignore-not-found || true
-
