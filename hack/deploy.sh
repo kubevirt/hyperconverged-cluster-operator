@@ -82,15 +82,7 @@ fi
 # Wait for the HCO to be ready
 sleep 20
 
-function status(){
-    "${CMD}" get hco -n kubevirt-hyperconverged -o yaml
-    "${CMD}" get pods -n kubevirt-hyperconverged
-    "${CMD}" get hco hyperconverged-cluster -n kubevirt-hyperconverged -o=jsonpath='{range .status.conditions[*]}{.type}{"\t"}{.status}{"\t"}{.message}{"\n"}{end}'
-}
-
-trap status EXIT
-
-"${CMD}" wait deployment/hyperconverged-cluster-operator --for=condition=Available --timeout="720s" || CONTAINER_ERRORED+="${op}"
+"${CMD}" wait deployment/hyperconverged-cluster-operator --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${op}"
 
 for op in cdi-operator cluster-network-addons-operator kubevirt-ssp-operator node-maintenance-operator virt-operator machine-remediation-operator; do
     "${CMD}" wait deployment/"${op}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${op} "
