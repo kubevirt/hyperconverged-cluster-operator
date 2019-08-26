@@ -273,12 +273,12 @@
   version = "v0.3.1"
 
 [[projects]]
-  digest = "1:0f9fbe4a905d2923bcd2131de2ecf0040aeac9037ecab5195e14ef8db9b495c1"
+  digest = "1:494c481825bcf642e32c7e30b3fe8037e11cd14b8eb8559db3041bdc34ec4acf"
   name = "github.com/gorilla/websocket"
   packages = ["."]
   pruneopts = "NT"
-  revision = "66b9c49e59c6c48f0ffce28c2d8b8a5678502c6d"
-  version = "v1.4.0"
+  revision = "c3e18be99d19e6b3e8f1559eea2c161a665c4b6b"
+  version = "v1.4.1"
 
 [[projects]]
   branch = "master"
@@ -703,14 +703,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:14ee4a02d39404c0c214aa69cf84ec0baf98b4573fc756ebdf3cd5ea92d7756d"
+  digest = "1:bbc262db5540a2f0142cbddc6f2ba91c1ae25739bab635d1fa6a15d9cb25fbdd"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "NT"
-  revision = "fde4db37ae7ad8191b03d30d27f258b5291ae4e3"
+  revision = "fb81701db80f1745f51259b1f286de3fe2ec80c8"
 
 [[projects]]
   digest = "1:348fa8283a7c60b5b71ce04d27b37f7c0fce552d4d0b463b5b3ebbd1840d3f1a"
@@ -760,7 +760,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2a51be551419a4082609269b3ba71c7b694820a29ed4a4e0842e03e244da9d55"
+  digest = "1:2d07ef6f0e99a05bdbd229c6d7fed6881e75950af6a9ea6d218b56abcd72e268"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
@@ -777,7 +777,7 @@
     "internal/semver",
   ]
   pruneopts = "NT"
-  revision = "aa644d2adf2a0206508fa6a8f9de0e726dddf77e"
+  revision = "95c3470cfb70bba4d4d578afaf29e0b4b307e3b3"
 
 [[projects]]
   digest = "1:25a3797e84a65cc761261eb04134cc03bc64861ef37d1242d92b199bd955800f"
