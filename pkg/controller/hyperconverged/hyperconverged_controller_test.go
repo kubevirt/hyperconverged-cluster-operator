@@ -7,7 +7,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	gomegatypes "github.com/onsi/gomega/types"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -24,6 +23,7 @@ import (
 	networkaddons "github.com/kubevirt/cluster-network-addons-operator/pkg/apis"
 	networkaddonsv1alpha1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1alpha1"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
+	"github.com/openshift/custom-resource-status/testlib"
 	// networkaddonsnames "github.com/kubevirt/cluster-network-addons-operator/pkg/names"
 	hcov1alpha1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -146,19 +146,19 @@ var _ = Describe("HyperconvergedController", func() {
 				// ObjectReference should have been added
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 				// Check conditions
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "KubeVirtConditions",
 					Message: "KubeVirt resource has no conditions",
 				})))
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
 					Reason:  "KubeVirtConditions",
 					Message: "KubeVirt resource has no conditions",
 				})))
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "KubeVirtConditions",
@@ -208,25 +208,25 @@ var _ = Describe("HyperconvergedController", func() {
 				// ObjectReference should have been added
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 				// Check conditions
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "KubeVirtNotAvailable",
 					Message: "KubeVirt is not available: Bar",
 				})))
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
 					Reason:  "KubeVirtProgressing",
 					Message: "KubeVirt is progressing: Bar",
 				})))
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "KubeVirtProgressing",
 					Message: "KubeVirt is progressing: Bar",
 				})))
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionDegraded,
 					Status:  corev1.ConditionTrue,
 					Reason:  "KubeVirtDegraded",
@@ -283,19 +283,19 @@ var _ = Describe("HyperconvergedController", func() {
 				// ObjectReference should have been added
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 				// Check conditions
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "CDIConditions",
 					Message: "CDI resource has no conditions",
 				})))
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
 					Reason:  "CDIConditions",
 					Message: "CDI resource has no conditions",
 				})))
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "CDIConditions",
@@ -345,25 +345,25 @@ var _ = Describe("HyperconvergedController", func() {
 				// ObjectReference should have been added
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 				// Check conditions
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "CDINotAvailable",
 					Message: "CDI is not available: Bar",
 				})))
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
 					Reason:  "CDIProgressing",
 					Message: "CDI is progressing: Bar",
 				})))
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "CDIProgressing",
 					Message: "CDI is progressing: Bar",
 				})))
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionDegraded,
 					Status:  corev1.ConditionTrue,
 					Reason:  "CDIDegraded",
@@ -423,19 +423,19 @@ var _ = Describe("HyperconvergedController", func() {
 				// ObjectReference should have been added
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 				// Check conditions
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "NetworkAddonsConfigConditions",
 					Message: "NetworkAddonsConfig resource has no conditions",
 				})))
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
 					Reason:  "NetworkAddonsConfigConditions",
 					Message: "NetworkAddonsConfig resource has no conditions",
 				})))
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "NetworkAddonsConfigConditions",
@@ -485,25 +485,25 @@ var _ = Describe("HyperconvergedController", func() {
 				// ObjectReference should have been added
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 				// Check conditions
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "NetworkAddonsConfigNotAvailable",
 					Message: "NetworkAddonsConfig is not available: Bar",
 				})))
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
 					Reason:  "NetworkAddonsConfigProgressing",
 					Message: "NetworkAddonsConfig is progressing: Bar",
 				})))
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "NetworkAddonsConfigProgressing",
 					Message: "NetworkAddonsConfig is progressing: Bar",
 				})))
-				Expect(r.conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionDegraded,
 					Status:  corev1.ConditionTrue,
 					Reason:  "NetworkAddonsConfigDegraded",
@@ -771,31 +771,31 @@ var _ = Describe("HyperconvergedController", func() {
 						foundResource),
 				).To(BeNil())
 				// Check conditions
-				Expect(foundResource.Status.Conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    hcov1alpha1.ConditionReconcileComplete,
 					Status:  corev1.ConditionTrue,
 					Reason:  reconcileCompleted,
 					Message: reconcileCompletedMessage,
 				})))
-				Expect(foundResource.Status.Conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
 					Reason:  reconcileInit,
 					Message: "Initializing HyperConverged cluster",
 				})))
-				Expect(foundResource.Status.Conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
 					Reason:  reconcileInit,
 					Message: "Initializing HyperConverged cluster",
 				})))
-				Expect(foundResource.Status.Conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionDegraded,
 					Status:  corev1.ConditionFalse,
 					Reason:  reconcileInit,
 					Message: "Initializing HyperConverged cluster",
 				})))
-				Expect(foundResource.Status.Conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionUnknown,
 					Reason:  reconcileInit,
@@ -856,25 +856,25 @@ var _ = Describe("HyperconvergedController", func() {
 						foundResource),
 				).To(BeNil())
 				// Check conditions
-				Expect(foundResource.Status.Conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    hcov1alpha1.ConditionReconcileComplete,
 					Status:  corev1.ConditionTrue,
 					Reason:  reconcileCompleted,
 					Message: reconcileCompletedMessage,
 				})))
-				Expect(foundResource.Status.Conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "NetworkAddonsConfigConditions",
 					Message: "NetworkAddonsConfig resource has no conditions",
 				})))
-				Expect(foundResource.Status.Conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
 					Reason:  "NetworkAddonsConfigConditions",
 					Message: "NetworkAddonsConfig resource has no conditions",
 				})))
-				Expect(foundResource.Status.Conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "NetworkAddonsConfigConditions",
@@ -977,31 +977,31 @@ var _ = Describe("HyperconvergedController", func() {
 						foundResource),
 				).To(BeNil())
 				// Check conditions
-				Expect(foundResource.Status.Conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    hcov1alpha1.ConditionReconcileComplete,
 					Status:  corev1.ConditionTrue,
 					Reason:  reconcileCompleted,
 					Message: reconcileCompletedMessage,
 				})))
-				Expect(foundResource.Status.Conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionTrue,
 					Reason:  reconcileCompleted,
 					Message: reconcileCompletedMessage,
 				})))
-				Expect(foundResource.Status.Conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionFalse,
 					Reason:  reconcileCompleted,
 					Message: reconcileCompletedMessage,
 				})))
-				Expect(foundResource.Status.Conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionDegraded,
 					Status:  corev1.ConditionFalse,
 					Reason:  reconcileCompleted,
 					Message: reconcileCompletedMessage,
 				})))
-				Expect(foundResource.Status.Conditions).To(ContainElement(RepresentCondition(conditionsv1.Condition{
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionTrue,
 					Reason:  reconcileCompleted,
@@ -1032,43 +1032,4 @@ func initReconciler(client client.Client) *ReconcileHyperConverged {
 
 	// Create a ReconcileHyperConverged object with the scheme and fake client
 	return &ReconcileHyperConverged{client: client, scheme: s}
-}
-
-func RepresentCondition(expected conditionsv1.Condition) gomegatypes.GomegaMatcher {
-	return &representConditionMatcher{
-		expected: expected,
-	}
-}
-
-type representConditionMatcher struct {
-	expected conditionsv1.Condition
-}
-
-func (matcher *representConditionMatcher) Match(actual interface{}) (success bool, err error) {
-	actualCondition, ok := actual.(conditionsv1.Condition)
-	if !ok {
-		return false, fmt.Errorf("RepresentConditionMatcher expects a Condition")
-	}
-
-	if matcher.expected.Type != actualCondition.Type {
-		return false, nil
-	}
-	if matcher.expected.Status != actualCondition.Status {
-		return false, nil
-	}
-	if matcher.expected.Reason != actualCondition.Reason {
-		return false, nil
-	}
-	if matcher.expected.Message != actualCondition.Message {
-		return false, nil
-	}
-	return true, nil
-}
-
-func (matcher *representConditionMatcher) FailureMessage(actual interface{}) (message string) {
-	return fmt.Sprintf("Expected\n\t%#v\nto match the condition\n\t%#v", actual, matcher.expected)
-}
-
-func (matcher *representConditionMatcher) NegatedFailureMessage(actual interface{}) (message string) {
-	return fmt.Sprintf("Expected\n\t%#v\nnot to match the condition\n\t%#v", actual, matcher.expected)
 }
