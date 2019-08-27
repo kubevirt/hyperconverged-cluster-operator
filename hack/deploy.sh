@@ -107,6 +107,7 @@ done
 # TODO: When MRO conditions stabilize, uncomment.  Create a follow up PR after this merges to uncomment
 # Wait for machine-remediation controllers under the openshift-machine-api namespace
 set -x
+set +e
 for dep in machine-health-check machine-disruption-budget machine-remediation; do
     "${CMD}" -n openshift-machine-api wait deployment/"${dep}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${dep} "
     "${CMD}" -n openshift-machine-api wait deployment/"${dep}" --for=condition=Available --timeout="1s" -o yaml
