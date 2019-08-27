@@ -110,10 +110,10 @@ set -x
 set +e
 for dep in machine-health-check machine-disruption-budget machine-remediation; do
     "${CMD}" -n openshift-machine-api wait deployment/"${dep}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${dep} "
-    "${CMD}" -n openshift-machine-api wait deployment/"${dep}" --for=condition=Available --timeout="1s" -o yaml
+    POD=$("${CMD}" get pods -n openshift-machine-api | grep "${dep}" | head -1 | awk '{ print $1 }')
+    "${CMD}" -n openshift-machine-api logs $POD --all-containers=true
+    "${CMD}" -n openshift-machine-api get "deployment/$dep" -o yaml
 done
-"${CMD}" -n openshift-machine-api get pods/machine-remediation-operator -o yaml
-"${CMD}" -n openshift-machine-api logs machine-remediation-operator --all-containers=true
 
 if [ -z "$CONTAINER_ERRORED" ]; then
     echo "SUCCESS"
