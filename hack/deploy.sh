@@ -36,6 +36,7 @@ if [ -n "${IMAGE_FORMAT}" ]; then
 fi
 
 sed -i "s#image: quay.io/kubevirt/hyperconverged-cluster-operator:latest#image: ${HCO_IMAGE}#g" _out/operator.yaml
+"${CMD}" get nodes
 
 # create namespaces
 "${CMD}" create ns kubevirt-hyperconverged
@@ -108,11 +109,14 @@ done
 # Wait for machine-remediation controllers under the openshift-machine-api namespace
 set -x
 set +e
+"${CMD}" get nodes
 for dep in machine-health-check machine-disruption-budget machine-remediation; do
     "${CMD}" -n openshift-machine-api wait deployment/"${dep}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${dep} "
+    "${CMD}" get pods -n openshift-machine-api | grep "${dep}"
     POD=$("${CMD}" get pods -n openshift-machine-api | grep "${dep}" | head -1 | awk '{ print $1 }')
     "${CMD}" -n openshift-machine-api logs $POD --all-containers=true
     "${CMD}" -n openshift-machine-api get "deployment/$dep" -o yaml
+    "${CMD}" -n openshift-machine-api get $POD -o yaml
 done
 
 if [ -z "$CONTAINER_ERRORED" ]; then
