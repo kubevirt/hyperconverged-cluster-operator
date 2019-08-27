@@ -93,8 +93,10 @@ sleep 20
 
 "${CMD}" wait deployment/hyperconverged-cluster-operator --for=condition=Available --timeout="720s" || CONTAINER_ERRORED+="${op}"
 
+set +e
 for op in cdi-operator cluster-network-addons-operator kubevirt-ssp-operator node-maintenance-operator virt-operator machine-remediation-operator; do
     "${CMD}" wait deployment/"${op}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${op} "
+    "${CMD}" get "deployment/${op}" -o yaml
 done
 
 "${CMD}" create -f _out/hco.cr.yaml
@@ -108,7 +110,6 @@ done
 # TODO: When MRO conditions stabilize, uncomment.  Create a follow up PR after this merges to uncomment
 # Wait for machine-remediation controllers under the openshift-machine-api namespace
 set -x
-set +e
 "${CMD}" get nodes
 for dep in machine-health-check machine-disruption-budget machine-remediation; do
     "${CMD}" -n openshift-machine-api wait deployment/"${dep}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${dep} "
