@@ -135,9 +135,6 @@ done
 
 # Patch the HCO catalogsource image to the upgrade version
 ./cluster-up/kubectl.sh patch catalogsource hco-catalogsource-example -n openshift-operator-lifecycle-manager -p '{"spec":{"image": "registry:5000/kubevirt/hco-registry:upgrade"}}' --type merge
-# Delete the catalog operator. Sometimes the HCO catalogsource pod fails to come up after patching.
-#CATALOG_OPERATOR_POD=`./cluster-up/kubectl.sh get pods -n openshift-operator-lifecycle-manager | grep catalog-operator | head -1 | awk '{ print $1 }'`
-#./cluster-up/kubectl.sh delete pod $CATALOG_OPERATOR_POD -n openshift-operator-lifecycle-manager
 sleep 30
 HCO_CATALOGSOURCE_POD=`./cluster-up/kubectl.sh get pods -n openshift-operator-lifecycle-manager | grep hco-catalogsource | head -1 | awk '{ print $1 }'`
 ./cluster-up/kubectl.sh wait pod $HCO_CATALOGSOURCE_POD --for condition=Ready -n openshift-operator-lifecycle-manager --timeout="120s"
@@ -145,8 +142,6 @@ HCO_CATALOGSOURCE_POD=`./cluster-up/kubectl.sh get pods -n openshift-operator-li
 # Delete the catalog-operator to force it to reload and read the 
 # new HCO catalogsource. Otherwise it could take up to 10 mins
 # for it to detect that the catalogsource has been updated.
-#CATALOG_OPERATOR_POD=`./cluster-up/kubectl.sh get pods -n openshift-operator-lifecycle-manager | grep catalog-operator | head -1 | awk '{ print $1 }'`
-#./cluster-up/kubectl.sh delete pod $CATALOG_OPERATOR_POD -n openshift-operator-lifecycle-manager
 sleep 15
 CATALOG_OPERATOR_POD=`./cluster-up/kubectl.sh get pods -n openshift-operator-lifecycle-manager | grep catalog-operator | head -1 | awk '{ print $1 }'`
 ./cluster-up/kubectl.sh wait pod $CATALOG_OPERATOR_POD --for condition=Ready -n openshift-operator-lifecycle-manager --timeout="120s"
