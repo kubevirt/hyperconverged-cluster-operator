@@ -162,7 +162,7 @@ HCO_OPERATOR_POD=`./cluster-up/kubectl.sh get pods -n kubevirt-hyperconverged | 
 
 # Verify hco-operator has updated to the new version from the local registry
 # registry:5000/kubevirt/hyperconverged-cluster-operator:latest
-./hack/retry.sh 2 30 "./cluster-up/kubectl.sh get deployment hco-operator -n kubevirt-hyperconverged -o yaml | grep image | grep registry:5000"
+./hack/retry.sh 2 30 "./cluster-up/kubectl.sh get deployments -n kubevirt-hyperconverged -o yaml | grep image | grep hyperconverged-cluster | grep registry:5000"
 
 echo "----- Images after upgrade"
 ./cluster-up/kubectl.sh get deployments -n kubevirt-hyperconverged -o yaml | grep image | grep -v imagePullPolicy
