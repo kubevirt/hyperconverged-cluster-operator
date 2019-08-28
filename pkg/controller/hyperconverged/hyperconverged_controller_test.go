@@ -862,23 +862,24 @@ var _ = Describe("HyperconvergedController", func() {
 					Reason:  reconcileCompleted,
 					Message: reconcileCompletedMessage,
 				})))
+				// Why Template validator? Because it is the last to be checked, so the last missing overwrites everything
 				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
-					Reason:  "NetworkAddonsConfigConditions",
-					Message: "NetworkAddonsConfig resource has no conditions",
+					Reason:  "KubevirtTemplateValidatorConditions",
+					Message: "KubevirtTemplateValidator resource has no conditions",
 				})))
 				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
-					Reason:  "NetworkAddonsConfigConditions",
-					Message: "NetworkAddonsConfig resource has no conditions",
+					Reason:  "KubevirtTemplateValidatorConditions",
+					Message: "KubevirtTemplateValidator resource has no conditions",
 				})))
 				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionFalse,
-					Reason:  "NetworkAddonsConfigConditions",
-					Message: "NetworkAddonsConfig resource has no conditions",
+					Reason:  "KubevirtTemplateValidatorConditions",
+					Message: "KubevirtTemplateValidator resource has no conditions",
 				})))
 			})
 
@@ -956,10 +957,13 @@ var _ = Describe("HyperconvergedController", func() {
 				}
 				expectedKVCTB := newKubeVirtCommonTemplateBundleForCR(hco, OpenshiftNamespace)
 				expectedKVCTB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/ctbs/%s", expectedKVCTB.Namespace, expectedKVCTB.Name)
+				expectedKVCTB.Status.Conditions = getGenericCompletedConditions()
 				expectedKVNLB := newKubeVirtNodeLabellerBundleForCR(hco, namespace)
 				expectedKVNLB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/nlb/%s", expectedKVNLB.Namespace, expectedKVNLB.Name)
+				expectedKVNLB.Status.Conditions = getGenericCompletedConditions()
 				expectedKVTV := newKubeVirtTemplateValidatorForCR(hco, namespace)
 				expectedKVTV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/tv/%s", expectedKVTV.Namespace, expectedKVTV.Name)
+				expectedKVTV.Status.Conditions = getGenericCompletedConditions()
 				// Add all of the objects to the client
 				cl := initClient([]runtime.Object{hco, expectedKVConfig, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
 				r := initReconciler(cl)
@@ -1011,6 +1015,23 @@ var _ = Describe("HyperconvergedController", func() {
 		})
 	})
 })
+
+func getGenericCompletedConditions() []conditionsv1.Condition {
+	return []conditionsv1.Condition{
+		conditionsv1.Condition{
+			Type:   conditionsv1.ConditionAvailable,
+			Status: corev1.ConditionTrue,
+		},
+		conditionsv1.Condition{
+			Type:   conditionsv1.ConditionProgressing,
+			Status: corev1.ConditionFalse,
+		},
+		conditionsv1.Condition{
+			Type:   conditionsv1.ConditionDegraded,
+			Status: corev1.ConditionFalse,
+		},
+	}
+}
 
 func initClient(clientObjects []runtime.Object) client.Client {
 	// Create a fake client to mock API calls
