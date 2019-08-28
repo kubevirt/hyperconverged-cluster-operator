@@ -93,10 +93,13 @@ sleep 20
 
 "${CMD}" wait deployment/hyperconverged-cluster-operator --for=condition=Available --timeout="720s" || CONTAINER_ERRORED+="${op}"
 
-set +e
 for op in cdi-operator cluster-network-addons-operator kubevirt-ssp-operator node-maintenance-operator virt-operator machine-remediation-operator; do
-    "${CMD}" wait deployment/"${op}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${op} "
-    "${CMD}" get "deployment/${op}" -o yaml
+    badop=0
+    "${CMD}" wait deployment/"${op}" --for=condition=Available --timeout="360s" || badop=1
+    if [ $badop = 1 ]; then
+	CONTAINER_ERRORED+="${op} "
+	"${CMD}" get "deployment/${op}" -o yaml
+    fi
 done
 
 "${CMD}" create -f _out/hco.cr.yaml
@@ -109,15 +112,21 @@ done
 
 # TODO: When MRO conditions stabilize, uncomment.  Create a follow up PR after this merges to uncomment
 # Wait for machine-remediation controllers under the openshift-machine-api namespace
-set -x
 "${CMD}" get nodes
 for dep in machine-health-check machine-disruption-budget machine-remediation; do
-    "${CMD}" -n openshift-machine-api wait deployment/"${dep}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${dep} "
-    "${CMD}" get pods -n openshift-machine-api | grep "${dep}"
-    POD=$("${CMD}" get pods -n openshift-machine-api | grep "${dep}" | head -1 | awk '{ print $1 }')
-    "${CMD}" -n openshift-machine-api logs $POD --all-containers=true
-    "${CMD}" -n openshift-machine-api get "deployment/$dep" -o yaml
-    "${CMD}" -n openshift-machine-api get $POD -o yaml
+    baddep=0
+    "${CMD}" -n openshift-machine-api wait deployment/"${dep}" --for=condition=Available --timeout="360s" || baddep=1
+    if [ $baddep = 1 ]; then
+	set +e
+	CONTAINER_ERRORED+="${dep} "
+	"${CMD}" get pods -n openshift-machine-api | grep "${dep}"
+	PODS=$("${CMD}" get pods -n openshift-machine-api | grep "${dep}" | awk '{ print $1 }')
+	for POD in $PODS; do
+	    "${CMD}" -n openshift-machine-api get pods/$POD -o yaml
+	    "${CMD}" -n openshift-machine-api logs $POD --all-containers=true
+	done
+	set -e
+    fi
 done
 
 if [ -z "$CONTAINER_ERRORED" ]; then
