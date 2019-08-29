@@ -30,7 +30,7 @@ done
 ./cluster-up/kubectl.sh wait deployment packageserver --for condition=Available -n openshift-operator-lifecycle-manager --timeout="1200s"
 ./cluster-up/kubectl.sh wait deployment catalog-operator --for condition=Available -n openshift-operator-lifecycle-manager --timeout="1200s"
 
-./cluster-up/kubectl.sh create ns kubevirt-hyperconverged
+./cluster-up/kubectl.sh create ns kubevirt-hyperconverged | true
 
 cat <<EOF | ./cluster-up/kubectl.sh create -f -
 apiVersion: operators.coreos.com/v1alpha2
