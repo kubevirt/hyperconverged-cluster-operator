@@ -363,7 +363,7 @@
   revision = "b84e30acd515aadc4b783ad4ff83aff3299bdfe0"
 
 [[projects]]
-  digest = "1:3b1a9d372aec31a02acaf9efa70a2e39772d1fdac9a9f847c73d7516c90d420b"
+  digest = "1:277180b93af8a3a36a39228a4de09dfb727b24d8c0974477062092e6adbf570e"
   name = "github.com/kubevirt/cluster-network-addons-operator"
   packages = [
     "pkg/apis",
@@ -372,8 +372,8 @@
     "pkg/names",
   ]
   pruneopts = "NT"
-  revision = "201dbef83ba7c215fbebed96a75c870fddd928ab"
-  version = "0.13.0"
+  revision = "0925a389ba4b9ea39f600aba560331c34ab853bc"
+  version = "0.14.0"
 
 [[projects]]
   branch = "master"

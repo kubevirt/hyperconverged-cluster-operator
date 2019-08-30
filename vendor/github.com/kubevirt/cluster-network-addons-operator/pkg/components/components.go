@@ -63,7 +63,7 @@ func (ai *AddonsImages) FillDefaults() *AddonsImages {
 	return ai
 }
 
-func GetDeployment(version string, namespace string, repository string, tag string, imagePullPolicy string, addonsImages *AddonsImages) *appsv1.Deployment {
+func GetDeployment(version string, operatorVersion string, namespace string, repository string, tag string, imagePullPolicy string, addonsImages *AddonsImages) *appsv1.Deployment {
 	image := fmt.Sprintf("%s/%s:%s", repository, Name, tag)
 	deployment := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
@@ -74,7 +74,7 @@ func GetDeployment(version string, namespace string, repository string, tag stri
 			Name:      Name,
 			Namespace: namespace,
 			Annotations: map[string]string{
-				opv1alpha1.SchemeGroupVersion.Group + "/version": version,
+				opv1alpha1.SchemeGroupVersion.Group + "/version": operatorVersion,
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
@@ -136,7 +136,7 @@ func GetDeployment(version string, namespace string, repository string, tag stri
 								},
 								{
 									Name:  "OPERATOR_VERSION",
-									Value: version,
+									Value: operatorVersion,
 								},
 								{
 									Name: "OPERATOR_NAMESPACE",
