@@ -17,8 +17,8 @@
     "pkg/apis/kubevirt/v1",
   ]
   pruneopts = "NT"
-  revision = "aa0acea59f91d807c5cf0ba0d66798ef4df83c7c"
-  version = "v1.0.10"
+  revision = "e835b70be3200ffbd0d052424ffebe6241a7bb9d"
+  version = "v1.0.11"
 
 [[projects]]
   digest = "1:0a111edd8693fd977f42a0c4f199a0efb13c20aec9da99ad8830c7bb6a87e8d6"
