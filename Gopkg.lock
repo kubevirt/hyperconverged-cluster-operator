@@ -10,15 +10,15 @@
   version = "v0.44.3"
 
 [[projects]]
-  digest = "1:ed9bee091e4cf5ae00d0368134ac0d139a1d41ed0c5302e67d8b1c3e2fd46564"
+  digest = "1:dcf6fa4863789b39b784b4ab1c33f037be6b6fe3e77f78251d26b41df1863a2e"
   name = "github.com/MarSik/kubevirt-ssp-operator"
   packages = [
     "pkg/apis",
     "pkg/apis/kubevirt/v1",
   ]
   pruneopts = "NT"
-  revision = "aa0acea59f91d807c5cf0ba0d66798ef4df83c7c"
-  version = "v1.0.10"
+  revision = "b062157158fb5ca996ab2ba3aea4e1e10ced7679"
+  version = "v1.0.12"
 
 [[projects]]
   digest = "1:0a111edd8693fd977f42a0c4f199a0efb13c20aec9da99ad8830c7bb6a87e8d6"

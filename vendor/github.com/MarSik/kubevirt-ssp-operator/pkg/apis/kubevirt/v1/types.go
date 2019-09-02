@@ -39,8 +39,8 @@ type KubevirtNodeLabellerBundle struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   VersionSpec  `json:"spec,omitempty"`
-	Status ConfigStatus `json:"status,omitempty"`
+	Spec   ComponentSpec `json:"spec,omitempty"`
+	Status ConfigStatus  `json:"status,omitempty"`
 }
 
 // +genclient
@@ -63,16 +63,21 @@ type KubevirtMetricsAggregation struct {
 	Status ConfigStatus `json:"status,omitempty"`
 }
 
-// custom spec
+// minimal spec: only the version
 type VersionSpec struct {
 	Version string `json:"version,omitempty"`
+}
+
+type ComponentSpec struct {
+	Version string `json:"version,omitempty"`
+	UseKVM  bool   `json:"use_kvm,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type KubevirtCommonTemplatesBundleList struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
-	metav1.ListMeta `son:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 
 	Items []KubevirtCommonTemplatesBundle `json:"items"`
 }
@@ -81,7 +86,7 @@ type KubevirtCommonTemplatesBundleList struct {
 type KubevirtNodeLabellerBundleList struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
-	metav1.ListMeta `son:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 
 	Items []KubevirtNodeLabellerBundle `json:"items"`
 }
@@ -90,7 +95,7 @@ type KubevirtNodeLabellerBundleList struct {
 type KubevirtTemplateValidatorList struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
-	metav1.ListMeta `son:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 
 	Items []KubevirtTemplateValidator `json:"items"`
 }
@@ -99,7 +104,7 @@ type KubevirtTemplateValidatorList struct {
 type KubevirtMetricsAggregationList struct {
 	metav1.TypeMeta `json:",inline"`
 	// +optional
-	metav1.ListMeta `son:"metadata,omitempty"`
+	metav1.ListMeta `json:"metadata,omitempty"`
 
 	Items []KubevirtMetricsAggregation `json:"items"`
 }
