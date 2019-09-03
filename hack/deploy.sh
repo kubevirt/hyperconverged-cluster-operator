@@ -26,6 +26,15 @@ HCO_NAMESPACE="kubevirt-hyperconverged"
 HCO_KIND="hyperconvergeds"
 HCO_RESOURCE_NAME="hyperconverged-cluster"
 
+CI=""
+if [ "$1" == "CI" ]; then
+	echo "deploying on CI"
+	CI="true"
+elif [ "$HOSTNAME" == "hco-e2e-aws" ]; then
+	echo "deploying on AWS CI"
+	CI="true"
+fi
+
 # Cleanup previously generated manifests
 rm -rf _out/
 
@@ -88,7 +97,13 @@ fi
 "${CMD}" create -f _out/service_account.yaml
 "${CMD}" create -f _out/cluster_role_binding.yaml
 "${CMD}" create -f _out/crds/
-"${CMD}" create -f _out/operator.yaml
+if [ "${CI}" != "true" ]; then
+	"${CMD}" create -f _out/operator.yaml
+else
+	cat _out/operator.yaml | sed 's|# enable only on CI|"true"|' > _out/operator-ci.yaml
+	cat _out/operator-ci.yaml
+	"${CMD}" create -f _out/operator-ci.yaml
+fi
 
 # Wait for the HCO to be ready
 sleep 20
