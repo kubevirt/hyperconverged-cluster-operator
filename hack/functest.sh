@@ -4,3 +4,14 @@
 
 # git clone https://github.com/kubevirt/kubevirt
 # make functest . . .
+
+set -x
+
+oc get deployment -n kubevirt-hyperconverged hyperconverged-cluster-operator -o yaml
+
+cat _out/operator.yaml
+
+cat /usr/local/hco-e2e-aws-cluster-profile
+
+cat /usr/local/hco-e2e-aws
+
