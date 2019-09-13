@@ -26,8 +26,12 @@ HCO_NAMESPACE="kubevirt-hyperconverged"
 HCO_KIND="hyperconvergeds"
 HCO_RESOURCE_NAME="hyperconverged-cluster"
 
+echo $HCO_IMAGE 
+
 # Cleanup previously generated manifests
 rm -rf _out/
+
+cat deploy/operator.yaml 
 
 # Copy release manifests as a base for generated ones, this should make it possible to upgrade
 cp -r deploy _out/
@@ -39,6 +43,8 @@ if [ -n "${IMAGE_FORMAT}" ]; then
 fi
 
 sed -i "s#image: quay.io/kubevirt/hyperconverged-cluster-operator:latest#image: ${HCO_IMAGE}#g" _out/operator.yaml
+
+cat _out/operator.yaml 
 
 # create namespaces
 "${CMD}" create ns "${HCO_NAMESPACE}" | true
@@ -88,6 +94,7 @@ fi
 "${CMD}" create -f _out/service_account.yaml
 "${CMD}" create -f _out/cluster_role_binding.yaml
 "${CMD}" create -f _out/crds/
+cat _out/operator.yaml 
 "${CMD}" create -f _out/operator.yaml
 
 # Wait for the HCO to be ready

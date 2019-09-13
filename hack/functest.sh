@@ -15,3 +15,15 @@ cat /usr/local/hco-e2e-aws-cluster-profile
 
 cat /usr/local/hco-e2e-aws
 
+set | grep IMAGE_FORMAT
+
+set
+
+ls
+
+oc get routes -n openshift-image-registry -o yaml 
+
+oc get routes -A
+
+cat $KUBECONFIG
+
