@@ -95,7 +95,7 @@ metadata:
     categories: OpenShift Optional
     certified: 'false'
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:latest
-    createdAt: 2019-09-18 11:59:52.250189667 +0300 IDT m=+0.025805317
+    createdAt: 2019-09-20 14:34:18.976704477 -0400 EDT m=+0.030473927
     description: Creates and maintains a HyperConverged KubeVirt Deployment
     repository: https://github.com/kubevirt/hyperconverged-cluster-operator
     support: 'false'
@@ -294,13 +294,16 @@ spec:
               - apps
               resources:
               - deployments
+              - deployments/finalizers
               - daemonsets
+              - replicasets
               verbs:
               - get
               - list
               - watch
               - create
               - delete
+              - update
             - apiGroups:
               - rbac.authorization.k8s.io
               resources:
@@ -472,6 +475,18 @@ spec:
               - watch
               - create
               - delete
+            - apiGroups:
+              - monitoring.coreos.com
+              resources:
+              - servicemonitors
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+              - update
+              - patch
             - apiGroups:
               - subresources.kubevirt.io
               resources:
@@ -1369,12 +1384,12 @@ spec:
                   - "2"
                   env:
                   - name: OPERATOR_IMAGE
-                    value: kubevirt/virt-operator:v0.20.5
+                    value: kubevirt/virt-operator:v0.20.6
                   - name: WATCH_NAMESPACE
                     valueFrom:
                       fieldRef:
                         fieldPath: metadata.annotations['olm.targetNamespaces']
-                  image: kubevirt/virt-operator:v0.20.5
+                  image: kubevirt/virt-operator:v0.20.6
                   imagePullPolicy: IfNotPresent
                   name: virt-operator
                   ports:
@@ -1586,7 +1601,7 @@ spec:
                       - name: WATCH_NAMESPACE
                         value: ""
                       - name: VIRT_LAUNCHER_TAG
-                        value: v0.20.5
+                        value: v0.20.6
                       - name: OPERATOR_NAME
                         value: "kubevirt-ssp-operator"
 

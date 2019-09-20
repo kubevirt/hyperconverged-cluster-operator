@@ -58,13 +58,16 @@ rules:
   - apps
   resources:
   - deployments
+  - deployments/finalizers
   - daemonsets
+  - replicasets
   verbs:
   - get
   - list
   - watch
   - create
   - delete
+  - update
 - apiGroups:
   - rbac.authorization.k8s.io
   resources:

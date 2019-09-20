@@ -195,7 +195,9 @@ func GetClusterRole() *rbacv1.ClusterRole {
 				},
 				Resources: []string{
 					"deployments",
+					"deployments/finalizers",
 					"daemonsets",
+					"replicasets",
 				},
 				Verbs: []string{
 					"get",
@@ -203,6 +205,7 @@ func GetClusterRole() *rbacv1.ClusterRole {
 					"watch",
 					"create",
 					"delete",
+					"update",
 				},
 			},
 			{
