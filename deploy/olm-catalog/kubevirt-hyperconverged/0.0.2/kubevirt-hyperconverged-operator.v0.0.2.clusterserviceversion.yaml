@@ -88,7 +88,7 @@ metadata:
     categories: OpenShift Optional
     certified: 'false'
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:latest
-    createdAt: 2019-09-27 09:10:51.169057148 +0200 CEST m=+0.017728632
+    createdAt: 2019-09-23 16:07:52.126069559 -0400 EDT m=+0.029901903
     description: Creates and maintains a HyperConverged KubeVirt Deployment
     repository: https://github.com/kubevirt/hyperconverged-cluster-operator
     support: 'false'
@@ -260,34 +260,44 @@ spec:
               verbs:
               - '*'
             - apiGroups:
+              - machineremediation.kubevirt.io
+              resources:
+              - machineremediationoperators
+              - machineremediationoperators/status
+              verbs:
+              - '*'
+            - apiGroups:
               - ""
               resources:
-              - configmaps
               - pods
-              - serviceaccounts
               - services
+              - services/finalizers
+              - endpoints
+              - persistentvolumeclaims
+              - events
+              - configmaps
+              - secrets
+              - serviceaccounts
               verbs:
-              - get
-              - list
-              - watch
-              - create
-              - update
-              - delete
-            - apiGroups:
-              - batch
-              resources:
-              - jobs
-              verbs:
-              - get
-              - list
-              - watch
-              - create
-              - delete
+              - '*'
             - apiGroups:
               - apps
               resources:
               - deployments
+              - deployments/finalizers
               - daemonsets
+              - replicasets
+              verbs:
+              - get
+              - list
+              - watch
+              - create
+              - delete
+              - update
+            - apiGroups:
+              - batch
+              resources:
+              - jobs
               verbs:
               - get
               - list
@@ -338,12 +348,12 @@ spec:
               - patch
               - update
             - apiGroups:
-              - machineremediation.kubevirt.io
+              - monitoring.coreos.com
               resources:
-              - machineremediationoperators
-              - machineremediationoperators/status
+              - servicemonitors
               verbs:
-              - '*'
+              - get
+              - create
 
 
         - serviceAccountName: kubevirt-operator
