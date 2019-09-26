@@ -236,7 +236,7 @@ spec:
   selector:
     matchLabels:
       machineremediation.kubevirt.io: machine-remediation-operator
-      machineremediation.kubevirt.io/version: v0.3.10
+      machineremediation.kubevirt.io/version: v0.3.12
   strategy:
     type: RollingUpdate
   template:
@@ -244,7 +244,7 @@ spec:
       creationTimestamp: null
       labels:
         machineremediation.kubevirt.io: machine-remediation-operator
-        machineremediation.kubevirt.io/version: v0.3.10
+        machineremediation.kubevirt.io/version: v0.3.12
     spec:
       affinity:
         podAntiAffinity:
@@ -267,8 +267,8 @@ spec:
         - /usr/bin/machine-remediation-operator
         env:
         - name: OPERATOR_VERSION
-          value: v0.3.10
-        image: kubevirt/machine-remediation-operator:v0.3.10
+          value: v0.3.12
+        image: kubevirt/machine-remediation-operator:v0.3.12
         imagePullPolicy: IfNotPresent
         name: machine-remediation-operator
         resources:
