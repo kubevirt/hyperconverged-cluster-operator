@@ -1,0 +1,17 @@
+# we need to pin the 4.2.0 image because https://github.com/operator-framework/operator-registry/issues/70
+FROM quay.io/openshift/origin-operator-registry:4.2.0
+ARG KUBEVIRT_PROVIDER
+
+USER 1001
+COPY --chown=1001 olm-catalog /registry
+
+COPY upgrade-create-new-version.sh /
+RUN /upgrade-create-new-version.sh
+
+# Initialize the database
+RUN initializer --manifests /registry/kubevirt-hyperconverged --output bundles.db
+
+# There are multiple binaries in the origin-operator-registry
+# We want the registry-server
+ENTRYPOINT ["registry-server"]
+CMD ["--database", "bundles.db"]
