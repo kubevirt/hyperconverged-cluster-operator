@@ -215,11 +215,7 @@ echo "----- Images after upgrade"
 ./cluster-up/kubectl.sh get pod $HCO_CATALOGSOURCE_POD -n openshift-operator-lifecycle-manager -o yaml | grep image | grep -v imagePullPolicy
 
 echo "-- Upgrade Step 9/9: wait that cluster will become operational"
-./hack/check-state.sh
-if [ "x$?" != "x0" ]; then
-   echo "Error: cluster is not well"
-   exit 1
-fi
+make check-state
 
 echo "Cluster is up and running. Congratulations!"
 
