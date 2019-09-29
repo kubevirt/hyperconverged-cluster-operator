@@ -68,6 +68,9 @@ build-push-all: container-build-operator container-push-operator container-build
 upgrade-test:
 	./hack/upgrade-test.sh
  
+check-state:
+	timeout 10m ./hack/check-state.sh
+
 help: ## Show this help screen
 	@echo 'Usage: make <OPTIONS> ... <TARGETS>'
 	@echo ''
