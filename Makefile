@@ -17,6 +17,7 @@ endif
 build: $(SOURCES) ## Build binary from source
 	go build -i -ldflags="-s -w" -o _out/hyperconverged-cluster-operator ./cmd/hyperconverged-cluster-operator
 	go build -i -ldflags="-s -w" -o _out/csv-merger tools/csv-merger/csv-merger.go
+	go build -i -ldflags="-s -w" -o _out/test-hco-utils tools/test-hco-utils/test-hco-utils.go
 
 install:
 	go install ./cmd/...
@@ -41,6 +42,12 @@ container-build: container-build-operator container-build-operator-courier
 container-build-operator:
 	docker build -f build/Dockerfile -t $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG) .
 
+container-copy-test-hco:
+	bash -cx "mkdir -p test-out || ls -al test-out || true"
+	docker run --entrypoint cat $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG) /usr/local/bin/test-hco-utils > ./test-out/test-hco-utils
+	stat ./test-out/test-hco-utils
+	chmod +x ./test-out/test-hco-utils
+ 
 container-build-operator-courier:
 	docker build -f tools/operator-courier/Dockerfile -t hco-courier .
 
@@ -79,6 +86,9 @@ stageRegistry:
 
 bundleRegistry:
 	REGISTRY_NAMESPACE=$(REGISTRY_NAMESPACE) IMAGE_REGISTRY=$(IMAGE_REGISTRY) ./hack/build-registry-bundle.sh
+
+container-clusterserviceversion:
+	REGISTRY_NAMESPACE=$(REGISTRY_NAMESPACE) IMAGE_REGISTRY=$(IMAGE_REGISTRY) ./hack/upgrade-test-clusterserviceversion.sh
 
 build-push-all: container-build-operator container-push-operator container-build-operator-courier bundle-push
 

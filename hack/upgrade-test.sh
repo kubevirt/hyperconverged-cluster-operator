@@ -204,7 +204,7 @@ ${CMD} wait pod $CATALOG_OPERATOR_POD --for condition=Ready -n openshift-operato
 #  currentCSV: kubevirt-hyperconverged-operator.v100.0.0
 #  installedCSV: kubevirt-hyperconverged-operator.v100.0.0
 echo "--"
-echo "-- Upgrade Step 5/7: verify the subscription's currentCSV and installedCSV have moved to the new version"
+echo "-- Upgrade Step 7/7: verify the subscription's currentCSV and installedCSV have moved to the new version"
 echo "--"
 
 sleep 10
@@ -227,3 +227,30 @@ echo "-- Upgrade Step 7/7: wait that cluster will become operational"
 timeout 10m bash -c 'export CMD="${CMD}";exec ./hack/check-state.sh'
 
 echo "Cluster is up and running!"
+echo "-- Upgrade Step 9/9: wait that cluster will become operational"
+
+echo "check that deployments match the CSV spec"
+
+set -x
+set +e
+
+# build & copy the text executable
+make container-build-operator container-copy-test-hco
+
+#export REGISTRY_NAMESPACE=kubevirt
+#export IMAGE_REGISTRY=registry:5000
+#export CONTAINER_TAG=latest
+# copy cluster service version file.
+#make container-clusterserviceversion 
+
+ls -al ./test-out
+
+./test-out/test-hco-utils ${CMD} ./test-out/clusterserviceversion.yaml
+
+if [ "$?" != "0" ]; then
+    echo "Error: deployments don't match CSV spec, status $?"
+    exit 1
+fi
+
+echo "upgrade-test completed successfully"
+
