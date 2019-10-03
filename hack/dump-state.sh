@@ -2,11 +2,31 @@
 
 
 function RunCmd {
-    cmd="$@"
+    cmd=$@
     echo "Command: $cmd"
-    $cmd
-    if [ "x$?" != "x0" ]; then
-        echo "Command failed: $cmd Status: $?"
+    echo ""
+    bash -c "$cmd"
+    stat=$?
+    if [ "$stat" != "0" ]; then
+        echo "Command failed: $cmd Status: $stat"
+    fi
+}
+
+function ShowOperatorSummary {
+
+    local kind=$1
+    local name=$2
+    local namespace=$3
+
+    echo ""
+    echo "Status of Operator object: kind=$kind name=$name"
+    echo ""
+
+    QUERY="{range .status.conditions[*]}{.type}{'\t'}{.status}{'\t'}{.message}{'\n'}{end}" 
+    if [ "$namespace" == "." ]; then
+        RunCmd "$CMD get $kind $name -o=jsonpath=\"$QUERY\""
+    else
+        RunCmd "$CMD get $kind $name -n $namespace -o=jsonpath=\"$QUERY\""
     fi
 }
 
@@ -15,29 +35,34 @@ cat <<EOF
      Start of HCO state dump         
 =================================
 
-========
-HCO Pods
-========
+==========================
+summary of operator status
+==========================
 
 EOF
 
-RunCmd "$CMD get pods -n kubevirt-hyperconverged -o json"
+ShowOperatorSummary  hyperconvergeds.hco.kubevirt.io hyperconverged-cluster kubevirt-hyperconverged  
+
+RELATED_OBJECTS=`${CMD} get hyperconvergeds.hco.kubevirt.io hyperconverged-cluster -n kubevirt-hyperconverged -o go-template='{{range .status.relatedObjects }}{{if .namespace }}{{ printf "%s %s %s\n" .kind .name .namespace }}{{ else }}{{ printf "%s %s .\n" .kind .name }}{{ end }}{{ end }}'`
+
+echo "${RELATED_OBJECTS}" | while read line; do 
+
+    fields=( $line )
+    kind=${fields[0]} 
+    name=${fields[1]} 
+    namespace=${fields[2]} 
+
+    if [ "$kind" != "ConfigMap" ]; then
+        ShowOperatorSummary $kind $name $namespace
+    fi
+done
 
 cat <<EOF
-===============
-HCO Deployments
-===============
-EOF
 
-RunCmd "$CMD get deployments -n kubevirt-hyperconverged -o json"
-
-cat <<EOF
 ========================
 HCO operator related CRD
 ========================
 EOF
-
-RELATED_OBJECTS=`${CMD} get hyperconvergeds.hco.kubevirt.io hyperconverged-cluster -n kubevirt-hyperconverged -o go-template='{{range .status.relatedObjects }}{{if .namespace }}{{ printf "%s %s %s\n" .kind .name .namespace }}{{ else }}{{ printf "%s %s .\n" .kind .name }}{{ end }}{{ end }}'`
 
 echo "${RELATED_OBJECTS}" | while read line; do 
 
@@ -54,6 +79,26 @@ echo "${RELATED_OBJECTS}" | while read line; do
         RunCmd "$CMD get $kind $name -n $namespace -o json"
     fi
 done
+
+cat <<EOF
+
+========
+HCO Pods
+========
+
+EOF
+
+RunCmd "$CMD get pods -n kubevirt-hyperconverged -o json"
+
+cat <<EOF
+
+a===============
+HCO Deployments
+===============
+
+EOF
+
+RunCmd "$CMD get deployments -n kubevirt-hyperconverged -o json"
 
 cat <<EOF
 ===============================
