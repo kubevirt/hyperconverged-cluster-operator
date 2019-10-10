@@ -50,14 +50,19 @@ if [ -n "${KUBEVIRT_PROVIDER}" ]; then
   REGISTRY_IMAGE_UPGRADE="registry:5000/kubevirt/hco-registry-upgrade"
   REGISTRY_IMAGE_URL_PREFIX="registry:5000/kubevirt"
   CMD="./cluster-up/kubectl.sh"
+  HCO_CATALOG_NAMESPACE="openshift-operator-lifecycle-manager"
 else
   # Prow Openshift CI 
-  component=hco-registry
-  REGISTRY_IMAGE=`eval echo ${IMAGE_FORMAT}`
-  component=hco-registry-upgrade
-  REGISTRY_IMAGE_UPGRADE=`eval echo ${IMAGE_FORMAT}`
-  component=""
-  REGISTRY_IMAGE_URL_PREFIX=`eval echo ${IMAGE_FORMAT}`
+  # IMAGE_FORMAT=registry.svc.ci.openshift.org/ci-op-b1qw1nxw/stable:hyperconverged-cluster-operator
+  HCO_OPERATOR_IMAGE=`eval echo ${IMAGE_FORMAT}`
+  CI_IMAGE_URL_PREFIX=$(echo $HCO_OPERATOR_IMAGE | cut -d ":" -f 1)
+  echo "CI_IMAGE_URL_PREFIX: $CI_IMAGE_URL_PREFIX"
+  REGISTRY_IMAGE="${CI_IMAGE_URL_PREFIX}:hco-registry"
+  REGISTRY_IMAGE_UPGRADE="${CI_IMAGE_URL_PREFIX}:hco-registry-upgrade"
+  REGISTRY_IMAGE_URL_PREFIX=$CI_IMAGE_URL_PREFIX
+  HCO_CATALOG_NAMESPACE="openshift-marketplace"
+  CMD="oc"
+  echo "prow"
 fi
 
 function cleanup() {
@@ -79,7 +84,7 @@ echo "--"
 make cluster-clean
 "${CMD}" delete -f ./deploy/hco.cr.yaml -n kubevirt-hyperconverged | true
 "${CMD}" delete subscription hco-subscription-example -n kubevirt-hyperconverged | true
-"${CMD}" delete catalogsource hco-catalogsource-example -n openshift-operator-lifecycle-manager | true
+"${CMD}" delete catalogsource hco-catalogsource-example -n ${HCO_CATALOG_NAMESPACE} | true
 "${CMD}" delete operatorgroup hco-operatorgroup -n kubevirt-hyperconverged | true
 
 
@@ -120,7 +125,7 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
   name: hco-catalogsource-example
-  namespace: openshift-operator-lifecycle-manager
+  namespace: ${HCO_CATALOG_NAMESPACE}
 spec:
   sourceType: grpc
   image: ${REGISTRY_IMAGE}
@@ -130,8 +135,8 @@ EOF
 
 sleep 15
 
-HCO_CATALOGSOURCE_POD=`${CMD} get pods -n openshift-operator-lifecycle-manager | grep hco-catalogsource | head -1 | awk '{ print $1 }'`
-${CMD} wait pod $HCO_CATALOGSOURCE_POD --for condition=Ready -n openshift-operator-lifecycle-manager --timeout="120s"
+HCO_CATALOGSOURCE_POD=`${CMD} get pods -n ${HCO_CATALOG_NAMESPACE} | grep hco-catalogsource | head -1 | awk '{ print $1 }'`
+${CMD} wait pod $HCO_CATALOGSOURCE_POD --for condition=Ready -n ${HCO_CATALOG_NAMESPACE} --timeout="120s"
 
 CATALOG_OPERATOR_POD=`${CMD} get pods -n openshift-operator-lifecycle-manager | grep catalog-operator | head -1 | awk '{ print $1 }'`
 ${CMD} wait pod $CATALOG_OPERATOR_POD --for condition=Ready -n openshift-operator-lifecycle-manager --timeout="120s"
@@ -155,7 +160,7 @@ spec:
   channel: 0.0.3
   name: kubevirt-hyperconverged
   source: hco-catalogsource-example
-  sourceNamespace: openshift-operator-lifecycle-manager
+  sourceNamespace: ${HCO_CATALOG_NAMESPACE}
 EOF
 
 # Allow time for the install plan to be created a for the
@@ -177,7 +182,7 @@ ${CMD} get pods -n kubevirt-hyperconverged
 
 echo "----- Images before upgrade"
 ${CMD} get deployments -n kubevirt-hyperconverged -o yaml | grep image | grep -v imagePullPolicy
-${CMD} get pod $HCO_CATALOGSOURCE_POD -n openshift-operator-lifecycle-manager -o yaml | grep image | grep -v imagePullPolicy
+${CMD} get pod $HCO_CATALOGSOURCE_POD -n ${HCO_CATALOG_NAMESPACE} -o yaml | grep image | grep -v imagePullPolicy
 
 echo "--"
 echo "-- Upgrade Step 4/6: patch existing catalog source with new registry image"
@@ -185,11 +190,11 @@ echo "-- and wait for hco-catalogsource pod to be in Ready state"
 echo "--"
 
 # Patch the HCO catalogsource image to the upgrade version
-${CMD} patch catalogsource hco-catalogsource-example -n openshift-operator-lifecycle-manager -p "{\"spec\": {\"image\": \"${REGISTRY_IMAGE_UPGRADE}\"}}"  --type merge
+${CMD} patch catalogsource hco-catalogsource-example -n ${HCO_CATALOG_NAMESPACE} -p "{\"spec\": {\"image\": \"${REGISTRY_IMAGE_UPGRADE}\"}}"  --type merge
 sleep 5
-./hack/retry.sh 20 30 "${CMD} get pods -n openshift-operator-lifecycle-manager | grep hco-catalogsource | grep -v Terminating"
-HCO_CATALOGSOURCE_POD=`${CMD} get pods -n openshift-operator-lifecycle-manager | grep hco-catalogsource | grep -v Terminating | head -1 | awk '{ print $1 }'`
-${CMD} wait pod $HCO_CATALOGSOURCE_POD --for condition=Ready -n openshift-operator-lifecycle-manager --timeout="120s"
+./hack/retry.sh 20 30 "${CMD} get pods -n ${HCO_CATALOG_NAMESPACE} | grep hco-catalogsource | grep -v Terminating"
+HCO_CATALOGSOURCE_POD=`${CMD} get pods -n ${HCO_CATALOG_NAMESPACE} | grep hco-catalogsource | grep -v Terminating | head -1 | awk '{ print $1 }'`
+${CMD} wait pod $HCO_CATALOGSOURCE_POD --for condition=Ready -n ${HCO_CATALOG_NAMESPACE} --timeout="120s"
 
 sleep 15
 CATALOG_OPERATOR_POD=`${CMD} get pods -n openshift-operator-lifecycle-manager | grep catalog-operator | head -1 | awk '{ print $1 }'`
@@ -217,4 +222,4 @@ echo "--"
 
 echo "----- Images after upgrade"
 ${CMD} get deployments -n kubevirt-hyperconverged -o yaml | grep image | grep -v imagePullPolicy
-${CMD} get pod $HCO_CATALOGSOURCE_POD -n openshift-operator-lifecycle-manager -o yaml | grep image | grep -v imagePullPolicy
+${CMD} get pod $HCO_CATALOGSOURCE_POD -n ${HCO_CATALOG_NAMESPACE} -o yaml | grep image | grep -v imagePullPolicy
