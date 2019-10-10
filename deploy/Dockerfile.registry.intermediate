@@ -1,1 +1,1 @@
-FROM quay.io/openshift/origin-operator-registry:latest
+FROM quay.io/openshift/origin-operator-registry:4.2.0
