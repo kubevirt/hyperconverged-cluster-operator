@@ -92,7 +92,7 @@ RunCmd "$CMD get pods -n kubevirt-hyperconverged -o json"
 
 cat <<EOF
 
-a===============
+===============
 HCO Deployments
 ===============
 

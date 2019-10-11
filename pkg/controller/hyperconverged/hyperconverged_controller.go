@@ -1080,6 +1080,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtMetricsAggregation(instance *hco
 
 func isKVMAvailable() bool {
 	if val, ok := os.LookupEnv("KVM_EMULATION"); ok && (strings.ToLower(val) == "true") {
+		log.Info(strings.ToLower(val))
 		log.Info("Running with KVM emulation")
 		return false
 	}
