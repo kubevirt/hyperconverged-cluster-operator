@@ -70,7 +70,7 @@ type VersionSpec struct {
 
 type ComponentSpec struct {
 	Version string `json:"version,omitempty"`
-	UseKVM  bool   `json:"use_kvm,omitempty"`
+	UseKVM  bool   `json:"use_kvm"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
