@@ -100,7 +100,7 @@ fi
 if [ "${CI}" != "true" ]; then
 	"${CMD}" create -f _out/operator.yaml
 else
-	cat _out/operator.yaml | sed 's|# enable only on CI|"true"|' > _out/operator-ci.yaml
+	sed 's|##-enable-only-in-CI-##|"true"|' < _out/operator.yaml > _out/operator-ci.yaml
 	cat _out/operator-ci.yaml
 	"${CMD}" create -f _out/operator-ci.yaml
 fi
