@@ -75,7 +75,14 @@ metadata:
             "nodeName": "nodename",
             "reason": "node maintenance reason"
           }
-        }{{end}}
+        },{{end}}
+        {
+          "apiVersion": "kubevirt.io/v1alpha1",
+          "kind": "V2VVmware",
+          "metadata": {
+            "name": "v2vvmware"
+          }
+        }
       ]
     capabilities: Full Lifecycle
     categories: OpenShift Optional
@@ -532,3 +539,8 @@ spec:
         kind: NodeMaintenance
         displayName: Node Maintenance
         description: Node Maintenance
+      - name: v2vvmwares.kubevirt.io
+        version: v1alpha1
+        kind: V2VVmware
+        displayName: V2V Vmware
+        description: V2V Vmware
