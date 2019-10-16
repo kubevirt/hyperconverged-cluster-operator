@@ -72,6 +72,9 @@ function status(){
     "${CMD}" get hco -n "${HCO_NAMESPACE}" -o yaml
     "${CMD}" get pods -n "${HCO_NAMESPACE}"
     "${CMD}" get hco hyperconverged-cluster -n "${HCO_NAMESPACE}" -o=jsonpath='{range .status.conditions[*]}{.type}{"\t"}{.status}{"\t"}{.message}{"\n"}{end}'
+    # SSP components troubleshoot helpers
+    "${CMD}" describe pods -n "${HCO_NAMESPACE}" -l app=kubevirt-node-labeller
+    "${CMD}" logs -n "${HCO_NAMESPACE}" $( ${CMD} get pods -l name=kubevirt-ssp-operator -o custom-columns=:metadata.name )
 }
 
 trap status EXIT
