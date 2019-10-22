@@ -22,6 +22,7 @@
 container_id=$(docker ps | grep kubevirtci | cut -d ' ' -f 1)
 registry_port=$(docker port $container_id | grep 5000 | cut -d ':' -f 2)
 registry=localhost:$registry_port
+registry=default-route-openshift-image-registry.apps.rwsu.devcluster.openshift.com
 
 echo "INFO: registry: $registry"
 

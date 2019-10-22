@@ -51,8 +51,9 @@ if [ -n "${KUBEVIRT_PROVIDER}" ]; then
   REGISTRY_IMAGE_URL_PREFIX="registry:5000/kubevirt"
   CMD="./cluster-up/kubectl.sh"
   HCO_CATALOG_NAMESPACE="openshift-operator-lifecycle-manager"
+  echo "Running on STDCI ${KUBEVIRT_PROVIDER}"
 else
-  # Prow Openshift CI 
+  # Prow OpenShift CI
   # IMAGE_FORMAT=registry.svc.ci.openshift.org/ci-op-b1qw1nxw/stable:hyperconverged-cluster-operator
   HCO_OPERATOR_IMAGE=`eval echo ${IMAGE_FORMAT}`
   CI_IMAGE_URL_PREFIX=$(echo $HCO_OPERATOR_IMAGE | cut -d ":" -f 1)
@@ -62,7 +63,7 @@ else
   REGISTRY_IMAGE_URL_PREFIX=$CI_IMAGE_URL_PREFIX
   HCO_CATALOG_NAMESPACE="openshift-marketplace"
   CMD="oc"
-  echo "prow"
+  echo "Running on OpenShift CI"
 fi
 
 function cleanup() {
@@ -150,6 +151,8 @@ ${CMD} wait pod $PACKAGESERVER_POD --for condition=Ready -n openshift-operator-l
 # we wait for 15 seconds here. 
 sleep 15
 
+LATEST_VERSION=$(ls -d ./deploy/olm-catalog/kubevirt-hyperconverged/*/ | sort -r | head -1 | cut -d '/' -f 5);
+
 cat <<EOF | ${CMD} create -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
@@ -157,7 +160,7 @@ metadata:
   name: hco-subscription-example
   namespace: kubevirt-hyperconverged
 spec:
-  channel: 0.0.3
+  channel: ${LATEST_VERSION}
   name: kubevirt-hyperconverged
   source: hco-catalogsource-example
   sourceNamespace: ${HCO_CATALOG_NAMESPACE}
@@ -176,6 +179,9 @@ HCO_KIND="hyperconvergeds"
 HCO_RESOURCE_NAME="hyperconverged-cluster"
 
 ${CMD} create -f ./deploy/hco.cr.yaml -n kubevirt-hyperconverged
+
+HCO_OPERATOR_POD=`${CMD} get pods -n kubevirt-hyperconverged | grep hco-operator | head -1 | awk '{ print $1 }'`
+${CMD} wait pod $HCO_OPERATOR_POD --for condition=Ready -n kubevirt-hyperconverged --timeout="600s"
 
 ${CMD} get subscription -n kubevirt-hyperconverged -o yaml
 ${CMD} get pods -n kubevirt-hyperconverged 
