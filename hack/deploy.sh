@@ -90,11 +90,6 @@ function debug(){
     exit 1
 }
 
-# machine CRD already exists on OKD clusters, so we do not want to deploy it again
-if [[ $(${CMD} get crd machines.machine.openshift.io) != "" ]]; then
-    rm -rf _out/crds/machine.crd.yaml
-fi
-
 # Deploy local manifests
 "${CMD}" create -f _out/cluster_role.yaml
 "${CMD}" create -f _out/service_account.yaml
