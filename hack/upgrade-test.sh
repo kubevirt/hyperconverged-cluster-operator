@@ -42,14 +42,15 @@
 # The hyperconverged-cluster deployment's image is also checked
 # to verify that it is updated to the new operator image from 
 # the local registry.
-source hack/common.sh
 
-if [ -n "${KUBEVIRT_PROVIDER}" ]; then
+echo "KUBEVIRT_PROVIDER: $KUBEVIRT_PROVIDER"
+
+if [ -n "$KUBEVIRT_PROVIDER" ]; then
   # okd-* provider, STDCI
   REGISTRY_IMAGE="registry:5000/kubevirt/hco-registry"
   REGISTRY_IMAGE_UPGRADE="registry:5000/kubevirt/hco-registry-upgrade"
   REGISTRY_IMAGE_URL_PREFIX="registry:5000/kubevirt"
-  CMD="./cluster-up/kubectl.sh"
+  export CMD="./cluster-up/kubectl.sh"
   HCO_CATALOG_NAMESPACE="openshift-operator-lifecycle-manager"
   echo "Running on STDCI ${KUBEVIRT_PROVIDER}"
 else
@@ -62,7 +63,7 @@ else
   REGISTRY_IMAGE_UPGRADE="${CI_IMAGE_URL_PREFIX}:hco-registry-upgrade"
   REGISTRY_IMAGE_URL_PREFIX=$CI_IMAGE_URL_PREFIX
   HCO_CATALOG_NAMESPACE="openshift-marketplace"
-  CMD="oc"
+  export CMD="oc"
   echo "Running on OpenShift CI"
 fi
 
@@ -82,7 +83,10 @@ echo "--"
 echo "-- Upgrade Step 1/6: clean cluster"
 echo "--"
 
-make cluster-clean
+if [ -n "$KUBEVIRT_PROVIDER" ]; then
+  make cluster-clean
+fi
+
 "${CMD}" delete -f ./deploy/hco.cr.yaml -n kubevirt-hyperconverged | true
 "${CMD}" delete subscription hco-subscription-example -n kubevirt-hyperconverged | true
 "${CMD}" delete catalogsource hco-catalogsource-example -n ${HCO_CATALOG_NAMESPACE} | true
@@ -93,7 +97,7 @@ make cluster-clean
 ${CMD} wait deployment packageserver --for condition=Available -n openshift-operator-lifecycle-manager --timeout="1200s"
 ${CMD} wait deployment catalog-operator --for condition=Available -n openshift-operator-lifecycle-manager --timeout="1200s"
 
-if [ -n "${KUBEVIRT_PROVIDER}" ]; then
+if [ -n "$KUBEVIRT_PROVIDER" ]; then
   echo "--"
   echo "-- Upgrade Step 2/6: build images for STDCI"
   echo "--"
