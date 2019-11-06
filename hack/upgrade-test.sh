@@ -46,25 +46,11 @@
 echo "KUBEVIRT_PROVIDER: $KUBEVIRT_PROVIDER"
 
 if [ -n "$KUBEVIRT_PROVIDER" ]; then
-  # okd-* provider, STDCI
-  REGISTRY_IMAGE="registry:5000/kubevirt/hco-registry"
-  REGISTRY_IMAGE_UPGRADE="registry:5000/kubevirt/hco-registry-upgrade"
-  REGISTRY_IMAGE_URL_PREFIX="registry:5000/kubevirt"
-  export CMD="./cluster-up/kubectl.sh"
-  HCO_CATALOG_NAMESPACE="openshift-operator-lifecycle-manager"
   echo "Running on STDCI ${KUBEVIRT_PROVIDER}"
+  source ./hack/upgrade-stdci-config
 else
-  # Prow OpenShift CI
-  # IMAGE_FORMAT=registry.svc.ci.openshift.org/ci-op-b1qw1nxw/stable:hyperconverged-cluster-operator
-  HCO_OPERATOR_IMAGE=`eval echo ${IMAGE_FORMAT}`
-  CI_IMAGE_URL_PREFIX=$(echo $HCO_OPERATOR_IMAGE | cut -d ":" -f 1)
-  echo "CI_IMAGE_URL_PREFIX: $CI_IMAGE_URL_PREFIX"
-  REGISTRY_IMAGE="${CI_IMAGE_URL_PREFIX}:hco-registry"
-  REGISTRY_IMAGE_UPGRADE="${CI_IMAGE_URL_PREFIX}:hco-registry-upgrade"
-  REGISTRY_IMAGE_URL_PREFIX=$CI_IMAGE_URL_PREFIX
-  HCO_CATALOG_NAMESPACE="openshift-marketplace"
-  export CMD="oc"
   echo "Running on OpenShift CI"
+  source ./hack/upgrade-openshiftci-config
 fi
 
 function cleanup() {
