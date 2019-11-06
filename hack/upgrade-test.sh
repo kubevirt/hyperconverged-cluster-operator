@@ -220,3 +220,9 @@ echo "--"
 echo "----- Images after upgrade"
 ${CMD} get deployments -n kubevirt-hyperconverged -o yaml | grep image | grep -v imagePullPolicy
 ${CMD} get pod $HCO_CATALOGSOURCE_POD -n ${HCO_CATALOG_NAMESPACE} -o yaml | grep image | grep -v imagePullPolicy
+
+set -x
+which go || true
+which ginkgo || true
+
+    echo "* cosmetic change *"
