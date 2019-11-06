@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"strings"
 
+	promv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/ghodss/yaml"
 	secv1 "github.com/openshift/api/security/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -77,7 +78,8 @@ type InstallStrategy struct {
 	// deprecated, keep it for backwards compatibility
 	customSCCPrivileges []*customSCCPrivilegedAccounts
 
-	sccs []*secv1.SecurityContextConstraints
+	sccs            []*secv1.SecurityContextConstraints
+	serviceMonitors []*promv1.ServiceMonitor
 }
 
 func NewInstallStrategyConfigMap(config *operatorutil.KubeVirtDeploymentConfig) (*corev1.ConfigMap, error) {
@@ -174,6 +176,9 @@ func dumpInstallStrategyToBytes(strategy *InstallStrategy) []byte {
 	for _, entry := range strategy.sccs {
 		marshalutil.MarshallObject(entry, writer)
 	}
+	for _, entry := range strategy.serviceMonitors {
+		marshalutil.MarshallObject(entry, writer)
+	}
 	writer.Flush()
 
 	return b.Bytes()
@@ -194,6 +199,10 @@ func GenerateCurrentInstallStrategy(config *operatorutil.KubeVirtDeploymentConfi
 	rbaclist = append(rbaclist, rbac.GetAllApiServer(config.GetNamespace())...)
 	rbaclist = append(rbaclist, rbac.GetAllController(config.GetNamespace())...)
 	rbaclist = append(rbaclist, rbac.GetAllHandler(config.GetNamespace())...)
+
+	monitorNamespace := config.GetMonitorNamespace()
+	monitorServiceAccount := config.GetMonitorServiceAccount()
+	rbaclist = append(rbaclist, rbac.GetAllServiceMonitor(config.GetNamespace(), monitorNamespace, monitorServiceAccount)...)
 
 	for _, entry := range rbaclist {
 		cr, ok := entry.(*rbacv1.ClusterRole)
@@ -222,21 +231,22 @@ func GenerateCurrentInstallStrategy(config *operatorutil.KubeVirtDeploymentConfi
 	}
 
 	strategy.services = append(strategy.services, components.NewPrometheusService(config.GetNamespace()))
+	strategy.serviceMonitors = append(strategy.serviceMonitors, components.NewServiceMonitorCR(config.GetNamespace(), monitorNamespace, true))
 
 	strategy.services = append(strategy.services, components.NewApiServerService(config.GetNamespace()))
-	apiDeployment, err := components.NewApiServerDeployment(config.GetNamespace(), config.GetImageRegistry(), config.GetApiVersion(), config.GetImagePullPolicy(), config.GetVerbosity())
+	apiDeployment, err := components.NewApiServerDeployment(config.GetNamespace(), config.GetImageRegistry(), config.GetImagePrefix(), config.GetApiVersion(), config.GetImagePullPolicy(), config.GetVerbosity())
 	if err != nil {
 		return nil, fmt.Errorf("error generating virt-apiserver deployment %v", err)
 	}
 	strategy.deployments = append(strategy.deployments, apiDeployment)
 
-	controller, err := components.NewControllerDeployment(config.GetNamespace(), config.GetImageRegistry(), config.GetControllerVersion(), config.GetLauncherVersion(), config.GetImagePullPolicy(), config.GetVerbosity())
+	controller, err := components.NewControllerDeployment(config.GetNamespace(), config.GetImageRegistry(), config.GetImagePrefix(), config.GetControllerVersion(), config.GetLauncherVersion(), config.GetImagePullPolicy(), config.GetVerbosity())
 	if err != nil {
 		return nil, fmt.Errorf("error generating virt-controller deployment %v", err)
 	}
 	strategy.deployments = append(strategy.deployments, controller)
 
-	handler, err := components.NewHandlerDaemonSet(config.GetNamespace(), config.GetImageRegistry(), config.GetHandlerVersion(), config.GetImagePullPolicy(), config.GetVerbosity())
+	handler, err := components.NewHandlerDaemonSet(config.GetNamespace(), config.GetImageRegistry(), config.GetImagePrefix(), config.GetHandlerVersion(), config.GetImagePullPolicy(), config.GetVerbosity())
 	if err != nil {
 		return nil, fmt.Errorf("error generating virt-handler deployment %v", err)
 	}
@@ -407,6 +417,12 @@ func loadInstallStrategyFromBytes(data string) (*InstallStrategy, error) {
 				return nil, err
 			}
 			strategy.sccs = append(strategy.sccs, s)
+		case "ServiceMonitor":
+			sm := &promv1.ServiceMonitor{}
+			if err := yaml.Unmarshal([]byte(entry), &sm); err != nil {
+				return nil, err
+			}
+			strategy.serviceMonitors = append(strategy.serviceMonitors, sm)
 		default:
 			return nil, fmt.Errorf("UNKNOWN TYPE %s detected", obj.Kind)
 

@@ -32,9 +32,9 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 
+	"github.com/blang/semver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
 	"github.com/operator-framework/operator-lifecycle-manager/pkg/lib/version"
-	"github.com/blang/semver"
 )
 
 type csvClusterPermissions struct {
@@ -50,19 +50,20 @@ type csvDeployments struct {
 	Spec appsv1.DeploymentSpec `json:"spec,omitempty"`
 }
 type csvStrategySpec struct {
-	ClusterPermissions []csvClusterPermissions  `json:"clusterPermissions"`
-	Permissions        []csvPermissions         `json:"permissions"`
-	Deployments        []csvDeployments         `json:"deployments"`
+	ClusterPermissions []csvClusterPermissions `json:"clusterPermissions"`
+	Permissions        []csvPermissions        `json:"permissions"`
+	Deployments        []csvDeployments        `json:"deployments"`
 }
 
 var (
 	cnaCsv              = flag.String("cna-csv", "", "")
 	virtCsv             = flag.String("virt-csv", "", "")
 	sspCsv              = flag.String("ssp-csv", "", "")
-	mroCsv              = flag.String("mro-csv", "", "")
 	cdiCsv              = flag.String("cdi-csv", "", "")
 	nmoCsv              = flag.String("nmo-csv", "", "")
 	operatorImage       = flag.String("operator-image-name", "", "")
+	imsConversionImage  = flag.String("ims-conversion-image-name", "", "")
+	imsVMWareImage      = flag.String("ims-vmware-image-name", "", "")
 	csvVersion          = flag.String("csv-version", "", "")
 	replacesCsvVersion  = flag.String("replaces-csv-version", "", "")
 	metadataDescription = flag.String("metadata-description", "", "")
@@ -77,7 +78,6 @@ func main() {
 		*cnaCsv,
 		*virtCsv,
 		*sspCsv,
-		*mroCsv,
 		*cdiCsv,
 		*nmoCsv,
 	}
@@ -126,11 +126,11 @@ func main() {
 				templateStruct.Spec.CustomResourceDefinitions.Owned = append(
 					templateStruct.Spec.CustomResourceDefinitions.Owned,
 					csvv1.CRDDescription{
-						Name:           owned.Name,
-						Version:        owned.Version,
-						Kind:           owned.Kind,
-						Description:    owned.Description,
-						DisplayName:    owned.DisplayName,
+						Name:        owned.Name,
+						Version:     owned.Version,
+						Kind:        owned.Kind,
+						Description: owned.Description,
+						DisplayName: owned.DisplayName,
 					})
 			}
 		}
@@ -146,6 +146,14 @@ func main() {
 				if env.Name == "OPERATOR_IMAGE" {
 					efound = true
 					deployment.Spec.Template.Spec.Containers[0].Env[i].Value = *operatorImage
+				}
+				if env.Name == "CONVERSION_CONTAINER" {
+					efound = true
+					deployment.Spec.Template.Spec.Containers[0].Env[i].Value = *imsConversionImage
+				}
+				if env.Name == "VMWARE_CONTAINER" {
+					efound = true
+					deployment.Spec.Template.Spec.Containers[0].Env[i].Value = *imsVMWareImage
 				}
 			}
 		}
@@ -169,7 +177,10 @@ func main() {
 	templateStruct.Annotations["containerImage"] = *operatorImage
 	templateStruct.Name = "kubevirt-hyperconverged-operator.v" + *csvVersion
 	templateStruct.Spec.Version = version.OperatorVersion{semver.MustParse(*csvVersion)}
-	templateStruct.Spec.Replaces = "kubevirt-hyperconverged-operator.v" + *replacesCsvVersion
+
+	if *replacesCsvVersion != "" {
+		templateStruct.Spec.Replaces = "kubevirt-hyperconverged-operator.v" + *replacesCsvVersion
+	}
 
 	if *metadataDescription != "" {
 		templateStruct.Annotations["description"] = *metadataDescription

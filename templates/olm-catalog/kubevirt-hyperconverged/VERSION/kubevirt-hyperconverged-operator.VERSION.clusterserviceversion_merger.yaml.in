@@ -10,6 +10,9 @@ metadata:
           "metadata": {
             "name": "kubevirt-hyperconverged",
             "namespace": "kubevirt-hyperconverged"
+          },
+          "spec": {
+            "BareMetalPlatform": "false"
           }
         },
         {
@@ -60,13 +63,6 @@ metadata:
           "kind": "KubevirtMetricsAggregation",
           "metadata": {
             "name": "metrics-aggregation"
-          }
-        },
-        {
-          "apiVersion": "machineremediation.kubevirt.io/v1alpha1",
-          "kind": "MachineRemediationOperator",
-          "metadata": {
-            "name": "mro"
           }
         },
         {
@@ -224,34 +220,37 @@ spec:
           verbs:
           - '*'
         - apiGroups:
-          - ''
+          - ""
           resources:
-          - configmaps
           - pods
-          - serviceaccounts
           - services
+          - services/finalizers
+          - endpoints
+          - persistentvolumeclaims
+          - events
+          - configmaps
+          - secrets
+          - serviceaccounts
           verbs:
-          - get
-          - list
-          - watch
-          - create
-          - update
-          - delete
-        - apiGroups:
-          - batch
-          resources:
-          - jobs
-          verbs:
-          - get
-          - list
-          - watch
-          - create
-          - delete
+          - '*'
         - apiGroups:
           - apps
           resources:
           - deployments
+          - deployments/finalizers
           - daemonsets
+          - replicasets
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - delete
+          - update
+        - apiGroups:
+          - batch
+          resources:
+          - jobs
           verbs:
           - get
           - list
@@ -302,12 +301,12 @@ spec:
           - patch
           - update
         - apiGroups:
-          - machineremediation.kubevirt.io
+          - monitoring.coreos.com
           resources:
-          - machineremediationoperators
-          - machineremediationoperators/status
+          - servicemonitors
           verbs:
-          - '*'
+          - get
+          - create
         serviceAccountName: hyperconverged-cluster-operator
       permissions:
       deployments:

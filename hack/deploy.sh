@@ -22,6 +22,9 @@ set -e
 source hack/common.sh
 
 HCO_IMAGE=${HCO_IMAGE:-quay.io/kubevirt/hyperconverged-cluster-operator:latest}
+HCO_NAMESPACE="kubevirt-hyperconverged"
+HCO_KIND="hyperconvergeds"
+HCO_RESOURCE_NAME="hyperconverged-cluster"
 
 # Cleanup previously generated manifests
 rm -rf _out/
@@ -38,10 +41,10 @@ fi
 sed -i "s#image: quay.io/kubevirt/hyperconverged-cluster-operator:latest#image: ${HCO_IMAGE}#g" _out/operator.yaml
 
 # create namespaces
-"${CMD}" create ns kubevirt-hyperconverged | true
+"${CMD}" create ns "${HCO_NAMESPACE}" | true
 
 # Create additional namespaces needed for HCO components
-namespaces=("openshift" "openshift-machine-api")
+namespaces=("openshift")
 for namespace in ${namespaces[@]}; do
     if [[ $(${CMD} get ns ${namespace}) == "" ]]; then
         ${CMD} create ns ${namespace}
@@ -50,16 +53,16 @@ done
 
 if [ "${CMD}" == "oc" ]; then
     # Switch project to kubevirt-hyperconverged
-    oc project kubevirt-hyperconverged
+    oc project "${HCO_NAMESPACE}"
 else
     # switch namespace to kubevirt-hyperconverged
-    ${CMD} config set-context $(${CMD} config current-context) --namespace=kubevirt-hyperconverged
+    ${CMD} config set-context $(${CMD} config current-context) --namespace="${HCO_NAMESPACE}"
 fi
 
 function status(){
-    "${CMD}" get hco -n kubevirt-hyperconverged -o yaml
-    "${CMD}" get pods -n kubevirt-hyperconverged
-    "${CMD}" get hco hyperconverged-cluster -n kubevirt-hyperconverged -o=jsonpath='{range .status.conditions[*]}{.type}{"\t"}{.status}{"\t"}{.message}{"\n"}{end}'
+    "${CMD}" get hco -n "${HCO_NAMESPACE}" -o yaml
+    "${CMD}" get pods -n "${HCO_NAMESPACE}"
+    "${CMD}" get hco hyperconverged-cluster -n "${HCO_NAMESPACE}" -o=jsonpath='{range .status.conditions[*]}{.type}{"\t"}{.status}{"\t"}{.message}{"\n"}{end}'
 }
 
 trap status EXIT
@@ -69,8 +72,8 @@ function debug(){
     echo "Found pods with errors ${CONTAINER_ERRORED}"
 
     for err in ${CONTAINER_ERRORED}; do
-	echo "------------- $err"
-	"${CMD}" logs $("${CMD}" get pods -n kubevirt-hyperconverged | grep $err | head -1 | awk '{ print $1 }')
+        echo "------------- $err"
+        "${CMD}" logs $("${CMD}" get pods -n "${HCO_NAMESPACE}" | grep $err | head -1 | awk '{ print $1 }')
     done
     exit 1
 }
@@ -92,21 +95,24 @@ sleep 20
 
 "${CMD}" wait deployment/hyperconverged-cluster-operator --for=condition=Available --timeout="720s" || CONTAINER_ERRORED+="${op}"
 
-for op in cdi-operator cluster-network-addons-operator kubevirt-ssp-operator node-maintenance-operator virt-operator machine-remediation-operator; do
+for op in cdi-operator cluster-network-addons-operator kubevirt-ssp-operator node-maintenance-operator virt-operator; do
     "${CMD}" wait deployment/"${op}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${op} "
 done
 
 "${CMD}" create -f _out/hco.cr.yaml
-sleep 30
-"${CMD}" wait pod $("${CMD}" get pods | grep hyperconverged-cluster-operator | awk '{ print $1 }') --for=condition=Ready --timeout="360s"
+sleep 10
+# Give HCO 10 minutes to reconcile
+if ! timeout 10m bash -c -- "until "${CMD}" get -n ${HCO_NAMESPACE} ${HCO_KIND} ${HCO_RESOURCE_NAME} -o go-template='{{ range .status.conditions }}{{ if eq .type \"Available\" }}{{ .status }}{{ end }}{{ end }}' | grep True; do sleep 1; done";
+then
+    echo "Available condition never became true"
+    "${CMD}" get pods -n "${HCO_NAMESPACE}"
+    exit 1
+fi
+# Show all conditions and their status
+"${CMD}" get -n ${HCO_NAMESPACE} ${HCO_KIND} ${HCO_RESOURCE_NAME} -o go-template='{{ range .status.conditions }}{{ .type }}{{ "\t" }}{{ .status }}{{ "\t" }}{{ .message }}{{ "\n" }}{{ end }}'
 
 for dep in cdi-apiserver cdi-deployment cdi-uploadproxy virt-api virt-controller; do
     "${CMD}" wait deployment/"${dep}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${dep} "
-done
-
-# Wait for machine-remediation controllers under the openshift-machine-api namespace
-for dep in machine-health-check machine-disruption-budget machine-remediation; do
-    "${CMD}" -n openshift-machine-api wait deployment/"${dep}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${dep} "
 done
 
 if [ -z "$CONTAINER_ERRORED" ]; then
@@ -115,5 +121,5 @@ if [ -z "$CONTAINER_ERRORED" ]; then
 else
     CONTAINER_ERRORED+='hyperconverged-cluster-operator'
     debug
-    "${CMD}" get pods -n kubevirt-hyperconverged
+    "${CMD}" get pods -n "${HCO_NAMESPACE}"
 fi

@@ -23,11 +23,11 @@ required = [
 
 [[override]]
   name = "kubevirt.io/kubevirt"
-  version = "=v0.20.4"
+  version = "=v0.20.8"
 
 [[constraint]]
   name = "kubevirt.io/client-go"
-  version = "=v0.20.4"
+  version = "=v0.20.8"
 
 [[override]]
   name = "github.com/go-kit/kit"
@@ -35,7 +35,7 @@ required = [
 
 [[override]]
   name = "github.com/kubevirt/cluster-network-addons-operator"
-  version = "=0.15.0"
+  version = "=0.17.0"
 
 [[override]]
   name = "github.com/MarSik/kubevirt-ssp-operator"
@@ -57,10 +57,6 @@ required = [
 [[override]]
   name = "sigs.k8s.io/controller-tools"
   version = "=v0.1.8"
-
-[[override]]
-  name = "kubevirt.io/machine-remediation-operator"
-  version = "=v0.3.10"
 
 [[override]]
   name = "k8s.io/api"

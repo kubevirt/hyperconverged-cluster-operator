@@ -27,6 +27,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 
 	k8sv1 "k8s.io/api/core/v1"
@@ -53,14 +54,27 @@ const (
 	// these names need to match field names from KubeVirt Spec if they are set from there
 	AdditionalPropertiesNamePullPolicy = "ImagePullPolicy"
 
+	// lookup key in AdditionalProperties
+	AdditionalPropertiesMonitorNamespace = "monitorNamespace"
+
+	// lookup key in AdditionalProperties
+	AdditionalPropertiesMonitorServiceAccount = "monitorAccount"
+
+	// account to use if one is not explicitly named
+	DefaultMonitorNamespace = "openshift-monitoring"
+
+	// account to use if one is not explicitly named
+	DefaultMonitorAccount = "prometheus-k8s"
+
 	// the regex used to parse the operator image
-	operatorImageRegex = "^(.*)/virt-operator([@:].*)?$"
+	operatorImageRegex = "^(.*)/(.*)virt-operator([@:].*)?$"
 )
 
 type KubeVirtDeploymentConfig struct {
-	ID        string `json:"id,omitempty" optional:"true"`
-	Namespace string `json:"namespace,omitempty" optional:"true"`
-	Registry  string `json:"registry,omitempty" optional:"true"`
+	ID          string `json:"id,omitempty" optional:"true"`
+	Namespace   string `json:"namespace,omitempty" optional:"true"`
+	Registry    string `json:"registry,omitempty" optional:"true"`
+	ImagePrefix string `json:"imagePrefix,omitempty" optional:"true"`
 
 	// the KubeVirt version
 	// matches the image tag, if tags are used, either by the manifest, or by the KubeVirt CR
@@ -142,14 +156,16 @@ func getConfig(registry, tag, namespace string, additionalProperties map[string]
 	tagFromOperator := ""
 	operatorSha := ""
 	skipShasums := false
+	imagePrefix := ""
 
 	if len(matches) == 1 {
 		// only use registry from operator image if it was not given yet
 		if registry == "" {
 			registry = matches[0][1]
 		}
+		imagePrefix = matches[0][2]
 
-		version := matches[0][2]
+		version := matches[0][3]
 		if version == "" {
 			tagFromOperator = "latest"
 		} else if strings.HasPrefix(version, ":") {
@@ -170,7 +186,7 @@ func getConfig(registry, tag, namespace string, additionalProperties map[string]
 		}
 	}
 
-	config := newDeploymentConfigWithTag(registry, tag, namespace, additionalProperties)
+	config := newDeploymentConfigWithTag(registry, imagePrefix, tag, namespace, additionalProperties)
 	if skipShasums {
 		return config
 	}
@@ -182,7 +198,7 @@ func getConfig(registry, tag, namespace string, additionalProperties map[string]
 	launcherSha := os.Getenv(VirtLauncherShasumEnvName)
 	kubeVirtVersion := os.Getenv(KubeVirtVersionEnvName)
 	if operatorSha != "" && apiSha != "" && controllerSha != "" && handlerSha != "" && launcherSha != "" && kubeVirtVersion != "" {
-		config = newDeploymentConfigWithShasums(registry, kubeVirtVersion, operatorSha, apiSha, controllerSha, handlerSha, launcherSha, namespace, additionalProperties)
+		config = newDeploymentConfigWithShasums(registry, imagePrefix, kubeVirtVersion, operatorSha, apiSha, controllerSha, handlerSha, launcherSha, namespace, additionalProperties)
 	}
 
 	return config
@@ -196,7 +212,7 @@ func VerifyEnv() error {
 	}
 	imageRegEx := regexp.MustCompile(operatorImageRegex)
 	matches := imageRegEx.FindAllStringSubmatch(imageString, 1)
-	if len(matches) != 1 || len(matches[0]) != 3 {
+	if len(matches) != 1 || len(matches[0]) != 4 {
 		return fmt.Errorf("can not parse operator image env var %s", imageString)
 	}
 
@@ -217,9 +233,10 @@ func VerifyEnv() error {
 	return nil
 }
 
-func newDeploymentConfigWithTag(registry, tag, namespace string, kvSpec map[string]string) *KubeVirtDeploymentConfig {
+func newDeploymentConfigWithTag(registry, imagePrefix, tag, namespace string, kvSpec map[string]string) *KubeVirtDeploymentConfig {
 	c := &KubeVirtDeploymentConfig{
 		Registry:             registry,
+		ImagePrefix:          imagePrefix,
 		KubeVirtVersion:      tag,
 		Namespace:            namespace,
 		AdditionalProperties: kvSpec,
@@ -228,9 +245,10 @@ func newDeploymentConfigWithTag(registry, tag, namespace string, kvSpec map[stri
 	return c
 }
 
-func newDeploymentConfigWithShasums(registry, kubeVirtVersion, operatorSha, apiSha, controllerSha, handlerSha, launcherSha, namespace string, additionalProperties map[string]string) *KubeVirtDeploymentConfig {
+func newDeploymentConfigWithShasums(registry, imagePrefix, kubeVirtVersion, operatorSha, apiSha, controllerSha, handlerSha, launcherSha, namespace string, additionalProperties map[string]string) *KubeVirtDeploymentConfig {
 	c := &KubeVirtDeploymentConfig{
 		Registry:             registry,
+		ImagePrefix:          imagePrefix,
 		KubeVirtVersion:      kubeVirtVersion,
 		VirtOperatorSha:      operatorSha,
 		VirtApiSha:           apiSha,
@@ -287,6 +305,10 @@ func (c *KubeVirtDeploymentConfig) GetImageRegistry() string {
 	return c.Registry
 }
 
+func (c *KubeVirtDeploymentConfig) GetImagePrefix() string {
+	return c.ImagePrefix
+}
+
 func (c *KubeVirtDeploymentConfig) UseShasums() bool {
 	return c.VirtOperatorSha != "" && c.VirtApiSha != "" && c.VirtControllerSha != "" && c.VirtHandlerSha != "" && c.VirtLauncherSha != ""
 }
@@ -317,6 +339,22 @@ func (c *KubeVirtDeploymentConfig) GetImagePullPolicy() k8sv1.PullPolicy {
 	return k8sv1.PullIfNotPresent
 }
 
+func (c *KubeVirtDeploymentConfig) GetMonitorNamespace() string {
+	p, ok := c.AdditionalProperties[AdditionalPropertiesMonitorNamespace]
+	if !ok {
+		return DefaultMonitorNamespace
+	}
+	return p
+}
+
+func (c *KubeVirtDeploymentConfig) GetMonitorServiceAccount() string {
+	p, ok := c.AdditionalProperties[AdditionalPropertiesMonitorServiceAccount]
+	if !ok {
+		return DefaultMonitorAccount
+	}
+	return p
+}
+
 func (c *KubeVirtDeploymentConfig) GetNamespace() string {
 	return c.Namespace
 }
@@ -331,13 +369,45 @@ func (c *KubeVirtDeploymentConfig) generateInstallStrategyID() {
 	// changeable properties from the KubeVirt CR. This will be used for identifying the correct install strategy job
 	// and configmap
 	// Calculate a sha over all those properties
-
 	hasher := sha1.New()
-
-	version := fmt.Sprintf("%+v", c)
-	hasher.Write([]byte(version))
+	values := c.getStringFromFields()
+	hasher.Write([]byte(values))
 
 	c.ID = hex.EncodeToString(hasher.Sum(nil))
+}
+
+func (c *KubeVirtDeploymentConfig) getStringFromFields() string {
+	result := ""
+	v := reflect.ValueOf(*c)
+	for i := 0; i < v.NumField(); i++ {
+		fieldName := v.Type().Field(i).Name
+		result += fieldName
+		field := v.Field(i)
+		if field.Type().Kind() == reflect.Map {
+			keys := field.MapKeys()
+			nameKeys := make(map[string]reflect.Value, len(keys))
+			names := make([]string, 0, len(keys))
+			for _, key := range keys {
+				name := key.String()
+				if name == "" {
+					continue
+				}
+				nameKeys[name] = key
+				names = append(names, name)
+			}
+			sort.Strings(names)
+			for _, name := range names {
+				key := nameKeys[name]
+				val := field.MapIndex(key).String()
+				result += name
+				result += val
+			}
+		} else {
+			value := v.Field(i).String()
+			result += value
+		}
+	}
+	return result
 }
 
 func (c *KubeVirtDeploymentConfig) GetDeploymentID() string {

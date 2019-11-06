@@ -90,6 +90,7 @@ var KubeVirtVersionTag = "latest"
 var KubeVirtVersionTagAlt = ""
 var KubeVirtUtilityRepoPrefix = ""
 var KubeVirtRepoPrefix = "kubevirt"
+var ImagePrefixAlt = ""
 var ContainerizedDataImporterNamespace = "cdi"
 var KubeVirtKubectlPath = ""
 var KubeVirtOcPath = ""
@@ -110,6 +111,7 @@ func init() {
 	flag.StringVar(&KubeVirtVersionTagAlt, "container-tag-alt", "", "An alternate tag that can be used to test operator deployments")
 	flag.StringVar(&KubeVirtUtilityRepoPrefix, "utility-container-prefix", "", "Set the repository prefix for all images")
 	flag.StringVar(&KubeVirtRepoPrefix, "container-prefix", "kubevirt", "Set the repository prefix for all images")
+	flag.StringVar(&ImagePrefixAlt, "image-prefix-alt", "", "Optional prefix for virt-* image names for additional imagePrefix operator test")
 	flag.StringVar(&ContainerizedDataImporterNamespace, "cdi-namespace", "cdi", "Set the repository prefix for CDI components")
 	flag.StringVar(&KubeVirtKubectlPath, "kubectl-path", "", "Set path to kubectl binary")
 	flag.StringVar(&KubeVirtOcPath, "oc-path", "", "Set path to oc binary")
@@ -146,6 +148,7 @@ const (
 
 const (
 	AlpineHttpUrl     = "http://cdi-http-import-server.kubevirt/images/alpine.iso"
+	FedoraHttpUrl     = "http://cdi-http-import-server.kubevirt/images/fedora.img"
 	GuestAgentHttpUrl = "http://cdi-http-import-server.kubevirt/qemu-ga"
 	StressHttpUrl     = "http://cdi-http-import-server.kubevirt/stress"
 )
@@ -870,6 +873,19 @@ func IsOpenShift() bool {
 	return isOpenShift
 }
 
+func ServiceMonitorEnabled() bool {
+	virtClient, err := kubecli.GetKubevirtClient()
+	PanicOnError(err)
+
+	serviceMonitorEnabled, err := util.IsServiceMonitorEnabled(virtClient)
+	if err != nil {
+		fmt.Printf("ERROR: Can't verify ServiceMonitor CRD %v\n", err)
+		panic(err)
+	}
+
+	return serviceMonitorEnabled
+}
+
 func composeResourceURI(object unstructured.Unstructured) string {
 	uri := "/api"
 	if object.GetAPIVersion() != "v1" {
@@ -1433,10 +1449,31 @@ func PanicOnError(err error) {
 	}
 }
 
-func NewRandomDataVolumeWithHttpImport(imageUrl string, namespace string, accessMode k8sv1.PersistentVolumeAccessMode) *cdiv1.DataVolume {
+func NewRandomDataVolumeWithHttpImport(imageUrl, namespace string, accessMode k8sv1.PersistentVolumeAccessMode) *cdiv1.DataVolume {
+	return newRandomDataVolumeWithHttpImport(imageUrl, namespace, Config.StorageClassLocal, accessMode)
+}
 
+func NewRandomVirtualMachineInstanceWithOCSDisk(imageUrl, namespace string, accessMode k8sv1.PersistentVolumeAccessMode, volMode k8sv1.PersistentVolumeMode) (*v1.VirtualMachineInstance, *cdiv1.DataVolume) {
+	if !HasCDI() {
+		Skip("Skip DataVolume tests when CDI is not present")
+	}
+	sc, exists := GetCephStorageClass()
+	if !exists {
+		Skip("Skip OCS tests when Ceph is not present")
+	}
+	virtCli, err := kubecli.GetKubevirtClient()
+	PanicOnError(err)
+
+	dv := newRandomDataVolumeWithHttpImport(imageUrl, namespace, sc, accessMode)
+	dv.Spec.PVC.VolumeMode = &volMode
+	_, err = virtCli.CdiClient().CdiV1alpha1().DataVolumes(dv.Namespace).Create(dv)
+	Expect(err).ToNot(HaveOccurred())
+	WaitForSuccessfulDataVolumeImport(dv, 240)
+	return NewRandomVMIWithDataVolume(dv.Name), dv
+}
+
+func newRandomDataVolumeWithHttpImport(imageUrl, namespace, storageClass string, accessMode k8sv1.PersistentVolumeAccessMode) *cdiv1.DataVolume {
 	name := "test-datavolume-" + rand.String(12)
-	storageClass := Config.StorageClassLocal
 	quantity, err := resource.ParseQuantity("1Gi")
 	PanicOnError(err)
 	dataVolume := &cdiv1.DataVolume{
@@ -1471,10 +1508,12 @@ func NewRandomDataVolumeWithHttpImport(imageUrl string, namespace string, access
 }
 
 func NewRandomDataVolumeWithPVCSource(sourceNamespace, sourceName, targetNamespace string, accessMode k8sv1.PersistentVolumeAccessMode) *cdiv1.DataVolume {
+	return NewRandomDataVolumeWithPVCSourceWithStorageClass(sourceNamespace, sourceName, targetNamespace, Config.StorageClassLocal, "1Gi", accessMode)
+}
 
+func NewRandomDataVolumeWithPVCSourceWithStorageClass(sourceNamespace, sourceName, targetNamespace, storageClass, size string, accessMode k8sv1.PersistentVolumeAccessMode) *cdiv1.DataVolume {
 	name := "test-datavolume-" + rand.String(12)
-	storageClass := Config.StorageClassLocal
-	quantity, err := resource.ParseQuantity("1Gi")
+	quantity, err := resource.ParseQuantity(size)
 	PanicOnError(err)
 	dataVolume := &cdiv1.DataVolume{
 		ObjectMeta: metav1.ObjectMeta{
@@ -1739,23 +1778,6 @@ func GetGuestAgentUserData() string {
                 setenforce 0
                 systemd-run --unit=guestagent /usr/local/bin/qemu-ga
                 `, GuestAgentHttpUrl, StressHttpUrl)
-}
-
-func WaitForGuestAgentChannel(vmi *v1.VirtualMachineInstance) {
-	virtClient, err := kubecli.GetKubevirtClient()
-	PanicOnError(err)
-
-	By("Waiting for guest agent connection")
-	EventuallyWithOffset(1, func() bool {
-		updatedVmi, err := virtClient.VirtualMachineInstance(vmi.Namespace).Get(vmi.Name, &metav1.GetOptions{})
-		Expect(err).ToNot(HaveOccurred())
-		for _, condition := range updatedVmi.Status.Conditions {
-			if condition.Type == v1.VirtualMachineInstanceAgentConnected && condition.Status == k8sv1.ConditionTrue {
-				return true
-			}
-		}
-		return false
-	}, 420*time.Second, 2).Should(BeTrue(), "Should have agent connected condition")
 }
 
 func NewRandomVMIWithEphemeralDiskAndUserdata(containerImage string, userData string) *v1.VirtualMachineInstance {
@@ -2161,21 +2183,27 @@ func NewRandomVMIWithCustomMacAddress() *v1.VirtualMachineInstance {
 }
 
 // Block until DataVolume succeeds.
-func WaitForSuccessfulDataVolumeImport(obj runtime.Object, seconds int) {
+func WaitForSuccessfulDataVolumeImportOfVMI(obj runtime.Object, seconds int) {
 	vmi, ok := obj.(*v1.VirtualMachineInstance)
 	ExpectWithOffset(1, ok).To(BeTrue(), "Object is not of type *v1.VMI")
+	waitForSuccessfulDataVolumeImport(vmi.Namespace, vmi.Spec.Volumes[0].DataVolume.Name, seconds)
+}
 
+func WaitForSuccessfulDataVolumeImport(dv *cdiv1.DataVolume, seconds int) {
+	waitForSuccessfulDataVolumeImport(dv.Namespace, dv.Name, seconds)
+}
+
+func waitForSuccessfulDataVolumeImport(namespace, name string, seconds int) {
+	By("Checking that the DataVolume has succeeded")
 	virtClient, err := kubecli.GetKubevirtClient()
-	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	ExpectWithOffset(2, err).ToNot(HaveOccurred())
 
-	EventuallyWithOffset(1, func() cdiv1.DataVolumePhase {
-		dv, err := virtClient.CdiClient().CdiV1alpha1().DataVolumes(vmi.Namespace).Get(vmi.Spec.Volumes[0].DataVolume.Name, metav1.GetOptions{})
-		ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	EventuallyWithOffset(2, func() cdiv1.DataVolumePhase {
+		dv, err := virtClient.CdiClient().CdiV1alpha1().DataVolumes(namespace).Get(name, metav1.GetOptions{})
+		ExpectWithOffset(2, err).ToNot(HaveOccurred())
 
 		return dv.Status.Phase
 	}, time.Duration(seconds)*time.Second, 1*time.Second).Should(Equal(cdiv1.Succeeded), "Timed out waiting for DataVolume to enter Succeeded phase")
-
-	return
 }
 
 // Block until the specified VirtualMachineInstance started and return the target node name.
@@ -2699,6 +2727,21 @@ func SkipIfNotUseNetworkPolicy(virtClient kubecli.KubevirtClient) {
 	}
 }
 
+func GetHighestCPUNumberAmongNodes(virtClient kubecli.KubevirtClient) int {
+	var cpus int64
+
+	nodes, err := virtClient.Core().Nodes().List(metav1.ListOptions{})
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+
+	for _, node := range nodes.Items {
+		if v, ok := node.Status.Capacity[k8sv1.ResourceCPU]; ok && v.Value() > cpus {
+			cpus = v.Value()
+		}
+	}
+
+	return int(cpus)
+}
+
 func GetK8sCmdClient() string {
 	// use oc if it exists, otherwise use kubectl
 	if KubeVirtOcPath != "" {
@@ -3013,7 +3056,7 @@ func CreateISCSITargetPOD(containerDiskName ContainerDisk) (iscsiTargetIP string
 	image := fmt.Sprintf("%s/cdi-http-import-server:%s", KubeVirtUtilityRepoPrefix, KubeVirtUtilityVersionTag)
 	resources := k8sv1.ResourceRequirements{}
 	resources.Limits = make(k8sv1.ResourceList)
-	resources.Limits[k8sv1.ResourceMemory] = resource.MustParse("64M")
+	resources.Limits[k8sv1.ResourceMemory] = resource.MustParse("256M")
 	pod := &k8sv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "test-iscsi-target",
@@ -3666,6 +3709,19 @@ func HasCDI() bool {
 	return HasFeature("DataVolumes")
 }
 
+func GetCephStorageClass() (string, bool) {
+	virtClient, err := kubecli.GetKubevirtClient()
+	Expect(err).ToNot(HaveOccurred())
+	storageClassList, err := virtClient.StorageV1().StorageClasses().List(metav1.ListOptions{})
+	Expect(err).ToNot(HaveOccurred())
+	for _, storageClass := range storageClassList.Items {
+		if storageClass.Provisioner == "csi-rbdplugin" {
+			return storageClass.Name, true
+		}
+	}
+	return "", false
+}
+
 func HasExperimentalIgnitionSupport() bool {
 	return HasFeature("ExperimentalIgnitionSupport")
 }
@@ -3830,22 +3886,27 @@ func GenerateHelloWorldServer(vmi *v1.VirtualMachineInstance, testPort int, prot
 	Expect(err).ToNot(HaveOccurred())
 }
 
-func UpdateClusterConfigValue(key string, value string) {
+// UpdateClusterConfigValueAndWait updates the given configuration in the kubevirt config map and then waits
+// to allow the configuration events to be propagated to the consumers.
+func UpdateClusterConfigValueAndWait(key string, value string) {
 	virtClient, err := kubecli.GetKubevirtClient()
 	PanicOnError(err)
 	cfgMap, err := virtClient.CoreV1().ConfigMaps(KubeVirtInstallNamespace).Get(kubevirtConfig, metav1.GetOptions{})
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	cfgMap.Data[key] = value
 	_, err = virtClient.CoreV1().ConfigMaps(KubeVirtInstallNamespace).Update(cfgMap)
-	Expect(err).ToNot(HaveOccurred())
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+
+	time.Sleep(2 * time.Second)
 }
 
 func WaitAgentConnected(virtClient kubecli.KubevirtClient, vmi *v1.VirtualMachineInstance) {
-	Eventually(func() bool {
+	By("Waiting for guest agent connection")
+	EventuallyWithOffset(1, func() bool {
 		updatedVmi, err := virtClient.VirtualMachineInstance(NamespaceTestDefault).Get(vmi.Name, &metav1.GetOptions{})
 		Expect(err).ToNot(HaveOccurred())
 		for _, condition := range updatedVmi.Status.Conditions {
-			if condition.Type == "AgentConnected" && condition.Status == "True" {
+			if condition.Type == v1.VirtualMachineInstanceAgentConnected && condition.Status == k8sv1.ConditionTrue {
 				return true
 			}
 		}

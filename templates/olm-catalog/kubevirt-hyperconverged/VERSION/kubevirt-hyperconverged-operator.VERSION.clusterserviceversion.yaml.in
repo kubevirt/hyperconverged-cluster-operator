@@ -66,13 +66,6 @@ metadata:
           }
         },
         {
-          "apiVersion": "machineremediation.kubevirt.io/v1alpha1",
-          "kind": "MachineRemediationOperator",
-          "metadata": {
-            "name": "mro"
-          }
-        },
-        {
           "apiVersion": "kubevirt.io/v1alpha1",
           "kind": "NodeMaintenance",
           "metadata": {
@@ -82,14 +75,7 @@ metadata:
             "nodeName": "nodename",
             "reason": "node maintenance reason"
           }
-        },{{end}}
-        {
-          "apiVersion": "kubevirt.io/v1alpha1",
-          "kind": "V2VVmware",
-          "metadata": {
-            "name": "v2vvmware"
-          }
-        }
+        }{{end}}
       ]
     capabilities: Full Lifecycle
     categories: OpenShift Optional
@@ -227,9 +213,6 @@ spec:
         - serviceAccountName: cluster-network-addons-operator
           rules:
 {{.CNA.ClusterRules}}
-        - serviceAccountName: machine-remediation-operator
-          rules:
-{{.MRO.Rules}}
         - serviceAccountName: kubevirt-ssp-operator
           rules:
           - apiGroups:
@@ -426,9 +409,6 @@ spec:
         - name: cluster-network-addons-operator-0-0-2
           spec:
 {{.CNA.DeploymentSpec}}
-        - name: machine-remediation-operator-0-0-2
-          spec:
-{{.MRO.DeploymentSpec}}
         - name: kubevirt-ssp-operator-0-0-2
           spec:
             replicas: 1
@@ -552,8 +532,3 @@ spec:
         kind: NodeMaintenance
         displayName: Node Maintenance
         description: Node Maintenance
-      - name: v2vvmwares.kubevirt.io
-        version: v1alpha1
-        kind: V2VVmware
-        displayName: V2V Vmware
-        description: V2V Vmware

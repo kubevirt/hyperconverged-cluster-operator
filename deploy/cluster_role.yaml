@@ -31,34 +31,44 @@ rules:
   verbs:
   - '*'
 - apiGroups:
+  - machineremediation.kubevirt.io
+  resources:
+  - machineremediationoperators
+  - machineremediationoperators/status
+  verbs:
+  - '*'
+- apiGroups:
   - ""
   resources:
-  - configmaps
   - pods
-  - serviceaccounts
   - services
+  - services/finalizers
+  - endpoints
+  - persistentvolumeclaims
+  - events
+  - configmaps
+  - secrets
+  - serviceaccounts
   verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - delete
-- apiGroups:
-  - batch
-  resources:
-  - jobs
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - delete
+  - '*'
 - apiGroups:
   - apps
   resources:
   - deployments
+  - deployments/finalizers
   - daemonsets
+  - replicasets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - delete
+  - update
+- apiGroups:
+  - batch
+  resources:
+  - jobs
   verbs:
   - get
   - list
@@ -109,12 +119,12 @@ rules:
   - patch
   - update
 - apiGroups:
-  - machineremediation.kubevirt.io
+  - monitoring.coreos.com
   resources:
-  - machineremediationoperators
-  - machineremediationoperators/status
+  - servicemonitors
   verbs:
-  - '*'
+  - get
+  - create
 
 
 ---
@@ -242,6 +252,18 @@ rules:
   - watch
   - create
   - delete
+- apiGroups:
+  - monitoring.coreos.com
+  resources:
+  - servicemonitors
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - delete
+  - update
+  - patch
 - apiGroups:
   - subresources.kubevirt.io
   resources:
@@ -832,59 +854,6 @@ rules:
   - '*'
   resources:
   - '*'
-  verbs:
-  - '*'
-
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  labels:
-    machineremediation.kubevirt.io: ""
-    machineremediation.kubevirt.io/version: v0.3.10
-  name: machine-remediation-operator
-rules:
-- apiGroups:
-  - machineremediation.kubevirt.io
-  resources:
-  - machineremediationoperators
-  - machineremediationoperators/status
-  verbs:
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - nodes
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - serviceaccounts
-  verbs:
-  - '*'
-- apiGroups:
-  - apps
-  resources:
-  - deployments
-  verbs:
-  - '*'
-- apiGroups:
-  - apiextensions.k8s.io
-  resources:
-  - customresourcedefinitions
-  verbs:
-  - '*'
-- apiGroups:
-  - rbac.authorization.k8s.io
-  resources:
-  - clusterroles
-  - clusterrolebindings
   verbs:
   - '*'
 
