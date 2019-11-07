@@ -196,7 +196,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		r.ensureKubeVirtNodeLabellerBundle,
 		r.ensureKubeVirtTemplateValidator,
 		r.ensureKubeVirtMetricsAggregation,
-		//r.ensureIMSConfig,
+		r.ensureIMSConfig,
 	} {
 		err = f(instance, reqLogger, request)
 		if err != nil {
