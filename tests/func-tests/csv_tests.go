@@ -1,19 +1,33 @@
-package main
+package tests
 
 import (
+	"github.com/onsi/ginkgo"
+
 	"encoding/json"
 	"fmt"
 	"github.com/ghodss/yaml"
 	//"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"os"
+        "os"
 	"os/exec"
 )
 
-var (
-	kubectlCmd                    string
-	clusterServiceVersionFileName string
-)
+// test parameters.
+type TestCfg struct {
+	KubectlCmd                    string
+	ClusterServiceVersionFileName string
+}
+
+func newTestCfg() (*TestCfg,bool) {
+
+        kubectlCommand := os.Getenv("TEST_KUBECTL_CMD")
+        clusterServiceVersionFileName := os.Getenv("TEST_CSV_FILE")
+
+        runTests := kubectlCommand != "" && clusterServiceVersionFileName != ""
+
+        return &TestCfg{KubectlCmd: kubectlCommand, ClusterServiceVersionFileName: clusterServiceVersionFileName}, runTests
+}
+
 
 // yaml parsing structs (for parsing of cluster service version yaml file)
 type hcoType struct {
@@ -61,7 +75,7 @@ type specDeployment struct {
 func parseClusterServiceVersionFile(fname string) ([]specDeployment, error) {
 	bdata, err := ioutil.ReadFile(fname)
 	if err != nil {
-		fmt.Print(err)
+		fmt.Fprint(ginkgo.GinkgoWriter, err)
 		return nil, err
 
 	}
@@ -69,7 +83,7 @@ func parseClusterServiceVersionFile(fname string) ([]specDeployment, error) {
 
 	err = yaml.Unmarshal([]byte(bdata), &data)
 	if err != nil {
-		fmt.Print(err)
+		fmt.Fprint(ginkgo.GinkgoWriter, err)
 		return nil, err
 	}
 
@@ -81,11 +95,10 @@ func parseClusterServiceVersionFile(fname string) ([]specDeployment, error) {
 	retVals := make([]specDeployment, numResult)
 
 	for pos, spec := range data.Spec.Install.Spec.Deployments {
-		fmt.Println("****")
-		fmt.Println(spec)
+		fmt.Fprintln(ginkgo.GinkgoWriter, "Spec: ", spec)
 
 		retVals[pos] = specDeployment{spec.Name, spec.Spec.Template.Spec.Containers[0].Image}
-		fmt.Println(retVals[pos])
+		fmt.Fprintln(ginkgo.GinkgoWriter, "Spec: ",retVals[pos])
 	}
 
 	return retVals, nil
@@ -142,15 +155,14 @@ func parseDeployments(bdata string) (map[string]deploymentData, error) {
 
 	err := json.Unmarshal([]byte(bdata), &data)
 	if err != nil {
-		fmt.Print(err)
+		fmt.Fprint(ginkgo.GinkgoWriter, err)
 		return nil, err
 	}
 
 	ret := make(map[string]deploymentData)
 
 	for _, entry := range data.Items {
-		fmt.Println("###")
-		fmt.Println(entry)
+		fmt.Fprintln(ginkgo.GinkgoWriter, "Deployment: ", entry)
 
 		name := entry.Metadata.Name
 		imageName := entry.Spec.Template.Spec.Containers[0].Image
@@ -163,7 +175,7 @@ func parseDeployments(bdata string) (map[string]deploymentData, error) {
 		}
 
 		depData := deploymentData{imageName, available}
-		fmt.Println(depData)
+		fmt.Fprintln(ginkgo.GinkgoWriter, depData)
 		ret[name] = depData
 	}
 
@@ -179,15 +191,15 @@ func matchClusterServiceDataToDeployment(specDep []specDeployment, depData map[s
 	status := true
 	for _, entry := range specDep {
 		if deploymentEntry, ok := depData[entry.Name]; !ok {
-			fmt.Printf("no deployment exists for Cluster service entry %s", entry.Name)
+			fmt.Fprintf(ginkgo.GinkgoWriter, "no deployment exists for Cluster service entry %s", entry.Name)
 			status = false
 		} else {
 			if !deploymentEntry.Available {
-				fmt.Printf("deployment %s exists, but is is not available", entry.Name)
+				fmt.Fprintf(ginkgo.GinkgoWriter, "deployment %s exists, but is is not available", entry.Name)
 				status = false
 			}
 			if !matchImages(entry.Image, deploymentEntry.Image) {
-				fmt.Printf("images in cluster service entry %s does not match image in deployment %s", entry.Image, deploymentEntry.Image)
+				fmt.Fprintf(ginkgo.GinkgoWriter, "images in cluster service entry %s does not match image in deployment %s", entry.Image, deploymentEntry.Image)
 				status = false
 			}
 		}
@@ -195,49 +207,57 @@ func matchClusterServiceDataToDeployment(specDep []specDeployment, depData map[s
 	return status
 }
 
-func parseCmdLine() {
-	if len(os.Args) != 3 {
-		fmt.Print("command line <kubectl cmd> <cluster service version file name>")
-		os.Exit(1)
-	}
-	kubectlCmd = os.Args[1]
-	clusterServiceVersionFileName = os.Args[2]
-}
 
-func getDeploymentJson() (string, error) {
+func getDeploymentJson(kubectlCmd string) (string, error) {
 	cmd := exec.Command(kubectlCmd, "get", "deployments", "-o", "json")
 
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("get deployments failed with %w", err)
-	}
-	return string(out), nil
+    out, err := cmd.CombinedOutput()
+    if err != nil {
+                errf := fmt.Errorf("get deployments failed with %s", err)
+		return "", errf
+    }
+    return string(out), nil
 
 }
 
-func main() {
-	parseCmdLine()
+var _ = ginkgo.Describe("ClusterServiceVersion", func() {
 
-	cluster, cerr := parseClusterServiceVersionFile(clusterServiceVersionFileName)
+	ginkgo.Context("csv testing", func() {
+		ginkgo.It("For each csv entry should have active deployment with same image as in csv file", func() {
+                    testDeployments()
+                })
+        })
+})
+
+func testDeployments() {
+
+        tstCfg, runTests := newTestCfg()
+        if  !runTests {
+                fmt.Fprintln(ginkgo.GinkgoWriter, "*** skipping ClusterService test  ***")
+                return
+        }
+
+	cluster, cerr := parseClusterServiceVersionFile(tstCfg.ClusterServiceVersionFileName)
 	if cerr != nil {
-		fmt.Println("Parsing of cluster service version failed", cerr)
-		os.Exit(1)
+		msg := fmt.Sprint("Parsing of cluster service version failed", cerr)
+		ginkgo.Fail(msg)
 	}
 
-	depjson, serr := getDeploymentJson()
+	depjson, serr := getDeploymentJson(tstCfg.KubectlCmd)
 	if serr != nil {
-		fmt.Println("failed to get deployment", serr)
-		os.Exit(1)
-	}
+		msg := fmt.Sprint("failed to get deployment", serr)
+	        ginkgo.Fail(msg)
+        }
 
 	dep, derr := parseDeployments(depjson) //"tools/test-hco-utils/deploy.json")
 	if derr != nil {
-		fmt.Println("failed to parse the deployment data", derr)
-		os.Exit(1)
-	}
+		msg := fmt.Sprint("failed to parse the deployment data", derr)
+	        ginkgo.Fail(msg)
+        }
 
 	if !matchClusterServiceDataToDeployment(cluster, dep) {
-		os.Exit(1)
-	}
-	fmt.Println("*** all deployments are up and corespond to cluster service version ***")
+	        msg := fmt.Sprint("deployment does not match cluster service data")
+                ginkgo.Fail(msg)
+        }
+	fmt.Fprintln(ginkgo.GinkgoWriter, "*** all deployments are up and corespond to cluster service version ***")
 }
