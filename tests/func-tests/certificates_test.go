@@ -173,6 +173,11 @@ var _ = Describe("Certificates", func() {
 			By("Rotating the certs first")
 			Expect(RotateCeritifcates(testscore.KubeVirtInstallNamespace)).To(Succeed())
 			WaitForPodsToBecomeReady(testscore.KubeVirtInstallNamespace)
+			jobType := tests.GetJobTypeEnvVar()
+			storageClass := tests.KubeVirtStorageClassLocal
+			if jobType == "prow" {
+				storageClass = ""
+			}
 
 			By("Upload image")
 			Eventually(func() error {
@@ -191,7 +196,7 @@ var _ = Describe("Certificates", func() {
 					"--pvc-size", pvcSize,
 					"--uploadproxy-url", fmt.Sprintf("https://127.0.0.1:%d", localUploadProxyPort),
 					"--wait-secs", "30",
-					"--storage-class", tests.KubeVirtStorageClassLocal,
+					"--storage-class", storageClass,
 					"--insecure")
 				err = virtctlCmd()
 				if err != nil {
