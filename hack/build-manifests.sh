@@ -33,7 +33,6 @@ DEPLOY_DIR="${PROJECT_ROOT}/deploy"
 CRD_DIR="${DEPLOY_DIR}/crds"
 CSV_DIR="${DEPLOY_DIR}/olm-catalog/kubevirt-hyperconverged/${CSV_VERSION}"
 
-
 OPERATOR_NAME="${NAME:-kubevirt-hyperconverged-operator}"
 OPERATOR_NAMESPACE="${NAMESPACE:-kubevirt-hyperconverged}"
 OPERATOR_IMAGE="${OPERATOR_IMAGE:-quay.io/kubevirt/hyperconverged-cluster-operator:latest}"
@@ -45,7 +44,7 @@ CNA_IMAGE="${CNA_IMAGE:-quay.io/kubevirt/cluster-network-addons-operator:0.18.0}
 SSP_IMAGE="${SSP_IMAGE:-quay.io/fromani/kubevirt-ssp-operator-container:v1.0.16}"
 CDI_IMAGE="${CDI_IMAGE:-docker.io/kubevirt/cdi-operator:v1.11.0}"
 NMO_IMAGE="${NMO_IMAGE:-quay.io/kubevirt/node-maintenance-operator:v0.4.0}"
-# HPP_IMAGE="${HPP_IMAGE:-quay.io/kubevirt/hostpath-provisioner-operator:v0.2.3}"
+HPP_IMAGE="${HPP_IMAGE:-quay.io/kubevirt/hostpath-provisioner-operator:v0.2.5}"
 CONVERSION_CONTAINER="${CONVERSION_CONTAINER:-quay.io/kubevirt/kubevirt-v2v-conversion:v2.0.0}"
 VMWARE_CONTAINER="${VMWARE_CONTAINER:-quay.io/kubevirt/kubevirt-vmware:v2.0.0}"
 
@@ -182,14 +181,13 @@ cnaCsv="${TEMPDIR}/$(create_cna_csv).${CSV_EXT}"
 sspCsv="${TEMPDIR}/$(create_ssp_csv).${CSV_EXT}"
 cdiCsv="${TEMPDIR}/$(create_cdi_csv).${CSV_EXT}"
 nmoCsv="${TEMPDIR}/$(create_nmo_csv).${CSV_EXT}"
-# hppCsv="${TEMPDIR}/$(create_hpp_csv).${CSV_EXT}"
+hppCsv="${TEMPDIR}/$(create_hpp_csv).${CSV_EXT}"
 popd
 
 mkdir -p "${CSV_DIR}"
 cp -f ${TEMPDIR}/*.${CRD_EXT} ${CRD_DIR}
 
 # Build and write deploy dir
-# --hpp-csv="$(<${hppCsv})" \
 (cd ${PROJECT_ROOT}/tools/manifest-templator/ && go build)
 ${PROJECT_ROOT}/tools/manifest-templator/manifest-templator \
   --cna-csv="$(<${cnaCsv})" \
@@ -197,6 +195,7 @@ ${PROJECT_ROOT}/tools/manifest-templator/manifest-templator \
   --ssp-csv="$(<${sspCsv})" \
   --cdi-csv="$(<${cdiCsv})" \
   --nmo-csv="$(<${nmoCsv})" \
+  --hpp-csv="$(<${hppCsv})" \
   --ims-conversion-image-name="${CONVERSION_CONTAINER}" \
   --ims-vmware-image-name="${VMWARE_CONTAINER}" \
   --operator-namespace="${OPERATOR_NAMESPACE}" \
@@ -207,7 +206,6 @@ ${PROJECT_ROOT}/tools/manifest-templator/manifest-templator \
 cp -f ${CRD_DIR}/*.${CRD_EXT} ${CSV_DIR}
 
 # Build and merge CSVs
-# --hpp-csv="$(<${hppCsv})" \
 (cd ${PROJECT_ROOT}/tools/csv-merger/ && go build)
 ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --cna-csv="$(<${cnaCsv})" \
@@ -215,6 +213,7 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --ssp-csv="$(<${sspCsv})" \
   --cdi-csv="$(<${cdiCsv})" \
   --nmo-csv="$(<${nmoCsv})" \
+  --hpp-csv="$(<${hppCsv})" \
   --ims-conversion-image-name="${CONVERSION_CONTAINER}" \
   --ims-vmware-image-name="${VMWARE_CONTAINER}" \
   --csv-version=${CSV_VERSION} \
