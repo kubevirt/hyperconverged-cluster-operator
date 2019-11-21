@@ -297,7 +297,7 @@ func WaitForPodsToBecomeReady(namespace string) {
 			return fmt.Errorf("Not ready Pods: %v", notReady)
 		}
 		return nil
-	}, 10*time.Minute, 1*time.Second).Should(Succeed())
+	}, 20*time.Minute, 1*time.Second).Should(Succeed())
 }
 
 func GetCert(port string) []byte {
