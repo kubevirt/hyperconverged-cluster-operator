@@ -8,7 +8,7 @@ metadata:
     categories: OpenShift Optional
     certified: "false"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:latest
-    createdAt: "2019-11-21 14:51:49"
+    createdAt: "2019-11-21 16:30:21"
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -1529,20 +1529,20 @@ spec:
               - command:
                 - hyperconverged-cluster-operator
                 env:
-                - name: KVM_EMULATION
-                - name: OPERATOR_IMAGE
-                  value: quay.io/kubevirt/hyperconverged-cluster-operator:latest
-                - name: OPERATOR_NAME
-                  value: hyperconverged-cluster-operator
-                - name: POD_NAME
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.name
-                - name: WATCH_NAMESPACE
-                - name: CONVERSION_CONTAINER
-                  value: quay.io/kubevirt/kubevirt-v2v-conversion:v2.0.0
-                - name: VMWARE_CONTAINER
-                  value: quay.io/kubevirt/kubevirt-vmware:v2.0.0
+                  - name: KVM_EMULATION
+                  - name: OPERATOR_IMAGE
+                    value: quay.io/kubevirt/hyperconverged-cluster-operator:latest
+                  - name: OPERATOR_NAME
+                    value: hyperconverged-cluster-operator
+                  - name: POD_NAME
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.name
+                  - name: WATCH_NAMESPACE
+                  - name: CONVERSION_CONTAINER
+                    value: quay.io/kubevirt/kubevirt-v2v-conversion:v2.0.0
+                  - name: VMWARE_CONTAINER
+                    value: quay.io/kubevirt/kubevirt-vmware:v2.0.0
                 image: quay.io/kubevirt/hyperconverged-cluster-operator:latest
                 imagePullPolicy: IfNotPresent
                 name: hyperconverged-cluster-operator
@@ -1918,7 +1918,7 @@ spec:
   maturity: alpha
   provider:
     name: KubeVirt project
-  replaces: kubevirt-hyperconverged-operator-v0.0.3
+  replaces: kubevirt-hyperconverged-operator.v0.0.3
   selector:
     matchLabels:
       alm-owner-kubevirt: kubevirt-hyperconverged

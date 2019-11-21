@@ -1363,20 +1363,20 @@ spec:
               - command:
                 - hyperconverged-cluster-operator
                 env:
-                - name: KVM_EMULATION
-                - name: OPERATOR_IMAGE
-                  value: quay.io/kubevirt/hyperconverged-cluster-operator:latest
-                - name: OPERATOR_NAME
-                  value: hyperconverged-cluster-operator
-                - name: POD_NAME
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.name
-                - name: WATCH_NAMESPACE
-                - name: CONVERSION_CONTAINER
-                  value: quay.io/kubevirt/kubevirt-v2v-conversion:v2.0.0
-                - name: VMWARE_CONTAINER
-                  value: quay.io/kubevirt/kubevirt-vmware:v2.0.0
+                  - name: KVM_EMULATION
+                  - name: OPERATOR_IMAGE
+                    value: quay.io/kubevirt/hyperconverged-cluster-operator:latest
+                  - name: OPERATOR_NAME
+                    value: hyperconverged-cluster-operator
+                  - name: POD_NAME
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.name
+                  - name: WATCH_NAMESPACE
+                  - name: CONVERSION_CONTAINER
+                    value: quay.io/kubevirt/kubevirt-v2v-conversion:v2.0.0
+                  - name: VMWARE_CONTAINER
+                    value: quay.io/kubevirt/kubevirt-vmware:v2.0.0
                 image: quay.io/kubevirt/hyperconverged-cluster-operator:latest
                 imagePullPolicy: IfNotPresent
                 name: hyperconverged-cluster-operator
@@ -1665,6 +1665,7 @@ spec:
   maturity: alpha
   provider:
     name: KubeVirt project
+  replaces: kubevirt-hyperconverged-operator.v0.0.2
   selector:
     matchLabels:
       alm-owner-kubevirt: kubevirt-hyperconverged
