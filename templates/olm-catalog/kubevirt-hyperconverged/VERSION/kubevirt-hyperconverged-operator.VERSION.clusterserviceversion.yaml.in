@@ -285,6 +285,7 @@ spec:
             - services
             verbs:
             - create
+            - update
             - get
             - patch
             - list
