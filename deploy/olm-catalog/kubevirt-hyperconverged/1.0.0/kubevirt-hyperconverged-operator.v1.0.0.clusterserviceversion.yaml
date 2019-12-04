@@ -3,12 +3,13 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"apiVersion":"hco.kubevirt.io/v1alpha1","kind":"HyperConverged","metadata":{"name":"kubevirt-hyperconverged","namespace":"kubevirt-hyperconverged"},"spec":{"BareMetalPlatform":false}}]'
+    alm-examples: '[{"apiVersion":"hco.kubevirt.io/v1alpha1","kind":"HyperConverged","metadata":{"name":"kubevirt-hyperconverged","namespace":"kubevirt-hyperconverged"},"spec":{"BareMetalPlatform":false}},{"apiVersion":"networkaddonsoperator.network.kubevirt.io/v1alpha1","kind":"NetworkAddonsConfig","metadata":{"name":"cluster"},"spec":{"imagePullPolicy":"IfNotPresent","kubeMacPool":{"rangeEnd":"FD:FF:FF:FF:FF:FF","rangeStart":"02:00:00:00:00:00"},"linuxBridge":{},"multus":{},"nmstate":{},"ovs":{}}},{"apiVersion":"kubevirt.io/v1alpha3","kind":"KubeVirt","metadata":{"name":"kubevirt","namespace":"kubevirt"},"spec":{"imagePullPolicy":"Always"}},{"apiVersion":"kubevirt.io/v1","kind":"KubevirtCommonTemplatesBundle","metadata":{"name":"kubevirt-common-template-bundle"},"spec":{"version":"v0.7.0"}},{"apiVersion":"kubevirt.io/v1","kind":"KubevirtMetricsAggregation","metadata":{"name":"kubevirt-metrics-aggregation"},"spec":{"version":"v0.0.1"}},{"apiVersion":"kubevirt.io/v1","kind":"KubevirtNodeLabellerBundle","metadata":{"name":"kubevirt-node-labeller-bundle"},"spec":{"version":"v0.1.1"}},{"apiVersion":"kubevirt.io/v1","kind":"KubevirtTemplateValidator","metadata":{"name":"kubevirt-template-validator","namespace":"kubevirt"},"spec":{"templateValidatorReplicas":2,"version":"v0.6.2"}},{"apiVersion":"cdi.kubevirt.io/v1alpha1","kind":"CDI","metadata":{"name":"cdi","namespace":"cdi"},"spec":{"imagePullPolicy":"IfNotPresent"}},{"apiVersion":"kubevirt.io/v1alpha1","kind":"NodeMaintenance","metadata":{"name":"nodemaintenance-xyz"},"spec":{"nodeName":"node02","reason":"Test
+      node maintenance"}},{"apiVersion":"hostpathprovisioner.kubevirt.io/v1alpha1","kind":"HostPathProvisioner","metadata":{"name":"hostpath-provisioner"},"spec":{"imagePullPolicy":"IfNotPresent","pathConfig":{"path":"/var/hpvolumes","useNamingPrefix":"false"}}}]'
     capabilities: Full Lifecycle
     categories: OpenShift Optional
     certified: "false"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:latest
-    createdAt: "2019-11-21 16:30:21"
+    createdAt: "2019-12-04 12:04:47"
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -102,214 +103,42 @@ spec:
       displayName: KubeVirt deployment
       kind: KubeVirt
       name: kubevirts.kubevirt.io
-      specDescriptors:
-      - description: The ImagePullPolicy to use for the KubeVirt components.
-        displayName: ImagePullPolicy
-        path: imagePullPolicy
-        x-descriptors:
-        - urn:alm:descriptor:io.kubernetes:imagePullPolicy
-      - description: The ImageRegistry to use for the KubeVirt components.
-        displayName: ImageRegistry
-        path: imageRegistry
-        x-descriptors:
-        - urn:alm:descriptor:text
-      - description: The ImageTag to use for the KubeVirt components.
-        displayName: ImageTag
-        path: imageTag
-        x-descriptors:
-        - urn:alm:descriptor:text
-      statusDescriptors:
-      - description: The deployment phase.
-        displayName: Phase
-        path: phase
-        x-descriptors:
-        - urn:alm:descriptor:io.kubernetes.phase
-      - description: Explanation for the current status of the cluster.
-        displayName: Conditions
-        path: conditions
-        x-descriptors:
-        - urn:alm:descriptor:io.kubernetes.conditions
-      - description: The observed version of the KubeVirt deployment.
-        displayName: Observed KubeVirt Version
-        path: observedKubeVirtVersion
-        x-descriptors:
-        - urn:alm:descriptor:text
-      - description: The targeted version of the KubeVirt deployment.
-        displayName: Target KubeVirt Version
-        path: targetKubeVirtVersion
-        x-descriptors:
-        - urn:alm:descriptor:text
-      - description: The observed registry of the KubeVirt deployment.
-        displayName: Observed KubeVirt registry
-        path: ObservedKubeVirtRegistry
-        x-descriptors:
-        - urn:alm:descriptor:text
-      - description: The targeted registry of the KubeVirt deployment.
-        displayName: Target KubeVirt registry
-        path: TargetKubeVirtRegistry
-        x-descriptors:
-        - urn:alm:descriptor:text
-      - description: The version of the KubeVirt Operator.
-        displayName: KubeVirt Operator Version
-        path: operatorVersion
-        x-descriptors:
-        - urn:alm:descriptor:text
       version: v1alpha3
     - description: Represents a deployment of the predefined VM templates
       displayName: KubeVirt common templates
       kind: KubevirtCommonTemplatesBundle
       name: kubevirtcommontemplatesbundles.kubevirt.io
-      specDescriptors:
-      - description: The version of the KubeVirt Templates to deploy
-        displayName: Version
-        path: version
-        x-descriptors:
-        - urn:alm:descriptor:io.kubernetes.ssp:version
       version: v1
     - description: Provide aggregation rules for core kubevirt metrics
       displayName: KubeVirt Metric Aggregation
       kind: KubevirtMetricsAggregation
       name: kubevirtmetricsaggregations.kubevirt.io
-      specDescriptors:
-      - description: The version of the aggregation rules to deploy
-        displayName: Version
-        path: version
-        x-descriptors:
-        - urn:alm:descriptor:io.kubernetes.ssp:version
       version: v1
     - description: Represents a deployment of Node labeller component
       displayName: KubeVirt Node labeller
       kind: KubevirtNodeLabellerBundle
       name: kubevirtnodelabellerbundles.kubevirt.io
-      specDescriptors:
-      - description: The version of the node labeller to deploy
-        displayName: Version
-        path: version
-        x-descriptors:
-        - urn:alm:descriptor:io.kubernetes.ssp:version
       version: v1
     - description: Represents a deployment of admission control webhook to validate
         the KubeVirt templates
       displayName: KubeVirt Template Validator admission webhook
       kind: KubevirtTemplateValidator
       name: kubevirttemplatevalidators.kubevirt.io
-      specDescriptors:
-      - description: The version of the KubeVirt Template Validator to deploy
-        displayName: Version
-        path: version
-        x-descriptors:
-        - urn:alm:descriptor:io.kubernetes.ssp:version
       version: v1
     - description: Represents a CDI deployment
       displayName: CDI deployment
       kind: CDI
       name: cdis.cdi.kubevirt.io
-      resources:
-      - kind: ConfigMap
-        name: cdi-operator-leader-election-helper
-        version: v1
-      specDescriptors:
-      - description: The ImageRegistry to use for the CDI components.
-        displayName: ImageRegistry
-        path: imageRegistry
-        x-descriptors:
-        - urn:alm:descriptor:text
-      - description: The ImageTag to use for the CDI components.
-        displayName: ImageTag
-        path: imageTag
-        x-descriptors:
-        - urn:alm:descriptor:text
-      - description: The ImagePullPolicy to use for the CDI components.
-        displayName: ImagePullPolicy
-        path: imagePullPolicy
-        x-descriptors:
-        - urn:alm:descriptor:io.kubernetes:imagePullPolicy
-      statusDescriptors:
-      - description: The deployment phase.
-        displayName: Phase
-        path: phase
-        x-descriptors:
-        - urn:alm:descriptor:io.kubernetes.phase
-      - description: Explanation for the current status of the CDI deployment.
-        displayName: Conditions
-        path: conditions
-        x-descriptors:
-        - urn:alm:descriptor:io.kubernetes.conditions
-      - description: The observed version of the CDI deployment.
-        displayName: Observed CDI Version
-        path: observedVersion
-        x-descriptors:
-        - urn:alm:descriptor:text
-      - description: The targeted version of the CDI deployment.
-        displayName: Target CDI Version
-        path: targetVersion
-        x-descriptors:
-        - urn:alm:descriptor:text
-      - description: The version of the CDI Operator
-        displayName: CDI Operator Version
-        path: operatorVersion
-        x-descriptors:
-        - urn:alm:descriptor:text
       version: v1alpha1
     - description: Represents a deployment of node maintenance crd
       displayName: KubeVirt node maintenance
       kind: NodeMaintenance
       name: nodemaintenances.kubevirt.io
-      specDescriptors:
-      - description: The version of the node maintenance to deploy
-        displayName: Version
-        path: version
-        x-descriptors:
-        - urn:alm:descriptor:io.kubernetes.node-maintenance:version
       version: v1alpha1
     - description: Represents a HostPathProvisioner deployment
       displayName: HostPathProvisioner deployment
       kind: HostPathProvisioner
       name: hostpathprovisioners.hostpathprovisioner.kubevirt.io
-      specDescriptors:
-      - description: The ImageRegistry to use for the HostPathProvisioner components.
-        displayName: ImageRegistry
-        path: imageRegistry
-        x-descriptors:
-        - urn:alm:descriptor:text
-      - description: The ImageTag to use for the HostPathProvisioner components.
-        displayName: ImageTag
-        path: imageTag
-        x-descriptors:
-        - urn:alm:descriptor:text
-      - description: The ImagePullPolicy to use for the HostPathProvisioner components.
-        displayName: ImagePullPolicy
-        path: imagePullPolicy
-        x-descriptors:
-        - urn:alm:descriptor:io.kubernetes:imagePullPolicy
-      - description: The PathConfig object allows you to specify where and how you
-          want the directories created that will back the PVs.
-        displayName: PathConfig
-        path: pathConfig
-        x-descriptors:
-        - urn:alm:descriptor:text
-      statusDescriptors:
-      - description: Explanation for the current status of the HostPathProvisioner
-          deployment.
-        displayName: Conditions
-        path: conditions
-        x-descriptors:
-        - urn:alm:descriptor:io.kubernetes.conditions
-      - description: The observed version of the HostPathProvisioner deployment.
-        displayName: Observed HostPathProvisioner Version
-        path: observedVersion
-        x-descriptors:
-        - urn:alm:descriptor:text
-      - description: The targeted version of the HostPathProvisioner deployment.
-        displayName: Target HostPathProvisioner Version
-        path: targetVersion
-        x-descriptors:
-        - urn:alm:descriptor:text
-      - description: The version of the HostPathProvisioner Operator
-        displayName: HostPathProvisioner Operator Version
-        path: operatorVersion
-        x-descriptors:
-        - urn:alm:descriptor:text
       version: v1alpha1
   description: |-
     **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
@@ -1529,20 +1358,20 @@ spec:
               - command:
                 - hyperconverged-cluster-operator
                 env:
-                  - name: KVM_EMULATION
-                  - name: OPERATOR_IMAGE
-                    value: quay.io/kubevirt/hyperconverged-cluster-operator:latest
-                  - name: OPERATOR_NAME
-                    value: hyperconverged-cluster-operator
-                  - name: POD_NAME
-                    valueFrom:
-                      fieldRef:
-                        fieldPath: metadata.name
-                  - name: WATCH_NAMESPACE
-                  - name: CONVERSION_CONTAINER
-                    value: quay.io/kubevirt/kubevirt-v2v-conversion:v2.0.0
-                  - name: VMWARE_CONTAINER
-                    value: quay.io/kubevirt/kubevirt-vmware:v2.0.0
+                - name: KVM_EMULATION
+                - name: OPERATOR_IMAGE
+                  value: quay.io/kubevirt/hyperconverged-cluster-operator:latest
+                - name: OPERATOR_NAME
+                  value: hyperconverged-cluster-operator
+                - name: POD_NAME
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.name
+                - name: WATCH_NAMESPACE
+                - name: CONVERSION_CONTAINER
+                  value: quay.io/kubevirt/kubevirt-v2v-conversion:v2.0.0
+                - name: VMWARE_CONTAINER
+                  value: quay.io/kubevirt/kubevirt-vmware:v2.0.0
                 image: quay.io/kubevirt/hyperconverged-cluster-operator:latest
                 imagePullPolicy: IfNotPresent
                 name: hyperconverged-cluster-operator
