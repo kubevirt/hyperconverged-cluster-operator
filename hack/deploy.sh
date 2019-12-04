@@ -98,7 +98,7 @@ function debug(){
 if [ "${CI}" != "true" ]; then
 	"${CMD}" create -f _out/operator.yaml
 else
-	sed 's|name: KVM_EMULATION|name: KVM_EMULATION\n          value: "true"|' < _out/operator.yaml > _out/operator-ci.yaml
+	sed -E 's|^(\s*)- name: KVM_EMULATION$|\1- name: KVM_EMULATION\n\1  value: "true"|' < _out/operator.yaml > _out/operator-ci.yaml
 	cat _out/operator-ci.yaml
 	"${CMD}" create -f _out/operator-ci.yaml
 fi
