@@ -57,7 +57,13 @@ function Msg {
     set -x
 }
 
-echo "KUBEVIRT_PROVIDER: $KUBEVIRT_PROVIDER"
+#UPGRADE_METHOD=${UPGRADE_METHOD:-catalog_source}
+UPGRADE_METHOD=${UPGRADE_METHOD:-subscription_channel}
+
+cat <<EOF
+KUBEVIRT_PROVIDER:  $KUBEVIRT_PROVIDER
+UPGRADE_METHOD:     $UPGRADE_METHOD     
+EOF
 
 if [ -n "$KUBEVIRT_PROVIDER" ]; then
   echo "Running on STDCI ${KUBEVIRT_PROVIDER}"
@@ -196,10 +202,26 @@ ${CMD} get pod $HCO_CATALOGSOURCE_POD -n ${HCO_CATALOG_NAMESPACE} -o yaml | grep
 # version updates the latest version.
 # The currentCSV in the package manifest is also updated to point to the new version.
 
-Msg "patch existing catalog source with new registry image" "and wait for hco-catalogsource pod to be in Ready state"
+Msg "patch existing catalog source with new registry image" "and wait for hco-catalogsource pod to be in Ready state" "upgrade method: ${UPGRADE_METHOD}"
 
-# Patch the HCO catalogsource image to the upgrade version
-${CMD} patch catalogsource hco-catalogsource-example -n ${HCO_CATALOG_NAMESPACE} -p "{\"spec\": {\"image\": \"${REGISTRY_IMAGE_UPGRADE}\"}}"  --type merge
+
+
+case "$UPGRADE_METHOD" in
+
+catalog_source)
+    # Path the HCO catalogsource image to the upgrade version
+    ${CMD} patch catalogsource hco-catalogsource-example -n ${HCO_CATALOG_NAMESPACE} -p "{\"spec\": {\"image\": \"${REGISTRY_IMAGE_UPGRADE}\"}}"  --type merge
+    ;;
+
+subscription_channel)
+    ${CMD} patch subs hco-subscription -p '{"spec":{"channel": "'${LATEST_VERSION}'"}}' --type merge
+    ;;
+
+*)
+    echo "*** test failed. bad upgrade method: ${UPGRADE_METHOD} ***"
+    exit 1
+esac
+
 sleep 5
 ./hack/retry.sh 20 30 "${CMD} get pods -n ${HCO_CATALOG_NAMESPACE} | grep hco-catalogsource | grep -v Terminating"
 HCO_CATALOGSOURCE_POD=`${CMD} get pods -n ${HCO_CATALOG_NAMESPACE} | grep hco-catalogsource | grep -v Terminating | head -1 | awk '{ print $1 }'`
