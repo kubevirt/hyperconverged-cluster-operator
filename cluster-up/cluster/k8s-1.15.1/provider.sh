@@ -7,6 +7,7 @@ image="k8s-1.15.1@sha256:14d7b1806f24e527167d2913deafd910ea46e69b830bf0b094dde35
 source ${KUBEVIRTCI_PATH}/cluster/ephemeral-provider-common.sh
 
 function up() {
+    set -x
     ${_cli} run $(_add_common_params)
 
     # Copy k8s config and kubectl
