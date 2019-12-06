@@ -40,7 +40,7 @@ IMAGE_PULL_POLICY="${IMAGE_PULL_POLICY:-IfNotPresent}"
 
 # Component Images
 KUBEVIRT_IMAGE="${KUBEVIRT_IMAGE:-docker.io/kubevirt/virt-operator:v0.20.8}"
-CNA_IMAGE="${CNA_IMAGE:-quay.io/kubevirt/cluster-network-addons-operator:0.18.0}"
+CNA_IMAGE="${CNA_IMAGE:-quay.io/kubevirt/cluster-network-addons-operator:0.23.0}"
 SSP_IMAGE="${SSP_IMAGE:-quay.io/fromani/kubevirt-ssp-operator-container:v1.0.19}"
 CDI_IMAGE="${CDI_IMAGE:-docker.io/kubevirt/cdi-operator:v1.11.0}"
 NMO_IMAGE="${NMO_IMAGE:-quay.io/kubevirt/node-maintenance-operator:v0.4.0}"
@@ -98,11 +98,16 @@ function create_cna_csv() {
   local operatorName="cluster-network-addons"
   local imagePullUrl="${CNA_IMAGE}"
   local dumpCRDsArg="--dump-crds"
+  local containerPrefix="${CNA_IMAGE%/*}"
+  local tag="${CNA_IMAGE/*:/}"
   local operatorArgs=" \
     --namespace=${OPERATOR_NAMESPACE} \
     --version=${CSV_VERSION} \
     --version-replaces=${REPLACES_VERSION} \
     --image-pull-policy=IfNotPresent \
+    --operator-version=${tag} \
+    --container-tag=${tag} \
+    --container-prefix=${containerPrefix} \
   "
 
   gen_csv ${operatorName} ${imagePullUrl} ${dumpCRDsArg} ${operatorArgs}
