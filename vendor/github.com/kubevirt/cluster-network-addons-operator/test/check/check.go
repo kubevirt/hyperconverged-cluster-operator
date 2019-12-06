@@ -25,6 +25,8 @@ import (
 	opv1alpha1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1alpha1"
 	"github.com/kubevirt/cluster-network-addons-operator/pkg/components"
 	"github.com/kubevirt/cluster-network-addons-operator/pkg/names"
+
+	. "github.com/kubevirt/cluster-network-addons-operator/test/okd"
 )
 
 const (
@@ -35,6 +37,11 @@ const (
 
 func CheckComponentsDeployment(components []Component) {
 	for _, component := range components {
+		if component.ComponentName == MultusComponent.ComponentName && IsOnOKDCluster() {
+			// On OpenShift 4, Multus is not owned by us
+			continue
+		}
+
 		By(fmt.Sprintf("Checking that component %s is deployed", component.ComponentName))
 		err := checkForComponent(&component)
 		Expect(err).NotTo(HaveOccurred(), "Component has not been fully deployed")
@@ -43,6 +50,11 @@ func CheckComponentsDeployment(components []Component) {
 
 func CheckComponentsRemoval(components []Component) {
 	for _, component := range components {
+		if component.ComponentName == MultusComponent.ComponentName && IsOnOKDCluster() {
+			// On OpenShift 4, Multus is not owned by us
+			continue
+		}
+
 		// TODO: Once finalizers are implemented, we should switch to using
 		// once-time checks, since after NodeNetworkState removal, no components
 		// should be left over.

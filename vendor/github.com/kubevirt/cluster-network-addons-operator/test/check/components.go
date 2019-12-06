@@ -40,7 +40,6 @@ var (
 		SecurityContextConstraints: "nmstate",
 		DaemonSets:                 []string{"nmstate-handler"},
 	}
-
 	OvsComponent = Component{
 		ComponentName:              "Ovs",
 		ClusterRole:                "ovs-cni-marker-cr",

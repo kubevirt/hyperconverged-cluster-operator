@@ -3,6 +3,7 @@ package releases
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/blang/semver"
 	. "github.com/onsi/ginkgo"
@@ -10,6 +11,7 @@ import (
 
 	opv1alpha1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1alpha1"
 	. "github.com/kubevirt/cluster-network-addons-operator/test/kubectl"
+	. "github.com/kubevirt/cluster-network-addons-operator/test/okd"
 	. "github.com/kubevirt/cluster-network-addons-operator/test/operations"
 )
 
@@ -80,6 +82,10 @@ func CheckReleaseUsesExpectedContainerImages(release Release) {
 	By(fmt.Sprintf("Checking that all deployed images match release %s", release.Version))
 
 	expectedContainers := sortContainers(release.Containers)
+	if IsOnOKDCluster() {
+		// On OpenShift 4, Multus is not owned by us and will not be reported in Status
+		expectedContainers = dropMultusContainers(expectedContainers)
+	}
 
 	config := GetConfig()
 	deployedContainers := sortContainers(config.Status.Containers)
@@ -94,4 +100,14 @@ func sortContainers(containers []opv1alpha1.Container) []opv1alpha1.Container {
 			sort.StringsAreSorted([]string{containers[a].Name, containers[b].Name}))
 	})
 	return containers
+}
+
+func dropMultusContainers(containers []opv1alpha1.Container) []opv1alpha1.Container {
+	filteredContainers := []opv1alpha1.Container{}
+	for _, container := range containers {
+		if !strings.Contains(container.Name, "multus") {
+			filteredContainers = append(filteredContainers, container)
+		}
+	}
+	return filteredContainers
 }

@@ -6,7 +6,7 @@ import (
 
 func init() {
 	release := Release{
-		Version: "0.19.0",
+		Version: "0.24.0",
 		Containers: []opv1alpha1.Container{
 			opv1alpha1.Container{
 				ParentName: "kube-multus-ds-amd64",
@@ -36,19 +36,19 @@ func init() {
 				ParentName: "nmstate-handler",
 				ParentKind: "DaemonSet",
 				Name:       "nmstate-handler",
-				Image:      "quay.io/nmstate/kubernetes-nmstate-handler:v0.11.0",
+				Image:      "quay.io/nmstate/kubernetes-nmstate-handler:v0.12.0",
 			},
 			opv1alpha1.Container{
 				ParentName: "ovs-cni-amd64",
 				ParentKind: "DaemonSet",
 				Name:       "ovs-cni-plugin",
-				Image:      "quay.io/kubevirt/ovs-cni-plugin:v0.7.0",
+				Image:      "quay.io/kubevirt/ovs-cni-plugin:v0.8.0",
 			},
 			opv1alpha1.Container{
 				ParentName: "ovs-cni-amd64",
 				ParentKind: "DaemonSet",
 				Name:       "ovs-cni-marker",
-				Image:      "quay.io/kubevirt/ovs-cni-marker:v0.7.0",
+				Image:      "quay.io/kubevirt/ovs-cni-marker:v0.8.0",
 			},
 		},
 		SupportedSpec: opv1alpha1.NetworkAddonsConfigSpec{
