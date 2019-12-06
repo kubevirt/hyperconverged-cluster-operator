@@ -44,7 +44,8 @@ CNA_IMAGE="${CNA_IMAGE:-quay.io/kubevirt/cluster-network-addons-operator:0.23.0}
 SSP_IMAGE="${SSP_IMAGE:-quay.io/fromani/kubevirt-ssp-operator-container:v1.0.19}"
 CDI_IMAGE="${CDI_IMAGE:-docker.io/kubevirt/cdi-operator:v1.11.0}"
 NMO_IMAGE="${NMO_IMAGE:-quay.io/kubevirt/node-maintenance-operator:v0.4.0}"
-HPP_IMAGE="${HPP_IMAGE:-quay.io/kubevirt/hostpath-provisioner-operator:v0.2.5}"
+HPPO_IMAGE="${HPP_IMAGE:-quay.io/kubevirt/hostpath-provisioner-operator:v0.2.7}"
+HPP_IMAGE="${HPP_IMAGE:-quay.io/kubevirt/hostpath-provisioner:v0.2.2}"
 CONVERSION_CONTAINER="${CONVERSION_CONTAINER:-quay.io/kubevirt/kubevirt-v2v-conversion:v2.0.0}"
 VMWARE_CONTAINER="${VMWARE_CONTAINER:-quay.io/kubevirt/kubevirt-vmware:v2.0.0}"
 
@@ -166,11 +167,12 @@ function create_nmo_csv() {
 
 function create_hpp_csv() {
   local operatorName="hostpath-provisioner"
-  local imagePullUrl="${HPP_IMAGE}"
+  local imagePullUrl="${HPPO_IMAGE}"
   local dumpCRDsArg="--dump-crds"
   local operatorArgs=" \
     --csv-version=${CSV_VERSION} \
-    --operator-image-name=${HPP_IMAGE} \
+    --operator-image-name=${HPPO_IMAGE} \
+    --provisioner-image-name=${HPP_IMAGE} \
     --namespace=${OPERATOR_NAMESPACE} \
     --pull-policy=IfNotPresent \
   "

@@ -1247,14 +1247,6 @@ rules:
   - get
   - list
 - apiGroups:
-  - storage.k8s.io
-  resourceNames:
-  - hostpath-provisioner
-  resources:
-  - storageclasses
-  verbs:
-  - watch
-- apiGroups:
   - ""
   resources:
   - nodes
