@@ -4,12 +4,12 @@ kind: ClusterServiceVersion
 metadata:
   annotations:
     alm-examples: '[{"apiVersion":"hco.kubevirt.io/v1alpha1","kind":"HyperConverged","metadata":{"name":"kubevirt-hyperconverged","namespace":"kubevirt-hyperconverged"},"spec":{"BareMetalPlatform":false}},{"apiVersion":"networkaddonsoperator.network.kubevirt.io/v1alpha1","kind":"NetworkAddonsConfig","metadata":{"name":"cluster"},"spec":{"imagePullPolicy":"IfNotPresent","kubeMacPool":{"rangeEnd":"FD:FF:FF:FF:FF:FF","rangeStart":"02:00:00:00:00:00"},"linuxBridge":{},"multus":{},"nmstate":{},"ovs":{}}},{"apiVersion":"kubevirt.io/v1alpha3","kind":"KubeVirt","metadata":{"name":"kubevirt","namespace":"kubevirt"},"spec":{"imagePullPolicy":"Always"}},{"apiVersion":"kubevirt.io/v1","kind":"KubevirtTemplateValidator","metadata":{"name":"kubevirt-template-validator","namespace":"kubevirt"},"spec":{"templateValidatorReplicas":2,"version":"v0.6.2"}},{"apiVersion":"kubevirt.io/v1","kind":"KubevirtCommonTemplatesBundle","metadata":{"name":"kubevirt-common-template-bundle"},"spec":{"version":"v0.7.0"}},{"apiVersion":"kubevirt.io/v1","kind":"KubevirtMetricsAggregation","metadata":{"name":"kubevirt-metrics-aggregation"},"spec":{"version":"v0.0.1"}},{"apiVersion":"kubevirt.io/v1","kind":"KubevirtNodeLabellerBundle","metadata":{"name":"kubevirt-node-labeller-bundle"},"spec":{"version":"v0.1.1"}},{"apiVersion":"cdi.kubevirt.io/v1alpha1","kind":"CDI","metadata":{"name":"cdi","namespace":"cdi"},"spec":{"imagePullPolicy":"IfNotPresent"}},{"apiVersion":"kubevirt.io/v1alpha1","kind":"NodeMaintenance","metadata":{"name":"nodemaintenance-xyz"},"spec":{"nodeName":"node02","reason":"Test
-      node maintenance"}},{"apiVersion":"hostpathprovisioner.kubevirt.io/v1alpha1","kind":"HostPathProvisioner","metadata":{"name":"hostpath-provisioner"},"spec":{"imagePullPolicy":"IfNotPresent","pathConfig":{"path":"/var/hpvolumes","useNamingPrefix":"false"}}}]'
+      node maintenance"}}]'
     capabilities: Full Lifecycle
     categories: OpenShift Optional
     certified: "false"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:latest
-    createdAt: "2019-12-10 14:43:38"
+    createdAt: "2019-12-10 17:02:30"
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -134,11 +134,6 @@ spec:
       displayName: KubeVirt node maintenance
       kind: NodeMaintenance
       name: nodemaintenances.kubevirt.io
-      version: v1alpha1
-    - description: Represents a HostPathProvisioner deployment
-      displayName: HostPathProvisioner deployment
-      kind: HostPathProvisioner
-      name: hostpathprovisioners.hostpathprovisioner.kubevirt.io
       version: v1alpha1
   description: |-
     **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
@@ -1225,115 +1220,6 @@ spec:
           verbs:
           - '*'
         serviceAccountName: node-maintenance-operator
-      - rules:
-        - apiGroups:
-          - ""
-          resources:
-          - persistentvolumes
-          verbs:
-          - '*'
-        - apiGroups:
-          - ""
-          resources:
-          - persistentvolumeclaims
-          verbs:
-          - get
-          - list
-          - watch
-          - create
-          - update
-        - apiGroups:
-          - ""
-          resources:
-          - events
-          verbs:
-          - list
-          - watch
-          - create
-          - patch
-          - update
-        - apiGroups:
-          - rbac.authorization.k8s.io
-          resourceNames:
-          - hostpath-provisioner
-          resources:
-          - clusterrolebindings
-          verbs:
-          - update
-          - delete
-        - apiGroups:
-          - rbac.authorization.k8s.io
-          resources:
-          - clusterrolebindings
-          verbs:
-          - list
-          - get
-          - watch
-          - create
-        - apiGroups:
-          - rbac.authorization.k8s.io
-          resourceNames:
-          - hostpath-provisioner
-          resources:
-          - clusterroles
-          verbs:
-          - update
-          - delete
-        - apiGroups:
-          - rbac.authorization.k8s.io
-          resources:
-          - clusterroles
-          verbs:
-          - list
-          - get
-          - watch
-          - create
-        - apiGroups:
-          - apps
-          resourceNames:
-          - hostpath-provisioner-operator
-          resources:
-          - deployments/finalizers
-          verbs:
-          - update
-        - apiGroups:
-          - hostpathprovisioner.kubevirt.io
-          resources:
-          - '*'
-          verbs:
-          - '*'
-        - apiGroups:
-          - security.openshift.io
-          resources:
-          - securitycontextconstraints
-          verbs:
-          - list
-          - get
-          - watch
-          - create
-        - apiGroups:
-          - security.openshift.io
-          resourceNames:
-          - hostpath-provisioner
-          resources:
-          - securitycontextconstraints
-          verbs:
-          - delete
-          - update
-        - apiGroups:
-          - storage.k8s.io
-          resources:
-          - storageclasses
-          verbs:
-          - get
-          - list
-        - apiGroups:
-          - ""
-          resources:
-          - nodes
-          verbs:
-          - get
-        serviceAccountName: hostpath-provisioner-operator
       deployments:
       - name: hco-operator
         spec:
@@ -1600,41 +1486,6 @@ spec:
               tolerations:
               - effect: NoSchedule
                 key: node-role.kubernetes.io/master
-      - name: hostpath-provisioner-operator
-        spec:
-          replicas: 1
-          selector:
-            matchLabels:
-              name: hostpath-provisioner-operator
-              operator.hostpath-provisioner.kubevirt.io: ""
-          strategy: {}
-          template:
-            metadata:
-              labels:
-                name: hostpath-provisioner-operator
-                operator.hostpath-provisioner.kubevirt.io: ""
-            spec:
-              containers:
-              - env:
-                - name: WATCH_NAMESPACE
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.namespace
-                - name: POD_NAME
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: metadata.name
-                - name: OPERATOR_NAME
-                  value: hostpath-provisioner-operator
-                - name: PROVISIONER_IMAGE
-                  value: quay.io/kubevirt/hostpath-provisioner:v0.2.2
-                - name: PULL_POLICY
-                  value: IfNotPresent
-                image: quay.io/kubevirt/hostpath-provisioner-operator:v0.2.8
-                imagePullPolicy: IfNotPresent
-                name: hostpath-provisioner-operator
-                resources: {}
-              serviceAccountName: hostpath-provisioner-operator
       permissions:
       - rules:
         - apiGroups:
@@ -1664,56 +1515,6 @@ spec:
           - update
           - delete
         serviceAccountName: cluster-network-addons-operator
-      - rules:
-        - apiGroups:
-          - apps
-          resources:
-          - daemonsets
-          verbs:
-          - list
-          - get
-          - watch
-          - create
-        - apiGroups:
-          - apps
-          resourceNames:
-          - hostpath-provisioner
-          resources:
-          - daemonsets
-          verbs:
-          - delete
-          - update
-        - apiGroups:
-          - ""
-          resources:
-          - pods
-          verbs:
-          - get
-        - apiGroups:
-          - ""
-          resources:
-          - configmaps
-          verbs:
-          - get
-          - create
-        - apiGroups:
-          - ""
-          resourceNames:
-          - hostpath-provisioner-admin
-          resources:
-          - serviceaccounts
-          verbs:
-          - '*'
-        - apiGroups:
-          - ""
-          resources:
-          - serviceaccounts
-          verbs:
-          - list
-          - get
-          - watch
-          - create
-        serviceAccountName: hostpath-provisioner-operator
     strategy: deployment
   installModes:
   - supported: true
