@@ -11,6 +11,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/operator-framework/operator-sdk/pkg/ready"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -44,6 +45,10 @@ const (
 	// Foreground deletion finalizer is blocking removal of HyperConverged until explicitly dropped.
 	// TODO: Research whether there is a better way.
 	foregroundDeletionFinalizer = "foregroundDeletion"
+
+	HyperConvergedNameEnv      = "HCO_NAME"
+	HyperConvergedNameDefault  = "hyperconverged-cluster"
+	HyperConvergedNamespaceEnv = "HCO_NAMESPACE"
 
 	// UndefinedNamespace is for cluster scoped resources
 	UndefinedNamespace string = ""
@@ -1084,4 +1089,22 @@ func isKVMAvailable() bool {
 	}
 	log.Info("Running with KVM available")
 	return true
+}
+
+// GetNamespacedName returns the name/namespace of the HyperConverged resource
+func GetNamespacedName() (types.NamespacedName, error) {
+	hco := types.NamespacedName{
+		Name: HyperConvergedNameDefault,
+	}
+
+	if name, ok := os.LookupEnv(HyperConvergedNameEnv); ok {
+		hco.Name = name
+	}
+
+	if namespace, ok := os.LookupEnv(HyperConvergedNamespaceEnv); ok {
+		hco.Namespace = namespace
+	} else {
+		return hco, fmt.Errorf("%s unset or empty", HyperConvergedNamespaceEnv)
+	}
+	return hco, nil
 }
