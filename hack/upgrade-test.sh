@@ -86,7 +86,7 @@ if [ -n "$KUBEVIRT_PROVIDER" ]; then
   make cluster-clean
 fi
 
-"${CMD}" delete -f ./deploy/hco.cr.yaml -n kubevirt-hyperconverged | true
+"${CMD}" delete -f ./deploy/hco.cr.yaml -n hyperconverged-cluster | true
 "${CMD}" delete subscription hco-subscription-example -n kubevirt-hyperconverged | true
 "${CMD}" delete catalogsource hco-catalogsource-example -n ${HCO_CATALOG_NAMESPACE} | true
 "${CMD}" delete operatorgroup hco-operatorgroup -n kubevirt-hyperconverged | true
