@@ -44,7 +44,7 @@ CNA_IMAGE="${CNA_IMAGE:-quay.io/kubevirt/cluster-network-addons-operator:0.24.0}
 SSP_IMAGE="${SSP_IMAGE:-quay.io/fromani/kubevirt-ssp-operator-container:v1.0.19}"
 CDI_IMAGE="${CDI_IMAGE:-docker.io/kubevirt/cdi-operator:v1.13.0}"
 NMO_IMAGE="${NMO_IMAGE:-quay.io/kubevirt/node-maintenance-operator:v0.4.0}"
-HPPO_IMAGE="${HPP_IMAGE:-quay.io/kubevirt/hostpath-provisioner-operator:v0.2.8}"
+HPPO_IMAGE="${HPP_IMAGE:-quay.io/kubevirt/hostpath-provisioner-operator:v0.2.9}"
 HPP_IMAGE="${HPP_IMAGE:-quay.io/kubevirt/hostpath-provisioner:v0.2.2}"
 CONVERSION_CONTAINER="${CONVERSION_CONTAINER:-quay.io/kubevirt/kubevirt-v2v-conversion:v2.0.0}"
 VMWARE_CONTAINER="${VMWARE_CONTAINER:-quay.io/kubevirt/kubevirt-vmware:v2.0.0}"
@@ -230,6 +230,7 @@ ${PROJECT_ROOT}/tools/manifest-templator/manifest-templator \
   --ssp-csv="$(<${sspCsv})" \
   --cdi-csv="$(<${cdiCsv})" \
   --nmo-csv="$(<${nmoCsv})" \
+  --hpp-csv="$(<${hppCsv})" \
   --ims-conversion-image-name="${CONVERSION_CONTAINER}" \
   --ims-vmware-image-name="${VMWARE_CONTAINER}" \
   --operator-namespace="${OPERATOR_NAMESPACE}" \
@@ -243,6 +244,7 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --ssp-csv="$(<${sspCsv})" \
   --cdi-csv="$(<${cdiCsv})" \
   --nmo-csv="$(<${nmoCsv})" \
+  --hpp-csv="$(<${hppCsv})" \
   --ims-conversion-image-name="${CONVERSION_CONTAINER}" \
   --ims-vmware-image-name="${VMWARE_CONTAINER}" \
   --csv-version=${CSV_VERSION} \
