@@ -44,7 +44,9 @@ if ${_kubectl} get routes ;
 then 
     ${_kubectl} delete routes --ignore-not-found=true --namespace "${namespace}" cdi-uploadproxy
 fi
-for ns in $(${_kubectl} get namespaces --no-headers -o custom-columns=":metadata.name") ;
+
+namespaces=$(${_kubectl} get namespaces --no-headers -o custom-columns=":metadata.name")
+for ns in ${namespaces} ;
 do
     ${_kubectl} delete pods --namespace "${ns}" -l cdi.kubevirt.io
 done
