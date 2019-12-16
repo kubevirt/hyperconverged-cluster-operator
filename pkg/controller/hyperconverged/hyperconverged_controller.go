@@ -88,6 +88,11 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	hco, err := GetNamespacedName()
+	if err != nil {
+		return err
+	}
+
 	// Watch secondary resources
 	for _, resource := range []runtime.Object{
 		&kubevirtv1.KubeVirt{},
@@ -98,9 +103,14 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		&sspv1.KubevirtTemplateValidator{},
 		&sspv1.KubevirtMetricsAggregation{},
 	} {
-		err = c.Watch(&source.Kind{Type: resource}, &handler.EnqueueRequestForOwner{
-			IsController: true,
-			OwnerType:    &hcov1alpha1.HyperConverged{},
+		err = c.Watch(&source.Kind{Type: resource}, &handler.EnqueueRequestsFromMapFunc{
+			ToRequests: handler.ToRequestsFunc(
+				// always enqueue the same HyperConverged object, since there should be only one
+				func(a handler.MapObject) []reconcile.Request{
+					return []reconcile.Request{
+						{NamespacedName: hco},
+					}
+				}),
 		})
 		if err != nil {
 			return err
