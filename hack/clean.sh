@@ -20,7 +20,6 @@
 source hack/common.sh
 
 # Remove HCO
-"${CMD}" delete -f _out/hco.cr.yaml --ignore-not-found || true
 "${CMD}" wait --for=delete hyperconverged.hco.kubevirt.io/hyperconverged-cluster || true
 # TODO: delete hangs on machine.crd.yaml. Only delete the ones that don't hang
 # from _out/crds/.

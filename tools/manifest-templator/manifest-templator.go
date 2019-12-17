@@ -75,14 +75,11 @@ func main() {
 	check(err)
 	v2vCrd, err := os.Create(path.Join(*deployDir, "crds/v2vvmware.crd.yaml"))
 	check(err)
-	operatorCr, err := os.Create(path.Join(*deployDir, "hco.cr.yaml"))
-	check(err)
 	defer operatorYaml.Close()
 	defer saYaml.Close()
 	defer crbYaml.Close()
 	defer crYaml.Close()
 	defer operatorCrd.Close()
-	defer operatorCr.Close()
 	defer v2vCrd.Close()
 
 	// the CSVs we expect to handle
@@ -277,7 +274,6 @@ func main() {
 	// Write out CRDs and CR
 	util.MarshallObject(components.GetOperatorCRD(), operatorCrd)
 	util.MarshallObject(components.GetV2VCRD(), v2vCrd)
-	util.MarshallObject(components.GetOperatorCR(), operatorCr)
 
 	// Write out deployments
 	for _, deployment := range deployments {

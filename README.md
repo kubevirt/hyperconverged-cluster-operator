@@ -113,12 +113,6 @@ spec:
 EOF
 ```
 
-Create an HCO CustomResource, which creates the KubeVirt CR, launching KubeVirt,
-CDI, Network-addons, and SSP.
-```bash
-kubectl create -f deploy/hco.cr.yaml -n kubevirt-hyperconverged
-```
-
 ## Create a Cluster & Launch the HCO
 1. Choose the provider  
 ```bash

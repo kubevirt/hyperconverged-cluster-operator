@@ -116,7 +116,7 @@ for op in cdi-operator cluster-network-addons-operator kubevirt-ssp-operator nod
     "${CMD}" wait deployment/"${op}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${op} "
 done
 
-"${CMD}" create -f _out/hco.cr.yaml
+# HyperConverged resource should be created automatically
 sleep 10
 # Give 8 minutes to available condition become true
 if ! timeout 8m bash -c -- "until "${CMD}" get -n ${HCO_NAMESPACE} ${HCO_KIND} ${HCO_RESOURCE_NAME} -o go-template='{{ range .status.conditions }}{{ if eq .type \"Available\" }}{{ .status }}{{ end }}{{ end }}' | grep True; do sleep 1; done";

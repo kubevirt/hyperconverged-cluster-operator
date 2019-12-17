@@ -33,6 +33,3 @@ kubectl create -f https://raw.githubusercontent.com/kubevirt/hyperconverged-clus
 kubectl create -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/master/deploy/service_account.yaml
 kubectl create -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/master/deploy/cluster_role_binding.yaml
 kubectl create -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/master/deploy/operator.yaml
-
-# Create an HCO CustomResource, which creates the KubeVirt CR, launching KubeVirt.
-kubectl create -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/master/deploy/hco.cr.yaml

@@ -86,7 +86,6 @@ if [ -n "$KUBEVIRT_PROVIDER" ]; then
   make cluster-clean
 fi
 
-"${CMD}" delete -f ./deploy/hco.cr.yaml -n kubevirt-hyperconverged | true
 "${CMD}" delete subscription hco-subscription-example -n kubevirt-hyperconverged | true
 "${CMD}" delete catalogsource hco-catalogsource-example -n ${HCO_CATALOG_NAMESPACE} | true
 "${CMD}" delete operatorgroup hco-operatorgroup -n kubevirt-hyperconverged | true
@@ -175,7 +174,7 @@ HCO_NAMESPACE="kubevirt-hyperconverged"
 HCO_KIND="hyperconvergeds"
 HCO_RESOURCE_NAME="hyperconverged-cluster"
 
-${CMD} create -f ./deploy/hco.cr.yaml -n kubevirt-hyperconverged
+# HyperConverged resource should be created automatically
 
 HCO_OPERATOR_POD=`${CMD} get pods -n kubevirt-hyperconverged | grep hco-operator | head -1 | awk '{ print $1 }'`
 ${CMD} wait pod $HCO_OPERATOR_POD --for condition=Ready -n kubevirt-hyperconverged --timeout="600s"
