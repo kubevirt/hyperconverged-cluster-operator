@@ -17,6 +17,7 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/ready"
 	"github.com/operator-framework/operator-sdk/pkg/restmapper"
 	"github.com/spf13/pflag"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -25,9 +26,11 @@ import (
 
 	sspopv1 "github.com/MarSik/kubevirt-ssp-operator/pkg/apis"
 	networkaddons "github.com/kubevirt/cluster-network-addons-operator/pkg/apis"
+	hcov1alpha1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1"
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	cdiv1alpha1 "kubevirt.io/containerized-data-importer/pkg/apis/core/v1alpha1"
@@ -167,6 +170,24 @@ func main() {
 		if err == metrics.ErrServiceMonitorNotPresent {
 			log.Info("Install prometheus-operator in your cluster to create ServiceMonitor objects", "error", err.Error())
 		}
+	}
+
+	// Create the HyperConverged resource if it's not there
+	client := mgr.GetClient()
+	err = client.Create(context.TODO(), &hcov1alpha1.HyperConverged{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      hcoNamespacedName.Name,
+			Namespace: hcoNamespacedName.Namespace,
+		},
+	})
+	switch {
+	case err == nil:
+		log.Info("Created HyperConverged resource")
+	case errors.IsAlreadyExists(err):
+		log.Info("HyperConverged resource already exists")
+	default:
+		log.Error(err, "Failed to create HyperConverged resource")
+		os.Exit(1)
 	}
 
 	log.Info("Starting the Cmd.")
