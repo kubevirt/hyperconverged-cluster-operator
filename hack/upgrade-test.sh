@@ -116,19 +116,36 @@ metadata:
   namespace: kubevirt-hyperconverged
 EOF
 
-# TODO: The catalog source image here should point to the latest version in quay.io
-# once that is published.
-cat <<EOF | ${CMD} create -f -
-apiVersion: operators.coreos.com/v1alpha1
-kind: CatalogSource
+Msg "Creating OperatorSource"
+cat <<EOF | oc create -f -
+apiVersion: operators.coreos.com/v1
+kind: OperatorSource
 metadata:
-  name: hco-catalogsource-example
-  namespace: ${HCO_CATALOG_NAMESPACE}
+  name: "kubevirt-hyperconverged"
+  namespace: "kubevirt-hyperconverged"
 spec:
-  sourceType: grpc
-  image: ${REGISTRY_IMAGE}
-  displayName: KubeVirt HyperConverged
-  publisher: Red Hat
+  type: appregistry
+  endpoint: https://quay.io/cnr
+  registryNamespace: "kubevirt-hyperconverged"
+  displayName: "kubevirt-hyperconverged"
+  publisher: "Kubevirt"
+EOF
+
+Msg "Give the cluster 30 seconds to create the catalogSourceConfig..."
+sleep 30
+
+cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1
+kind: CatalogSourceConfig
+metadata:
+  name: "hco-catalogsource-example"
+  namespace: "${HCO_CATALOG_NAMESPACE}"
+spec:
+  source: "kubevirt-hyperconverged"
+  targetNamespace: "${HCO_CATALOG_NAMESPACE}"
+  packages: "kubevirt-hyperconverged"
+  csDisplayName: "KubeVirt HyperConverged"
+  csPublisher: "Red Hat"
 EOF
 
 sleep 15
