@@ -1047,6 +1047,7 @@ var _ = Describe("HyperconvergedController", func() {
 			})
 
 			It("should create all managed resources", func() {
+				os.Setenv("HCO_NAMESPACE", namespace)
 				os.Setenv("CONVERSION_CONTAINER", "registry.redhat.io/container-native-virtualization/kubevirt-v2v-conversion:v2.0.0")
 				os.Setenv("VMWARE_CONTAINER", "registry.redhat.io/container-native-virtualization/kubevirt-vmware:v2.0.0}")
 				hco := &hcov1alpha1.HyperConverged{
@@ -1105,6 +1106,7 @@ var _ = Describe("HyperconvergedController", func() {
 			})
 
 			It("should find all managed resources", func() {
+				os.Setenv("HCO_NAMESPACE", namespace)
 				os.Setenv("CONVERSION_CONTAINER", "registry.redhat.io/container-native-virtualization/kubevirt-v2v-conversion:v2.0.0")
 				os.Setenv("VMWARE_CONTAINER", "registry.redhat.io/container-native-virtualization/kubevirt-vmware:v2.0.0}")
 				hco := &hcov1alpha1.HyperConverged{
@@ -1187,6 +1189,7 @@ var _ = Describe("HyperconvergedController", func() {
 			})
 
 			It("should complete when components are finished", func() {
+				os.Setenv("HCO_NAMESPACE", namespace)
 				os.Setenv("CONVERSION_CONTAINER", "registry.redhat.io/container-native-virtualization/kubevirt-v2v-conversion:v2.0.0")
 				os.Setenv("VMWARE_CONTAINER", "registry.redhat.io/container-native-virtualization/kubevirt-vmware:v2.0.0}")
 				hco := &hcov1alpha1.HyperConverged{
