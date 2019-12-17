@@ -56,11 +56,13 @@ const (
 	// OpenshiftNamespace is for resources that belong in the openshift namespace
 	OpenshiftNamespace string = "openshift"
 
-	reconcileInit             = "Init"
-	reconcileInitMessage      = "Initializing HyperConverged cluster"
-	reconcileFailed           = "ReconcileFailed"
-	reconcileCompleted        = "ReconcileCompleted"
-	reconcileCompletedMessage = "Reconcile completed successfully"
+	reconcileInit                = "Init"
+	reconcileInitMessage         = "Initializing HyperConverged cluster"
+	reconcileFailed              = "ReconcileFailed"
+	reconcileCompleted           = "ReconcileCompleted"
+	reconcileCompletedMessage    = "Reconcile completed successfully"
+	invalidNamespacedName        = "InvalidNamespacedName"
+	invalidNamespacedNameMessage = "Resource does not match expected name and namespace"
 )
 
 // Add creates a new HyperConverged Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -106,7 +108,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		err = c.Watch(&source.Kind{Type: resource}, &handler.EnqueueRequestsFromMapFunc{
 			ToRequests: handler.ToRequestsFunc(
 				// always enqueue the same HyperConverged object, since there should be only one
-				func(a handler.MapObject) []reconcile.Request{
+				func(a handler.MapObject) []reconcile.Request {
 					return []reconcile.Request{
 						{NamespacedName: hco},
 					}
@@ -153,6 +155,28 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	hco, err := GetNamespacedName()
+	if err != nil {
+		reqLogger.Error(err, "Failed to get HyperConverged namespaced name")
+		return reconcile.Result{}, err
+	}
+	// There should be only one HyperConverged resource with a preconfigured
+	// name and namespace
+	if request.NamespacedName != hco {
+		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
+			Type:    hcov1alpha1.ConditionReconcileComplete,
+			Status:  corev1.ConditionFalse,
+			Reason:  invalidNamespacedName,
+			Message: invalidNamespacedNameMessage,
+		})
+		err = r.client.Status().Update(context.TODO(), instance)
+		if err != nil {
+			reqLogger.Error(err, "Failed to add conditions to status of invalid resource")
+			return reconcile.Result{}, err
+		}
+		return reconcile.Result{}, nil
 	}
 
 	// Add conditions if there are none
