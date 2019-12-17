@@ -115,6 +115,18 @@ func GetDeploymentSpec(image, imagePullPolicy, conversionContainer, vmwareContai
 								},
 							},
 							{
+								Name: "HCO_NAME",
+								Value: "hyperconverged-cluster",
+							},
+							{
+								Name: "HCO_NAMESPACE",
+								ValueFrom: &corev1.EnvVarSource{
+									FieldRef: &corev1.ObjectFieldSelector{
+										FieldPath: "metadata.namespace",
+									},
+								},
+							},
+							{
 								Name:  "WATCH_NAMESPACE",
 								Value: "",
 							},

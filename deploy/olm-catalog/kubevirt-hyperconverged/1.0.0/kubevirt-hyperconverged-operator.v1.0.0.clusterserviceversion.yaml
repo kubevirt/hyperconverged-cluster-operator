@@ -9,7 +9,7 @@ metadata:
     categories: OpenShift Optional
     certified: "false"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:latest
-    createdAt: "2019-12-13 11:09:13"
+    createdAt: "2019-12-17 14:10:45"
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -1265,6 +1265,12 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.name
+                - name: HCO_NAME
+                  value: hyperconverged-cluster
+                - name: HCO_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
                 - name: WATCH_NAMESPACE
                 - name: CONVERSION_CONTAINER
                   value: quay.io/kubevirt/kubevirt-v2v-conversion:v2.0.0
