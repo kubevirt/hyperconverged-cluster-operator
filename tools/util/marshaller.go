@@ -128,3 +128,18 @@ func MarshallObject(obj interface{}, writer io.Writer) error {
 
 	return nil
 }
+
+func InterfaceToMap(iface interface{}) map[string]string {
+	m := make(map[string]string)
+	writer, err := json.Marshal(iface)
+	check(err)
+	err = json.Unmarshal((writer), &m)
+	check(err)
+	return m
+}
+
+func check(err error) {
+	if err != nil {
+		panic(err)
+	}
+}

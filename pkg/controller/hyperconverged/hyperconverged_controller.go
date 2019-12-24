@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
 	"github.com/operator-framework/operator-sdk/pkg/ready"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/reference"
@@ -295,16 +296,14 @@ func newKubeVirtConfigForCR(cr *hcov1alpha1.HyperConverged, namespace string) *c
 	labels := map[string]string{
 		"app": cr.Name,
 	}
+	data := util.InterfaceToMap(cr.Spec.KubevirtConfigurations)
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kubevirt-config",
 			Labels:    labels,
 			Namespace: namespace,
 		},
-		Data: map[string]string{
-			"feature-gates": "DataVolumes,SRIOV,LiveMigration,CPUManager,CPUNodeDiscovery,Sidecar",
-			"migrations":    `{"nodeDrainTaintKey" : "node.kubernetes.io/unschedulable"}`,
-		},
+		Data: data,
 	}
 }
 

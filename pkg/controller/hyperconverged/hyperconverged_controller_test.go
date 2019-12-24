@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -97,6 +98,46 @@ var _ = Describe("HyperconvergedController", func() {
 				// ObjectReference should have been added
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 			})
+
+			It("should pass configurations form HCO-CR to virt_configMap", func() {
+				hco := &hcov1alpha1.HyperConverged{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      name,
+						Namespace: namespace,
+					},
+					Spec: hcov1alpha1.HyperConvergedSpec{
+						KubevirtConfigurations: hcov1alpha1.KubevirtConfigurations{
+							MachineType: "some_type",
+						},
+					},
+				}
+				expectedResource := newKubeVirtConfigForCR(hco, namespace)
+				Expect(strings.Contains(expectedResource.Data["MachineType"], "some_type"))
+
+				cl := initClient([]runtime.Object{})
+				r := initReconciler(cl)
+				Expect(r.ensureKubeVirtConfig(hco, log, request)).To(BeNil())
+				foundResource := &corev1.ConfigMap{}
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: expectedResource.ObjectMeta.Name, Namespace: expectedResource.ObjectMeta.Namespace},
+					foundResource)
+				Expect(foundResource.Name).To(Equal(expectedResource.Name))
+				Expect(foundResource.Labels).Should(HaveKeyWithValue("app", name))
+				Expect(foundResource.Namespace).To(Equal(expectedResource.Namespace))
+				Expect(strings.Contains(foundResource.Data["MachineType"], "some_type"))
+
+			})
+
+			It("should return error when no scheme is provided for reconciler" , func(){ //TODO : change this.
+				// will not be a runtime object
+				hco := &hcov1alpha1.HyperConverged{
+				}
+				
+				cl := initClient([]runtime.Object{})
+				badReconciler :=  &ReconcileHyperConverged{client: cl, scheme: &runtime.Scheme{}}
+				err  := badReconciler.ensureKubeVirtConfig(hco, log, request)
+				Expect(err).ToNot(BeNil())
+			}) 
 		})
 
 		Context("KubeVirt Storage Config", func() {

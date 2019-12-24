@@ -3,10 +3,12 @@ package components
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/blang/semver"
 	hcov1alpha1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
 	csvv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	csvVersion "github.com/operator-framework/operator-lifecycle-manager/pkg/lib/version"
 	appsv1 "k8s.io/api/apps/v1"
@@ -14,7 +16,9 @@ import (
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	extv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	cmdv1 "kubevirt.io/kubevirt/pkg/handler-launcher-com/cmd/v1"
 )
 
 // Taking this from "github.com/operator-framework/operator-lifecycle-manager/pkg/controller/install"
@@ -40,6 +44,31 @@ type StrategyDetailsDeployment struct {
 }
 
 const hcoName = "hyperconverged-cluster-operator"
+
+const (
+	ParallelOutboundMigrationsPerNodeDefault uint32 = 2
+	ParallelMigrationsPerClusterDefault      uint32 = 5
+	BandwithPerMigrationDefault                     = "64Mi"
+	MigrationAllowAutoConverge               bool   = false
+	MigrationProgressTimeout                 int64  = 150
+	MigrationCompletionTimeoutPerGiB         int64  = 800
+	DefaultMachineType                              = "q35"
+	DefaultCPURequest                               = "100m"
+	DefaultMemoryOvercommit                         = 100
+	DefaultEmulatedMachines                         = "q35*,pc-q35*"
+	DefaultLessPVCSpaceToleration                   = 10
+	DefaultNodeSelectors                            = ""
+	DefaultNetworkInterface                         = "bridge"
+	DefaultImagePullPolicy                          = corev1.PullIfNotPresent
+	DefaultUseEmulation                             = false
+	DefaultUnsafeMigrationOverride                  = false
+	DefaultPermitSlirpInterface                     = false
+	SmbiosConfigDefaultFamily                       = "KubeVirt"
+	SmbiosConfigDefaultManufacturer                 = "KubeVirt"
+	SmbiosConfigDefaultProduct                      = "None"
+	DefaultPermitBridgeInterfaceOnPodNetwork        = true
+	NodeDrainTaintDefaultKey                        = "kubevirt.io/drain"
+)
 
 func GetDeployment(image, imagePullPolicy, conversionContainer, vmwareContainerString string) appsv1.Deployment {
 	return appsv1.Deployment{
@@ -463,8 +492,9 @@ func GetOperatorCR() *hcov1alpha1.HyperConverged {
 			Name: "hyperconverged-cluster",
 		},
 		Spec: hcov1alpha1.HyperConvergedSpec{
-			BareMetalPlatform:     false,
-			LocalStorageClassName: "",
+			BareMetalPlatform:      false,
+			LocalStorageClassName:  "",
+			KubevirtConfigurations: *defaultKubevirtConfigurations(),
 		},
 	}
 }
@@ -500,7 +530,7 @@ func GetCSVBase(name, displayName, description, image, replaces string, version 
 			},
 			"spec": map[string]interface{}{
 				"BareMetalPlatform": false,
-			},
+			}, "KubevirtConfigurations": util.InterfaceToMap(defaultKubevirtConfigurations()),
 		},
 	})
 
@@ -614,4 +644,59 @@ func GetCSVBase(name, displayName, description, image, replaces string, version 
 
 func int32Ptr(i int32) *int32 {
 	return &i
+}
+func defaultKubevirtConfigurations() *hcov1alpha1.KubevirtConfigurations {
+	parallelOutboundMigrationsPerNodeDefault := ParallelOutboundMigrationsPerNodeDefault
+	parallelMigrationsPerClusterDefault := ParallelMigrationsPerClusterDefault
+	bandwithPerMigrationDefault := resource.MustParse(BandwithPerMigrationDefault)
+	nodeDrainTaintDefaultKey := NodeDrainTaintDefaultKey
+	allowAutoConverge := MigrationAllowAutoConverge
+	progressTimeout := MigrationProgressTimeout
+	completionTimeoutPerGiB := MigrationCompletionTimeoutPerGiB
+	cpuRequestDefault := resource.MustParse(DefaultCPURequest)
+	emulatedMachinesDefault := strings.Split(DefaultEmulatedMachines, ",")
+	nodeSelectorsDefault, _ := parseNodeSelectors(DefaultNodeSelectors)
+	defaultNetworkInterface := DefaultNetworkInterface
+	SmbiosDefaultConfig := &cmdv1.SMBios{
+		Family:       SmbiosConfigDefaultFamily,
+		Manufacturer: SmbiosConfigDefaultManufacturer,
+		Product:      SmbiosConfigDefaultProduct,
+	}
+	return &hcov1alpha1.KubevirtConfigurations{
+		ResourceVersion: "0",
+		ImagePullPolicy: DefaultImagePullPolicy,
+		UseEmulation:    DefaultUseEmulation,
+		MigrationConfig: &hcov1alpha1.MigrationConfig{
+			ParallelMigrationsPerCluster:      &parallelMigrationsPerClusterDefault,
+			ParallelOutboundMigrationsPerNode: &parallelOutboundMigrationsPerNodeDefault,
+			BandwidthPerMigration:             &bandwithPerMigrationDefault,
+			NodeDrainTaintKey:                 &nodeDrainTaintDefaultKey,
+			ProgressTimeout:                   &progressTimeout,
+			CompletionTimeoutPerGiB:           &completionTimeoutPerGiB,
+			UnsafeMigrationOverride:           DefaultUnsafeMigrationOverride,
+			AllowAutoConverge:                 allowAutoConverge,
+		},
+		MachineType:                       DefaultMachineType,
+		CPURequest:                        cpuRequestDefault,
+		MemoryOvercommit:                  DefaultMemoryOvercommit,
+		EmulatedMachines:                  emulatedMachinesDefault,
+		LessPVCSpaceToleration:            DefaultLessPVCSpaceToleration,
+		NodeSelectors:                     nodeSelectorsDefault,
+		NetworkInterface:                  defaultNetworkInterface,
+		PermitSlirpInterface:              DefaultPermitSlirpInterface,
+		PermitBridgeInterfaceOnPodNetwork: DefaultPermitBridgeInterfaceOnPodNetwork,
+		SmbiosConfig:                      SmbiosDefaultConfig,
+	}
+}
+
+func parseNodeSelectors(str string) (map[string]string, error) {
+	nodeSelectors := make(map[string]string)
+	for _, s := range strings.Split(strings.TrimSpace(str), "\n") {
+		v := strings.Split(s, "=")
+		if len(v) != 2 {
+			return nil, fmt.Errorf("Invalid node selector: %s", s)
+		}
+		nodeSelectors[v[0]] = v[1]
+	}
+	return nodeSelectors, nil
 }
