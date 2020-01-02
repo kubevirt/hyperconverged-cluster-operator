@@ -25,6 +25,10 @@ import (
 	testscore "kubevirt.io/kubevirt/tests"
 )
 
+var StorageClass = ""
+flag.StringVar(&StorageClass, "storage-class" , tests.KubeVirtStorageClassLocal, "Set storage class")
+
+
 var _ = Describe("Certificates", func() {
 	flag.Parse()
 
@@ -174,7 +178,7 @@ var _ = Describe("Certificates", func() {
 			Expect(RotateCeritifcates(testscore.KubeVirtInstallNamespace)).To(Succeed())
 			WaitForPodsToBecomeReady(testscore.KubeVirtInstallNamespace)
 			jobType := tests.GetJobTypeEnvVar()
-			storageClass := tests.KubeVirtStorageClassLocal
+			storageClass := StorageClass
 			if jobType == "prow" {
 				storageClass = ""
 			}
