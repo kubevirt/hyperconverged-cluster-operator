@@ -590,10 +590,6 @@ func newNetworkAddonsForCR(cr *hcov1alpha1.HyperConverged, namespace string) *ne
 
 func (r *ReconcileHyperConverged) ensureNetworkAddons(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
 	networkAddons := newNetworkAddonsForCR(instance, UndefinedNamespace)
-	if err := controllerutil.SetControllerReference(instance, networkAddons, r.scheme); err != nil {
-		return err
-	}
-
 	key, err := client.ObjectKeyFromObject(networkAddons)
 	if err != nil {
 		logger.Error(err, "Failed to get object key for Network Addons")
@@ -615,6 +611,13 @@ func (r *ReconcileHyperConverged) ensureNetworkAddons(instance *hcov1alpha1.Hype
 	}
 
 	logger.Info("NetworkAddonsConfig already exists", "NetworkAddonsConfig.Namespace", found.Namespace, "NetworkAddonsConfig.Name", found.Name)
+
+	existingOwners := found.GetOwnerReferences()
+	if len(existingOwners) > 0 {
+		logger.Info("Removing all NetworkAddonsConfig owner references","NetworkAddonsConfig.OwnerReferences", found.GetOwnerReferences())
+		found.SetOwnerReferences([]metav1.OwnerReference{})
+		return r.client.Update(context.TODO(), found)
+	}
 
 	// Add it to the list of RelatedObjects if found
 	objectRef, err := reference.GetReference(r.scheme, found)
