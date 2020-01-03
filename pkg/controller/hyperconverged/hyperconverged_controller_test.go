@@ -1035,9 +1035,12 @@ var _ = Describe("HyperconvergedController", func() {
 	Describe("Reconcile HyperConverged", func() {
 		Context("HCO Lifecycle", func() {
 
-			It("should handle not found", func() {
+			BeforeEach(func() {
 				os.Setenv("CONVERSION_CONTAINER", "registry.redhat.io/container-native-virtualization/kubevirt-v2v-conversion:v2.0.0")
 				os.Setenv("VMWARE_CONTAINER", "registry.redhat.io/container-native-virtualization/kubevirt-vmware:v2.0.0}")
+			})
+
+			It("should handle not found", func() {
 				cl := initClient([]runtime.Object{})
 				r := initReconciler(cl)
 
@@ -1046,10 +1049,49 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(res).Should(Equal(reconcile.Result{}))
 			})
 
+			It("should ignore invalid requests", func() {
+
+				hco := &hcov1alpha1.HyperConverged{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "invalid",
+						Namespace: "invalid",
+					},
+					Spec: hcov1alpha1.HyperConvergedSpec{},
+					Status: hcov1alpha1.HyperConvergedStatus{
+						Conditions: []conditionsv1.Condition{},
+					},
+				}
+				cl := initClient([]runtime.Object{hco})
+				r := initReconciler(cl)
+
+				// Do the reconcile
+				var invalidRequest = reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Name:      "invalid",
+						Namespace: "invalid",
+					},
+				}
+				res, err := r.Reconcile(invalidRequest)
+				Expect(err).To(BeNil())
+				Expect(res).Should(Equal(reconcile.Result{}))
+
+				// Get the HCO
+				foundResource := &hcov1alpha1.HyperConverged{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
+						foundResource),
+				).To(BeNil())
+				// Check conditions
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+					Type:    hcov1alpha1.ConditionReconcileComplete,
+					Status:  corev1.ConditionFalse,
+					Reason:  invalidNamespacedName,
+					Message: invalidNamespacedNameMessage,
+				})))
+			})
+
 			It("should create all managed resources", func() {
-				os.Setenv("HCO_NAMESPACE", namespace)
-				os.Setenv("CONVERSION_CONTAINER", "registry.redhat.io/container-native-virtualization/kubevirt-v2v-conversion:v2.0.0")
-				os.Setenv("VMWARE_CONTAINER", "registry.redhat.io/container-native-virtualization/kubevirt-vmware:v2.0.0}")
 				hco := &hcov1alpha1.HyperConverged{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      name,
@@ -1106,9 +1148,6 @@ var _ = Describe("HyperconvergedController", func() {
 			})
 
 			It("should find all managed resources", func() {
-				os.Setenv("HCO_NAMESPACE", namespace)
-				os.Setenv("CONVERSION_CONTAINER", "registry.redhat.io/container-native-virtualization/kubevirt-v2v-conversion:v2.0.0")
-				os.Setenv("VMWARE_CONTAINER", "registry.redhat.io/container-native-virtualization/kubevirt-vmware:v2.0.0}")
 				hco := &hcov1alpha1.HyperConverged{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      name,
@@ -1189,9 +1228,6 @@ var _ = Describe("HyperconvergedController", func() {
 			})
 
 			It("should complete when components are finished", func() {
-				os.Setenv("HCO_NAMESPACE", namespace)
-				os.Setenv("CONVERSION_CONTAINER", "registry.redhat.io/container-native-virtualization/kubevirt-v2v-conversion:v2.0.0")
-				os.Setenv("VMWARE_CONTAINER", "registry.redhat.io/container-native-virtualization/kubevirt-vmware:v2.0.0}")
 				hco := &hcov1alpha1.HyperConverged{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      name,
