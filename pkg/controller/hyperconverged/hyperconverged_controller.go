@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/ready"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -46,9 +47,7 @@ const (
 	// TODO: Research whether there is a better way.
 	foregroundDeletionFinalizer = "foregroundDeletion"
 
-	HyperConvergedNameEnv      = "HCO_NAME"
-	HyperConvergedNameDefault  = "hyperconverged-cluster"
-	HyperConvergedNamespaceEnv = "HCO_NAMESPACE"
+	HyperConvergedName = "hyperconverged-cluster"
 
 	// UndefinedNamespace is for cluster scoped resources
 	UndefinedNamespace string = ""
@@ -1128,17 +1127,13 @@ func isKVMAvailable() bool {
 // GetNamespacedName returns the name/namespace of the HyperConverged resource
 func GetNamespacedName() (types.NamespacedName, error) {
 	hco := types.NamespacedName{
-		Name: HyperConvergedNameDefault,
+		Name: HyperConvergedName,
 	}
 
-	if name, ok := os.LookupEnv(HyperConvergedNameEnv); ok {
-		hco.Name = name
+	namespace, err := k8sutil.GetOperatorNamespace()
+	if err != nil {
+		return hco, err
 	}
-
-	if namespace, ok := os.LookupEnv(HyperConvergedNamespaceEnv); ok {
-		hco.Namespace = namespace
-	} else {
-		return hco, fmt.Errorf("%s unset or empty", HyperConvergedNamespaceEnv)
-	}
+	hco.Namespace = namespace
 	return hco, nil
 }

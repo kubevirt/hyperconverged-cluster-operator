@@ -80,10 +80,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Get the namespace the operator is currently deployed in.
-	operatorNs, err := k8sutil.GetOperatorNamespace()
+	watchNamespace, err := k8sutil.GetWatchNamespace()
 	if err != nil {
-		log.Error(err, "")
+		log.Error(err, "Failed to get watch namespace")
 		os.Exit(1)
 	}
 
@@ -114,7 +113,7 @@ func main() {
 
 	// Create a new Cmd to provide shared dependencies and start components
 	mgr, err := manager.New(cfg, manager.Options{
-		Namespace:          hcoNamespacedName.Namespace,
+		Namespace:          watchNamespace,
 		MapperProvider:     restmapper.NewDynamicRESTMapper,
 		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
 	})
@@ -162,7 +161,7 @@ func main() {
 	// CreateServiceMonitors will automatically create the prometheus-operator ServiceMonitor resources
 	// necessary to configure Prometheus to scrape metrics from this operator.
 	services := []*corev1.Service{service}
-	_, err = metrics.CreateServiceMonitors(cfg, operatorNs, services)
+	_, err = metrics.CreateServiceMonitors(cfg, hcoNamespacedName.Namespace, services)
 	if err != nil {
 		log.Info("Could not create ServiceMonitor object", "error", err.Error())
 		// If this operator is deployed to a cluster without the prometheus-operator running, it will return
