@@ -2,7 +2,9 @@ package hyperconverged
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+
 	"fmt"
 	"os"
 	"reflect"
@@ -12,6 +14,8 @@ import (
 	"github.com/operator-framework/operator-sdk/pkg/ready"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/reference"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -35,6 +39,9 @@ import (
 )
 
 var log = logf.Log.WithName("controller_hyperconverged")
+
+// List of cluster scoped CR's, w/o reference owner
+var  unReferencedCRsMap = make(map[string]interface{})
 
 const (
 	// We cannot set owner reference of cluster-wide resources to namespaced HyperConverged object. Therefore,
@@ -138,6 +145,34 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	// Add finalizer to handle cluster-scoped crs that has no owner reference
+	isFinalizerSet := contains(instance.ObjectMeta.Finalizers, FinalizerName)
+	if instance.ObjectMeta.DeletionTimestamp.IsZero() {
+		if ! isFinalizerSet {
+			instance.ObjectMeta.Finalizers = append(instance.ObjectMeta.Finalizers, FinalizerName)
+			return reconcile.Result{}, r.client.Update(context.TODO(), instance)
+		}
+	}else{
+		if isFinalizerSet {
+		// Delete CRs that has no owner reference
+			for crName, cr := range unReferencedCRsMap {
+				result, error := handleComponentResourceRemoval(r.client, reqLogger, instance, cr)
+				if error != nil {
+					reqLogger.Error(error, "Failed during CR cleanup", crName)
+					return result, nil
+				}
+			}
+		}
+		// Remove finalizer on hco deletion
+		instance.ObjectMeta.Finalizers = drop(instance.ObjectMeta.Finalizers, FinalizerName)
+		isForegroundFinalizerSet := contains(instance.ObjectMeta.Finalizers, foregroundDeletionFinalizer)
+		if isForegroundFinalizerSet &&
+			len(instance.ObjectMeta.Finalizers) == 1 {
+			instance.ObjectMeta.Finalizers = drop(instance.ObjectMeta.Finalizers, foregroundDeletionFinalizer)
+		}
+		return reconcile.Result{}, r.client.Update(context.TODO(), instance)
 	}
 
 	// Add conditions if there are none
@@ -612,6 +647,10 @@ func (r *ReconcileHyperConverged) ensureNetworkAddons(instance *hcov1alpha1.Hype
 
 	logger.Info("NetworkAddonsConfig already exists", "NetworkAddonsConfig.Namespace", found.Namespace, "NetworkAddonsConfig.Name", found.Name)
 
+	if unReferencedCRsMap[found.GetName()] == nil{
+		unReferencedCRsMap[found.GetName()] = found
+	}
+
 	existingOwners := found.GetOwnerReferences()
 	if len(existingOwners) > 0 {
 		logger.Info("Removing all NetworkAddonsConfig owner references","NetworkAddonsConfig.OwnerReferences", found.GetOwnerReferences())
@@ -691,6 +730,63 @@ func (r *ReconcileHyperConverged) ensureNetworkAddons(instance *hcov1alpha1.Hype
 	}
 
 	return r.client.Status().Update(context.TODO(), instance)
+}
+
+func contains(list []string, candidate string) bool {
+	for _, item := range list {
+		if item == candidate {
+			return true
+		}
+	}
+	return false
+}
+
+func drop(list []string, candidate string) []string {
+	newList := []string{}
+	for _, item := range list {
+		if item != candidate {
+			newList = append(newList, item)
+		}
+	}
+	return newList
+}
+
+func toUnstructured(instance interface{}) (*unstructured.Unstructured, error) {
+	instanceAsBinary, error := json.Marshal(instance)
+	if error != nil {
+		return nil, error
+	}
+	instanceAsUnstructured := &unstructured.Unstructured{}
+	if error := json.Unmarshal(instanceAsBinary, instanceAsUnstructured); error != nil {
+		return nil, error
+	}
+	return instanceAsUnstructured, nil
+}
+
+func handleComponentResourceRemoval(client client.Client, logger logr.Logger, hcoCR *hcov1alpha1.HyperConverged, crInstance interface{},) (reconcile.Result, error) {
+	resource, error := toUnstructured(crInstance)
+	if error != nil {
+		logger.Error(error, "Failed to convert object to Unstructured")
+		return reconcile.Result{}, error
+	}
+
+	error = client.Get(context.TODO(), types.NamespacedName{Name: resource.GetName(), Namespace: resource.GetNamespace()}, resource)
+	if error != nil {
+		if apierrors.IsNotFound(error) {
+			logger.Info("Resource doesn't exist, there is nothing to remove", "Kind", resource.GetObjectKind())
+			return reconcile.Result{}, nil
+		}
+		return reconcile.Result{}, error
+	}
+
+	labels := resource.GetLabels()
+	if app, labelExists := labels["app"]; !labelExists || app != hcoCR.Name {
+		logger.Info("Existing resource wasn't deployed by HCO, ignoring", "Kind", resource.GetObjectKind())
+		return reconcile.Result{}, nil
+	}
+
+	error = client.Delete(context.TODO(), resource)
+	return reconcile.Result{}, error
 }
 
 func handleConditionsSSP(r *ReconcileHyperConverged, logger logr.Logger, component string, status *sspv1.ConfigStatus) {
