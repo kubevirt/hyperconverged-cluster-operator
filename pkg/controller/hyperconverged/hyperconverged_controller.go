@@ -53,11 +53,13 @@ const (
 	// OpenshiftNamespace is for resources that belong in the openshift namespace
 	OpenshiftNamespace string = "openshift"
 
-	reconcileInit             = "Init"
-	reconcileInitMessage      = "Initializing HyperConverged cluster"
-	reconcileFailed           = "ReconcileFailed"
-	reconcileCompleted        = "ReconcileCompleted"
-	reconcileCompletedMessage = "Reconcile completed successfully"
+	reconcileInit               = "Init"
+	reconcileInitMessage        = "Initializing HyperConverged cluster"
+	reconcileFailed             = "ReconcileFailed"
+	reconcileCompleted          = "ReconcileCompleted"
+	reconcileCompletedMessage   = "Reconcile completed successfully"
+	invalidRequestReason        = "InvalidRequest"
+	invalidRequestMessageFormat = "Request does not match expected name (%v) and namespace (%v)"
 )
 
 // Add creates a new HyperConverged Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -150,6 +152,24 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		}
 		// Error reading the object - requeue the request.
 		return reconcile.Result{}, err
+	}
+
+	hco, err := getHyperconverged()
+	if err != nil {
+		reqLogger.Error(err, "Failed to get HyperConverged namespaced name")
+		return reconcile.Result{}, err
+	}
+
+	// Ignore invalid requests
+	if request.NamespacedName != hco {
+		reqLogger.Info("Invalid request", "HyperConverged.Namespace", hco.Namespace, "HyperConverged.Name", hco.Name)
+		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
+			Type:    hcov1alpha1.ConditionReconcileComplete,
+			Status:  corev1.ConditionFalse,
+			Reason:  invalidRequestReason,
+			Message: fmt.Sprintf(invalidRequestMessageFormat, hco.Name, hco.Namespace),
+		})
+		return reconcile.Result{}, r.client.Status().Update(context.TODO(), instance)
 	}
 
 	// Add conditions if there are none
