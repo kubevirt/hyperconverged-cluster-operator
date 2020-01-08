@@ -47,10 +47,7 @@ const (
 
 	// UndefinedNamespace is for cluster scoped resources
 	UndefinedNamespace string = ""
-
-	// OpenshiftNamespace is for resources that belong in the openshift namespace
-	OpenshiftNamespace string = "openshift"
-
+	
 	reconcileInit             = "Init"
 	reconcileInitMessage      = "Initializing HyperConverged cluster"
 	reconcileFailed           = "ReconcileFailed"
@@ -765,13 +762,13 @@ func newKubeVirtCommonTemplateBundleForCR(cr *hcov1alpha1.HyperConverged, namesp
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "common-templates-" + cr.Name,
 			Labels:    labels,
-			Namespace: OpenshiftNamespace,
+			Namespace: namespace,
 		},
 	}
 }
 
 func (r *ReconcileHyperConverged) ensureKubeVirtCommonTemplateBundle(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
-	kvCTB := newKubeVirtCommonTemplateBundleForCR(instance, OpenshiftNamespace)
+	kvCTB := newKubeVirtCommonTemplateBundleForCR(instance, request.Namespace)
 	if err := controllerutil.SetControllerReference(instance, kvCTB, r.scheme); err != nil {
 		return err
 	}
