@@ -211,6 +211,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 			for _, f := range []func(c client.Client, cr *hcov1alpha1.HyperConverged) error{
 				ensureCDIDeleted,
 				ensureNetworkAddonsDeleted,
+				ensureKubeVirtCommonTemplateBundleDeleted,
 			} {
 				err = f(r.client, instance)
 				if err != nil {
@@ -837,9 +838,6 @@ func newKubeVirtCommonTemplateBundleForCR(cr *hcov1alpha1.HyperConverged, namesp
 
 func (r *ReconcileHyperConverged) ensureKubeVirtCommonTemplateBundle(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
 	kvCTB := newKubeVirtCommonTemplateBundleForCR(instance, OpenshiftNamespace)
-	if err := controllerutil.SetControllerReference(instance, kvCTB, r.scheme); err != nil {
-		return err
-	}
 
 	key, err := client.ObjectKeyFromObject(kvCTB)
 	if err != nil {
@@ -855,6 +853,20 @@ func (r *ReconcileHyperConverged) ensureKubeVirtCommonTemplateBundle(instance *h
 
 	if err != nil {
 		return err
+	}
+
+	existingOwners := found.GetOwnerReferences()
+
+	// Previous versions used to have HCO-operator (namespace: kubevirt-hyperconverged)
+	// as the owner of kvCTB (namespace: OpenshiftNamespace).
+	// It's not legal, so remove that.
+	if (len(existingOwners) > 0) {
+		logger.Info("kvCTB has owners, removing...")
+		found.SetOwnerReferences([]metav1.OwnerReference{})
+		err = r.client.Update(context.TODO(), found)
+		if err != nil {
+			logger.Error(err, "Failed to remove kvCTB's previous owners")
+		}
 	}
 
 	logger.Info("KubeVirt Common Templates Bundle already exists", "bundle.Namespace", found.Namespace, "bundle.Name", found.Name)
@@ -1254,6 +1266,25 @@ func ensureNetworkAddonsDeleted(c client.Client, instance *hcov1alpha1.HyperConv
 
 	if err != nil {
 		log.Error(err, "Failed to get NetworkAddonsConfig from kubernetes")
+		return err
+	}
+
+	return componentResourceRemoval(found, c, instance)
+}
+
+func ensureKubeVirtCommonTemplateBundleDeleted(c client.Client, instance *hcov1alpha1.HyperConverged) (error) {
+	kvCTB := newKubeVirtCommonTemplateBundleForCR(instance, OpenshiftNamespace)
+
+	key, err := client.ObjectKeyFromObject(kvCTB)
+	if err != nil {
+		log.Error(err, "Failed to get object key for KubeVirt Common Templates Bundle")
+	}
+
+	found := &sspv1.KubevirtCommonTemplatesBundle{}
+	err = c.Get(context.TODO(), key, found)
+
+	if err != nil {
+		log.Error(err, "Failed to get KubeVirt Common Templates Bundle from kubernetes")
 		return err
 	}
 
