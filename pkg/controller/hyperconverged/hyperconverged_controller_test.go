@@ -619,7 +619,7 @@ var _ = Describe("HyperconvergedController", func() {
 					Spec: hcov1alpha1.HyperConvergedSpec{},
 				}
 
-				expectedResource := newKubeVirtCommonTemplateBundleForCR(hco, OpenshiftNamespace)
+				expectedResource := newKubeVirtCommonTemplateBundleForCR(hco, namespace)
 				cl := initClient([]runtime.Object{})
 				r := initReconciler(cl)
 				Expect(r.ensureKubeVirtCommonTemplateBundle(hco, log, request)).To(BeNil())
@@ -644,7 +644,7 @@ var _ = Describe("HyperconvergedController", func() {
 					Spec: hcov1alpha1.HyperConvergedSpec{},
 				}
 
-				expectedResource := newKubeVirtCommonTemplateBundleForCR(hco, OpenshiftNamespace)
+				expectedResource := newKubeVirtCommonTemplateBundleForCR(hco, namespace)
 				expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
 				cl := initClient([]runtime.Object{hco, expectedResource})
 				r := initReconciler(cl)
@@ -667,7 +667,7 @@ var _ = Describe("HyperconvergedController", func() {
 					Spec: hcov1alpha1.HyperConvergedSpec{},
 				}
 
-				expectedResource := newKubeVirtCommonTemplateBundleForCR(hco, OpenshiftNamespace)
+				expectedResource := newKubeVirtCommonTemplateBundleForCR(hco, namespace)
 				expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
 				expectedResource.Status.Conditions = []conditionsv1.Condition{
 					conditionsv1.Condition{
@@ -1136,7 +1136,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedCDI.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cdis/%s", expectedCDI.Namespace, expectedCDI.Name)
 				expectedCNA := newNetworkAddonsForCR(hco, UndefinedNamespace)
 				expectedCNA.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cnas/%s", expectedCNA.Namespace, expectedCNA.Name)
-				expectedKVCTB := newKubeVirtCommonTemplateBundleForCR(hco, OpenshiftNamespace)
+				expectedKVCTB := newKubeVirtCommonTemplateBundleForCR(hco, namespace)
 				expectedKVCTB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/ctbs/%s", expectedKVCTB.Namespace, expectedKVCTB.Name)
 				expectedKVNLB := newKubeVirtNodeLabellerBundleForCR(hco, namespace)
 				expectedKVNLB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/nlb/%s", expectedKVNLB.Namespace, expectedKVNLB.Name)
@@ -1260,7 +1260,7 @@ var _ = Describe("HyperconvergedController", func() {
 						Status: corev1.ConditionFalse,
 					},
 				}
-				expectedKVCTB := newKubeVirtCommonTemplateBundleForCR(hco, OpenshiftNamespace)
+				expectedKVCTB := newKubeVirtCommonTemplateBundleForCR(hco, namespace)
 				expectedKVCTB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/ctbs/%s", expectedKVCTB.Namespace, expectedKVCTB.Name)
 				expectedKVCTB.Status.Conditions = getGenericCompletedConditions()
 				expectedKVNLB := newKubeVirtNodeLabellerBundleForCR(hco, namespace)
