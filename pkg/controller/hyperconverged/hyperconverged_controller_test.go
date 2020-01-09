@@ -1319,6 +1319,47 @@ var _ = Describe("HyperconvergedController", func() {
 			})
 		})
 	})
+	Describe("HyperConverged utility functions", func() {
+			It("function drop (string in slice of strings)", func() {
+				testSlice := []string{"1", "2", "2", "3", "4", "aaaa"}
+				Expect(drop(testSlice, "2")).To(Equal([]string{"1", "3", "4", "aaaa"}))
+				Expect(drop(testSlice, "5")).To(Equal(testSlice))
+				Expect(drop(testSlice, "a")).To(Equal(testSlice))
+				Expect(drop(testSlice, "")).To(Equal(testSlice))
+
+				emptySlice := []string{}
+				Expect(drop(emptySlice, "")).To(Equal(emptySlice))
+			})
+
+			It("function contains (string in slice of strings)", func() {
+				testSlice := []string{"1", "2", "2", "3", "4", "aaaa"}
+				Expect(contains(testSlice, "2")).To(BeTrue())
+				Expect(contains(testSlice, "a")).To(BeFalse())
+
+				emptySlice := []string{}
+				Expect(contains(emptySlice, "2")).To(BeFalse())
+			})
+
+			It("function toUnstructured", func() {
+				hco := &hcov1alpha1.HyperConverged{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       "HyperConverged",
+						APIVersion: "v1",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      name,
+						Namespace: namespace,
+					},
+					Spec: hcov1alpha1.HyperConvergedSpec{},
+				}
+
+				unstructured, err := toUnstructured(hco)
+				Expect(err).To(BeNil())
+				Expect(unstructured.GetKind()).To(Equal("HyperConverged"))
+				Expect(unstructured.GetName()).To(Equal(name))
+				Expect(unstructured.GetNamespace()).To(Equal(namespace))
+			})
+	})
 })
 
 func getGenericCompletedConditions() []conditionsv1.Condition {
