@@ -10,7 +10,6 @@ import (
 
 	"encoding/json"
 	"github.com/go-logr/logr"
-	"github.com/operator-framework/operator-sdk/pkg/k8sutil"
 	"github.com/operator-framework/operator-sdk/pkg/ready"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -45,7 +44,8 @@ const (
 	// use finalizers to manage the cleanup.
 	FinalizerName = "hyperconvergeds.hco.kubevirt.io"
 
-	HyperConvergedName = "hyperconverged-cluster"
+	HyperConvergedName   = "hyperconverged-cluster"
+	OperatorNamespaceEnv = "OPERATOR_NAMESPACE"
 
 	// UndefinedNamespace is for cluster scoped resources
 	UndefinedNamespace string = ""
@@ -1169,11 +1169,12 @@ func getHyperconverged() (types.NamespacedName, error) {
 		Name: HyperConvergedName,
 	}
 
-	namespace, err := k8sutil.GetOperatorNamespace()
-	if err != nil {
-		return hco, err
+	if namespace, ok := os.LookupEnv(OperatorNamespaceEnv); ok {
+		hco.Namespace = namespace
+	} else {
+		return hco, fmt.Errorf("%s unset or empty in environment", OperatorNamespaceEnv)
 	}
-	hco.Namespace = namespace
+
 	return hco, nil
 }
 
