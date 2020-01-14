@@ -226,6 +226,11 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --replaces-csv-version=${REPLACES_CSV_VERSION} \
   --spec-displayname="KubeVirt HyperConverged Cluster Operator" \
   --spec-description="$(<${PROJECT_ROOT}/docs/operator_description.md)" \
+  --crd-display="HyperConverged Cluster Operator" \
+  --provider-name="KubeVirt project" \
+  --maturity="alpha" \
+  --maintainer-name="KubeVirt project" \
+  --maintainer-email="kubevirt-dev@googlegroups.com" \
   --operator-image-name="${OPERATOR_IMAGE}" > "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}"
 (cd ${PROJECT_ROOT}/tools/csv-merger/ && go clean)
 

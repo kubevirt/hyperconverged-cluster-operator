@@ -74,6 +74,11 @@ var (
 	specDescription     = flag.String("spec-description", "", "Description")
 	specDisplayName     = flag.String("spec-displayname", "", "Display Name")
 	relatedImagesList   = flag.String("related-images-list", "", "Comma separated list of all the images referred in the CSV")
+	crdDisplay          = flag.String("crd-display", "KubeVirt HyperConverged Cluster", "Label show in OLM UI about the primary CRD")
+	providerName        = flag.String("provider-name", "", "Provider name")
+	maturity            = flag.String("maturity", "", "Maturity level")
+	maintainerName      = flag.String("maintainer-name", "", "Maintainer name")
+	maintainerEmail     = flag.String("maintainer-email", "", "Maintainer email address")
 )
 
 func main() {
@@ -106,6 +111,7 @@ func main() {
 		*operatorImage,
 		replaces,
 		version,
+		*crdDisplay,
 	)
 	csvExtended := ClusterServiceVersionExtended{
 		TypeMeta:   csvBase.TypeMeta,
@@ -242,6 +248,18 @@ func main() {
 	}
 	if *specDisplayName != "" {
 		csvExtended.Spec.DisplayName = *specDisplayName
+	}
+	if *providerName != "" {
+		csvExtended.Spec.Provider.Name = *providerName
+	}
+	if *maturity != "" {
+		csvExtended.Spec.Maturity = *maturity
+	}
+	if *maintainerName != "" {
+		csvExtended.Spec.Maintainers[0].Name = *maintainerName
+	}
+	if *maintainerEmail != "" {
+		csvExtended.Spec.Maintainers[0].Email = *maintainerEmail
 	}
 
 	util.MarshallObject(csvExtended, os.Stdout)
