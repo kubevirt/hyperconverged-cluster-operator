@@ -114,6 +114,9 @@ kind: OperatorGroup
 metadata:
   name: hco-operatorgroup
   namespace: kubevirt-hyperconverged
+  spec:
+    targetNamespaces:
+    - kubevirt-hyperconverged
 EOF
 
 # TODO: The catalog source image here should point to the latest version in quay.io
@@ -162,6 +165,13 @@ spec:
   source: hco-catalogsource-example
   sourceNamespace: ${HCO_CATALOG_NAMESPACE}
 EOF
+
+# temporary debug show commands
+sleep 15
+${CMD} get csv -A
+${CMD} describe csv -A
+${CMD} get subscription -A -o yaml
+${CMD} get pods -n kubevirt-hyperconverged
 
 # Allow time for the install plan to be created a for the
 # hco-operator to be created. Otherwise kubectl wait will report EOF.

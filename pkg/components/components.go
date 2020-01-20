@@ -123,8 +123,12 @@ func GetDeploymentSpec(image, imagePullPolicy, conversionContainer, vmwareContai
 								},
 							},
 							{
-								Name:  "WATCH_NAMESPACE",
-								Value: "",
+								Name: "WATCH_NAMESPACE",
+								ValueFrom: &corev1.EnvVarSource{
+									FieldRef: &corev1.ObjectFieldSelector{
+										FieldPath: "metadata.namespace",
+									},
+								},
 							},
 							{
 								Name:  "CONVERSION_CONTAINER",
@@ -520,15 +524,16 @@ func GetCSVBase(name, hcCRNamespace, displayName, description, image, replaces s
 			Name:      fmt.Sprintf("%v.v%v", name, version.String()),
 			Namespace: "placeholder",
 			Annotations: map[string]string{
-				"alm-examples":   string(almExamples),
-				"capabilities":   "Full Lifecycle",
-				"certified":      "false",
-				"categories":     "OpenShift Optional",
-				"containerImage": image,
-				"createdAt":      time.Now().Format("2006-01-02 15:04:05"),
-				"description":    description,
-				"repository":     "https://github.com/kubevirt/hyperconverged-cluster-operator",
-				"support":        "false",
+				"alm-examples":         string(almExamples),
+				"capabilities":         "Full Lifecycle",
+				"certified":            "false",
+				"olm.targetNamespaces": "kubevirt-hyperconverged",
+				"categories":           "OpenShift Optional",
+				"containerImage":       image,
+				"createdAt":            time.Now().Format("2006-01-02 15:04:05"),
+				"description":          description,
+				"repository":           "https://github.com/kubevirt/hyperconverged-cluster-operator",
+				"support":              "false",
 			},
 		},
 		Spec: csvv1alpha1.ClusterServiceVersionSpec{
@@ -586,11 +591,11 @@ func GetCSVBase(name, hcCRNamespace, displayName, description, image, replaces s
 				},
 				csvv1alpha1.InstallMode{
 					Type:      csvv1alpha1.InstallModeTypeMultiNamespace,
-					Supported: true,
+					Supported: false,
 				},
 				csvv1alpha1.InstallMode{
 					Type:      csvv1alpha1.InstallModeTypeAllNamespaces,
-					Supported: true,
+					Supported: false,
 				},
 			},
 			// Skip this in favor of having a separate function to get

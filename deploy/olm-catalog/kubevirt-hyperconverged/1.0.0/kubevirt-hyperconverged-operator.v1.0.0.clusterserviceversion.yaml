@@ -8,6 +8,7 @@ metadata:
     capabilities: Full Lifecycle
     categories: OpenShift Optional
     certified: "false"
+    olm.targetNamespaces: kubevirt-hyperconverged
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:latest
     createdAt: "2020-02-11 19:49:42"
     description: |-
@@ -1277,6 +1278,9 @@ spec:
                     fieldRef:
                       fieldPath: metadata.name
                 - name: WATCH_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
                 - name: CONVERSION_CONTAINER
                   value: quay.io/kubevirt/kubevirt-v2v-conversion:v2.0.0
                 - name: VMWARE_CONTAINER
@@ -1554,9 +1558,9 @@ spec:
     type: OwnNamespace
   - supported: true
     type: SingleNamespace
-  - supported: true
+  - supported: false
     type: MultiNamespace
-  - supported: true
+  - supported: false
     type: AllNamespaces
   keywords:
   - KubeVirt
