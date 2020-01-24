@@ -3,10 +3,10 @@ module github.com/kubevirt/hyperconverged-cluster-operator
 go 1.13
 
 require (
+	cloud.google.com/go v0.37.4 // indirect
 	github.com/MarSik/kubevirt-ssp-operator v1.0.20
 	github.com/appscode/jsonpatch v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/coreos/go-systemd v0.0.0-20190620071333-e64a0ec8b42a // indirect
 	github.com/coreos/prometheus-operator v0.35.0 // indirect
 	github.com/emicklei/go-restful v2.9.6+incompatible // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
@@ -14,35 +14,31 @@ require (
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.19.4
 	github.com/golang/mock v1.3.1 // indirect
-	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.9.4 // indirect
 	github.com/imdario/mergo v0.3.8
 	github.com/kubevirt/cluster-network-addons-operator v0.3.1-0.20191002163030-b0275809cef4
-	github.com/mitchellh/hashstructure v1.0.0 // indirect
-	github.com/munnerz/goautoneg v0.0.0-20190414153302-2ae31c8b6b30 // indirect
 	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.7.0
 	github.com/openshift/client-go v0.0.0-20190923180330-3b6373338c9b // indirect
 	github.com/openshift/custom-resource-status v0.0.0-20190822192428-e62f2f3b79f3
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20191220211133-23f5c0292434
-	github.com/operator-framework/operator-registry v1.5.1 // indirect
 	github.com/operator-framework/operator-sdk v0.10.0
 	github.com/prometheus/common v0.6.0 // indirect
 	github.com/prometheus/procfs v0.0.3 // indirect
+	github.com/spf13/cobra v0.0.5 // indirect
 	github.com/spf13/pflag v1.0.5
+	github.com/stretchr/testify v1.4.0 // indirect
+	go.uber.org/atomic v1.4.0 // indirect
 	golang.org/x/crypto v0.0.0-20190621222207-cc06ce4a13d4 // indirect
-	gonum.org/v1/gonum v0.0.0-20190710053202-4340aa3071a0 // indirect
+	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45 // indirect
 	google.golang.org/appengine v1.6.1 // indirect
+	google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55 // indirect
 	k8s.io/api v0.15.7
 	k8s.io/apiextensions-apiserver v0.0.0
 	k8s.io/apimachinery v0.15.7
 	k8s.io/apiserver v0.0.0 // indirect
 	k8s.io/client-go v11.0.1-0.20190409021438-1a26190bd76a+incompatible
-	k8s.io/code-generator v0.0.0 // indirect
-	k8s.io/component-base v0.0.0 // indirect
-	k8s.io/kube-aggregator v0.0.0 // indirect
+	k8s.io/klog v0.4.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20190918143330-0270cf2f1c1d
-	k8s.io/kubernetes v1.16.0 // indirect
 	kubevirt.io/client-go v0.0.0-00010101000000-000000000000
 	kubevirt.io/containerized-data-importer v1.11.0
 	kubevirt.io/kubevirt v0.23.3
