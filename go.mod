@@ -47,15 +47,9 @@ require (
 
 )
 
+// Pinned to kubernetes-1.13.4 to align with
+// https://github.com/operator-framework/operator-sdk/blob/v0.10.x/internal/pkg/scaffold/go_mod.go
 replace (
-	github.com/appscode/jsonpatch => github.com/appscode/jsonpatch v1.0.1
-
-	github.com/coreos/prometheus-operator => github.com/coreos/prometheus-operator v0.29.0
-	github.com/go-kit/kit => github.com/go-kit/kit v0.3.0
-	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20190401163519-84c2b942258a
-	github.com/openshift/machine-api-operator => github.com/openshift/machine-api-operator v0.2.1-0.20191025120018-fb3724fc7bdf
-	github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.10.0
-	github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.0.0-20190424153033-d3245f150225
 	k8s.io/api => k8s.io/api v0.0.0-20190222213804-5cb15d344471
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20190228180357-d002e88f6236
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190221213512-86fb29eff628
@@ -71,6 +65,16 @@ replace (
 	k8s.io/kube-state-metrics => k8s.io/kube-state-metrics v1.6.0
 	k8s.io/kubectl => k8s.io/kubectl v0.15.7
 	k8s.io/kubernetes => k8s.io/kubernetes v1.14.1
+)
+
+replace (
+	github.com/appscode/jsonpatch => github.com/appscode/jsonpatch v1.0.1
+	github.com/coreos/prometheus-operator => github.com/coreos/prometheus-operator v0.29.0
+	github.com/go-kit/kit => github.com/go-kit/kit v0.3.0
+	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20190401163519-84c2b942258a
+	github.com/openshift/machine-api-operator => github.com/openshift/machine-api-operator v0.2.1-0.20191025120018-fb3724fc7bdf
+	github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.10.0
+	github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.0.0-20190424153033-d3245f150225
 	kubevirt.io/client-go => kubevirt.io/client-go v0.23.3
 	kubevirt.io/kubevirt => kubevirt.io/kubevirt v0.23.3
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.1.12
