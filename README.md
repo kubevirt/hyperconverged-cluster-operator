@@ -152,3 +152,4 @@ For example:
 ```bash
 $ ./cluster-up/kubectl.sh get pods --all-namespaces
 ```
+
