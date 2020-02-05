@@ -1,12 +1,13 @@
-QUAY_USERNAME      ?=
-QUAY_PASSWORD      ?=
-SOURCE_DIRS        = cmd pkg
-SOURCES            := $(shell find . -name '*.go' -not -path "*/vendor/*")
-SHA                := $(shell git describe --no-match  --always --abbrev=40 --dirty)
-IMAGE_REGISTRY     ?= quay.io
-IMAGE_TAG          ?= latest
-OPERATOR_IMAGE     ?= kubevirt/hyperconverged-cluster-operator
-REGISTRY_NAMESPACE ?=
+QUAY_USERNAME            ?=
+QUAY_PASSWORD            ?=
+SOURCE_DIRS               = cmd pkg
+SOURCES                  := $(shell find . -name '*.go' -not -path "*/vendor/*")
+SHA                      := $(shell git describe --no-match  --always --abbrev=40 --dirty)
+IMAGE_REGISTRY           ?= quay.io
+IMAGE_TAG                ?= latest
+OPERATOR_IMAGE           ?= kubevirt/hyperconverged-cluster-operator
+REGISTRY_NAMESPACE       ?=
+REGISTRY_EXTRA_PUSH_ARGS ?=
 
 
 # Prow doesn't have docker command
@@ -55,7 +56,7 @@ container-build-operator-courier:
 container-push: container-push-operator
 
 container-push-operator:
-	docker push $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG)
+	docker push $(REGISTRY_EXTRA_PUSH_ARGS) $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG)
 
 cluster-up:
 	./cluster-up/up.sh

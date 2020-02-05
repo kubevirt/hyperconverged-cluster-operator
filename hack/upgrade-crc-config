@@ -1,0 +1,6 @@
+# CRC
+REGISTRY_IMAGE=image-registry.openshift-image-registry.svc:5000/kubevirt/hco-registry:latest
+REGISTRY_IMAGE_UPGRADE=image-registry.openshift-image-registry.svc:5000/kubevirt/hco-registry-upgrade:latest
+REGISTRY_IMAGE_URL_PREFIX=image-registry.openshift-image-registry.svc:5000/kubevirt/hyperconverged-cluster-operator:latest
+HCO_CATALOG_NAMESPACE="openshift-marketplace"
+export CMD="oc"

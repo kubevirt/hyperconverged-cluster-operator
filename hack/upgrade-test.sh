@@ -62,6 +62,9 @@ echo "KUBEVIRT_PROVIDER: $KUBEVIRT_PROVIDER"
 if [ -n "$KUBEVIRT_PROVIDER" ]; then
   echo "Running on STDCI ${KUBEVIRT_PROVIDER}"
   source ./hack/upgrade-stdci-config
+elif [ -n "$FOR_CRC" ]; then
+  echo "Running against CRC cluster"
+  source ./hack/upgrade-crc-config
 else
   echo "Running on OpenShift CI"
   source ./hack/upgrade-openshiftci-config
@@ -99,6 +102,9 @@ ${CMD} wait deployment catalog-operator --for condition=Available -n openshift-o
 if [ -n "$KUBEVIRT_PROVIDER" ]; then
   Msg "build images for STDCI"
   ./hack/upgrade-test-build-images.sh
+elif [ -n "$FOR_CRC" ]; then
+  Msg "build images for CRC"
+  ./hack/upgrade-test-build-images-crc.sh
 else
   Msg "Openshift CI detected." "Image build skipped. Images are built through Prow."
 fi
