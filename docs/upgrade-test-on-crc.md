@@ -7,13 +7,21 @@ run the HCO upgrade test against a CRC deployed OpenShift cluster.
 
 Deploy a OpenShift cluster using the CRC instructions: https://code-ready.github.io/crc/.
 
-## Login as an admin
+## Login to the cluster as an admin
 
 ````
+eval $(crc oc-env)
 oc login -u kubeadmin -p <replace-with-your-password> https://api.crc.testing:6443
 ````
 
 Use the kubeadmin password that is printed to STDOUT, after "crc start" completes.
+
+## Login to the cluster's image registry
+
+````
+podman login -u kubeadmin -p $(oc whoami -t) --tls-verify=false default-route-openshift-image-registry.apps-crc.testing
+
+````
 
 ## Create the kubevirt namespace
 
@@ -26,7 +34,7 @@ oc create ns kubevirt
 
 ## Create ClusterRoleBindings
 
-Create ClusterRoleBindings to allow pods to read the images pushed to image registry.
+Create ClusterRoleBindings to allow pods to read from the image registry.
 
 ````
 cat <<EOF | oc create -f -
@@ -62,7 +70,7 @@ EOF
 
 ## Run the upgrade test
 
-Pass in a value for the FOR_CRC environment variable and call "make upgrade-test" to run the upgrade test. Setting a value for FOR_CRC indicates to the upgrade test to use settings to  run against a CRC cluster.
+Pass in a value for the FOR_CRC environment variable and call "make upgrade-test" to run the upgrade test. Setting a value for FOR_CRC indicates to the upgrade test to use settings to run against a CRC cluster.
 
 ````
 FOR_CRC=true make upgrade-test
