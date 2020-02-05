@@ -5,7 +5,6 @@ ARG UPGRADE_VERSION=100.0.0
 COPY deploy/olm-catalog /registry
 COPY hack /hack
 RUN export UPGRADE_VERSION=${UPGRADE_VERSION}; /hack/upgrade-create-new-version.sh
-USER root
 
 # enable KVM_EMULATION for CI, needed by kubevirt-node-labeller on AWS
 RUN find /registry/kubevirt-hyperconverged/ -type f -exec sed -E -i 's|^(\s*)- name: KVM_EMULATION$|\1- name: KVM_EMULATION\n\1  value: "true"|' {} \; || :

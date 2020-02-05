@@ -3,7 +3,6 @@ FROM quay.io/openshift/origin-operator-registry:latest
 
 COPY deploy/olm-catalog /registry
 
-USER root
 # enable KVM_EMULATION for CI, needed by kubevirt-node-labeller on AWS
 RUN find /registry/kubevirt-hyperconverged/ -type f -exec sed -E -i 's|^(\s*)- name: KVM_EMULATION$|\1- name: KVM_EMULATION\n\1  value: "true"|' {} \; || :
 
