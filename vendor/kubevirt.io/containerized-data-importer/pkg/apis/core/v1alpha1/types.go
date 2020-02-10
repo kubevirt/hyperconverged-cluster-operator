@@ -256,16 +256,14 @@ type CDIConfig struct {
 
 //CDIConfigSpec defines specification for user configuration
 type CDIConfigSpec struct {
-	UploadProxyURLOverride   *string                      `json:"uploadProxyURLOverride,omitempty"`
-	ScratchSpaceStorageClass *string                      `json:"scratchSpaceStorageClass,omitempty"`
-	PodResourceRequirements  *corev1.ResourceRequirements `json:"podResourceRequirements,omitempty"`
+	UploadProxyURLOverride   *string `json:"uploadProxyURLOverride,omitempty"`
+	ScratchSpaceStorageClass *string `json:"scratchSpaceStorageClass,omitempty"`
 }
 
 //CDIConfigStatus provides
 type CDIConfigStatus struct {
-	UploadProxyURL                 *string                      `json:"uploadProxyURL,omitempty"`
-	ScratchSpaceStorageClass       string                       `json:"scratchSpaceStorageClass,omitempty"`
-	DefaultPodResourceRequirements *corev1.ResourceRequirements `json:"defaultPodResourceRequirements,omitempty"`
+	UploadProxyURL           *string `json:"uploadProxyURL,omitempty"`
+	ScratchSpaceStorageClass string  `json:"scratchSpaceStorageClass,omitempty"`
 }
 
 //CDIConfigList provides the needed parameters to do request a list of CDIConfigs from the system

@@ -6,24 +6,32 @@ require (
 	github.com/MarSik/kubevirt-ssp-operator v1.0.20
 	github.com/appscode/jsonpatch v1.0.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible
+	github.com/coreos/go-systemd v0.0.0-20190620071333-e64a0ec8b42a // indirect
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.19.4
+	github.com/grpc-ecosystem/go-grpc-middleware v1.1.0 // indirect
+	github.com/grpc-ecosystem/grpc-gateway v1.9.4 // indirect
 	github.com/imdario/mergo v0.3.8
 	github.com/kubevirt/cluster-network-addons-operator v0.3.1-0.20191002163030-b0275809cef4
-	github.com/onsi/ginkgo v1.10.1
-	github.com/onsi/gomega v1.7.0
+	github.com/mattn/goveralls v0.0.5 // indirect
+	github.com/mitchellh/hashstructure v1.0.0 // indirect
+	github.com/munnerz/goautoneg v0.0.0-20190414153302-2ae31c8b6b30 // indirect
+	github.com/onsi/ginkgo v1.12.0
+	github.com/onsi/gomega v1.9.0
+	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible // indirect
 	github.com/openshift/custom-resource-status v0.0.0-20190822192428-e62f2f3b79f3
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20191220211133-23f5c0292434
 	github.com/operator-framework/operator-sdk v0.10.0
 	github.com/spf13/pflag v1.0.5
+	gonum.org/v1/gonum v0.0.0-20190710053202-4340aa3071a0 // indirect
 	k8s.io/api v0.16.4
 	k8s.io/apiextensions-apiserver v0.16.4
 	k8s.io/apimachinery v0.16.4
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
 	kubevirt.io/client-go v0.26.0
-	kubevirt.io/containerized-data-importer v1.13.0
+	kubevirt.io/containerized-data-importer v1.11.0
 	kubevirt.io/kubevirt v0.26.0
 	sigs.k8s.io/controller-runtime v0.4.0
 
