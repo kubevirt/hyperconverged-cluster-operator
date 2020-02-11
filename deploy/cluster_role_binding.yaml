@@ -79,21 +79,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    name: cdi-operator
-  name: cdi-operator
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cdi-operator
-subjects:
-- kind: ServiceAccount
-  name: cdi-operator
-  namespace: kubevirt-hyperconverged
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  labels:
     name: node-maintenance-operator
   name: node-maintenance-operator
 roleRef:
