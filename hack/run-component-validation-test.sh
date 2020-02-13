@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-source ./hack/upgrade-openshiftci-config
-
+HCO_CATALOG_NAMESPACE="openshift-marketplace"
+export CMD="oc"
 export TEST_CSV_FILE=./test-out/clusterserviceversion.yaml
 export KUBECONFIG=~/.crc/machines/crc/kubeconfig
 export TEST_KUBECTL_CMD=${CMD}
