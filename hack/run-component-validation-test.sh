@@ -5,8 +5,8 @@ set -euo pipefail
 HCO_CATALOG_NAMESPACE="openshift-marketplace"
 export CMD="oc"
 export TEST_CSV_FILE=./test-out/clusterserviceversion.yaml
-export KUBECONFIG=~/.crc/machines/crc/kubeconfig
 export TEST_KUBECTL_CMD=${CMD}
+export KUBECONFIG="${KUBECONFIG:-/tmp/artifacts/installer/auth/kubeconfig}"
 
 HCO_CATALOGSOURCE_POD=`${CMD} get pods -n ${HCO_CATALOG_NAMESPACE} | grep hco-catalogsource | head -1 | awk '{ print $1 }'`
 ${CMD} exec -ti -n ${HCO_CATALOG_NAMESPACE} ${HCO_CATALOGSOURCE_POD} cat kubevirt-hyperconverged/100.0.0/kubevirt-hyperconverged-operator.v100.0.0.clusterserviceversion.yaml > $TEST_CSV_FILE
