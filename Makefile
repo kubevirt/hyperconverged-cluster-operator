@@ -92,8 +92,18 @@ container-clusterserviceversion:
 
 build-push-all: container-build-operator container-push-operator container-build-operator-courier bundle-push
 
-upgrade-test:
+build-component-validation-tests:
+	TEST_DIRECTORY=component-validation-tests ${DO} ./hack/build-tests.sh
+
+run-component-validation-tests:
+	./hack/run-component-validation-test.sh
+
+component-validation-tests: build-component-validation-tests run-component-validation-tests
+
+run-upgrade-test:
 	./hack/upgrade-test.sh
+
+upgrade-test: run-upgrade-test component-validation-tests
 
 dump-state:
 	./hack/dump-state.sh 

@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+TEST_DIRECTORY="${NAME:-func-tests}"
+
 go get github.com/mattn/goveralls
 go get -v github.com/onsi/ginkgo/ginkgo
 go get -v github.com/onsi/gomega
@@ -14,9 +16,9 @@ if [ "${JOB_TYPE}" == "travis" ]; then
     PACKAGE_PATH="pkg/controller/hyperconverged/"
     ginkgo -r -cover ${PACKAGE_PATH}
 else 
-    test_path="tests/func-tests"
+    test_path="tests/${TEST_DIRECTORY}"
     test_out_path=${test_path}/_out
     mkdir -p ${test_out_path}
     ginkgo build ${test_path}
-    mv ${test_path}/func-tests.test ${test_out_path}
+    mv ${test_path}/${TEST_DIRECTORY}.test ${test_out_path}
 fi
