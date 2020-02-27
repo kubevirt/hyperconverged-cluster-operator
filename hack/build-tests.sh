@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-TEST_DIRECTORY="${NAME:-func-tests}"
+TEST_DIRECTORY="${TEST_DIRECTORY:-func-tests}"
 
 go get github.com/mattn/goveralls
 go get -v github.com/onsi/ginkgo/ginkgo

@@ -93,7 +93,7 @@ container-clusterserviceversion:
 build-push-all: container-build-operator container-push-operator container-build-operator-courier bundle-push
 
 build-component-validation-tests:
-	TEST_DIRECTORY=component-validation-tests ${DO} ./hack/build-tests.sh
+	TEST_DIRECTORY=component-validation-tests ./hack/build-tests.sh
 
 run-component-validation-tests:
 	./hack/run-component-validation-test.sh

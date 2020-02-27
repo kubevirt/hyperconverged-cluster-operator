@@ -44,6 +44,6 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	virtCli, err := kubecli.GetKubevirtClient()
+	_, err := kubecli.GetKubevirtClient()
 	Expect(err).ToNot(HaveOccurred())
 })

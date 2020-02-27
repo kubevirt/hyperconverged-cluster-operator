@@ -181,7 +181,7 @@ HCO_OPERATOR_POD=`${CMD} get pods -n kubevirt-hyperconverged | grep hco-operator
 ${CMD} wait pod $HCO_OPERATOR_POD --for condition=Ready -n kubevirt-hyperconverged --timeout="600s"
 
 Msg "check that cluster is operational before upgrade"
-timeout 10m bash -c 'export CMD="${CMD}";exec ./hack/check-state.sh' 
+timeout 15m bash -c 'export CMD="${CMD}";exec ./hack/check-state.sh' 
 
 ${CMD} get subscription -n kubevirt-hyperconverged -o yaml
 ${CMD} get pods -n kubevirt-hyperconverged 
@@ -229,6 +229,6 @@ ${CMD} get deployments -n kubevirt-hyperconverged -o yaml | grep image | grep -v
 ${CMD} get pod $HCO_CATALOGSOURCE_POD -n ${HCO_CATALOG_NAMESPACE} -o yaml | grep image | grep -v imagePullPolicy
 
 Msg "wait that cluster is operational after upgrade"
-timeout 10m bash -c 'export CMD="${CMD}";exec ./hack/check-state.sh'
+timeout 15m bash -c 'export CMD="${CMD}";exec ./hack/check-state.sh'
 
 echo "upgrade-test completed successfully."

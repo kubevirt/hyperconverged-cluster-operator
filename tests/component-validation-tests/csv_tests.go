@@ -5,7 +5,9 @@ import (
 
 	"encoding/json"
 	"fmt"
+
 	"github.com/ghodss/yaml"
+
 	//"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
@@ -207,7 +209,7 @@ func matchClusterServiceDataToDeployment(specDep []specDeployment, depData map[s
 }
 
 func getDeploymentJson(kubectlCmd string) (string, error) {
-	cmd := exec.Command(kubectlCmd, "get", "deployments", "-o", "json")
+	cmd := exec.Command(kubectlCmd, "get", "deployments", "-o", "json", "-n", "kubevirt-hyperconverged")
 
 	out, err := cmd.CombinedOutput()
 	if err != nil {
