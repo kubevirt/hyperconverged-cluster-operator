@@ -10,7 +10,7 @@ require (
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.19.4
 	github.com/imdario/mergo v0.3.8
-	github.com/kubevirt/cluster-network-addons-operator v0.3.1-0.20191002163030-b0275809cef4
+	github.com/kubevirt/cluster-network-addons-operator v0.3.1-0.20200226122004-919521cbbe11
 	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.7.0
 	github.com/openshift/custom-resource-status v0.0.0-20190822192428-e62f2f3b79f3
