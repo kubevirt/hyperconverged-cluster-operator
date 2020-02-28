@@ -68,10 +68,21 @@ roleRef:
 EOF
 ````
 
+## Install podman-docker
+
+If docker isn't already installed.
+
+````
+sudo dnf install podman-docker
+````
+
 ## Run the upgrade test
 
 Pass in a value for the FOR_CRC environment variable and call "make upgrade-test" to run the upgrade test. Setting a value for FOR_CRC indicates to the upgrade test to use settings to run against a CRC cluster.
 
+KUBECONFIG path may need to be adjusted depending on your CRC version.
+
 ````
+export KUBECONFIG=~/.crc/cache/crc_libvirt_4.3.0/kubeconfig
 FOR_CRC=true make upgrade-test
 ````
