@@ -3,10 +3,10 @@ package hyperconverged
 import (
 	"context"
 	"fmt"
-	"os"
-
+	ownVersion "github.com/kubevirt/hyperconverged-cluster-operator/version"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"os"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -1201,6 +1201,10 @@ var _ = Describe("HyperconvergedController", func() {
 					Reason:  reconcileInit,
 					Message: "Initializing HyperConverged cluster",
 				})))
+
+				Expect(foundResource.Spec.Version).To(Equal(ownVersion.Version))
+				Expect(foundResource.Status.Phase).To(Equal(hcov1alpha1.HyperConvergedDeployingStatus))
+				Expect(foundResource.Status.Status).To(Equal(hcov1alpha1.HyperConvergedDeployingStatus))
 			})
 
 			It("should find all managed resources", func() {
@@ -1281,6 +1285,9 @@ var _ = Describe("HyperconvergedController", func() {
 					Reason:  "KubevirtTemplateValidatorConditions",
 					Message: "KubevirtTemplateValidator resource has no conditions",
 				})))
+
+				Expect(foundResource.Status.Phase).To(Equal(hcov1alpha1.HyperConvergedDeployingStatus))
+				Expect(foundResource.Status.Status).To(Equal(hcov1alpha1.HyperConvergedDeployingStatus))
 			})
 
 			It("should complete when components are finished", func() {
@@ -1411,6 +1418,180 @@ var _ = Describe("HyperconvergedController", func() {
 					Reason:  reconcileCompleted,
 					Message: reconcileCompletedMessage,
 				})))
+				Expect(foundResource.Status.Phase).To(Equal(hcov1alpha1.HyperConvergedDeployedStatus))
+				Expect(foundResource.Status.Status).To(Equal(hcov1alpha1.HyperConvergedDeployedStatus))
+			})
+
+			It("should perform deletion", func() {
+				now := metav1.Now()
+				hco := &hcov1alpha1.HyperConverged{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:              name,
+						Namespace:         namespace,
+						DeletionTimestamp: &now,
+						Finalizers:        []string{FinalizerName},
+					},
+					Spec: hcov1alpha1.HyperConvergedSpec{},
+					Status: hcov1alpha1.HyperConvergedStatus{
+						Conditions: []conditionsv1.Condition{
+							conditionsv1.Condition{
+								Type:    hcov1alpha1.ConditionReconcileComplete,
+								Status:  corev1.ConditionTrue,
+								Reason:  reconcileCompleted,
+								Message: reconcileCompletedMessage,
+							},
+						},
+					},
+				}
+
+				// These are all of the objects that we expect to "find" in the client because
+				// we already created them in a previous reconcile.
+				expectedKVConfig := newKubeVirtConfigForCR(hco, namespace)
+				expectedKVConfig.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/configmaps/%s", expectedKVConfig.Namespace, expectedKVConfig.Name)
+				expectedKVStorageConfig := newKubeVirtStorageConfigForCR(hco, namespace)
+				expectedKVStorageConfig.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/configmaps/%s", expectedKVStorageConfig.Namespace, expectedKVStorageConfig.Name)
+				expectedKV := newKubeVirtForCR(hco, namespace)
+				expectedKV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/kubevirts/%s", expectedKV.Namespace, expectedKV.Name)
+				expectedCDI := newCDIForCR(hco, UndefinedNamespace)
+				expectedCDI.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cdis/%s", expectedCDI.Namespace, expectedCDI.Name)
+				expectedCNA := newNetworkAddonsForCR(hco, UndefinedNamespace)
+				expectedCNA.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cnas/%s", expectedCNA.Namespace, expectedCNA.Name)
+				expectedKVCTB := newKubeVirtCommonTemplateBundleForCR(hco, OpenshiftNamespace)
+				expectedKVCTB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/ctbs/%s", expectedKVCTB.Namespace, expectedKVCTB.Name)
+				expectedKVNLB := newKubeVirtNodeLabellerBundleForCR(hco, namespace)
+				expectedKVNLB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/nlb/%s", expectedKVNLB.Namespace, expectedKVNLB.Name)
+				expectedKVTV := newKubeVirtTemplateValidatorForCR(hco, namespace)
+				expectedKVTV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/tv/%s", expectedKVTV.Namespace, expectedKVTV.Name)
+
+				// Add all of the objects to the client
+				cl := initClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
+
+				r := initReconciler(cl)
+
+				// Do the reconcile
+				res, err := r.Reconcile(request)
+				Expect(err).To(BeNil())
+				Expect(res).Should(Equal(reconcile.Result{Requeue: true}))
+
+				// Get the HCO
+				foundResource := &hcov1alpha1.HyperConverged{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
+						foundResource),
+				).To(BeNil())
+
+				// Check conditions
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+					Type:    hcov1alpha1.ConditionReconcileComplete,
+					Status:  corev1.ConditionTrue,
+					Reason:  reconcileCompleted,
+					Message: reconcileCompletedMessage,
+				})))
+				// Check phase
+				Expect(foundResource.Status.Phase).To(Equal(hcov1alpha1.HyperConvergedDeletingStatus))
+				Expect(foundResource.Status.Status).To(Equal(hcov1alpha1.HyperConvergedDeletingStatus))
+			})
+
+			It("should stay in deploying phase upon error condition", func() {
+				hco := &hcov1alpha1.HyperConverged{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      name,
+						Namespace: namespace,
+					},
+					Spec: hcov1alpha1.HyperConvergedSpec{},
+					Status: hcov1alpha1.HyperConvergedStatus{
+						Conditions: []conditionsv1.Condition{
+							{
+								Type:    conditionsv1.ConditionAvailable,
+								Status:  corev1.ConditionFalse,
+								Reason:  reconcileCompleted,
+								Message: reconcileCompletedMessage,
+							},
+							{
+								Type:    conditionsv1.ConditionProgressing,
+								Status:  corev1.ConditionFalse,
+								Reason:  reconcileCompleted,
+								Message: reconcileCompletedMessage,
+							},
+							{
+								Type:    conditionsv1.ConditionDegraded,
+								Status:  corev1.ConditionFalse,
+								Reason:  reconcileCompleted,
+								Message: reconcileCompletedMessage,
+							},
+							{
+								Type:    conditionsv1.ConditionUpgradeable,
+								Status:  corev1.ConditionTrue,
+								Reason:  reconcileCompleted,
+								Message: reconcileCompletedMessage,
+							},
+						},
+					},
+				}
+
+				// These are all of the objects that we expect to "find" in the client because
+				// we already created them in a previous reconcile.
+				expectedKVConfig := newKubeVirtConfigForCR(hco, namespace)
+				expectedKVConfig.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/configmaps/%s", expectedKVConfig.Namespace, expectedKVConfig.Name)
+				expectedKVStorageConfig := newKubeVirtStorageConfigForCR(hco, namespace)
+				expectedKVStorageConfig.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/configmaps/%s", expectedKVStorageConfig.Namespace, expectedKVStorageConfig.Name)
+				expectedKV := newKubeVirtForCR(hco, namespace)
+				expectedKV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/kubevirts/%s", expectedKV.Namespace, expectedKV.Name)
+				expectedCDI := newCDIForCR(hco, UndefinedNamespace)
+				expectedCDI.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cdis/%s", expectedCDI.Namespace, expectedCDI.Name)
+				expectedCNA := newNetworkAddonsForCR(hco, UndefinedNamespace)
+				expectedCNA.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cnas/%s", expectedCNA.Namespace, expectedCNA.Name)
+				expectedKVCTB := newKubeVirtCommonTemplateBundleForCR(hco, OpenshiftNamespace)
+				expectedKVCTB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/ctbs/%s", expectedKVCTB.Namespace, expectedKVCTB.Name)
+				expectedKVNLB := newKubeVirtNodeLabellerBundleForCR(hco, namespace)
+				expectedKVNLB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/nlb/%s", expectedKVNLB.Namespace, expectedKVNLB.Name)
+				expectedKVTV := newKubeVirtTemplateValidatorForCR(hco, namespace)
+				expectedKVTV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/tv/%s", expectedKVTV.Namespace, expectedKVTV.Name)
+
+				// Add all of the objects to the client
+				cl := initClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
+
+				r := initReconciler(cl)
+
+				// Do the reconcile
+				res, err := r.Reconcile(request)
+				Expect(err).To(BeNil())
+				Expect(res).Should(Equal(reconcile.Result{}))
+
+				// Get the HCO
+				foundResource := &hcov1alpha1.HyperConverged{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
+						foundResource),
+				).To(BeNil())
+
+				// Check phase - need to be "Deploying"
+				Expect(foundResource.Status.Phase).To(Equal(hcov1alpha1.HyperConvergedDeployingStatus))
+				Expect(foundResource.Status.Status).To(Equal(hcov1alpha1.HyperConvergedDeployingStatus))
+
+				// Now, check the same, but when the previous phase is "Deployed"
+				hco.Status.SetStatus(hcov1alpha1.HyperConvergedDeployedStatus)
+				cl = initClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
+				r = initReconciler(cl)
+
+				// Do the reconcile
+				res, err = r.Reconcile(request)
+				Expect(err).To(BeNil())
+				Expect(res).Should(Equal(reconcile.Result{}))
+
+				// Get the HCO
+				foundResource = &hcov1alpha1.HyperConverged{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
+						foundResource),
+				).To(BeNil())
+
+				// Check phase - need to be "Degraded"
+				Expect(foundResource.Status.Phase).To(Equal(hcov1alpha1.HyperConvergedDegradedStatus))
+				Expect(foundResource.Status.Status).To(Equal(hcov1alpha1.HyperConvergedDegradedStatus))
 			})
 		})
 	})

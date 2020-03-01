@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	ownVersion "github.com/kubevirt/hyperconverged-cluster-operator/version"
 	"os"
 	"reflect"
 	"strings"
@@ -183,41 +184,21 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// Add conditions if there are none
 	var init bool
+	err = r.client.Update(context.TODO(), instance)
+	if err != nil {
+		reqLogger.Error(err, "Failed to set the version")
+		return reconcile.Result{}, err
+	}
 	if instance.Status.Conditions == nil {
 		init = true
+		instance.Spec.Version = ownVersion.Version
+		instance.Status.SetStatus(hcov1alpha1.HyperConvergedDeployingStatus)
+		instance.Status.Versions = hcov1alpha1.GetOperatorVersions()
+		instance.Labels = map[string]string{hcov1alpha1.AppLabel: hcov1alpha1.AppLableValue}
 
-		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
-			Type:    hcov1alpha1.ConditionReconcileComplete,
-			Status:  corev1.ConditionUnknown, // we just started trying to reconcile
-			Reason:  reconcileInit,
-			Message: reconcileInitMessage,
-		})
-		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
-			Type:    conditionsv1.ConditionAvailable,
-			Status:  corev1.ConditionFalse,
-			Reason:  reconcileInit,
-			Message: reconcileInitMessage,
-		})
-		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
-			Type:    conditionsv1.ConditionProgressing,
-			Status:  corev1.ConditionTrue,
-			Reason:  reconcileInit,
-			Message: reconcileInitMessage,
-		})
-		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
-			Type:    conditionsv1.ConditionDegraded,
-			Status:  corev1.ConditionFalse,
-			Reason:  reconcileInit,
-			Message: reconcileInitMessage,
-		})
-		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
-			Type:    conditionsv1.ConditionUpgradeable,
-			Status:  corev1.ConditionUnknown,
-			Reason:  reconcileInit,
-			Message: reconcileInitMessage,
-		})
+		setInitConditions(instance)
 
-		err = r.client.Status().Update(context.TODO(), instance)
+		err = r.client.Update(context.TODO(), instance)
 		if err != nil {
 			reqLogger.Error(err, "Failed to add conditions to status")
 			return reconcile.Result{}, err
@@ -281,6 +262,8 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 			// Remove the finalizer
 			instance.ObjectMeta.Finalizers = drop(instance.ObjectMeta.Finalizers, FinalizerName)
+			instance.Status.SetStatus(hcov1alpha1.HyperConvergedDeletingStatus)
+
 			err = r.client.Update(context.TODO(), instance)
 
 			// Need to requeue because finalizer update does not change metadata.generation
@@ -332,30 +315,8 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	if r.conditions == nil {
 		reqLogger.Info("No component operator reported negatively")
-		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
-			Type:    conditionsv1.ConditionAvailable,
-			Status:  corev1.ConditionTrue,
-			Reason:  reconcileCompleted,
-			Message: reconcileCompletedMessage,
-		})
-		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
-			Type:    conditionsv1.ConditionProgressing,
-			Status:  corev1.ConditionFalse,
-			Reason:  reconcileCompleted,
-			Message: reconcileCompletedMessage,
-		})
-		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
-			Type:    conditionsv1.ConditionDegraded,
-			Status:  corev1.ConditionFalse,
-			Reason:  reconcileCompleted,
-			Message: reconcileCompletedMessage,
-		})
-		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
-			Type:    conditionsv1.ConditionUpgradeable,
-			Status:  corev1.ConditionTrue,
-			Reason:  reconcileCompleted,
-			Message: reconcileCompletedMessage,
-		})
+		updateDefaultConditions(instance)
+		instance.Status.SetStatus(hcov1alpha1.HyperConvergedDeployedStatus)
 
 		// If no operator whose conditions we are watching reports an error, then it is safe
 		// to set readiness.
@@ -377,6 +338,14 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		// you will only see CDI as it updates last).
 		for _, condition := range r.conditions {
 			conditionsv1.SetStatusCondition(&instance.Status.Conditions, condition)
+		}
+
+		// If still on Deploying status, it makes sense that things are still not
+		// fully working, and some of the components are not available yet
+		if instance.Status.Status == "" {
+			instance.Status.SetStatus(hcov1alpha1.HyperConvergedDeployingStatus)
+		} else if instance.Status.Status != hcov1alpha1.HyperConvergedDeployingStatus {
+			instance.Status.SetStatus(hcov1alpha1.HyperConvergedDegradedStatus)
 		}
 
 		// If for any reason we marked ourselves !upgradeable...then unset readiness
@@ -416,6 +385,66 @@ func (r *ReconcileHyperConverged) emitEvent(instance *hcov1alpha1.HyperConverged
 	r.recorder.Event(csv, kind, errT, errMsg)
 	return nil
 
+}
+
+func updateDefaultConditions(instance *hcov1alpha1.HyperConverged) {
+	conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionAvailable,
+		Status:  corev1.ConditionTrue,
+		Reason:  reconcileCompleted,
+		Message: reconcileCompletedMessage,
+	})
+	conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionProgressing,
+		Status:  corev1.ConditionFalse,
+		Reason:  reconcileCompleted,
+		Message: reconcileCompletedMessage,
+	})
+	conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionDegraded,
+		Status:  corev1.ConditionFalse,
+		Reason:  reconcileCompleted,
+		Message: reconcileCompletedMessage,
+	})
+	conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionUpgradeable,
+		Status:  corev1.ConditionTrue,
+		Reason:  reconcileCompleted,
+		Message: reconcileCompletedMessage,
+	})
+}
+
+func setInitConditions(instance *hcov1alpha1.HyperConverged) {
+	conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
+		Type:    hcov1alpha1.ConditionReconcileComplete,
+		Status:  corev1.ConditionUnknown, // we just started trying to reconcile
+		Reason:  reconcileInit,
+		Message: reconcileInitMessage,
+	})
+	conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionAvailable,
+		Status:  corev1.ConditionFalse,
+		Reason:  reconcileInit,
+		Message: reconcileInitMessage,
+	})
+	conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionProgressing,
+		Status:  corev1.ConditionTrue,
+		Reason:  reconcileInit,
+		Message: reconcileInitMessage,
+	})
+	conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionDegraded,
+		Status:  corev1.ConditionFalse,
+		Reason:  reconcileInit,
+		Message: reconcileInitMessage,
+	})
+	conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionUpgradeable,
+		Status:  corev1.ConditionUnknown,
+		Reason:  reconcileInit,
+		Message: reconcileInitMessage,
+	})
 }
 
 func newKubeVirtConfigForCR(cr *hcov1alpha1.HyperConverged, namespace string) *corev1.ConfigMap {

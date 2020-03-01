@@ -3,6 +3,7 @@ package components
 import (
 	"encoding/json"
 	"fmt"
+	ownVersion "github.com/kubevirt/hyperconverged-cluster-operator/version"
 	"time"
 
 	"github.com/blang/semver"
@@ -500,6 +501,11 @@ func GetV2VCRD() *extv1beta1.CustomResourceDefinition {
 }
 
 func GetOperatorCR() *hcov1alpha1.HyperConverged {
+	status := hcov1alpha1.HyperConvergedStatus{
+		Versions: hcov1alpha1.GetOperatorVersions(),
+	}
+	status.SetStatus(hcov1alpha1.HyperConvergedDeployingStatus)
+
 	return &hcov1alpha1.HyperConverged{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "hco.kubevirt.io/v1alpha1",
@@ -511,7 +517,9 @@ func GetOperatorCR() *hcov1alpha1.HyperConverged {
 		Spec: hcov1alpha1.HyperConvergedSpec{
 			BareMetalPlatform:     false,
 			LocalStorageClassName: "",
+			Version:               ownVersion.Version,
 		},
+		Status: status,
 	}
 }
 
@@ -546,6 +554,7 @@ func GetCSVBase(name, namespace, displayName, description, image, replaces strin
 			},
 			"spec": map[string]interface{}{
 				"BareMetalPlatform": false,
+				"version":           ownVersion.Version,
 			},
 		},
 	})
