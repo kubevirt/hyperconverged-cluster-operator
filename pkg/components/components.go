@@ -429,12 +429,12 @@ func GetOperatorCRD(namespace string) *extv1beta1.CustomResourceDefinition {
 						"metadata": {
 							Properties: map[string]extv1beta1.JSONSchemaProps{
 								"name": {
-									Type:        "string",
-									Pattern:     "kubevirt-hyperconverged",
+									Type:    "string",
+									Pattern: "kubevirt-hyperconverged",
 								},
 								"namespace": {
-									Type:        "string",
-									Pattern:     namespace,
+									Type:    "string",
+									Pattern: namespace,
 								},
 							},
 						},
