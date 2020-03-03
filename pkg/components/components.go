@@ -391,7 +391,7 @@ func GetClusterRoleBinding(namespace string) rbacv1.ClusterRoleBinding {
 	}
 }
 
-func GetOperatorCRD() *extv1beta1.CustomResourceDefinition {
+func GetOperatorCRD(namespace string) *extv1beta1.CustomResourceDefinition {
 	return &extv1beta1.CustomResourceDefinition{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apiextensions.k8s.io/v1beta1",
@@ -421,6 +421,25 @@ func GetOperatorCRD() *extv1beta1.CustomResourceDefinition {
 
 			AdditionalPrinterColumns: []extv1beta1.CustomResourceColumnDefinition{
 				{Name: "Age", Type: "date", JSONPath: ".metadata.creationTimestamp"},
+			},
+
+			Validation: &extv1beta1.CustomResourceValidation{
+				OpenAPIV3Schema: &extv1beta1.JSONSchemaProps{
+					Properties: map[string]extv1beta1.JSONSchemaProps{
+						"metadata": {
+							Properties: map[string]extv1beta1.JSONSchemaProps{
+								"name": {
+									Type:        "string",
+									Pattern:     "kubevirt-hyperconverged",
+								},
+								"namespace": {
+									Type:        "string",
+									Pattern:     namespace,
+								},
+							},
+						},
+					},
+				},
 			},
 
 			Subresources: &extv1beta1.CustomResourceSubresources{

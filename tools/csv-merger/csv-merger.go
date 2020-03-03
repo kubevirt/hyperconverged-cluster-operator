@@ -89,7 +89,7 @@ var (
 
 func gen_hco_crds() {
 	// Write out CRDs and CR
-	util.MarshallObject(components.GetOperatorCRD(), os.Stdout)
+	util.MarshallObject(components.GetOperatorCRD(*namespace), os.Stdout)
 	util.MarshallObject(components.GetV2VCRD(), os.Stdout)
 }
 
