@@ -3,4 +3,5 @@ apiVersion: hco.kubevirt.io/v1alpha1
 kind: HyperConverged
 metadata:
   name: kubevirt-hyperconverged
-spec: {}
+spec:
+  version: 1.0.0

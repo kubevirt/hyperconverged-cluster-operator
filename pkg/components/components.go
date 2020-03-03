@@ -554,7 +554,6 @@ func GetCSVBase(name, namespace, displayName, description, image, replaces strin
 			},
 			"spec": map[string]interface{}{
 				"BareMetalPlatform": false,
-				"version":           ownVersion.Version,
 			},
 		},
 	})
