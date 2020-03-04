@@ -21,7 +21,7 @@ set -ex
 
 source hack/common.sh
 
-HCO_IMAGE=${HCO_IMAGE:-quay.io/kubevirt/hyperconverged-cluster-operator:latest}
+HCO_IMAGE=${HCO_IMAGE:-quay.io/kubevirt/hyperconverged-cluster-operator:1.0.0}
 HCO_NAMESPACE="kubevirt-hyperconverged"
 HCO_KIND="hyperconvergeds"
 HCO_RESOURCE_NAME="kubevirt-hyperconverged"
@@ -47,7 +47,7 @@ if [ -n "${IMAGE_FORMAT}" ]; then
     HCO_IMAGE=`eval echo ${IMAGE_FORMAT}`
 fi
 
-sed -i "s#image: quay.io/kubevirt/hyperconverged-cluster-operator:latest#image: ${HCO_IMAGE}#g" _out/operator.yaml
+sed -i "s#image: quay.io/kubevirt/hyperconverged-cluster-operator:1.0.0#image: ${HCO_IMAGE}#g" _out/operator.yaml
 
 # create namespaces
 "${CMD}" create ns "${HCO_NAMESPACE}" | true
