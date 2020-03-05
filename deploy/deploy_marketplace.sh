@@ -5,7 +5,8 @@ set -ex
 RED='\033[0;31m'
 NO_COLOR='\033[0m'
 
-globalNamespace=`oc -n openshift-operator-lifecycle-manager get deployments catalog-operator -o jsonpath='{.spec.template.spec.containers[].args[1]}'`
+OLM_NAMESPACE="${OLM_NAMESPACE:-openshift-operator-lifecycle-manager}"
+globalNamespace=`oc -n "${OLM_NAMESPACE}" get deployments catalog-operator -o jsonpath='{.spec.template.spec.containers[].args[1]}'`
 echo "Global Namespace: ${globalNamespace}"
 
 APP_REGISTRY="${APP_REGISTRY:-kubevirt-hyperconverged}"
