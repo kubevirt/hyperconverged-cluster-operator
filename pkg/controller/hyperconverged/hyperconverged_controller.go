@@ -1346,12 +1346,17 @@ func ensureKubeVirtDeleted(c client.Client, instance *hcov1alpha1.HyperConverged
 	key, err := client.ObjectKeyFromObject(virt)
 	if err != nil {
 		log.Error(err, "Failed to get object key for KubeVirt")
+		return err
 	}
 
 	found := &kubevirtv1.KubeVirt{}
 	err = c.Get(context.TODO(), key, found)
 
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Info("KubeVirt resource doesn't exist, there is nothing to remove")
+			return nil
+		}
 		log.Error(err, "Failed to get KubeVirt from kubernetes")
 		return err
 	}
@@ -1365,12 +1370,17 @@ func ensureCDIDeleted(c client.Client, instance *hcov1alpha1.HyperConverged) err
 	key, err := client.ObjectKeyFromObject(cdi)
 	if err != nil {
 		log.Error(err, "Failed to get object key for CDI")
+		return err
 	}
 
 	found := &cdiv1alpha1.CDI{}
 	err = c.Get(context.TODO(), key, found)
 
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Info("CDI resource doesn't exist, there is nothing to remove")
+			return nil
+		}
 		log.Error(err, "Failed to get CDI from kubernetes")
 		return err
 	}
@@ -1383,12 +1393,17 @@ func ensureNetworkAddonsDeleted(c client.Client, instance *hcov1alpha1.HyperConv
 	key, err := client.ObjectKeyFromObject(networkAddons)
 	if err != nil {
 		log.Error(err, "Failed to get object key for Network Addons")
+		return err
 	}
 
 	found := &networkaddonsv1alpha1.NetworkAddonsConfig{}
 	err = c.Get(context.TODO(), key, found)
 
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Info("NetworkAddonsConfig doesn't exist, there is nothing to remove")
+			return nil
+		}
 		log.Error(err, "Failed to get NetworkAddonsConfig from kubernetes")
 		return err
 	}
@@ -1402,12 +1417,17 @@ func ensureKubeVirtCommonTemplateBundleDeleted(c client.Client, instance *hcov1a
 	key, err := client.ObjectKeyFromObject(kvCTB)
 	if err != nil {
 		log.Error(err, "Failed to get object key for KubeVirt Common Templates Bundle")
+		return err
 	}
 
 	found := &sspv1.KubevirtCommonTemplatesBundle{}
 	err = c.Get(context.TODO(), key, found)
 
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Info("KubevirtCommonTemplatesBundle doesn't exist, there is nothing to remove")
+			return nil
+		}
 		log.Error(err, "Failed to get KubeVirt Common Templates Bundle from kubernetes")
 		return err
 	}
