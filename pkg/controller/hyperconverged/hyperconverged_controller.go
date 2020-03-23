@@ -567,18 +567,16 @@ func (r *ReconcileHyperConverged) ensureKubeVirt(instance *hcov1alpha1.HyperConv
 			Message: "KubeVirt resource has no conditions",
 		})
 	} else {
+
+		foundAvailableCond := false
 		for _, condition := range found.Status.Conditions {
 			// convert the KubeVirt condition type to one we understand
 			switch conditionsv1.ConditionType(condition.Type) {
 			case conditionsv1.ConditionAvailable:
+				foundAvailableCond = true
 				if condition.Status == corev1.ConditionFalse {
-					logger.Info("KubeVirt is not 'Available'")
-					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
-						Type:    conditionsv1.ConditionAvailable,
-						Status:  corev1.ConditionFalse,
-						Reason:  "KubeVirtNotAvailable",
-						Message: fmt.Sprintf("KubeVirt is not available: %v", string(condition.Message)),
-					})
+					msg := fmt.Sprintf("KubeVirt is not available: %v", string(condition.Message))
+					componentNotAvailable(logger, "KubeVirt", msg, r)
 				}
 			case conditionsv1.ConditionProgressing:
 				if condition.Status == corev1.ConditionTrue {
@@ -607,6 +605,10 @@ func (r *ReconcileHyperConverged) ensureKubeVirt(instance *hcov1alpha1.HyperConv
 					})
 				}
 			}
+		}
+
+		if !foundAvailableCond {
+			componentNotAvailable(logger, "KubeVirt", `missing "Available" condition`, r)
 		}
 	}
 
@@ -705,18 +707,16 @@ func (r *ReconcileHyperConverged) ensureCDI(instance *hcov1alpha1.HyperConverged
 			Message: "CDI resource has no conditions",
 		})
 	} else {
+		foundAvailableCond := false
 		for _, condition := range found.Status.Conditions {
+
 			// convert the CDI condition type to one we understand
 			switch conditionsv1.ConditionType(condition.Type) {
 			case conditionsv1.ConditionAvailable:
+				foundAvailableCond = true
 				if condition.Status == corev1.ConditionFalse {
-					logger.Info("CDI is not 'Available'")
-					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
-						Type:    conditionsv1.ConditionAvailable,
-						Status:  corev1.ConditionFalse,
-						Reason:  "CDINotAvailable",
-						Message: fmt.Sprintf("CDI is not available: %v", string(condition.Message)),
-					})
+					msg := fmt.Sprintf("CDI is not available: %v", string(condition.Message))
+					componentNotAvailable(logger, "CDI", msg, r)
 				}
 			case conditionsv1.ConditionProgressing:
 				if condition.Status == corev1.ConditionTrue {
@@ -745,6 +745,10 @@ func (r *ReconcileHyperConverged) ensureCDI(instance *hcov1alpha1.HyperConverged
 					})
 				}
 			}
+		}
+
+		if !foundAvailableCond {
+			componentNotAvailable(logger, "CDI", `missing "Available" condition`, r)
 		}
 	}
 
@@ -841,17 +845,14 @@ func (r *ReconcileHyperConverged) ensureNetworkAddons(instance *hcov1alpha1.Hype
 			Message: "NetworkAddonsConfig resource has no conditions",
 		})
 	} else {
+		foundAvailableCond := false
 		for _, condition := range found.Status.Conditions {
 			switch conditionsv1.ConditionType(condition.Type) {
 			case conditionsv1.ConditionAvailable:
+				foundAvailableCond = true
 				if condition.Status == corev1.ConditionFalse {
-					logger.Info("NetworkAddonsConfig is not 'Available'")
-					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
-						Type:    conditionsv1.ConditionAvailable,
-						Status:  corev1.ConditionFalse,
-						Reason:  "NetworkAddonsConfigNotAvailable",
-						Message: fmt.Sprintf("NetworkAddonsConfig is not available: %v", string(condition.Message)),
-					})
+					msg := fmt.Sprintf("NetworkAddonsConfig is not available: %v", string(condition.Message))
+					componentNotAvailable(logger, "NetworkAddonsConfig", msg, r)
 				}
 			case conditionsv1.ConditionProgressing:
 				if condition.Status == corev1.ConditionTrue {
@@ -880,6 +881,10 @@ func (r *ReconcileHyperConverged) ensureNetworkAddons(instance *hcov1alpha1.Hype
 					})
 				}
 			}
+		}
+
+		if !foundAvailableCond {
+			componentNotAvailable(logger, "NetworkAddonsConfig", `missing "Available" condition`, r)
 		}
 	}
 
@@ -910,17 +915,15 @@ func handleConditionsSSP(r *ReconcileHyperConverged, logger logr.Logger, compone
 			Message: message,
 		})
 	} else {
+		foundAvailableCond := false
 		for _, condition := range status.Conditions {
+
 			switch conditionsv1.ConditionType(condition.Type) {
 			case conditionsv1.ConditionAvailable:
+				foundAvailableCond = true
 				if condition.Status == corev1.ConditionFalse {
-					logger.Info(fmt.Sprintf("%s is not 'Available'", component))
-					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
-						Type:    conditionsv1.ConditionAvailable,
-						Status:  corev1.ConditionFalse,
-						Reason:  fmt.Sprintf("%sNotAvailable", component),
-						Message: fmt.Sprintf("%s is not available: %v", component, string(condition.Message)),
-					})
+					msg := fmt.Sprintf("%s is not available: %v", component, string(condition.Message))
+					componentNotAvailable(logger, component, msg, r)
 				}
 			case conditionsv1.ConditionProgressing:
 				if condition.Status == corev1.ConditionTrue {
@@ -950,7 +953,21 @@ func handleConditionsSSP(r *ReconcileHyperConverged, logger logr.Logger, compone
 				}
 			}
 		}
+
+		if !foundAvailableCond {
+			componentNotAvailable(logger, component, `missing "Available" condition`, r)
+		}
 	}
+}
+
+func componentNotAvailable(logger logr.Logger, component string, msg string, r *ReconcileHyperConverged) {
+	logger.Info(fmt.Sprintf("%s is not 'Available'", component))
+	conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+		Type:    conditionsv1.ConditionAvailable,
+		Status:  corev1.ConditionFalse,
+		Reason:  fmt.Sprintf("%sNotAvailable", component),
+		Message: msg,
+	})
 }
 
 func newKubeVirtCommonTemplateBundleForCR(cr *hcov1alpha1.HyperConverged, namespace string) *sspv1.KubevirtCommonTemplatesBundle {

@@ -1450,9 +1450,175 @@ var _ = Describe("HyperconvergedController", func() {
 					Message: reconcileCompletedMessage,
 				})))
 			})
+
+			It(`should be not available if when components with missing "Available" condition`, func() {
+				hco := &hcov1alpha1.HyperConverged{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      name,
+						Namespace: namespace,
+					},
+					Spec: hcov1alpha1.HyperConvergedSpec{},
+					Status: hcov1alpha1.HyperConvergedStatus{
+						Conditions: []conditionsv1.Condition{
+							conditionsv1.Condition{
+								Type:    hcov1alpha1.ConditionReconcileComplete,
+								Status:  corev1.ConditionTrue,
+								Reason:  reconcileCompleted,
+								Message: reconcileCompletedMessage,
+							},
+						},
+					},
+				}
+				// These are all of the objects that we expect to "find" in the client because
+				// we already created them in a previous reconcile.
+				expectedKVConfig := newKubeVirtConfigForCR(hco, namespace)
+				expectedKVConfig.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/configmaps/%s", expectedKVConfig.Namespace, expectedKVConfig.Name)
+				expectedKVStorageConfig := newKubeVirtStorageConfigForCR(hco, namespace)
+				expectedKVStorageConfig.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/configmaps/%s", expectedKVStorageConfig.Namespace, expectedKVStorageConfig.Name)
+				expectedKV := newKubeVirtForCR(hco, namespace)
+				expectedKV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/kubevirts/%s", expectedKV.Namespace, expectedKV.Name)
+				expectedKV.Status.Conditions = []kubevirtv1.KubeVirtCondition{
+					kubevirtv1.KubeVirtCondition{
+						Type:   kubevirtv1.KubeVirtConditionProgressing,
+						Status: corev1.ConditionFalse,
+					},
+					kubevirtv1.KubeVirtCondition{
+						Type:   kubevirtv1.KubeVirtConditionDegraded,
+						Status: corev1.ConditionFalse,
+					},
+				}
+				expectedCDI := newCDIForCR(hco, UndefinedNamespace)
+				expectedCDI.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cdis/%s", expectedCDI.Namespace, expectedCDI.Name)
+				expectedCDI.Status.Conditions = []conditionsv1.Condition{
+					conditionsv1.Condition{
+						Type:   conditionsv1.ConditionAvailable,
+						Status: corev1.ConditionTrue,
+					},
+					conditionsv1.Condition{
+						Type:   conditionsv1.ConditionProgressing,
+						Status: corev1.ConditionFalse,
+					},
+					conditionsv1.Condition{
+						Type:   conditionsv1.ConditionDegraded,
+						Status: corev1.ConditionFalse,
+					},
+				}
+				expectedCNA := newNetworkAddonsForCR(hco, UndefinedNamespace)
+				expectedCNA.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cnas/%s", expectedCNA.Namespace, expectedCNA.Name)
+				expectedCNA.Status.Conditions = []conditionsv1.Condition{
+					conditionsv1.Condition{
+						Type:   conditionsv1.ConditionAvailable,
+						Status: corev1.ConditionTrue,
+					},
+					conditionsv1.Condition{
+						Type:   conditionsv1.ConditionProgressing,
+						Status: corev1.ConditionFalse,
+					},
+					conditionsv1.Condition{
+						Type:   conditionsv1.ConditionDegraded,
+						Status: corev1.ConditionFalse,
+					},
+				}
+				expectedKVCTB := newKubeVirtCommonTemplateBundleForCR(hco, OpenshiftNamespace)
+				expectedKVCTB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/ctbs/%s", expectedKVCTB.Namespace, expectedKVCTB.Name)
+				expectedKVCTB.Status.Conditions = getGenericCompletedConditions()
+				expectedKVNLB := newKubeVirtNodeLabellerBundleForCR(hco, namespace)
+				expectedKVNLB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/nlb/%s", expectedKVNLB.Namespace, expectedKVNLB.Name)
+				expectedKVNLB.Status.Conditions = getGenericCompletedConditions()
+				expectedKVTV := newKubeVirtTemplateValidatorForCR(hco, namespace)
+				expectedKVTV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/tv/%s", expectedKVTV.Namespace, expectedKVTV.Name)
+				expectedKVTV.Status.Conditions = getGenericCompletedConditions()
+				// Add all of the objects to the client
+				cl := initClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
+
+				checkAvailability(hco, cl, corev1.ConditionFalse)
+
+				available := kubevirtv1.KubeVirtCondition{
+					Type:   kubevirtv1.KubeVirtConditionAvailable,
+					Status: corev1.ConditionTrue,
+				}
+				expectedKV.Status.Conditions = append(expectedKV.Status.Conditions, available)
+				cl = initClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
+				checkAvailability(hco, cl, corev1.ConditionTrue)
+
+				origConds := expectedCDI.Status.Conditions
+				expectedCDI.Status.Conditions = expectedCDI.Status.Conditions[1:]
+				cl = initClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
+				checkAvailability(hco, cl, corev1.ConditionFalse)
+
+				expectedCDI.Status.Conditions = origConds
+				cl = initClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
+				checkAvailability(hco, cl, corev1.ConditionTrue)
+
+				origConds = expectedCNA.Status.Conditions
+				expectedCNA.Status.Conditions = expectedCDI.Status.Conditions[1:]
+				cl = initClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
+				checkAvailability(hco, cl, corev1.ConditionFalse)
+
+				expectedCNA.Status.Conditions = origConds
+				cl = initClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
+				checkAvailability(hco, cl, corev1.ConditionTrue)
+
+				origConds = expectedKVCTB.Status.Conditions
+				expectedKVCTB.Status.Conditions = expectedCDI.Status.Conditions[1:]
+				cl = initClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
+				checkAvailability(hco, cl, corev1.ConditionFalse)
+
+				expectedKVCTB.Status.Conditions = origConds
+				cl = initClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
+				checkAvailability(hco, cl, corev1.ConditionTrue)
+
+				origConds = expectedKVNLB.Status.Conditions
+				expectedKVNLB.Status.Conditions = expectedCDI.Status.Conditions[1:]
+				cl = initClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
+				checkAvailability(hco, cl, corev1.ConditionFalse)
+
+				expectedKVNLB.Status.Conditions = origConds
+				cl = initClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
+				checkAvailability(hco, cl, corev1.ConditionTrue)
+
+				origConds = expectedKVTV.Status.Conditions
+				expectedKVTV.Status.Conditions = expectedCDI.Status.Conditions[1:]
+				cl = initClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
+				checkAvailability(hco, cl, corev1.ConditionFalse)
+
+				expectedKVTV.Status.Conditions = origConds
+				cl = initClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
+				checkAvailability(hco, cl, corev1.ConditionTrue)
+
+
+			})
 		})
 	})
 })
+var check = 0
+func checkAvailability(hco *hcov1alpha1.HyperConverged, cl client.Client, expected corev1.ConditionStatus ) {
+	r := initReconciler(cl)
+	res, err := r.Reconcile(request)
+	Expect(err).To(BeNil())
+	Expect(res).Should(Equal(reconcile.Result{}))
+
+	foundResource := &hcov1alpha1.HyperConverged{}
+	Expect(
+		cl.Get(context.TODO(),
+			types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
+			foundResource),
+	).To(BeNil())
+	// Check conditions
+
+	found := false
+	for _, cond := range foundResource.Status.Conditions {
+		if cond.Type == conditionsv1.ConditionType(kubevirtv1.KubeVirtConditionAvailable) {
+			found = true
+			Expect(cond.Status).To(Equal(expected))
+		}
+	}
+
+	check++
+	if !found {
+		Fail(fmt.Sprintf(`%d. Can't find 'Available' condition; %v`, check, foundResource.Status.Conditions))
+	}
+}
 
 func getGenericCompletedConditions() []conditionsv1.Condition {
 	return []conditionsv1.Condition{
