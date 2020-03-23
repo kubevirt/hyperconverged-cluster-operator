@@ -1591,7 +1591,7 @@ var _ = Describe("HyperconvergedController", func() {
 		})
 	})
 })
-var check = 0
+
 func checkAvailability(hco *hcov1alpha1.HyperConverged, cl client.Client, expected corev1.ConditionStatus ) {
 	r := initReconciler(cl)
 	res, err := r.Reconcile(request)
@@ -1614,9 +1614,8 @@ func checkAvailability(hco *hcov1alpha1.HyperConverged, cl client.Client, expect
 		}
 	}
 
-	check++
 	if !found {
-		Fail(fmt.Sprintf(`%d. Can't find 'Available' condition; %v`, check, foundResource.Status.Conditions))
+		Fail(fmt.Sprintf(`Can't find 'Available' condition; %v`, foundResource.Status.Conditions))
 	}
 }
 
