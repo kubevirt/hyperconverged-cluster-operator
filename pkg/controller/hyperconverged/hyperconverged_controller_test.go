@@ -1592,7 +1592,7 @@ var _ = Describe("HyperconvergedController", func() {
 	})
 })
 
-func checkAvailability(hco *hcov1alpha1.HyperConverged, cl client.Client, expected corev1.ConditionStatus ) {
+func checkAvailability(hco *hcov1alpha1.HyperConverged, cl client.Client, expected corev1.ConditionStatus) {
 	r := initReconciler(cl)
 	res, err := r.Reconcile(request)
 	Expect(err).To(BeNil())
