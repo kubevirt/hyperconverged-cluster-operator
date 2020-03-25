@@ -457,16 +457,14 @@ func GetOperatorCRD(namespace string) *extv1beta1.CustomResourceDefinition {
 
 			Validation: &extv1beta1.CustomResourceValidation{
 				OpenAPIV3Schema: &extv1beta1.JSONSchemaProps{
+					Type: "object",
 					Properties: map[string]extv1beta1.JSONSchemaProps{
 						"metadata": {
+							Type: "object",
 							Properties: map[string]extv1beta1.JSONSchemaProps{
 								"name": extv1beta1.JSONSchemaProps{
 									Type:    "string",
 									Pattern: hcov1alpha1.HyperConvergedName,
-								},
-								"namespace": extv1beta1.JSONSchemaProps{
-									Type:    "string",
-									Pattern: namespace,
 								},
 							},
 						},
