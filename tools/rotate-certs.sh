@@ -76,8 +76,8 @@ ${_kubectl} delete secrets --ignore-not-found=true --namespace "${namespace}" vi
 ${_kubectl} delete pods --namespace "${namespace}" -l kubevirt.io=virt-template-validator
 
 if (${_kubectl} get crd kwebuis.kubevirt.io >/dev/null 2>&1); then
-  # valid for 1.4.Z only
   echo "# Rotating Web UI certificates ..."
+  # valid for 1.4.Z only
   formerVersion=$(${_kubectl} get kwebui kubevirt-web-ui -n ${webui_namespace} -o yaml | grep '  version: '|sed 's/^.*: *\(.*\)$/\1/g')
   echo Detected former Web UI version: ${formerVersion}
   ${_kubectl} patch kwebui kubevirt-web-ui -n ${webui_namespace} --patch '{"spec": {"version": ""}}' --type=merge # undeploy
