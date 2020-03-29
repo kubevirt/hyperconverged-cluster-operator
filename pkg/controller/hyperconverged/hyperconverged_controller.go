@@ -1287,10 +1287,10 @@ func translateKubeVirtConds(orig []kubevirtv1.KubeVirtCondition) []conditionsv1.
 	translated := make([]conditionsv1.Condition, len(orig), len(orig))
 
 	for i, origCond := range orig {
-		translated[i] = conditionsv1.Condition {
-			Type: conditionsv1.ConditionType(origCond.Type),
-			Status: origCond.Status,
-			Reason: origCond.Reason,
+		translated[i] = conditionsv1.Condition{
+			Type:    conditionsv1.ConditionType(origCond.Type),
+			Status:  origCond.Status,
+			Reason:  origCond.Reason,
 			Message: origCond.Message,
 		}
 	}
