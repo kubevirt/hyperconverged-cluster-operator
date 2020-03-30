@@ -3,12 +3,9 @@ package hyperconverged
 import (
 	"context"
 	"fmt"
-	k8sTime "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
-	"time"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"os"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -1511,50 +1508,6 @@ var _ = Describe("HyperconvergedController", func() {
 				expected.kvTv.Status.Conditions = origConds
 				cl = expected.initClient()
 				checkAvailability(expected.hco, cl, corev1.ConditionTrue)
-			})
-
-			It(`should delete HCO`, func() {
-
-				// First, create HCO and check it
-				expected := getBasicDeployment()
-				cl := expected.initClient()
-				r := initReconciler(cl)
-				res, err := r.Reconcile(request)
-				Expect(err).To(BeNil())
-				Expect(res).Should(Equal(reconcile.Result{}))
-
-				foundResource := &hcov1alpha1.HyperConverged{}
-				Expect(
-					cl.Get(context.TODO(),
-						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
-						foundResource),
-				).To(BeNil())
-
-				Expect(foundResource.Status.RelatedObjects).ToNot(BeNil())
-				Expect(len(foundResource.Status.RelatedObjects)).Should(Equal(8))
-				Expect(foundResource.ObjectMeta.Finalizers).Should(Equal([]string{FinalizerName}))
-
-				// Now, delete HCO
-				delTime := time.Now().UTC().Add(-1 * time.Minute)
-				expected.hco.ObjectMeta.DeletionTimestamp = &k8sTime.Time{Time: delTime}
-				expected.hco.ObjectMeta.Finalizers = []string{FinalizerName}
-				cl = expected.initClient()
-
-				r = initReconciler(cl)
-				res, err = r.Reconcile(request)
-				Expect(err).To(BeNil())
-				Expect(res).Should(Equal(reconcile.Result{Requeue: true}))
-
-				foundResource = &hcov1alpha1.HyperConverged{}
-				Expect(
-					cl.Get(context.TODO(),
-						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
-						foundResource),
-				).To(BeNil())
-
-				Expect(foundResource.Status.RelatedObjects).To(BeNil())
-				Expect(foundResource.ObjectMeta.Finalizers).To(BeNil())
-
 			})
 		})
 	})
