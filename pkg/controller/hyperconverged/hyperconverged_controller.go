@@ -109,7 +109,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		&sspv1.KubevirtCommonTemplatesBundle{},
 		&sspv1.KubevirtNodeLabellerBundle{},
 		&sspv1.KubevirtTemplateValidator{},
-		&sspv1.KubevirtMetricsAggregation{},
 	} {
 		err = c.Watch(&source.Kind{Type: resource}, &handler.EnqueueRequestsFromMapFunc{
 			ToRequests: handler.ToRequestsFunc(
@@ -298,7 +297,6 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		r.ensureKubeVirtCommonTemplateBundle,
 		r.ensureKubeVirtNodeLabellerBundle,
 		r.ensureKubeVirtTemplateValidator,
-		r.ensureKubeVirtMetricsAggregation,
 		r.ensureIMSConfig,
 	} {
 		err = f(instance, reqLogger, request)
@@ -1054,54 +1052,6 @@ func (r *ReconcileHyperConverged) ensureKubeVirtStorageConfig(instance *hcov1alp
 	objectreferencesv1.SetObjectReference(&instance.Status.RelatedObjects, *objectRef)
 
 	return nil
-}
-
-func newKubeVirtMetricsAggregationForCR(cr *hcov1alpha1.HyperConverged, namespace string) *sspv1.KubevirtMetricsAggregation {
-	labels := map[string]string{
-		"app": cr.Name,
-	}
-	return &sspv1.KubevirtMetricsAggregation{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "metrics-aggregation-" + cr.Name,
-			Labels:    labels,
-			Namespace: namespace,
-		},
-	}
-}
-
-func (r *ReconcileHyperConverged) ensureKubeVirtMetricsAggregation(instance *hcov1alpha1.HyperConverged, logger logr.Logger, request reconcile.Request) error {
-	kubevirtMetricsAggregation := newKubeVirtMetricsAggregationForCR(instance, request.Namespace)
-	if err := controllerutil.SetControllerReference(instance, kubevirtMetricsAggregation, r.scheme); err != nil {
-		return err
-	}
-
-	key, err := client.ObjectKeyFromObject(kubevirtMetricsAggregation)
-	if err != nil {
-		logger.Error(err, "Failed to get object key for KubeVirt Metrics Aggregation")
-	}
-
-	found := &sspv1.KubevirtMetricsAggregation{}
-	err = r.client.Get(context.TODO(), key, found)
-	if err != nil && apierrors.IsNotFound(err) {
-		logger.Info("Creating KubeVirt Metrics Aggregation")
-		return r.client.Create(context.TODO(), kubevirtMetricsAggregation)
-	}
-
-	if err != nil {
-		return err
-	}
-
-	logger.Info("KubeVirt Metrics Aggregation already exists", "metrics.Namespace", found.Namespace, "metrics.Name", found.Name)
-
-	// Add it to the list of RelatedObjects if found
-	objectRef, err := reference.GetReference(r.scheme, found)
-	if err != nil {
-		return err
-	}
-	objectreferencesv1.SetObjectReference(&instance.Status.RelatedObjects, *objectRef)
-
-	handleComponentConditions(r, logger, "KubevirtMetricsAggregation", found.Status.Conditions)
-	return r.client.Status().Update(context.TODO(), instance)
 }
 
 func isKVMAvailable() bool {
