@@ -211,7 +211,7 @@ var _ = Describe("Certificates", func() {
 					"--pvc-name", pvcName,
 					"--pvc-size", pvcSize,
 					"--uploadproxy-url", fmt.Sprintf("https://127.0.0.1:%d", localUploadProxyPort),
-					"--wait-secs", "30",
+					"--wait-secs", "120",
 					"--storage-class", storageClass,
 					"--insecure")
 				err = virtctlCmd()
@@ -219,7 +219,7 @@ var _ = Describe("Certificates", func() {
 					return fmt.Errorf("UploadImage Error: %+v\n", err)
 				}
 				return nil
-			}, 60*time.Second, 5*time.Second).Should(Succeed())
+			}, 120*time.Second, 5*time.Second).Should(Succeed())
 
 			By("Start VM")
 			vm := NewRandomVMWithPVC(pvcName)
@@ -233,7 +233,7 @@ var _ = Describe("Certificates", func() {
 				}
 				Expect(err).ToNot(HaveOccurred())
 				return vmi.Status.Phase
-			}, 8*time.Minute, 2*time.Second).Should(Equal(v1.Running))
+			}, 16*time.Minute, 2*time.Second).Should(Equal(v1.Running))
 		})
 		AfterEach(func() {
 			err = os.Remove(imagePath)
