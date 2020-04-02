@@ -835,7 +835,9 @@ func (r *ReconcileHyperConverged) ensureKubeVirtCommonTemplateBundle(instance *h
 	}
 	objectreferencesv1.SetObjectReference(&instance.Status.RelatedObjects, *objectRef)
 
-	handleComponentConditions(r, logger, "KubevirtCommonTemplatesBundle", found.Status.Conditions)
+	// TODO: temporary avoid checking conditions on KubevirtCommonTemplatesBundle because it's currently
+	// broken on k8s. Revert this when we will be able to fix it
+	// handleComponentConditions(r, logger, "KubevirtCommonTemplatesBundle", found.Status.Conditions)
 	return r.client.Status().Update(context.TODO(), instance)
 }
 
