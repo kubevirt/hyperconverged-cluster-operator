@@ -871,73 +871,77 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 			})
 
-			It("should handle conditions", func() {
-				hco := &hcov1alpha1.HyperConverged{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      name,
-						Namespace: namespace,
-					},
-					Spec: hcov1alpha1.HyperConvergedSpec{},
-				}
+			// TODO: temporary avoid checking conditions on KubevirtNodeLabellerBundle because it's currently
+			// broken on k8s. Revert this when we will be able to fix it
+			/*
+				It("should handle conditions", func() {
+					hco := &hcov1alpha1.HyperConverged{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      name,
+							Namespace: namespace,
+						},
+						Spec: hcov1alpha1.HyperConvergedSpec{},
+					}
 
-				expectedResource := newKubeVirtNodeLabellerBundleForCR(hco, namespace)
-				expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
-				expectedResource.Status.Conditions = []conditionsv1.Condition{
-					conditionsv1.Condition{
+					expectedResource := newKubeVirtNodeLabellerBundleForCR(hco, namespace)
+					expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
+					expectedResource.Status.Conditions = []conditionsv1.Condition{
+						conditionsv1.Condition{
+							Type:    conditionsv1.ConditionAvailable,
+							Status:  corev1.ConditionFalse,
+							Reason:  "Foo",
+							Message: "Bar",
+						},
+						conditionsv1.Condition{
+							Type:    conditionsv1.ConditionProgressing,
+							Status:  corev1.ConditionTrue,
+							Reason:  "Foo",
+							Message: "Bar",
+						},
+						conditionsv1.Condition{
+							Type:    conditionsv1.ConditionDegraded,
+							Status:  corev1.ConditionTrue,
+							Reason:  "Foo",
+							Message: "Bar",
+						},
+					}
+					cl := initClient([]runtime.Object{hco, expectedResource})
+					r := initReconciler(cl)
+					Expect(r.ensureKubeVirtNodeLabellerBundle(hco, log, request)).To(BeNil())
+
+					// Check HCO's status
+					Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+					objectRef, err := reference.GetReference(r.scheme, expectedResource)
+					Expect(err).To(BeNil())
+					// ObjectReference should have been added
+					Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
+					// Check conditions
+					Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 						Type:    conditionsv1.ConditionAvailable,
 						Status:  corev1.ConditionFalse,
-						Reason:  "Foo",
-						Message: "Bar",
-					},
-					conditionsv1.Condition{
+						Reason:  "KubevirtNodeLabellerBundleNotAvailable",
+						Message: "KubevirtNodeLabellerBundle is not available: Bar",
+					})))
+					Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 						Type:    conditionsv1.ConditionProgressing,
 						Status:  corev1.ConditionTrue,
-						Reason:  "Foo",
-						Message: "Bar",
-					},
-					conditionsv1.Condition{
+						Reason:  "KubevirtNodeLabellerBundleProgressing",
+						Message: "KubevirtNodeLabellerBundle is progressing: Bar",
+					})))
+					Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+						Type:    conditionsv1.ConditionUpgradeable,
+						Status:  corev1.ConditionFalse,
+						Reason:  "KubevirtNodeLabellerBundleProgressing",
+						Message: "KubevirtNodeLabellerBundle is progressing: Bar",
+					})))
+					Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 						Type:    conditionsv1.ConditionDegraded,
 						Status:  corev1.ConditionTrue,
-						Reason:  "Foo",
-						Message: "Bar",
-					},
-				}
-				cl := initClient([]runtime.Object{hco, expectedResource})
-				r := initReconciler(cl)
-				Expect(r.ensureKubeVirtNodeLabellerBundle(hco, log, request)).To(BeNil())
-
-				// Check HCO's status
-				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
-				objectRef, err := reference.GetReference(r.scheme, expectedResource)
-				Expect(err).To(BeNil())
-				// ObjectReference should have been added
-				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
-				// Check conditions
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
-					Type:    conditionsv1.ConditionAvailable,
-					Status:  corev1.ConditionFalse,
-					Reason:  "KubevirtNodeLabellerBundleNotAvailable",
-					Message: "KubevirtNodeLabellerBundle is not available: Bar",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
-					Type:    conditionsv1.ConditionProgressing,
-					Status:  corev1.ConditionTrue,
-					Reason:  "KubevirtNodeLabellerBundleProgressing",
-					Message: "KubevirtNodeLabellerBundle is progressing: Bar",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
-					Type:    conditionsv1.ConditionUpgradeable,
-					Status:  corev1.ConditionFalse,
-					Reason:  "KubevirtNodeLabellerBundleProgressing",
-					Message: "KubevirtNodeLabellerBundle is progressing: Bar",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
-					Type:    conditionsv1.ConditionDegraded,
-					Status:  corev1.ConditionTrue,
-					Reason:  "KubevirtNodeLabellerBundleDegraded",
-					Message: "KubevirtNodeLabellerBundle is degraded: Bar",
-				})))
-			})
+						Reason:  "KubevirtNodeLabellerBundleDegraded",
+						Message: "KubevirtNodeLabellerBundle is degraded: Bar",
+					})))
+				})
+			*/
 
 			It("should request KVM without any extra setting", func() {
 				hco := &hcov1alpha1.HyperConverged{
@@ -1498,14 +1502,18 @@ var _ = Describe("HyperconvergedController", func() {
 				cl = expected.initClient()
 				checkAvailability(expected.hco, cl, corev1.ConditionTrue)
 
-				origConds = expected.kvNlb.Status.Conditions
-				expected.kvNlb.Status.Conditions = expected.cdi.Status.Conditions[1:]
-				cl = expected.initClient()
-				checkAvailability(expected.hco, cl, corev1.ConditionFalse)
+				// TODO: temporary avoid checking conditions on KubevirtNodeLabellerBundle because it's currently
+				// broken on k8s. Revert this when we will be able to fix it
+				/*
+					origConds = expected.kvNlb.Status.Conditions
+					expected.kvNlb.Status.Conditions = expected.cdi.Status.Conditions[1:]
+					cl = expected.initClient()
+					checkAvailability(expected.hco, cl, corev1.ConditionFalse)
 
-				expected.kvNlb.Status.Conditions = origConds
-				cl = expected.initClient()
-				checkAvailability(expected.hco, cl, corev1.ConditionTrue)
+					expected.kvNlb.Status.Conditions = origConds
+					cl = expected.initClient()
+					checkAvailability(expected.hco, cl, corev1.ConditionTrue)
+				*/
 
 				// TODO: temporary avoid checking conditions on KubevirtTemplateValidator because it's currently
 				// broken on k8s. Revert this when we will be able to fix it
