@@ -995,7 +995,9 @@ func (r *ReconcileHyperConverged) ensureKubeVirtTemplateValidator(instance *hcov
 	}
 	objectreferencesv1.SetObjectReference(&instance.Status.RelatedObjects, *objectRef)
 
-	handleComponentConditions(r, logger, "KubevirtTemplateValidator", found.Status.Conditions)
+	// TODO: temporary avoid checking conditions on KubevirtTemplateValidator because it's currently
+	// broken on k8s. Revert this when we will be able to fix it
+	// handleComponentConditions(r, logger, "KubevirtTemplateValidator", found.Status.Conditions)
 	return r.client.Status().Update(context.TODO(), instance)
 }
 
@@ -1100,7 +1102,8 @@ func (r *ReconcileHyperConverged) ensureKubeVirtMetricsAggregation(instance *hco
 	}
 	objectreferencesv1.SetObjectReference(&instance.Status.RelatedObjects, *objectRef)
 
-	// Don't call handleComponentConditions, because KubeVirtMetricsAggregation uses non-standard conditions
+	// TODO: we don't call handleComponentConditions because KubeVirtMetricsAggregation uses non-standard conditions
+	// fix this when KubeVirtMetricsAggregation will be ready for this
 	return r.client.Status().Update(context.TODO(), instance)
 }
 
