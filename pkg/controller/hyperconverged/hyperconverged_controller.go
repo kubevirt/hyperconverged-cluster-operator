@@ -546,7 +546,69 @@ func (r *ReconcileHyperConverged) ensureKubeVirt(instance *hcov1alpha1.HyperConv
 	objectreferencesv1.SetObjectReference(&instance.Status.RelatedObjects, *objectRef)
 
 	// Handle KubeVirt resource conditions
-	handleComponentConditions(r, logger, "KubeVirt", translateKubeVirtConds(found.Status.Conditions))
+	if found.Status.Conditions == nil {
+		logger.Info("KubeVirt's resource is not reporting Conditions on it's Status")
+		conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+			Type:    conditionsv1.ConditionAvailable,
+			Status:  corev1.ConditionFalse,
+			Reason:  "KubeVirtConditions",
+			Message: "KubeVirt resource has no conditions",
+		})
+		conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+			Type:    conditionsv1.ConditionProgressing,
+			Status:  corev1.ConditionTrue,
+			Reason:  "KubeVirtConditions",
+			Message: "KubeVirt resource has no conditions",
+		})
+		conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+			Type:    conditionsv1.ConditionUpgradeable,
+			Status:  corev1.ConditionFalse,
+			Reason:  "KubeVirtConditions",
+			Message: "KubeVirt resource has no conditions",
+		})
+	} else {
+		for _, condition := range found.Status.Conditions {
+			// convert the KubeVirt condition type to one we understand
+			switch conditionsv1.ConditionType(condition.Type) {
+			case conditionsv1.ConditionAvailable:
+				if condition.Status == corev1.ConditionFalse {
+					logger.Info("KubeVirt is not 'Available'")
+					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+						Type:    conditionsv1.ConditionAvailable,
+						Status:  corev1.ConditionFalse,
+						Reason:  "KubeVirtNotAvailable",
+						Message: fmt.Sprintf("KubeVirt is not available: %v", string(condition.Message)),
+					})
+				}
+			case conditionsv1.ConditionProgressing:
+				if condition.Status == corev1.ConditionTrue {
+					logger.Info("KubeVirt is 'Progressing'")
+					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+						Type:    conditionsv1.ConditionProgressing,
+						Status:  corev1.ConditionTrue,
+						Reason:  "KubeVirtProgressing",
+						Message: fmt.Sprintf("KubeVirt is progressing: %v", string(condition.Message)),
+					})
+					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+						Type:    conditionsv1.ConditionUpgradeable,
+						Status:  corev1.ConditionFalse,
+						Reason:  "KubeVirtProgressing",
+						Message: fmt.Sprintf("KubeVirt is progressing: %v", string(condition.Message)),
+					})
+				}
+			case conditionsv1.ConditionDegraded:
+				if condition.Status == corev1.ConditionTrue {
+					logger.Info("KubeVirt is 'Degraded'")
+					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+						Type:    conditionsv1.ConditionDegraded,
+						Status:  corev1.ConditionTrue,
+						Reason:  "KubeVirtDegraded",
+						Message: fmt.Sprintf("KubeVirt is degraded: %v", string(condition.Message)),
+					})
+				}
+			}
+		}
+	}
 
 	return r.client.Status().Update(context.TODO(), instance)
 }
@@ -622,7 +684,69 @@ func (r *ReconcileHyperConverged) ensureCDI(instance *hcov1alpha1.HyperConverged
 	objectreferencesv1.SetObjectReference(&instance.Status.RelatedObjects, *objectRef)
 
 	// Handle CDI resource conditions
-	handleComponentConditions(r, logger, "CDI", found.Status.Conditions)
+	if found.Status.Conditions == nil {
+		logger.Info("CDI's resource is not reporting Conditions on it's Status")
+		conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+			Type:    conditionsv1.ConditionAvailable,
+			Status:  corev1.ConditionFalse,
+			Reason:  "CDIConditions",
+			Message: "CDI resource has no conditions",
+		})
+		conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+			Type:    conditionsv1.ConditionProgressing,
+			Status:  corev1.ConditionTrue,
+			Reason:  "CDIConditions",
+			Message: "CDI resource has no conditions",
+		})
+		conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+			Type:    conditionsv1.ConditionUpgradeable,
+			Status:  corev1.ConditionFalse,
+			Reason:  "CDIConditions",
+			Message: "CDI resource has no conditions",
+		})
+	} else {
+		for _, condition := range found.Status.Conditions {
+			// convert the CDI condition type to one we understand
+			switch conditionsv1.ConditionType(condition.Type) {
+			case conditionsv1.ConditionAvailable:
+				if condition.Status == corev1.ConditionFalse {
+					logger.Info("CDI is not 'Available'")
+					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+						Type:    conditionsv1.ConditionAvailable,
+						Status:  corev1.ConditionFalse,
+						Reason:  "CDINotAvailable",
+						Message: fmt.Sprintf("CDI is not available: %v", string(condition.Message)),
+					})
+				}
+			case conditionsv1.ConditionProgressing:
+				if condition.Status == corev1.ConditionTrue {
+					logger.Info("CDI is 'Progressing'")
+					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+						Type:    conditionsv1.ConditionProgressing,
+						Status:  corev1.ConditionTrue,
+						Reason:  "CDIProgressing",
+						Message: fmt.Sprintf("CDI is progressing: %v", string(condition.Message)),
+					})
+					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+						Type:    conditionsv1.ConditionUpgradeable,
+						Status:  corev1.ConditionFalse,
+						Reason:  "CDIProgressing",
+						Message: fmt.Sprintf("CDI is progressing: %v", string(condition.Message)),
+					})
+				}
+			case conditionsv1.ConditionDegraded:
+				if condition.Status == corev1.ConditionTrue {
+					logger.Info("CDI is 'Degraded'")
+					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+						Type:    conditionsv1.ConditionDegraded,
+						Status:  corev1.ConditionTrue,
+						Reason:  "CDIDegraded",
+						Message: fmt.Sprintf("CDI is degraded: %v", string(condition.Message)),
+					})
+				}
+			}
+		}
+	}
 
 	return r.client.Status().Update(context.TODO(), instance)
 }
@@ -696,13 +820,74 @@ func (r *ReconcileHyperConverged) ensureNetworkAddons(instance *hcov1alpha1.Hype
 	objectreferencesv1.SetObjectReference(&instance.Status.RelatedObjects, *objectRef)
 
 	// Handle conditions
-	handleComponentConditions(r, logger, "NetworkAddonsConfig", found.Status.Conditions)
+	if found.Status.Conditions == nil {
+		logger.Info("NetworkAddonsConfig's resource is not reporting Conditions on it's Status")
+		conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+			Type:    conditionsv1.ConditionAvailable,
+			Status:  corev1.ConditionFalse,
+			Reason:  "NetworkAddonsConfigConditions",
+			Message: "NetworkAddonsConfig resource has no conditions",
+		})
+		conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+			Type:    conditionsv1.ConditionProgressing,
+			Status:  corev1.ConditionTrue,
+			Reason:  "NetworkAddonsConfigConditions",
+			Message: "NetworkAddonsConfig resource has no conditions",
+		})
+		conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+			Type:    conditionsv1.ConditionUpgradeable,
+			Status:  corev1.ConditionFalse,
+			Reason:  "NetworkAddonsConfigConditions",
+			Message: "NetworkAddonsConfig resource has no conditions",
+		})
+	} else {
+		for _, condition := range found.Status.Conditions {
+			switch conditionsv1.ConditionType(condition.Type) {
+			case conditionsv1.ConditionAvailable:
+				if condition.Status == corev1.ConditionFalse {
+					logger.Info("NetworkAddonsConfig is not 'Available'")
+					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+						Type:    conditionsv1.ConditionAvailable,
+						Status:  corev1.ConditionFalse,
+						Reason:  "NetworkAddonsConfigNotAvailable",
+						Message: fmt.Sprintf("NetworkAddonsConfig is not available: %v", string(condition.Message)),
+					})
+				}
+			case conditionsv1.ConditionProgressing:
+				if condition.Status == corev1.ConditionTrue {
+					logger.Info("NetworkAddonsConfig is 'Progressing'")
+					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+						Type:    conditionsv1.ConditionProgressing,
+						Status:  corev1.ConditionTrue,
+						Reason:  "NetworkAddonsConfigProgressing",
+						Message: fmt.Sprintf("NetworkAddonsConfig is progressing: %v", string(condition.Message)),
+					})
+					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+						Type:    conditionsv1.ConditionUpgradeable,
+						Status:  corev1.ConditionFalse,
+						Reason:  "NetworkAddonsConfigProgressing",
+						Message: fmt.Sprintf("NetworkAddonsConfig is progressing: %v", string(condition.Message)),
+					})
+				}
+			case conditionsv1.ConditionDegraded:
+				if condition.Status == corev1.ConditionTrue {
+					logger.Info("NetworkAddonsConfig is 'Degraded'")
+					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+						Type:    conditionsv1.ConditionDegraded,
+						Status:  corev1.ConditionTrue,
+						Reason:  "NetworkAddonsConfigDegraded",
+						Message: fmt.Sprintf("NetworkAddonsConfig is degraded: %v", string(condition.Message)),
+					})
+				}
+			}
+		}
+	}
 
 	return r.client.Status().Update(context.TODO(), instance)
 }
 
-func handleComponentConditions(r *ReconcileHyperConverged, logger logr.Logger, component string, conditions []conditionsv1.Condition) {
-	if conditions == nil || len(conditions) == 0 {
+func handleConditionsSSP(r *ReconcileHyperConverged, logger logr.Logger, component string, status *sspv1.ConfigStatus) {
+	if status.Conditions == nil {
 		reason := fmt.Sprintf("%sConditions", component)
 		message := fmt.Sprintf("%s resource has no conditions", component)
 		logger.Info(fmt.Sprintf("%s's resource is not reporting Conditions on it's Status", component))
@@ -725,15 +910,17 @@ func handleComponentConditions(r *ReconcileHyperConverged, logger logr.Logger, c
 			Message: message,
 		})
 	} else {
-		foundAvailableCond := false
-		for _, condition := range conditions {
-
+		for _, condition := range status.Conditions {
 			switch conditionsv1.ConditionType(condition.Type) {
 			case conditionsv1.ConditionAvailable:
-				foundAvailableCond = true
 				if condition.Status == corev1.ConditionFalse {
-					msg := fmt.Sprintf("%s is not available: %v", component, string(condition.Message))
-					componentNotAvailable(logger, component, msg, r)
+					logger.Info(fmt.Sprintf("%s is not 'Available'", component))
+					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+						Type:    conditionsv1.ConditionAvailable,
+						Status:  corev1.ConditionFalse,
+						Reason:  fmt.Sprintf("%sNotAvailable", component),
+						Message: fmt.Sprintf("%s is not available: %v", component, string(condition.Message)),
+					})
 				}
 			case conditionsv1.ConditionProgressing:
 				if condition.Status == corev1.ConditionTrue {
@@ -763,21 +950,7 @@ func handleComponentConditions(r *ReconcileHyperConverged, logger logr.Logger, c
 				}
 			}
 		}
-
-		if !foundAvailableCond {
-			componentNotAvailable(logger, component, `missing "Available" condition`, r)
-		}
 	}
-}
-
-func componentNotAvailable(logger logr.Logger, component string, msg string, r *ReconcileHyperConverged) {
-	logger.Info(fmt.Sprintf("%s is not 'Available'", component))
-	conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
-		Type:    conditionsv1.ConditionAvailable,
-		Status:  corev1.ConditionFalse,
-		Reason:  fmt.Sprintf("%sNotAvailable", component),
-		Message: msg,
-	})
 }
 
 func newKubeVirtCommonTemplateBundleForCR(cr *hcov1alpha1.HyperConverged, namespace string) *sspv1.KubevirtCommonTemplatesBundle {
@@ -835,7 +1008,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtCommonTemplateBundle(instance *h
 	}
 	objectreferencesv1.SetObjectReference(&instance.Status.RelatedObjects, *objectRef)
 
-	handleComponentConditions(r, logger, "KubevirtCommonTemplatesBundle", found.Status.Conditions)
+	handleConditionsSSP(r, logger, "KubevirtCommonTemplatesBundle", &found.Status)
 	return r.client.Status().Update(context.TODO(), instance)
 }
 
@@ -886,7 +1059,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtNodeLabellerBundle(instance *hco
 	}
 	objectreferencesv1.SetObjectReference(&instance.Status.RelatedObjects, *objectRef)
 
-	handleComponentConditions(r, logger, "KubevirtNodeLabellerBundle", found.Status.Conditions)
+	handleConditionsSSP(r, logger, "KubevirtNodeLabellerBundle", &found.Status)
 	return r.client.Status().Update(context.TODO(), instance)
 }
 
@@ -995,7 +1168,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtTemplateValidator(instance *hcov
 	}
 	objectreferencesv1.SetObjectReference(&instance.Status.RelatedObjects, *objectRef)
 
-	handleComponentConditions(r, logger, "KubevirtTemplateValidator", found.Status.Conditions)
+	handleConditionsSSP(r, logger, "KubevirtTemplateValidator", &found.Status)
 	return r.client.Status().Update(context.TODO(), instance)
 }
 
@@ -1101,6 +1274,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtMetricsAggregation(instance *hco
 	objectreferencesv1.SetObjectReference(&instance.Status.RelatedObjects, *objectRef)
 
 	// Don't call handleComponentConditions, because KubeVirtMetricsAggregation uses non-standard conditions
+
 	return r.client.Status().Update(context.TODO(), instance)
 }
 
@@ -1279,21 +1453,4 @@ func ensureKubeVirtCommonTemplateBundleDeleted(c client.Client, instance *hcov1a
 	}
 
 	return componentResourceRemoval(found, c, instance)
-}
-
-// translateKubeVirtConds translates list of KubeVirt conditions to a list of custom resource
-// conditions.
-func translateKubeVirtConds(orig []kubevirtv1.KubeVirtCondition) []conditionsv1.Condition {
-	translated := make([]conditionsv1.Condition, len(orig), len(orig))
-
-	for i, origCond := range orig {
-		translated[i] = conditionsv1.Condition{
-			Type:    conditionsv1.ConditionType(origCond.Type),
-			Status:  origCond.Status,
-			Reason:  origCond.Reason,
-			Message: origCond.Message,
-		}
-	}
-
-	return translated
 }
