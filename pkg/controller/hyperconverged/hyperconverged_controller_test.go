@@ -1560,29 +1560,29 @@ var _ = Describe("HyperconvergedController", func() {
 				expected.kv.Status.Conditions = expected.kv.Status.Conditions[1:]
 
 				cl := expected.initClient()
-				checkAvailability(expected.hco, cl, corev1.ConditionFalse)
+				checkAvailability(expected.hco, cl, false, corev1.ConditionFalse)
 
 				expected.kv.Status.Conditions = origKvConds
 				cl = expected.initClient()
-				checkAvailability(expected.hco, cl, corev1.ConditionTrue)
+				checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
 
 				origConds := expected.cdi.Status.Conditions
 				expected.cdi.Status.Conditions = expected.cdi.Status.Conditions[1:]
 				cl = expected.initClient()
-				checkAvailability(expected.hco, cl, corev1.ConditionFalse)
+				checkAvailability(expected.hco, cl, false, corev1.ConditionFalse)
 
 				expected.cdi.Status.Conditions = origConds
 				cl = expected.initClient()
-				checkAvailability(expected.hco, cl, corev1.ConditionTrue)
+				checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
 
 				origConds = expected.cna.Status.Conditions
 				expected.cna.Status.Conditions = expected.cdi.Status.Conditions[1:]
 				cl = expected.initClient()
-				checkAvailability(expected.hco, cl, corev1.ConditionFalse)
+				checkAvailability(expected.hco, cl, false, corev1.ConditionFalse)
 
 				expected.cna.Status.Conditions = origConds
 				cl = expected.initClient()
-				checkAvailability(expected.hco, cl, corev1.ConditionTrue)
+				checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
 
 				// TODO: temporary avoid checking conditions on KubevirtCommonTemplatesBundle because it's currently
 				// broken on k8s. Revert this when we will be able to fix it
@@ -1590,11 +1590,11 @@ var _ = Describe("HyperconvergedController", func() {
 					origConds = expected.kvCtb.Status.Conditions
 					expected.kvCtb.Status.Conditions = expected.cdi.Status.Conditions[1:]
 					cl = expected.initClient()
-					checkAvailability(expected.hco, cl, corev1.ConditionFalse)
+					checkAvailability(expected.hco, cl, false, corev1.ConditionFalse)
 
 					expected.kvCtb.Status.Conditions = origConds
 					cl = expected.initClient()
-					checkAvailability(expected.hco, cl, corev1.ConditionTrue)
+					checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
 				*/
 
 				// TODO: temporary avoid checking conditions on KubevirtNodeLabellerBundle because it's currently
@@ -1603,11 +1603,11 @@ var _ = Describe("HyperconvergedController", func() {
 					origConds = expected.kvNlb.Status.Conditions
 					expected.kvNlb.Status.Conditions = expected.cdi.Status.Conditions[1:]
 					cl = expected.initClient()
-					checkAvailability(expected.hco, cl, corev1.ConditionFalse)
+					checkAvailability(expected.hco, cl, false, corev1.ConditionFalse)
 
 					expected.kvNlb.Status.Conditions = origConds
 					cl = expected.initClient()
-					checkAvailability(expected.hco, cl, corev1.ConditionTrue)
+					checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
 				*/
 
 				// TODO: temporary avoid checking conditions on KubevirtTemplateValidator because it's currently
@@ -1616,11 +1616,11 @@ var _ = Describe("HyperconvergedController", func() {
 					origConds = expected.kvTv.Status.Conditions
 					expected.kvTv.Status.Conditions = expected.cdi.Status.Conditions[1:]
 					cl = expected.initClient()
-					checkAvailability(expected.hco, cl, corev1.ConditionFalse)
+					checkAvailability(expected.hco, cl, false, corev1.ConditionFalse)
 
 					expected.kvTv.Status.Conditions = origConds
 					cl = expected.initClient()
-					checkAvailability(expected.hco, cl, corev1.ConditionTrue)
+					checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
 				*/
 			})
 
@@ -1668,7 +1668,96 @@ var _ = Describe("HyperconvergedController", func() {
 
 			})
 		})
+
+		Context("Upgrade Mode", func() {
+			expected := getBasicDeployment()
+			okConds := expected.hco.Status.Conditions
+
+			const (
+				OLD_IMAGE = "quay.io/kubuvirt/hyperconverged-cluster-operator:v2.3.0"
+				NEW_IMAGE = "quay.io/kubuvirt/hyperconverged-cluster-operator:v2.4.0"
+			)
+
+			BeforeEach(func() {
+				os.Setenv("CONVERSION_CONTAINER", "registry.redhat.io/container-native-virtualization/kubevirt-v2v-conversion:v2.0.0")
+				os.Setenv("VMWARE_CONTAINER", "registry.redhat.io/container-native-virtualization/kubevirt-vmware:v2.0.0}")
+				os.Setenv("OPERATOR_NAMESPACE", namespace)
+			})
+
+			It("Should update the image Id in the CR on init", func() {
+				os.Setenv(operatorImageEnv, OLD_IMAGE)
+
+				expected.hco.Status.Conditions = nil
+
+				cl := expected.initClient()
+				foundResource := checkAvailability(expected.hco, cl, true, corev1.ConditionFalse)
+				for _, cond := range foundResource.Status.Conditions {
+					if cond.Type == conditionsv1.ConditionAvailable {
+						Expect(cond.Reason).Should(Equal("Init"))
+						break
+					}
+				}
+				Expect(foundResource.Annotations[operatorImageCr]).Should(Equal(OLD_IMAGE))
+
+				expected.hco.Status.Conditions = okConds
+			})
+
+			It("detect upgrade where with image Id", func() {
+				os.Setenv(operatorImageEnv, NEW_IMAGE)
+
+				// old image Id is set
+				if expected.hco.ObjectMeta.Annotations == nil {
+					expected.hco.ObjectMeta.Annotations = map[string]string{}
+				}
+				expected.hco.ObjectMeta.Annotations[operatorImageCr] = OLD_IMAGE
+
+				// CDI is not ready
+				expected.cdi.Status.Conditions = getGenericProgressingConditions()
+
+				cl := expected.initClient()
+				foundResource := checkAvailability(expected.hco, cl, false, corev1.ConditionFalse)
+
+				// check that the image Id is not set, because upgrade is not completed
+				Expect(foundResource.ObjectMeta.Annotations[operatorImageCr]).Should(Equal(OLD_IMAGE))
+
+				// now, complete the upgrade
+				expected.cdi.Status.Conditions = getGenericCompletedConditions()
+				cl = expected.initClient()
+				foundResource = checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
+
+				// check that the image Id is set, now, when upgrade is completed
+				Expect(foundResource.ObjectMeta.Annotations[operatorImageCr]).Should(Equal(NEW_IMAGE))
+
+			})
+
+			It("detect upgrade where w/o image Id", func() {
+				os.Setenv(operatorImageEnv, NEW_IMAGE)
+
+				// no image Id in CR
+				//delete(expected.hco.ObjectMeta.Annotations, operatorImageCr)
+				expected.hco.ObjectMeta.Annotations = nil
+				// CDI is not ready
+				expected.cdi.Status.Conditions = getGenericProgressingConditions()
+
+				cl := expected.initClient()
+				foundResource := checkAvailability(expected.hco, cl, false, corev1.ConditionFalse)
+
+				// check that the image Id is not set, because upgrade is not completed
+				Expect(foundResource.ObjectMeta.Annotations[operatorImageCr]).To(BeEmpty())
+
+				// now, complete the upgrade
+				expected.cdi.Status.Conditions = getGenericCompletedConditions()
+				cl = expected.initClient()
+				foundResource = checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
+
+				// check that the image Id is set, now, when upgrade is completed
+				Expect(foundResource.ObjectMeta.Annotations[operatorImageCr]).Should(Equal(NEW_IMAGE))
+
+			})
+
+		})
 	})
+
 })
 
 type basicExpected struct {
@@ -1754,38 +1843,12 @@ func getBasicDeployment() *basicExpected {
 
 	expectedCDI := newCDIForCR(hco, UndefinedNamespace)
 	expectedCDI.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cdis/%s", expectedCDI.Namespace, expectedCDI.Name)
-	expectedCDI.Status.Conditions = []conditionsv1.Condition{
-		{
-			Type:   conditionsv1.ConditionAvailable,
-			Status: corev1.ConditionTrue,
-		},
-		{
-			Type:   conditionsv1.ConditionProgressing,
-			Status: corev1.ConditionFalse,
-		},
-		{
-			Type:   conditionsv1.ConditionDegraded,
-			Status: corev1.ConditionFalse,
-		},
-	}
+	expectedCDI.Status.Conditions = getGenericCompletedConditions()
 	res.cdi = expectedCDI
 
 	expectedCNA := newNetworkAddonsForCR(hco, UndefinedNamespace)
 	expectedCNA.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cnas/%s", expectedCNA.Namespace, expectedCNA.Name)
-	expectedCNA.Status.Conditions = []conditionsv1.Condition{
-		{
-			Type:   conditionsv1.ConditionAvailable,
-			Status: corev1.ConditionTrue,
-		},
-		{
-			Type:   conditionsv1.ConditionProgressing,
-			Status: corev1.ConditionFalse,
-		},
-		{
-			Type:   conditionsv1.ConditionDegraded,
-			Status: corev1.ConditionFalse,
-		},
-	}
+	expectedCNA.Status.Conditions = getGenericCompletedConditions()
 	res.cna = expectedCNA
 
 	expectedKVCTB := newKubeVirtCommonTemplateBundleForCR(hco, OpenshiftNamespace)
@@ -1806,18 +1869,8 @@ func getBasicDeployment() *basicExpected {
 	return res
 }
 
-func checkAvailability(hco *hcov1alpha1.HyperConverged, cl client.Client, expected corev1.ConditionStatus) {
-	r := initReconciler(cl)
-	res, err := r.Reconcile(request)
-	Expect(err).To(BeNil())
-	Expect(res).Should(Equal(reconcile.Result{}))
-
-	foundResource := &hcov1alpha1.HyperConverged{}
-	Expect(
-		cl.Get(context.TODO(),
-			types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
-			foundResource),
-	).To(BeNil())
+func checkAvailability(hco *hcov1alpha1.HyperConverged, cl client.Client, requeue bool, expected corev1.ConditionStatus) *hcov1alpha1.HyperConverged {
+	foundResource := doReconcile(cl, hco, requeue)
 	// Check conditions
 
 	found := false
@@ -1825,12 +1878,30 @@ func checkAvailability(hco *hcov1alpha1.HyperConverged, cl client.Client, expect
 		if cond.Type == conditionsv1.ConditionType(kubevirtv1.KubeVirtConditionAvailable) {
 			found = true
 			Expect(cond.Status).To(Equal(expected))
+			break
 		}
 	}
 
 	if !found {
 		Fail(fmt.Sprintf(`Can't find 'Available' condition; %v`, foundResource.Status.Conditions))
 	}
+
+	return foundResource
+}
+
+func doReconcile(cl client.Client, hco *hcov1alpha1.HyperConverged, requeue bool) *hcov1alpha1.HyperConverged {
+	r := initReconciler(cl)
+	res, err := r.Reconcile(request)
+	Expect(err).To(BeNil())
+	Expect(res).Should(Equal(reconcile.Result{Requeue: requeue}))
+
+	foundResource := &hcov1alpha1.HyperConverged{}
+	Expect(
+		cl.Get(context.TODO(),
+			types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
+			foundResource),
+	).To(BeNil())
+	return foundResource
 }
 
 func getGenericCompletedConditions() []conditionsv1.Condition {
@@ -1842,6 +1913,23 @@ func getGenericCompletedConditions() []conditionsv1.Condition {
 		{
 			Type:   conditionsv1.ConditionProgressing,
 			Status: corev1.ConditionFalse,
+		},
+		{
+			Type:   conditionsv1.ConditionDegraded,
+			Status: corev1.ConditionFalse,
+		},
+	}
+}
+
+func getGenericProgressingConditions() []conditionsv1.Condition {
+	return []conditionsv1.Condition{
+		{
+			Type:   conditionsv1.ConditionAvailable,
+			Status: corev1.ConditionFalse,
+		},
+		{
+			Type:   conditionsv1.ConditionProgressing,
+			Status: corev1.ConditionTrue,
 		},
 		{
 			Type:   conditionsv1.ConditionDegraded,

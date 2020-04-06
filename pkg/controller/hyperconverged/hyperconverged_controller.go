@@ -72,6 +72,9 @@ const (
 	uninstallVirtErrorMsg = "The uninstall request failed on virt component: "
 	ErrHCOUninstall       = "ErrHCOUninstall"
 	uninstallHCOErrorMsg  = "The uninstall request failed on dependent components, please check their logs."
+
+	operatorImageEnv = "OPERATOR_IMAGE"
+	operatorImageCr  = "operatorImage"
 )
 
 // Add creates a new HyperConverged Controller and adds it to the Manager. The Manager will set fields on the Controller
@@ -82,7 +85,12 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileHyperConverged{client: mgr.GetClient(), scheme: mgr.GetScheme(), recorder: mgr.GetEventRecorderFor(hcov1alpha1.HyperConvergedName)}
+	return &ReconcileHyperConverged{
+		client:      mgr.GetClient(),
+		scheme:      mgr.GetScheme(),
+		recorder:    mgr.GetEventRecorderFor(hcov1alpha1.HyperConvergedName),
+		upgradeMode: false,
+	}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -138,10 +146,11 @@ var _ reconcile.Reconciler = &ReconcileHyperConverged{}
 type ReconcileHyperConverged struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client     client.Client
-	scheme     *runtime.Scheme
-	recorder   record.EventRecorder
-	conditions []conditionsv1.Condition
+	client      client.Client
+	scheme      *runtime.Scheme
+	recorder    record.EventRecorder
+	conditions  []conditionsv1.Condition
+	upgradeMode bool
 }
 
 // Reconcile reads that state of the cluster for a HyperConverged object and makes changes based on the state read
@@ -152,6 +161,8 @@ type ReconcileHyperConverged struct {
 func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	reqLogger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	reqLogger.Info("Reconciling HyperConverged operator")
+
+	ownImage := os.Getenv(operatorImageEnv)
 
 	// Fetch the HyperConverged instance
 	instance := &hcov1alpha1.HyperConverged{}
@@ -191,6 +202,8 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 	if instance.Status.Conditions == nil {
 		init = true
 
+		r.updateImageId(instance, ownImage)
+
 		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
 			Type:    hcov1alpha1.ConditionReconcileComplete,
 			Status:  corev1.ConditionUnknown, // we just started trying to reconcile
@@ -222,7 +235,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 			Message: reconcileInitMessage,
 		})
 
-		err = r.client.Status().Update(context.TODO(), instance)
+		err = r.client.Update(context.TODO(), instance)
 		if err != nil {
 			reqLogger.Error(err, "Failed to add conditions to status")
 			return reconcile.Result{}, err
@@ -294,6 +307,10 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		}
 	}
 
+	// If the current image is not updated in CR ,then we're updating. This is also works when updating from
+	// an old version, since instance.ObjectMeta.Annotations[operatorImageCr] will be empty.
+	r.upgradeMode = !init && instance.ObjectMeta.Annotations[operatorImageCr] != ownImage
+
 	for _, f := range []func(*hcov1alpha1.HyperConverged, logr.Logger, reconcile.Request) error{
 		r.ensureKubeVirtPriorityClass,
 		r.ensureKubeVirtConfig,
@@ -364,6 +381,11 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 			Message: reconcileCompletedMessage,
 		})
 
+		if r.upgradeMode { // update the new image only when upgrade is completed
+			r.updateImageId(instance, ownImage)
+			r.upgradeMode = false
+		}
+
 		// If no operator whose conditions we are watching reports an error, then it is safe
 		// to set readiness.
 		r := ready.NewFileReady()
@@ -396,7 +418,14 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 			}
 		}
 	}
-	return reconcile.Result{}, r.client.Status().Update(context.TODO(), instance)
+	return reconcile.Result{}, r.client.Update(context.TODO(), instance)
+}
+
+func (r *ReconcileHyperConverged) updateImageId(instance *hcov1alpha1.HyperConverged, ownImage string) {
+	if instance.ObjectMeta.Annotations == nil {
+		instance.ObjectMeta.Annotations = map[string]string{}
+	}
+	instance.ObjectMeta.Annotations[operatorImageCr] = ownImage
 }
 
 func (r *ReconcileHyperConverged) emitEvent(instance *hcov1alpha1.HyperConverged, logger logr.Logger, kind string, errT string, errMsg string) error {
