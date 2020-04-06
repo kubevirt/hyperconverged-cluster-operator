@@ -835,9 +835,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtCommonTemplateBundle(instance *h
 	}
 	objectreferencesv1.SetObjectReference(&instance.Status.RelatedObjects, *objectRef)
 
-	// TODO: temporary avoid checking conditions on KubevirtCommonTemplatesBundle because it's currently
-	// broken on k8s. Revert this when we will be able to fix it
-	// handleComponentConditions(r, logger, "KubevirtCommonTemplatesBundle", found.Status.Conditions)
+	handleComponentConditions(r, logger, "KubevirtCommonTemplatesBundle", found.Status.Conditions)
 	return r.client.Status().Update(context.TODO(), instance)
 }
 
@@ -888,9 +886,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtNodeLabellerBundle(instance *hco
 	}
 	objectreferencesv1.SetObjectReference(&instance.Status.RelatedObjects, *objectRef)
 
-	// TODO: temporary avoid checking conditions on KubevirtNodeLabellerBundle because it's currently
-	// broken on k8s. Revert this when we will be able to fix it
-	//handleComponentConditions(r, logger, "KubevirtNodeLabellerBundle", found.Status.Conditions)
+	handleComponentConditions(r, logger, "KubevirtNodeLabellerBundle", found.Status.Conditions)
 	return r.client.Status().Update(context.TODO(), instance)
 }
 
@@ -999,9 +995,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtTemplateValidator(instance *hcov
 	}
 	objectreferencesv1.SetObjectReference(&instance.Status.RelatedObjects, *objectRef)
 
-	// TODO: temporary avoid checking conditions on KubevirtTemplateValidator because it's currently
-	// broken on k8s. Revert this when we will be able to fix it
-	// handleComponentConditions(r, logger, "KubevirtTemplateValidator", found.Status.Conditions)
+	handleComponentConditions(r, logger, "KubevirtTemplateValidator", found.Status.Conditions)
 	return r.client.Status().Update(context.TODO(), instance)
 }
 
