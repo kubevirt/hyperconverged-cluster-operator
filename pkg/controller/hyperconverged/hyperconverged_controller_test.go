@@ -1674,8 +1674,8 @@ var _ = Describe("HyperconvergedController", func() {
 			okConds := expected.hco.Status.Conditions
 
 			const (
-				OLD_IMAGE = "quay.io/kubuvirt/hyperconverged-cluster-operator:v2.3.0"
-				NEW_IMAGE = "quay.io/kubuvirt/hyperconverged-cluster-operator:v2.4.0"
+				OldImage = "quay.io/kubuvirt/hyperconverged-cluster-operator:v1.0.0"
+				NewImage = "quay.io/kubuvirt/hyperconverged-cluster-operator:v1.1.0"
 			)
 
 			BeforeEach(func() {
@@ -1685,7 +1685,7 @@ var _ = Describe("HyperconvergedController", func() {
 			})
 
 			It("Should update the image Id in the CR on init", func() {
-				os.Setenv(operatorImageEnv, OLD_IMAGE)
+				os.Setenv(operatorImageEnv, OldImage)
 
 				expected.hco.Status.Conditions = nil
 
@@ -1697,19 +1697,19 @@ var _ = Describe("HyperconvergedController", func() {
 						break
 					}
 				}
-				Expect(foundResource.Annotations[operatorImageCr]).Should(Equal(OLD_IMAGE))
+				Expect(foundResource.Annotations[operatorImageCr]).Should(Equal(OldImage))
 
 				expected.hco.Status.Conditions = okConds
 			})
 
 			It("detect upgrade where with image Id", func() {
-				os.Setenv(operatorImageEnv, NEW_IMAGE)
+				os.Setenv(operatorImageEnv, NewImage)
 
 				// old image Id is set
 				if expected.hco.ObjectMeta.Annotations == nil {
 					expected.hco.ObjectMeta.Annotations = map[string]string{}
 				}
-				expected.hco.ObjectMeta.Annotations[operatorImageCr] = OLD_IMAGE
+				expected.hco.ObjectMeta.Annotations[operatorImageCr] = OldImage
 
 				// CDI is not ready
 				expected.cdi.Status.Conditions = getGenericProgressingConditions()
@@ -1718,7 +1718,7 @@ var _ = Describe("HyperconvergedController", func() {
 				foundResource := checkAvailability(expected.hco, cl, false, corev1.ConditionFalse)
 
 				// check that the image Id is not set, because upgrade is not completed
-				Expect(foundResource.ObjectMeta.Annotations[operatorImageCr]).Should(Equal(OLD_IMAGE))
+				Expect(foundResource.ObjectMeta.Annotations[operatorImageCr]).Should(Equal(OldImage))
 
 				// now, complete the upgrade
 				expected.cdi.Status.Conditions = getGenericCompletedConditions()
@@ -1726,12 +1726,12 @@ var _ = Describe("HyperconvergedController", func() {
 				foundResource = checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
 
 				// check that the image Id is set, now, when upgrade is completed
-				Expect(foundResource.ObjectMeta.Annotations[operatorImageCr]).Should(Equal(NEW_IMAGE))
+				Expect(foundResource.ObjectMeta.Annotations[operatorImageCr]).Should(Equal(NewImage))
 
 			})
 
 			It("detect upgrade where w/o image Id", func() {
-				os.Setenv(operatorImageEnv, NEW_IMAGE)
+				os.Setenv(operatorImageEnv, NewImage)
 
 				// no image Id in CR
 				expected.hco.ObjectMeta.Annotations = nil
@@ -1750,7 +1750,7 @@ var _ = Describe("HyperconvergedController", func() {
 				foundResource = checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
 
 				// check that the image Id is set, now, when upgrade is completed
-				Expect(foundResource.ObjectMeta.Annotations[operatorImageCr]).Should(Equal(NEW_IMAGE))
+				Expect(foundResource.ObjectMeta.Annotations[operatorImageCr]).Should(Equal(NewImage))
 
 			})
 
