@@ -1734,7 +1734,6 @@ var _ = Describe("HyperconvergedController", func() {
 				os.Setenv(operatorImageEnv, NEW_IMAGE)
 
 				// no image Id in CR
-				//delete(expected.hco.ObjectMeta.Annotations, operatorImageCr)
 				expected.hco.ObjectMeta.Annotations = nil
 				// CDI is not ready
 				expected.cdi.Status.Conditions = getGenericProgressingConditions()
