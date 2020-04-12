@@ -235,7 +235,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 			Message: reconcileInitMessage,
 		})
 
-		err = r.client.Update(context.TODO(), instance)
+		err = r.client.Status().Update(context.TODO(), instance)
 		if err != nil {
 			reqLogger.Error(err, "Failed to add conditions to status")
 			return reconcile.Result{}, err
@@ -418,7 +418,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 			}
 		}
 	}
-	return reconcile.Result{}, r.client.Update(context.TODO(), instance)
+	return reconcile.Result{}, r.client.Status().Update(context.TODO(), instance)
 }
 
 func (r *ReconcileHyperConverged) updateImageId(instance *hcov1alpha1.HyperConverged, ownImage string) {
@@ -426,6 +426,7 @@ func (r *ReconcileHyperConverged) updateImageId(instance *hcov1alpha1.HyperConve
 		instance.ObjectMeta.Annotations = map[string]string{}
 	}
 	instance.ObjectMeta.Annotations[operatorImageCr] = ownImage
+	r.client.Update(context.TODO(), instance)
 }
 
 func (r *ReconcileHyperConverged) emitEvent(instance *hcov1alpha1.HyperConverged, logger logr.Logger, kind string, errT string, errMsg string) error {
