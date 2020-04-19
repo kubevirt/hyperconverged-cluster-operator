@@ -421,7 +421,7 @@ func (r *ReconcileHyperConverged) emitEvent(instance *hcov1alpha1.HyperConverged
 ensureComponents ensures that all the sub-components are up and running. It sets the HCO conditions according to
 the status of the sub-components.
 */
-func (r *ReconcileHyperConverged) ensureComponents(instance *hcov1alpha1.HyperConverged, request reconcile.Request, reqLogger logr.Logger) (error) {
+func (r *ReconcileHyperConverged) ensureComponents(instance *hcov1alpha1.HyperConverged, request reconcile.Request, reqLogger logr.Logger) error {
 	for _, f := range []func(*hcov1alpha1.HyperConverged, logr.Logger, reconcile.Request) error{
 		r.ensureKubeVirtConfig,
 		r.ensureKubeVirtStorageConfig,
@@ -469,33 +469,33 @@ func (r *ReconcileHyperConverged) aggregateCompConditions(instance *hcov1alpha1.
 	if cond, ok := r.conditions[conditionsv1.ConditionDegraded]; ok {
 		if _, ok = r.conditions[conditionsv1.ConditionProgressing]; !ok {
 			r.setStatusCondition(conditionsv1.Condition{
-				Type:               conditionsv1.ConditionProgressing,
-				Status:             corev1.ConditionTrue,
-				Reason:             cond.Reason,
-				Message:            cond.Reason,
+				Type:    conditionsv1.ConditionProgressing,
+				Status:  corev1.ConditionTrue,
+				Reason:  cond.Reason,
+				Message: cond.Reason,
 			})
 
 			r.setStatusCondition(conditionsv1.Condition{
-				Type:               conditionsv1.ConditionUpgradeable,
-				Status:             corev1.ConditionFalse,
-				Reason:             cond.Reason,
-				Message:            cond.Reason,
+				Type:    conditionsv1.ConditionUpgradeable,
+				Status:  corev1.ConditionFalse,
+				Reason:  cond.Reason,
+				Message: cond.Reason,
 			})
 		}
 		if _, ok = r.conditions[conditionsv1.ConditionAvailable]; !ok {
 			r.setStatusCondition(conditionsv1.Condition{
-				Type:               conditionsv1.ConditionAvailable,
-				Status:             corev1.ConditionFalse,
-				Reason:             cond.Reason,
-				Message:            cond.Reason,
+				Type:    conditionsv1.ConditionAvailable,
+				Status:  corev1.ConditionFalse,
+				Reason:  cond.Reason,
+				Message: cond.Reason,
 			})
 		}
 	} else {
 		r.setStatusCondition(conditionsv1.Condition{
-			Type:               conditionsv1.ConditionDegraded,
-			Status:             corev1.ConditionFalse,
-			Reason:             cond.Reason,
-			Message:            cond.Reason,
+			Type:    conditionsv1.ConditionDegraded,
+			Status:  corev1.ConditionFalse,
+			Reason:  cond.Reason,
+			Message: cond.Reason,
 		})
 
 		if _, ok = r.conditions[conditionsv1.ConditionProgressing]; ok {
@@ -503,26 +503,26 @@ func (r *ReconcileHyperConverged) aggregateCompConditions(instance *hcov1alpha1.
 			// Progressing exists, Upgradable exists too
 			if _, ok = r.conditions[conditionsv1.ConditionAvailable]; !ok {
 				r.setStatusCondition(conditionsv1.Condition{
-					Type:               conditionsv1.ConditionAvailable,
-					Status:             corev1.ConditionFalse,
-					Reason:             cond.Reason,
-					Message:            cond.Reason,
+					Type:    conditionsv1.ConditionAvailable,
+					Status:  corev1.ConditionFalse,
+					Reason:  cond.Reason,
+					Message: cond.Reason,
 				})
 			}
 		} else {
-			// if we get there, Available must be exists
+			// if we get there, Available must be exists, and it should be "False".
 			r.setStatusCondition(conditionsv1.Condition{
-				Type:               conditionsv1.ConditionProgressing,
-				Status:             corev1.ConditionTrue,
-				Reason:             cond.Reason,
-				Message:            cond.Reason,
+				Type:    conditionsv1.ConditionProgressing,
+				Status:  corev1.ConditionTrue,
+				Reason:  cond.Reason,
+				Message: cond.Reason,
 			})
 
 			r.setStatusCondition(conditionsv1.Condition{
-				Type:               conditionsv1.ConditionUpgradeable,
-				Status:             corev1.ConditionTrue,
-				Reason:             cond.Reason,
-				Message:            cond.Reason,
+				Type:    conditionsv1.ConditionUpgradeable,
+				Status:  corev1.ConditionTrue,
+				Reason:  cond.Reason,
+				Message: cond.Reason,
 			})
 		}
 	}
