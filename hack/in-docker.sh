@@ -5,12 +5,11 @@ set -e
 source hack/common.sh
 
 HCO_DIR="$(readlink -f $(dirname $0)/../)"
-BUILD_DIR=${HCO_DIR}/tests/build
 WORK_DIR="/go/src/github.com/kubevirt/hyperconverged-cluster-operator"
 BUILD_TAG="hco-test-build"
-
-# Build the encapsulated compile and test container
-(cd ${BUILD_DIR} && docker build --tag ${BUILD_TAG} .)
+REGISTRY="quay.io/kubevirt-hyperconverged"
+TAG=latest
+TEST_BUILD_TAG="${REGISTRY}/${BUILD_TAG}:${TAG}"
 
 # Execute the build
 [ -t 1 ] && USE_TTY="-it"
@@ -21,4 +20,4 @@ docker run ${USE_TTY} \
     -e RUN_GID=$(id -g) \
     -e GOCACHE=/gocache \
     -w ${WORK_DIR} \
-    ${BUILD_TAG} "$1"
+    ${TEST_BUILD_TAG} "$1"
