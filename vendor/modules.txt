@@ -119,7 +119,7 @@ github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1
 # github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515
 github.com/kr/logfmt
-# github.com/kubevirt/cluster-network-addons-operator v0.3.1-0.20200407142152-d77a0c6a95e3
+# github.com/kubevirt/cluster-network-addons-operator v0.3.1-0.20200420182533-2baa2a03b09c
 github.com/kubevirt/cluster-network-addons-operator/pkg/apis
 github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1alpha1
 github.com/kubevirt/cluster-network-addons-operator/pkg/names
@@ -185,7 +185,7 @@ github.com/openshift/custom-resource-status/testlib
 # github.com/operator-framework/operator-lifecycle-manager v0.0.0-20191220211133-23f5c0292434
 github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1
 github.com/operator-framework/operator-lifecycle-manager/pkg/lib/version
-# github.com/operator-framework/operator-sdk v0.10.0 => github.com/operator-framework/operator-sdk v0.15.1
+# github.com/operator-framework/operator-sdk v0.12.0 => github.com/operator-framework/operator-sdk v0.15.1
 github.com/operator-framework/operator-sdk/pkg/k8sutil
 github.com/operator-framework/operator-sdk/pkg/kube-metrics
 github.com/operator-framework/operator-sdk/pkg/leader
