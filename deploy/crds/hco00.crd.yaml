@@ -21,13 +21,12 @@ spec:
     status: {}
   validation:
     openAPIV3Schema:
+      type: object
       properties:
         metadata:
+          type: object
           properties:
             name:
-              pattern: kubevirt-hyperconverged
-              type: string
-            namespace:
               pattern: kubevirt-hyperconverged
               type: string
   version: v1alpha1

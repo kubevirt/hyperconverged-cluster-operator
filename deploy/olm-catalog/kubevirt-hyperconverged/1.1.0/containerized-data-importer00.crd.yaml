@@ -27,6 +27,7 @@ spec:
   scope: Cluster
   validation:
     openAPIV3Schema:
+      type: object
       properties:
         apiVersion:
           type: string
