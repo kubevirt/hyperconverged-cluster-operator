@@ -49,6 +49,8 @@ spec:
               - BlockUninstallIfWorkloadsExist
               type: string
           type: object
+        status:
+          type: object
   version: v1alpha1
   versions:
   - name: v1alpha1
