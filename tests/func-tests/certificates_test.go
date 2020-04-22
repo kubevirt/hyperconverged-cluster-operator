@@ -39,25 +39,6 @@ var _ = Describe("Certificates", func() {
 		close(stopChan)
 	})
 
-	It("should rotate kubemacpool certificates", func() {
-		By("getting the kubemacpool-service certificate")
-		oldCert, err := GetCertForService("kubemacpool-service", testscore.KubeVirtInstallNamespace, "443")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(oldCert).ToNot(BeEmpty())
-
-		By("invoking the rotation script")
-		Expect(RotateCeritifcates(testscore.KubeVirtInstallNamespace)).To(Succeed())
-		By("waiting for all pods to become ready again")
-		WaitForPodsToBecomeReady(testscore.KubeVirtInstallNamespace)
-
-		By("getting the ceritifcate again after doing the rotation")
-		newCert, err := GetCertForService("kubemacpool-service", testscore.KubeVirtInstallNamespace, "443")
-		Expect(newCert).ToNot(BeEmpty())
-
-		By("verifying that the ceritificate indeed changed")
-		Expect(newCert).ToNot(Equal(oldCert))
-	})
-
 	It("should rotate cdi certificates", func() {
 		By("getting the cdi-api certificate")
 		oldCDIAPICert, err := GetCertForService("cdi-api", testscore.KubeVirtInstallNamespace, "443")
