@@ -16,39 +16,6 @@ spec:
     - hpps
     singular: hostpathprovisioner
   scope: Cluster
-  validation:
-    openAPIV3Schema:
-      type: object
-      properties:
-        apiVersion:
-          type: string
-        kind:
-          type: string
-        metadata:
-          type: object
-        spec:
-          properties:
-            imagePullPolicy:
-              enum:
-              - Always
-              - IfNotPresent
-              - Never
-              type: string
-            imageRegistry:
-              type: string
-            imageTag:
-              type: string
-            pathConfig:
-              properties:
-                path:
-                  type: string
-                useNamingPrefix:
-                  enum:
-                  - "true"
-                  - "false"
-                  type: string
-              type: object
-          type: object
   version: v1alpha1
   versions:
   - name: v1alpha1
