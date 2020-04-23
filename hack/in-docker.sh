@@ -7,7 +7,7 @@ source hack/common.sh
 HCO_DIR="$(readlink -f $(dirname $0)/../)"
 WORK_DIR="/go/src/github.com/kubevirt/hyperconverged-cluster-operator"
 BUILD_TAG="hco-test-build"
-REGISTRY="quay.io/kubevirt-hyperconverged"
+REGISTRY="quay.io/kubevirt"
 TAG=latest
 TEST_BUILD_TAG="${REGISTRY}/${BUILD_TAG}:${TAG}"
 

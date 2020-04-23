@@ -6,7 +6,7 @@ source hack/common.sh
 HCO_DIR="$(readlink -f $(dirname $0)/../)"
 BUILD_DIR=${HCO_DIR}/tests/build
 BUILD_TAG="hco-test-build"
-REGISTRY="quay.io/kubevirt-hyperconverged"
+REGISTRY="quay.io/kubevirt"
 TAG=latest
 TEST_BUILD_TAG="${REGISTRY}/${BUILD_TAG}:${TAG}"
 
