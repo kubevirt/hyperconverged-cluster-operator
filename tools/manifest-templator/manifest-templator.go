@@ -52,6 +52,12 @@ var (
 	imsVMWareImage     = flag.String("ims-vmware-image-name", "", "IMS VMWare image")
 	smbios             = flag.String("smbios", "", "Custom SMBIOS string for KubeVirt ConfigMap")
 	machinetype        = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap")
+	kubevirtVersion    = flag.String("kubevirt-version", "", "Kubevirt operator version")
+	cdiVersion         = flag.String("cdi-version", "", "CDI operator version")
+	cnaoVersion        = flag.String("cnao-version", "", "CNA operator version")
+	sspVersion         = flag.String("ssp-version", "", "SSP operator version")
+	nmoVersion         = flag.String("nmo-version", "", "NM operator version")
+	hppoVersion        = flag.String("hppo-version", "", "HPP operator version")
 )
 
 // check handles errors
@@ -116,6 +122,12 @@ func main() {
 			*imsVMWareImage,
 			*smbios,
 			*machinetype,
+			*kubevirtVersion,
+			*cdiVersion,
+			*cnaoVersion,
+			*sspVersion,
+			*nmoVersion,
+			*hppoVersion,
 		),
 	}
 	serviceAccounts := map[string]v1.ServiceAccount{

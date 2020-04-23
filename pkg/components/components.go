@@ -39,9 +39,20 @@ type StrategyDetailsDeployment struct {
 	ClusterPermissions []StrategyDeploymentPermissions `json:"clusterPermissions,omitempty"`
 }
 
-const hcoName = "hyperconverged-cluster-operator"
+const (
+	hcoName             = "hyperconverged-cluster-operator"
+	kubevirtVersionEnvV = "KUBEVIRT_VERSION"
+	cdiVersionEnvV      = "CDI_VERSION"
+	cnaoVersionEnvV     = "NETWORK_ADDONS_VERSION"
+	sspVersionEnvV      = "SSP_VERSION"
+	nmoVersionEnvV      = "NMO_VERSION"
+	hppoVersionEnvV     = "HPPO_VERSION"
+)
 
-func GetDeployment(namespace, image, imagePullPolicy, conversionContainer, vmwareContainerString, smbios, machinetype string) appsv1.Deployment {
+func GetDeployment(
+	namespace, image, imagePullPolicy, conversionContainer, vmwareContainerString, smbios, machinetype string,
+	kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion string,
+) appsv1.Deployment {
 	return appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
@@ -53,11 +64,17 @@ func GetDeployment(namespace, image, imagePullPolicy, conversionContainer, vmwar
 				"name": hcoName,
 			},
 		},
-		Spec: GetDeploymentSpec(namespace, image, imagePullPolicy, conversionContainer, vmwareContainerString, smbios, machinetype),
+		Spec: GetDeploymentSpec(
+			namespace, image, imagePullPolicy, conversionContainer, vmwareContainerString, smbios, machinetype,
+			kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion,
+		),
 	}
 }
 
-func GetDeploymentSpec(namespace, image, imagePullPolicy, conversionContainer, vmwareContainer, smbios, machinetype string) appsv1.DeploymentSpec {
+func GetDeploymentSpec(
+	namespace, image, imagePullPolicy, conversionContainer, vmwareContainer, smbios, machinetype string,
+	kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion string,
+) appsv1.DeploymentSpec {
 	return appsv1.DeploymentSpec{
 		Replicas: int32Ptr(1),
 		Selector: &metav1.LabelSelector{
@@ -137,6 +154,30 @@ func GetDeploymentSpec(namespace, image, imagePullPolicy, conversionContainer, v
 							{
 								Name:  "MACHINETYPE",
 								Value: machinetype,
+							},
+							{
+								Name:  kubevirtVersionEnvV,
+								Value: kubevirtVersion,
+							},
+							{
+								Name:  cdiVersionEnvV,
+								Value: cdiVersion,
+							},
+							{
+								Name:  cnaoVersionEnvV,
+								Value: cnaoVersion,
+							},
+							{
+								Name:  sspVersionEnvV,
+								Value: sspVersion,
+							},
+							{
+								Name:  nmoVersionEnvV,
+								Value: nmoVersion,
+							},
+							{
+								Name:  hppoVersionEnvV,
+								Value: hppoVersion,
 							},
 						},
 					},
@@ -524,12 +565,18 @@ func GetOperatorCR() *hcov1alpha1.HyperConverged {
 }
 
 // GetInstallStrategyBase returns the basics of an HCO InstallStrategy
-func GetInstallStrategyBase(namespace, image, imagePullPolicy, conversionContainer, vmwareContainer, smbios, machinetype string) *StrategyDetailsDeployment {
+func GetInstallStrategyBase(
+	namespace, image, imagePullPolicy, conversionContainer, vmwareContainer, smbios, machinetype string,
+	kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion string,
+) *StrategyDetailsDeployment {
 	return &StrategyDetailsDeployment{
 		DeploymentSpecs: []StrategyDeploymentSpec{
 			StrategyDeploymentSpec{
 				Name: "hco-operator",
-				Spec: GetDeploymentSpec(namespace, image, imagePullPolicy, conversionContainer, vmwareContainer, smbios, machinetype),
+				Spec: GetDeploymentSpec(
+					namespace, image, imagePullPolicy, conversionContainer, vmwareContainer, smbios, machinetype,
+					kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion,
+				),
 			},
 		},
 		Permissions: []StrategyDeploymentPermissions{},
