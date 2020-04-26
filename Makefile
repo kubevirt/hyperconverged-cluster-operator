@@ -7,7 +7,6 @@ IMAGE_REGISTRY     ?= quay.io
 IMAGE_TAG          ?= latest
 OPERATOR_IMAGE     ?= kubevirt/hyperconverged-cluster-operator
 REGISTRY_NAMESPACE ?=
-TEST_BUILD_TAG     ?= quay.io/kubevirt-hyperconverged/hco-test-build:latest
 
 
 # Prow doesn't have docker command
@@ -77,9 +76,6 @@ functest: build-functest test-functional-prow
 build-functest:
 	${DO} ./hack/build-tests.sh
 
-build-functest-image:
-	./hack/build-in-docker.sh
-
 test-functional:
 	JOB_TYPE="stdci" ./hack/run-tests.sh
 
@@ -142,6 +138,5 @@ test: test-unit
 		build-push-all \
 		ci-functest \
 		build-functest \
-		build-functest-image \
 		test-functional \
 		test-functional-prow \
