@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#set -x
+set -x
+
 # Setup Environment Variables
-TARGET_NAMESPACE="${TARGET_NAMESPACE:-kubevirt-hyperconverged}"
 HCO_VERSION="${HCO_VERSION:-1.1.0}"
 HCO_CHANNEL="${HCO_CHANNEL:-1.1.0}"
 MARKETPLACE_MODE="${MARKETPLACE_MODE:-true}"
@@ -10,7 +10,6 @@ HCO_REGISTRY_IMAGE="${HCO_REGISTRY_IMAGE:-quay.io/kubevirt/hco-container-registr
 PRIVATE_REPO="${PRIVATE_REPO:-false}"
 QUAY_USERNAME="${QUAY_USERNAME:-}"
 QUAY_PASSWORD="${QUAY_PASSWORD:-}"
-QUAY_TOKEN=""
 CONTENT_ONLY="${CONTENT_ONLY:-false}"
 KVM_EMULATION="${KVM_EMULATION:-false}"
 OC_TOOL="${OC_TOOL:-oc}"
@@ -19,15 +18,14 @@ OC_TOOL="${OC_TOOL:-oc}"
 
 main() {
   SCRIPT_DIR="$(dirname "$0")"
-  PATCHES_DIR="patches"
+  TARGET_NAMESPACE=$(grep name: $SCRIPT_DIR/namespace.yaml | awk '{print $2}')
 
   TMPDIR=$(mktemp -d)
   cp -r $SCRIPT_DIR/* $TMPDIR
-  echo temp dir is: $TMPDIR
 
   if [ "$PRIVATE_REPO" = 'true' ]; then
     get_quay_token
-    oc create secret generic quay-registry-kubevirt-hyperconverged --from-literal=token="$QUAY_TOKEN" -n ${TARGET_NAMESPACE}
+    oc create secret generic quay-registry-kubevirt-hyperconverged --from-literal=token="$QUAY_TOKEN" -n openshift-marketplace
 
     cat <<EOF >$TMPDIR/kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -65,38 +63,31 @@ EOF
     exit 0
   fi
 
-  # If the user has defined overlay patches - insert them into kustomization.yaml
-  if [ -d $TMPDIR/$PATCHES_DIR ]; then
-    PATCHES="patchesStrategicMerge:"
-    for file in $TMPDIR/$PATCHES_DIR/*
-    do
-      PATCHES+=$'\n  - '$PATCHES_DIR/`basename $file`
-    done
-  fi
   # KVM_EMULATION setting is active only when a deployment is done.
   if [ "$KVM_EMULATION" = 'true' ]; then
     cat <<EOF >$TMPDIR/kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+namespace: ${TARGET_NAMESPACE}
 bases:
   - kvm_emulation
 resources:
   - namespace.yaml
-$PATCHES
 EOF
     exit
     retry_loop $TMPDIR
   else
+    # In case KVM_EMULATION is not set.
     cat <<EOF >$TMPDIR/kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+namespace: ${TARGET_NAMESPACE}
 bases:
   - base
 resources:
   - namespace.yaml
-$PATCHES
 EOF
     retry_loop $TMPDIR
   fi
