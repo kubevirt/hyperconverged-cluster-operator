@@ -2,7 +2,6 @@ apiVersion: operators.coreos.com/v1
 kind: OperatorSource
 metadata:
   name: kubevirt-hyperconverged
-  namespace: openshift-marketplace
 spec:
   authorizationToken:
     secretName: "quay-registry-kubevirt-hyperconverged"
