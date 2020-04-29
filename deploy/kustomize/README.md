@@ -6,32 +6,7 @@ In order to install HCO on your cluster, two necessary steps to be performed:
 1. **Delivery** - Make HCO recognized and available for the operator-lifecycle-manager (OLM).
 2. **Deployment** - Use OLM provided resources and APIs to deploy HCO on the cluster.
 
-## Directory Tree
 The directory tree consists of kustomize-based manifests with default values, supporting various deployment configurations.
-```
-deploy/kustomize/
-├── base
-│   ├── hco_cr.yaml
-│   ├── kustomization.yaml
-│   ├── operator_group.yaml
-│   └── subscription.yaml
-├── deploy_kustomize.sh
-├── image_registry
-│   ├── catalog_source.yaml
-│   └── kustomization.yaml
-├── kvm_emulation
-│   ├── kustomization.yaml
-│   └── subscription.patch.yaml
-├── marketplace
-│   ├── catalog_source_config.yaml
-│   ├── kustomization.yaml
-│   └── operator_source.yaml
-├── namespace.yaml
-├── private_repo
-│   ├── kustomization.yaml
-│   └── operator_source.patch.yaml
-└── README.md
-```
 
 ## Delivery
 There are two distinct options to deliver HCO operator to OLM - Marketplace and Image Registry.
