@@ -434,6 +434,8 @@ func newKubeVirtConfigForCR(cr *hcov1alpha1.HyperConverged, namespace string) *c
 			"feature-gates":       "DataVolumes,SRIOV,LiveMigration,CPUManager,CPUNodeDiscovery,Sidecar",
 			"migrations":          `{"nodeDrainTaintKey" : "node.kubernetes.io/unschedulable"}`,
 			"selinuxLauncherType": "spc_t",
+			"obsolete-cpus":       "486, pentium, pentium2, pentium3, pentiumpro, coreduo, n270, core2duo, Conroe, athlon, phenom",
+			"min-cpu":             "Penryn",
 		},
 	}
 	val, ok := os.LookupEnv("SMBIOS")
