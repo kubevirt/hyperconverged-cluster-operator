@@ -156,7 +156,7 @@ type ReconcileHyperConverged struct {
 	client      client.Client
 	scheme      *runtime.Scheme
 	recorder    record.EventRecorder
-	conditions  []conditionsv1.Condition
+	conditions  hcoConditions
 	upgradeMode bool
 	ownVersion  string
 }
@@ -250,7 +250,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	// in-memory conditions should start off empty. It will only ever hold
 	// negative conditions (!Available, Degraded, Progressing)
-	r.conditions = nil
+	r.conditions = newHcoConditions()
 
 	// Handle finalizers
 	if instance.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -365,7 +365,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		return reconcile.Result{Requeue: true}, nil
 	}
 
-	if r.conditions == nil {
+	if r.conditions == nil || r.conditions.empty() {
 		reqLogger.Info("No component operator reported negatively")
 		conditionsv1.SetStatusCondition(&instance.Status.Conditions, conditionsv1.Condition{
 			Type:    conditionsv1.ConditionAvailable,
@@ -416,6 +416,68 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		// One shortcoming is that only one failure of a particular condition can be
 		// captured at one time (ie. if KubeVirt and CDI are both reporting !Available,
 		// you will only see CDI as it updates last).
+
+		if cond, ok := r.conditions[conditionsv1.ConditionDegraded]; ok {
+			if _, ok = r.conditions[conditionsv1.ConditionProgressing]; !ok {
+				r.setStatusCondition(conditionsv1.Condition{
+					Type:    conditionsv1.ConditionProgressing,
+					Status:  corev1.ConditionTrue,
+					Reason:  cond.Reason,
+					Message: cond.Reason,
+				})
+
+				r.setStatusCondition(conditionsv1.Condition{
+					Type:    conditionsv1.ConditionUpgradeable,
+					Status:  corev1.ConditionFalse,
+					Reason:  cond.Reason,
+					Message: cond.Reason,
+				})
+			}
+			if _, ok = r.conditions[conditionsv1.ConditionAvailable]; !ok {
+				r.setStatusCondition(conditionsv1.Condition{
+					Type:    conditionsv1.ConditionAvailable,
+					Status:  corev1.ConditionFalse,
+					Reason:  cond.Reason,
+					Message: cond.Reason,
+				})
+			}
+		} else {
+			r.setStatusCondition(conditionsv1.Condition{
+				Type:    conditionsv1.ConditionDegraded,
+				Status:  corev1.ConditionFalse,
+				Reason:  cond.Reason,
+				Message: cond.Reason,
+			})
+
+			if _, ok = r.conditions[conditionsv1.ConditionProgressing]; ok {
+				// Since Progressing and Upgradable are set together, assuming that if
+				// Progressing exists, Upgradable exists too
+				if _, ok = r.conditions[conditionsv1.ConditionAvailable]; !ok {
+					r.setStatusCondition(conditionsv1.Condition{
+						Type:    conditionsv1.ConditionAvailable,
+						Status:  corev1.ConditionFalse,
+						Reason:  cond.Reason,
+						Message: cond.Reason,
+					})
+				}
+			} else {
+				// if we get there, Available must be exists, and it should be "False".
+				r.setStatusCondition(conditionsv1.Condition{
+					Type:    conditionsv1.ConditionProgressing,
+					Status:  corev1.ConditionTrue,
+					Reason:  cond.Reason,
+					Message: cond.Reason,
+				})
+
+				r.setStatusCondition(conditionsv1.Condition{
+					Type:    conditionsv1.ConditionUpgradeable,
+					Status:  corev1.ConditionTrue,
+					Reason:  cond.Reason,
+					Message: cond.Reason,
+				})
+			}
+		}
+
 		for _, condition := range r.conditions {
 			conditionsv1.SetStatusCondition(&instance.Status.Conditions, condition)
 		}
@@ -805,19 +867,19 @@ func handleComponentConditions(r *ReconcileHyperConverged, logger logr.Logger, c
 		reason := fmt.Sprintf("%sConditions", component)
 		message := fmt.Sprintf("%s resource has no conditions", component)
 		logger.Info(fmt.Sprintf("%s's resource is not reporting Conditions on it's Status", component))
-		conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+		r.setStatusCondition(conditionsv1.Condition{
 			Type:    conditionsv1.ConditionAvailable,
 			Status:  corev1.ConditionFalse,
 			Reason:  reason,
 			Message: message,
 		})
-		conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+		r.setStatusCondition(conditionsv1.Condition{
 			Type:    conditionsv1.ConditionProgressing,
 			Status:  corev1.ConditionTrue,
 			Reason:  reason,
 			Message: message,
 		})
-		conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+		r.setStatusCondition(conditionsv1.Condition{
 			Type:    conditionsv1.ConditionUpgradeable,
 			Status:  corev1.ConditionFalse,
 			Reason:  reason,
@@ -826,24 +888,23 @@ func handleComponentConditions(r *ReconcileHyperConverged, logger logr.Logger, c
 	} else {
 		foundAvailableCond := false
 		for _, condition := range conditions {
-
-			switch conditionsv1.ConditionType(condition.Type) {
+			switch condition.Type {
 			case conditionsv1.ConditionAvailable:
 				foundAvailableCond = true
 				if condition.Status == corev1.ConditionFalse {
 					msg := fmt.Sprintf("%s is not available: %v", component, string(condition.Message))
-					componentNotAvailable(logger, component, msg, r)
+					r.componentNotAvailable(logger, component, msg)
 				}
 			case conditionsv1.ConditionProgressing:
 				if condition.Status == corev1.ConditionTrue {
 					logger.Info(fmt.Sprintf("%s is 'Progressing'", component))
-					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+					r.setStatusCondition(conditionsv1.Condition{
 						Type:    conditionsv1.ConditionProgressing,
 						Status:  corev1.ConditionTrue,
 						Reason:  fmt.Sprintf("%sProgressing", component),
 						Message: fmt.Sprintf("%s is progressing: %v", component, string(condition.Message)),
 					})
-					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+					r.setStatusCondition(conditionsv1.Condition{
 						Type:    conditionsv1.ConditionUpgradeable,
 						Status:  corev1.ConditionFalse,
 						Reason:  fmt.Sprintf("%sProgressing", component),
@@ -853,7 +914,7 @@ func handleComponentConditions(r *ReconcileHyperConverged, logger logr.Logger, c
 			case conditionsv1.ConditionDegraded:
 				if condition.Status == corev1.ConditionTrue {
 					logger.Info(fmt.Sprintf("%s is 'Degraded'", component))
-					conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+					r.setStatusCondition(conditionsv1.Condition{
 						Type:    conditionsv1.ConditionDegraded,
 						Status:  corev1.ConditionTrue,
 						Reason:  fmt.Sprintf("%sDegraded", component),
@@ -864,19 +925,31 @@ func handleComponentConditions(r *ReconcileHyperConverged, logger logr.Logger, c
 		}
 
 		if !foundAvailableCond {
-			componentNotAvailable(logger, component, `missing "Available" condition`, r)
+			r.componentNotAvailable(logger, component, `missing "Available" condition`)
 		}
 	}
 }
 
-func componentNotAvailable(logger logr.Logger, component string, msg string, r *ReconcileHyperConverged) {
+func (r *ReconcileHyperConverged) componentNotAvailable(logger logr.Logger, component string, msg string) {
 	logger.Info(fmt.Sprintf("%s is not 'Available'", component))
-	conditionsv1.SetStatusCondition(&r.conditions, conditionsv1.Condition{
+	r.setStatusCondition(conditionsv1.Condition{
 		Type:    conditionsv1.ConditionAvailable,
 		Status:  corev1.ConditionFalse,
 		Reason:  fmt.Sprintf("%sNotAvailable", component),
 		Message: msg,
 	})
+}
+
+func (r *ReconcileHyperConverged) setStatusCondition(newCondition conditionsv1.Condition) {
+	if r.conditions == nil {
+		r.conditions = newHcoConditions()
+	}
+
+	r.conditions.setStatusCondition(newCondition)
+}
+
+func (r *ReconcileHyperConverged) conditionsEmpty() bool {
+	return r.conditions == nil || r.conditions.empty()
 }
 
 func newKubeVirtCommonTemplateBundleForCR(cr *hcov1alpha1.HyperConverged, namespace string) *sspv1.KubevirtCommonTemplatesBundle {
