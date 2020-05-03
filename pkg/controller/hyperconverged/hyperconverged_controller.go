@@ -377,6 +377,68 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		// One shortcoming is that only one failure of a particular condition can be
 		// captured at one time (ie. if KubeVirt and CDI are both reporting !Available,
 		// you will only see CDI as it updates last).
+
+		if cond, ok := r.conditions[conditionsv1.ConditionDegraded]; ok {
+			if _, ok = r.conditions[conditionsv1.ConditionProgressing]; !ok {
+				r.setStatusCondition(conditionsv1.Condition{
+					Type:    conditionsv1.ConditionProgressing,
+					Status:  corev1.ConditionTrue,
+					Reason:  cond.Reason,
+					Message: cond.Reason,
+				})
+
+				r.setStatusCondition(conditionsv1.Condition{
+					Type:    conditionsv1.ConditionUpgradeable,
+					Status:  corev1.ConditionFalse,
+					Reason:  cond.Reason,
+					Message: cond.Reason,
+				})
+			}
+			if _, ok = r.conditions[conditionsv1.ConditionAvailable]; !ok {
+				r.setStatusCondition(conditionsv1.Condition{
+					Type:    conditionsv1.ConditionAvailable,
+					Status:  corev1.ConditionFalse,
+					Reason:  cond.Reason,
+					Message: cond.Reason,
+				})
+			}
+		} else {
+			r.setStatusCondition(conditionsv1.Condition{
+				Type:    conditionsv1.ConditionDegraded,
+				Status:  corev1.ConditionFalse,
+				Reason:  cond.Reason,
+				Message: cond.Reason,
+			})
+
+			if _, ok = r.conditions[conditionsv1.ConditionProgressing]; ok {
+				// Since Progressing and Upgradable are set together, assuming that if
+				// Progressing exists, Upgradable exists too
+				if _, ok = r.conditions[conditionsv1.ConditionAvailable]; !ok {
+					r.setStatusCondition(conditionsv1.Condition{
+						Type:    conditionsv1.ConditionAvailable,
+						Status:  corev1.ConditionFalse,
+						Reason:  cond.Reason,
+						Message: cond.Reason,
+					})
+				}
+			} else {
+				// if we get there, Available must be exists, and it should be "False".
+				r.setStatusCondition(conditionsv1.Condition{
+					Type:    conditionsv1.ConditionProgressing,
+					Status:  corev1.ConditionTrue,
+					Reason:  cond.Reason,
+					Message: cond.Reason,
+				})
+
+				r.setStatusCondition(conditionsv1.Condition{
+					Type:    conditionsv1.ConditionUpgradeable,
+					Status:  corev1.ConditionTrue,
+					Reason:  cond.Reason,
+					Message: cond.Reason,
+				})
+			}
+		}
+
 		for _, condition := range r.conditions {
 			conditionsv1.SetStatusCondition(&instance.Status.Conditions, condition)
 		}
