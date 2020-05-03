@@ -1,0 +1,42 @@
+@startuml
+start
+
+if ([Degraded = False] Exists) then
+  -[#red]-> yes;
+  if ([Progressing = True] Exists) then
+    -[#green]-> no;
+    :Set **Progressing = True**
+    Set **Upgradable = False**]
+  else
+    -[#red]-> yes;
+  endif
+  if ([Available = False] Exists) then
+    -[#green]-> no;
+    :Set **Available = False**]
+  else
+    -[#red]-> yes;
+  endif
+else
+  -[#green]-> no;
+  :Set **Degraded = False**]
+  if ([Progressing = True] Exists) then
+    -[#red]-> yes;
+    if ([Available = False] Exists) then
+      -[#green]-> no;
+      :Set **Available = False**]
+    else
+      -[#red]-> yes;
+    endif
+  else
+    -[#green]-> no;
+    if ([Available = False] Exists) then
+      -[#green]-> no;
+      :Set **Progressing = True**
+      Set **Upgradable = True**]
+    else
+      -[#red]-> yes;
+    endif
+  endif
+endif
+end
+@enduml
