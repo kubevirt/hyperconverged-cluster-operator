@@ -42,10 +42,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const operatorName = "kubevirt-hyperconverged-operator"
+const (
+	operatorName = "kubevirt-hyperconverged-operator"
+	CSVMode = "CSV"
+	CRDMode = "CRDs"
+)
 
-const CSVMode = "CSV"
-const CRDMode = "CRDs"
 
 var validOutputModes = []string{CSVMode, CRDMode}
 
@@ -296,6 +298,8 @@ func main() {
 				}
 
 				strategySpec := csvStruct.Spec.InstallStrategy.StrategySpec
+
+				util.AddEnvAcrossContainers(strategySpec, hcoKvIoVersionName, *hcoKvIoVersion)
 
 				installStrategyBase.DeploymentSpecs = append(installStrategyBase.DeploymentSpecs, strategySpec.DeploymentSpecs...)
 				installStrategyBase.ClusterPermissions = append(installStrategyBase.ClusterPermissions, strategySpec.ClusterPermissions...)

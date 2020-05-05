@@ -279,6 +279,8 @@ func main() {
 					},
 				})
 			}
+
+			util.AddEnvAcrossContainers(strategySpec, hcoKvIoVersionName, *hcoKvIoVersion)
 		}
 	}
 

@@ -264,7 +264,8 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --spec-description="$(<${PROJECT_ROOT}/docs/operator_description.md)" \
   --crd-display="HyperConverged Cluster Operator" \
   --smbios="${SMBIOS}" \
-  --csv-overrides="$(<${csvOverrides})" \
+  --hco-kv-io-version="${CSV_VERSION}" \
+  --csv-overrides=$(<${csvOverrides}) \
   --operator-image-name="${OPERATOR_IMAGE}" > "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}"
 
 # Copy all CRDs into the CRD and CSV directories
