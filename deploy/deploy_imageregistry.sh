@@ -147,6 +147,9 @@ spec:
   BareMetalPlatform: true
 EOF
 
+    echo "Give the cluster 30 seconds to process the CR..."
+    sleep 30
+
     echo "Waiting for HCO to get fully deployed"
     oc wait -n ${TARGET_NAMESPACE} hyperconverged kubevirt-hyperconverged --for condition=Available --timeout=15m
     oc wait "$(oc get pods -n ${TARGET_NAMESPACE} -l name=hyperconverged-cluster-operator -o name)" -n "${TARGET_NAMESPACE}" --for condition=Ready --timeout=15m
