@@ -68,7 +68,7 @@ var _ = Describe("HyperconvergedTypes", func() {
 			hcs := &HyperConvergedStatus{
 				Conditions:     []conditionsv1.Condition{},
 				RelatedObjects: []corev1.ObjectReference{},
-				Versions:       Versions{
+				Versions: Versions{
 					{Name: "aaa", Version: "1.2.3"},
 					{Name: "bbb", Version: "4.5.6"},
 					{Name: "ccc", Version: "7.8.9"},
@@ -94,7 +94,7 @@ var _ = Describe("HyperconvergedTypes", func() {
 			hcs := &HyperConvergedStatus{
 				Conditions:     []conditionsv1.Condition{},
 				RelatedObjects: []corev1.ObjectReference{},
-				Versions:       Versions{
+				Versions: Versions{
 					{Name: testName, Version: testOldVersion},
 					{Name: "bbb", Version: "4.5.6"},
 					{Name: "ccc", Version: "7.8.9"},
@@ -120,7 +120,7 @@ var _ = Describe("HyperconvergedTypes", func() {
 			hcs := &HyperConvergedStatus{
 				Conditions:     []conditionsv1.Condition{},
 				RelatedObjects: []corev1.ObjectReference{},
-				Versions:       Versions{
+				Versions: Versions{
 					{Name: "aaa", Version: "1.2.3"},
 					{Name: testName, Version: testOldVersion},
 					{Name: "ccc", Version: "7.8.9"},
@@ -146,7 +146,7 @@ var _ = Describe("HyperconvergedTypes", func() {
 			hcs := &HyperConvergedStatus{
 				Conditions:     []conditionsv1.Condition{},
 				RelatedObjects: []corev1.ObjectReference{},
-				Versions:       Versions{
+				Versions: Versions{
 					{Name: "aaa", Version: "1.2.3"},
 					{Name: "bbb", Version: "4.5.6"},
 					{Name: testName, Version: testOldVersion},
@@ -209,7 +209,7 @@ var _ = Describe("HyperconvergedTypes", func() {
 			hcs := &HyperConvergedStatus{
 				Conditions:     []conditionsv1.Condition{},
 				RelatedObjects: []corev1.ObjectReference{},
-				Versions:       Versions{
+				Versions: Versions{
 					{Name: "aaa", Version: "1.2.3"},
 					{Name: "bbb", Version: "4.5.6"},
 					{Name: "ccc", Version: "7.8.9"},
@@ -231,7 +231,7 @@ var _ = Describe("HyperconvergedTypes", func() {
 			hcs := &HyperConvergedStatus{
 				Conditions:     []conditionsv1.Condition{},
 				RelatedObjects: []corev1.ObjectReference{},
-				Versions:       Versions{
+				Versions: Versions{
 					{Name: testName, Version: testVersion},
 					{Name: "bbb", Version: "4.5.6"},
 					{Name: "ccc", Version: "7.8.9"},
@@ -253,7 +253,7 @@ var _ = Describe("HyperconvergedTypes", func() {
 			hcs := &HyperConvergedStatus{
 				Conditions:     []conditionsv1.Condition{},
 				RelatedObjects: []corev1.ObjectReference{},
-				Versions:       Versions{
+				Versions: Versions{
 					{Name: "aaa", Version: "1.2.3"},
 					{Name: testName, Version: testVersion},
 					{Name: "ccc", Version: "7.8.9"},
@@ -275,7 +275,7 @@ var _ = Describe("HyperconvergedTypes", func() {
 			hcs := &HyperConvergedStatus{
 				Conditions:     []conditionsv1.Condition{},
 				RelatedObjects: []corev1.ObjectReference{},
-				Versions:       Versions{
+				Versions: Versions{
 					{Name: "aaa", Version: "1.2.3"},
 					{Name: "bbb", Version: "4.5.6"},
 					{Name: testName, Version: testVersion},
