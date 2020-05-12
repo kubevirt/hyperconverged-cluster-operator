@@ -316,7 +316,11 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 	// If the current image is not updated in CR ,then we're updating. This is also works when updating from
 	// an old version, since instance.ObjectMeta.Annotations[operatorImageCr] will be empty.
 	knownHcoVersion, _ := instance.Status.GetVersion(hcoVersionName)
-	r.upgradeMode = !init && knownHcoVersion != r.ownVersion
+
+	if !r.upgradeMode && !init && knownHcoVersion != r.ownVersion {
+		r.upgradeMode = true
+		reqLogger.Info(fmt.Sprintf("Upgating from version %s to version %s", knownHcoVersion, r.ownVersion))
+	}
 
 	for _, f := range []func(*hcov1alpha1.HyperConverged, logr.Logger, reconcile.Request) error{
 		r.ensureKubeVirtPriorityClass,
@@ -391,6 +395,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		if r.upgradeMode { // update the new image only when upgrade is completed
 			instance.Status.UpdateVersion(hcoVersionName, r.ownVersion)
 			r.upgradeMode = false
+			reqLogger.Info(fmt.Sprintf("Successfuly upgraded to version %s"), r.ownVersion)
 		}
 
 		// If no operator whose conditions we are watching reports an error, then it is safe
