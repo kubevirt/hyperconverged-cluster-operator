@@ -319,7 +319,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	if !r.upgradeMode && !init && knownHcoVersion != r.ownVersion {
 		r.upgradeMode = true
-		reqLogger.Info(fmt.Sprintf("Upgating from version %s to version %s", knownHcoVersion, r.ownVersion))
+		reqLogger.Info(fmt.Sprintf("Start upgrating from version %s to version %s", knownHcoVersion, r.ownVersion))
 	}
 
 	for _, f := range []func(*hcov1alpha1.HyperConverged, logr.Logger, reconcile.Request) error{
