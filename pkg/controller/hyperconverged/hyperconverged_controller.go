@@ -395,7 +395,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		if r.upgradeMode { // update the new image only when upgrade is completed
 			instance.Status.UpdateVersion(hcoVersionName, r.ownVersion)
 			r.upgradeMode = false
-			reqLogger.Info(fmt.Sprintf("Successfuly upgraded to version %s"), r.ownVersion)
+			reqLogger.Info(fmt.Sprintf("Successfuly upgraded to version %s", r.ownVersion))
 		}
 
 		// If no operator whose conditions we are watching reports an error, then it is safe
