@@ -1604,11 +1604,15 @@ var _ = Describe("HyperconvergedController", func() {
 					origConds = expected.kvCtb.Status.Conditions
 					expected.kvCtb.Status.Conditions = expected.cdi.Status.Conditions[1:]
 					cl = expected.initClient()
-					checkAvailability(expected.hco, cl, false, corev1.ConditionFalse)
+					foundResource, requeue = doReconcile(cl, expected.hco)
+					Expect(requeue).To(BeFalse())
+					checkAvailability(foundResource, corev1.ConditionFalse)
 
 					expected.kvCtb.Status.Conditions = origConds
 					cl = expected.initClient()
-					checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
+					foundResource, requeue = doReconcile(cl, expected.hco)
+					Expect(requeue).To(BeFalse())
+					checkAvailability(foundResource, corev1.ConditionTrue)
 				*/
 
 				// TODO: temporary avoid checking conditions on KubevirtNodeLabellerBundle because it's currently
@@ -1617,11 +1621,15 @@ var _ = Describe("HyperconvergedController", func() {
 					origConds = expected.kvNlb.Status.Conditions
 					expected.kvNlb.Status.Conditions = expected.cdi.Status.Conditions[1:]
 					cl = expected.initClient()
-					checkAvailability(expected.hco, cl, false, corev1.ConditionFalse)
+					foundResource, requeue = doReconcile(cl, expected.hco)
+					Expect(requeue).To(BeFalse())
+					checkAvailability(foundResource, corev1.ConditionFalse)
 
 					expected.kvNlb.Status.Conditions = origConds
 					cl = expected.initClient()
-					checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
+					foundResource, requeue = doReconcile(cl, expected.hco)
+					Expect(requeue).To(BeFalse())
+					checkAvailability(foundResource, corev1.ConditionTrue)
 				*/
 
 				// TODO: temporary avoid checking conditions on KubevirtTemplateValidator because it's currently
@@ -1630,11 +1638,15 @@ var _ = Describe("HyperconvergedController", func() {
 					origConds = expected.kvTv.Status.Conditions
 					expected.kvTv.Status.Conditions = expected.cdi.Status.Conditions[1:]
 					cl = expected.initClient()
-					checkAvailability(expected.hco, cl, false, corev1.ConditionFalse)
+					foundResource, requeue = doReconcile(cl, expected.hco)
+					Expect(requeue).To(BeFalse())
+					checkAvailability(foundResource, corev1.ConditionFalse)
 
 					expected.kvTv.Status.Conditions = origConds
 					cl = expected.initClient()
-					checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
+					foundResource, requeue = doReconcile(cl, expected.hco)
+					Expect(requeue).To(BeFalse())
+					checkAvailability(foundResource, corev1.ConditionTrue)
 				*/
 			})
 
