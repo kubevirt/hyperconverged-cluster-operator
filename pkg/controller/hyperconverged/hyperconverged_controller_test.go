@@ -1562,29 +1562,41 @@ var _ = Describe("HyperconvergedController", func() {
 				expected.kv.Status.Conditions = expected.kv.Status.Conditions[1:]
 
 				cl := expected.initClient()
-				checkAvailability(expected.hco, cl, false, corev1.ConditionFalse)
+				foundResource, requeue := doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionFalse)
 
 				expected.kv.Status.Conditions = origKvConds
 				cl = expected.initClient()
-				checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
+				foundResource, requeue = doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionTrue)
 
 				origConds := expected.cdi.Status.Conditions
 				expected.cdi.Status.Conditions = expected.cdi.Status.Conditions[1:]
 				cl = expected.initClient()
-				checkAvailability(expected.hco, cl, false, corev1.ConditionFalse)
+				foundResource, requeue = doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionFalse)
 
 				expected.cdi.Status.Conditions = origConds
 				cl = expected.initClient()
-				checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
+				foundResource, requeue = doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionTrue)
 
 				origConds = expected.cna.Status.Conditions
 				expected.cna.Status.Conditions = expected.cdi.Status.Conditions[1:]
 				cl = expected.initClient()
-				checkAvailability(expected.hco, cl, false, corev1.ConditionFalse)
+				foundResource, requeue = doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionFalse)
 
 				expected.cna.Status.Conditions = origConds
 				cl = expected.initClient()
-				checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
+				foundResource, requeue = doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionTrue)
 
 				// TODO: temporary avoid checking conditions on KubevirtCommonTemplatesBundle because it's currently
 				// broken on k8s. Revert this when we will be able to fix it
@@ -1692,7 +1704,10 @@ var _ = Describe("HyperconvergedController", func() {
 				expected.hco.Status.Conditions = nil
 
 				cl := expected.initClient()
-				foundResource := checkAvailability(expected.hco, cl, true, corev1.ConditionFalse)
+				foundResource, requeue := doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeTrue())
+				checkAvailability(foundResource, corev1.ConditionFalse)
+
 				for _, cond := range foundResource.Status.Conditions {
 					if cond.Type == conditionsv1.ConditionAvailable {
 						Expect(cond.Reason).Should(Equal("Init"))
@@ -1716,7 +1731,9 @@ var _ = Describe("HyperconvergedController", func() {
 				expected.cdi.Status.Conditions = getGenericProgressingConditions()
 
 				cl := expected.initClient()
-				foundResource := checkAvailability(expected.hco, cl, false, corev1.ConditionFalse)
+				foundResource, requeue := doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionFalse)
 
 				// check that the image Id is not set, because upgrade is not completed
 				ver, ok := foundResource.Status.GetVersion(hcoVersionName)
@@ -1726,7 +1743,9 @@ var _ = Describe("HyperconvergedController", func() {
 				// now, complete the upgrade
 				expected.cdi.Status.Conditions = getGenericCompletedConditions()
 				cl = expected.initClient()
-				foundResource = checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
+				foundResource, requeue = doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionTrue)
 
 				// check that the image Id is set, now, when upgrade is completed
 				ver, ok = foundResource.Status.GetVersion(hcoVersionName)
@@ -1742,7 +1761,9 @@ var _ = Describe("HyperconvergedController", func() {
 				expected.hco.Status.Versions = nil
 
 				cl := expected.initClient()
-				foundResource := checkAvailability(expected.hco, cl, false, corev1.ConditionFalse)
+				foundResource, requeue := doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionFalse)
 
 				// check that the image Id is not set, because upgrade is not completed
 				ver, ok := foundResource.Status.GetVersion(hcoVersionName)
@@ -1753,7 +1774,9 @@ var _ = Describe("HyperconvergedController", func() {
 				// now, complete the upgrade
 				expected.cdi.Status.Conditions = getGenericCompletedConditions()
 				cl = expected.initClient()
-				foundResource = checkAvailability(expected.hco, cl, false, corev1.ConditionTrue)
+				foundResource, requeue = doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionTrue)
 
 				// check that the image Id is set, now, when upgrade is completed
 				ver, ok = foundResource.Status.GetVersion(hcoVersionName)
@@ -1873,12 +1896,9 @@ func getBasicDeployment() *basicExpected {
 	return res
 }
 
-func checkAvailability(hco *hcov1alpha1.HyperConverged, cl client.Client, requeue bool, expected corev1.ConditionStatus) *hcov1alpha1.HyperConverged {
-	foundResource := doReconcile(cl, hco, requeue)
-	// Check conditions
-
+func checkAvailability(hco *hcov1alpha1.HyperConverged, expected corev1.ConditionStatus) {
 	found := false
-	for _, cond := range foundResource.Status.Conditions {
+	for _, cond := range hco.Status.Conditions {
 		if cond.Type == conditionsv1.ConditionType(kubevirtv1.KubeVirtConditionAvailable) {
 			found = true
 			Expect(cond.Status).To(Equal(expected))
@@ -1887,13 +1907,12 @@ func checkAvailability(hco *hcov1alpha1.HyperConverged, cl client.Client, requeu
 	}
 
 	if !found {
-		Fail(fmt.Sprintf(`Can't find 'Available' condition; %v`, foundResource.Status.Conditions))
+		Fail(fmt.Sprintf(`Can't find 'Available' condition; %v`, hco.Status.Conditions))
 	}
-
-	return foundResource
 }
 
-func doReconcile(cl client.Client, hco *hcov1alpha1.HyperConverged, requeue bool) *hcov1alpha1.HyperConverged {
+// returns the HCO after reconcile, and the returned requeue
+func doReconcile(cl client.Client, hco *hcov1alpha1.HyperConverged) (*hcov1alpha1.HyperConverged, bool) {
 	r := initReconciler(cl)
 
 	r.ownVersion = os.Getenv(util.HcoKvIoVersionName)
@@ -1903,7 +1922,6 @@ func doReconcile(cl client.Client, hco *hcov1alpha1.HyperConverged, requeue bool
 
 	res, err := r.Reconcile(request)
 	Expect(err).To(BeNil())
-	Expect(res).Should(Equal(reconcile.Result{Requeue: requeue}))
 
 	foundResource := &hcov1alpha1.HyperConverged{}
 	Expect(
@@ -1911,7 +1929,8 @@ func doReconcile(cl client.Client, hco *hcov1alpha1.HyperConverged, requeue bool
 			types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
 			foundResource),
 	).To(BeNil())
-	return foundResource
+
+	return foundResource, res.Requeue
 }
 
 func getGenericCompletedConditions() []conditionsv1.Condition {
