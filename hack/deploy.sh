@@ -72,8 +72,13 @@ function status(){
     "${CMD}" get hco -n "${HCO_NAMESPACE}" -o yaml || true
     "${CMD}" get pods -n "${HCO_NAMESPACE}" || true
     "${CMD}" get hco "${HCO_RESOURCE_NAME}" -n "${HCO_NAMESPACE}" -o=jsonpath='{range .status.conditions[*]}{.type}{"\t"}{.status}{"\t"}{.message}{"\n"}{end}' || true
+    "${CMD}" get $("${CMD}" get kubevirts -n "${HCO_NAMESPACE}" -o name) -n "${HCO_NAMESPACE}" -o yaml || true
+    "${CMD}" get deployments -n "${HCO_NAMESPACE}" virt-operator -o yaml || true
+    "${CMD}" get replicaset -n "${HCO_NAMESPACE}" -lkubevirt.io=virt-operator -o yaml || true
+    "${CMD}" get priorityclasses || true
+    "${CMD}" get priorityclasses kubevirt-cluster-critical -o yaml || true
     # Get logs of all the pods
-    for PNAME in $( ${CMD} get pods -n ${HCO_NAMESPACE} --field-selector=status.phase!=Running -o custom-columns=:metadata.name )
+    for PNAME in $( ${CMD} get pods -n ${HCO_NAMESPACE} -o custom-columns=:metadata.name )
     do
       echo -e "\n--- ${PNAME} ---"
       ${CMD} describe pod -n ${HCO_NAMESPACE} ${PNAME} || true
