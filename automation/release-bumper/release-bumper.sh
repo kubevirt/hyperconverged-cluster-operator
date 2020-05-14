@@ -5,6 +5,7 @@ CONFIG_FILE="hack/config"
 function main {
   declare -A CURRENT_VERSIONS
   declare -A UPDATED_VERSIONS
+  declare -A COMPONENTS_REPOS
   declare SHOULD_UPDATED
 
   echo "Getting Components current versions..."
@@ -25,6 +26,9 @@ function main {
 
   echo Executing "build-manifests.sh"...
   ./hack/build-manifests.sh
+
+  echo Updating go.mod...
+  update_go_mod
 
   echo Executing "go mod vendor"
   go mod vendor
@@ -52,7 +56,7 @@ function get_current_versions {
 }
 
 function get_updated_versions {
-  declare -A COMPONENTS_REPOS=(
+  COMPONENTS_REPOS=(
     ["KUBEVIRT"]="kubevirt/kubevirt"
     ["CDI"]="kubevirt/containerized-data-importer"
     ["NETWORK_ADDONS"]="kubevirt/cluster-network-addons-operator"
@@ -95,7 +99,7 @@ function update_versions() {
     search_pattern=$(echo "$component.*${UPDATED_VERSIONS[$component]}" | tr -d '"')
     if curl -s -L  https://api.github.com/repos/kubevirt/hyperconverged-cluster-operator/pulls | jq .[].title | \
     grep -q "$search_pattern"; then
-      echo "An existing pull request of bumping $component to version ${UPDATED_VERSIONS[$component]} has been found.\
+      echo "An existing pull request of bumping $component to version ${UPDATED_VERSIONS[$component]} has been found. \
 Continuing to next component."
       continue
     else
@@ -107,6 +111,21 @@ Continuing to next component."
       break
     fi
   done;
+}
+
+function update_go_mod() {
+  UPDATED_COMPONENT=$(cat updated_component.txt)
+  UPDATED_VERSION=$(cat updated_version.txt)
+
+  if [ $UPDATED_COMPONENT == "KUBEVIRT" ]; then
+    MODULE_PATH="kubevirt.io"
+    EXCLUSION="/containerized-data-importer/!"
+  else
+    MODULE_PATH=$(echo ${COMPONENTS_REPOS[$UPDATED_COMPONENT]} | cut -d "/" -f 2)
+  fi
+
+  sed -E -i "$EXCLUSION s/($MODULE_PATH.*)v[0-9\.]+/\1${UPDATED_VERSION}/" go.mod
+
 }
 
 main

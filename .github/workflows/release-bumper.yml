@@ -1,7 +1,7 @@
 name: Auto-Bump Component's Versions
 on:
   schedule:
-    - cron:  '0 16 * * *'
+    - cron:  '0 11 * * *'
 jobs:
   build:
     name: HCO Release Bump Job
@@ -25,7 +25,7 @@ jobs:
           commit-message: |
             Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }}
 
-            Signed-off-by: hco_release_bot <hco_release_bot@redhat.com>
+            Signed-off-by: hco_bump_bot <hco_bump_bot@redhat.com>
           committer: GitHub <noreply@github.com>
           title: "Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }}"
           body: |
