@@ -46,11 +46,22 @@ var name = "kubevirt-hyperconverged"
 var namespace = "kubevirt-hyperconverged"
 
 // Mock request to simulate Reconcile() being called on an event for a watched resource
-var request = reconcile.Request{
-	NamespacedName: types.NamespacedName{
-		Name:      name,
-		Namespace: namespace,
-	},
+var (
+	request = reconcile.Request{
+		NamespacedName: types.NamespacedName{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+)
+
+func newReq() *hcoRequest {
+	return &hcoRequest{
+		Request:    request,
+		logger:     log,
+		conditions: newHcoConditions(),
+		ctx:        context.TODO(),
+	}
 }
 
 var _ = Describe("HyperconvergedController", func() {
@@ -75,7 +86,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource := newKubeVirtPriorityClass()
 				cl := initClient([]runtime.Object{})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirtPriorityClass(hco, log, request)).To(BeNil())
+				Expect(r.ensureKubeVirtPriorityClass(hco, newReq())).To(BeNil())
 
 				key, err := client.ObjectKeyFromObject(expectedResource)
 				Expect(err).ToNot(HaveOccurred())
@@ -90,7 +101,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource := newKubeVirtPriorityClass()
 				cl := initClient([]runtime.Object{expectedResource})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirtPriorityClass(hco, log, request)).To(BeNil())
+				Expect(r.ensureKubeVirtPriorityClass(hco, newReq())).To(BeNil())
 
 				objectRef, err := reference.GetReference(r.scheme, expectedResource)
 				Expect(err).To(BeNil())
@@ -100,7 +111,7 @@ var _ = Describe("HyperconvergedController", func() {
 			DescribeTable("should update if something changed", func(modifiedResource *schedulingv1.PriorityClass) {
 				cl := initClient([]runtime.Object{modifiedResource})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirtPriorityClass(hco, log, request)).To(BeNil())
+				Expect(r.ensureKubeVirtPriorityClass(hco, newReq())).To(BeNil())
 
 				expectedResource := newKubeVirtPriorityClass()
 				key, err := client.ObjectKeyFromObject(expectedResource)
@@ -160,7 +171,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource := newKubeVirtConfigForCR(hco, namespace)
 				cl := initClient([]runtime.Object{})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirtConfig(hco, log, request)).To(BeNil())
+				Expect(r.ensureKubeVirtConfig(hco, newReq())).To(BeNil())
 
 				foundResource := &corev1.ConfigMap{}
 				Expect(
@@ -186,7 +197,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
 				cl := initClient([]runtime.Object{hco, expectedResource})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirtConfig(hco, log, request)).To(BeNil())
+				Expect(r.ensureKubeVirtConfig(hco, newReq())).To(BeNil())
 
 				// Check HCO's status
 				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
@@ -214,7 +225,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				cl := initClient([]runtime.Object{hco, outdatedResource})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirtConfig(hco, log, request)).To(BeNil())
+				Expect(r.ensureKubeVirtConfig(hco, newReq())).To(BeNil())
 
 				foundResource := &corev1.ConfigMap{}
 				Expect(
@@ -241,7 +252,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource := newKubeVirtStorageConfigForCR(hco, namespace)
 				cl := initClient([]runtime.Object{})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirtStorageConfig(hco, log, request)).To(BeNil())
+				Expect(r.ensureKubeVirtStorageConfig(hco, newReq())).To(BeNil())
 
 				foundResource := &corev1.ConfigMap{}
 				Expect(
@@ -267,7 +278,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
 				cl := initClient([]runtime.Object{hco, expectedResource})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirtStorageConfig(hco, log, request)).To(BeNil())
+				Expect(r.ensureKubeVirtStorageConfig(hco, newReq())).To(BeNil())
 
 				// Check HCO's status
 				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
@@ -337,7 +348,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource := newKubeVirtForCR(hco, namespace)
 				cl := initClient([]runtime.Object{})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirt(hco, log, request)).To(BeNil())
+				Expect(r.ensureKubeVirt(hco, newReq())).To(BeNil())
 
 				foundResource := &kubevirtv1.KubeVirt{}
 				Expect(
@@ -363,7 +374,8 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
 				cl := initClient([]runtime.Object{hco, expectedResource})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirt(hco, log, request)).To(BeNil())
+				req := newReq()
+				Expect(r.ensureKubeVirt(hco, req)).To(BeNil())
 
 				// Check HCO's status
 				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
@@ -372,24 +384,24 @@ var _ = Describe("HyperconvergedController", func() {
 				// ObjectReference should have been added
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 				// Check conditions
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				Expect(req.conditions[conditionsv1.ConditionAvailable]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "KubeVirtConditions",
 					Message: "KubeVirt resource has no conditions",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				}))
+				Expect(req.conditions[conditionsv1.ConditionProgressing]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
 					Reason:  "KubeVirtConditions",
 					Message: "KubeVirt resource has no conditions",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				}))
+				Expect(req.conditions[conditionsv1.ConditionUpgradeable]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "KubeVirtConditions",
 					Message: "KubeVirt resource has no conditions",
-				})))
+				}))
 			})
 
 			It("should set default UninstallStrategy if missing", func() {
@@ -409,7 +421,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				cl := initClient([]runtime.Object{hco, missingUSResource})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirt(hco, log, request)).To(BeNil())
+				Expect(r.ensureKubeVirt(hco, newReq())).To(BeNil())
 
 				foundResource := &kubevirtv1.KubeVirt{}
 				Expect(
@@ -453,7 +465,8 @@ var _ = Describe("HyperconvergedController", func() {
 				}
 				cl := initClient([]runtime.Object{hco, expectedResource})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirt(hco, log, request)).To(BeNil())
+				req := newReq()
+				Expect(r.ensureKubeVirt(hco, req)).To(BeNil())
 
 				// Check HCO's status
 				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
@@ -462,30 +475,30 @@ var _ = Describe("HyperconvergedController", func() {
 				// ObjectReference should have been added
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 				// Check conditions
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				Expect(req.conditions[conditionsv1.ConditionAvailable]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "KubeVirtNotAvailable",
 					Message: "KubeVirt is not available: Bar",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				}))
+				Expect(req.conditions[conditionsv1.ConditionProgressing]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
 					Reason:  "KubeVirtProgressing",
 					Message: "KubeVirt is progressing: Bar",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				}))
+				Expect(req.conditions[conditionsv1.ConditionUpgradeable]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "KubeVirtProgressing",
 					Message: "KubeVirt is progressing: Bar",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				}))
+				Expect(req.conditions[conditionsv1.ConditionDegraded]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionDegraded,
 					Status:  corev1.ConditionTrue,
 					Reason:  "KubeVirtDegraded",
 					Message: "KubeVirt is degraded: Bar",
-				})))
+				}))
 			})
 		})
 
@@ -502,7 +515,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource := newCDIForCR(hco, UndefinedNamespace)
 				cl := initClient([]runtime.Object{})
 				r := initReconciler(cl)
-				Expect(r.ensureCDI(hco, log, request)).To(BeNil())
+				Expect(r.ensureCDI(hco, newReq())).To(BeNil())
 
 				foundResource := &cdiv1alpha1.CDI{}
 				Expect(
@@ -528,7 +541,8 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
 				cl := initClient([]runtime.Object{hco, expectedResource})
 				r := initReconciler(cl)
-				Expect(r.ensureCDI(hco, log, request)).To(BeNil())
+				req := newReq()
+				Expect(r.ensureCDI(hco, req)).To(BeNil())
 
 				// Check HCO's status
 				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
@@ -537,24 +551,24 @@ var _ = Describe("HyperconvergedController", func() {
 				// ObjectReference should have been added
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 				// Check conditions
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				Expect(req.conditions[conditionsv1.ConditionAvailable]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "CDIConditions",
 					Message: "CDI resource has no conditions",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				}))
+				Expect(req.conditions[conditionsv1.ConditionProgressing]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
 					Reason:  "CDIConditions",
 					Message: "CDI resource has no conditions",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				}))
+				Expect(req.conditions[conditionsv1.ConditionUpgradeable]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "CDIConditions",
 					Message: "CDI resource has no conditions",
-				})))
+				}))
 			})
 
 			It("should set default UninstallStrategy if missing", func() {
@@ -574,7 +588,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				cl := initClient([]runtime.Object{hco, missingUSResource})
 				r := initReconciler(cl)
-				Expect(r.ensureCDI(hco, log, request)).To(BeNil())
+				Expect(r.ensureCDI(hco, newReq())).To(BeNil())
 
 				foundResource := &cdiv1alpha1.CDI{}
 				Expect(
@@ -618,7 +632,8 @@ var _ = Describe("HyperconvergedController", func() {
 				}
 				cl := initClient([]runtime.Object{hco, expectedResource})
 				r := initReconciler(cl)
-				Expect(r.ensureCDI(hco, log, request)).To(BeNil())
+				req := newReq()
+				Expect(r.ensureCDI(hco, req)).To(BeNil())
 
 				// Check HCO's status
 				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
@@ -627,30 +642,30 @@ var _ = Describe("HyperconvergedController", func() {
 				// ObjectReference should have been added
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 				// Check conditions
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				Expect(req.conditions[conditionsv1.ConditionAvailable]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "CDINotAvailable",
 					Message: "CDI is not available: Bar",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				}))
+				Expect(req.conditions[conditionsv1.ConditionProgressing]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
 					Reason:  "CDIProgressing",
 					Message: "CDI is progressing: Bar",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				}))
+				Expect(req.conditions[conditionsv1.ConditionUpgradeable]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "CDIProgressing",
 					Message: "CDI is progressing: Bar",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				}))
+				Expect(req.conditions[conditionsv1.ConditionDegraded]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionDegraded,
 					Status:  corev1.ConditionTrue,
 					Reason:  "CDIDegraded",
 					Message: "CDI is degraded: Bar",
-				})))
+				}))
 			})
 		})
 
@@ -667,7 +682,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource := newNetworkAddonsForCR(hco, UndefinedNamespace)
 				cl := initClient([]runtime.Object{})
 				r := initReconciler(cl)
-				Expect(r.ensureNetworkAddons(hco, log, request)).To(BeNil())
+				Expect(r.ensureNetworkAddons(hco, newReq())).To(BeNil())
 
 				foundResource := &networkaddonsv1alpha1.NetworkAddonsConfig{}
 				Expect(
@@ -695,7 +710,8 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
 				cl := initClient([]runtime.Object{hco, expectedResource})
 				r := initReconciler(cl)
-				Expect(r.ensureNetworkAddons(hco, log, request)).To(BeNil())
+				req := newReq()
+				Expect(r.ensureNetworkAddons(hco, req)).To(BeNil())
 
 				// Check HCO's status
 				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
@@ -704,24 +720,24 @@ var _ = Describe("HyperconvergedController", func() {
 				// ObjectReference should have been added
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 				// Check conditions
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				Expect(req.conditions[conditionsv1.ConditionAvailable]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "NetworkAddonsConfigConditions",
 					Message: "NetworkAddonsConfig resource has no conditions",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				}))
+				Expect(req.conditions[conditionsv1.ConditionProgressing]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
 					Reason:  "NetworkAddonsConfigConditions",
 					Message: "NetworkAddonsConfig resource has no conditions",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				}))
+				Expect(req.conditions[conditionsv1.ConditionUpgradeable]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "NetworkAddonsConfigConditions",
 					Message: "NetworkAddonsConfig resource has no conditions",
-				})))
+				}))
 			})
 
 			It("should handle conditions", func() {
@@ -757,7 +773,8 @@ var _ = Describe("HyperconvergedController", func() {
 				}
 				cl := initClient([]runtime.Object{hco, expectedResource})
 				r := initReconciler(cl)
-				Expect(r.ensureNetworkAddons(hco, log, request)).To(BeNil())
+				req := newReq()
+				Expect(r.ensureNetworkAddons(hco, req)).To(BeNil())
 
 				// Check HCO's status
 				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
@@ -766,30 +783,30 @@ var _ = Describe("HyperconvergedController", func() {
 				// ObjectReference should have been added
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 				// Check conditions
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				Expect(req.conditions[conditionsv1.ConditionAvailable]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "NetworkAddonsConfigNotAvailable",
 					Message: "NetworkAddonsConfig is not available: Bar",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				}))
+				Expect(req.conditions[conditionsv1.ConditionProgressing]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
 					Reason:  "NetworkAddonsConfigProgressing",
 					Message: "NetworkAddonsConfig is progressing: Bar",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				}))
+				Expect(req.conditions[conditionsv1.ConditionUpgradeable]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "NetworkAddonsConfigProgressing",
 					Message: "NetworkAddonsConfig is progressing: Bar",
-				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				}))
+				Expect(req.conditions[conditionsv1.ConditionDegraded]).To(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionDegraded,
 					Status:  corev1.ConditionTrue,
 					Reason:  "NetworkAddonsConfigDegraded",
 					Message: "NetworkAddonsConfig is degraded: Bar",
-				})))
+				}))
 			})
 		})
 
@@ -806,7 +823,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource := newKubeVirtCommonTemplateBundleForCR(hco, OpenshiftNamespace)
 				cl := initClient([]runtime.Object{})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirtCommonTemplateBundle(hco, log, request)).To(BeNil())
+				Expect(r.ensureKubeVirtCommonTemplateBundle(hco, newReq())).To(BeNil())
 
 				foundResource := &sspv1.KubevirtCommonTemplatesBundle{}
 				Expect(
@@ -832,7 +849,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
 				cl := initClient([]runtime.Object{hco, expectedResource})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirtCommonTemplateBundle(hco, log, request)).To(BeNil())
+				Expect(r.ensureKubeVirtCommonTemplateBundle(hco, newReq())).To(BeNil())
 
 				// Check HCO's status
 				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
@@ -878,7 +895,7 @@ var _ = Describe("HyperconvergedController", func() {
 					}
 					cl := initClient([]runtime.Object{hco, expectedResource})
 					r := initReconciler(cl)
-					Expect(r.ensureKubeVirtCommonTemplateBundle(hco, log, request)).To(BeNil())
+					Expect(r.ensureKubeVirtCommonTemplateBundle(hco, newReq())).To(BeNil())
 
 					// Check HCO's status
 					Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
@@ -887,25 +904,25 @@ var _ = Describe("HyperconvergedController", func() {
 					// ObjectReference should have been added
 					Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 					// Check conditions
-					Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+					Expect(req.conditions[]).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 						Type:    conditionsv1.ConditionAvailable,
 						Status:  corev1.ConditionFalse,
 						Reason:  "KubevirtCommonTemplatesBundleNotAvailable",
 						Message: "KubevirtCommonTemplatesBundle is not available: Bar",
 					})))
-					Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+					Expect(req.conditions[]).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 						Type:    conditionsv1.ConditionProgressing,
 						Status:  corev1.ConditionTrue,
 						Reason:  "KubevirtCommonTemplatesBundleProgressing",
 						Message: "KubevirtCommonTemplatesBundle is progressing: Bar",
 					})))
-					Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+					Expect(req.conditions[]).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 						Type:    conditionsv1.ConditionUpgradeable,
 						Status:  corev1.ConditionFalse,
 						Reason:  "KubevirtCommonTemplatesBundleProgressing",
 						Message: "KubevirtCommonTemplatesBundle is progressing: Bar",
 					})))
-					Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+					Expect(req.conditions[]).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 						Type:    conditionsv1.ConditionDegraded,
 						Status:  corev1.ConditionTrue,
 						Reason:  "KubevirtCommonTemplatesBundleDegraded",
@@ -928,7 +945,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource := newKubeVirtNodeLabellerBundleForCR(hco, namespace)
 				cl := initClient([]runtime.Object{})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirtNodeLabellerBundle(hco, log, request)).To(BeNil())
+				Expect(r.ensureKubeVirtNodeLabellerBundle(hco, newReq())).To(BeNil())
 
 				foundResource := &sspv1.KubevirtNodeLabellerBundle{}
 				Expect(
@@ -954,7 +971,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
 				cl := initClient([]runtime.Object{hco, expectedResource})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirtNodeLabellerBundle(hco, log, request)).To(BeNil())
+				Expect(r.ensureKubeVirtNodeLabellerBundle(hco, newReq())).To(BeNil())
 
 				// Check HCO's status
 				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
@@ -1000,7 +1017,7 @@ var _ = Describe("HyperconvergedController", func() {
 					}
 					cl := initClient([]runtime.Object{hco, expectedResource})
 					r := initReconciler(cl)
-					Expect(r.ensureKubeVirtNodeLabellerBundle(hco, log, request)).To(BeNil())
+					Expect(r.ensureKubeVirtNodeLabellerBundle(hco, newReq())).To(BeNil())
 
 					// Check HCO's status
 					Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
@@ -1009,25 +1026,25 @@ var _ = Describe("HyperconvergedController", func() {
 					// ObjectReference should have been added
 					Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 					// Check conditions
-					Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+					Expect(req.conditions[]).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 						Type:    conditionsv1.ConditionAvailable,
 						Status:  corev1.ConditionFalse,
 						Reason:  "KubevirtNodeLabellerBundleNotAvailable",
 						Message: "KubevirtNodeLabellerBundle is not available: Bar",
 					})))
-					Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+					Expect(req.conditions[]).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 						Type:    conditionsv1.ConditionProgressing,
 						Status:  corev1.ConditionTrue,
 						Reason:  "KubevirtNodeLabellerBundleProgressing",
 						Message: "KubevirtNodeLabellerBundle is progressing: Bar",
 					})))
-					Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+					Expect(req.conditions[]).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 						Type:    conditionsv1.ConditionUpgradeable,
 						Status:  corev1.ConditionFalse,
 						Reason:  "KubevirtNodeLabellerBundleProgressing",
 						Message: "KubevirtNodeLabellerBundle is progressing: Bar",
 					})))
-					Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+					Expect(req.conditions[]).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 						Type:    conditionsv1.ConditionDegraded,
 						Status:  corev1.ConditionTrue,
 						Reason:  "KubevirtNodeLabellerBundleDegraded",
@@ -1100,7 +1117,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource := newKubeVirtTemplateValidatorForCR(hco, namespace)
 				cl := initClient([]runtime.Object{})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirtTemplateValidator(hco, log, request)).To(BeNil())
+				Expect(r.ensureKubeVirtTemplateValidator(hco, newReq())).To(BeNil())
 
 				foundResource := &sspv1.KubevirtTemplateValidator{}
 				Expect(
@@ -1126,7 +1143,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
 				cl := initClient([]runtime.Object{hco, expectedResource})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirtTemplateValidator(hco, log, request)).To(BeNil())
+				Expect(r.ensureKubeVirtTemplateValidator(hco, newReq())).To(BeNil())
 
 				// Check HCO's status
 				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
@@ -1171,7 +1188,7 @@ var _ = Describe("HyperconvergedController", func() {
 				}
 				cl := initClient([]runtime.Object{hco, expectedResource})
 				r := initReconciler(cl)
-				Expect(r.ensureKubeVirtTemplateValidator(hco, log, request)).To(BeNil())
+				Expect(r.ensureKubeVirtTemplateValidator(hco, newReq())).To(BeNil())
 
 				// Check HCO's status
 				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
@@ -1180,25 +1197,25 @@ var _ = Describe("HyperconvergedController", func() {
 				// ObjectReference should have been added
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 				// Check conditions
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				Expect(req.conditions[]).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "KubevirtTemplateValidatorNotAvailable",
 					Message: "KubevirtTemplateValidator is not available: Bar",
 				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				Expect(req.conditions[]).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
 					Reason:  "KubevirtTemplateValidatorProgressing",
 					Message: "KubevirtTemplateValidator is progressing: Bar",
 				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				Expect(req.conditions[]).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "KubevirtTemplateValidatorProgressing",
 					Message: "KubevirtTemplateValidator is progressing: Bar",
 				})))
-				Expect(r.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				Expect(req.conditions[]).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionDegraded,
 					Status:  corev1.ConditionTrue,
 					Reason:  "KubevirtTemplateValidatorDegraded",
@@ -1221,7 +1238,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				cl := initClient([]runtime.Object{})
 				r := initReconciler(cl)
-				Expect(r.ensureIMSConfig(hco, log, request)).ToNot(BeNil())
+				Expect(r.ensureIMSConfig(hco, newReq())).ToNot(BeNil())
 			})
 		})
 	})
@@ -1311,9 +1328,9 @@ var _ = Describe("HyperconvergedController", func() {
 				// Check conditions
 				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    hcov1alpha1.ConditionReconcileComplete,
-					Status:  corev1.ConditionTrue,
-					Reason:  reconcileCompleted,
-					Message: reconcileCompletedMessage,
+					Status:  corev1.ConditionUnknown,
+					Reason:  reconcileInit,
+					Message: reconcileInitMessage,
 				})))
 				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
