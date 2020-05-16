@@ -9,7 +9,7 @@ metadata:
     categories: OpenShift Optional
     certified: "false"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.1.0
-    createdAt: "2020-05-15 14:19:18"
+    createdAt: "2020-05-16 11:09:39"
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -397,6 +397,14 @@ spec:
         serviceAccountName: cluster-network-addons-operator
       - rules:
         - apiGroups:
+          - ""
+          resources:
+          - secrets
+          verbs:
+          - create
+          - get
+          - update
+        - apiGroups:
           - kubevirt.io
           resources:
           - kubevirts
@@ -421,6 +429,12 @@ spec:
           - create
           - update
           - delete
+          - patch
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
           - patch
         - apiGroups:
           - batch
@@ -559,23 +573,6 @@ spec:
           - watch
           - patch
         - apiGroups:
-          - admissionregistration.k8s.io
-          resources:
-          - validatingwebhookconfigurations
-          - mutatingwebhookconfigurations
-          verbs:
-          - get
-          - create
-          - update
-        - apiGroups:
-          - apiregistration.k8s.io
-          resources:
-          - apiservices
-          verbs:
-          - get
-          - create
-          - update
-        - apiGroups:
           - ""
           resources:
           - pods
@@ -634,16 +631,6 @@ spec:
           - get
           - list
           - watch
-        - apiGroups:
-          - ""
-          resources:
-          - secrets
-          verbs:
-          - get
-          - list
-          - delete
-          - update
-          - create
         - apiGroups:
           - ""
           resources:
@@ -762,6 +749,17 @@ spec:
           - nodes
           verbs:
           - patch
+          - list
+          - watch
+          - get
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
         - apiGroups:
           - ""
           resources:
@@ -785,13 +783,6 @@ spec:
           - get
           - list
           - watch
-        - apiGroups:
-          - ""
-          resources:
-          - secrets
-          verbs:
-          - create
-          - get
         - apiGroups:
           - subresources.kubevirt.io
           resources:
@@ -1527,12 +1518,12 @@ spec:
                 - "2"
                 env:
                 - name: OPERATOR_IMAGE
-                  value: docker.io/kubevirt/virt-operator:v0.28.0
+                  value: docker.io/kubevirt/virt-operator:v0.29.0
                 - name: WATCH_NAMESPACE
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
-                image: docker.io/kubevirt/virt-operator:v0.28.0
+                image: docker.io/kubevirt/virt-operator:v0.29.0
                 imagePullPolicy: IfNotPresent
                 name: virt-operator
                 ports:
@@ -1550,12 +1541,22 @@ spec:
                   initialDelaySeconds: 5
                   timeoutSeconds: 10
                 resources: {}
+                volumeMounts:
+                - mountPath: /etc/virt-operator/certificates
+                  name: kubevirt-operator-certs
+                  readOnly: true
+              priorityClassName: kubevirt-cluster-critical
               securityContext:
                 runAsNonRoot: true
               serviceAccountName: kubevirt-operator
               tolerations:
               - key: CriticalAddonsOnly
                 operator: Exists
+              volumes:
+              - name: kubevirt-operator-certs
+                secret:
+                  optional: true
+                  secretName: kubevirt-operator-certs
       - name: kubevirt-ssp-operator
         spec:
           replicas: 1

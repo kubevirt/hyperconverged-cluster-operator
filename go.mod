@@ -22,13 +22,13 @@ require (
 	k8s.io/apimachinery v0.18.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20200204173128-addea2498afe
-	kubevirt.io/client-go v0.26.0
+	kubevirt.io/client-go v0.29.0
 	kubevirt.io/containerized-data-importer v1.17.0
-	kubevirt.io/kubevirt v0.28.0
+	kubevirt.io/kubevirt v0.29.0
 	sigs.k8s.io/controller-runtime v0.5.2
 )
 
-// Pinned to kubernetes-1.16.4 to kubevirt.io/kubevirt v0.28.0
+// Pinned to kubernetes-1.16.4 to kubevirt.io/kubevirt v0.29.0
 replace (
 	k8s.io/api => k8s.io/api v0.16.4
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.16.4
@@ -65,8 +65,8 @@ replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.3.1
 	github.com/openshift/machine-api-operator => github.com/openshift/machine-api-operator v0.2.1-0.20191025120018-fb3724fc7bdf
 	github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.0.0-20190424153033-d3245f150225
-	kubevirt.io/client-go => kubevirt.io/client-go v0.26.0
-	kubevirt.io/kubevirt => kubevirt.io/kubevirt v0.26.0
+	kubevirt.io/client-go => kubevirt.io/client-go v0.29.0
+	kubevirt.io/kubevirt => kubevirt.io/kubevirt v0.29.0
 )
 
 // Aligning with https://github.com/kubevirt/containerized-data-importer/blob/release-v1.17/go.mod
