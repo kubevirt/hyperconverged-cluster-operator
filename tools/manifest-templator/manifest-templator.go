@@ -27,6 +27,7 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
+	hcoUtils "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
 
 	csvv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
@@ -280,7 +281,7 @@ func main() {
 				})
 			}
 
-			util.AddEnvAcrossContainers(strategySpec, hcoKvIoVersionName, *hcoKvIoVersion)
+			util.AddEnvAcrossContainers(&strategySpec, hcoUtils.HcoKvIoVersionName, *hcoKvIoVersion)
 		}
 	}
 

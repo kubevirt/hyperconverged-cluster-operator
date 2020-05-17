@@ -113,6 +113,8 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         - name: WATCH_NAMESPACE
+        - name: HCO_KV_IO_VERSION
+          value: 1.1.0
         image: quay.io/kubevirt/cluster-network-addons-operator:0.36.0
         imagePullPolicy: IfNotPresent
         name: cluster-network-addons-operator
@@ -167,6 +169,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.annotations['olm.targetNamespaces']
+        - name: HCO_KV_IO_VERSION
+          value: 1.1.0
         image: docker.io/kubevirt/virt-operator:v0.28.0
         imagePullPolicy: IfNotPresent
         name: virt-operator
@@ -226,6 +230,8 @@ spec:
         - name: IMAGE_NAME_PREFIX
         - name: OPERATOR_NAME
           value: kubevirt-ssp-operator
+        - name: HCO_KV_IO_VERSION
+          value: 1.1.0
         image: quay.io/fromani/kubevirt-ssp-operator-container:v1.0.30
         imagePullPolicy: Always
         name: kubevirt-ssp-operator
@@ -275,6 +281,8 @@ spec:
           value: "1"
         - name: PULL_POLICY
           value: IfNotPresent
+        - name: HCO_KV_IO_VERSION
+          value: 1.1.0
         image: docker.io/kubevirt/cdi-operator:v1.17.0
         imagePullPolicy: IfNotPresent
         name: cdi-operator
@@ -320,6 +328,8 @@ spec:
               fieldPath: metadata.name
         - name: OPERATOR_NAME
           value: node-maintenance-operator
+        - name: HCO_KV_IO_VERSION
+          value: 1.1.0
         image: quay.io/kubevirt/node-maintenance-operator:v0.5.0
         imagePullPolicy: Always
         name: node-maintenance-operator
@@ -364,6 +374,8 @@ spec:
           value: quay.io/kubevirt/hostpath-provisioner:v0.4.0
         - name: PULL_POLICY
           value: IfNotPresent
+        - name: HCO_KV_IO_VERSION
+          value: 1.1.0
         image: quay.io/kubevirt/hostpath-provisioner-operator:v0.4.2
         imagePullPolicy: IfNotPresent
         name: hostpath-provisioner-operator

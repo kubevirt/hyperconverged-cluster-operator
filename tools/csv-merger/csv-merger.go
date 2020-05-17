@@ -24,6 +24,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	hcoUtils "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"io/ioutil"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	"log"
@@ -44,10 +45,9 @@ import (
 
 const (
 	operatorName = "kubevirt-hyperconverged-operator"
-	CSVMode = "CSV"
-	CRDMode = "CRDs"
+	CSVMode      = "CSV"
+	CRDMode      = "CRDs"
 )
-
 
 var validOutputModes = []string{CSVMode, CRDMode}
 
@@ -299,7 +299,7 @@ func main() {
 
 				strategySpec := csvStruct.Spec.InstallStrategy.StrategySpec
 
-				util.AddEnvAcrossContainers(strategySpec, hcoKvIoVersionName, *hcoKvIoVersion)
+				util.AddEnvAcrossContainersOf(&strategySpec, hcoUtils.HcoKvIoVersionName, *hcoKvIoVersion)
 
 				installStrategyBase.DeploymentSpecs = append(installStrategyBase.DeploymentSpecs, strategySpec.DeploymentSpecs...)
 				installStrategyBase.ClusterPermissions = append(installStrategyBase.ClusterPermissions, strategySpec.ClusterPermissions...)
