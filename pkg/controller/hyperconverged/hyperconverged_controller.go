@@ -367,47 +367,118 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 	}
 
 	req.logger.Info("Reconcile complete")
-	reconcileCompletedCond := conditionsv1.Condition{
-		Type:    hcov1alpha1.ConditionReconcileComplete,
-		Status:  corev1.ConditionTrue,
-		Reason:  reconcileCompleted,
-		Message: reconcileCompletedMessage,
-	}
 
 	// Requeue if we just created everything
 	if init {
 		return reconcile.Result{Requeue: true}, err
 	}
 
-	if req.conditions.empty() {
-		req.logger.Info("No component operator reported negatively")
+	allComponentsAreUp := req.conditions.empty()
 
-		req.conditions.setStatusCondition(reconcileCompletedCond)
+	// See the chart at design/aggregateNegativeConditions.png; The numbers below follows the numbers in the chart
+	// find the PlantURL syntax here: https://plantuml.com/activity-diagram-beta
 
-		req.conditions.setStatusCondition(conditionsv1.Condition{
-			Type:    conditionsv1.ConditionAvailable,
-			Status:  corev1.ConditionTrue,
-			Reason:  reconcileCompleted,
-			Message: reconcileCompletedMessage,
-		})
-		req.conditions.setStatusCondition(conditionsv1.Condition{
-			Type:    conditionsv1.ConditionProgressing,
-			Status:  corev1.ConditionFalse,
-			Reason:  reconcileCompleted,
-			Message: reconcileCompletedMessage,
-		})
-		req.conditions.setStatusCondition(conditionsv1.Condition{
+	// If any component operator reports negatively we want to write that to
+	// the instance while preserving it's lastTransitionTime.
+	// For example, consider the KubeVirt resource has the Available condition
+	// type with type "False". When reconciling KubeVirt's resource we would
+	// add it to the in-memory representation of HCO's conditions (r.conditions)
+	// and here we are simply writing it back to the server.
+	// One shortcoming is that only one failure of a particular condition can be
+	// captured at one time (ie. if KubeVirt and CDI are both reporting !Available,
+	// you will only see CDI as it updates last).
+
+	req.conditions.setStatusCondition(conditionsv1.Condition{
+		Type:    hcov1alpha1.ConditionReconcileComplete,
+		Status:  corev1.ConditionTrue,
+		Reason:  reconcileCompleted,
+		Message: reconcileCompletedMessage,
+	})
+
+	if cond, conditionFound := req.conditions[conditionsv1.ConditionDegraded]; conditionFound { // (#chart 1)
+		if _, conditionFound = req.conditions[conditionsv1.ConditionProgressing]; !conditionFound { // (#chart 2)
+			req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 3)
+				Type:    conditionsv1.ConditionProgressing,
+				Status:  corev1.ConditionFalse,
+				Reason:  reconcileCompleted,
+				Message: reconcileCompletedMessage,
+			})
+		} // else - Progressing is already exists
+
+		if _, conditionFound = req.conditions[conditionsv1.ConditionUpgradeable]; !conditionFound { // (#chart 4)
+			req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 5)
+				Type:    conditionsv1.ConditionUpgradeable,
+				Status:  corev1.ConditionFalse,
+				Reason:  cond.Reason,
+				Message: cond.Reason,
+			})
+		} // else - Upgradeable is already exists
+		if _, conditionFound = req.conditions[conditionsv1.ConditionAvailable]; !conditionFound { // (#chart 6)
+			req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 7)
+				Type:    conditionsv1.ConditionAvailable,
+				Status:  corev1.ConditionFalse,
+				Reason:  cond.Reason,
+				Message: cond.Reason,
+			})
+		} // else - Available is already exists
+	} else {
+		// Degraded is not found. add it.
+		req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 8)
 			Type:    conditionsv1.ConditionDegraded,
 			Status:  corev1.ConditionFalse,
 			Reason:  reconcileCompleted,
 			Message: reconcileCompletedMessage,
 		})
-		req.conditions.setStatusCondition(conditionsv1.Condition{
-			Type:    conditionsv1.ConditionUpgradeable,
-			Status:  corev1.ConditionTrue,
-			Reason:  reconcileCompleted,
-			Message: reconcileCompletedMessage,
-		})
+
+		if cond, conditionFound = req.conditions[conditionsv1.ConditionProgressing]; conditionFound { // (#chart 9)
+
+			if _, conditionFound = req.conditions[conditionsv1.ConditionUpgradeable]; !conditionFound { // (#chart 10)
+				req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 11)
+					Type:    conditionsv1.ConditionUpgradeable,
+					Status:  corev1.ConditionFalse,
+					Reason:  cond.Reason,
+					Message: cond.Reason,
+				})
+			} // else - Upgradeable is already exists
+
+			if _, conditionFound = req.conditions[conditionsv1.ConditionAvailable]; !conditionFound { // (#chart 12)
+				req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 13)
+					Type:    conditionsv1.ConditionAvailable,
+					Status:  corev1.ConditionTrue,
+					Reason:  reconcileCompleted,
+					Message: reconcileCompletedMessage,
+				})
+			} // else - Available is already exists
+		} else {
+			req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 14)
+				Type:    conditionsv1.ConditionProgressing,
+				Status:  corev1.ConditionFalse,
+				Reason:  reconcileCompleted,
+				Message: reconcileCompletedMessage,
+			})
+
+			if _, conditionFound = req.conditions[conditionsv1.ConditionUpgradeable]; !conditionFound { // (#chart 15)
+				req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 16)
+					Type:    conditionsv1.ConditionUpgradeable,
+					Status:  corev1.ConditionTrue,
+					Reason:  reconcileCompleted,
+					Message: reconcileCompletedMessage,
+				})
+			}
+
+			if _, conditionFound = req.conditions[conditionsv1.ConditionAvailable]; !conditionFound { // (#chart 17) {
+				req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 18)
+					Type:    conditionsv1.ConditionAvailable,
+					Status:  corev1.ConditionTrue,
+					Reason:  reconcileCompleted,
+					Message: reconcileCompletedMessage,
+				})
+			}
+		}
+	}
+
+	if allComponentsAreUp {
+		req.logger.Info("No component operator reported negatively")
 
 		if r.upgradeMode { // update the new image only when upgrade is completed
 			instance.Status.UpdateVersion(hcoVersionName, r.ownVersion)
@@ -423,120 +494,13 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 			req.logger.Error(err, "Failed to mark operator ready")
 			return reconcile.Result{}, err
 		}
-	} else {
-
-		// See the chart at design/aggregateNegativeConditions.png; The numbers below follows the numbers in the chart
-
-		// If any component operator reports negatively we want to write that to
-		// the instance while preserving it's lastTransitionTime.
-		// For example, consider the KubeVirt resource has the Available condition
-		// type with type "False". When reconciling KubeVirt's resource we would
-		// add it to the in-memory representation of HCO's conditions (r.conditions)
-		// and here we are simply writing it back to the server.
-		// One shortcoming is that only one failure of a particular condition can be
-		// captured at one time (ie. if KubeVirt and CDI are both reporting !Available,
-		// you will only see CDI as it updates last).
-
-		req.conditions.setStatusCondition(reconcileCompletedCond)
-
-		if cond, conditionFound := req.conditions[conditionsv1.ConditionDegraded]; conditionFound { // (#chart 1)
-			if _, conditionFound = req.conditions[conditionsv1.ConditionProgressing]; !conditionFound { // (#chart 2)
-				req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 3)
-					Type:    conditionsv1.ConditionProgressing,
-					Status:  corev1.ConditionTrue,
-					Reason:  cond.Reason,
-					Message: cond.Reason,
-				})
-			} // else - Progressing is already exists
-
-			if _, conditionFound = req.conditions[conditionsv1.ConditionUpgradeable]; !conditionFound { // (#chart 4)
-				req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 5)
-					Type:    conditionsv1.ConditionUpgradeable,
-					Status:  corev1.ConditionFalse,
-					Reason:  cond.Reason,
-					Message: cond.Reason,
-				})
-			} // else - Upgradeable is already exists
-			if _, conditionFound = req.conditions[conditionsv1.ConditionAvailable]; !conditionFound { // (#chart 6)
-				req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 7)
-					Type:    conditionsv1.ConditionAvailable,
-					Status:  corev1.ConditionFalse,
-					Reason:  cond.Reason,
-					Message: cond.Reason,
-				})
-			} // else - Available is already exists
-		} else {
-			// Degraded is not found. add it.
-			req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 8)
-				Type:    conditionsv1.ConditionDegraded,
-				Status:  corev1.ConditionFalse,
-				Reason:  reconcileCompleted,
-				Message: reconcileCompletedMessage,
-			})
-
-			if cond, conditionFound = req.conditions[conditionsv1.ConditionProgressing]; conditionFound { // (#chart 9)
-
-				if _, conditionFound = req.conditions[conditionsv1.ConditionUpgradeable]; !conditionFound { // (#chart 10)
-					req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 11)
-						Type:    conditionsv1.ConditionUpgradeable,
-						Status:  corev1.ConditionFalse,
-						Reason:  cond.Reason,
-						Message: cond.Reason,
-					})
-				} // else - Upgradeable is already exists
-
-				if _, conditionFound = req.conditions[conditionsv1.ConditionAvailable]; !conditionFound { // (#chart 12)
-					req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 13)
-						Type:    conditionsv1.ConditionAvailable,
-						Status:  corev1.ConditionTrue,
-						Reason:  reconcileCompleted,
-						Message: reconcileCompletedMessage,
-					})
-				} // else - Available is already exists
-			} else {
-
-				if _, conditionFound = req.conditions[conditionsv1.ConditionUpgradeable]; !conditionFound { // (#chart 14)
-					req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 15)
-						Type:    conditionsv1.ConditionUpgradeable,
-						Status:  corev1.ConditionTrue,
-						Reason:  reconcileCompleted,
-						Message: reconcileCompletedMessage,
-					})
-				}
-
-				if cond, conditionFound = req.conditions[conditionsv1.ConditionAvailable]; !conditionFound { // (#chart 16) {
-					req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 17)
-						Type:    conditionsv1.ConditionAvailable,
-						Status:  corev1.ConditionTrue,
-						Reason:  reconcileCompleted,
-						Message: reconcileCompletedMessage,
-					})
-
-					req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 18)
-						Type:    conditionsv1.ConditionProgressing,
-						Status:  corev1.ConditionFalse,
-						Reason:  reconcileCompleted,
-						Message: reconcileCompletedMessage,
-					})
-				} else {
-					req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 19)
-						Type:    conditionsv1.ConditionProgressing,
-						Status:  corev1.ConditionTrue,
-						Reason:  cond.Reason,
-						Message: cond.Reason,
-					})
-				}
-			}
-		}
-
+	} else if cond, conditionFound := req.conditions[conditionsv1.ConditionUpgradeable]; conditionFound && cond.Status == corev1.ConditionFalse {
 		// If for any reason we marked ourselves !upgradeable...then unset readiness
-		if cond, conditionFound := req.conditions[conditionsv1.ConditionUpgradeable]; conditionFound && cond.Status == corev1.ConditionFalse {
-			r := ready.NewFileReady()
-			err = r.Unset()
-			if err != nil {
-				req.logger.Error(err, "Failed to mark operator unready")
-				return reconcile.Result{}, err
-			}
+		r := ready.NewFileReady()
+		err = r.Unset()
+		if err != nil {
+			req.logger.Error(err, "Failed to mark operator unready")
+			return reconcile.Result{}, err
 		}
 	}
 
@@ -1549,7 +1513,7 @@ func ensureKubeVirtCommonTemplateBundleDeleted(c client.Client, instance *hcov1a
 // translateKubeVirtConds translates list of KubeVirt conditions to a list of custom resource
 // conditions.
 func translateKubeVirtConds(orig []kubevirtv1.KubeVirtCondition) []conditionsv1.Condition {
-	translated := make([]conditionsv1.Condition, len(orig), len(orig))
+	translated := make([]conditionsv1.Condition, len(orig))
 
 	for i, origCond := range orig {
 		translated[i] = conditionsv1.Condition{

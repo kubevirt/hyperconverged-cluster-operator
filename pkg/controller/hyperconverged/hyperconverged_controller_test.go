@@ -2,6 +2,7 @@ package hyperconverged
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/version"
@@ -1811,6 +1812,300 @@ var _ = Describe("HyperconvergedController", func() {
 				ver, ok = foundResource.Status.GetVersion(hcoVersionName)
 				Expect(ok).To(BeTrue())
 				Expect(ver).Should(Equal(NewVersion))
+			})
+		})
+
+		Context("Aggregate Negative Conditions", func() {
+			const errorReason = "CdiTestError1"
+			It("should be degraded when a component is degraded", func() {
+				expected := getBasicDeployment()
+				conditionsv1.SetStatusCondition(&expected.cdi.Status.Conditions, conditionsv1.Condition{
+					Type:    conditionsv1.ConditionDegraded,
+					Status:  corev1.ConditionTrue,
+					Reason:  errorReason,
+					Message: "CDI Test Error message",
+				})
+				cl := expected.initClient()
+				foundResource, _ := doReconcile(cl, expected.hco)
+
+				conditions := foundResource.Status.Conditions
+				_, _ = fmt.Fprintln(GinkgoWriter, "\nActual Conditions:")
+				wr := json.NewEncoder(GinkgoWriter)
+				wr.SetIndent("", "  ")
+				_ = wr.Encode(conditions)
+
+				cd := conditionsv1.FindStatusCondition(conditions, hcov1alpha1.ConditionReconcileComplete)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionAvailable)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal("CDIDegraded"))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionProgressing)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionDegraded)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal("CDIDegraded"))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionUpgradeable)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal("CDIDegraded"))
+
+			})
+
+			It("should be degraded when a component is degraded + Progressing", func() {
+				expected := getBasicDeployment()
+				conditionsv1.SetStatusCondition(&expected.cdi.Status.Conditions, conditionsv1.Condition{
+					Type:    conditionsv1.ConditionDegraded,
+					Status:  corev1.ConditionTrue,
+					Reason:  errorReason,
+					Message: "CDI Test Error message",
+				})
+				conditionsv1.SetStatusCondition(&expected.cdi.Status.Conditions, conditionsv1.Condition{
+					Type:    conditionsv1.ConditionProgressing,
+					Status:  corev1.ConditionTrue,
+					Reason:  "progressingError",
+					Message: "CDI Test Error message",
+				})
+				cl := expected.initClient()
+				foundResource, _ := doReconcile(cl, expected.hco)
+
+				conditions := foundResource.Status.Conditions
+				_, _ = fmt.Fprintln(GinkgoWriter, "\nActual Conditions:")
+				wr := json.NewEncoder(GinkgoWriter)
+				wr.SetIndent("", "  ")
+				_ = wr.Encode(conditions)
+
+				cd := conditionsv1.FindStatusCondition(conditions, hcov1alpha1.ConditionReconcileComplete)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionAvailable)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal("CDIDegraded"))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionProgressing)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal("CDIProgressing"))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionDegraded)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal("CDIDegraded"))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionUpgradeable)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal("CDIProgressing"))
+			})
+
+			It("should be degraded when a component is degraded + !Available", func() {
+				expected := getBasicDeployment()
+				conditionsv1.SetStatusCondition(&expected.cdi.Status.Conditions, conditionsv1.Condition{
+					Type:    conditionsv1.ConditionDegraded,
+					Status:  corev1.ConditionTrue,
+					Reason:  errorReason,
+					Message: "CDI Test Error message",
+				})
+				conditionsv1.SetStatusCondition(&expected.cdi.Status.Conditions, conditionsv1.Condition{
+					Type:    conditionsv1.ConditionAvailable,
+					Status:  corev1.ConditionFalse,
+					Reason:  "AvailableError",
+					Message: "CDI Test Error message",
+				})
+				cl := expected.initClient()
+				foundResource, _ := doReconcile(cl, expected.hco)
+
+				conditions := foundResource.Status.Conditions
+				_, _ = fmt.Fprintln(GinkgoWriter, "\nActual Conditions:")
+				wr := json.NewEncoder(GinkgoWriter)
+				wr.SetIndent("", "  ")
+				_ = wr.Encode(conditions)
+
+				cd := conditionsv1.FindStatusCondition(conditions, hcov1alpha1.ConditionReconcileComplete)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionAvailable)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal("CDINotAvailable"))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionProgressing)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionDegraded)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal("CDIDegraded"))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionUpgradeable)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal("CDIDegraded"))
+			})
+
+			It("should be Progressing when a component is Progressing", func() {
+				expected := getBasicDeployment()
+				conditionsv1.SetStatusCondition(&expected.cdi.Status.Conditions, conditionsv1.Condition{
+					Type:    conditionsv1.ConditionProgressing,
+					Status:  corev1.ConditionTrue,
+					Reason:  errorReason,
+					Message: "CDI Test Error message",
+				})
+				cl := expected.initClient()
+				foundResource, _ := doReconcile(cl, expected.hco)
+
+				conditions := foundResource.Status.Conditions
+				_, _ = fmt.Fprintln(GinkgoWriter, "\nActual Conditions:")
+				wr := json.NewEncoder(GinkgoWriter)
+				wr.SetIndent("", "  ")
+				_ = wr.Encode(conditions)
+
+				cd := conditionsv1.FindStatusCondition(conditions, hcov1alpha1.ConditionReconcileComplete)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionAvailable)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionProgressing)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal("CDIProgressing"))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionDegraded)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionUpgradeable)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal("CDIProgressing"))
+			})
+
+			It("should be Progressing when a component is Progressing + !Available", func() {
+				expected := getBasicDeployment()
+				conditionsv1.SetStatusCondition(&expected.cdi.Status.Conditions, conditionsv1.Condition{
+					Type:    conditionsv1.ConditionProgressing,
+					Status:  corev1.ConditionTrue,
+					Reason:  errorReason,
+					Message: "CDI Test Error message",
+				})
+				conditionsv1.SetStatusCondition(&expected.cdi.Status.Conditions, conditionsv1.Condition{
+					Type:    conditionsv1.ConditionAvailable,
+					Status:  corev1.ConditionFalse,
+					Reason:  "AvailableError",
+					Message: "CDI Test Error message",
+				})
+				cl := expected.initClient()
+				foundResource, _ := doReconcile(cl, expected.hco)
+
+				conditions := foundResource.Status.Conditions
+				_, _ = fmt.Fprintln(GinkgoWriter, "\nActual Conditions:")
+				wr := json.NewEncoder(GinkgoWriter)
+				wr.SetIndent("", "  ")
+				_ = wr.Encode(conditions)
+
+				cd := conditionsv1.FindStatusCondition(conditions, hcov1alpha1.ConditionReconcileComplete)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionAvailable)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal("CDINotAvailable"))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionProgressing)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal("CDIProgressing"))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionDegraded)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionUpgradeable)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal("CDIProgressing"))
+			})
+
+			It("should be not Available when a component is not Available + !", func() {
+				expected := getBasicDeployment()
+				conditionsv1.SetStatusCondition(&expected.cdi.Status.Conditions, conditionsv1.Condition{
+					Type:    conditionsv1.ConditionAvailable,
+					Status:  corev1.ConditionFalse,
+					Reason:  "AvailableError",
+					Message: "CDI Test Error message",
+				})
+				cl := expected.initClient()
+				foundResource, _ := doReconcile(cl, expected.hco)
+
+				conditions := foundResource.Status.Conditions
+				_, _ = fmt.Fprintln(GinkgoWriter, "\nActual Conditions:")
+				wr := json.NewEncoder(GinkgoWriter)
+				wr.SetIndent("", "  ")
+				_ = wr.Encode(conditions)
+
+				cd := conditionsv1.FindStatusCondition(conditions, hcov1alpha1.ConditionReconcileComplete)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionAvailable)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal("CDINotAvailable"))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionProgressing)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionDegraded)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionUpgradeable)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+			})
+
+			It("should be with all positive condition when all components working properly", func() {
+				expected := getBasicDeployment()
+				cl := expected.initClient()
+				foundResource, _ := doReconcile(cl, expected.hco)
+
+				conditions := foundResource.Status.Conditions
+				_, _ = fmt.Fprintln(GinkgoWriter, "\nActual Conditions:")
+				wr := json.NewEncoder(GinkgoWriter)
+				wr.SetIndent("", "  ")
+				_ = wr.Encode(conditions)
+
+				cd := conditionsv1.FindStatusCondition(conditions, hcov1alpha1.ConditionReconcileComplete)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionAvailable)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionProgressing)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionDegraded)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionUpgradeable)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+			})
+
+			It("should set the status of the last faulty component", func() {
+				expected := getBasicDeployment()
+				conditionsv1.SetStatusCondition(&expected.cdi.Status.Conditions, conditionsv1.Condition{
+					Type:    conditionsv1.ConditionAvailable,
+					Status:  corev1.ConditionFalse,
+					Reason:  "AvailableError",
+					Message: "CDI Test Error message",
+				})
+				conditionsv1.SetStatusCondition(&expected.cna.Status.Conditions, conditionsv1.Condition{
+					Type:    conditionsv1.ConditionAvailable,
+					Status:  corev1.ConditionFalse,
+					Reason:  "AvailableError",
+					Message: "CNA Test Error message",
+				})
+				cl := expected.initClient()
+				foundResource, _ := doReconcile(cl, expected.hco)
+
+				conditions := foundResource.Status.Conditions
+				_, _ = fmt.Fprintln(GinkgoWriter, "\nActual Conditions:")
+				wr := json.NewEncoder(GinkgoWriter)
+				wr.SetIndent("", "  ")
+				_ = wr.Encode(conditions)
+
+				cd := conditionsv1.FindStatusCondition(conditions, hcov1alpha1.ConditionReconcileComplete)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionAvailable)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal("NetworkAddonsConfigNotAvailable"))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionProgressing)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionDegraded)
+				Expect(cd.Status).Should(BeEquivalentTo("False"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
+				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionUpgradeable)
+				Expect(cd.Status).Should(BeEquivalentTo("True"))
+				Expect(cd.Reason).Should(Equal(reconcileCompleted))
 			})
 		})
 	})
