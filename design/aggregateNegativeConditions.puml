@@ -1,40 +1,79 @@
 @startuml
-start
+title HCO - Aggregate Nagative Conditions
 
-if ([Degraded = False] Exists) then
-  -[#red]-> yes;
-  if ([Progressing = True] Exists) then
-    -[#green]-> no;
-    :Set **Progressing = True**
-    Set **Upgradable = False**]
+start
+  !x=1
+if ((x) [Degraded = True] Exists) then
+  !x=x+1
+  -[#orangered]-> yes;
+  if ((x) [Progressing = True] Exists) then
+    !x=x+1
+    -[#springgreen]-> no;
+    #orangered:(x) Set **Progressing = True**]
+    !x=x+1
   else
-    -[#red]-> yes;
+    -[#orangered]-> yes;
   endif
-  if ([Available = False] Exists) then
-    -[#green]-> no;
-    :Set **Available = False**]
+  if ((x) [Upgradable = False] Exists) then
+    !x=x+1
+    -[#springgreen]-> no;
+    #orangered:(x) Set **Upgradable = False**]
+    !x=x+1
   else
-    -[#red]-> yes;
+    -[#orangered]-> yes;
+  endif
+  if ((x) [Available = False] Exists) then
+    !x=x+1
+    -[#springgreen]-> no;
+    #orangered:(x) Set **Available = False**]
+    !x=x+1
+  else
+    -[#orangered]-> yes;
   endif
 else
-  -[#green]-> no;
-  :Set **Degraded = False**]
-  if ([Progressing = True] Exists) then
-    -[#red]-> yes;
-    if ([Available = False] Exists) then
-      -[#green]-> no;
-      :Set **Available = False**]
+  -[#springgreen]-> no;
+  #springgreen:(x) Set **Degraded = False**]
+  !x=x+1
+  if ((x) [Progressing = True] Exists) then
+    !x=x+1
+    -[#orangered]-> yes;
+    if ((x) [Upgradable = False] Exists) then
+      !x=x+1
+      -[#springgreen]-> no;
+      #orangered:(x) Set **Upgradable = False**]
+      !x=x+1
     else
-      -[#red]-> yes;
+      -[#orangered]-> yes;
+    endif
+    if ((x) [Available = False] Exists) then
+      !x=x+1
+      -[#springgreen]-> no;
+      #springgreen:(x) Set **Available = True**]
+      !x=x+1
+    else
+      -[#orangered]-> yes;
     endif
   else
-    -[#green]-> no;
-    if ([Available = False] Exists) then
-      -[#green]-> no;
-      :Set **Progressing = True**
-      Set **Upgradable = True**]
+    -[#springgreen]-> no;
+    if ((x) [Upgradable = False] Exists) then
+      !x=x+1
+      -[#springgreen]-> no;
+      #springgreen:(x) Set **Upgradable = True**]
+      !x=x+1
     else
-      -[#red]-> yes;
+      -[#orangered]-> yes;
+    endif
+    if ((x) [Available = False] Exists) then
+      !x=x+1
+      -[#springgreen]-> no;
+      #springgreen:(x) Set **Available = True**]
+      !x=x+1
+      #springgreen:(x) Set **Progressing = False**]
+      !x=x+1
+    else
+      -[#orangered]-> yes;
+      #orangered:(x) Set **Progressing = True**]
+      !x=x+1
     endif
   endif
 endif
