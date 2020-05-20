@@ -20,6 +20,7 @@ sanity:
 	go fmt ./...
 	go mod vendor
 	./hack/build-manifests.sh
+	./hack/build-charts.sh
 	git diff -G'^[^    createdAt: ]' --exit-code
 
 build: $(SOURCES) ## Build binary from source

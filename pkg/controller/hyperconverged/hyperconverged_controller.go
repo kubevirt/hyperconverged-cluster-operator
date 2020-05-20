@@ -375,8 +375,101 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	allComponentsAreUp := req.conditions.empty()
 
-	// See the chart at design/aggregateNegativeConditions.png; The numbers below follows the numbers in the chart
-	// find the PlantURL syntax here: https://plantuml.com/activity-diagram-beta
+	/*
+		See the chart at design/aggregateComponentConditions.svg; The numbers below follows the numbers in the chart
+		Here is the PlantUML code for the chart that describes the aggregation of the sub-components conditions.
+		Find the PlantURL syntax here: https://plantuml.com/activity-diagram-beta
+
+		@startuml ../../../design/aggregateComponentConditions.svg
+		title Aggregate Component Conditions
+
+		start
+		  #springgreen:Set **ReconcileComplete = True**]
+		  !x=1
+		if ((x) [Degraded = True] Exists) then
+		  !x=x+1
+		  #orangered:<<implicit>>\n**Degraded = True** /
+		  -[#orangered]-> yes;
+		  if ((x) [Progressing = True] Exists) then
+			!x=x+1
+			-[#springgreen]-> no;
+			#springgreen:(x) Set **Progressing = False**]
+			!x=x+1
+		  else
+			-[#orangered]-> yes;
+			#orangered:<<implicit>>\n**Progressing = True** /
+		  endif
+		  if ((x) [Upgradable = False] Exists) then
+			!x=x+1
+			-[#springgreen]-> no;
+			#orangered:(x) Set **Upgradable = False**]
+			!x=x+1
+		  else
+			-[#orangered]-> yes;
+			#orangered:<<implicit>>\n**Upgradable = False** /
+		  endif
+		  if ((x) [Available = False] Exists) then
+			!x=x+1
+			-[#springgreen]-> no;
+			#orangered:(x) Set **Available = False**]
+			!x=x+1
+		  else
+			-[#orangered]-> yes;
+			#orangered:<<implicit>>\n**Available = False** /
+		  endif
+		else
+		  -[#springgreen]-> no;
+		  #springgreen:(x) Set **Degraded = False**]
+		  !x=x+1
+		  if ((x) [Progressing = True] Exists) then
+			!x=x+1
+			-[#orangered]-> yes;
+			#orangered:<<implicit>>\n**Progressing = True** /
+			if ((x) [Upgradable = False] Exists) then
+			  !x=x+1
+			  -[#springgreen]-> no;
+			  #orangered:(x) Set **Upgradable = False**]
+			  !x=x+1
+			else
+			  -[#orangered]-> yes;
+			  #orangered:<<implicit>>\n**Upgradable = False** /
+			endif
+			if ((x) [Available = False] Exists) then
+			  !x=x+1
+			  -[#springgreen]-> no;
+			  #springgreen:(x) Set **Available = True**]
+			  !x=x+1
+			else
+			  #orangered:<<implicit>>\n**Available = False** /
+			  -[#orangered]-> yes;
+			endif
+		  else
+			-[#springgreen]-> no;
+			#springgreen:(x) Set **Progressing = False**]
+			!x=x+1
+			if ((x) [Upgradable = False] Exists) then
+			  !x=x+1
+			  -[#springgreen]-> no;
+			  #springgreen:(x) Set **Upgradable = True**]
+			  !x=x+1
+			else
+			#orangered:<<implicit>>\n**Upgradable = False** /
+			  -[#orangered]-> yes;
+			endif
+			if ((x) [Available = False] Exists) then
+			  !x=x+1
+			  -[#springgreen]-> no;
+			  #springgreen:(x) Set **Available = True**]
+			  !x=x+1
+			else
+			  -[#orangered]-> yes;
+			  #orangered:<<implicit>>\n**Available = False** /
+			endif
+		  endif
+		endif
+		end
+		@enduml
+	*/
 
 	// If any component operator reports negatively we want to write that to
 	// the instance while preserving it's lastTransitionTime.
