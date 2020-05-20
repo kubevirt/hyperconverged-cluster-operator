@@ -20,7 +20,6 @@ sanity:
 	go fmt ./...
 	go mod vendor
 	./hack/build-manifests.sh
-	./hack/build-charts.sh
 	git diff -G'^[^    createdAt: ]' --exit-code
 
 build: $(SOURCES) ## Build binary from source
@@ -118,6 +117,9 @@ test-unit:
 
 test: test-unit
 
+charts:
+	./hack/build-charts.sh
+
 .PHONY: start \
 		clean \
 		build \
@@ -141,3 +143,4 @@ test: test-unit
 		build-functest \
 		test-functional \
 		test-functional-prow \
+		charts \
