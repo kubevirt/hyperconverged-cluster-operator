@@ -1839,7 +1839,8 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cd.Reason).Should(Equal(reconcileCompleted))
 				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionAvailable)
 				Expect(cd.Status).Should(BeEquivalentTo("False"))
-				Expect(cd.Reason).Should(Equal("CDIDegraded"))
+				Expect(cd.Reason).Should(Equal(commonDegradedReason))
+				Expect(cd.Message).Should(Equal("HCO is not available due to degraded components"))
 				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionProgressing)
 				Expect(cd.Status).Should(BeEquivalentTo("False"))
 				Expect(cd.Reason).Should(Equal(reconcileCompleted))
@@ -1848,7 +1849,8 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cd.Reason).Should(Equal("CDIDegraded"))
 				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionUpgradeable)
 				Expect(cd.Status).Should(BeEquivalentTo("False"))
-				Expect(cd.Reason).Should(Equal("CDIDegraded"))
+				Expect(cd.Reason).Should(Equal(commonDegradedReason))
+				Expect(cd.Message).Should(Equal("HCO is not Upgradeable due to degraded components"))
 
 			})
 
@@ -1880,7 +1882,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cd.Reason).Should(Equal(reconcileCompleted))
 				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionAvailable)
 				Expect(cd.Status).Should(BeEquivalentTo("False"))
-				Expect(cd.Reason).Should(Equal("CDIDegraded"))
+				Expect(cd.Reason).Should(Equal(commonDegradedReason))
 				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionProgressing)
 				Expect(cd.Status).Should(BeEquivalentTo("True"))
 				Expect(cd.Reason).Should(Equal("CDIProgressing"))
@@ -1929,7 +1931,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cd.Reason).Should(Equal("CDIDegraded"))
 				cd = conditionsv1.FindStatusCondition(conditions, conditionsv1.ConditionUpgradeable)
 				Expect(cd.Status).Should(BeEquivalentTo("False"))
-				Expect(cd.Reason).Should(Equal("CDIDegraded"))
+				Expect(cd.Reason).Should(Equal(commonDegradedReason))
 			})
 
 			It("should be Progressing when a component is Progressing", func() {
@@ -2006,7 +2008,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cd.Reason).Should(Equal("CDIProgressing"))
 			})
 
-			It("should be not Available when a component is not Available + !", func() {
+			It("should be not Available when a component is not Available", func() {
 				expected := getBasicDeployment()
 				conditionsv1.SetStatusCondition(&expected.cdi.Status.Conditions, conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,

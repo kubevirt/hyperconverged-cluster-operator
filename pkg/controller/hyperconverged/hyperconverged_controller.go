@@ -68,6 +68,8 @@ const (
 	reconcileCompletedMessage   = "Reconcile completed successfully"
 	invalidRequestReason        = "InvalidRequest"
 	invalidRequestMessageFormat = "Request does not match expected name (%v) and namespace (%v)"
+	commonDegradedReason        = "HCODegraded"
+	commonProgressingReason     = "HCOProgressing"
 
 	ErrCDIUninstall       = "ErrCDIUninstall"
 	uninstallCDIErrorMsg  = "The uninstall request failed on CDI component: "
@@ -488,7 +490,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		Message: reconcileCompletedMessage,
 	})
 
-	if cond, conditionFound := req.conditions[conditionsv1.ConditionDegraded]; conditionFound { // (#chart 1)
+	if _, conditionFound := req.conditions[conditionsv1.ConditionDegraded]; conditionFound { // (#chart 1)
 		if _, conditionFound = req.conditions[conditionsv1.ConditionProgressing]; !conditionFound { // (#chart 2)
 			req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 3)
 				Type:    conditionsv1.ConditionProgressing,
@@ -502,16 +504,16 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 			req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 5)
 				Type:    conditionsv1.ConditionUpgradeable,
 				Status:  corev1.ConditionFalse,
-				Reason:  cond.Reason,
-				Message: cond.Reason,
+				Reason:  commonDegradedReason,
+				Message: "HCO is not Upgradeable due to degraded components",
 			})
 		} // else - Upgradeable is already exists
 		if _, conditionFound = req.conditions[conditionsv1.ConditionAvailable]; !conditionFound { // (#chart 6)
 			req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 7)
 				Type:    conditionsv1.ConditionAvailable,
 				Status:  corev1.ConditionFalse,
-				Reason:  cond.Reason,
-				Message: cond.Reason,
+				Reason:  commonDegradedReason,
+				Message: "HCO is not available due to degraded components",
 			})
 		} // else - Available is already exists
 	} else {
@@ -523,14 +525,14 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 			Message: reconcileCompletedMessage,
 		})
 
-		if cond, conditionFound = req.conditions[conditionsv1.ConditionProgressing]; conditionFound { // (#chart 9)
+		if _, conditionFound = req.conditions[conditionsv1.ConditionProgressing]; conditionFound { // (#chart 9)
 
 			if _, conditionFound = req.conditions[conditionsv1.ConditionUpgradeable]; !conditionFound { // (#chart 10)
 				req.conditions.setStatusCondition(conditionsv1.Condition{ // (#chart 11)
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionFalse,
-					Reason:  cond.Reason,
-					Message: cond.Reason,
+					Reason:  commonProgressingReason,
+					Message: "HCO is not Upgradeable due to progressing components",
 				})
 			} // else - Upgradeable is already exists
 
