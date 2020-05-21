@@ -216,17 +216,13 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         - name: IMAGE_REFERENCE
-          value: quay.io/fromani/kubevirt-ssp-operator-container:v1.0.30
+          value: quay.io/fromani/kubevirt-ssp-operator-container:v1.0.32
         - name: WATCH_NAMESPACE
-        - name: KVM_INFO_TAG
         - name: VALIDATOR_TAG
-        - name: VIRT_LAUNCHER_TAG
-        - name: NODE_LABELLER_TAG
-        - name: CPU_PLUGIN_TAG
         - name: IMAGE_NAME_PREFIX
         - name: OPERATOR_NAME
           value: kubevirt-ssp-operator
-        image: quay.io/fromani/kubevirt-ssp-operator-container:v1.0.30
+        image: quay.io/fromani/kubevirt-ssp-operator-container:v1.0.32
         imagePullPolicy: Always
         name: kubevirt-ssp-operator
         ports:
