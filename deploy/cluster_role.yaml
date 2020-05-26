@@ -333,6 +333,14 @@ metadata:
   name: kubevirt-operator
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - get
+  - update
+- apiGroups:
   - kubevirt.io
   resources:
   - kubevirts
@@ -357,6 +365,12 @@ rules:
   - create
   - update
   - delete
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
   - patch
 - apiGroups:
   - batch
@@ -495,23 +509,6 @@ rules:
   - watch
   - patch
 - apiGroups:
-  - admissionregistration.k8s.io
-  resources:
-  - validatingwebhookconfigurations
-  - mutatingwebhookconfigurations
-  verbs:
-  - get
-  - create
-  - update
-- apiGroups:
-  - apiregistration.k8s.io
-  resources:
-  - apiservices
-  verbs:
-  - get
-  - create
-  - update
-- apiGroups:
   - ""
   resources:
   - pods
@@ -570,16 +567,6 @@ rules:
   - get
   - list
   - watch
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - delete
-  - update
-  - create
 - apiGroups:
   - ""
   resources:
@@ -698,6 +685,17 @@ rules:
   - nodes
   verbs:
   - patch
+  - list
+  - watch
+  - get
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -721,13 +719,6 @@ rules:
   - get
   - list
   - watch
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - create
-  - get
 - apiGroups:
   - subresources.kubevirt.io
   resources:
