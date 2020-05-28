@@ -1003,6 +1003,7 @@ func newNetworkAddonsForCR(cr *hcov1alpha1.HyperConverged, namespace string) *ne
 			LinuxBridge: &networkaddonsv1alpha1.LinuxBridge{},
 			Ovs:         &networkaddonsv1alpha1.Ovs{},
 			NMState:     &networkaddonsv1alpha1.NMState{},
+			KubeMacPool: &networkaddonsv1alpha1.KubeMacPool{},
 		},
 	}
 }
