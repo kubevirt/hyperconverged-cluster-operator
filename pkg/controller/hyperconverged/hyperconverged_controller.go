@@ -1040,7 +1040,7 @@ func (r *ReconcileHyperConverged) ensureNetworkAddons(req *hcoRequest) (upgradeD
 		}
 	}
 
-	if !reflect.DeepEqual(found.Spec, networkAddons.Spec) {
+	if !reflect.DeepEqual(found.Spec, networkAddons.Spec) && !r.upgradeMode {
 		req.logger.Info("Updating existing Network Addons")
 		found.Spec = networkAddons.Spec
 		return false, r.client.Update(req.ctx, found)
