@@ -9,7 +9,7 @@ metadata:
     categories: OpenShift Optional
     certified: "false"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.1.0
-    createdAt: "2020-05-28 10:10:10"
+    createdAt: "2020-05-29 05:06:30"
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -447,7 +447,6 @@ spec:
           - configmaps
           verbs:
           - patch
-          - delete
         - apiGroups:
           - batch
           resources:
@@ -761,6 +760,17 @@ spec:
           - nodes
           verbs:
           - patch
+          - list
+          - watch
+          - get
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
         - apiGroups:
           - ""
           resources:
@@ -1454,7 +1464,7 @@ spec:
                 - name: HCO_KV_IO_VERSION
                   value: 1.1.0
                 - name: KUBEVIRT_VERSION
-                  value: v0.29.2
+                  value: v0.29.0
                 - name: CDI_VERSION
                   value: v1.17.0
                 - name: NETWORK_ADDONS_VERSION
@@ -1573,12 +1583,12 @@ spec:
                 - "2"
                 env:
                 - name: OPERATOR_IMAGE
-                  value: docker.io/kubevirt/virt-operator:v0.29.2
+                  value: docker.io/kubevirt/virt-operator:v0.29.0
                 - name: WATCH_NAMESPACE
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
-                image: docker.io/kubevirt/virt-operator:v0.29.2
+                image: docker.io/kubevirt/virt-operator:v0.29.0
                 imagePullPolicy: IfNotPresent
                 name: virt-operator
                 ports:
@@ -1832,30 +1842,6 @@ spec:
           - update
           - delete
         serviceAccountName: cluster-network-addons-operator
-      - rules:
-        - apiGroups:
-          - ""
-          resources:
-          - secrets
-          verbs:
-          - create
-          - get
-          - list
-          - watch
-          - patch
-          - delete
-        - apiGroups:
-          - ""
-          resources:
-          - configmaps
-          verbs:
-          - create
-          - get
-          - list
-          - watch
-          - patch
-          - delete
-        serviceAccountName: kubevirt-operator
       - rules:
         - apiGroups:
           - rbac.authorization.k8s.io
