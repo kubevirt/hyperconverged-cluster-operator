@@ -9,7 +9,7 @@ metadata:
     categories: OpenShift Optional
     certified: "false"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.1.0
-    createdAt: "2020-05-30 05:06:22"
+    createdAt: "2020-05-31 05:07:00"
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -448,7 +448,6 @@ spec:
           - configmaps
           verbs:
           - patch
-          - delete
         - apiGroups:
           - batch
           resources:
@@ -762,6 +761,17 @@ spec:
           - nodes
           verbs:
           - patch
+          - list
+          - watch
+          - get
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
         - apiGroups:
           - ""
           resources:
@@ -1455,7 +1465,7 @@ spec:
                 - name: HCO_KV_IO_VERSION
                   value: 1.1.0
                 - name: KUBEVIRT_VERSION
-                  value: v0.29.2
+                  value: v0.30.0-rc.1
                 - name: CDI_VERSION
                   value: v1.18.0
                 - name: NETWORK_ADDONS_VERSION
@@ -1574,12 +1584,12 @@ spec:
                 - "2"
                 env:
                 - name: OPERATOR_IMAGE
-                  value: docker.io/kubevirt/virt-operator:v0.29.2
+                  value: docker.io/kubevirt/virt-operator:v0.30.0-rc.1
                 - name: WATCH_NAMESPACE
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
-                image: docker.io/kubevirt/virt-operator:v0.29.2
+                image: docker.io/kubevirt/virt-operator:v0.30.0-rc.1
                 imagePullPolicy: IfNotPresent
                 name: virt-operator
                 ports:
