@@ -174,6 +174,7 @@ type hcoRequest struct {
 	instance                   *hcov1alpha1.HyperConverged
 	componentUpgradeInProgress bool
 	dirty                      bool
+	statusDirty                bool
 }
 
 // Reconcile reads that state of the cluster for a HyperConverged object and makes changes based on the state read
@@ -190,6 +191,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		ctx:                        context.TODO(),
 		componentUpgradeInProgress: r.upgradeMode,
 		dirty:                      false,
+		statusDirty:                false,
 	}
 
 	req.logger.Info("Reconciling HyperConverged operator")
@@ -206,7 +208,15 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 	if req.dirty {
 		updateErr := r.client.Update(req.ctx, req.instance)
 		if updateErr != nil {
-			req.logger.Info("faild to update the CR", updateErr)
+			req.logger.Info("failed to update the CR", updateErr)
+			err = updateErr
+		}
+	}
+
+	if req.statusDirty {
+		updateErr := r.client.Status().Update(req.ctx, req.instance)
+		if updateErr != nil {
+			req.logger.Info("failed to update the CR Status", updateErr)
 			err = updateErr
 		}
 	}
@@ -796,7 +806,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtConfig(req *hcoRequest) (upgrade
 		}
 	}
 
-	req.dirty = true
+	req.statusDirty = true
 	return req.componentUpgradeInProgress, nil // r.client.Status().Update(req.ctx, req.instance)
 }
 
@@ -921,7 +931,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirt(req *hcoRequest) (upgradeDone b
 
 	upgradeDone = req.componentUpgradeInProgress && r.checkComponentVersion(hcoutil.KubevirtVersionEnvV, found.Status.ObservedKubeVirtVersion)
 
-	req.dirty = true
+	req.statusDirty = true
 	return upgradeDone, nil // r.client.Status().Update(req.ctx, req.instance)
 }
 
@@ -1000,7 +1010,7 @@ func (r *ReconcileHyperConverged) ensureCDI(req *hcoRequest) (upgradeDone bool, 
 
 	upgradeDone = req.componentUpgradeInProgress && r.checkComponentVersion(hcoutil.CdiVersionEnvV, found.Status.ObservedVersion)
 
-	req.dirty = true
+	req.statusDirty = true
 	return upgradeDone, nil // r.client.Status().Update(req.ctx, req.instance)
 }
 
@@ -1077,7 +1087,7 @@ func (r *ReconcileHyperConverged) ensureNetworkAddons(req *hcoRequest) (upgradeD
 
 	upgradeDone = req.componentUpgradeInProgress && r.checkComponentVersion(hcoutil.CnaoVersionEnvV, found.Status.ObservedVersion)
 
-	req.dirty = true
+	req.statusDirty = true
 	return upgradeDone, nil // r.client.Status().Update(req.ctx, req.instance)
 }
 
@@ -1220,7 +1230,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtCommonTemplateBundle(req *hcoReq
 	// TODO: temporary avoid checking upgrade because it's not implemented in KubevirtCommonTemplatesBundle
 	//req.componentUpgradeInProgress = req.componentUpgradeInProgress && r.checkComponentVersion(???, ???)
 
-	req.dirty = true
+	req.statusDirty = true
 	return req.componentUpgradeInProgress, nil // r.client.Status().Update(req.ctx, req.instance)
 }
 
@@ -1274,7 +1284,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtNodeLabellerBundle(req *hcoReque
 	// TODO: temporary avoid checking conditions on KubevirtNodeLabellerBundle because it's currently
 	// broken on k8s. Revert this when we will be able to fix it
 	//handleComponentConditions(r, req, "KubevirtNodeLabellerBundle", found.Status.Conditions)
-	req.dirty = true
+	req.statusDirty = true
 	return req.componentUpgradeInProgress, nil // r.client.Status().Update(req.ctx, req.instance)
 }
 
@@ -1337,7 +1347,7 @@ func (r *ReconcileHyperConverged) ensureIMSConfig(req *hcoRequest) (upgradeDone 
 
 	// TODO: Handle conditions
 	// TODO: check version for upgrade
-	req.dirty = true
+	req.statusDirty = true
 	return req.componentUpgradeInProgress, nil // r.client.Status().Update(req.ctx, req.instance)
 }
 
@@ -1374,7 +1384,7 @@ func (r *ReconcileHyperConverged) ensureVMImport(req *hcoRequest) (upgradeDone b
 
 	upgradeDone = req.componentUpgradeInProgress && r.checkComponentVersion(hcoutil.VMImportEnvV, found.Status.ObservedVersion)
 
-	req.dirty = true
+	req.statusDirty = true
 	return upgradeDone, nil // r.client.Status().Update(req.ctx, req.instance)
 }
 
@@ -1443,7 +1453,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtTemplateValidator(req *hcoReques
 	// TODO: temporary avoid checking upgrade because it's not implemented in KubevirtTemplateValidator
 	//req.componentUpgradeInProgress = req.componentUpgradeInProgress && r.checkComponentVersion(???, ???)
 
-	req.dirty = true
+	req.statusDirty = true
 	return req.componentUpgradeInProgress, nil // r.client.Status().Update(req.ctx, req.instance)
 }
 
@@ -1552,7 +1562,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtMetricsAggregation(req *hcoReque
 	// fix this when KubeVirtMetricsAggregation will be ready for this
 	// TODO check KubeVirtMetricsAggregation version for upgrade
 
-	req.dirty = true
+	req.statusDirty = true
 	return req.componentUpgradeInProgress, nil // r.client.Status().Update(req.ctx, req.instance)
 }
 
@@ -1572,7 +1582,7 @@ func (r *ReconcileHyperConverged) updateConditions(req *hcoRequest) error {
 
 	//err := r.client.Status().Update(req.ctx, req.instance)
 	//req.logger.Info("Failed to update CR status")
-	req.dirty = true
+	req.statusDirty = true
 	return nil
 }
 
