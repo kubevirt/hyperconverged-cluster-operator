@@ -205,6 +205,19 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	res, err := r.doReconcile(req)
 
+	/*
+			From K8s API reference: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/
+		    ================================================================================================================
+			Replace: Replacing a resource object will update the resource by replacing the existing spec with the provided
+			one. For read-then-write operations this is safe because an optimistic lock failure will occur if the resource
+			was	modified between the read and write.
+
+			**Note: The ResourceStatus will be ignored by the system and will not be updated. To update the status, one must
+			invoke the specific status update operation.**
+			================================================================================================================
+
+			So we need to update both the CR and the CR Status.
+	*/
 	if req.dirty {
 		updateErr := r.client.Update(req.ctx, req.instance)
 		if updateErr != nil {
@@ -249,7 +262,6 @@ func (r *ReconcileHyperConverged) doReconcile(req *hcoRequest) (reconcile.Result
 		// Add the finalizer if it's not there
 		if !contains(req.instance.ObjectMeta.Finalizers, FinalizerName) {
 			req.instance.ObjectMeta.Finalizers = append(req.instance.ObjectMeta.Finalizers, FinalizerName)
-			// err = r.client.Update(req.ctx, req.instance)
 			req.dirty = true
 		}
 	} else {
@@ -408,7 +420,6 @@ func (r *ReconcileHyperConverged) ensureHcoDeleted(req *hcoRequest) (reconcile.R
 
 	// Remove the finalizer
 	req.instance.ObjectMeta.Finalizers = drop(req.instance.ObjectMeta.Finalizers, FinalizerName)
-	// updateErr := r.client.Update(req.ctx, req.instance)
 	req.dirty = true
 
 	// Need to requeue because finalizer update does not change metadata.generation
@@ -807,7 +818,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtConfig(req *hcoRequest) (upgrade
 	}
 
 	req.statusDirty = true
-	return req.componentUpgradeInProgress, nil // r.client.Status().Update(req.ctx, req.instance)
+	return req.componentUpgradeInProgress, nil
 }
 
 // newKubeVirtForCR returns a KubeVirt CR
@@ -932,7 +943,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirt(req *hcoRequest) (upgradeDone b
 	upgradeDone = req.componentUpgradeInProgress && r.checkComponentVersion(hcoutil.KubevirtVersionEnvV, found.Status.ObservedKubeVirtVersion)
 
 	req.statusDirty = true
-	return upgradeDone, nil // r.client.Status().Update(req.ctx, req.instance)
+	return upgradeDone, nil
 }
 
 // newCDIForCr returns a CDI CR
@@ -1011,7 +1022,7 @@ func (r *ReconcileHyperConverged) ensureCDI(req *hcoRequest) (upgradeDone bool, 
 	upgradeDone = req.componentUpgradeInProgress && r.checkComponentVersion(hcoutil.CdiVersionEnvV, found.Status.ObservedVersion)
 
 	req.statusDirty = true
-	return upgradeDone, nil // r.client.Status().Update(req.ctx, req.instance)
+	return upgradeDone, nil
 }
 
 // newNetworkAddonsForCR returns a NetworkAddonsConfig CR
@@ -1088,7 +1099,7 @@ func (r *ReconcileHyperConverged) ensureNetworkAddons(req *hcoRequest) (upgradeD
 	upgradeDone = req.componentUpgradeInProgress && r.checkComponentVersion(hcoutil.CnaoVersionEnvV, found.Status.ObservedVersion)
 
 	req.statusDirty = true
-	return upgradeDone, nil // r.client.Status().Update(req.ctx, req.instance)
+	return upgradeDone, nil
 }
 
 func handleComponentConditions(r *ReconcileHyperConverged, req *hcoRequest, component string, componentConds []conditionsv1.Condition) {
@@ -1231,7 +1242,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtCommonTemplateBundle(req *hcoReq
 	//req.componentUpgradeInProgress = req.componentUpgradeInProgress && r.checkComponentVersion(???, ???)
 
 	req.statusDirty = true
-	return req.componentUpgradeInProgress, nil // r.client.Status().Update(req.ctx, req.instance)
+	return req.componentUpgradeInProgress, nil
 }
 
 func newKubeVirtNodeLabellerBundleForCR(cr *hcov1alpha1.HyperConverged, namespace string) *sspv1.KubevirtNodeLabellerBundle {
@@ -1285,7 +1296,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtNodeLabellerBundle(req *hcoReque
 	// broken on k8s. Revert this when we will be able to fix it
 	//handleComponentConditions(r, req, "KubevirtNodeLabellerBundle", found.Status.Conditions)
 	req.statusDirty = true
-	return req.componentUpgradeInProgress, nil // r.client.Status().Update(req.ctx, req.instance)
+	return req.componentUpgradeInProgress, nil
 }
 
 func newIMSConfigForCR(cr *hcov1alpha1.HyperConverged, namespace string) *corev1.ConfigMap {
@@ -1348,7 +1359,7 @@ func (r *ReconcileHyperConverged) ensureIMSConfig(req *hcoRequest) (upgradeDone 
 	// TODO: Handle conditions
 	// TODO: check version for upgrade
 	req.statusDirty = true
-	return req.componentUpgradeInProgress, nil // r.client.Status().Update(req.ctx, req.instance)
+	return req.componentUpgradeInProgress, nil
 }
 
 func (r *ReconcileHyperConverged) ensureVMImport(req *hcoRequest) (upgradeDone bool, err error) {
@@ -1385,7 +1396,7 @@ func (r *ReconcileHyperConverged) ensureVMImport(req *hcoRequest) (upgradeDone b
 	upgradeDone = req.componentUpgradeInProgress && r.checkComponentVersion(hcoutil.VMImportEnvV, found.Status.ObservedVersion)
 
 	req.statusDirty = true
-	return upgradeDone, nil // r.client.Status().Update(req.ctx, req.instance)
+	return upgradeDone, nil
 }
 
 // newVMImportForCR returns a VM import CR
@@ -1454,7 +1465,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtTemplateValidator(req *hcoReques
 	//req.componentUpgradeInProgress = req.componentUpgradeInProgress && r.checkComponentVersion(???, ???)
 
 	req.statusDirty = true
-	return req.componentUpgradeInProgress, nil // r.client.Status().Update(req.ctx, req.instance)
+	return req.componentUpgradeInProgress, nil
 }
 
 func newKubeVirtStorageConfigForCR(cr *hcov1alpha1.HyperConverged, namespace string) *corev1.ConfigMap {
@@ -1563,7 +1574,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtMetricsAggregation(req *hcoReque
 	// TODO check KubeVirtMetricsAggregation version for upgrade
 
 	req.statusDirty = true
-	return req.componentUpgradeInProgress, nil // r.client.Status().Update(req.ctx, req.instance)
+	return req.componentUpgradeInProgress, nil
 }
 
 // This function is used to exit from the reconcile function, updating the conditions and returns the reconcile result
@@ -1580,8 +1591,6 @@ func (r *ReconcileHyperConverged) updateConditions(req *hcoRequest) error {
 		conditionsv1.SetStatusCondition(&req.instance.Status.Conditions, cond)
 	}
 
-	//err := r.client.Status().Update(req.ctx, req.instance)
-	//req.logger.Info("Failed to update CR status")
 	req.statusDirty = true
 	return nil
 }
