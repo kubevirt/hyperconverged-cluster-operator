@@ -207,18 +207,27 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 	res, err := r.doReconcile(req)
 
 	/*
-			From K8s API reference: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/
-		    ============================================================================================================
-			Replace: Replacing a resource object will update the resource by replacing the existing spec with the
-			provided one. For read-then-write operations this is safe because an optimistic lock failure will occur if
-			the resource was modified between the read and write.
+		From K8s API reference: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/
+		============================================================================================================
+		Replace: Replacing a resource object will update the resource by replacing the existing spec with the
+		provided one. For read-then-write operations this is safe because an optimistic lock failure will occur if
+		the resource was modified between the read and write.
 
-			**Note: The ResourceStatus will be ignored by the system and will not be updated. To update the status, one
-			must invoke the specific status update operation.**
-			============================================================================================================
+		**Note: The ResourceStatus will be ignored by the system and will not be updated. To update the status, one
+		must invoke the specific status update operation.**
+		============================================================================================================
 
-			So we need to update both the CR and the CR Status.
+		In addition, updating the status should not update the metadata, so we need to update both the CR and the
+		CR Status, and we need to update the status first, in order to prevent a conflict.
 	*/
+	if req.statusDirty {
+		updateErr := r.client.Status().Update(req.ctx, req.instance)
+		if updateErr != nil {
+			req.logger.Info("failed to update the CR Status", updateErr)
+			err = updateErr
+		}
+	}
+
 	if req.dirty {
 		updateErr := r.client.Update(req.ctx, req.instance)
 		if updateErr != nil {
@@ -227,12 +236,8 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		}
 	}
 
-	if req.statusDirty {
-		updateErr := r.client.Status().Update(req.ctx, req.instance)
-		if updateErr != nil {
-			req.logger.Info("failed to update the CR Status", updateErr)
-			err = updateErr
-		}
+	if apierrors.IsConflict(err) {
+		res.Requeue = true
 	}
 
 	return res, err
