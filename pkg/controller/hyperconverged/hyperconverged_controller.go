@@ -166,15 +166,16 @@ type ReconcileHyperConverged struct {
 	ownVersion  string
 }
 
+// hcoRequest - gather data for a specific request
 type hcoRequest struct {
-	reconcile.Request
-	logger                     logr.Logger
-	conditions                 hcoConditions
-	ctx                        context.Context
-	instance                   *hcov1alpha1.HyperConverged
-	componentUpgradeInProgress bool
-	dirty                      bool
-	statusDirty                bool
+	reconcile.Request                                      // inheritance of operator request
+	logger                     logr.Logger                 // request logger
+	conditions                 hcoConditions               // in-memory conditions
+	ctx                        context.Context             // context of this request, to be use for any other call
+	instance                   *hcov1alpha1.HyperConverged // the current state of the CR, as read from K8s
+	componentUpgradeInProgress bool                        // if in upgrade mode, accumulate the component upgrade status
+	dirty                      bool                        // is something was changed in the CR
+	statusDirty                bool                        // is something was changed in the CR's Status
 }
 
 // Reconcile reads that state of the cluster for a HyperConverged object and makes changes based on the state read
@@ -207,14 +208,14 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 	/*
 			From K8s API reference: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/
-		    ================================================================================================================
-			Replace: Replacing a resource object will update the resource by replacing the existing spec with the provided
-			one. For read-then-write operations this is safe because an optimistic lock failure will occur if the resource
-			was	modified between the read and write.
+		    ============================================================================================================
+			Replace: Replacing a resource object will update the resource by replacing the existing spec with the
+			provided one. For read-then-write operations this is safe because an optimistic lock failure will occur if
+			the resource was modified between the read and write.
 
-			**Note: The ResourceStatus will be ignored by the system and will not be updated. To update the status, one must
-			invoke the specific status update operation.**
-			================================================================================================================
+			**Note: The ResourceStatus will be ignored by the system and will not be updated. To update the status, one
+			must invoke the specific status update operation.**
+			============================================================================================================
 
 			So we need to update both the CR and the CR Status.
 	*/
