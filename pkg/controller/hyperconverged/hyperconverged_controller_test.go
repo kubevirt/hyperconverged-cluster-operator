@@ -423,22 +423,18 @@ var _ = Describe("HyperconvergedController", func() {
 					checkAvailability(foundResource, corev1.ConditionTrue)
 				*/
 
-				// TODO: temporary avoid checking conditions on KubevirtNodeLabellerBundle because it's currently
-				// broken on k8s. Revert this when we will be able to fix it
-				/*
-					origConds = expected.kvNlb.Status.Conditions
-					expected.kvNlb.Status.Conditions = expected.cdi.Status.Conditions[1:]
-					cl = expected.initClient()
-					foundResource, requeue = doReconcile(cl, expected.hco)
-					Expect(requeue).To(BeFalse())
-					checkAvailability(foundResource, corev1.ConditionFalse)
+				origConds = expected.kvNlb.Status.Conditions
+				expected.kvNlb.Status.Conditions = expected.cdi.Status.Conditions[1:]
+				cl = expected.initClient()
+				foundResource, requeue = doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionFalse)
 
-					expected.kvNlb.Status.Conditions = origConds
-					cl = expected.initClient()
-					foundResource, requeue = doReconcile(cl, expected.hco)
-					Expect(requeue).To(BeFalse())
-					checkAvailability(foundResource, corev1.ConditionTrue)
-				*/
+				expected.kvNlb.Status.Conditions = origConds
+				cl = expected.initClient()
+				foundResource, requeue = doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionTrue)
 
 				// TODO: temporary avoid checking conditions on KubevirtTemplateValidator because it's currently
 				// broken on k8s. Revert this when we will be able to fix it

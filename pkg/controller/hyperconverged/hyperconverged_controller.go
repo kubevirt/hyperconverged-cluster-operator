@@ -1279,6 +1279,11 @@ func newKubeVirtNodeLabellerBundleForCR(cr *hcov1alpha1.HyperConverged, namespac
 }
 
 func (r *ReconcileHyperConverged) ensureKubeVirtNodeLabellerBundle(req *hcoRequest) (upgradeDone bool, err error) {
+	// avoid deploying KubeVirtNodeLabellerBundle if deploying without KVM
+	// because it that case it will be useless
+	if !isKVMAvailable() {
+		return false, nil
+	}
 	kvNLB := newKubeVirtNodeLabellerBundleForCR(req.instance, req.Namespace)
 	if err = controllerutil.SetControllerReference(req.instance, kvNLB, r.scheme); err != nil {
 		return false, err
@@ -1309,9 +1314,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtNodeLabellerBundle(req *hcoReque
 	}
 	objectreferencesv1.SetObjectReference(&req.instance.Status.RelatedObjects, *objectRef)
 
-	// TODO: temporary avoid checking conditions on KubevirtNodeLabellerBundle because it's currently
-	// broken on k8s. Revert this when we will be able to fix it
-	//handleComponentConditions(r, req, "KubevirtNodeLabellerBundle", found.Status.Conditions)
+	handleComponentConditions(r, req, "KubevirtNodeLabellerBundle", found.Status.Conditions)
 	req.statusDirty = true
 	return req.componentUpgradeInProgress, nil
 }

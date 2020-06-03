@@ -28,8 +28,8 @@ HCO_RESOURCE_NAME="kubevirt-hyperconverged"
 HCO_CRD_NAME="hyperconvergeds.hco.kubevirt.io"
 
 CI=""
-if [ "$1" == "CI" ]; then
-	echo "deploying on CI"
+if [ -n "$KUBEVIRT_PROVIDER" ]; then
+	echo "deploying on KubevirtCI ${KUBEVIRT_PROVIDER}"
 	CI="true"
 elif [ "$HOSTNAME" == "hco-e2e-aws" ] || [ "$HOSTNAME" == "e2e-aws-cnv" ]; then
 	echo "deploying on AWS CI"
