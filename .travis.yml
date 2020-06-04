@@ -5,6 +5,7 @@ sudo: required
 dist: trusty
 before_install:
   - export COVERALLS_SERVICE_JOB_ID=$( TRAVIS_JOB_ID )
+  - export COVERALLS_SERVICE_NAME="KV Hyperconverged code coverage"
 services:
 - docker
 
