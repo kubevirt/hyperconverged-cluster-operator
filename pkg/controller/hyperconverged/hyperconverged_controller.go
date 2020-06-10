@@ -1266,11 +1266,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtCommonTemplateBundle(req *hcoReq
 	}
 	objectreferencesv1.SetObjectReference(&req.instance.Status.RelatedObjects, *objectRef)
 
-	// TODO: temporary avoid checking conditions on KubevirtCommonTemplatesBundle because it's currently
-	// broken on k8s. Revert this when we will be able to fix it
-	// handleComponentConditions(r, req, "KubevirtCommonTemplatesBundle", found.Status.Conditions)
-	// TODO: temporary avoid checking upgrade because it's not implemented in KubevirtCommonTemplatesBundle
-	//req.componentUpgradeInProgress = req.componentUpgradeInProgress && r.checkComponentVersion(???, ???)
+	handleComponentConditions(r, req, "KubevirtCommonTemplatesBundle", found.Status.Conditions)
 
 	req.statusDirty = true
 	return req.componentUpgradeInProgress, nil
@@ -1323,9 +1319,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtNodeLabellerBundle(req *hcoReque
 	}
 	objectreferencesv1.SetObjectReference(&req.instance.Status.RelatedObjects, *objectRef)
 
-	// TODO: temporary avoid checking conditions on KubevirtNodeLabellerBundle because it's currently
-	// broken on k8s. Revert this when we will be able to fix it
-	//handleComponentConditions(r, req, "KubevirtNodeLabellerBundle", found.Status.Conditions)
+	handleComponentConditions(r, req, "KubevirtNodeLabellerBundle", found.Status.Conditions)
 	req.statusDirty = true
 	return req.componentUpgradeInProgress, nil
 }
@@ -1489,11 +1483,7 @@ func (r *ReconcileHyperConverged) ensureKubeVirtTemplateValidator(req *hcoReques
 	}
 	objectreferencesv1.SetObjectReference(&req.instance.Status.RelatedObjects, *objectRef)
 
-	// TODO: temporary avoid checking conditions on KubevirtTemplateValidator because it's currently
-	// broken on k8s. Revert this when we will be able to fix it
-	// handleComponentConditions(r, req, "KubevirtTemplateValidator", found.Status.Conditions)
-	// TODO: temporary avoid checking upgrade because it's not implemented in KubevirtTemplateValidator
-	//req.componentUpgradeInProgress = req.componentUpgradeInProgress && r.checkComponentVersion(???, ???)
+	handleComponentConditions(r, req, "KubevirtTemplateValidator", found.Status.Conditions)
 
 	req.statusDirty = true
 	return req.componentUpgradeInProgress, nil
