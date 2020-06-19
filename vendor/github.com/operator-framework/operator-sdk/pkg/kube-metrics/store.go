@@ -106,10 +106,10 @@ func namespacedListWatchFunc(dynamicInterface dynamic.NamespaceableResourceInter
 	namespace string) cache.ListWatch {
 	return cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return dynamicInterface.Namespace(namespace).List(context.TODO(), opts)
+			return dynamicInterface.Namespace(namespace).List(opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return dynamicInterface.Namespace(namespace).Watch(context.TODO(), opts)
+			return dynamicInterface.Namespace(namespace).Watch(opts)
 		},
 	}
 }
@@ -117,10 +117,10 @@ func namespacedListWatchFunc(dynamicInterface dynamic.NamespaceableResourceInter
 func clusterScopeListWatchFunc(dynamicInterface dynamic.NamespaceableResourceInterface) cache.ListWatch {
 	return cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return dynamicInterface.List(context.TODO(), opts)
+			return dynamicInterface.List(opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return dynamicInterface.Watch(context.TODO(), opts)
+			return dynamicInterface.Watch(opts)
 		},
 	}
 }
