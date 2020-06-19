@@ -9,18 +9,18 @@ require (
 	github.com/go-logr/logr v0.1.0
 	github.com/go-openapi/spec v0.19.7
 	github.com/imdario/mergo v0.3.8
-	github.com/kubevirt/cluster-network-addons-operator v0.3.1-0.20200527095331-9cc2867ac8dc
+	github.com/kubevirt/cluster-network-addons-operator v0.3.1-0.20200618154343-b60ae2ad7adf
 	github.com/kubevirt/vm-import-operator v0.0.3
 	github.com/onsi/ginkgo v1.12.0
 	github.com/onsi/gomega v1.10.0
 	github.com/openshift/custom-resource-status v0.0.0-20190822192428-e62f2f3b79f3
-	github.com/operator-framework/api v0.3.5
+	github.com/operator-framework/api v0.3.7-0.20200528122852-759ca0d84007
 	github.com/operator-framework/operator-lifecycle-manager v0.0.0-20200321030439-57b580e57e88
-	github.com/operator-framework/operator-sdk v0.17.0
+	github.com/operator-framework/operator-sdk v0.18.0
 	github.com/spf13/pflag v1.0.5
-	k8s.io/api v0.18.2
+	k8s.io/api v0.18.3
 	k8s.io/apiextensions-apiserver v0.18.2
-	k8s.io/apimachinery v0.18.2
+	k8s.io/apimachinery v0.18.3
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20200204173128-addea2498afe
 	kubevirt.io/client-go v0.30.1

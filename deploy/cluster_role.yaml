@@ -333,14 +333,22 @@ metadata:
 rules:
 - apiGroups:
   - security.openshift.io
-  resourceNames:
-  - privileged
   resources:
   - securitycontextconstraints
   verbs:
   - get
   - list
   - watch
+- apiGroups:
+  - security.openshift.io
+  resourceNames:
+  - privileged
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - get
+  - patch
+  - update
 - apiGroups:
   - operator.openshift.io
   resources:
@@ -353,14 +361,68 @@ rules:
   - networkaddonsoperator.network.kubevirt.io
   resources:
   - networkaddonsconfigs
+  - networkaddonsconfigs/status
   verbs:
   - get
   - list
   - watch
+  - update
 - apiGroups:
+  - ""
+  resources:
+  - services
+  - configmaps
+  - namespaces
+  - nodes
+  - nodes/status
+  - serviceaccounts
+  - pods
+  - pods/status
+  - events
+  - secrets
+  verbs:
   - '*'
+- apiGroups:
+  - apps
   resources:
   - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - mutatingwebhookconfigurations
+  - validatingwebhookconfigurations
+  verbs:
+  - '*'
+- apiGroups:
+  - k8s.cni.cncf.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - '*'
+- apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachines
+  verbs:
+  - '*'
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
   verbs:
   - '*'
 ---
