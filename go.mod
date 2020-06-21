@@ -85,4 +85,9 @@ replace (
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.5.2
 )
 
+// cluster-network-addons-operator pulls in dependency on operator-sdk v0.18.0,
+// but since HCO is pinned to Kubernetes v0.16.4, it needs to stay on operator-sdk
+// v0.17.0.
+replace github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.17.0
+
 replace github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm

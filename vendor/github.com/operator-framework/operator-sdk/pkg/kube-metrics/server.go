@@ -35,9 +35,8 @@ func ServeMetrics(stores [][]*metricsstore.MetricsStore, host string, port int32
 	// Add healthzPath
 	mux.HandleFunc(healthzPath, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
-		if _, err := w.Write([]byte("ok")); err != nil {
-			log.Error(err, "Unable to write to serve custom metrics")
-		}
+		_, err := w.Write([]byte("ok"))
+		log.Error(err, "Unable to write to serve custom metrics")
 	})
 	// Add index
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -51,9 +50,7 @@ func ServeMetrics(stores [][]*metricsstore.MetricsStore, host string, port int32
 			 </ul>
              </body>
              </html>`))
-		if err != nil {
-			log.Error(err, "Unable to write to serve custom metrics")
-		}
+		log.Error(err, "Unable to write to serve custom metrics")
 	})
 	err := http.ListenAndServe(listenAddress, mux)
 	log.Error(err, "Failed to serve custom metrics")
