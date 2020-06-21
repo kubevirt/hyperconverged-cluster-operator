@@ -1010,31 +1010,6 @@ var _ = Describe("HyperconvergedController", func() {
 					})))
 				})
 			*/
-
-			It("should request KVM without any extra setting", func() {
-				os.Unsetenv("KVM_EMULATION")
-
-				expectedResource := newKubeVirtNodeLabellerBundleForCR(hco, namespace)
-				Expect(expectedResource.Spec.UseKVM).To(BeTrue())
-			})
-
-			It("should not request KVM if emulation requested", func() {
-				err := os.Setenv("KVM_EMULATION", "true")
-				Expect(err).NotTo(HaveOccurred())
-				defer os.Unsetenv("KVM_EMULATION")
-
-				expectedResource := newKubeVirtNodeLabellerBundleForCR(hco, namespace)
-				Expect(expectedResource.Spec.UseKVM).To(BeFalse())
-			})
-
-			It("should request KVM if emulation value not set", func() {
-				err := os.Setenv("KVM_EMULATION", "")
-				Expect(err).NotTo(HaveOccurred())
-				defer os.Unsetenv("KVM_EMULATION")
-
-				expectedResource := newKubeVirtNodeLabellerBundleForCR(hco, namespace)
-				Expect(expectedResource.Spec.UseKVM).To(BeTrue())
-			})
 		})
 
 		Context("KubeVirtTemplateValidator", func() {
