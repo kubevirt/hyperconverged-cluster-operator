@@ -179,8 +179,8 @@ ${CMD} create -f ./deploy/hco.cr.yaml -n kubevirt-hyperconverged
 
 HCO_OPERATOR_POD=`${CMD} get pods -n ${HCO_NAMESPACE} | grep hco-operator | head -1 | awk '{ print $1 }'`
 
-${CMD} wait -n ${HCO_NAMESPACE} ${HCO_KIND} ${HCO_RESOURCE_NAME} --for condition=Available --timeout=15m
-${CMD} wait pod $HCO_OPERATOR_POD --for condition=Ready -n ${HCO_NAMESPACE} --timeout=15m
+${CMD} wait -n ${HCO_NAMESPACE} ${HCO_KIND} ${HCO_RESOURCE_NAME} --for condition=Available --timeout=30m
+${CMD} wait pod $HCO_OPERATOR_POD --for condition=Ready -n ${HCO_NAMESPACE} --timeout=30m
 
 Msg "check that cluster is operational before upgrade"
 timeout 10m bash -c 'export CMD="${CMD}";exec ./hack/check-state.sh' 
