@@ -17,15 +17,6 @@ Use it to obtain an opinionated deployment of KubeVirt and its helper operators.
 
 ![](images/HCO-design.jpg)
 
-## Installing HCO Community Operator (OpenShift Only)
-The Hyperconverged Cluster Operator is published as a Community Operator in
-Operatorhub.io.  In the UI, you can search for it under the "OperatorHub"
-tab or deploy from the commandline:
-
-```bash
-$ curl https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/master/deploy/hco.yaml | kubectl create -f -
-```
-
 ## Installing HCO using kustomize (Openshift OLM Only)
 To install the default community HyperConverged Cluster Operator, along with its underlying components, run:
 ```bash
