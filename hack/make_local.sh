@@ -8,5 +8,5 @@ mkdir -p "${LOCAL_DIR}"
 sed "s/\(^.*\/operator.yaml$\)/### \1/" deploy/deploy.sh > _local/deploy.sh
 chmod +x _local/deploy.sh
 
-kubectl apply -f _local/local.yaml
 _local/deploy.sh
+kubectl apply -f _local/local.yaml

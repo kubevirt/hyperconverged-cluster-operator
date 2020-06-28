@@ -7,12 +7,15 @@ The local HCO is going to run from an IDE, but it should communicate with a runn
 In order to run, you'll need a running kubernetes, and the right configuration. Set the `KUBECONFIG` environment variable 
 to the running kubernetes configurations.
 
-It is possible to use `kubevirtci` in order to get a running kubernetes, for example:
-```shell script
-$ export KUBEVIRT_PROVIDER=k8s-1.17
-$ make cluster-up
-```
-Then, the `KUBECONFIG` environment variable should be set to `_kubevirtci/_ci-configs/k8s-1.17/.kubeconfig`.
+Running HCO locally tested with
+* [minikube](https://kubernetes.io/docs/setup/learning-environment/minikube/)
+* [Code-Ready Container (CRC)](https://github.com/code-ready/crc)
+* kubevirtci - for example:
+  ```shell script
+  $ export KUBEVIRT_PROVIDER=k8s-1.17
+  $ make cluster-up
+  ```
+  Then, the `KUBECONFIG` environment variable should be set to `_kubevirtci/_ci-configs/k8s-1.17/.kubeconfig`.
 
 ### Local Deployments
 It is required to deploy some CRDs and deployments before running the HCO itself, by running:
@@ -36,7 +39,7 @@ Add new "Go Build" run configuration.
   * `OSDK_FORCE_RUN_MODE=local`
   * `OPERATOR_NAMESPACE=kubevirt-hyperconverged`
   * `CONVERSION_CONTAINER=v2.0.0` (example)
-  * `VMWARE_CONTAINER=v2.0.0-3` (example)
+  * `VMWARE_CONTAINER=v2.0.0-4` (example)
 
 Now it is possible to run or debug as any golang software.
 ![](../images/running_local_from_goland.png)
@@ -59,7 +62,7 @@ Use the following `launch.json` file for configurations:
                 "OSDK_FORCE_RUN_MODE": "local",
                 "OPERATOR_NAMESPACE":"kubevirt-hyperconverged",
                 "CONVERSION_CONTAINER": "v2.0.0",
-                "VMWARE_CONTAINER": "v2.0.0-3"
+                "VMWARE_CONTAINER": "v2.0.0-4"
             },
             "args": []
         }
