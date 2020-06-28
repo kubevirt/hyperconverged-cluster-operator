@@ -254,7 +254,7 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 
 func (r *ReconcileHyperConverged) doReconcile(req *hcoRequest) (reconcile.Result, error) {
 
-	if err := r.clusterInfo.CheckRunningInOpenshift(req.ctx); err != nil {
+	if err := r.clusterInfo.CheckRunningInOpenshift(req.ctx, req.logger); err != nil {
 		return reconcile.Result{}, err
 	}
 
