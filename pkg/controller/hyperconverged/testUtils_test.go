@@ -277,5 +277,15 @@ func initReconciler(client client.Client) *ReconcileHyperConverged {
 	}
 
 	// Create a ReconcileHyperConverged object with the scheme and fake client
-	return &ReconcileHyperConverged{client: client, scheme: s}
+	return &ReconcileHyperConverged{client: client, scheme: s, clusterInfo: clusterInfoMock{}}
+}
+
+type clusterInfoMock struct{}
+
+func (clusterInfoMock) CheckRunningInOpenshift(ctx context.Context) error {
+	return nil
+}
+
+func (clusterInfoMock) IsOpenshift() bool {
+	return true
 }
