@@ -110,6 +110,12 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 		upgradeMode: false,
 		ownVersion:  ownVersion,
 		clusterInfo: hcoutil.NewClusterInfo(mgr.GetClient()),
+		shouldRemoveOldCrd: map[string]bool{
+			commonTemplatesBundleOldCrdName: true,
+			metricsAggregationOldCrdName:    true,
+			nodeLabellerBundlesOldCrdName:   true,
+			templateValidatorsOldCrdName:    true,
+		},
 	}
 }
 
@@ -167,12 +173,13 @@ var _ reconcile.Reconciler = &ReconcileHyperConverged{}
 type ReconcileHyperConverged struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client      client.Client
-	scheme      *runtime.Scheme
-	recorder    record.EventRecorder
-	upgradeMode bool
-	ownVersion  string
-	clusterInfo hcoutil.ClusterInfo
+	client             client.Client
+	scheme             *runtime.Scheme
+	recorder           record.EventRecorder
+	upgradeMode        bool
+	ownVersion         string
+	clusterInfo        hcoutil.ClusterInfo
+	shouldRemoveOldCrd map[string]bool
 }
 
 // hcoRequest - gather data for a specific request
@@ -1267,9 +1274,14 @@ func (r *ReconcileHyperConverged) ensureKubeVirtCommonTemplateBundle(req *hcoReq
 
 	isReady := handleComponentConditions(r, req, "KubevirtCommonTemplatesBundle", found.Status.Conditions)
 
-	upgradeInProgress := r.upgradeMode && isReady && r.checkComponentVersion(hcoutil.SspVersionEnvV, found.Status.ObservedVersion)
-	if upgradeInProgress {
-		r.removeCrd(req, commonTemplatesBundleOldCrdName)
+	upgradeInProgress := false
+	if isReady {
+		upgradeInProgress = r.upgradeMode && r.checkComponentVersion(hcoutil.SspVersionEnvV, found.Status.ObservedVersion)
+		if (upgradeInProgress || !r.upgradeMode) && r.shouldRemoveOldCrd[commonTemplatesBundleOldCrdName] {
+			if r.removeCrd(req, commonTemplatesBundleOldCrdName) {
+				r.shouldRemoveOldCrd[commonTemplatesBundleOldCrdName] = false
+			}
+		}
 	}
 
 	req.statusDirty = true
@@ -1329,9 +1341,15 @@ func (r *ReconcileHyperConverged) ensureKubeVirtNodeLabellerBundle(req *hcoReque
 	objectreferencesv1.SetObjectReference(&req.instance.Status.RelatedObjects, *objectRef)
 
 	isReady := handleComponentConditions(r, req, "KubevirtNodeLabellerBundle", found.Status.Conditions)
-	upgradeInProgress := r.upgradeMode && isReady && r.checkComponentVersion(hcoutil.SspVersionEnvV, found.Status.ObservedVersion)
-	if upgradeInProgress {
-		r.removeCrd(req, nodeLabellerBundlesOldCrdName)
+
+	upgradeInProgress := false
+	if isReady {
+		upgradeInProgress = r.upgradeMode && r.checkComponentVersion(hcoutil.SspVersionEnvV, found.Status.ObservedVersion)
+		if (upgradeInProgress || !r.upgradeMode) && r.shouldRemoveOldCrd[nodeLabellerBundlesOldCrdName] {
+			if r.removeCrd(req, nodeLabellerBundlesOldCrdName) {
+				r.shouldRemoveOldCrd[nodeLabellerBundlesOldCrdName] = false
+			}
+		}
 	}
 
 	req.componentUpgradeInProgress = req.componentUpgradeInProgress && upgradeInProgress
@@ -1504,10 +1522,17 @@ func (r *ReconcileHyperConverged) ensureKubeVirtTemplateValidator(req *hcoReques
 	objectreferencesv1.SetObjectReference(&req.instance.Status.RelatedObjects, *objectRef)
 
 	isReady := handleComponentConditions(r, req, "KubevirtTemplateValidator", found.Status.Conditions)
-	upgradeInProgress := r.upgradeMode && isReady && r.checkComponentVersion(hcoutil.SspVersionEnvV, found.Status.ObservedVersion)
-	if upgradeInProgress {
-		r.removeCrd(req, templateValidatorsOldCrdName)
+
+	upgradeInProgress := false
+	if isReady {
+		upgradeInProgress = r.upgradeMode && r.checkComponentVersion(hcoutil.SspVersionEnvV, found.Status.ObservedVersion)
+		if (upgradeInProgress || !r.upgradeMode) && r.shouldRemoveOldCrd[templateValidatorsOldCrdName] {
+			if r.removeCrd(req, templateValidatorsOldCrdName) {
+				r.shouldRemoveOldCrd[templateValidatorsOldCrdName] = false
+			}
+		}
 	}
+
 	req.componentUpgradeInProgress = req.componentUpgradeInProgress && upgradeInProgress
 	req.statusDirty = true
 	return req.componentUpgradeInProgress, nil
@@ -1619,9 +1644,15 @@ func (r *ReconcileHyperConverged) ensureKubeVirtMetricsAggregation(req *hcoReque
 	objectreferencesv1.SetObjectReference(&req.instance.Status.RelatedObjects, *objectRef)
 
 	isReady := handleComponentConditions(r, req, "KubeVirtMetricsAggregation", found.Status.Conditions)
-	upgradeInProgress := r.upgradeMode && isReady && r.checkComponentVersion(hcoutil.SspVersionEnvV, found.Status.ObservedVersion)
-	if upgradeInProgress {
-		r.removeCrd(req, metricsAggregationOldCrdName)
+
+	upgradeInProgress := false
+	if isReady {
+		upgradeInProgress = r.upgradeMode && r.checkComponentVersion(hcoutil.SspVersionEnvV, found.Status.ObservedVersion)
+		if (upgradeInProgress || !r.upgradeMode) && r.shouldRemoveOldCrd[metricsAggregationOldCrdName] {
+			if r.removeCrd(req, metricsAggregationOldCrdName) {
+				r.shouldRemoveOldCrd[metricsAggregationOldCrdName] = false
+			}
+		}
 	}
 
 	req.componentUpgradeInProgress = req.componentUpgradeInProgress && upgradeInProgress
@@ -1659,7 +1690,8 @@ func (r *ReconcileHyperConverged) setLabels(req *hcoRequest) {
 	}
 }
 
-func (r *ReconcileHyperConverged) removeCrd(req *hcoRequest, crdName string) {
+// return true if not found or if deletion succeeded
+func (r *ReconcileHyperConverged) removeCrd(req *hcoRequest, crdName string) bool {
 	found := &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"kind":       "CustomResourceDefinition",
@@ -1671,15 +1703,19 @@ func (r *ReconcileHyperConverged) removeCrd(req *hcoRequest, crdName string) {
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			req.logger.Error(err, fmt.Sprintf("failed to read the %s CRD; %s", crdName, err.Error()))
+			return false
 		}
 	} else {
 		err = r.client.Delete(req.ctx, found)
 		if err != nil {
 			req.logger.Error(err, fmt.Sprintf("failed to remove the %s CRD; %s", crdName, err.Error()))
+			return false
 		} else {
 			req.logger.Info("successfully removed CRD", "CRD Name", crdName)
 		}
 	}
+
+	return true
 }
 
 func isKVMAvailable() bool {
