@@ -10,7 +10,7 @@
           "--cdi-namespace=@NAMESPACE@",
           "--config=/etc/config/test-config.json",
           "--ginkgo.seed=0",
-          "--ginkgo.focus=\\[crit:high\\]",
+          "--ginkgo.focus=@GINKGO_TESTS_TO_FOCUS@",
           "--ginkgo.skip=@GINKGO_TESTS_TO_SKIP@"
         ],
         "volumeMounts": [
