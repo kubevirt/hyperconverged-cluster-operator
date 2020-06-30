@@ -476,8 +476,6 @@ func (r *ReconcileHyperConverged) ensureHco(req *hcoRequest) error {
 		r.ensureKubeVirtPriorityClass,
 		r.ensureKubeVirtConfig,
 		r.ensureKubeVirtStorageConfig,
-		r.ensureKubeVirtStorageRole,
-		r.ensureKubeVirtStorageRoleBinding,
 		r.ensureKubeVirt,
 		r.ensureCDI,
 		r.ensureNetworkAddons,
@@ -959,6 +957,16 @@ func (r *ReconcileHyperConverged) ensureCDI(req *hcoRequest) (upgradeDone bool, 
 	}
 
 	req.logger.Info("CDI already exists", "CDI.Namespace", found.Namespace, "CDI.Name", found.Name)
+
+	err = r.ensureKubeVirtStorageRole(req)
+	if err != nil {
+		return false, err
+	}
+
+	err = r.ensureKubeVirtStorageRoleBinding(req)
+	if err != nil {
+		return false, err
+	}
 
 	existingOwners := found.GetOwnerReferences()
 
@@ -1530,10 +1538,10 @@ func newKubeVirtStorageConfigForCR(cr *hcov1alpha1.HyperConverged, namespace str
 	}
 }
 
-func (r *ReconcileHyperConverged) ensureKubeVirtStorageRole(req *hcoRequest) (upgradeDone bool, err error) {
+func (r *ReconcileHyperConverged) ensureKubeVirtStorageRole(req *hcoRequest) error {
 	kubevirtStorageRole := newKubeVirtStorageRoleForCR(req.instance, req.Namespace)
 	if err := controllerutil.SetControllerReference(req.instance, kubevirtStorageRole, r.scheme); err != nil {
-		return false, err
+		return err
 	}
 
 	key, err := client.ObjectKeyFromObject(kubevirtStorageRole)
@@ -1545,28 +1553,28 @@ func (r *ReconcileHyperConverged) ensureKubeVirtStorageRole(req *hcoRequest) (up
 	err = r.client.Get(req.ctx, key, found)
 	if err != nil && apierrors.IsNotFound(err) {
 		req.logger.Info("Creating kubevirt storage role")
-		return false, r.client.Create(req.ctx, kubevirtStorageRole)
+		return r.client.Create(req.ctx, kubevirtStorageRole)
 	}
 
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	req.logger.Info("KubeVirt storage role already exists", "KubeVirtConfig.Namespace", found.Namespace, "KubeVirtConfig.Name", found.Name)
 	// Add it to the list of RelatedObjects if found
 	objectRef, err := reference.GetReference(r.scheme, found)
 	if err != nil {
-		return false, err
+		return err
 	}
 	objectreferencesv1.SetObjectReference(&req.instance.Status.RelatedObjects, *objectRef)
 
-	return req.componentUpgradeInProgress, nil
+	return nil
 }
 
-func (r *ReconcileHyperConverged) ensureKubeVirtStorageRoleBinding(req *hcoRequest) (upgradeDone bool, err error) {
+func (r *ReconcileHyperConverged) ensureKubeVirtStorageRoleBinding(req *hcoRequest) error {
 	kubevirtStorageRoleBinding := newKubeVirtStorageRoleBindingForCR(req.instance, req.Namespace)
 	if err := controllerutil.SetControllerReference(req.instance, kubevirtStorageRoleBinding, r.scheme); err != nil {
-		return false, err
+		return err
 	}
 
 	key, err := client.ObjectKeyFromObject(kubevirtStorageRoleBinding)
@@ -1578,22 +1586,22 @@ func (r *ReconcileHyperConverged) ensureKubeVirtStorageRoleBinding(req *hcoReque
 	err = r.client.Get(req.ctx, key, found)
 	if err != nil && apierrors.IsNotFound(err) {
 		req.logger.Info("Creating kubevirt storage rolebinding")
-		return false, r.client.Create(req.ctx, kubevirtStorageRoleBinding)
+		return r.client.Create(req.ctx, kubevirtStorageRoleBinding)
 	}
 
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	req.logger.Info("KubeVirt storage rolebinding already exists", "KubeVirtConfig.Namespace", found.Namespace, "KubeVirtConfig.Name", found.Name)
 	// Add it to the list of RelatedObjects if found
 	objectRef, err := reference.GetReference(r.scheme, found)
 	if err != nil {
-		return false, err
+		return err
 	}
 	objectreferencesv1.SetObjectReference(&req.instance.Status.RelatedObjects, *objectRef)
 
-	return req.componentUpgradeInProgress, nil
+	return nil
 }
 
 func (r *ReconcileHyperConverged) ensureKubeVirtStorageConfig(req *hcoRequest) (upgradeDone bool, err error) {
