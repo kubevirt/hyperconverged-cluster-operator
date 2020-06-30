@@ -96,7 +96,7 @@ var _ = Describe("HyperconvergedController", func() {
 			})
 
 			It("should create if not present", func() {
-				expectedResource := newKubeVirtPriorityClass()
+				expectedResource := util.NewKubeVirtPriorityClass()
 				cl := initClient([]runtime.Object{})
 				r := initReconciler(cl)
 				upgradeDone, err := r.ensureKubeVirtPriorityClass(req)
@@ -113,7 +113,7 @@ var _ = Describe("HyperconvergedController", func() {
 			})
 
 			It("should do nothing if already exists", func() {
-				expectedResource := newKubeVirtPriorityClass()
+				expectedResource := util.NewKubeVirtPriorityClass()
 				cl := initClient([]runtime.Object{expectedResource})
 				r := initReconciler(cl)
 				upgradeDone, err := r.ensureKubeVirtPriorityClass(req)
@@ -132,7 +132,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(upgradeDone).To(BeFalse())
 				Expect(err).To(BeNil())
 
-				expectedResource := newKubeVirtPriorityClass()
+				expectedResource := util.NewKubeVirtPriorityClass()
 				key, err := client.ObjectKeyFromObject(expectedResource)
 				Expect(err).ToNot(HaveOccurred())
 				foundResource := &schedulingv1.PriorityClass{}
@@ -2380,7 +2380,7 @@ func getBasicDeployment() *basicExpected {
 	}
 	res.hco = hco
 
-	res.pc = newKubeVirtPriorityClass()
+	res.pc = util.NewKubeVirtPriorityClass()
 	// These are all of the objects that we expect to "find" in the client because
 	// we already created them in a previous reconcile.
 	expectedKVConfig := newKubeVirtConfigForCR(hco, namespace)

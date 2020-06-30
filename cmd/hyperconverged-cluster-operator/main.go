@@ -4,6 +4,9 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"os"
+	"runtime"
+
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller"
 	securityv1 "github.com/openshift/api/security/v1"
@@ -15,8 +18,7 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
-	"os"
-	"runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
@@ -29,6 +31,7 @@ import (
 	kubemetrics "github.com/operator-framework/operator-sdk/pkg/kube-metrics"
 	sdkVersion "github.com/operator-framework/operator-sdk/version"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	cdiv1alpha1 "kubevirt.io/containerized-data-importer/pkg/apis/core/v1alpha1"
@@ -189,6 +192,12 @@ func main() {
 		}
 	}
 
+	err = createPriorityClass(ctx, mgr)
+	if err != nil {
+		log.Error(err, "Failed creating PriorityClass")
+		os.Exit(1)
+	}
+
 	log.Info("Starting the Cmd.")
 
 	// Start the Cmd
@@ -196,6 +205,25 @@ func main() {
 		log.Error(err, "Manager exited non-zero")
 		os.Exit(1)
 	}
+}
+
+func createPriorityClass(ctx context.Context, mgr manager.Manager) error {
+	pc := hcoutil.NewKubeVirtPriorityClass()
+
+	key, err := client.ObjectKeyFromObject(pc)
+	if err != nil {
+		log.Error(err, "Failed to get object key for KubeVirt PriorityClass")
+		return err
+	}
+
+	err = mgr.GetAPIReader().Get(ctx, key, pc)
+
+	if err != nil && apierrors.IsNotFound(err) {
+		log.Info("Creating KubeVirt PriorityClass")
+		return mgr.GetClient().Create(ctx, pc, &client.CreateOptions{})
+	}
+
+	return err
 }
 
 // serveCRMetrics gets the Operator/CustomResource GVKs and generates metrics based on those types.
