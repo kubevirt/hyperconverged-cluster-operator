@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"os"
@@ -1351,28 +1352,25 @@ var _ = Describe("HyperconvergedController", func() {
 					Reason:  reconcileCompleted,
 					Message: reconcileCompletedMessage,
 				})))
-				// TODO: temporary ignoring KubevirtTemplateValidator conditions
-				/*
-					// Why Template validator? Because it is the last to be checked, so the last missing overwrites everything
-					Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
-						Type:    conditionsv1.ConditionAvailable,
-						Status:  corev1.ConditionFalse,
-						Reason:  "KubevirtTemplateValidatorConditions",
-						Message: "KubevirtTemplateValidator resource has no conditions",
-					})))
-					Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
-						Type:    conditionsv1.ConditionProgressing,
-						Status:  corev1.ConditionTrue,
-						Reason:  "KubevirtTemplateValidatorConditions",
-						Message: "KubevirtTemplateValidator resource has no conditions",
-					})))
-					Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
-						Type:    conditionsv1.ConditionUpgradeable,
-						Status:  corev1.ConditionFalse,
-						Reason:  "KubevirtTemplateValidatorConditions",
-						Message: "KubevirtTemplateValidator resource has no conditions",
-					})))
-				*/
+				// Why Template validator? Because it is the last to be checked, so the last missing overwrites everything
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+					Type:    conditionsv1.ConditionAvailable,
+					Status:  corev1.ConditionFalse,
+					Reason:  "KubevirtTemplateValidatorConditions",
+					Message: "KubevirtTemplateValidator resource has no conditions",
+				})))
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+					Type:    conditionsv1.ConditionProgressing,
+					Status:  corev1.ConditionTrue,
+					Reason:  "KubevirtTemplateValidatorConditions",
+					Message: "KubevirtTemplateValidator resource has no conditions",
+				})))
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+					Type:    conditionsv1.ConditionUpgradeable,
+					Status:  corev1.ConditionFalse,
+					Reason:  "KubevirtTemplateValidatorConditions",
+					Message: "KubevirtTemplateValidator resource has no conditions",
+				})))
 			})
 
 			It("should complete when components are finished", func() {
@@ -1549,56 +1547,44 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(requeue).To(BeFalse())
 				checkAvailability(foundResource, corev1.ConditionTrue)
 
-				// TODO: temporary avoid checking conditions on KubevirtCommonTemplatesBundle because it's currently
-				// broken on k8s. Revert this when we will be able to fix it
-				/*
-					origConds = expected.kvCtb.Status.Conditions
-					expected.kvCtb.Status.Conditions = expected.cdi.Status.Conditions[1:]
-					cl = expected.initClient()
-					foundResource, requeue = doReconcile(cl, expected.hco)
-					Expect(requeue).To(BeFalse())
-					checkAvailability(foundResource, corev1.ConditionFalse)
+				origConds = expected.kvCtb.Status.Conditions
+				expected.kvCtb.Status.Conditions = expected.cdi.Status.Conditions[1:]
+				cl = expected.initClient()
+				foundResource, requeue = doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionFalse)
 
-					expected.kvCtb.Status.Conditions = origConds
-					cl = expected.initClient()
-					foundResource, requeue = doReconcile(cl, expected.hco)
-					Expect(requeue).To(BeFalse())
-					checkAvailability(foundResource, corev1.ConditionTrue)
-				*/
+				expected.kvCtb.Status.Conditions = origConds
+				cl = expected.initClient()
+				foundResource, requeue = doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionTrue)
 
-				// TODO: temporary avoid checking conditions on KubevirtNodeLabellerBundle because it's currently
-				// broken on k8s. Revert this when we will be able to fix it
-				/*
-					origConds = expected.kvNlb.Status.Conditions
-					expected.kvNlb.Status.Conditions = expected.cdi.Status.Conditions[1:]
-					cl = expected.initClient()
-					foundResource, requeue = doReconcile(cl, expected.hco)
-					Expect(requeue).To(BeFalse())
-					checkAvailability(foundResource, corev1.ConditionFalse)
+				origConds = expected.kvNlb.Status.Conditions
+				expected.kvNlb.Status.Conditions = expected.cdi.Status.Conditions[1:]
+				cl = expected.initClient()
+				foundResource, requeue = doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionFalse)
 
-					expected.kvNlb.Status.Conditions = origConds
-					cl = expected.initClient()
-					foundResource, requeue = doReconcile(cl, expected.hco)
-					Expect(requeue).To(BeFalse())
-					checkAvailability(foundResource, corev1.ConditionTrue)
-				*/
+				expected.kvNlb.Status.Conditions = origConds
+				cl = expected.initClient()
+				foundResource, requeue = doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionTrue)
 
-				// TODO: temporary avoid checking conditions on KubevirtTemplateValidator because it's currently
-				// broken on k8s. Revert this when we will be able to fix it
-				/*
-					origConds = expected.kvTv.Status.Conditions
-					expected.kvTv.Status.Conditions = expected.cdi.Status.Conditions[1:]
-					cl = expected.initClient()
-					foundResource, requeue = doReconcile(cl, expected.hco)
-					Expect(requeue).To(BeFalse())
-					checkAvailability(foundResource, corev1.ConditionFalse)
+				origConds = expected.kvTv.Status.Conditions
+				expected.kvTv.Status.Conditions = expected.cdi.Status.Conditions[1:]
+				cl = expected.initClient()
+				foundResource, requeue = doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionFalse)
 
-					expected.kvTv.Status.Conditions = origConds
-					cl = expected.initClient()
-					foundResource, requeue = doReconcile(cl, expected.hco)
-					Expect(requeue).To(BeFalse())
-					checkAvailability(foundResource, corev1.ConditionTrue)
-				*/
+				expected.kvTv.Status.Conditions = origConds
+				cl = expected.initClient()
+				foundResource, requeue = doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionTrue)
 			})
 
 			It(`should delete HCO`, func() {
@@ -1706,6 +1692,12 @@ var _ = Describe("HyperconvergedController", func() {
 
 				expected.vmi.Status.ObservedVersion = newComponentVersion
 				os.Setenv(util.VMImportEnvV, newComponentVersion)
+
+				os.Setenv(util.SspVersionEnvV, newComponentVersion)
+				expected.kvCtb.Status.ObservedVersion = newComponentVersion
+				expected.kvNlb.Status.ObservedVersion = newComponentVersion
+				expected.kvTv.Status.ObservedVersion = newComponentVersion
+				expected.kvMtAg.Status.ObservedVersion = newComponentVersion
 
 				os.Setenv(util.HcoKvIoVersionName, newVersion)
 
@@ -2541,5 +2533,15 @@ func initReconciler(client client.Client) *ReconcileHyperConverged {
 	}
 
 	// Create a ReconcileHyperConverged object with the scheme and fake client
-	return &ReconcileHyperConverged{client: client, scheme: s}
+	return &ReconcileHyperConverged{client: client, scheme: s, clusterInfo: &clusterInfoMock{}}
+}
+
+type clusterInfoMock struct{}
+
+func (clusterInfoMock) CheckRunningInOpenshift(_ context.Context, _ logr.Logger) error {
+	return nil
+}
+
+func (clusterInfoMock) IsOpenshift() bool {
+	return true
 }
