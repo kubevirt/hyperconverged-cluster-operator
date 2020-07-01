@@ -79,6 +79,8 @@ function status(){
       ${CMD} describe pod -n ${HCO_NAMESPACE} ${PNAME} || true
       ${CMD} logs -n ${HCO_NAMESPACE} ${PNAME} --all-containers=true || true
     done
+    HCO_POD=$( ${CMD} get pods -l "name=hyperconverged-cluster-operator" -o name)
+    ${CMD} logs "${HCO_POD}"
 }
 
 trap status EXIT
