@@ -224,6 +224,10 @@ sleep 60
 ${CMD} get pods -n kubevirt-hyperconverged
 ${CMD} wait deployment ${HCO_DEPLOYMENT_NAME} --for condition=Available -n ${HCO_NAMESPACE} --timeout="1200s"
 
+Msg "verify new operator version"
+HCO_VERSION=$( ${CMD} get hco ${HCO_RESOURCE_NAME} -n ${HCO_NAMESPACE} -o jsonpath="{ .status.versions[?(@.name=='operator')].version }")
+[[ "${LATEST_VERSION}" == "${HCO_VERSION}" ]]
+
 ./hack/retry.sh 30 60 "${CMD} get subscriptions -n kubevirt-hyperconverged -o yaml | grep currentCSV | grep v100.0.0"
 ./hack/retry.sh 2 30 "${CMD} get subscriptions -n kubevirt-hyperconverged -o yaml | grep installedCSV | grep v100.0.0"
 
