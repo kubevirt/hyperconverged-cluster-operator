@@ -172,7 +172,6 @@ type ReconcileHyperConverged struct {
 	ownVersion         string
 	clusterInfo        hcoutil.ClusterInfo
 	shouldRemoveOldCrd map[string]bool
-	runLocally         bool
 }
 
 // hcoRequest - gather data for a specific request
