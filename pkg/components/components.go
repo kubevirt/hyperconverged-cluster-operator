@@ -8,7 +8,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 
 	"github.com/blang/semver"
-	hcov1alpha1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1alpha1"
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	csvVersion "github.com/operator-framework/api/pkg/lib/version"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
@@ -522,7 +522,7 @@ func GetOperatorCRD(namespace string) *extv1beta1.CustomResourceDefinition {
 							Properties: map[string]extv1beta1.JSONSchemaProps{
 								"name": extv1beta1.JSONSchemaProps{
 									Type:    "string",
-									Pattern: hcov1alpha1.HyperConvergedName,
+									Pattern: hcov1beta1.HyperConvergedName,
 								},
 							},
 						},
@@ -662,8 +662,8 @@ func GetV2VOvirtProviderCRD() *extv1beta1.CustomResourceDefinition {
 	}
 }
 
-func GetOperatorCR() *hcov1alpha1.HyperConverged {
-	return &hcov1alpha1.HyperConverged{
+func GetOperatorCR() *hcov1beta1.HyperConverged {
+	return &hcov1beta1.HyperConverged{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "hco.kubevirt.io/v1alpha1",
 			Kind:       "HyperConverged",
@@ -671,7 +671,7 @@ func GetOperatorCR() *hcov1alpha1.HyperConverged {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "kubevirt-hyperconverged",
 		},
-		Spec: hcov1alpha1.HyperConvergedSpec{
+		Spec: hcov1beta1.HyperConvergedSpec{
 			BareMetalPlatform:     false,
 			LocalStorageClassName: "",
 		},
