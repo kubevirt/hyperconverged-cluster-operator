@@ -328,6 +328,11 @@ func (r *ReconcileHyperConverged) getHcoInstanceFromK8s(req *hcoRequest) (*hcov1
 		// Error reading the object - requeue the request.
 		return nil, err
 	}
+
+	//gvk := instance.TypeMeta.GroupVersionKind()
+	//gvk.Version = "v1beta1"
+	//instance.SetGroupVersionKind(gvk)
+	//req.logger.Info(gvk.Version)
 	return instance, nil
 }
 
