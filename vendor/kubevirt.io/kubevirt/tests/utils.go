@@ -266,6 +266,12 @@ const (
 	tmpPath         = "/tmp/kubevirt.io/tests"
 )
 
+const (
+	capNetAdmin k8sv1.Capability = "NET_ADMIN"
+	capNetRaw   k8sv1.Capability = "NET_RAW"
+	capSysNice  k8sv1.Capability = "SYS_NICE"
+)
+
 type ProcessFunc func(event *k8sv1.Event) (done bool)
 
 type ObjectEventWatcher struct {
@@ -1942,7 +1948,29 @@ func NewRandomVMIWithEFIBootloader() *v1.VirtualMachineInstance {
 	vmi.Spec.Domain.Resources.Requests[k8sv1.ResourceMemory] = resource.MustParse("1Gi")
 	vmi.Spec.Domain.Firmware = &v1.Firmware{
 		Bootloader: &v1.Bootloader{
-			EFI: &v1.EFI{},
+			EFI: &v1.EFI{
+				SecureBoot: NewBool(false),
+			},
+		},
+	}
+
+	return vmi
+
+}
+
+func NewRandomVMIWithSecureBoot() *v1.VirtualMachineInstance {
+	vmi := NewRandomVMIWithEphemeralDiskHighMemory(ContainerDiskFor(ContainerDiskMicroLiveCD))
+
+	// EFI needs more memory than other images
+	vmi.Spec.Domain.Resources.Requests[k8sv1.ResourceMemory] = resource.MustParse("1Gi")
+	vmi.Spec.Domain.Features = &v1.Features{
+		SMM: &v1.FeatureState{
+			Enabled: NewBool(true),
+		},
+	}
+	vmi.Spec.Domain.Firmware = &v1.Firmware{
+		Bootloader: &v1.Bootloader{
+			EFI: &v1.EFI{}, // SecureBoot should default to true
 		},
 	}
 
@@ -2773,6 +2801,7 @@ const (
 	ContainerDiskCirros               ContainerDisk = "cirros"
 	ContainerDiskAlpine               ContainerDisk = "alpine"
 	ContainerDiskFedora               ContainerDisk = "fedora-cloud"
+	ContainerDiskMicroLiveCD          ContainerDisk = "microlivecd"
 	ContainerDiskVirtio               ContainerDisk = "virtio-container-disk"
 	ContainerDiskEmpty                ContainerDisk = "empty"
 )
@@ -2782,7 +2811,7 @@ const (
 // Supported values are: cirros, fedora, alpine, guest-agent
 func ContainerDiskFor(name ContainerDisk) string {
 	switch name {
-	case ContainerDiskCirros, ContainerDiskAlpine, ContainerDiskFedora, ContainerDiskCirrosCustomLocation:
+	case ContainerDiskCirros, ContainerDiskAlpine, ContainerDiskFedora, ContainerDiskMicroLiveCD, ContainerDiskCirrosCustomLocation:
 		return fmt.Sprintf("%s/%s-container-disk-demo:%s", KubeVirtUtilityRepoPrefix, name, KubeVirtUtilityVersionTag)
 	case ContainerDiskVirtio:
 		return fmt.Sprintf("%s/virtio-container-disk:%s", KubeVirtUtilityRepoPrefix, KubeVirtUtilityVersionTag)
@@ -2807,19 +2836,23 @@ func CheckForTextExpecter(vmi *v1.VirtualMachineInstance, expected []expect.Batc
 }
 
 func configureIPv6OnVMI(vmi *v1.VirtualMachineInstance, expecter expect.Expecter, virtClient kubecli.KubevirtClient, prompt string) error {
-	shouldConfigureIpv6 := func(vmi *v1.VirtualMachineInstance) bool {
-		shouldConfigureIpv6Batch := append([]expect.Batcher{
+	hasEth0Iface := func(vmi *v1.VirtualMachineInstance) bool {
+		hasNetEth0Batch := append([]expect.Batcher{
 			&expect.BSnd{S: "\n"},
 			&expect.BExp{R: prompt},
-			&expect.BSnd{S: "ip a | grep -q eth0\n"},
+			&expect.BSnd{S: "ip a | grep -q eth0; echo $?\n"},
+			&expect.BExp{R: retcode("0")}})
+		_, err := expecter.ExpectBatch(hasNetEth0Batch, 30*time.Second)
+		return err == nil
+	}
+
+	hasGlobalIPv6 := func(vmi *v1.VirtualMachineInstance) bool {
+		hasGlobalIPv6Batch := append([]expect.Batcher{
+			&expect.BSnd{S: "\n"},
 			&expect.BExp{R: prompt},
-			&expect.BSnd{S: "echo $?\n"},
-			&expect.BExp{R: "0"},
-			&expect.BSnd{S: "ip address show dev eth0 scope global | grep -q inet6\n"},
-			&expect.BExp{R: prompt},
-			&expect.BSnd{S: "echo $?\n"},
-			&expect.BExp{R: "1"}})
-		_, err := expecter.ExpectBatch(shouldConfigureIpv6Batch, 30*time.Second)
+			&expect.BSnd{S: "ip -6 address show dev eth0 scope global | grep -q inet6; echo $?\n"},
+			&expect.BExp{R: retcode("0")}})
+		_, err := expecter.ExpectBatch(hasGlobalIPv6Batch, 30*time.Second)
 		return err == nil
 	}
 
@@ -2833,34 +2866,35 @@ func configureIPv6OnVMI(vmi *v1.VirtualMachineInstance, expecter expect.Expecter
 	if !netutils.IsIPv6String(dnsServerIP) ||
 		(vmi.Spec.Domain.Devices.Interfaces == nil || len(vmi.Spec.Domain.Devices.Interfaces) == 0 || vmi.Spec.Domain.Devices.Interfaces[0].InterfaceBindingMethod.Masquerade == nil) ||
 		(vmi.Spec.Domain.Devices.AutoattachPodInterface != nil && !*vmi.Spec.Domain.Devices.AutoattachPodInterface) ||
-		!shouldConfigureIpv6(vmi) {
+		(!hasEth0Iface(vmi) || hasGlobalIPv6(vmi)) {
 		return nil
 	}
 
-	ipv6Batch := append([]expect.Batcher{
+	addIPv6Address := append([]expect.Batcher{
 		&expect.BSnd{S: "\n"},
 		&expect.BExp{R: prompt},
-		&expect.BSnd{S: "sudo ip -6 addr add fd10:0:2::2/120 dev eth0\n"},
-		&expect.BExp{R: prompt},
-		&expect.BSnd{S: "echo $?\n"},
-		&expect.BExp{R: "0"},
-		&expect.BSnd{S: "sleep 5\n"},
-		&expect.BExp{R: prompt},
-		&expect.BSnd{S: "sudo ip -6 route add default via fd10:0:2::1 src fd10:0:2::2\n"},
-		&expect.BExp{R: prompt},
-		&expect.BSnd{S: "echo $?\n"},
-		&expect.BExp{R: "0"},
-		&expect.BSnd{S: fmt.Sprintf(`echo "nameserver %s" >> /etc/resolv.conf\n`, dnsServerIP)},
-		&expect.BExp{R: prompt},
-		&expect.BSnd{S: "echo $?\n"},
-		&expect.BExp{R: "0"}})
-	resp, err := expecter.ExpectBatch(ipv6Batch, 1*time.Minute)
-
+		&expect.BSnd{S: "sudo ip -6 addr add fd10:0:2::2/120 dev eth0; echo $?\n"},
+		&expect.BExp{R: retcode("0")}})
+	resp, err := expecter.ExpectBatch(addIPv6Address, 30*time.Second)
 	if err != nil {
-		log.DefaultLogger().Object(vmi).Infof("Configure ipv6: %v", resp)
+		log.DefaultLogger().Object(vmi).Infof("addIPv6Address failed: %v", resp)
 		expecter.Close()
 		return err
 	}
+
+	time.Sleep(5 * time.Second)
+	addIPv6DefaultRoute := append([]expect.Batcher{
+		&expect.BSnd{S: "\n"},
+		&expect.BExp{R: prompt},
+		&expect.BSnd{S: "sudo ip -6 route add default via fd10:0:2::1 src fd10:0:2::2; echo $?\n"},
+		&expect.BExp{R: retcode("0")}})
+	resp, err = expecter.ExpectBatch(addIPv6DefaultRoute, 30*time.Second)
+	if err != nil {
+		log.DefaultLogger().Object(vmi).Infof("addIPv6DefaultRoute failed: %v", resp)
+		expecter.Close()
+		return err
+	}
+
 	return nil
 }
 
@@ -2995,6 +3029,26 @@ func ReLoggedInFedoraExpecter(vmi *v1.VirtualMachineInstance, timeout int) (expe
 		expecter.Close()
 		return expecter, err
 	}
+	return expecter, err
+}
+
+func SecureBootExpecter(vmi *v1.VirtualMachineInstance) (expect.Expecter, error) {
+	virtClient, err := kubecli.GetKubevirtClient()
+	PanicOnError(err)
+	expecter, _, err := NewConsoleExpecter(virtClient, vmi, 10*time.Second)
+	if err != nil {
+		return nil, err
+	}
+	b := append([]expect.Batcher{
+		&expect.BExp{R: "secureboot: Secure boot enabled"},
+	})
+	res, err := expecter.ExpectBatch(b, 180*time.Second)
+	if err != nil {
+		log.DefaultLogger().Object(vmi).Infof("Login: %+v", res)
+		expecter.Close()
+		return expecter, err
+	}
+
 	return expecter, err
 }
 
@@ -4169,7 +4223,7 @@ func StartHTTPServer(vmi *v1.VirtualMachineInstance, port int, isFedoraVM bool) 
 	} else {
 		expecter, err = LoggedInCirrosExpecter(vmi)
 		Expect(err).NotTo(HaveOccurred())
-		httpServerMaker = fmt.Sprintf("screen -d -m nc -klp %d -e echo -e \"HTTP/1.1 200 OK\\n\\nHello World!\"\n", port)
+		httpServerMaker = fmt.Sprintf("screen -d -m nc -klp %d -e echo -e \"HTTP/1.1 200 OK\\nContent-Length: 11\\n\\nHello World!\"\n", port)
 		prompt = "\\$"
 	}
 	defer expecter.Close()
@@ -4687,12 +4741,6 @@ func IsRunningOnKindInfraIPv6() bool {
 	return strings.HasPrefix(provider, "kind-k8s-1.17.0-ipv6")
 }
 
-func SkipStressTestIfRunnigOnKindInfra() {
-	if IsRunningOnKindInfra() {
-		Skip("Skip stress test till issue https://github.com/kubevirt/kubevirt/issues/3323 is fixed")
-	}
-}
-
 func SkipPVCTestIfRunnigOnKindInfra() {
 	if IsRunningOnKindInfra() {
 		Skip("Skip PVC tests till PR https://github.com/kubevirt/kubevirt/pull/3171 is merged")
@@ -4761,4 +4809,19 @@ func RandTmpDir() string {
 func IsIPv6Cluster(virtClient kubecli.KubevirtClient) bool {
 	clusterDnsIP, _ := getClusterDnsServiceIP(virtClient)
 	return netutils.IsIPv6String(clusterDnsIP)
+}
+
+func retcode(retcode string) string {
+	return "\n" + retcode
+}
+
+func IsLauncherCapabilityValid(capability k8sv1.Capability) bool {
+	switch capability {
+	case
+		capNetAdmin,
+		capNetRaw,
+		capSysNice:
+		return true
+	}
+	return false
 }
