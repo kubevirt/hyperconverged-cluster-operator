@@ -1594,8 +1594,8 @@ kubevirt.io/containerized-data-importer v1.10.9/go.mod h1:qF594BtRRkruyrqLwt3zbL
 kubevirt.io/containerized-data-importer v1.15.0/go.mod h1:Sl6HMDIzQZ/psSKj/CjjgVWlQHFVLfHXIxeoQEGqshk=
 kubevirt.io/containerized-data-importer v1.18.2 h1:KqG/qUbNqxcQWiPuSpLwnCBXSruKQJPj8yTFdAwlUoc=
 kubevirt.io/containerized-data-importer v1.18.2/go.mod h1:1j3iNrMpQ6cEiOTcFfYsbeFT/7sCXxZWpCCxijMlB9M=
-kubevirt.io/kubevirt v0.30.3 h1:9vc+u+PNiY6yKYENSOKI+Qbc5Vi8V3qIvnmRlmbuDcY=
-kubevirt.io/kubevirt v0.30.3/go.mod h1:WLdeg4+foVfYDZHghJEZN6kJx/pIAW6JfESMIlnbDHs=
+kubevirt.io/kubevirt v0.30.4 h1:0vvYKJfOuRqPP+M2C9MQ5tiPKfPpnywACUOA3VGHHIs=
+kubevirt.io/kubevirt v0.30.4/go.mod h1:WLdeg4+foVfYDZHghJEZN6kJx/pIAW6JfESMIlnbDHs=
 kubevirt.io/qe-tools v0.1.3 h1:ZDDolkD2IsHuPW8PNyty5fWO6wpI2BXcQpC65en/9FU=
 kubevirt.io/qe-tools v0.1.3/go.mod h1:PJyH/YXC4W0AmxfheDmXWMbLNsMSboVGXKpMAwfKzVE=
 kubevirt.io/qe-tools v0.1.6 h1:S6z9CATmgV2/z9CWetij++Rhu7l/Z4ObZqerLdNMo0Y=
