@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-logr/logr"
+	"github.com/operator-framework/operator-sdk/pkg/ready"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"os"
@@ -1824,8 +1825,32 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cond.Reason).Should(Equal("HCOUpgrading"))
 				Expect(cond.Message).Should(Equal("HCO is now upgrading to version " + newVersion))
 
-				// now, complete the upgrade
+				hcoReady, err := checkHcoReady()
+				Expect(err).To(BeNil())
+				Expect(hcoReady).To(BeFalse())
+
+				// check that the upgrade is not done if the not all the versions are match.
+				// Conditions are valid
 				expected.cdi.Status.Conditions = getGenericCompletedConditions()
+				cl = expected.initClient()
+				foundResource, requeue = doReconcile(cl, expected.hco)
+				Expect(requeue).To(BeFalse())
+				checkAvailability(foundResource, corev1.ConditionTrue)
+
+				// check that the image Id is set, now, when upgrade is completed
+				ver, ok = foundResource.Status.GetVersion(hcoVersionName)
+				Expect(ok).To(BeTrue())
+				Expect(ver).Should(Equal(oldVersion))
+				cond = conditionsv1.FindStatusCondition(foundResource.Status.Conditions, conditionsv1.ConditionProgressing)
+				Expect(cond.Status).Should(BeEquivalentTo("True"))
+				Expect(cond.Reason).Should(Equal("HCOUpgrading"))
+				Expect(cond.Message).Should(Equal("HCO is now upgrading to version " + newVersion))
+
+				hcoReady, err = checkHcoReady()
+				Expect(err).To(BeNil())
+				Expect(hcoReady).To(BeFalse())
+
+				// now, complete the upgrade
 				expected.kv.Status.ObservedKubeVirtVersion = newComponentVersion
 				cl = expected.initClient()
 				foundResource, requeue = doReconcile(cl, expected.hco)
@@ -1840,6 +1865,10 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cond.Status).Should(BeEquivalentTo("False"))
 				Expect(cond.Reason).Should(Equal(reconcileCompleted))
 				Expect(cond.Message).Should(Equal(reconcileCompletedMessage))
+
+				hcoReady, err = checkHcoReady()
+				Expect(err).To(BeNil())
+				Expect(hcoReady).To(BeTrue())
 			})
 
 			It("don't complete upgrade if CDI version is not match to the CDI version env ver", func() {
@@ -1858,6 +1887,10 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(requeue).To(BeFalse())
 				checkAvailability(foundResource, corev1.ConditionFalse)
 
+				hcoReady, err := checkHcoReady()
+				Expect(err).To(BeNil())
+				Expect(hcoReady).To(BeFalse())
+
 				// check that the image Id is not set, because upgrade is not completed
 				ver, ok := foundResource.Status.GetVersion(hcoVersionName)
 				Expect(ok).To(BeTrue())
@@ -1866,6 +1899,10 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cond.Status).Should(BeEquivalentTo("True"))
 				Expect(cond.Reason).Should(Equal("HCOUpgrading"))
 				Expect(cond.Message).Should(Equal("HCO is now upgrading to version " + newVersion))
+
+				hcoReady, err = checkHcoReady()
+				Expect(err).To(BeNil())
+				Expect(hcoReady).To(BeFalse())
 
 				// now, complete the upgrade
 				expected.cdi.Status.Conditions = getGenericCompletedConditions()
@@ -1883,6 +1920,11 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cond.Status).Should(BeEquivalentTo("False"))
 				Expect(cond.Reason).Should(Equal(reconcileCompleted))
 				Expect(cond.Message).Should(Equal(reconcileCompletedMessage))
+
+				hcoReady, err = checkHcoReady()
+				Expect(err).To(BeNil())
+				Expect(hcoReady).To(BeTrue())
+
 			})
 
 			It("don't complete upgrade if CNA version is not match to the CNA version env ver", func() {
@@ -2544,4 +2586,16 @@ func (clusterInfoMock) CheckRunningInOpenshift(_ context.Context, _ logr.Logger)
 
 func (clusterInfoMock) IsOpenshift() bool {
 	return true
+}
+
+func checkHcoReady() (bool, error) {
+	_, err := os.Stat(ready.FileName)
+
+	if err == nil {
+		return true, nil
+	} else if os.IsNotExist(err) {
+		return false, nil
+	}
+
+	return false, err
 }
