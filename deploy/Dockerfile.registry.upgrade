@@ -1,11 +1,14 @@
 FROM quay.io/fedora/fedora:30-x86_64 AS builder
 ARG UPGRADE_VERSION=100.0.0
+ARG RELEASE_DELTA=1
 ENV GOPATH=/go
 RUN echo "UPGRADE_VERSION: ${UPGRADE_VERSION}"
 WORKDIR /go/src/github.com/kubevirt/hyperconverged-cluster-operator/
 COPY . .
 RUN dnf install -y dep golang make findutils tar && dnf clean all -y
-RUN export UPGRADE_VERSION=${UPGRADE_VERSION}; ./hack/upgrade-create-new-version.sh
+RUN export UPGRADE_VERSION=${UPGRADE_VERSION} && \
+    export RELEASE_DELTA=${RELEASE_DELTA} && \
+    ./hack/upgrade-create-new-version.sh
 
 FROM quay.io/openshift/origin-operator-registry:latest
 ARG KUBEVIRT_PROVIDER

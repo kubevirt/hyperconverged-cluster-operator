@@ -25,6 +25,13 @@ LATEST_CSV_DIR="${PACKAGE_DIR}/${LATEST_VERSION}"
 LATEST_CSV_NAME="${OPERATOR_NAME}.v${LATEST_VERSION}.clusterserviceversion.yaml"
 UPGRADE_CSV_DIR="${PACKAGE_DIR}/${UPGRADE_VERSION}"
 UPGRADE_CSV="${UPGRADE_CSV_DIR}/${OPERATOR_NAME}.v${UPGRADE_VERSION}.clusterserviceversion.yaml"
+RELEASE_DELTA=${RELEASE_DELTA:-1}
+
+if [ "${RELEASE_DELTA}" == "1" ]; then
+  REPLACES_VERSION=${LATEST_VERSION}
+else
+  REPLACES_VERSION=$(ls -d ${PACKAGE_DIR}/*/ | sort -rV | awk "NR==${RELEASE_DELTA}" | cut -d '/' -f 5)
+fi
 
 echo "LATEST_VERSION: $LATEST_VERSION"
 echo "UPGRADE_VERSION: $UPGRADE_VERSION"
@@ -33,7 +40,13 @@ cp -r ${LATEST_CSV_DIR} ${UPGRADE_CSV_DIR}
 mv "${UPGRADE_CSV_DIR}/${LATEST_CSV_NAME}" "${UPGRADE_CSV}"
 
 sed -i "s|${OPERATOR_NAME}.v${LATEST_VERSION}|${OPERATOR_NAME}.v${UPGRADE_VERSION}|g" "${UPGRADE_CSV}"
-sed -i "s|replaces:.*|replaces: ${OPERATOR_NAME}.v${LATEST_VERSION}|" "${UPGRADE_CSV}"
+sed -i "s|replaces:.*|replaces: ${OPERATOR_NAME}.v${REPLACES_VERSION}|" "${UPGRADE_CSV}"
 sed -i "s|version:\s*${LATEST_VERSION}|version: ${UPGRADE_VERSION}|g" "${UPGRADE_CSV}"
 sed -i "s|value:\s*${LATEST_VERSION}|value: ${UPGRADE_VERSION}|g" "${UPGRADE_CSV}"
 sed -i "/^channels:/a - name: \"${UPGRADE_VERSION}\"\n  currentCSV: ${OPERATOR_NAME}.v${UPGRADE_VERSION}" ./deploy/olm-catalog/kubevirt-hyperconverged/kubevirt-hyperconverged.package.yaml
+
+if [ "${RELEASE_DELTA}" != "1" ]; then
+  echo "  skips:" >> "${UPGRADE_CSV}"
+  echo "  - ${LATEST_VERSION}" >> "${UPGRADE_CSV}"
+  sed -i "s|^defaultChannel: .*$|defaultChannel: \"${REPLACES_VERSION}\"|g" ./deploy/olm-catalog/kubevirt-hyperconverged/kubevirt-hyperconverged.package.yaml
+fi

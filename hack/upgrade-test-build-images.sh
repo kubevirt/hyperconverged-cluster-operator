@@ -43,7 +43,7 @@ done
 
 export REGISTRY_DOCKERFILE="Dockerfile.registry.upgrade"
 export REGISTRY_IMAGE_NAME="hco-registry-upgrade"
-export REGISTRY_EXTRA_BUILD_ARGS="--build-arg KUBEVIRT_PROVIDER=$KUBEVIRT_PROVIDER"
+export REGISTRY_EXTRA_BUILD_ARGS="--build-arg KUBEVIRT_PROVIDER=${KUBEVIRT_PROVIDER} --build-arg RELEASE_DELTA=${RELEASE_DELTA}"
 make bundleRegistry
 
 pwd
