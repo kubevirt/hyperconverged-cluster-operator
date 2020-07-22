@@ -4,7 +4,7 @@ HCO_OPERATOR_IMAGE=`eval echo ${IMAGE_FORMAT}`
 CI_IMAGE_URL_PREFIX=$(echo $HCO_OPERATOR_IMAGE | cut -d ":" -f 1)
 echo "CI_IMAGE_URL_PREFIX: $CI_IMAGE_URL_PREFIX"
 REGISTRY_IMAGE="quay.io/kubevirt/hco-container-registry:latest"
-if [[ -n PREV]]; then
+if [[ -n $PREV ]]; then
   REGISTRY_IMAGE_UPGRADE="${CI_IMAGE_URL_PREFIX}:hco-registry-upgrade-prev"
 else
   REGISTRY_IMAGE_UPGRADE="${CI_IMAGE_URL_PREFIX}:hco-registry-upgrade"
