@@ -55,9 +55,4 @@ fi
 # enable KVM_EMULATION for CI, needed by kubevirt-node-labeller on AWS
 find ${PACKAGE_DIR} -type f -exec sed -E -i 's|^(\s*)- name: KVM_EMULATION$|\1- name: KVM_EMULATION\n\1  value: "true"|' {} \; || :
 
-if [ -n "$KUBEVIRT_PROVIDER" ]; then
-  sed -i "s|quay.io/kubevirt/hyperconverged-cluster-operator:.*$|registry:5000/kubevirt/hyperconverged-cluster-operator:latest|g" ${UPGRADE_CSV_DIR}/kubevirt-hyperconverged-operator.v${UPGRADE_VERSION}.clusterserviceversion.yaml;
-else
-  sed -i "s|quay.io/kubevirt/hyperconverged-cluster-operator:.*$|registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:hyperconverged-cluster-operator|g" ${UPGRADE_CSV_DIR}/kubevirt-hyperconverged-operator.v${UPGRADE_VERSION}.clusterserviceversion.yaml;
-fi
 cat ${PACKAGE_DIR}/kubevirt-hyperconverged.package.yaml
