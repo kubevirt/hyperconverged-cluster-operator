@@ -9,7 +9,7 @@ metadata:
     categories: OpenShift Optional
     certified: "false"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.2.0
-    createdAt: "2020-07-23 09:29:22"
+    createdAt: "2020-07-24 05:09:35"
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -1837,7 +1837,7 @@ spec:
                 - name: OPERATOR_NAME
                   value: hostpath-provisioner-operator
                 - name: PROVISIONER_IMAGE
-                  value: quay.io/kubevirt/hostpath-provisioner:v0.4.0
+                  value: quay.io/kubevirt/hostpath-provisioner:v0.5.1
                 - name: PULL_POLICY
                   value: IfNotPresent
                 image: quay.io/kubevirt/hostpath-provisioner-operator:v0.4.3

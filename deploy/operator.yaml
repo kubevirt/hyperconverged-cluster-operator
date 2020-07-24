@@ -391,7 +391,7 @@ spec:
         - name: OPERATOR_NAME
           value: hostpath-provisioner-operator
         - name: PROVISIONER_IMAGE
-          value: quay.io/kubevirt/hostpath-provisioner:v0.4.0
+          value: quay.io/kubevirt/hostpath-provisioner:v0.5.1
         - name: PULL_POLICY
           value: IfNotPresent
         image: quay.io/kubevirt/hostpath-provisioner-operator:v0.4.3
