@@ -233,24 +233,36 @@ func (r *ReconcileHyperConverged) Reconcile(request reconcile.Request) (reconcil
 		In addition, updating the status should not update the metadata, so we need to update both the CR and the
 		CR Status, and we need to update the status first, in order to prevent a conflict.
 	*/
+
 	if req.statusDirty {
 		updateErr := r.client.Status().Update(req.ctx, req.instance)
 		if updateErr != nil {
-			req.logger.Error(updateErr, "failed to update the CR Status")
+			updateErrorMsg := "failed to update HCO Status"
+			r.eventEmitter.EmitEvent(req.instance, corev1.EventTypeWarning, "HcoUpdateError", updateErrorMsg)
+			req.logger.Error(updateErr, updateErrorMsg)
 			err = updateErr
 		}
+	}
+
+	// recover Spec.Version if upgrade missed when upgrade completed
+	// Doing it here because status.update overrides spec for some reason
+	knownHcoVersion, versionFound := req.instance.Status.GetVersion(hcoVersionName)
+	if (!r.upgradeMode) && versionFound && (knownHcoVersion == r.ownVersion) && (req.instance.Spec.Version != r.ownVersion) {
+		req.instance.Spec.Version = r.ownVersion
+		req.dirty = true
 	}
 
 	if req.dirty {
 		updateErr := r.client.Update(req.ctx, req.instance)
 		if updateErr != nil {
-			req.logger.Error(updateErr, "failed to update the CR")
+			updateErrorMsg := "failed to update HCO CR"
+			r.eventEmitter.EmitEvent(req.instance, corev1.EventTypeWarning, "HcoUpdateError", updateErrorMsg)
+			req.logger.Error(updateErr, updateErrorMsg)
 			err = updateErr
 		}
 	}
 
 	if apierrors.IsConflict(err) {
-		r.eventEmitter.EmitEvent(req.instance, corev1.EventTypeWarning, "HcoUpdateError", err.Error())
 		res.Requeue = true
 	}
 
@@ -303,11 +315,6 @@ func (r *ReconcileHyperConverged) doReconcile(req *hcoRequest) (reconcile.Result
 		req.logger.Info(fmt.Sprintf("Start upgrating from version %s to version %s", knownHcoVersion, r.ownVersion))
 	}
 
-	// recover Spec.Version if upgrade missed when upgrade completed
-	if !r.upgradeMode && !init && (knownHcoVersion == r.ownVersion) && (req.instance.Spec.Version != r.ownVersion) {
-		req.instance.Spec.Version = r.ownVersion
-		req.dirty = true
-	}
 	req.componentUpgradeInProgress = r.upgradeMode
 
 	err = r.ensureHco(req)
@@ -739,7 +746,6 @@ func (r *ReconcileHyperConverged) completeReconciliation(req *hcoRequest) error 
 			return err
 		}
 	}
-
 	return r.updateConditions(req)
 }
 
