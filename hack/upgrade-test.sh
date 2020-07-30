@@ -233,7 +233,7 @@ Msg "verify that the hyperconverged-cluster Pod is using the new image"
 ./hack/retry.sh 10 30 "CMD=${CMD} HCO_NAMESPACE=${HCO_NAMESPACE} ./hack/check_pod_upgrade.sh"
 
 Msg "wait that cluster is operational after upgrade"
-timeout 10m bash -c 'export CMD="${CMD}";exec ./hack/check-state.sh'
+timeout 15m bash -c 'export CMD="${CMD}";exec ./hack/check-state.sh'
 
 Msg "verify new operator version reported after the upgrade"
 ./hack/retry.sh 10 30 "CMD=${CMD} HCO_RESOURCE_NAME=${HCO_RESOURCE_NAME} HCO_NAMESPACE=${HCO_NAMESPACE} TARGET_VERSION=${TARGET_VERSION} hack/check_hco_version.sh"
