@@ -3,6 +3,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/kubevirt/hyperconverged-cluster-operator/badge.svg?branch=master&service=github)](https://coveralls.io/github/kubevirt/hyperconverged-cluster-operator?branch=master)
 
 # Hyperconverged Cluster Operator
+[test - do not merge]
 
 A unified operator deploying and controlling [KubeVirt](https://github.com/kubevirt/kubevirt) and several adjacent operators:
 
