@@ -41,8 +41,21 @@
 # to verify that it is updated to the new operator image from 
 # the local registry.
 
-MAX_STEPS=8
+MAX_STEPS=10
 CUR_STEP=1
+RELEASE_DELTA="${RELEASE_DELTA:-1}"
+HCO_DEPLOYMENT_NAME=hco-operator
+HCO_NAMESPACE="kubevirt-hyperconverged"
+HCO_KIND="hyperconvergeds"
+HCO_RESOURCE_NAME="kubevirt-hyperconverged"
+HCO_SUBSCRIPTION_NAME="hco-subscription-example"
+HCO_CATALOGSOURCE_NAME="hco-catalogsource-example"
+HCO_OPERATORGROUP_NAME="hco-operatorgroup"
+PACKAGE_DIR="./deploy/olm-catalog/kubevirt-hyperconverged"
+INITIAL_CHANNEL=$(ls -d ${PACKAGE_DIR}/*/ | sort -rV | awk "NR==${RELEASE_DELTA}" | cut -d '/' -f 5)
+TARGET_VERSION=100.0.0
+TARGET_CHANNEL=${TARGET_VERSION}
+echo "INITIAL_CHANNEL: $INITIAL_CHANNEL"
 
 function Msg {
     { set +x; } 2>/dev/null
@@ -84,12 +97,13 @@ if [ -n "$KUBEVIRT_PROVIDER" ]; then
   make cluster-clean
 fi
 
-"${CMD}" delete -f ./deploy/hco.cr.yaml -n kubevirt-hyperconverged | true
-"${CMD}" delete subscription hco-subscription-example -n kubevirt-hyperconverged | true
-"${CMD}" delete catalogsource hco-catalogsource-example -n ${HCO_CATALOG_NAMESPACE} | true
-"${CMD}" delete operatorgroup hco-operatorgroup -n kubevirt-hyperconverged | true
+"${CMD}" delete ${HCO_KIND} ${HCO_RESOURCE_NAME} -n ${HCO_NAMESPACE} || true
+"${CMD}" delete subscription ${HCO_SUBSCRIPTION_NAME} -n ${HCO_NAMESPACE} || true
+"${CMD}" delete catalogsource ${HCO_CATALOGSOURCE_NAME} -n ${HCO_CATALOG_NAMESPACE} || true
+"${CMD}" delete operatorgroup ${HCO_OPERATORGROUP_NAME} -n ${HCO_NAMESPACE} || true
 
-
+source hack/compare_scc.sh
+dump_sccs_before
 
 ${CMD} wait deployment packageserver --for condition=Available -n openshift-operator-lifecycle-manager --timeout="1200s"
 ${CMD} wait deployment catalog-operator --for condition=Available -n openshift-operator-lifecycle-manager --timeout="1200s"
@@ -103,19 +117,15 @@ fi
 
 Msg "create catalogsource and subscription to install HCO"
 
-HCO_NAMESPACE="kubevirt-hyperconverged"
-HCO_KIND="hyperconvergeds"
-HCO_RESOURCE_NAME="kubevirt-hyperconverged"
-
-${CMD} create ns ${HCO_NAMESPACE} | true
+${CMD} create ns ${HCO_NAMESPACE} || true
 ${CMD} get pods -n ${HCO_NAMESPACE}
 
 cat <<EOF | ${CMD} create -f -
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
-  name: hco-operatorgroup
-  namespace: kubevirt-hyperconverged
+  name: ${HCO_OPERATORGROUP_NAME}
+  namespace: ${HCO_NAMESPACE}
 spec:
   targetNamespaces:
   - ${HCO_NAMESPACE}
@@ -125,11 +135,11 @@ cat <<EOF | ${CMD} create -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
-  name: hco-catalogsource-example
+  name: ${HCO_CATALOGSOURCE_NAME}
   namespace: ${HCO_CATALOG_NAMESPACE}
 spec:
   sourceType: grpc
-  image: ${REGISTRY_IMAGE}
+  image: ${REGISTRY_IMAGE_UPGRADE}
   displayName: KubeVirt HyperConverged
   publisher: Red Hat
 EOF
@@ -148,48 +158,45 @@ ${CMD} wait pod $PACKAGESERVER_POD --for condition=Ready -n openshift-operator-l
 # Creating a subscription immediately after the catalog
 # source is ready can cause delays. Sometimes the catalog-operator
 # isn't ready to create the install plan. As a temporary workaround
-# we wait for 15 seconds here. 
+# we wait for 15 seconds here.
 sleep 15
-
-LATEST_VERSION=$(ls -d ./deploy/olm-catalog/kubevirt-hyperconverged/*/ | sort -r | head -1 | cut -d '/' -f 5);
 
 cat <<EOF | ${CMD} create -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
   name: hco-subscription-example
-  namespace: kubevirt-hyperconverged
+  namespace: ${HCO_NAMESPACE}
 spec:
-  channel: ${LATEST_VERSION}
+  channel: ${INITIAL_CHANNEL}
   name: kubevirt-hyperconverged
-  source: hco-catalogsource-example
+  source: ${HCO_CATALOGSOURCE_NAME}
   sourceNamespace: ${HCO_CATALOG_NAMESPACE}
 ${SUBSCRIPTION_CONFIG}
 EOF
 
 # Allow time for the install plan to be created a for the
 # hco-operator to be created. Otherwise kubectl wait will report EOF.
-./hack/retry.sh 20 30 "${CMD} get subscription -n kubevirt-hyperconverged | grep -v EOF"
-./hack/retry.sh 20 30 "${CMD} get pods -n kubevirt-hyperconverged | grep hco-operator"
+./hack/retry.sh 20 30 "${CMD} get subscription -n ${HCO_NAMESPACE} | grep -v EOF"
+./hack/retry.sh 20 30 "${CMD} get pods -n ${HCO_NAMESPACE} | grep hco-operator"
 
-HCO_OPERATOR_POD=`${CMD} get pods -n kubevirt-hyperconverged | grep hco-operator  | grep Running | head -1 | awk '{ print $1 }'`
-${CMD} wait pod $HCO_OPERATOR_POD --for condition=Ready -n kubevirt-hyperconverged --timeout="1200s"
+${CMD} wait deployment ${HCO_DEPLOYMENT_NAME} --for condition=Available -n ${HCO_NAMESPACE} --timeout="1200s"
 
-${CMD} create -f ./deploy/hco.cr.yaml -n kubevirt-hyperconverged
-
-HCO_OPERATOR_POD=`${CMD} get pods -n ${HCO_NAMESPACE} | grep hco-operator | grep Running | head -1 | awk '{ print $1 }'`
+CSV=$( ${CMD} get csv -o name -n ${HCO_NAMESPACE})
+HCO_API_VERSION=$( ${CMD} get -n ${HCO_NAMESPACE} "${CSV}" -o jsonpath="{ .spec.customresourcedefinitions.owned[?(@.kind=='HyperConverged')].version }")
+sed -e "s|hco.kubevirt.io/v1beta1|hco.kubevirt.io/${HCO_API_VERSION}|g" deploy/hco.cr.yaml | ${CMD} apply -n kubevirt-hyperconverged -f -
 
 ${CMD} wait -n ${HCO_NAMESPACE} ${HCO_KIND} ${HCO_RESOURCE_NAME} --for condition=Available --timeout=30m
-${CMD} wait pod $HCO_OPERATOR_POD --for condition=Ready -n ${HCO_NAMESPACE} --timeout=30m
+${CMD} wait deployment ${HCO_DEPLOYMENT_NAME} --for condition=Available -n ${HCO_NAMESPACE} --timeout="30m"
 
 Msg "check that cluster is operational before upgrade"
 timeout 10m bash -c 'export CMD="${CMD}";exec ./hack/check-state.sh' 
 
-${CMD} get subscription -n kubevirt-hyperconverged -o yaml
-${CMD} get pods -n kubevirt-hyperconverged 
+${CMD} get subscription -n ${HCO_NAMESPACE} -o yaml
+${CMD} get pods -n ${HCO_NAMESPACE}
 
 echo "----- Images before upgrade"
-${CMD} get deployments -n kubevirt-hyperconverged -o yaml | grep image | grep -v imagePullPolicy
+${CMD} get deployments -n ${HCO_NAMESPACE} -o yaml | grep image | grep -v imagePullPolicy
 ${CMD} get pod $HCO_CATALOGSOURCE_POD -n ${HCO_CATALOG_NAMESPACE} -o yaml | grep image | grep -v imagePullPolicy
 
 # Create a new version based off of latest. The new version appends ".1" to the latest version.
@@ -198,18 +205,8 @@ ${CMD} get pod $HCO_CATALOGSOURCE_POD -n ${HCO_CATALOG_NAMESPACE} -o yaml | grep
 # version updates the latest version.
 # The currentCSV in the package manifest is also updated to point to the new version.
 
-Msg "patch existing catalog source with new registry image" "and wait for hco-catalogsource pod to be in Ready state"
-
-# Patch the HCO catalogsource image to the upgrade version
-${CMD} patch catalogsource hco-catalogsource-example -n ${HCO_CATALOG_NAMESPACE} -p "{\"spec\": {\"image\": \"${REGISTRY_IMAGE_UPGRADE}\"}}"  --type merge
-sleep 5
-./hack/retry.sh 20 30 "${CMD} get pods -n ${HCO_CATALOG_NAMESPACE} | grep hco-catalogsource | grep -v Terminating"
-HCO_CATALOGSOURCE_POD=`${CMD} get pods -n ${HCO_CATALOG_NAMESPACE} | grep hco-catalogsource | grep -v Terminating | head -1 | awk '{ print $1 }'`
-${CMD} wait pod $HCO_CATALOGSOURCE_POD --for condition=Ready -n ${HCO_CATALOG_NAMESPACE} --timeout="1800s"
-
-sleep 15
-CATALOG_OPERATOR_POD=`${CMD} get pods -n openshift-operator-lifecycle-manager | grep catalog-operator | head -1 | awk '{ print $1 }'`
-${CMD} wait pod $CATALOG_OPERATOR_POD --for condition=Ready -n openshift-operator-lifecycle-manager --timeout="120s"
+Msg "Patch the subscription to move to the new channel"
+${CMD} patch subscription ${HCO_SUBSCRIPTION_NAME} -n ${HCO_NAMESPACE} -p "{\"spec\": {\"channel\": \"${TARGET_CHANNEL}\"}}"  --type merge
 
 # Verify the subscription has changed to the new version
 #  currentCSV: kubevirt-hyperconverged-operator.v100.0.0
@@ -217,22 +214,28 @@ ${CMD} wait pod $CATALOG_OPERATOR_POD --for condition=Ready -n openshift-operato
 Msg "verify the subscription's currentCSV and installedCSV have moved to the new version"
 
 sleep 60
-HCO_OPERATOR_POD=`${CMD} get pods -n kubevirt-hyperconverged | grep hco-operator | head -1 | awk '{ print $1 }'`
-${CMD} get pods -n kubevirt-hyperconverged
-${CMD} wait pod $HCO_OPERATOR_POD --for condition=Ready -n kubevirt-hyperconverged --timeout="1200s"
+${CMD} get pods -n ${HCO_NAMESPACE}
+${CMD} wait deployment ${HCO_DEPLOYMENT_NAME} --for condition=Available -n ${HCO_NAMESPACE} --timeout="1200s"
 
-./hack/retry.sh 30 60 "${CMD} get subscriptions -n kubevirt-hyperconverged -o yaml | grep currentCSV | grep v100.0.0"
-./hack/retry.sh 2 30 "${CMD} get subscriptions -n kubevirt-hyperconverged -o yaml | grep installedCSV | grep v100.0.0"
+./hack/retry.sh 30 60 "${CMD} get subscriptions -n ${HCO_NAMESPACE} -o yaml | grep currentCSV   | grep v${TARGET_VERSION}"
+./hack/retry.sh  2 30 "${CMD} get subscriptions -n ${HCO_NAMESPACE} -o yaml | grep installedCSV | grep v${TARGET_VERSION}"
 
 Msg "verify the hyperconverged-cluster deployment is using the new image"
 
-./hack/retry.sh 6 30 "${CMD} get deployments -n kubevirt-hyperconverged -o yaml | grep image | grep hyperconverged-cluster | grep ${REGISTRY_IMAGE_URL_PREFIX}"
+./hack/retry.sh 6 30 "${CMD} get deployments -n ${HCO_NAMESPACE} -o yaml | grep image | grep hyperconverged-cluster | grep ${REGISTRY_IMAGE_URL_PREFIX}"
 
 echo "----- Images after upgrade"
-${CMD} get deployments -n kubevirt-hyperconverged -o yaml | grep image | grep -v imagePullPolicy
+${CMD} get deployments -n ${HCO_NAMESPACE} -o yaml | grep image | grep -v imagePullPolicy
 ${CMD} get pod $HCO_CATALOGSOURCE_POD -n ${HCO_CATALOG_NAMESPACE} -o yaml | grep image | grep -v imagePullPolicy
 
-Msg "wait that cluster is operational after upgrade"
-timeout 10m bash -c 'export CMD="${CMD}";exec ./hack/check-state.sh'
+echo "----- Pod after upgrade"
+Msg "verify that the hyperconverged-cluster Pod is using the new image"
+./hack/retry.sh 10 30 "CMD=${CMD} HCO_NAMESPACE=${HCO_NAMESPACE} ./hack/check_pod_upgrade.sh"
 
+Msg "wait that cluster is operational after upgrade"
+timeout 15m bash -c 'export CMD="${CMD}";exec ./hack/check-state.sh'
+
+Msg "verify new operator version reported after the upgrade"
+./hack/retry.sh 10 30 "CMD=${CMD} HCO_RESOURCE_NAME=${HCO_RESOURCE_NAME} HCO_NAMESPACE=${HCO_NAMESPACE} TARGET_VERSION=${TARGET_VERSION} hack/check_hco_version.sh"
+dump_sccs_after
 echo "upgrade-test completed successfully."

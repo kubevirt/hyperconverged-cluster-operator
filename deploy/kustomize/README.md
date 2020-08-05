@@ -14,32 +14,54 @@ There are two distinct options to deliver HCO operator to OLM - Marketplace and 
 ### Marketplace
 This method is taking advantage of OperatorSource, which makes the operator available on OLM OperatorHub (implicitly creating a CatalogSource with the same name).
 To manually deliver HCO using marketplace, edit `spec.registryNamespace` of `marketplace/operator_source.yaml` to the desired value (default is "kubevirt-hyperconverged"), and run:
-```
-oc apply -k marketplace
+```bash
+$ oc apply -k marketplace
 ```
 Which will create the HCO catalog source with default configuration. After processing is complete, the package will be available in OperatorHub.
 
 #### Private Repo
-If the operator source is located in a private Quay.io registry, you should provide the OperatorSource resource with a secret, which can be extracted by:
-```
-curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '
+- If the operator source is located in a private Quay.io appregistry namespace, you should provide the OperatorSource resource with a secret, which can be extracted by:
+```bash
+$ QUAY_TOKEN=$(curl -sH "Content-Type: application/json" -XPOST https://quay.io/cnr/api/v1/users/login -d '
   {
       "user": {
           "username": "'"${QUAY_USERNAME}"'",
           "password": "'"${QUAY_PASSWORD}"'"
       }
-  }' | jq -r '.token'
+  }' | jq -r '.token')
 ```
-The token should be inserted in `spec.authorizationToken.secretName` of `private_repo/operator_source.patch.yaml`, then run:
+
+- A secret resource containing the Quay token should be created by:
+```bash
+$ oc create secret generic quay-registry-kubevirt-hyperconverged --from-literal="token=$QUAY_TOKEN" -n openshift-marketplace
 ```
-oc apply -k private_repo
+
+- The secret name is the value in `spec.authorizationToken.secretName` of `private_repo/operator_source.patch.yaml`.
+- The private appregistry namespace should be added in `private_repo/operator_source.patch.yaml` overlay at `spec.registryNamespace`.
+
+
+`operator_source.patch.yaml:`
+```bash
+apiVersion: operators.coreos.com/v1
+kind: OperatorSource
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  authorizationToken:
+    secretName: "quay-registry-kubevirt-hyperconverged"
+  registryNamespace: <my-private-appregistry>
+```
+
+- Lastly, apply the private_repo overlay to create the OperatorSource (and consequently the CatalogSource) which is connected to the private Quay app-registry:
+```bash
+$ oc apply -k private_repo
 ```
 
 ### Image Registry
 This method is delivering the operator's bundle image via a grpc protocol from an image registry.
 To manually deliver HCO using image registry, edit `spec.image` of `image_registry/catalog_source.yaml` to the desired image bundle URL, and run:
-```
-oc apply -k image_registry
+```bash
+$ oc apply -k image_registry
 ```
 
 ### Automation
@@ -59,24 +81,24 @@ Set environment variable "MARKETPLACE_MODE" to "false".
 
 #### Examples
 ##### Deliver Content using Marketplace (appregistry)
-```
-CONTENT_ONLY=true \
+```bash
+$ CONTENT_ONLY=true \
 MARKETPLACE_MODE=true \ |
 ./deploy/kustomize/deploy_kustomize.sh
 ```
 
 ##### Deploy HCO using Image Registry with KVM Emulation enabled
-```
-MARKETPLACE_MODE=false \
+```bash
+$ MARKETPLACE_MODE=false \
 KVM_EMULATION=true \
-CONTENT_ONLY=false \ |
+CONTENT_ONLY=false \
 ./deploy/kustomize/deploy_kustomize.sh
 ```
 
 In order to change the default HCO bundle image, use the following command prior to executing the script:
-```
-DESIRED_IMAGE=< a URL to hco bundle image>
-sed "s/\(image: \)\(.*\)/\1${DESIRED_IMAGE}/" deploy/kustomize/image_registry/catalog_source.yaml
+```bash
+$ DESIRED_IMAGE=<a URL to hco bundle image>
+$ sed -i "s|\(image: \)\(.*\)|\1${DESIRED_IMAGE}|" deploy/kustomize/image_registry/catalog_source.yaml
 ```
 
 ## Deployment
@@ -87,8 +109,8 @@ The deployment phase consists of 3 resources, located in `base` directory:
 
 In addition, a namespace must be deployed prior to the deployment of resources above. the namespace resource can be found in `namespace.yaml`.
 To deploy HCO with default settings, run:
-```
-cat <<EOF >kustomization.yaml
+```bash
+$ cat <<EOF >kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -98,13 +120,13 @@ resources:
   - namespace.yaml
 EOF
 
-oc apply -k .
+$ oc apply -k .
 ```
 
 ### KVM Emulation
 If KVM emulation is required on your environment, use the following overlay to add the Subscription resource with relevant KVM config:
-```
-oc apply -k kvm_emulation
+```bash
+$ oc apply -k kvm_emulation
 ```
 
 ### Automation
@@ -118,8 +140,8 @@ In order to make customizations to your deployment, you need to set up other env
 ### Change Deployment Namespace
 The default namespace is `kubevirt-hyperconverged`.
 In order to change that to a custom value, you should edit `namespace.yaml` and update its `metadata.name` value, and run:
-```
-cat <<EOF >kustomization.yaml
+```bash
+$ cat <<EOF >kustomization.yaml
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -130,13 +152,13 @@ resources:
   - namespace.yaml
 EOF
 
-oc apply -k .
+$ oc apply -k .
 ```
 
 ### Modify HCO Channel and Version
 Create a Subscription patch to reflect the desired version and channel.
-```
-cat > subscription.patch.yaml << EOF
+```bash
+$ cat > subscription.patch.yaml << EOF
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -146,7 +168,7 @@ spec:
   channel: "${HCO_CHANNEL}"
 ```
 and then update the `kustomization.yaml` to include the patch:
-```
+```bash
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -159,4 +181,4 @@ patchesStrategicMerge:
 
 #### Deploy
 When customizations are ready, run `./deploy_kustomize.sh`.
-The script will prepare and submit kustomize manifests to the cluster. It will also check whenever deployment is complete (HCO CR reports Condition "Available" True), and finish successfully.
+The script will prepare and submit kustomize manifests to the cluster. It will also check whenever deployment is complete (HCO CR reports Condition "Available"=True), and finish successfully.
