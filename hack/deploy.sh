@@ -20,11 +20,13 @@
 set -ex
 
 source hack/common.sh
+source hack/compare_scc.sh
 
 HCO_IMAGE=${HCO_IMAGE:-quay.io/kubevirt/hyperconverged-cluster-operator:latest}
 HCO_NAMESPACE="kubevirt-hyperconverged"
 HCO_KIND="hyperconvergeds"
 HCO_RESOURCE_NAME="kubevirt-hyperconverged"
+HCO_CRD_NAME="hyperconvergeds.hco.kubevirt.io"
 
 CI=""
 if [ "$1" == "CI" ]; then
@@ -40,6 +42,9 @@ rm -rf _out/
 
 # Copy release manifests as a base for generated ones, this should make it possible to upgrade
 cp -r deploy _out/
+
+# dump cluster SCCs to be sure we are not going to modify them with the deployment
+dump_sccs_before
 
 # if this is set we run on okd ci
 if [ -n "${IMAGE_FORMAT}" ]; then
@@ -101,6 +106,14 @@ function debug(){
 "${CMD}" create -f _out/service_account.yaml
 "${CMD}" create -f _out/cluster_role_binding.yaml
 "${CMD}" create -f _out/crds/
+
+sleep 20
+if [[ "$(${CMD} get crd ${HCO_CRD_NAME} -o=jsonpath='{.status.conditions[?(@.type=="NonStructuralSchema")].status}')" == "True" ]];
+then
+    echo "HCO CRD reports NonStructuralSchema condition"
+    "${CMD}" get crd ${HCO_CRD_NAME} -o go-template='{{ range .status.conditions }}{{ .type }}{{ "\t" }}{{ .status }}{{ "\t" }}{{ .message }}{{ "\n" }}{{ end }}'
+fi
+
 if [ "${CI}" != "true" ]; then
 	"${CMD}" create -f _out/operator.yaml
 else
@@ -136,6 +149,9 @@ fi
 for dep in cdi-apiserver cdi-deployment cdi-uploadproxy virt-api virt-controller; do
     "${CMD}" wait deployment/"${dep}" --for=condition=Available --timeout="360s" || CONTAINER_ERRORED+="${dep} "
 done
+
+# compare initial cluster SCCs to be sure HCO deployment didn't introduce any change
+dump_sccs_after
 
 if [ -z "$CONTAINER_ERRORED" ]; then
     echo "SUCCESS"
