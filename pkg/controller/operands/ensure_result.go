@@ -1,4 +1,4 @@
-package hyperconverged
+package operands
 
 import (
 	"fmt"
@@ -16,9 +16,7 @@ type EnsureResult struct {
 }
 
 func NewEnsureResult(resource runtime.Object) *EnsureResult {
-	t := fmt.Sprintf("%T", resource)
-	p := strings.LastIndex(t, ".")
-	return &EnsureResult{Type: t[p+1:]}
+	return &EnsureResult{Type: getResourceType(resource)}
 }
 
 func (r *EnsureResult) Error(err error) *EnsureResult {
@@ -44,4 +42,10 @@ func (r *EnsureResult) SetUpgradeDone(upgradeDone bool) *EnsureResult {
 func (r *EnsureResult) SetName(name string) *EnsureResult {
 	r.Name = name
 	return r
+}
+
+func getResourceType(resource runtime.Object) string {
+	t := fmt.Sprintf("%T", resource)
+	p := strings.LastIndex(t, ".")
+	return t[p+1:]
 }

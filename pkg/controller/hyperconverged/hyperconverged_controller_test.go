@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/operands"
 	"os"
 	"time"
 
@@ -171,13 +172,13 @@ var _ = Describe("HyperconvergedController", func() {
 				}
 				// These are all of the objects that we expect to "find" in the client because
 				// we already created them in a previous reconcile.
-				expectedKVConfig := newKubeVirtConfigForCR(hco, namespace)
+				expectedKVConfig := operands.NewKubeVirtConfigForCR(hco, namespace)
 				expectedKVConfig.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/configmaps/%s", expectedKVConfig.Namespace, expectedKVConfig.Name)
-				expectedKVStorageConfig := newKubeVirtStorageConfigForCR(hco, namespace)
+				expectedKVStorageConfig := operands.NewKubeVirtStorageConfigForCR(hco, namespace)
 				expectedKVStorageConfig.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/configmaps/%s", expectedKVStorageConfig.Namespace, expectedKVStorageConfig.Name)
-				expectedKVStorageRole := newKubeVirtStorageRoleForCR(hco, namespace)
+				expectedKVStorageRole := operands.NewKubeVirtStorageRoleForCR(hco, namespace)
 				expectedKVStorageRole.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/roles/%s", expectedKVStorageRole.Namespace, expectedKVStorageRole.Name)
-				expectedKVStorageRoleBinding := newKubeVirtStorageRoleBindingForCR(hco, namespace)
+				expectedKVStorageRoleBinding := operands.NewKubeVirtStorageRoleBindingForCR(hco, namespace)
 				expectedKVStorageRoleBinding.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/rolebindings/%s", expectedKVStorageRoleBinding.Namespace, expectedKVStorageRoleBinding.Name)
 				expectedKV := hco.NewKubeVirt(namespace)
 				expectedKV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/kubevirts/%s", expectedKV.Namespace, expectedKV.Name)
@@ -187,9 +188,9 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedCNA.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cnas/%s", expectedCNA.Namespace, expectedCNA.Name)
 				expectedKVCTB := hco.NewKubeVirtCommonTemplateBundle()
 				expectedKVCTB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/ctbs/%s", expectedKVCTB.Namespace, expectedKVCTB.Name)
-				expectedKVNLB := newKubeVirtNodeLabellerBundleForCR(hco, namespace)
+				expectedKVNLB := operands.NewKubeVirtNodeLabellerBundleForCR(hco, namespace)
 				expectedKVNLB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/nlb/%s", expectedKVNLB.Namespace, expectedKVNLB.Name)
-				expectedKVTV := newKubeVirtTemplateValidatorForCR(hco, namespace)
+				expectedKVTV := operands.NewKubeVirtTemplateValidatorForCR(hco, namespace)
 				expectedKVTV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/tv/%s", expectedKVTV.Namespace, expectedKVTV.Name)
 				// Add all of the objects to the client
 				cl := initClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKVStorageRole, expectedKVStorageRoleBinding, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
@@ -255,13 +256,13 @@ var _ = Describe("HyperconvergedController", func() {
 				}
 				// These are all of the objects that we expect to "find" in the client because
 				// we already created them in a previous reconcile.
-				expectedKVConfig := newKubeVirtConfigForCR(hco, namespace)
+				expectedKVConfig := operands.NewKubeVirtConfigForCR(hco, namespace)
 				expectedKVConfig.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/configmaps/%s", expectedKVConfig.Namespace, expectedKVConfig.Name)
-				expectedKVStorageConfig := newKubeVirtStorageConfigForCR(hco, namespace)
+				expectedKVStorageConfig := operands.NewKubeVirtStorageConfigForCR(hco, namespace)
 				expectedKVStorageConfig.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/configmaps/%s", expectedKVStorageConfig.Namespace, expectedKVStorageConfig.Name)
-				expectedKVStorageRole := newKubeVirtStorageRoleForCR(hco, namespace)
+				expectedKVStorageRole := operands.NewKubeVirtStorageRoleForCR(hco, namespace)
 				expectedKVStorageRole.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/role/%s", expectedKVStorageRole.Namespace, expectedKVStorageRole.Name)
-				expectedKVStorageRoleBinding := newKubeVirtStorageRoleBindingForCR(hco, namespace)
+				expectedKVStorageRoleBinding := operands.NewKubeVirtStorageRoleBindingForCR(hco, namespace)
 				expectedKVStorageRoleBinding.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/role/%s", expectedKVStorageRoleBinding.Namespace, expectedKVStorageRoleBinding.Name)
 				expectedKV := hco.NewKubeVirt(namespace)
 				expectedKV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/kubevirts/%s", expectedKV.Namespace, expectedKV.Name)
@@ -314,10 +315,10 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedKVCTB := hco.NewKubeVirtCommonTemplateBundle()
 				expectedKVCTB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/ctbs/%s", expectedKVCTB.Namespace, expectedKVCTB.Name)
 				expectedKVCTB.Status.Conditions = getGenericCompletedConditions()
-				expectedKVNLB := newKubeVirtNodeLabellerBundleForCR(hco, namespace)
+				expectedKVNLB := operands.NewKubeVirtNodeLabellerBundleForCR(hco, namespace)
 				expectedKVNLB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/nlb/%s", expectedKVNLB.Namespace, expectedKVNLB.Name)
 				expectedKVNLB.Status.Conditions = getGenericCompletedConditions()
-				expectedKVTV := newKubeVirtTemplateValidatorForCR(hco, namespace)
+				expectedKVTV := operands.NewKubeVirtTemplateValidatorForCR(hco, namespace)
 				expectedKVTV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/tv/%s", expectedKVTV.Namespace, expectedKVTV.Name)
 				expectedKVTV.Status.Conditions = getGenericCompletedConditions()
 				// Add all of the objects to the client

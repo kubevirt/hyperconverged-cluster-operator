@@ -3,6 +3,8 @@ package hyperconverged
 import (
 	"context"
 	"fmt"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/operands"
 	"github.com/operator-framework/operator-sdk/pkg/ready"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -95,13 +97,13 @@ func newHco() *hcov1beta1.HyperConverged {
 	}
 }
 
-func newReq(inst *hcov1beta1.HyperConverged) *hcoRequest {
-	return &hcoRequest{
+func newReq(inst *hcov1beta1.HyperConverged) *common.HcoRequest {
+	return &common.HcoRequest{
 		Request:    request,
-		logger:     log,
-		conditions: newHcoConditions(),
-		ctx:        context.TODO(),
-		instance:   inst,
+		Logger:     log,
+		Conditions: common.NewHcoConditions(),
+		Ctx:        context.TODO(),
+		Instance:   inst,
 	}
 }
 
@@ -134,18 +136,18 @@ func getBasicDeployment() *basicExpected {
 	res.pc = hco.NewKubeVirtPriorityClass()
 	// These are all of the objects that we expect to "find" in the client because
 	// we already created them in a previous reconcile.
-	expectedKVConfig := newKubeVirtConfigForCR(hco, namespace)
+	expectedKVConfig := operands.NewKubeVirtConfigForCR(hco, namespace)
 	expectedKVConfig.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/configmaps/%s", expectedKVConfig.Namespace, expectedKVConfig.Name)
 	res.kvConfig = expectedKVConfig
 
-	expectedKVStorageConfig := newKubeVirtStorageConfigForCR(hco, namespace)
+	expectedKVStorageConfig := operands.NewKubeVirtStorageConfigForCR(hco, namespace)
 	expectedKVStorageConfig.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/configmaps/%s", expectedKVStorageConfig.Namespace, expectedKVStorageConfig.Name)
 	res.kvStorageConfig = expectedKVStorageConfig
-	expectedKVStorageRole := newKubeVirtStorageRoleForCR(hco, namespace)
+	expectedKVStorageRole := operands.NewKubeVirtStorageRoleForCR(hco, namespace)
 	expectedKVStorageRole.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/roles/%s", expectedKVStorageConfig.Namespace, expectedKVStorageConfig.Name)
 	res.kvStorageRole = expectedKVStorageRole
 
-	expectedKVStorageRoleBinding := newKubeVirtStorageRoleBindingForCR(hco, namespace)
+	expectedKVStorageRoleBinding := operands.NewKubeVirtStorageRoleBindingForCR(hco, namespace)
 	expectedKVStorageRoleBinding.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/rolebindings/%s", expectedKVStorageConfig.Namespace, expectedKVStorageConfig.Name)
 	res.kvStorageRoleBinding = expectedKVStorageRoleBinding
 
@@ -182,26 +184,26 @@ func getBasicDeployment() *basicExpected {
 	expectedKVCTB.Status.Conditions = getGenericCompletedConditions()
 	res.kvCtb = expectedKVCTB
 
-	expectedKVNLB := newKubeVirtNodeLabellerBundleForCR(hco, namespace)
+	expectedKVNLB := operands.NewKubeVirtNodeLabellerBundleForCR(hco, namespace)
 	expectedKVNLB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/nlb/%s", expectedKVNLB.Namespace, expectedKVNLB.Name)
 	expectedKVNLB.Status.Conditions = getGenericCompletedConditions()
 	res.kvNlb = expectedKVNLB
 
-	expectedKVTV := newKubeVirtTemplateValidatorForCR(hco, namespace)
+	expectedKVTV := operands.NewKubeVirtTemplateValidatorForCR(hco, namespace)
 	expectedKVTV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/tv/%s", expectedKVTV.Namespace, expectedKVTV.Name)
 	expectedKVTV.Status.Conditions = getGenericCompletedConditions()
 	res.kvTv = expectedKVTV
 
-	expectedVMI := newVMImportForCR(hco, namespace)
+	expectedVMI := operands.NewVMImportForCR(hco, namespace)
 	expectedVMI.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/vmimportconfigs/%s", expectedVMI.Namespace, expectedVMI.Name)
 	expectedVMI.Status.Conditions = getGenericCompletedConditions()
 	res.vmi = expectedVMI
 
-	kvMtAg := newKubeVirtMetricsAggregationForCR(hco, namespace)
+	kvMtAg := operands.NewKubeVirtMetricsAggregationForCR(hco, namespace)
 	kvMtAg.Status.Conditions = getGenericCompletedConditions()
 	res.kvMtAg = kvMtAg
 
-	res.imsConfig = newIMSConfigForCR(hco, namespace)
+	res.imsConfig = operands.NewIMSConfigForCR(hco, namespace, "CONVERSION_CONTAINER", "VMWARE_CONTAINER")
 
 	return res
 }
@@ -290,13 +292,15 @@ func initReconciler(client client.Client) *ReconcileHyperConverged {
 		Expect(f(s)).To(BeNil())
 	}
 
+	mockEvents := &eventEmitterMock{}
 	// Create a ReconcileHyperConverged object with the scheme and fake client
 	return &ReconcileHyperConverged{
-		client:       client,
-		scheme:       s,
-		clusterInfo:  clusterInfoMock{},
-		eventEmitter: &eventEmitterMock{},
-		firstLoop:    true,
+		client:          client,
+		scheme:          s,
+		clusterInfo:     clusterInfoMock{},
+		eventEmitter:    mockEvents,
+		operandHandlers: operands.NewOperands(client, s, mockEvents, true),
+		firstLoop:       true,
 	}
 }
 
@@ -336,3 +340,6 @@ func (eventEmitterMock) EmitEvent(_ runtime.Object, _, _, _ string) {
 
 func (eventEmitterMock) UpdateClient(_ context.Context, _ client.Reader, _ logr.Logger) {
 }
+func (eventEmitterMock) EmitCreatedEvent(_ runtime.Object, _, _ string) {}
+func (eventEmitterMock) EmitUpdatedEvent(_ runtime.Object, _, _ string) {}
+func (eventEmitterMock) EmitDeletedEvent(_ runtime.Object, _, _ string) {}

@@ -2,6 +2,7 @@ package util
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-logr/logr"
 	csvv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -23,6 +24,9 @@ type EventEmitter interface {
 	Init(ctx context.Context, mgr manager.Manager, ci ClusterInfo, logger logr.Logger)
 	EmitEvent(object runtime.Object, eventType, reason, msg string)
 	UpdateClient(ctx context.Context, clnt client.Reader, logger logr.Logger)
+	EmitCreatedEvent(object runtime.Object, objType, objName string)
+	EmitUpdatedEvent(object runtime.Object, objType, objName string)
+	EmitDeletedEvent(object runtime.Object, objType, objName string)
 }
 
 type eventEmitter struct {
@@ -51,6 +55,18 @@ func (ee eventEmitter) EmitEvent(object runtime.Object, eventType, reason, msg s
 	if ee.csv != nil {
 		ee.recorder.Event(ee.csv, eventType, reason, msg)
 	}
+}
+
+func (ee eventEmitter) EmitCreatedEvent(object runtime.Object, objType, objName string) {
+	ee.EmitEvent(object, corev1.EventTypeNormal, "Created", fmt.Sprintf("Created %s %s", objType, objName))
+}
+
+func (ee eventEmitter) EmitUpdatedEvent(object runtime.Object, objType, objName string) {
+	ee.EmitEvent(object, corev1.EventTypeNormal, "Updated", fmt.Sprintf("Updated %s %s", objType, objName))
+}
+
+func (ee eventEmitter) EmitDeletedEvent(object runtime.Object, objType, objName string) {
+	ee.EmitEvent(object, corev1.EventTypeNormal, "Killing", fmt.Sprintf("Deleted %s %s", objType, objName))
 }
 
 func (ee *eventEmitter) UpdateClient(ctx context.Context, clnt client.Reader, logger logr.Logger) {
