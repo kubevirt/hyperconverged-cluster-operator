@@ -242,7 +242,14 @@ ${CMD} wait deployment ${HCO_DEPLOYMENT_NAME} --for condition=Available -n ${HCO
 
 Msg "verify the hyperconverged-cluster deployment is using the new image"
 
-./hack/retry.sh 6 30 "${CMD} get deployments -n ${HCO_NAMESPACE} -o yaml | grep image | grep hyperconverged-cluster | grep ${REGISTRY_IMAGE_URL_PREFIX}"
+NEW_IMAGE_NAME="${IMAGE_FORMAT//\$\{component\}/hyperconverged-cluster-operator}"
+echo "New HCO image name: ${NEW_IMAGE_NAME}"
+
+IMAGE_REG=$(echo "${NEW_IMAGE_NAME}" | cut -d '/' -f 2)
+
+${CMD} get deployments -n "${HCO_NAMESPACE}" "${HCO_DEPLOYMENT_NAME}" -o jsonpath="{.spec.template.spec.containers[0]}"
+
+./hack/retry.sh 6 30 "${CMD} get deployments -n ${HCO_NAMESPACE} ${HCO_DEPLOYMENT_NAME} -o jsonpath=\"{.spec.template.spec.containers[0].image}\" | grep ${IMAGE_REG}"
 
 echo "----- Images after upgrade"
 ${CMD} get deployments -n ${HCO_NAMESPACE} -o yaml | grep image | grep -v imagePullPolicy
