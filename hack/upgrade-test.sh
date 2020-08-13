@@ -237,5 +237,11 @@ timeout 15m bash -c 'export CMD="${CMD}";exec ./hack/check-state.sh'
 
 Msg "verify new operator version reported after the upgrade"
 ./hack/retry.sh 10 30 "CMD=${CMD} HCO_RESOURCE_NAME=${HCO_RESOURCE_NAME} HCO_NAMESPACE=${HCO_NAMESPACE} TARGET_VERSION=${TARGET_VERSION} hack/check_hco_version.sh"
-dump_sccs_after
+
+if [[ -n $PREV ]]; then
+  # ignoring scc check on 1.0.0 -> 1.1.0+PR because in 1.0.0 we ship CDI v1.13.1 which was bugged
+  echo "----- Skipping SCC check"
+else
+  dump_sccs_after
+fi
 echo "upgrade-test completed successfully."
