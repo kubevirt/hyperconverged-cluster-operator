@@ -50,6 +50,7 @@ type basicExpected struct {
 	vmi                  *vmimportv1.VMImportConfig
 	kvMtAg               *sspv1.KubevirtMetricsAggregation
 	imsConfig            *corev1.ConfigMap
+	consoleCliDownload   *consolev1.ConsoleCLIDownload
 }
 
 func (be basicExpected) toArray() []runtime.Object {
@@ -69,6 +70,7 @@ func (be basicExpected) toArray() []runtime.Object {
 		be.vmi,
 		be.kvMtAg,
 		be.imsConfig,
+		be.consoleCliDownload,
 	}
 }
 
@@ -202,7 +204,13 @@ func getBasicDeployment() *basicExpected {
 	kvMtAg.Status.Conditions = getGenericCompletedConditions()
 	res.kvMtAg = kvMtAg
 
-	res.imsConfig = newIMSConfigForCR(hco, namespace)
+	expectedIMSConfig := newIMSConfigForCR(hco, namespace)
+	expectedIMSConfig.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/configmaps/%s", expectedIMSConfig.Namespace, expectedIMSConfig.Name)
+	res.imsConfig = expectedIMSConfig
+
+	expectedConsoleCliDownload := hco.NewConsoleCLIDownload()
+	expectedIMSConfig.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/consoleclidownloads/%s", expectedConsoleCliDownload.Namespace, expectedConsoleCliDownload.Name)
+	res.consoleCliDownload = expectedConsoleCliDownload
 
 	return res
 }

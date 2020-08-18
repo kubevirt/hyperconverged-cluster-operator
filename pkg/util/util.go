@@ -202,24 +202,3 @@ func EnsureDeleted(ctx context.Context, c client.Client, obj runtime.Object, hco
 
 	return ComponentResourceRemoval(ctx, c, obj, hcoName, logger, dryRun)
 }
-
-// EnsureCreated creates the runtime object if it does not exist
-func EnsureCreated(ctx context.Context, c client.Client, obj runtime.Object, logger logr.Logger) error {
-	err := GetRuntimeObject(ctx, c, obj, logger)
-
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			logger.Info("Creating object", "kind", obj.GetObjectKind())
-			return c.Create(ctx, obj)
-		}
-
-		if meta.IsNoMatchError(err) {
-			return err
-		}
-
-		logger.Error(err, "failed getting runtime object", "kind", obj.GetObjectKind())
-		return err
-	}
-
-	return nil
-}
