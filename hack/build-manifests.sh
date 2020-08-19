@@ -81,10 +81,11 @@ function create_virt_csv() {
   local operatorName="kubevirt"
   local imagePullUrl="${KUBEVIRT_IMAGE}"
   local dumpCRDsArg="--dumpCRDs"
+  local virtDigest=$(get_image_digest "${KUBEVIRT_IMAGE}")
   local operatorArgs=" \
     --namespace=${OPERATOR_NAMESPACE} \
     --csvVersion=${CSV_VERSION} \
-    --operatorImageVersion=${KUBEVIRT_IMAGE/*:/} \
+    --operatorImageVersion=${virtDigest/*@/} \
     --dockerPrefix=${KUBEVIRT_IMAGE%\/*} \
   "
 
@@ -97,6 +98,7 @@ function create_cna_csv() {
   local imagePullUrl="${CNA_IMAGE}"
   local dumpCRDsArg="--dump-crds"
   local containerPrefix="${CNA_IMAGE%/*}"
+  local cnaDigest=$(get_image_digest "${CNA_IMAGE}")
   local tag="${CNA_IMAGE/*:/}"
   local operatorArgs=" \
     --namespace=${OPERATOR_NAMESPACE} \
@@ -104,8 +106,9 @@ function create_cna_csv() {
     --version-replaces=${REPLACES_VERSION} \
     --image-pull-policy=IfNotPresent \
     --operator-version=${tag} \
-    --container-tag=${tag} \
+    --container-tag=${cnaDigest/*:/} \
     --container-prefix=${containerPrefix} \
+    --image-name=${cnaDigest/:*/}
   "
 
   gen_csv ${operatorName} ${imagePullUrl} ${dumpCRDsArg} ${operatorArgs}
@@ -116,10 +119,11 @@ function create_ssp_csv() {
   local operatorName="scheduling-scale-performance"
   local imagePullUrl="${SSP_IMAGE}"
   local dumpCRDsArg="--dump-crds"
+  local sspDigest=$(get_image_digest "${SSP_IMAGE}")
   local operatorArgs=" \
     --namespace=${OPERATOR_NAMESPACE} \
     --csv-version=${CSV_VERSION} \
-    --operator-image=${SSP_IMAGE} \
+    --operator-image=${sspDigest} \
     --operator-version=${SSP_VERSION} \
   "
 
@@ -132,18 +136,27 @@ function create_cdi_csv() {
   local imagePullUrl="${CDI_IMAGE}"
   local containerPrefix="${CDI_IMAGE%/*}"
   local tag="${CDI_IMAGE/*:/}"
+
+  local cdiDigest=$(get_image_digest "${CDI_IMAGE}")
+  local controllerDigest=$(get_image_digest "${containerPrefix}/cdi-controller:${tag}")
+  local apiserverDigest=$(get_image_digest "${containerPrefix}/cdi-apiserver:${tag}")
+  local clonerDigest=$(get_image_digest "${containerPrefix}/cdi-cloner:${tag}")
+  local importerDigest=$(get_image_digest "${containerPrefix}/cdi-importer:${tag}")
+  local uploadproxyDigest=$(get_image_digest "${containerPrefix}/cdi-uploadproxy:${tag}")
+  local uploadserverDigest=$(get_image_digest "${containerPrefix}/cdi-uploadserver:${tag}")
+
   local dumpCRDsArg="--dump-crds"
   local operatorArgs=" \
     --namespace=${OPERATOR_NAMESPACE} \
     --csv-version=${CSV_VERSION} \
     --pull-policy=IfNotPresent \
-    --operator-image=${CDI_IMAGE} \
-    --controller-image=${containerPrefix}/cdi-controller:${tag} \
-    --apiserver-image=${containerPrefix}/cdi-apiserver:${tag} \
-    --cloner-image=${containerPrefix}/cdi-cloner:${tag} \
-    --importer-image=${containerPrefix}/cdi-importer:${tag} \
-    --uploadproxy-image=${containerPrefix}/cdi-uploadproxy:${tag} \
-    --uploadserver-image=${containerPrefix}/cdi-uploadserver:${tag} \
+    --operator-image=${cdiDigest} \
+    --controller-image=${controllerDigest} \
+    --apiserver-image=${apiserverDigest} \
+    --cloner-image=${clonerDigest} \
+    --importer-image=${importerDigest} \
+    --uploadproxy-image=${uploadproxyDigest} \
+    --uploadserver-image=${uploadserverDigest} \
     --operator-version=${CDI_VERSION} \
   "
   gen_csv ${operatorName} ${imagePullUrl} ${dumpCRDsArg} ${operatorArgs}
@@ -154,10 +167,12 @@ function create_hpp_csv() {
   local operatorName="hostpath-provisioner"
   local imagePullUrl="${HPPO_IMAGE}"
   local dumpCRDsArg="--dump-crds"
+  local hppoDigest=$(get_image_digest "${HPPO_IMAGE}")
+  local hppDigest=$(get_image_digest "${HPP_IMAGE}")
   local operatorArgs=" \
     --csv-version=${CSV_VERSION} \
-    --operator-image-name=${HPPO_IMAGE} \
-    --provisioner-image-name=${HPP_IMAGE} \
+    --operator-image-name=${hppoDigest} \
+    --provisioner-image-name=${hppDigest} \
     --namespace=${OPERATOR_NAMESPACE} \
     --pull-policy=IfNotPresent \
   "
@@ -170,13 +185,15 @@ function create_vm_import_csv() {
   local operatorName="vm-import-operator"
   local imagePullUrl="${VM_IMPORT_IMAGE}"
   local containerPrefix="${VM_IMPORT_IMAGE%/*}"
+  local operatorDigest=$(get_image_digest "${VM_IMPORT_IMAGE}")
   local tag="${VM_IMPORT_IMAGE/*:/}"
+  local controllerDigest=$(get_image_digest "${containerPrefix}/vm-import-controller:${tag}")
   local dumpCRDsArg="--dump-crds"
   local operatorArgs=" \
     --csv-version=${CSV_VERSION} \
     --operator-version=${VM_IMPORT_VERSION} \
-    --operator-image=${VM_IMPORT_IMAGE} \
-    --controller-image=${containerPrefix}/vm-import-controller:${tag} \
+    --operator-image=${operatorDigest} \
+    --controller-image=${controllerDigest} \
     --namespace=${OPERATOR_NAMESPACE} \
     --pull-policy=IfNotPresent \
   "
@@ -184,6 +201,13 @@ function create_vm_import_csv() {
   gen_csv ${operatorName} ${imagePullUrl} ${dumpCRDsArg} ${operatorArgs}
   echo "${operatorName}"
 }
+
+function get_image_digest() {
+#  docker pull "$1" > /dev/null
+#  docker inspect "$1" -f "{{index .RepoDigests 0}}"
+  echo "${1/:*/}@$(skopeo inspect "docker://$1" | jq -r '.Digest')"
+}
+
 
 TEMPDIR=$(mktemp -d) || (echo "Failed to create temp directory" && exit 1)
 pushd $TEMPDIR
@@ -242,6 +266,8 @@ Product: None
 EOM
 )
 
+IMAGE_NAME=$(get_image_digest "${OPERATOR_IMAGE}")
+
 # Build and write deploy dir
 (cd ${PROJECT_ROOT}/tools/manifest-templator/ && go build)
 ${PROJECT_ROOT}/tools/manifest-templator/manifest-templator \
@@ -263,7 +289,7 @@ ${PROJECT_ROOT}/tools/manifest-templator/manifest-templator \
   --ssp-version="${SSP_VERSION}" \
   --hppo-version="${HPPO_VERSION}" \
   --vm-import-version="${VM_IMPORT_VERSION}" \
-  --operator-image="${OPERATOR_IMAGE}"
+  --operator-image="${IMAGE_NAME}"
 (cd ${PROJECT_ROOT}/tools/manifest-templator/ && go clean)
 
 # Build and merge CSVs
@@ -290,7 +316,7 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --ssp-version="${SSP_VERSION}" \
   --hppo-version="${HPPO_VERSION}" \
   --vm-import-version="${VM_IMPORT_VERSION}" \
-  --operator-image-name="${OPERATOR_IMAGE}" > "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}"
+  --operator-image-name="${IMAGE_NAME}" > "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}"
 
 # Copy all CRDs into the CRD and CSV directories
 rm -f ${CRD_DIR}/*

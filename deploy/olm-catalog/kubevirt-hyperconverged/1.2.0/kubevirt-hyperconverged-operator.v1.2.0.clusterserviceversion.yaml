@@ -7,8 +7,8 @@ metadata:
     capabilities: Full Lifecycle
     categories: OpenShift Optional
     certified: "false"
-    containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.2.0
-    createdAt: "2020-08-23 05:13:22"
+    containerImage: quay.io/kubevirt/hyperconverged-cluster-operator@sha256:4df494494edb282bf0d781392a83cf42107d8d28be88822c8e6cb45e116425bc
+    createdAt: "2020-08-19 15:14:57"
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -1443,7 +1443,7 @@ spec:
                 env:
                 - name: KVM_EMULATION
                 - name: OPERATOR_IMAGE
-                  value: quay.io/kubevirt/hyperconverged-cluster-operator:1.2.0
+                  value: quay.io/kubevirt/hyperconverged-cluster-operator@sha256:4df494494edb282bf0d781392a83cf42107d8d28be88822c8e6cb45e116425bc
                 - name: OPERATOR_NAME
                   value: hyperconverged-cluster-operator
                 - name: OPERATOR_NAMESPACE
@@ -1468,7 +1468,7 @@ spec:
                 - name: KUBEVIRT_VERSION
                   value: v0.32.0-rc.2
                 - name: CDI_VERSION
-                  value: v1.22.0
+                  value: v1.21.0
                 - name: NETWORK_ADDONS_VERSION
                   value: 0.41.0
                 - name: SSP_VERSION
@@ -1477,7 +1477,7 @@ spec:
                   value: v0.5.2
                 - name: VM_IMPORT_VERSION
                   value: v0.1.0
-                image: quay.io/kubevirt/hyperconverged-cluster-operator:1.2.0
+                image: quay.io/kubevirt/hyperconverged-cluster-operator@sha256:4df494494edb282bf0d781392a83cf42107d8d28be88822c8e6cb45e116425bc
                 imagePullPolicy: IfNotPresent
                 name: hyperconverged-cluster-operator
                 readinessProbe:
@@ -1522,7 +1522,7 @@ spec:
                 - name: MACVTAP_CNI_IMAGE
                   value: quay.io/kubevirt/macvtap-cni:v0.2.0
                 - name: OPERATOR_IMAGE
-                  value: quay.io/kubevirt/cluster-network-addons-operator:0.41.0
+                  value: quay.io/kubevirt/quay.io/kubevirt/cluster-network-addons-operator@sha256:314b2aa9e3c154bd9bc7fc5dfc142eed08ecfca37ec381d86d4bc3b7cbe6d468
                 - name: OPERATOR_NAME
                   value: cluster-network-addons-operator
                 - name: OPERATOR_VERSION
@@ -1540,7 +1540,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.name
                 - name: WATCH_NAMESPACE
-                image: quay.io/kubevirt/cluster-network-addons-operator:0.41.0
+                image: quay.io/kubevirt/quay.io/kubevirt/cluster-network-addons-operator@sha256:314b2aa9e3c154bd9bc7fc5dfc142eed08ecfca37ec381d86d4bc3b7cbe6d468
                 imagePullPolicy: IfNotPresent
                 name: cluster-network-addons-operator
                 resources: {}
@@ -1583,12 +1583,12 @@ spec:
                 - "2"
                 env:
                 - name: OPERATOR_IMAGE
-                  value: docker.io/kubevirt/virt-operator:v0.32.0-rc.2
+                  value: docker.io/kubevirt/virt-operator@sha256:f5d7d2c005db7a822eb919e09e19d300ade42158c9a1acce1f545316cf52fcb7
                 - name: WATCH_NAMESPACE
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
-                image: docker.io/kubevirt/virt-operator:v0.32.0-rc.2
+                image: docker.io/kubevirt/virt-operator@sha256:f5d7d2c005db7a822eb919e09e19d300ade42158c9a1acce1f545316cf52fcb7
                 imagePullPolicy: IfNotPresent
                 name: virt-operator
                 ports:
@@ -1641,7 +1641,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.name
                 - name: IMAGE_REFERENCE
-                  value: quay.io/fromani/kubevirt-ssp-operator-container:v1.0.41
+                  value: quay.io/fromani/kubevirt-ssp-operator-container@sha256:38ac2f7140ef94c0e41ceac0786f09926d8642055193c75b60cb13b1ccc209a0
                 - name: WATCH_NAMESPACE
                 - name: KVM_INFO_TAG
                 - name: VALIDATOR_TAG
@@ -1653,7 +1653,7 @@ spec:
                   value: kubevirt-ssp-operator
                 - name: OPERATOR_VERSION
                   value: v1.0.41
-                image: quay.io/fromani/kubevirt-ssp-operator-container:v1.0.41
+                image: quay.io/fromani/kubevirt-ssp-operator-container@sha256:38ac2f7140ef94c0e41ceac0786f09926d8642055193c75b60cb13b1ccc209a0
                 imagePullPolicy: Always
                 name: kubevirt-ssp-operator
                 ports:
@@ -1680,24 +1680,24 @@ spec:
                 - name: DEPLOY_CLUSTER_RESOURCES
                   value: "true"
                 - name: OPERATOR_VERSION
-                  value: v1.22.0
+                  value: v1.21.0
                 - name: CONTROLLER_IMAGE
-                  value: docker.io/kubevirt/cdi-controller:v1.22.0
+                  value: docker.io/kubevirt/cdi-controller@sha256:4c871f2ccef31f2c60750e0e338330497b235e51a435f6f10ed2fb950e52ab0e
                 - name: IMPORTER_IMAGE
-                  value: docker.io/kubevirt/cdi-importer:v1.22.0
+                  value: docker.io/kubevirt/cdi-importer@sha256:5b3def2697b0c5a7727ccc507c51310d246b01b168aa8b84484f329c2fb0edca
                 - name: CLONER_IMAGE
-                  value: docker.io/kubevirt/cdi-cloner:v1.22.0
+                  value: docker.io/kubevirt/cdi-cloner@sha256:15d6bedabdfdc979382c6f58bd9c1f77e00cc16dc40a463d5c942384805d1526
                 - name: APISERVER_IMAGE
-                  value: docker.io/kubevirt/cdi-apiserver:v1.22.0
+                  value: docker.io/kubevirt/cdi-apiserver@sha256:8cb0670bc1ae057e3f0f5ab876bf605cee950bc2f0e053eb789c6a988a916823
                 - name: UPLOAD_SERVER_IMAGE
-                  value: docker.io/kubevirt/cdi-uploadserver:v1.22.0
+                  value: docker.io/kubevirt/cdi-uploadserver@sha256:921a1a6d154c3ada5cad8c568b25b94282edf28030c8cf90db92d9e6088fd771
                 - name: UPLOAD_PROXY_IMAGE
-                  value: docker.io/kubevirt/cdi-uploadproxy:v1.22.0
+                  value: docker.io/kubevirt/cdi-uploadproxy@sha256:cdcde3bedc2254fa72ffa652d5bb59392ceb7c786ca95e62fa87e5a075da8f8d
                 - name: VERBOSITY
                   value: "1"
                 - name: PULL_POLICY
                   value: IfNotPresent
-                image: docker.io/kubevirt/cdi-operator:v1.22.0
+                image: docker.io/kubevirt/cdi-operator@sha256:c75651b612932e6c304804088d60e41916f8fb6b375d0c5e8102a52c4d29b3b5
                 imagePullPolicy: IfNotPresent
                 name: cdi-operator
                 ports:
@@ -1735,10 +1735,10 @@ spec:
                 - name: OPERATOR_NAME
                   value: hostpath-provisioner-operator
                 - name: PROVISIONER_IMAGE
-                  value: quay.io/kubevirt/hostpath-provisioner:v0.5.1
+                  value: quay.io/kubevirt/hostpath-provisioner@sha256:9d92c216bc50d7fbfc787f315ad77dabd2ac26d981702efd545a1dd1f2b37c6c
                 - name: PULL_POLICY
                   value: IfNotPresent
-                image: quay.io/kubevirt/hostpath-provisioner-operator:v0.5.2
+                image: quay.io/kubevirt/hostpath-provisioner-operator@sha256:074aae9b1fbc727975934e86eea31e699e4504c24e1a7aea6d0b2d69f0e07673
                 imagePullPolicy: IfNotPresent
                 name: hostpath-provisioner-operator
                 resources: {}
@@ -1764,7 +1764,7 @@ spec:
                 - name: OPERATOR_VERSION
                   value: v0.1.0
                 - name: CONTROLLER_IMAGE
-                  value: quay.io/kubevirt/vm-import-controller:v0.1.0
+                  value: quay.io/kubevirt/vm-import-controller@sha256:89e0703c2abe0762b1d530982c3a92a3419246ecfa2b7ae1904ec5288c08405d
                 - name: PULL_POLICY
                   value: IfNotPresent
                 - name: OS_CONFIGMAP_NAME
@@ -1774,7 +1774,7 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.name
-                image: quay.io/kubevirt/vm-import-operator:v0.1.0
+                image: quay.io/kubevirt/vm-import-operator@sha256:a06352fc2bac876f38f39092d1dde449fe3a768e208696eb0be32359b4e67368
                 imagePullPolicy: IfNotPresent
                 name: vm-import-operator
                 resources: {}
