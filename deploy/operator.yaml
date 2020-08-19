@@ -107,7 +107,7 @@ spec:
         - name: MACVTAP_CNI_IMAGE
           value: quay.io/kubevirt/macvtap-cni:v0.2.0
         - name: OPERATOR_IMAGE
-          value: quay.io/kubevirt/quay.io/kubevirt/cluster-network-addons-operator@sha256:314b2aa9e3c154bd9bc7fc5dfc142eed08ecfca37ec381d86d4bc3b7cbe6d468
+          value: quay.io/kubevirt/cluster-network-addons-operator@sha256:314b2aa9e3c154bd9bc7fc5dfc142eed08ecfca37ec381d86d4bc3b7cbe6d468
         - name: OPERATOR_NAME
           value: cluster-network-addons-operator
         - name: OPERATOR_VERSION
@@ -125,7 +125,7 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         - name: WATCH_NAMESPACE
-        image: quay.io/kubevirt/quay.io/kubevirt/cluster-network-addons-operator@sha256:314b2aa9e3c154bd9bc7fc5dfc142eed08ecfca37ec381d86d4bc3b7cbe6d468
+        image: quay.io/kubevirt/cluster-network-addons-operator@sha256:314b2aa9e3c154bd9bc7fc5dfc142eed08ecfca37ec381d86d4bc3b7cbe6d468
         imagePullPolicy: IfNotPresent
         name: cluster-network-addons-operator
         resources: {}

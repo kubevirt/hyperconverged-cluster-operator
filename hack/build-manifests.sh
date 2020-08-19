@@ -97,8 +97,9 @@ function create_cna_csv() {
   local operatorName="cluster-network-addons"
   local imagePullUrl="${CNA_IMAGE}"
   local dumpCRDsArg="--dump-crds"
-  local containerPrefix="${CNA_IMAGE%/*}"
   local cnaDigest=$(get_image_digest "${CNA_IMAGE}")
+  local containerPrefix="${cnaDigest%/*}"
+  local imageName="${cnaDigest#${containerPrefix}/}"
   local tag="${CNA_IMAGE/*:/}"
   local operatorArgs=" \
     --namespace=${OPERATOR_NAMESPACE} \
@@ -108,7 +109,7 @@ function create_cna_csv() {
     --operator-version=${tag} \
     --container-tag=${cnaDigest/*:/} \
     --container-prefix=${containerPrefix} \
-    --image-name=${cnaDigest/:*/}
+    --image-name=${imageName/:*/}
   "
 
   gen_csv ${operatorName} ${imagePullUrl} ${dumpCRDsArg} ${operatorArgs}
@@ -203,9 +204,7 @@ function create_vm_import_csv() {
 }
 
 function get_image_digest() {
-#  docker pull "$1" > /dev/null
-#  docker inspect "$1" -f "{{index .RepoDigests 0}}"
-  echo "${1/:*/}@$(skopeo inspect "docker://$1" | jq -r '.Digest')"
+  echo "${1/:*/}@$(docker run --rm quay.io/skopeo/stable:latest inspect "docker://$1" | jq -r '.Digest')"
 }
 
 
