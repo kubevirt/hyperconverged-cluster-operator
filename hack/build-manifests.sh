@@ -77,16 +77,30 @@ function gen_csv() {
     "/---/" "{*}"
 }
 
+function get-virt-operator-sha() {
+  local digest=$(get_image_digest "docker.io/kubevirt/virt-$1:${KUBEVIRT_VERSION}")
+  echo "${digest/*@/}"
+}
+
 function create_virt_csv() {
   local operatorName="kubevirt"
   local imagePullUrl="${KUBEVIRT_IMAGE}"
   local dumpCRDsArg="--dumpCRDs"
   local virtDigest=$(get_image_digest "${KUBEVIRT_IMAGE}")
+  local apiSha=$(get-virt-operator-sha "api")
+  local controllerSha=$(get-virt-operator-sha "controller")
+  local launcherSha=$(get-virt-operator-sha "launcher")
+  local handlerSha=$(get-virt-operator-sha "handler")
   local operatorArgs=" \
     --namespace=${OPERATOR_NAMESPACE} \
     --csvVersion=${CSV_VERSION} \
     --operatorImageVersion=${virtDigest/*@/} \
     --dockerPrefix=${KUBEVIRT_IMAGE%\/*} \
+    --kubeVirtVersion=${KUBEVIRT_VERSION} \
+    --apiSha=${apiSha} \
+    --controllerSha=${controllerSha} \
+    --handlerSha=${handlerSha} \
+    --launcherSha=${launcherSha} \
   "
 
   gen_csv ${operatorName} ${imagePullUrl} ${dumpCRDsArg} ${operatorArgs}
@@ -145,7 +159,6 @@ function create_cdi_csv() {
   local importerDigest=$(get_image_digest "${containerPrefix}/cdi-importer:${tag}")
   local uploadproxyDigest=$(get_image_digest "${containerPrefix}/cdi-uploadproxy:${tag}")
   local uploadserverDigest=$(get_image_digest "${containerPrefix}/cdi-uploadserver:${tag}")
-
   local dumpCRDsArg="--dump-crds"
   local operatorArgs=" \
     --namespace=${OPERATOR_NAMESPACE} \
@@ -204,12 +217,15 @@ function create_vm_import_csv() {
 }
 
 function get_image_digest() {
-  echo "${1/:*/}@$(docker run --rm quay.io/skopeo/stable:latest inspect "docker://$1" | jq -r '.Digest')"
+  local image="${1/:*/}@$(docker run --rm quay.io/skopeo/stable:latest inspect "docker://$1" | jq -r '.Digest')"
+  echo "${image}" >> ${IMAGES_FILE}
+  echo "${image}"
 }
-
 
 TEMPDIR=$(mktemp -d) || (echo "Failed to create temp directory" && exit 1)
 pushd $TEMPDIR
+export IMAGES_FILE="${TEMPDIR}/images.txt"
+touch ${IMAGES_FILE}
 virtCsv="${TEMPDIR}/$(create_virt_csv).${CSV_EXT}"
 cnaCsv="${TEMPDIR}/$(create_cna_csv).${CSV_EXT}"
 sspCsv="${TEMPDIR}/$(create_ssp_csv).${CSV_EXT}"
@@ -217,6 +233,7 @@ cdiCsv="${TEMPDIR}/$(create_cdi_csv).${CSV_EXT}"
 hppCsv="${TEMPDIR}/$(create_hpp_csv).${CSV_EXT}"
 importCsv="${TEMPDIR}/$(create_vm_import_csv).${CSV_EXT}"
 csvOverrides="${TEMPDIR}/csv_overrides.${CSV_EXT}"
+
 cat > ${csvOverrides} <<- EOM
 ---
 spec:
@@ -266,6 +283,10 @@ EOM
 )
 
 IMAGE_NAME=$(get_image_digest "${OPERATOR_IMAGE}")
+conversionContainer=$(get_image_digest "${CONVERSION_CONTAINER}")
+vmwareContainer=$(get_image_digest "${VMWARE_CONTAINER}")
+
+IMAGE_LIST=$(cat ${IMAGES_FILE} | tr '\n' ',')
 
 # Build and write deploy dir
 (cd ${PROJECT_ROOT}/tools/manifest-templator/ && go build)
@@ -277,8 +298,8 @@ ${PROJECT_ROOT}/tools/manifest-templator/manifest-templator \
   --cdi-csv="$(<${cdiCsv})" \
   --hpp-csv="$(<${hppCsv})" \
   --vmimport-csv="$(<${importCsv})" \
-  --ims-conversion-image-name="${CONVERSION_CONTAINER}" \
-  --ims-vmware-image-name="${VMWARE_CONTAINER}" \
+  --ims-conversion-image-name="${conversionContainer}" \
+  --ims-vmware-image-name="${vmwareContainer}" \
   --operator-namespace="${OPERATOR_NAMESPACE}" \
   --smbios="${SMBIOS}" \
   --hco-kv-io-version="${CSV_VERSION}" \
@@ -299,8 +320,8 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --cdi-csv="$(<${cdiCsv})" \
   --hpp-csv="$(<${hppCsv})" \
   --vmimport-csv="$(<${importCsv})" \
-  --ims-conversion-image-name="${CONVERSION_CONTAINER}" \
-  --ims-vmware-image-name="${VMWARE_CONTAINER}" \
+  --ims-conversion-image-name="${conversionContainer}" \
+  --ims-vmware-image-name="${vmwareContainer}" \
   --csv-version=${CSV_VERSION} \
   --replaces-csv-version=${REPLACES_CSV_VERSION} \
   --hco-kv-io-version="${CSV_VERSION}" \
@@ -315,6 +336,7 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --ssp-version="${SSP_VERSION}" \
   --hppo-version="${HPPO_VERSION}" \
   --vm-import-version="${VM_IMPORT_VERSION}" \
+  --related-images-list="${IMAGE_LIST}" \
   --operator-image-name="${IMAGE_NAME}" > "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}"
 
 # Copy all CRDs into the CRD and CSV directories

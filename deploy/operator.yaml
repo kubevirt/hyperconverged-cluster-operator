@@ -33,9 +33,9 @@ spec:
               fieldPath: metadata.name
         - name: WATCH_NAMESPACE
         - name: CONVERSION_CONTAINER
-          value: quay.io/kubevirt/kubevirt-v2v-conversion:v2.0.0
+          value: quay.io/kubevirt/kubevirt-v2v-conversion@sha256:c620233c71b805004c2cd38927c421b69d99b27cb40af521967e655882b2f815
         - name: VMWARE_CONTAINER
-          value: quay.io/kubevirt/kubevirt-vmware:v2.0.0-6
+          value: quay.io/kubevirt/kubevirt-vmware@sha256:07ce0160f3f384eb1ec35ad823ac305337089123a4b65f9f794f4b72528e133a
         - name: SMBIOS
           value: |-
             Family: KubeVirt
@@ -47,7 +47,7 @@ spec:
         - name: KUBEVIRT_VERSION
           value: v0.32.0-rc.2
         - name: CDI_VERSION
-          value: v1.21.0
+          value: v1.22.0
         - name: NETWORK_ADDONS_VERSION
           value: 0.41.0
         - name: SSP_VERSION
@@ -179,6 +179,16 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.annotations['olm.targetNamespaces']
+        - name: KUBEVIRT_VERSION
+          value: v0.32.0-rc.2
+        - name: VIRT_API_SHASUM
+          value: sha256:6554564e51f07d2fe106ae6ae622f5acd8e48fe9e58b260c4be6f0fc97d84ffa
+        - name: VIRT_CONTROLLER_SHASUM
+          value: sha256:5ccc40b24e9b2fa1c4d26377941a6bcbd71cc70ed5fcbac70cd6cded96af25c2
+        - name: VIRT_HANDLER_SHASUM
+          value: sha256:71d151e62fa3e18587244c0180a8cdbdb2cd68654b9035c715ebdb0b952733f4
+        - name: VIRT_LAUNCHER_SHASUM
+          value: sha256:e20f759c2066857d48b58aad562c47a30eff682523c6a73ed3ab0718f53d3134
         image: docker.io/kubevirt/virt-operator@sha256:f5d7d2c005db7a822eb919e09e19d300ade42158c9a1acce1f545316cf52fcb7
         imagePullPolicy: IfNotPresent
         name: virt-operator
@@ -283,24 +293,24 @@ spec:
         - name: DEPLOY_CLUSTER_RESOURCES
           value: "true"
         - name: OPERATOR_VERSION
-          value: v1.21.0
+          value: v1.22.0
         - name: CONTROLLER_IMAGE
-          value: docker.io/kubevirt/cdi-controller@sha256:4c871f2ccef31f2c60750e0e338330497b235e51a435f6f10ed2fb950e52ab0e
+          value: docker.io/kubevirt/cdi-controller@sha256:89937377c6e851ee9ba85d861b87d49b87084ef2b7e05257ceed779529552d30
         - name: IMPORTER_IMAGE
-          value: docker.io/kubevirt/cdi-importer@sha256:5b3def2697b0c5a7727ccc507c51310d246b01b168aa8b84484f329c2fb0edca
+          value: docker.io/kubevirt/cdi-importer@sha256:a5d9743e30a097969d5905ea1bcb5eefb0b7e22b43313a30cc51dc5d43316a91
         - name: CLONER_IMAGE
-          value: docker.io/kubevirt/cdi-cloner@sha256:15d6bedabdfdc979382c6f58bd9c1f77e00cc16dc40a463d5c942384805d1526
+          value: docker.io/kubevirt/cdi-cloner@sha256:69eefb735597d79efd4bc7abb4c7f415ac5bd3a2b19636a435d60b6e6fba428a
         - name: APISERVER_IMAGE
-          value: docker.io/kubevirt/cdi-apiserver@sha256:8cb0670bc1ae057e3f0f5ab876bf605cee950bc2f0e053eb789c6a988a916823
+          value: docker.io/kubevirt/cdi-apiserver@sha256:de5d46cdfd09b7c3cbfd1b33007c8185750e8d30617cc7919f4f7507d0cb55ef
         - name: UPLOAD_SERVER_IMAGE
-          value: docker.io/kubevirt/cdi-uploadserver@sha256:921a1a6d154c3ada5cad8c568b25b94282edf28030c8cf90db92d9e6088fd771
+          value: docker.io/kubevirt/cdi-uploadserver@sha256:c00d7abee0b605a1d827f803dc8522e61717d4c6382a5c2308fad9ab4b473ddf
         - name: UPLOAD_PROXY_IMAGE
-          value: docker.io/kubevirt/cdi-uploadproxy@sha256:cdcde3bedc2254fa72ffa652d5bb59392ceb7c786ca95e62fa87e5a075da8f8d
+          value: docker.io/kubevirt/cdi-uploadproxy@sha256:b7397d4adfedefbba8de7a51f437af4f44a233d0323bcc0c93c9ad044afa011b
         - name: VERBOSITY
           value: "1"
         - name: PULL_POLICY
           value: IfNotPresent
-        image: docker.io/kubevirt/cdi-operator@sha256:c75651b612932e6c304804088d60e41916f8fb6b375d0c5e8102a52c4d29b3b5
+        image: docker.io/kubevirt/cdi-operator@sha256:f74a9235b813160b577bae4d513d53b5ae25ea768134d6ccb801183e6a78cc51
         imagePullPolicy: IfNotPresent
         name: cdi-operator
         ports:
