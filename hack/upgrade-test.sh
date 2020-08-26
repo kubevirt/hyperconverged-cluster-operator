@@ -99,11 +99,11 @@ if [ -n "$KUBEVIRT_PROVIDER" ]; then
   make cluster-clean
 fi
 
-"${CMD}" delete ${HCO_KIND} ${HCO_RESOURCE_NAME} -n ${HCO_NAMESPACE} || true
-"${CMD}" delete subscription ${HCO_SUBSCRIPTION_NAME} -n ${HCO_NAMESPACE} || true
-"${CMD}" delete catalogsource ${HCO_CATALOGSOURCE_NAME} -n ${HCO_CATALOG_NAMESPACE} || true
-"${CMD}" delete catalogsource ${NMO_CATALOGSOURCE_NAME} -n ${HCO_CATALOG_NAMESPACE} || true
-"${CMD}" delete operatorgroup ${HCO_OPERATORGROUP_NAME} -n ${HCO_NAMESPACE} || true
+"${CMD}" delete ${HCO_KIND} ${HCO_RESOURCE_NAME} -n ${HCO_NAMESPACE} --ignore-not-found
+"${CMD}" delete subscription ${HCO_SUBSCRIPTION_NAME} -n ${HCO_NAMESPACE} --ignore-not-found
+"${CMD}" delete catalogsource ${HCO_CATALOGSOURCE_NAME} -n ${HCO_CATALOG_NAMESPACE} --ignore-not-found
+"${CMD}" delete catalogsource ${NMO_CATALOGSOURCE_NAME} -n ${HCO_CATALOG_NAMESPACE} --ignore-not-found
+"${CMD}" delete operatorgroup ${HCO_OPERATORGROUP_NAME} -n ${HCO_NAMESPACE} --ignore-not-found
 
 source hack/compare_scc.sh
 dump_sccs_before
