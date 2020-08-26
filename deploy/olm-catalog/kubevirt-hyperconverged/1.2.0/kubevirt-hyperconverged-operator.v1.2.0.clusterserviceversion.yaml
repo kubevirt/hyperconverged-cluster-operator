@@ -8,7 +8,7 @@ metadata:
     categories: OpenShift Optional
     certified: "false"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator@sha256:4df494494edb282bf0d781392a83cf42107d8d28be88822c8e6cb45e116425bc
-    createdAt: "2020-08-25 22:48:53"
+    createdAt: "2020-08-26 14:50:14"
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -1792,7 +1792,7 @@ spec:
                       fieldPath: metadata.name
                 - name: MONITORING_NAMESPACE
                   value: openshift-monitoring
-                image: quay.io/kubevirt/vm-import-operator@sha256:abed5d2168a6c6e91f00eec1b336c45707e9df45101b52027b4261275d192180
+                image: quay.io/kubevirt/vm-import-operator@sha256:f0702bb3d3d2058f47f197e6f45d61d6ee8e1b5f51efe58752e7f67f6b2876fa
                 imagePullPolicy: IfNotPresent
                 name: vm-import-operator
                 resources: {}
@@ -1995,7 +1995,7 @@ spec:
     name: hostpath-provisioner-operator
   - image: quay.io/kubevirt/hostpath-provisioner@sha256:9d92c216bc50d7fbfc787f315ad77dabd2ac26d981702efd545a1dd1f2b37c6c
     name: hostpath-provisioner
-  - image: quay.io/kubevirt/vm-import-operator@sha256:abed5d2168a6c6e91f00eec1b336c45707e9df45101b52027b4261275d192180
+  - image: quay.io/kubevirt/vm-import-operator@sha256:f0702bb3d3d2058f47f197e6f45d61d6ee8e1b5f51efe58752e7f67f6b2876fa
     name: vm-import-operator
   - image: quay.io/kubevirt/vm-import-controller@sha256:bc4bcaec67670b8ca87ef8ad9841ab94f7925d6c1f11bc2aa2bb331f77c2e8bb
     name: vm-import-controller

@@ -63,6 +63,9 @@ spec:
                     status:
                       description: Current status of the condition, True, False, Unknown
                       type: string
+                    type:
+                      description: ConditionType is the state of the operator's reconciliation functionality.
+                      type: string
                   type: object
                 type: array
               observedVersion:
@@ -70,6 +73,9 @@ spec:
                 type: string
               operatorVersion:
                 description: The version of the VMImportConfig resource as defined by the operator
+                type: string
+              phase:
+                description: VMImportPhase is the current phase of the VMImport deployment
                 type: string
               targetVersion:
                 description: The desired version of the VMImportConfig resource
