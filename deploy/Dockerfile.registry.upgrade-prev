@@ -10,7 +10,9 @@ RUN export UPGRADE_VERSION=${UPGRADE_VERSION} && \
     export PREV=true && \
     ./hack/upgrade-create-new-version.sh
 
-FROM quay.io/openshift/origin-operator-registry:latest
+# temporary hack to unlock oCI
+FROM quay.io/tiraboschi/yrtsiger-yrotarepo-nigiro:latest
+#FROM quay.io/openshift/origin-operator-registry:latest
 ARG KUBEVIRT_PROVIDER
 ARG UPGRADE_VERSION=100.0.0
 COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/deploy/olm-catalog /registry

@@ -1,4 +1,6 @@
-FROM quay.io/openshift/origin-operator-registry:latest
+# temporary hack to unlock oCI
+FROM quay.io/tiraboschi/yrtsiger-yrotarepo-nigiro:latest
+#FROM quay.io/openshift/origin-operator-registry:latest
 
 COPY deploy/olm-catalog /registry
 
