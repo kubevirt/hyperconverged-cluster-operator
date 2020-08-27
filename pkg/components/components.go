@@ -879,13 +879,15 @@ func GetCSVBase(name, namespace, displayName, description, image, replaces strin
 						Description: "V2V oVirt",
 					},
 				},
-				Required: []csvv1alpha1.CRDDescription{
-					{
-						Name:    "nodemaintenances.nodemaintenance.kubevirt.io",
-						Version: "v1beta1",
-						Kind:    "NodeMaintenance",
+				/*
+					Required: []csvv1alpha1.CRDDescription{
+						{
+							Name:    "nodemaintenances.nodemaintenance.kubevirt.io",
+							Version: "v1beta1",
+							Kind:    "NodeMaintenance",
+						},
 					},
-				},
+				*/
 			},
 		},
 	}
