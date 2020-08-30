@@ -137,10 +137,9 @@ Continuing to next component."
       continue
     else
       echo "INFO: Updating $component to ${UPDATED_VERSIONS[$component]}."
-      sed -E -i "s/(""$component""_VERSION=).*/\1${UPDATED_VERSIONS[$component]}/" ${CONFIG_FILE}
-
+      sed -E -i "s|(${component}_VERSION=).*|\1\"${UPDATED_VERSIONS[$component]}\"|" ${CONFIG_FILE}
       echo "$component" > updated_component.txt
-      echo "${UPDATED_VERSIONS[$component]}" | tr -d '"' > updated_version.txt
+      echo "${UPDATED_VERSIONS[$component]}" > updated_version.txt
       UPDATING='true'
       break
     fi
