@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 CONFIG_FILE="hack/config"
 
@@ -51,7 +51,7 @@ function get_current_versions {
   )
 
   for component in "${!CURRENT_VERSIONS[@]}"; do
-    CURRENT_VERSIONS[$component]=$(grep "$component"_VERSION ${CONFIG_FILE} | cut -d "=" -f 2)
+    CURRENT_VERSIONS[$component]=$(grep "$component"_VERSION ${CONFIG_FILE} | sed -r "s|${component}_VERSION=\"(.+)\"$|\1|")
     done;
 }
 
@@ -70,8 +70,8 @@ function get_updated_versions {
 
   UPDATED_VERSIONS=()
   for component in "${!COMPONENTS_REPOS[@]}"; do
-    UPDATED_VERSIONS[$component]=\"$(get_latest_release "${COMPONENTS_REPOS[$component]}")\";
-    if [ "${UPDATED_VERSIONS[$component]}" == \"\" ]; then
+    UPDATED_VERSIONS[$component]=$(get_latest_release "${COMPONENTS_REPOS[$component]}");
+    if [ -z "${UPDATED_VERSIONS[$component]}" ]; then
       echo "ERROR: Unable to get an updated version of $component, aborting..."
       exit 1
     fi
@@ -79,7 +79,8 @@ function get_updated_versions {
 }
 
 function get_latest_release() {
-  curl -s -L --silent "https://api.github.com/repos/$1/releases" | grep -m 1 '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'
+  RELEASES=$(curl -s -L --silent "https://api.github.com/repos/$1/releases" | jq -r '.[].tag_name')
+  semversort "${RELEASES[*]}"
 }
 
 function compare_versions() {
