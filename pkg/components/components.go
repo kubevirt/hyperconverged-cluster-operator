@@ -85,7 +85,33 @@ func GetDeploymentSpec(namespace, image, imagePullPolicy, conversionContainer, v
 									},
 								},
 							},
-							InitialDelaySeconds: 5,
+							// TODO: this is just a temporary workaround for https://bugzilla.redhat.com/1868712
+							// until OLM will properly support operator conditions as documented in:
+							// https://github.com/operator-framework/enhancements/blob/master/enhancements/operator-conditions.md
+							//
+							// Currently the only communication channel with OLM is the readiness
+							// probe on the operator pod but this is overloaded by different
+							// meanings and so HCO is also using it to signal the status of components operators:
+							// an HyperConverged Cluster can take up to 10-15 minutes
+							// to be ready and during this time HCO pod reports ready=false
+							// and this is translated to the phase of the CSV object.
+							// Now, as for https://bugzilla.redhat.com/1868712 ,
+							// OLM tries to reinstall a CSV with phase != Success and this will
+							// cause OLM to generate new certs for the admission validating
+							// webhooks defined in the CSV but this will cause the deployment
+							// associated to that webhooks to be updated with a new olmcahash
+							// annotation causing a restart of that pods.
+							// In the case of HCO pod, after each restart,
+							// HCO will adopt components CRs created in the past and,
+							// if at least one of the components operators is still
+							// not ready/available/..., HCO will report again ready = false
+							// entering a restart loop.
+							//
+							// Setting a really high InitialDelaySeconds value
+							// is just an horrible workaround to get restarted less frequently
+							// during the initial deployment of the HyperConverged Cluster.
+							// InitialDelaySeconds: 5,
+							InitialDelaySeconds: 180,
 							PeriodSeconds:       5,
 							FailureThreshold:    1,
 						},

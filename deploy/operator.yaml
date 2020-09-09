@@ -67,7 +67,7 @@ spec:
             - stat
             - /tmp/operator-sdk-ready
           failureThreshold: 1
-          initialDelaySeconds: 5
+          initialDelaySeconds: 180
           periodSeconds: 5
         resources: {}
       serviceAccountName: hyperconverged-cluster-operator
