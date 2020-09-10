@@ -436,7 +436,7 @@ spec:
         - name: OPERATOR_VERSION
           value: v0.2.1
         - name: CONTROLLER_IMAGE
-          value: quay.io/kubevirt/vm-import-controller@sha256:530c06edce4695ec7fb6ff4a695413a9484a14f5f7928f0d976205319d541efb
+          value: quay.io/kubevirt/vm-import-controller@sha256:1d0b536354eda43b439c8897147b7610f25a64324a67cc707c000cdff8e8cf7a
         - name: PULL_POLICY
           value: IfNotPresent
         - name: WATCH_NAMESPACE
@@ -446,7 +446,7 @@ spec:
               fieldPath: metadata.name
         - name: MONITORING_NAMESPACE
           value: openshift-monitoring
-        image: quay.io/kubevirt/vm-import-operator@sha256:2c5a2b723063657f3ed254de2dac523c313e3a3c18dbcf1a0b5d37bafa80de47
+        image: quay.io/kubevirt/vm-import-operator@sha256:69a4cf0b4de5115e02aaf244325a5a6c61080bd5a8dd1095d78bcc9024b648ad
         imagePullPolicy: IfNotPresent
         name: vm-import-operator
         resources: {}
