@@ -2,6 +2,7 @@ package hyperconverged
 
 import (
 	"os"
+	"reflect"
 
 	networkaddonsshared "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/shared"
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
@@ -705,7 +706,101 @@ var _ = Describe("HyperConverged Components", func() {
 			Expect(req.conditions).To(BeEmpty())
 		})
 
-		// TODO: add tests to ensure that HCO properly propagates NodePlacement from its CR
+		It("should add node placement if missing in CNAO", func() {
+			existingResource := hco.NewNetworkAddons()
+
+			hco.Spec.Infra = NewHyperConvergedConfig()
+			hco.Spec.Workloads = NewHyperConvergedConfig()
+
+			cl := initClient([]runtime.Object{hco, existingResource})
+			r := initReconciler(cl)
+			res := r.ensureNetworkAddons(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Err).To(BeNil())
+
+			foundResource := &networkaddonsv1.NetworkAddonsConfig{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+			).To(BeNil())
+
+			Expect(existingResource.Spec.PlacementConfiguration).To(BeNil())
+			Expect(foundResource.Spec.PlacementConfiguration).ToNot(BeNil())
+			placementConfig := foundResource.Spec.PlacementConfiguration
+			Expect(placementConfig.Infra).ToNot(BeNil())
+			Expect(placementConfig.Infra.NodeSelector["key1"]).Should(Equal("value1"))
+			Expect(placementConfig.Infra.NodeSelector["key2"]).Should(Equal("value2"))
+
+			Expect(placementConfig.Workloads).ToNot(BeNil())
+			reflect.DeepEqual(placementConfig.Workloads.Tolerations, hco.Spec.Workloads.Tolerations)
+
+			Expect(req.conditions).To(BeEmpty())
+		})
+
+		It("should remove node placement if missing in HCO CR", func() {
+
+			hcoNodePlacement := newHco()
+			hcoNodePlacement.Spec.Infra = NewHyperConvergedConfig()
+			hcoNodePlacement.Spec.Workloads = NewHyperConvergedConfig()
+			existingResource := hcoNodePlacement.NewNetworkAddons()
+
+			cl := initClient([]runtime.Object{hco, existingResource})
+			r := initReconciler(cl)
+			res := r.ensureNetworkAddons(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Err).To(BeNil())
+
+			foundResource := &networkaddonsv1.NetworkAddonsConfig{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+			).To(BeNil())
+
+			Expect(existingResource.Spec.PlacementConfiguration).ToNot(BeNil())
+			Expect(foundResource.Spec.PlacementConfiguration).To(BeNil())
+
+			Expect(req.conditions).To(BeEmpty())
+		})
+
+		It("should modify node placement according to HCO CR", func() {
+
+			hco.Spec.Infra = NewHyperConvergedConfig()
+			hco.Spec.Workloads = NewHyperConvergedConfig()
+			existingResource := hco.NewNetworkAddons()
+
+			// now, modify HCO's node placement
+			seconds3 := int64(3)
+			hco.Spec.Infra.Tolerations = append(hco.Spec.Infra.Tolerations, corev1.Toleration{
+				Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: &seconds3,
+			})
+
+			hco.Spec.Workloads.NodeSelector["key1"] = "something else"
+
+			cl := initClient([]runtime.Object{hco, existingResource})
+			r := initReconciler(cl)
+			res := r.ensureNetworkAddons(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Err).To(BeNil())
+
+			foundResource := &networkaddonsv1.NetworkAddonsConfig{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+			).To(BeNil())
+
+			Expect(existingResource.Spec.PlacementConfiguration).ToNot(BeNil())
+			Expect(existingResource.Spec.PlacementConfiguration.Infra.Tolerations).To(HaveLen(2))
+			Expect(existingResource.Spec.PlacementConfiguration.Workloads.NodeSelector["key1"]).Should(Equal("value1"))
+
+			Expect(foundResource.Spec.PlacementConfiguration).ToNot(BeNil())
+			Expect(foundResource.Spec.PlacementConfiguration.Infra.Tolerations).To(HaveLen(3))
+			Expect(foundResource.Spec.PlacementConfiguration.Workloads.NodeSelector["key1"]).Should(Equal("something else"))
+
+			Expect(req.conditions).To(BeEmpty())
+		})
 
 		It("should handle conditions", func() {
 			expectedResource := hco.NewNetworkAddons()
