@@ -3,6 +3,7 @@
 HCO_NAMESPACE="kubevirt-hyperconverged"
 HCO_KIND="hyperconvergeds"
 HCO_RESOURCE_NAME="kubevirt-hyperconverged"
+HCO_DEPLOYMENT_NAME=hco-operator
 
 echo "KUBEVIRT_PROVIDER: $KUBEVIRT_PROVIDER"
 
@@ -44,6 +45,11 @@ spec:
 EOF
 
   ${CMD} patch -n "${HCO_NAMESPACE}" Subscription "${SUBSCRIPTION_NAME}" --patch="$(cat "${TMP_DIR}/subscription-patch.yaml")" --type=merge
+
+  # give it some time to take place
+  sleep 60
+  # wait for the HCO to run with the new configurations
+  ${CMD} wait deployment ${HCO_DEPLOYMENT_NAME} --for condition=Available -n ${HCO_NAMESPACE} --timeout="1200s"
 fi
 
 ${CMD} apply -n kubevirt-hyperconverged -f deploy/hco.cr.yaml
