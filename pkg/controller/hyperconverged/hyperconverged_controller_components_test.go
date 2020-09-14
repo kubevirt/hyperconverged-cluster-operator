@@ -1498,8 +1498,116 @@ var _ = Describe("HyperConverged Components", func() {
 			).To(BeNil())
 			Expect(foundResource.Spec.ImagePullPolicy).To(BeEmpty())
 		})
-		// TODO: add tests to ensure that HCO properly propagates NodePlacement from its CR
 
+		It("should add node placement if missing in VM-Import", func() {
+			existingResource := newVMImportForCR(hco, namespace)
+
+			hco.Spec.Infra = NewHyperConvergedConfig()
+			hco.Spec.Workloads = NewHyperConvergedConfig()
+
+			cl := initClient([]runtime.Object{hco, existingResource})
+			r := initReconciler(cl)
+			res := r.ensureVMImport(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Err).To(BeNil())
+
+			foundResource := &vmimportv1beta1.VMImportConfig{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+			).To(BeNil())
+
+			Expect(existingResource.Spec.Infra.Affinity.NodeAffinity).To(BeNil())
+			Expect(existingResource.Spec.Infra.Affinity.PodAffinity).To(BeNil())
+			Expect(existingResource.Spec.Infra.Affinity.PodAntiAffinity).To(BeNil())
+			Expect(existingResource.Spec.Infra.NodeSelector).To(BeEmpty())
+			Expect(existingResource.Spec.Infra.Tolerations).To(BeEmpty())
+
+			Expect(foundResource.Spec.Infra.Affinity).ToNot(BeNil())
+			Expect(foundResource.Spec.Infra.NodeSelector).ToNot(BeEmpty())
+			Expect(foundResource.Spec.Infra.Tolerations).ToNot(BeEmpty())
+
+			infra := foundResource.Spec.Infra
+			Expect(infra.NodeSelector["key1"]).Should(Equal("value1"))
+			Expect(infra.NodeSelector["key2"]).Should(Equal("value2"))
+
+			reflect.DeepEqual(infra.Tolerations, hco.Spec.Infra.Tolerations)
+			reflect.DeepEqual(infra.Affinity, hco.Spec.Infra.Affinity)
+
+			Expect(req.conditions).To(BeEmpty())
+		})
+
+		It("should remove node placement if missing in HCO CR", func() {
+
+			hcoNodePlacement := newHco()
+			hcoNodePlacement.Spec.Infra = NewHyperConvergedConfig()
+			hcoNodePlacement.Spec.Workloads = NewHyperConvergedConfig()
+			existingResource := newVMImportForCR(hcoNodePlacement, namespace)
+
+			cl := initClient([]runtime.Object{hco, existingResource})
+			r := initReconciler(cl)
+			res := r.ensureVMImport(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Err).To(BeNil())
+
+			foundResource := &vmimportv1beta1.VMImportConfig{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+			).To(BeNil())
+
+			Expect(existingResource.Spec.Infra.Affinity.NodeAffinity).ToNot(BeNil())
+			Expect(existingResource.Spec.Infra.NodeSelector).ToNot(BeEmpty())
+			Expect(existingResource.Spec.Infra.Tolerations).ToNot(BeEmpty())
+
+			Expect(foundResource.Spec.Infra.Affinity.NodeAffinity).To(BeNil())
+			Expect(foundResource.Spec.Infra.Affinity.PodAffinity).To(BeNil())
+			Expect(foundResource.Spec.Infra.Affinity.PodAntiAffinity).To(BeNil())
+			Expect(foundResource.Spec.Infra.NodeSelector).To(BeEmpty())
+			Expect(foundResource.Spec.Infra.Tolerations).To(BeEmpty())
+
+			Expect(req.conditions).To(BeEmpty())
+		})
+
+		It("should modify node placement according to HCO CR", func() {
+
+			hco.Spec.Infra = NewHyperConvergedConfig()
+			hco.Spec.Workloads = NewHyperConvergedConfig()
+			existingResource := newVMImportForCR(hco, namespace)
+
+			// now, modify HCO's node placement
+			seconds3 := int64(3)
+			hco.Spec.Infra.Tolerations = append(hco.Spec.Infra.Tolerations, corev1.Toleration{
+				Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: &seconds3,
+			})
+
+			hco.Spec.Infra.NodeSelector["key1"] = "something else"
+
+			cl := initClient([]runtime.Object{hco, existingResource})
+			r := initReconciler(cl)
+			res := r.ensureVMImport(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Err).To(BeNil())
+
+			foundResource := &vmimportv1beta1.VMImportConfig{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+			).To(BeNil())
+
+			Expect(existingResource.Spec.Infra.Affinity).ToNot(BeNil())
+			Expect(existingResource.Spec.Infra.Tolerations).To(HaveLen(2))
+			Expect(existingResource.Spec.Infra.NodeSelector["key1"]).Should(Equal("value1"))
+
+			Expect(foundResource.Spec.Infra.Affinity).ToNot(BeNil())
+			Expect(foundResource.Spec.Infra.Tolerations).To(HaveLen(3))
+			Expect(foundResource.Spec.Infra.NodeSelector["key1"]).Should(Equal("something else"))
+
+			Expect(req.conditions).To(BeEmpty())
+		})
 	})
 
 	Context("ConsoleCLIDownload", func() {
