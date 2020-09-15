@@ -1531,8 +1531,9 @@ func newVMImportForCR(cr *hcov1beta1.HyperConverged, namespace string) *vmimport
 	}
 
 	spec := vmimportv1beta1.VMImportConfigSpec{}
-	cr.Spec.Infra.DeepCopyInto(&spec.Infra)
-
+	if cr.Spec.Infra.NodePlacement != nil {
+		cr.Spec.Infra.NodePlacement.DeepCopyInto(&spec.Infra)
+	}
 	return &vmimportv1beta1.VMImportConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "vmimport-" + cr.Name,

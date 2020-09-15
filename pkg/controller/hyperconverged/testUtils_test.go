@@ -209,9 +209,9 @@ func getBasicDeployment() *basicExpected {
 	return res
 }
 
-func NewHyperConvergedConfig() sdkapi.NodePlacement {
+func NewHyperConvergedConfig() *sdkapi.NodePlacement {
 	seconds1, seconds2 := int64(1), int64(2)
-	return sdkapi.NodePlacement{
+	return &sdkapi.NodePlacement{
 		NodeSelector: map[string]string{
 			"key1": "value1",
 			"key2": "value2",

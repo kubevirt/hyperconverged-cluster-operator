@@ -28,20 +28,27 @@ type HyperConvergedSpec struct {
 	// LocalStorageClassName the name of the local storage class.
 	LocalStorageClassName string `json:"localStorageClassName,omitempty"`
 
-	// infra NodePlacement influences the pod configuration (currently only placement)
+	// infra HyperConvergedConfig influences the pod configuration (currently only placement)
 	// for all the infra components needed on the virtualization enabled cluster
 	// but not necessarely directly on each node running VMs/VMIs.
 	// +optional
-	Infra sdkapi.NodePlacement `json:"infra,omitempty"`
+	Infra HyperConvergedConfig `json:"infra,omitempty"`
 
-	// workloads sdkapi.NodePlacement influences the pod configuration (currently only placement) of components
+	// workloads HyperConvergedConfig influences the pod configuration (currently only placement) of components
 	// which need to be running on a node where virtualization workloads should be able to run.
-	// Changes to Workloads sdkapi.NodePlacement can be applied only without existing workload.
+	// Changes to Workloads HyperConvergedConfig can be applied only without existing workload.
 	// +optional
-	Workloads sdkapi.NodePlacement `json:"workloads,omitempty"`
+	Workloads HyperConvergedConfig `json:"workloads,omitempty"`
 
 	// operator version
 	Version string `json:"version,omitempty"`
+}
+
+// HyperConvergedConfig defines a set of configurations to pass to components
+type HyperConvergedConfig struct {
+	// NodePlacement describes node scheduling configuration.
+	// +optional
+	NodePlacement *sdkapi.NodePlacement `json:"nodePlacement,omitempty"`
 }
 
 // HyperConvergedStatus defines the observed state of HyperConverged
