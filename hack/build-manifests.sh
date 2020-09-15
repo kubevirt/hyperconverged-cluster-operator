@@ -66,10 +66,15 @@ function gen_csv() {
   local crds="${operatorName}.crds.yaml"
 
   # TODO: Use oc to run if cluster is available
-  local dockerArgs="docker run --rm --entrypoint=${csvGeneratorPath} ${imagePullUrl} ${operatorArgs}"
 
-  eval $dockerArgs > $csv
-  eval $dockerArgs $dumpCRDsArg > $csvWithCRDs
+
+  local outDir="${PROJECT_ROOT}/_out/${operatorName}"
+  local lastLayer="skopeo inspect docker://${imagePullUrl} | jq -r .Layers[-1] | sed -e 's,^sha256:,,'"
+  skopeo copy docker://${imagePullUrl} dir:${outDir}
+  tar xf ${outDir}/${lastLayer} -C ${outDir}
+
+  eval ${outDir}/${csvGeneratorPath} > $csv
+  eval ${outDir}/${csvGeneratorPath} $dumpCRDsArg > $csvWithCRDs
 
   diff -u $csv $csvWithCRDs | grep -E "^\+" | sed -E 's/^\+//' | tail -n+2 > $crds
 
