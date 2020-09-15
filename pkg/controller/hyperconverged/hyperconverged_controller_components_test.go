@@ -1518,9 +1518,7 @@ var _ = Describe("HyperConverged Components", func() {
 					foundResource),
 			).To(BeNil())
 
-			Expect(existingResource.Spec.Infra.Affinity.NodeAffinity).To(BeNil())
-			Expect(existingResource.Spec.Infra.Affinity.PodAffinity).To(BeNil())
-			Expect(existingResource.Spec.Infra.Affinity.PodAntiAffinity).To(BeNil())
+			Expect(existingResource.Spec.Infra.Affinity).To(BeNil())
 			Expect(existingResource.Spec.Infra.NodeSelector).To(BeEmpty())
 			Expect(existingResource.Spec.Infra.Tolerations).To(BeEmpty())
 
@@ -1562,9 +1560,7 @@ var _ = Describe("HyperConverged Components", func() {
 			Expect(existingResource.Spec.Infra.NodeSelector).ToNot(BeEmpty())
 			Expect(existingResource.Spec.Infra.Tolerations).ToNot(BeEmpty())
 
-			Expect(foundResource.Spec.Infra.Affinity.NodeAffinity).To(BeNil())
-			Expect(foundResource.Spec.Infra.Affinity.PodAffinity).To(BeNil())
-			Expect(foundResource.Spec.Infra.Affinity.PodAntiAffinity).To(BeNil())
+			Expect(foundResource.Spec.Infra.Affinity).To(BeNil())
 			Expect(foundResource.Spec.Infra.NodeSelector).To(BeEmpty())
 			Expect(foundResource.Spec.Infra.Tolerations).To(BeEmpty())
 
