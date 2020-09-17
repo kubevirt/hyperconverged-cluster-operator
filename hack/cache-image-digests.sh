@@ -98,5 +98,11 @@ function create_digest_file() {
 if [ ! -f "${DIGESTS_FILE}" ] || ! git diff --quiet --exit-code master ./hack/config; then
   create_digest_file
 else
-  echo no new versions. using cache
+  source "${DIGESTS_FILE}"
+  digest=$(get_image_digest "${OPERATOR_IMAGE}")
+  if [[ ! "${digest}" == "${HCO_OPERATOR_DIGEST}" ]]; then
+    sed -r -i "s|${HCO_OPERATOR_DIGEST}|${digest}|g" "${DIGESTS_FILE}"
+  else
+    echo no new versions. using cache
+  fi
 fi
