@@ -226,7 +226,7 @@ ${CMD} wait deployment ${HCO_DEPLOYMENT_NAME} --for condition=Available -n ${HCO
 
 Msg "verify the hyperconverged-cluster deployment is using the new image"
 
-SEARCH_PHRASE=$(echo ${REGISTRY_IMAGE_URL_PREFIX} | sed -r "s|.*/([^/]*/stable).*|\1|")
+SEARCH_PHRASE="${OPENSHIFT_BUILD_NAMESPACE}/stable"
 ./hack/retry.sh 6 30 "${CMD} get -n ${HCO_NAMESPACE} deployment ${HCO_DEPLOYMENT_NAME} jsonpath=\"{ .spec.template.spec.containers[0].image }\" | grep ${SEARCH_PHRASE}"
 
 Msg "wait that cluster is operational after upgrade"
