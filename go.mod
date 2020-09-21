@@ -29,7 +29,9 @@ require (
 	k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
 	kubevirt.io/client-go v0.33.0
 	kubevirt.io/containerized-data-importer v1.23.2
-	kubevirt.io/kubevirt v0.33.0
+	// TODO: Move to v0.34.0 once available
+	// kubevirt.io/kubevirt v0.34.0
+	kubevirt.io/kubevirt v0.0.0-20200921031326-e3610ed19782
 	sigs.k8s.io/controller-runtime v0.6.2
 	sigs.k8s.io/controller-tools v0.4.0
 )
