@@ -552,7 +552,7 @@ var _ = Describe("HyperConverged Components", func() {
 			Expect(*foundResource.Spec.UninstallStrategy).To(Equal(*expectedResource.Spec.UninstallStrategy))
 		})
 
-		It("should add node placement if missing in CNAO", func() {
+		It("should add node placement if missing in CDI", func() {
 			existingResource := hco.NewCDI()
 
 			hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: NewHyperConvergedConfig()}
