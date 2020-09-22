@@ -97,7 +97,7 @@ var _ = Describe("Hyperconverged Webhooks", func() {
 			}
 			// replace the real client with a mock
 			c := fake.NewFakeClientWithScheme(s, hco, hco.NewKubeVirt(), hco.NewCDI())
-			cli = errorClient{c, KvError}
+			cli = errorClient{c, kvUpdateFailure}
 
 			newHco := &HyperConverged{}
 			hco.DeepCopyInto(newHco)
@@ -106,7 +106,7 @@ var _ = Describe("Hyperconverged Webhooks", func() {
 
 			err := newHco.ValidateUpdate(hco)
 			Expect(err).NotTo(BeNil())
-			Expect(err).Should(Equal(KvError))
+			Expect(err).Should(Equal(ErrFakeKvError))
 		})
 
 		It("should return error if CDI CR is missing", func() {
@@ -143,7 +143,7 @@ var _ = Describe("Hyperconverged Webhooks", func() {
 			}
 			// replace the real client with a mock
 			c := fake.NewFakeClientWithScheme(s, hco, hco.NewKubeVirt(), hco.NewCDI())
-			cli = errorClient{c, CdiError}
+			cli = errorClient{c, cdiUpdateFailure}
 
 			newHco := &HyperConverged{}
 			hco.DeepCopyInto(newHco)
@@ -152,7 +152,7 @@ var _ = Describe("Hyperconverged Webhooks", func() {
 
 			err := newHco.ValidateUpdate(hco)
 			Expect(err).NotTo(BeNil())
-			Expect(err).Should(Equal(CdiError))
+			Expect(err).Should(Equal(ErrFakeCdiError))
 		})
 
 		It("should not return error if no different in Spec.Workloads", func() {
@@ -179,6 +179,31 @@ var _ = Describe("Hyperconverged Webhooks", func() {
 			err := newHco.ValidateUpdate(hco)
 			Expect(err).To(BeNil())
 		})
+
+		It("should not return error if dry-run update of CDI CR passes", func() {
+			hco := &HyperConverged{
+				Spec: HyperConvergedSpec{
+					Infra: HyperConvergedConfig{
+						NodePlacement: newHyperConvergedConfig(),
+					},
+					Workloads: HyperConvergedConfig{
+						NodePlacement: newHyperConvergedConfig(),
+					},
+				},
+			}
+			// replace the real client with a mock
+			c := fake.NewFakeClientWithScheme(s, hco, hco.NewKubeVirt(), hco.NewCDI())
+			cli = errorClient{c, noFailure}
+
+			newHco := &HyperConverged{}
+			hco.DeepCopyInto(newHco)
+			// change something in workloads to trigger dry-run update
+			newHco.Spec.Workloads.NodePlacement.NodeSelector["a change"] = "Something else"
+
+			err := newHco.ValidateUpdate(hco)
+			Expect(err).To(BeNil())
+		})
+
 	})
 })
 
@@ -214,19 +239,34 @@ func newHyperConvergedConfig() *sdkapi.NodePlacement {
 	}
 }
 
+type fakeFailure int
+const (
+	noFailure fakeFailure = iota
+	kvUpdateFailure
+	cdiUpdateFailure
+)
+
 type errorClient struct {
 	client.Client
-	err error
+	failure fakeFailure
 }
 
 var (
-	KvError = errors.New("fake KubeVirt error")
-	CdiError = errors.New("fake CDI error")
+	ErrFakeKvError  = errors.New("fake KubeVirt error")
+	ErrFakeCdiError = errors.New("fake CDI error")
 )
 
 func (ec errorClient) Update(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
-	if ec.err != nil {
-		return ec.err
+	switch obj.(type) {
+	case *kubevirtv1.KubeVirt:
+		if ec.failure == kvUpdateFailure {
+			return ErrFakeKvError
+		}
+	case *cdiv1beta1.CDI:
+		if ec.failure == cdiUpdateFailure {
+			return ErrFakeCdiError
+		}
 	}
+
 	return ec.Client.Update(ctx, obj, opts...)
 }
