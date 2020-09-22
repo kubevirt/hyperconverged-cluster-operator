@@ -240,6 +240,7 @@ func newHyperConvergedConfig() *sdkapi.NodePlacement {
 }
 
 type fakeFailure int
+
 const (
 	noFailure fakeFailure = iota
 	kvUpdateFailure
