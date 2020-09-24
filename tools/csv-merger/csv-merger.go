@@ -111,17 +111,18 @@ var (
 		"Comma separated list of all the CRDs that should be visible in OLM console")
 	relatedImagesList = flag.String("related-images-list", "",
 		"Comma separated list of all the images referred in the CSV (just the image pull URLs or eventually a set of 'image|name' collations)")
-	crdDir          = flag.String("crds-dir", "", "the directory containing the CRDs for apigroup validation. The validation will be performed if and only if the value is non-empty.")
-	hcoKvIoVersion  = flag.String("hco-kv-io-version", "", "KubeVirt version")
-	kubevirtVersion = flag.String("kubevirt-version", "", "Kubevirt operator version")
-	cdiVersion      = flag.String("cdi-version", "", "CDI operator version")
-	cnaoVersion     = flag.String("cnao-version", "", "CNA operator version")
-	sspVersion      = flag.String("ssp-version", "", "SSP operator version")
-	nmoVersion      = flag.String("nmo-version", "", "NM operator version")
-	hppoVersion     = flag.String("hppo-version", "", "HPP operator version")
-	vmImportVersion = flag.String("vm-import-version", "", "VM-Import operator version")
-	apiSources      = flag.String("api-sources", cwd+"/...", "Project sources")
-	envVars         EnvVarFlags
+	ignoreComponentsRelatedImages = flag.Bool("ignore-component-related-image", false, "Ignore relatedImages from components CSVs")
+	crdDir                        = flag.String("crds-dir", "", "the directory containing the CRDs for apigroup validation. The validation will be performed if and only if the value is non-empty.")
+	hcoKvIoVersion                = flag.String("hco-kv-io-version", "", "KubeVirt version")
+	kubevirtVersion               = flag.String("kubevirt-version", "", "Kubevirt operator version")
+	cdiVersion                    = flag.String("cdi-version", "", "CDI operator version")
+	cnaoVersion                   = flag.String("cnao-version", "", "CNA operator version")
+	sspVersion                    = flag.String("ssp-version", "", "SSP operator version")
+	nmoVersion                    = flag.String("nmo-version", "", "NM operator version")
+	hppoVersion                   = flag.String("hppo-version", "", "HPP operator version")
+	vmImportVersion               = flag.String("vm-import-version", "", "VM-Import operator version")
+	apiSources                    = flag.String("api-sources", cwd+"/...", "Project sources")
+	envVars                       EnvVarFlags
 )
 
 func gen_hco_crds() {
@@ -310,60 +311,64 @@ func main() {
 			}
 		}
 
-		for _, csvStr := range csvs {
-			if csvStr != "" {
-				csvBytes := []byte(csvStr)
+		for i, csvStr := range csvs {
+			if csvStr == "" {
+				csvNames := []string{"CNA", "KubeVirt", "SSP", "CDI", "NMO", "HPP", "VM Import"}
+				log.Panicf("ERROR: the %s CSV was empty", csvNames[i])
+			}
+			csvBytes := []byte(csvStr)
 
-				csvStruct := &ClusterServiceVersionExtended{}
+			csvStruct := &ClusterServiceVersionExtended{}
 
-				err := yaml.Unmarshal(csvBytes, csvStruct)
-				if err != nil {
-					panic(err)
-				}
+			err := yaml.Unmarshal(csvBytes, csvStruct)
+			if err != nil {
+				panic(err)
+			}
 
-				strategySpec := csvStruct.Spec.InstallStrategy.StrategySpec
+			strategySpec := csvStruct.Spec.InstallStrategy.StrategySpec
 
-				installStrategyBase.DeploymentSpecs = append(installStrategyBase.DeploymentSpecs, strategySpec.DeploymentSpecs...)
-				installStrategyBase.ClusterPermissions = append(installStrategyBase.ClusterPermissions, strategySpec.ClusterPermissions...)
-				installStrategyBase.Permissions = append(installStrategyBase.Permissions, strategySpec.Permissions...)
+			installStrategyBase.DeploymentSpecs = append(installStrategyBase.DeploymentSpecs, strategySpec.DeploymentSpecs...)
+			installStrategyBase.ClusterPermissions = append(installStrategyBase.ClusterPermissions, strategySpec.ClusterPermissions...)
+			installStrategyBase.Permissions = append(installStrategyBase.Permissions, strategySpec.Permissions...)
 
-				csvExtended.Spec.WebhookDefinitions = append(csvExtended.Spec.WebhookDefinitions, csvStruct.Spec.WebhookDefinitions...)
+			csvExtended.Spec.WebhookDefinitions = append(csvExtended.Spec.WebhookDefinitions, csvStruct.Spec.WebhookDefinitions...)
 
-				for _, owned := range csvStruct.Spec.CustomResourceDefinitions.Owned {
-					csvExtended.Spec.CustomResourceDefinitions.Owned = append(
-						csvExtended.Spec.CustomResourceDefinitions.Owned,
-						csvv1alpha1.CRDDescription{
-							Name:        owned.Name,
-							Version:     owned.Version,
-							Kind:        owned.Kind,
-							Description: owned.Description,
-							DisplayName: owned.DisplayName,
-						},
-					)
-				}
+			for _, owned := range csvStruct.Spec.CustomResourceDefinitions.Owned {
+				csvExtended.Spec.CustomResourceDefinitions.Owned = append(
+					csvExtended.Spec.CustomResourceDefinitions.Owned,
+					csvv1alpha1.CRDDescription{
+						Name:        owned.Name,
+						Version:     owned.Version,
+						Kind:        owned.Kind,
+						Description: owned.Description,
+						DisplayName: owned.DisplayName,
+					},
+				)
+			}
 
-				csv_base_alm_string := csvExtended.Annotations["alm-examples"]
-				csv_struct_alm_string := csvStruct.Annotations["alm-examples"]
-				var base_almcrs []interface{}
-				var struct_almcrs []interface{}
-				if err = json.Unmarshal([]byte(csv_base_alm_string), &base_almcrs); err != nil {
-					panic(err)
-				}
-				if err = json.Unmarshal([]byte(csv_struct_alm_string), &struct_almcrs); err != nil {
-					panic(err)
-				}
-				for _, cr := range struct_almcrs {
-					base_almcrs = append(
-						base_almcrs,
-						cr,
-					)
-				}
-				alm_b, err := json.Marshal(base_almcrs)
-				if err != nil {
-					panic(err)
-				}
-				csvExtended.Annotations["alm-examples"] = string(alm_b)
+			csv_base_alm_string := csvExtended.Annotations["alm-examples"]
+			csv_struct_alm_string := csvStruct.Annotations["alm-examples"]
+			var base_almcrs []interface{}
+			var struct_almcrs []interface{}
+			if err = json.Unmarshal([]byte(csv_base_alm_string), &base_almcrs); err != nil {
+				panic(err)
+			}
+			if err = json.Unmarshal([]byte(csv_struct_alm_string), &struct_almcrs); err != nil {
+				panic(err)
+			}
+			for _, cr := range struct_almcrs {
+				base_almcrs = append(
+					base_almcrs,
+					cr,
+				)
+			}
+			alm_b, err := json.Marshal(base_almcrs)
+			if err != nil {
+				panic(err)
+			}
+			csvExtended.Annotations["alm-examples"] = string(alm_b)
 
+			if !*ignoreComponentsRelatedImages {
 				for _, image := range csvStruct.Spec.RelatedImages {
 					relatedImageSet.add(image.Ref)
 				}
