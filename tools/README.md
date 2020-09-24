@@ -16,5 +16,5 @@ During the rotation, the following things may occur:
  * Image uploads will be cancelled
  * VNC and Console connections will be closed
 
-After the rotation is done, all opperations will continue as usual.
+After the rotation is done, all operations will continue as usual.
 VirtualMachine and VirtualMachineInstance workloads will not be affected.
