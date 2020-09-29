@@ -30,7 +30,7 @@ require (
 	// TODO: Move to v0.34.0 once available
 	// kubevirt.io/client-go v0.34.0
 	kubevirt.io/client-go v0.33.0
-	kubevirt.io/containerized-data-importer v1.23.3
+	kubevirt.io/containerized-data-importer v1.23.5
 	// TODO: Move to v0.34.0 once available
 	// kubevirt.io/kubevirt v0.34.0
 	kubevirt.io/kubevirt v0.0.0-20200921031326-e3610ed19782
