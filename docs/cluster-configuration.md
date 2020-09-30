@@ -1,27 +1,27 @@
-#Cluster Configuration
+# Cluster Configuration
 ## Introduction
-The HyperConverged Cluster allows modifying the KubeVirt cluseter configuration by editing the HyperConverged Cluster CR
+The HyperConverged Cluster allows modifying the KubeVirt cluster configuration by editing the HyperConverged Cluster CR
 (Custom Resource).
 
 The HyperConverged Cluster operator copies the cluster configuration values to the other operand's CRs.
 
 ***Note***: The cluster configurations are supported only in API version `v1beta1` or higher.
 ## Configuration
-The configuration are done separately to Infra and Workloads. The CR's Spec object contains the `infra` and the 
+The configuration is done separately to Infra and Workloads. The CR's Spec object contains the `infra` and the 
 `workloads` objects.
 
 The structures of the `infra` and the `workloads` objects are the same. The HyperConverged Cluster operator will update 
 the other operator CRs, according to the specific CR structure. The meaning is if, for example, the other CR does not 
 support Infra cluster configurations, but only Workloads configurations, the HyperConverged Cluster operator will only
-copy the Workloads configurations for to this operator's CR.
+copy the Workloads configurations to this operator's CR.
 
-Bellow are the cluster configuration details. Currently, only "Node Placement" configuration is supported.
+Below are the cluster configuration details. Currently, only "Node Placement" configuration is supported.
 
 ### Node Placement
 The `nodePlacement` object is an optional field in the HyperConverged Cluster's CR, under `spec.infra` and `spec.workloads`
 fields.
 
-***Note***: The HyperConverged Cluster operator does not allow modifying of the workloads's node placement configurations if there are already
+***Note***: The HyperConverged Cluster operator does not allow modifying of the workloads' node placement configurations if there are already
 existing virtual machines or data volumes. 
 
 The `nodePlacement` object contains the following fields:
@@ -31,7 +31,7 @@ have additional labels as well). See https://kubernetes.io/docs/concepts/configu
 * `affinity` enables pod affinity/anti-affinity placement expanding the types of constraints
 that can be expressed with nodeSelector.
 affinity is going to be applied to the relevant kind of pods in parallel with nodeSelector
-See https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+See https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity.
 * `tolerations` is a list of tolerations applied to the relevant kind of pods.
 See https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ for more info.
 
