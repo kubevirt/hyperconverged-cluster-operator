@@ -41,7 +41,7 @@
 # to verify that it is updated to the new operator image from 
 # the local registry.
 
-MAX_STEPS=11
+MAX_STEPS=12
 CUR_STEP=1
 RELEASE_DELTA="${RELEASE_DELTA:-1}"
 HCO_DEPLOYMENT_NAME=hco-operator
@@ -245,4 +245,8 @@ ${CMD} get deployments -n ${HCO_NAMESPACE} -o yaml | grep image | grep -v imageP
 ${CMD} get pod $HCO_CATALOGSOURCE_POD -n ${HCO_CATALOG_NAMESPACE} -o yaml | grep image | grep -v imagePullPolicy
 
 dump_sccs_after
+
+Msg "Test node placement APIs"
+"${CMD}" patch hyperconverged -n ${HCO_NAMESPACE} ${HCO_RESOURCE_NAME} --type='json' -p='[{"op": "add", "path":"/spec/infra", "value": {"nodePlacement": {"nodeSelector": {"nodeType": "infra"}}}}, {"op": "add", "path": "/spec/workloads", "value": {"nodePlacement": {"nodeSelector": {"nodeType": "workloads"}}}}]'
+
 echo "upgrade-test completed successfully."
