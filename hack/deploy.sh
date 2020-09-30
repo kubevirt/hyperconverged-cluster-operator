@@ -153,6 +153,8 @@ done
 # compare initial cluster SCCs to be sure HCO deployment didn't introduce any change
 dump_sccs_after
 
+"${CMD}" patch hyperconverged -n ${HCO_NAMESPACE} ${HCO_RESOURCE_NAME} --type='json' -p='[{"op": "add", "path":"/spec/infra", "value": {"nodePlacement": {"nodeSelector": {"nodeType": "infra"}}}}, {"op": "add", "path": "/spec/workloads", "value": {"nodePlacement": {"nodeSelector": {"nodeType": "workloads"}}}}]'
+
 if [ -z "$CONTAINER_ERRORED" ]; then
     echo "SUCCESS"
     exit 0
