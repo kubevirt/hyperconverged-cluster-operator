@@ -171,6 +171,9 @@ ${CMD} logs -n ${HCO_NAMESPACE} "${HCO_POD}" | grep "Cluster type = "
 # compare initial cluster SCCs to be sure HCO deployment didn't introduce any change
 dump_sccs_after
 
+echo "brutally delete HCO removing the namespace where it's running"
+"${CMD}" delete ns ${HCO_NAMESPACE}
+
 if [ -z "$CONTAINER_ERRORED" ]; then
     echo "SUCCESS"
     exit 0

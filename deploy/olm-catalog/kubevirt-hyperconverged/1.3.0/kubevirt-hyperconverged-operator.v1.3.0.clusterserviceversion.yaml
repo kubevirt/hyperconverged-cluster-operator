@@ -8,7 +8,7 @@ metadata:
     categories: OpenShift Optional
     certified: "false"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator@sha256:d30b96dca17e99c9c12c83609629fb886bbd99255e2ee020ffc598c476ccdfb2
-    createdAt: "2020-11-16 20:48:25"
+    createdAt: "2020-11-17 09:39:32"
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -304,6 +304,7 @@ spec:
         - apiGroups:
           - ""
           resources:
+          - namespaces
           - pods
           - services
           - services/finalizers
@@ -313,6 +314,7 @@ spec:
           - configmaps
           - secrets
           - serviceaccounts
+          - serviceaccounts/finalizers
           verbs:
           - '*'
         - apiGroups:
@@ -419,10 +421,22 @@ spec:
           resources:
           - validatingwebhookconfigurations
           verbs:
+          - get
           - list
           - watch
           - update
           - patch
+          - delete
+        - apiGroups:
+          - apiregistration.k8s.io
+          resources:
+          - apiservices
+          verbs:
+          - get
+          - list
+          - update
+          - patch
+          - delete
         - apiGroups:
           - console.openshift.io
           resources:
@@ -1760,6 +1774,7 @@ spec:
                   periodSeconds: 5
                 resources: {}
               serviceAccountName: hyperconverged-cluster-operator
+              terminationGracePeriodSeconds: 180
       - name: hco-webhook
         spec:
           replicas: 1

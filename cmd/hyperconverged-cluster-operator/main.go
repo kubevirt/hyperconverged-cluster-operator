@@ -4,13 +4,18 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/hyperconverged"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+
+	"os"
+	"runtime"
+	"time"
+
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks"
 	"github.com/spf13/pflag"
-	"os"
-	"runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -31,6 +36,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	apiregistrationv1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer/pkg/apis/core/v1beta1"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
@@ -139,14 +145,16 @@ func main() {
 	needLeaderElection := !operatorWebhookMode && !runInLocal
 
 	// Create a new Cmd to provide shared dependencies and start components
+	gracefulShutdownTimeout := util.GracefulShutdownTimeoutSeconds * time.Second
 	mgr, err := manager.New(cfg, manager.Options{
-		Namespace:              watchNamespace,
-		MetricsBindAddress:     fmt.Sprintf("%s:%d", hcoutil.MetricsHost, hcoutil.MetricsPort),
-		HealthProbeBindAddress: fmt.Sprintf("%s:%d", hcoutil.HealthProbeHost, hcoutil.HealthProbePort),
-		ReadinessEndpointName:  hcoutil.ReadinessEndpointName,
-		LivenessEndpointName:   hcoutil.LivenessEndpointName,
-		LeaderElection:         needLeaderElection,
-		LeaderElectionID:       "hyperconverged-cluster-operator-lock",
+		Namespace:               watchNamespace,
+		MetricsBindAddress:      fmt.Sprintf("%s:%d", hcoutil.MetricsHost, hcoutil.MetricsPort),
+		HealthProbeBindAddress:  fmt.Sprintf("%s:%d", hcoutil.HealthProbeHost, hcoutil.HealthProbePort),
+		ReadinessEndpointName:   hcoutil.ReadinessEndpointName,
+		LivenessEndpointName:    hcoutil.LivenessEndpointName,
+		LeaderElection:          needLeaderElection,
+		LeaderElectionID:        "hyperconverged-cluster-operator-lock",
+		GracefulShutdownTimeout: &gracefulShutdownTimeout,
 	})
 	if err != nil {
 		log.Error(err, "")
@@ -164,6 +172,7 @@ func main() {
 		csvv1alpha1.AddToScheme,
 		vmimportv1beta1.AddToScheme,
 		admissionregistrationv1.AddToScheme,
+		apiregistrationv1.AddToScheme,
 		consolev1.AddToScheme,
 		openshiftconfigv1.AddToScheme,
 	} {
@@ -233,6 +242,38 @@ func main() {
 		}
 	}
 
+	log.Info("Add a runnable to the manager waiting for a graceful shutdown.")
+	if err := mgr.Add(manager.RunnableFunc(func(s <-chan struct{}) error {
+		log.Info("Entering the runnable.")
+		<-s
+		log.Info("Entering the shutdown procedure.")
+		namespaceTerminating, err := hcoutil.IsNamespaceTerminating(ctx, mgr.GetClient(), depOperatorNs, log)
+		if err != nil {
+			log.Error(err, "unable to check the namespace during the shutdown")
+			// TODO: remove this, debug only
+			time.Sleep(90 * time.Second) // Delay the shutdown to give more time to the operator to correctly react to namespace deletion
+		} else {
+			log.Info("In the shutdown.", "namespaceTerminating", namespaceTerminating)
+			if namespaceTerminating {
+				log.Info("Delaying the shutdown to cleanup on namespace deletion.")
+				cerr := hyperconverged.CleanupNs(ctx, mgr, depOperatorNs, log)
+				if cerr != nil {
+					log.Error(err, "Failed cleaning up the namespace")
+				}
+				// TODO: remove this, debug only
+				time.Sleep(90 * time.Second) // Delay the shutdown to give more time to the operator to correctly react to namespace deletion
+			} else {
+				// TODO: remove this, debug only
+				log.Info("Delaying the shutdown without namespace deletion.")
+				time.Sleep(90 * time.Second) // Delay the shutdown to give more time to the operator to correctly react to namespace deletion
+			}
+		}
+		return nil
+	})); err != nil {
+		log.Error(err, "unable add a runnable to the manager")
+		os.Exit(1)
+	}
+
 	log.Info("Starting the Cmd.")
 	eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Init", "Starting the HyperConverged Pod")
 	// Start the Cmd
@@ -241,6 +282,7 @@ func main() {
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "UnexpectedError", "HyperConverged crashed; "+err.Error())
 		os.Exit(1)
 	}
+
 }
 
 // KubeVirtPriorityClass is needed by virt-operator but OLM is not able to

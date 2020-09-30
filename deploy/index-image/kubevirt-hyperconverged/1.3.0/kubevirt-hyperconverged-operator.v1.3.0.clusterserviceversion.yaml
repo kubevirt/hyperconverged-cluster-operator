@@ -304,6 +304,7 @@ spec:
         - apiGroups:
           - ""
           resources:
+          - namespaces
           - pods
           - services
           - services/finalizers
@@ -313,6 +314,7 @@ spec:
           - configmaps
           - secrets
           - serviceaccounts
+          - serviceaccounts/finalizers
           verbs:
           - '*'
         - apiGroups:
@@ -419,10 +421,22 @@ spec:
           resources:
           - validatingwebhookconfigurations
           verbs:
+          - get
           - list
           - watch
           - update
           - patch
+          - delete
+        - apiGroups:
+          - apiregistration.k8s.io
+          resources:
+          - apiservices
+          verbs:
+          - get
+          - list
+          - update
+          - patch
+          - delete
         - apiGroups:
           - console.openshift.io
           resources:
@@ -1760,6 +1774,7 @@ spec:
                   periodSeconds: 5
                 resources: {}
               serviceAccountName: hyperconverged-cluster-operator
+              terminationGracePeriodSeconds: 180
       - name: hco-webhook
         spec:
           replicas: 1

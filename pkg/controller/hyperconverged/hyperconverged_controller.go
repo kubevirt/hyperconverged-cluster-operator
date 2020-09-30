@@ -2,6 +2,7 @@ package hyperconverged
 
 import (
 	"fmt"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 
 	"github.com/google/uuid"
@@ -16,6 +17,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -307,6 +309,16 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 			req.Instance.ObjectMeta.Finalizers = drop(req.Instance.ObjectMeta.Finalizers, badFinalizerName)
 			req.Dirty = true
 		}
+
+		// add a finalizer also to the service account
+		hcosa := &corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "hyperconverged-cluster-operator", // TODO: avoid hard-coding it
+				Namespace: req.Instance.Namespace,
+			},
+		}
+		controllerutil.AddFinalizer(hcosa, FinalizerName)
+
 	} else {
 		if contains(req.Instance.ObjectMeta.Finalizers, FinalizerName) {
 			return r.ensureHcoDeleted(req)
@@ -431,6 +443,15 @@ func (r *ReconcileHyperConverged) ensureHcoDeleted(req *common.HcoRequest) (reco
 	// Remove the finalizer
 	req.Instance.ObjectMeta.Finalizers = drop(req.Instance.ObjectMeta.Finalizers, FinalizerName)
 	req.Dirty = true
+
+	// add a finalizer also to the service account
+	hcosa := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "hyperconverged-cluster-operator", // TODO: avoid hard-coding it
+			Namespace: req.Instance.Namespace,
+		},
+	}
+	controllerutil.RemoveFinalizer(hcosa, FinalizerName)
 
 	// Need to requeue because finalizer update does not change metadata.generation
 	return reconcile.Result{Requeue: true}, nil

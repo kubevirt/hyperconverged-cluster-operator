@@ -168,6 +168,15 @@ func (wh WebhookHandler) ValidateDelete(hc *v1beta1.HyperConverged) error {
 
 	ctx := context.TODO()
 
+	isNsterminating, errNamespace := hcoutil.IsNamespaceTerminating(ctx, wh.cli, hc.Namespace, wh.logger)
+	if errNamespace != nil {
+		wh.logger.Error(errNamespace, "Delete validation failed on namespace check")
+		return errNamespace
+	} else if isNsterminating {
+		// avoid any further check if the namespace is already flagged for termination
+		return nil
+	}
+
 	for _, obj := range []runtime.Object{
 		operands.NewKubeVirt(hc),
 		operands.NewCDI(hc),

@@ -82,6 +82,7 @@ spec:
           periodSeconds: 5
         resources: {}
       serviceAccountName: hyperconverged-cluster-operator
+      terminationGracePeriodSeconds: 180
 ---
 apiVersion: apps/v1
 kind: Deployment

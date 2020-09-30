@@ -72,6 +72,7 @@ func GetDeploymentWebhook(namespace, image, imagePullPolicy string, env []corev1
 }
 
 func GetDeploymentSpecOperator(namespace, image, imagePullPolicy, conversionContainer, vmwareContainer, smbios, machinetype, hcoKvIoVersion, kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion, vmImportVersion string, env []corev1.EnvVar) appsv1.DeploymentSpec {
+	var terminationGracePeriodSeconds int64 = util.GracefulShutdownTimeoutSeconds
 	return appsv1.DeploymentSpec{
 		Replicas: int32Ptr(1),
 		Selector: &metav1.LabelSelector{
@@ -89,7 +90,8 @@ func GetDeploymentSpecOperator(namespace, image, imagePullPolicy, conversionCont
 				},
 			},
 			Spec: corev1.PodSpec{
-				ServiceAccountName: hcoName,
+				ServiceAccountName:            hcoName,
+				TerminationGracePeriodSeconds: &terminationGracePeriodSeconds,
 				Containers: []corev1.Container{
 					{
 						Name:            hcoName,
@@ -425,6 +427,7 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 				"",
 			},
 			Resources: []string{
+				"namespaces",
 				"pods",
 				"services",
 				"services/finalizers",
@@ -434,6 +437,7 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 				"configmaps",
 				"secrets",
 				"serviceaccounts",
+				"serviceaccounts/finalizers",
 			},
 			Verbs: []string{
 				"*",
@@ -597,10 +601,27 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 				"validatingwebhookconfigurations",
 			},
 			Verbs: []string{
+				"get",
 				"list",
 				"watch",
 				"update",
 				"patch",
+				"delete",
+			},
+		},
+		{
+			APIGroups: []string{
+				"apiregistration.k8s.io",
+			},
+			Resources: []string{
+				"apiservices",
+			},
+			Verbs: []string{
+				"get",
+				"list",
+				"update",
+				"patch",
+				"delete",
 			},
 		},
 		{

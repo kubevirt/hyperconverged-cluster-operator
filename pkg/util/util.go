@@ -52,6 +52,10 @@ var ErrNoNamespace = fmt.Errorf("namespace not found for current environment")
 // is returned by functions that only work on operators running in cluster mode)
 var ErrRunLocal = fmt.Errorf("operator run mode forced to local")
 
+const (
+	GracefulShutdownTimeoutSeconds = 180
+)
+
 func GetOperatorNamespaceFromEnv() (string, error) {
 	if namespace, ok := os.LookupEnv(OperatorNamespaceEnv); ok {
 		return namespace, nil
@@ -295,4 +299,33 @@ func EnsureCreated(ctx context.Context, c client.Client, obj runtime.Object, log
 	}
 
 	return nil
+}
+
+// IsNamespaceTerminating checks if the nameSpace where HCO is running is terminating
+func IsNamespaceTerminating(ctx context.Context, c client.Client, namespace string, logger logr.Logger) (bool, error) {
+	namespaceTerminating := false
+
+	found := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: namespace,
+		},
+	}
+
+	key, err := client.ObjectKeyFromObject(found)
+	if err != nil {
+		logger.Error(err, "Failed to get object key for HCO namespace")
+		return namespaceTerminating, err
+	}
+
+	err = c.Get(ctx, key, found)
+	if err != nil {
+		logger.Error(err, "Failed to get HCO namespace object")
+		return namespaceTerminating, err
+	}
+
+	if !found.ObjectMeta.DeletionTimestamp.IsZero() {
+		namespaceTerminating = true
+		logger.Info("The namespace is flagged for termination", "namespace", namespace)
+	}
+	return namespaceTerminating, nil
 }

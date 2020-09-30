@@ -91,6 +91,36 @@ func (r *HyperConverged) SetupWebhookWithManager(ctx context.Context, mgr ctrl.M
 	return bldr.Complete()
 }
 
+func (r *HyperConverged) RemoveWebhookWithManager(ctx context.Context, mgr ctrl.Manager) error {
+	vwcList := &admissionregistrationv1.ValidatingWebhookConfigurationList{}
+	err := mgr.GetAPIReader().List(ctx, vwcList, client.MatchingLabels{"olm.webhook-description-generate-name": hcoutil.HcoValidatingWebhook})
+	if err != nil {
+		hcolog.Error(err, "A validating webhook for the HCO was not found")
+		return err
+	}
+
+	for _, vwc := range vwcList.Items {
+		delete := false
+
+		for i, wh := range vwc.Webhooks {
+			if wh.Name == hcoutil.HcoValidatingWebhook {
+				vwc.Webhooks[i].NamespaceSelector = &metav1.LabelSelector{MatchLabels: map[string]string{}}
+				delete = true
+			}
+		}
+
+		if delete {
+			hcolog.Info("Removing HCO ValidatingWebhookConfiguration", "webhook", vwc.Name)
+			err = mgr.GetClient().Delete(ctx, &vwc)
+			if err != nil {
+				hcolog.Error(err, "Failed removing HCO ValidatingWebhookConfiguration", "webhook", vwc.Name)
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 var _ webhook.Validator = &HyperConverged{}
 
 func (r *HyperConverged) ValidateCreate() error {
