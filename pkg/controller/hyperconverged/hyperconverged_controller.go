@@ -1580,7 +1580,22 @@ func newVMImportForCR(cr *hcov1beta1.HyperConverged, namespace string) *vmimport
 
 	spec := vmimportv1beta1.VMImportConfigSpec{}
 	if cr.Spec.Infra.NodePlacement != nil {
-		cr.Spec.Infra.NodePlacement.DeepCopyInto(&spec.Infra)
+		if cr.Spec.Infra.NodePlacement.Affinity != nil {
+			affinity := corev1.Affinity{}
+			cr.Spec.Infra.NodePlacement.Affinity.DeepCopyInto(&affinity)
+			spec.Infra.Affinity = &affinity
+		}
+		if cr.Spec.Infra.NodePlacement.NodeSelector != nil {
+			spec.Infra.NodeSelector = make(map[string]string)
+			for k, v := range cr.Spec.Infra.NodePlacement.NodeSelector {
+				spec.Infra.NodeSelector[k] = v
+			}
+		}
+		for _, hcoTolr := range cr.Spec.Infra.NodePlacement.Tolerations {
+			tvTolr := corev1.Toleration{}
+			hcoTolr.DeepCopyInto(&tvTolr)
+			spec.Infra.Tolerations = append(spec.Infra.Tolerations, tvTolr)
+		}
 	}
 	return &vmimportv1beta1.VMImportConfig{
 		ObjectMeta: metav1.ObjectMeta{
