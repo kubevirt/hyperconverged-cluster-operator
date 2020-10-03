@@ -22,15 +22,15 @@ require (
 	github.com/operator-framework/operator-sdk v0.18.0
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/tools v0.0.0-20200616195046-dc31b401abb5
-	k8s.io/api v0.18.6
-	k8s.io/apiextensions-apiserver v0.18.6
-	k8s.io/apimachinery v0.18.6
+	k8s.io/api v0.19.0-rc.2
+	k8s.io/apiextensions-apiserver v0.19.0-rc.2
+	k8s.io/apimachinery v0.19.0-rc.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
 	// TODO: Move to v0.34.0 once available
 	// kubevirt.io/client-go v0.34.0
 	kubevirt.io/client-go v0.33.0
-	kubevirt.io/containerized-data-importer v1.23.5
+	kubevirt.io/containerized-data-importer v1.24.0
 	// TODO: Move to v0.34.0 once available
 	// kubevirt.io/kubevirt v0.34.0
 	kubevirt.io/kubevirt v0.0.0-20200921031326-e3610ed19782
@@ -80,7 +80,7 @@ replace (
 	kubevirt.io/client-go => ./kubevirt/staging/src/kubevirt.io/client-go
 )
 
-// Aligning with https://github.com/kubevirt/containerized-data-importer/blob/release-v1.23.5
+// Aligning with https://github.com/kubevirt/containerized-data-importer/blob/release-v1.24.0
 replace (
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20191219222812-2987a591a72c
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20191125132246-f6563a70e19a
