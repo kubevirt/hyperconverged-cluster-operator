@@ -42,7 +42,7 @@ See https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ for 
 
 #### Operators placement
 The HyperConverged Cluster Operator and the operators for its component are supposed to be deployed by the Operator Lifecycle Manager (OLM).
-Thus, the HyperConverged Cluster Operator si not going to directly influence its own placement but that should be influenced by the OLM.
+Thus, the HyperConverged Cluster Operator is not going to directly influence its own placement but that should be influenced by the OLM.
 The cluster admin indeed is allowed to influence the placement of the Pods directly created by the OLM configuring a [nodeSelector](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#nodeselector) or [tolerations](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#tolerations) directly on the OLM subscription object.
 
 #### Node Placement Examples
