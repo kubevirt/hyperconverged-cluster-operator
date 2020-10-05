@@ -35,7 +35,7 @@ spec:
         - name: CONVERSION_CONTAINER
           value: quay.io/kubevirt/kubevirt-v2v-conversion@sha256:c620233c71b805004c2cd38927c421b69d99b27cb40af521967e655882b2f815
         - name: VMWARE_CONTAINER
-          value: quay.io/kubevirt/kubevirt-vmware@sha256:8f25b28caddeaf3e405e6f78fb970a0f78891a66a7dddeae8a595712da897351
+          value: quay.io/kubevirt/kubevirt-vmware@sha256:ae5ccd98a49ab9e154ce482d2fa73f044b00211f273210a9cd371b40746d3c92
         - name: SMBIOS
           value: |-
             Family: KubeVirt
@@ -57,7 +57,7 @@ spec:
         - name: HPPO_VERSION
           value: v0.5.2
         - name: VM_IMPORT_VERSION
-          value: v0.2.2
+          value: v0.2.3
         image: quay.io/kubevirt/hyperconverged-cluster-operator@sha256:d015b58b0ed77fb20eab5cf5c4d530b3eebcba03fc75e571b1ec56dace9cb254
         imagePullPolicy: IfNotPresent
         name: hyperconverged-cluster-operator
@@ -436,9 +436,9 @@ spec:
         - name: DEPLOY_CLUSTER_RESOURCES
           value: "true"
         - name: OPERATOR_VERSION
-          value: v0.2.2
+          value: v0.2.3
         - name: CONTROLLER_IMAGE
-          value: quay.io/kubevirt/vm-import-controller@sha256:bee1d7820fe7803d08aeb81314737e9c380e10e4a6c2226f72074fcac3d777f9
+          value: quay.io/kubevirt/vm-import-controller@sha256:59c3f2a65fbac003a772c1850a1d819b0ee529763bf2e199c2d3a799c44e71e4
         - name: PULL_POLICY
           value: IfNotPresent
         - name: WATCH_NAMESPACE
@@ -449,7 +449,7 @@ spec:
         - name: MONITORING_NAMESPACE
           value: openshift-monitoring
         - name: VIRTV2V_IMAGE
-        image: quay.io/kubevirt/vm-import-operator@sha256:d223cfeb93bc95dd1929347eaef56f15ef7288ddea98f1fa32cf37b665753a50
+        image: quay.io/kubevirt/vm-import-operator@sha256:62706b1ce8df1d4427f591f0b6a75a73560e724d8d5fc860144467ecf5be1edc
         imagePullPolicy: IfNotPresent
         name: vm-import-operator
         resources: {}
