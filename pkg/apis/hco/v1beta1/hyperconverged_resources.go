@@ -37,11 +37,48 @@ func (r *HyperConverged) getLabels() map[string]string {
 	}
 }
 
+const (
+	FeatureGateDataVolumes      = "DataVolumes"
+	FeatureGateSRIOV            = "SRIOV"
+	FeatureGateLiveMigration    = "LiveMigration"
+	FeatureGateCPUManager       = "CPUManager"
+	FeatureGateCPUNodeDiscovery = "CPUNodeDiscovery"
+	FeatureGateSidecar          = "Sidecar"
+	FeatureGateSnapshot         = "Snapshot"
+)
+
+var DefaultFeatureGates = map[string]bool{
+	FeatureGateDataVolumes:      true,
+	FeatureGateSRIOV:            true,
+	FeatureGateLiveMigration:    true,
+	FeatureGateCPUManager:       true,
+	FeatureGateCPUNodeDiscovery: true,
+	FeatureGateSidecar:          true,
+	FeatureGateSnapshot:         true,
+}
+
+func NewDefaultFeatureGates() []string {
+	return []string{
+		FeatureGateDataVolumes,
+		FeatureGateSRIOV,
+		FeatureGateLiveMigration,
+		FeatureGateCPUManager,
+		FeatureGateCPUNodeDiscovery,
+		FeatureGateSidecar,
+		FeatureGateSnapshot,
+	}
+}
+
 func (r *HyperConverged) NewKubeVirt(opts ...string) *kubevirtv1.KubeVirt {
 	spec := kubevirtv1.KubeVirtSpec{
 		UninstallStrategy: kubevirtv1.KubeVirtUninstallStrategyBlockUninstallIfWorkloadsExist,
 		Infra:             hcoConfig2KvConfig(r.Spec.Infra),
 		Workloads:         hcoConfig2KvConfig(r.Spec.Workloads),
+		Configuration: kubevirtv1.KubeVirtConfiguration{
+			DeveloperConfiguration: &kubevirtv1.DeveloperConfiguration{
+				FeatureGates: NewDefaultFeatureGates(),
+			},
+		},
 	}
 
 	return &kubevirtv1.KubeVirt{

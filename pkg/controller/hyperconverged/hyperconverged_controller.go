@@ -796,7 +796,6 @@ func newKubeVirtConfigForCR(cr *hcov1beta1.HyperConverged, namespace string) *co
 		// TODO: This is going to change in the next HCO release where the whole configMap is going
 		// to be continuously reconciled
 		Data: map[string]string{
-			virtconfig.FeatureGatesKey:        "DataVolumes,SRIOV,LiveMigration,CPUManager,CPUNodeDiscovery,Sidecar,Snapshot",
 			virtconfig.MigrationsConfigKey:    `{"nodeDrainTaintKey" : "node.kubernetes.io/unschedulable"}`,
 			virtconfig.SELinuxLauncherTypeKey: "virt_launcher.process",
 			virtconfig.NetworkInterfaceKey:    kubevirtDefaultNetworkInterfaceValue,
@@ -858,21 +857,30 @@ func (r *ReconcileHyperConverged) ensureKubeVirtConfig(req *hcoRequest) *EnsureR
 		// and only on HCO upgrades.
 		// TODO: This is going to change in the next HCO release where the whole configMap is going
 		// to be continuously reconciled
+		changed := false
 		for _, k := range []string{
-			virtconfig.FeatureGatesKey,
 			virtconfig.SmbiosConfigKey,
 			virtconfig.MachineTypeKey,
 			virtconfig.SELinuxLauncherTypeKey,
 			virtconfig.UseEmulationKey,
 		} {
 			if found.Data[k] != kubevirtConfig.Data[k] {
+				changed = true
 				req.logger.Info(fmt.Sprintf("Updating %s on existing KubeVirt config", k))
 				found.Data[k] = kubevirtConfig.Data[k]
-				err = r.client.Update(req.ctx, found)
-				if err != nil {
-					req.logger.Error(err, fmt.Sprintf("Failed updating %s on an existing kubevirt config", k))
-					return res.Error(err)
-				}
+			}
+		}
+
+		if _, exists := found.Data[virtconfig.FeatureGatesKey]; exists {
+			changed = true
+			delete(found.Data, virtconfig.FeatureGatesKey)
+		}
+
+		if changed {
+			err = r.client.Update(req.ctx, found)
+			if err != nil {
+				req.logger.Error(err, "Failed updating the kubevirt config")
+				return res.Error(err)
 			}
 		}
 	}
@@ -962,6 +970,16 @@ func (r *ReconcileHyperConverged) ensureKubeVirt(req *hcoRequest) *EnsureResult 
 	req.logger.Info("KubeVirt already exists", "KubeVirt.Namespace", found.Namespace, "KubeVirt.Name", found.Name)
 
 	if !reflect.DeepEqual(found.Spec, virt.Spec) {
+		if found.Spec.Configuration.DeveloperConfiguration != nil {
+			featureGates := virt.Spec.Configuration.DeveloperConfiguration.FeatureGates
+			for _, featureGate := range found.Spec.Configuration.DeveloperConfiguration.FeatureGates {
+				if _, ok := hcov1beta1.DefaultFeatureGates[featureGate]; !ok {
+					featureGates = append(featureGates, featureGate)
+				}
+			}
+			virt.Spec.Configuration.DeveloperConfiguration.FeatureGates = featureGates
+		}
+
 		found.Spec = virt.Spec
 		req.logger.Info("Updating existing KubeVirt's Spec to its default value")
 		err = r.client.Update(req.ctx, found)

@@ -211,6 +211,9 @@ var _ = Describe("HyperConverged Components", func() {
 				Expect(foundResource.Data[k]).To(Equal(outdatedResource.Data[k]))
 				Expect(foundResource.Data[k]).To(Not(Equal(expectedResource.Data[k])))
 			}
+
+			_, ok := foundResource.Data[virtconfig.FeatureGatesKey]
+			Expect(ok).To(BeFalse())
 		})
 
 		It("should not touch it when not in in upgrade mode", func() {
@@ -341,6 +344,15 @@ var _ = Describe("HyperConverged Components", func() {
 			Expect(foundResource.Name).To(Equal(expectedResource.Name))
 			Expect(foundResource.Labels).Should(HaveKeyWithValue(hcoutil.AppLabel, name))
 			Expect(foundResource.Namespace).To(Equal(expectedResource.Namespace))
+
+			featureGates := foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates
+			Expect(featureGates).To(ContainElement(hcov1beta1.FeatureGateDataVolumes))
+			Expect(featureGates).To(ContainElement(hcov1beta1.FeatureGateSRIOV))
+			Expect(featureGates).To(ContainElement(hcov1beta1.FeatureGateLiveMigration))
+			Expect(featureGates).To(ContainElement(hcov1beta1.FeatureGateCPUManager))
+			Expect(featureGates).To(ContainElement(hcov1beta1.FeatureGateCPUNodeDiscovery))
+			Expect(featureGates).To(ContainElement(hcov1beta1.FeatureGateSidecar))
+			Expect(featureGates).To(ContainElement(hcov1beta1.FeatureGateSnapshot))
 		})
 
 		It("should find if present", func() {
@@ -506,6 +518,73 @@ var _ = Describe("HyperConverged Components", func() {
 			Expect(foundResource.Spec.Workloads).ToNot(BeNil())
 			Expect(foundResource.Spec.Workloads.NodePlacement).ToNot(BeNil())
 			Expect(foundResource.Spec.Workloads.NodePlacement.NodeSelector["key1"]).Should(Equal("something else"))
+
+			Expect(req.conditions).To(BeEmpty())
+		})
+
+		It("should add feature gates if missing in KubeVirt", func() {
+			existingResource := hco.NewKubeVirt()
+
+			existingResource.Spec.Configuration.DeveloperConfiguration = nil
+
+			cl := initClient([]runtime.Object{hco, existingResource})
+			r := initReconciler(cl)
+			res := r.ensureKubeVirt(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Err).To(BeNil())
+
+			foundResource := &kubevirtv1.KubeVirt{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+			).To(BeNil())
+
+			Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
+			featureGates := foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates
+			Expect(featureGates).To(HaveLen(len(hcov1beta1.DefaultFeatureGates)))
+			Expect(featureGates).To(ContainElement(hcov1beta1.FeatureGateDataVolumes))
+			Expect(featureGates).To(ContainElement(hcov1beta1.FeatureGateSRIOV))
+			Expect(featureGates).To(ContainElement(hcov1beta1.FeatureGateLiveMigration))
+			Expect(featureGates).To(ContainElement(hcov1beta1.FeatureGateCPUManager))
+			Expect(featureGates).To(ContainElement(hcov1beta1.FeatureGateCPUNodeDiscovery))
+			Expect(featureGates).To(ContainElement(hcov1beta1.FeatureGateSidecar))
+			Expect(featureGates).To(ContainElement(hcov1beta1.FeatureGateSnapshot))
+		})
+
+		It("should merge feature gates with the default values", func() {
+			existingResource := hco.NewKubeVirt()
+
+			// now, modify KV's feature gates: add non-default one and remove one of the default values (the 4th)
+			featureGates := existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates
+			// remove the 4th item
+			featureGates = append(featureGates[:3], featureGates[4:]...)
+			featureGates = append(featureGates, "non standard feature")
+
+			cl := initClient([]runtime.Object{hco, existingResource})
+			r := initReconciler(cl)
+			res := r.ensureKubeVirt(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Err).To(BeNil())
+
+			foundResource := &kubevirtv1.KubeVirt{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+			).To(BeNil())
+
+			Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
+			foundFeatureGates := foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates
+			Expect(foundFeatureGates).To(HaveLen(len(hcov1beta1.DefaultFeatureGates) + 1))
+			Expect(foundFeatureGates).To(ContainElement(hcov1beta1.FeatureGateDataVolumes))
+			Expect(foundFeatureGates).To(ContainElement(hcov1beta1.FeatureGateSRIOV))
+			Expect(foundFeatureGates).To(ContainElement(hcov1beta1.FeatureGateLiveMigration))
+			Expect(foundFeatureGates).To(ContainElement(hcov1beta1.FeatureGateCPUManager))
+			Expect(foundFeatureGates).To(ContainElement(hcov1beta1.FeatureGateCPUNodeDiscovery))
+			Expect(foundFeatureGates).To(ContainElement(hcov1beta1.FeatureGateSidecar))
+			Expect(foundFeatureGates).To(ContainElement(hcov1beta1.FeatureGateSnapshot))
+			Expect(foundFeatureGates).To(ContainElement("non standard feature"))
 
 			Expect(req.conditions).To(BeEmpty())
 		})
