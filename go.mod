@@ -26,8 +26,6 @@ require (
 	k8s.io/apimachinery v0.19.0-rc.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
-	// TODO: Move to v0.34.0 once available
-	// kubevirt.io/client-go v0.34.0
 	kubevirt.io/client-go v0.34.0
 	kubevirt.io/containerized-data-importer v1.24.0
 	kubevirt.io/controller-lifecycle-operator-sdk v0.1.1
