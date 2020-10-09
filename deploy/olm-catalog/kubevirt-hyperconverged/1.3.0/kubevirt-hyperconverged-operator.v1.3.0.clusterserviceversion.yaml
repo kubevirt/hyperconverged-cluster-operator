@@ -8,7 +8,7 @@ metadata:
     categories: OpenShift Optional
     certified: "false"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator@sha256:95c8c3e9002ebe55254b9371757a98a3d29991ba83e3edfe405a9174c596365a
-    createdAt: "2020-10-07 15:11:08"
+    createdAt: "2020-10-10 10:44:06"
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -1897,7 +1897,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.name
                 - name: IMAGE_REFERENCE
-                  value: quay.io/fromani/kubevirt-ssp-operator-container@sha256:a8f8bd3c02db4c76a80b00288e4f9bf8e0f9885db1f303202771e44051d9127a
+                  value: quay.io/fromani/kubevirt-ssp-operator-container@sha256:e7b8222457fe126c746b3602410fa913ffb9ff0b5bef67f07645eae03ec847d2
                 - name: WATCH_NAMESPACE
                 - name: KVM_INFO_TAG
                 - name: VALIDATOR_TAG
@@ -1909,7 +1909,7 @@ spec:
                   value: kubevirt-ssp-operator
                 - name: OPERATOR_VERSION
                   value: v1.2.1
-                image: quay.io/fromani/kubevirt-ssp-operator-container@sha256:a8f8bd3c02db4c76a80b00288e4f9bf8e0f9885db1f303202771e44051d9127a
+                image: quay.io/fromani/kubevirt-ssp-operator-container@sha256:e7b8222457fe126c746b3602410fa913ffb9ff0b5bef67f07645eae03ec847d2
                 imagePullPolicy: IfNotPresent
                 name: kubevirt-ssp-operator
                 ports:
@@ -2272,7 +2272,7 @@ spec:
     name: kubemacpool
   - image: quay.io/nmstate/kubernetes-nmstate-handler@sha256:444ab3349882ac58f594396529708146993b831c2e3e1d524eaa12e17e09f150
     name: kubernetes-nmstate-handler
-  - image: quay.io/fromani/kubevirt-ssp-operator-container@sha256:a8f8bd3c02db4c76a80b00288e4f9bf8e0f9885db1f303202771e44051d9127a
+  - image: quay.io/fromani/kubevirt-ssp-operator-container@sha256:e7b8222457fe126c746b3602410fa913ffb9ff0b5bef67f07645eae03ec847d2
     name: kubevirt-ssp-operator-container
   - image: quay.io/kubevirt/kubevirt-v2v-conversion@sha256:c620233c71b805004c2cd38927c421b69d99b27cb40af521967e655882b2f815
     name: kubevirt-v2v-conversion
