@@ -327,6 +327,9 @@ csplit --digits=2 --quiet --elide-empty-files \
   $hco_crds \
   "/---/" "{*}"
 
+# Validate the yaml files
+docker run -it --rm -v "$(pwd)":/yaml sdesbure/yamllint yamllint -d "{extends: relaxed, rules: {line-length: disable}}" ./*.yaml
+
 popd
 
 rm -fr "${CSV_DIR}"
