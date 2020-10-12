@@ -327,9 +327,6 @@ csplit --digits=2 --quiet --elide-empty-files \
   $hco_crds \
   "/---/" "{*}"
 
-# Validate the yaml files
-docker run -it --rm -v "$(pwd)":/yaml sdesbure/yamllint yamllint -d "{extends: relaxed, rules: {line-length: disable}}" ./*.yaml
-
 popd
 
 rm -fr "${CSV_DIR}"
@@ -423,6 +420,10 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
 rm -f ${CRD_DIR}/*
 cp -f ${TEMPDIR}/*.${CRD_EXT} ${CRD_DIR}
 cp -f ${TEMPDIR}/*.${CRD_EXT} ${CSV_DIR}
+
+# Validate the yaml files
+(cd ${CRD_DIR} && docker run -it --rm -v "$(pwd)":/yaml sdesbure/yamllint yamllint -d "{extends: relaxed, rules: {line-length: disable}}" *.yaml)
+(cd ${CSV_DIR} && docker run -it --rm -v "$(pwd)":/yaml sdesbure/yamllint yamllint -d "{extends: relaxed, rules: {line-length: disable}}" *.yaml)
 
 # Check there are not API Groups overlap between different CNV operators
 ${PROJECT_ROOT}/tools/csv-merger/csv-merger --crds-dir=${CRD_DIR}
