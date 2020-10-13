@@ -1,4 +1,8 @@
 #!/bin/bash -xe
+source hack/config
+
+curl -L -k "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/virtctl-${KUBEVIRT_VERSION}-linux-amd64" --output virtctl
+chmod +x virtctl
 
 export KUBEVIRT_PROVIDER=${TARGET:-"k8s-1.17"}
 
@@ -29,21 +33,21 @@ set -x
 for i in {1..15}; do
   echo "run number $i"
   kubectl apply -f hack/testvm.yaml
-  virtctl start testvm
+  ./virtctl start testvm
 
-  for _ in {1..5}; do
+  for _ in {1..15}; do
     VMI_NODE=$(kubectl get vmi testvm -o json | jq -r '.metadata.labels["kubevirt.io/nodeName"]')
     if [[ "${VMI_NODE}" != "null" ]]; then
       break 1
     fi
-    sleep 10
+    sleep 20
   done
   if [[ "${VMI_NODE}" != "${WORKLOADS_NODE}" ]]; then
     # exit 1
     echo error
     break
   fi
-  virtctl stop testvm
+  ./virtctl stop testvm
   kubectl wait vmi testvm --for delete --timeout=60s
   kubectl delete -f hack/testvm.yaml
 done
