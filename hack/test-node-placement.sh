@@ -13,9 +13,6 @@ KUBEVIRT_NUM_NODES=3 make cluster-up
 
 # Make sure all the workers are tagged
 WORKER_NODES=$(kubectl get nodes -o json | jq -r '.items[] | select(.metadata.labels["node-role.kubernetes.io/master"] == null) | .metadata.name')
-for node in $WORKER_NODES; do
-  kubectl label node "${node}" node-role.kubernetes.io/worker=""
-done
 
 # Label infra node and workloads node
 # shellcheck disable=SC2206
@@ -23,6 +20,7 @@ WORKERS_ARR=(${WORKER_NODES})
 kubectl label node "${WORKERS_ARR[0]}" node.kubernetes.io/instance-type=infra
 kubectl label node "${WORKERS_ARR[1]}" node.kubernetes.io/instance-type=workloads
 
+kubectl get nodes -o wide --show-labels
 HCO_CONFIGURATION_HOOK=hack/np-config-hook.sh make cluster-sync
 
 WORKLOADS_NODE=$(kubectl get node -l "node.kubernetes.io/instance-type=workloads" -o name)
