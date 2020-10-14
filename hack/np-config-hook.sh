@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -x
+
 INFRA=$(cat <<EOF
   infra:
     nodePlacement:
@@ -19,5 +21,7 @@ EOF
 WORKLOADS=$(echo "${WORKLOADS}" | sed '$!s|$|\\|g')
 
 
-sed -i -r "s|^  infra:.*$|${INFRA}|" _out/hco.cr.yaml
-sed -i -r "s|^  workloads:.*$|${WORKLOADS}|" _out/hco.cr.yaml
+sed -i -r "s|^  infra:.*$|${INFRA}|; s|^  workloads:.*$|${WORKLOADS}|" _out/hco.cr.yaml
+
+echo HCO CR after modification:
+cat _out/hco.cr.yaml

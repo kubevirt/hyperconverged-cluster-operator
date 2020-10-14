@@ -27,7 +27,13 @@ WORKLOADS_NODE=$(kubectl get node -l "node.kubernetes.io/instance-type=workloads
 WORKLOADS_NODE="${WORKLOADS_NODE#*/}"
 [[ "${WORKLOADS_NODE}" == "${WORKERS_ARR[1]}" ]]
 
-set -x
+if [[ -z ${KUBECONFIG} ]]; then
+  set +x # don't show secrets in the log
+  kubectl config view > _out/kubeconfig.yaml
+  export KUBECONFIG=_out/kubeconfig.yaml
+  set -x
+fi
+
 for i in {1..15}; do
   echo "run number $i"
   kubectl apply -f hack/testvm.yaml
