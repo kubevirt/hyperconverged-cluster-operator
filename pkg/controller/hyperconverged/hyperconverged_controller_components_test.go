@@ -1,6 +1,8 @@
 package hyperconverged
 
 import (
+	"os"
+
 	networkaddonsshared "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/shared"
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
@@ -18,7 +20,6 @@ import (
 	kubevirtv1 "kubevirt.io/client-go/api/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer/pkg/apis/core/v1beta1"
 	virtconfig "kubevirt.io/kubevirt/pkg/virt-config"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo"
@@ -1838,14 +1839,14 @@ var _ = Describe("HyperConverged Components", func() {
 
 		BeforeEach(func() {
 			os.Setenv("CONVERSION_CONTAINER", "new-conversion-container-value")
-			os.Setenv("VMWARE_CONTAINER", "new-vmware-container-value")
+			os.Setenv("VM_IMPORT_PROVIDER_CONTAINER", "new-import-provider-container-value")
 			hco = newHco()
 			req = newReq(hco)
 		})
 
 		It("should error if environment vars not specified", func() {
 			os.Unsetenv("CONVERSION_CONTAINER")
-			os.Unsetenv("VMWARE_CONTAINER")
+			os.Unsetenv("VM_IMPORT_PROVIDER_CONTAINER")
 
 			cl := initClient([]runtime.Object{})
 			r := initReconciler(cl)
@@ -1896,7 +1897,7 @@ var _ = Describe("HyperConverged Components", func() {
 		// TODO: fix this bad design splitting the config map into two distinct objects and reconcile the whole object here
 		It("should (partially!!!) reconcile according to env values", func() {
 			convk := "v2v-conversion-image"
-			vmwarek := "kubevirt-vmware-image"
+			vmwarek := "vm-import-provider-image"
 			updatableKeys := [...]string{convk, vmwarek}
 			unupdatableKeyValues := map[string]string{
 				"ext_key_1": "ext_value_1",
@@ -1909,7 +1910,7 @@ var _ = Describe("HyperConverged Components", func() {
 			outdatedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", outdatedResource.Namespace, outdatedResource.Name)
 			// values we should update
 			outdatedResource.Data[convk] = "old-conversion-container-value-we-have-to-update"
-			outdatedResource.Data[vmwarek] = "old-vmware-container-value-we-have-to-update"
+			outdatedResource.Data[vmwarek] = "old-import-provider-container-value-we-have-to-update"
 			// add values we should not touch
 			for k, v := range unupdatableKeyValues {
 				outdatedResource.Data[k] = v

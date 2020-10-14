@@ -3,8 +3,9 @@ package hyperconverged
 import (
 	"context"
 	"fmt"
-	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/pkg/sdk/api"
 	"os"
+
+	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/pkg/sdk/api"
 
 	"github.com/operator-framework/operator-sdk/pkg/ready"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -86,8 +87,8 @@ var (
 			Namespace: namespace,
 		},
 	}
-	conversion_image = "quay.io/kubevirt/kubevirt-v2v-conversion:v2.0.0"
-	vmware_image     = "quay.io/kubevirt/kubevirt-vmware:v2.0.0"
+	conversion_image         = "quay.io/kubevirt/kubevirt-v2v-conversion:v2.0.0"
+	vm_import_provider_image = "quay.io/kubevirt/kubevirt-vmware:v2.0.0"
 )
 
 func newHco() *hcov1beta1.HyperConverged {
@@ -208,7 +209,7 @@ func getBasicDeployment() *basicExpected {
 
 	res.imsConfig = newIMSConfigForCR(hco, namespace)
 	res.imsConfig.Data["v2v-conversion-image"] = conversion_image
-	res.imsConfig.Data["kubevirt-vmware-image"] = vmware_image
+	res.imsConfig.Data["vm-import-provider-image"] = vm_import_provider_image
 
 	return res
 }

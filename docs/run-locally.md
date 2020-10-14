@@ -51,7 +51,7 @@ format. Copy  the content of this file to the `Environment` field. The minimum r
   * `OSDK_FORCE_RUN_MODE=local`
   * `OPERATOR_NAMESPACE=kubevirt-hyperconverged`
   * `CONVERSION_CONTAINER=v2.0.0` (example)
-  * `VMWARE_CONTAINER=v2.0.0-4` (example)
+  * `VM_IMPORT_PROVIDER_CONTAINER=v2.0.0-4` (example)
 
 **Tip**: Instead of setting the environment variables as text, install the [EnvFile](https://plugins.jetbrains.com/plugin/7861-envfile) 
 plugin, then run `FORMAT=env make local` to generate the `_local.envs.env` file. Then change the run configurations to 
@@ -81,7 +81,7 @@ Use the following `launch.json` file for configurations:
                 "OSDK_FORCE_RUN_MODE": "local",
                 "OPERATOR_NAMESPACE":"kubevirt-hyperconverged",
                 "CONVERSION_CONTAINER": "v2.0.0",
-                "VMWARE_CONTAINER": "v2.0.0-4"
+                "VM_IMPORT_PROVIDER_CONTAINER": "v2.0.0-4"
             },
             "args": []
         }
@@ -90,7 +90,7 @@ Use the following `launch.json` file for configurations:
 ```
 Take the actual environment variables from the `_local/envs.txt` file.
 
-**Note**: `KUBECONFIG`, `CONVERSION_CONTAINER` and `VMWARE_CONTAINER` above are examples. Set the values that match your
+**Note**: `KUBECONFIG`, `CONVERSION_CONTAINER` and `VM_IMPORT_PROVIDER_CONTAINER` above are examples. Set the values that match your
 environment.
 
 Now it is possible to run HCO from VS Code.

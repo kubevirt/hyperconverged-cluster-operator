@@ -1411,14 +1411,17 @@ func newIMSConfigForCR(cr *hcov1beta1.HyperConverged, namespace string) *corev1.
 	}
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "v2v-vmware",
+			Name:      "vm-import-provider",
 			Labels:    labels,
 			Namespace: namespace,
 		},
 		Data: map[string]string{
-			"v2v-conversion-image":              os.Getenv("CONVERSION_CONTAINER"),
-			"kubevirt-vmware-image":             os.Getenv("VMWARE_CONTAINER"),
-			"kubevirt-vmware-image-pull-policy": "IfNotPresent",
+			"v2v-conversion-image":           os.Getenv("CONVERSION_CONTAINER"),
+			"v2v-conversion-pull-policy":     "IfNotPresent",
+			"vm-import-provider-image":       os.Getenv("VM_IMPORT_PROVIDER_CONTAINER"),
+			"vm-import-provider-pull-policy": "IfNotPresent",
+			"vddk-init-image":                os.Getenv("VDDK_INIT_CONTAINER"), // Optional
+			"vddk-init-pull-policy":          "IfNotPresent",
 		},
 	}
 }
@@ -1430,8 +1433,8 @@ func (r *ReconcileHyperConverged) ensureIMSConfig(req *hcoRequest) *EnsureResult
 		return res.Error(errors.New("ims-conversion-container not specified"))
 	}
 
-	if os.Getenv("VMWARE_CONTAINER") == "" {
-		return res.Error(errors.New("ims-vmware-container not specified"))
+	if os.Getenv("VM_IMPORT_PROVIDER_CONTAINER") == "" {
+		return res.Error(errors.New("ims-import-provider-container not specified"))
 	}
 
 	err := controllerutil.SetControllerReference(req.instance, imsConfig, r.scheme)

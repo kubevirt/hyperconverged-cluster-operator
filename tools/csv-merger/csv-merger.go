@@ -85,29 +85,29 @@ func (i *EnvVarFlags) Set(value string) error {
 }
 
 var (
-	cwd, _              = os.Getwd()
-	outputMode          = flag.String("output-mode", CSVMode, "Working mode: "+strings.Join(validOutputModes, "|"))
-	cnaCsv              = flag.String("cna-csv", "", "Cluster Network Addons CSV string")
-	virtCsv             = flag.String("virt-csv", "", "KubeVirt CSV string")
-	sspCsv              = flag.String("ssp-csv", "", "Scheduling Scale Performance CSV string")
-	cdiCsv              = flag.String("cdi-csv", "", "Containerized Data Importer CSV String")
-	nmoCsv              = flag.String("nmo-csv", "", "Node Maintenance Operator CSV String")
-	hppCsv              = flag.String("hpp-csv", "", "HostPath Provisioner Operator CSV String")
-	vmImportCsv         = flag.String("vmimport-csv", "", "Virtual Machine Import Operator CSV String")
-	operatorImage       = flag.String("operator-image-name", "", "HyperConverged Cluster Operator image")
-	imsConversionImage  = flag.String("ims-conversion-image-name", "", "IMS conversion image")
-	imsVMWareImage      = flag.String("ims-vmware-image-name", "", "IMS VMWare image")
-	smbios              = flag.String("smbios", "", "Custom SMBIOS string for KubeVirt ConfigMap")
-	machinetype         = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap")
-	csvVersion          = flag.String("csv-version", "", "CSV version")
-	replacesCsvVersion  = flag.String("replaces-csv-version", "", "CSV version to replace")
-	metadataDescription = flag.String("metadata-description", "", "Metadata")
-	specDescription     = flag.String("spec-description", "", "Description")
-	specDisplayName     = flag.String("spec-displayname", "", "Display Name")
-	namespace           = flag.String("namespace", "kubevirt-hyperconverged", "Namespace")
-	crdDisplay          = flag.String("crd-display", "KubeVirt HyperConverged Cluster", "Label show in OLM UI about the primary CRD")
-	csvOverrides        = flag.String("csv-overrides", "", "CSV like string with punctual changes that will be recursively applied (if possible)")
-	visibleCRDList      = flag.String("visible-crds-list", "hyperconvergeds.hco.kubevirt.io,hostpathprovisioners.hostpathprovisioner.kubevirt.io",
+	cwd, _                 = os.Getwd()
+	outputMode             = flag.String("output-mode", CSVMode, "Working mode: "+strings.Join(validOutputModes, "|"))
+	cnaCsv                 = flag.String("cna-csv", "", "Cluster Network Addons CSV string")
+	virtCsv                = flag.String("virt-csv", "", "KubeVirt CSV string")
+	sspCsv                 = flag.String("ssp-csv", "", "Scheduling Scale Performance CSV string")
+	cdiCsv                 = flag.String("cdi-csv", "", "Containerized Data Importer CSV String")
+	nmoCsv                 = flag.String("nmo-csv", "", "Node Maintenance Operator CSV String")
+	hppCsv                 = flag.String("hpp-csv", "", "HostPath Provisioner Operator CSV String")
+	vmImportCsv            = flag.String("vmimport-csv", "", "Virtual Machine Import Operator CSV String")
+	operatorImage          = flag.String("operator-image-name", "", "HyperConverged Cluster Operator image")
+	imsConversionImage     = flag.String("ims-conversion-image-name", "", "IMS conversion image")
+	imsImportProviderImage = flag.String("ims-import-provider-image-name", "", "IMS import provider image")
+	smbios                 = flag.String("smbios", "", "Custom SMBIOS string for KubeVirt ConfigMap")
+	machinetype            = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap")
+	csvVersion             = flag.String("csv-version", "", "CSV version")
+	replacesCsvVersion     = flag.String("replaces-csv-version", "", "CSV version to replace")
+	metadataDescription    = flag.String("metadata-description", "", "Metadata")
+	specDescription        = flag.String("spec-description", "", "Description")
+	specDisplayName        = flag.String("spec-displayname", "", "Display Name")
+	namespace              = flag.String("namespace", "kubevirt-hyperconverged", "Namespace")
+	crdDisplay             = flag.String("crd-display", "KubeVirt HyperConverged Cluster", "Label show in OLM UI about the primary CRD")
+	csvOverrides           = flag.String("csv-overrides", "", "CSV like string with punctual changes that will be recursively applied (if possible)")
+	visibleCRDList         = flag.String("visible-crds-list", "hyperconvergeds.hco.kubevirt.io,hostpathprovisioners.hostpathprovisioner.kubevirt.io",
 		"Comma separated list of all the CRDs that should be visible in OLM console")
 	relatedImagesList = flag.String("related-images-list", "",
 		"Comma separated list of all the images referred in the CSV (just the image pull URLs or eventually a set of 'image|name' collations)")
@@ -289,7 +289,7 @@ func main() {
 			*operatorImage,
 			"IfNotPresent",
 			*imsConversionImage,
-			*imsVMWareImage,
+			*imsImportProviderImage,
 			*smbios,
 			*machinetype,
 			*hcoKvIoVersion,

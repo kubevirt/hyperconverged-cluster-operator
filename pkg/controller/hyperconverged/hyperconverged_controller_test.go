@@ -47,7 +47,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 			BeforeEach(func() {
 				os.Setenv("CONVERSION_CONTAINER", conversion_image)
-				os.Setenv("VMWARE_CONTAINER", vmware_image)
+				os.Setenv("VM_IMPORT_PROVIDER_CONTAINER", vm_import_provider_image)
 				os.Setenv("OPERATOR_NAMESPACE", namespace)
 			})
 
@@ -504,7 +504,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 			BeforeEach(func() {
 				os.Setenv("CONVERSION_CONTAINER", conversion_image)
-				os.Setenv("VMWARE_CONTAINER", vmware_image)
+				os.Setenv("VM_IMPORT_PROVIDER_CONTAINER", vm_import_provider_image)
 				os.Setenv("OPERATOR_NAMESPACE", namespace)
 				os.Setenv(hcoutil.HcoKvIoVersionName, version.Version)
 			})
@@ -544,7 +544,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 			BeforeEach(func() {
 				os.Setenv("CONVERSION_CONTAINER", conversion_image)
-				os.Setenv("VMWARE_CONTAINER", vmware_image)
+				os.Setenv("VM_IMPORT_PROVIDER_CONTAINER", vm_import_provider_image)
 				os.Setenv("OPERATOR_NAMESPACE", namespace)
 
 				expected.kv.Status.ObservedKubeVirtVersion = newComponentVersion

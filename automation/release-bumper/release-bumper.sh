@@ -51,7 +51,7 @@ function get_current_versions {
     ["HPP"]=""
     ["VM_IMPORT"]=""
 #    ["CONVERSION_CONTAINER"]=""
-#    ["VMWARE_CONTAINER"]=""
+#    ["VM_IMPORT_PROVIDER_CONTAINER"]=""
   )
 
   for component in "${!CURRENT_VERSIONS[@]}"; do
@@ -70,7 +70,7 @@ function get_updated_versions {
     ["HPP"]="kubevirt/hostpath-provisioner"
     ["VM_IMPORT"]="kubevirt/vm-import-operator"
 #    ["CONVERSION_CONTAINER"]=""
-#    ["VMWARE_CONTAINER"]=""
+#    ["VM_IMPORT_PROVIDER_CONTAINER"]=""
   )
 
   UPDATED_VERSIONS=()

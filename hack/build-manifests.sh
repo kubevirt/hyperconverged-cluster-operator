@@ -63,7 +63,7 @@ NMO_IMAGE="${NMO_IMAGE:-quay.io/kubevirt/node-maintenance-operator:${NMO_VERSION
 HPPO_IMAGE="${HPP_IMAGE:-quay.io/kubevirt/hostpath-provisioner-operator:${HPPO_VERSION}}"
 HPP_IMAGE="${HPP_IMAGE:-quay.io/kubevirt/hostpath-provisioner:${HPP_VERSION}}"
 CONVERSION_CONTAINER="${CONVERSION_CONTAINER:-quay.io/kubevirt/kubevirt-v2v-conversion:${CONVERSION_CONTAINER_VERSION}}"
-VMWARE_CONTAINER="${VMWARE_CONTAINER:-quay.io/kubevirt/kubevirt-vmware:${VMWARE_CONTAINER_VERSION}}"
+VM_IMPORT_PROVIDER_CONTAINER="${VM_IMPORT_PROVIDER_CONTAINER:-quay.io/kubevirt/kubevirt-vmware:${IMPORT_PROVIDER_CONTAINER_VERSION}}"
 VM_IMPORT_IMAGE="${VM_IMPORT_IMAGE:-quay.io/kubevirt/vm-import-operator:${VM_IMPORT_VERSION}}"
 
 # Important extensions
@@ -351,7 +351,7 @@ EOM
 
 IMAGE_NAME=$(get_image_digest "${OPERATOR_IMAGE}")
 conversionContainer=$(get_image_digest "${CONVERSION_CONTAINER}")
-vmwareContainer=$(get_image_digest "${VMWARE_CONTAINER}")
+importProviderContainer=$(get_image_digest "${VM_IMPORT_PROVIDER_CONTAINER}")
 
 IMAGE_LIST=$(cat ${IMAGES_FILE} | tr '\n' ',')
 
@@ -373,7 +373,7 @@ ${PROJECT_ROOT}/tools/manifest-templator/manifest-templator \
   --hpp-csv="$(<${hppCsv})" \
   --vmimport-csv="$(<${importCsv})" \
   --ims-conversion-image-name="${conversionContainer}" \
-  --ims-vmware-image-name="${vmwareContainer}" \
+  --ims-import-provider-image-name="${importProviderContainer}" \
   --operator-namespace="${OPERATOR_NAMESPACE}" \
   --smbios="${SMBIOS}" \
   --hco-kv-io-version="${CSV_VERSION}" \
@@ -397,7 +397,7 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --hpp-csv="$(<${hppCsv})" \
   --vmimport-csv="$(<${importCsv})" \
   --ims-conversion-image-name="${conversionContainer}" \
-  --ims-vmware-image-name="${vmwareContainer}" \
+  --ims-import-provider-image-name="${importProviderContainer}" \
   --csv-version=${CSV_VERSION} \
   --replaces-csv-version=${REPLACES_CSV_VERSION} \
   --hco-kv-io-version="${CSV_VERSION}" \
