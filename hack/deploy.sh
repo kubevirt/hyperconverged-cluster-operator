@@ -22,6 +22,8 @@ set -ex
 source hack/common.sh
 source hack/compare_scc.sh
 
+"${CMD}" get nodes -o wide --show-labels
+
 HCO_IMAGE=${HCO_IMAGE:-quay.io/kubevirt/hyperconverged-cluster-operator:latest}
 HCO_NAMESPACE="kubevirt-hyperconverged"
 HCO_KIND="hyperconvergeds"
