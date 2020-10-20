@@ -47,7 +47,7 @@ var _ = Describe("Virtual Machines", func() {
 			expectedWorkloadsPods := map[string]bool{
 				"bridge-marker":   false,
 				"cni-plugins":     false,
-				"kube-multus":     false,
+				//"kube-multus":     false,
 				"nmstate-handler": false,
 				"ovs-cni-marker":  false,
 				"virt-handler":    false,
@@ -62,11 +62,11 @@ var _ = Describe("Virtual Machines", func() {
 
 			for _, pod := range pods.Items {
 				podName := pod.Spec.Containers[0].Name
+				fmt.Fprintf(GinkgoWriter, "Found %s pod '%s' in the 'workloads' node %s\n", podName, pod.Name, workloadsNode.Name)
 				if found, ok := expectedWorkloadsPods[podName]; ok {
 					if !found {
 						expectedWorkloadsPods[podName] = true
 					}
-					fmt.Fprintf(GinkgoWriter, "Found %s pod in the 'workloads' node %s\n", podName, workloadsNode.Name)
 				}
 			}
 
@@ -85,15 +85,14 @@ var _ = Describe("Virtual Machines", func() {
 			})
 
 			expectedInfraPods := map[string]bool{
-				"cdi-apiserver":                   false,
-				"cdi-controller":                  false,
-				"cdi-uploadproxy":                 false,
-				"cluster-network-addons-operator": false,
-				"manager":                         false,
-				"nmstate-webhook":                 false,
-				"virt-api":                        false,
-				"virt-controller":                 false,
-				"vm-import-controller":            false,
+				"cdi-apiserver":        false,
+				"cdi-controller":       false,
+				"cdi-uploadproxy":      false,
+				"manager":              false,
+				"nmstate-webhook":      false,
+				"virt-api":             false,
+				"virt-controller":      false,
+				"vm-import-controller": false,
 			}
 
 			for _, node := range infraNodes.Items {
@@ -106,12 +105,11 @@ var _ = Describe("Virtual Machines", func() {
 
 				for _, pod := range pods.Items {
 					podName := pod.Spec.Containers[0].Name
+					fmt.Fprintf(GinkgoWriter, "Found %s pod '%s' in the 'infra' node %s\n", podName, pod.Name, node.Name)
 					if found, ok := expectedInfraPods[podName]; ok {
 						if !found {
 							expectedInfraPods[podName] = true
 						}
-						fmt.Fprintf(GinkgoWriter, "Found %s pod in the 'infra' node %s\n", podName, workloadsNode.Name)
-
 					}
 				}
 			}
