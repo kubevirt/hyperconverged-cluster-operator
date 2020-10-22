@@ -49,11 +49,12 @@ func initReconciler(client client.Client) *ReconcileHyperConverged {
 
 	// Create a ReconcileHyperConverged object with the scheme and fake client
 	return &ReconcileHyperConverged{
-		client:       client,
-		scheme:       s,
-		clusterInfo:  clusterInfoMock{},
-		eventEmitter: &eventEmitterMock{},
-		firstLoop:    true,
+		client:             client,
+		scheme:             s,
+		clusterInfo:        clusterInfoMock{},
+		eventEmitter:       &eventEmitterMock{},
+		cliDownloadHandler: &operands.CLIDownloadHandler{Client: client, Scheme: s},
+		firstLoop:          true,
 	}
 }
 

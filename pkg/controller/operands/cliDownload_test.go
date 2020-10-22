@@ -1,30 +1,25 @@
-package hyperconverged
+package operands
 
 import (
-	"os"
-
+	"context"
+	"fmt"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/commonTestUtils"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
 	consolev1 "github.com/openshift/api/console/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
-
-	"context"
-	"fmt"
-
 	"k8s.io/client-go/tools/reference"
+	"os"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("HyperConverged Components", func() {
-
+var _ = Describe("CLI Download", func() {
 	Context("ConsoleCLIDownload", func() {
 
 		var hco *hcov1beta1.HyperConverged
@@ -38,9 +33,8 @@ var _ = Describe("HyperConverged Components", func() {
 		It("should create if not present", func() {
 			expectedResource := hco.NewConsoleCLIDownload()
 			cl := commonTestUtils.InitClient([]runtime.Object{})
-			r := initReconciler(cl)
-
-			err := r.ensureConsoleCLIDownload(req)
+			handler := &CLIDownloadHandler{Client: cl, Scheme: commonTestUtils.GetScheme()}
+			err := handler.Ensure(req)
 			Expect(err).To(BeNil())
 
 			foundResource := &consolev1.ConsoleCLIDownload{}
@@ -50,7 +44,7 @@ var _ = Describe("HyperConverged Components", func() {
 					foundResource),
 			).To(BeNil())
 			Expect(foundResource.Name).To(Equal(expectedResource.Name))
-			Expect(foundResource.Labels).Should(HaveKeyWithValue(hcoutil.AppLabel, name))
+			Expect(foundResource.Labels).Should(HaveKeyWithValue(hcoutil.AppLabel, commonTestUtils.Name))
 			Expect(foundResource.Namespace).To(Equal(expectedResource.Namespace))
 		})
 
@@ -58,13 +52,13 @@ var _ = Describe("HyperConverged Components", func() {
 			expectedResource := hco.NewConsoleCLIDownload()
 			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/consoleclidownloads/%s", expectedResource.Namespace, expectedResource.Name)
 			cl := commonTestUtils.InitClient([]runtime.Object{hco, expectedResource})
-			r := initReconciler(cl)
-			err := r.ensureConsoleCLIDownload(req)
+			handler := &CLIDownloadHandler{Client: cl, Scheme: commonTestUtils.GetScheme()}
+			err := handler.Ensure(req)
 			Expect(err).To(BeNil())
 
 			// Check HCO's status
 			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
-			objectRef, err := reference.GetReference(r.scheme, expectedResource)
+			objectRef, err := reference.GetReference(handler.Scheme, expectedResource)
 			Expect(err).To(BeNil())
 			// ObjectReference should have been added
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
@@ -73,8 +67,8 @@ var _ = Describe("HyperConverged Components", func() {
 		DescribeTable("should update if something changed", func(modifiedResource *consolev1.ConsoleCLIDownload) {
 			os.Setenv(hcoutil.KubevirtVersionEnvV, "100")
 			cl := commonTestUtils.InitClient([]runtime.Object{modifiedResource})
-			r := initReconciler(cl)
-			err := r.ensureConsoleCLIDownload(req)
+			handler := &CLIDownloadHandler{Client: cl, Scheme: commonTestUtils.GetScheme()}
+			err := handler.Ensure(req)
 			Expect(err).To(BeNil())
 			expectedResource := hco.NewConsoleCLIDownload()
 			key, err := client.ObjectKeyFromObject(expectedResource)
@@ -120,7 +114,8 @@ var _ = Describe("HyperConverged Components", func() {
 							},
 						},
 					},
-				}),
+				},
+			),
 		)
 	})
 })
