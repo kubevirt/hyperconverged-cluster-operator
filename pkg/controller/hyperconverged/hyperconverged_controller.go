@@ -1,7 +1,6 @@
 package hyperconverged
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -17,7 +16,6 @@ import (
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -36,7 +34,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubevirtv1 "kubevirt.io/client-go/api/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer/pkg/apis/core/v1beta1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
@@ -89,6 +86,7 @@ func prepareHandlerMap(clt client.Client, scheme *runtime.Scheme, isOpenshift bo
 	operandMap["cdi"] = &operands.CdiHandler{Client: clt, Scheme: scheme}
 	operandMap["cna"] = &operands.CnaHandler{Client: clt, Scheme: scheme}
 	operandMap["vmimport"] = &operands.VmImportHandler{Client: clt, Scheme: scheme}
+	operandMap["IMSConfig"] = operands.IMSConfigHandler{Client: clt, Scheme: scheme}
 	if isOpenshift {
 		operandMap["kvCTB"] = operands.NewCommonTemplateBundleHandler(clt, scheme)
 		operandMap["kvNLB"] = operands.NewNodeLabellerBundleHandler(clt, scheme)
@@ -795,90 +793,8 @@ func (r *ReconcileHyperConverged) ensureKubeVirtNodeLabellerBundle(req *common.H
 	return nil
 }
 
-func newIMSConfigForCR(cr *hcov1beta1.HyperConverged, namespace string) *corev1.ConfigMap {
-	labels := map[string]string{
-		hcoutil.AppLabel: cr.Name,
-	}
-	return &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "v2v-vmware",
-			Labels:    labels,
-			Namespace: namespace,
-		},
-		Data: map[string]string{
-			"v2v-conversion-image":              os.Getenv("CONVERSION_CONTAINER"),
-			"kubevirt-vmware-image":             os.Getenv("VMWARE_CONTAINER"),
-			"kubevirt-vmware-image-pull-policy": "IfNotPresent",
-		},
-	}
-}
-
 func (r *ReconcileHyperConverged) ensureIMSConfig(req *common.HcoRequest) *operands.EnsureResult {
-	imsConfig := newIMSConfigForCR(req.Instance, req.Namespace)
-	res := operands.NewEnsureResult(imsConfig)
-	if os.Getenv("CONVERSION_CONTAINER") == "" {
-		return res.Error(errors.New("ims-conversion-container not specified"))
-	}
-
-	if os.Getenv("VMWARE_CONTAINER") == "" {
-		return res.Error(errors.New("ims-vmware-container not specified"))
-	}
-
-	err := controllerutil.SetControllerReference(req.Instance, imsConfig, r.scheme)
-	if err != nil {
-		return res.Error(err)
-	}
-
-	key, err := client.ObjectKeyFromObject(imsConfig)
-	if err != nil {
-		req.Logger.Error(err, "Failed to get object key for IMS Configmap")
-	}
-
-	res.SetName(key.Name)
-	found := &corev1.ConfigMap{}
-
-	err = r.client.Get(req.Ctx, key, found)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			req.Logger.Info("Creating IMS Configmap")
-			err = r.client.Create(req.Ctx, imsConfig)
-			if err == nil {
-				return res.SetCreated()
-			}
-		}
-		return res.Error(err)
-	}
-
-	req.Logger.Info("IMS Configmap already exists", "imsConfigMap.Namespace", found.Namespace, "imsConfigMap.Name", found.Name)
-
-	// Add it to the list of RelatedObjects if found
-	objectRef, err := reference.GetReference(r.scheme, found)
-	if err != nil {
-		return res.Error(err)
-	}
-	objectreferencesv1.SetObjectReference(&req.Instance.Status.RelatedObjects, *objectRef)
-
-	// in an ideal world HCO should be managing the whole config map,
-	// now due to a bad design only a few values of this config map are
-	// really managed by HCO while others are managed by other entities
-	// TODO: fix this bad design splitting the config map into two distinct objects and reconcile the whole object here
-	needsUpdate := false
-	for key, value := range imsConfig.Data {
-		if found.Data[key] != value {
-			found.Data[key] = value
-			needsUpdate = true
-		}
-	}
-	if needsUpdate {
-		req.Logger.Info("Updating existing IMS Configmap to its default values")
-		err = r.client.Update(req.Ctx, found)
-		if err != nil {
-			return res.Error(err)
-		}
-		return res.SetUpdated()
-	}
-
-	return res.SetUpgradeDone(req.ComponentUpgradeInProgress)
+	return operandMap["IMSConfig"].Ensure(req)
 }
 
 func (r *ReconcileHyperConverged) ensureVMImport(req *common.HcoRequest) *operands.EnsureResult {
