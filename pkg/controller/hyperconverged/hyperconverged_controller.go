@@ -48,7 +48,6 @@ const (
 
 	reconcileInit               = "Init"
 	reconcileInitMessage        = "Initializing HyperConverged cluster"
-	reconcileFailed             = "ReconcileFailed"
 	reconcileCompleted          = "ReconcileCompleted"
 	reconcileCompletedMessage   = "Reconcile completed successfully"
 	invalidRequestReason        = "InvalidRequest"
@@ -72,25 +71,6 @@ func Add(mgr manager.Manager, ci hcoutil.ClusterInfo) error {
 	return add(mgr, newReconciler(mgr, ci))
 }
 
-// temp map, until we move all the operands code
-var (
-	operandMap = map[string]operands.Operand{}
-)
-
-func prepareHandlerMap(clt client.Client, scheme *runtime.Scheme) {
-	operandMap["kvc"] = &operands.KvConfigHandler{Client: clt, Scheme: scheme}
-	operandMap["kvpc"] = &operands.KvPriorityClassHandler{Client: clt, Scheme: scheme}
-	operandMap["kv"] = &operands.KubevirtHandler{Client: clt, Scheme: scheme}
-	operandMap["cdi"] = &operands.CdiHandler{Client: clt, Scheme: scheme}
-	operandMap["cna"] = &operands.CnaHandler{Client: clt, Scheme: scheme}
-	operandMap["vmimport"] = &operands.VmImportHandler{Client: clt, Scheme: scheme}
-	operandMap["kvCTB"] = operands.NewCommonTemplateBundleHandler(clt, scheme)
-	operandMap["kvNLB"] = operands.NewNodeLabellerBundleHandler(clt, scheme)
-	operandMap["kvTV"] = operands.NewTemplateValidatorHandler(clt, scheme)
-	operandMap["kvMA"] = operands.NewMetricsAggregationHandler(clt, scheme)
-	operandMap["IMSConfig"] = operands.IMSConfigHandler{Client: clt, Scheme: scheme}
-}
-
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo) reconcile.Reconciler {
 
@@ -99,16 +79,14 @@ func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo) reconcile.Reconc
 		ownVersion = version.Version
 	}
 
-	prepareHandlerMap(mgr.GetClient(), mgr.GetScheme())
-
 	return &ReconcileHyperConverged{
 		client:             mgr.GetClient(),
 		scheme:             mgr.GetScheme(),
 		recorder:           mgr.GetEventRecorderFor(hcoutil.HyperConvergedName),
 		cliDownloadHandler: &operands.CLIDownloadHandler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
+		operandHandler:     operands.NewOperandHandler(mgr.GetClient(), mgr.GetScheme(), ci.IsOpenshift(), hcoutil.GetEventEmitter()),
 		upgradeMode:        false,
 		ownVersion:         ownVersion,
-		clusterInfo:        ci,
 		eventEmitter:       hcoutil.GetEventEmitter(),
 		firstLoop:          true,
 	}
@@ -172,9 +150,9 @@ type ReconcileHyperConverged struct {
 	scheme             *runtime.Scheme
 	recorder           record.EventRecorder
 	cliDownloadHandler *operands.CLIDownloadHandler
+	operandHandler     *operands.OperandHandler
 	upgradeMode        bool
 	ownVersion         string
-	clusterInfo        hcoutil.ClusterInfo
 	eventEmitter       hcoutil.EventEmitter
 	firstLoop          bool
 }
@@ -310,7 +288,7 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 
 	r.cliDownloadHandler.Ensure(req)
 
-	err = r.ensureHco(req)
+	err = r.operandHandler.Ensure(req)
 	if err != nil {
 		return reconcile.Result{}, r.updateConditions(req)
 	}
@@ -451,43 +429,6 @@ func (r *ReconcileHyperConverged) ensureHcoDeleted(req *common.HcoRequest) (reco
 
 	// Need to requeue because finalizer update does not change metadata.generation
 	return reconcile.Result{Requeue: true}, nil
-}
-
-func (r *ReconcileHyperConverged) ensureHco(req *common.HcoRequest) error {
-	for _, f := range []func(*common.HcoRequest) *operands.EnsureResult{
-		r.ensureKubeVirtPriorityClass,
-		r.ensureKubeVirtConfig,
-		r.ensureKubeVirt,
-		r.ensureCDI,
-		r.ensureNetworkAddons,
-		r.ensureKubeVirtCommonTemplateBundle,
-		r.ensureKubeVirtNodeLabellerBundle,
-		r.ensureKubeVirtTemplateValidator,
-		r.ensureKubeVirtMetricsAggregation,
-		r.ensureIMSConfig,
-		r.ensureVMImport,
-	} {
-		res := f(req)
-		if res.Err != nil {
-			req.ComponentUpgradeInProgress = false
-			req.Conditions.SetStatusCondition(conditionsv1.Condition{
-				Type:    hcov1beta1.ConditionReconcileComplete,
-				Status:  corev1.ConditionFalse,
-				Reason:  reconcileFailed,
-				Message: fmt.Sprintf("Error while reconciling: %v", res.Err),
-			})
-			return res.Err
-		}
-
-		if res.Created {
-			r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "Created", fmt.Sprintf("Created %s %s", res.Type, res.Name))
-		} else if res.Updated {
-			r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "Updated", fmt.Sprintf("Updated %s %s", res.Type, res.Name))
-		}
-
-		req.ComponentUpgradeInProgress = req.ComponentUpgradeInProgress && res.UpgradeDone
-	}
-	return nil
 }
 
 func (r *ReconcileHyperConverged) aggregateComponentConditions(req *common.HcoRequest) bool {
@@ -752,50 +693,6 @@ func (r *ReconcileHyperConverged) completeReconciliation(req *common.HcoRequest)
 		}
 	}
 	return r.updateConditions(req)
-}
-
-func (r *ReconcileHyperConverged) ensureKubeVirtPriorityClass(req *common.HcoRequest) *operands.EnsureResult {
-	return operandMap["kvpc"].Ensure(req)
-}
-
-func (r *ReconcileHyperConverged) ensureKubeVirtConfig(req *common.HcoRequest) *operands.EnsureResult {
-	return operandMap["kvc"].Ensure(req)
-}
-
-func (r *ReconcileHyperConverged) ensureKubeVirt(req *common.HcoRequest) *operands.EnsureResult {
-	return operandMap["kv"].Ensure(req)
-}
-
-func (r *ReconcileHyperConverged) ensureCDI(req *common.HcoRequest) *operands.EnsureResult {
-	return operandMap["cdi"].Ensure(req)
-}
-
-func (r *ReconcileHyperConverged) ensureNetworkAddons(req *common.HcoRequest) *operands.EnsureResult {
-	return operandMap["cna"].Ensure(req)
-}
-
-func (r *ReconcileHyperConverged) ensureKubeVirtCommonTemplateBundle(req *common.HcoRequest) *operands.EnsureResult {
-	return operandMap["kvCTB"].Ensure(req)
-}
-
-func (r *ReconcileHyperConverged) ensureKubeVirtNodeLabellerBundle(req *common.HcoRequest) *operands.EnsureResult {
-	return operandMap["kvNLB"].Ensure(req)
-}
-
-func (r *ReconcileHyperConverged) ensureIMSConfig(req *common.HcoRequest) *operands.EnsureResult {
-	return operandMap["IMSConfig"].Ensure(req)
-}
-
-func (r *ReconcileHyperConverged) ensureVMImport(req *common.HcoRequest) *operands.EnsureResult {
-	return operandMap["vmimport"].Ensure(req)
-}
-
-func (r *ReconcileHyperConverged) ensureKubeVirtTemplateValidator(req *common.HcoRequest) *operands.EnsureResult {
-	return operandMap["kvTV"].Ensure(req)
-}
-
-func (r *ReconcileHyperConverged) ensureKubeVirtMetricsAggregation(req *common.HcoRequest) *operands.EnsureResult {
-	return operandMap["kvMA"].Ensure(req)
 }
 
 // This function is used to exit from the reconcile function, updating the conditions and returns the reconcile result
