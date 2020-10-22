@@ -55,13 +55,6 @@ const (
 	commonDegradedReason        = "HCODegraded"
 	commonProgressingReason     = "HCOProgressing"
 
-	ErrCDIUninstall       = "ErrCDIUninstall"
-	uninstallCDIErrorMsg  = "The uninstall request failed on CDI component: "
-	ErrVirtUninstall      = "ErrVirtUninstall"
-	uninstallVirtErrorMsg = "The uninstall request failed on virt component: "
-	ErrHCOUninstall       = "ErrHCOUninstall"
-	uninstallHCOErrorMsg  = "The uninstall request failed on dependent components, please check their logs."
-
 	hcoVersionName = "operator"
 )
 
@@ -384,43 +377,9 @@ func (r *ReconcileHyperConverged) setInitialConditions(req *common.HcoRequest) e
 }
 
 func (r *ReconcileHyperConverged) ensureHcoDeleted(req *common.HcoRequest) (reconcile.Result, error) {
-	for _, obj := range []runtime.Object{
-		req.Instance.NewKubeVirt(),
-		req.Instance.NewCDI(),
-		req.Instance.NewNetworkAddons(),
-		req.Instance.NewKubeVirtCommonTemplateBundle(),
-		req.Instance.NewConsoleCLIDownload(),
-		operands.NewVMImportForCR(req.Instance),
-	} {
-		err := hcoutil.EnsureDeleted(req.Ctx, r.client, obj, req.Instance.Name, req.Logger, false)
-		if err != nil {
-			req.Logger.Error(err, "Failed to manually delete objects")
-
-			// TODO: ask to other components to expose something like
-			// func IsDeleteRefused(err error) bool
-			// to be able to clearly distinguish between an explicit
-			// refuse from other operator and any other kind of error that
-			// could potentially happen in the process
-
-			errT := ErrHCOUninstall
-			errMsg := uninstallHCOErrorMsg
-			switch obj.(type) {
-			case *kubevirtv1.KubeVirt:
-				errT = ErrVirtUninstall
-				errMsg = uninstallVirtErrorMsg + err.Error()
-			case *cdiv1beta1.CDI:
-				errT = ErrCDIUninstall
-				errMsg = uninstallCDIErrorMsg + err.Error()
-			}
-
-			r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeWarning, errT, errMsg)
-
-			return reconcile.Result{}, err
-		}
-
-		if key, err := client.ObjectKeyFromObject(obj); err == nil {
-			r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "Killing", fmt.Sprintf("Removed %s %s", obj.GetObjectKind().GroupVersionKind().Kind, key.Name))
-		}
+	err := r.operandHandler.EnsureDeleted(req)
+	if err != nil {
+		return reconcile.Result{}, err
 	}
 
 	// Remove the finalizer
