@@ -3,7 +3,6 @@ package hyperconverged
 import (
 	"fmt"
 	"os"
-	"reflect"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/operands"
@@ -13,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -29,11 +27,9 @@ import (
 	sspv1 "github.com/kubevirt/kubevirt-ssp-operator/pkg/apis/kubevirt/v1"
 	vmimportv1beta1 "github.com/kubevirt/vm-import-operator/pkg/apis/v2v/v1beta1"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
-	objectreferencesv1 "github.com/openshift/custom-resource-status/objectreferences/v1"
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	kubevirtv1 "kubevirt.io/client-go/api/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer/pkg/apis/core/v1beta1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
@@ -77,7 +73,9 @@ func Add(mgr manager.Manager, ci hcoutil.ClusterInfo) error {
 }
 
 // temp map, until we move all the operands code
-var operandMap = map[string]operands.Operand{}
+var (
+	operandMap = map[string]operands.Operand{}
+)
 
 func prepareHandlerMap(clt client.Client, scheme *runtime.Scheme) {
 	operandMap["kvc"] = &operands.KvConfigHandler{Client: clt, Scheme: scheme}
@@ -104,14 +102,15 @@ func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo) reconcile.Reconc
 	prepareHandlerMap(mgr.GetClient(), mgr.GetScheme())
 
 	return &ReconcileHyperConverged{
-		client:       mgr.GetClient(),
-		scheme:       mgr.GetScheme(),
-		recorder:     mgr.GetEventRecorderFor(hcoutil.HyperConvergedName),
-		upgradeMode:  false,
-		ownVersion:   ownVersion,
-		clusterInfo:  ci,
-		eventEmitter: hcoutil.GetEventEmitter(),
-		firstLoop:    true,
+		client:             mgr.GetClient(),
+		scheme:             mgr.GetScheme(),
+		recorder:           mgr.GetEventRecorderFor(hcoutil.HyperConvergedName),
+		cliDownloadHandler: &operands.CLIDownloadHandler{Client: mgr.GetClient(), Scheme: mgr.GetScheme()},
+		upgradeMode:        false,
+		ownVersion:         ownVersion,
+		clusterInfo:        ci,
+		eventEmitter:       hcoutil.GetEventEmitter(),
+		firstLoop:          true,
 	}
 }
 
@@ -169,14 +168,15 @@ var _ reconcile.Reconciler = &ReconcileHyperConverged{}
 type ReconcileHyperConverged struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client       client.Client
-	scheme       *runtime.Scheme
-	recorder     record.EventRecorder
-	upgradeMode  bool
-	ownVersion   string
-	clusterInfo  hcoutil.ClusterInfo
-	eventEmitter hcoutil.EventEmitter
-	firstLoop    bool
+	client             client.Client
+	scheme             *runtime.Scheme
+	recorder           record.EventRecorder
+	cliDownloadHandler *operands.CLIDownloadHandler
+	upgradeMode        bool
+	ownVersion         string
+	clusterInfo        hcoutil.ClusterInfo
+	eventEmitter       hcoutil.EventEmitter
+	firstLoop          bool
 }
 
 // Reconcile reads that state of the cluster for a HyperConverged object and makes changes based on the state read
@@ -308,7 +308,7 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 
 	req.SetUpgradeMode(r.upgradeMode)
 
-	r.ensureConsoleCLIDownload(req)
+	r.cliDownloadHandler.Ensure(req)
 
 	err = r.ensureHco(req)
 	if err != nil {
@@ -788,39 +788,6 @@ func (r *ReconcileHyperConverged) ensureIMSConfig(req *common.HcoRequest) *opera
 
 func (r *ReconcileHyperConverged) ensureVMImport(req *common.HcoRequest) *operands.EnsureResult {
 	return operandMap["vmimport"].Ensure(req)
-}
-
-func (r *ReconcileHyperConverged) ensureConsoleCLIDownload(req *common.HcoRequest) error {
-	ccd := req.Instance.NewConsoleCLIDownload()
-
-	found := req.Instance.NewConsoleCLIDownload()
-	err := hcoutil.EnsureCreated(req.Ctx, r.client, found, req.Logger)
-	if err != nil {
-		if meta.IsNoMatchError(err) {
-			req.Logger.Info("ConsoleCLIDownload was not found, skipping")
-		}
-		return err
-	}
-
-	// Make sure we hold the right link spec
-	if reflect.DeepEqual(found.Spec, ccd.Spec) {
-		objectRef, err := reference.GetReference(r.scheme, found)
-		if err != nil {
-			req.Logger.Error(err, "failed getting object reference for ConsoleCLIDownload")
-			return err
-		}
-		objectreferencesv1.SetObjectReference(&req.Instance.Status.RelatedObjects, *objectRef)
-		return nil
-	}
-
-	ccd.Spec.DeepCopyInto(&found.Spec)
-
-	err = r.client.Update(req.Ctx, found)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (r *ReconcileHyperConverged) ensureKubeVirtTemplateValidator(req *common.HcoRequest) *operands.EnsureResult {
