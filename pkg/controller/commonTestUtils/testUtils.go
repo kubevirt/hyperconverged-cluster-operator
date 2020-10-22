@@ -18,8 +18,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"k8s.io/client-go/kubernetes/scheme"
+	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 
 	. "github.com/onsi/gomega"
 )
@@ -33,14 +33,13 @@ const (
 )
 
 var (
-	TestLogger = logf.Log.WithName("controller_hyperconverged")
+	TestLogger  = logf.Log.WithName("controller_hyperconverged")
 	TestRequest = reconcile.Request{
 		NamespacedName: types.NamespacedName{
 			Name:      Name,
 			Namespace: Namespace,
 		},
 	}
-
 )
 
 func NewHco() *hcov1beta1.HyperConverged {
