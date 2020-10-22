@@ -186,7 +186,7 @@ func getBasicDeployment() *BasicExpected {
 	expectedKVTV.Status.Conditions = getGenericCompletedConditions()
 	res.kvTv = expectedKVTV
 
-	expectedVMI := newVMImportForCR(hco)
+	expectedVMI := operands.NewVMImportForCR(hco)
 	expectedVMI.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/vmimportconfigs/%s", expectedVMI.Namespace, expectedVMI.Name)
 	expectedVMI.Status.Conditions = getGenericCompletedConditions()
 	res.vmi = expectedVMI
@@ -296,16 +296,16 @@ func checkHcoReady() (bool, error) {
 }
 
 func checkAvailability(hco *hcov1beta1.HyperConverged, expected corev1.ConditionStatus) {
-    found := false
-    for _, cond := range hco.Status.Conditions {
-        if cond.Type == conditionsv1.ConditionType(kubevirtv1.KubeVirtConditionAvailable) {
-            found = true
-            Expect(cond.Status).To(Equal(expected))
-            break
-        }
-    }
+	found := false
+	for _, cond := range hco.Status.Conditions {
+		if cond.Type == conditionsv1.ConditionType(kubevirtv1.KubeVirtConditionAvailable) {
+			found = true
+			Expect(cond.Status).To(Equal(expected))
+			break
+		}
+	}
 
-    if !found {
-        Fail(fmt.Sprintf(`Can't find 'Available' condition; %v`, hco.Status.Conditions))
-    }
+	if !found {
+		Fail(fmt.Sprintf(`Can't find 'Available' condition; %v`, hco.Status.Conditions))
+	}
 }
