@@ -22,21 +22,21 @@ type OperandHandler struct {
 
 func NewOperandHandler(client client.Client, scheme *runtime.Scheme, isOpenshiftCluster bool, eventEmitter hcoutil.EventEmitter) *OperandHandler {
 	operands := []Operand{
-		&KvConfigHandler{Client: client, Scheme: scheme},
-		&KvPriorityClassHandler{Client: client, Scheme: scheme},
-		&KubevirtHandler{Client: client, Scheme: scheme},
-		&CdiHandler{Client: client, Scheme: scheme},
-		&CnaHandler{Client: client, Scheme: scheme},
-		&VmImportHandler{Client: client, Scheme: scheme},
-		&IMSConfigHandler{Client: client, Scheme: scheme},
+		&kvConfigHandler{Client: client, Scheme: scheme},
+		&kvPriorityClassHandler{Client: client, Scheme: scheme},
+		&kubevirtHandler{Client: client, Scheme: scheme},
+		&cdiHandler{Client: client, Scheme: scheme},
+		&cnaHandler{Client: client, Scheme: scheme},
+		&vmImportHandler{Client: client, Scheme: scheme},
+		&imsConfigHandler{Client: client, Scheme: scheme},
 	}
 
 	if isOpenshiftCluster {
 		operands = append(operands, []Operand{
-			NewCommonTemplateBundleHandler(client, scheme),
-			NewNodeLabellerBundleHandler(client, scheme),
-			NewTemplateValidatorHandler(client, scheme),
-			NewMetricsAggregationHandler(client, scheme),
+			newCommonTemplateBundleHandler(client, scheme),
+			newNodeLabellerBundleHandler(client, scheme),
+			newTemplateValidatorHandler(client, scheme),
+			newMetricsAggregationHandler(client, scheme),
 		}...)
 	}
 
