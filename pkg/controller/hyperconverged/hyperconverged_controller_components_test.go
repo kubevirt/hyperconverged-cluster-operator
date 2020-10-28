@@ -125,7 +125,8 @@ var _ = Describe("HyperConverged Components", func() {
 		var req *hcoRequest
 
 		updatableKeys := [...]string{virtconfig.SmbiosConfigKey, virtconfig.MachineTypeKey, virtconfig.SELinuxLauncherTypeKey, virtconfig.FeatureGatesKey}
-		unupdatableKeys := [...]string{virtconfig.MigrationsConfigKey, virtconfig.NetworkInterfaceKey}
+		removeKeys := [...]string{virtconfig.MigrationsConfigKey}
+		unupdatableKeys := [...]string{virtconfig.NetworkInterfaceKey}
 
 		BeforeEach(func() {
 			hco = newHco()
@@ -181,8 +182,9 @@ var _ = Describe("HyperConverged Components", func() {
 			outdatedResource.Data[virtconfig.MachineTypeKey] = "old-machinetype-value-that-we-have-to-update"
 			outdatedResource.Data[virtconfig.SELinuxLauncherTypeKey] = "old-selinuxlauncher-value-that-we-have-to-update"
 			outdatedResource.Data[virtconfig.FeatureGatesKey] = "old-featuregates-value-that-we-have-to-update"
+			// value that we should remove if configured
+			outdatedResource.Data[virtconfig.MigrationsConfigKey] = "old-migrationsconfig-value-that-we-should-remove"
 			// values we should preserve
-			outdatedResource.Data[virtconfig.MigrationsConfigKey] = "old-migrationsconfig-value-that-we-should-preserve"
 			outdatedResource.Data[virtconfig.NetworkInterfaceKey] = "old-defaultnetworkinterface-value-that-we-should-preserve"
 
 			cl := initClient([]runtime.Object{hco, outdatedResource})
@@ -208,6 +210,11 @@ var _ = Describe("HyperConverged Components", func() {
 			for _, k := range unupdatableKeys {
 				Expect(foundResource.Data[k]).To(Equal(outdatedResource.Data[k]))
 				Expect(foundResource.Data[k]).To(Not(Equal(expectedResource.Data[k])))
+			}
+			for _, k := range removeKeys {
+				Expect(outdatedResource.Data).To(HaveKey(k))
+				Expect(expectedResource.Data).To(Not(HaveKey(k)))
+				Expect(foundResource.Data).To(Not(HaveKey(k)))
 			}
 		})
 
