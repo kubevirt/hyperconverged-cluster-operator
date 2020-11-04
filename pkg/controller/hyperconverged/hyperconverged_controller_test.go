@@ -1217,5 +1217,84 @@ var _ = Describe("HyperconvergedController", func() {
 
 			})
 		})
+
+		Context("Detection of a tainted configuration", func() {
+
+			It("Raises a TaintedConfiguration condition upon detection of such configuration", func() {
+				hco := commonTestUtils.NewHco()
+				hco.ObjectMeta.Annotations = map[string]string{
+					JSONPatchKVAnnotationName: `
+						[
+							{
+								"op": "add",
+								"path": "/configuration/migrations",
+								"value": '{"allowPostCopy": "true"}'
+							}
+						]`,
+				}
+
+				cl := commonTestUtils.InitClient([]runtime.Object{hco})
+				r := initReconciler(cl)
+
+				// Do the reconcile
+				res, err := r.Reconcile(request)
+				Expect(err).To(BeNil())
+				Expect(res).Should(Equal(reconcile.Result{Requeue: true}))
+
+				// Get the HCO
+				foundResource := &hcov1beta1.HyperConverged{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
+						foundResource),
+				).To(BeNil())
+
+				// Check conditions
+				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+					Type:    hcov1beta1.ConditionTaintedConfiguration,
+					Status:  corev1.ConditionTrue,
+					Reason:  taintedConfigurationReason,
+					Message: taintedConfigurationMessage,
+				})))
+			})
+
+			It("Removes the TaintedConfiguration condition upon removal of such configuration", func() {
+				hco := commonTestUtils.NewHco()
+				hco.Status.Conditions = append(hco.Status.Conditions, conditionsv1.Condition{
+					Type:    hcov1beta1.ConditionTaintedConfiguration,
+					Status:  corev1.ConditionTrue,
+					Reason:  taintedConfigurationReason,
+					Message: taintedConfigurationMessage,
+				})
+
+				cl := commonTestUtils.InitClient([]runtime.Object{hco})
+				r := initReconciler(cl)
+
+				// Do the reconcile
+				res, err := r.Reconcile(request)
+				Expect(err).To(BeNil())
+
+				// Expecting "Requeue: false" since the conditions aren't empty
+				Expect(res).Should(Equal(reconcile.Result{Requeue: false}))
+
+				// Get the HCO
+				foundResource := &hcov1beta1.HyperConverged{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
+						foundResource),
+				).To(BeNil())
+
+				// Check conditions
+				// Check conditions
+				Expect(foundResource.Status.Conditions).To(Not(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+					Type:    hcov1beta1.ConditionTaintedConfiguration,
+					Status:  corev1.ConditionTrue,
+					Reason:  taintedConfigurationReason,
+					Message: taintedConfigurationMessage,
+				}))))
+			})
+
+		})
 	})
 })
