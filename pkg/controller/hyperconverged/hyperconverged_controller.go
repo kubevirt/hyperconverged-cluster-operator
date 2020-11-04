@@ -54,9 +54,23 @@ const (
 	invalidRequestMessageFormat = "Request does not match expected name (%v) and namespace (%v)"
 	commonDegradedReason        = "HCODegraded"
 	commonProgressingReason     = "HCOProgressing"
+	taintedConfigurationReason  = "UnsupportedFeatureAnnotation"
+	taintedConfigurationMessage = "Unsupported feature was activated via an HCO annotation"
 
 	hcoVersionName = "operator"
+
+	JSONPatchKVAnnotationName   = "kubevirt.kubevirt.io/jsonpatch"
+	JSONPatchCDIAnnotationName  = "containerizeddataimporter.kubevirt.io/jsonpatch"
+	JSONPatchCNAOAnnotationName = "networkaddonsconfigs.kubevirt.io/jsonpatch"
 )
+
+// Annotations used to patch operand CRs with unsupported/unofficial/hidden features.
+// The presence of any of these annotations raises the hcov1beta1.ConditionTaintedConfiguration condition.
+var JSONPatchAnnotationNames = []string{
+	JSONPatchKVAnnotationName,
+	JSONPatchCDIAnnotationName,
+	JSONPatchCNAOAnnotationName,
+}
 
 // Add creates a new HyperConverged Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -265,6 +279,12 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 		if contains(req.Instance.ObjectMeta.Finalizers, FinalizerName) {
 			return r.ensureHcoDeleted(req)
 		}
+	}
+
+	// Detect a "TaintedConfiguration" state, and raise a corresponding event
+	err = r.detectTaintedConfiguration(req)
+	if err != nil {
+		req.Logger.Error(err, "Failed to detect tainted configuration state")
 	}
 
 	// If the current version is not updated in CR ,then we're updating. This is also works when updating from
@@ -658,6 +678,17 @@ func (r *ReconcileHyperConverged) updateConditions(req *common.HcoRequest) error
 		conditionsv1.SetStatusCondition(&req.Instance.Status.Conditions, cond)
 	}
 
+	for _, condType := range common.HcoHiddenConditionTypes {
+		cond, found := req.Conditions[condType]
+		if found {
+			conditionsv1.SetStatusCondition(&req.Instance.Status.Conditions, cond)
+		} else {
+			// hidden conditions are removed from
+			// the HCO CR, unless explicitly set.
+			conditionsv1.RemoveStatusCondition(&req.Instance.Status.Conditions, condType)
+		}
+	}
+
 	req.StatusDirty = true
 	return nil
 }
@@ -670,6 +701,36 @@ func (r *ReconcileHyperConverged) setLabels(req *common.HcoRequest) {
 		req.Instance.ObjectMeta.Labels[hcoutil.AppLabel] = req.Instance.Name
 		req.Dirty = true
 	}
+}
+
+func (r *ReconcileHyperConverged) detectTaintedConfiguration(req *common.HcoRequest) error {
+	tainted := false
+
+	for _, jpa := range JSONPatchAnnotationNames {
+		_, exists := req.Instance.ObjectMeta.Annotations[jpa]
+		if exists {
+			tainted = true
+			break
+		}
+	}
+
+	if tainted {
+		// Only log at "first occurrence" of detection
+		if !conditionsv1.IsStatusConditionTrue(req.Instance.Status.Conditions, hcov1beta1.ConditionTaintedConfiguration) {
+			req.Logger.Info("Detected tainted configuration state for HCO")
+		}
+
+		req.Conditions.SetStatusCondition(conditionsv1.Condition{
+			Type:    hcov1beta1.ConditionTaintedConfiguration,
+			Status:  corev1.ConditionTrue,
+			Reason:  taintedConfigurationReason,
+			Message: taintedConfigurationMessage,
+		})
+
+		return r.updateConditions(req)
+	}
+
+	return nil
 }
 
 // getHyperconverged returns the name/namespace of the HyperConverged resource
