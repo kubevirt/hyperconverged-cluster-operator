@@ -58,18 +58,14 @@ const (
 	taintedConfigurationMessage = "Unsupported feature was activated via an HCO annotation"
 
 	hcoVersionName = "operator"
-
-	JSONPatchKVAnnotationName   = "kubevirt.kubevirt.io/jsonpatch"
-	JSONPatchCDIAnnotationName  = "containerizeddataimporter.kubevirt.io/jsonpatch"
-	JSONPatchCNAOAnnotationName = "networkaddonsconfigs.kubevirt.io/jsonpatch"
 )
 
 // Annotations used to patch operand CRs with unsupported/unofficial/hidden features.
 // The presence of any of these annotations raises the hcov1beta1.ConditionTaintedConfiguration condition.
 var JSONPatchAnnotationNames = []string{
-	JSONPatchKVAnnotationName,
-	JSONPatchCDIAnnotationName,
-	JSONPatchCNAOAnnotationName,
+	common.JSONPatchKVAnnotationName,
+	common.JSONPatchCDIAnnotationName,
+	common.JSONPatchCNAOAnnotationName,
 }
 
 // Add creates a new HyperConverged Controller and adds it to the Manager. The Manager will set fields on the Controller
