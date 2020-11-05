@@ -13,12 +13,6 @@ var (
 		conditionsv1.ConditionDegraded,
 		conditionsv1.ConditionUpgradeable,
 	}
-
-	// These are condition types that are only visible when their value is "abnormal"
-	// (i.e., 'True' for negative-polarity conditions, and 'False' for positive-polarity conditions).
-	HcoHiddenConditionTypes = []conditionsv1.ConditionType{
-		hcov1beta1.ConditionTaintedConfiguration,
-	}
 )
 
 type HcoConditions map[conditionsv1.ConditionType]conditionsv1.Condition

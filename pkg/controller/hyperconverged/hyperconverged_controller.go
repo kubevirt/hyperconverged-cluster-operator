@@ -281,12 +281,6 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 		}
 	}
 
-	// Detect a "TaintedConfiguration" state, and raise a corresponding event
-	err = r.detectTaintedConfiguration(req)
-	if err != nil {
-		req.Logger.Error(err, "Failed to detect tainted configuration state")
-	}
-
 	// If the current version is not updated in CR ,then we're updating. This is also works when updating from
 	// an old version, since Status.Versions will be empty.
 	knownHcoVersion, _ := req.Instance.Status.GetVersion(hcoVersionName)
@@ -678,16 +672,8 @@ func (r *ReconcileHyperConverged) updateConditions(req *common.HcoRequest) error
 		conditionsv1.SetStatusCondition(&req.Instance.Status.Conditions, cond)
 	}
 
-	for _, condType := range common.HcoHiddenConditionTypes {
-		cond, found := req.Conditions[condType]
-		if found {
-			conditionsv1.SetStatusCondition(&req.Instance.Status.Conditions, cond)
-		} else {
-			// hidden conditions are removed from
-			// the HCO CR, unless explicitly set.
-			conditionsv1.RemoveStatusCondition(&req.Instance.Status.Conditions, condType)
-		}
-	}
+	// Detect a "TaintedConfiguration" state, and raise a corresponding event
+	r.detectTaintedConfiguration(req)
 
 	req.StatusDirty = true
 	return nil
@@ -703,9 +689,13 @@ func (r *ReconcileHyperConverged) setLabels(req *common.HcoRequest) {
 	}
 }
 
-func (r *ReconcileHyperConverged) detectTaintedConfiguration(req *common.HcoRequest) error {
-	tainted := false
+func (r *ReconcileHyperConverged) detectTaintedConfiguration(req *common.HcoRequest) {
+	conditionExists := conditionsv1.IsStatusConditionTrue(req.Instance.Status.Conditions,
+		hcov1beta1.ConditionTaintedConfiguration)
 
+	// A tainted configuration state is indicated by the
+	// presence of at least one of the JSON Patch annotations
+	tainted := false
 	for _, jpa := range JSONPatchAnnotationNames {
 		_, exists := req.Instance.ObjectMeta.Annotations[jpa]
 		if exists {
@@ -715,22 +705,29 @@ func (r *ReconcileHyperConverged) detectTaintedConfiguration(req *common.HcoRequ
 	}
 
 	if tainted {
-		// Only log at "first occurrence" of detection
-		if !conditionsv1.IsStatusConditionTrue(req.Instance.Status.Conditions, hcov1beta1.ConditionTaintedConfiguration) {
-			req.Logger.Info("Detected tainted configuration state for HCO")
-		}
-
-		req.Conditions.SetStatusCondition(conditionsv1.Condition{
+		conditionsv1.SetStatusCondition(&req.Instance.Status.Conditions, conditionsv1.Condition{
 			Type:    hcov1beta1.ConditionTaintedConfiguration,
 			Status:  corev1.ConditionTrue,
 			Reason:  taintedConfigurationReason,
 			Message: taintedConfigurationMessage,
 		})
 
-		return r.updateConditions(req)
-	}
+		if !conditionExists {
+			// Only log at "first occurrence" of detection
+			req.Logger.Info("Detected tainted configuration state for HCO")
+			req.StatusDirty = true
+		}
+	} else { // !tainted
 
-	return nil
+		// For the sake of keeping the JSONPatch backdoor in low profile,
+		// we just remove the condition instead of False'ing it.
+		if conditionExists {
+			conditionsv1.RemoveStatusCondition(&req.Instance.Status.Conditions, hcov1beta1.ConditionTaintedConfiguration)
+
+			req.Logger.Info("Detected untainted configuration state for HCO")
+			req.StatusDirty = true
+		}
+	}
 }
 
 // getHyperconverged returns the name/namespace of the HyperConverged resource
