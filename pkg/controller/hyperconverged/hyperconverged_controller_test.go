@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/commonTestUtils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/operands"
 	"os"
@@ -1223,7 +1224,7 @@ var _ = Describe("HyperconvergedController", func() {
 			It("Raises a TaintedConfiguration condition upon detection of such configuration", func() {
 				hco := commonTestUtils.NewHco()
 				hco.ObjectMeta.Annotations = map[string]string{
-					JSONPatchKVAnnotationName: `
+					common.JSONPatchKVAnnotationName: `
 						[
 							{
 								"op": "add",
