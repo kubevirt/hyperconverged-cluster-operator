@@ -169,7 +169,7 @@ func getBasicDeployment() *BasicExpected {
 	expectedCNA.Status.Conditions = getGenericCompletedConditions()
 	res.cna = expectedCNA
 
-	expectedKVCTB := hco.NewKubeVirtCommonTemplateBundle()
+	expectedKVCTB := operands.NewKubeVirtCommonTemplateBundle(hco)
 	expectedKVCTB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/ctbs/%s", expectedKVCTB.Namespace, expectedKVCTB.Name)
 	expectedKVCTB.Status.Conditions = getGenericCompletedConditions()
 	res.kvCtb = expectedKVCTB

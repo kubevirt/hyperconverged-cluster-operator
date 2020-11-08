@@ -93,7 +93,7 @@ func (h OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		NewKubeVirt(req.Instance),
 		NewCDI(req.Instance),
 		NewNetworkAddons(req.Instance),
-		req.Instance.NewKubeVirtCommonTemplateBundle(),
+		NewKubeVirtCommonTemplateBundle(req.Instance),
 		req.Instance.NewConsoleCLIDownload(),
 		NewVMImportForCR(req.Instance),
 	} {

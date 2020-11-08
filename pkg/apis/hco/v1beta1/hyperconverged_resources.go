@@ -5,7 +5,6 @@ import (
 	"os"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-	sspv1 "github.com/kubevirt/kubevirt-ssp-operator/pkg/apis/kubevirt/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,16 +26,6 @@ func (r *HyperConverged) getLabels() map[string]string {
 
 	return map[string]string{
 		hcoutil.AppLabel: hcoName,
-	}
-}
-
-func (r *HyperConverged) NewKubeVirtCommonTemplateBundle(opts ...string) *sspv1.KubevirtCommonTemplatesBundle {
-	return &sspv1.KubevirtCommonTemplatesBundle{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "common-templates-" + r.Name,
-			Labels:    r.getLabels(),
-			Namespace: r.getNamespace(hcoutil.OpenshiftNamespace, opts),
-		},
 	}
 }
 
