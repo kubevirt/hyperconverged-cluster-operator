@@ -5,8 +5,8 @@ set -x
 hco_namespace=kubevirt-hyperconverged
 
 # Create the namespaces for the HCO
-kubectl create ns ${hco_namespace}
-kubectl config set-context --current --namespace=${hco_namespace}
+kubectl create ns $hco_namespace
+
 # Create additional namespaces needed for HCO components
 namespaces=("openshift")
 for namespace in ${namespaces[@]}; do
