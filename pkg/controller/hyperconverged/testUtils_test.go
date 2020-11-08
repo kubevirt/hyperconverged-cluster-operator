@@ -159,7 +159,7 @@ func getBasicDeployment() *BasicExpected {
 	}
 	res.kv = expectedKV
 
-	expectedCDI := hco.NewCDI()
+	expectedCDI := operands.NewCDI(hco)
 	expectedCDI.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cdis/%s", expectedCDI.Namespace, expectedCDI.Name)
 	expectedCDI.Status.Conditions = getGenericCompletedConditions()
 	res.cdi = expectedCDI

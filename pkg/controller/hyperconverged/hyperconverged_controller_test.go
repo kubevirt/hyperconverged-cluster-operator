@@ -183,7 +183,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedKVStorageRoleBinding.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/rolebindings/%s", expectedKVStorageRoleBinding.Namespace, expectedKVStorageRoleBinding.Name)
 				expectedKV := operands.NewKubeVirt(hco, namespace)
 				expectedKV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/kubevirts/%s", expectedKV.Namespace, expectedKV.Name)
-				expectedCDI := hco.NewCDI()
+				expectedCDI := operands.NewCDI(hco)
 				expectedCDI.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cdis/%s", expectedCDI.Namespace, expectedCDI.Name)
 				expectedCNA := hco.NewNetworkAddons()
 				expectedCNA.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cnas/%s", expectedCNA.Namespace, expectedCNA.Name)
@@ -281,7 +281,7 @@ var _ = Describe("HyperconvergedController", func() {
 						Status: corev1.ConditionFalse,
 					},
 				}
-				expectedCDI := hco.NewCDI()
+				expectedCDI := operands.NewCDI(hco)
 				expectedCDI.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cdis/%s", expectedCDI.Namespace, expectedCDI.Name)
 				expectedCDI.Status.Conditions = []conditionsv1.Condition{
 					{

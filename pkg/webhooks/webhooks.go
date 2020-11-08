@@ -52,7 +52,7 @@ func (wh WebhookHandler) ValidateUpdate(requested *v1beta1.HyperConverged, exist
 		opts := &client.UpdateOptions{DryRun: []string{metav1.DryRunAll}}
 		for _, obj := range []runtime.Object{
 			operands.NewKubeVirt(requested),
-			requested.NewCDI(),
+			operands.NewCDI(requested),
 			// TODO: try to validate with all the components
 		} {
 			if err := wh.updateOperatorCr(ctx, requested, obj, opts); err != nil {
@@ -80,7 +80,7 @@ func (wh WebhookHandler) updateOperatorCr(ctx context.Context, hc *v1beta1.Hyper
 
 	case *cdiv1beta1.CDI:
 		existingCdi := obj
-		required := hc.NewCDI()
+		required := operands.NewCDI(hc)
 		existingCdi.Spec = required.Spec
 	}
 
@@ -100,7 +100,7 @@ func (wh WebhookHandler) ValidateDelete(hc *v1beta1.HyperConverged) error {
 
 	for _, obj := range []runtime.Object{
 		operands.NewKubeVirt(hc),
-		hc.NewCDI(),
+		operands.NewCDI(hc),
 	} {
 		err := hcoutil.EnsureDeleted(ctx, wh.cli, obj, hc.Name, wh.logger, true)
 		if err != nil {

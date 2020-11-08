@@ -14,7 +14,6 @@ import (
 	consolev1 "github.com/openshift/api/console/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	cdiv1beta1 "kubevirt.io/containerized-data-importer/pkg/apis/core/v1beta1"
 )
 
 func (r *HyperConverged) getNamespace(defaultNamespace string, opts []string) string {
@@ -33,30 +32,6 @@ func (r *HyperConverged) getLabels() map[string]string {
 
 	return map[string]string{
 		hcoutil.AppLabel: hcoName,
-	}
-}
-
-func (r *HyperConverged) NewCDI(opts ...string) *cdiv1beta1.CDI {
-	uninstallStrategy := cdiv1beta1.CDIUninstallStrategyBlockUninstallIfWorkloadsExist
-
-	spec := cdiv1beta1.CDISpec{
-		UninstallStrategy: &uninstallStrategy,
-	}
-
-	if r.Spec.Infra.NodePlacement != nil {
-		r.Spec.Infra.NodePlacement.DeepCopyInto(&spec.Infra)
-	}
-	if r.Spec.Workloads.NodePlacement != nil {
-		r.Spec.Workloads.NodePlacement.DeepCopyInto(&spec.Workloads)
-	}
-
-	return &cdiv1beta1.CDI{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "cdi-" + r.Name,
-			Labels:    r.getLabels(),
-			Namespace: r.getNamespace(hcoutil.UndefinedNamespace, opts),
-		},
-		Spec: spec,
 	}
 }
 

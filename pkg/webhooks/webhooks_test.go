@@ -84,7 +84,7 @@ var _ = Describe("webhooks handler", func() {
 		It("should return error if KV CR is missing", func() {
 			hco := &v1beta1.HyperConverged{}
 			// replace the real client with a mock
-			cli := fake.NewFakeClientWithScheme(s, hco, hco.NewCDI())
+			cli := fake.NewFakeClientWithScheme(s, hco, operands.NewCDI(hco))
 			wh := &WebhookHandler{}
 			wh.Init(logger, cli)
 
@@ -116,7 +116,7 @@ var _ = Describe("webhooks handler", func() {
 				},
 			}
 			// replace the real client with a mock
-			c := fake.NewFakeClientWithScheme(s, hco, operands.NewKubeVirt(hco), hco.NewCDI())
+			c := fake.NewFakeClientWithScheme(s, hco, operands.NewKubeVirt(hco), operands.NewCDI(hco))
 			cli := errorClient{c, kvUpdateFailure}
 			wh := &WebhookHandler{}
 			wh.Init(logger, cli)
@@ -166,7 +166,7 @@ var _ = Describe("webhooks handler", func() {
 				},
 			}
 			// replace the real client with a mock
-			c := fake.NewFakeClientWithScheme(s, hco, operands.NewKubeVirt(hco), hco.NewCDI())
+			c := fake.NewFakeClientWithScheme(s, hco, operands.NewKubeVirt(hco), operands.NewCDI(hco))
 			cli := errorClient{c, cdiUpdateFailure}
 			wh := &WebhookHandler{}
 			wh.Init(logger, cli)
@@ -193,7 +193,7 @@ var _ = Describe("webhooks handler", func() {
 				},
 			}
 			// replace the real client with a mock
-			c := fake.NewFakeClientWithScheme(s, hco, operands.NewKubeVirt(hco), hco.NewCDI())
+			c := fake.NewFakeClientWithScheme(s, hco, operands.NewKubeVirt(hco), operands.NewCDI(hco))
 			cli := errorClient{c, noFailure}
 			wh := &WebhookHandler{}
 			wh.Init(logger, cli)
