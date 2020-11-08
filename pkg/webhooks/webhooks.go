@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-logr/logr"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/operands"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -50,7 +51,7 @@ func (wh WebhookHandler) ValidateUpdate(requested *v1beta1.HyperConverged, exist
 
 		opts := &client.UpdateOptions{DryRun: []string{metav1.DryRunAll}}
 		for _, obj := range []runtime.Object{
-			requested.NewKubeVirt(),
+			operands.NewKubeVirt(requested),
 			requested.NewCDI(),
 			// TODO: try to validate with all the components
 		} {
@@ -64,7 +65,7 @@ func (wh WebhookHandler) ValidateUpdate(requested *v1beta1.HyperConverged, exist
 }
 
 // currently only supports KV and CDI
-func (wh WebhookHandler) updateOperatorCr(ctx context.Context, r *v1beta1.HyperConverged, exists runtime.Object, opts *client.UpdateOptions) error {
+func (wh WebhookHandler) updateOperatorCr(ctx context.Context, hc *v1beta1.HyperConverged, exists runtime.Object, opts *client.UpdateOptions) error {
 	err := hcoutil.GetRuntimeObject(ctx, wh.cli, exists, wh.logger)
 	if err != nil {
 		wh.logger.Error(err, "failed to get object from kubernetes", "kind", exists.GetObjectKind())
@@ -74,12 +75,12 @@ func (wh WebhookHandler) updateOperatorCr(ctx context.Context, r *v1beta1.HyperC
 	switch obj := exists.(type) {
 	case *kubevirtv1.KubeVirt:
 		existingKv := obj
-		required := r.NewKubeVirt()
+		required := operands.NewKubeVirt(hc)
 		existingKv.Spec = required.Spec
 
 	case *cdiv1beta1.CDI:
 		existingCdi := obj
-		required := r.NewCDI()
+		required := hc.NewCDI()
 		existingCdi.Spec = required.Spec
 	}
 
@@ -98,7 +99,7 @@ func (wh WebhookHandler) ValidateDelete(hc *v1beta1.HyperConverged) error {
 	ctx := context.TODO()
 
 	for _, obj := range []runtime.Object{
-		hc.NewKubeVirt(),
+		operands.NewKubeVirt(hc),
 		hc.NewCDI(),
 	} {
 		err := hcoutil.EnsureDeleted(ctx, wh.cli, obj, hc.Name, wh.logger, true)

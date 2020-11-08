@@ -141,7 +141,7 @@ func getBasicDeployment() *BasicExpected {
 	expectedKVStorageRoleBinding.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/rolebindings/%s", expectedKVStorageConfig.Namespace, expectedKVStorageConfig.Name)
 	res.kvStorageRoleBinding = expectedKVStorageRoleBinding
 
-	expectedKV := hco.NewKubeVirt(namespace)
+	expectedKV := operands.NewKubeVirt(hco, namespace)
 	expectedKV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/kubevirts/%s", expectedKV.Namespace, expectedKV.Name)
 	expectedKV.Status.Conditions = []kubevirtv1.KubeVirtCondition{
 		{

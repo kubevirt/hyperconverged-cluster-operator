@@ -14,7 +14,6 @@ import (
 	consolev1 "github.com/openshift/api/console/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kubevirtv1 "kubevirt.io/client-go/api/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer/pkg/apis/core/v1beta1"
 )
 
@@ -35,51 +34,6 @@ func (r *HyperConverged) getLabels() map[string]string {
 	return map[string]string{
 		hcoutil.AppLabel: hcoName,
 	}
-}
-
-func (r *HyperConverged) NewKubeVirt(opts ...string) *kubevirtv1.KubeVirt {
-	spec := kubevirtv1.KubeVirtSpec{
-		UninstallStrategy: kubevirtv1.KubeVirtUninstallStrategyBlockUninstallIfWorkloadsExist,
-		Infra:             hcoConfig2KvConfig(r.Spec.Infra),
-		Workloads:         hcoConfig2KvConfig(r.Spec.Workloads),
-	}
-
-	return &kubevirtv1.KubeVirt{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "kubevirt-" + r.Name,
-			Labels:    r.getLabels(),
-			Namespace: r.getNamespace(r.Namespace, opts),
-		},
-		Spec: spec,
-	}
-}
-
-func hcoConfig2KvConfig(hcoConfig HyperConvergedConfig) *kubevirtv1.ComponentConfig {
-	if hcoConfig.NodePlacement != nil {
-		kvConfig := &kubevirtv1.ComponentConfig{}
-		kvConfig.NodePlacement = &kubevirtv1.NodePlacement{}
-
-		if hcoConfig.NodePlacement.Affinity != nil {
-			kvConfig.NodePlacement.Affinity = &corev1.Affinity{}
-			hcoConfig.NodePlacement.Affinity.DeepCopyInto(kvConfig.NodePlacement.Affinity)
-		}
-
-		if hcoConfig.NodePlacement.NodeSelector != nil {
-			kvConfig.NodePlacement.NodeSelector = make(map[string]string)
-			for k, v := range hcoConfig.NodePlacement.NodeSelector {
-				kvConfig.NodePlacement.NodeSelector[k] = v
-			}
-		}
-
-		for _, hcoTolr := range hcoConfig.NodePlacement.Tolerations {
-			kvTolr := corev1.Toleration{}
-			hcoTolr.DeepCopyInto(&kvTolr)
-			kvConfig.NodePlacement.Tolerations = append(kvConfig.NodePlacement.Tolerations, kvTolr)
-		}
-
-		return kvConfig
-	}
-	return nil
 }
 
 func (r *HyperConverged) NewCDI(opts ...string) *cdiv1beta1.CDI {

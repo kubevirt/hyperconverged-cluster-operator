@@ -258,7 +258,7 @@ var _ = Describe("KubeVirt Operand", func() {
 		})
 
 		It("should create if not present", func() {
-			expectedResource := hco.NewKubeVirt(commonTestUtils.Namespace)
+			expectedResource := NewKubeVirt(hco, commonTestUtils.Namespace)
 			cl := commonTestUtils.InitClient([]runtime.Object{})
 			handler := &kubevirtHandler{Client: cl, Scheme: commonTestUtils.GetScheme()}
 			res := handler.Ensure(req)
@@ -277,7 +277,7 @@ var _ = Describe("KubeVirt Operand", func() {
 		})
 
 		It("should find if present", func() {
-			expectedResource := hco.NewKubeVirt(commonTestUtils.Namespace)
+			expectedResource := NewKubeVirt(hco, commonTestUtils.Namespace)
 			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
 			cl := commonTestUtils.InitClient([]runtime.Object{hco, expectedResource})
 			handler := &kubevirtHandler{Client: cl, Scheme: commonTestUtils.GetScheme()}
@@ -313,9 +313,9 @@ var _ = Describe("KubeVirt Operand", func() {
 		})
 
 		It("should set default UninstallStrategy if missing", func() {
-			expectedResource := hco.NewKubeVirt(commonTestUtils.Namespace)
+			expectedResource := NewKubeVirt(hco, commonTestUtils.Namespace)
 			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
-			missingUSResource := hco.NewKubeVirt(commonTestUtils.Namespace)
+			missingUSResource := NewKubeVirt(hco, commonTestUtils.Namespace)
 			missingUSResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", missingUSResource.Namespace, missingUSResource.Name)
 			missingUSResource.Spec.UninstallStrategy = ""
 
@@ -337,7 +337,7 @@ var _ = Describe("KubeVirt Operand", func() {
 		})
 
 		It("should add node placement if missing in KubeVirt", func() {
-			existingResource := hco.NewKubeVirt()
+			existingResource := NewKubeVirt(hco)
 
 			hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
 			hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
@@ -378,7 +378,7 @@ var _ = Describe("KubeVirt Operand", func() {
 			hcoNodePlacement := commonTestUtils.NewHco()
 			hcoNodePlacement.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
 			hcoNodePlacement.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
-			existingResource := hcoNodePlacement.NewKubeVirt()
+			existingResource := NewKubeVirt(hcoNodePlacement)
 
 			cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
 			handler := &kubevirtHandler{Client: cl, Scheme: commonTestUtils.GetScheme()}
@@ -407,7 +407,7 @@ var _ = Describe("KubeVirt Operand", func() {
 		It("should modify node placement according to HCO CR", func() {
 			hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
 			hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
-			existingResource := hco.NewKubeVirt()
+			existingResource := NewKubeVirt(hco)
 
 			// now, modify HCO's node placement
 			seconds3 := int64(3)
@@ -453,7 +453,7 @@ var _ = Describe("KubeVirt Operand", func() {
 		It("should overwrite node placement if directly set on KV CR", func() {
 			hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
 			hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
-			existingResource := hco.NewKubeVirt()
+			existingResource := NewKubeVirt(hco)
 
 			// mock a reconciliation triggered by a change in KV CR
 			req.HCOTriggered = false
@@ -499,7 +499,7 @@ var _ = Describe("KubeVirt Operand", func() {
 		})
 
 		It("should handle conditions", func() {
-			expectedResource := hco.NewKubeVirt(commonTestUtils.Namespace)
+			expectedResource := NewKubeVirt(hco, commonTestUtils.Namespace)
 			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
 			expectedResource.Status.Conditions = []kubevirtv1.KubeVirtCondition{
 				kubevirtv1.KubeVirtCondition{
