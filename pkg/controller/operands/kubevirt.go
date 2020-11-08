@@ -218,7 +218,7 @@ type kvPriorityClassHandler genericOperand
 
 func (kvpc *kvPriorityClassHandler) Ensure(req *common.HcoRequest) *EnsureResult {
 	req.Logger.Info("Reconciling KubeVirt PriorityClass")
-	pc := req.Instance.NewKubeVirtPriorityClass()
+	pc := NewKubeVirtPriorityClass(req.Instance)
 	res := NewEnsureResult(pc)
 	key, err := client.ObjectKeyFromObject(pc)
 	if err != nil {
@@ -267,6 +267,24 @@ func (kvpc *kvPriorityClassHandler) Ensure(req *common.HcoRequest) *EnsureResult
 		return res.Error(err)
 	}
 	return res.SetUpdated()
+}
+
+func NewKubeVirtPriorityClass(hc *hcov1beta1.HyperConverged) *schedulingv1.PriorityClass {
+	return &schedulingv1.PriorityClass{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "scheduling.k8s.io/v1",
+			Kind:       "PriorityClass",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "kubevirt-cluster-critical",
+			Labels: getLabels(hc),
+		},
+		// 1 billion is the highest value we can set
+		// https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass
+		Value:         1000000000,
+		GlobalDefault: false,
+		Description:   "This priority class should be used for KubeVirt core components only.",
+	}
 }
 
 // translateKubeVirtConds translates list of KubeVirt conditions to a list of custom resource

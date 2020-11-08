@@ -37,7 +37,7 @@ var _ = Describe("KubeVirt Operand", func() {
 		})
 
 		It("should create if not present", func() {
-			expectedResource := hco.NewKubeVirtPriorityClass()
+			expectedResource := NewKubeVirtPriorityClass(hco)
 			cl := commonTestUtils.InitClient([]runtime.Object{})
 			handler := &kvPriorityClassHandler{Client: cl, Scheme: commonTestUtils.GetScheme()}
 			res := handler.Ensure(req)
@@ -54,7 +54,7 @@ var _ = Describe("KubeVirt Operand", func() {
 		})
 
 		It("should do nothing if already exists", func() {
-			expectedResource := hco.NewKubeVirtPriorityClass()
+			expectedResource := NewKubeVirtPriorityClass(hco)
 			cl := commonTestUtils.InitClient([]runtime.Object{expectedResource})
 			handler := &kvPriorityClassHandler{Client: cl, Scheme: commonTestUtils.GetScheme()}
 			res := handler.Ensure(req)
@@ -73,7 +73,7 @@ var _ = Describe("KubeVirt Operand", func() {
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).To(BeNil())
 
-			expectedResource := hco.NewKubeVirtPriorityClass()
+			expectedResource := NewKubeVirtPriorityClass(hco)
 			key, err := client.ObjectKeyFromObject(expectedResource)
 			Expect(err).ToNot(HaveOccurred())
 			foundResource := &schedulingv1.PriorityClass{}

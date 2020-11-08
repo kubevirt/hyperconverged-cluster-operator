@@ -123,7 +123,7 @@ func getBasicDeployment() *BasicExpected {
 	}
 	res.hco = hco
 
-	res.pc = hco.NewKubeVirtPriorityClass()
+	res.pc = operands.NewKubeVirtPriorityClass(hco)
 	// These are all of the objects that we expect to "find" in the client because
 	// we already created them in a previous reconcile.
 	expectedKVConfig := operands.NewKubeVirtConfigForCR(hco, namespace)

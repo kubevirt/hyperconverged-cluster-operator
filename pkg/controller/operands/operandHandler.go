@@ -94,7 +94,7 @@ func (h OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		NewCDI(req.Instance),
 		NewNetworkAddons(req.Instance),
 		NewKubeVirtCommonTemplateBundle(req.Instance),
-		req.Instance.NewConsoleCLIDownload(),
+		NewConsoleCLIDownload(req.Instance),
 		NewVMImportForCR(req.Instance),
 	} {
 		err := hcoutil.EnsureDeleted(req.Ctx, h.client, obj, req.Instance.Name, req.Logger, false)
