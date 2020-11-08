@@ -164,7 +164,7 @@ func getBasicDeployment() *BasicExpected {
 	expectedCDI.Status.Conditions = getGenericCompletedConditions()
 	res.cdi = expectedCDI
 
-	expectedCNA := hco.NewNetworkAddons()
+	expectedCNA := operands.NewNetworkAddons(hco)
 	expectedCNA.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cnas/%s", expectedCNA.Namespace, expectedCNA.Name)
 	expectedCNA.Status.Conditions = getGenericCompletedConditions()
 	res.cna = expectedCNA

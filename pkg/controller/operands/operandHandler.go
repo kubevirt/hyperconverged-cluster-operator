@@ -92,7 +92,7 @@ func (h OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 	for _, obj := range []runtime.Object{
 		NewKubeVirt(req.Instance),
 		NewCDI(req.Instance),
-		req.Instance.NewNetworkAddons(),
+		NewNetworkAddons(req.Instance),
 		req.Instance.NewKubeVirtCommonTemplateBundle(),
 		req.Instance.NewConsoleCLIDownload(),
 		NewVMImportForCR(req.Instance),

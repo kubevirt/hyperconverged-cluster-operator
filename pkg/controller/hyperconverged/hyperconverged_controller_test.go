@@ -185,7 +185,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedKV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/kubevirts/%s", expectedKV.Namespace, expectedKV.Name)
 				expectedCDI := operands.NewCDI(hco)
 				expectedCDI.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cdis/%s", expectedCDI.Namespace, expectedCDI.Name)
-				expectedCNA := hco.NewNetworkAddons()
+				expectedCNA := operands.NewNetworkAddons(hco)
 				expectedCNA.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cnas/%s", expectedCNA.Namespace, expectedCNA.Name)
 				expectedKVCTB := hco.NewKubeVirtCommonTemplateBundle()
 				expectedKVCTB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/ctbs/%s", expectedKVCTB.Namespace, expectedKVCTB.Name)
@@ -297,7 +297,7 @@ var _ = Describe("HyperconvergedController", func() {
 						Status: corev1.ConditionFalse,
 					},
 				}
-				expectedCNA := hco.NewNetworkAddons()
+				expectedCNA := operands.NewNetworkAddons(hco)
 				expectedCNA.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cnas/%s", expectedCNA.Namespace, expectedCNA.Name)
 				expectedCNA.Status.Conditions = []conditionsv1.Condition{
 					{

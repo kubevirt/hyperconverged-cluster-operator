@@ -2,13 +2,8 @@ package v1beta1
 
 import (
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
-	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/pkg/sdk/api"
 	"os"
 
-	networkaddonsshared "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/shared"
-	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
-	networkaddonsnames "github.com/kubevirt/cluster-network-addons-operator/pkg/names"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	sspv1 "github.com/kubevirt/kubevirt-ssp-operator/pkg/apis/kubevirt/v1"
 	consolev1 "github.com/openshift/api/console/v1"
@@ -33,67 +28,6 @@ func (r *HyperConverged) getLabels() map[string]string {
 	return map[string]string{
 		hcoutil.AppLabel: hcoName,
 	}
-}
-
-func (r *HyperConverged) NewNetworkAddons(opts ...string) *networkaddonsv1.NetworkAddonsConfig {
-
-	cnaoSpec := networkaddonsshared.NetworkAddonsConfigSpec{
-		Multus:      &networkaddonsshared.Multus{},
-		LinuxBridge: &networkaddonsshared.LinuxBridge{},
-		Ovs:         &networkaddonsshared.Ovs{},
-		NMState:     &networkaddonsshared.NMState{},
-		KubeMacPool: &networkaddonsshared.KubeMacPool{},
-	}
-
-	cnaoInfra := hcoConfig2CnaoPlacement(r.Spec.Infra.NodePlacement)
-	cnaoWorkloads := hcoConfig2CnaoPlacement(r.Spec.Workloads.NodePlacement)
-	if cnaoInfra != nil || cnaoWorkloads != nil {
-		cnaoSpec.PlacementConfiguration = &networkaddonsshared.PlacementConfiguration{
-			Infra:     cnaoInfra,
-			Workloads: cnaoWorkloads,
-		}
-	}
-
-	return &networkaddonsv1.NetworkAddonsConfig{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      networkaddonsnames.OPERATOR_CONFIG,
-			Labels:    r.getLabels(),
-			Namespace: r.getNamespace(hcoutil.UndefinedNamespace, opts),
-		},
-		Spec: cnaoSpec,
-	}
-}
-
-func hcoConfig2CnaoPlacement(hcoConf *sdkapi.NodePlacement) *networkaddonsshared.Placement {
-	if hcoConf == nil {
-		return nil
-	}
-	empty := true
-	cnaoPlacement := &networkaddonsshared.Placement{}
-	if hcoConf.Affinity != nil {
-		empty = false
-		hcoConf.Affinity.DeepCopyInto(&cnaoPlacement.Affinity)
-	}
-
-	for _, hcoTol := range hcoConf.Tolerations {
-		empty = false
-		cnaoTol := corev1.Toleration{}
-		hcoTol.DeepCopyInto(&cnaoTol)
-		cnaoPlacement.Tolerations = append(cnaoPlacement.Tolerations, cnaoTol)
-	}
-
-	if len(hcoConf.NodeSelector) > 0 {
-		empty = false
-		cnaoPlacement.NodeSelector = make(map[string]string)
-		for k, v := range hcoConf.NodeSelector {
-			cnaoPlacement.NodeSelector[k] = v
-		}
-	}
-
-	if empty {
-		return nil
-	}
-	return cnaoPlacement
 }
 
 func (r *HyperConverged) NewKubeVirtCommonTemplateBundle(opts ...string) *sspv1.KubevirtCommonTemplatesBundle {
