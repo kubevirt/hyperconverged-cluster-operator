@@ -64,9 +64,9 @@ func (h *cnaHandler) updateCrImp(req *common.HcoRequest, exists runtime.Object, 
 
 	if !reflect.DeepEqual(found.Spec, networkAddons.Spec) && !req.UpgradeMode {
 		if req.HCOTriggered {
-			req.Logger.Info("Updating existing CDI's Spec to new opinionated values")
+			req.Logger.Info("Updating existing Network Addons's Spec to new opinionated values")
 		} else {
-			req.Logger.Info("Reconciling an externally updated CDI's Spec to its opinionated values")
+			req.Logger.Info("Reconciling an externally updated Network Addons's Spec to its opinionated values")
 		}
 		networkAddons.Spec.DeepCopyInto(&found.Spec)
 		err := h.Client.Update(req.Ctx, found)
