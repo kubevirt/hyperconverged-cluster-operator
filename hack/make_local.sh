@@ -9,6 +9,7 @@ hco_namespace=kubevirt-hyperconverged
 set -o allexport
 source hack/config
 set +o allexport
+export WEBHOOK_MODE=false
 
 mkdir -p "${LOCAL_DIR}"
 ./hack/make_local.py "${LOCAL_DIR}" "${FORMAT}"
