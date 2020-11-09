@@ -125,6 +125,16 @@ spec:
         path: version
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
+      - description: nodePlacement APIs are temporary hidden
+        displayName: nodePlacement APIs are temporary hidden
+        path: infra
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
+      - description: nodePlacement APIs are temporary hidden
+        displayName: nodePlacement APIs are temporary hidden
+        path: workloads
+        x-descriptors:
+        - urn:alm:descriptor:com.tectonic.ui:hidden
       version: v1beta1
     - description: V2V Vmware
       displayName: V2V Vmware

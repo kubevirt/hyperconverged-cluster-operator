@@ -1115,6 +1115,26 @@ func GetCSVBase(name, namespace, displayName, description, image, replaces strin
 									"urn:alm:descriptor:com.tectonic.ui:hidden",
 								},
 							},
+							// TODO: remove this only once nodePlacement APIs are mature
+							// enough to be shown on the UI
+							{
+								DisplayName: "nodePlacement APIs are temporary hidden",
+								Description: "nodePlacement APIs are temporary hidden",
+								Path:        "infra",
+								XDescriptors: []string{
+									"urn:alm:descriptor:com.tectonic.ui:hidden",
+								},
+							},
+							// TODO: remove this only once nodePlacement APIs are mature
+							// enough to be shown on the UI
+							{
+								DisplayName: "nodePlacement APIs are temporary hidden",
+								Description: "nodePlacement APIs are temporary hidden",
+								Path:        "workloads",
+								XDescriptors: []string{
+									"urn:alm:descriptor:com.tectonic.ui:hidden",
+								},
+							},
 						},
 						StatusDescriptors: []csvv1alpha1.StatusDescriptor{},
 					},
