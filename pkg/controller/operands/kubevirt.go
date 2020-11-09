@@ -19,7 +19,6 @@ import (
 	"os"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
@@ -60,7 +59,7 @@ func (h *kubevirtHandler) updateCrImp(req *common.HcoRequest, exists runtime.Obj
 	virt, ok1 := required.(*kubevirtv1.KubeVirt)
 	found, ok2 := exists.(*kubevirtv1.KubeVirt)
 	if !ok1 || !ok2 {
-		return false, false, errors.New("can't convert to CDI")
+		return false, false, errors.New("can't convert to KubeVirt")
 	}
 	if !reflect.DeepEqual(found.Spec, virt.Spec) {
 		if req.HCOTriggered {
@@ -130,43 +129,35 @@ func hcoConfig2KvConfig(hcoConfig hcov1beta1.HyperConvergedConfig) *kubevirtv1.C
 
 type kvConfigHandler genericOperand
 
-func (kvc *kvConfigHandler) Ensure(req *common.HcoRequest) *EnsureResult {
-	kubevirtConfig := NewKubeVirtConfigForCR(req.Instance, req.Namespace)
-	res := NewEnsureResult(kubevirtConfig)
-	err := controllerutil.SetControllerReference(req.Instance, kubevirtConfig, kvc.Scheme)
-	if err != nil {
-		return res.Error(err)
+func newKvConfigHandler(Client client.Client, Scheme *runtime.Scheme) *kvConfigHandler {
+	handler := &kvConfigHandler{
+		Client:              Client,
+		Scheme:              Scheme,
+		crType:              "KubeVirt Config",
+		removeExistingOwner: false,
+		getFullCr: func(hc *hcov1beta1.HyperConverged) runtime.Object {
+			return NewKubeVirtConfigForCR(hc, hc.Namespace)
+		},
+		getEmptyCr: func() runtime.Object { return &corev1.ConfigMap{} },
+		getObjectMeta: func(cr runtime.Object) *metav1.ObjectMeta {
+			return &cr.(*corev1.ConfigMap).ObjectMeta
+		},
 	}
 
-	key, err := client.ObjectKeyFromObject(kubevirtConfig)
-	if err != nil {
-		req.Logger.Error(err, "Failed to get object key for kubevirt config")
-	}
-	res.SetName(key.Name)
+	handler.updateCr = handler.updateCrImp
 
-	found := &corev1.ConfigMap{}
-	err = kvc.Client.Get(req.Ctx, key, found)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			req.Logger.Info("Creating kubevirt config")
-			err = kvc.Client.Create(req.Ctx, kubevirtConfig)
-			if err == nil {
-				return res.SetCreated()
-			}
-		}
-		return res.Error(err)
-	}
+	return handler
 
-	req.Logger.Info("KubeVirt config already exists", "KubeVirtConfig.Namespace", found.Namespace, "KubeVirtConfig.Name", found.Name)
-	// Add it to the list of RelatedObjects if found
-	objectRef, err := reference.GetReference(kvc.Scheme, found)
-	if err != nil {
-		return res.Error(err)
+}
+
+func (h *kvConfigHandler) updateCrImp(req *common.HcoRequest, exists runtime.Object, required runtime.Object) (bool, bool, error) {
+	kubevirtConfig, ok1 := required.(*corev1.ConfigMap)
+	found, ok2 := exists.(*corev1.ConfigMap)
+	if !ok1 || !ok2 {
+		return false, false, errors.New("can't convert to ConfigMap")
 	}
-	objectreferencesv1.SetObjectReference(&req.Instance.Status.RelatedObjects, *objectRef)
 
 	if req.UpgradeMode {
-
 		changed := false
 		// only virtconfig.SmbiosConfigKey, virtconfig.MachineTypeKey, virtconfig.SELinuxLauncherTypeKey,
 		// virtconfig.FeatureGatesKey and virtconfig.UseEmulationKey are going to be manipulated
@@ -198,15 +189,25 @@ func (kvc *kvConfigHandler) Ensure(req *common.HcoRequest) *EnsureResult {
 		}
 
 		if changed {
-			err = kvc.Client.Update(req.Ctx, found)
+			err := h.Client.Update(req.Ctx, found)
 			if err != nil {
 				req.Logger.Error(err, "Failed updating the kubevirt config map")
-				return res.Error(err)
+				return false, false, err
 			}
+			return true, false, nil
 		}
 	}
+	return false, false, nil
+}
 
-	return res.SetUpgradeDone(req.ComponentUpgradeInProgress)
+func (h *kvConfigHandler) Ensure(req *common.HcoRequest) *EnsureResult {
+	gh := (*genericOperand)(h)
+	res := gh.ensure(req)
+	if res.Err == nil {
+		res.SetUpgradeDone(req.ComponentUpgradeInProgress)
+	}
+
+	return res
 }
 
 type kvPriorityClassHandler genericOperand

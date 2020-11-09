@@ -32,7 +32,7 @@ type OperandHandler struct {
 
 func NewOperandHandler(client client.Client, scheme *runtime.Scheme, isOpenshiftCluster bool, eventEmitter hcoutil.EventEmitter) *OperandHandler {
 	operands := []Operand{
-		&kvConfigHandler{Client: client, Scheme: scheme},
+		newKvConfigHandler(client, scheme),
 		&kvPriorityClassHandler{Client: client, Scheme: scheme},
 		newKubevirtHandler(client, scheme),
 		newCdiHandler(client, scheme),

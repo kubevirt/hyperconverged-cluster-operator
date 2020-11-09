@@ -132,7 +132,7 @@ var _ = Describe("KubeVirt Operand", func() {
 		It("should create if not present", func() {
 			expectedResource := NewKubeVirtConfigForCR(req.Instance, commonTestUtils.Namespace)
 			cl := commonTestUtils.InitClient([]runtime.Object{})
-			handler := &kvConfigHandler{Client: cl, Scheme: commonTestUtils.GetScheme()}
+			handler := newKvConfigHandler(cl, commonTestUtils.GetScheme())
 			res := handler.Ensure(req)
 
 			Expect(res.UpgradeDone).To(BeFalse())
@@ -153,7 +153,7 @@ var _ = Describe("KubeVirt Operand", func() {
 			expectedResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
 			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
 			cl := commonTestUtils.InitClient([]runtime.Object{hco, expectedResource})
-			handler := &kvConfigHandler{Client: cl, Scheme: commonTestUtils.GetScheme()}
+			handler := newKvConfigHandler(cl, commonTestUtils.GetScheme())
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).To(BeNil())
@@ -182,7 +182,7 @@ var _ = Describe("KubeVirt Operand", func() {
 			outdatedResource.Data[virtconfig.NetworkInterfaceKey] = "old-defaultnetworkinterface-value-that-we-should-preserve"
 
 			cl := commonTestUtils.InitClient([]runtime.Object{hco, outdatedResource})
-			handler := &kvConfigHandler{Client: cl, Scheme: commonTestUtils.GetScheme()}
+			handler := newKvConfigHandler(cl, commonTestUtils.GetScheme())
 
 			// force upgrade mode
 			req.UpgradeMode = true
@@ -227,7 +227,7 @@ var _ = Describe("KubeVirt Operand", func() {
 			outdatedResource.Data[virtconfig.DefaultNetworkInterface] = "old-defaultnetworkinterface-value-that-we-should-preserve"
 
 			cl := commonTestUtils.InitClient([]runtime.Object{hco, outdatedResource})
-			handler := &kvConfigHandler{Client: cl, Scheme: commonTestUtils.GetScheme()}
+			handler := newKvConfigHandler(cl, commonTestUtils.GetScheme())
 
 			// ensure that we are not in upgrade mode
 			req.UpgradeMode = false
