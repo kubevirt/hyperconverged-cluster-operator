@@ -39,7 +39,7 @@ var _ = Describe("KubeVirt Operand", func() {
 		It("should create if not present", func() {
 			expectedResource := NewKubeVirtPriorityClass(hco)
 			cl := commonTestUtils.InitClient([]runtime.Object{})
-			handler := &kvPriorityClassHandler{Client: cl, Scheme: commonTestUtils.GetScheme()}
+			handler := newKvPriorityClassHandler(cl, commonTestUtils.GetScheme())
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).To(BeNil())
@@ -56,7 +56,7 @@ var _ = Describe("KubeVirt Operand", func() {
 		It("should do nothing if already exists", func() {
 			expectedResource := NewKubeVirtPriorityClass(hco)
 			cl := commonTestUtils.InitClient([]runtime.Object{expectedResource})
-			handler := &kvPriorityClassHandler{Client: cl, Scheme: commonTestUtils.GetScheme()}
+			handler := newKvPriorityClassHandler(cl, commonTestUtils.GetScheme())
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).To(BeNil())
@@ -68,7 +68,7 @@ var _ = Describe("KubeVirt Operand", func() {
 
 		DescribeTable("should update if something changed", func(modifiedResource *schedulingv1.PriorityClass) {
 			cl := commonTestUtils.InitClient([]runtime.Object{modifiedResource})
-			handler := &kvPriorityClassHandler{Client: cl, Scheme: commonTestUtils.GetScheme()}
+			handler := newKvPriorityClassHandler(cl, commonTestUtils.GetScheme())
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).To(BeNil())
