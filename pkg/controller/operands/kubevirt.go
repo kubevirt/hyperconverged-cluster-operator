@@ -221,6 +221,12 @@ func (h *kvPriorityClassHandler) updateCrImp(req *common.HcoRequest, exists runt
 		return false, false, nil
 	}
 
+	if req.HCOTriggered {
+		req.Logger.Info("Updating existing KubeVirt's Spec to new opinionated values")
+	} else {
+		req.Logger.Info("Reconciling an externally updated KubeVirt's Spec to its opinionated values")
+	}
+
 	// something was changed but since we can't patch a priority class object, we remove it
 	err := h.Client.Delete(req.Ctx, found, &client.DeleteOptions{})
 	if err != nil {
@@ -233,7 +239,7 @@ func (h *kvPriorityClassHandler) updateCrImp(req *common.HcoRequest, exists runt
 		return false, false, err
 	}
 
-	return true, false, nil
+	return true, !req.HCOTriggered, nil
 }
 
 func (h *kvPriorityClassHandler) Ensure(req *common.HcoRequest) *EnsureResult {
