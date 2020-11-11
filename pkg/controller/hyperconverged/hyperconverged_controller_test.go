@@ -378,7 +378,7 @@ var _ = Describe("HyperconvergedController", func() {
 				hco := commonTestUtils.NewHco()
 				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
 				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
-				existingResource := hco.NewKubeVirt()
+				existingResource := operands.NewKubeVirt(hco, namespace)
 
 				// now, modify KV's node placement
 				seconds3 := int64(3)
@@ -436,7 +436,7 @@ var _ = Describe("HyperconvergedController", func() {
 				hco := commonTestUtils.NewHco()
 				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
 				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
-				existingResource := hco.NewKubeVirt()
+				existingResource := operands.NewKubeVirt(hco, namespace)
 
 				// now, modify KV's node placement
 				seconds3 := int64(3)
