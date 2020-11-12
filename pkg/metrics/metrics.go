@@ -6,27 +6,27 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
-var (
-	// Number of out-of-band modifications overwritten by HCO
-	overwrittenModifications = prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "hyperconverged_cluster_operator_out_of_band_modifications",
-			Help: "Count of out-of-band modifications overwritten by HCO",
-		},
-		[]string{"component_name"},
-	)
-
-	// HcoMetrics wrapper for all hco metrics
-	HcoMetrics = hcoMetrics{overwrittenModifications}
-)
+// HcoMetrics wrapper for all hco metrics
+var HcoMetrics = hcoMetrics{prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "hyperconverged_cluster_operator_out_of_band_modifications",
+		Help: "Count of out-of-band modifications overwritten by HCO",
+	},
+	[]string{"component_name"},
+)}
 
 // hcoMetrics holds all HCO metrics
 type hcoMetrics struct {
+	// overwrittenModifications counts out-of-band modifications overwritten by HCO
 	overwrittenModifications *prometheus.CounterVec
 }
 
 func init() {
-	metrics.Registry.MustRegister(overwrittenModifications)
+	HcoMetrics.init()
+}
+
+func (hm *hcoMetrics) init() {
+	metrics.Registry.MustRegister(hm.overwrittenModifications)
 }
 
 // IncOverwrittenModifications increments counter by 1
