@@ -38,7 +38,7 @@ jobs:
           committer: HCO Bump Bot <noreply@github.com>
           title: "Bump $UPDATED_COMPONENT to $UPDATED_VERSION"
           body: |
-            Bump $UPDATED_COMPONEN to $UPDATED_VERSION
+            Bump $UPDATED_COMPONENT to $UPDATED_VERSION
             Executed by HCO Release-Bumper Bot.
             ```release-note
             Bump $UPDATED_COMPONENT to $UPDATED_VERSION
