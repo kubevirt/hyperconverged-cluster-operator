@@ -17,27 +17,33 @@ jobs:
       - name: Check for new releases and update
         run: ./automation/release-bumper/release-bumper.sh
       - name: Set "UPDATED_COMPONENT" environment variable
-        run: echo "::set-env name=UPDATED_COMPONENT::$(cat updated_component.txt)";
+        run: |
+          echo 'UPDATED_COMPONENT<<EOF' >> $GITHUB_ENV
+          cat updated_component.txt >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - name: Set "UPDATED_VERSION" environment variable
-        run: echo "::set-env name=UPDATED_VERSION::$(cat updated_version.txt)";
+        run: |
+          echo 'UPDATED_VERSION<<EOF' >> $GITHUB_ENV
+          cat updated_version.txt >> $GITHUB_ENV
+          echo 'EOF' >> $GITHUB_ENV
       - name: Remove temporary files
         run: rm -f updated_component.txt updated_version.txt
       - uses: peter-evans/create-pull-request@v2
         with:
           token: ${{ secrets.HCO_BOT_TOKEN }}
           commit-message: |
-            Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }}
+            Bump $UPDATED_COMPONENT to $UPDATED_VERSION
 
             Signed-off-by: HCO Bump Bot <noreply@github.com>
           committer: HCO Bump Bot <noreply@github.com>
-          title: "Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }}"
+          title: "Bump $UPDATED_COMPONENT to $UPDATED_VERSION"
           body: |
-            Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }}
+            Bump $UPDATED_COMPONEN to $UPDATED_VERSION
             Executed by HCO Release-Bumper Bot.
             ```release-note
-            Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }}
+            Bump $UPDATED_COMPONENT to $UPDATED_VERSION
             ```
           assignees: tiraboschi,orenc1,nunnatsa
           reviewers: tiraboschi,orenc1,nunnatsa
           team-reviewers: owners, maintainers
-          branch: bump_${{ env.UPDATED_COMPONENT }}_${{ env.UPDATED_VERSION }}
+          branch: bump_$UPDATED_COMPONENT_$UPDATED_VERSION
