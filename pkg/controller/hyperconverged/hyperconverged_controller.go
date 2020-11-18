@@ -43,7 +43,7 @@ var (
 const (
 	// We cannot set owner reference of cluster-wide resources to namespaced HyperConverged object. Therefore,
 	// use finalizers to manage the cleanup.
-	FinalizerName = "kubevirt.io/hyperconverged"
+	FinalizerName    = "kubevirt.io/hyperconverged"
 	badFinalizerName = "hyperconvergeds.hco.kubevirt.io"
 
 	// OpenshiftNamespace is for resources that belong in the openshift namespace
