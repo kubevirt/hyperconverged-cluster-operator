@@ -425,7 +425,7 @@ cp -f ${TEMPDIR}/*.${CRD_EXT} ${CRD_DIR}
 cp -f ${TEMPDIR}/*.${CRD_EXT} ${CSV_DIR}
 
 # Validate the yaml files
-pip install --user yamllint
+pip3 install --user yamllint
 (cd ${CRD_DIR} && yamllint -d "{extends: relaxed, rules: {line-length: disable}}" *.yaml)
 (cd ${CSV_DIR} && yamllint -d "{extends: relaxed, rules: {line-length: disable}}" *.yaml)
 
