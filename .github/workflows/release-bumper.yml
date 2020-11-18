@@ -32,18 +32,18 @@ jobs:
         with:
           token: ${{ secrets.HCO_BOT_TOKEN }}
           commit-message: |
-            Bump $UPDATED_COMPONENT to $UPDATED_VERSION
+            Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }}
 
             Signed-off-by: HCO Bump Bot <noreply@github.com>
           committer: HCO Bump Bot <noreply@github.com>
-          title: "Bump $UPDATED_COMPONENT to $UPDATED_VERSION"
+          title: "Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }}"
           body: |
-            Bump $UPDATED_COMPONENT to $UPDATED_VERSION
+            Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }}
             Executed by HCO Release-Bumper Bot.
             ```release-note
-            Bump $UPDATED_COMPONENT to $UPDATED_VERSION
+            Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }}
             ```
           assignees: tiraboschi,orenc1,nunnatsa
           reviewers: tiraboschi,orenc1,nunnatsa
           team-reviewers: owners, maintainers
-          branch: bump_$UPDATED_COMPONENT_$UPDATED_VERSION
+          branch: bump_${{ env.UPDATED_COMPONENT }}_${{ env.UPDATED_VERSION }}
