@@ -1,10 +1,10 @@
-name: Auto-Bump Component's Versions
+name: Auto-Update Image Digests
 on:
   schedule:
-    - cron:  '0 4 * * *'
+    - cron:  '0 4/4 * * *'
 jobs:
   build:
-    name: HCO Release Bump Job
+    name: HCO Update Image Digests Job
     if: (github.repository == 'kubevirt/hyperconverged-cluster-operator')
     runs-on: ubuntu-latest
     steps:
@@ -25,11 +25,11 @@ jobs:
               dep ensure
           fi
 
-      - name: Build
+      - name: Build the degister app
         working-directory: tools/digester
         run: go build -v .
 
-      - name: Run
+      - name: Run the degister app to update the digests
         run: |
           ./automation/digester/update_images.sh
           if ! git diff --quiet --exit-code; then
@@ -52,7 +52,7 @@ jobs:
           title: "Update Image Digests"
           body: |
             Update Image Digests
-            Executed by HCO Release-Bumper Bot.
+            Executed by HCO Update Image Digest Bot.
             ```release-note
             Update Image Digests
             ```
