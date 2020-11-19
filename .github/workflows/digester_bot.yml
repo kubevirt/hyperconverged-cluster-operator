@@ -33,6 +33,13 @@ jobs:
       - name: Run
         run: ./automation/digester/update_images.sh
 
+      - name: Regenerage CSV
+        run: |
+          if ! git diff --quiet --exit-code; then
+          ./hack/build-manifests.sh
+          git add a.txt
+          fi
+
       - uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.HCO_BOT_TOKEN }}
