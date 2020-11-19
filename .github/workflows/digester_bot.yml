@@ -19,7 +19,6 @@ jobs:
       - name: Get dependencies
         working-directory: tools/digester
         run: |
-          cd tools/
           go get -v -t -d ./...
           if [ -f Gopkg.toml ]; then
               curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
@@ -31,16 +30,18 @@ jobs:
         run: go build -v .
 
       - name: Run
-        run: ./automation/digester/update_images.sh
-
-      - name: Regenerage CSV
         run: |
+          ./automation/digester/update_images.sh
           if ! git diff --quiet --exit-code; then
-          ./hack/build-manifests.sh
-          git add a.txt
+            echo "CHANGED=true" >> $GITHUB_ENV
           fi
 
+      - name: Regenerage CSV
+        if: ${{ env.CHANGED }}
+        run: ./hack/build-manifests.sh
+
       - uses: peter-evans/create-pull-request@v3
+        if: ${{ env.CHANGED }}
         with:
           token: ${{ secrets.HCO_BOT_TOKEN }}
           commit-message: |
