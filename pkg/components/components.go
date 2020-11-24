@@ -128,8 +128,8 @@ func GetDeploymentSpecOperator(namespace, image, imagePullPolicy, conversionCont
 						},
 						Env: append([]corev1.EnvVar{
 							{
-								Name:  util.OperatorWebhookModeEnv,
-								Value: "false",
+								Name:  util.ContainerAppName,
+								Value: util.ContainerOperatorApp,
 							},
 							{
 								Name:  "KVM_EMULATION",
@@ -288,8 +288,8 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy string, env []co
 						},
 						Env: append([]corev1.EnvVar{
 							{
-								Name:  util.OperatorWebhookModeEnv,
-								Value: "true",
+								Name:  util.ContainerAppName,
+								Value: util.ContainerWebhookApp,
 							},
 							{
 								Name:  "OPERATOR_IMAGE",

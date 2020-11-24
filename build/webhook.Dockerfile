@@ -2,17 +2,13 @@ FROM golang:1.15.2 AS builder
 
 WORKDIR /go/src/github.com/kubevirt/hyperconverged-cluster-operator/
 COPY . .
-RUN make build
+RUN make build-webhook
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal
-ENV OPERATOR=/usr/local/bin/hyperconverged-cluster-operator \
-    WEBHOOK=/usr/local/bin/hyperconverged-cluster-webhook \
-    # APP holds the *name* of the actual application to run
-    # see build/entrypoint
-    APP=OPERATOR \
-    CSV_MERGER=/usr/local/bin/csv-merger \
+ENV WEBHOOK=/usr/local/bin/hyperconverged-cluster-webhook \
+    APP=WEBHOOK \
     USER_UID=1001 \
-    USER_NAME=hyperconverged-cluster-operator
+    USER_NAME=hyperconverged-cluster-webhook
 
 COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/build/bin/ /usr/local/bin
 
@@ -23,9 +19,7 @@ RUN mkdir -p ${HOME} && \
     # runtime user will need to be able to self-insert in /etc/passwd
     chmod g+rw /etc/passwd
 
-COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/_out/hyperconverged-cluster-operator $OPERATOR
-COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/_out/hyperconverged-cluster-webhook $WEBHOOK
-COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/_out/csv-merger $CSV_MERGER
+COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/_out/hyperconverged-cluster-webhook $APP
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 USER ${USER_UID}
 
