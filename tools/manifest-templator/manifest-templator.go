@@ -113,7 +113,7 @@ func main() {
 		*vmImportCsv,
 	}
 
-	if webhookImage == nil {
+	if webhookImage == nil || *webhookImage == "" {
 		*webhookImage = *operatorImage
 	}
 

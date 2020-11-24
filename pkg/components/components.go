@@ -255,7 +255,7 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy string, env []co
 						Image:           image,
 						ImagePullPolicy: corev1.PullPolicy(imagePullPolicy),
 						// TODO: command being name is artifact of operator-sdk usage
-						Command: []string{hcoName},
+						Command: []string{hcoNameWebhook},
 						ReadinessProbe: &corev1.Probe{
 							Handler: corev1.Handler{
 								HTTPGet: &corev1.HTTPGetAction{
@@ -882,7 +882,7 @@ func GetOperatorCR() *hcov1beta1.HyperConverged {
 }
 
 // GetInstallStrategyBase returns the basics of an HCO InstallStrategy
-func GetInstallStrategyBase(namespace, image, imagePullPolicy, conversionContainer, vmwareContainer, smbios, machinetype, hcoKvIoVersion, kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion, vmImportVersion string, env []corev1.EnvVar) *csvv1alpha1.StrategyDetailsDeployment {
+func GetInstallStrategyBase(namespace, image, webhookImage, imagePullPolicy, conversionContainer, vmwareContainer, smbios, machinetype, hcoKvIoVersion, kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion, vmImportVersion string, env []corev1.EnvVar) *csvv1alpha1.StrategyDetailsDeployment {
 	return &csvv1alpha1.StrategyDetailsDeployment{
 		DeploymentSpecs: []csvv1alpha1.StrategyDeploymentSpec{
 			csvv1alpha1.StrategyDeploymentSpec{
@@ -891,7 +891,7 @@ func GetInstallStrategyBase(namespace, image, imagePullPolicy, conversionContain
 			},
 			csvv1alpha1.StrategyDeploymentSpec{
 				Name: hcoWhDeploymentName,
-				Spec: GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, env),
+				Spec: GetDeploymentSpecWebhook(namespace, webhookImage, imagePullPolicy, env),
 			},
 		},
 		Permissions: []csvv1alpha1.StrategyDeploymentPermissions{},
