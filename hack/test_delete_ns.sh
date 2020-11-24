@@ -20,22 +20,34 @@
 set -ex
 
 function test_delete_ns(){
+    OLM=0
     if [ "${CMD}" == "oc" ]; then
-        echo "Trying to delete kubevirt-hyperconverged namespace when the hyperconverged CR is still there"
-        # this should fail with a clear error message
-        ${CMD} delete namespace kubevirt-hyperconverged 2>&1 | grep "denied the request: HyperConverged CR is still present, please remove it before deleting the containing namespace"
+      CSV=$(oc get csv -n kubevirt-hyperconverged -o name | wc -l)
+      if [ "$CSV" -gt 0 ]; then
+        OLM=1
+      fi
+    fi
+
+    if [ "$OLM" -gt 0 ]; then
+        # TODO: remove this once we are able to run the webhook also on k8s
+        echo "HCO has been deployed by the OLM, so its webhook is supposed to work: let's test it"
 
         echo "kubevirt-hyperconverged namespace should be still there"
         ${CMD} get namespace kubevirt-hyperconverged -o yaml
 
+        echo "Trying to delete kubevirt-hyperconverged namespace when the hyperconverged CR is still there"
+        time timeout 60m ${CMD} delete namespace kubevirt-hyperconverged
+
     else
+        # TODO: remove this once we are able to run the webhook also on k8s
         echo "Ignoring webhook on k8s where we don't have OLM based validating webhooks"
+
+        echo "Delete the hyperconverged CR to remove the product"
+        time timeout 30m ${CMD} delete hyperconverged -n kubevirt-hyperconverged kubevirt-hyperconverged
+    
+        echo "Finally delete kubevirt-hyperconverged namespace"
+        time timeout 30m ${CMD} delete namespace kubevirt-hyperconverged
     fi
 
-    echo "Delete the hyperconverged CR to remove the product"
-    timeout 10m ${CMD} delete hyperconverged -n kubevirt-hyperconverged kubevirt-hyperconverged
-
-    echo "Finally delete kubevirt-hyperconverged namespace"
-    timeout 10m ${CMD} delete namespace kubevirt-hyperconverged
 }
 

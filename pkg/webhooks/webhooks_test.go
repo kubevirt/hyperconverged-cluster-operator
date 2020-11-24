@@ -570,19 +570,33 @@ var _ = Describe("webhooks handler", func() {
 			wh := &WebhookHandler{}
 			wh.Init(logger, cli, HcoValidNamespace)
 
-			allowed, err := wh.HandleMutatingNsDelete(ns, false)
+			err := wh.HandleMutatingNsDelete(ns, false)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(allowed).To(BeTrue())
 		})
 
-		It("should not allow the delete of the namespace if Hyperconverged CR exists", func() {
-			cli := fake.NewFakeClientWithScheme(s, cr)
+		It("should return error if deletion of HCO CR returns an error", func() {
+			cr := &v1beta1.HyperConverged{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      ResourceName,
+					Namespace: HcoValidNamespace,
+				},
+				Spec: v1beta1.HyperConvergedSpec{},
+			}
+
+			ns := &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: HcoValidNamespace,
+				},
+			}
+
+			c := getFakeClient(s, cr)
+			cli := errorClient{c, hcDeleteFailure}
 			wh := &WebhookHandler{}
 			wh.Init(logger, cli, HcoValidNamespace)
 
-			allowed, err := wh.HandleMutatingNsDelete(ns, false)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(allowed).To(BeFalse())
+			err := wh.HandleMutatingNsDelete(ns, false)
+			Expect(err).NotTo(BeNil())
+			Expect(err).Should(Equal(ErrFakeHCOError))
 		})
 
 		It("should ignore other namespaces even if Hyperconverged CR exists", func() {
@@ -596,9 +610,8 @@ var _ = Describe("webhooks handler", func() {
 				},
 			}
 
-			allowed, err := wh.HandleMutatingNsDelete(other_ns, false)
+			err := wh.HandleMutatingNsDelete(other_ns, false)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(allowed).To(BeTrue())
 		})
 
 	})
@@ -664,6 +677,7 @@ const (
 	kubevirtMetricsAggregationUpdateFailure
 	vmImportUpdateFailure
 	timeoutError
+	hcDeleteFailure
 )
 
 type errorClient struct {
@@ -680,6 +694,7 @@ var (
 	ErrFakeTemplateValidatorError    = errors.New("fake TemplateValidator error")
 	ErrFakeMetricsAggregationError   = errors.New("fake MetricsAggregation error")
 	ErrFakeVMImportError             = errors.New("fake VMImport error")
+	ErrFakeHCOError                  = errors.New("fake HCO error")
 )
 
 func (ec errorClient) Update(ctx context.Context, obj runtime.Object, opts ...client.UpdateOption) error {
@@ -724,4 +739,18 @@ func (ec errorClient) Update(ctx context.Context, obj runtime.Object, opts ...cl
 	}
 
 	return ec.Client.Update(ctx, obj, opts...)
+}
+
+func (ec errorClient) Delete(ctx context.Context, obj runtime.Object, opts ...client.DeleteOption) error {
+
+	if ec.failure == hcDeleteFailure {
+		return ErrFakeHCOError
+	}
+
+	if ec.failure == timeoutError {
+		// timeout + 100 ms
+		time.Sleep(updateDryRunTimeOut + time.Millisecond*100)
+	}
+
+	return ec.Client.Delete(ctx, obj, opts...)
 }

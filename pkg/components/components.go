@@ -971,6 +971,8 @@ func GetCSVBase(name, namespace, displayName, description, image, replaces strin
 
 	sideEffectMutating := admissionregistrationv1.SideEffectClassNoneOnDryRun
 	webhookPathMutating := util.HCONSWebhookPath
+	// give it enough time to uninstall the whole product
+	var webhookNSTimeout int32 = 900
 
 	ns_mutating_webhook := csvv1alpha1.WebhookDescription{
 		GenerateName:            util.HcoMutatingWebhookNS,
@@ -980,7 +982,7 @@ func GetCSVBase(name, namespace, displayName, description, image, replaces strin
 		AdmissionReviewVersions: []string{"v1beta1", "v1"},
 		SideEffects:             &sideEffectMutating,
 		FailurePolicy:           &failurePolicy,
-		TimeoutSeconds:          &webhookTimeout,
+		TimeoutSeconds:          &webhookNSTimeout,
 		ObjectSelector: &metav1.LabelSelector{
 			MatchLabels: map[string]string{"name": namespace},
 		},

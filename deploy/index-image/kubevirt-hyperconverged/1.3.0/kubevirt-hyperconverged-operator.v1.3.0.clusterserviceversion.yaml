@@ -2454,7 +2454,7 @@ spec:
       resources:
       - namespaces
     sideEffects: NoneOnDryRun
-    timeoutSeconds: 30
+    timeoutSeconds: 900
     type: MutatingAdmissionWebhook
     webhookPath: /mutate-ns-hco-kubevirt-io
   - admissionReviewVersions:

@@ -35,7 +35,7 @@ type WebhookHandlerIfs interface {
 	ValidateCreate(hc *HyperConverged) error
 	ValidateUpdate(requested *HyperConverged, exists *HyperConverged) error
 	ValidateDelete(hc *HyperConverged) error
-	HandleMutatingNsDelete(ns *corev1.Namespace, dryRun bool) (bool, error)
+	HandleMutatingNsDelete(ns *corev1.Namespace, dryRun bool) error
 }
 
 var whHandler WebhookHandlerIfs
@@ -128,8 +128,12 @@ type nsMutator struct {
 	decoder *admission.Decoder
 }
 
-// TODO: nsMutator should try to delete HyperConverged CR before deleting the namespace
-// currently it simply blocks namespace deletion if HyperConverged CR is there
+// nsMutator is trying to to delete HyperConverged CR before accepting the deletion request for the namespace
+// if it accepts the deletion request, the namespace should be ready to be delete
+// without getting stuck or without the risk of any leftovers.
+// Please notice that the serviceAccounts used by other operator are also part of this namespace
+// so once we accept the deletion of the namespace, all the components operator are going to quickly
+// lose any power
 func (a *nsMutator) Handle(ctx context.Context, req admission.Request) admission.Response {
 	hcolog.Info("reaching nsMutator.Handle")
 	ns := &corev1.Namespace{}
@@ -144,18 +148,18 @@ func (a *nsMutator) Handle(ctx context.Context, req admission.Request) admission
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 
-		admitted, herr := whHandler.HandleMutatingNsDelete(ns, *req.DryRun)
-		if err != nil {
+		herr := whHandler.HandleMutatingNsDelete(ns, *req.DryRun)
+		if herr != nil {
+			hcolog.Error(herr, hcoutil.HCONSWebhookPath+" refused the request")
 			return admission.Errored(http.StatusInternalServerError, herr)
 		}
-		if admitted {
-			return admission.Allowed("the namespace doesn't contain HyperConverged CR, admitting its deletion")
-		}
-		return admission.Denied("HyperConverged CR is still present, please remove it before deleting the containing namespace")
+
+		hcolog.Info(hcoutil.HCONSWebhookPath + " admitted the delete request")
+		return admission.Allowed(hcoutil.HCONSWebhookPath + " admitted the delete request")
 	}
 
 	// ignoring other operations
-	return admission.Allowed("ignoring other operations")
+	return admission.Allowed(hcoutil.HCONSWebhookPath + " admitted the request")
 
 }
 

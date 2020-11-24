@@ -11,7 +11,6 @@ import (
 	sspv1 "github.com/kubevirt/kubevirt-ssp-operator/pkg/apis/kubevirt/v1"
 	vmimportv1beta1 "github.com/kubevirt/vm-import-operator/pkg/apis/v2v/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kubevirtv1 "kubevirt.io/client-go/api/v1"
@@ -24,6 +23,7 @@ import (
 
 const (
 	updateDryRunTimeOut = time.Second * 3
+	whDeleteTimeOut     = 120 * time.Second
 )
 
 type WebhookHandler struct {
@@ -180,15 +180,16 @@ func (wh WebhookHandler) ValidateDelete(hc *v1beta1.HyperConverged) error {
 	return nil
 }
 
-func (wh WebhookHandler) HandleMutatingNsDelete(ns *corev1.Namespace, dryRun bool) (bool, error) {
+func (wh WebhookHandler) HandleMutatingNsDelete(ns *corev1.Namespace, dryRun bool) error {
 	wh.logger.Info("validating namespace deletion", "name", ns.Name)
 
 	if ns.Name != wh.namespace {
 		wh.logger.Info("ignoring request for a different namespace")
-		return true, nil
+		return nil
 	}
 
-	ctx := context.TODO()
+	tCtx, cancel := context.WithTimeout(context.Background(), whDeleteTimeOut)
+	defer cancel()
 	hco := &v1beta1.HyperConverged{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      hcoutil.HyperConvergedName,
@@ -196,27 +197,5 @@ func (wh WebhookHandler) HandleMutatingNsDelete(ns *corev1.Namespace, dryRun boo
 		},
 	}
 
-	// TODO: once the deletion of HCO CR is really safe during namespace deletion
-	// (foreground deletion, context timeouts...) try to automatically
-	// delete HCO CR if there.
-	// For now let's simply block the deletion if the namespace with a clear error message
-	// if HCO CR is still there
-
-	key, err := client.ObjectKeyFromObject(hco)
-	if err != nil {
-		wh.logger.Error(err, "failed to get object key for HyperConverged CR")
-		return false, err
-	}
-	found := &v1beta1.HyperConverged{}
-	err = wh.cli.Get(ctx, key, found)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			wh.logger.Info("HCO CR doesn't not exist, allow namespace deletion")
-			return true, nil
-		}
-		wh.logger.Error(err, "failed getting HyperConverged CR")
-		return false, err
-	}
-	wh.logger.Info("HCO CR still exists, forbid namespace deletion")
-	return false, nil
+	return hcoutil.EnsureDeleted(tCtx, wh.cli, hco, hcoutil.HyperConvergedName, wh.logger, dryRun, !dryRun)
 }

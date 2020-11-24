@@ -234,9 +234,11 @@ func ComponentResourceRemoval(ctx context.Context, c client.Client, obj interfac
 
 	labels := resource.GetLabels()
 
-	if app, labelExists := labels[AppLabel]; !labelExists || app != hcoName {
-		logger.Info("Existing resource wasn't deployed by HCO, ignoring", "Kind", resource.GetObjectKind())
-		return nil
+	if resource.GetObjectKind().GroupVersionKind().Kind != "HyperConverged" {
+		if app, labelExists := labels[AppLabel]; !labelExists || app != hcoName {
+			logger.Info("Existing resource wasn't deployed by HCO, ignoring", "Kind", resource.GetObjectKind())
+			return nil
+		}
 	}
 
 	opts := &client.DeleteOptions{}
