@@ -130,7 +130,7 @@ CDI, Network-addons, VM import and SSP.
 kubectl create -f deploy/hco.cr.yaml -n kubevirt-hyperconverged
 ```
 
-## Create a Cluster & Launch the HCO
+## Create a Cluster & Launch the HyperConverged Operator
 1. Choose the provider
 ```bash
 #For k8s cluster:
