@@ -4,14 +4,13 @@ import (
 	"context"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+
 	networkaddons "github.com/kubevirt/cluster-network-addons-operator/pkg/apis"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis"
-	sspopv1 "github.com/kubevirt/kubevirt-ssp-operator/pkg/apis"
 	vmimportv1beta1 "github.com/kubevirt/vm-import-operator/pkg/apis/v2v/v1beta1"
 	consolev1 "github.com/openshift/api/console/v1"
-	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer/pkg/apis/core/v1beta1"
+	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
@@ -19,7 +18,9 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
@@ -111,11 +112,11 @@ func GetScheme() *runtime.Scheme {
 		apis.AddToScheme,
 		cdiv1beta1.AddToScheme,
 		networkaddons.AddToScheme,
-		sspopv1.AddToScheme,
+		sspv1beta1.AddToScheme,
 		vmimportv1beta1.AddToScheme,
 		consolev1.AddToScheme,
 		monitoringv1.AddToScheme,
-		extv1.AddToScheme,
+		apiextensionsv1.AddToScheme,
 	} {
 		Expect(f(testScheme)).To(BeNil())
 	}

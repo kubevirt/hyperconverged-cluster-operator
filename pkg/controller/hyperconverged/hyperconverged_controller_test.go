@@ -190,14 +190,10 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedCDI.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cdis/%s", expectedCDI.Namespace, expectedCDI.Name)
 				expectedCNA := operands.NewNetworkAddons(hco)
 				expectedCNA.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cnas/%s", expectedCNA.Namespace, expectedCNA.Name)
-				expectedKVCTB := operands.NewKubeVirtCommonTemplateBundle(hco)
-				expectedKVCTB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/ctbs/%s", expectedKVCTB.Namespace, expectedKVCTB.Name)
-				expectedKVNLB := operands.NewKubeVirtNodeLabellerBundleForCR(hco, namespace)
-				expectedKVNLB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/nlb/%s", expectedKVNLB.Namespace, expectedKVNLB.Name)
-				expectedKVTV := operands.NewKubeVirtTemplateValidatorForCR(hco, namespace)
-				expectedKVTV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/tv/%s", expectedKVTV.Namespace, expectedKVTV.Name)
+				expectedSSP := operands.NewSSP(hco)
+				expectedSSP.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/ctbs/%s", expectedSSP.Namespace, expectedSSP.Name)
 				// Add all of the objects to the client
-				cl := commonTestUtils.InitClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKVStorageRole, expectedKVStorageRoleBinding, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
+				cl := commonTestUtils.InitClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKVStorageRole, expectedKVStorageRoleBinding, expectedKV, expectedCDI, expectedCNA, expectedSSP})
 				r := initReconciler(cl)
 
 				// Do the reconcile
@@ -219,24 +215,24 @@ var _ = Describe("HyperconvergedController", func() {
 					Reason:  reconcileCompleted,
 					Message: reconcileCompletedMessage,
 				})))
-				// Why Template validator? Because it is the last to be checked, so the last missing overwrites everything
+				// Why SSP? Because it is the last to be checked, so the last missing overwrites everything
 				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
-					Reason:  "KubevirtTemplateValidatorConditions",
-					Message: "KubevirtTemplateValidator resource has no conditions",
+					Reason:  "SSPConditions",
+					Message: "SSP resource has no conditions",
 				})))
 				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
-					Reason:  "KubevirtTemplateValidatorConditions",
-					Message: "KubevirtTemplateValidator resource has no conditions",
+					Reason:  "SSPConditions",
+					Message: "SSP resource has no conditions",
 				})))
 				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 					Type:    conditionsv1.ConditionUpgradeable,
 					Status:  corev1.ConditionFalse,
-					Reason:  "KubevirtTemplateValidatorConditions",
-					Message: "KubevirtTemplateValidator resource has no conditions",
+					Reason:  "SSPConditions",
+					Message: "SSP resource has no conditions",
 				})))
 			})
 
@@ -316,17 +312,11 @@ var _ = Describe("HyperconvergedController", func() {
 						Status: corev1.ConditionFalse,
 					},
 				}
-				expectedKVCTB := operands.NewKubeVirtCommonTemplateBundle(hco)
-				expectedKVCTB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/ctbs/%s", expectedKVCTB.Namespace, expectedKVCTB.Name)
-				expectedKVCTB.Status.Conditions = getGenericCompletedConditions()
-				expectedKVNLB := operands.NewKubeVirtNodeLabellerBundleForCR(hco, namespace)
-				expectedKVNLB.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/nlb/%s", expectedKVNLB.Namespace, expectedKVNLB.Name)
-				expectedKVNLB.Status.Conditions = getGenericCompletedConditions()
-				expectedKVTV := operands.NewKubeVirtTemplateValidatorForCR(hco, namespace)
-				expectedKVTV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/tv/%s", expectedKVTV.Namespace, expectedKVTV.Name)
-				expectedKVTV.Status.Conditions = getGenericCompletedConditions()
+				expectedSSP := operands.NewSSP(hco)
+				expectedSSP.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/ctbs/%s", expectedSSP.Namespace, expectedSSP.Name)
+				expectedSSP.Status.Conditions = getGenericCompletedConditions()
 				// Add all of the objects to the client
-				cl := commonTestUtils.InitClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKV, expectedCDI, expectedCNA, expectedKVCTB, expectedKVNLB, expectedKVTV})
+				cl := commonTestUtils.InitClient([]runtime.Object{hco, expectedKVConfig, expectedKVStorageConfig, expectedKV, expectedCDI, expectedCNA, expectedSSP})
 				r := initReconciler(cl)
 
 				// Do the reconcile
@@ -528,40 +518,14 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(requeue).To(BeFalse())
 				checkAvailability(foundResource, corev1.ConditionTrue)
 
-				origConds = expected.kvCtb.Status.Conditions
-				expected.kvCtb.Status.Conditions = expected.cdi.Status.Conditions[1:]
+				origConds = expected.ssp.Status.Conditions
+				expected.ssp.Status.Conditions = expected.cdi.Status.Conditions[1:]
 				cl = expected.initClient()
 				foundResource, requeue = doReconcile(cl, expected.hco)
 				Expect(requeue).To(BeFalse())
 				checkAvailability(foundResource, corev1.ConditionFalse)
 
-				expected.kvCtb.Status.Conditions = origConds
-				cl = expected.initClient()
-				foundResource, requeue = doReconcile(cl, expected.hco)
-				Expect(requeue).To(BeFalse())
-				checkAvailability(foundResource, corev1.ConditionTrue)
-
-				origConds = expected.kvNlb.Status.Conditions
-				expected.kvNlb.Status.Conditions = expected.cdi.Status.Conditions[1:]
-				cl = expected.initClient()
-				foundResource, requeue = doReconcile(cl, expected.hco)
-				Expect(requeue).To(BeFalse())
-				checkAvailability(foundResource, corev1.ConditionFalse)
-
-				expected.kvNlb.Status.Conditions = origConds
-				cl = expected.initClient()
-				foundResource, requeue = doReconcile(cl, expected.hco)
-				Expect(requeue).To(BeFalse())
-				checkAvailability(foundResource, corev1.ConditionTrue)
-
-				origConds = expected.kvTv.Status.Conditions
-				expected.kvTv.Status.Conditions = expected.cdi.Status.Conditions[1:]
-				cl = expected.initClient()
-				foundResource, requeue = doReconcile(cl, expected.hco)
-				Expect(requeue).To(BeFalse())
-				checkAvailability(foundResource, corev1.ConditionFalse)
-
-				expected.kvTv.Status.Conditions = origConds
+				expected.ssp.Status.Conditions = origConds
 				cl = expected.initClient()
 				foundResource, requeue = doReconcile(cl, expected.hco)
 				Expect(requeue).To(BeFalse())
@@ -586,7 +550,7 @@ var _ = Describe("HyperconvergedController", func() {
 				).To(BeNil())
 
 				Expect(foundResource.Status.RelatedObjects).ToNot(BeNil())
-				Expect(len(foundResource.Status.RelatedObjects)).Should(Equal(18))
+				Expect(len(foundResource.Status.RelatedObjects)).Should(Equal(15))
 				Expect(foundResource.ObjectMeta.Finalizers).Should(Equal([]string{FinalizerName}))
 
 				// Now, delete HCO
@@ -715,10 +679,7 @@ var _ = Describe("HyperconvergedController", func() {
 				os.Setenv(hcoutil.VMImportEnvV, newComponentVersion)
 
 				os.Setenv(hcoutil.SspVersionEnvV, newComponentVersion)
-				expected.kvCtb.Status.ObservedVersion = newComponentVersion
-				expected.kvNlb.Status.ObservedVersion = newComponentVersion
-				expected.kvTv.Status.ObservedVersion = newComponentVersion
-				expected.kvMtAg.Status.ObservedVersion = newComponentVersion
+				expected.ssp.Status.ObservedVersion = newComponentVersion
 
 				os.Setenv(hcoutil.HcoKvIoVersionName, newVersion)
 
