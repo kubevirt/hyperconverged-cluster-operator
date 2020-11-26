@@ -293,6 +293,8 @@ func NewKubeVirtStorageConfigForCR(cr *hcov1beta1.HyperConverged, namespace stri
 		localSC = *(&cr.Spec.LocalStorageClassName)
 	}
 
+	ocsRBD := "ocs-storagecluster-ceph-rbd"
+
 	labels := map[string]string{
 		hcoutil.AppLabel: cr.Name,
 	}
@@ -307,6 +309,8 @@ func NewKubeVirtStorageConfigForCR(cr *hcov1beta1.HyperConverged, namespace stri
 			"volumeMode":            "Filesystem",
 			localSC + ".accessMode": "ReadWriteOnce",
 			localSC + ".volumeMode": "Filesystem",
+			ocsRBD + ".accessMode":  "ReadWriteMany",
+			ocsRBD + ".volumeMode":  "Block",
 		},
 	}
 }
