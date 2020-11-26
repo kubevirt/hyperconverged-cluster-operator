@@ -7,7 +7,7 @@ RUN make build
 FROM registry.access.redhat.com/ubi8/ubi-minimal
 ENV OPERATOR=/usr/local/bin/hyperconverged-cluster-operator \
     WEBHOOK=/usr/local/bin/hyperconverged-cluster-webhook \
-    # APP holds the *name* of the actual application to run
+    # APP holds the *name* of the actual application to run; can be OPERATOR (default) or WEBHOOK
     # see build/entrypoint
     APP=OPERATOR \
     CSV_MERGER=/usr/local/bin/csv-merger \
