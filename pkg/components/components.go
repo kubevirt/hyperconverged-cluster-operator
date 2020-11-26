@@ -128,6 +128,11 @@ func GetDeploymentSpecOperator(namespace, image, imagePullPolicy, conversionCont
 						},
 						Env: append([]corev1.EnvVar{
 							{
+								// deprecated: left here for CI test.
+								Name:  util.OperatorWebhookModeEnv,
+								Value: "false",
+							},
+							{
 								Name:  util.ContainerAppName,
 								Value: util.ContainerOperatorApp,
 							},
@@ -287,6 +292,11 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy string, env []co
 							FailureThreshold:    1,
 						},
 						Env: append([]corev1.EnvVar{
+							{
+								// deprecated: left here for CI test.
+								Name:  util.OperatorWebhookModeEnv,
+								Value: "true",
+							},
 							{
 								Name:  util.ContainerAppName,
 								Value: util.ContainerWebhookApp,

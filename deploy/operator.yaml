@@ -21,6 +21,8 @@ spec:
       - command:
         - hyperconverged-cluster-operator
         env:
+        - name: WEBHOOK_MODE
+          value: "false"
         - name: APP
           value: OPERATOR
         - name: KVM_EMULATION
@@ -105,6 +107,8 @@ spec:
       - command:
         - hyperconverged-cluster-webhook
         env:
+        - name: WEBHOOK_MODE
+          value: "true"
         - name: APP
           value: WEBHOOK
         - name: OPERATOR_IMAGE
