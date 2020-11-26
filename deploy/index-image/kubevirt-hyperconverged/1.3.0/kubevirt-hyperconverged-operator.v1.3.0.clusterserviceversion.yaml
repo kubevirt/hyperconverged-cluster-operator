@@ -1730,7 +1730,7 @@ spec:
                 - name: CDI_VERSION
                   value: v1.26.1
                 - name: NETWORK_ADDONS_VERSION
-                  value: v0.42.3
+                  value: v0.42.4
                 - name: SSP_VERSION
                   value: v1.2.1
                 - name: NMO_VERSION
@@ -1847,7 +1847,7 @@ spec:
                 - name: OPERATOR_NAME
                   value: cluster-network-addons-operator
                 - name: OPERATOR_VERSION
-                  value: v0.42.3
+                  value: v0.42.4
                 - name: OPERATOR_NAMESPACE
                   valueFrom:
                     fieldRef:
