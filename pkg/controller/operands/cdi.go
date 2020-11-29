@@ -230,7 +230,6 @@ func NewKubeVirtStorageRoleBindingForCR(cr *hcov1beta1.HyperConverged, namespace
 	}
 }
 
-
 // ************** CDI Storage Config Handler **************
 type storageConfigHandler genericOperand
 
@@ -251,8 +250,8 @@ type storageConfigHooks struct{}
 func (h storageConfigHooks) getFullCr(hc *hcov1beta1.HyperConverged) runtime.Object {
 	return NewKubeVirtStorageConfigForCR(hc, hc.Namespace)
 }
-func (h storageConfigHooks) getEmptyCr() runtime.Object { return &corev1.ConfigMap{} }
-func (h storageConfigHooks) validate() error { return nil }
+func (h storageConfigHooks) getEmptyCr() runtime.Object                              { return &corev1.ConfigMap{} }
+func (h storageConfigHooks) validate() error                                         { return nil }
 func (h storageConfigHooks) postFound(_ *common.HcoRequest, _ runtime.Object) error  { return nil }
 func (h storageConfigHooks) getConditions(_ runtime.Object) []conditionsv1.Condition { return nil }
 func (h storageConfigHooks) checkComponentVersion(_ runtime.Object) bool             { return true }
