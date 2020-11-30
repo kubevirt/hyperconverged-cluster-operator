@@ -33,6 +33,11 @@ export IMAGE_TAG="${build_date}_$(git show -s --format=%h)"
 export DOCKER_PREFIX=kubevirtnightlybuilds
 TEMP_OPERATOR_IMAGE=${DOCKER_PREFIX}/hyperconverged-cluster-operator
 TEMP_WEBHOOK_IMAGE=${DOCKER_PREFIX}/hyperconverged-cluster-webhook
+
+# Build HCO & HCO Webhook
+make container-build-operator container-push-operator container-build-webhook container-push-webhook
+
+# Update image digests
 sed -i "s#docker.io/kubevirt/virt-#${kv_image/-*/-}#" deploy/images.csv
 sed -i "s#^KUBEVIRT_VERSION=.*#KUBEVIRT_VERSION=\"${kv_tag}\"#" hack/config
 sed -i "s#quay.io/kubevirt/hyperconverged-cluster-operator#${TEMP_OPERATOR_IMAGE}#" deploy/images.csv
@@ -41,8 +46,7 @@ sed -i "s#^CSV_VERSION=.*#CSV_VERSION=\"${IMAGE_TAG}\"#" hack/config
 (cd ./tools/digester && go build .)
 ./automation/digester/update_images.sh
 
-# Build HCO & HCO Webhook
-make container-build-operator container-push-operator container-build-webhook container-push-webhook
+# Build the CSV
 ./hack/build-manifests.sh
 
 REGISTRY_NAMESPACE=${DOCKER_PREFIX} CONTAINER_TAG=${IMAGE_TAG} make bundleRegistry
