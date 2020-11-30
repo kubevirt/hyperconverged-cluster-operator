@@ -31,15 +31,15 @@ trap 'catch $? $LINENO' ERR TERM INT
 # of the manifests into a single, unified, ClusterServiceVersion.
 
 function get_image_digest() {
-  if [[ ! -f ./tools/digester/digester ]]; then
+  if [[ ! -f ${PROJECT_ROOT}/tools/digester/digester ]]; then
     (
-      cd ./tools/digester
+      cd "${PROJECT_ROOT}/tools/digester"
       go build .
     )
   fi
 
   local image
-  image=$(./tools/digester/digester -image "$1" "$2")
+  image=$("${PROJECT_ROOT}/tools/digester/digester" -image "$1" "$2")
   echo "${image}"
 }
 
@@ -93,32 +93,16 @@ function gen_csv() {
     "/---/" "{*}"
 }
 
-function get-virt-operator-sha() {
-  local digest
-  local image="${KUBEVIRT_IMAGE%/*}/virt-$1:${KUBEVIRT_IMAGE/*:}"
-  digest=$(get_image_digest "${image}" -d)
-  if [[ $? != 0 ]]; then return $?; fi
-  echo "${digest}"
-}
-
 function create_virt_csv() {
   local apiSha
   local controllerSha
   local launcherSha
   local handlerSha
 
-  if [[ -n ${KUBEVIRT_IMAGE} ]]; then
-    KUBEVIRT_OPERATOR_IMAGE=$(get_image_digest "${KUBEVIRT_IMAGE}")
-    apiSha=$(get-virt-operator-sha "api")
-    controllerSha=$(get-virt-operator-sha "controller")
-    launcherSha=$(get-virt-operator-sha "launcher")
-    handlerSha=$(get-virt-operator-sha "handler")
-  else
-    apiSha="${KUBEVIRT_API_IMAGE/*@/}"
-    controllerSha="${KUBEVIRT_CONTROLLER_IMAGE/*@/}"
-    launcherSha="${KUBEVIRT_LAUNCHER_IMAGE/*@/}"
-    handlerSha="${KUBEVIRT_HANDLER_IMAGE/*@/}"
-  fi
+  apiSha="${KUBEVIRT_API_IMAGE/*@/}"
+  controllerSha="${KUBEVIRT_CONTROLLER_IMAGE/*@/}"
+  launcherSha="${KUBEVIRT_LAUNCHER_IMAGE/*@/}"
+  handlerSha="${KUBEVIRT_HANDLER_IMAGE/*@/}"
 
   local operatorName="kubevirt"
   local dumpCRDsArg="--dumpCRDs"

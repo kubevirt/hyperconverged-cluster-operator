@@ -11,6 +11,7 @@ export PATH=/usr/local/go/bin:$PATH
 # get latest commits
 latest_kubevirt=$(curl -sL https://storage.googleapis.com/kubevirt-prow/devel/nightly/release/kubevirt/kubevirt/latest)
 latest_kubevirt_image=$(curl -sL "https://storage.googleapis.com/kubevirt-prow/devel/nightly/release/kubevirt/kubevirt/${latest_kubevirt}/kubevirt-operator.yaml" | grep 'OPERATOR_IMAGE' -A1 | tail -n 1 | sed 's/.*value: //g')
+IFS=: read -r kv_image kv_tag <<< "${latest_kubevirt_image}"
 latest_kubevirt_commit=$(curl -sL "https://storage.googleapis.com/kubevirt-prow/devel/nightly/release/kubevirt/kubevirt/${latest_kubevirt}/commit")
 
 # Update HCO dependencies
@@ -27,13 +28,18 @@ go mod tidy
 
 # set envs
 build_date="$(date +%Y%m%d)"
-export IMAGE_TAG
-IMAGE_TAG="${build_date}_$(git show -s --format=%h)"
 export IMAGE_REGISTRY=docker.io
+export IMAGE_TAG="${build_date}_$(git show -s --format=%h)"
 export DOCKER_PREFIX=kubevirtnightlybuilds
-export OPERATOR_IMAGE=${IMAGE_REGISTRY}/${DOCKER_PREFIX}/hyperconverged-cluster-operator:${IMAGE_TAG}
-export WEBHOOK_IMAGE=${DOCKER_PREFIX}/hyperconverged-cluster-webhook:${IMAGE_TAG}
-export KUBEVIRT_IMAGE=${IMAGE_REGISTRY}/${latest_kubevirt_image}
+TEMP_OPERATOR_IMAGE=${DOCKER_PREFIX}/hyperconverged-cluster-operator
+TEMP_WEBHOOK_IMAGE=${DOCKER_PREFIX}/hyperconverged-cluster-webhook
+sed -i "s#docker.io/kubevirt/virt-#${kv_image/-*/-}#" deploy/images.csv
+sed -i "s#^KUBEVIRT_VERSION=.*#KUBEVIRT_VERSION=\"${kv_tag}\"#" hack/config
+sed -i "s#quay.io/kubevirt/hyperconverged-cluster-operator#${TEMP_OPERATOR_IMAGE}#" deploy/images.csv
+sed -i "s#quay.io/kubevirt/hyperconverged-cluster-webhook#${TEMP_WEBHOOK_IMAGE}#" deploy/images.csv
+sed -i "s#^CSV_VERSION=.*#CSV_VERSION=\"${IMAGE_TAG}\"#" hack/config
+(cd ./tools/digester && go build .)
+./automation/digester/update_images.sh
 
 # Build HCO & HCO Webhook
 make container-build-operator container-push-operator container-build-webhook container-push-webhook
