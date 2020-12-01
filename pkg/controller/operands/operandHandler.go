@@ -45,6 +45,9 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, isOpenshift
 		(*genericOperand)(newCnaHandler(client, scheme)),
 		(*genericOperand)(newVmImportHandler(client, scheme)),
 		(*genericOperand)(newImsConfigHandler(client, scheme)),
+		(*genericOperand)(newMetricsServiceHandler(client, scheme)),
+		(*genericOperand)(newMetricsServiceMonitorHandler(client, scheme)),
+		(*genericOperand)(newMonitoringPrometheusRuleHandler(client, scheme)),
 	}
 
 	if isOpenshiftCluster {

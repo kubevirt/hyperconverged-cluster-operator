@@ -22,6 +22,8 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
+	promv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
@@ -131,6 +133,9 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		&sspv1.KubevirtMetricsAggregation{},
 		&schedulingv1.PriorityClass{},
 		&vmimportv1beta1.VMImportConfig{},
+		&corev1.Service{},
+		&monitoringv1.ServiceMonitor{},
+		&promv1.PrometheusRule{},
 	} {
 		msg := fmt.Sprintf("Reconciling for %T", resource)
 		err = c.Watch(&source.Kind{Type: resource}, &handler.EnqueueRequestsFromMapFunc{
