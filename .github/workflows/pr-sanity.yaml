@@ -26,15 +26,14 @@ jobs:
         with:
           go-version: '^1.15' # The Go version to download (if necessary) and use.
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: |-
-          # Do sanity checks
-          - make sanity
-          # Verify we can actually build the operator
-          - make build
-          # Unit tests
-          - make test
+      - name: Do sanity checks
+        run: make sanity
+
+      - name: Verify we can actually build the operator
+        run: make build
+
+      - name: Unit tests
+        run: make test
 
       - name: Install goveralls
         env:
@@ -45,3 +44,6 @@ jobs:
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: goveralls -coverprofile=covprofile -service=github
+
+      - name: Verify the current manifests pass validation
+        run: make container-build-operator-courier
