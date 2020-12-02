@@ -43,7 +43,7 @@ jobs:
       - name: Send coverage
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: goveralls -coverprofile=covprofile -service=github
+        run: goveralls -coverprofile=pkg/controller/hyperconverged/hyperconverged.coverprofile -service=github
 
       - name: Verify the current manifests pass validation
         run: make container-build-operator-courier
