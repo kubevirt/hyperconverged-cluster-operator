@@ -2,7 +2,7 @@
 
 name: Sanity Checks
 
-# Controls when the action will run. 
+# Controls when the action will run.
 on:
   pull_request:
     branches: [ master ]
@@ -35,3 +35,13 @@ jobs:
           - make build
           # Unit tests
           - make test
+
+      - name: Install goveralls
+        env:
+          GO111MODULE: off
+        run: go get github.com/mattn/goveralls
+
+      - name: Send coverage
+        env:
+          COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: goveralls -coverprofile=covprofile -service=github
