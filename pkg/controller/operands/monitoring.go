@@ -6,7 +6,6 @@ import (
 	"reflect"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	promv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -21,7 +20,7 @@ import (
 
 const (
 	operatorPortName     = "http-metrics"
-	defaultOperatorName  = "kubevirt-hyperconverged-operator"
+	defaultOperatorName  = "hyperconverged-cluster-operator"
 	operatorNameEnv      = "OPERATOR_NAME"
 	metricsSuffix        = "-operator-metrics"
 	alertRuleGroup       = "kubevirt.hyperconverged.rules"
@@ -45,7 +44,7 @@ func newMetricsServiceHandler(Client client.Client, Scheme *runtime.Scheme) *met
 type metricsServiceHooks struct{}
 
 func (h metricsServiceHooks) getFullCr(hc *hcov1beta1.HyperConverged) runtime.Object {
-	return newMetricsService(hc)
+	return NewMetricsService(hc, hc.Namespace)
 }
 func (h metricsServiceHooks) getEmptyCr() runtime.Object                              { return &corev1.Service{} }
 func (h metricsServiceHooks) validate() error                                         { return nil }
@@ -80,8 +79,8 @@ func (h *metricsServiceHooks) updateCr(req *common.HcoRequest, Client client.Cli
 	return false, false, nil
 }
 
-// creates service for prometheus metrics
-func newMetricsService(hc *hcov1beta1.HyperConverged, opts ...string) *corev1.Service {
+// NewMetricsService creates service for prometheus metrics
+func NewMetricsService(hc *hcov1beta1.HyperConverged, namespace string) *corev1.Service {
 	// Add to the below struct any other metrics ports you want to expose.
 	servicePorts := []corev1.ServicePort{
 		{Port: hcoutil.MetricsPort, Name: operatorPortName, Protocol: v1.ProtocolTCP, TargetPort: intstr.IntOrString{Type: intstr.Int, IntVal: hcoutil.MetricsPort}},
@@ -102,7 +101,7 @@ func newMetricsService(hc *hcov1beta1.HyperConverged, opts ...string) *corev1.Se
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      hc.Name + metricsSuffix,
 			Labels:    getLabels(hc),
-			Namespace: getNamespace(hc.Namespace, opts),
+			Namespace: namespace,
 		},
 		Spec: spec,
 	}
@@ -117,7 +116,7 @@ func newMetricsServiceMonitorHandler(Client client.Client, Scheme *runtime.Schem
 		crType:                 "ServiceMonitor",
 		removeExistingOwner:    false,
 		setControllerReference: true,
-		isCr:                   true,
+		isCr:                   false,
 		hooks:                  &metricsServiceMonitorHooks{},
 	}
 }
@@ -125,7 +124,7 @@ func newMetricsServiceMonitorHandler(Client client.Client, Scheme *runtime.Schem
 type metricsServiceMonitorHooks struct{}
 
 func (h metricsServiceMonitorHooks) getFullCr(hc *hcov1beta1.HyperConverged) runtime.Object {
-	return newServiceMonitor(hc)
+	return NewServiceMonitor(hc, hc.Namespace)
 }
 func (h metricsServiceMonitorHooks) getEmptyCr() runtime.Object {
 	return &monitoringv1.ServiceMonitor{}
@@ -162,8 +161,8 @@ func (h *metricsServiceMonitorHooks) updateCr(req *common.HcoRequest, Client cli
 	return false, false, nil
 }
 
-// creates ServiceMonitor resource to expose metrics endpoint
-func newServiceMonitor(hc *hcov1beta1.HyperConverged, opts ...string) *monitoringv1.ServiceMonitor {
+// NewServiceMonitor creates ServiceMonitor resource to expose metrics endpoint
+func NewServiceMonitor(hc *hcov1beta1.HyperConverged, namespace string) *monitoringv1.ServiceMonitor {
 	labels := getLabels(hc)
 
 	spec := monitoringv1.ServiceMonitorSpec{
@@ -177,7 +176,7 @@ func newServiceMonitor(hc *hcov1beta1.HyperConverged, opts ...string) *monitorin
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      hc.Name + metricsSuffix,
 			Labels:    labels,
-			Namespace: getNamespace(hc.Namespace, opts),
+			Namespace: namespace,
 		},
 		Spec: spec,
 	}
@@ -192,7 +191,7 @@ func newMonitoringPrometheusRuleHandler(Client client.Client, Scheme *runtime.Sc
 		crType:                 "PrometheusRule",
 		removeExistingOwner:    false,
 		setControllerReference: true,
-		isCr:                   true,
+		isCr:                   false,
 		hooks:                  &prometheusRuleHooks{},
 	}
 }
@@ -200,20 +199,20 @@ func newMonitoringPrometheusRuleHandler(Client client.Client, Scheme *runtime.Sc
 type prometheusRuleHooks struct{}
 
 func (h prometheusRuleHooks) getFullCr(hc *hcov1beta1.HyperConverged) runtime.Object {
-	return newPrometheusRule(hc)
+	return NewPrometheusRule(hc, hc.Namespace)
 }
-func (h prometheusRuleHooks) getEmptyCr() runtime.Object                              { return &promv1.PrometheusRule{} }
+func (h prometheusRuleHooks) getEmptyCr() runtime.Object                              { return &monitoringv1.PrometheusRule{} }
 func (h prometheusRuleHooks) validate() error                                         { return nil }
 func (h prometheusRuleHooks) postFound(*common.HcoRequest, runtime.Object) error      { return nil }
 func (h prometheusRuleHooks) getConditions(_ runtime.Object) []conditionsv1.Condition { return nil }
 func (h prometheusRuleHooks) checkComponentVersion(_ runtime.Object) bool             { return true }
 func (h prometheusRuleHooks) getObjectMeta(cr runtime.Object) *metav1.ObjectMeta {
-	return &cr.(*promv1.PrometheusRule).ObjectMeta
+	return &cr.(*monitoringv1.PrometheusRule).ObjectMeta
 }
 
 func (h *prometheusRuleHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
-	rule, ok1 := required.(*promv1.PrometheusRule)
-	found, ok2 := exists.(*promv1.PrometheusRule)
+	rule, ok1 := required.(*monitoringv1.PrometheusRule)
+	found, ok2 := exists.(*monitoringv1.PrometheusRule)
 	if !ok1 || !ok2 {
 		return false, false, errors.New("can't convert to PrometheusRule")
 	}
@@ -233,12 +232,12 @@ func (h *prometheusRuleHooks) updateCr(req *common.HcoRequest, Client client.Cli
 	return false, false, nil
 }
 
-// creates PrometheusRule resource to define alert rules
-func newPrometheusRule(hc *hcov1beta1.HyperConverged, opts ...string) *promv1.PrometheusRule {
-	spec := promv1.PrometheusRuleSpec{
-		Groups: []promv1.RuleGroup{{
+// NewPrometheusRule creates PrometheusRule resource to define alert rules
+func NewPrometheusRule(hc *hcov1beta1.HyperConverged, namespace string) *monitoringv1.PrometheusRule {
+	spec := monitoringv1.PrometheusRuleSpec{
+		Groups: []monitoringv1.RuleGroup{{
 			Name: alertRuleGroup,
-			Rules: []promv1.Rule{{
+			Rules: []monitoringv1.Rule{{
 				Alert: outOfBandUpdateAlert,
 				Expr:  intstr.FromString("sum(hyperconverged_cluster_operator_out_of_band_modifications[1m]) by (component_name) > 0"),
 				For:   "1m",
@@ -253,15 +252,15 @@ func newPrometheusRule(hc *hcov1beta1.HyperConverged, opts ...string) *promv1.Pr
 		}},
 	}
 
-	return &promv1.PrometheusRule{
+	return &monitoringv1.PrometheusRule{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: promv1.SchemeGroupVersion.String(),
+			APIVersion: monitoringv1.SchemeGroupVersion.String(),
 			Kind:       "PrometheusRule",
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      hc.Name + "-prometheus-rule",
 			Labels:    getLabels(hc),
-			Namespace: getNamespace(hc.Namespace, opts),
+			Namespace: namespace,
 		},
 		Spec: spec,
 	}

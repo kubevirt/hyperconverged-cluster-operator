@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	promv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/commonTestUtils"
@@ -31,7 +30,7 @@ var _ = Describe("Monitoring Operand", func() {
 		})
 
 		It("should create if not present", func() {
-			expectedResource := newMetricsService(hco)
+			expectedResource := NewMetricsService(hco, commonTestUtils.Namespace)
 			cl := commonTestUtils.InitClient([]runtime.Object{})
 			handler := (*genericOperand)(newMetricsServiceHandler(cl, commonTestUtils.GetScheme()))
 			res := handler.ensure(req)
@@ -53,7 +52,7 @@ var _ = Describe("Monitoring Operand", func() {
 		})
 
 		It("should find if present", func() {
-			expectedResource := newMetricsService(hco)
+			expectedResource := NewMetricsService(hco, commonTestUtils.Namespace)
 			cl := commonTestUtils.InitClient([]runtime.Object{expectedResource})
 			handler := (*genericOperand)(newMetricsServiceHandler(cl, commonTestUtils.GetScheme()))
 			res := handler.ensure(req)
@@ -69,7 +68,7 @@ var _ = Describe("Monitoring Operand", func() {
 		})
 
 		It("should reconcile to default", func() {
-			existingResource := newMetricsService(hco)
+			existingResource := NewMetricsService(hco, commonTestUtils.Namespace)
 			existingResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", existingResource.Namespace, existingResource.Name)
 
 			existingResource.Spec.Ports[0].Name = "Non default value"
@@ -108,7 +107,7 @@ var _ = Describe("Monitoring Operand", func() {
 		})
 
 		It("should create if not present", func() {
-			expectedResource := newServiceMonitor(hco)
+			expectedResource := NewServiceMonitor(hco, commonTestUtils.Namespace)
 			cl := commonTestUtils.InitClient([]runtime.Object{})
 			handler := (*genericOperand)(newMetricsServiceMonitorHandler(cl, commonTestUtils.GetScheme()))
 			res := handler.ensure(req)
@@ -130,7 +129,7 @@ var _ = Describe("Monitoring Operand", func() {
 		})
 
 		It("should find if present", func() {
-			expectedResource := newServiceMonitor(hco)
+			expectedResource := NewServiceMonitor(hco, commonTestUtils.Namespace)
 			cl := commonTestUtils.InitClient([]runtime.Object{expectedResource})
 			handler := (*genericOperand)(newMetricsServiceMonitorHandler(cl, commonTestUtils.GetScheme()))
 			res := handler.ensure(req)
@@ -146,7 +145,7 @@ var _ = Describe("Monitoring Operand", func() {
 		})
 
 		It("should reconcile to default", func() {
-			existingResource := newServiceMonitor(hco)
+			existingResource := NewServiceMonitor(hco, commonTestUtils.Namespace)
 			existingResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", existingResource.Namespace, existingResource.Name)
 
 			existingResource.Spec.Endpoints[0].Port = "Non default value"
@@ -183,7 +182,7 @@ var _ = Describe("Monitoring Operand", func() {
 		})
 
 		It("should create if not present", func() {
-			expectedResource := newPrometheusRule(hco)
+			expectedResource := NewPrometheusRule(hco, commonTestUtils.Namespace)
 			cl := commonTestUtils.InitClient([]runtime.Object{})
 			handler := (*genericOperand)(newMonitoringPrometheusRuleHandler(cl, commonTestUtils.GetScheme()))
 			res := handler.ensure(req)
@@ -193,7 +192,7 @@ var _ = Describe("Monitoring Operand", func() {
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).To(BeNil())
 
-			foundResource := &promv1.PrometheusRule{}
+			foundResource := &monitoringv1.PrometheusRule{}
 			Expect(
 				cl.Get(context.TODO(),
 					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -205,7 +204,7 @@ var _ = Describe("Monitoring Operand", func() {
 		})
 
 		It("should find if present", func() {
-			expectedResource := newPrometheusRule(hco)
+			expectedResource := NewPrometheusRule(hco, commonTestUtils.Namespace)
 			cl := commonTestUtils.InitClient([]runtime.Object{expectedResource})
 			handler := (*genericOperand)(newMonitoringPrometheusRuleHandler(cl, commonTestUtils.GetScheme()))
 			res := handler.ensure(req)
@@ -221,7 +220,7 @@ var _ = Describe("Monitoring Operand", func() {
 		})
 
 		It("should reconcile to default", func() {
-			existingResource := newPrometheusRule(hco)
+			existingResource := NewPrometheusRule(hco, commonTestUtils.Namespace)
 			existingResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", existingResource.Namespace, existingResource.Name)
 
 			existingResource.Spec.Groups[0].Name = "Non default value"
@@ -237,7 +236,7 @@ var _ = Describe("Monitoring Operand", func() {
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).To(BeNil())
 
-			foundResource := &promv1.PrometheusRule{}
+			foundResource := &monitoringv1.PrometheusRule{}
 			Expect(
 				cl.Get(context.TODO(),
 					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},

@@ -19,7 +19,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	promv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
 	networkaddons "github.com/kubevirt/cluster-network-addons-operator/pkg/apis"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -156,7 +155,6 @@ func main() {
 		consolev1.AddToScheme,
 		openshiftconfigv1.AddToScheme,
 		monitoringv1.AddToScheme,
-		promv1.AddToScheme,
 	} {
 		if err := f(mgr.GetScheme()); err != nil {
 			log.Error(err, "Failed to add to scheme")
