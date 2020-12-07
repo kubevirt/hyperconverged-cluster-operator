@@ -239,8 +239,8 @@ func NewPrometheusRule(hc *hcov1beta1.HyperConverged, namespace string) *monitor
 			Name: alertRuleGroup,
 			Rules: []monitoringv1.Rule{{
 				Alert: outOfBandUpdateAlert,
-				Expr:  intstr.FromString("sum(hyperconverged_cluster_operator_out_of_band_modifications[1m]) by (component_name) > 0"),
-				For:   "1m",
+				Expr:  intstr.FromString("sum(increase(hyperconverged_cluster_operator_out_of_band_modifications[1m])) by (component_name) > 0"),
+				For:   "60m",
 				Annotations: map[string]string{
 					"description": "Out-of-band modification for {{ $labels.component_name }} .",
 					"summary":     "Out-of-band CR modification was detected",
