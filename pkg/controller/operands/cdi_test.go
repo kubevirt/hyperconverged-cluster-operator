@@ -271,6 +271,42 @@ var _ = Describe("CDI Operand", func() {
 			Expect(req.Conditions).To(BeEmpty())
 		})
 
+		It("should not overwrite Spec.Config if directly set on CDI CR", func() {
+			expectedResource := NewCDI(hco)
+			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
+
+			// mock a reconciliation triggered by a change in CDI CR
+			req.HCOTriggered = false
+
+			// modify a cfg
+			storageClass := "aa"
+			proxyURLOverride := "proxyOverride"
+			expectedResource.Spec.Config = &cdiv1beta1.CDIConfigSpec{
+				UploadProxyURLOverride:   &proxyURLOverride,
+				ScratchSpaceStorageClass: &storageClass,
+				PodResourceRequirements:  &corev1.ResourceRequirements{},
+				FeatureGates:             []string{"DummyFG"},
+				FilesystemOverhead:       &cdiv1beta1.FilesystemOverhead{Global: "5"},
+			}
+
+			cl := commonTestUtils.InitClient([]runtime.Object{hco, expectedResource})
+			handler := (*genericOperand)(newCdiHandler(cl, commonTestUtils.GetScheme()))
+			res := handler.ensure(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Overwritten).To(BeFalse())
+			Expect(res.Err).To(BeNil())
+
+			foundResource := &cdiv1beta1.CDI{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
+					foundResource),
+			).To(BeNil())
+			Expect(foundResource.Spec.Config).ToNot(BeNil())
+			Expect(*foundResource.Spec.Config).To(Equal(*expectedResource.Spec.Config))
+		})
+
 		It("should handle conditions", func() {
 			expectedResource := NewCDI(hco)
 			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
