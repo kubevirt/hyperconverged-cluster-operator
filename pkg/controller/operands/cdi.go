@@ -69,6 +69,8 @@ func (h *cdiHooks) updateCr(req *common.HcoRequest, Client client.Client, exists
 		found.Spec.Config.DeepCopyInto(cdi.Spec.Config)
 	}
 
+	setDefaultFeatureGates(&cdi.Spec)
+
 	if !reflect.DeepEqual(found.Spec, cdi.Spec) {
 		overwritten := false
 		if req.HCOTriggered {
@@ -85,6 +87,22 @@ func (h *cdiHooks) updateCr(req *common.HcoRequest, Client client.Client, exists
 		return true, overwritten, nil
 	}
 	return false, false, nil
+}
+
+func setDefaultFeatureGates(spec *cdiv1beta1.CDISpec) {
+	featureGate := "HonorWaitForFirstConsumer"
+
+	if spec.Config == nil {
+		spec.Config = &cdiv1beta1.CDIConfigSpec{}
+	} else {
+		for _, value := range spec.Config.FeatureGates {
+			if value == featureGate {
+				return
+			}
+		}
+	}
+
+	spec.Config.FeatureGates = append(spec.Config.FeatureGates, featureGate)
 }
 
 func (h *cdiHooks) postFound(req *common.HcoRequest, exists runtime.Object) error {
