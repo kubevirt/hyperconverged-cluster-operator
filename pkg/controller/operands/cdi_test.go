@@ -52,8 +52,6 @@ var _ = Describe("CDI Operand", func() {
 		It("should find if present", func() {
 			expectedResource := NewCDI(hco)
 			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
-			expectedResource.Spec.Config = &cdiv1beta1.CDIConfigSpec{FeatureGates: []string{"HonorWaitForFirstConsumer"}}
-
 			cl := commonTestUtils.InitClient([]runtime.Object{hco, expectedResource})
 			handler := (*genericOperand)(newCdiHandler(cl, commonTestUtils.GetScheme()))
 			res := handler.ensure(req)
@@ -320,6 +318,7 @@ var _ = Describe("CDI Operand", func() {
 		It("should add HonorWaitForFirstConsumer featuregate if Spec.Config if empty", func() {
 			expectedResource := NewCDI(hco)
 			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
+			expectedResource.Spec.Config = nil
 
 			// mock a reconciliation triggered by a change in CDI CR
 			req.HCOTriggered = false
@@ -345,7 +344,6 @@ var _ = Describe("CDI Operand", func() {
 		It("should handle conditions", func() {
 			expectedResource := NewCDI(hco)
 			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
-			expectedResource.Spec.Config = &cdiv1beta1.CDIConfigSpec{FeatureGates: []string{"HonorWaitForFirstConsumer"}}
 			expectedResource.Status.Conditions = []conditionsv1.Condition{
 				conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,

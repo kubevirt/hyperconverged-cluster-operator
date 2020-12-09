@@ -124,6 +124,7 @@ func NewCDI(hc *hcov1beta1.HyperConverged, opts ...string) *cdiv1beta1.CDI {
 
 	spec := cdiv1beta1.CDISpec{
 		UninstallStrategy: &uninstallStrategy,
+		Config:            &cdiv1beta1.CDIConfigSpec{FeatureGates: []string{"HonorWaitForFirstConsumer"}},
 	}
 
 	if hc.Spec.Infra.NodePlacement != nil {
