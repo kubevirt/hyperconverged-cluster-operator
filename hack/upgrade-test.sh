@@ -254,6 +254,8 @@ ${CMD} get pod $HCO_CATALOGSOURCE_POD -n ${HCO_CATALOG_NAMESPACE} -o yaml | grep
 
 dump_sccs_after
 
+KUBECTL_BINARY=${CMD} ./hack/test_quick_start.sh
+
 Msg "brutally delete HCO removing the namespace where it's running"
 source hack/test_delete_ns.sh
 test_delete_ns
