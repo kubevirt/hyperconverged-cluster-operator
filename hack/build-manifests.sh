@@ -156,6 +156,15 @@ function create_ssp_csv() {
   "
 
   gen_csv ${SSP_CSV_GENERATOR} ${operatorName} "${SSP_OPERATOR_IMAGE}" ${dumpCRDsArg} ${operatorArgs}
+
+  # Temporary CSV workarounds:
+  # 1) remove the `certs` volume from ssp-operator pod
+  # 2) set the containerPort to 9443 for the ssp webhook
+  sspCsv="${TEMPDIR}/${operatorName}.${CSV_EXT}"
+  sed -i '/volumes:/,/secretName: ssp-webhook-server-cert/d' ${sspCsv}
+  sed -i '/volumeMounts:/,/readOnly: true/d' ${sspCsv}
+  sed -i '/webhookPath: \/validate-ssp-kubevirt-io-v1beta1-ssp/a \ \ \ \ containerPort: 9443' ${sspCsv}
+  
   echo "${operatorName}"
 }
 

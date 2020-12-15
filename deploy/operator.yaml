@@ -339,17 +339,8 @@ spec:
           name: webhook-server
           protocol: TCP
         resources: {}
-        volumeMounts:
-        - mountPath: /tmp/k8s-webhook-server/serving-certs
-          name: cert
-          readOnly: true
       serviceAccountName: ssp-operator
       terminationGracePeriodSeconds: 10
-      volumes:
-      - name: cert
-        secret:
-          defaultMode: 420
-          secretName: ssp-webhook-server-cert
 ---
 apiVersion: apps/v1
 kind: Deployment
