@@ -22,9 +22,17 @@ set -ex
 function test_delete_ns(){
     if [ "${CMD}" == "oc" ]; then
         echo "Trying to delete kubevirt-hyperconverged namespace when the hyperconverged CR is still there"
+        date --utc +%H:%M:%S
         # this should fail with a clear error message
         DELETE_ERROR_TEXT="$(${CMD} delete namespace kubevirt-hyperconverged 2>&1 || true)"
-        echo "${DELETE_ERROR_TEXT}" | grep "denied the request: HyperConverged CR is still present, please remove it before deleting the containing namespace"
+	
+	# TODO: test only, remove!
+	date --utc +%H:%M:%S
+	${CMD} get pods -A | grep authentication || true
+	${CMD} describe co authentication || true
+        # ########################
+
+	echo "${DELETE_ERROR_TEXT}" | grep "denied the request: HyperConverged CR is still present, please remove it before deleting the containing namespace"
 
         echo "kubevirt-hyperconverged namespace should be still there"
         ${CMD} get namespace kubevirt-hyperconverged -o yaml
