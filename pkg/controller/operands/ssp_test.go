@@ -3,15 +3,17 @@ package operands
 import (
 	"context"
 	"fmt"
+	"os"
+
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/commonTestUtils"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
+	v1 "github.com/openshift/custom-resource-status/objectreferences/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	lifecycleapi "kubevirt.io/controller-lifecycle-operator-sdk/pkg/sdk/api"
 	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
-	"os"
 
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -466,6 +468,79 @@ var _ = Describe("SSP Operands", func() {
 				Expect(foundCrds.Items).To(BeEmpty())
 			})
 
+			It("should remove old related objects if upgrade is done", func() {
+				// Simulate no upgrade
+				req.SetUpgradeMode(false)
+
+				// Initialize RelatedObjects with a bunch of objects
+				// including old SSP ones.
+				for _, objRef := range oldSSPRelatedObjects() {
+					v1.SetObjectReference(&hco.Status.RelatedObjects, objRef)
+				}
+				for _, objRef := range otherRelatedObjects() {
+					v1.SetObjectReference(&hco.Status.RelatedObjects, objRef)
+				}
+
+				cl := commonTestUtils.InitClient(nil)
+				handler := newSspHandler(cl, commonTestUtils.GetScheme())
+				res := handler.ensure(req)
+
+				Expect(res.Created).To(BeTrue())
+				Expect(res.Updated).To(BeFalse())
+				Expect(res.Overwritten).To(BeFalse())
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Err).To(BeNil())
+
+				Expect(hco.Status.RelatedObjects).To(HaveLen(len(otherRelatedObjects())))
+				for _, objRef := range oldSSPRelatedObjects() {
+					Expect(hco.Status.RelatedObjects).ToNot(ContainElement(objRef))
+				}
+			})
+
+			It("should retry removing old related objects when they fail to be removed from the status", func() {
+				// Simulate no upgrade
+				req.SetUpgradeMode(false)
+
+				// Initialize RelatedObjects with a bunch of objects
+				// including old SSP ones.
+				for _, objRef := range oldSSPRelatedObjects() {
+					v1.SetObjectReference(&hco.Status.RelatedObjects, objRef)
+				}
+				for _, objRef := range otherRelatedObjects() {
+					v1.SetObjectReference(&hco.Status.RelatedObjects, objRef)
+				}
+
+				cl := commonTestUtils.InitClient(nil)
+				handler := newSspHandler(cl, commonTestUtils.GetScheme())
+				res := handler.ensure(req)
+
+				Expect(res.Created).To(BeTrue())
+				Expect(res.Updated).To(BeFalse())
+				Expect(res.Overwritten).To(BeFalse())
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Err).To(BeNil())
+
+				// Now simulate "status update failure",
+				// i.e. related objects aren't removed.
+				for _, objRef := range oldSSPRelatedObjects() {
+					v1.SetObjectReference(&hco.Status.RelatedObjects, objRef)
+				}
+
+				// Simulate another reconciliation cycle
+				res = handler.ensure(req)
+
+				Expect(res.Created).To(BeFalse())
+				Expect(res.Updated).To(BeFalse())
+				Expect(res.Overwritten).To(BeFalse())
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Err).To(BeNil())
+
+				// len+1 because the (new) SSP object is now added to RelatedObjects
+				Expect(hco.Status.RelatedObjects).To(HaveLen(len(otherRelatedObjects()) + 1))
+				for _, objRef := range oldSSPRelatedObjects() {
+					Expect(hco.Status.RelatedObjects).ToNot(ContainElement(objRef))
+				}
+			})
 		})
 	})
 })
@@ -503,4 +578,50 @@ func oldSSPCrdsAsObjects() []runtime.Object {
 	}
 
 	return objs
+}
+
+func oldSSPRelatedObjects() []corev1.ObjectReference {
+	return []corev1.ObjectReference{
+		{
+			APIVersion: "ssp.kubevirt.io/v1",
+			Kind:       "KubevirtCommonTemplatesBundle",
+			Name:       "common-templates-kubevirt-hyperconverged",
+			Namespace:  "openshift",
+		},
+		{
+			APIVersion: "ssp.kubevirt.io/v1",
+			Kind:       "KubevirtNodeLabellerBundle",
+			Name:       "node-labeller-kubevirt-hyperconverged",
+			Namespace:  "kubevirt-hyperconverged",
+		},
+		{
+			APIVersion: "ssp.kubevirt.io/v1",
+			Kind:       "KubevirtTemplateValidator",
+			Name:       "template-validator-kubevirt-hyperconverged",
+			Namespace:  "kubevirt-hyperconverged",
+		},
+		{
+			APIVersion: "ssp.kubevirt.io/v1",
+			Kind:       "KubevirtMetricsAggregation",
+			Name:       "metrics-aggregation-kubevirt-hyperconverged",
+			Namespace:  "kubevirt-hyperconverged",
+		},
+	}
+}
+
+func otherRelatedObjects() []corev1.ObjectReference {
+	return []corev1.ObjectReference{
+		{
+			APIVersion: "kubevirt.io/v1alpha3",
+			Kind:       "Kubevirt",
+			Name:       "kubevirt-kubevirt-hyperconverged",
+			Namespace:  "openshift",
+		},
+		{
+			APIVersion: "cdi.kubevirt.io/v1beta1",
+			Kind:       "CDI",
+			Name:       "cdi-kubevirt-hyperconverged",
+			Namespace:  "kubevirt-hyperconverged",
+		},
+	}
 }
