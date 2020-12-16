@@ -263,6 +263,16 @@ dump_sccs_after
 
 KUBECTL_BINARY=${CMD} ./hack/test_quick_start.sh
 
+# dumb workaround for a CI issue:
+# for a still unclear issue, openshift authentication operator
+# often dies after a certain amount of time (quite deterministic)
+# this cause oauth pod to be restarted and this can potentially
+# made the whole lane failing if we try to send any oc command
+# exactly at that time.
+# pospone the last part of the test by 15 minutes to be sure
+# to loose that race until we are able to get it fixed on CI infra
+sleep 900
+
 Msg "brutally delete HCO removing the namespace where it's running"
 source hack/test_delete_ns.sh
 test_delete_ns
