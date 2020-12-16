@@ -84,7 +84,7 @@ func (h qsHooks) updateCr(req *common.HcoRequest, Client client.Client, exists r
 		return false, false, errors.New("can't convert to ConsoleQuickStart")
 	}
 
-	if !reflect.DeepEqual(found.Spec, h.required.Spec) && !req.UpgradeMode {
+	if !reflect.DeepEqual(found.Spec, h.required.Spec) {
 		if req.HCOTriggered {
 			req.Logger.Info("Updating existing ConsoleQuickStart's Spec to new opinionated values", "name", h.required.Name)
 		} else {
