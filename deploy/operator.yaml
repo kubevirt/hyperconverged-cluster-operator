@@ -141,8 +141,36 @@ spec:
             scheme: HTTP
           initialDelaySeconds: 5
           periodSeconds: 5
+        volumeMounts:
+        - mountPath: /apiserver.local.config/certificates
+          name: apiservice-cert
         resources: {}
       serviceAccountName: hyperconverged-cluster-operator
+      volumes:
+      - name: apiservice-cert
+        secret:
+          defaultMode: 420
+          items:
+          - key: tls.crt
+            path: apiserver.crt
+          - key: tls.key
+            path: apiserver.key
+          secretName: hco-webhook-service-cert
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hco-webhook-service
+spec:
+  ports:
+  - name: "4343"
+    port: 4343
+    protocol: TCP
+    targetPort: 4343
+  selector:
+    name: hyperconverged-cluster-webhook
+  sessionAffinity: None
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment

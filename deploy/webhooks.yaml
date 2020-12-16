@@ -1,0 +1,56 @@
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned
+  namespace: kubevirt-hyperconverged
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: hco-webhook-service-cert
+  namespace: kubevirt-hyperconverged
+spec:
+  secretName: hco-webhook-service-cert
+  dnsNames:
+  - hco-webhook-service.kubevirt-hyperconverged.svc
+  issuerRef:
+    name: selfsigned
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: validate-hco.kubevirt.io
+  annotations:
+    cert-manager.io/inject-ca-from: kubevirt-hyperconverged/hco-webhook-service-cert
+webhooks:
+- admissionReviewVersions:
+  - v1beta1
+  - v1
+  clientConfig:
+    # caBundle: WILL BE INJECTED BY CERT-MANAGER BECAUSE OF THE ANNOTATION
+    service:
+      name: hco-webhook-service
+      namespace: kubevirt-hyperconverged
+      path: /validate-hco-kubevirt-io-v1beta1-hyperconverged
+      port: 4343
+  failurePolicy: Fail
+  matchPolicy: Equivalent
+  name: validate-hco.kubevirt.io
+  objectSelector: {}
+  rules:
+  - apiGroups:
+    - hco.kubevirt.io
+    apiVersions:
+    - v1alpha1
+    - v1beta1
+    operations:
+    - CREATE
+    - DELETE
+    - UPDATE
+    resources:
+    - hyperconvergeds
+    scope: '*'
+  sideEffects: None
+  timeoutSeconds: 30

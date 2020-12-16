@@ -117,11 +117,14 @@ function debug(){
     exit 1
 }
 
+# Deploy cert-manager for webhooks
+"${CMD}" apply -f _out/cert-manager/
+
 # Deploy local manifests
-"${CMD}" create -f _out/cluster_role.yaml
-"${CMD}" create -f _out/service_account.yaml
-"${CMD}" create -f _out/cluster_role_binding.yaml
-"${CMD}" create -f _out/crds/
+"${CMD}" apply -f _out/cluster_role.yaml
+"${CMD}" apply -f _out/service_account.yaml
+"${CMD}" apply -f _out/cluster_role_binding.yaml
+"${CMD}" apply -f _out/crds/
 
 sleep 20
 if [[ "$(${CMD} get crd ${HCO_CRD_NAME} -o=jsonpath='{.status.conditions[?(@.type=="NonStructuralSchema")].status}')" == "True" ]];
@@ -131,12 +134,15 @@ then
 fi
 
 if [ "${CI}" != "true" ]; then
-	"${CMD}" create -f _out/operator.yaml
+	"${CMD}" apply -f _out/operator.yaml
 else
 	sed -E 's|^(\s*)- name: KVM_EMULATION$|\1- name: KVM_EMULATION\n\1  value: "true"|' < _out/operator.yaml > _out/operator-ci.yaml
 	cat _out/operator-ci.yaml
-	"${CMD}" create -f _out/operator-ci.yaml
+	"${CMD}" apply -f _out/operator-ci.yaml
 fi
+
+echo "Creating resources for webhooks"
+"${CMD}" apply -f _out/webhooks.yaml
 
 # Wait for the HCO to be ready
 sleep 20
@@ -149,7 +155,7 @@ for op in cdi-operator cluster-network-addons-operator kubevirt-ssp-operator nod
     "${CMD}" wait deployment/"${op}" --for=condition=Available --timeout="540s" || CONTAINER_ERRORED+="${op} "
 done
 
-"${CMD}" create -f _out/hco.cr.yaml
+"${CMD}" apply -f _out/hco.cr.yaml
 sleep 10
 # Give 30 minutes to available condition become true
 if ! timeout 30m bash -c -- "until "${CMD}" get -n ${HCO_NAMESPACE} ${HCO_KIND} ${HCO_RESOURCE_NAME} -o go-template='{{ range .status.conditions }}{{ if eq .type \"Available\" }}{{ .status }}{{ end }}{{ end }}' | grep True; do sleep 1; done";
