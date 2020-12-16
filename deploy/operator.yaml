@@ -473,10 +473,39 @@ spec:
         imagePullPolicy: Always
         name: node-maintenance-operator
         resources: {}
+        volumeMounts:
+        - mountPath: /apiserver.local.config/certificates
+          name: apiservice-cert
+      volumes:
+      - name: apiservice-cert
+        secret:
+          defaultMode: 420
+          items:
+          - key: tls.crt
+            path: apiserver.crt
+          - key: tls.key
+            path: apiserver.key
+          secretName: node-maintenance-operator-service-cert      
       serviceAccountName: node-maintenance-operator
       tolerations:
       - effect: NoSchedule
         key: node-role.kubernetes.io/master
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-maintenance-operator-service
+  namespace: openshift-cnv
+spec:
+  ports:
+  - name: "8443"
+    port: 8443
+    protocol: TCP
+    targetPort: 8443
+  selector:
+    name: node-maintenance-operator
+  sessionAffinity: None
+  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
