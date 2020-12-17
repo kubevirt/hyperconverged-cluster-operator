@@ -13,20 +13,19 @@ require (
 	github.com/go-openapi/spec v0.19.7 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/mock v1.4.0 // indirect
-	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/kubevirt/cluster-network-addons-operator v0.43.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
-	google.golang.org/appengine v1.6.5 // indirect
 	k8s.io/api v0.19.0-rc.2
 	k8s.io/apimachinery v0.19.0-rc.2
 	k8s.io/client-go v12.0.0+incompatible
-	kubevirt.io/client-go v0.34.0
-	kubevirt.io/containerized-data-importer v1.24.1 // indirect
-	kubevirt.io/kubevirt v0.34.0
-	sigs.k8s.io/yaml v1.2.0 // indirect
+	kubevirt.io/client-go v0.0.0-00010101000000-000000000000
+	kubevirt.io/kubevirt v0.36.0
 )
 
-// Pinned to kubernetes-1.16.4 to kubevirt.io/kubevirt v0.33.0
+// keep it aligned when we bump kubevirt dependencies
+replace kubevirt.io/client-go => kubevirt.io/client-go v0.36.0
+
+// Pinned to v0.16.4
 replace (
 	k8s.io/api => k8s.io/api v0.16.4
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.16.4
@@ -40,7 +39,6 @@ replace (
 	k8s.io/component-base => k8s.io/component-base v0.16.4
 	k8s.io/cri-api => k8s.io/cri-api v0.16.4
 	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.16.4
-	k8s.io/klog => k8s.io/klog v0.4.0
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.16.4
 	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.16.4
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
@@ -63,7 +61,6 @@ replace (
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.3.1
 	github.com/openshift/machine-api-operator => github.com/openshift/machine-api-operator v0.2.1-0.20191025120018-fb3724fc7bdf
 	github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.0.0-20190424153033-d3245f150225
-	kubevirt.io/client-go => kubevirt.io/client-go v0.34.0
 )
 
 // Aligning with https://github.com/kubevirt/containerized-data-importer/blob/release-v1.24.1
@@ -74,23 +71,7 @@ replace (
 	sigs.k8s.io/structured-merge-diff => sigs.k8s.io/structured-merge-diff v0.0.0-20190302045857-e85c7b244fd2
 )
 
-// sigs.k8s.io/controller-runtime 0.6.0 requires k8s-* v0.18.2 but we are pinned
-// to kubernetes-1.16.4  as for kubevirt.io/kubevirt v0.33.0
-// need github.com/operator-framework/api v0.3.5
-replace (
-	github.com/operator-framework/api => github.com/operator-framework/api v0.3.5
-	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.5.2
-)
-
-// cluster-network-addons-operator pulls in dependency on operator-sdk 0.39.2
-// but since HCO is pinned to Kubernetes v0.16.4, it needs to stay on operator-sdk
-// v0.17.0.
-replace github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.17.0
-
 replace github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309 // Required by Helm
-
-// Pinned for compatibility with kubernetes-1.16.4
-replace sigs.k8s.io/controller-tools => sigs.k8s.io/controller-tools v0.2.4
 
 replace vbom.ml/util => github.com/fvbommel/util v0.0.0-20180919145318-efcd4e0f9787
 

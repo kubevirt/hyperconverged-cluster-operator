@@ -19,7 +19,7 @@ require (
 	github.com/kubevirt/kubevirt-ssp-operator v1.2.1
 	github.com/kubevirt/vm-import-operator v0.2.5
 	github.com/onsi/ginkgo v1.14.2
-	github.com/onsi/gomega v1.10.3
+	github.com/onsi/gomega v1.10.4
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
 	github.com/openshift/custom-resource-status v0.0.0-20200602122900-c002fd1547ca
 	github.com/operator-framework/api v0.3.13
@@ -27,7 +27,6 @@ require (
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/client_model v0.2.0
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/net v0.0.0-20201110031124-69a78807bb2b // indirect
 	golang.org/x/text v0.3.4 // indirect
 	golang.org/x/tools v0.0.0-20200616195046-dc31b401abb5
 	google.golang.org/genproto v0.0.0-20200701001935-0939c5918c31 // indirect
