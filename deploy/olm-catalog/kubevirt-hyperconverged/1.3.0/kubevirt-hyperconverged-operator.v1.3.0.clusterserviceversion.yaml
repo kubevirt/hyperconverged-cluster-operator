@@ -1827,7 +1827,20 @@ spec:
                   initialDelaySeconds: 5
                   periodSeconds: 5
                 resources: {}
+                volumeMounts:
+                - mountPath: /apiserver.local.config/certificates
+                  name: apiservice-cert
               serviceAccountName: hyperconverged-cluster-operator
+              volumes:
+              - name: apiservice-cert
+                secret:
+                  defaultMode: 420
+                  items:
+                  - key: tls.crt
+                    path: apiserver.crt
+                  - key: tls.key
+                    path: apiserver.key
+                  secretName: hco-webhook-service-cert
       - name: cluster-network-addons-operator
         spec:
           replicas: 1

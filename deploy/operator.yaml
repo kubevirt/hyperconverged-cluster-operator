@@ -141,10 +141,10 @@ spec:
             scheme: HTTP
           initialDelaySeconds: 5
           periodSeconds: 5
+        resources: {}
         volumeMounts:
         - mountPath: /apiserver.local.config/certificates
           name: apiservice-cert
-        resources: {}
       serviceAccountName: hyperconverged-cluster-operator
       volumes:
       - name: apiservice-cert
@@ -156,21 +156,6 @@ spec:
           - key: tls.key
             path: apiserver.key
           secretName: hco-webhook-service-cert
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: hco-webhook-service
-spec:
-  ports:
-  - name: "4343"
-    port: 4343
-    protocol: TCP
-    targetPort: 4343
-  selector:
-    name: hyperconverged-cluster-webhook
-  sessionAffinity: None
-  type: ClusterIP
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -476,6 +461,10 @@ spec:
         volumeMounts:
         - mountPath: /apiserver.local.config/certificates
           name: apiservice-cert
+      serviceAccountName: node-maintenance-operator
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
       volumes:
       - name: apiservice-cert
         secret:
@@ -485,27 +474,7 @@ spec:
             path: apiserver.crt
           - key: tls.key
             path: apiserver.key
-          secretName: node-maintenance-operator-service-cert      
-      serviceAccountName: node-maintenance-operator
-      tolerations:
-      - effect: NoSchedule
-        key: node-role.kubernetes.io/master
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: node-maintenance-operator-service
-  namespace: openshift-cnv
-spec:
-  ports:
-  - name: "8443"
-    port: 8443
-    protocol: TCP
-    targetPort: 8443
-  selector:
-    name: node-maintenance-operator
-  sessionAffinity: None
-  type: ClusterIP
+          secretName: node-maintenance-operator-service-cert
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -593,3 +562,31 @@ spec:
       securityContext:
         runAsNonRoot: true
       serviceAccountName: vm-import-operator
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hco-webhook-service
+spec:
+  ports:
+  - name: "4343"
+    port: 4343
+    protocol: TCP
+    targetPort: 4343
+  selector:
+    name: hyperconverged-cluster-webhook
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-maintenance-operator-service
+spec:
+  ports:
+  - name: "8443"
+    port: 8443
+    protocol: TCP
+    targetPort: 8443
+  selector:
+    name: node-maintenance-operator
+  type: ClusterIP

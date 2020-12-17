@@ -24,11 +24,11 @@ source hack/common.sh
 "${CMD}" wait --for=delete hyperconverged.hco.kubevirt.io/kubevirt-hyperconverged || true
 # TODO: delete hangs on machine.crd.yaml. Only delete the ones that don't hang
 
-"${CMD}" delete -f _out/webhooks.yaml--ignore-not-found || true
-
 # from _out/crds/.
 "${CMD}" delete -f _out/crds --ignore-not-found || true
 "${CMD}" delete -f _out/operator.yaml --ignore-not-found || true
+
+"${CMD}" delete -f _out/webhooks.yaml--ignore-not-found || true
 
 # Delete kubevirt-operator
 "${CMD}" delete -n kubevirt apiservice v1alpha3.kubevirt.io --ignore-not-found || true

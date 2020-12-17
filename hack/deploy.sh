@@ -133,6 +133,10 @@ then
     "${CMD}" get crd ${HCO_CRD_NAME} -o go-template='{{ range .status.conditions }}{{ .type }}{{ "\t" }}{{ .status }}{{ "\t" }}{{ .message }}{{ "\n" }}{{ end }}'
 fi
 
+# note that generated certificates are necessary for webhook deployments
+echo "Creating resources for webhooks"
+"${CMD}" apply -f _out/webhooks.yaml
+
 if [ "${CI}" != "true" ]; then
 	"${CMD}" apply -f _out/operator.yaml
 else
@@ -140,9 +144,6 @@ else
 	cat _out/operator-ci.yaml
 	"${CMD}" apply -f _out/operator-ci.yaml
 fi
-
-echo "Creating resources for webhooks"
-"${CMD}" apply -f _out/webhooks.yaml
 
 # Wait for the HCO to be ready
 sleep 20
