@@ -118,7 +118,7 @@ function debug(){
 }
 
 # Deploy cert-manager for webhooks
-"${CMD}" apply -f _out/cert-manager/
+"${CMD}" apply -f _out/cert-manager.yaml
 
 # Deploy local manifests
 "${CMD}" apply -f _out/cluster_role.yaml
@@ -134,6 +134,9 @@ then
 fi
 
 # note that generated certificates are necessary for webhook deployments
+# manifest-templator does not add them into operator.yaml at the moment. 
+# when a new webhook (deployed by OLM in production) is introduced, 
+# it must be added into webhooks.yaml as well.
 echo "Creating resources for webhooks"
 "${CMD}" apply -f _out/webhooks.yaml
 

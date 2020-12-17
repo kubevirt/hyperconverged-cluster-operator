@@ -2,7 +2,6 @@ apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
   name: selfsigned
-  namespace: kubevirt-hyperconverged
 spec:
   selfSigned: {}
 ---
@@ -10,7 +9,6 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: hco-webhook-service-cert
-  namespace: kubevirt-hyperconverged
 spec:
   secretName: hco-webhook-service-cert
   dnsNames:
@@ -59,7 +57,6 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: node-maintenance-operator-service-cert
-  namespace: kubevirt-hyperconverged
 spec:
   secretName: node-maintenance-operator-service-cert
   dnsNames:
