@@ -28,7 +28,7 @@ source hack/common.sh
 "${CMD}" delete -f _out/crds --ignore-not-found || true
 "${CMD}" delete -f _out/operator.yaml --ignore-not-found || true
 
-"${CMD}" delete -f _out/webhooks.yaml--ignore-not-found || true
+"${CMD}" delete -f _out/webhooks.yaml --ignore-not-found || true
 
 # Delete kubevirt-operator
 "${CMD}" delete -n kubevirt apiservice v1alpha3.kubevirt.io --ignore-not-found || true
