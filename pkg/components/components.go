@@ -1215,48 +1215,35 @@ func GetCSVBase(name, namespace, displayName, description, image, replaces strin
 	}
 }
 
-func getVolumeSourceItemsForWebHooks() []corev1.KeyToPath {
-	return []corev1.KeyToPath{
-		{
-			Key:  "tls.crt",
-			Path: "apiserver.crt",
-		},
-		{
-			Key:  "tls.key",
-			Path: "apiserver.key",
-		},
-	}
-}
-
-func getVolumeMountForCertificates() []corev1.VolumeMount {
-	return []corev1.VolumeMount{
-		{
-			Name:      "apiservice-cert",
-			MountPath: "/apiserver.local.config/certificates",
-		},
-	}
-}
-
-func getDefaultModeForCertVolume() *int32 {
-	defaultMode := int32(420)
-	return &defaultMode
-}
-
 func InjectVolumesForWebHookCerts(deploy *appsv1.Deployment) {
+	defaultMode := int32(420)
 	volume := v1.Volume{
 		Name: certVolume,
 		VolumeSource: corev1.VolumeSource{
 			Secret: &corev1.SecretVolumeSource{
 				SecretName:  deploy.Name + "-service-cert",
-				DefaultMode: getDefaultModeForCertVolume(),
-				Items:       getVolumeSourceItemsForWebHooks(),
+				DefaultMode: &defaultMode,
+				Items: []corev1.KeyToPath{
+					{
+						Key:  "tls.crt",
+						Path: "apiserver.crt",
+					},
+					{
+						Key:  "tls.key",
+						Path: "apiserver.key",
+					},
+				},
 			},
 		},
 	}
 	deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, volume)
 
 	for index, container := range deploy.Spec.Template.Spec.Containers {
-		deploy.Spec.Template.Spec.Containers[index].VolumeMounts = append(container.VolumeMounts, getVolumeMountForCertificates()...)
+		deploy.Spec.Template.Spec.Containers[index].VolumeMounts = append(container.VolumeMounts,
+			corev1.VolumeMount{
+				Name:      "apiservice-cert",
+				MountPath: "/apiserver.local.config/certificates",
+			})
 	}
 }
 
