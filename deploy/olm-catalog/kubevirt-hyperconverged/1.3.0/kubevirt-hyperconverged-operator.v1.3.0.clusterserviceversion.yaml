@@ -7,8 +7,13 @@ metadata:
     capabilities: Full Lifecycle
     categories: OpenShift Optional
     certified: "false"
+<<<<<<< HEAD
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator@sha256:e7356254a1251f1fba682be77c9a90b1f840d6a84ff88492fb1e87ae30dda9da
-    createdAt: "2020-12-24 04:16:53"
+    createdAt: "2020-12-18 14:28:54"
+=======
+    containerImage: quay.io/kubevirt/hyperconverged-cluster-operator@sha256:0849ed82f0ea486ff5f0dd67ccf67d85e7a41bab263a2916311c530042dd9be6
+    createdAt: "2020-12-14 12:54:53"
+>>>>>>> 618b7628 (revert the change in createdAt)
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -1827,20 +1832,7 @@ spec:
                   initialDelaySeconds: 5
                   periodSeconds: 5
                 resources: {}
-                volumeMounts:
-                - mountPath: /apiserver.local.config/certificates
-                  name: apiservice-cert
               serviceAccountName: hyperconverged-cluster-operator
-              volumes:
-              - name: apiservice-cert
-                secret:
-                  defaultMode: 420
-                  items:
-                  - key: tls.crt
-                    path: apiserver.crt
-                  - key: tls.key
-                    path: apiserver.key
-                  secretName: hco-webhook-service-cert
       - name: cluster-network-addons-operator
         spec:
           replicas: 1

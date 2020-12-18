@@ -38,10 +38,7 @@ const (
 	hcoNameWebhook      = "hyperconverged-cluster-webhook"
 	hcoDeploymentName   = "hco-operator"
 	hcoWhDeploymentName = "hco-webhook"
-	hcoWhServiceName    = "hco-webhook-service"
-	hcoWhServiceSecret  = hcoWhServiceName + "-cert"
-
-	CertVolume = "apiservice-cert"
+	certVolume          = "apiservice-cert"
 )
 
 func GetDeploymentOperator(namespace, image, imagePullPolicy, conversionContainer, vmwareContainerString, smbios, machinetype, hcoKvIoVersion, kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion, vmImportVersion string, env []corev1.EnvVar) appsv1.Deployment {
@@ -61,7 +58,7 @@ func GetDeploymentOperator(namespace, image, imagePullPolicy, conversionContaine
 }
 
 func GetDeploymentWebhook(namespace, image, imagePullPolicy string, env []corev1.EnvVar) appsv1.Deployment {
-	return appsv1.Deployment{
+	deploy := appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
 			Kind:       "Deployment",
@@ -74,6 +71,9 @@ func GetDeploymentWebhook(namespace, image, imagePullPolicy string, env []corev1
 		},
 		Spec: GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, env),
 	}
+
+	InjectVolumesForWebHookCerts(&deploy)
+	return deploy
 }
 
 func GetServiceWebhook(namespace string) v1.Service {
@@ -83,7 +83,7 @@ func GetServiceWebhook(namespace string) v1.Service {
 			Kind:       "Service",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: hcoWhDeploymentName + "-service",
+			Name: hcoNameWebhook + "-service",
 		},
 		Spec: v1.ServiceSpec{
 			Selector: map[string]string{
@@ -292,8 +292,7 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy string, env []co
 						Image:           image,
 						ImagePullPolicy: corev1.PullPolicy(imagePullPolicy),
 						// TODO: command being name is artifact of operator-sdk usage
-						Command:      []string{hcoNameWebhook},
-						VolumeMounts: GetVolumeMountForCertificates(),
+						Command: []string{hcoNameWebhook},
 						ReadinessProbe: &corev1.Probe{
 							Handler: corev1.Handler{
 								HTTPGet: &corev1.HTTPGetAction{
@@ -361,22 +360,11 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy string, env []co
 						}, env...),
 					},
 				},
-				Volumes: []v1.Volume{
-					{
-						Name: CertVolume,
-						VolumeSource: corev1.VolumeSource{
-							Secret: &corev1.SecretVolumeSource{
-								SecretName:  hcoWhServiceSecret,
-								DefaultMode: GetDefaultModeForCertVolume(),
-								Items:       GetVolumeSourceItemsForWebHooks(),
-							},
-						},
-					},
-				},
 			},
 		},
 	}
 }
+
 func GetClusterRole() rbacv1.ClusterRole {
 	return rbacv1.ClusterRole{
 		TypeMeta: metav1.TypeMeta{
@@ -1227,7 +1215,7 @@ func GetCSVBase(name, namespace, displayName, description, image, replaces strin
 	}
 }
 
-func GetVolumeSourceItemsForWebHooks() []corev1.KeyToPath {
+func getVolumeSourceItemsForWebHooks() []corev1.KeyToPath {
 	return []corev1.KeyToPath{
 		{
 			Key:  "tls.crt",
@@ -1240,7 +1228,7 @@ func GetVolumeSourceItemsForWebHooks() []corev1.KeyToPath {
 	}
 }
 
-func GetVolumeMountForCertificates() []corev1.VolumeMount {
+func getVolumeMountForCertificates() []corev1.VolumeMount {
 	return []corev1.VolumeMount{
 		{
 			Name:      "apiservice-cert",
@@ -1249,9 +1237,27 @@ func GetVolumeMountForCertificates() []corev1.VolumeMount {
 	}
 }
 
-func GetDefaultModeForCertVolume() *int32 {
+func getDefaultModeForCertVolume() *int32 {
 	defaultMode := int32(420)
 	return &defaultMode
+}
+
+func InjectVolumesForWebHookCerts(deploy *appsv1.Deployment) {
+	volume := v1.Volume{
+		Name: certVolume,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName:  deploy.Name + "-service-cert",
+				DefaultMode: getDefaultModeForCertVolume(),
+				Items:       getVolumeSourceItemsForWebHooks(),
+			},
+		},
+	}
+	deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, volume)
+
+	for index, container := range deploy.Spec.Template.Spec.Containers {
+		deploy.Spec.Template.Spec.Containers[index].VolumeMounts = append(container.VolumeMounts, getVolumeMountForCertificates()...)
+	}
 }
 
 func int32Ptr(i int32) *int32 {

@@ -8,11 +8,11 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: hco-webhook-service-cert
+  name: hyperconverged-cluster-webhook-service-cert-cert
 spec:
-  secretName: hco-webhook-service-cert
+  secretName: hyperconverged-cluster-webhook-service-cert-cert
   dnsNames:
-  - hco-webhook-service.kubevirt-hyperconverged.svc
+  - hyperconverged-cluster-webhook-service-cert.kubevirt-hyperconverged.svc
   issuerRef:
     name: selfsigned
 ---
@@ -21,7 +21,7 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: validate-hco.kubevirt.io
   annotations:
-    cert-manager.io/inject-ca-from: kubevirt-hyperconverged/hco-webhook-service-cert
+    cert-manager.io/inject-ca-from: kubevirt-hyperconverged/hyperconverged-cluster-webhook-service-cert-cert
 webhooks:
 - admissionReviewVersions:
   - v1beta1
@@ -29,7 +29,7 @@ webhooks:
   clientConfig:
     # caBundle: WILL BE INJECTED BY CERT-MANAGER BECAUSE OF THE ANNOTATION
     service:
-      name: hco-webhook-service
+      name: hyperconverged-cluster-webhook-service-cert
       namespace: kubevirt-hyperconverged
       path: /validate-hco-kubevirt-io-v1beta1-hyperconverged
       port: 4343

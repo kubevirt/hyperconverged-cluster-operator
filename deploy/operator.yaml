@@ -155,7 +155,7 @@ spec:
             path: apiserver.crt
           - key: tls.key
             path: apiserver.key
-          secretName: hco-webhook-service-cert
+          secretName: hyperconverged-cluster-webhook-service-cert
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -566,7 +566,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: hco-webhook-service
+  name: hyperconverged-cluster-webhook-service
 spec:
   ports:
   - name: "4343"

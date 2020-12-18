@@ -393,21 +393,7 @@ func main() {
 func injectWebhookMounts(webhookDefs []csvv1alpha1.WebhookDescription, deploy *appsv1.Deployment) {
 	for _, webhook := range webhookDefs {
 		if webhook.DeploymentName == deploy.Name {
-			certVolume := v1.Volume{
-				Name: components.CertVolume,
-				VolumeSource: corev1.VolumeSource{
-					Secret: &corev1.SecretVolumeSource{
-						SecretName:  webhook.DeploymentName + "-service-cert",
-						DefaultMode: components.GetDefaultModeForCertVolume(),
-						Items:       components.GetVolumeSourceItemsForWebHooks(),
-					},
-				},
-			}
-			deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, certVolume)
-
-			for index, container := range deploy.Spec.Template.Spec.Containers {
-				deploy.Spec.Template.Spec.Containers[index].VolumeMounts = append(container.VolumeMounts, components.GetVolumeMountForCertificates()...)
-			}
+			components.InjectVolumesForWebHookCerts(deploy)
 		}
 	}
 }
