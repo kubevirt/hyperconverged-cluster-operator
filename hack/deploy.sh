@@ -151,7 +151,8 @@ fi
 # Wait for the HCO to be ready
 sleep 20
 
-"${CMD}" wait deployment/hyperconverged-cluster-operator --for=condition=Available --timeout="1080s" || CONTAINER_ERRORED+="${op}"
+"${CMD}" wait deployment/hyperconverged-cluster-operator --for=condition=Available --timeout="1080s" || CONTAINER_ERRORED+="hyperconverged-cluster-operator "
+"${CMD}" wait deployment/hyperconverged-cluster-webhook --for=condition=Available --timeout="1080s" || CONTAINER_ERRORED+="hyperconverged-cluster-webhook "
 
 # avoid checking the availability of virt-operator here because it will become available only when
 # HCO will create its priorityClass and this will happen only when wi will have HCO cr
