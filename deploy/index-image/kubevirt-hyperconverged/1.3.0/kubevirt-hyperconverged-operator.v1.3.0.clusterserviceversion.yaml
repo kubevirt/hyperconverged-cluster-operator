@@ -2088,8 +2088,17 @@ spec:
                   name: webhook-server
                   protocol: TCP
                 resources: {}
+                volumeMounts:
+                - mountPath: /tmp/k8s-webhook-server/serving-certs
+                  name: cert
+                  readOnly: true
               serviceAccountName: ssp-operator
               terminationGracePeriodSeconds: 10
+              volumes:
+              - name: cert
+                secret:
+                  defaultMode: 420
+                  secretName: ssp-webhook-server-cert
       - name: cdi-operator
         spec:
           replicas: 1
@@ -2568,7 +2577,6 @@ spec:
     webhookPath: /mutate-ns-hco-kubevirt-io
   - admissionReviewVersions:
     - v1beta1
-    containerPort: 9443
     deploymentName: ssp-operator
     failurePolicy: Fail
     generateName: vssp.kb.io
