@@ -56,7 +56,7 @@ source hack/common.sh
 "${CMD}" delete -f _out/service_account.yaml --ignore-not-found || true
 
 # Remove cert-manager
-"${CMD}" apply -f _out/cert-manager.yaml
+"${CMD}" delete -f _out/cert-manager.yaml --ignore-not-found || true
 
 # Delete namespace at the end
 # "${CMD}" delete ns kubevirt-hyperconverged --ignore-not-found || true
