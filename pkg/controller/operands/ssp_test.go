@@ -110,12 +110,13 @@ var _ = Describe("SSP Operands", func() {
 			Expect(foundResource.Spec).To(Equal(expectedResource.Spec))
 		})
 
-		Context("NodeLabeller node placement", func() {
+		Context("Node placement", func() {
 
 			It("should add node placement if missing", func() {
 				existingResource := NewSSP(hco, commonTestUtils.Namespace)
 
 				hco.Spec.Workloads.NodePlacement = commonTestUtils.NewHyperConvergedConfig()
+				hco.Spec.Infra.NodePlacement = commonTestUtils.NewHyperConvergedConfig2()
 
 				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
 				handler := newSspHandler(cl, commonTestUtils.GetScheme())
@@ -134,8 +135,9 @@ var _ = Describe("SSP Operands", func() {
 				).To(BeNil())
 
 				Expect(existingResource.Spec.NodeLabeller.Placement).To(BeZero())
+				Expect(existingResource.Spec.TemplateValidator.Placement).To(BeZero())
 				Expect(*foundResource.Spec.NodeLabeller.Placement).To(Equal(*hco.Spec.Workloads.NodePlacement))
-				Expect(foundResource.Spec.TemplateValidator.Placement).To(BeZero())
+				Expect(*foundResource.Spec.TemplateValidator.Placement).To(Equal(*hco.Spec.Infra.NodePlacement))
 				Expect(req.Conditions).To(BeEmpty())
 			})
 
@@ -143,6 +145,7 @@ var _ = Describe("SSP Operands", func() {
 
 				hcoNodePlacement := commonTestUtils.NewHco()
 				hcoNodePlacement.Spec.Workloads.NodePlacement = commonTestUtils.NewHyperConvergedConfig()
+				hcoNodePlacement.Spec.Infra.NodePlacement = commonTestUtils.NewHyperConvergedConfig2()
 				existingResource := NewSSP(hcoNodePlacement, commonTestUtils.Namespace)
 
 				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
@@ -162,22 +165,30 @@ var _ = Describe("SSP Operands", func() {
 				).To(BeNil())
 
 				Expect(existingResource.Spec.NodeLabeller.Placement).ToNot(BeZero())
+				Expect(existingResource.Spec.TemplateValidator.Placement).ToNot(BeZero())
 				Expect(foundResource.Spec.NodeLabeller.Placement).To(BeZero())
-
+				Expect(foundResource.Spec.TemplateValidator.Placement).To(BeZero())
 				Expect(req.Conditions).To(BeEmpty())
 			})
 
 			It("should modify node placement according to HCO CR", func() {
 
 				hco.Spec.Workloads.NodePlacement = commonTestUtils.NewHyperConvergedConfig()
+				hco.Spec.Infra.NodePlacement = commonTestUtils.NewHyperConvergedConfig2()
 				existingResource := NewSSP(hco, commonTestUtils.Namespace)
 
 				// now, modify HCO's node placement
-				seconds3 := int64(3)
+				seconds12 := int64(12)
 				hco.Spec.Workloads.NodePlacement.Tolerations = append(hco.Spec.Workloads.NodePlacement.Tolerations, corev1.Toleration{
-					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: &seconds3,
+					Key: "key12", Operator: "operator12", Value: "value12", Effect: "effect12", TolerationSeconds: &seconds12,
 				})
 				hco.Spec.Workloads.NodePlacement.NodeSelector["key1"] = "something else"
+
+				seconds34 := int64(34)
+				hco.Spec.Infra.NodePlacement.Tolerations = append(hco.Spec.Infra.NodePlacement.Tolerations, corev1.Toleration{
+					Key: "key34", Operator: "operator34", Value: "value34", Effect: "effect34", TolerationSeconds: &seconds34,
+				})
+				hco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "something entirely else"
 
 				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
 				handler := newSspHandler(cl, commonTestUtils.GetScheme())
@@ -198,27 +209,41 @@ var _ = Describe("SSP Operands", func() {
 				Expect(existingResource.Spec.NodeLabeller.Placement.Affinity.NodeAffinity).ToNot(BeZero())
 				Expect(existingResource.Spec.NodeLabeller.Placement.Tolerations).To(HaveLen(2))
 				Expect(existingResource.Spec.NodeLabeller.Placement.NodeSelector["key1"]).Should(Equal("value1"))
+				Expect(existingResource.Spec.TemplateValidator.Placement.Affinity.NodeAffinity).ToNot(BeZero())
+				Expect(existingResource.Spec.TemplateValidator.Placement.Tolerations).To(HaveLen(2))
+				Expect(existingResource.Spec.TemplateValidator.Placement.NodeSelector["key3"]).Should(Equal("value3"))
 
 				Expect(foundResource.Spec.NodeLabeller.Placement.Affinity.NodeAffinity).ToNot(BeNil())
 				Expect(foundResource.Spec.NodeLabeller.Placement.Tolerations).To(HaveLen(3))
 				Expect(foundResource.Spec.NodeLabeller.Placement.NodeSelector["key1"]).Should(Equal("something else"))
+				Expect(foundResource.Spec.TemplateValidator.Placement.Affinity.NodeAffinity).ToNot(BeNil())
+				Expect(foundResource.Spec.TemplateValidator.Placement.Tolerations).To(HaveLen(3))
+				Expect(foundResource.Spec.TemplateValidator.Placement.NodeSelector["key3"]).Should(Equal("something entirely else"))
 
 				Expect(req.Conditions).To(BeEmpty())
 			})
 
 			It("should overwrite node placement if directly set on SSP CR", func() {
 				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
+				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig2()}
 				existingResource := NewSSP(hco, commonTestUtils.Namespace)
 
 				// mock a reconciliation triggered by a change in NewKubeVirtNodeLabellerBundle CR
 				req.HCOTriggered = false
 
 				// now, modify NodeLabeller node placement
-				seconds3 := int64(3)
+				seconds12 := int64(12)
 				existingResource.Spec.NodeLabeller.Placement.Tolerations = append(hco.Spec.Workloads.NodePlacement.Tolerations, corev1.Toleration{
-					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: &seconds3,
+					Key: "key12", Operator: "operator12", Value: "value12", Effect: "effect12", TolerationSeconds: &seconds12,
 				})
 				existingResource.Spec.NodeLabeller.Placement.NodeSelector["key1"] = "BADvalue1"
+
+				// and modify TemplateValidator node placement
+				seconds34 := int64(34)
+				existingResource.Spec.TemplateValidator.Placement.Tolerations = append(hco.Spec.Infra.NodePlacement.Tolerations, corev1.Toleration{
+					Key: "key34", Operator: "operator34", Value: "value34", Effect: "effect34", TolerationSeconds: &seconds34,
+				})
+				existingResource.Spec.TemplateValidator.Placement.NodeSelector["key3"] = "BADvalue3"
 
 				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
 				handler := newSspHandler(cl, commonTestUtils.GetScheme())
@@ -237,144 +262,13 @@ var _ = Describe("SSP Operands", func() {
 
 				Expect(existingResource.Spec.NodeLabeller.Placement.Tolerations).To(HaveLen(3))
 				Expect(existingResource.Spec.NodeLabeller.Placement.NodeSelector["key1"]).Should(Equal("BADvalue1"))
+				Expect(existingResource.Spec.TemplateValidator.Placement.Tolerations).To(HaveLen(3))
+				Expect(existingResource.Spec.TemplateValidator.Placement.NodeSelector["key3"]).Should(Equal("BADvalue3"))
 
 				Expect(foundResource.Spec.NodeLabeller.Placement.Tolerations).To(HaveLen(2))
 				Expect(foundResource.Spec.NodeLabeller.Placement.NodeSelector["key1"]).Should(Equal("value1"))
-
-				Expect(req.Conditions).To(BeEmpty())
-			})
-		})
-
-		Context("TemplateValidator node placement", func() {
-
-			It("should add node placement if missing ", func() {
-				existingResource := NewSSP(hco, commonTestUtils.Namespace)
-
-				hco.Spec.Infra.NodePlacement = commonTestUtils.NewHyperConvergedConfig()
-
-				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
-				handler := newSspHandler(cl, commonTestUtils.GetScheme())
-				res := handler.ensure(req)
-				Expect(res.Created).To(BeFalse())
-				Expect(res.Updated).To(BeTrue())
-				Expect(res.Overwritten).To(BeFalse())
-				Expect(res.UpgradeDone).To(BeFalse())
-				Expect(res.Err).To(BeNil())
-
-				foundResource := &sspv1beta1.SSP{}
-				Expect(
-					cl.Get(context.TODO(),
-						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
-						foundResource),
-				).To(BeNil())
-
-				Expect(existingResource.Spec.TemplateValidator.Placement).To(BeZero())
-				Expect(*foundResource.Spec.TemplateValidator.Placement).To(Equal(*hco.Spec.Infra.NodePlacement))
-				Expect(foundResource.Spec.NodeLabeller.Placement).To(BeZero())
-				Expect(req.Conditions).To(BeEmpty())
-			})
-
-			It("should remove node placement if missing in HCO CR", func() {
-
-				hcoNodePlacement := commonTestUtils.NewHco()
-				hcoNodePlacement.Spec.Infra.NodePlacement = commonTestUtils.NewHyperConvergedConfig()
-				existingResource := NewSSP(hcoNodePlacement, commonTestUtils.Namespace)
-
-				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
-				handler := newSspHandler(cl, commonTestUtils.GetScheme())
-				res := handler.ensure(req)
-				Expect(res.Created).To(BeFalse())
-				Expect(res.Updated).To(BeTrue())
-				Expect(res.Overwritten).To(BeFalse())
-				Expect(res.UpgradeDone).To(BeFalse())
-				Expect(res.Err).To(BeNil())
-
-				foundResource := &sspv1beta1.SSP{}
-				Expect(
-					cl.Get(context.TODO(),
-						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
-						foundResource),
-				).To(BeNil())
-
-				Expect(existingResource.Spec.TemplateValidator.Placement).ToNot(BeZero())
-				Expect(foundResource.Spec.TemplateValidator.Placement).To(BeZero())
-
-				Expect(req.Conditions).To(BeEmpty())
-			})
-
-			It("should modify node placement according to HCO CR", func() {
-
-				hco.Spec.Infra.NodePlacement = commonTestUtils.NewHyperConvergedConfig()
-				existingResource := NewSSP(hco, commonTestUtils.Namespace)
-
-				// now, modify HCO's node placement
-				seconds3 := int64(3)
-				hco.Spec.Infra.NodePlacement.Tolerations = append(hco.Spec.Infra.NodePlacement.Tolerations, corev1.Toleration{
-					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: &seconds3,
-				})
-				hco.Spec.Infra.NodePlacement.NodeSelector["key1"] = "something else"
-
-				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
-				handler := newSspHandler(cl, commonTestUtils.GetScheme())
-				res := handler.ensure(req)
-				Expect(res.Created).To(BeFalse())
-				Expect(res.Updated).To(BeTrue())
-				Expect(res.Overwritten).To(BeFalse())
-				Expect(res.UpgradeDone).To(BeFalse())
-				Expect(res.Err).To(BeNil())
-
-				foundResource := &sspv1beta1.SSP{}
-				Expect(
-					cl.Get(context.TODO(),
-						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
-						foundResource),
-				).To(BeNil())
-
-				Expect(existingResource.Spec.TemplateValidator.Placement.Affinity.NodeAffinity).ToNot(BeZero())
-				Expect(existingResource.Spec.TemplateValidator.Placement.Tolerations).To(HaveLen(2))
-				Expect(existingResource.Spec.TemplateValidator.Placement.NodeSelector["key1"]).Should(Equal("value1"))
-
-				Expect(foundResource.Spec.TemplateValidator.Placement.Affinity.NodeAffinity).ToNot(BeNil())
-				Expect(foundResource.Spec.TemplateValidator.Placement.Tolerations).To(HaveLen(3))
-				Expect(foundResource.Spec.TemplateValidator.Placement.NodeSelector["key1"]).Should(Equal("something else"))
-
-				Expect(req.Conditions).To(BeEmpty())
-			})
-
-			It("should overwrite node placement if directly set on SSP CR", func() {
-				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
-				existingResource := NewSSP(hco, commonTestUtils.Namespace)
-
-				// mock a reconciliation triggered by a change in NewKubeVirtNodeLabellerBundle CR
-				req.HCOTriggered = false
-
-				// now, modify NodeLabeller node placement
-				seconds3 := int64(3)
-				existingResource.Spec.TemplateValidator.Placement.Tolerations = append(hco.Spec.Infra.NodePlacement.Tolerations, corev1.Toleration{
-					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: &seconds3,
-				})
-				existingResource.Spec.TemplateValidator.Placement.NodeSelector["key1"] = "BADvalue1"
-
-				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
-				handler := newSspHandler(cl, commonTestUtils.GetScheme())
-				res := handler.ensure(req)
-				Expect(res.UpgradeDone).To(BeFalse())
-				Expect(res.Updated).To(BeTrue())
-				Expect(res.Overwritten).To(BeTrue())
-				Expect(res.Err).To(BeNil())
-
-				foundResource := &sspv1beta1.SSP{}
-				Expect(
-					cl.Get(context.TODO(),
-						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
-						foundResource),
-				).To(BeNil())
-
-				Expect(existingResource.Spec.TemplateValidator.Placement.Tolerations).To(HaveLen(3))
-				Expect(existingResource.Spec.TemplateValidator.Placement.NodeSelector["key1"]).Should(Equal("BADvalue1"))
-
 				Expect(foundResource.Spec.TemplateValidator.Placement.Tolerations).To(HaveLen(2))
-				Expect(foundResource.Spec.TemplateValidator.Placement.NodeSelector["key1"]).Should(Equal("value1"))
+				Expect(foundResource.Spec.TemplateValidator.Placement.NodeSelector["key3"]).Should(Equal("value3"))
 
 				Expect(req.Conditions).To(BeEmpty())
 			})

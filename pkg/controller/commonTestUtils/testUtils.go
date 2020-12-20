@@ -99,6 +99,38 @@ func NewHyperConvergedConfig() *sdkapi.NodePlacement {
 	}
 }
 
+func NewHyperConvergedConfig2() *sdkapi.NodePlacement {
+	seconds3, seconds4 := int64(3), int64(4)
+	return &sdkapi.NodePlacement{
+		NodeSelector: map[string]string{
+			"key3": "value3",
+			"key4": "value4",
+		},
+		Affinity: &corev1.Affinity{
+			NodeAffinity: &corev1.NodeAffinity{
+				RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+					NodeSelectorTerms: []corev1.NodeSelectorTerm{
+						{
+							MatchExpressions: []corev1.NodeSelectorRequirement{
+								{Key: "key3", Operator: "operator3", Values: []string{"value31, value32"}},
+								{Key: "key4", Operator: "operator4", Values: []string{"value41, value42"}},
+							},
+							MatchFields: []corev1.NodeSelectorRequirement{
+								{Key: "key3", Operator: "operator3", Values: []string{"value31, value32"}},
+								{Key: "key4", Operator: "operator4", Values: []string{"value41, value42"}},
+							},
+						},
+					},
+				},
+			},
+		},
+		Tolerations: []corev1.Toleration{
+			{Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: &seconds3},
+			{Key: "key4", Operator: "operator4", Value: "value4", Effect: "effect4", TolerationSeconds: &seconds4},
+		},
+	}
+}
+
 var testScheme *runtime.Scheme
 
 func GetScheme() *runtime.Scheme {
