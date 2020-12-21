@@ -41,7 +41,7 @@
 # to verify that it is updated to the new operator image from 
 # the local registry.
 
-MAX_STEPS=14
+MAX_STEPS=15
 CUR_STEP=1
 RELEASE_DELTA="${RELEASE_DELTA:-1}"
 HCO_DEPLOYMENT_NAME=hco-operator
@@ -91,6 +91,9 @@ function cleanup() {
 
 trap "cleanup" INT TERM EXIT
 
+Msg "Enable debug logging for OLM"
+"${CMD}" patch deployment olm-operator -n openshift-operator-lifecycle-manager --type json --patch '[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--debug"}]'
+sleep 30s # Let it soak in
 
 Msg "Clean cluster"
 
