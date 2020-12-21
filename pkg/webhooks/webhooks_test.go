@@ -545,6 +545,105 @@ var _ = Describe("webhooks handler", func() {
 			Expect(err).Should(Equal(context.DeadlineExceeded))
 		})
 
+		// plain-k8s tests
+		It("should not return error in plain-k8s if KubeVirtCommonTemplateBundle CR is missing", func() {
+			hco := &v1beta1.HyperConverged{}
+			ctx := context.TODO()
+			cli := getFakeClient(s, hco)
+			Expect(cli.Delete(ctx, operands.NewKubeVirtCommonTemplateBundle(hco))).To(BeNil())
+			wh := &WebhookHandler{}
+			wh.Init(logger, cli, HcoValidNamespace, false)
+
+			newHco := &v1beta1.HyperConverged{
+				Spec: v1beta1.HyperConvergedSpec{
+					Infra: v1beta1.HyperConvergedConfig{
+						NodePlacement: newHyperConvergedConfig(),
+					},
+					Workloads: v1beta1.HyperConvergedConfig{
+						NodePlacement: newHyperConvergedConfig(),
+					},
+				},
+			}
+
+			err := wh.ValidateUpdate(newHco, hco)
+			Expect(err).To(BeNil())
+		})
+
+		It("should return error in plain-k8s if KV CR is missing", func() {
+			hco := &v1beta1.HyperConverged{}
+			ctx := context.TODO()
+			cli := getFakeClient(s, hco)
+			Expect(cli.Delete(ctx, operands.NewKubeVirt(hco))).To(BeNil())
+			wh := &WebhookHandler{}
+			wh.Init(logger, cli, HcoValidNamespace, false)
+
+			newHco := &v1beta1.HyperConverged{
+				Spec: v1beta1.HyperConvergedSpec{
+					Infra: v1beta1.HyperConvergedConfig{
+						NodePlacement: newHyperConvergedConfig(),
+					},
+					Workloads: v1beta1.HyperConvergedConfig{
+						NodePlacement: newHyperConvergedConfig(),
+					},
+				},
+			}
+
+			err := wh.ValidateUpdate(newHco, hco)
+			Expect(err).NotTo(BeNil())
+			Expect(apierrors.IsNotFound(err)).To(BeTrue())
+		})
+
+		It("should return error in plain-k8s if dry-run update of VMImport CR returns error", func() {
+			hco := &v1beta1.HyperConverged{
+				Spec: v1beta1.HyperConvergedSpec{
+					Infra: v1beta1.HyperConvergedConfig{
+						NodePlacement: newHyperConvergedConfig(),
+					},
+					Workloads: v1beta1.HyperConvergedConfig{
+						NodePlacement: newHyperConvergedConfig(),
+					},
+				},
+			}
+			c := getFakeClient(s, hco)
+			cli := errorClient{c, vmImportUpdateFailure}
+			wh := &WebhookHandler{}
+			wh.Init(logger, cli, HcoValidNamespace, true)
+
+			newHco := &v1beta1.HyperConverged{}
+			hco.DeepCopyInto(newHco)
+			// change something in workloads to trigger dry-run update
+			newHco.Spec.Workloads.NodePlacement.NodeSelector["a change"] = "Something else"
+
+			err := wh.ValidateUpdate(newHco, hco)
+			Expect(err).NotTo(BeNil())
+			Expect(err).Should(Equal(ErrFakeVMImportError))
+		})
+
+		It("should return error if dry-run update of NewKubeVirtMetricsAggregation CR returns error", func() {
+			hco := &v1beta1.HyperConverged{
+				Spec: v1beta1.HyperConvergedSpec{
+					Infra: v1beta1.HyperConvergedConfig{
+						NodePlacement: newHyperConvergedConfig(),
+					},
+					Workloads: v1beta1.HyperConvergedConfig{
+						NodePlacement: newHyperConvergedConfig(),
+					},
+				},
+			}
+			c := getFakeClient(s, hco)
+			cli := errorClient{c, kubevirtMetricsAggregationUpdateFailure}
+			wh := &WebhookHandler{}
+			wh.Init(logger, cli, HcoValidNamespace, false)
+
+			newHco := &v1beta1.HyperConverged{}
+			hco.DeepCopyInto(newHco)
+			// change something in workloads to trigger dry-run update
+			newHco.Spec.Workloads.NodePlacement.NodeSelector["a change"] = "Something else"
+
+			err := wh.ValidateUpdate(newHco, hco)
+			Expect(err).To(BeNil())
+		})
+
 	})
 
 	Context("Check mutating webhook for namespace deletion", func() {
