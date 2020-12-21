@@ -25,6 +25,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	appsv1 "k8s.io/api/apps/v1"
 	"log"
 	"os"
 	"path/filepath"
@@ -338,6 +339,7 @@ func main() {
 			// TODO: remove this once fixed on OLM side
 			for _, deployment := range strategySpec.DeploymentSpecs {
 				delete(deployment.Spec.Template.Annotations, "description")
+
 			}
 
 			installStrategyBase.DeploymentSpecs = append(installStrategyBase.DeploymentSpecs, strategySpec.DeploymentSpecs...)
@@ -420,6 +422,12 @@ func main() {
 		// Update csv strategy.
 		csvExtended.Spec.InstallStrategy.StrategyName = "deployment"
 		csvExtended.Spec.InstallStrategy.StrategySpec = *installStrategyBase
+
+		// TODO: try forcing RollingUpdate strategy on all the deployment to
+		// bypass an upgrade bug
+		for i, _ := range csvExtended.Spec.InstallStrategy.StrategySpec.DeploymentSpecs {
+			csvExtended.Spec.InstallStrategy.StrategySpec.DeploymentSpecs[i].Spec.Strategy.Type = appsv1.RollingUpdateDeploymentStrategyType
+		}
 
 		if *metadataDescription != "" {
 			csvExtended.Annotations["description"] = *metadataDescription

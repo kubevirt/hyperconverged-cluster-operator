@@ -8,7 +8,7 @@ metadata:
     categories: OpenShift Optional
     certified: "false"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator@sha256:0849ed82f0ea486ff5f0dd67ccf67d85e7a41bab263a2916311c530042dd9be6
-    createdAt: "2020-12-20 10:42:21"
+    createdAt: "2020-12-21 18:14:00"
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -1835,7 +1835,7 @@ spec:
             matchLabels:
               name: cluster-network-addons-operator
           strategy:
-            type: Recreate
+            type: RollingUpdate
           template:
             metadata:
               labels:
@@ -1978,7 +1978,8 @@ spec:
           selector:
             matchLabels:
               name: kubevirt-ssp-operator
-          strategy: {}
+          strategy:
+            type: RollingUpdate
           template:
             metadata:
               labels:
@@ -2018,7 +2019,8 @@ spec:
             matchLabels:
               name: cdi-operator
               operator.cdi.kubevirt.io: ""
-          strategy: {}
+          strategy:
+            type: RollingUpdate
           template:
             metadata:
               labels:
@@ -2069,7 +2071,8 @@ spec:
           selector:
             matchLabels:
               name: node-maintenance-operator
-          strategy: {}
+          strategy:
+            type: RollingUpdate
           template:
             metadata:
               labels:
@@ -2109,7 +2112,8 @@ spec:
             matchLabels:
               name: hostpath-provisioner-operator
               operator.hostpath-provisioner.kubevirt.io: ""
-          strategy: {}
+          strategy:
+            type: RollingUpdate
           template:
             metadata:
               labels:
@@ -2144,7 +2148,8 @@ spec:
             matchLabels:
               name: vm-import-operator
               operator.v2v.kubevirt.io: ""
-          strategy: {}
+          strategy:
+            type: RollingUpdate
           template:
             metadata:
               labels:

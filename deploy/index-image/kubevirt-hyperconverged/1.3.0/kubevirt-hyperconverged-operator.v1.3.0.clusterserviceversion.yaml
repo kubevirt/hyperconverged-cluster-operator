@@ -1835,7 +1835,7 @@ spec:
             matchLabels:
               name: cluster-network-addons-operator
           strategy:
-            type: Recreate
+            type: RollingUpdate
           template:
             metadata:
               labels:
@@ -1978,7 +1978,8 @@ spec:
           selector:
             matchLabels:
               name: kubevirt-ssp-operator
-          strategy: {}
+          strategy:
+            type: RollingUpdate
           template:
             metadata:
               labels:
@@ -2018,7 +2019,8 @@ spec:
             matchLabels:
               name: cdi-operator
               operator.cdi.kubevirt.io: ""
-          strategy: {}
+          strategy:
+            type: RollingUpdate
           template:
             metadata:
               labels:
@@ -2069,7 +2071,8 @@ spec:
           selector:
             matchLabels:
               name: node-maintenance-operator
-          strategy: {}
+          strategy:
+            type: RollingUpdate
           template:
             metadata:
               labels:
@@ -2109,7 +2112,8 @@ spec:
             matchLabels:
               name: hostpath-provisioner-operator
               operator.hostpath-provisioner.kubevirt.io: ""
-          strategy: {}
+          strategy:
+            type: RollingUpdate
           template:
             metadata:
               labels:
@@ -2144,7 +2148,8 @@ spec:
             matchLabels:
               name: vm-import-operator
               operator.v2v.kubevirt.io: ""
-          strategy: {}
+          strategy:
+            type: RollingUpdate
           template:
             metadata:
               labels:
