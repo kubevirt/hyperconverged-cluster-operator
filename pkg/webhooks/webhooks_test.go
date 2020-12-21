@@ -619,7 +619,7 @@ var _ = Describe("webhooks handler", func() {
 			Expect(err).Should(Equal(ErrFakeVMImportError))
 		})
 
-		It("should return error if dry-run update of NewKubeVirtMetricsAggregation CR returns error", func() {
+		It("should not return error if dry-run update of NewKubeVirtMetricsAggregation CR returns error", func() {
 			hco := &v1beta1.HyperConverged{
 				Spec: v1beta1.HyperConvergedSpec{
 					Infra: v1beta1.HyperConvergedConfig{
