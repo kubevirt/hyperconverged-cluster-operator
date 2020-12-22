@@ -93,7 +93,17 @@ trap "cleanup" INT TERM EXIT
 
 Msg "Enable debug logging for OLM"
 
-"${CMD}" patch clusterversion version --type json -patch '[{"op": "add", "path": "/spec/overrides", "value": { "kind": "Deployment", "group": "apps/v1", "name": "olm-operator", "namespace": "openshift-operator-lifecycle-manager", "unmanaged": true }}]'
+"${CMD}" patch clusterversion version --type json --patch "$(cat << 'EOM'
+- op: add
+  path: /spec/overrides
+  value:
+  - kind: Deployment
+    group: apps/v1
+    name: olm-operator
+    namespace: openshift-operator-lifecycle-manager
+    unmanaged: true
+EOM
+)"
 sleep 10s
 "${CMD}" patch deployment olm-operator -n openshift-operator-lifecycle-manager --type json --patch '[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--debug"}]'
 sleep 30s # Let it soak in
