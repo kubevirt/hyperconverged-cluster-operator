@@ -229,7 +229,12 @@ ${CMD} patch subscription ${HCO_SUBSCRIPTION_NAME} -n ${HCO_NAMESPACE} -p "{\"sp
 #  installedCSV: kubevirt-hyperconverged-operator.v100.0.0
 Msg "Verify the subscription's currentCSV and installedCSV have moved to the new version"
 
-sleep 60
+sleep 120
+
+# try to workaround an OLM bug that leads it getting stuck with two CSVs in pending status
+# TODO: removed once fixed on the OLM side
+${CMD} patch ClusterServiceVersion kubevirt-hyperconverged-operator.v${INITIAL_CHANNEL} -n ${HCO_NAMESPACE} -p "{\"status\": {\"phase\": \"Replacing\"}}"  --type merge
+
 ${CMD} get pods -n ${HCO_NAMESPACE}
 ${CMD} wait deployment ${HCO_DEPLOYMENT_NAME} --for condition=Available -n ${HCO_NAMESPACE} --timeout="1200s"
 ${CMD} wait deployment ${HCO_WH_DEPLOYMENT_NAME} --for condition=Available -n ${HCO_NAMESPACE} --timeout="1200s"
