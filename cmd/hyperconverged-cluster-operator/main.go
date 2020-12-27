@@ -157,7 +157,6 @@ func main() {
 		openshiftconfigv1.AddToScheme,
 		monitoringv1.AddToScheme,
 		extv1.AddToScheme,
-		consolev1.AddToScheme,
 	} {
 		if err := f(mgr.GetScheme()); err != nil {
 			log.Error(err, "Failed to add to scheme")
