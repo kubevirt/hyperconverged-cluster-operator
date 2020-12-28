@@ -7,6 +7,7 @@ import (
 	networkaddonsnames "github.com/kubevirt/cluster-network-addons-operator/pkg/names"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -80,13 +81,14 @@ func (h *cnaHooks) updateCr(req *common.HcoRequest, Client client.Client, exists
 		}
 	}
 
-	if !reflect.DeepEqual(found.Spec, networkAddons.Spec) && !req.UpgradeMode {
+	if (!reflect.DeepEqual(found.Spec, networkAddons.Spec) ||
+		!reflect.DeepEqual(found.Labels, networkAddons.Labels)) && !req.UpgradeMode {
 		if req.HCOTriggered {
 			req.Logger.Info("Updating existing Network Addons's Spec to new opinionated values")
 		} else {
 			req.Logger.Info("Reconciling an externally updated Network Addons's Spec to its opinionated values")
 		}
-
+		util.DeepCopyLabels(&networkAddons.ObjectMeta, &found.ObjectMeta)
 		networkAddons.Spec.DeepCopyInto(&found.Spec)
 		err := Client.Update(req.Ctx, found)
 		if err != nil {
@@ -120,7 +122,7 @@ func NewNetworkAddons(hc *hcov1beta1.HyperConverged, opts ...string) *networkadd
 	return &networkaddonsv1.NetworkAddonsConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      networkaddonsnames.OPERATOR_CONFIG,
-			Labels:    getLabels(hc),
+			Labels:    getLabels(hc, hcoutil.AppComponentNetwork),
 			Namespace: getNamespace(hcoutil.UndefinedNamespace, opts),
 		},
 		Spec: cnaoSpec,

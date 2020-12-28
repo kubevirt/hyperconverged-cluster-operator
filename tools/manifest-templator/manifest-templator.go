@@ -152,6 +152,7 @@ func main() {
 			*operatorNamespace,
 			*webhookImage,
 			"IfNotPresent",
+			*hcoKvIoVersion,
 			[]corev1.EnvVar{},
 		),
 	}

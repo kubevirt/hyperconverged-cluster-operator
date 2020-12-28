@@ -2,6 +2,9 @@ package operands
 
 import (
 	"fmt"
+	"os"
+	"reflect"
+
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -10,8 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/reference"
-	"os"
-	"reflect"
 )
 
 type CLIDownloadHandler genericOperand
@@ -65,7 +66,7 @@ func NewConsoleCLIDownload(hc *hcov1beta1.HyperConverged) *consolev1.ConsoleCLID
 	return &consolev1.ConsoleCLIDownload{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "virtctl-clidownloads-" + hc.Name,
-			Labels: getLabels(hc),
+			Labels: getLabels(hc, hcoutil.AppComponentCompute),
 		},
 
 		Spec: consolev1.ConsoleCLIDownloadSpec{
