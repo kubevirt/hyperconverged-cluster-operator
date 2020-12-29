@@ -185,11 +185,14 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedKVStorageRole.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/roles/%s", expectedKVStorageRole.Namespace, expectedKVStorageRole.Name)
 				expectedKVStorageRoleBinding := operands.NewKubeVirtStorageRoleBindingForCR(hco, namespace)
 				expectedKVStorageRoleBinding.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/rolebindings/%s", expectedKVStorageRoleBinding.Namespace, expectedKVStorageRoleBinding.Name)
-				expectedKV := operands.NewKubeVirt(hco, namespace)
+				expectedKV, err := operands.NewKubeVirt(hco, namespace)
+				Expect(err).ToNot(HaveOccurred())
 				expectedKV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/kubevirts/%s", expectedKV.Namespace, expectedKV.Name)
-				expectedCDI := operands.NewCDI(hco)
+				expectedCDI, err := operands.NewCDI(hco)
+				Expect(err).ToNot(HaveOccurred())
 				expectedCDI.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cdis/%s", expectedCDI.Namespace, expectedCDI.Name)
-				expectedCNA := operands.NewNetworkAddons(hco)
+				expectedCNA, err := operands.NewNetworkAddons(hco)
+				Expect(err).ToNot(HaveOccurred())
 				expectedCNA.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cnas/%s", expectedCNA.Namespace, expectedCNA.Name)
 				expectedSSP := operands.NewSSP(hco)
 				expectedSSP.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/ctbs/%s", expectedSSP.Namespace, expectedSSP.Name)
@@ -338,7 +341,9 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedKVStorageRole.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/role/%s", expectedKVStorageRole.Namespace, expectedKVStorageRole.Name)
 				expectedKVStorageRoleBinding := operands.NewKubeVirtStorageRoleBindingForCR(hco, namespace)
 				expectedKVStorageRoleBinding.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/role/%s", expectedKVStorageRoleBinding.Namespace, expectedKVStorageRoleBinding.Name)
-				expectedKV := operands.NewKubeVirt(hco, namespace)
+				expectedKV, err := operands.NewKubeVirt(hco, namespace)
+				Expect(err).ToNot(HaveOccurred())
+
 				expectedKV.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/kubevirts/%s", expectedKV.Namespace, expectedKV.Name)
 				expectedKV.Status.Conditions = []kubevirtv1.KubeVirtCondition{
 					{
@@ -354,7 +359,8 @@ var _ = Describe("HyperconvergedController", func() {
 						Status: corev1.ConditionFalse,
 					},
 				}
-				expectedCDI := operands.NewCDI(hco)
+				expectedCDI, err := operands.NewCDI(hco)
+				Expect(err).ToNot(HaveOccurred())
 				expectedCDI.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cdis/%s", expectedCDI.Namespace, expectedCDI.Name)
 				expectedCDI.Status.Conditions = []conditionsv1.Condition{
 					{
@@ -370,7 +376,8 @@ var _ = Describe("HyperconvergedController", func() {
 						Status: corev1.ConditionFalse,
 					},
 				}
-				expectedCNA := operands.NewNetworkAddons(hco)
+				expectedCNA, err := operands.NewNetworkAddons(hco)
+				Expect(err).ToNot(HaveOccurred())
 				expectedCNA.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/cnas/%s", expectedCNA.Namespace, expectedCNA.Name)
 				expectedCNA.Status.Conditions = []conditionsv1.Condition{
 					{
@@ -442,7 +449,8 @@ var _ = Describe("HyperconvergedController", func() {
 				hco := commonTestUtils.NewHco()
 				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewNodePlacement()}
 				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewNodePlacement()}
-				existingResource := operands.NewKubeVirt(hco, namespace)
+				existingResource, err := operands.NewKubeVirt(hco, namespace)
+				Expect(err).ToNot(HaveOccurred())
 
 				// now, modify KV's node placement
 				seconds3 := int64(3)
@@ -500,7 +508,8 @@ var _ = Describe("HyperconvergedController", func() {
 				hco := commonTestUtils.NewHco()
 				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewNodePlacement()}
 				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewNodePlacement()}
-				existingResource := operands.NewKubeVirt(hco, namespace)
+				existingResource, err := operands.NewKubeVirt(hco, namespace)
+				Expect(err).ToNot(HaveOccurred())
 
 				// now, modify KV's node placement
 				seconds3 := int64(3)
@@ -1420,7 +1429,7 @@ var _ = Describe("HyperconvergedController", func() {
 							{
 								"op": "add",
 								"path": "/configuration/migrations",
-								"value": '{"allowPostCopy": "true"}'
+								"value": {"allowPostCopy": true}
 							}
 						]`,
 				}
@@ -1428,26 +1437,42 @@ var _ = Describe("HyperconvergedController", func() {
 				cl := commonTestUtils.InitClient([]runtime.Object{hco})
 				r := initReconciler(cl)
 
-				// Do the reconcile
-				res, err := r.Reconcile(request)
-				Expect(err).To(BeNil())
-				Expect(res).Should(Equal(reconcile.Result{Requeue: true}))
+				By("Reconcile", func() {
+					res, err := r.Reconcile(request)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(res).Should(Equal(reconcile.Result{Requeue: true}))
+				})
 
-				// Get the HCO
-				foundResource := &hcov1beta1.HyperConverged{}
-				Expect(
-					cl.Get(context.TODO(),
-						types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
-						foundResource),
-				).To(BeNil())
+				By("Verify HC conditions", func() {
+					foundResource := &hcov1beta1.HyperConverged{}
+					Expect(
+						cl.Get(context.TODO(),
+							types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
+							foundResource),
+					).To(BeNil())
 
-				// Check conditions
-				Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
-					Type:    hcov1beta1.ConditionTaintedConfiguration,
-					Status:  corev1.ConditionTrue,
-					Reason:  taintedConfigurationReason,
-					Message: taintedConfigurationMessage,
-				})))
+					// Check conditions
+					Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+						Type:    hcov1beta1.ConditionTaintedConfiguration,
+						Status:  corev1.ConditionTrue,
+						Reason:  taintedConfigurationReason,
+						Message: taintedConfigurationMessage,
+					})))
+				})
+
+				By("Verify that KV was modified by the annotation", func() {
+					kv := &kubevirtv1.KubeVirt{}
+					kvSearch := operands.NewKubeVirtWithNameOnly(hco)
+					Expect(
+						cl.Get(context.TODO(),
+							types.NamespacedName{Name: kvSearch.Name, Namespace: kvSearch.Namespace},
+							kv),
+					).To(BeNil())
+
+					Expect(kv.Spec.Configuration.MigrationConfiguration).ToNot(BeNil())
+					Expect(kv.Spec.Configuration.MigrationConfiguration.AllowPostCopy).ToNot(BeNil())
+					Expect(*kv.Spec.Configuration.MigrationConfiguration.AllowPostCopy).To(BeTrue())
+				})
 			})
 
 			It("Removes the TaintedConfiguration condition upon removal of such configuration", func() {

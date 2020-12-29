@@ -1,7 +1,9 @@
 package operands
 
 import (
+	"encoding/json"
 	"fmt"
+	jsonpatch "github.com/evanphx/json-patch"
 	"os"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -45,7 +47,7 @@ type genericOperand struct {
 // Set of resource handler hooks, to be implement in each handler
 type hcoResourceHooks interface {
 	// Generate the required resource, with all the required fields)
-	getFullCr(*hcov1beta1.HyperConverged) runtime.Object
+	getFullCr(*hcov1beta1.HyperConverged) (runtime.Object, error)
 	// Generate an empty resource, to be used as the input of the client.Get method. After calling this method, it will
 	// contains the actual values in K8s.
 	getEmptyCr() runtime.Object
@@ -64,10 +66,15 @@ type hcoResourceHooks interface {
 }
 
 func (h *genericOperand) ensure(req *common.HcoRequest) *EnsureResult {
-	cr := h.hooks.getFullCr(req.Instance)
+	cr, err := h.hooks.getFullCr(req.Instance)
+	if err != nil {
+		return &EnsureResult{
+			Err: err,
+		}
+	}
 
 	res := NewEnsureResult(cr)
-	if err := h.hooks.validate(); err != nil {
+	if err = h.hooks.validate(); err != nil {
 		return res.Error(err)
 	}
 
@@ -278,4 +285,30 @@ func getLabels(hc *hcov1beta1.HyperConverged, component hcoutil.AppComponent) ma
 		hcoutil.AppLabelPartOf:    hcoutil.HyperConvergedCluster,
 		hcoutil.AppLabelComponent: string(component),
 	}
+}
+
+func applyAnnotationPatch(spec interface{}, annotation string) error {
+	patches, err := jsonpatch.DecodePatch([]byte(annotation))
+	if err != nil {
+		return err
+	}
+	specBytes, err := json.Marshal(spec)
+	if err != nil {
+		return err
+	}
+	apply, err := patches.Apply(specBytes)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(apply, spec)
+}
+
+func applyPatchToSpec(hc *hcov1beta1.HyperConverged, annotationName string, spec interface{}) error {
+	if cnaoUnsupportedAnnotation, ok := hc.Annotations[annotationName]; ok {
+		if err := applyAnnotationPatch(&spec, cnaoUnsupportedAnnotation); err != nil {
+			return fmt.Errorf("wrong jsonPatch in the %s annotation; %v", annotationName, err)
+		}
+	}
+
+	return nil
 }
