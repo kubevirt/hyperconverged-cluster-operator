@@ -18,7 +18,7 @@ def gen_local_deployments(outdir):
         csv = yaml.safe_load(csv_file)
 
     with open(f'{outdir}/local.yaml', 'w') as out:
-        csv = [x for x in csv['spec']['install']['spec']['deployments'] if x['name'] != 'hco-operator']
+        csv = [x for x in csv['spec']['install']['spec']['deployments'] if x['name'] != 'hco-operator' and x['name'] != 'hco-webhook' ]
         for c in csv:
             c.update({
                 'apiVersion': 'apps/v1',
