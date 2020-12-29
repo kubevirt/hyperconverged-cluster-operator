@@ -50,15 +50,24 @@ source "${PROJECT_ROOT}"/deploy/images.env
 DEPLOY_DIR="${PROJECT_ROOT}/deploy"
 CRD_DIR="${DEPLOY_DIR}/crds"
 OLM_DIR="${DEPLOY_DIR}/olm-catalog"
+CSV_VERSION=${CSV_VERSION}
+CSV_TIMESTAMP=$(date +%Y%m%d%H%M -u)
 CSV_DIR="${OLM_DIR}/kubevirt-hyperconverged/${CSV_VERSION}"
 DEFAULT_CSV_GENERATOR="/usr/bin/csv-generator"
 SSP_CSV_GENERATOR="/csv-generator"
 
 INDEX_IMAGE_DIR=${DEPLOY_DIR}/index-image
+CSV_INDEX_IMAGE_DIR="${INDEX_IMAGE_DIR}/kubevirt-hyperconverged/${CSV_VERSION}"
 
 OPERATOR_NAME="${OPERATOR_NAME:-kubevirt-hyperconverged-operator}"
 OPERATOR_NAMESPACE="${OPERATOR_NAMESPACE:-kubevirt-hyperconverged}"
 IMAGE_PULL_POLICY="${IMAGE_PULL_POLICY:-IfNotPresent}"
+
+# Backing up the current CSVs in order to check diffs for make sanity after their re-creation
+CSV_OLM_BEFORE=$(ls ${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}*)
+CSV_INDEX_IMAGE_BEFORE=$(ls ${CSV_INDEX_IMAGE_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}*)
+cp ${CSV_OLM_BEFORE} /tmp/csv-olm-before.yaml
+cp ${CSV_INDEX_IMAGE_BEFORE} /tmp/csv-index-image-before.yaml
 
 # Important extensions
 CSV_EXT="clusterserviceversion.yaml"
@@ -358,7 +367,7 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --vmimport-csv="$(<${importCsv})" \
   --ims-conversion-image-name="${CONVERSION_IMAGE}" \
   --ims-vmware-image-name="${VMWARE_IMAGE}" \
-  --csv-version=${CSV_VERSION} \
+  --csv-version=${CSV_VERSION}-${CSV_TIMESTAMP} \
   --replaces-csv-version=${REPLACES_CSV_VERSION} \
   --hco-kv-io-version="${CSV_VERSION}" \
   --spec-displayname="KubeVirt HyperConverged Cluster Operator" \
@@ -375,7 +384,7 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --vm-import-version="${VM_IMPORT_VERSION}" \
   --related-images-list="${DIGEST_LIST}" \
   --operator-image-name="${HCO_OPERATOR_IMAGE}" \
-  --webhook-image-name="${HCO_WEBHOOK_IMAGE}" > "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}"
+  --webhook-image-name="${HCO_WEBHOOK_IMAGE}" > "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}-${CSV_TIMESTAMP}.${CSV_EXT}"
 
 # Copy all CRDs into the CRD and CSV directories
 rm -f ${CRD_DIR}/*
@@ -390,6 +399,10 @@ cp -f ${TEMPDIR}/*.${CRD_EXT} ${CSV_DIR}
 ${PROJECT_ROOT}/tools/csv-merger/csv-merger --crds-dir=${CRD_DIR}
 (cd ${PROJECT_ROOT}/tools/csv-merger/ && go clean)
 
+# Add the current CSV_TIMESTAMP to the currentCSV in the packages file
+sed -Ei "s/(currentCSV: ${OPERATOR_NAME}.v${CSV_VERSION}).*/\1-${CSV_TIMESTAMP}/" \
+ ${PACKAGE_DIR}/kubevirt-hyperconverged.package.yaml
+
 # Intentionally removing last so failure leaves around the templates
 rm -rf ${TEMPDIR}
 
@@ -398,5 +411,11 @@ mkdir -p "${INDEX_IMAGE_DIR:?}/kubevirt-hyperconverged"
 cp -r "${CSV_DIR}" "${INDEX_IMAGE_DIR:?}/kubevirt-hyperconverged/"
 cp "${OLM_DIR}/bundle.Dockerfile" "${INDEX_IMAGE_DIR:?}/"
 
-INDEX_IMAGE_CSV="${INDEX_IMAGE_DIR}/kubevirt-hyperconverged/${CSV_VERSION}/kubevirt-hyperconverged-operator.v${CSV_VERSION}.${CSV_EXT}"
+INDEX_IMAGE_CSV="${INDEX_IMAGE_DIR}/kubevirt-hyperconverged/${CSV_VERSION}/kubevirt-hyperconverged-operator.v${CSV_VERSION}-${CSV_TIMESTAMP}.${CSV_EXT}"
 sed -r -i "s|createdAt: \".*\$|createdAt: \"2020-10-23 08:58:25\"|; s|quay.io/kubevirt/hyperconverged-cluster-operator.*$|+IMAGE_TO_REPLACE+|; s|quay.io/kubevirt/hyperconverged-cluster-webhook.*$|+WEBHOOK_IMAGE_TO_REPLACE+|" ${INDEX_IMAGE_CSV}
+
+CSV_OLM_AFTER="${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}-${CSV_TIMESTAMP}.${CSV_EXT}"
+CSV_INDEX_IMAGE_AFTER=${INDEX_IMAGE_CSV}
+
+cp ${CSV_OLM_AFTER} /tmp/csv-olm-after.yaml
+cp ${CSV_INDEX_IMAGE_AFTER} /tmp/csv-index-image-after.yaml

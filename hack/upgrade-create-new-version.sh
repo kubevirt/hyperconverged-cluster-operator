@@ -23,6 +23,8 @@ LATEST_VERSION=$(ls -d ${PACKAGE_DIR}/*/ | sort -rV | head -1 | cut -d '/' -f 5)
 OPERATOR_NAME="kubevirt-hyperconverged-operator"
 LATEST_CSV_DIR="${PACKAGE_DIR}/${LATEST_VERSION}"
 LATEST_CSV_NAME="${OPERATOR_NAME}.v${LATEST_VERSION}.clusterserviceversion.yaml"
+CSV_TIMESTAMP=$(ls ${LATEST_CSV_DIR}/${OPERATOR_NAME}* | grep -Po "v${LATEST_VERSION}-\K(\d+)")
+LATEST_CSV_NAME="${OPERATOR_NAME}.v${LATEST_VERSION}-${CSV_TIMESTAMP}.clusterserviceversion.yaml"
 UPGRADE_CSV_DIR="${PACKAGE_DIR}/${UPGRADE_VERSION}"
 UPGRADE_CSV="${UPGRADE_CSV_DIR}/${OPERATOR_NAME}.v${UPGRADE_VERSION}.clusterserviceversion.yaml"
 
@@ -45,10 +47,14 @@ sed -i "s|version:\s*${LATEST_VERSION}|version: ${UPGRADE_VERSION}|g" "${UPGRADE
 sed -i "s|value:\s*${LATEST_VERSION}|value: ${UPGRADE_VERSION}|g" "${UPGRADE_CSV}"
 if [[ -z $PREV ]]; then
   sed -i "/^channels:/a - name: \"${UPGRADE_VERSION}\"\n  currentCSV: ${OPERATOR_NAME}.v${UPGRADE_VERSION}" ${PACKAGE_DIR}/kubevirt-hyperconverged.package.yaml
+  sed -Ei "s|replaces:(.*)|replaces:\1-${CSV_TIMESTAMP}|" "${UPGRADE_CSV}"
 else
   sed -i "s|${LATEST_VERSION}|${UPGRADE_VERSION}|g" ${PACKAGE_DIR}/kubevirt-hyperconverged.package.yaml
   sed -i "s|^defaultChannel:.*|defaultChannel: ${REPLACES_VERSION}|g" ${PACKAGE_DIR}/kubevirt-hyperconverged.package.yaml
 fi
+
+sed -Ei "s/(currentCSV: ${OPERATOR_NAME}.v${UPGRADE_VERSION}).*/\1-${CSV_TIMESTAMP}/" \
+ ${PACKAGE_DIR}/kubevirt-hyperconverged.package.yaml
 
 # enable KVM_EMULATION for CI, needed by kubevirt-node-labeller on AWS
 find ${PACKAGE_DIR} -type f -exec sed -E -i 's|^(\s*)- name: KVM_EMULATION$|\1- name: KVM_EMULATION\n\1  value: "true"|' {} \; || :

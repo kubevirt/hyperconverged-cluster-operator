@@ -23,7 +23,7 @@ sanity:
 	go mod tidy -v
 	go mod vendor
 	./hack/build-manifests.sh
-	git difftool -y --trust-exit-code --extcmd=./hack/diff-csv.sh
+	git difftool -y --trust-exit-code --extcmd=./hack/diff-csv.sh -- . ':!*kubevirt-hyperconverged-operator*.yaml'
 
 build: build-operator build-csv-merger build-webhook
 

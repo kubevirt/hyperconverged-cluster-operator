@@ -75,12 +75,13 @@ metadata:
 
       KubeVirt is distributed under the
       [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0.txt).
+    olm.skipRange: '>=1.4.0-1 <1.4.0-202012301733'
     operatorframework.io/initialization-resource: '{"apiVersion":"hco.kubevirt.io/v1beta1","kind":"HyperConverged","metadata":{"annotations":{"deployOVS":"false"},"name":"kubevirt-hyperconverged","namespace":"kubevirt-hyperconverged"},"spec":{"BareMetalPlatform":false}}'
     operatorframework.io/suggested-namespace: kubevirt-hyperconverged
     operators.operatorframework.io/internal-objects: '["v2vvmwares.v2v.kubevirt.io","ovirtproviders.v2v.kubevirt.io","networkaddonsconfigs.networkaddonsoperator.network.kubevirt.io","kubevirts.kubevirt.io","ssps.ssp.kubevirt.io","cdis.cdi.kubevirt.io","nodemaintenances.nodemaintenance.kubevirt.io","vmimportconfigs.v2v.kubevirt.io"]'
     repository: https://github.com/kubevirt/hyperconverged-cluster-operator
     support: "false"
-  name: kubevirt-hyperconverged-operator.v1.4.0
+  name: kubevirt-hyperconverged-operator.v1.4.0-202012301733
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -2609,7 +2610,7 @@ spec:
     matchLabels:
       alm-owner-kubevirt: kubevirt-hyperconverged
       operated-by: kubevirt-hyperconverged
-  version: 1.4.0
+  version: 1.4.0-202012301733
   webhookdefinitions:
   - admissionReviewVersions:
     - v1beta1
