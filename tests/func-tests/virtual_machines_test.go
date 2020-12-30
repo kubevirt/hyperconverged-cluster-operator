@@ -168,7 +168,8 @@ var _ = Describe("Virtual Machines", func() {
 
 				index := strconv.Itoa(i + 1)
 
-				It("should create, verify and delete a vmi; run #" + index, func() {
+				It("should create, verify and delete a vmi; run #" + index, func(itDone Done) {
+					defer close(itDone)
 					vmi := testscore.NewRandomVMI()
 					vmiName := vmi.Name
 					Eventually(func() error {
