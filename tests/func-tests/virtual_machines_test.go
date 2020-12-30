@@ -3,6 +3,8 @@ package tests_test
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"sync"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -15,9 +17,9 @@ import (
 
 	"github.com/kubevirt/cluster-network-addons-operator/pkg/apis"
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
-	"kubevirt.io/kubevirt/tests/flags"
 	kubevirtv1 "kubevirt.io/client-go/api/v1"
 	"kubevirt.io/client-go/kubecli"
+	"kubevirt.io/kubevirt/tests/flags"
 
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
@@ -147,31 +149,52 @@ var _ = Describe("Virtual Machines", func() {
 	})
 
 	Context("vmi testing", func() {
-		for i := 0; i < 20; i++ {
-			It(fmt.Sprintf("should create, verify and delete a vmi; run #%d", i), func() {
-				vmi := testscore.NewRandomVMI()
-				vmiName := vmi.Name
-				Eventually(func() error {
-					_, err := client.VirtualMachineInstance(testscore.NamespaceTestDefault).Create(vmi)
-					return err
-				}, timeout, pollingInterval).Should(Not(HaveOccurred()), "failed to create a vmi")
-				Eventually(func() bool {
-					vmi, err = client.VirtualMachineInstance(testscore.NamespaceTestDefault).Get(vmiName, &k8smetav1.GetOptions{})
-					Expect(err).ToNot(HaveOccurred())
-					if vmi.Status.Phase == kubevirtv1.Running {
-						if checkNodePlacement {
-							Expect(vmi.Labels["kubevirt.io/nodeName"]).Should(Equal(workloadsNode.Name))
-							fmt.Fprintf(GinkgoWriter, "The VMI is running on the right node: %s\n", workloadsNode.Name)
+
+		const numOfVms = 20
+
+		wg := sync.WaitGroup{}
+		wg.Add(numOfVms)
+
+		done := make(chan bool)
+		go func(done chan <- bool) {
+			wg.Wait()
+			close(done)
+		}(done)
+
+		for i := 0; i < numOfVms; i++ {
+
+			go func(i int) {
+				defer wg.Done()
+
+				index := strconv.Itoa(i + 1)
+
+				It("should create, verify and delete a vmi; run #" + index, func() {
+					vmi := testscore.NewRandomVMI()
+					vmiName := vmi.Name
+					Eventually(func() error {
+						_, err := client.VirtualMachineInstance(testscore.NamespaceTestDefault).Create(vmi)
+						return err
+					}, timeout, pollingInterval).Should(Not(HaveOccurred()), "failed to create a vmi; run #" + index)
+					Eventually(func() bool {
+						vmi, err = client.VirtualMachineInstance(testscore.NamespaceTestDefault).Get(vmiName, &k8smetav1.GetOptions{})
+						Expect(err).ToNot(HaveOccurred())
+						if vmi.Status.Phase == kubevirtv1.Running {
+							if checkNodePlacement {
+								Expect(vmi.Labels["kubevirt.io/nodeName"]).Should(Equal(workloadsNode.Name))
+								fmt.Fprintf(GinkgoWriter, "The VMI is running on the right node: %s; run #%s\n", workloadsNode.Name, index)
+							}
+							return true
 						}
-						return true
-					}
-					return false
-				}, timeout, pollingInterval).Should(BeTrue(), "failed to get the vmi Running")
-				Eventually(func() error {
-					err := client.VirtualMachineInstance(testscore.NamespaceTestDefault).Delete(vmiName, &k8smetav1.DeleteOptions{})
-					return err
-				}, timeout, pollingInterval).Should(Not(HaveOccurred()), "failed to delete a vmi")
-			})
+						return false
+					}, timeout, pollingInterval).Should(BeTrue(), "failed to get the vmi Running; run #" + index)
+					Eventually(func() error {
+						err := client.VirtualMachineInstance(testscore.NamespaceTestDefault).Delete(vmiName, &k8smetav1.DeleteOptions{})
+						return err
+					}, timeout, pollingInterval).Should(Not(HaveOccurred()), "failed to delete a vmi; run #" + index)
+				})
+			}(i)
 		}
+
+		<- done
 	})
 })
