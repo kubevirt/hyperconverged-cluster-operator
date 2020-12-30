@@ -33,7 +33,7 @@ kubectl create -f https://raw.githubusercontent.com/kubevirt/hyperconverged-clus
 kubectl create -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/master/deploy/crds/hco02.crd.yaml
 
 # Deploy cert-manager for webhook certificates
-kubectl create -n $hco_namespace -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/master/deploy/cert-manager.yaml
+kubectl create -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/master/deploy/cert-manager.yaml
 
 # Launch all of the Service Accounts, Cluster Role(Binding)s, and Operators.
 kubectl create -n $hco_namespace -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/master/deploy/cluster_role.yaml

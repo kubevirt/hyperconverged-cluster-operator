@@ -97,3 +97,24 @@ Now it is possible to run HCO from VS Code.
 
 ![](../images/run_local_from_vscode.png)
  
+
+## Running webhook
+
+To be able to run webhook in your local environment, two other configurations are required in your local environment.
+
+### 1) TLS secrets to mount
+   
+   Run `./hack/local_webhook.sh` to fetch TLS secrets from k8s to your local environment. They will be available under `_local/certs` folder.
+  
+### 2) A tunnel between your local machine and k8s cluster
+
+  `Telepresence` is an open source tool that lets you run a single service locally, while connecting that service to a remote Kubernetes cluster. For more information, see https://www.telepresence.io/discussion/overview
+
+  Install telepresence by following the doc here https://www.telepresence.io/reference/install
+
+  Before running webhook, *in another terminal*, create a telepresence deployment into the cluster which forwards requests from cluster to your local machine.
+  ```shell script
+  telepresence -n kubevirt-hyperconverged --new-deployment  hyperconverged-cluster-webhook-service  --expose 4343
+  ```
+
+  Then run the `/cmd/hyperconverged-cluster-webhook/main.go` as you run the operator explained above.

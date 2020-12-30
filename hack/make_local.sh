@@ -13,8 +13,11 @@ export WEBHOOK_MODE=false
 
 mkdir -p "${LOCAL_DIR}"
 ./hack/make_local.py "${LOCAL_DIR}" "${FORMAT}"
+
+# don't deploy operator, webhook and the HCO CR.
 sed "s/\(^.*\/operator.yaml$\)/### \1/" deploy/deploy.sh > _local/deploy.sh
 sed -i "s/\(^.*\/webhooks.yaml$\)/### \1/" _local/deploy.sh
+sed -i "s/\(^.*\/hco.cr.yaml$\)/### \1/" _local/deploy.sh
 sed -i "s|-f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/master/deploy|-f deploy|g" _local/deploy.sh
 
 chmod +x _local/deploy.sh
