@@ -192,7 +192,7 @@ var _ = Describe("Virtual Machines", func() {
 						err := client.VirtualMachineInstance(testscore.NamespaceTestDefault).Delete(vmiName, &k8smetav1.DeleteOptions{})
 						return err
 					}, timeout, pollingInterval).Should(Not(HaveOccurred()), "failed to delete a vmi; run #" + index)
-				})
+				}, float64(time.Minute * 5))
 			}(i)
 		}
 
