@@ -22,7 +22,7 @@ import (
 
 const (
 	webHookCertDirEnv     = "WEBHOOK_CERT_DIR"
-	defaultWebhookCertDir = "/apiserver.local.config/certificates"
+	DefaultWebhookCertDir = "/apiserver.local.config/certificates"
 
 	WebhookCertName = "apiserver.crt"
 	WebhookKeyName  = "apiserver.key"
@@ -38,7 +38,7 @@ func GetWebhookCertDir() string {
 		return webhookCertDir
 	}
 
-	return defaultWebhookCertDir
+	return DefaultWebhookCertDir
 }
 
 type WebhookHandlerIfs interface {
