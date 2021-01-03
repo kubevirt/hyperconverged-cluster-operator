@@ -62,7 +62,8 @@ func (r *HyperConverged) SetupWebhookWithManager(ctx context.Context, mgr ctrl.M
 	whHandler = handler
 	whHandler.Init(hcolog, mgr.GetClient(), operatorNsEnv, isOpenshift)
 
-	certs := []string{filepath.Join(GetWebhookCertDir(), WebhookCertName), filepath.Join(GetWebhookCertDir(), WebhookKeyName)}
+	webhookCertDir := GetWebhookCertDir()
+	certs := []string{filepath.Join(webhookCertDir, WebhookCertName), filepath.Join(webhookCertDir, WebhookKeyName)}
 	for _, fname := range certs {
 		if _, err := os.Stat(fname); err != nil {
 			hcolog.Error(err, "CSV certificates were not found, skipping webhook initialization")
