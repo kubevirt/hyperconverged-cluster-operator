@@ -672,7 +672,8 @@ var _ = Describe("KubeVirt Operand", func() {
 					fgDisabled: false,
 				}
 
-				existingResource := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
 				By("KV CR should contain the fgEnabled feature gate", func() {
 					Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
 					Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(fgEnabled))
@@ -682,12 +683,14 @@ var _ = Describe("KubeVirt Operand", func() {
 			})
 
 			It("should not add the feature gates if FeatureGates map is nil", func() {
-				existingResource := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
 				Expect(existingResource.Spec.Configuration.DeveloperConfiguration).To(BeNil())
 			})
 
 			It("should add feature gates if they are set to true", func() {
-				existingResource := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
 
 				hco.Spec.FeatureGates = map[string]bool{
 					fgEnabled:  true,
@@ -718,7 +721,8 @@ var _ = Describe("KubeVirt Operand", func() {
 			})
 
 			It("should handle existing feature gates on update", func() {
-				existingResource := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
 				existingResource.Spec.Configuration.DeveloperConfiguration = &kubevirtv1.DeveloperConfiguration{
 					FeatureGates: []string{fgMissing, fgDisabled, fgNoChange},
 				}
@@ -769,7 +773,8 @@ var _ = Describe("KubeVirt Operand", func() {
 			})
 
 			It("should remove all KV feature gates if there are no managed KV feature gates in HC", func() {
-				existingResource := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
 				existingResource.Spec.Configuration.DeveloperConfiguration = &kubevirtv1.DeveloperConfiguration{
 					FeatureGates: []string{fgMissing, fgDisabled, fgNoChange},
 				}
