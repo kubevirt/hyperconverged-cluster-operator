@@ -499,6 +499,121 @@ var _ = Describe("KubeVirt Operand", func() {
 			Expect(req.Conditions).To(BeEmpty())
 		})
 
+		It("should add the MigratableHostPassthrough feature gate if WithHostPassthroughCPU is set to true", func() {
+			hco.Spec.LiveMigration = &hcov1beta1.LiveMigrationConfig{
+				WithHostPassthroughCPU: true,
+			}
+
+			existingResource := NewKubeVirt(hco)
+			By("KV CR should contain the WithHostPassthroughCPU feature gate", func() {
+				Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
+				Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvMigratableHostPassthrough))
+			})
+		})
+
+		It("should not add the MigratableHostPassthrough feature gate if WithHostPassthroughCPU is set to false", func() {
+			hco.Spec.LiveMigration = &hcov1beta1.LiveMigrationConfig{
+				WithHostPassthroughCPU: false,
+			}
+
+			existingResource := NewKubeVirt(hco)
+			Expect(existingResource.Spec.Configuration.DeveloperConfiguration).To(BeNil())
+		})
+
+		It("should not add the MigratableHostPassthrough feature gate if LiveMigration is nil", func() {
+			existingResource := NewKubeVirt(hco)
+			Expect(existingResource.Spec.Configuration.DeveloperConfiguration).To(BeNil())
+		})
+
+		It("should add the MigratableHostPassthrough feature gate if WithHostPassthroughCPU is set to true", func() {
+			existingResource := NewKubeVirt(hco)
+
+			hco.Spec.LiveMigration = &hcov1beta1.LiveMigrationConfig{
+				WithHostPassthroughCPU: true,
+			}
+
+			cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
+			handler := (*genericOperand)(newKubevirtHandler(cl, commonTestUtils.GetScheme()))
+			res := handler.ensure(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeTrue())
+			Expect(res.Overwritten).To(BeFalse())
+			Expect(res.Err).To(BeNil())
+
+			foundResource := &kubevirtv1.KubeVirt{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+			).To(BeNil())
+
+			By("KV CR should contain the WithHostPassthroughCPU feature gate", func() {
+				Expect(foundResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
+				Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvMigratableHostPassthrough))
+			})
+		})
+
+		It("should remove the MigratableHostPassthrough feature gate if LiveMigration is empty", func() {
+			hco.Spec.LiveMigration = &hcov1beta1.LiveMigrationConfig{
+				WithHostPassthroughCPU: true,
+			}
+
+			existingResource := NewKubeVirt(hco)
+			By("Make sure the existing KV is with the MigratableHostPassthrough feeature gate", func() {
+				Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
+				Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvMigratableHostPassthrough))
+			})
+
+			hco.Spec.LiveMigration.WithHostPassthroughCPU = false
+
+			cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
+			handler := (*genericOperand)(newKubevirtHandler(cl, commonTestUtils.GetScheme()))
+			res := handler.ensure(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeTrue())
+			Expect(res.Overwritten).To(BeFalse())
+			Expect(res.Err).To(BeNil())
+
+			foundResource := &kubevirtv1.KubeVirt{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+			).To(BeNil())
+
+			By("KV CR should not contain the WithHostPassthroughCPU feature gate", func() {
+				Expect(foundResource.Spec.Configuration.DeveloperConfiguration).To(BeNil())
+			})
+		})
+
+		It("should remove the MigratableHostPassthrough feature gate if WithHostPassthroughCPU is set to false", func() {
+			Expect(hco.Spec.LiveMigration).To(BeNil())
+
+			existingResource := NewKubeVirt(hco)
+			existingResource.Spec.Configuration.DeveloperConfiguration = &kubevirtv1.DeveloperConfiguration{
+				FeatureGates: []string{kvMigratableHostPassthrough},
+			}
+
+			cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
+			handler := (*genericOperand)(newKubevirtHandler(cl, commonTestUtils.GetScheme()))
+			res := handler.ensure(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeTrue())
+			Expect(res.Overwritten).To(BeFalse())
+			Expect(res.Err).To(BeNil())
+
+			foundResource := &kubevirtv1.KubeVirt{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+			).To(BeNil())
+
+			By("KV CR should not contain the WithHostPassthroughCPU feature gate", func() {
+				Expect(foundResource.Spec.Configuration.DeveloperConfiguration).To(BeNil())
+			})
+		})
+
 		It("should handle conditions", func() {
 			expectedResource := NewKubeVirt(hco, commonTestUtils.Namespace)
 			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)

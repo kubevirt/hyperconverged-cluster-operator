@@ -40,8 +40,19 @@ type HyperConvergedSpec struct {
 	// +optional
 	Workloads HyperConvergedConfig `json:"workloads,omitempty"`
 
+	// LiveMigration *LiveMigrationConfig Manages virtual machine live migration capabilities
+	// +optional
+	LiveMigration *LiveMigrationConfig `json:"liveMigration,omitempty"`
+
 	// operator version
 	Version string `json:"version,omitempty"`
+}
+
+type LiveMigrationConfig struct {
+	// WithHostPassthroughCPU bool indicates whether it is possible to migrate a virtual machine with CPU host-passthrough
+	// mode. This should be enabled only when the Cluster is homogeneous from CPU HW perspective.
+	// default = false
+	WithHostPassthroughCPU bool `json:"withHostPassthroughCPU"`
 }
 
 // HyperConvergedConfig defines a set of configurations to pass to components
@@ -153,4 +164,20 @@ type HyperConvergedList struct {
 
 func init() {
 	SchemeBuilder.Register(&HyperConverged{}, &HyperConvergedList{})
+}
+
+// Add a string to a slice of string only if not already there or if the slice is empty
+func AddOnlyOnce(words []string, word string) []string {
+	found := false
+	for _, w := range words {
+		if w == word {
+			found = true
+			break
+		}
+	}
+
+	if found {
+		return words
+	}
+	return append(words, word)
 }

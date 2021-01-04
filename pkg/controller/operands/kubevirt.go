@@ -20,6 +20,8 @@ import (
 
 const (
 	kubevirtDefaultNetworkInterfaceValue = "masquerade"
+	//TODO: Remove when the https://github.com/kubevirt/kubevirt/pull/4323 PR is released
+	kvMigratableHostPassthrough = "MigratableHostPassthrough"
 )
 
 // ************  KubeVirt Handler  **************
@@ -83,6 +85,16 @@ func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) *kubevirtv1.Kube
 		UninstallStrategy: kubevirtv1.KubeVirtUninstallStrategyBlockUninstallIfWorkloadsExist,
 		Infra:             hcoConfig2KvConfig(hc.Spec.Infra),
 		Workloads:         hcoConfig2KvConfig(hc.Spec.Workloads),
+	}
+
+	if hc.Spec.LiveMigration != nil && hc.Spec.LiveMigration.WithHostPassthroughCPU {
+		if spec.Configuration.DeveloperConfiguration == nil {
+			spec.Configuration.DeveloperConfiguration = &kubevirtv1.DeveloperConfiguration{}
+		}
+
+		spec.Configuration.DeveloperConfiguration.FeatureGates = hcov1beta1.AddOnlyOnce(
+			spec.Configuration.DeveloperConfiguration.FeatureGates,
+			kvMigratableHostPassthrough)
 	}
 
 	return &kubevirtv1.KubeVirt{
@@ -303,12 +315,19 @@ func NewKubeVirtConfigForCR(cr *hcov1beta1.HyperConverged, namespace string) *co
 	labels := map[string]string{
 		hcoutil.AppLabel: cr.Name,
 	}
+
+	fgs := "DataVolumes,SRIOV,LiveMigration,CPUManager,CPUNodeDiscovery,Sidecar,Snapshot"
+	if cr.Spec.LiveMigration != nil && cr.Spec.LiveMigration.WithHostPassthroughCPU {
+		fgs = fmt.Sprintf("fgs,%s", kvMigratableHostPassthrough)
+	}
+
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kubevirt-config",
 			Labels:    labels,
 			Namespace: namespace,
 		},
+
 		// only virtconfig.SmbiosConfigKey, virtconfig.MachineTypeKey, virtconfig.SELinuxLauncherTypeKey,
 		// virtconfig.FeatureGatesKey and virtconfig.UseEmulationKey are going to be manipulated
 		// and only on HCO upgrades.
@@ -316,7 +335,7 @@ func NewKubeVirtConfigForCR(cr *hcov1beta1.HyperConverged, namespace string) *co
 		// TODO: This is going to change in the next HCO release where the whole configMap is going
 		// to be continuously reconciled
 		Data: map[string]string{
-			virtconfig.FeatureGatesKey:        "DataVolumes,SRIOV,LiveMigration,CPUManager,CPUNodeDiscovery,Sidecar,Snapshot",
+			virtconfig.FeatureGatesKey:        fgs,
 			virtconfig.SELinuxLauncherTypeKey: "virt_launcher.process",
 			virtconfig.NetworkInterfaceKey:    kubevirtDefaultNetworkInterfaceValue,
 		},

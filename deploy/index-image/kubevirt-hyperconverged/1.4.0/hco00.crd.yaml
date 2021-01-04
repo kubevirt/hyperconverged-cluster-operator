@@ -527,6 +527,15 @@ spec:
                         type: array
                     type: object
                 type: object
+              liveMigration:
+                description: LiveMigration *LiveMigrationConfig Manages virtual machine live migration capabilities
+                properties:
+                  withHostPassthroughCPU:
+                    description: WithHostPassthroughCPU bool indicates whether it is possible to migrate a virtual machine with CPU host-passthrough mode. This should be enabled only when the Cluster is homogeneous from CPU HW perspective. default = false
+                    type: boolean
+                required:
+                - withHostPassthroughCPU
+                type: object
               localStorageClassName:
                 description: LocalStorageClassName the name of the local storage class.
                 type: string

@@ -296,4 +296,57 @@ var _ = Describe("HyperconvergedTypes", func() {
 		// TODO: add tests on nodeselectors and tolerations
 
 	})
+
+	Context("AddOnlyOnce", func() {
+		It("Add to a nil slice", func() {
+			var words []string = nil
+			words = AddOnlyOnce(words, "test")
+			Expect(words).To(HaveLen(1))
+			Expect(words).To(ContainElement("test"))
+		})
+
+		It("Add to an empty slice", func() {
+			words := make([]string, 0)
+			words = AddOnlyOnce(words, "test")
+			Expect(words).To(HaveLen(1))
+			Expect(words).To(ContainElement("test"))
+		})
+
+		It("Add to non-empty slice", func() {
+			words := []string{"aaa", "bbb", "ccc"}
+			words = AddOnlyOnce(words, "test")
+			Expect(words).To(HaveLen(4))
+			Expect(words).To(ContainElement("test"))
+		})
+
+		It("Add to slice that already contains the word as single value", func() {
+			words := []string{"test"}
+			words = AddOnlyOnce(words, "test")
+			Expect(words).To(HaveLen(1))
+			Expect(words).To(ContainElement("test"))
+
+			count := 0
+			for _, w := range words {
+				if w == "test" {
+					count++
+				}
+			}
+			Expect(count).Should(Equal(1))
+		})
+
+		It("Add to slice that already contains the word", func() {
+			words := []string{"aaa", "test", "bbb"}
+			words = AddOnlyOnce(words, "test")
+			Expect(words).To(HaveLen(3))
+			Expect(words).To(ContainElement("test"))
+
+			count := 0
+			for _, w := range words {
+				if w == "test" {
+					count++
+				}
+			}
+			Expect(count).Should(Equal(1))
+		})
+	})
 })
