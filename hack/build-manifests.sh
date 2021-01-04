@@ -156,6 +156,18 @@ function create_ssp_csv() {
   "
 
   gen_csv ${SSP_CSV_GENERATOR} ${operatorName} "${SSP_OPERATOR_IMAGE}" ${dumpCRDsArg} ${operatorArgs}
+
+  # Temporarily remove CSV webhook to workaround BZ#1908596:
+  # 1. Convert CSV to JSON
+  # 2. Remove SSP webhook definition
+  # 3. Set ENABLE_WEBHOOKS=false for the SSP container
+  # 4. Convert CSV back to YAML
+  sspCsv="${TEMPDIR}/${operatorName}.${CSV_EXT}"
+  csvJson=$(kubectl patch -f $sspCsv --local --type json --patch '[]' -o json)
+  csvJson=$(echo "$csvJson" | jq 'del(.spec.webhookdefinitions[] | select(.deploymentName == "ssp-operator"))')
+  csvJson=$(echo "$csvJson" | jq '(.spec.install.spec.deployments[] | select(.name == "ssp-operator").spec.template.spec.containers[0].env) += [{ "name": "ENABLE_WEBHOOKS", "value": "false" }]')
+  echo "$csvJson" | kubectl patch -f - --local --type json --patch '[]' -o yaml > $sspCsv
+
   echo "${operatorName}"
 }
 
