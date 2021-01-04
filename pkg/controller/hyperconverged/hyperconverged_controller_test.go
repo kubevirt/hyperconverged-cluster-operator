@@ -366,8 +366,8 @@ var _ = Describe("HyperconvergedController", func() {
 
 			It("should increment counter when out-of-band change overwritten", func() {
 				hco := commonTestUtils.NewHco()
-				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
-				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
+				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewNodePlacement()}
+				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewNodePlacement()}
 				existingResource := operands.NewKubeVirt(hco, namespace)
 
 				// now, modify KV's node placement
@@ -424,8 +424,8 @@ var _ = Describe("HyperconvergedController", func() {
 
 			It("should not increment counter when CR was changed by HCO", func() {
 				hco := commonTestUtils.NewHco()
-				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
-				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewHyperConvergedConfig()}
+				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewNodePlacement()}
+				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewNodePlacement()}
 				existingResource := operands.NewKubeVirt(hco, namespace)
 
 				// now, modify KV's node placement

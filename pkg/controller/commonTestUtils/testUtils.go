@@ -67,7 +67,7 @@ func NewReq(inst *hcov1beta1.HyperConverged) *common.HcoRequest {
 	}
 }
 
-func NewHyperConvergedConfig() *sdkapi.NodePlacement {
+func NewNodePlacement() *sdkapi.NodePlacement {
 	seconds1, seconds2 := int64(1), int64(2)
 	return &sdkapi.NodePlacement{
 		NodeSelector: map[string]string{
@@ -99,7 +99,7 @@ func NewHyperConvergedConfig() *sdkapi.NodePlacement {
 	}
 }
 
-func NewHyperConvergedConfig2() *sdkapi.NodePlacement {
+func NewOtherNodePlacement() *sdkapi.NodePlacement {
 	seconds3, seconds4 := int64(3), int64(4)
 	return &sdkapi.NodePlacement{
 		NodeSelector: map[string]string{
