@@ -23,7 +23,6 @@ chmod +x _local/deploy.sh
 
 kubectl config set-context --current --namespace=${hco_namespace}
 _local/deploy.sh
-# kubectl apply -f _local/local.yaml
 
 if [ "${DEBUG_OPERATOR}" == "true" ]; then
   kubectl --namespace=${hco_namespace} scale deploy hyperconverged-cluster-operator --replicas=0
