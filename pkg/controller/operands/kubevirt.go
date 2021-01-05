@@ -25,6 +25,7 @@ const (
 
 const (
 	kvHotplugVolumes = "HotplugVolumes"
+	cmFeatureGates   = "DataVolumes,SRIOV,LiveMigration,CPUManager,CPUNodeDiscovery,Sidecar,Snapshot"
 )
 
 var (
@@ -354,9 +355,7 @@ func translateKubeVirtConds(orig []kubevirtv1.KubeVirtCondition) []conditionsv1.
 }
 
 func NewKubeVirtConfigForCR(cr *hcov1beta1.HyperConverged, namespace string) *corev1.ConfigMap {
-	const constFeatureGates = "DataVolumes,SRIOV,LiveMigration,CPUManager,CPUNodeDiscovery,Sidecar,Snapshot"
-
-	featureGates := constFeatureGates
+	featureGates := cmFeatureGates
 	if managedFeatureGates := cr.Spec.FeatureGates.GetFeatureGateList(managedKvFeatureGates); len(managedFeatureGates) > 0 {
 		featureGates = fmt.Sprintf("%s,%s", featureGates, strings.Join(managedFeatureGates, ","))
 	}

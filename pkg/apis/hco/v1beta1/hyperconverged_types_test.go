@@ -341,7 +341,7 @@ var _ = Describe("HyperconvergedTypes", func() {
 				fgList := fgs.GetFeatureGateList(managedFgs)
 
 				By("should include enabled managed FGs", func() {
-					Expect(fgList).To(HaveLen(0))
+					Expect(fgList).To(BeEmpty())
 				})
 			})
 
@@ -350,7 +350,7 @@ var _ = Describe("HyperconvergedTypes", func() {
 				fgList := fgs.GetFeatureGateList(managedFgs)
 
 				By("should create empty list", func() {
-					Expect(fgList).To(HaveLen(0))
+					Expect(fgList).To(BeEmpty())
 				})
 			})
 
@@ -360,7 +360,7 @@ var _ = Describe("HyperconvergedTypes", func() {
 				fgList := fgs.GetFeatureGateList(managedFgs)
 
 				By("should create empty list", func() {
-					Expect(fgList).To(HaveLen(0))
+					Expect(fgList).To(BeEmpty())
 				})
 			})
 		})
