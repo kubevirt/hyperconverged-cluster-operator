@@ -39,8 +39,9 @@ type OperandHandler struct {
 	client   client.Client
 	operands []Operand
 	// save for deletions
-	quickStartObjects []*consolev1.ConsoleQuickStart
-	eventEmitter      hcoutil.EventEmitter
+	quickStartObjects   []*consolev1.ConsoleQuickStart
+	eventEmitter        hcoutil.EventEmitter
+	defaultFeatureGates []string
 }
 
 func NewOperandHandler(client client.Client, scheme *runtime.Scheme, isOpenshiftCluster bool, eventEmitter hcoutil.EventEmitter) *OperandHandler {
@@ -64,10 +65,14 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, isOpenshift
 		}...)
 	}
 
+	defaultFgs := make([]string, 0)
+	defaultFgs = append(defaultFgs, getKvDefaultFeatureGates()...)
+
 	return &OperandHandler{
-		client:       client,
-		operands:     operands,
-		eventEmitter: eventEmitter,
+		client:              client,
+		operands:            operands,
+		eventEmitter:        eventEmitter,
+		defaultFeatureGates: defaultFgs,
 	}
 }
 
@@ -200,4 +205,8 @@ func (h OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 	}
 
 	return nil
+}
+
+func (h OperandHandler) GetDefaultFeatureGates() []string {
+	return h.defaultFeatureGates
 }

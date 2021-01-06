@@ -297,6 +297,12 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 			req.Logger.Error(err, "Failed to add conditions to status")
 			return reconcile.Result{}, err
 		}
+
+	}
+
+	// Set default feature gates, if not pre-defined in the CR
+	if applyDefaultFeatureGates(req.Instance, r.operandHandler.GetDefaultFeatureGates()) {
+		req.Dirty = true
 	}
 
 	r.setLabels(req)
@@ -305,19 +311,19 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 	// negative conditions (!Available, Degraded, Progressing)
 	req.Conditions = common.NewHcoConditions()
 
-	fin_dropped := false
+	finDropped := false
 	// Handle finalizers
 	if contains(req.Instance.ObjectMeta.Finalizers, badFinalizerName) {
 		req.Logger.Info("removing a finalizer set in the past (without a fully qualified name)")
-		req.Instance.ObjectMeta.Finalizers, fin_dropped = drop(req.Instance.ObjectMeta.Finalizers, badFinalizerName)
-		req.Dirty = req.Dirty || fin_dropped
+		req.Instance.ObjectMeta.Finalizers, finDropped = drop(req.Instance.ObjectMeta.Finalizers, badFinalizerName)
+		req.Dirty = req.Dirty || finDropped
 	}
 	if req.Instance.ObjectMeta.DeletionTimestamp.IsZero() {
 		// Add the finalizer if it's not there
 		if !contains(req.Instance.ObjectMeta.Finalizers, FinalizerName) {
 			req.Logger.Info("setting a finalizer (with fully qualified name)")
 			req.Instance.ObjectMeta.Finalizers = append(req.Instance.ObjectMeta.Finalizers, FinalizerName)
-			req.Dirty = req.Dirty || fin_dropped
+			req.Dirty = req.Dirty || finDropped
 		}
 	} else {
 		if !req.HCOTriggered {
@@ -840,6 +846,19 @@ func drop(slice []string, s string) ([]string, bool) {
 		}
 	}
 	return newSlice, dropped
+}
+
+// Set default feature gates, if not pre-defined in the CR
+func applyDefaultFeatureGates(hc *hcov1beta1.HyperConverged, featureGates []string) bool {
+	if hc.Spec.FeatureGates == nil {
+		hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{}
+
+		for _, fg := range featureGates {
+			hc.Spec.FeatureGates[fg] = true
+		}
+		return true
+	}
+	return false
 }
 
 func init() {

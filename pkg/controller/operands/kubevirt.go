@@ -25,17 +25,46 @@ const (
 )
 
 const (
-	kvHotplugVolumes = "HotplugVolumes"
-	cmFeatureGates   = "DataVolumes,SRIOV,LiveMigration,CPUManager,CPUNodeDiscovery,Sidecar,Snapshot"
+	// default KV feature gates that are not in virtconfig
+	kvDataVolumes = "DataVolumes"
+	kvSRIOV       = "SRIOV"
 )
 
 var (
+	// defaultManagedKvFeatureGates list is used to initiate the KV feature gate list
+	defaultManagedKvFeatureGates = []string{
+		kvDataVolumes,
+		kvSRIOV,
+		virtconfig.LiveMigrationGate,
+		virtconfig.CPUManager,
+		virtconfig.CPUNodeDiscoveryGate,
+		virtconfig.SidecarGate,
+		virtconfig.SnapshotGate,
+	}
+
 	// managedKvFeatureGates - list of KV feature gates that can be set/clear by adding/remove them
 	// from HyperConverged CR
-	managedKvFeatureGates = []string{
-		kvHotplugVolumes,
+	optionalKvFeatureGates = []string{
+		virtconfig.IgnitionGate,
+		virtconfig.HypervStrictCheckGate,
+		virtconfig.GPUGate,
+		virtconfig.HostDevicesGate,
+		virtconfig.HotplugVolumesGate,
+		virtconfig.HostDiskGate,
+		virtconfig.VirtIOFSGate,
+		virtconfig.MacvtapGate,
 	}
+
+	managedKvFeatureGates []string
 )
+
+func init() {
+	managedKvFeatureGates = append(defaultManagedKvFeatureGates, optionalKvFeatureGates...)
+}
+
+func getKvDefaultFeatureGates() []string {
+	return defaultManagedKvFeatureGates
+}
 
 // ************  KubeVirt Handler  **************
 type kubevirtHandler genericOperand
@@ -204,7 +233,6 @@ func (h *kvConfigHooks) updateCr(req *common.HcoRequest, Client client.Client, e
 		// TODO: This is going to change in the next HCO release where the whole configMap is going
 		// to be continuously reconciled
 		for _, k := range []string{
-			virtconfig.FeatureGatesKey,
 			virtconfig.SmbiosConfigKey,
 			virtconfig.MachineTypeKey,
 			virtconfig.SELinuxLauncherTypeKey,
@@ -225,37 +253,12 @@ func (h *kvConfigHooks) updateCr(req *common.HcoRequest, Client client.Client, e
 				changed = true
 			}
 		}
-	} else { // not in upgrade mode
+	}
 
-		// Add/remove managed KV feature gates without modifying any other feature gates, that may be changed by the user:
-		// 1. first, get the current feature gate list from the config map, and split the list into the ist string to a
-		//    slice of FGs
-		foundFgSplit := strings.Split(found.Data[virtconfig.FeatureGatesKey], ",")
-		resultFg := make([]string, 0, len(foundFgSplit))
-		fgChanged := false
-		// 2. Remove only managed FGs from the list, if are not in the HC CR
-		for _, fg := range foundFgSplit {
-			// Remove if not in HC CR
-			if hcoutil.ContainsString(managedKvFeatureGates, fg) && !req.Instance.Spec.FeatureGates.IsEnabled(fg) {
-				fgChanged = true
-				continue
-			}
-			resultFg = append(resultFg, fg)
-		}
-
-		// 3. Add managed FGs if set in the HC CR
-		for _, fg := range req.Instance.Spec.FeatureGates.GetFeatureGateList(managedKvFeatureGates) {
-			if !hcoutil.ContainsString(foundFgSplit, fg) {
-				resultFg = append(resultFg, fg)
-				fgChanged = true
-			}
-		}
-
-		// 4. If a managed FG added/removed, rebuild a new list. Else, use the current one.
-		if fgChanged {
-			changed = true
-			found.Data[virtconfig.FeatureGatesKey] = strings.Join(resultFg, ",")
-		}
+	if found.Data[virtconfig.FeatureGatesKey] != kubevirtConfig.Data[virtconfig.FeatureGatesKey] {
+		req.Logger.Info(fmt.Sprintf("Updating %s on existing KubeVirt config", virtconfig.FeatureGatesKey))
+		found.Data[virtconfig.FeatureGatesKey] = kubevirtConfig.Data[virtconfig.FeatureGatesKey]
+		changed = true
 	}
 
 	if !reflect.DeepEqual(found.Labels, kubevirtConfig.Labels) {
@@ -374,11 +377,9 @@ func translateKubeVirtConds(orig []kubevirtv1.KubeVirtCondition) []conditionsv1.
 }
 
 func NewKubeVirtConfigForCR(cr *hcov1beta1.HyperConverged, namespace string) *corev1.ConfigMap {
-	featureGates := cmFeatureGates
 
-	if managedFeatureGates := cr.Spec.FeatureGates.GetFeatureGateList(managedKvFeatureGates); len(managedFeatureGates) > 0 {
-		featureGates = fmt.Sprintf("%s,%s", featureGates, strings.Join(managedFeatureGates, ","))
-	}
+	fgList := cr.Spec.FeatureGates.GetFeatureGateList(managedKvFeatureGates)
+	featureGates := strings.Join(fgList, ",")
 
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{

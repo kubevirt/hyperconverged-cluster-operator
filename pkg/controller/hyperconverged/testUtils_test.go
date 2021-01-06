@@ -101,6 +101,8 @@ func (be BasicExpected) initClient() *commonTestUtils.HcoTestClient {
 func getBasicDeployment() *BasicExpected {
 
 	res := &BasicExpected{}
+	operandHandler := operands.NewOperandHandler(nil, nil, true, &commonTestUtils.EventEmitterMock{})
+	defaultGw := operandHandler.GetDefaultFeatureGates()
 
 	hco := &hcov1beta1.HyperConverged{
 		ObjectMeta: metav1.ObjectMeta{
@@ -122,6 +124,8 @@ func getBasicDeployment() *BasicExpected {
 			},
 		},
 	}
+
+	applyDefaultFeatureGates(hco, defaultGw)
 	res.hco = hco
 
 	res.pc = operands.NewKubeVirtPriorityClass(hco)

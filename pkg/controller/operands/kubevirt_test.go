@@ -129,7 +129,7 @@ var _ = Describe("KubeVirt Operand", func() {
 		var hco *hcov1beta1.HyperConverged
 		var req *common.HcoRequest
 
-		updatableKeys := [...]string{virtconfig.SmbiosConfigKey, virtconfig.MachineTypeKey, virtconfig.SELinuxLauncherTypeKey, virtconfig.FeatureGatesKey}
+		updatableKeys := [...]string{virtconfig.SmbiosConfigKey, virtconfig.MachineTypeKey, virtconfig.SELinuxLauncherTypeKey}
 		removeKeys := [...]string{virtconfig.MigrationsConfigKey}
 		unupdatableKeys := [...]string{virtconfig.NetworkInterfaceKey}
 
@@ -188,7 +188,6 @@ var _ = Describe("KubeVirt Operand", func() {
 			outdatedResource.Data[virtconfig.SmbiosConfigKey] = "old-smbios-value-that-we-have-to-update"
 			outdatedResource.Data[virtconfig.MachineTypeKey] = "old-machinetype-value-that-we-have-to-update"
 			outdatedResource.Data[virtconfig.SELinuxLauncherTypeKey] = "old-selinuxlauncher-value-that-we-have-to-update"
-			outdatedResource.Data[virtconfig.FeatureGatesKey] = "old-featuregates-value-that-we-have-to-update"
 			// value that we should remove if configured
 			outdatedResource.Data[virtconfig.MigrationsConfigKey] = "old-migrationsconfig-value-that-we-should-remove"
 			// values we should preserve
@@ -234,7 +233,6 @@ var _ = Describe("KubeVirt Operand", func() {
 			outdatedResource.Data[virtconfig.SmbiosConfigKey] = "old-smbios-value-that-we-have-to-update"
 			outdatedResource.Data[virtconfig.MachineTypeKey] = "old-machinetype-value-that-we-have-to-update"
 			outdatedResource.Data[virtconfig.SELinuxLauncherTypeKey] = "old-selinuxlauncher-value-that-we-have-to-update"
-			outdatedResource.Data[virtconfig.FeatureGatesKey] = "old-featuregates-value-that-we-have-to-update"
 			// values we should preserve
 			outdatedResource.Data[virtconfig.MigrationsConfigKey] = "old-migrationsconfig-value-that-we-should-preserve"
 			outdatedResource.Data[virtconfig.DefaultNetworkInterface] = "old-defaultnetworkinterface-value-that-we-should-preserve"
@@ -264,64 +262,70 @@ var _ = Describe("KubeVirt Operand", func() {
 			origKvFeatureGates := managedKvFeatureGates
 
 			const (
+				defaultFg1      = "defaultFg1"
+				defaultFg2      = "defaultFg2"
+				defaultFgString = defaultFg1 + "," + defaultFg2
 				userModifiedFgs = "userModifiedFg1,userModifiedFg2,userModifiedFg3"
+			)
+
+			var (
+				defaultFgs = []string{defaultFg1, defaultFg2}
 			)
 			BeforeEach(func() {
 				// list of fake KV managed FGs
-				managedKvFeatureGates = []string{fgEnabled, fgMissing, fgDisabled, fgNoChange}
+				managedKvFeatureGates = []string{defaultFg1, defaultFg2, fgEnabled, fgMissing, fgDisabled, fgNoChange}
+
+				hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{}
+				for _, fg := range defaultFgs {
+					hco.Spec.FeatureGates[fg] = true
+				}
 			})
 
 			AfterEach(func() {
 				managedKvFeatureGates = origKvFeatureGates
 			})
 
-			It("should have a list of enabled features that are managed by the HCO CR", func() {
+			It("Should have an empty feature gate ist if the HCO CR contains no FGs", func() {
 				existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
 				By("KV CR should contain the fgEnabled feature gate", func() {
-					Expect(existingResource.Data[virtconfig.FeatureGatesKey]).Should(Equal(cmFeatureGates))
+					Expect(existingResource.Data[virtconfig.FeatureGatesKey]).Should(Equal(defaultFgString))
 				})
 			})
 
 			It("should add the feature gates if they exist and enabled in HyperConverged CR", func() {
-				hco.Spec.FeatureGates = map[string]bool{
-					fgEnabled:  true,
-					fgDisabled: false,
-				}
+				hco.Spec.FeatureGates[fgEnabled] = true
+				hco.Spec.FeatureGates[fgDisabled] = false
 
 				existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-				By("KV CR should contain the fgEnabled feature gate", func() {
-					Expect(existingResource.Data[virtconfig.FeatureGatesKey]).Should(Equal(cmFeatureGates + "," + fgEnabled))
+				By("should contain the fgEnabled feature gate", func() {
+					Expect(existingResource.Data[virtconfig.FeatureGatesKey]).Should(Equal(defaultFgString + "," + fgEnabled))
 				})
 			})
 
 			It("should add feature gates if they are set to true", func() {
 				existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
 				By("Make sure the enabled FG is not there", func() {
-					Expect(existingResource.Data[virtconfig.FeatureGatesKey]).Should(Equal(cmFeatureGates))
+					Expect(existingResource.Data[virtconfig.FeatureGatesKey]).Should(Equal(defaultFgString))
 				})
 
-				hco.Spec.FeatureGates = map[string]bool{
-					fgEnabled:  true,
-					fgDisabled: false,
-				}
+				hco.Spec.FeatureGates[fgEnabled] = true
+				hco.Spec.FeatureGates[fgDisabled] = false
 
 				foundResource := &corev1.ConfigMap{}
 				reconcileCm(hco, req, true, existingResource, foundResource)
 
 				By("KV CR should contain the enabled feature gate", func() {
-					Expect(foundResource.Data[virtconfig.FeatureGatesKey]).Should(Equal(cmFeatureGates + "," + fgEnabled))
+					Expect(foundResource.Data[virtconfig.FeatureGatesKey]).Should(Equal(defaultFgString + "," + fgEnabled))
 				})
 			})
 
 			It("should handle feature gates on update", func() {
 				existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-				existingResource.Data[virtconfig.FeatureGatesKey] = fmt.Sprintf("%s,%s,%s,%s", cmFeatureGates, fgMissing, fgDisabled, fgNoChange)
+				existingResource.Data[virtconfig.FeatureGatesKey] = fmt.Sprintf("%s,%s,%s,%s", defaultFgString, fgMissing, fgDisabled, fgNoChange)
 
-				hco.Spec.FeatureGates = map[string]bool{
-					fgEnabled:  true,
-					fgDisabled: false,
-					fgNoChange: true,
-				}
+				hco.Spec.FeatureGates[fgEnabled] = true
+				hco.Spec.FeatureGates[fgDisabled] = false
+				hco.Spec.FeatureGates[fgNoChange] = true
 
 				foundResource := &corev1.ConfigMap{}
 				reconcileCm(hco, req, true, existingResource, foundResource)
@@ -337,55 +341,28 @@ var _ = Describe("KubeVirt Operand", func() {
 
 			It("should remove all KV feature gates if there are no managed KV feature gates in HC", func() {
 				existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-				existingResource.Data[virtconfig.FeatureGatesKey] = fmt.Sprintf("%s,%s,%s,%s", cmFeatureGates, fgMissing, fgDisabled, fgNoChange)
+				existingResource.Data[virtconfig.FeatureGatesKey] = fmt.Sprintf("%s,%s,%s,%s", defaultFgString, fgMissing, fgDisabled, fgNoChange)
 
 				foundResource := &corev1.ConfigMap{}
 				reconcileCm(hco, req, true, existingResource, foundResource)
 
-				Expect(foundResource.Data[virtconfig.FeatureGatesKey]).Should(Equal(cmFeatureGates))
+				Expect(foundResource.Data[virtconfig.FeatureGatesKey]).Should(Equal(defaultFgString))
 			})
 
-			It("should not modify user modified feature gates on update", func() {
+			It("should REMOVE user modified feature gates on update", func() {
 				existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
 				existingResource.Data[virtconfig.FeatureGatesKey] = fmt.Sprintf("%s,%s,%s,%s", userModifiedFgs, fgMissing, fgDisabled, fgNoChange)
 
-				hco.Spec.FeatureGates = map[string]bool{
-					fgEnabled:  true,
-					fgDisabled: false,
-					fgNoChange: true,
-				}
+				hco.Spec.FeatureGates[fgEnabled] = true
+				hco.Spec.FeatureGates[fgDisabled] = false
+				hco.Spec.FeatureGates[fgNoChange] = true
 
 				foundResource := &corev1.ConfigMap{}
 				reconcileCm(hco, req, true, existingResource, foundResource)
 
 				By("Should add enabled FGs, remove missing FGs, remove disabled FGs and not change existing enabled FGs", func() {
 					found := foundResource.Data[virtconfig.FeatureGatesKey]
-					Expect(strings.Contains(found, cmFeatureGates)).To(BeFalse())
-					Expect(strings.Contains(found, userModifiedFgs)).To(BeTrue())
-					Expect(strings.Contains(found, fgEnabled)).To(BeTrue())
-					Expect(strings.Contains(found, fgMissing)).To(BeFalse())
-					Expect(strings.Contains(found, fgDisabled)).To(BeFalse())
-					Expect(strings.Contains(found, fgNoChange)).To(BeTrue())
-				})
-			})
-
-			It("should modify user modified feature gates on upgrade", func() {
-				existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-				existingResource.Data[virtconfig.FeatureGatesKey] = fmt.Sprintf("%s,%s,%s,%s", userModifiedFgs, fgMissing, fgDisabled, fgNoChange)
-
-				hco.Spec.FeatureGates = map[string]bool{
-					fgEnabled:  true,
-					fgDisabled: false,
-					fgNoChange: true,
-				}
-
-				req.UpgradeMode = true
-				foundResource := &corev1.ConfigMap{}
-				reconcileCm(hco, req, true, existingResource, foundResource)
-
-				By("Should add enabled FGs, remove missing FGs, remove disabled FGs and not change existing enabled FGs", func() {
-					found := foundResource.Data[virtconfig.FeatureGatesKey]
-					Expect(strings.Contains(found, cmFeatureGates)).To(BeTrue())
+					Expect(strings.Contains(found, defaultFgString)).To(BeTrue())
 					Expect(strings.Contains(found, userModifiedFgs)).To(BeFalse())
 					Expect(strings.Contains(found, fgEnabled)).To(BeTrue())
 					Expect(strings.Contains(found, fgMissing)).To(BeFalse())
@@ -803,19 +780,19 @@ var _ = Describe("KubeVirt Operand", func() {
 			Expect(err).ToNot(HaveOccurred())
 			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
 			expectedResource.Status.Conditions = []kubevirtv1.KubeVirtCondition{
-				kubevirtv1.KubeVirtCondition{
+				{
 					Type:    kubevirtv1.KubeVirtConditionAvailable,
 					Status:  corev1.ConditionFalse,
 					Reason:  "Foo",
 					Message: "Bar",
 				},
-				kubevirtv1.KubeVirtCondition{
+				{
 					Type:    kubevirtv1.KubeVirtConditionProgressing,
 					Status:  corev1.ConditionTrue,
 					Reason:  "Foo",
 					Message: "Bar",
 				},
-				kubevirtv1.KubeVirtCondition{
+				{
 					Type:    kubevirtv1.KubeVirtConditionDegraded,
 					Status:  corev1.ConditionTrue,
 					Reason:  "Foo",
