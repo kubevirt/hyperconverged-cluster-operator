@@ -81,15 +81,23 @@ func (h *cnaHooks) updateCr(req *common.HcoRequest, Client client.Client, exists
 		}
 	}
 
-	if (!reflect.DeepEqual(found.Spec, networkAddons.Spec) ||
-		!reflect.DeepEqual(found.Labels, networkAddons.Labels)) && !req.UpgradeMode {
+	changed := false
+	if !reflect.DeepEqual(found.Spec, networkAddons.Spec) && !req.UpgradeMode {
 		if req.HCOTriggered {
 			req.Logger.Info("Updating existing Network Addons's Spec to new opinionated values")
 		} else {
 			req.Logger.Info("Reconciling an externally updated Network Addons's Spec to its opinionated values")
 		}
-		util.DeepCopyLabels(&networkAddons.ObjectMeta, &found.ObjectMeta)
 		networkAddons.Spec.DeepCopyInto(&found.Spec)
+		changed = true
+	}
+
+	if !reflect.DeepEqual(found.Labels, networkAddons.Labels) {
+		util.DeepCopyLabels(&networkAddons.ObjectMeta, &found.ObjectMeta)
+		changed = true
+	}
+
+	if changed {
 		err := Client.Update(req.Ctx, found)
 		if err != nil {
 			return false, false, err

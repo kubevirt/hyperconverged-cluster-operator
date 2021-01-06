@@ -170,6 +170,12 @@ func (h *cdiHooks) ensureKubeVirtStorageRole(req *common.HcoRequest) error {
 		return err
 	}
 
+	if !reflect.DeepEqual(found.Labels, kubevirtStorageRole.Labels) {
+		req.Logger.Info("Updating KubeVirt storage role for labels")
+		util.DeepCopyLabels(&kubevirtStorageRole.ObjectMeta, &found.ObjectMeta)
+		return h.Client.Update(req.Ctx, found)
+	}
+
 	req.Logger.Info("KubeVirt storage role already exists", "KubeVirtConfig.Namespace", found.Namespace, "KubeVirtConfig.Name", found.Name)
 	// Add it to the list of RelatedObjects if found
 	objectRef, err := reference.GetReference(h.Scheme, found)
@@ -201,6 +207,12 @@ func (h *cdiHooks) ensureKubeVirtStorageRoleBinding(req *common.HcoRequest) erro
 
 	if err != nil {
 		return err
+	}
+
+	if !reflect.DeepEqual(found.Labels, kubevirtStorageRoleBinding.Labels) {
+		req.Logger.Info("Updating KubeVirt storage rolebinding for labels")
+		util.DeepCopyLabels(&kubevirtStorageRoleBinding.ObjectMeta, &found.ObjectMeta)
+		return h.Client.Update(req.Ctx, found)
 	}
 
 	req.Logger.Info("KubeVirt storage rolebinding already exists", "KubeVirtConfig.Namespace", found.Namespace, "KubeVirtConfig.Name", found.Name)

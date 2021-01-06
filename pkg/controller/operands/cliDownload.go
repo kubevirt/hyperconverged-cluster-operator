@@ -7,6 +7,7 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	consolev1 "github.com/openshift/api/console/v1"
 	objectreferencesv1 "github.com/openshift/custom-resource-status/objectreferences/v1"
@@ -37,11 +38,14 @@ func (h CLIDownloadHandler) Ensure(req *common.HcoRequest) error {
 			return err
 		}
 		objectreferencesv1.SetObjectReference(&req.Instance.Status.RelatedObjects, *objectRef)
-		return nil
+
+		if reflect.DeepEqual(found.Labels, ccd.Labels) {
+			return nil
+		}
 	}
 
 	ccd.Spec.DeepCopyInto(&found.Spec)
-
+	util.DeepCopyLabels(&ccd.ObjectMeta, &found.ObjectMeta)
 	err = h.Client.Update(req.Ctx, found)
 	if err != nil {
 		return err
