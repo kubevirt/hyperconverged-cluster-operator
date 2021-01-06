@@ -85,11 +85,6 @@ func (i *EnvVarFlags) Set(value string) error {
 	return nil
 }
 
-type component struct {
-	csv          string
-	appComponent hcoutil.AppComponent
-}
-
 var (
 	cwd, _              = os.Getwd()
 	outputMode          = flag.String("output-mode", CSVMode, "Working mode: "+strings.Join(validOutputModes, "|"))
@@ -261,34 +256,35 @@ func main() {
 			panic(errors.New("Must specify spec-displayname and spec-description"))
 		}
 
-		componentsWithCsvs := []component{
+		componentsWithCsvs := []util.CsvWithComponent{
 			{
-				csv:          *cnaCsv,
-				appComponent: hcoutil.AppComponentNetwork,
+				Csv:       *cnaCsv,
+				Component: hcoutil.AppComponentNetwork,
 			},
 			{
-				csv:          *virtCsv,
-				appComponent: hcoutil.AppComponentCompute,
+				Csv:       *virtCsv,
+				Component: hcoutil.AppComponentCompute,
 			},
 			{
-				csv:          *sspCsv,
-				appComponent: hcoutil.AppComponentSchedule,
+				Csv:       *sspCsv,
+				Component: hcoutil.AppComponentSchedule,
 			},
 			{
-				csv:          *cdiCsv,
-				appComponent: hcoutil.AppComponentStorage,
+				Csv:       *cdiCsv,
+				Component: hcoutil.AppComponentStorage,
 			},
 			{
-				csv:          *nmoCsv,
-				appComponent: hcoutil.AppComponentNetwork,
+				Csv:       *nmoCsv,
+				Component: hcoutil.AppComponentNetwork,
 			},
 			{
-				csv:          *hppCsv,
-				appComponent: hcoutil.AppComponentStorage,
+				Csv:       *hppCsv,
+				Component: hcoutil.AppComponentStorage,
 			},
 			{
-				csv:          *vmImportCsv,
-				appComponent: hcoutil.AppComponentImport},
+				Csv:       *vmImportCsv,
+				Component: hcoutil.AppComponentImport,
+			},
 		}
 
 		version := semver.MustParse(*csvVersion)
@@ -335,14 +331,7 @@ func main() {
 			envVars,
 		)
 
-		for i, _ := range installStrategyBase.DeploymentSpecs {
-			overwriteWithStandardLabels(installStrategyBase.DeploymentSpecs[i].Spec.Template.Labels, *hcoKvIoVersion, hcoutil.AppComponentDeployment)
-
-			if installStrategyBase.DeploymentSpecs[i].Label == nil {
-				installStrategyBase.DeploymentSpecs[i].Label = make(map[string]string)
-			}
-			overwriteWithStandardLabels(installStrategyBase.DeploymentSpecs[i].Label, *hcoKvIoVersion, hcoutil.AppComponentDeployment)
-		}
+		overwriteDeploymentSpecLabels(installStrategyBase.DeploymentSpecs, hcoutil.AppComponentDeployment)
 
 		relatedImageSet := newRelatedImageSet()
 
@@ -353,11 +342,11 @@ func main() {
 		}
 
 		for i, c := range componentsWithCsvs {
-			if c.csv == "" {
+			if c.Csv == "" {
 				csvNames := []string{"CNA", "KubeVirt", "SSP", "CDI", "NMO", "HPP", "VM Import"}
 				log.Panicf("ERROR: the %s CSV was empty", csvNames[i])
 			}
-			csvBytes := []byte(c.csv)
+			csvBytes := []byte(c.Csv)
 
 			csvStruct := &ClusterServiceVersionExtended{}
 
@@ -375,15 +364,7 @@ func main() {
 				delete(deployment.Spec.Template.Annotations, "description")
 			}
 
-			for i, _ := range strategySpec.DeploymentSpecs {
-				overwriteWithStandardLabels(strategySpec.DeploymentSpecs[i].Spec.Template.Labels, *hcoKvIoVersion, c.appComponent)
-
-				if strategySpec.DeploymentSpecs[i].Label == nil {
-					strategySpec.DeploymentSpecs[i].Label = make(map[string]string)
-				}
-				overwriteWithStandardLabels(strategySpec.DeploymentSpecs[i].Label, *hcoKvIoVersion, c.appComponent)
-			}
-
+			overwriteDeploymentSpecLabels(strategySpec.DeploymentSpecs, c.Component)
 			installStrategyBase.DeploymentSpecs = append(installStrategyBase.DeploymentSpecs, strategySpec.DeploymentSpecs...)
 
 			installStrategyBase.ClusterPermissions = append(installStrategyBase.ClusterPermissions, strategySpec.ClusterPermissions...)
@@ -497,6 +478,20 @@ func main() {
 
 	default:
 		panic("Unsupported output mode: " + *outputMode)
+	}
+
+}
+
+func overwriteDeploymentSpecLabels(specs []csvv1alpha1.StrategyDeploymentSpec, component hcoutil.AppComponent) {
+	for i, _ := range specs {
+		if specs[i].Label == nil {
+			specs[i].Label = make(map[string]string)
+		}
+		if specs[i].Spec.Template.Labels == nil {
+			specs[i].Spec.Template.Labels = make(map[string]string)
+		}
+		overwriteWithStandardLabels(specs[i].Spec.Template.Labels, *hcoKvIoVersion, component)
+		overwriteWithStandardLabels(specs[i].Label, *hcoKvIoVersion, component)
 	}
 
 }

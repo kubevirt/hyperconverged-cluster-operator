@@ -1,6 +1,8 @@
 package util
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 func DeepCopyLabels(src, tgt *metav1.ObjectMeta) {
 	if src.Labels == nil {
