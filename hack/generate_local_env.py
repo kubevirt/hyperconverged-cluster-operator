@@ -1,6 +1,5 @@
 #! /usr/bin/python
 
-import yaml
 import sys
 import re
 from os import environ, linesep
