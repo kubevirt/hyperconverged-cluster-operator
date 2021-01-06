@@ -24,8 +24,9 @@ const (
 )
 
 const (
-	kvHotplugVolumes = "HotplugVolumes"
-	cmFeatureGates   = "DataVolumes,SRIOV,LiveMigration,CPUManager,CPUNodeDiscovery,Sidecar,Snapshot"
+	kvHotplugVolumes         = "HotplugVolumes"
+	kvWithHostPassthroughCPU = "WithHostPassthroughCPU"
+	cmFeatureGates           = "DataVolumes,SRIOV,LiveMigration,CPUManager,CPUNodeDiscovery,Sidecar,Snapshot"
 )
 
 var (
@@ -33,6 +34,7 @@ var (
 	// from HyperConverged CR
 	managedKvFeatureGates = []string{
 		kvHotplugVolumes,
+		kvWithHostPassthroughCPU,
 	}
 )
 
