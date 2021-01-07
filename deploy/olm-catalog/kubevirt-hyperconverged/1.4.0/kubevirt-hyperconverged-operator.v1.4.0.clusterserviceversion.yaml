@@ -8,7 +8,7 @@ metadata:
     categories: OpenShift Optional
     certified: "false"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator@sha256:e7356254a1251f1fba682be77c9a90b1f840d6a84ff88492fb1e87ae30dda9da
-    createdAt: "2021-01-07 09:28:58"
+    createdAt: "2021-01-07 15:53:16"
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -2136,19 +2136,14 @@ spec:
                   name: webhook-server
                   protocol: TCP
                 resources: {}
-<<<<<<< HEAD
-              serviceAccountName: kubevirt-ssp-operator
+              serviceAccountName: ssp-operator
+              terminationGracePeriodSeconds: 10
       - label:
           app.kubernetes.io/component: storage
           app.kubernetes.io/managed-by: olm
           app.kubernetes.io/part-of: hyperconverged-cluster
           app.kubernetes.io/version: 1.4.0
         name: cdi-operator
-=======
-              serviceAccountName: ssp-operator
-              terminationGracePeriodSeconds: 10
-      - name: cdi-operator
->>>>>>> Update CSV generation for new SSP
         spec:
           replicas: 1
           selector:
