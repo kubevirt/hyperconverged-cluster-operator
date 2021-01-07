@@ -248,7 +248,7 @@ timeout 20m bash -c 'export CMD="${CMD}";exec ./hack/check-state.sh'
 
 # Make sure the CSV is installed properly.
 Msg "Read the CSV to make sure the deployment is done"
-./hack/retry.sh 30 10 "${CMD} get ClusterServiceVersion  -n ${HCO_NAMESPACE} kubevirt-hyperconverged-operator.v${TARGET_VERSION} -o jsonpath='{ .status.phase }' | grep 'Succeeded'"
+./hack/retry.sh 90 10 "${CMD} get ClusterServiceVersion  -n ${HCO_NAMESPACE} kubevirt-hyperconverged-operator.v${TARGET_VERSION} -o jsonpath='{ .status.phase }' | grep 'Succeeded'"
 
 
 echo "----- Pod after upgrade"
