@@ -63,12 +63,6 @@ OPERATOR_NAME="${OPERATOR_NAME:-kubevirt-hyperconverged-operator}"
 OPERATOR_NAMESPACE="${OPERATOR_NAMESPACE:-kubevirt-hyperconverged}"
 IMAGE_PULL_POLICY="${IMAGE_PULL_POLICY:-IfNotPresent}"
 
-# Backing up the current CSVs in order to check diffs for make sanity after their re-creation
-CSV_OLM_BEFORE=$(ls ${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}*)
-CSV_INDEX_IMAGE_BEFORE=$(ls ${CSV_INDEX_IMAGE_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}*)
-cp ${CSV_OLM_BEFORE} /tmp/csv-olm-before.yaml
-cp ${CSV_INDEX_IMAGE_BEFORE} /tmp/csv-index-image-before.yaml
-
 # Important extensions
 CSV_EXT="clusterserviceversion.yaml"
 CSV_CRD_EXT="csv_crds.yaml"
@@ -356,6 +350,14 @@ ${PROJECT_ROOT}/tools/manifest-templator/manifest-templator \
   --webhook-image="${HCO_WEBHOOK_IMAGE}"
 (cd ${PROJECT_ROOT}/tools/manifest-templator/ && go clean)
 
+if [[ "$1" == "UNIQUE"  ]]; then
+  CSV_VERSION_PARAM=${CSV_VERSION}-${CSV_TIMESTAMP}
+  ENABLE_UNIQUE="true"
+else
+  CSV_VERSION_PARAM=${CSV_VERSION}
+  ENABLE_UNIQUE="false"
+fi
+
 # Build and merge CSVs
 ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --cna-csv="$(<${cnaCsv})" \
@@ -367,7 +369,7 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --vmimport-csv="$(<${importCsv})" \
   --ims-conversion-image-name="${CONVERSION_IMAGE}" \
   --ims-vmware-image-name="${VMWARE_IMAGE}" \
-  --csv-version=${CSV_VERSION}-${CSV_TIMESTAMP} \
+  --csv-version=${CSV_VERSION_PARAM} \
   --replaces-csv-version=${REPLACES_CSV_VERSION} \
   --hco-kv-io-version="${CSV_VERSION}" \
   --spec-displayname="KubeVirt HyperConverged Cluster Operator" \
@@ -375,6 +377,7 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --crd-display="HyperConverged Cluster Operator" \
   --smbios="${SMBIOS}" \
   --csv-overrides="$(<${csvOverrides})" \
+  --enable-unique-version=${ENABLE_UNIQUE} \
   --kubevirt-version="${KUBEVIRT_VERSION}" \
   --cdi-version="${CDI_VERSION}" \
   --cnao-version="${NETWORK_ADDONS_VERSION}" \
@@ -384,7 +387,7 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --vm-import-version="${VM_IMPORT_VERSION}" \
   --related-images-list="${DIGEST_LIST}" \
   --operator-image-name="${HCO_OPERATOR_IMAGE}" \
-  --webhook-image-name="${HCO_WEBHOOK_IMAGE}" > "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}-${CSV_TIMESTAMP}.${CSV_EXT}"
+  --webhook-image-name="${HCO_WEBHOOK_IMAGE}" > "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}"
 
 # Copy all CRDs into the CRD and CSV directories
 rm -f ${CRD_DIR}/*
@@ -399,9 +402,11 @@ cp -f ${TEMPDIR}/*.${CRD_EXT} ${CSV_DIR}
 ${PROJECT_ROOT}/tools/csv-merger/csv-merger --crds-dir=${CRD_DIR}
 (cd ${PROJECT_ROOT}/tools/csv-merger/ && go clean)
 
-# Add the current CSV_TIMESTAMP to the currentCSV in the packages file
-sed -Ei "s/(currentCSV: ${OPERATOR_NAME}.v${CSV_VERSION}).*/\1-${CSV_TIMESTAMP}/" \
- ${PACKAGE_DIR}/kubevirt-hyperconverged.package.yaml
+if [[ "$1" == "UNIQUE"  ]]; then
+  # Add the current CSV_TIMESTAMP to the currentCSV in the packages file
+  sed -Ei "s/(currentCSV: ${OPERATOR_NAME}.v${CSV_VERSION}).*/\1-${CSV_TIMESTAMP}/" \
+   ${PACKAGE_DIR}/kubevirt-hyperconverged.package.yaml
+fi
 
 # Intentionally removing last so failure leaves around the templates
 rm -rf ${TEMPDIR}
@@ -411,11 +416,5 @@ mkdir -p "${INDEX_IMAGE_DIR:?}/kubevirt-hyperconverged"
 cp -r "${CSV_DIR}" "${INDEX_IMAGE_DIR:?}/kubevirt-hyperconverged/"
 cp "${OLM_DIR}/bundle.Dockerfile" "${INDEX_IMAGE_DIR:?}/"
 
-INDEX_IMAGE_CSV="${INDEX_IMAGE_DIR}/kubevirt-hyperconverged/${CSV_VERSION}/kubevirt-hyperconverged-operator.v${CSV_VERSION}-${CSV_TIMESTAMP}.${CSV_EXT}"
+INDEX_IMAGE_CSV="${INDEX_IMAGE_DIR}/kubevirt-hyperconverged/${CSV_VERSION}/kubevirt-hyperconverged-operator.v${CSV_VERSION}.${CSV_EXT}"
 sed -r -i "s|createdAt: \".*\$|createdAt: \"2020-10-23 08:58:25\"|; s|quay.io/kubevirt/hyperconverged-cluster-operator.*$|+IMAGE_TO_REPLACE+|; s|quay.io/kubevirt/hyperconverged-cluster-webhook.*$|+WEBHOOK_IMAGE_TO_REPLACE+|" ${INDEX_IMAGE_CSV}
-
-CSV_OLM_AFTER="${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}-${CSV_TIMESTAMP}.${CSV_EXT}"
-CSV_INDEX_IMAGE_AFTER=${INDEX_IMAGE_CSV}
-
-cp ${CSV_OLM_AFTER} /tmp/csv-olm-after.yaml
-cp ${CSV_INDEX_IMAGE_AFTER} /tmp/csv-index-image-after.yaml

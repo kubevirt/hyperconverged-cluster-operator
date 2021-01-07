@@ -19,6 +19,7 @@ IMAGE_REGISTRY=${IMAGE_REGISTRY:-quay.io}
 REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE:-kubevirt}
 BUNDLE_REGISTRY_IMAGE_NAME=${BUNDLE_REGISTRY_IMAGE_NAME:-hyperconverged-cluster-bundle}
 INDEX_REGISTRY_IMAGE_NAME=${INDEX_REGISTRY_IMAGE_NAME:-hyperconverged-cluster-index}
+OPM=${OPM:-opm}
 
 function create_index_image() {
   CURRENT_VERSION=$1
@@ -35,7 +36,7 @@ function create_index_image() {
   docker build -t "${BUNDLE_IMAGE_NAME}" -f bundle.Dockerfile --build-arg "VERSION=${CURRENT_VERSION}" .
   docker push "${BUNDLE_IMAGE_NAME}"
   # shellcheck disable=SC2086
-  opm index add --bundles "${BUNDLE_IMAGE_NAME}" ${INDEX_IMAGE_PARAM} --tag "${INDEX_IMAGE_NAME}" -u docker
+  ${OPM} index add --bundles "${BUNDLE_IMAGE_NAME}" ${INDEX_IMAGE_PARAM} --tag "${INDEX_IMAGE_NAME}" -u docker
   docker push "${INDEX_IMAGE_NAME}"
 }
 
