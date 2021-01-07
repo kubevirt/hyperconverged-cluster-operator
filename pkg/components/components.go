@@ -547,6 +547,7 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 				"watch",
 				"create",
 				"delete",
+				"update",
 			},
 		},
 		{
