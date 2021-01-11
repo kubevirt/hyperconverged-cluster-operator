@@ -591,7 +591,7 @@ var _ = Describe("webhooks handler", func() {
 		)
 	})
 
- 	Context("Check mutating webhook for namespace deletion", func() {
+	Context("Check mutating webhook for namespace deletion", func() {
 		BeforeEach(func() {
 			Expect(os.Setenv("OPERATOR_NAMESPACE", HcoValidNamespace)).To(BeNil())
 		})

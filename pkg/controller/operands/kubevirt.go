@@ -131,7 +131,7 @@ func NewKubeVirtWithNameOnly(hc *hcov1beta1.HyperConverged, opts ...string) *kub
 	return &kubevirtv1.KubeVirt{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kubevirt-" + hc.Name,
-			Labels:    getLabels(hc),
+			Labels:    getLabels(hc, hcoutil.AppComponentCompute),
 			Namespace: getNamespace(hc.Namespace, opts),
 		},
 	}
