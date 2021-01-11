@@ -1431,7 +1431,7 @@ var _ = Describe("HyperconvergedController", func() {
 						[
 							{
 								"op": "add",
-								"path": "/configuration/migrations",
+								"path": "/spec/configuration/migrations",
 								"value": {"allowPostCopy": true}
 							}
 						]`,
@@ -1446,15 +1446,14 @@ var _ = Describe("HyperconvergedController", func() {
 					Expect(res).Should(Equal(reconcile.Result{Requeue: true}))
 				})
 
-				By("Verify HC conditions", func() {
-					foundResource := &hcov1beta1.HyperConverged{}
-					Expect(
-						cl.Get(context.TODO(),
-							types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
-							foundResource),
-					).To(BeNil())
+				foundResource := &hcov1beta1.HyperConverged{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
+						foundResource),
+				).To(BeNil())
 
-					// Check conditions
+				By("Verify HC conditions", func() {
 					Expect(foundResource.Status.Conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
 						Type:    hcov1beta1.ConditionTaintedConfiguration,
 						Status:  corev1.ConditionTrue,

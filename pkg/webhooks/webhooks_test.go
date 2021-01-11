@@ -51,47 +51,47 @@ const (
 	validKvAnnotation = `[
 					{
 						"op": "add",
-						"path": "/configuration/cpuRequest",
+						"path": "/spec/configuration/cpuRequest",
 						"value": "12m"
 					},
 					{
 						"op": "add",
-						"path": "/configuration/developerConfiguration",
+						"path": "/spec/configuration/developerConfiguration",
 						"value": {"featureGates": ["fg1"]}
 					},
 					{
 						"op": "add",
-						"path": "/configuration/developerConfiguration/featureGates/-",
+						"path": "/spec/configuration/developerConfiguration/featureGates/-",
 						"value": "fg2"
 					}
 			]`
 	validCdiAnnotation = `[
 				{
 					"op": "add",
-					"path": "/config/featureGates/-",
+					"path": "/spec/config/featureGates/-",
 					"value": "fg1"
 				},
 				{
 					"op": "add",
-					"path": "/config/filesystemOverhead",
+					"path": "/spec/config/filesystemOverhead",
 					"value": {"global": "50", "storageClass": {"AAA": "75", "BBB": "25"}}
 				}
 			]`
 	validCnaAnnotation = `[
 					{
 						"op": "add",
-						"path": "/kubeMacPool",
+						"path": "/spec/kubeMacPool",
 						"value": {"rangeStart": "1.1.1.1.1.1", "rangeEnd": "5.5.5.5.5.5" }
 					},
 					{
 						"op": "add",
-						"path": "/imagePullPolicy",
+						"path": "/spec/imagePullPolicy",
 						"value": "Always"
 					}
 			]`
-	invalidKvAnnotation  = `[{"op": "wrongOp", "path": "/configuration/cpuRequest", "value": "12m"}]`
-	invalidCdiAnnotation = `[{"op": "wrongOp", "path": "/config/featureGates/-", "value": "fg1"}]`
-	invalidCnaAnnotation = `[{"op": "wrongOp", "path": "/kubeMacPool", "value": {"rangeStart": "1.1.1.1.1.1", "rangeEnd": "5.5.5.5.5.5" }}]`
+	invalidKvAnnotation  = `[{"op": "wrongOp", "path": "/spec/configuration/cpuRequest", "value": "12m"}]`
+	invalidCdiAnnotation = `[{"op": "wrongOp", "path": "/spec/config/featureGates/-", "value": "fg1"}]`
+	invalidCnaAnnotation = `[{"op": "wrongOp", "path": "/spec/kubeMacPool", "value": {"rangeStart": "1.1.1.1.1.1", "rangeEnd": "5.5.5.5.5.5" }}]`
 )
 
 var _ = Describe("webhooks handler", func() {
@@ -581,7 +581,7 @@ var _ = Describe("webhooks handler", func() {
 
 				err := wh.ValidateUpdate(newHco, hco)
 				Expect(err).To(HaveOccurred())
-				Expect(err.Error()).To(ContainSubstring("wrong jsonPatch in the %s", annotationName))
+				Expect(err.Error()).To(ContainSubstring("invalid jsonPatch in the %s", annotationName))
 				fmt.Fprintf(GinkgoWriter, "Expected error: %v\n", err)
 
 			},

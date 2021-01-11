@@ -383,17 +383,17 @@ var _ = Describe("CNA Operand", func() {
 			}))
 		})
 
-		Context("Unsupported Annotation", func() {
+		Context("jsonpath Annotation", func() {
 			It("Should create CNA object with changes from the annotation", func() {
 				hco.Annotations = map[string]string{common.JSONPatchCNAOAnnotationName: `[
 					{
 						"op": "add",
-						"path": "/kubeMacPool",
+						"path": "/spec/kubeMacPool",
 						"value": {"rangeStart": "1.1.1.1.1.1", "rangeEnd": "5.5.5.5.5.5" }
 					},
 					{
 						"op": "add",
-						"path": "/imagePullPolicy",
+						"path": "/spec/imagePullPolicy",
 						"value": "Always"
 					}
 				]`}
@@ -410,7 +410,7 @@ var _ = Describe("CNA Operand", func() {
 				hco.Annotations = map[string]string{common.JSONPatchCNAOAnnotationName: `[
 					{
 						"op": "notExists",
-						"path": "/kubeMacPool",
+						"path": "/spec/kubeMacPool",
 						"value": {"rangeStart": "1.1.1.1.1.1", "rangeEnd": "5.5.5.5.5.5" }
 					}
 				]`}
@@ -423,12 +423,12 @@ var _ = Describe("CNA Operand", func() {
 				hco.Annotations = map[string]string{common.JSONPatchCNAOAnnotationName: `[
 					{
 						"op": "add",
-						"path": "/kubeMacPool",
+						"path": "/spec/kubeMacPool",
 						"value": {"rangeStart": "1.1.1.1.1.1", "rangeEnd": "5.5.5.5.5.5" }
 					},
 					{
 						"op": "add",
-						"path": "/imagePullPolicy",
+						"path": "/spec/imagePullPolicy",
 						"value": "Always"
 					}
 				]`}
@@ -457,7 +457,7 @@ var _ = Describe("CNA Operand", func() {
 				hco.Annotations = map[string]string{common.JSONPatchCNAOAnnotationName: `[
 					{
 						"op": "notExists",
-						"path": "/kubeMacPool",
+						"path": "/spec/kubeMacPool",
 						"value": {"rangeStart": "1.1.1.1.1.1", "rangeEnd": "5.5.5.5.5.5" }
 					}
 				]`}
@@ -485,12 +485,12 @@ var _ = Describe("CNA Operand", func() {
 				hco.Annotations = map[string]string{common.JSONPatchCNAOAnnotationName: `[
 					{
 						"op": "add",
-						"path": "/kubeMacPool",
+						"path": "/spec/kubeMacPool",
 						"value": {"rangeStart": "1.1.1.1.1.1", "rangeEnd": "5.5.5.5.5.5" }
 					},
 					{
 						"op": "add",
-						"path": "/imagePullPolicy",
+						"path": "/spec/imagePullPolicy",
 						"value": "Always"
 					}
 				]`}
@@ -524,7 +524,7 @@ var _ = Describe("CNA Operand", func() {
 				hco.Annotations = map[string]string{common.JSONPatchCNAOAnnotationName: `[
 					{
 						"op": "notExists",
-						"path": "/kubeMacPool",
+						"path": "/spec/kubeMacPool",
 						"value": {"rangeStart": "1.1.1.1.1.1", "rangeEnd": "5.5.5.5.5.5" }
 					}
 				]`}

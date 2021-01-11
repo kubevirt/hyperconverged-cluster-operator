@@ -10,52 +10,73 @@ import (
 var _ = Describe("Test operator.go", func() {
 	Context("Test applyAnnotationPatch", func() {
 		It("Should fail for bad json", func() {
-			spec := &cdiv1beta1.CDISpec{}
+			obj := &cdiv1beta1.CDI{}
 
-			err := applyAnnotationPatch(spec, `{]`)
+			err := applyAnnotationPatch(obj, `{]`)
 			Expect(err).To(HaveOccurred())
 			fmt.Fprintf(GinkgoWriter, "Expected error: %v\n", err)
-			Expect(err).To(HaveOccurred())
 		})
 
 		It("Should fail for single patch object (instead of an array)", func() {
-			spec := &cdiv1beta1.CDISpec{}
+			obj := &cdiv1beta1.CDI{}
 
-			err := applyAnnotationPatch(spec, `{"op": "add", "path": "/config/featureGates/-", "value": "fg1"}`)
+			err := applyAnnotationPatch(obj, `{"op": "add", "path": "/spec/config/featureGates/-", "value": "fg1"}`)
 			Expect(err).To(HaveOccurred())
 			fmt.Fprintf(GinkgoWriter, "Expected error: %v\n", err)
-			Expect(err).To(HaveOccurred())
 		})
 
 		It("Should fail for unknown op in a patch object", func() {
-			spec := &cdiv1beta1.CDISpec{}
+			obj := &cdiv1beta1.CDI{}
 
-			err := applyAnnotationPatch(spec, `[{"op": "unknown", "path": "/config/featureGates/-", "value": "fg1"}]`)
+			err := applyAnnotationPatch(obj, `[{"op": "unknown", "path": "/spec/config/featureGates/-", "value": "fg1"}]`)
 			Expect(err).To(HaveOccurred())
 			fmt.Fprintf(GinkgoWriter, "Expected error: %v\n", err)
+		})
+
+		It("Should fail for wrong path - not starts with '/spec/' - patch object", func() {
+			obj := &cdiv1beta1.CDI{}
+
+			err := applyAnnotationPatch(obj, `[{"op": "add", "path": "/config/featureGates/-", "value": "fg1"}]`)
 			Expect(err).To(HaveOccurred())
+			fmt.Fprintf(GinkgoWriter, "Expected error: %v\n", err)
 		})
 
 		It("Should fail for adding to a not exist object", func() {
-			spec := &cdiv1beta1.CDISpec{}
+			obj := &cdiv1beta1.CDI{}
 
-			err := applyAnnotationPatch(spec, `[{"op": "add", "path": "/config/filesystemOverhead/global", "value": "65"}]`)
+			err := applyAnnotationPatch(obj, `[{"op": "add", "path": "/spec/config/filesystemOverhead/global", "value": "65"}]`)
 			Expect(err).To(HaveOccurred())
 			fmt.Fprintf(GinkgoWriter, "Expected error: %v\n", err)
-			Expect(err).To(HaveOccurred())
 		})
 
 		It("Should fail for removing non-exist field", func() {
-			spec := &cdiv1beta1.CDISpec{
-				Config: &cdiv1beta1.CDIConfigSpec{
-					FilesystemOverhead: &cdiv1beta1.FilesystemOverhead{},
+			obj := &cdiv1beta1.CDI{
+				Spec: cdiv1beta1.CDISpec{
+					Config: &cdiv1beta1.CDIConfigSpec{
+						FilesystemOverhead: &cdiv1beta1.FilesystemOverhead{},
+					},
 				},
 			}
 
-			err := applyAnnotationPatch(spec, `[{"op": "remove", "path": "/config/filesystemOverhead/global"}]`)
+			err := applyAnnotationPatch(obj, `[{"op": "remove", "path": "/spec/config/filesystemOverhead/global"}]`)
 			Expect(err).To(HaveOccurred())
 			fmt.Fprintf(GinkgoWriter, "Expected error: %v\n", err)
-			Expect(err).To(HaveOccurred())
+		})
+
+		It("Should apply annotation if everything is corrct", func() {
+			obj := &cdiv1beta1.CDI{
+				Spec: cdiv1beta1.CDISpec{
+					Config: &cdiv1beta1.CDIConfigSpec{
+						FilesystemOverhead: &cdiv1beta1.FilesystemOverhead{},
+					},
+				},
+			}
+
+			err := applyAnnotationPatch(obj, `[{"op": "add", "path": "/spec/config/filesystemOverhead/global", "value": "55"}]`)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(obj.Spec.Config).NotTo(BeNil())
+			Expect(obj.Spec.Config.FilesystemOverhead).NotTo(BeNil())
+			Expect(obj.Spec.Config.FilesystemOverhead.Global).Should(BeEquivalentTo("55"))
 		})
 	})
 })

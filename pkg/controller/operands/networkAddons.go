@@ -127,12 +127,12 @@ func NewNetworkAddons(hc *hcov1beta1.HyperConverged, opts ...string) (*networkad
 		}
 	}
 
-	if err := applyPatchToSpec(hc, common.JSONPatchCNAOAnnotationName, &cnaoSpec); err != nil {
-		return nil, err
-	}
-
 	cna := NewNetworkAddonsWithNameOnly(hc, opts...)
 	cna.Spec = cnaoSpec
+
+	if err := applyPatchToSpec(hc, common.JSONPatchCNAOAnnotationName, cna); err != nil {
+		return nil, err
+	}
 
 	return cna, nil
 }

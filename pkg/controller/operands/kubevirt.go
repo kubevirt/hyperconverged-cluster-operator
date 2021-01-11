@@ -111,19 +111,13 @@ func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtv1.Kub
 		spec.Configuration.DeveloperConfiguration.FeatureGates = fgs
 	}
 
-	if err := applyPatchToSpec(hc, common.JSONPatchKVAnnotationName, &spec); err != nil {
-		return nil, err
-	}
-	//return &kubevirtv1.KubeVirt{
-	//	ObjectMeta: metav1.ObjectMeta{
-	//		Name:      "kubevirt-" + hc.Name,
-	//		Labels:    getLabels(hc, hcoutil.AppComponentCompute),
-	//		Namespace: getNamespace(hc.Namespace, opts),
-	//	},
-	//	Spec: spec,
-
 	kv := NewKubeVirtWithNameOnly(hc, opts...)
 	kv.Spec = spec
+
+	if err := applyPatchToSpec(hc, common.JSONPatchKVAnnotationName, kv); err != nil {
+		return nil, err
+	}
+
 	return kv, nil
 }
 

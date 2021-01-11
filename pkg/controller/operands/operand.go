@@ -2,12 +2,13 @@ package operands
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	jsonpatch "github.com/evanphx/json-patch"
-	"os"
-
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"os"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"strings"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
@@ -287,26 +288,38 @@ func getLabels(hc *hcov1beta1.HyperConverged, component hcoutil.AppComponent) ma
 	}
 }
 
-func applyAnnotationPatch(spec interface{}, annotation string) error {
+func applyAnnotationPatch(obj runtime.Object, annotation string) error {
 	patches, err := jsonpatch.DecodePatch([]byte(annotation))
 	if err != nil {
 		return err
 	}
-	specBytes, err := json.Marshal(spec)
+
+	for _, patch := range patches {
+		path, err := patch.Path()
+		if err != nil {
+			return err
+		}
+
+		if !strings.HasPrefix(path, "/spec/") {
+			return errors.New("can only modify spec fields")
+		}
+	}
+
+	specBytes, err := json.Marshal(obj)
 	if err != nil {
 		return err
 	}
-	apply, err := patches.Apply(specBytes)
+	patchedBytes, err := patches.Apply(specBytes)
 	if err != nil {
 		return err
 	}
-	return json.Unmarshal(apply, spec)
+	return json.Unmarshal(patchedBytes, obj)
 }
 
-func applyPatchToSpec(hc *hcov1beta1.HyperConverged, annotationName string, spec interface{}) error {
-	if cnaoUnsupportedAnnotation, ok := hc.Annotations[annotationName]; ok {
-		if err := applyAnnotationPatch(&spec, cnaoUnsupportedAnnotation); err != nil {
-			return fmt.Errorf("wrong jsonPatch in the %s annotation; %v", annotationName, err)
+func applyPatchToSpec(hc *hcov1beta1.HyperConverged, annotationName string, obj runtime.Object) error {
+	if jsonpathAnnotation, ok := hc.Annotations[annotationName]; ok {
+		if err := applyAnnotationPatch(obj, jsonpathAnnotation); err != nil {
+			return fmt.Errorf("invalid jsonPatch in the %s annotation: %v", annotationName, err)
 		}
 	}
 

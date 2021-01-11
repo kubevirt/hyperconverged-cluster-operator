@@ -138,12 +138,12 @@ func NewCDI(hc *hcov1beta1.HyperConverged, opts ...string) (*cdiv1beta1.CDI, err
 		hc.Spec.Workloads.NodePlacement.DeepCopyInto(&spec.Workloads)
 	}
 
-	if err := applyPatchToSpec(hc, common.JSONPatchCDIAnnotationName, &spec); err != nil {
-		return nil, err
-	}
-
 	cdi := NewCDIWithNameOnly(hc, opts...)
 	cdi.Spec = spec
+
+	if err := applyPatchToSpec(hc, common.JSONPatchCDIAnnotationName, cdi); err != nil {
+		return nil, err
+	}
 
 	return cdi, nil
 }

@@ -414,17 +414,17 @@ var _ = Describe("CDI Operand", func() {
 			}))
 		})
 
-		Context("Unsupported Annotation", func() {
+		Context("Jsonpatch Annotation", func() {
 			It("Should create CDI object with changes from the annotation", func() {
 				hco.Annotations = map[string]string{common.JSONPatchCDIAnnotationName: `[
 					{
 						"op": "add",
-						"path": "/config/featureGates/-",
+						"path": "/spec/config/featureGates/-",
 						"value": "fg1"
 					},
 					{
 						"op": "add",
-						"path": "/config/filesystemOverhead",
+						"path": "/spec/config/filesystemOverhead",
 						"value": {"global": "50", "storageClass": {"AAA": "75", "BBB": "25"}}
 					}
 				]`}
@@ -444,7 +444,7 @@ var _ = Describe("CDI Operand", func() {
 				hco.Annotations = map[string]string{common.JSONPatchCDIAnnotationName: `[
 					{
 						"op": "notExists",
-						"path": "/config/featureGates/-",
+						"path": "/spec/config/featureGates/-",
 						"value": "fg1"
 					}
 				]`}
@@ -457,12 +457,12 @@ var _ = Describe("CDI Operand", func() {
 				hco.Annotations = map[string]string{common.JSONPatchCDIAnnotationName: `[
 					{
 						"op": "add",
-						"path": "/config/featureGates/-",
+						"path": "/spec/config/featureGates/-",
 						"value": "fg1"
 					},
 					{
 						"op": "add",
-						"path": "/config/filesystemOverhead",
+						"path": "/spec/config/filesystemOverhead",
 						"value": {"global": "50", "storageClass": {"AAA": "75", "BBB": "25"}}
 					}
 				]`}
@@ -494,7 +494,7 @@ var _ = Describe("CDI Operand", func() {
 				hco.Annotations = map[string]string{common.JSONPatchCDIAnnotationName: `[
 					{
 						"op": "notExists",
-						"path": "/config/featureGates/-",
+						"path": "/spec/config/featureGates/-",
 						"value": "fg1"
 					}
 				]`}
@@ -522,12 +522,12 @@ var _ = Describe("CDI Operand", func() {
 				hco.Annotations = map[string]string{common.JSONPatchCDIAnnotationName: `[
 					{
 						"op": "add",
-						"path": "/cloneStrategyOverride",
+						"path": "/spec/cloneStrategyOverride",
 						"value": "copy"
 					},
 					{
 						"op": "add",
-						"path": "/ImagePullPolicy",
+						"path": "/spec/ImagePullPolicy",
 						"value": "Always"
 					}
 				]`}
@@ -561,12 +561,12 @@ var _ = Describe("CDI Operand", func() {
 				hco.Annotations = map[string]string{common.JSONPatchCDIAnnotationName: `[
 					{
 						"op": "notExistsOp",
-						"path": "/cloneStrategyOverride",
+						"path": "/spec/cloneStrategyOverride",
 						"value": "copy"
 					},
 					{
 						"op": "add",
-						"path": "/ImagePullPolicy",
+						"path": "/spec/ImagePullPolicy",
 						"value": "Always"
 					}
 				]`}

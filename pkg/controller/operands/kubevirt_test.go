@@ -861,23 +861,23 @@ var _ = Describe("KubeVirt Operand", func() {
 			}))
 		})
 
-		Context("Unsupported Annotation", func() {
+		Context("jsonpath Annotation", func() {
 			It("Should create KV object with changes from the annotation", func() {
 
 				hco.Annotations = map[string]string{common.JSONPatchKVAnnotationName: `[
 					{
 						"op": "add",
-						"path": "/configuration/cpuRequest",
+						"path": "/spec/configuration/cpuRequest",
 						"value": "12m"
 					},
 					{
 						"op": "add",
-						"path": "/configuration/developerConfiguration",
+						"path": "/spec/configuration/developerConfiguration",
 						"value": {"featureGates": ["fg1"]}
 					},
 					{
 						"op": "add",
-						"path": "/configuration/developerConfiguration/featureGates/-",
+						"path": "/spec/configuration/developerConfiguration/featureGates/-",
 						"value": "fg2"
 					}
 				]`}
@@ -901,7 +901,7 @@ var _ = Describe("KubeVirt Operand", func() {
 				hco.Annotations = map[string]string{common.JSONPatchKVAnnotationName: `[
 					{
 						"op": "notExists",
-						"path": "/config/featureGates/-",
+						"path": "/spec/config/featureGates/-",
 						"value": "fg1"
 					}
 				]`}
@@ -914,17 +914,17 @@ var _ = Describe("KubeVirt Operand", func() {
 				hco.Annotations = map[string]string{common.JSONPatchKVAnnotationName: `[
 					{
 						"op": "add",
-						"path": "/configuration/cpuRequest",
+						"path": "/spec/configuration/cpuRequest",
 						"value": "12m"
 					},
 					{
 						"op": "add",
-						"path": "/configuration/developerConfiguration",
+						"path": "/spec/configuration/developerConfiguration",
 						"value": {"featureGates": ["fg1"]}
 					},
 					{
 						"op": "add",
-						"path": "/configuration/developerConfiguration/featureGates/-",
+						"path": "/spec/configuration/developerConfiguration/featureGates/-",
 						"value": "fg2"
 					}
 				]`}
@@ -961,7 +961,7 @@ var _ = Describe("KubeVirt Operand", func() {
 				hco.Annotations = map[string]string{common.JSONPatchKVAnnotationName: `[
 					{
 						"op": "notExists",
-						"path": "/configuration/developerConfiguration",
+						"path": "/spec/configuration/developerConfiguration",
 						"value": {"featureGates": ["fg1"]}
 					}
 				]`}
@@ -989,17 +989,17 @@ var _ = Describe("KubeVirt Operand", func() {
 				hco.Annotations = map[string]string{common.JSONPatchKVAnnotationName: `[
 					{
 						"op": "add",
-						"path": "/configuration/cpuRequest",
+						"path": "/spec/configuration/cpuRequest",
 						"value": "12m"
 					},
 					{
 						"op": "add",
-						"path": "/configuration/developerConfiguration",
+						"path": "/spec/configuration/developerConfiguration",
 						"value": {"featureGates": ["fg1"]}
 					},
 					{
 						"op": "add",
-						"path": "/configuration/developerConfiguration/featureGates/-",
+						"path": "/spec/configuration/developerConfiguration/featureGates/-",
 						"value": "fg2"
 					}
 				]`}
@@ -1040,7 +1040,7 @@ var _ = Describe("KubeVirt Operand", func() {
 				hco.Annotations = map[string]string{common.JSONPatchKVAnnotationName: `[
 					{
 						"op": "notExistsOp",
-						"path": "/configuration/cpuRequest",
+						"path": "/spec/configuration/cpuRequest",
 						"value": "12m"
 					}
 				]`}
