@@ -1848,7 +1848,7 @@ spec:
                 - name: HPPO_VERSION
                   value: v0.7.0
                 - name: VM_IMPORT_VERSION
-                  value: v0.2.5
+                  value: v0.3.0
                 image: +IMAGE_TO_REPLACE+
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
@@ -2319,7 +2319,7 @@ spec:
                 - name: DEPLOY_CLUSTER_RESOURCES
                   value: "true"
                 - name: OPERATOR_VERSION
-                  value: v0.2.5
+                  value: v0.3.0
                 - name: CONTROLLER_IMAGE
                   value: quay.io/kubevirt/vm-import-controller@sha256:481f4a493a66d1310734ac135e8dbaa5dc01c9d93f6e9ecc9326b81c1c08dbfe
                 - name: PULL_POLICY
