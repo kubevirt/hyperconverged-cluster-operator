@@ -139,6 +139,5 @@ webhooks:
     - UPDATE
     resources:
     - ssps
-    scope: Cluster
   sideEffects: None
   timeoutSeconds: 10
