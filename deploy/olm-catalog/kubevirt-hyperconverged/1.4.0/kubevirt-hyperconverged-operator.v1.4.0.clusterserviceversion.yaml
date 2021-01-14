@@ -3,12 +3,12 @@ apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
   annotations:
-    alm-examples: '[{"apiVersion":"hco.kubevirt.io/v1beta1","kind":"HyperConverged","metadata":{"annotations":{"deployOVS":"false"},"name":"kubevirt-hyperconverged","namespace":"kubevirt-hyperconverged"},"spec":{"BareMetalPlatform":false}},{"apiVersion":"networkaddonsoperator.network.kubevirt.io/v1","kind":"NetworkAddonsConfig","metadata":{"name":"cluster"},"spec":{"imagePullPolicy":"IfNotPresent","kubeMacPool":{"rangeEnd":"FD:FF:FF:FF:FF:FF","rangeStart":"02:00:00:00:00:00"},"linuxBridge":{},"macvtap":{},"multus":{},"nmstate":{},"ovs":{}}},{"apiVersion":"kubevirt.io/v1alpha3","kind":"KubeVirt","metadata":{"name":"kubevirt","namespace":"kubevirt"},"spec":{"imagePullPolicy":"Always"}},{"apiVersion":"ssp.kubevirt.io/v1beta1","kind":"SSP","metadata":{"name":"ssp-sample","namespace":"kubevirt"},"spec":{"commonTemplates":{"namespace":"kubevirt"},"templateValidator":{"replicas":2}}},{"apiVersion":"cdi.kubevirt.io/v1beta1","kind":"CDI","metadata":{"name":"cdi","namespace":"cdi"},"spec":{"imagePullPolicy":"IfNotPresent"}},{"apiVersion":"nodemaintenance.kubevirt.io/v1beta1","kind":"NodeMaintenance","metadata":{"name":"nodemaintenance-example"},"spec":{"nodeName":"node02","reason":"Test node maintenance"}},{"apiVersion":"hostpathprovisioner.kubevirt.io/v1beta1","kind":"HostPathProvisioner","metadata":{"name":"hostpath-provisioner"},"spec":{"imagePullPolicy":"IfNotPresent","pathConfig":{"path":"/var/hpvolumes","useNamingPrefix":false}}},{"apiVersion":"v2v.kubevirt.io/v1beta1","kind":"VMImportConfig","metadata":{"name":"vm-import-operator-config"},"spec":{"imagePullPolicy":"IfNotPresent"}}]'
+    alm-examples: '[{"apiVersion":"hco.kubevirt.io/v1beta1","kind":"HyperConverged","metadata":{"annotations":{"deployOVS":"false"},"name":"kubevirt-hyperconverged","namespace":"kubevirt-hyperconverged"},"spec":{"BareMetalPlatform":false}},{"apiVersion":"networkaddonsoperator.network.kubevirt.io/v1","kind":"NetworkAddonsConfig","metadata":{"name":"cluster"},"spec":{"imagePullPolicy":"IfNotPresent","kubeMacPool":{"rangeEnd":"FD:FF:FF:FF:FF:FF","rangeStart":"02:00:00:00:00:00"},"linuxBridge":{},"macvtap":{},"multus":{},"nmstate":{},"ovs":{}}},{"apiVersion":"kubevirt.io/v1","kind":"KubeVirt","metadata":{"name":"kubevirt","namespace":"kubevirt"},"spec":{"imagePullPolicy":"Always"}},{"apiVersion":"ssp.kubevirt.io/v1beta1","kind":"SSP","metadata":{"name":"ssp-sample","namespace":"kubevirt"},"spec":{"commonTemplates":{"namespace":"kubevirt"},"templateValidator":{"replicas":2}}},{"apiVersion":"cdi.kubevirt.io/v1beta1","kind":"CDI","metadata":{"name":"cdi","namespace":"cdi"},"spec":{"imagePullPolicy":"IfNotPresent"}},{"apiVersion":"nodemaintenance.kubevirt.io/v1beta1","kind":"NodeMaintenance","metadata":{"name":"nodemaintenance-example"},"spec":{"nodeName":"node02","reason":"Test node maintenance"}},{"apiVersion":"hostpathprovisioner.kubevirt.io/v1beta1","kind":"HostPathProvisioner","metadata":{"name":"hostpath-provisioner"},"spec":{"imagePullPolicy":"IfNotPresent","pathConfig":{"path":"/var/hpvolumes","useNamingPrefix":false}}},{"apiVersion":"v2v.kubevirt.io/v1beta1","kind":"VMImportConfig","metadata":{"name":"vm-import-operator-config"},"spec":{"imagePullPolicy":"IfNotPresent"}}]'
     capabilities: Full Lifecycle
     categories: OpenShift Optional
     certified: "false"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator@sha256:a1b248457d1d6296390e7aa8b92e3db2a7786f32fe483ad9f44ca40ad1d69280
-    createdAt: "2021-01-14 11:24:07"
+    createdAt: "2021-01-14 17:18:18"
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -145,7 +145,7 @@ spec:
       displayName: KubeVirt deployment
       kind: KubeVirt
       name: kubevirts.kubevirt.io
-      version: v1alpha3
+      version: v1
     - description: SSP is the Schema for the ssps API
       displayName: SSP
       kind: SSP
@@ -1836,7 +1836,7 @@ spec:
                 - name: HCO_KV_IO_VERSION
                   value: 1.4.0
                 - name: KUBEVIRT_VERSION
-                  value: v0.36.0
+                  value: v0.37.0-rc.1
                 - name: CDI_VERSION
                   value: v1.28.0
                 - name: NETWORK_ADDONS_VERSION
@@ -2046,22 +2046,22 @@ spec:
                 - "2"
                 env:
                 - name: OPERATOR_IMAGE
-                  value: docker.io/kubevirt/virt-operator@sha256:4c33eaab42033c84310b62e146274f95a55699235c59846c8cec3009a91a723f
+                  value: quay.io/kubevirt/virt-operator@sha256:b9f90cba61ecf5a1b4e5f9878865e552a9325b9eaa589348b2f5e7962671f395
                 - name: WATCH_NAMESPACE
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: KUBEVIRT_VERSION
-                  value: v0.36.0
+                  value: v0.37.0-rc.1
                 - name: VIRT_API_SHASUM
-                  value: sha256:4d778f63d2f5ecb61d4f6fe8b5ead010836d46d75349f3c3634f5862614e4a21
+                  value: sha256:9c9ab8f200644950d82457108d915afb4d9cb23e945c7eda2a43b7ddf44eefe5
                 - name: VIRT_CONTROLLER_SHASUM
-                  value: sha256:f1fe5d43cd89b2f7d18cb23a14753b260a85f7e862b13529b640d7e8c36e81d5
+                  value: sha256:4914c437d40d01055783404436fdb2fdbe6b430870459ac6382ed99499faa70e
                 - name: VIRT_HANDLER_SHASUM
-                  value: sha256:10e9294253c2037d29a9a33dfeb3b096dbb7ceb5ed2f0fc1662d66535108d236
+                  value: sha256:cbd621354bf5bcd34d4f097a78e5f8265d82bd551facfc718d638169cac274f9
                 - name: VIRT_LAUNCHER_SHASUM
-                  value: sha256:1bb248aeb9d0bc66667f6133f8230cc80944b562c3d267cc00a5382954140c12
-                image: docker.io/kubevirt/virt-operator@sha256:4c33eaab42033c84310b62e146274f95a55699235c59846c8cec3009a91a723f
+                  value: sha256:621ffe4c1d53055376c963ce0de6420fb13d6b27f821b471b018eaf061780068
+                image: quay.io/kubevirt/virt-operator@sha256:b9f90cba61ecf5a1b4e5f9878865e552a9325b9eaa589348b2f5e7962671f395
                 imagePullPolicy: IfNotPresent
                 name: virt-operator
                 ports:
@@ -2581,15 +2581,15 @@ spec:
     name: ovs-cni-plugin
   - image: quay.io/kubevirt/ssp-operator@sha256:224887f65c1cc4e738735a8d01dbf0d9f9e6e8322bcbb3bdd847b774340e73bc
     name: ssp-operator
-  - image: docker.io/kubevirt/virt-api@sha256:4d778f63d2f5ecb61d4f6fe8b5ead010836d46d75349f3c3634f5862614e4a21
+  - image: quay.io/kubevirt/virt-api@sha256:9c9ab8f200644950d82457108d915afb4d9cb23e945c7eda2a43b7ddf44eefe5
     name: virt-api
-  - image: docker.io/kubevirt/virt-controller@sha256:f1fe5d43cd89b2f7d18cb23a14753b260a85f7e862b13529b640d7e8c36e81d5
+  - image: quay.io/kubevirt/virt-controller@sha256:4914c437d40d01055783404436fdb2fdbe6b430870459ac6382ed99499faa70e
     name: virt-controller
-  - image: docker.io/kubevirt/virt-handler@sha256:10e9294253c2037d29a9a33dfeb3b096dbb7ceb5ed2f0fc1662d66535108d236
+  - image: quay.io/kubevirt/virt-handler@sha256:cbd621354bf5bcd34d4f097a78e5f8265d82bd551facfc718d638169cac274f9
     name: virt-handler
-  - image: docker.io/kubevirt/virt-launcher@sha256:1bb248aeb9d0bc66667f6133f8230cc80944b562c3d267cc00a5382954140c12
+  - image: quay.io/kubevirt/virt-launcher@sha256:621ffe4c1d53055376c963ce0de6420fb13d6b27f821b471b018eaf061780068
     name: virt-launcher
-  - image: docker.io/kubevirt/virt-operator@sha256:4c33eaab42033c84310b62e146274f95a55699235c59846c8cec3009a91a723f
+  - image: quay.io/kubevirt/virt-operator@sha256:b9f90cba61ecf5a1b4e5f9878865e552a9325b9eaa589348b2f5e7962671f395
     name: virt-operator
   - image: quay.io/kubevirt/vm-import-controller@sha256:ea074a875cc405b10a390638319a5f050d5a050f9846dc4d17dc53a42f625e39
     name: vm-import-controller

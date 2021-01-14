@@ -65,7 +65,7 @@ github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
-# github.com/google/go-cmp v0.5.0
+# github.com/google/go-cmp v0.5.2
 github.com/google/go-cmp/cmp
 github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
@@ -210,7 +210,7 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0
+# golang.org/x/crypto v0.0.0-20201216223049-8b5274cf687f
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/mod v0.2.0
 golang.org/x/mod/semver
@@ -230,12 +230,14 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f
+# golang.org/x/sys v0.0.0-20201112073958-5cba982894dd
 golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
+# golang.org/x/term v0.0.0-20201117132131-f5c789dd3221
+golang.org/x/term
 # golang.org/x/text v0.3.4
-## explicit
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/htmlindex
@@ -510,7 +512,7 @@ k8s.io/utils/buffer
 k8s.io/utils/integer
 k8s.io/utils/pointer
 k8s.io/utils/trace
-# kubevirt.io/client-go v0.36.0 => kubevirt.io/client-go v0.36.0
+# kubevirt.io/client-go v0.37.0-rc.1 => kubevirt.io/client-go v0.37.0-rc.1
 ## explicit
 kubevirt.io/client-go/api/v1
 kubevirt.io/client-go/log
@@ -523,7 +525,7 @@ kubevirt.io/containerized-data-importer/pkg/apis/core/v1beta1
 # kubevirt.io/controller-lifecycle-operator-sdk v0.1.1
 ## explicit
 kubevirt.io/controller-lifecycle-operator-sdk/pkg/sdk/api
-# kubevirt.io/kubevirt v0.36.0
+# kubevirt.io/kubevirt v0.37.0-rc.1
 ## explicit
 kubevirt.io/kubevirt/pkg/virt-config
 # kubevirt.io/ssp-operator v0.1.1
@@ -612,7 +614,7 @@ sigs.k8s.io/yaml
 # github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.3.1
 # github.com/openshift/machine-api-operator => github.com/openshift/machine-api-operator v0.2.1-0.20191025120018-fb3724fc7bdf
 # github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.0.0-20190424153033-d3245f150225
-# kubevirt.io/client-go => kubevirt.io/client-go v0.36.0
+# kubevirt.io/client-go => kubevirt.io/client-go v0.37.0-rc.1
 # github.com/openshift/api => github.com/openshift/api v0.0.0-20201120165435-072a4cd8ca42
 # github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20191125132246-f6563a70e19a
 # github.com/openshift/library-go => github.com/mhenriks/library-go v0.0.0-20200116194830-9fcc1a687a9d

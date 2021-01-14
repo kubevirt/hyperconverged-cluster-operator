@@ -56,7 +56,7 @@ spec:
         - name: HCO_KV_IO_VERSION
           value: 1.4.0
         - name: KUBEVIRT_VERSION
-          value: v0.36.0
+          value: v0.37.0-rc.1
         - name: CDI_VERSION
           value: v1.28.0
         - name: NETWORK_ADDONS_VERSION
@@ -289,22 +289,22 @@ spec:
         - "2"
         env:
         - name: OPERATOR_IMAGE
-          value: docker.io/kubevirt/virt-operator@sha256:4c33eaab42033c84310b62e146274f95a55699235c59846c8cec3009a91a723f
+          value: quay.io/kubevirt/virt-operator@sha256:b9f90cba61ecf5a1b4e5f9878865e552a9325b9eaa589348b2f5e7962671f395
         - name: WATCH_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.annotations['olm.targetNamespaces']
         - name: KUBEVIRT_VERSION
-          value: v0.36.0
+          value: v0.37.0-rc.1
         - name: VIRT_API_SHASUM
-          value: sha256:4d778f63d2f5ecb61d4f6fe8b5ead010836d46d75349f3c3634f5862614e4a21
+          value: sha256:9c9ab8f200644950d82457108d915afb4d9cb23e945c7eda2a43b7ddf44eefe5
         - name: VIRT_CONTROLLER_SHASUM
-          value: sha256:f1fe5d43cd89b2f7d18cb23a14753b260a85f7e862b13529b640d7e8c36e81d5
+          value: sha256:4914c437d40d01055783404436fdb2fdbe6b430870459ac6382ed99499faa70e
         - name: VIRT_HANDLER_SHASUM
-          value: sha256:10e9294253c2037d29a9a33dfeb3b096dbb7ceb5ed2f0fc1662d66535108d236
+          value: sha256:cbd621354bf5bcd34d4f097a78e5f8265d82bd551facfc718d638169cac274f9
         - name: VIRT_LAUNCHER_SHASUM
-          value: sha256:1bb248aeb9d0bc66667f6133f8230cc80944b562c3d267cc00a5382954140c12
-        image: docker.io/kubevirt/virt-operator@sha256:4c33eaab42033c84310b62e146274f95a55699235c59846c8cec3009a91a723f
+          value: sha256:621ffe4c1d53055376c963ce0de6420fb13d6b27f821b471b018eaf061780068
+        image: quay.io/kubevirt/virt-operator@sha256:b9f90cba61ecf5a1b4e5f9878865e552a9325b9eaa589348b2f5e7962671f395
         imagePullPolicy: IfNotPresent
         name: virt-operator
         ports:
