@@ -120,7 +120,7 @@ function debug(){
 
 # In case SSP is disabled, apply with a label selector to filter out its resources.
 LABEL_SELECTOR_ARG=""
-if [ "$ENABLE_SSP" != "true" ]; do
+if [ "$ENABLE_SSP" != "true" ]; then
     LABEL_SELECTOR_ARG="-l name!=ssp-operator"
 fi
 
@@ -173,7 +173,7 @@ OPERATORS=(
     "vm-import-operator"
 )
 
-if [ "$ENABLE_SSP" = "true" ]; do
+if [ "$ENABLE_SSP" = "true" ]; then
     OPERATORS+="ssp-operator"
 fi
 
