@@ -129,10 +129,10 @@ fi
 "${CMD}" -n cert-manager wait deployment/cert-manager-webhook --for=condition=Available --timeout="300s"
 
 # Deploy local manifests
-"${CMD}" apply "${LABEL_SELECTOR_ARG}" -f _out/cluster_role.yaml
-"${CMD}" apply "${LABEL_SELECTOR_ARG}" -f _out/service_account.yaml
-"${CMD}" apply "${LABEL_SELECTOR_ARG}" -f _out/cluster_role_binding.yaml
-"${CMD}" apply "${LABEL_SELECTOR_ARG}" -f _out/crds/
+"${CMD}" apply $LABEL_SELECTOR_ARG -f _out/cluster_role.yaml
+"${CMD}" apply $LABEL_SELECTOR_ARG -f _out/service_account.yaml
+"${CMD}" apply $LABEL_SELECTOR_ARG -f _out/cluster_role_binding.yaml
+"${CMD}" apply $LABEL_SELECTOR_ARG -f _out/crds/
 
 sleep 20
 if [[ "$(${CMD} get crd ${HCO_CRD_NAME} -o=jsonpath='{.status.conditions[?(@.type=="NonStructuralSchema")].status}')" == "True" ]];
@@ -146,14 +146,14 @@ fi
 # when a new webhook (deployed by OLM in production) is introduced, 
 # it must be added into webhooks.yaml as well.
 echo "Creating resources for webhooks"
-"${CMD}" apply "${LABEL_SELECTOR_ARG}" -f _out/webhooks.yaml
+"${CMD}" apply $LABEL_SELECTOR_ARG -f _out/webhooks.yaml
 
 if [ "${CI}" != "true" ]; then
-	"${CMD}" apply "${LABEL_SELECTOR_ARG}" -f _out/operator.yaml
+	"${CMD}" apply $LABEL_SELECTOR_ARG -f _out/operator.yaml
 else
 	sed -E 's|^(\s*)- name: KVM_EMULATION$|\1- name: KVM_EMULATION\n\1  value: "true"|' < _out/operator.yaml > _out/operator-ci.yaml
 	cat _out/operator-ci.yaml
-	"${CMD}" apply "${LABEL_SELECTOR_ARG}" -f _out/operator-ci.yaml
+	"${CMD}" apply $LABEL_SELECTOR_ARG -f _out/operator-ci.yaml
 fi
 
 # Wait for the HCO to be ready
@@ -168,7 +168,7 @@ sleep 20
 # Check on ssp-operator only if it's enabled.
 OPERATORS=(
     "cdi-operator"
-    "cluster-network-addons-operator "
+    "cluster-network-addons-operator"
     "node-maintenance-operator"
     "vm-import-operator"
 )
