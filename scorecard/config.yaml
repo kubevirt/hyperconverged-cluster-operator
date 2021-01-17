@@ -53,18 +53,7 @@ stages:
       suite: olm
       test: olm-status-descriptors-test
 
-  - entrypoint:
-      - custom-scorecard-tests
-      - customtest1
-    image: quay.io/erkanerol/custom-scorecard-tests:dev
+  - image: quay.io/erkanerol/custom-scorecard-tests:dev8
     labels:
       suite: custom
-      test: customtest1
-
-  - entrypoint:
-      - custom-scorecard-tests
-      - customtest2
-    image: quay.io/erkanerol/custom-scorecard-tests:dev
-    labels:
-      suite: custom
-      test: customtest2
+      test: functest

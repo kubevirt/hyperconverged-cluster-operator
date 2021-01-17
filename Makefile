@@ -95,6 +95,8 @@ ci-functest: build-functest test-functional
 
 functest: build-functest test-functional-prow
 
+scorecard: build-functest test-scorecard
+
 build-functest:
 	${DO} ./hack/build-tests.sh
 
@@ -103,6 +105,9 @@ test-functional:
 
 test-functional-prow:
 	./hack/run-tests.sh
+
+test-scorecard:
+	./scorecard/run-scorecard.sh
 
 stageRegistry:
 	@APP_REGISTRY_NAMESPACE=redhat-operators-stage PACKAGE=kubevirt-hyperconverged ./tools/quay-registry.sh $(QUAY_USERNAME) $(QUAY_PASSWORD)
