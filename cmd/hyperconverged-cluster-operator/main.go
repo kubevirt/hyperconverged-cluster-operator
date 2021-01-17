@@ -220,14 +220,7 @@ func main() {
 func createPriorityClass(ctx context.Context, mgr manager.Manager) error {
 	pc := operands.NewKubeVirtPriorityClass(&hcov1beta1.HyperConverged{})
 
-	key, err := client.ObjectKeyFromObject(pc)
-	if err != nil {
-		log.Error(err, "Failed to get object key for KubeVirt PriorityClass")
-		return err
-	}
-
-	err = mgr.GetAPIReader().Get(ctx, key, pc)
-
+	err := mgr.GetAPIReader().Get(ctx, client.ObjectKeyFromObject(pc), pc)
 	if err != nil && apierrors.IsNotFound(err) {
 		log.Info("Creating KubeVirt PriorityClass")
 		return mgr.GetClient().Create(ctx, pc, &client.CreateOptions{})

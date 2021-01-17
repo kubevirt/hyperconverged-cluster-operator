@@ -3,6 +3,10 @@ package operands
 import (
 	"errors"
 	"fmt"
+	"os"
+	"reflect"
+	"strings"
+
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -13,15 +17,22 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	kubevirtv1 "kubevirt.io/client-go/api/v1"
-	virtconfig "kubevirt.io/kubevirt/pkg/virt-config"
-	"os"
-	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 const (
 	kubevirtDefaultNetworkInterfaceValue = "masquerade"
+	// We can import the constants below from Kubevirt virt-config package
+	// after Kubevirt will consume k8s.io v0.19.2 or higher
+	FeatureGatesKey         = "feature-gates"
+	MachineTypeKey          = "machine-type"
+	UseEmulationKey         = "debug.useEmulation"
+	MigrationsConfigKey     = "migrations"
+	NetworkInterfaceKey     = "default-network-interface"
+	SmbiosConfigKey         = "smbios"
+	SELinuxLauncherTypeKey  = "selinuxLauncherType"
+	DefaultNetworkInterface = "bridge"
+	HotplugVolumesGate      = "HotplugVolumes"
 )
 
 const (
@@ -47,7 +58,7 @@ type kubevirtHooks struct {
 	cache *kubevirtv1.KubeVirt
 }
 
-func (h *kubevirtHooks) getFullCr(hc *hcov1beta1.HyperConverged) (runtime.Object, error) {
+func (h *kubevirtHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
 	if h.cache == nil {
 		kv, err := NewKubeVirt(hc)
 		if err != nil {
@@ -58,7 +69,7 @@ func (h *kubevirtHooks) getFullCr(hc *hcov1beta1.HyperConverged) (runtime.Object
 	return h.cache, nil
 }
 
-func (h kubevirtHooks) getEmptyCr() runtime.Object                         { return &kubevirtv1.KubeVirt{} }
+func (h kubevirtHooks) getEmptyCr() client.Object                          { return &kubevirtv1.KubeVirt{} }
 func (h kubevirtHooks) validate() error                                    { return nil }
 func (h kubevirtHooks) postFound(*common.HcoRequest, runtime.Object) error { return nil }
 func (h kubevirtHooks) getConditions(cr runtime.Object) []conditionsv1.Condition {
@@ -180,10 +191,10 @@ func newKvConfigHandler(Client client.Client, Scheme *runtime.Scheme) *kvConfigH
 
 type kvConfigHooks struct{}
 
-func (h kvConfigHooks) getFullCr(hc *hcov1beta1.HyperConverged) (runtime.Object, error) {
+func (h kvConfigHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
 	return NewKubeVirtConfigForCR(hc, hc.Namespace), nil
 }
-func (h kvConfigHooks) getEmptyCr() runtime.Object                            { return &corev1.ConfigMap{} }
+func (h kvConfigHooks) getEmptyCr() client.Object                             { return &corev1.ConfigMap{} }
 func (h kvConfigHooks) validate() error                                       { return nil }
 func (h kvConfigHooks) postFound(*common.HcoRequest, runtime.Object) error    { return nil }
 func (h kvConfigHooks) getConditions(runtime.Object) []conditionsv1.Condition { return nil }
@@ -209,12 +220,12 @@ func (h *kvConfigHooks) updateCr(req *common.HcoRequest, Client client.Client, e
 		// TODO: This is going to change in the next HCO release where the whole configMap is going
 		// to be continuously reconciled
 		for _, k := range []string{
-			virtconfig.FeatureGatesKey,
-			virtconfig.SmbiosConfigKey,
-			virtconfig.MachineTypeKey,
-			virtconfig.SELinuxLauncherTypeKey,
-			virtconfig.UseEmulationKey,
-			virtconfig.MigrationsConfigKey,
+			FeatureGatesKey,
+			SmbiosConfigKey,
+			MachineTypeKey,
+			SELinuxLauncherTypeKey,
+			UseEmulationKey,
+			MigrationsConfigKey,
 		} {
 			if found.Data[k] != kubevirtConfig.Data[k] {
 				req.Logger.Info(fmt.Sprintf("Updating %s on existing KubeVirt config", k))
@@ -222,7 +233,7 @@ func (h *kvConfigHooks) updateCr(req *common.HcoRequest, Client client.Client, e
 				changed = true
 			}
 		}
-		for _, k := range []string{virtconfig.MigrationsConfigKey} {
+		for _, k := range []string{MigrationsConfigKey} {
 			_, ok := found.Data[k]
 			if ok {
 				req.Logger.Info(fmt.Sprintf("Deleting %s on existing KubeVirt config", k))
@@ -235,14 +246,14 @@ func (h *kvConfigHooks) updateCr(req *common.HcoRequest, Client client.Client, e
 		// Add/remove managed KV feature gates without modifying any other feature gates, that may be changed by the user:
 		// 1. first, get the current feature gate list from the config map, and split the list into the ist string to a
 		//    slice of FGs
-		foundFgSplit := strings.Split(found.Data[virtconfig.FeatureGatesKey], ",")
+		foundFgSplit := strings.Split(found.Data[FeatureGatesKey], ",")
 		resultFg := make([]string, 0, len(foundFgSplit))
 		fgChanged := false
 		// 2. Remove only managed FGs from the list, if are not in the HC CR
 		for _, fg := range foundFgSplit {
 			// Remove if not in HC CR
 			switch fg {
-			case virtconfig.HotplugVolumesGate:
+			case HotplugVolumesGate:
 				if !req.Instance.Spec.FeatureGates.IsHotplugVolumesEnabled() {
 					fgChanged = true
 					continue
@@ -262,7 +273,7 @@ func (h *kvConfigHooks) updateCr(req *common.HcoRequest, Client client.Client, e
 		// 4. If a managed FG added/removed, rebuild a new list. Else, use the current one.
 		if fgChanged {
 			changed = true
-			found.Data[virtconfig.FeatureGatesKey] = strings.Join(resultFg, ",")
+			found.Data[FeatureGatesKey] = strings.Join(resultFg, ",")
 		}
 	}
 
@@ -300,10 +311,10 @@ func newKvPriorityClassHandler(Client client.Client, Scheme *runtime.Scheme) *kv
 
 type kvPriorityClassHooks struct{}
 
-func (h kvPriorityClassHooks) getFullCr(hc *hcov1beta1.HyperConverged) (runtime.Object, error) {
+func (h kvPriorityClassHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
 	return NewKubeVirtPriorityClass(hc), nil
 }
-func (h kvPriorityClassHooks) getEmptyCr() runtime.Object                              { return &schedulingv1.PriorityClass{} }
+func (h kvPriorityClassHooks) getEmptyCr() client.Object                               { return &schedulingv1.PriorityClass{} }
 func (h kvPriorityClassHooks) validate() error                                         { return nil }
 func (h kvPriorityClassHooks) postFound(_ *common.HcoRequest, _ runtime.Object) error  { return nil }
 func (h kvPriorityClassHooks) getConditions(_ runtime.Object) []conditionsv1.Condition { return nil }
@@ -402,22 +413,22 @@ func NewKubeVirtConfigForCR(cr *hcov1beta1.HyperConverged, namespace string) *co
 		// TODO: This is going to change in the next HCO release where the whole configMap is going
 		// to be continuously reconciled
 		Data: map[string]string{
-			virtconfig.FeatureGatesKey:        featureGates,
-			virtconfig.SELinuxLauncherTypeKey: "virt_launcher.process",
-			virtconfig.NetworkInterfaceKey:    kubevirtDefaultNetworkInterfaceValue,
+			FeatureGatesKey:        featureGates,
+			SELinuxLauncherTypeKey: "virt_launcher.process",
+			NetworkInterfaceKey:    kubevirtDefaultNetworkInterfaceValue,
 		},
 	}
 	val, ok := os.LookupEnv("SMBIOS")
 	if ok && val != "" {
-		cm.Data[virtconfig.SmbiosConfigKey] = val
+		cm.Data[SmbiosConfigKey] = val
 	}
 	val, ok = os.LookupEnv("MACHINETYPE")
 	if ok && val != "" {
-		cm.Data[virtconfig.MachineTypeKey] = val
+		cm.Data[MachineTypeKey] = val
 	}
 	val, ok = os.LookupEnv("KVM_EMULATION")
 	if ok && val != "" {
-		cm.Data[virtconfig.UseEmulationKey] = val
+		cm.Data[UseEmulationKey] = val
 	}
 	return cm
 }
@@ -431,7 +442,7 @@ func getKvFeatureGateList(fgs *hcov1beta1.HyperConvergedFeatureGates) []string {
 	res := make([]string, 0, 1)
 
 	if fgs.IsHotplugVolumesEnabled() {
-		res = append(res, virtconfig.HotplugVolumesGate)
+		res = append(res, HotplugVolumesGate)
 	}
 
 	return res
