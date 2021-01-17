@@ -9,7 +9,6 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-logfmt/logfmt v0.5.0 // indirect
 	github.com/go-logr/logr v0.3.0
-	github.com/go-logr/zapr v0.2.0 // indirect
 	github.com/go-openapi/spec v0.19.7
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/go-cmp v0.5.4 // indirect
@@ -50,7 +49,6 @@ require (
 	kubevirt.io/client-go v0.36.0
 	kubevirt.io/containerized-data-importer v1.29.0
 	kubevirt.io/controller-lifecycle-operator-sdk v0.1.2
-	kubevirt.io/kubevirt v0.36.0
 	kubevirt.io/ssp-operator v0.1.1
 	sigs.k8s.io/controller-runtime v0.7.0
 	sigs.k8s.io/controller-tools v0.4.1
