@@ -151,10 +151,10 @@ spec:
                 description: BareMetalPlatform indicates whether the infrastructure is baremetal.
                 type: boolean
               featureGates:
-                description: featureGates HyperConvergedFeatureGates contains a list of feature enabler flags. Setting a flag to `true` will enable the feature. Setting `false` or removing the feature gate, disables the feature.
+                description: featureGates is a map of feature gate flags. Setting a flag to `true` will enable the feature. Setting `false` or removing the feature gate, disables the feature.
                 properties:
                   HotplugVolumes:
-                    description: Allow attaching a data volume to a running VMI; type is boolean; default is false
+                    description: Allow attaching a data volume to a running VMI
                     type: boolean
                 type: object
               infra:

@@ -41,7 +41,7 @@ type HyperConvergedSpec struct {
 	// +optional
 	Workloads HyperConvergedConfig `json:"workloads,omitempty"`
 
-	// featureGates HyperConvergedFeatureGates contains a list of feature enabler flags. Setting a flag to `true` will enable
+	// featureGates is a map of feature gate flags. Setting a flag to `true` will enable
 	// the feature. Setting `false` or removing the feature gate, disables the feature.
 	// +optional
 	FeatureGates *HyperConvergedFeatureGates `json:"featureGates,omitempty"`
@@ -62,7 +62,7 @@ type HyperConvergedConfig struct {
 // +optional
 // +k8s:openapi-gen=true
 type HyperConvergedFeatureGates struct {
-	// Allow attaching a data volume to a running VMI; type is boolean; default is false
+	// Allow attaching a data volume to a running VMI
 	// +optional
 	HotplugVolumes *bool `json:"HotplugVolumes,omitempty"`
 }

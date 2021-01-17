@@ -89,7 +89,7 @@ func schema_pkg_apis_hco_v1beta1_HyperConvergedFeatureGates(ref common.Reference
 				Properties: map[string]spec.Schema{
 					"HotplugVolumes": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Allow attaching a data volume to a running VMI; type is boolean; default is false",
+							Description: "Allow attaching a data volume to a running VMI",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -135,7 +135,7 @@ func schema_pkg_apis_hco_v1beta1_HyperConvergedSpec(ref common.ReferenceCallback
 					},
 					"featureGates": {
 						SchemaProps: spec.SchemaProps{
-							Description: "featureGates HyperConvergedFeatureGates contains a list of feature enabler flags. Setting a flag to `true` will enable the feature. Setting `false` or removing the feature gate, disables the feature.",
+							Description: "featureGates is a map of feature gate flags. Setting a flag to `true` will enable the feature. Setting `false` or removing the feature gate, disables the feature.",
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1.HyperConvergedFeatureGates"),
 						},
 					},
