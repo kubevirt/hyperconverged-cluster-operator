@@ -766,6 +766,7 @@ func GetOperatorCRD(relPath string) *extv1.CustomResourceDefinition {
 	for _, p := range pkgs {
 		err = packageErrors(p, packages.TypeError)
 		if err != nil {
+			fmt.Printf("%#v\n", err)
 			panic(err)
 		}
 	}

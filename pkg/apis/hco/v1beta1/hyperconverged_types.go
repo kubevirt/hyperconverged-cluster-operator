@@ -4,6 +4,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/pkg/sdk/api"
+	virtconfig "kubevirt.io/kubevirt/pkg/virt-config"
 
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 )
@@ -40,10 +41,10 @@ type HyperConvergedSpec struct {
 	// +optional
 	Workloads HyperConvergedConfig `json:"workloads,omitempty"`
 
-	// featureGates HyperConvergedFeatureGates contain a list of feature enabler flags. Setting a flag to `true` will enable
+	// featureGates HyperConvergedFeatureGates contains a list of feature enabler flags. Setting a flag to `true` will enable
 	// the feature. Setting `false` or removing the feature gate, disables the feature.
-	// optional+
-	FeatureGates HyperConvergedFeatureGates `json:"featureGates,omitempty"`
+	// +optional
+	FeatureGates *HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 
 	// operator version
 	Version string `json:"version,omitempty"`
@@ -56,23 +57,29 @@ type HyperConvergedConfig struct {
 	NodePlacement *sdkapi.NodePlacement `json:"nodePlacement,omitempty"`
 }
 
-type HyperConvergedFeatureGates map[string]bool
-
-func (fgs HyperConvergedFeatureGates) IsEnabled(fgName string) bool {
-	fg, found := fgs[fgName]
-	return fg && found
+// HyperConvergedFeatureGates is a set of optional feature gates to enable or disable new features that are not enabled
+// by default yet.
+// +optional
+// +k8s:openapi-gen=true
+type HyperConvergedFeatureGates struct {
+	// Allow attaching a data volume to a running VMI; type is boolean; default is false
+	// +optional
+	HotplugVolumes *bool `json:"HotplugVolumes,omitempty"`
 }
 
 // get list of feature gates from a specific operand list
-func (fgs HyperConvergedFeatureGates) GetFeatureGateList(candidates []string) []string {
-	res := make([]string, 0, len(fgs))
-	for _, fg := range candidates {
-		if fgs.IsEnabled(fg) {
-			res = append(res, fg)
-		}
+func (fgs *HyperConvergedFeatureGates) GetFeatureGateList() []string {
+	res := make([]string, 0, 1)
+
+	if fgs.IsHotplugVolumesEnabled() {
+		res = append(res, virtconfig.HotplugVolumesGate)
 	}
 
 	return res
+}
+
+func (fgs HyperConvergedFeatureGates) IsHotplugVolumesEnabled() bool {
+	return fgs.HotplugVolumes != nil && *fgs.HotplugVolumes
 }
 
 // HyperConvergedStatus defines the observed state of HyperConverged
