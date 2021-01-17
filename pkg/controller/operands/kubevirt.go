@@ -106,15 +106,13 @@ func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtv1.Kub
 		Workloads:         hcoConfig2KvConfig(hc.Spec.Workloads),
 	}
 
-	if hc.Spec.FeatureGates != nil {
-		fgs := hc.Spec.FeatureGates.GetFeatureGateList()
-		if len(fgs) > 0 {
-			if spec.Configuration.DeveloperConfiguration == nil {
-				spec.Configuration.DeveloperConfiguration = &kubevirtv1.DeveloperConfiguration{}
-			}
-
-			spec.Configuration.DeveloperConfiguration.FeatureGates = fgs
+	fgs := hc.Spec.FeatureGates.GetFeatureGateList()
+	if len(fgs) > 0 {
+		if spec.Configuration.DeveloperConfiguration == nil {
+			spec.Configuration.DeveloperConfiguration = &kubevirtv1.DeveloperConfiguration{}
 		}
+
+		spec.Configuration.DeveloperConfiguration.FeatureGates = fgs
 	}
 
 	kv := NewKubeVirtWithNameOnly(hc, opts...)
@@ -245,7 +243,7 @@ func (h *kvConfigHooks) updateCr(req *common.HcoRequest, Client client.Client, e
 			// Remove if not in HC CR
 			switch fg {
 			case virtconfig.HotplugVolumesGate:
-				if (req.Instance.Spec.FeatureGates == nil) || (!req.Instance.Spec.FeatureGates.IsHotplugVolumesEnabled()) {
+				if !req.Instance.Spec.FeatureGates.IsHotplugVolumesEnabled() {
 					fgChanged = true
 					continue
 				}
@@ -254,12 +252,10 @@ func (h *kvConfigHooks) updateCr(req *common.HcoRequest, Client client.Client, e
 		}
 
 		// 3. Add managed FGs if set in the HC CR
-		if req.Instance.Spec.FeatureGates != nil {
-			for _, fg := range req.Instance.Spec.FeatureGates.GetFeatureGateList() {
-				if !hcoutil.ContainsString(foundFgSplit, fg) {
-					resultFg = append(resultFg, fg)
-					fgChanged = true
-				}
+		for _, fg := range req.Instance.Spec.FeatureGates.GetFeatureGateList() {
+			if !hcoutil.ContainsString(foundFgSplit, fg) {
+				resultFg = append(resultFg, fg)
+				fgChanged = true
 			}
 		}
 
@@ -389,10 +385,8 @@ func translateKubeVirtConds(orig []kubevirtv1.KubeVirtCondition) []conditionsv1.
 func NewKubeVirtConfigForCR(cr *hcov1beta1.HyperConverged, namespace string) *corev1.ConfigMap {
 	featureGates := cmFeatureGates
 
-	if cr.Spec.FeatureGates != nil {
-		if managedFeatureGates := cr.Spec.FeatureGates.GetFeatureGateList(); len(managedFeatureGates) > 0 {
-			featureGates = fmt.Sprintf("%s,%s", featureGates, strings.Join(managedFeatureGates, ","))
-		}
+	if managedFeatureGates := cr.Spec.FeatureGates.GetFeatureGateList(); len(managedFeatureGates) > 0 {
+		featureGates = fmt.Sprintf("%s,%s", featureGates, strings.Join(managedFeatureGates, ","))
 	}
 
 	cm := &corev1.ConfigMap{

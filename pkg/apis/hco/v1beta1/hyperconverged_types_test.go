@@ -301,14 +301,19 @@ var _ = Describe("HyperconvergedTypes", func() {
 	Context("HyperConvergedFeatureGates", func() {
 
 		Context("Test IsHotplugVolumesEnabled", func() {
+			It("Should return false if HyperConvergedFeatureGates is nil", func() {
+				var fgs *HyperConvergedFeatureGates = nil
+				Expect(fgs.IsHotplugVolumesEnabled()).To(BeFalse())
+			})
+
 			It("Should return false if HotplugVolumes does not exist", func() {
-				fgs := HyperConvergedFeatureGates{}
+				fgs := &HyperConvergedFeatureGates{}
 				Expect(fgs.IsHotplugVolumesEnabled()).To(BeFalse())
 			})
 
 			It("Should return false if HotplugVolumes is false", func() {
 				disabled := false
-				fgs := HyperConvergedFeatureGates{
+				fgs := &HyperConvergedFeatureGates{
 					HotplugVolumes: &disabled,
 				}
 				Expect(fgs.IsHotplugVolumesEnabled()).To(BeFalse())
@@ -316,7 +321,7 @@ var _ = Describe("HyperconvergedTypes", func() {
 
 			It("Should return false if HotplugVolumes is true", func() {
 				enabled := true
-				fgs := HyperConvergedFeatureGates{
+				fgs := &HyperConvergedFeatureGates{
 					HotplugVolumes: &enabled,
 				}
 				Expect(fgs.IsHotplugVolumesEnabled()).To(BeTrue())
@@ -324,6 +329,10 @@ var _ = Describe("HyperconvergedTypes", func() {
 		})
 
 		Context("Test GetFeatureGateList", func() {
+			It("Should create an empty slice if HyperConvergedFeatureGates is nil", func() {
+				var fgs *HyperConvergedFeatureGates = nil
+				Expect(fgs.GetFeatureGateList()).To(BeEmpty())
+			})
 
 			It("Should create an empty slice if no FG exists", func() {
 				fgs := HyperConvergedFeatureGates{}

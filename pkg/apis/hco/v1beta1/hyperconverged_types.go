@@ -69,6 +69,10 @@ type HyperConvergedFeatureGates struct {
 
 // get list of feature gates from a specific operand list
 func (fgs *HyperConvergedFeatureGates) GetFeatureGateList() []string {
+	if fgs == nil {
+		return nil
+	}
+
 	res := make([]string, 0, 1)
 
 	if fgs.IsHotplugVolumesEnabled() {
@@ -78,8 +82,8 @@ func (fgs *HyperConvergedFeatureGates) GetFeatureGateList() []string {
 	return res
 }
 
-func (fgs HyperConvergedFeatureGates) IsHotplugVolumesEnabled() bool {
-	return fgs.HotplugVolumes != nil && *fgs.HotplugVolumes
+func (fgs *HyperConvergedFeatureGates) IsHotplugVolumesEnabled() bool {
+	return (fgs != nil) && (fgs.HotplugVolumes != nil) && (*fgs.HotplugVolumes)
 }
 
 // HyperConvergedStatus defines the observed state of HyperConverged
