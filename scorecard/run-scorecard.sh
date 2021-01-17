@@ -16,7 +16,10 @@ cp tests/func-tests/_out/func-tests.test scorecard/image/func-tests.test
 docker build -t  quay.io/erkanerol/custom-scorecard-tests:dev8 scorecard/image
 docker push quay.io/erkanerol/custom-scorecard-tests:dev8
 
-# kubectl create ns scorecard
-# kubectl create serviceaccount scorecard -n scorecard
-# kubectl create clusterrolebinding scorecard-cluster-admin --clusterrole=cluster-admin --serviceaccount=scorecard:scorecard
-operator-sdk scorecard "$BUNDLEDIR"  -c ./scorecard/config.yaml -n scorecard -s scorecard  --verbose -x --wait-time=300s --selector=test=functest
+
+kubectl create ns scorecard --dry-run -o yaml | kubectl apply -f -
+kubectl create serviceaccount scorecard -n scorecard --dry-run -o yaml | kubectl apply -f -
+kubectl create clusterrolebinding scorecard-cluster-admin --clusterrole=cluster-admin --serviceaccount=scorecard:scorecard --dry-run -o yaml | kubectl apply -f -
+
+# assumes hco is already deployed and the commands below are executed.
+operator-sdk scorecard "$BUNDLEDIR"  -c ./scorecard/config.yaml -n scorecard -s scorecard  --verbose -x --wait-time=300s
