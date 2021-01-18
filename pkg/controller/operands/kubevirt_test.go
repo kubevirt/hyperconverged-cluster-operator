@@ -1301,6 +1301,36 @@ var _ = Describe("KubeVirt Operand", func() {
 			})
 		})
 	})
+
+	Context("Test getKvFeatureGateList", func() {
+		It("Should create an empty slice if HyperConvergedFeatureGates is nil", func() {
+			var fgs *hcov1beta1.HyperConvergedFeatureGates = nil
+			Expect(getKvFeatureGateList(fgs)).To(BeEmpty())
+		})
+
+		It("Should create an empty slice if no FG exists", func() {
+			fgs := &hcov1beta1.HyperConvergedFeatureGates{}
+			Expect(getKvFeatureGateList(fgs)).To(BeEmpty())
+		})
+
+		It("Should create an empty slice if no FG is enabled", func() {
+			disabled := false
+			fgs := &hcov1beta1.HyperConvergedFeatureGates{
+				HotplugVolumes: &disabled,
+			}
+			Expect(getKvFeatureGateList(fgs)).To(BeEmpty())
+		})
+
+		It("Should create a slice if there are enabled FGs", func() {
+			enabled := true
+			fgs := &hcov1beta1.HyperConvergedFeatureGates{
+				HotplugVolumes: &enabled,
+			}
+			fgList := getKvFeatureGateList(fgs)
+			Expect(fgList).To(HaveLen(1))
+			Expect(fgList[0]).Should(Equal(virtconfig.HotplugVolumesGate))
+		})
+	})
 })
 
 func reconcileCm(hco *hcov1beta1.HyperConverged, req *common.HcoRequest, expectUpdate bool, existingCM, foundCm *corev1.ConfigMap) {

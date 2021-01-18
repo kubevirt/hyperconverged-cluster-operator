@@ -1,12 +1,10 @@
 package v1beta1
 
 import (
+	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/pkg/sdk/api"
-	virtconfig "kubevirt.io/kubevirt/pkg/virt-config"
-
-	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -65,21 +63,6 @@ type HyperConvergedFeatureGates struct {
 	// Allow attaching a data volume to a running VMI
 	// +optional
 	HotplugVolumes *bool `json:"HotplugVolumes,omitempty"`
-}
-
-// get list of feature gates from a specific operand list
-func (fgs *HyperConvergedFeatureGates) GetFeatureGateList() []string {
-	if fgs == nil {
-		return nil
-	}
-
-	res := make([]string, 0, 1)
-
-	if fgs.IsHotplugVolumesEnabled() {
-		res = append(res, virtconfig.HotplugVolumesGate)
-	}
-
-	return res
 }
 
 func (fgs *HyperConvergedFeatureGates) IsHotplugVolumesEnabled() bool {

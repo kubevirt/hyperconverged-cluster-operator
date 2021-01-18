@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 	corev1 "k8s.io/api/core/v1"
-	virtconfig "kubevirt.io/kubevirt/pkg/virt-config"
 	"testing"
 )
 
@@ -325,36 +324,6 @@ var _ = Describe("HyperconvergedTypes", func() {
 					HotplugVolumes: &enabled,
 				}
 				Expect(fgs.IsHotplugVolumesEnabled()).To(BeTrue())
-			})
-		})
-
-		Context("Test GetFeatureGateList", func() {
-			It("Should create an empty slice if HyperConvergedFeatureGates is nil", func() {
-				var fgs *HyperConvergedFeatureGates = nil
-				Expect(fgs.GetFeatureGateList()).To(BeEmpty())
-			})
-
-			It("Should create an empty slice if no FG exists", func() {
-				fgs := HyperConvergedFeatureGates{}
-				Expect(fgs.GetFeatureGateList()).To(BeEmpty())
-			})
-
-			It("Should create an empty slice if no FG is enabled", func() {
-				disabled := false
-				fgs := HyperConvergedFeatureGates{
-					HotplugVolumes: &disabled,
-				}
-				Expect(fgs.GetFeatureGateList()).To(BeEmpty())
-			})
-
-			It("Should create a slice if there are enabled FGs", func() {
-				enabled := true
-				fgs := HyperConvergedFeatureGates{
-					HotplugVolumes: &enabled,
-				}
-				fgList := fgs.GetFeatureGateList()
-				Expect(fgList).To(HaveLen(1))
-				Expect(fgList[0]).Should(Equal(virtconfig.HotplugVolumesGate))
 			})
 		})
 	})
