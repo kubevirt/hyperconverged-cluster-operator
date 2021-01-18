@@ -1,11 +1,10 @@
 package v1beta1
 
 import (
+	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/pkg/sdk/api"
-
-	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -40,10 +39,10 @@ type HyperConvergedSpec struct {
 	// +optional
 	Workloads HyperConvergedConfig `json:"workloads,omitempty"`
 
-	// featureGates HyperConvergedFeatureGates contain a list of feature enabler flags. Setting a flag to `true` will enable
+	// featureGates is a map of feature gate flags. Setting a flag to `true` will enable
 	// the feature. Setting `false` or removing the feature gate, disables the feature.
-	// optional+
-	FeatureGates HyperConvergedFeatureGates `json:"featureGates,omitempty"`
+	// +optional
+	FeatureGates *HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 
 	// operator version
 	Version string `json:"version,omitempty"`
@@ -72,7 +71,8 @@ func (fgs HyperConvergedFeatureGates) GetFeatureGateList(candidates []string) []
 		}
 	}
 
-	return res
+func (fgs *HyperConvergedFeatureGates) IsHotplugVolumesEnabled() bool {
+	return (fgs != nil) && (fgs.HotplugVolumes != nil) && (*fgs.HotplugVolumes)
 }
 
 // HyperConvergedStatus defines the observed state of HyperConverged

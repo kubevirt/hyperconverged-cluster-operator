@@ -298,22 +298,32 @@ var _ = Describe("HyperconvergedTypes", func() {
 	})
 
 	Context("HyperConvergedFeatureGates", func() {
-		fgs := HyperConvergedFeatureGates{
-			"enabled":  true,
-			"disabled": false,
-		}
 
-		It("Test IsEnabled", func() {
-			By("Should return true if exists and true", func() {
-				Expect(fgs.IsEnabled("enabled")).To(BeTrue())
+		Context("Test IsHotplugVolumesEnabled", func() {
+			It("Should return false if HyperConvergedFeatureGates is nil", func() {
+				var fgs *HyperConvergedFeatureGates = nil
+				Expect(fgs.IsHotplugVolumesEnabled()).To(BeFalse())
 			})
 
-			By("Should return false if exists and false", func() {
-				Expect(fgs.IsEnabled("disabled")).To(BeFalse())
+			It("Should return false if HotplugVolumes does not exist", func() {
+				fgs := &HyperConvergedFeatureGates{}
+				Expect(fgs.IsHotplugVolumesEnabled()).To(BeFalse())
 			})
 
-			By("Should return true if not exists", func() {
-				Expect(fgs.IsEnabled("missing")).To(BeFalse())
+			It("Should return false if HotplugVolumes is false", func() {
+				disabled := false
+				fgs := &HyperConvergedFeatureGates{
+					HotplugVolumes: &disabled,
+				}
+				Expect(fgs.IsHotplugVolumesEnabled()).To(BeFalse())
+			})
+
+			It("Should return false if HotplugVolumes is true", func() {
+				enabled := true
+				fgs := &HyperConvergedFeatureGates{
+					HotplugVolumes: &enabled,
+				}
+				Expect(fgs.IsHotplugVolumesEnabled()).To(BeTrue())
 			})
 		})
 
