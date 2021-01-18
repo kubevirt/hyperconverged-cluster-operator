@@ -87,7 +87,7 @@ func schema_pkg_apis_hco_v1beta1_HyperConvergedFeatureGates(ref common.Reference
 				Description: "HyperConvergedFeatureGates is a set of optional feature gates to enable or disable new features that are not enabled by default yet.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"HotplugVolumes": {
+					"hotplugVolumes": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Allow attaching a data volume to a running VMI",
 							Type:        []string{"boolean"},

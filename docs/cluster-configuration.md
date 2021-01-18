@@ -120,8 +120,8 @@ or new features that are not enabled by default.
 To enable a feature, add its name to the `featureGates` list and set it to `true`. Missing or `false` feature gates 
 disables the feature.
 
-### HotplugVolumes Feature Gate
-Set the `HotplugVolumes` feature gate in order to allow attaching a data volume to a running VMI.
+### hotplugVolumes Feature Gate
+Set the `hotplugVolumes` feature gate in order to allow attaching a data volume to a running VMI.
 
 ### Feature Gates Example
 
@@ -134,5 +134,5 @@ spec:
   infra: {}
   workloads: {}
   featureGates:
-    HotplugVolumes: true
+    hotplugVolumes: true
 ```

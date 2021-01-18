@@ -62,7 +62,7 @@ type HyperConvergedConfig struct {
 type HyperConvergedFeatureGates struct {
 	// Allow attaching a data volume to a running VMI
 	// +optional
-	HotplugVolumes *bool `json:"HotplugVolumes,omitempty"`
+	HotplugVolumes *bool `json:"hotplugVolumes,omitempty"`
 }
 
 func (fgs *HyperConvergedFeatureGates) IsHotplugVolumesEnabled() bool {
