@@ -55,21 +55,15 @@ type HyperConvergedConfig struct {
 	NodePlacement *sdkapi.NodePlacement `json:"nodePlacement,omitempty"`
 }
 
-type HyperConvergedFeatureGates map[string]bool
-
-func (fgs HyperConvergedFeatureGates) IsEnabled(fgName string) bool {
-	fg, found := fgs[fgName]
-	return fg && found
+// HyperConvergedFeatureGates is a set of optional feature gates to enable or disable new features that are not enabled
+// by default yet.
+// +optional
+// +k8s:openapi-gen=true
+type HyperConvergedFeatureGates struct {
+	// Allow attaching a data volume to a running VMI
+	// +optional
+	HotplugVolumes *bool `json:"hotplugVolumes,omitempty"`
 }
-
-// get list of feature gates from a specific operand list
-func (fgs HyperConvergedFeatureGates) GetFeatureGateList(candidates []string) []string {
-	res := make([]string, 0, len(fgs))
-	for _, fg := range candidates {
-		if fgs.IsEnabled(fg) {
-			res = append(res, fg)
-		}
-	}
 
 func (fgs *HyperConvergedFeatureGates) IsHotplugVolumesEnabled() bool {
 	return (fgs != nil) && (fgs.HotplugVolumes != nil) && (*fgs.HotplugVolumes)

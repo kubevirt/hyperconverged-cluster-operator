@@ -326,53 +326,5 @@ var _ = Describe("HyperconvergedTypes", func() {
 				Expect(fgs.IsHotplugVolumesEnabled()).To(BeTrue())
 			})
 		})
-
-		Context("Test GetFeatureGateList", func() {
-			It("Should create a slice of up-to-date feature gates list", func() {
-				managedFgs := []string{"enabled", "disabled", "missing"}
-				fgList := fgs.GetFeatureGateList(managedFgs)
-
-				By("should include enabled managed FGs", func() {
-					Expect(fgList).To(HaveLen(1))
-					Expect(fgList).To(ContainElement("enabled"))
-				})
-
-				By("should not include disabled managed FGs", func() {
-					Expect(fgList).ToNot(ContainElement("disabled"))
-				})
-
-				By("should not include missing managed FGs", func() {
-					Expect(fgList).ToNot(ContainElement("missing"))
-				})
-			})
-
-			It("Should create empty list if the managed FG list is empty", func() {
-				managedFgs := make([]string, 0)
-				fgList := fgs.GetFeatureGateList(managedFgs)
-
-				By("should include enabled managed FGs", func() {
-					Expect(fgList).To(BeEmpty())
-				})
-			})
-
-			It("Should create empty list if the managed FG list is nil", func() {
-				var managedFgs []string = nil
-				fgList := fgs.GetFeatureGateList(managedFgs)
-
-				By("should create empty list", func() {
-					Expect(fgList).To(BeEmpty())
-				})
-			})
-
-			It("Should create empty list if the HyperConvergedFeatureGates is empty", func() {
-				fgs := HyperConvergedFeatureGates{}
-				managedFgs := []string{"fg1", "fg2", "fg3"}
-				fgList := fgs.GetFeatureGateList(managedFgs)
-
-				By("should create empty list", func() {
-					Expect(fgList).To(BeEmpty())
-				})
-			})
-		})
 	})
 })
