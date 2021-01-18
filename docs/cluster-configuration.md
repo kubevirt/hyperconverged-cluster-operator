@@ -109,3 +109,27 @@ tolerations.
           value: "kubevirt"
           effect: "NoSchedule"
   ```
+
+## FeatureGates
+The `featureGates` field is an optional set of optional boolean feature enabler. The features in this list are advanced 
+or new features that are not enabled by default.
+
+To enable a feature, add its name to the `featureGates` list and set it to `true`. Missing or `false` feature gates 
+disables the feature.
+
+### hotplugVolumes Feature Gate
+Set the `hotplugVolumes` feature gate in order to allow attaching a data volume to a running VMI.
+
+### Feature Gates Example
+
+```yaml
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  infra: {}
+  workloads: {}
+  featureGates:
+    hotplugVolumes: true
+```
