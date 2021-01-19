@@ -2,7 +2,7 @@ FROM golang:1.15.2 AS builder
 
 WORKDIR /go/src/github.com/kubevirt/hyperconverged-cluster-operator/
 COPY . .
-RUN make build
+RUN make build-operator build-csv-merger build-functest
 
 FROM registry.access.redhat.com/ubi8/ubi-minimal
 ENV OPERATOR=/usr/local/bin/hyperconverged-cluster-operator \
