@@ -43,7 +43,7 @@ jobs:
       - name: Send coverage
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CI_BRANCH: master
+          GITHUB_REF: master
         run: goveralls -v -coverprofile=./coverprofiles/cover.coverprofile -service=github
 
       - name: Verify the current manifests pass validation
