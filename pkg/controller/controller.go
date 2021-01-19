@@ -15,5 +15,6 @@ func AddToManager(m manager.Manager, ci hcoutil.ClusterInfo) error {
 			return err
 		}
 	}
+
 	return nil
 }
