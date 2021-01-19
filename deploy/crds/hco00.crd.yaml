@@ -214,7 +214,9 @@ spec:
                     description: Support migration for VMs with host-model CPU mode
                     type: boolean
                   withHostPassthroughCPU:
-                    description: Allow migrating a virtual machine with CPU host-passthrough mode. This should be enabled only when the Cluster is homogeneous from CPU HW perspective doc here
+                    description: Allow migrating a virtual machine with CPU host-passthrough
+                      mode. This should be enabled only when the Cluster is homogeneous
+                      from CPU HW perspective doc here
                     type: boolean
                 type: object
               infra:
