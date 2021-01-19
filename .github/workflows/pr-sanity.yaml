@@ -47,7 +47,7 @@ jobs:
           echo "GITHUB_HEAD_REF = ${GITHUB_HEAD_REF}"
           echo "GITHUB_BASE_REF = ${GITHUB_BASE_REF}"
           echo "GITHUB_REF = ${GITHUB_REF}"
-          GITHUB_REF=${GITHUB_BASE_REF} goveralls -v -coverprofile=./coverprofiles/cover.coverprofile -service=github
+          (GITHUB_REF=${GITHUB_BASE_REF} goveralls -v -coverprofile=./coverprofiles/cover.coverprofile -service=github)
 
       - name: Verify the current manifests pass validation
         run: make container-build-operator-courier
