@@ -25,7 +25,7 @@ sanity:
 	./hack/build-manifests.sh
 	git difftool -y --trust-exit-code --extcmd=./hack/diff-csv.sh
 
-build: build-operator build-csv-merger build-webhook
+build: build-operator build-csv-merger build-webhook build-functest
 
 build-operator: $(SOURCES) ## Build binary from source
 	go build -i -ldflags="-s -w" -o _out/hyperconverged-cluster-operator ./cmd/hyperconverged-cluster-operator

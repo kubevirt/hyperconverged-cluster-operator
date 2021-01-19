@@ -7,6 +7,7 @@ RUN make build
 FROM registry.access.redhat.com/ubi8/ubi-minimal
 ENV OPERATOR=/usr/local/bin/hyperconverged-cluster-operator \
     CSV_MERGER=/usr/local/bin/csv-merger \
+    FUNC_TESTS=/usr/local/bin/func-tests.test \
     USER_UID=1001 \
     USER_NAME=hyperconverged-cluster-operator
 
@@ -19,6 +20,8 @@ RUN mkdir -p ${HOME} && \
 
 COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/_out/hyperconverged-cluster-operator $OPERATOR
 COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/_out/csv-merger $CSV_MERGER
+COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests/_out/func-tests.test $FUNC_TESTS
+
 ENTRYPOINT $OPERATOR
 USER ${USER_UID}
 
