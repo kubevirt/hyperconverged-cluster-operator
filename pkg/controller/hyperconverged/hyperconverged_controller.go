@@ -205,7 +205,7 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 		r.operandHandler.Reset()
 	}
 
-	req := common.NewHcoRequest(pRequest, log, r.upgradeMode, hcoTriggered)
+	req := common.NewHcoRequest(ctx, pRequest, log, r.upgradeMode, hcoTriggered)
 	if req.HCOTriggered {
 		req.Logger.Info("Reconciling HyperConverged operator")
 	} else {
