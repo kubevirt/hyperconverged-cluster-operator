@@ -43,11 +43,11 @@ jobs:
       - name: Send coverage
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REF: master
         run: |-
           echo "GITHUB_HEAD_REF = ${GITHUB_HEAD_REF}"
-          echo "GITHUB_BASE_REF = ${GITHUB_HEAD_REF}"
-          goveralls -v -coverprofile=./coverprofiles/cover.coverprofile -service=github
+          echo "GITHUB_BASE_REF = ${GITHUB_BASE_REF}"
+          echo "GITHUB_REF = ${GITHUB_REF}"
+          GITHUB_REF=${GITHUB_BASE_REF} goveralls -v -coverprofile=./coverprofiles/cover.coverprofile -service=github
 
       - name: Verify the current manifests pass validation
         run: make container-build-operator-courier
