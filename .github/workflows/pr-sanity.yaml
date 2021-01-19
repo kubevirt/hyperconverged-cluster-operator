@@ -44,7 +44,7 @@ jobs:
         env:
           COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CI_BRANCH: master
-        run: goveralls -coverprofile=./coverprofiles/cover.coverprofile -service=github
+        run: goveralls -v -coverprofile=./coverprofiles/cover.coverprofile -service=github
 
       - name: Verify the current manifests pass validation
         run: make container-build-operator-courier
