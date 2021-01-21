@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"os"
 	"time"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/commonTestUtils"
@@ -851,6 +852,30 @@ var _ = Describe("HyperconvergedController", func() {
 				expected.ssp.Status.ObservedVersion = newComponentVersion
 
 				expected.hco.Status.Conditions = origConditions
+			})
+
+			It("Should update OperatorCondition Upgradable to False", func() {
+				_ = commonTestUtils.GetScheme() // ensure the scheme is loaded so this test can be focused
+
+				expected := getBasicDeployment()
+
+				// old HCO Version is set
+				expected.hco.Status.UpdateVersion(hcoVersionName, oldVersion)
+				expected.hco.Spec.Version = oldVersion
+
+				cl := expected.initClient()
+				r := initReconciler(cl)
+
+				r.ownVersion = os.Getenv(hcoutil.HcoKvIoVersionName)
+				if r.ownVersion == "" {
+					r.ownVersion = version.Version
+				}
+
+				_, err := r.Reconcile(context.TODO(), request)
+				Expect(err).To(BeNil())
+
+				condStub := r.upgradableCondition.(*stubCondition)
+				Expect(condStub.calls).To(Equal([]metav1.ConditionStatus{metav1.ConditionFalse}))
 			})
 
 			It("Should update HCO Version Id in the CR on init", func() {

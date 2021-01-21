@@ -14,6 +14,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/version"
 	vmimportv1beta1 "github.com/kubevirt/vm-import-operator/pkg/apis/v2v/v1beta1"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
+	"github.com/operator-framework/operator-lib/conditions"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
@@ -47,13 +48,24 @@ func initReconciler(client client.Client) *ReconcileHyperConverged {
 	operandHandler := operands.NewOperandHandler(client, s, true, &commonTestUtils.EventEmitterMock{})
 	// Create a ReconcileHyperConverged object with the scheme and fake client
 	return &ReconcileHyperConverged{
-		client:             client,
-		scheme:             s,
-		operandHandler:     operandHandler,
-		eventEmitter:       &commonTestUtils.EventEmitterMock{},
-		cliDownloadHandler: &operands.CLIDownloadHandler{Client: client, Scheme: s},
-		firstLoop:          true,
+		client:              client,
+		scheme:              s,
+		operandHandler:      operandHandler,
+		eventEmitter:        &commonTestUtils.EventEmitterMock{},
+		cliDownloadHandler:  &operands.CLIDownloadHandler{Client: client, Scheme: s},
+		firstLoop:           true,
+		upgradableCondition: &stubCondition{},
 	}
+}
+
+type stubCondition struct {
+	calls []metav1.ConditionStatus
+}
+
+func (nc *stubCondition) Set(
+	ctx context.Context, status metav1.ConditionStatus, option ...conditions.Option) error {
+	nc.calls = append(nc.calls, status)
+	return nil
 }
 
 type BasicExpected struct {

@@ -32,6 +32,7 @@ import (
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	version "github.com/kubevirt/hyperconverged-cluster-operator/version"
 	vmimportv1beta1 "github.com/kubevirt/vm-import-operator/pkg/apis/v2v/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubevirtv1 "kubevirt.io/client-go/api/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer/pkg/apis/core/v1beta1"
 	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
@@ -60,6 +61,7 @@ const (
 	commonProgressingReason     = "HCOProgressing"
 	taintedConfigurationReason  = "UnsupportedFeatureAnnotation"
 	taintedConfigurationMessage = "Unsupported feature was activated via an HCO annotation"
+	olmUpgradableConditionType  = "Upgradable"
 
 	hcoVersionName    = "operator"
 	secondaryCRPrefix = "hco-controlled-cr-"
@@ -75,12 +77,12 @@ var JSONPatchAnnotationNames = []string{
 
 // Add creates a new HyperConverged Controller and adds it to the Manager. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
-func Add(mgr manager.Manager, ci hcoutil.ClusterInfo) error {
-	return add(mgr, newReconciler(mgr, ci), ci)
+func Add(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradableCond hcoutil.Condition) error {
+	return add(mgr, newReconciler(mgr, ci, upgradableCond), ci)
 }
 
 // newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo) reconcile.Reconciler {
+func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradableCond hcoutil.Condition) reconcile.Reconciler {
 
 	ownVersion := os.Getenv(hcoutil.HcoKvIoVersionName)
 	if ownVersion == "" {
@@ -167,15 +169,16 @@ var _ reconcile.Reconciler = &ReconcileHyperConverged{}
 type ReconcileHyperConverged struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client             client.Client
-	scheme             *runtime.Scheme
-	recorder           record.EventRecorder
-	cliDownloadHandler *operands.CLIDownloadHandler
-	operandHandler     *operands.OperandHandler
-	upgradeMode        bool
-	ownVersion         string
-	eventEmitter       hcoutil.EventEmitter
-	firstLoop          bool
+	client              client.Client
+	scheme              *runtime.Scheme
+	recorder            record.EventRecorder
+	cliDownloadHandler  *operands.CLIDownloadHandler
+	operandHandler      *operands.OperandHandler
+	upgradeMode         bool
+	ownVersion          string
+	eventEmitter        hcoutil.EventEmitter
+	firstLoop           bool
+	upgradableCondition hcoutil.Condition
 }
 
 // Reconcile reads that state of the cluster for a HyperConverged object and makes changes based on the state read
@@ -305,6 +308,11 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 	knownHcoVersion, _ := req.Instance.Status.GetVersion(hcoVersionName)
 
 	if !r.upgradeMode && !init && knownHcoVersion != r.ownVersion {
+		// Ensure OLM is not interfering while we are upgrading components.
+		if err := r.disableOLMUpgrades(req); err != nil {
+			return reconcile.Result{}, err
+		}
+
 		r.upgradeMode = true
 		r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "UpgradeHCO", "Upgrading the HyperConverged to version "+r.ownVersion)
 		req.Logger.Info(fmt.Sprintf("Start upgrading from version %s to version %s", knownHcoVersion, r.ownVersion))
@@ -331,6 +339,9 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 
 	r.completeReconciliation(req)
 
+	if err := r.enableOLMUpgrades(req); err != nil {
+		return reconcile.Result{}, err
+	}
 	return reconcile.Result{}, nil
 }
 
@@ -842,6 +853,25 @@ func (r *ReconcileHyperConverged) recoverHCOVersion(request *common.HcoRequest) 
 		request.Instance.Spec.Version = r.ownVersion
 		request.Dirty = true
 	}
+}
+
+// disableOLMUpgrades disallows OLM to upgrade this operator by setting the upgradable condition to False.
+func (r *ReconcileHyperConverged) disableOLMUpgrades(request *common.HcoRequest) error {
+	if err := r.upgradableCondition.Set(request.Ctx, metav1.ConditionFalse); err != nil {
+		return err
+	}
+	return nil
+}
+
+// enableOLMUpgrades allows OLM to upgrade this operator by setting the upgradable condition to True.
+func (r *ReconcileHyperConverged) enableOLMUpgrades(request *common.HcoRequest) error {
+	if !request.UpgradeMode {
+		// Ensure OLM is "unblocked" when stepping out of upgrade mode.
+		if err := r.upgradableCondition.Set(request.Ctx, metav1.ConditionTrue); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // getHyperConvergedNamespacedName returns the name/namespace of the HyperConverged resource

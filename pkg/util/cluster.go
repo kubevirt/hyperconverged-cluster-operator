@@ -35,7 +35,8 @@ func GetClusterInfo() ClusterInfo {
 	return clusterInfo
 }
 
-const operatorConditionNameEnvVar = "OPERATOR_CONDITION_NAME"
+// This Env var is set by OLM, so the Operator can discover it's OperatorCondition.
+const OperatorConditionNameEnvVar = "OPERATOR_CONDITION_NAME"
 
 func (c *ClusterInfoImp) Init(ctx context.Context, creader client.Reader, logger logr.Logger, runningLocally bool) error {
 	c.checkManagedByOLM()
@@ -43,9 +44,8 @@ func (c *ClusterInfoImp) Init(ctx context.Context, creader client.Reader, logger
 }
 
 func (c *ClusterInfoImp) checkManagedByOLM() {
-	// This Env var is set by OLM, so the Operator can discover it's OperatorCondition.
 	// We assume that this Operator is managed by OLM when this variable is present.
-	_, c.managedByOLM = os.LookupEnv(operatorConditionNameEnvVar)
+	_, c.managedByOLM = os.LookupEnv(OperatorConditionNameEnvVar)
 }
 
 func (c *ClusterInfoImp) checkRunningInOpenshift(ctx context.Context, creader client.Reader, logger logr.Logger, runningLocally bool) error {

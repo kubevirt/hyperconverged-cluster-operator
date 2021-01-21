@@ -9,6 +9,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/operands"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -27,7 +28,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer/pkg/apis/core/v1beta1"
 	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
@@ -84,6 +87,29 @@ func main() {
 	err = ci.Init(ctx, mgr.GetAPIReader(), logger, cmdHelper.IsRunInLocal())
 	cmdHelper.ExitOnError(err, "Cannot detect cluster type")
 
+	// Force OperatorCondition Upgradable to False
+	//
+	// We have to at least default the condition to False or
+	// OLM will use the Readiness condition via our readiness probe instead:
+	// https://olm.operatorframework.io/docs/advanced-tasks/communicating-operator-conditions-to-olm/#setting-defaults
+	//
+	// We want to force it to False to ensure that the final decision about whether
+	// the operator can be upgraded stays within the hyperconverged controller.
+	logger.Info("Setting OperatorCondition.")
+	upgradableCondition, err := hcoutil.NewOperatorCondition(ci, mgr.GetClient(), hcoutil.UpgradableCondition)
+	cmdHelper.ExitOnError(err, "Cannot create Upgradable OperatorCondition")
+
+	err = wait.ExponentialBackoff(retry.DefaultRetry, func() (bool, error) {
+		err := upgradableCondition.Set(ctx, metav1.ConditionFalse)
+		if err != nil {
+			logger.Error(err, "Setting OperatorCondition.")
+		}
+		return err == nil, nil
+	})
+	cmdHelper.ExitOnError(err, "Cannot set OperatorCondition")
+
+	logger.Info("Registering Components.")
+
 	eventEmitter := hcoutil.GetEventEmitter()
 	// Set temporary configuration, until the regular client is ready
 	eventEmitter.Init(ctx, mgr, ci, logger)
@@ -97,7 +123,7 @@ func main() {
 	cmdHelper.ExitOnError(err, "unable to add ready check")
 
 	// Setup all Controllers
-	if err := controller.AddToManager(mgr, ci); err != nil {
+	if err := controller.AddToManager(mgr, ci, upgradableCondition); err != nil {
 		logger.Error(err, "")
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register component; "+err.Error())
 		os.Exit(1)
