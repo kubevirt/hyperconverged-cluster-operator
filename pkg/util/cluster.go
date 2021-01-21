@@ -2,6 +2,7 @@ package util
 
 import (
 	"context"
+	"os"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -14,13 +15,17 @@ import (
 )
 
 type ClusterInfo interface {
-	CheckRunningInOpenshift(creader client.Reader, ctx context.Context, logger logr.Logger, runningLocally bool) error
+	Init(ctx context.Context, creader client.Reader, logger logr.Logger, runningLocally bool) error
 	IsOpenshift() bool
 	IsRunningLocally() bool
+	IsManagedByOLM() bool
 }
+
+var _ ClusterInfo = (*ClusterInfoImp)(nil)
 
 type ClusterInfoImp struct {
 	runningInOpenshift bool
+	managedByOLM       bool
 	runningLocally     bool
 }
 
@@ -30,7 +35,20 @@ func GetClusterInfo() ClusterInfo {
 	return clusterInfo
 }
 
-func (c *ClusterInfoImp) CheckRunningInOpenshift(creader client.Reader, ctx context.Context, logger logr.Logger, runningLocally bool) error {
+const operatorConditionNameEnvVar = "OPERATOR_CONDITION_NAME"
+
+func (c *ClusterInfoImp) Init(ctx context.Context, creader client.Reader, logger logr.Logger, runningLocally bool) error {
+	c.checkManagedByOLM()
+	return c.checkRunningInOpenshift(ctx, creader, logger, runningLocally)
+}
+
+func (c *ClusterInfoImp) checkManagedByOLM() {
+	// This Env var is set by OLM, so the Operator can discover it's OperatorCondition.
+	// We assume that this Operator is managed by OLM when this variable is present.
+	_, c.managedByOLM = os.LookupEnv(operatorConditionNameEnvVar)
+}
+
+func (c *ClusterInfoImp) checkRunningInOpenshift(ctx context.Context, creader client.Reader, logger logr.Logger, runningLocally bool) error {
 	c.runningLocally = runningLocally
 	isOpenShift := false
 	version := ""
@@ -68,6 +86,10 @@ func (c ClusterInfoImp) IsOpenshift() bool {
 }
 
 func (c ClusterInfoImp) IsRunningLocally() bool {
+	return c.runningLocally
+}
+
+func (c ClusterInfoImp) IsManagedByOLM() bool {
 	return c.runningLocally
 }
 

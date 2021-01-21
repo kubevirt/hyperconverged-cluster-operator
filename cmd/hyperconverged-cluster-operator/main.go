@@ -81,7 +81,7 @@ func main() {
 	// Detect OpenShift version
 	ctx := context.TODO()
 	ci := hcoutil.GetClusterInfo()
-	err = ci.CheckRunningInOpenshift(mgr.GetAPIReader(), ctx, logger, cmdHelper.IsRunInLocal())
+	err = ci.Init(ctx, mgr.GetAPIReader(), logger, cmdHelper.IsRunInLocal())
 	cmdHelper.ExitOnError(err, "Cannot detect cluster type")
 
 	eventEmitter := hcoutil.GetEventEmitter()
