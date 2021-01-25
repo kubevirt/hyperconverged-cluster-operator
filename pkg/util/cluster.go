@@ -22,12 +22,13 @@ type ClusterInfo interface {
 type ClusterInfoImp struct {
 	runningInOpenshift bool
 	runningLocally     bool
+	fake_field         bool
 }
 
-var clusterInfo ClusterInfo
+var cluster_info ClusterInfo
 
 func GetClusterInfo() ClusterInfo {
-	return clusterInfo
+	return cluster_info
 }
 
 func (c *ClusterInfoImp) CheckRunningInOpenshift(creader client.Reader, ctx context.Context, logger logr.Logger, runningLocally bool) error {
@@ -86,7 +87,7 @@ func (c ClusterInfoImp) findApi(apis []*metav1.APIResourceList, resourceName str
 }
 
 func init() {
-	clusterInfo = &ClusterInfoImp{
+	cluster_info = &ClusterInfoImp{
 		runningInOpenshift: false,
 	}
 }

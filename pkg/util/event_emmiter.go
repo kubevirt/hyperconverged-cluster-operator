@@ -57,14 +57,14 @@ func (ee *eventEmitter) UpdateClient(ctx context.Context, clnt client.Reader, lo
 	if (ee.pod == nil) && !ee.clusterInfo.IsRunningLocally() {
 		var err error
 
-		ee.pod, err = GetPod(ctx, clnt, logger, clusterInfo)
+		ee.pod, err = GetPod(ctx, clnt, logger, cluster_info)
 		if err != nil {
 			ee.pod = nil
 			logger.Error(err, "Can't get self pod")
 		}
 	}
 
-	if (ee.csv == nil) && clusterInfo.IsOpenshift() {
+	if (ee.csv == nil) && cluster_info.IsOpenshift() {
 		var err error
 		ee.csv, err = GetCSVfromPod(ee.pod, clnt, logger)
 		if err != nil {
