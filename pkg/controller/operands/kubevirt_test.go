@@ -896,6 +896,7 @@ var _ = Describe("KubeVirt Operand", func() {
 						HotplugVolumes:         &disabled,
 						WithHostPassthroughCPU: &disabled,
 						WithHostModelCPU:       &disabled,
+						HypervStrictCheck:      &disabled,
 					}
 
 					existingResource, err := NewKubeVirt(hco)
@@ -1550,16 +1551,28 @@ var _ = Describe("KubeVirt Operand", func() {
 			Expect(fgList[0]).Should(Equal(SRIOVLiveMigrationGate))
 		})
 
+		It("Should create a slice if HypervStrictCheck gate is enabled", func() {
+			enabled := true
+			fgs := &hcov1beta1.HyperConvergedFeatureGates{
+				HypervStrictCheck: &enabled,
+			}
+			fgList := getKvFeatureGateList(fgs)
+			Expect(fgList).To(HaveLen(1))
+			Expect(fgList[0]).Should(Equal(kvHypervStrictCheck))
+		})
+
 		It("Should create a slice when all gates are enabled", func() {
 			enabled := true
 			fgs := &hcov1beta1.HyperConvergedFeatureGates{
 				HotplugVolumes:         &enabled,
 				WithHostPassthroughCPU: &enabled,
 				WithHostModelCPU:       &enabled,
+				HypervStrictCheck:      &enabled,
+				SRIOVLiveMigration:     &enabled,
 			}
 			fgList := getKvFeatureGateList(fgs)
-			Expect(fgList).To(HaveLen(3))
-			Expect(fgList).Should(ContainElements(HotplugVolumesGate, kvWithHostPassthroughCPU, kvWithHostModelCPU))
+			Expect(fgList).To(HaveLen(5))
+			Expect(fgList).Should(ContainElements(HotplugVolumesGate, kvWithHostPassthroughCPU, kvWithHostModelCPU, kvHypervStrictCheck, SRIOVLiveMigrationGate))
 		})
 
 		It("Should create a slice when part of gates are enabled", func() {
@@ -1569,11 +1582,13 @@ var _ = Describe("KubeVirt Operand", func() {
 				HotplugVolumes:         &enabled,
 				WithHostPassthroughCPU: &disabled,
 				WithHostModelCPU:       &enabled,
+				HypervStrictCheck:      &disabled,
+				SRIOVLiveMigration:     &enabled,
 			}
 			fgList := getKvFeatureGateList(fgs)
-			Expect(fgList).To(HaveLen(2))
-			Expect(fgList).Should(ContainElements(HotplugVolumesGate, kvWithHostModelCPU))
-			Expect(fgList).ShouldNot(ContainElements(kvWithHostPassthroughCPU))
+			Expect(fgList).To(HaveLen(3))
+			Expect(fgList).Should(ContainElements(HotplugVolumesGate, kvWithHostModelCPU, SRIOVLiveMigrationGate))
+			Expect(fgList).ShouldNot(ContainElements(kvWithHostPassthroughCPU, kvHypervStrictCheck))
 		})
 	})
 })

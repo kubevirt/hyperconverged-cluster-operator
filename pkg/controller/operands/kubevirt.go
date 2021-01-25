@@ -45,6 +45,7 @@ const (
 	// ToDo: remove these and use KV's virtconfig constants when available
 	kvWithHostPassthroughCPU = "WithHostPassthroughCPU"
 	kvWithHostModelCPU       = "WithHostModelCPU"
+	kvHypervStrictCheck      = "HypervStrictCheck"
 )
 
 // ************  KubeVirt Handler  **************
@@ -317,6 +318,11 @@ func filterOutDisabledFeatureGates(req *common.HcoRequest, foundFgSplit []string
 				fgChanged = true
 				continue
 			}
+		case kvHypervStrictCheck:
+			if !req.Instance.Spec.FeatureGates.IsHypervStrictCheckEnabled() {
+				fgChanged = true
+				continue
+			}
 		}
 		resultFg = append(resultFg, fg)
 	}
@@ -526,6 +532,10 @@ func getKvFeatureGateList(fgs *hcov1beta1.HyperConvergedFeatureGates) []string {
 
 	if fgs.IsSRIOVLiveMigrationEnabled() {
 		res = append(res, SRIOVLiveMigrationGate)
+	}
+
+	if fgs.IsHypervStrictCheckEnabled() {
+		res = append(res, kvHypervStrictCheck)
 	}
 
 	return res
