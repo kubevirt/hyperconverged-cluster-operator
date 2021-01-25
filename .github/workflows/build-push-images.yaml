@@ -18,12 +18,12 @@ jobs:
       - name: Checkout the latest code
         uses: actions/checkout@v2
         with:
-          ref: master
+          ref: ${{ github.ref }}
       - name: Get latest version
         run: |
           PACKAGE_DIR="./deploy/olm-catalog/kubevirt-hyperconverged"
           CSV_VERSION=$(ls -d ${PACKAGE_DIR}/*/ | sort -rV | awk "NR==$((RELEASE_DELTA+1))" | cut -d '/' -f 5)
-          echo "CSV_VERSION=${CSV_VERSION}" >> $GITHUB_ENV
+          echo "CSV_VERSION=${CSV_VERSION}-unstable" >> $GITHUB_ENV
       - name: Build Applications Images
         run: |
           export IMAGE_TAG=${{ env.CSV_VERSION }}
@@ -33,7 +33,9 @@ jobs:
           export IMAGE_TAG=${{ env.CSV_VERSION }}
           make container-push
       - name: Run Digester to update digests of application images
-        run: ./automation/digester/update_images.sh
+        run: |
+          export HCO_VERSION=${{ env.CSV_VERSION }}
+          ./automation/digester/update_images.sh
       - name: Build Manifests with unique CSV semver
         run: ./hack/build-manifests.sh UNIQUE
       - name: Get opm client
@@ -43,4 +45,4 @@ jobs:
       - name: Build and Push the Index Image
         run: |
           export OPM=$(pwd)/linux-amd64-opm
-          ./hack/build-index-image.sh LATEST
+          ./hack/build-index-image.sh ${{ env.CSV_VERSION }} UNSTABLE
