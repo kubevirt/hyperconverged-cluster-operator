@@ -129,57 +129,78 @@ func checkCrdExists(ctx context.Context, Client client.Client, logger log.Logger
 
 func getQuickStartHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]Operand, error) {
 	crdExists, err := checkCrdExists(context.TODO(), Client, logger)
-	if err != nil {
+	if !crdExists {
 		return nil, err
-	} else if !crdExists {
-		return nil, nil
 	}
 
+	filesLocation := getQuickstartDirPath()
+
+	valid, err := validateQuickstartDir(filesLocation)
+	if !valid {
+		return nil, err
+	}
+
+	return createQuickstartHandlersFromFiles(logger, Client, Scheme, hc, filesLocation)
+}
+
+func getQuickstartDirPath() string {
 	filesLocation := os.Getenv(manifestLocationVarName)
 	if filesLocation == "" {
-		filesLocation = defaultManifestLocation
+		return defaultManifestLocation
 	}
 
+	return filesLocation
+}
+
+func validateQuickstartDir(filesLocation string) (bool, error) {
 	info, err := os.Stat(filesLocation)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
+		if os.IsNotExist(err) { // don't return error if there is no quickstart dir, just ignore it
+			return false, nil
 		}
-		return nil, err
+		return false, err
 	}
 
 	if !info.IsDir() {
-		return nil, nil
+		return false, nil
 	}
+	return true, nil
+}
 
+func createQuickstartHandlersFromFiles(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, filesLocation string) ([]Operand, error) {
 	var handlers []Operand
-	err = filepath.Walk(filesLocation, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(filesLocation, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if !info.IsDir() && strings.HasSuffix(info.Name(), ".yaml") {
-			file, err := os.Open(path)
-			if err != nil {
-				return err
-			}
-
-			qs, err := yamlToQuickStart(file)
-			if err != nil {
-				logger.Info("Can't generate a ConsoleQuickStart object from yaml file", "file name", path)
-			} else {
-				qs.Labels = getLabels(hc, util.AppComponentCompute)
-				handlers = append(handlers, newQuickStartHandler(Client, Scheme, qs))
-			}
+		qs := processQuickstartFile(path, info, logger, hc, Client, Scheme)
+		if qs != nil {
+			handlers = append(handlers, qs)
 		}
+
 		return nil
 	})
+	return handlers, err
+}
 
-	if err != nil {
-		return nil, err
+func processQuickstartFile(path string, info os.FileInfo, logger log.Logger, hc *hcov1beta1.HyperConverged, Client client.Client, Scheme *runtime.Scheme) Operand {
+	if !info.IsDir() && strings.HasSuffix(info.Name(), ".yaml") {
+		file, err := os.Open(path)
+		if err != nil {
+			logger.Error(err, "Can't open the quickStart yaml file", "file name", path)
+			return nil
+		}
+
+		qs, err := yamlToQuickStart(file)
+		if err != nil {
+			logger.Error(err, "Can't generate a ConsoleQuickStart object from yaml file", "file name", path)
+		} else {
+			qs.Labels = getLabels(hc, util.AppComponentCompute)
+			return newQuickStartHandler(Client, Scheme, qs)
+		}
 	}
-
-	return handlers, nil
+	return nil
 }
 
 func yamlToQuickStart(file io.Reader) (*consolev1.ConsoleQuickStart, error) {
