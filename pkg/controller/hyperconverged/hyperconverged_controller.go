@@ -184,33 +184,26 @@ type ReconcileHyperConverged struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
-
-	secCRPlaceholder, err := getSecondaryCRPlaceholder()
+	hcoTriggered, err := isTriggeredByHyperConverged(request)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	hcoTriggered := true
-	pRequest := request
-	if request.NamespacedName == secCRPlaceholder {
-		hcoTriggered = false
-		hco, err := getHyperconverged()
+	reconcileRequest := request
+	if hcoTriggered {
+		log.Info("Reconciling HyperConverged operator")
+
+		r.operandHandler.Reset()
+	} else {
+		log.Info("The reconciliation got triggered by a secondary CR object")
+
+		reconcileRequest, err = getHyperconvergedReconcileRequest()
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-		pRequest = reconcile.Request{
-			NamespacedName: hco,
-		}
-	} else {
-		r.operandHandler.Reset()
 	}
 
-	req := common.NewHcoRequest(ctx, pRequest, log, r.upgradeMode, hcoTriggered)
-	if req.HCOTriggered {
-		req.Logger.Info("Reconciling HyperConverged operator")
-	} else {
-		req.Logger.Info("The reconciliation got triggered by a secondary CR object")
-	}
+	req := common.NewHcoRequest(ctx, reconcileRequest, log, r.upgradeMode, hcoTriggered)
 
 	// Fetch the HyperConverged instance
 	instance, err := r.getHcoInstanceFromK8s(req)
@@ -235,48 +228,7 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 		r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeWarning, "ReconcileError", err.Error())
 	}
 
-	/*
-		From K8s API reference: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/
-		============================================================================================================
-		Replace: Replacing a resource object will update the resource by replacing the existing spec with the
-		provided one. For read-then-write operations this is safe because an optimistic lock failure will occur if
-		the resource was modified between the read and write.
-
-		**Note: The ResourceStatus will be ignored by the system and will not be updated. To update the status, one
-		must invoke the specific status update operation.**
-		============================================================================================================
-
-		In addition, updating the status should not update the metadata, so we need to update both the CR and the
-		CR Status, and we need to update the status first, in order to prevent a conflict.
-	*/
-
-	if req.StatusDirty {
-		updateErr := r.client.Status().Update(req.Ctx, req.Instance)
-		if updateErr != nil {
-			updateErrorMsg := "Failed to update HCO Status"
-			r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeWarning, "HcoUpdateError", updateErrorMsg)
-			req.Logger.Error(updateErr, updateErrorMsg)
-			err = updateErr
-		}
-	}
-
-	// recover Spec.Version if upgrade missed when upgrade completed
-	// Doing it here because status.update overrides spec for some reason
-	knownHcoVersion, versionFound := req.Instance.Status.GetVersion(hcoVersionName)
-	if (!r.upgradeMode) && versionFound && (knownHcoVersion == r.ownVersion) && (req.Instance.Spec.Version != r.ownVersion) {
-		req.Instance.Spec.Version = r.ownVersion
-		req.Dirty = true
-	}
-
-	if req.Dirty {
-		updateErr := r.client.Update(req.Ctx, req.Instance)
-		if updateErr != nil {
-			updateErrorMsg := "Failed to update HCO CR"
-			r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeWarning, "HcoUpdateError", updateErrorMsg)
-			req.Logger.Error(updateErr, updateErrorMsg)
-			err = updateErr
-		}
-	}
+	err = r.updateHyperConverged(req)
 
 	if apierrors.IsConflict(err) {
 		res.Requeue = true
@@ -379,7 +331,7 @@ func (r *ReconcileHyperConverged) getHcoInstanceFromK8s(req *common.HcoRequest) 
 }
 
 func (r *ReconcileHyperConverged) validateNamespace(req *common.HcoRequest) (bool, error) {
-	hco, err := getHyperconverged()
+	hco, err := getHyperConverged()
 	if err != nil {
 		req.Logger.Error(err, "Failed to get HyperConverged namespaced name")
 		return false, err
@@ -790,8 +742,57 @@ func (r *ReconcileHyperConverged) detectTaintedConfiguration(req *common.HcoRequ
 	}
 }
 
-// getHyperconverged returns the name/namespace of the HyperConverged resource
-func getHyperconverged() (types.NamespacedName, error) {
+func (r *ReconcileHyperConverged) updateHyperConverged(req *common.HcoRequest) error {
+	/*
+		From K8s API reference: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/
+		============================================================================================================
+		Replace: Replacing a resource object will update the resource by replacing the existing spec with the
+		provided one. For read-then-write operations this is safe because an optimistic lock failure will occur if
+		the resource was modified between the read and write.
+
+		**Note: The ResourceStatus will be ignored by the system and will not be updated. To update the status, one
+		must invoke the specific status update operation.**
+		============================================================================================================
+
+		In addition, updating the status should not update the metadata, so we need to update both the CR and the
+		CR Status, and we need to update the status first, in order to prevent a conflict.
+	*/
+
+	var err error
+
+	if req.StatusDirty {
+		updateErr := r.client.Status().Update(req.Ctx, req.Instance)
+		if updateErr != nil {
+			updateErrorMsg := "Failed to update HCO Status"
+			r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeWarning, "HcoUpdateError", updateErrorMsg)
+			req.Logger.Error(updateErr, updateErrorMsg)
+			err = updateErr
+		}
+	}
+
+	// recover Spec.Version if upgrade missed when upgrade completed
+	// Doing it here because status.update overrides spec for some reason
+	knownHcoVersion, versionFound := req.Instance.Status.GetVersion(hcoVersionName)
+	if (!r.upgradeMode) && versionFound && (knownHcoVersion == r.ownVersion) && (req.Instance.Spec.Version != r.ownVersion) {
+		req.Instance.Spec.Version = r.ownVersion
+		req.Dirty = true
+	}
+
+	if req.Dirty {
+		updateErr := r.client.Update(req.Ctx, req.Instance)
+		if updateErr != nil {
+			updateErrorMsg := "Failed to update HCO CR"
+			r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeWarning, "HcoUpdateError", updateErrorMsg)
+			req.Logger.Error(updateErr, updateErrorMsg)
+			err = updateErr
+		}
+	}
+
+	return err
+}
+
+// getHyperConverged returns the name/namespace of the HyperConverged resource
+func getHyperConverged() (types.NamespacedName, error) {
 	hco := types.NamespacedName{
 		Name: hcoutil.HyperConvergedName,
 	}
@@ -805,7 +806,20 @@ func getHyperconverged() (types.NamespacedName, error) {
 	return hco, nil
 }
 
-// getOtherCrPlaceholder returns a placeholder to be able to discriminate
+// getHyperconvergedReconcileRequest returns the HyperConverged resource's
+// name/namespace wrapped in a reconcile.Request
+func getHyperconvergedReconcileRequest() (reconcile.Request, error) {
+	hco, err := getHyperConverged()
+	if err != nil {
+		return reconcile.Request{}, err
+	}
+
+	return reconcile.Request{
+		NamespacedName: hco,
+	}, nil
+}
+
+// getSecondaryCRPlaceholder returns a placeholder to be able to discriminate
 // reconciliation requests triggered by secondary watched resources
 // use a random generated suffix for security reasons
 func getSecondaryCRPlaceholder() (types.NamespacedName, error) {
@@ -820,6 +834,18 @@ func getSecondaryCRPlaceholder() (types.NamespacedName, error) {
 	hco.Namespace = namespace
 
 	return hco, nil
+}
+
+// isTriggeredByHyperConverged determines whether the reconciliation request has been triggered
+// by a change to the HyperConvereged CR, or a change to one of its secondary watches resources
+func isTriggeredByHyperConverged(request reconcile.Request) (bool, error) {
+	placeholder, err := getSecondaryCRPlaceholder()
+	if err != nil {
+		return false, err
+	}
+
+	isSecondary := request.NamespacedName == placeholder
+	return !isSecondary, nil
 }
 
 func contains(slice []string, s string) bool {
