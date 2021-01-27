@@ -3,6 +3,7 @@ package operands
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -106,7 +107,7 @@ func (h qsHooks) updateCr(req *common.HcoRequest, Client client.Client, exists r
 	return false, false, nil
 }
 
-func checkCrdExists(ctx context.Context, Client client.Client, logger log.Logger) (bool, error) {
+func checkCrdExists(ctx context.Context, Client client.Client, logger log.Logger) error {
 	qsCrd := &extv1.CustomResourceDefinition{
 		TypeMeta: metav1.TypeMeta{
 			Kind: customResourceDefinitionName,
@@ -119,25 +120,25 @@ func checkCrdExists(ctx context.Context, Client client.Client, logger log.Logger
 	logger.Info("Read the ConsoleQuickStart CRD")
 	if err := Client.Get(ctx, client.ObjectKeyFromObject(qsCrd), qsCrd); err != nil {
 		if apierrors.IsNotFound(err) {
-			return false, nil
+			return newProcessingError(nil)
 		}
-		return false, err
+		return newProcessingError(err)
 	}
 
-	return true, nil
+	return nil
 }
 
 func getQuickStartHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]Operand, error) {
-	crdExists, err := checkCrdExists(context.TODO(), Client, logger)
-	if !crdExists {
-		return nil, err
+	err := checkCrdExists(context.TODO(), Client, logger)
+	if err != nil {
+		return nil, errors.Unwrap(err)
 	}
 
 	filesLocation := getQuickstartDirPath()
 
-	valid, err := validateQuickstartDir(filesLocation)
-	if !valid {
-		return nil, err
+	err = validateQuickstartDir(filesLocation)
+	if err != nil {
+		return nil, errors.Unwrap(err) // if not wrapped, then it's not an error that stops processing, and it return nil
 	}
 
 	return createQuickstartHandlersFromFiles(logger, Client, Scheme, hc, filesLocation)
@@ -152,19 +153,19 @@ func getQuickstartDirPath() string {
 	return filesLocation
 }
 
-func validateQuickstartDir(filesLocation string) (bool, error) {
+func validateQuickstartDir(filesLocation string) error {
 	info, err := os.Stat(filesLocation)
 	if err != nil {
 		if os.IsNotExist(err) { // don't return error if there is no quickstart dir, just ignore it
-			return false, nil
+			return newProcessingError(nil) // return error, but don't stop processing
 		}
-		return false, err
+		return newProcessingError(err)
 	}
 
 	if !info.IsDir() {
-		return false, nil
+		return newProcessingError(nil) // return error, but don't stop processing
 	}
-	return true, nil
+	return nil
 }
 
 func createQuickstartHandlersFromFiles(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, filesLocation string) ([]Operand, error) {
@@ -174,22 +175,27 @@ func createQuickstartHandlersFromFiles(logger log.Logger, Client client.Client, 
 			return err
 		}
 
-		qs := processQuickstartFile(path, info, logger, hc, Client, Scheme)
+		qs, err := processQuickstartFile(path, info, logger, hc, Client, Scheme)
+		if err != nil {
+			return err
+		}
+
 		if qs != nil {
 			handlers = append(handlers, qs)
 		}
 
 		return nil
 	})
+
 	return handlers, err
 }
 
-func processQuickstartFile(path string, info os.FileInfo, logger log.Logger, hc *hcov1beta1.HyperConverged, Client client.Client, Scheme *runtime.Scheme) Operand {
+func processQuickstartFile(path string, info os.FileInfo, logger log.Logger, hc *hcov1beta1.HyperConverged, Client client.Client, Scheme *runtime.Scheme) (Operand, error) {
 	if !info.IsDir() && strings.HasSuffix(info.Name(), ".yaml") {
 		file, err := os.Open(path)
 		if err != nil {
 			logger.Error(err, "Can't open the quickStart yaml file", "file name", path)
-			return nil
+			return nil, err
 		}
 
 		qs, err := yamlToQuickStart(file)
@@ -197,10 +203,10 @@ func processQuickstartFile(path string, info os.FileInfo, logger log.Logger, hc 
 			logger.Error(err, "Can't generate a ConsoleQuickStart object from yaml file", "file name", path)
 		} else {
 			qs.Labels = getLabels(hc, util.AppComponentCompute)
-			return newQuickStartHandler(Client, Scheme, qs)
+			return newQuickStartHandler(Client, Scheme, qs), nil
 		}
 	}
-	return nil
+	return nil, nil
 }
 
 func yamlToQuickStart(file io.Reader) (*consolev1.ConsoleQuickStart, error) {
@@ -216,4 +222,11 @@ func yamlToQuickStart(file io.Reader) (*consolev1.ConsoleQuickStart, error) {
 	}
 
 	return qs, nil
+}
+
+// wrap an error if we want to actually stop processing by the error.
+// unwrapping it will return the original error.
+// unwrapping a regular error will return nil
+func newProcessingError(err error) error {
+	return fmt.Errorf("%w", err)
 }

@@ -2,6 +2,7 @@ package operands
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -27,20 +28,19 @@ var _ = Describe("QuickStart tests", func() {
 	)
 
 	Context("test checkCrdExists", func() {
-		It("should return false if not exists, with no error", func() {
+		It("should return not-stop-processing if not exists", func() {
 			cli := commonTestUtils.InitClient([]runtime.Object{})
 
-			supported, err := checkCrdExists(context.TODO(), cli, logger)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(supported).To(BeFalse())
+			err := checkCrdExists(context.TODO(), cli, logger)
+			Expect(err).Should(HaveOccurred())
+			Expect(errors.Unwrap(err)).To(BeNil())
 		})
 
 		It("should return true if CRD exists, with no error", func() {
 			cli := commonTestUtils.InitClient([]runtime.Object{qsCrd})
 
-			supported, err := checkCrdExists(context.TODO(), cli, logger)
+			err := checkCrdExists(context.TODO(), cli, logger)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(supported).To(BeTrue())
 		})
 	})
 
