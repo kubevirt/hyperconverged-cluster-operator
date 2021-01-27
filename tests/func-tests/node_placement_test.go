@@ -22,6 +22,8 @@ import (
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
+const nodePlacementSamplingSize = 20
+
 var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:system]Node Placement", func() {
 
 	var workloadsNode *v1.Node
@@ -61,51 +63,25 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 				"virt-handler":    false,
 			}
 
-			var cnaoCR networkaddonsv1.NetworkAddonsConfig
-
-			s := scheme.Scheme
-			_ = apis.AddToScheme(s)
-			s.AddKnownTypes(networkaddonsv1.SchemeGroupVersion)
-			opts := k8smetav1.GetOptions{}
-			err = client.RestClient().Get().
-				Resource("networkaddonsconfigs").
-				Name("cluster").
-				VersionedParams(&opts, scheme.ParameterCodec).
-				Timeout(10 * time.Second).
-				Do().Into(&cnaoCR)
-
+			By("Getting Network Addons Configs")
+			cnaoCR := getNetworkAddonsConfigs(client)
 			if cnaoCR.Spec.Ovs == nil {
 				delete(expectedWorkloadsPods, "ovs-cni-marker")
 			}
 
-			pods, err := client.CoreV1().Pods(flags.KubeVirtInstallNamespace).List(k8smetav1.ListOptions{
-				FieldSelector: fmt.Sprintf("spec.nodeName=%s", workloadsNode.Name),
-			})
+			By("Listing pods in infra node")
+			pods := listPodsInNode(client, workloadsNode.Name)
 
-			Expect(err).ToNot(HaveOccurred())
+			By("Collecting nodes of pods")
+			updatePodAssignments(pods, expectedWorkloadsPods, "workload", workloadsNode.Name)
 
-			for _, pod := range pods.Items {
-				podName := pod.Spec.Containers[0].Name
-				fmt.Fprintf(GinkgoWriter, "Found %s pod '%s' in the 'workloads' node %s\n", podName, pod.Name, workloadsNode.Name)
-				if found, ok := expectedWorkloadsPods[podName]; ok {
-					if !found {
-						expectedWorkloadsPods[podName] = true
-					}
-				}
-			}
-
+			By("Verifying that all expected workload pods exist in workload nodes")
 			Expect(expectedWorkloadsPods).ToNot(ContainElement(false))
 		})
 	})
 
 	Context("validate node placement on infra nodes", func() {
 		It("[test_id:5678] all expected 'infra' pod must be on infra node", func() {
-			infraNodes, err := client.CoreV1().Nodes().List(k8smetav1.ListOptions{
-				LabelSelector: "node.kubernetes.io/hco-test-node-type==infra",
-			})
-
-			Expect(err).ShouldNot(HaveOccurred())
-
 			expectedInfraPods := map[string]bool{
 				"cdi-apiserver":        false,
 				"cdi-controller":       false,
@@ -117,23 +93,18 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 				"vm-import-controller": false,
 			}
 
-			for _, node := range infraNodes.Items {
-				pods, err := client.CoreV1().Pods(flags.KubeVirtInstallNamespace).List(k8smetav1.ListOptions{
-					FieldSelector: fmt.Sprintf("spec.nodeName=%s", node.Name),
-				})
-				Expect(err).ToNot(HaveOccurred())
+			By("Listing infra nodes")
+			infraNodes := listInfraNodes(client)
 
-				for _, pod := range pods.Items {
-					podName := pod.Spec.Containers[0].Name
-					fmt.Fprintf(GinkgoWriter, "Found %s pod '%s' in the 'infra' node %s\n", podName, pod.Name, node.Name)
-					if found, ok := expectedInfraPods[podName]; ok {
-						if !found {
-							expectedInfraPods[podName] = true
-						}
-					}
-				}
+			for _, node := range infraNodes.Items {
+				By("Listing pods in " + node.Name)
+				pods := listPodsInNode(client, node.Name)
+
+				By("Collecting nodes of pods")
+				updatePodAssignments(pods, expectedInfraPods, "infra", node.Name)
 			}
 
+			By("Verifying that all expected infra pods exist in infra nodes")
 			Expect(expectedInfraPods).ToNot(ContainElement(false))
 		})
 	})
@@ -142,9 +113,8 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 		It("[test_id:5679] should create, verify and delete VMIs with correct node placements", func() {
 			// we are iterating many times to ensure that the vmi is not scheduled to the expected node by chance
 			// this test may give false positive result. more iteration can give more accuracy.
-			testAmount := 20
-			for i := 0; i < testAmount; i++ {
-				By(fmt.Sprintf("Run %d/%d", i+1, testAmount))
+			for i := 0; i < nodePlacementSamplingSize; i++ {
+				fmt.Fprintf(GinkgoWriter, "Run %d/%d\n", i+1, nodePlacementSamplingSize)
 				vmiName := verifyVMICreation(client)
 				vmi := verifyVMIRunning(client, vmiName)
 				verifyVMINodePlacement(vmi, workloadsNode.Name)
@@ -154,6 +124,55 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 	})
 
 })
+
+func updatePodAssignments(pods *v1.PodList, podMap map[string]bool, nodeType string, nodeName string) {
+	for _, pod := range pods.Items {
+		podName := pod.Spec.Containers[0].Name
+		fmt.Fprintf(GinkgoWriter, "Found %s pod '%s' in the '%s' node %s\n", podName, pod.Name, nodeType, nodeName)
+		if found, ok := podMap[podName]; ok {
+			if !found {
+				podMap[podName] = true
+			}
+		}
+	}
+}
+
+func listPodsInNode(client kubecli.KubevirtClient, nodeName string) *v1.PodList {
+	pods, err := client.CoreV1().Pods(flags.KubeVirtInstallNamespace).List(k8smetav1.ListOptions{
+		FieldSelector: fmt.Sprintf("spec.nodeName=%s", nodeName),
+	})
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+
+	return pods
+}
+
+func listInfraNodes(client kubecli.KubevirtClient) *v1.NodeList {
+	infraNodes, err := client.CoreV1().Nodes().List(k8smetav1.ListOptions{
+		LabelSelector: "node.kubernetes.io/hco-test-node-type==infra",
+	})
+	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+
+	return infraNodes
+}
+
+func getNetworkAddonsConfigs(client kubecli.KubevirtClient) *networkaddonsv1.NetworkAddonsConfig {
+	var cnaoCR networkaddonsv1.NetworkAddonsConfig
+
+	s := scheme.Scheme
+	_ = apis.AddToScheme(s)
+	s.AddKnownTypes(networkaddonsv1.SchemeGroupVersion)
+
+	err := client.RestClient().Get().
+		Resource("networkaddonsconfigs").
+		Name("cluster").
+		VersionedParams(&k8smetav1.GetOptions{}, scheme.ParameterCodec).
+		Timeout(10 * time.Second).
+		Do().Into(&cnaoCR)
+
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+
+	return &cnaoCR
+}
 
 func verifyVMINodePlacement(vmi *kubevirtv1.VirtualMachineInstance, workloadNodeName string) {
 	By("Verifying node placement of VMI")

@@ -14,8 +14,11 @@ import (
 	"kubevirt.io/client-go/kubecli"
 )
 
-const timeout = 360 * time.Second
-const pollingInterval = 5 * time.Second
+const (
+	timeout         = 360 * time.Second
+	pollingInterval = 5 * time.Second
+	vmiSamplingSize = 5
+)
 
 var _ = Describe("[rfe_id:273][crit:critical][vendor:cnv-qe@redhat.com][level:system]Virtual Machine", func() {
 	tests.FlagParse()
@@ -27,9 +30,8 @@ var _ = Describe("[rfe_id:273][crit:critical][vendor:cnv-qe@redhat.com][level:sy
 	})
 
 	It("[test_id:5696] should create, verify and delete VMIs", func() {
-		testAmount := 5
-		for i := 0; i < testAmount; i++ {
-			By(fmt.Sprintf("Run %d/%d", i+1, testAmount))
+		for i := 0; i < vmiSamplingSize; i++ {
+			fmt.Fprintf(GinkgoWriter, "Run %d/%d\n", i+1, vmiSamplingSize)
 			vmiName := verifyVMICreation(client)
 			verifyVMIRunning(client, vmiName)
 			verifyVMIDeletion(client, vmiName)
