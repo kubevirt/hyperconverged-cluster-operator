@@ -107,6 +107,11 @@ func (h qsHooks) updateCr(req *common.HcoRequest, Client client.Client, exists r
 	return false, false, nil
 }
 
+// This function returns 3-state error:
+//   err := checkCrdExists(...)
+//   err == nil - OK, CRD exists
+//   err != nil && errors.Unwrap(err) == nil - CRD does not exist, but that ok
+//   err != nil && errors.Unwrap(err) != nil - actual error
 func checkCrdExists(ctx context.Context, Client client.Client, logger log.Logger) error {
 	qsCrd := &extv1.CustomResourceDefinition{
 		TypeMeta: metav1.TypeMeta{
@@ -153,6 +158,11 @@ func getQuickstartDirPath() string {
 	return filesLocation
 }
 
+// This function returns 3-state error:
+//   err := validateQuickstartDir(...)
+//   err == nil - OK: quickstart directory exists
+//   err != nil && errors.Unwrap(err) == nil - quickstart directory does not exist, but that ok
+//   err != nil && errors.Unwrap(err) != nil - actual error
 func validateQuickstartDir(filesLocation string) error {
 	info, err := os.Stat(filesLocation)
 	if err != nil {
@@ -163,7 +173,8 @@ func validateQuickstartDir(filesLocation string) error {
 	}
 
 	if !info.IsDir() {
-		return newProcessingError(nil) // return error, but don't stop processing
+		err := fmt.Errorf("%s is not a directory", filesLocation)
+		return newProcessingError(err) // return error
 	}
 	return nil
 }

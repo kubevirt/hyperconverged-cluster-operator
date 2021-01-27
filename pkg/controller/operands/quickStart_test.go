@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/commonTestUtils"
@@ -102,6 +103,33 @@ var _ = Describe("QuickStart tests", func() {
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(handlers).To(HaveLen(1))
+			})
+		})
+
+		It("should return error if quickstart path is not a directory", func() {
+			filePath := "/testFiles/quickstart.yaml"
+			const currentDir = "/pkg/controller/operands"
+			wd, _ := os.Getwd()
+			if !strings.HasSuffix(wd, currentDir) {
+				filePath = wd + currentDir + filePath
+			} else {
+				filePath = wd + filePath
+			}
+
+			By("check that validateQuickstartDir return wrapped error", func() {
+				err := validateQuickstartDir(filePath)
+				Expect(err).Should(HaveOccurred())
+				Expect(errors.Unwrap(err)).ShouldNot(BeNil())
+			})
+
+			// quickstart directory path of a file
+			_ = os.Setenv(manifestLocationVarName, filePath)
+			By("check that getQuickStartHandlers returns error", func() {
+				cli := commonTestUtils.InitClient([]runtime.Object{qsCrd})
+				handlers, err := getQuickStartHandlers(logger, cli, schemeForTest, hco)
+
+				Expect(err).Should(HaveOccurred())
+				Expect(handlers).To(BeEmpty())
 			})
 		})
 	})
