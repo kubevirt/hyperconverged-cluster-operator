@@ -41,8 +41,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-const (
-	rbacAPI = rbacv1.GroupName + "/v1"
+var (
+	rbacAPI string
 )
 
 // flags for the command line arguments we accept
@@ -82,6 +82,7 @@ func check(err error) {
 	}
 }
 func init() {
+	rbacAPI = rbacv1.SchemeGroupVersion.String()
 	processCommandlineParams()
 }
 
@@ -185,19 +186,18 @@ func main() {
 	}
 
 	// Write out CRDs and CR
-	writeOperatorCr()
-	// Write out deployments
-	writeOperatorCrd()
+	writeOperatorCR()
+	writeOperatorCRD()
+	writeV2VCR()
+	writeV2VCRD()
 
-	writev2vCrd()
-	writev2vVirtCrd()
-	writeOperatorYaml(deployments, services)
+	// Write out deployments and services
+	writeOperatorDeploymentsAndServices(deployments, services)
 
 	// Write out rbac
-	// since maps are not ordered we must enforce one before writing
-	writeSaYaml(serviceAccounts)
-	writeCrbYaml(roleBindings, clusterRoleBindings)
-	writeCrYaml(permissions, clusterPermissions)
+	writeServiceAccounts(serviceAccounts)
+	writeClusterRoleBindings(roleBindings, clusterRoleBindings)
+	writeClusterRoles(permissions, clusterPermissions)
 }
 
 func getServices(csvStruct *csvv1alpha1.ClusterServiceVersion, services []v1.Service) []v1.Service {
@@ -403,14 +403,14 @@ func getCsvWithComponent() []util.CsvWithComponent {
 	return componentsWithCsvs
 }
 
-func writev2vVirtCrd() {
+func writeV2VCRD() {
 	v2voVirtCrd, err := os.Create(path.Join(*deployDir, "crds/v2vovirt.crd.yaml"))
 	check(err)
 	defer v2voVirtCrd.Close()
 	check(util.MarshallObject(components.GetV2VOvirtProviderCRD(), v2voVirtCrd))
 }
 
-func writev2vCrd() {
+func writeV2VCR() {
 	v2vCrd, err := os.Create(path.Join(*deployDir, "crds/v2vvmware.crd.yaml"))
 	check(err)
 	defer v2vCrd.Close()
@@ -440,21 +440,21 @@ func getOperatorParameters() *components.DeploymentOperatorParams {
 	return params
 }
 
-func writeOperatorCr() {
+func writeOperatorCR() {
 	operatorCr, err := os.Create(path.Join(*deployDir, "hco.cr.yaml"))
 	check(err)
 	defer operatorCr.Close()
 	check(util.MarshallObject(components.GetOperatorCR(), operatorCr))
 }
 
-func writeOperatorCrd() {
+func writeOperatorCRD() {
 	operatorCrd, err := os.Create(path.Join(*deployDir, "crds/hco.crd.yaml"))
 	check(err)
 	defer operatorCrd.Close()
 	check(util.MarshallObject(components.GetOperatorCRD(*apiSources), operatorCrd))
 }
 
-func writeOperatorYaml(deployments []appsv1.Deployment, services []v1.Service) {
+func writeOperatorDeploymentsAndServices(deployments []appsv1.Deployment, services []v1.Service) {
 	operatorYaml, err := os.Create(path.Join(*deployDir, "operator.yaml"))
 	check(err)
 	defer operatorYaml.Close()
@@ -462,17 +462,18 @@ func writeOperatorYaml(deployments []appsv1.Deployment, services []v1.Service) {
 		check(util.MarshallObject(deployment, operatorYaml))
 	}
 
-	// Write out deployments
+	// Write out services
 	for _, service := range services {
 		check(util.MarshallObject(service, operatorYaml))
 	}
 }
 
-func writeSaYaml(serviceAccounts map[string]v1.ServiceAccount) {
+func writeServiceAccounts(serviceAccounts map[string]v1.ServiceAccount) {
 	var keys []string
 	for saName := range serviceAccounts {
 		keys = append(keys, saName)
 	}
+	// since maps are not ordered we must enforce one before writing
 	sort.Strings(keys)
 
 	saYaml, err := os.Create(path.Join(*deployDir, "service_account.yaml"))
@@ -484,7 +485,7 @@ func writeSaYaml(serviceAccounts map[string]v1.ServiceAccount) {
 	}
 }
 
-func writeCrbYaml(roleBindings []rbacv1.RoleBinding, clusterRoleBindings []rbacv1.ClusterRoleBinding) {
+func writeClusterRoleBindings(roleBindings []rbacv1.RoleBinding, clusterRoleBindings []rbacv1.ClusterRoleBinding) {
 	crbYaml, err := os.Create(path.Join(*deployDir, "cluster_role_binding.yaml"))
 	check(err)
 	defer crbYaml.Close()
@@ -498,7 +499,7 @@ func writeCrbYaml(roleBindings []rbacv1.RoleBinding, clusterRoleBindings []rbacv
 	}
 }
 
-func writeCrYaml(permissions []rbacv1.Role, clusterPermissions []rbacv1.ClusterRole) {
+func writeClusterRoles(permissions []rbacv1.Role, clusterPermissions []rbacv1.ClusterRole) {
 	crYaml, err := os.Create(path.Join(*deployDir, "cluster_role.yaml"))
 	check(err)
 	defer crYaml.Close()
