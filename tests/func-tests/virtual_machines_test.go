@@ -71,6 +71,7 @@ var _ = Describe("Virtual Machines", func() {
 				Timeout(10 * time.Second).
 				Do().Into(&cnaoCR)
 
+			fmt.Fprintf(GinkgoWriter, "api error %s\n", err)
 			Expect(err).ToNot(HaveOccurred())
 
 			if cnaoCR.Spec.Ovs == nil {
