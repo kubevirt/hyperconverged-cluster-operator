@@ -42,7 +42,7 @@ type HyperConvergedSpec struct {
 	// featureGates is a map of feature gate flags. Setting a flag to `true` will enable
 	// the feature. Setting `false` or removing the feature gate, disables the feature.
 	// +optional
-	// +kubebuilder:default={}
+	// +kubebuilder:default={withHostModelCPU: true, withHostPassthroughCPU: false}
 	FeatureGates *HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 
 	// operator version
