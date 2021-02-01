@@ -184,33 +184,31 @@ type ReconcileHyperConverged struct {
 // The Controller will requeue the Request to be processed again if the returned error is non-nil or
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
+	logger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 
-	secCRPlaceholder, err := getSecondaryCRPlaceholder()
+	hcoTriggered, err := isTriggeredByHyperConverged(request)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	hcoTriggered := true
-	pRequest := request
-	if request.NamespacedName == secCRPlaceholder {
-		hcoTriggered = false
+	resolvedRequest := request
+	if hcoTriggered {
+		logger.Info("Reconciling HyperConverged operator")
+
+		r.operandHandler.Reset()
+	} else {
+		logger.Info("The reconciliation got triggered by a secondary CR object")
+
 		hco, err := getHyperconverged()
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-		pRequest = reconcile.Request{
+		resolvedRequest = reconcile.Request{
 			NamespacedName: hco,
 		}
-	} else {
-		r.operandHandler.Reset()
 	}
 
-	req := common.NewHcoRequest(ctx, pRequest, log, r.upgradeMode, hcoTriggered)
-	if req.HCOTriggered {
-		req.Logger.Info("Reconciling HyperConverged operator")
-	} else {
-		req.Logger.Info("The reconciliation got triggered by a secondary CR object")
-	}
+	req := common.NewHcoRequest(ctx, resolvedRequest, log, r.upgradeMode, hcoTriggered)
 
 	// Fetch the HyperConverged instance
 	instance, err := r.getHcoInstanceFromK8s(req)
@@ -283,6 +281,16 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 	}
 
 	return res, err
+}
+
+func isTriggeredByHyperConverged(request reconcile.Request) (bool, error) {
+	placeholder, err := getSecondaryCRPlaceholder()
+	if err != nil {
+		return false, err
+	}
+
+	isSecondary := request.NamespacedName == placeholder
+	return !isSecondary, nil
 }
 
 func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile.Result, error) {
