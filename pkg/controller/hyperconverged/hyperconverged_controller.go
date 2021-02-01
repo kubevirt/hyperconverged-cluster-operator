@@ -205,42 +205,20 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 	}
 
 	// Fetch the HyperConverged instance
-	instance, err := r.getHcoInstanceFromK8s(hcoRequest)
+	instance, err := r.getHyperConverged(hcoRequest)
 	if instance == nil {
 		return reconcile.Result{}, err
 	}
 	hcoRequest.Instance = instance
 
 	if r.firstLoop {
-		// reload eventEmitter. The client should now find all the required resources
-		r.eventEmitter.UpdateClient(hcoRequest.Ctx, r.client, hcoRequest.Logger)
-
-		r.operandHandler.FirstUseInitiation(r.scheme, hcoutil.GetClusterInfo().IsOpenshift(), hcoRequest.Instance)
+		r.firstLoopInitialization(hcoRequest)
 	}
 
-	res, err := r.doReconcile(hcoRequest)
-	if r.firstLoop {
-		r.firstLoop = false
-	}
-
+	result, err := r.doReconcile(hcoRequest)
 	if err != nil {
 		r.eventEmitter.EmitEvent(hcoRequest.Instance, corev1.EventTypeWarning, "ReconcileError", err.Error())
 	}
-
-	/*
-		From K8s API reference: https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/
-		============================================================================================================
-		Replace: Replacing a resource object will update the resource by replacing the existing spec with the
-		provided one. For read-then-write operations this is safe because an optimistic lock failure will occur if
-		the resource was modified between the read and write.
-
-		**Note: The ResourceStatus will be ignored by the system and will not be updated. To update the status, one
-		must invoke the specific status update operation.**
-		============================================================================================================
-
-		In addition, updating the status should not update the metadata, so we need to update both the CR and the
-		CR Status, and we need to update the status first, in order to prevent a conflict.
-	*/
 
 	if hcoRequest.StatusDirty {
 		updateErr := r.client.Status().Update(hcoRequest.Ctx, hcoRequest.Instance)
@@ -271,10 +249,10 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 	}
 
 	if apierrors.IsConflict(err) {
-		res.Requeue = true
+		result.Requeue = true
 	}
 
-	return res, err
+	return result, err
 }
 
 // resolveReconcileRequest returns a reconcile.Request to be used throughout the reconciliation cycle,
@@ -284,7 +262,7 @@ func resolveReconcileRequest(originalRequest reconcile.Request, hcoTriggered boo
 		return originalRequest, nil
 	}
 
-	hc, err := getHyperConverged()
+	hc, err := getHyperConvergedNamespacedName()
 	if err != nil {
 		return reconcile.Request{}, err
 	}
@@ -382,25 +360,29 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileHyperConverged) getHcoInstanceFromK8s(req *common.HcoRequest) (*hcov1beta1.HyperConverged, error) {
+// getHyperConverged gets the HyperConverged resource from the Kubernetes API.
+func (r *ReconcileHyperConverged) getHyperConverged(req *common.HcoRequest) (*hcov1beta1.HyperConverged, error) {
 	instance := &hcov1beta1.HyperConverged{}
 	err := r.client.Get(req.Ctx, req.NamespacedName, instance)
+
+	if apierrors.IsNotFound(err) {
+		req.Logger.Info("No HyperConverged resource")
+		// Request object not found, could have been deleted after reconcile request.
+		// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
+		// Return and don't requeue
+		return nil, nil
+	}
+
 	if err != nil {
-		if apierrors.IsNotFound(err) {
-			req.Logger.Info("No HyperConverged resource")
-			// Request object not found, could have been deleted after reconcile request.
-			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			// Return and don't requeue
-			return nil, nil
-		}
 		// Error reading the object - requeue the request.
 		return nil, err
 	}
+
 	return instance, nil
 }
 
 func (r *ReconcileHyperConverged) validateNamespace(req *common.HcoRequest) (bool, error) {
-	hco, err := getHyperConverged()
+	hco, err := getHyperConvergedNamespacedName()
 	if err != nil {
 		req.Logger.Error(err, "Failed to get HyperConverged namespaced name")
 		return false, err
@@ -805,8 +787,20 @@ func (r *ReconcileHyperConverged) detectTaintedConfiguration(req *common.HcoRequ
 	}
 }
 
-// getHyperConverged returns the name/namespace of the HyperConverged resource
-func getHyperConverged() (types.NamespacedName, error) {
+func (r *ReconcileHyperConverged) firstLoopInitialization(request *common.HcoRequest) {
+	// Reload eventEmitter.
+	// The client should now find all the required resources.
+	r.eventEmitter.UpdateClient(request.Ctx, r.client, request.Logger)
+
+	// Initialize operand handler.
+	r.operandHandler.FirstUseInitiation(r.scheme, hcoutil.GetClusterInfo().IsOpenshift(), request.Instance)
+
+	// Avoid re-initializing.
+	r.firstLoop = false
+}
+
+// getHyperConvergedNamespacedName returns the name/namespace of the HyperConverged resource
+func getHyperConvergedNamespacedName() (types.NamespacedName, error) {
 	hco := types.NamespacedName{
 		Name: hcoutil.HyperConvergedName,
 	}
