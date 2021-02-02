@@ -339,6 +339,12 @@ func (r *ReconcileHyperConverged) getHyperConverged(req *common.HcoRequest) (*hc
 	instance := &hcov1beta1.HyperConverged{}
 	err := r.client.Get(req.Ctx, req.NamespacedName, instance)
 
+	// Green path first
+	if err == nil {
+		return instance, nil
+	}
+
+	// Error path
 	if apierrors.IsNotFound(err) {
 		req.Logger.Info("No HyperConverged resource")
 		// Request object not found, could have been deleted after reconcile request.
@@ -347,12 +353,9 @@ func (r *ReconcileHyperConverged) getHyperConverged(req *common.HcoRequest) (*hc
 		return nil, nil
 	}
 
-	if err != nil {
-		// Error reading the object - requeue the request.
-		return nil, err
-	}
-
-	return instance, nil
+	// Another error reading the object.
+	// Just return the error so that the request is requeued.
+	return nil, err
 }
 
 // updateHyperConverged updates the HyperConverged resource according to its state in the request.
