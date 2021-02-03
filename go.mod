@@ -26,7 +26,7 @@ require (
 	github.com/prometheus/client_model v0.2.0
 	github.com/spf13/pflag v1.0.5
 	golang.org/x/text v0.3.4 // indirect
-	golang.org/x/tools v0.0.0-20200616195046-dc31b401abb5
+	golang.org/x/tools v0.0.0-20210106214847-113979e3529a
 	google.golang.org/genproto v0.0.0-20200701001935-0939c5918c31 // indirect
 	k8s.io/api v0.19.4
 	k8s.io/apiextensions-apiserver v0.19.0-rc.2
@@ -148,3 +148,5 @@ replace (
 	golang.org/x/crypto => golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/crypto/ssh/terminal => golang.org/x/crypto/ssh/terminal v0.0.0-20201221181555-eec23a3978ad
 )
+
+replace github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2
