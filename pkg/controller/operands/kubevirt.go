@@ -33,6 +33,7 @@ const (
 	SELinuxLauncherTypeKey  = "selinuxLauncherType"
 	DefaultNetworkInterface = "bridge"
 	HotplugVolumesGate      = "HotplugVolumes"
+	SRIOVLiveMigrationGate  = "SRIOVLiveMigration"
 )
 
 const (
@@ -311,6 +312,11 @@ func filterOutDisabledFeatureGates(req *common.HcoRequest, foundFgSplit []string
 				fgChanged = true
 				continue
 			}
+		case SRIOVLiveMigrationGate:
+			if !req.Instance.Spec.FeatureGates.IsSRIOVLiveMigrationEnabled() {
+				fgChanged = true
+				continue
+			}
 		}
 		resultFg = append(resultFg, fg)
 	}
@@ -516,6 +522,10 @@ func getKvFeatureGateList(fgs *hcov1beta1.HyperConvergedFeatureGates) []string {
 
 	if fgs.IsWithHostModelCPUEnabled() {
 		res = append(res, kvWithHostModelCPU)
+	}
+
+	if fgs.IsSRIOVLiveMigrationEnabled() {
+		res = append(res, SRIOVLiveMigrationGate)
 	}
 
 	return res
