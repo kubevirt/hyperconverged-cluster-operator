@@ -257,7 +257,7 @@ func (h *kvConfigHooks) updateDataNotOnUpgrade(req *common.HcoRequest, found *co
 	resultFg := make([]string, 0, len(foundFgSplit))
 
 	// 2. Remove only managed FGs from the list, if are not in the HC CR
-	changed, resultFg := h.filterDisabledFeatureGates(req, foundFgSplit, resultFg)
+	changed, resultFg := filterOutDisabledFeatureGates(req, foundFgSplit, resultFg)
 
 	// 3. Add managed FGs if set in the HC CR
 	added := false
@@ -291,7 +291,7 @@ func (h *kvConfigHooks) addEnabledFeatureGates(req *common.HcoRequest, foundFgSp
 	return resultFg, fgChanged
 }
 
-func (h *kvConfigHooks) filterDisabledFeatureGates(req *common.HcoRequest, foundFgSplit []string, resultFg []string) (bool, []string) {
+func filterOutDisabledFeatureGates(req *common.HcoRequest, foundFgSplit []string, resultFg []string) (bool, []string) {
 	fgChanged := false
 	for _, fg := range foundFgSplit {
 		// Remove if not in HC CR
