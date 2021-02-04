@@ -23,6 +23,7 @@ import (
 	vmimportv1beta1 "github.com/kubevirt/vm-import-operator/pkg/apis/v2v/v1beta1"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
+	operatorframeworkv1 "github.com/operator-framework/api/pkg/operators/v1"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -152,6 +153,12 @@ func getMnanagerOptions(watchNamespace string, needLeaderElection bool) manager.
 		LeaderElection:             needLeaderElection,
 		LeaderElectionResourceLock: "configmaps",
 		LeaderElectionID:           "hyperconverged-cluster-operator-lock",
+		ClientDisableCacheFor: []client.Object{
+			// Disable caching for OperatorConditions to enable lookups against the kubernetes API,
+			// without the need to wait for cache sync after manager.Start().
+			//
+			// We need this to be able to update the OperatorCondition object before starting the manager.
+			&operatorframeworkv1.OperatorCondition{}},
 	}
 }
 
