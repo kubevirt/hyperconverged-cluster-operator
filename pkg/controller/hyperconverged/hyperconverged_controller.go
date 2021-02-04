@@ -79,6 +79,11 @@ func Add(mgr manager.Manager, ci hcoutil.ClusterInfo) error {
 	return add(mgr, newReconciler(mgr, ci), ci)
 }
 
+// RegisterReconciler creates a new HyperConverged Reconciler and registers it into manager.
+func RegisterReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo) error {
+	return add(mgr, newReconciler(mgr, ci), ci)
+}
+
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo) reconcile.Reconciler {
 
