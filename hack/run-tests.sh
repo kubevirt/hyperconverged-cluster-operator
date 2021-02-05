@@ -14,6 +14,8 @@ fi
 
 if [[ ${JOB_TYPE} = "prow" ]]; then
     export KUBECTL_BINARY="oc"
+elif command -v kubectl; then
+    export KUBECTL_BINARY="kubectl"
 else
     export KUBECTL_BINARY="cluster/kubectl.sh"
 fi
