@@ -17,8 +17,6 @@ fi
 
 if [[ ${JOB_TYPE} = "prow" ]]; then
     KUBECTL_BINARY="oc"
-elif command -v kubectl; then
-    export KUBECTL_BINARY="kubectl"
 fi
 
 # when the tests are run in a pod, in-cluster config will be used
