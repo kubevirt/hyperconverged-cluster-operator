@@ -4,7 +4,7 @@ WORKDIR /go/src/github.com/kubevirt/hyperconverged-cluster-operator/
 COPY . .
 RUN make build-functest
 
-FROM registry.access.redhat.com/ubi8/ubi
+FROM registry.access.redhat.com/ubi8/ubi-minimal
 
 ENV USER_UID=1001 \
     TEST_OUT_PATH=/test
@@ -12,13 +12,10 @@ ENV USER_UID=1001 \
 WORKDIR ${TEST_OUT_PATH}
 ENTRYPOINT ./hack/run-tests.sh
 
-RUN curl -LO https://dl.k8s.io/release/v1.20.0/bin/linux/amd64/kubectl && \
-    chmod +x kubectl && \
-    chown ${USER_UID}:0 kubectl && \
-    mv kubectl /usr/local/bin/kubectl && \
-    dnf install -y jq
-
-USER ${USER_UID}
+RUN curl -Lo /usr/local/bin/kubectl "https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl" && \
+    chmod a+x /usr/local/bin/kubectl && \
+    curl -Lo /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && \
+    chmod a+x /usr/local/bin/jq
 
 COPY --from=builder --chown=${USER_UID}:0 /go/src/github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests/_out/func-tests.test  ${TEST_OUT_PATH}/
 COPY --from=builder --chown=${USER_UID}:0 /go/src/github.com/kubevirt/hyperconverged-cluster-operator/hack  ${TEST_OUT_PATH}/hack
