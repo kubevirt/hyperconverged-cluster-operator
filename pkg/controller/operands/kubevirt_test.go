@@ -1591,7 +1591,97 @@ var _ = Describe("KubeVirt Operand", func() {
 			Expect(fgList).ShouldNot(ContainElements(kvWithHostPassthroughCPU, kvHypervStrictCheck))
 		})
 	})
+
+	Context("filterOutDisabledFeatureGates", func() {
+		It("should remove all gates if none are enabled on the request", func() {
+			disabled := false
+			fgs := &hcov1beta1.HyperConvergedFeatureGates{
+				HotplugVolumes:         &disabled,
+				WithHostPassthroughCPU: &disabled,
+				WithHostModelCPU:       &disabled,
+				HypervStrictCheck:      &disabled,
+				SRIOVLiveMigration:     &disabled,
+			}
+
+			changed, result := filterOutDisabledFeatureGates(requestWithFeatureGates(fgs), []string{
+				HotplugVolumesGate,
+				kvWithHostPassthroughCPU,
+				kvWithHostModelCPU,
+				kvHypervStrictCheck,
+				SRIOVLiveMigrationGate,
+			}, make([]string, 0))
+			Expect(changed).To(BeTrue())
+			Expect(result).To(BeEmpty())
+		})
+		It("should remove only gates disabled on the request", func() {
+			enabled := true
+			disabled := false
+			fgs := &hcov1beta1.HyperConvergedFeatureGates{
+				HotplugVolumes:   &disabled,
+				WithHostModelCPU: &enabled,
+			}
+
+			changed, result := filterOutDisabledFeatureGates(
+				requestWithFeatureGates(fgs), []string{
+					HotplugVolumesGate,
+					kvWithHostModelCPU,
+				}, make([]string, 0, 1))
+			Expect(changed).To(BeTrue())
+			Expect(result).To(ContainElement(kvWithHostModelCPU))
+		})
+		It("should remove all gates if request gates are nil", func() {
+			changed, result := filterOutDisabledFeatureGates(
+				requestWithFeatureGates(nil), []string{
+					HotplugVolumesGate,
+					kvWithHostModelCPU,
+				}, make([]string, 0))
+			Expect(changed).To(BeTrue())
+			Expect(result).To(BeEmpty())
+		})
+		It("should not remove gates if none are disabled", func() {
+			enabled := true
+			fgs := &hcov1beta1.HyperConvergedFeatureGates{
+				HotplugVolumes:         &enabled,
+				WithHostPassthroughCPU: &enabled,
+				WithHostModelCPU:       &enabled,
+				HypervStrictCheck:      &enabled,
+				SRIOVLiveMigration:     &enabled,
+			}
+
+			allGates := []string{HotplugVolumesGate,
+				kvWithHostPassthroughCPU,
+				kvWithHostModelCPU,
+				kvHypervStrictCheck,
+				SRIOVLiveMigrationGate,
+			}
+
+			changed, result := filterOutDisabledFeatureGates(
+				requestWithFeatureGates(fgs),
+				allGates,
+				make([]string, 0, len(allGates)))
+			Expect(changed).To(BeFalse())
+			Expect(result).To(Equal(allGates))
+		})
+		It("should remove gates that don't have a matching field", func() {
+			enabled := true
+			fgs := &hcov1beta1.HyperConvergedFeatureGates{
+				SRIOVLiveMigration: &enabled,
+			}
+			changed, result := filterOutDisabledFeatureGates(
+				requestWithFeatureGates(fgs), []string{
+					SRIOVLiveMigrationGate,
+					"someGateThatDoesNotExist",
+				},
+				make([]string, 0, 1))
+			Expect(changed).To(BeTrue())
+			Expect(result).To(Equal([]string{SRIOVLiveMigrationGate}))
+		})
+	})
 })
+
+func requestWithFeatureGates(featureGates *hcov1beta1.HyperConvergedFeatureGates) *common.HcoRequest {
+	return &common.HcoRequest{Instance: &hcov1beta1.HyperConverged{Spec: hcov1beta1.HyperConvergedSpec{FeatureGates: featureGates}}}
+}
 
 func reconcileCm(hco *hcov1beta1.HyperConverged, req *common.HcoRequest, expectUpdate bool, existingCM, foundCm *corev1.ConfigMap) {
 	cl := commonTestUtils.InitClient([]runtime.Object{hco, existingCM})
