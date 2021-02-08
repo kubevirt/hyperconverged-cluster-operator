@@ -104,7 +104,8 @@ cluster-clean:
 
 ci-functest: build-functest test-functional
 
-functest: build-functest test-functional-prow
+# will revert
+functest: build-functest test-functional-in-container
 
 build-functest:
 	${DO} ./hack/build-tests.sh
