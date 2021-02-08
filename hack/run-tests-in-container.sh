@@ -20,9 +20,12 @@ if [[ ${JOB_TYPE} = "prow" ]]; then
 fi
 
 operator_image="$($KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" get pod -l name=hyperconverged-cluster-operator -o jsonpath='{.items[0] .spec .containers[?(@.name=="hyperconverged-cluster-operator")] .image}')"
-functest_image="${operator_image//hyperconverged-cluster-operator/hyperconverged-cluster-functest}"
+computed_test_image="${operator_image//hyperconverged-cluster-operator/hyperconverged-cluster-functest}"
 
-echo "Running tests with $functest_image"
+# the test image can be overwritten by the caller
+FUNC_TEST_IMAGE=${FUNC_TEST_IMAGE:-${computed_test_image}}
+
+echo "Running tests with $FUNC_TEST_IMAGE"
 
 $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" create serviceaccount functest \
   --dry-run -o yaml  |$KUBECTL_BINARY apply -f -
@@ -32,13 +35,10 @@ $KUBECTL_BINARY create clusterrolebinding functest-cluster-admin \
     --serviceaccount="${INSTALLED_NAMESPACE}":functest \
     --dry-run -o yaml  |$KUBECTL_BINARY apply -f -
 
-# don't forget to remove this!
-# functest_image="quay.io/erkanerol/hyperconverged-cluster-functest:v15"
-
 $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" delete pod functest --ignore-not-found --wait=true
 
 $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" run functest \
- --image="$functest_image" --serviceaccount=functest \
+ --image="$FUNC_TEST_IMAGE" --serviceaccount=functest \
  --env="INSTALLED_NAMESPACE=${INSTALLED_NAMESPACE}" \
  --restart=Never
 
