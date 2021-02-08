@@ -19,7 +19,7 @@ if [[ ${JOB_TYPE} = "prow" ]]; then
     KUBECTL_BINARY="oc"
 fi
 
-operator_image="$($KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" get deploy hyperconverged-cluster-operator -o jsonpath='{.spec .template .spec .containers[?(@.name=="hyperconverged-cluster-operator")] .image}')"
+operator_image="$($KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" get pod -l name=hyperconverged-cluster-operator -o jsonpath='{.items[0] .spec .containers[?(@.name=="hyperconverged-cluster-operator")] .image}')"
 functest_image="${operator_image//hyperconverged-cluster-operator/hyperconverged-cluster-functest}"
 
 echo "Running tests with $functest_image"
