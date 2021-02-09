@@ -17,10 +17,12 @@ fi
 
 if [[ ${JOB_TYPE} = "prow" ]]; then
     KUBECTL_BINARY="oc"
+    component=hyperconverged-cluster-functest
+    computed_test_image=`eval echo ${IMAGE_FORMAT}`
+else
+    operator_image="$($KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" get pod -l name=hyperconverged-cluster-operator -o jsonpath='{.items[0] .spec .containers[?(@.name=="hyperconverged-cluster-operator")] .image}')"
+    computed_test_image="${operator_image//hyperconverged-cluster-operator/hyperconverged-cluster-functest}"
 fi
-
-operator_image="$($KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" get pod -l name=hyperconverged-cluster-operator -o jsonpath='{.items[0] .spec .containers[?(@.name=="hyperconverged-cluster-operator")] .image}')"
-computed_test_image="${operator_image//hyperconverged-cluster-operator/hyperconverged-cluster-functest}"
 
 # the test image can be overwritten by the caller
 FUNC_TEST_IMAGE=${FUNC_TEST_IMAGE:-${computed_test_image}}
