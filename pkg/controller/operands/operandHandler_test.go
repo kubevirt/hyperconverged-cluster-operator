@@ -1,7 +1,9 @@
 package operands
 
 import (
+	"fmt"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/commonTestUtils"
@@ -145,6 +147,82 @@ var _ = Describe("Test operandHandler", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(qsList).ToNot(BeNil())
 				Expect(qsList.Items).To(BeEmpty())
+			})
+		})
+
+		It("delete KV error handling", func() {
+			err := os.Setenv(manifestLocationVarName, testFileLocation)
+			Expect(err).ToNot(HaveOccurred())
+			hco := commonTestUtils.NewHco()
+			cli := commonTestUtils.InitClient([]runtime.Object{qsCrd, hco})
+
+			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), true, commonTestUtils.EventEmitterMock{})
+			handler.FirstUseInitiation(commonTestUtils.GetScheme(), true, hco)
+
+			req := commonTestUtils.NewReq(hco)
+			err = handler.Ensure(req)
+			Expect(err).ToNot(HaveOccurred())
+
+			fakeError := fmt.Errorf("fake KV deletion error")
+			cli.InitiateDeleteErrors(func(obj client.Object) error {
+				if unstructed, ok := obj.(runtime.Unstructured); ok {
+					kind := unstructed.GetObjectKind()
+					if kind.GroupVersionKind().Kind == "KubeVirt" {
+						return fakeError
+					}
+				}
+				return nil
+			})
+
+			err = handler.EnsureDeleted(req)
+			Expect(err).Should(Equal(fakeError))
+
+			By("check that KV is deleted", func() {
+				// Read back KV
+				kvList := kubevirtv1.KubeVirtList{}
+				err := cli.List(req.Ctx, &kvList)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(kvList).ToNot(BeNil())
+				Expect(kvList.Items).To(HaveLen(1))
+				Expect(kvList.Items[0].Name).Should(Equal("kubevirt-kubevirt-hyperconverged"))
+			})
+		})
+
+		It("delete CDI error handling", func() {
+			err := os.Setenv(manifestLocationVarName, testFileLocation)
+			Expect(err).ToNot(HaveOccurred())
+			hco := commonTestUtils.NewHco()
+			cli := commonTestUtils.InitClient([]runtime.Object{qsCrd, hco})
+
+			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), true, commonTestUtils.EventEmitterMock{})
+			handler.FirstUseInitiation(commonTestUtils.GetScheme(), true, hco)
+
+			req := commonTestUtils.NewReq(hco)
+			err = handler.Ensure(req)
+			Expect(err).ToNot(HaveOccurred())
+
+			fakeError := fmt.Errorf("fake CDI deletion error")
+			cli.InitiateDeleteErrors(func(obj client.Object) error {
+				if unstructed, ok := obj.(runtime.Unstructured); ok {
+					kind := unstructed.GetObjectKind()
+					if kind.GroupVersionKind().Kind == "CDI" {
+						return fakeError
+					}
+				}
+				return nil
+			})
+
+			err = handler.EnsureDeleted(req)
+			Expect(err).Should(Equal(fakeError))
+
+			By("make sure the CDI object created", func() {
+				// Read back KV
+				cdiList := cdiv1beta1.CDIList{}
+				err := cli.List(req.Ctx, &cdiList)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cdiList).ToNot(BeNil())
+				Expect(cdiList.Items).To(HaveLen(1))
+				Expect(cdiList.Items[0].Name).Should(Equal("cdi-kubevirt-hyperconverged"))
 			})
 		})
 	})
