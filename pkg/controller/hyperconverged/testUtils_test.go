@@ -42,15 +42,16 @@ var (
 	}
 )
 
-func initReconciler(client client.Client) *ReconcileHyperConverged {
+func initReconciler(client client.Client, expectedEvents ...commonTestUtils.MockEvent) *ReconcileHyperConverged {
 	s := commonTestUtils.GetScheme()
-	operandHandler := operands.NewOperandHandler(client, s, true, &commonTestUtils.EventEmitterMock{})
+	eventEmitter := commonTestUtils.NewEventEmitterMock(expectedEvents...)
+	operandHandler := operands.NewOperandHandler(client, s, true, eventEmitter)
 	// Create a ReconcileHyperConverged object with the scheme and fake client
 	return &ReconcileHyperConverged{
 		client:             client,
 		scheme:             s,
 		operandHandler:     operandHandler,
-		eventEmitter:       &commonTestUtils.EventEmitterMock{},
+		eventEmitter:       eventEmitter,
 		cliDownloadHandler: &operands.CLIDownloadHandler{Client: client, Scheme: s},
 		firstLoop:          true,
 	}

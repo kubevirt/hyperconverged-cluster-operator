@@ -2,6 +2,7 @@ package operands
 
 import (
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -29,7 +30,77 @@ var _ = Describe("Test operandHandler", func() {
 			hco := commonTestUtils.NewHco()
 			cli := commonTestUtils.InitClient([]runtime.Object{qsCrd, hco})
 
-			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), true, commonTestUtils.EventEmitterMock{})
+			eventEmitter := commonTestUtils.NewEventEmitterMock(
+				[]commonTestUtils.MockEvent{
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Created",
+						Msg:       "Created ConfigMap kubevirt-config",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Created",
+						Msg:       "Created PriorityClass kubevirt-cluster-critical",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Created",
+						Msg:       "Created KubeVirt kubevirt-kubevirt-hyperconverged",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Created",
+						Msg:       "Created CDI cdi-kubevirt-hyperconverged",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Created",
+						Msg:       "Created ConfigMap kubevirt-storage-class-defaults",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Created",
+						Msg:       "Created NetworkAddonsConfig cluster",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Created",
+						Msg:       "Created VMImportConfig vmimport-kubevirt-hyperconverged",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Created",
+						Msg:       "Created ConfigMap v2v-vmware",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Created",
+						Msg:       "Created SSP ssp-kubevirt-hyperconverged",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Created",
+						Msg:       "Created Service kubevirt-hyperconverged-operator-metrics",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Created",
+						Msg:       "Created ServiceMonitor kubevirt-hyperconverged-operator-metrics",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Created",
+						Msg:       "Created PrometheusRule kubevirt-hyperconverged-prometheus-rule",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Created",
+						Msg:       "Created ConsoleQuickStart test-quick-start",
+					},
+				}...,
+			)
+
+			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), true, eventEmitter)
 			handler.FirstUseInitiation(commonTestUtils.GetScheme(), true, hco)
 
 			req := commonTestUtils.NewReq(hco)
@@ -48,7 +119,7 @@ var _ = Describe("Test operandHandler", func() {
 			})
 
 			By("make sure the CNA object created", func() {
-				// Read back KV
+				// Read back CNA
 				cnaList := networkaddonsv1.NetworkAddonsConfigList{}
 				err := cli.List(req.Ctx, &cnaList)
 				Expect(err).ToNot(HaveOccurred())
@@ -58,7 +129,7 @@ var _ = Describe("Test operandHandler", func() {
 			})
 
 			By("make sure the CDI object created", func() {
-				// Read back KV
+				// Read back CDI
 				cdiList := cdiv1beta1.CDIList{}
 				err := cli.List(req.Ctx, &cdiList)
 				Expect(err).ToNot(HaveOccurred())
@@ -68,7 +139,7 @@ var _ = Describe("Test operandHandler", func() {
 			})
 
 			By("make sure the VM-Import object created", func() {
-				// Read back KV
+				// Read back VM-Import
 				vmImportList := v1beta1.VMImportConfigList{}
 				err := cli.List(req.Ctx, &vmImportList)
 				Expect(err).ToNot(HaveOccurred())
@@ -94,15 +165,57 @@ var _ = Describe("Test operandHandler", func() {
 			hco := commonTestUtils.NewHco()
 			cli := commonTestUtils.InitClient([]runtime.Object{qsCrd, hco})
 
-			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), true, commonTestUtils.EventEmitterMock{})
+			eventEmitter := commonTestUtils.NewEventEmitterMock()
+			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), true, eventEmitter)
 			handler.FirstUseInitiation(commonTestUtils.GetScheme(), true, hco)
 
 			req := commonTestUtils.NewReq(hco)
 			err = handler.Ensure(req)
 			Expect(err).ToNot(HaveOccurred())
 
+			eventEmitter.SetExpectedEvents(
+				[]commonTestUtils.MockEvent{
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Killing",
+						Msg:       "Removed  virtctl-clidownloads-kubevirt-hyperconverged",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Killing",
+						Msg:       "Removed NetworkAddonsConfig cluster",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Killing",
+						Msg:       "Removed CDI cdi-kubevirt-hyperconverged",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Killing",
+						Msg:       "Removed VMImportConfig vmimport-kubevirt-hyperconverged",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Killing",
+						Msg:       "Removed ConsoleQuickStart test-quick-start",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Killing",
+						Msg:       "Removed SSP ssp-kubevirt-hyperconverged",
+					},
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Killing",
+						Msg:       "Removed KubeVirt kubevirt-kubevirt-hyperconverged",
+					},
+				}...,
+			)
 			err = handler.EnsureDeleted(req)
 			Expect(err).ToNot(HaveOccurred())
+
+			Expect(eventEmitter.GotExpectedEvent()).To(BeTrue())
 
 			By("check that KV is deleted", func() {
 				// Read back KV
@@ -114,7 +227,7 @@ var _ = Describe("Test operandHandler", func() {
 			})
 
 			By("make sure the CNA object deleted", func() {
-				// Read back KV
+				// Read back CNA
 				cnaList := networkaddonsv1.NetworkAddonsConfigList{}
 				err := cli.List(req.Ctx, &cnaList)
 				Expect(err).ToNot(HaveOccurred())
@@ -123,7 +236,7 @@ var _ = Describe("Test operandHandler", func() {
 			})
 
 			By("make sure the CDI object deleted", func() {
-				// Read back KV
+				// Read back CDI
 				cdiList := cdiv1beta1.CDIList{}
 				err := cli.List(req.Ctx, &cdiList)
 				Expect(err).ToNot(HaveOccurred())
@@ -132,7 +245,7 @@ var _ = Describe("Test operandHandler", func() {
 			})
 
 			By("make sure the VM-Import object deleted", func() {
-				// Read back KV
+				// Read back VM-Import
 				vmImportList := v1beta1.VMImportConfigList{}
 				err := cli.List(req.Ctx, &vmImportList)
 				Expect(err).ToNot(HaveOccurred())
@@ -156,14 +269,22 @@ var _ = Describe("Test operandHandler", func() {
 			hco := commonTestUtils.NewHco()
 			cli := commonTestUtils.InitClient([]runtime.Object{qsCrd, hco})
 
-			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), true, commonTestUtils.EventEmitterMock{})
+			fakeError := fmt.Errorf("fake KV deletion error")
+			eventEmitter := commonTestUtils.NewEventEmitterMock(
+				commonTestUtils.MockEvent{
+					EventType: corev1.EventTypeWarning,
+					Reason:    ErrVirtUninstall,
+					Msg:       uninstallVirtErrorMsg + fakeError.Error(),
+				},
+			)
+
+			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), true, eventEmitter)
 			handler.FirstUseInitiation(commonTestUtils.GetScheme(), true, hco)
 
 			req := commonTestUtils.NewReq(hco)
 			err = handler.Ensure(req)
 			Expect(err).ToNot(HaveOccurred())
 
-			fakeError := fmt.Errorf("fake KV deletion error")
 			cli.InitiateDeleteErrors(func(obj client.Object) error {
 				if unstructed, ok := obj.(runtime.Unstructured); ok {
 					kind := unstructed.GetObjectKind()
@@ -177,7 +298,11 @@ var _ = Describe("Test operandHandler", func() {
 			err = handler.EnsureDeleted(req)
 			Expect(err).Should(Equal(fakeError))
 
-			By("check that KV is deleted", func() {
+			By("Check that event was emitted", func() {
+				Expect(eventEmitter.GotExpectedEvent()).To(BeTrue())
+			})
+
+			By("check that KV still exists", func() {
 				// Read back KV
 				kvList := kubevirtv1.KubeVirtList{}
 				err := cli.List(req.Ctx, &kvList)
@@ -194,14 +319,21 @@ var _ = Describe("Test operandHandler", func() {
 			hco := commonTestUtils.NewHco()
 			cli := commonTestUtils.InitClient([]runtime.Object{qsCrd, hco})
 
-			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), true, commonTestUtils.EventEmitterMock{})
+			fakeError := fmt.Errorf("fake CDI deletion error")
+			eventEmitter := commonTestUtils.NewEventEmitterMock(
+				commonTestUtils.MockEvent{
+					EventType: corev1.EventTypeWarning,
+					Reason:    ErrCDIUninstall,
+					Msg:       uninstallCDIErrorMsg + fakeError.Error(),
+				},
+			)
+			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), true, eventEmitter)
 			handler.FirstUseInitiation(commonTestUtils.GetScheme(), true, hco)
 
 			req := commonTestUtils.NewReq(hco)
 			err = handler.Ensure(req)
 			Expect(err).ToNot(HaveOccurred())
 
-			fakeError := fmt.Errorf("fake CDI deletion error")
 			cli.InitiateDeleteErrors(func(obj client.Object) error {
 				if unstructed, ok := obj.(runtime.Unstructured); ok {
 					kind := unstructed.GetObjectKind()
@@ -215,7 +347,11 @@ var _ = Describe("Test operandHandler", func() {
 			err = handler.EnsureDeleted(req)
 			Expect(err).Should(Equal(fakeError))
 
-			By("make sure the CDI object created", func() {
+			By("Check that event was emitted", func() {
+				Expect(eventEmitter.GotExpectedEvent()).To(BeTrue())
+			})
+
+			By("make sure the CDI object still exists", func() {
 				// Read back KV
 				cdiList := cdiv1beta1.CDIList{}
 				err := cli.List(req.Ctx, &cdiList)
@@ -223,6 +359,57 @@ var _ = Describe("Test operandHandler", func() {
 				Expect(cdiList).ToNot(BeNil())
 				Expect(cdiList.Items).To(HaveLen(1))
 				Expect(cdiList.Items[0].Name).Should(Equal("cdi-kubevirt-hyperconverged"))
+			})
+		})
+
+		It("default delete error handling", func() {
+			err := os.Setenv(manifestLocationVarName, testFileLocation)
+			Expect(err).ToNot(HaveOccurred())
+			hco := commonTestUtils.NewHco()
+			cli := commonTestUtils.InitClient([]runtime.Object{qsCrd, hco})
+
+			fakeError := fmt.Errorf("fake CNA deletion error")
+			eventEmitter := commonTestUtils.NewEventEmitterMock()
+
+			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), true, eventEmitter)
+			handler.FirstUseInitiation(commonTestUtils.GetScheme(), true, hco)
+
+			req := commonTestUtils.NewReq(hco)
+			err = handler.Ensure(req)
+			Expect(err).ToNot(HaveOccurred())
+
+			cli.InitiateDeleteErrors(func(obj client.Object) error {
+				if unstructed, ok := obj.(runtime.Unstructured); ok {
+					kind := unstructed.GetObjectKind()
+					if kind.GroupVersionKind().Kind == "NetworkAddonsConfig" {
+						return fakeError
+					}
+				}
+				return nil
+			})
+
+			eventEmitter.SetExpectedEvents([]commonTestUtils.MockEvent{
+				{
+					EventType: corev1.EventTypeWarning,
+					Reason:    ErrHCOUninstall,
+					Msg:       uninstallHCOErrorMsg,
+				},
+			}...)
+			err = handler.EnsureDeleted(req)
+			Expect(err).Should(Equal(fakeError))
+
+			By("Check that event was emitted", func() {
+				Expect(eventEmitter.GotExpectedEvent()).To(BeTrue())
+			})
+
+			By("make sure the CNA object still exists", func() {
+				// Read back CNA
+				cnaList := networkaddonsv1.NetworkAddonsConfigList{}
+				err := cli.List(req.Ctx, &cnaList)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cnaList).ToNot(BeNil())
+				Expect(cnaList.Items).To(HaveLen(1))
+				Expect(cnaList.Items[0].Name).Should(Equal("cluster"))
 			})
 		})
 	})
