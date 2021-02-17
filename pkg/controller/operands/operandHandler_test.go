@@ -269,14 +269,7 @@ var _ = Describe("Test operandHandler", func() {
 			hco := commonTestUtils.NewHco()
 			cli := commonTestUtils.InitClient([]runtime.Object{qsCrd, hco})
 
-			fakeError := fmt.Errorf("fake KV deletion error")
-			eventEmitter := commonTestUtils.NewEventEmitterMock(
-				commonTestUtils.MockEvent{
-					EventType: corev1.EventTypeWarning,
-					Reason:    ErrVirtUninstall,
-					Msg:       uninstallVirtErrorMsg + fakeError.Error(),
-				},
-			)
+			eventEmitter := commonTestUtils.NewEventEmitterMock()
 
 			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), true, eventEmitter)
 			handler.FirstUseInitiation(commonTestUtils.GetScheme(), true, hco)
@@ -285,6 +278,7 @@ var _ = Describe("Test operandHandler", func() {
 			err = handler.Ensure(req)
 			Expect(err).ToNot(HaveOccurred())
 
+			fakeError := fmt.Errorf("fake KV deletion error")
 			cli.InitiateDeleteErrors(func(obj client.Object) error {
 				if unstructed, ok := obj.(runtime.Unstructured); ok {
 					kind := unstructed.GetObjectKind()
@@ -295,6 +289,13 @@ var _ = Describe("Test operandHandler", func() {
 				return nil
 			})
 
+			eventEmitter.SetExpectedEvents(
+				commonTestUtils.MockEvent{
+					EventType: corev1.EventTypeWarning,
+					Reason:    ErrVirtUninstall,
+					Msg:       uninstallVirtErrorMsg + fakeError.Error(),
+				},
+			)
 			err = handler.EnsureDeleted(req)
 			Expect(err).Should(Equal(fakeError))
 
@@ -319,14 +320,7 @@ var _ = Describe("Test operandHandler", func() {
 			hco := commonTestUtils.NewHco()
 			cli := commonTestUtils.InitClient([]runtime.Object{qsCrd, hco})
 
-			fakeError := fmt.Errorf("fake CDI deletion error")
-			eventEmitter := commonTestUtils.NewEventEmitterMock(
-				commonTestUtils.MockEvent{
-					EventType: corev1.EventTypeWarning,
-					Reason:    ErrCDIUninstall,
-					Msg:       uninstallCDIErrorMsg + fakeError.Error(),
-				},
-			)
+			eventEmitter := commonTestUtils.NewEventEmitterMock()
 			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), true, eventEmitter)
 			handler.FirstUseInitiation(commonTestUtils.GetScheme(), true, hco)
 
@@ -334,6 +328,7 @@ var _ = Describe("Test operandHandler", func() {
 			err = handler.Ensure(req)
 			Expect(err).ToNot(HaveOccurred())
 
+			fakeError := fmt.Errorf("fake CDI deletion error")
 			cli.InitiateDeleteErrors(func(obj client.Object) error {
 				if unstructed, ok := obj.(runtime.Unstructured); ok {
 					kind := unstructed.GetObjectKind()
@@ -343,6 +338,14 @@ var _ = Describe("Test operandHandler", func() {
 				}
 				return nil
 			})
+
+			eventEmitter.SetExpectedEvents(
+				commonTestUtils.MockEvent{
+					EventType: corev1.EventTypeWarning,
+					Reason:    ErrCDIUninstall,
+					Msg:       uninstallCDIErrorMsg + fakeError.Error(),
+				},
+			)
 
 			err = handler.EnsureDeleted(req)
 			Expect(err).Should(Equal(fakeError))
