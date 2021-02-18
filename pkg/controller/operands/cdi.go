@@ -22,7 +22,8 @@ import (
 )
 
 const (
-	cdiRoleName = "hco.kubevirt.io:config-reader"
+	cdiRoleName                   = "hco.kubevirt.io:config-reader"
+	HonorWaitForFirstConsumerGate = "HonorWaitForFirstConsumer"
 )
 
 type cdiHandler genericOperand
@@ -84,9 +85,9 @@ func (h *cdiHooks) updateCr(req *common.HcoRequest, Client client.Client, exists
 	if found.Spec.Config != nil {
 		cdi.Spec.Config = &cdiv1beta1.CDIConfigSpec{}
 		found.Spec.Config.DeepCopyInto(cdi.Spec.Config)
+		// restore default feature gates
+		setDefaultFeatureGates(&cdi.Spec)
 	}
-
-	setDefaultFeatureGates(&cdi.Spec)
 
 	if !reflect.DeepEqual(found.Spec, cdi.Spec) ||
 		!reflect.DeepEqual(found.Labels, cdi.Labels) {
@@ -109,19 +110,19 @@ func (h *cdiHooks) updateCr(req *common.HcoRequest, Client client.Client, exists
 }
 
 func setDefaultFeatureGates(spec *cdiv1beta1.CDISpec) {
-	featureGate := "HonorWaitForFirstConsumer"
-
 	if spec.Config == nil {
 		spec.Config = &cdiv1beta1.CDIConfigSpec{}
 	} else {
-		for _, value := range spec.Config.FeatureGates {
-			if value == featureGate {
-				return
-			}
+		if hcoutil.ContainsString(spec.Config.FeatureGates, HonorWaitForFirstConsumerGate) {
+			return
 		}
 	}
 
-	spec.Config.FeatureGates = append(spec.Config.FeatureGates, featureGate)
+	spec.Config.FeatureGates = append(spec.Config.FeatureGates, getDefaultFeatureGates()...)
+}
+
+func getDefaultFeatureGates() []string {
+	return []string{HonorWaitForFirstConsumerGate}
 }
 
 func (h *cdiHooks) postFound(req *common.HcoRequest, exists runtime.Object) error {
@@ -143,7 +144,7 @@ func NewCDI(hc *hcov1beta1.HyperConverged, opts ...string) (*cdiv1beta1.CDI, err
 
 	spec := cdiv1beta1.CDISpec{
 		UninstallStrategy: &uninstallStrategy,
-		Config:            &cdiv1beta1.CDIConfigSpec{FeatureGates: []string{"HonorWaitForFirstConsumer"}},
+		Config:            &cdiv1beta1.CDIConfigSpec{FeatureGates: getDefaultFeatureGates()},
 	}
 
 	if hc.Spec.Infra.NodePlacement != nil {
@@ -181,7 +182,7 @@ func (h *cdiHooks) ensureKubeVirtStorageRole(req *common.HcoRequest) error {
 
 	found := &rbacv1.Role{}
 	err := h.Client.Get(req.Ctx, client.ObjectKeyFromObject(kubevirtStorageRole), found)
-	if err != nil && apierrors.IsNotFound(err) {
+	if apierrors.IsNotFound(err) {
 		req.Logger.Info("Creating kubevirt storage role")
 		return h.Client.Create(req.Ctx, kubevirtStorageRole)
 	}

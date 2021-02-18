@@ -12,11 +12,13 @@ import (
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 	"github.com/openshift/custom-resource-status/testlib"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer/pkg/apis/core/v1beta1"
+	"reflect"
 )
 
 var _ = Describe("CDI Operand", func() {
@@ -588,6 +590,7 @@ var _ = Describe("CDI Operand", func() {
 
 				Expect(cdi.Spec.ImagePullPolicy).Should(BeEmpty())
 				Expect(cdi.Spec.CloneStrategyOverride).To(BeNil())
+
 			})
 		})
 
@@ -637,6 +640,98 @@ var _ = Describe("CDI Operand", func() {
 				Expect(crI == crII).To(BeFalse())
 				Expect(handler.hooks.(*cdiHooks).cache == crI).To(BeFalse())
 				Expect(handler.hooks.(*cdiHooks).cache == crII).To(BeTrue())
+			})
+		})
+
+		Context("KubeVirt Storage Role", func() {
+			It("should do nothing if exists", func() {
+				existsCdi, err := NewCDI(hco)
+				expectedRole := NewKubeVirtStorageRoleForCR(hco, hco.Namespace)
+				Expect(err).ToNot(HaveOccurred())
+
+				cl := commonTestUtils.InitClient([]runtime.Object{hco, existsCdi, expectedRole})
+
+				handler := (*genericOperand)(newCdiHandler(cl, commonTestUtils.GetScheme()))
+				res := handler.ensure(req)
+				Expect(res.Err).ToNot(HaveOccurred())
+
+				foundRole := &rbacv1.Role{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: expectedRole.Name, Namespace: expectedRole.Namespace},
+						foundRole),
+				).ToNot(HaveOccurred())
+
+				Expect(reflect.DeepEqual(expectedRole.Labels, foundRole.Labels)).To(BeTrue())
+			})
+
+			It("should update if labels are missing", func() {
+				existsCdi, err := NewCDI(hco)
+				expectedRole := NewKubeVirtStorageRoleForCR(hco, hco.Namespace)
+				expectedLabels := expectedRole.Labels
+				expectedRole.Labels = nil
+				Expect(err).ToNot(HaveOccurred())
+
+				cl := commonTestUtils.InitClient([]runtime.Object{hco, existsCdi, expectedRole})
+
+				handler := (*genericOperand)(newCdiHandler(cl, commonTestUtils.GetScheme()))
+				res := handler.ensure(req)
+				Expect(res.Err).ToNot(HaveOccurred())
+
+				foundRole := &rbacv1.Role{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: expectedRole.Name, Namespace: expectedRole.Namespace},
+						foundRole),
+				).ToNot(HaveOccurred())
+
+				Expect(reflect.DeepEqual(expectedLabels, foundRole.Labels)).To(BeTrue())
+			})
+		})
+
+		Context("KubeVirt Storage Role Binding", func() {
+			It("should do nothing if exists", func() {
+				existsCdi, err := NewCDI(hco)
+				expectedRoleBinding := NewKubeVirtStorageRoleBindingForCR(hco, hco.Namespace)
+				Expect(err).ToNot(HaveOccurred())
+
+				cl := commonTestUtils.InitClient([]runtime.Object{hco, existsCdi, expectedRoleBinding})
+
+				handler := (*genericOperand)(newCdiHandler(cl, commonTestUtils.GetScheme()))
+				res := handler.ensure(req)
+				Expect(res.Err).ToNot(HaveOccurred())
+
+				foundRoleBinding := &rbacv1.RoleBinding{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: expectedRoleBinding.Name, Namespace: expectedRoleBinding.Namespace},
+						foundRoleBinding),
+				).ToNot(HaveOccurred())
+
+				Expect(reflect.DeepEqual(expectedRoleBinding.Labels, foundRoleBinding.Labels)).To(BeTrue())
+			})
+
+			It("should update if labels are missing", func() {
+				existsCdi, err := NewCDI(hco)
+				expectedRoleBinding := NewKubeVirtStorageRoleBindingForCR(hco, hco.Namespace)
+				expectedLabels := expectedRoleBinding.Labels
+				expectedRoleBinding.Labels = nil
+				Expect(err).ToNot(HaveOccurred())
+
+				cl := commonTestUtils.InitClient([]runtime.Object{hco, existsCdi, expectedRoleBinding})
+
+				handler := (*genericOperand)(newCdiHandler(cl, commonTestUtils.GetScheme()))
+				res := handler.ensure(req)
+				Expect(res.Err).ToNot(HaveOccurred())
+
+				foundRoleBinding := &rbacv1.RoleBinding{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: expectedRoleBinding.Name, Namespace: expectedRoleBinding.Namespace},
+						foundRoleBinding),
+				).ToNot(HaveOccurred())
+
+				Expect(reflect.DeepEqual(expectedLabels, foundRoleBinding.Labels)).To(BeTrue())
 			})
 		})
 	})
