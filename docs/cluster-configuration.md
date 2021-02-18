@@ -150,3 +150,70 @@ spec:
     withHostModelCPU: true
     withHostPassthroughCPU: true
 ```
+
+## Configurations via Annotations
+In addition to `featureGates` field in HCO CR's spec, the user can set annotations in the HCO CR to unfold more configuration options.
+
+### OvS Opt-In Annotation
+Starting from HCO version 1.3.0, OvS CNI support is disabled by default on new installations.  
+In order to enable the deployment of OvS CNI DaemonSet on all _workload_ nodes, an annotation of `deployOVS: true` must be set on HCO CR.  
+It can be set while creating the HCO custom resource during the initial deployment, or during run time.
+* To enable OvS CNI on the cluster, the HCO CR should be similar to:  
+```
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  annotations:
+    deployOVS: "true"
+...
+```
+* OvS CNI can also be enabled during run time of HCO, by annotating its CR:
+```
+kubectl annotate HyperConverged kubevirt-hyperconverged -n kubevirt-hyperconverged deployOVS=true --overwrite
+```
+
+If a HCO was upgraded to 1.3.0 from a previous version, the annotation will be added as `true` and OvS will be deployed.  
+Subsequent upgrades to newer versions will preserve the state from previous version, i.e. OvS will be deployed in the upgraded version if and only if it was deployed in the previous one.
+
+### jsonpatch Annotations
+HCO enables users to modify the operand CRs directly using jsonpatch annotations in HCO CR.  
+Modifications done to CRs using jsonpatch annotations won't be reconciled back by HCO to the opinionated defaults.  
+The following annotations are supported in the HyperConverged CR:
+* `kubevirt.kubevirt.io/jsonpatch` - for KubeVirt configurations
+* `containerizeddataimporter.kubevirt.io/jsonpatch` - for CDI configurations
+* `networkaddonsconfig.kubevirt.io/jsonpatch` - for CNAO configurations
+
+The content of the annotation will be a json array of patch objects, as defined in [RFC6902](https://tools.ietf.org/html/rfc6902).
+The patch’s path is relative to the `spec` field in each CR.
+
+#### Examples
+* The user wants to set the KubeVirt CR’s `spec.configuration.migrations.allowPostCopy` field to `true`. In order to do that, the following annotation should be added to the HyperConverged CR:
+```
+metadata:
+  annotations:
+    kubevirt.kubevirt.io/jsonpatch: |-
+      [
+        {
+          "op": "add",
+          "path": "/configuration/migrations",
+          "value": '{"allowPostCopy": "true"}'
+        }
+      ]
+```
+* The user wants to override the default URL used when uploading to a DataVolume, by setting the CDI CR's `spec.config.uploadProxyURLOverride` to `myproxy.example.com`. In order to do that, the following annotation should be added to the HyperConverged CR:
+```
+metadata:
+  annotations:
+    containerizeddataimporter.kubevirt.io/jsonpatch: |-
+      [
+        {
+          "op": "add",
+          "path": "/config/uploadProxyURLOverride",
+          "value": "myproxy.example.com"
+        }
+      ]
+```
+
+### WARNING
+Using the jsonpatch annotation feature incorrectly might lead to unexpected results and could potentially render Kubevirt-Hyperconverged system unstable.  
+Use with caution!
