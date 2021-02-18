@@ -310,15 +310,12 @@ func isFeatureGateMissingFrom(checks featureGateChecks, featureGate string) bool
 	if check, isKnown := checks[featureGate]; isKnown {
 		return !check()
 	}
-	return true
+	return false
 }
 
 type featureGateChecks map[string]func() bool
 
 func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates) featureGateChecks {
-	if featureGates == nil {
-		return nil
-	}
 	return map[string]func() bool{
 		HotplugVolumesGate:       featureGates.IsHotplugVolumesEnabled,
 		kvWithHostPassthroughCPU: featureGates.IsWithHostPassthroughCPUEnabled,
@@ -511,8 +508,9 @@ func NewKubeVirtConfigForCR(cr *hcov1beta1.HyperConverged, namespace string) *co
 
 // get list of feature gates from a specific operand list
 func getKvFeatureGateList(fgs *hcov1beta1.HyperConvergedFeatureGates) []string {
-	res := make([]string, 0, 3)
-	for gate, check := range getFeatureGateChecks(fgs) {
+	checks := getFeatureGateChecks(fgs)
+	res := make([]string, 0, len(checks))
+	for gate, check := range checks {
 		if check() {
 			res = append(res, gate)
 		}
