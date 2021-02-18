@@ -77,7 +77,7 @@ Create the namespace for the HCO.
 kubectl create ns kubevirt-hyperconverged
 ```
 
-Create an OperatorGroup.
+Create an OperatorGroup that watches all namespaces.
 ```bash
 cat <<EOF | kubectl create -f -
 apiVersion: operators.coreos.com/v1
@@ -85,9 +85,6 @@ kind: OperatorGroup
 metadata:
   name: hco-operatorgroup
   namespace: kubevirt-hyperconverged
-spec:
-  targetNamespaces:
-  - "kubevirt-hyperconverged"
 EOF
 ```
 

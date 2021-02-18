@@ -127,9 +127,6 @@ kind: OperatorGroup
 metadata:
   name: ${HCO_OPERATORGROUP_NAME}
   namespace: ${HCO_NAMESPACE}
-spec:
-  targetNamespaces:
-  - ${HCO_NAMESPACE}
 EOF
 
 cat <<EOF | ${CMD} create -f -
