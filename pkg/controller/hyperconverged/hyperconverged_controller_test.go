@@ -54,8 +54,8 @@ var _ = Describe("HyperconvergedController", func() {
 		Context("HCO Lifecycle", func() {
 
 			BeforeEach(func() {
-				os.Setenv("CONVERSION_CONTAINER", commonTestUtils.Conversion_image)
-				os.Setenv("VMWARE_CONTAINER", commonTestUtils.Vmware_image)
+				os.Setenv("CONVERSION_CONTAINER", commonTestUtils.ConversionImage)
+				os.Setenv("VMWARE_CONTAINER", commonTestUtils.VmwareImage)
 				os.Setenv("OPERATOR_NAMESPACE", namespace)
 			})
 
@@ -797,8 +797,8 @@ var _ = Describe("HyperconvergedController", func() {
 			origConds := expected.hco.Status.Conditions
 
 			BeforeEach(func() {
-				os.Setenv("CONVERSION_CONTAINER", commonTestUtils.Conversion_image)
-				os.Setenv("VMWARE_CONTAINER", commonTestUtils.Vmware_image)
+				os.Setenv("CONVERSION_CONTAINER", commonTestUtils.ConversionImage)
+				os.Setenv("VMWARE_CONTAINER", commonTestUtils.VmwareImage)
 				os.Setenv("OPERATOR_NAMESPACE", namespace)
 				os.Setenv(hcoutil.HcoKvIoVersionName, version.Version)
 			})
@@ -843,8 +843,8 @@ var _ = Describe("HyperconvergedController", func() {
 			okConds := expected.hco.Status.Conditions
 
 			BeforeEach(func() {
-				os.Setenv("CONVERSION_CONTAINER", commonTestUtils.Conversion_image)
-				os.Setenv("VMWARE_CONTAINER", commonTestUtils.Vmware_image)
+				os.Setenv("CONVERSION_CONTAINER", commonTestUtils.ConversionImage)
+				os.Setenv("VMWARE_CONTAINER", commonTestUtils.VmwareImage)
 				os.Setenv("OPERATOR_NAMESPACE", namespace)
 
 				expected.kv.Status.ObservedKubeVirtVersion = newComponentVersion

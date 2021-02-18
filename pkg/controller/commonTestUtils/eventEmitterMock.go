@@ -17,23 +17,22 @@ type MockEvent struct {
 }
 
 type EventEmitterMock struct {
-	expectedEvents *sync.Map
+	storedEvents []MockEvent
+	lock         *sync.Mutex
 }
 
-func NewEventEmitterMock(expectedEvents ...MockEvent) *EventEmitterMock {
-	eem := &EventEmitterMock{}
-	eem.SetExpectedEvents(expectedEvents...)
-
-	return eem
-}
-
-func (eem *EventEmitterMock) SetExpectedEvents(expectedEvents ...MockEvent) {
-	events := &sync.Map{}
-	for _, event := range expectedEvents {
-		events.Store(event, false)
+func NewEventEmitterMock() *EventEmitterMock {
+	return &EventEmitterMock{
+		storedEvents: make([]MockEvent, 0),
+		lock:         &sync.Mutex{},
 	}
+}
 
-	eem.expectedEvents = events
+func (eem *EventEmitterMock) Reset() {
+	eem.lock.Lock()
+	defer eem.lock.Unlock()
+
+	eem.storedEvents = make([]MockEvent, 0)
 }
 
 func (EventEmitterMock) Init(_ context.Context, _ manager.Manager, _ hcoutil.ClusterInfo, _ logr.Logger) {
@@ -41,23 +40,40 @@ func (EventEmitterMock) Init(_ context.Context, _ manager.Manager, _ hcoutil.Clu
 }
 
 func (eem *EventEmitterMock) EmitEvent(_ runtime.Object, eventType, reason, msg string) {
-	eem.expectedEvents.Store(MockEvent{
+	event := MockEvent{
 		EventType: eventType,
 		Reason:    reason,
 		Msg:       msg,
-	}, true)
+	}
+
+	eem.lock.Lock()
+	defer eem.lock.Unlock()
+
+	eem.storedEvents = append(eem.storedEvents, event)
 }
 
 func (EventEmitterMock) UpdateClient(_ context.Context, _ client.Reader, _ logr.Logger) {
 	/* not implemented; mock only */
 }
 
-func (eem EventEmitterMock) GotExpectedEvent() bool {
-	gotAllEvents := true
-	eem.expectedEvents.Range(func(key, value interface{}) bool {
-		gotAllEvents = gotAllEvents && value.(bool)
-		return value.(bool)
-	})
+func (eem EventEmitterMock) CheckEvents(expectedEvents []MockEvent) bool {
+	eem.lock.Lock()
+	defer eem.lock.Unlock()
 
-	return gotAllEvents
+	for _, expectedEvent := range expectedEvents {
+		if !eventInArray(eem.storedEvents, expectedEvent) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func eventInArray(eventList []MockEvent, event MockEvent) bool {
+	for _, expectedEvent := range eventList {
+		if event == expectedEvent {
+			return true
+		}
+	}
+	return false
 }

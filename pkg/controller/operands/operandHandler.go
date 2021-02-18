@@ -3,7 +3,6 @@ package operands
 import (
 	"context"
 	"fmt"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sync"
 	"time"
 
@@ -179,9 +178,7 @@ func (h OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 				errorCh <- err
 			} else {
 				key := client.ObjectKeyFromObject(o)
-				if err := h.client.Get(tCtx, key, o); apierrors.IsNotFound(err) {
-					h.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "Killing", fmt.Sprintf("Removed %s %s", o.GetObjectKind().GroupVersionKind().Kind, key.Name))
-				}
+				h.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "Killing", fmt.Sprintf("Removed %s %s", o.GetObjectKind().GroupVersionKind().Kind, key.Name))
 			}
 		}(res, &wg)
 	}
