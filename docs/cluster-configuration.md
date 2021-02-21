@@ -152,14 +152,15 @@ spec:
 ```
 
 ## Configurations via Annotations
-In addition to `featureGates` field in HCO CR's spec, the user can set annotations in the HCO CR to unfold more configuration options.
+In addition to `featureGates` field in HyperConverged CR's spec, the user can set annotations in the HyperConverged CR to unfold more configuration options.  
+**Warning:** Annotations are less formal means of cluster configuration and may be dropped without the same deprecation process of a regular API, such as in the `spec` section.
 
 ### OvS Opt-In Annotation
 Starting from HCO version 1.3.0, OvS CNI support is disabled by default on new installations.  
-In order to enable the deployment of OvS CNI DaemonSet on all _workload_ nodes, an annotation of `deployOVS: true` must be set on HCO CR.  
-It can be set while creating the HCO custom resource during the initial deployment, or during run time.
-* To enable OvS CNI on the cluster, the HCO CR should be similar to:  
-```
+In order to enable the deployment of OvS CNI DaemonSet on all _workload_ nodes, an annotation of `deployOVS: true` must be set on HyperConverged CR.  
+It can be set while creating the HyperConverged custom resource during the initial deployment, or during run time.
+* To enable OvS CNI on the cluster, the HyperConverged CR should be similar to:  
+```yaml
 apiVersion: hco.kubevirt.io/v1beta1
 kind: HyperConverged
 metadata:
@@ -172,11 +173,11 @@ metadata:
 kubectl annotate HyperConverged kubevirt-hyperconverged -n kubevirt-hyperconverged deployOVS=true --overwrite
 ```
 
-If a HCO was upgraded to 1.3.0 from a previous version, the annotation will be added as `true` and OvS will be deployed.  
+If HCO was upgraded to 1.3.0 from a previous version, the annotation will be added as `true` and OvS will be deployed.  
 Subsequent upgrades to newer versions will preserve the state from previous version, i.e. OvS will be deployed in the upgraded version if and only if it was deployed in the previous one.
 
 ### jsonpatch Annotations
-HCO enables users to modify the operand CRs directly using jsonpatch annotations in HCO CR.  
+HCO enables users to modify the operand CRs directly using jsonpatch annotations in HyperConverged CR.  
 Modifications done to CRs using jsonpatch annotations won't be reconciled back by HCO to the opinionated defaults.  
 The following annotations are supported in the HyperConverged CR:
 * `kubevirt.kubevirt.io/jsonpatch` - for KubeVirt configurations
@@ -188,7 +189,7 @@ The patch’s path is relative to the `spec` field in each CR.
 
 #### Examples
 * The user wants to set the KubeVirt CR’s `spec.configuration.migrations.allowPostCopy` field to `true`. In order to do that, the following annotation should be added to the HyperConverged CR:
-```
+```yaml
 metadata:
   annotations:
     kubevirt.kubevirt.io/jsonpatch: |-
@@ -201,7 +202,7 @@ metadata:
       ]
 ```
 * The user wants to override the default URL used when uploading to a DataVolume, by setting the CDI CR's `spec.config.uploadProxyURLOverride` to `myproxy.example.com`. In order to do that, the following annotation should be added to the HyperConverged CR:
-```
+```yaml
 metadata:
   annotations:
     containerizeddataimporter.kubevirt.io/jsonpatch: |-
@@ -214,6 +215,59 @@ metadata:
       ]
 ```
 
+**_Note:_** The full configurations options for Kubevirt, CDI and CNAO which are avialbale on the cluster, can be explored by using `kubectl explain <resource name>.spec`. For example:  
+```yaml
+$ kubectl explain kv.spec
+KIND:     KubeVirt
+VERSION:  kubevirt.io/v1
+
+RESOURCE: spec <Object>
+
+DESCRIPTION:
+     <empty>
+
+FIELDS:
+   certificateRotateStrategy	<Object>
+
+   configuration	<Object>
+     holds kubevirt configurations. same as the virt-configMap
+
+   customizeComponents	<Object>
+
+   imagePullPolicy	<string>
+     The ImagePullPolicy to use.
+
+   imageRegistry	<string>
+     The image registry to pull the container images from Defaults to the same
+     registry the operator's container image is pulled from.
+  
+  <truncated>
+```
+
+To inspect lower-level objects onder `spec`, they can be specified in `kubectl explain`, recursively. e.g.  
+```yaml
+$ kubectl explain kv.spec.configuration.network
+KIND:     KubeVirt
+VERSION:  kubevirt.io/v1
+
+RESOURCE: network <Object>
+
+DESCRIPTION:
+     NetworkConfiguration holds network options
+
+FIELDS:
+   defaultNetworkInterface	<string>
+
+   permitBridgeInterfaceOnPodNetwork	<boolean>
+
+   permitSlirpInterface	<boolean>
+```
+
+* To explore kubevirt configuration options, use `kubectl explain kv.spec`
+* To explore CDI configuration options, use `kubectl explain cdi.spec`
+* To explore CNAO configuration options, use `kubectl explain networkaddonsconfig.spec`
+
 ### WARNING
-Using the jsonpatch annotation feature incorrectly might lead to unexpected results and could potentially render Kubevirt-Hyperconverged system unstable.  
-Use with caution!
+Using the jsonpatch annotation feature incorrectly might lead to unexpected results and could potentially render the Kubevirt-Hyperconverged system unstable.  
+The jsonpatch annotation feature is particularly dangerous when upgrading Kubevirt-Hyperconverged, as the structure or the semantics of the underlying components' CR might be changed. Please remove any jsonpatch annotation usage prior the upgrade, to avoid any potential issues.
+**USE WITH CAUTION!**
