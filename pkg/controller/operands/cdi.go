@@ -112,10 +112,10 @@ func (h *cdiHooks) updateCr(req *common.HcoRequest, Client client.Client, exists
 func setDefaultFeatureGates(spec *cdiv1beta1.CDISpec) {
 	if spec.Config == nil {
 		spec.Config = &cdiv1beta1.CDIConfigSpec{}
-	} else {
-		if hcoutil.ContainsString(spec.Config.FeatureGates, HonorWaitForFirstConsumerGate) {
-			return
-		}
+	}
+
+	if hcoutil.ContainsString(spec.Config.FeatureGates, HonorWaitForFirstConsumerGate) {
+		return
 	}
 
 	spec.Config.FeatureGates = append(spec.Config.FeatureGates, getDefaultFeatureGates()...)
@@ -175,10 +175,7 @@ func NewCDIWithNameOnly(hc *hcov1beta1.HyperConverged, opts ...string) *cdiv1bet
 }
 
 func (h *cdiHooks) ensureKubeVirtStorageRole(req *common.HcoRequest) error {
-	kubevirtStorageRole := NewKubeVirtStorageRoleForCR(req.Instance, req.Namespace)
-	if err := controllerutil.SetControllerReference(req.Instance, kubevirtStorageRole, h.Scheme); err != nil {
-		return err
-	}
+	kubevirtStorageRole := NewKubeVirtStorageRoleForCR(req.Instance, req.Namespace, h.Scheme)
 
 	found := &rbacv1.Role{}
 	err := h.Client.Get(req.Ctx, client.ObjectKeyFromObject(kubevirtStorageRole), found)
@@ -209,10 +206,7 @@ func (h *cdiHooks) ensureKubeVirtStorageRole(req *common.HcoRequest) error {
 }
 
 func (h *cdiHooks) ensureKubeVirtStorageRoleBinding(req *common.HcoRequest) error {
-	kubevirtStorageRoleBinding := NewKubeVirtStorageRoleBindingForCR(req.Instance, req.Namespace)
-	if err := controllerutil.SetControllerReference(req.Instance, kubevirtStorageRoleBinding, h.Scheme); err != nil {
-		return err
-	}
+	kubevirtStorageRoleBinding := NewKubeVirtStorageRoleBindingForCR(req.Instance, req.Namespace, h.Scheme)
 
 	found := &rbacv1.RoleBinding{}
 	err := h.Client.Get(req.Ctx, client.ObjectKeyFromObject(kubevirtStorageRoleBinding), found)
@@ -242,8 +236,8 @@ func (h *cdiHooks) ensureKubeVirtStorageRoleBinding(req *common.HcoRequest) erro
 	return nil
 }
 
-func NewKubeVirtStorageRoleForCR(cr *hcov1beta1.HyperConverged, namespace string) *rbacv1.Role {
-	return &rbacv1.Role{
+func NewKubeVirtStorageRoleForCR(cr *hcov1beta1.HyperConverged, namespace string, scheme *runtime.Scheme) *rbacv1.Role {
+	role := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cdiRoleName,
 			Labels:    getLabels(cr, hcoutil.AppComponentStorage),
@@ -258,10 +252,13 @@ func NewKubeVirtStorageRoleForCR(cr *hcov1beta1.HyperConverged, namespace string
 			},
 		},
 	}
+
+	_ = controllerutil.SetControllerReference(cr, role, scheme)
+	return role
 }
 
-func NewKubeVirtStorageRoleBindingForCR(cr *hcov1beta1.HyperConverged, namespace string) *rbacv1.RoleBinding {
-	return &rbacv1.RoleBinding{
+func NewKubeVirtStorageRoleBindingForCR(cr *hcov1beta1.HyperConverged, namespace string, scheme *runtime.Scheme) *rbacv1.RoleBinding {
+	roleBinding := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      cdiRoleName,
 			Labels:    getLabels(cr, hcoutil.AppComponentStorage),
@@ -280,6 +277,10 @@ func NewKubeVirtStorageRoleBindingForCR(cr *hcov1beta1.HyperConverged, namespace
 			},
 		},
 	}
+
+	_ = controllerutil.SetControllerReference(cr, roleBinding, scheme)
+
+	return roleBinding
 }
 
 // ************** CDI Storage Config Handler **************

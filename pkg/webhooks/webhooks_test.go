@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/commonTestUtils"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/commonTestUtils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
 

@@ -3,6 +3,8 @@ package operands
 import (
 	"context"
 	"fmt"
+	"reflect"
+
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/commonTestUtils"
@@ -18,7 +20,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer/pkg/apis/core/v1beta1"
-	"reflect"
 )
 
 var _ = Describe("CDI Operand", func() {
@@ -646,7 +647,7 @@ var _ = Describe("CDI Operand", func() {
 		Context("KubeVirt Storage Role", func() {
 			It("should do nothing if exists", func() {
 				existsCdi, err := NewCDI(hco)
-				expectedRole := NewKubeVirtStorageRoleForCR(hco, hco.Namespace)
+				expectedRole := NewKubeVirtStorageRoleForCR(hco, hco.Namespace, commonTestUtils.GetScheme())
 				Expect(err).ToNot(HaveOccurred())
 
 				cl := commonTestUtils.InitClient([]runtime.Object{hco, existsCdi, expectedRole})
@@ -662,12 +663,13 @@ var _ = Describe("CDI Operand", func() {
 						foundRole),
 				).ToNot(HaveOccurred())
 
-				Expect(reflect.DeepEqual(expectedRole.Labels, foundRole.Labels)).To(BeTrue())
+				Expect(expectedRole.ObjectMeta).Should(Equal(foundRole.ObjectMeta))
+				Expect(expectedRole.Rules).Should(Equal(foundRole.Rules))
 			})
 
 			It("should update if labels are missing", func() {
 				existsCdi, err := NewCDI(hco)
-				expectedRole := NewKubeVirtStorageRoleForCR(hco, hco.Namespace)
+				expectedRole := NewKubeVirtStorageRoleForCR(hco, hco.Namespace, commonTestUtils.GetScheme())
 				expectedLabels := expectedRole.Labels
 				expectedRole.Labels = nil
 				Expect(err).ToNot(HaveOccurred())
@@ -690,9 +692,10 @@ var _ = Describe("CDI Operand", func() {
 		})
 
 		Context("KubeVirt Storage Role Binding", func() {
+			scheme := commonTestUtils.GetScheme()
 			It("should do nothing if exists", func() {
 				existsCdi, err := NewCDI(hco)
-				expectedRoleBinding := NewKubeVirtStorageRoleBindingForCR(hco, hco.Namespace)
+				expectedRoleBinding := NewKubeVirtStorageRoleBindingForCR(hco, hco.Namespace, scheme)
 				Expect(err).ToNot(HaveOccurred())
 
 				cl := commonTestUtils.InitClient([]runtime.Object{hco, existsCdi, expectedRoleBinding})
@@ -713,7 +716,7 @@ var _ = Describe("CDI Operand", func() {
 
 			It("should update if labels are missing", func() {
 				existsCdi, err := NewCDI(hco)
-				expectedRoleBinding := NewKubeVirtStorageRoleBindingForCR(hco, hco.Namespace)
+				expectedRoleBinding := NewKubeVirtStorageRoleBindingForCR(hco, hco.Namespace, scheme)
 				expectedLabels := expectedRoleBinding.Labels
 				expectedRoleBinding.Labels = nil
 				Expect(err).ToNot(HaveOccurred())
