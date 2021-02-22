@@ -54,6 +54,12 @@ spec:
                   a flag to `true` will enable the feature. Setting `false` or removing
                   the feature gate, disables the feature.
                 properties:
+                  gpu:
+                    description: Allow assigning GPU and vGPU devices to virtual machines
+                    type: boolean
+                  hostDevices:
+                    description: Allow assigning host devices to virtual machines
+                    type: boolean
                   hotplugVolumes:
                     description: Allow attaching a data volume to a running VMI
                     type: boolean

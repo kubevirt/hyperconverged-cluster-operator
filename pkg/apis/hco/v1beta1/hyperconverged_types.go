@@ -71,6 +71,14 @@ type HyperConvergedFeatureGates struct {
 	// +optional
 	HotplugVolumes *bool `json:"hotplugVolumes,omitempty"`
 
+	// Allow assigning GPU and vGPU devices to virtual machines
+	// +optional
+	GPU *bool `json:"gpu,omitempty"`
+
+	// Allow assigning host devices to virtual machines
+	// +optional
+	HostDevices *bool `json:"hostDevices,omitempty"`
+
 	// Allow migrating a virtual machine with CPU host-passthrough mode. This should be
 	// enabled only when the Cluster is homogeneous from CPU HW perspective doc here
 	// +optional
@@ -91,6 +99,14 @@ type HyperConvergedFeatureGates struct {
 
 func (fgs *HyperConvergedFeatureGates) IsHotplugVolumesEnabled() bool {
 	return (fgs != nil) && (fgs.HotplugVolumes != nil) && (*fgs.HotplugVolumes)
+}
+
+func (fgs *HyperConvergedFeatureGates) IsGPUAssignmentEnabled() bool {
+	return (fgs != nil) && (fgs.GPU != nil) && (*fgs.GPU)
+}
+
+func (fgs *HyperConvergedFeatureGates) IsHostDevicesAssignmentEnabled() bool {
+	return (fgs != nil) && (fgs.HostDevices != nil) && (*fgs.HostDevices)
 }
 
 func (fgs *HyperConvergedFeatureGates) IsSRIOVLiveMigrationEnabled() bool {
