@@ -40,8 +40,7 @@ type HyperConvergedSpec struct {
 	// the feature. Setting `false` or removing the feature gate, disables the feature.
 	// +optional
 	// +TODO: Always keep the default FeatureGates in sync with the default field values in HyperConvergedFeatureGates //NOSONAR
-	// +kubebuilder:default={sriovLiveMigration: false, hotplugVolumes: false, withHostPassthroughCPU: false, withHostModelCPU: true, hypervStrictCheck: true}
-	// +kubebuilder:default={withHostModelCPU: true, withHostPassthroughCPU: false, hypervStrictCheck: true, gpu: false, hostDevices: false}
+	// +kubebuilder:default={sriovLiveMigration: false, hotplugVolumes: false, gpu: false, hostDevices: false, withHostPassthroughCPU: false, withHostModelCPU: true, hypervStrictCheck: true}
 	FeatureGates *HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 
 	// operator version
