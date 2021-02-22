@@ -3,8 +3,10 @@ package operands
 import (
 	"errors"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
@@ -32,22 +34,48 @@ const (
 	SmbiosConfigKey         = "smbios"
 	SELinuxLauncherTypeKey  = "selinuxLauncherType"
 	DefaultNetworkInterface = "bridge"
-	HotplugVolumesGate      = "HotplugVolumes"
-	SRIOVLiveMigrationGate  = "SRIOVLiveMigration"
-	GPUGate                 = "GPU"
-	HostDevicesGate         = "HostDevices"
 )
 
+// env vars
 const (
-	// todo: remove this when KV configmap will be drop
-	cmFeatureGates = "DataVolumes,SRIOV,LiveMigration,CPUManager,CPUNodeDiscovery,Sidecar,Snapshot"
+	kvmEmulationEnvName = "KVM_EMULATION"
 )
 
+// KubeVirt FeatureGates
 const (
-	// ToDo: remove these and use KV's virtconfig constants when available
+	kvDataVolumesGate        = "DataVolumes"
+	kvSRIOVGate              = "SRIOV"
+	kvLiveMigrationGate      = "LiveMigration"
+	kvCPUManagerGate         = "CPUManager"
+	kvCPUNodeDiscoveryGate   = "CPUNodeDiscovery"
+	kvSidecarGate            = "Sidecar"
+	kvSnapshotGate           = "Snapshot"
+	HotplugVolumesGate       = "HotplugVolumes"
 	kvWithHostPassthroughCPU = "WithHostPassthroughCPU"
 	kvWithHostModelCPU       = "WithHostModelCPU"
+	SRIOVLiveMigrationGate   = "SRIOVLiveMigration"
 	kvHypervStrictCheck      = "HypervStrictCheck"
+	GPUGate                  = "GPU"
+	HostDevicesGate          = "HostDevices"
+)
+
+var (
+	kvFeatureGateList = []string{
+		kvDataVolumesGate,
+		kvSRIOVGate,
+		kvLiveMigrationGate,
+		kvCPUManagerGate,
+		kvCPUNodeDiscoveryGate,
+		kvSidecarGate,
+		kvSnapshotGate,
+		HotplugVolumesGate,
+		kvWithHostPassthroughCPU,
+		kvWithHostModelCPU,
+		SRIOVLiveMigrationGate,
+		kvHypervStrictCheck,
+		GPUGate,
+		HostDevicesGate,
+	}
 )
 
 // ************  KubeVirt Handler  **************
@@ -122,19 +150,16 @@ func (h *kubevirtHooks) updateCr(req *common.HcoRequest, Client client.Client, e
 }
 
 func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtv1.KubeVirt, error) {
+	config, err := getKVConfig(hc)
+	if err != nil {
+		return nil, err
+	}
+
 	spec := kubevirtv1.KubeVirtSpec{
 		UninstallStrategy: kubevirtv1.KubeVirtUninstallStrategyBlockUninstallIfWorkloadsExist,
 		Infra:             hcoConfig2KvConfig(hc.Spec.Infra),
 		Workloads:         hcoConfig2KvConfig(hc.Spec.Workloads),
-	}
-
-	fgs := getKvFeatureGateList(hc.Spec.FeatureGates)
-	if len(fgs) > 0 {
-		if spec.Configuration.DeveloperConfiguration == nil {
-			spec.Configuration.DeveloperConfiguration = &kubevirtv1.DeveloperConfiguration{}
-		}
-
-		spec.Configuration.DeveloperConfiguration.FeatureGates = fgs
+		Configuration:     *config,
 	}
 
 	kv := NewKubeVirtWithNameOnly(hc, opts...)
@@ -145,6 +170,63 @@ func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtv1.Kub
 	}
 
 	return kv, nil
+}
+
+func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtv1.KubeVirtConfiguration, error) {
+	devConfig, err := getKVDevConfig(hc)
+	if err != nil {
+		return nil, err
+	}
+
+	config := &kubevirtv1.KubeVirtConfiguration{
+		DeveloperConfiguration: devConfig,
+		SELinuxLauncherType:    "virt_launcher.process",
+		NetworkConfiguration: &kubevirtv1.NetworkConfiguration{
+			NetworkInterface: string(kubevirtv1.MasqueradeInterface),
+		},
+	}
+
+	if smbiosConfig, ok := os.LookupEnv("SMBIOS"); ok {
+		if smbiosConfig = strings.TrimSpace(smbiosConfig); smbiosConfig != "" {
+			err := yaml.NewYAMLOrJSONDecoder(strings.NewReader(smbiosConfig), 1024).Decode(config.SMBIOSConfig)
+			if err != nil {
+				return config, err
+			}
+		}
+	}
+
+	if val, ok := os.LookupEnv("MACHINETYPE"); ok {
+		if val = strings.TrimSpace(val); val != "" {
+			config.MachineType = val
+		}
+	}
+
+	return config, nil
+}
+
+func getKVDevConfig(hc *hcov1beta1.HyperConverged) (*kubevirtv1.DeveloperConfiguration, error) {
+	fgs := getKvFeatureGateList(hc.Spec.FeatureGates)
+
+	var kvmEmulation = false
+	kvmEmulationStr, ok := os.LookupEnv(kvmEmulationEnvName)
+	if ok {
+		if kvmEmulationStr = strings.TrimSpace(kvmEmulationStr); kvmEmulationStr != "" {
+			var err error
+			kvmEmulation, err = strconv.ParseBool(kvmEmulationStr)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if len(fgs) > 0 || kvmEmulation {
+		return &kubevirtv1.DeveloperConfiguration{
+			FeatureGates: fgs,
+			UseEmulation: kvmEmulation,
+		}, nil
+	}
+
+	return nil, nil
 }
 
 func NewKubeVirtWithNameOnly(hc *hcov1beta1.HyperConverged, opts ...string) *kubevirtv1.KubeVirt {
@@ -225,9 +307,9 @@ func (h *kvConfigHooks) updateCr(req *common.HcoRequest, Client client.Client, e
 	changed := false
 	if req.UpgradeMode {
 		changed = h.updateDataOnUpgrade(req, found, kubevirtConfig)
-	} else { // not in upgrade mode
-		changed = h.updateDataNotOnUpgrade(req, found)
 	}
+
+	changed = h.updateData(found, kubevirtConfig) || changed
 
 	if !reflect.DeepEqual(found.Labels, kubevirtConfig.Labels) {
 		util.DeepCopyLabels(&kubevirtConfig.ObjectMeta, &found.ObjectMeta)
@@ -253,26 +335,13 @@ func (h *kvConfigHooks) updateDataOnUpgrade(req *common.HcoRequest, found *corev
 	return changed
 }
 
-func (h *kvConfigHooks) updateDataNotOnUpgrade(req *common.HcoRequest, found *corev1.ConfigMap) bool {
-	// Add/remove managed KV feature gates without modifying any other feature gates, that may be changed by the user:
-	// 1. first, get the current feature gate list from the config map, and split the list into the ist string to a
-	//    slice of FGs
-	foundFgSplit := strings.Split(found.Data[FeatureGatesKey], ",")
-	resultFg := make([]string, 0, len(foundFgSplit))
-
-	// 2. Remove only managed FGs from the list, if are not in the HC CR
-	changed, resultFg := filterOutDisabledFeatureGates(req, foundFgSplit, resultFg)
-
-	// 3. Add managed FGs if set in the HC CR
-	added := false
-	resultFg, added = h.addEnabledFeatureGates(req, foundFgSplit, resultFg)
-	changed = changed || added
-
-	// 4. If a managed FG added/removed, rebuild a new list. Else, use the current one.
-	if changed {
-		found.Data[FeatureGatesKey] = strings.Join(resultFg, ",")
+func (h *kvConfigHooks) updateData(found *corev1.ConfigMap, required *corev1.ConfigMap) bool {
+	if found.Data[FeatureGatesKey] != required.Data[FeatureGatesKey] {
+		found.Data[FeatureGatesKey] = required.Data[FeatureGatesKey]
+		return true
 	}
-	return changed
+
+	return false
 }
 
 func (h *kvConfigHooks) updateKvConfigMap(req *common.HcoRequest, Client client.Client, found *corev1.ConfigMap) (bool, bool, error) {
@@ -284,49 +353,19 @@ func (h *kvConfigHooks) updateKvConfigMap(req *common.HcoRequest, Client client.
 	return true, false, nil
 }
 
-func (h *kvConfigHooks) addEnabledFeatureGates(req *common.HcoRequest, foundFgSplit []string, resultFg []string) ([]string, bool) {
-	fgChanged := false
-	for _, fg := range getKvFeatureGateList(req.Instance.Spec.FeatureGates) {
-		if !hcoutil.ContainsString(foundFgSplit, fg) {
-			resultFg = append(resultFg, fg)
-			fgChanged = true
-		}
+func kvFGListChanged(fgs *hcov1beta1.HyperConvergedFeatureGates, foundFgSplit []string) bool {
+	enabledFgs := fgs.GetEnabledGateMap()
+	if len(enabledFgs) != len(foundFgSplit) {
+		return true
 	}
-	return resultFg, fgChanged
-}
 
-func filterOutDisabledFeatureGates(req *common.HcoRequest, foundFgSplit []string, resultFg []string) (bool, []string) {
-	fgChanged := false
-	featureGateChecks := getFeatureGateChecks(req.Instance.Spec.FeatureGates)
 	for _, fg := range foundFgSplit {
-		if isFeatureGateMissingFrom(featureGateChecks, fg) {
-			fgChanged = true
-			continue
+		if !enabledFgs[fg] {
+			return true
 		}
-		resultFg = append(resultFg, fg)
 	}
-	return fgChanged, resultFg
-}
 
-func isFeatureGateMissingFrom(checks featureGateChecks, featureGate string) bool {
-	if check, isKnown := checks[featureGate]; isKnown {
-		return !check()
-	}
 	return false
-}
-
-type featureGateChecks map[string]func() bool
-
-func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates) featureGateChecks {
-	return map[string]func() bool{
-		HotplugVolumesGate:       featureGates.IsHotplugVolumesEnabled,
-		kvWithHostPassthroughCPU: featureGates.IsWithHostPassthroughCPUEnabled,
-		kvWithHostModelCPU:       featureGates.IsWithHostModelCPUEnabled,
-		SRIOVLiveMigrationGate:   featureGates.IsSRIOVLiveMigrationEnabled,
-		kvHypervStrictCheck:      featureGates.IsHypervStrictCheckEnabled,
-		GPUGate:                  featureGates.IsGPUAssignmentEnabled,
-		HostDevicesGate:          featureGates.IsHostDevicesAssignmentEnabled,
-	}
 }
 
 func (h *kvConfigHooks) forceDefaultKeys(req *common.HcoRequest, found *corev1.ConfigMap, kubevirtConfig *corev1.ConfigMap) bool {
@@ -338,7 +377,6 @@ func (h *kvConfigHooks) forceDefaultKeys(req *common.HcoRequest, found *corev1.C
 	// TODO: This is going to change in the next HCO release where the whole configMap is going
 	// to be continuously reconciled
 	for _, k := range []string{
-		FeatureGatesKey,
 		SmbiosConfigKey,
 		MachineTypeKey,
 		SELinuxLauncherTypeKey,
@@ -471,11 +509,8 @@ func translateKubeVirtConds(orig []kubevirtv1.KubeVirtCondition) []conditionsv1.
 }
 
 func NewKubeVirtConfigForCR(cr *hcov1beta1.HyperConverged, namespace string) *corev1.ConfigMap {
-	featureGates := cmFeatureGates
-
-	if managedFeatureGates := getKvFeatureGateList(cr.Spec.FeatureGates); len(managedFeatureGates) > 0 {
-		featureGates = fmt.Sprintf("%s,%s", featureGates, strings.Join(managedFeatureGates, ","))
-	}
+	fgs := getKvFeatureGateList(cr.Spec.FeatureGates)
+	featureGates := strings.Join(fgs, ",")
 
 	cm := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -510,13 +545,16 @@ func NewKubeVirtConfigForCR(cr *hcov1beta1.HyperConverged, namespace string) *co
 	return cm
 }
 
-// get list of feature gates from a specific operand list
+// Take only KV FGs from the HC enabled FG list
 func getKvFeatureGateList(fgs *hcov1beta1.HyperConvergedFeatureGates) []string {
-	checks := getFeatureGateChecks(fgs)
-	res := make([]string, 0, len(checks))
-	for gate, check := range checks {
-		if check() {
-			res = append(res, gate)
+	generalEnabledFGs := fgs.GetEnabledGateMap()
+	if generalEnabledFGs == nil {
+		return nil
+	}
+	res := make([]string, 0, len(kvFeatureGateList))
+	for _, fg := range kvFeatureGateList {
+		if generalEnabledFGs[fg] {
+			res = append(res, fg)
 		}
 	}
 

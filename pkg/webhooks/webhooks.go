@@ -47,6 +47,8 @@ func (wh WebhookHandler) ValidateCreate(hc *v1beta1.HyperConverged) error {
 		return fmt.Errorf("invalid namespace for v1beta1.HyperConverged - please use the %s namespace", wh.namespace)
 	}
 
+	hc.Spec.FeatureGates.RebuildEnabledGateMap()
+
 	if _, err := operands.NewKubeVirt(hc); err != nil {
 		return err
 	}
@@ -68,6 +70,9 @@ func (wh WebhookHandler) ValidateUpdate(requested *v1beta1.HyperConverged, exist
 	wh.logger.Info("Validating update", "name", requested.Name)
 	ctx, cancel := context.WithTimeout(context.Background(), updateDryRunTimeOut)
 	defer cancel()
+
+	requested.Spec.FeatureGates.RebuildEnabledGateMap()
+	exists.Spec.FeatureGates.RebuildEnabledGateMap()
 
 	// If no change is detected in the spec nor the annotations - nothing to validate
 	if reflect.DeepEqual(exists.Spec, requested.Spec) &&

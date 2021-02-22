@@ -58,6 +58,15 @@ spec:
                   a flag to `true` will enable the feature. Setting `false` or removing
                   the feature gate, disables the feature.
                 properties:
+                  cpuManager:
+                    default: true
+                    type: boolean
+                  cpuNodeDiscovery:
+                    default: true
+                    type: boolean
+                  dataVolumes:
+                    default: true
+                    type: boolean
                   gpu:
                     default: false
                     description: Allow assigning GPU and vGPU devices to virtual machines
@@ -74,6 +83,18 @@ spec:
                     default: true
                     description: Enable HyperV strict host checking for HyperV enlightenments
                       Defaults to true, even when HyperConvergedFeatureGates is empty
+                    type: boolean
+                  liveMigration:
+                    default: true
+                    type: boolean
+                  sidecar:
+                    default: true
+                    type: boolean
+                  snapshot:
+                    default: true
+                    type: boolean
+                  sriov:
+                    default: true
                     type: boolean
                   sriovLiveMigration:
                     default: false

@@ -223,7 +223,6 @@ var _ = Describe("KubeVirt Operand", func() {
 			outdatedResource.Data[SmbiosConfigKey] = "old-smbios-value-that-we-have-to-update"
 			outdatedResource.Data[MachineTypeKey] = "old-machinetype-value-that-we-have-to-update"
 			outdatedResource.Data[SELinuxLauncherTypeKey] = "old-selinuxlauncher-value-that-we-have-to-update"
-			outdatedResource.Data[FeatureGatesKey] = "old-featuregates-value-that-we-have-to-update"
 			// values we should preserve
 			outdatedResource.Data[MigrationsConfigKey] = "old-migrationsconfig-value-that-we-should-preserve"
 			outdatedResource.Data[DefaultNetworkInterface] = "old-defaultnetworkinterface-value-that-we-should-preserve"
@@ -256,430 +255,49 @@ var _ = Describe("KubeVirt Operand", func() {
 				disabled = false
 			)
 
-			It("should have a list of enabled features that are managed by the HCO CR", func() {
+			It("should have a list of enabled features that are enabled in the HCO CR", func() {
+				hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
+					DataVolumes:      &enabled,
+					SRIOV:            &enabled,
+					LiveMigration:    &enabled,
+					CPUManager:       &enabled,
+					CPUNodeDiscovery: &enabled,
+					Sidecar:          &enabled,
+					Snapshot:         &enabled,
+				}
+				hco.Spec.FeatureGates.RebuildEnabledGateMap()
+
 				existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-				By("KV CR should contain the fgEnabled feature gate", func() {
-					Expect(existingResource.Data[FeatureGatesKey]).Should(Equal(cmFeatureGates))
-				})
+				Expect(existingResource.Data[FeatureGatesKey]).Should(Equal("DataVolumes,SRIOV,LiveMigration,CPUManager,CPUNodeDiscovery,Sidecar,Snapshot"))
 			})
 
-			It("should add the feature gates if they exist and enabled in HyperConverged CR", func() {
+			It("should not add the feature gates if they are disabled in HyperConverged CR", func() {
 				// HotplugVolumes - enabled; WithHostPassthroughCPU - disabled; WithHostModelCPU - missing
 				hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-					HotplugVolumes:         &enabled,
-					WithHostPassthroughCPU: &disabled,
+					DataVolumes:      &enabled,
+					SRIOV:            &disabled,
+					LiveMigration:    &enabled,
+					CPUManager:       &disabled,
+					CPUNodeDiscovery: &enabled,
+					Sidecar:          &disabled,
+					Snapshot:         &enabled,
 				}
+				hco.Spec.FeatureGates.RebuildEnabledGateMap()
 
 				existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-				By("KV CR should contain the HotplugVolumesGate feature gate", func() {
-					Expect(existingResource.Data[FeatureGatesKey]).Should(Equal(cmFeatureGates + "," + HotplugVolumesGate))
-				})
-			})
-
-			It("should add feature gates if they are set to true", func() {
-				existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-				By("Make sure the enabled FG is not there", func() {
-					Expect(existingResource.Data[FeatureGatesKey]).Should(Equal(cmFeatureGates))
-				})
-
-				hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-					HotplugVolumes: &enabled,
-				}
-
-				foundResource := &corev1.ConfigMap{}
-				reconcileCm(hco, req, true, existingResource, foundResource)
-
-				By("KV CR should contain the enabled feature gate", func() {
-					Expect(foundResource.Data[FeatureGatesKey]).Should(Equal(cmFeatureGates + "," + HotplugVolumesGate))
-				})
-			})
-
-			It("should not add feature gates if they are set to false", func() {
-				existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-				By("Make sure the enabled FG is not there", func() {
-					Expect(existingResource.Data[FeatureGatesKey]).Should(Equal(cmFeatureGates))
-				})
-
-				hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-					HotplugVolumes: &disabled,
-				}
-
-				foundResource := &corev1.ConfigMap{}
-				reconcileCm(hco, req, false, existingResource, foundResource)
-
-				Expect(foundResource.Data[FeatureGatesKey]).Should(Equal(cmFeatureGates))
-			})
-
-			It("should add GPU feature gate if enabled", func() {
-				hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-					GPU: &enabled,
-				}
-
-				existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-				Expect(existingResource.Data[FeatureGatesKey]).Should(ContainSubstring(GPUGate))
-			})
-
-			It("should add HostDevices feature gate if enabled", func() {
-				hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-					HostDevices: &enabled,
-				}
-
-				existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-				Expect(existingResource.Data[FeatureGatesKey]).Should(ContainSubstring(HostDevicesGate))
-			})
-
-			It("should add SRIOVLiveMigration if enabled", func() {
-				hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-					SRIOVLiveMigration: &enabled,
-				}
-
-				existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-				Expect(existingResource.Data[FeatureGatesKey]).Should(ContainSubstring(SRIOVLiveMigrationGate))
-			})
-
-			It("should add WithHostPassthroughCPU if enabled", func() {
-				hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-					WithHostPassthroughCPU: &enabled,
-				}
-
-				existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-				Expect(existingResource.Data[FeatureGatesKey]).Should(Equal(cmFeatureGates + ",WithHostPassthroughCPU"))
-			})
-
-			It("should add WithHostModelCPU if enabled", func() {
-				hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-					WithHostModelCPU: &enabled,
-				}
-
-				existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-				Expect(existingResource.Data[FeatureGatesKey]).Should(Equal(cmFeatureGates + ",WithHostModelCPU"))
+				Expect(existingResource.Data[FeatureGatesKey]).Should(Equal("DataVolumes,LiveMigration,CPUNodeDiscovery,Snapshot"))
 			})
 
 			It("should not add feature gates if they are not exist", func() {
 				existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-				By("Make sure the enabled FG is not there", func() {
-					Expect(existingResource.Data[FeatureGatesKey]).Should(Equal(cmFeatureGates))
-				})
+				Expect(existingResource.Data[FeatureGatesKey]).Should(BeEmpty())
 
 				hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{}
 
 				foundResource := &corev1.ConfigMap{}
 				reconcileCm(hco, req, false, existingResource, foundResource)
 
-				Expect(foundResource.Data[FeatureGatesKey]).Should(Equal(cmFeatureGates))
-			})
-
-			Context("should handle feature gates on update", func() {
-				cmFeatureGatesWithAllHCGates := fmt.Sprintf("%s,%s,%s,%s,%s", cmFeatureGates,
-					HotplugVolumesGate,
-					kvWithHostModelCPU,
-					kvWithHostPassthroughCPU,
-					kvHypervStrictCheck,
-				)
-				It("Should remove the non-ConfigMap FeatureGates from the CM if the FeatureGates field is nil", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = cmFeatureGatesWithAllHCGates
-
-					hco.Spec.FeatureGates = nil
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, true, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).Should(Equal(cmFeatureGates))
-				})
-
-				It("Should remove the non-ConfigMap FeatureGates from the CM if the FeatureGates field is empty", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = cmFeatureGatesWithAllHCGates
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, true, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).Should(Equal(cmFeatureGates))
-				})
-
-				It("Should remove the non-ConfigMap Gates from the CM if they are disabled", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = cmFeatureGatesWithAllHCGates
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						HotplugVolumes:   &disabled,
-						WithHostModelCPU: &enabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, true, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).Should(Equal(cmFeatureGates + "," + kvWithHostModelCPU))
-				})
-
-				It("Should remove SRIOVLiveMigration from the CM when SRIOVLiveMigration FeatureGate is disabled", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = fmt.Sprintf("%s,%s", cmFeatureGates, SRIOVLiveMigrationGate)
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						SRIOVLiveMigration: &disabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, true, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).Should(Equal(cmFeatureGates))
-				})
-
-				It("Should remove GPU the CM when its FeatureGate is disabled", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = fmt.Sprintf("%s,%s", cmFeatureGates, GPUGate)
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						GPU: &disabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, true, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).Should(Equal(cmFeatureGates))
-				})
-
-				It("Should remove HostDevices the CM when its FeatureGate is disabled", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = fmt.Sprintf("%s,%s", cmFeatureGates, HostDevicesGate)
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						HostDevices: &disabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, true, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).Should(Equal(cmFeatureGates))
-				})
-
-				It("Should keep the HotplugVolumes gate from the CM if the HotplugVolumes FeatureGates is enabled", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = fmt.Sprintf("%s,%s", cmFeatureGates, HotplugVolumesGate)
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						HotplugVolumes: &enabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, false, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).Should(Equal(fmt.Sprintf("%s,%s", cmFeatureGates, HotplugVolumesGate)))
-				})
-
-				It("Should keep SRIOVLiveMigration gate at the CM if the SRIOVLiveMigration FeatureGate is enabled", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = fmt.Sprintf("%s,%s", cmFeatureGates, SRIOVLiveMigrationGate)
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						SRIOVLiveMigration: &enabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, false, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(SRIOVLiveMigrationGate))
-				})
-
-				It("Should add gates to the CM if they are enabled on the HC CR", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = cmFeatureGates
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						HotplugVolumes:         &enabled,
-						WithHostPassthroughCPU: &enabled,
-						WithHostModelCPU:       &enabled,
-						HypervStrictCheck:      &enabled,
-						SRIOVLiveMigration:     &enabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, true, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(cmFeatureGates))
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(HotplugVolumesGate))
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(kvWithHostPassthroughCPU))
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(kvWithHostModelCPU))
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(SRIOVLiveMigrationGate))
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(kvHypervStrictCheck))
-				})
-
-				It("Should add SRIOVLiveMigration gate to the CM if SRIOVLiveMigration FeatureGate is enabled", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = cmFeatureGates
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						SRIOVLiveMigration: &enabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, true, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(cmFeatureGates))
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(SRIOVLiveMigrationGate))
-				})
-
-				It("Should add GPU gate to the CM if its FeatureGate is enabled", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = cmFeatureGates
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						GPU: &enabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, true, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(cmFeatureGates))
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(GPUGate))
-				})
-
-				It("Should add HostDevices gate to the CM if its FeatureGate is enabled", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = cmFeatureGates
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						HostDevices: &enabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, true, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(cmFeatureGates))
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(HostDevicesGate))
-				})
-
-				It("Should not modify user modified FGs if the HotplugVolumes FeatureGates is enabled", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = cmFeatureGates + ",userDefinedFG"
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						HotplugVolumes: &enabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, true, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(cmFeatureGates))
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(HotplugVolumesGate))
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring("userDefinedFG"))
-				})
-
-				It("Should not modify user modified FGs if SRIOVLiveMigration FeatureGate is enabled", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = cmFeatureGates + ",userDefinedFG"
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						SRIOVLiveMigration: &enabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, true, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(cmFeatureGates))
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(SRIOVLiveMigrationGate))
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring("userDefinedFG"))
-				})
-
-				It("Should not modify user modified FGs if GPU FeatureGate is enabled", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = cmFeatureGates + ",userDefinedFG"
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						GPU: &enabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, true, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(cmFeatureGates))
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(GPUGate))
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring("userDefinedFG"))
-				})
-
-				It("Should not modify user modified FGs if HostDevices FeatureGate is enabled", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = cmFeatureGates + ",userDefinedFG"
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						HostDevices: &enabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, true, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(cmFeatureGates))
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring(HostDevicesGate))
-					Expect(foundResource.Data[FeatureGatesKey]).Should(ContainSubstring("userDefinedFG"))
-				})
-
-				It("Should not modify user modified FGs if the HotplugVolumes FeatureGates is disabe", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = cmFeatureGates + ",userDefinedFG"
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						HotplugVolumes: &disabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, false, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).To(ContainSubstring(cmFeatureGates))
-					Expect(foundResource.Data[FeatureGatesKey]).ToNot(ContainSubstring(HotplugVolumesGate))
-					Expect(foundResource.Data[FeatureGatesKey]).To(ContainSubstring("userDefinedFG"))
-				})
-
-				It("Should not modify user modified FGs if SRIOVLiveMigration FeatureGate is disabled", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = cmFeatureGates + ",userDefinedFG"
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						SRIOVLiveMigration: &disabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, false, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).To(ContainSubstring(cmFeatureGates))
-					Expect(foundResource.Data[FeatureGatesKey]).ToNot(ContainSubstring(SRIOVLiveMigrationGate))
-					Expect(foundResource.Data[FeatureGatesKey]).To(ContainSubstring("userDefinedFG"))
-				})
-
-				It("Should not modify user modified FGs if GPU FeatureGate is disabled", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = cmFeatureGates + ",userDefinedFG"
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						GPU: &disabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, false, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).To(ContainSubstring(cmFeatureGates))
-					Expect(foundResource.Data[FeatureGatesKey]).ToNot(ContainSubstring(GPUGate))
-					Expect(foundResource.Data[FeatureGatesKey]).To(ContainSubstring("userDefinedFG"))
-				})
-
-				It("Should not modify user modified FGs if HostDevices FeatureGate is disabled", func() {
-					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
-					existingResource.Data[FeatureGatesKey] = cmFeatureGates + ",userDefinedFG"
-
-					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-						HostDevices: &disabled,
-					}
-
-					foundResource := &corev1.ConfigMap{}
-					reconcileCm(hco, req, false, existingResource, foundResource)
-
-					Expect(foundResource.Data[FeatureGatesKey]).To(ContainSubstring(cmFeatureGates))
-					Expect(foundResource.Data[FeatureGatesKey]).ToNot(ContainSubstring(HostDevicesGate))
-					Expect(foundResource.Data[FeatureGatesKey]).To(ContainSubstring("userDefinedFG"))
-				})
+				Expect(foundResource.Data[FeatureGatesKey]).Should(BeEmpty())
 			})
 		})
 	})
@@ -955,6 +573,7 @@ var _ = Describe("KubeVirt Operand", func() {
 						WithHostPassthroughCPU: &enabled,
 						WithHostModelCPU:       &enabled,
 					}
+					hco.Spec.FeatureGates.RebuildEnabledGateMap()
 
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -970,6 +589,7 @@ var _ = Describe("KubeVirt Operand", func() {
 						HotplugVolumes:         &enabled,
 						WithHostPassthroughCPU: &disabled,
 					}
+					hco.Spec.FeatureGates.RebuildEnabledGateMap()
 
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -987,6 +607,7 @@ var _ = Describe("KubeVirt Operand", func() {
 						WithHostPassthroughCPU: &enabled,
 						WithHostModelCPU:       &disabled,
 					}
+					hco.Spec.FeatureGates.RebuildEnabledGateMap()
 
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -1004,6 +625,7 @@ var _ = Describe("KubeVirt Operand", func() {
 						HotplugVolumes:   &disabled,
 						WithHostModelCPU: &enabled,
 					}
+					hco.Spec.FeatureGates.RebuildEnabledGateMap()
 
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -1019,6 +641,7 @@ var _ = Describe("KubeVirt Operand", func() {
 					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
 						SRIOVLiveMigration: &enabled,
 					}
+					hco.Spec.FeatureGates.RebuildEnabledGateMap()
 
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -1033,6 +656,7 @@ var _ = Describe("KubeVirt Operand", func() {
 					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
 						GPU: &enabled,
 					}
+					hco.Spec.FeatureGates.RebuildEnabledGateMap()
 
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -1047,6 +671,7 @@ var _ = Describe("KubeVirt Operand", func() {
 					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
 						HostDevices: &enabled,
 					}
+					hco.Spec.FeatureGates.RebuildEnabledGateMap()
 
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -1064,6 +689,7 @@ var _ = Describe("KubeVirt Operand", func() {
 						WithHostModelCPU:       &disabled,
 						HypervStrictCheck:      &disabled,
 					}
+					hco.Spec.FeatureGates.RebuildEnabledGateMap()
 
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -1074,6 +700,7 @@ var _ = Describe("KubeVirt Operand", func() {
 
 				It("should not add the feature gates if FeatureGates field is empty", func() {
 					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{}
+					hco.Spec.FeatureGates.RebuildEnabledGateMap()
 
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -1101,6 +728,7 @@ var _ = Describe("KubeVirt Operand", func() {
 					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
 						HotplugVolumes: &enabled,
 					}
+					hco.Spec.FeatureGates.RebuildEnabledGateMap()
 
 					cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
 					handler := (*genericOperand)(newKubevirtHandler(cl, commonTestUtils.GetScheme()))
@@ -1213,6 +841,7 @@ var _ = Describe("KubeVirt Operand", func() {
 					hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
 						HotplugVolumes: &enabled,
 					}
+					hco.Spec.FeatureGates.RebuildEnabledGateMap()
 
 					By("Make sure the existing KV is with the the expected FGs", func() {
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
@@ -1656,6 +1285,22 @@ var _ = Describe("KubeVirt Operand", func() {
 				Expect(handler.hooks.(*kubevirtHooks).cache == crII).To(BeTrue())
 			})
 		})
+
+		Context("Test getKVDevConfig", func() {
+			origUseEmulation := os.Getenv(kvmEmulationEnvName)
+			defer os.Setenv(kvmEmulationEnvName, origUseEmulation)
+			It("should return nil if there are no FG or KVM_EMULATION is not set", func() {
+				cfg, err := getKVDevConfig(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cfg).To(BeNil())
+			})
+
+			It("should return nil if there are no FG or KVM_EMULATION is not set", func() {
+				cfg, err := getKVDevConfig(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cfg).To(BeNil())
+			})
+		})
 	})
 
 	Context("Test getKvFeatureGateList", func() {
@@ -1684,6 +1329,8 @@ var _ = Describe("KubeVirt Operand", func() {
 			fgs := &hcov1beta1.HyperConvergedFeatureGates{
 				HotplugVolumes: &enabled,
 			}
+
+			fgs.RebuildEnabledGateMap()
 			fgList := getKvFeatureGateList(fgs)
 			Expect(fgList).To(HaveLen(1))
 			Expect(fgList[0]).Should(Equal(HotplugVolumesGate))
@@ -1693,6 +1340,8 @@ var _ = Describe("KubeVirt Operand", func() {
 			fgs := &hcov1beta1.HyperConvergedFeatureGates{
 				WithHostPassthroughCPU: &enabled,
 			}
+			fgs.RebuildEnabledGateMap()
+
 			fgList := getKvFeatureGateList(fgs)
 			Expect(fgList).To(HaveLen(1))
 			Expect(fgList[0]).Should(Equal(kvWithHostPassthroughCPU))
@@ -1703,6 +1352,8 @@ var _ = Describe("KubeVirt Operand", func() {
 			fgs := &hcov1beta1.HyperConvergedFeatureGates{
 				WithHostModelCPU: &enabled,
 			}
+			fgs.RebuildEnabledGateMap()
+
 			fgList := getKvFeatureGateList(fgs)
 			Expect(fgList).To(HaveLen(1))
 			Expect(fgList[0]).Should(Equal(kvWithHostModelCPU))
@@ -1712,6 +1363,8 @@ var _ = Describe("KubeVirt Operand", func() {
 			fgs := &hcov1beta1.HyperConvergedFeatureGates{
 				SRIOVLiveMigration: &enabled,
 			}
+			fgs.RebuildEnabledGateMap()
+
 			fgList := getKvFeatureGateList(fgs)
 			Expect(fgList).To(HaveLen(1))
 			Expect(fgList[0]).Should(Equal(SRIOVLiveMigrationGate))
@@ -1722,6 +1375,8 @@ var _ = Describe("KubeVirt Operand", func() {
 			fgs := &hcov1beta1.HyperConvergedFeatureGates{
 				HypervStrictCheck: &enabled,
 			}
+			fgs.RebuildEnabledGateMap()
+
 			fgList := getKvFeatureGateList(fgs)
 			Expect(fgList).To(HaveLen(1))
 			Expect(fgList[0]).Should(Equal(kvHypervStrictCheck))
@@ -1736,6 +1391,8 @@ var _ = Describe("KubeVirt Operand", func() {
 				HypervStrictCheck:      &enabled,
 				SRIOVLiveMigration:     &enabled,
 			}
+			fgs.RebuildEnabledGateMap()
+
 			fgList := getKvFeatureGateList(fgs)
 			Expect(fgList).To(HaveLen(5))
 			Expect(fgList).Should(ContainElements(HotplugVolumesGate, kvWithHostPassthroughCPU, kvWithHostModelCPU, kvHypervStrictCheck, SRIOVLiveMigrationGate))
@@ -1751,6 +1408,8 @@ var _ = Describe("KubeVirt Operand", func() {
 				HypervStrictCheck:      &disabled,
 				SRIOVLiveMigration:     &enabled,
 			}
+			fgs.RebuildEnabledGateMap()
+
 			fgList := getKvFeatureGateList(fgs)
 			Expect(fgList).To(HaveLen(3))
 			Expect(fgList).Should(ContainElements(HotplugVolumesGate, kvWithHostModelCPU, SRIOVLiveMigrationGate))
@@ -1758,83 +1417,61 @@ var _ = Describe("KubeVirt Operand", func() {
 		})
 	})
 
-	Context("filterOutDisabledFeatureGates", func() {
-		It("should remove all gates if none are enabled on the request", func() {
-			disabled := false
-			fgs := &hcov1beta1.HyperConvergedFeatureGates{
-				HotplugVolumes:         &disabled,
-				WithHostPassthroughCPU: &disabled,
-				WithHostModelCPU:       &disabled,
-				HypervStrictCheck:      &disabled,
-				SRIOVLiveMigration:     &disabled,
-			}
+	Context("Test kvFGListChanged", func() {
+		enabled := true
+		disabled := false
 
-			changed, result := filterOutDisabledFeatureGates(requestWithFeatureGates(fgs), []string{
-				HotplugVolumesGate,
-				kvWithHostPassthroughCPU,
-				kvWithHostModelCPU,
-				kvHypervStrictCheck,
-				SRIOVLiveMigrationGate,
-			}, make([]string, 0))
-			Expect(changed).To(BeTrue())
-			Expect(result).To(BeEmpty())
+		It("should return false if both lists are empty", func() {
+			Expect(kvFGListChanged(nil, nil)).Should(BeFalse())
+			Expect(kvFGListChanged(nil, []string{})).Should(BeFalse())
+			fgs := &hcov1beta1.HyperConvergedFeatureGates{}
+			fgs.RebuildEnabledGateMap()
+			Expect(kvFGListChanged(fgs, nil)).Should(BeFalse())
+			Expect(kvFGListChanged(fgs, []string{})).Should(BeFalse())
 		})
-		It("should remove only gates disabled on the request", func() {
-			enabled := true
-			disabled := false
+
+		It("Should return false if the list are identical", func() {
 			fgs := &hcov1beta1.HyperConvergedFeatureGates{
-				HotplugVolumes:   &disabled,
-				WithHostModelCPU: &enabled,
+				DataVolumes:   &enabled,
+				SRIOV:         &disabled,
+				LiveMigration: &enabled,
 			}
+			fgs.RebuildEnabledGateMap()
 
-			changed, result := filterOutDisabledFeatureGates(
-				requestWithFeatureGates(fgs), []string{
-					HotplugVolumesGate,
-					kvWithHostModelCPU,
-				}, make([]string, 0, 1))
-			Expect(changed).To(BeTrue())
-			Expect(result).To(ContainElement(kvWithHostModelCPU))
+			By("same order", func() {
+				Expect(kvFGListChanged(fgs, []string{"DataVolumes", "LiveMigration"})).To(BeFalse())
+			})
+
+			By("different order", func() {
+				Expect(kvFGListChanged(fgs, []string{"LiveMigration", "DataVolumes"})).To(BeFalse())
+			})
+
 		})
-		It("should remove all gates if request gates are nil", func() {
-			changed, result := filterOutDisabledFeatureGates(
-				requestWithFeatureGates(nil), []string{
-					HotplugVolumesGate,
-					kvWithHostModelCPU,
-					kvHypervStrictCheck,
-				}, make([]string, 0))
-			Expect(changed).To(BeTrue())
-			Expect(result).To(BeEmpty())
-		})
-		It("should not remove gates if none are disabled", func() {
-			enabled := true
+
+		It("Should return true if the list are not the same", func() {
 			fgs := &hcov1beta1.HyperConvergedFeatureGates{
-				HotplugVolumes:         &enabled,
-				WithHostPassthroughCPU: &enabled,
-				WithHostModelCPU:       &enabled,
-				HypervStrictCheck:      &enabled,
-				SRIOVLiveMigration:     &enabled,
+				DataVolumes:   &enabled,
+				SRIOV:         &disabled,
+				LiveMigration: &enabled,
 			}
+			fgs.RebuildEnabledGateMap()
 
-			allGates := []string{HotplugVolumesGate,
-				kvWithHostPassthroughCPU,
-				kvWithHostModelCPU,
-				kvHypervStrictCheck,
-				SRIOVLiveMigrationGate,
-			}
+			By("different lengths", func() {
+				Expect(kvFGListChanged(fgs, []string{"DataVolumes", "LiveMigration", "CPUManager"})).To(BeTrue())
+			})
 
-			changed, result := filterOutDisabledFeatureGates(
-				requestWithFeatureGates(fgs),
-				allGates,
-				make([]string, 0, len(allGates)))
-			Expect(changed).To(BeFalse())
-			Expect(result).To(Equal(allGates))
+			By("empty List", func() {
+				Expect(kvFGListChanged(fgs, nil)).To(BeTrue())
+				Expect(kvFGListChanged(nil, []string{"DataVolumes", "LiveMigration", "CPUManager"})).To(BeTrue())
+			})
+
+			By("Different values", func() {
+				Expect(kvFGListChanged(fgs, []string{"DataVolumes", "CPUManager"})).To(BeTrue())
+			})
+
 		})
 	})
 })
-
-func requestWithFeatureGates(featureGates *hcov1beta1.HyperConvergedFeatureGates) *common.HcoRequest {
-	return &common.HcoRequest{Instance: &hcov1beta1.HyperConverged{Spec: hcov1beta1.HyperConvergedSpec{FeatureGates: featureGates}}}
-}
 
 func reconcileCm(hco *hcov1beta1.HyperConverged, req *common.HcoRequest, expectUpdate bool, existingCM, foundCm *corev1.ConfigMap) {
 	cl := commonTestUtils.InitClient([]runtime.Object{hco, existingCM})

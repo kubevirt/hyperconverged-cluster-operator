@@ -302,15 +302,16 @@ var _ = Describe("HyperconvergedTypes", func() {
 
 	Context("HyperConvergedFeatureGates", func() {
 
-		Context("Test IsHotplugVolumesEnabled", func() {
-			It("Should return false if HyperConvergedFeatureGates is nil", func() {
+		Context("Test RebuildEnabledGateMap", func() {
+			It("Should return nil if HyperConvergedFeatureGates is nil", func() {
 				var fgs *HyperConvergedFeatureGates = nil
-				Expect(fgs.IsHotplugVolumesEnabled()).To(BeFalse())
+				Expect(fgs.RebuildEnabledGateMap()).To(BeNil())
 			})
 
 			It("Should return false if HotplugVolumes does not exist", func() {
 				fgs := &HyperConvergedFeatureGates{}
-				Expect(fgs.IsHotplugVolumesEnabled()).To(BeFalse())
+				m := fgs.RebuildEnabledGateMap()
+				Expect(m).To(BeEmpty())
 			})
 
 			It("Should return false if HotplugVolumes is false", func() {
@@ -318,183 +319,54 @@ var _ = Describe("HyperconvergedTypes", func() {
 				fgs := &HyperConvergedFeatureGates{
 					HotplugVolumes: &disabled,
 				}
-				Expect(fgs.IsHotplugVolumesEnabled()).To(BeFalse())
+				m := fgs.RebuildEnabledGateMap()
+				Expect(m).To(BeEmpty())
 			})
 
-			It("Should return false if HotplugVolumes is true", func() {
+			It("Should return true if HotplugVolumes is true", func() {
 				enabled := true
 				fgs := &HyperConvergedFeatureGates{
 					HotplugVolumes: &enabled,
 				}
-				Expect(fgs.IsHotplugVolumesEnabled()).To(BeTrue())
-			})
-		})
-
-		Context("Test IsSRIOVLiveMigrationEnabled", func() {
-			It("Should return false if HyperConvergedFeatureGates is nil", func() {
-				var fgs *HyperConvergedFeatureGates = nil
-				Expect(fgs.IsSRIOVLiveMigrationEnabled()).To(BeFalse())
+				m := fgs.RebuildEnabledGateMap()
+				Expect(m).To(HaveLen(1))
+				Expect(m["HotplugVolumes"]).To(BeTrue())
 			})
 
-			It("Should return false if IsSRIOVLiveMigrationEnabled does not exist", func() {
-				fgs := &HyperConvergedFeatureGates{}
-				Expect(fgs.IsSRIOVLiveMigrationEnabled()).To(BeFalse())
-			})
-
-			It("Should return false if IsSRIOVLiveMigrationEnabled is false", func() {
-				disabled := false
-				fgs := &HyperConvergedFeatureGates{
-					SRIOVLiveMigration: &disabled,
-				}
-				Expect(fgs.IsSRIOVLiveMigrationEnabled()).To(BeFalse())
-			})
-
-			It("Should return false if IsSRIOVLiveMigrationEnabled is true", func() {
+			It("Should return true for each enabled gate", func() {
 				enabled := true
 				fgs := &HyperConvergedFeatureGates{
-					SRIOVLiveMigration: &enabled,
-				}
-				Expect(fgs.IsSRIOVLiveMigrationEnabled()).To(BeTrue())
-			})
-		})
-
-		Context("Test IsGPUAssignmentEnabled", func() {
-			It("Should return false if HyperConvergedFeatureGates is nil", func() {
-				var fgs *HyperConvergedFeatureGates = nil
-				Expect(fgs.IsGPUAssignmentEnabled()).To(BeFalse())
-			})
-
-			It("Should return false if IsGPUAssignmentEnabled does not exist", func() {
-				fgs := &HyperConvergedFeatureGates{}
-				Expect(fgs.IsGPUAssignmentEnabled()).To(BeFalse())
-			})
-
-			It("Should return false if IsGPUAssignmentEnabled is false", func() {
-				disabled := false
-				fgs := &HyperConvergedFeatureGates{
-					GPU: &disabled,
-				}
-				Expect(fgs.IsGPUAssignmentEnabled()).To(BeFalse())
-			})
-
-			It("Should return false if IsGPUAssignmentEnabled is true", func() {
-				enabled := true
-				fgs := &HyperConvergedFeatureGates{
-					GPU: &enabled,
-				}
-				Expect(fgs.IsGPUAssignmentEnabled()).To(BeTrue())
-			})
-		})
-
-		Context("Test IsHostDevicesAssignmentEnabled", func() {
-			It("Should return false if HyperConvergedFeatureGates is nil", func() {
-				var fgs *HyperConvergedFeatureGates = nil
-				Expect(fgs.IsHostDevicesAssignmentEnabled()).To(BeFalse())
-			})
-
-			It("Should return false if IsHostDevicesAssignmentEnabled does not exist", func() {
-				fgs := &HyperConvergedFeatureGates{}
-				Expect(fgs.IsHostDevicesAssignmentEnabled()).To(BeFalse())
-			})
-
-			It("Should return false if IsHostDevicesAssignmentEnabled is false", func() {
-				disabled := false
-				fgs := &HyperConvergedFeatureGates{
-					HostDevices: &disabled,
-				}
-				Expect(fgs.IsHostDevicesAssignmentEnabled()).To(BeFalse())
-			})
-
-			It("Should return false if IsHostDevicesAssignmentEnabled is true", func() {
-				enabled := true
-				fgs := &HyperConvergedFeatureGates{
-					HostDevices: &enabled,
-				}
-				Expect(fgs.IsHostDevicesAssignmentEnabled()).To(BeTrue())
-			})
-		})
-
-		Context("Test IsWithHostPassthroughCPUEnabled", func() {
-			It("Should return false if HyperConvergedFeatureGates is nil", func() {
-				var fgs *HyperConvergedFeatureGates = nil
-				Expect(fgs.IsWithHostPassthroughCPUEnabled()).To(BeFalse())
-			})
-
-			It("Should return false if WithHostPassthroughCPU does not exist", func() {
-				fgs := &HyperConvergedFeatureGates{}
-				Expect(fgs.IsWithHostPassthroughCPUEnabled()).To(BeFalse())
-			})
-
-			It("Should return false if WithHostPassthroughCPU is false", func() {
-				disabled := false
-				fgs := &HyperConvergedFeatureGates{
-					WithHostPassthroughCPU: &disabled,
-				}
-				Expect(fgs.IsWithHostPassthroughCPUEnabled()).To(BeFalse())
-			})
-
-			It("Should return false if WithHostPassthroughCPU is true", func() {
-				enabled := true
-				fgs := &HyperConvergedFeatureGates{
+					DataVolumes:            &enabled,
+					SRIOV:                  &enabled,
+					LiveMigration:          &enabled,
+					CPUManager:             &enabled,
+					CPUNodeDiscovery:       &enabled,
+					Sidecar:                &enabled,
+					Snapshot:               &enabled,
+					SRIOVLiveMigration:     &enabled,
+					HotplugVolumes:         &enabled,
+					GPU:                    &enabled,
+					HostDevices:            &enabled,
 					WithHostPassthroughCPU: &enabled,
+					WithHostModelCPU:       &enabled,
+					HypervStrictCheck:      &enabled,
 				}
-				Expect(fgs.IsWithHostPassthroughCPUEnabled()).To(BeTrue())
-			})
-		})
-
-		Context("Test IsWithHostModelCPUEnabled", func() {
-			It("Should return false if HyperConvergedFeatureGates is nil", func() {
-				var fgs *HyperConvergedFeatureGates = nil
-				Expect(fgs.IsWithHostModelCPUEnabled()).To(BeFalse())
-			})
-
-			It("Should return false if WithHostModelCPU does not exist", func() {
-				fgs := &HyperConvergedFeatureGates{}
-				Expect(fgs.IsWithHostModelCPUEnabled()).To(BeFalse())
-			})
-
-			It("Should return false if WithHostModelCPU is false", func() {
-				disabled := false
-				fgs := &HyperConvergedFeatureGates{
-					WithHostModelCPU: &disabled,
-				}
-				Expect(fgs.IsWithHostModelCPUEnabled()).To(BeFalse())
-			})
-
-			It("Should return false if WithHostModelCPU is true", func() {
-				enabled := true
-				fgs := &HyperConvergedFeatureGates{
-					WithHostModelCPU: &enabled,
-				}
-				Expect(fgs.IsWithHostModelCPUEnabled()).To(BeTrue())
-			})
-		})
-
-		Context("Test IsHypervStrictCheckEnabled", func() {
-			It("Should return false if HyperConvergedFeatureGates is nil", func() {
-				var fgs *HyperConvergedFeatureGates = nil
-				Expect(fgs.IsHypervStrictCheckEnabled()).To(BeFalse())
-			})
-
-			It("Should return false if HypervStrictCheck does not exist", func() {
-				fgs := &HyperConvergedFeatureGates{}
-				Expect(fgs.IsHypervStrictCheckEnabled()).To(BeFalse())
-			})
-
-			It("Should return false if HypervStrictCheck is false", func() {
-				disabled := false
-				fgs := &HyperConvergedFeatureGates{
-					HypervStrictCheck: &disabled,
-				}
-				Expect(fgs.IsHypervStrictCheckEnabled()).To(BeFalse())
-			})
-
-			It("Should return true if HypervStrictCheck is true", func() {
-				enabled := true
-				fgs := &HyperConvergedFeatureGates{
-					HypervStrictCheck: &enabled,
-				}
-				Expect(fgs.IsHypervStrictCheckEnabled()).To(BeTrue())
+				m := fgs.RebuildEnabledGateMap()
+				Expect(m).To(HaveLen(14))
+				Expect(m["DataVolumes"]).To(BeTrue())
+				Expect(m["SRIOV"]).To(BeTrue())
+				Expect(m["LiveMigration"]).To(BeTrue())
+				Expect(m["CPUManager"]).To(BeTrue())
+				Expect(m["CPUNodeDiscovery"]).To(BeTrue())
+				Expect(m["Sidecar"]).To(BeTrue())
+				Expect(m["Snapshot"]).To(BeTrue())
+				Expect(m["SRIOVLiveMigration"]).To(BeTrue())
+				Expect(m["HotplugVolumes"]).To(BeTrue())
+				Expect(m["GPU"]).To(BeTrue())
+				Expect(m["HostDevices"]).To(BeTrue())
+				Expect(m["WithHostPassthroughCPU"]).To(BeTrue())
+				Expect(m["WithHostModelCPU"]).To(BeTrue())
+				Expect(m["HypervStrictCheck"]).To(BeTrue())
 			})
 		})
 	})

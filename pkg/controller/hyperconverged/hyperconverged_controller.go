@@ -340,6 +340,7 @@ func (r *ReconcileHyperConverged) getHyperConverged(req *common.HcoRequest) (*hc
 
 	// Green path first
 	if err == nil {
+		instance.Spec.FeatureGates.RebuildEnabledGateMap()
 		return instance, nil
 	}
 
