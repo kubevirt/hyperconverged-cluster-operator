@@ -457,7 +457,6 @@ var _ = Describe("KubeVirt Operand", func() {
 					Expect(foundResource.Data[FeatureGatesKey]).Should(Equal(cmFeatureGates))
 				})
 
-
 				It("Should keep the HotplugVolumes gate from the CM if the HotplugVolumes FeatureGates is enabled", func() {
 					existingResource := NewKubeVirtConfigForCR(hco, commonTestUtils.Namespace)
 					existingResource.Data[FeatureGatesKey] = fmt.Sprintf("%s,%s", cmFeatureGates, HotplugVolumesGate)

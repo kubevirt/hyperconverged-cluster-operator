@@ -40,7 +40,7 @@ type HyperConvergedSpec struct {
 	// the feature. Setting `false` or removing the feature gate, disables the feature.
 	// +optional
 	// +TODO: Always keep the default FeatureGates in sync with the default field values in HyperConvergedFeatureGates //NOSONAR
-	// +kubebuilder:default={withHostModelCPU: true, withHostPassthroughCPU: false, hypervStrictCheck: true}
+	// +kubebuilder:default={withHostModelCPU: true, withHostPassthroughCPU: false, hypervStrictCheck: true, gpu: false, hostDevices: false}
 	FeatureGates *HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 
 	// operator version
@@ -73,10 +73,12 @@ type HyperConvergedFeatureGates struct {
 
 	// Allow assigning GPU and vGPU devices to virtual machines
 	// +optional
+	// +kubebuilder:default=false
 	GPU *bool `json:"gpu,omitempty"`
 
 	// Allow assigning host devices to virtual machines
 	// +optional
+	// +kubebuilder:default=false
 	HostDevices *bool `json:"hostDevices,omitempty"`
 
 	// Allow migrating a virtual machine with CPU host-passthrough mode. This should be
