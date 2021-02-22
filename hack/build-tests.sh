@@ -12,7 +12,7 @@ if [ "${JOB_TYPE}" == "travis" ]; then
     go get -v github.com/onsi/gomega
     go get -u github.com/evanphx/json-patch
     go mod vendor
-    PACKAGE_PATH="pkg/"
+    PACKAGE_PATH="pkg/controller/ pkg/apis/ pkg/webhooks/"
     mkdir -p coverprofiles
     KUBEVIRT_CLIENT_GO_SCHEME_REGISTRATION_VERSION=v1 ginkgo -r -covermode atomic -outputdir=./coverprofiles -coverprofile=cover.coverprofile ${PACKAGE_PATH}
 else
