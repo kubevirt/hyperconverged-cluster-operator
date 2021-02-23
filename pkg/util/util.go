@@ -48,7 +48,10 @@ var ErrNoNamespace = fmt.Errorf("namespace not found for current environment")
 
 // ErrRunLocal indicates that the operator is set to run in local mode (this error
 // is returned by functions that only work on operators running in cluster mode)
-var ErrRunLocal = fmt.Errorf("operator run mode forced to local")
+var (
+	ErrRunLocal          = fmt.Errorf("operator run mode forced to local")
+	GetOperatorNamespace = getOperatorNamespace
+)
 
 func GetOperatorNamespaceFromEnv() (string, error) {
 	if namespace, ok := os.LookupEnv(OperatorNamespaceEnv); ok {
@@ -63,7 +66,7 @@ func IsRunModeLocal() bool {
 }
 
 // GetOperatorNamespace returns the namespace the operator should be running in.
-func GetOperatorNamespace(logger logr.Logger) (string, error) {
+func getOperatorNamespace(logger logr.Logger) (string, error) {
 	if IsRunModeLocal() {
 		return "", ErrRunLocal
 	}
@@ -124,6 +127,9 @@ func GetPod(ctx context.Context, c client.Reader, logger logr.Logger, ci Cluster
 }
 
 func GetCSVfromPod(pod *corev1.Pod, c client.Reader, logger logr.Logger) (*csvv1alpha1.ClusterServiceVersion, error) {
+	if pod == nil {
+		return nil, errors.New("pod is null")
+	}
 	operatorNs, err := GetOperatorNamespace(logger)
 	if err != nil {
 		return nil, err

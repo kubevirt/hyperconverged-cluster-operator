@@ -53,6 +53,8 @@ func (ee eventEmitter) EmitEvent(object runtime.Object, eventType, reason, msg s
 	}
 }
 
+// UpdateClient replaces the preliminary client set on Init(), to the final client. The preliminary
+// client is limited and can't read all the required data.
 func (ee *eventEmitter) UpdateClient(ctx context.Context, clnt client.Reader, logger logr.Logger) {
 	if (ee.pod == nil) && !ee.clusterInfo.IsRunningLocally() {
 		var err error
@@ -61,6 +63,7 @@ func (ee *eventEmitter) UpdateClient(ctx context.Context, clnt client.Reader, lo
 		if err != nil {
 			ee.pod = nil
 			logger.Error(err, "Can't get self pod")
+			return
 		}
 	}
 
