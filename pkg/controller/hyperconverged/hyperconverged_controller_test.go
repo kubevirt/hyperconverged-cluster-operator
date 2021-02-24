@@ -111,6 +111,15 @@ var _ = Describe("HyperconvergedController", func() {
 
 			It("should create all managed resources", func() {
 				hco := commonTestUtils.NewHco()
+				enabled := true
+				disabled := false
+				hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
+					DataVolumes:   &enabled,
+					SRIOV:         &enabled,
+					LiveMigration: &enabled,
+					CPUManager:    &disabled,
+				}
+
 				cl := commonTestUtils.InitClient([]runtime.Object{hco})
 				r := initReconciler(cl)
 
@@ -157,6 +166,15 @@ var _ = Describe("HyperconvergedController", func() {
 					Reason:  reconcileInit,
 					Message: "Initializing HyperConverged cluster",
 				})))
+
+				// Get the KV
+				kvList := &kubevirtv1.KubeVirtList{}
+				Expect(cl.List(context.TODO(), kvList)).To(BeNil())
+				Expect(kvList.Items).Should(HaveLen(1))
+				kv := kvList.Items[0]
+				Expect(kv.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(3))
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements("DataVolumes", "SRIOV", "LiveMigration"))
 			})
 
 			It("should find all managed resources", func() {

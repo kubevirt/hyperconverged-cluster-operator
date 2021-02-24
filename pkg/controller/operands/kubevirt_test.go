@@ -305,13 +305,31 @@ var _ = Describe("KubeVirt Operand", func() {
 	Context("KubeVirt", func() {
 		var hco *hcov1beta1.HyperConverged
 		var req *common.HcoRequest
+		origSmbios := os.Getenv(smbiosEnvName)
+		defer os.Setenv(smbiosEnvName, origSmbios)
+		origMachineType := os.Getenv(machineTypeEnvName)
+		defer os.Setenv(machineTypeEnvName, origMachineType)
 
 		BeforeEach(func() {
 			hco = commonTestUtils.NewHco()
 			req = commonTestUtils.NewReq(hco)
 		})
 
+		enabled := true
+
 		It("should create if not present", func() {
+			os.Setenv(smbiosEnvName,
+				`Family: smbios family
+Product: smbios product
+Manufacturer: smbios manufacturer
+Sku: 1.2.3
+Version: 1.2.3`)
+			os.Setenv(machineTypeEnvName, "machine-type")
+			hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
+				DataVolumes: &enabled,
+			}
+			hco.Spec.FeatureGates.RebuildEnabledGateMap()
+
 			expectedResource, err := NewKubeVirt(hco, commonTestUtils.Namespace)
 			Expect(err).ToNot(HaveOccurred())
 			cl := commonTestUtils.InitClient([]runtime.Object{})
@@ -329,6 +347,24 @@ var _ = Describe("KubeVirt Operand", func() {
 			Expect(foundResource.Name).To(Equal(expectedResource.Name))
 			Expect(foundResource.Labels).Should(HaveKeyWithValue(hcoutil.AppLabel, commonTestUtils.Name))
 			Expect(foundResource.Namespace).To(Equal(expectedResource.Namespace))
+
+			Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
+			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(1))
+			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement("DataVolumes"))
+
+			Expect(foundResource.Spec.Configuration.MachineType).Should(Equal("machine-type"))
+
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig).ToNot(BeNil())
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Family).Should(Equal("smbios family"))
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Product).Should(Equal("smbios product"))
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Manufacturer).Should(Equal("smbios manufacturer"))
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Sku).Should(Equal("1.2.3"))
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Version).Should(Equal("1.2.3"))
+
+			Expect(foundResource.Spec.Configuration.SELinuxLauncherType).Should(Equal(SELinuxLauncherType))
+
+			Expect(foundResource.Spec.Configuration.NetworkConfiguration).ToNot(BeNil())
+			Expect(foundResource.Spec.Configuration.NetworkConfiguration.NetworkInterface).Should(Equal(string(kubevirtv1.MasqueradeInterface)))
 		})
 
 		It("should find if present", func() {
@@ -366,6 +402,76 @@ var _ = Describe("KubeVirt Operand", func() {
 				Reason:  "KubeVirtConditions",
 				Message: "KubeVirt resource has no conditions",
 			}))
+		})
+
+		It("should force mandatory configurations", func() {
+			hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
+				DataVolumes: &enabled,
+			}
+			hco.Spec.FeatureGates.RebuildEnabledGateMap()
+
+			os.Setenv(smbiosEnvName,
+				`Family: smbios family
+Product: smbios product
+Manufacturer: smbios manufacturer
+Sku: 1.2.3
+Version: 1.2.3`)
+			os.Setenv(machineTypeEnvName, "machine-type")
+
+			existKv, err := NewKubeVirt(hco, commonTestUtils.Namespace)
+			Expect(err).ToNot(HaveOccurred())
+			existKv.Spec.Configuration.DeveloperConfiguration = &kubevirtv1.DeveloperConfiguration{
+				FeatureGates: []string{"wrongFG1", "wrongFG2", "wrongFG3"},
+			}
+			existKv.Spec.Configuration.MachineType = "wrong machine type"
+			existKv.Spec.Configuration.SMBIOSConfig = &kubevirtv1.SMBiosConfiguration{
+				Family:       "wrong family",
+				Product:      "wrong product",
+				Manufacturer: "wrong manifaturer",
+				Sku:          "0.0.0",
+				Version:      "1.1.1",
+			}
+			existKv.Spec.Configuration.SELinuxLauncherType = "wrongSELinuxLauncherType"
+			existKv.Spec.Configuration.NetworkConfiguration = &kubevirtv1.NetworkConfiguration{
+				NetworkInterface: "wrong network interface",
+			}
+			existKv.Spec.Configuration.EmulatedMachines = []string{"wrong"}
+
+			existKv.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", existKv.Namespace, existKv.Name)
+
+			cl := commonTestUtils.InitClient([]runtime.Object{hco, existKv})
+			handler := (*genericOperand)(newKubevirtHandler(cl, commonTestUtils.GetScheme()))
+			res := handler.ensure(req)
+
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeTrue())
+			Expect(res.Err).To(BeNil())
+
+			foundResource := &kubevirtv1.KubeVirt{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: existKv.Name, Namespace: existKv.Namespace},
+					foundResource),
+			).To(BeNil())
+			Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
+			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(1))
+			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement("DataVolumes"))
+
+			Expect(foundResource.Spec.Configuration.MachineType).Should(Equal("machine-type"))
+
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig).ToNot(BeNil())
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Family).Should(Equal("smbios family"))
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Product).Should(Equal("smbios product"))
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Manufacturer).Should(Equal("smbios manufacturer"))
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Sku).Should(Equal("1.2.3"))
+			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Version).Should(Equal("1.2.3"))
+
+			Expect(foundResource.Spec.Configuration.SELinuxLauncherType).Should(Equal(SELinuxLauncherType))
+
+			Expect(foundResource.Spec.Configuration.NetworkConfiguration).ToNot(BeNil())
+			Expect(foundResource.Spec.Configuration.NetworkConfiguration.NetworkInterface).Should(Equal(string(kubevirtv1.MasqueradeInterface)))
+
+			Expect(foundResource.Spec.Configuration.EmulatedMachines).Should(BeEmpty())
 		})
 
 		It("should set default UninstallStrategy if missing", func() {

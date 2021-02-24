@@ -39,6 +39,8 @@ const (
 // env vars
 const (
 	kvmEmulationEnvName = "KVM_EMULATION"
+	smbiosEnvName       = "SMBIOS"
+	machineTypeEnvName  = "MACHINETYPE"
 )
 
 // KubeVirt FeatureGates
@@ -57,6 +59,7 @@ const (
 	kvHypervStrictCheck      = "HypervStrictCheck"
 	GPUGate                  = "GPU"
 	HostDevicesGate          = "HostDevices"
+	SELinuxLauncherType      = "virt_launcher.process"
 )
 
 var (
@@ -180,14 +183,15 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtv1.KubeVirtConfigurati
 
 	config := &kubevirtv1.KubeVirtConfiguration{
 		DeveloperConfiguration: devConfig,
-		SELinuxLauncherType:    "virt_launcher.process",
+		SELinuxLauncherType:    SELinuxLauncherType,
 		NetworkConfiguration: &kubevirtv1.NetworkConfiguration{
 			NetworkInterface: string(kubevirtv1.MasqueradeInterface),
 		},
 	}
 
-	if smbiosConfig, ok := os.LookupEnv("SMBIOS"); ok {
+	if smbiosConfig, ok := os.LookupEnv(smbiosEnvName); ok {
 		if smbiosConfig = strings.TrimSpace(smbiosConfig); smbiosConfig != "" {
+			config.SMBIOSConfig = &kubevirtv1.SMBiosConfiguration{}
 			err := yaml.NewYAMLOrJSONDecoder(strings.NewReader(smbiosConfig), 1024).Decode(config.SMBIOSConfig)
 			if err != nil {
 				return config, err
@@ -195,7 +199,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtv1.KubeVirtConfigurati
 		}
 	}
 
-	if val, ok := os.LookupEnv("MACHINETYPE"); ok {
+	if val, ok := os.LookupEnv(machineTypeEnvName); ok {
 		if val = strings.TrimSpace(val); val != "" {
 			config.MachineType = val
 		}
@@ -530,15 +534,15 @@ func NewKubeVirtConfigForCR(cr *hcov1beta1.HyperConverged, namespace string) *co
 			NetworkInterfaceKey:    kubevirtDefaultNetworkInterfaceValue,
 		},
 	}
-	val, ok := os.LookupEnv("SMBIOS")
+	val, ok := os.LookupEnv(smbiosEnvName)
 	if ok && val != "" {
 		cm.Data[SmbiosConfigKey] = val
 	}
-	val, ok = os.LookupEnv("MACHINETYPE")
+	val, ok = os.LookupEnv(machineTypeEnvName)
 	if ok && val != "" {
 		cm.Data[MachineTypeKey] = val
 	}
-	val, ok = os.LookupEnv("KVM_EMULATION")
+	val, ok = os.LookupEnv(kvmEmulationEnvName)
 	if ok && val != "" {
 		cm.Data[UseEmulationKey] = val
 	}

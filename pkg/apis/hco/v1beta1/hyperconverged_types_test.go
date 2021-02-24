@@ -301,6 +301,8 @@ var _ = Describe("HyperconvergedTypes", func() {
 	})
 
 	Context("HyperConvergedFeatureGates", func() {
+		disabled := false
+		enabled := true
 
 		Context("Test RebuildEnabledGateMap", func() {
 			It("Should return nil if HyperConvergedFeatureGates is nil", func() {
@@ -315,7 +317,6 @@ var _ = Describe("HyperconvergedTypes", func() {
 			})
 
 			It("Should return false if HotplugVolumes is false", func() {
-				disabled := false
 				fgs := &HyperConvergedFeatureGates{
 					HotplugVolumes: &disabled,
 				}
@@ -324,7 +325,6 @@ var _ = Describe("HyperconvergedTypes", func() {
 			})
 
 			It("Should return true if HotplugVolumes is true", func() {
-				enabled := true
 				fgs := &HyperConvergedFeatureGates{
 					HotplugVolumes: &enabled,
 				}
@@ -334,7 +334,6 @@ var _ = Describe("HyperconvergedTypes", func() {
 			})
 
 			It("Should return true for each enabled gate", func() {
-				enabled := true
 				fgs := &HyperConvergedFeatureGates{
 					DataVolumes:            &enabled,
 					SRIOV:                  &enabled,
@@ -367,6 +366,38 @@ var _ = Describe("HyperconvergedTypes", func() {
 				Expect(m["WithHostPassthroughCPU"]).To(BeTrue())
 				Expect(m["WithHostModelCPU"]).To(BeTrue())
 				Expect(m["HypervStrictCheck"]).To(BeTrue())
+			})
+		})
+
+		Context("Test GetEnabledGateMap", func() {
+			It("should return nil if HyperConvergedFeatureGates is nil", func() {
+				Expect((*HyperConvergedFeatureGates)(nil).GetEnabledGateMap()).To(BeNil())
+			})
+
+			It("should return nil if RebuildEnabledGateMap was not called first", func() {
+				Expect((&HyperConvergedFeatureGates{}).GetEnabledGateMap()).To(BeNil())
+				Expect((&HyperConvergedFeatureGates{DataVolumes: &enabled}).GetEnabledGateMap()).To(BeNil())
+			})
+
+			It("should return the same result as the previous RebuildEnabledGateMap", func() {
+				fgs := &HyperConvergedFeatureGates{}
+				expected := fgs.RebuildEnabledGateMap()
+
+				Expect(fgs.GetEnabledGateMap()).To(BeEmpty())
+				Expect(fgs.GetEnabledGateMap()).Should(Equal(expected))
+
+				fgs.DataVolumes = &enabled
+				fgs.CPUManager = &enabled
+				fgs.SRIOV = &disabled
+
+				Expect(fgs.GetEnabledGateMap()).To(BeEmpty())
+				expected = fgs.RebuildEnabledGateMap()
+
+				actual := fgs.GetEnabledGateMap()
+				Expect(actual).To(HaveLen(2))
+				Expect(actual).Should(Equal(expected))
+				Expect(actual).Should(HaveKeyWithValue("DataVolumes", true))
+				Expect(actual).Should(HaveKeyWithValue("CPUManager", true))
 			})
 		})
 	})
