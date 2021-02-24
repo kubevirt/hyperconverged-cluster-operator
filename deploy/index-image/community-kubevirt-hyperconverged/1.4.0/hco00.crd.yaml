@@ -47,10 +47,17 @@ spec:
             properties:
               featureGates:
                 default:
+                  cpuManager: true
+                  cpuNodeDiscovery: true
+                  dataVolumes: true
                   gpu: false
                   hostDevices: false
                   hotplugVolumes: false
                   hypervStrictCheck: true
+                  liveMigration: true
+                  sidecar: true
+                  snapshot: true
+                  sriov: true
                   sriovLiveMigration: false
                   withHostModelCPU: true
                   withHostPassthroughCPU: false
@@ -60,12 +67,22 @@ spec:
                 properties:
                   cpuManager:
                     default: true
+                    description: TODO add description
                     type: boolean
                   cpuNodeDiscovery:
                     default: true
+                    description: TODO add description
                     type: boolean
                   dataVolumes:
                     default: true
+                    description: indicates that we support turning on DataVolume workflows.
+                      This means using DataVolumes in the VM and VMI definitions.
+                      There was a period of time where this was in alpha and needed
+                      to be explicility enabled. It also means that someone is using
+                      KubeVirt with CDI. So by not enabling this feature gate, someone
+                      can safely use kubevirt without CDI and know that users of kubevirt
+                      will not be able to post VM/VMIs that use CDI workflows that
+                      aren't available to them
                     type: boolean
                   gpu:
                     default: false
@@ -86,15 +103,22 @@ spec:
                     type: boolean
                   liveMigration:
                     default: true
+                    description: Enables VMIs to be live migrated. Without this, migrations
+                      are not possible and will be blocked
                     type: boolean
                   sidecar:
                     default: true
+                    description: Enables using our sidecar hooks for injecting custom
+                      logic into the VMI startup flow. This is a very advanced feature
+                      that has security implications, which is why it is opt-in only
                     type: boolean
                   snapshot:
                     default: true
+                    description: Enables the alpha offline snapshot functionality
                     type: boolean
                   sriov:
                     default: true
+                    description: TODO add description
                     type: boolean
                   sriovLiveMigration:
                     default: false

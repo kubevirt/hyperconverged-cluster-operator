@@ -21,12 +21,12 @@ for example:
 
   ```golang
   // Allow migrating a virtual machine with SRIOV interfaces.
-// When enabled virt-launcher pods of virtual machines with SRIOV
-// interfaces run with CAP_SYS_RESOURCE capability.
-// This may degrade virt-launcher security.
-// +optional
-// +kubebuilder:default=false
-SRIOVLiveMigration FeatureGate `json:"sriovLiveMigration,omitempty"`
+  // When enabled virt-launcher pods of virtual machines with SRIOV
+  // interfaces run with CAP_SYS_RESOURCE capability.
+  // This may degrade virt-launcher security.
+  // +optional
+  // +kubebuilder:default=false
+  SRIOVLiveMigration FeatureGate `json:"sriovLiveMigration,omitempty"`
   ```
 
 1. Add the new flag to the default of the FeatureGates field in the `HyperConvergedSpec` struct
