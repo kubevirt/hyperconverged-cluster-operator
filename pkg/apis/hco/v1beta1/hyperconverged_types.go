@@ -41,7 +41,7 @@ type HyperConvergedSpec struct {
 	// the feature. Setting `false` or removing the feature gate, disables the feature.
 	// +optional
 	// +TODO: Always keep the default FeatureGates in sync with the default field values in HyperConvergedFeatureGates //NOSONAR
-	// +kubebuilder:default={dataVolumes: true, sriov: true, liveMigration: true, cpuManager: true, cpuNodeDiscovery: true, sidecar: true, snapshot: true, sriovLiveMigration: false, hotplugVolumes: false, gpu: false, hostDevices: false, withHostPassthroughCPU: false, withHostModelCPU: true, hypervStrictCheck: true}
+	// +kubebuilder:default={sriovLiveMigration: false, hotplugVolumes: false, gpu: false, hostDevices: false, withHostPassthroughCPU: false, withHostModelCPU: true, hypervStrictCheck: true}
 	FeatureGates *HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 
 	// operator version
@@ -63,46 +63,6 @@ type FeatureGate *bool
 // +k8s:openapi-gen=true
 // +kubebuilder:default={}
 type HyperConvergedFeatureGates struct {
-	// indicates that we support turning on DataVolume workflows. This means using DataVolumes in the VM and VMI
-	// definitions. There was a period of time where this was in alpha and needed to be explicility enabled.
-	// It also means that someone is using KubeVirt with CDI. So by not enabling this feature gate, someone can safely
-	// use kubevirt without CDI and know that users of kubevirt will not be able to post VM/VMIs that use CDI workflows
-	// that aren't available to them
-	// +optional
-	// +kubebuilder:default=true
-	DataVolumes FeatureGate `json:"dataVolumes,omitempty"`
-
-	// TODO add description
-	// +optional
-	// +kubebuilder:default=true
-	SRIOV FeatureGate `json:"sriov,omitempty"`
-
-	// Enables VMIs to be live migrated. Without this, migrations are not possible and will be blocked
-	// +optional
-	// +kubebuilder:default=true
-	LiveMigration FeatureGate `json:"liveMigration,omitempty"`
-
-	// TODO add description
-	// +optional
-	// +kubebuilder:default=true
-	CPUManager FeatureGate `json:"cpuManager,omitempty"`
-
-	// TODO add description
-	// +optional
-	// +kubebuilder:default=true
-	CPUNodeDiscovery FeatureGate `json:"cpuNodeDiscovery,omitempty"`
-
-	// Enables using our sidecar hooks for injecting custom logic into the VMI startup flow. This is a very advanced
-	// feature that has security implications, which is why it is opt-in only
-	// +optional
-	// +kubebuilder:default=true
-	Sidecar FeatureGate `json:"sidecar,omitempty"`
-
-	// Enables the alpha offline snapshot functionality
-	// +optional
-	// +kubebuilder:default=true
-	Snapshot FeatureGate `json:"snapshot,omitempty"`
-
 	// Allow migrating a virtual machine with SRIOV interfaces.
 	// When enabled virt-launcher pods of virtual machines with SRIOV
 	// interfaces run with CAP_SYS_RESOURCE capability.

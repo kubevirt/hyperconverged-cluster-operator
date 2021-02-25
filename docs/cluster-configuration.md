@@ -144,55 +144,6 @@ for Kubevirt.
 
 To override the default, specify the featureGate in the HCO configuration.
 
-### dataVolumes Feature Gate
-
-Set the `dataVolumes` feature gate to indicates that we support turning on DataVolume workflows. This means using
-DataVolumes in the VM and VMI definitions. There was a period of time where this was in alpha and needed to be
-explicility enabled.
-
-It also means that someone is using KubeVirt with CDI. So by not enabling this feature gate, someone can safely use
-kubevirt without CDI and know that users of kubevirt will not be able to post VM/VMIs that use CDI workflows that aren't
-available to them
-
-**Default: `true`**
-
-### sriov Feature Gate
-
-Set the `sriov` feature gate :TODO add description
-
-**Default: `true`**
-
-### liveMigration Feature Gate
-
-Set the `liveMigration` feature gate in order to enable VMIs to be live migrated. Without this, migrations are not
-possible and will be blocked
-
-**Default: `true`**
-
-### cpuManager Feature Gate
-
-Set the `cpuManager` feature gate :TODO add description
-
-**Default: `true`**
-
-### cpuNodeDiscovery Feature Gate
-
-Set the `cpuNodeDiscovery` feature gate :TODO add description
-
-**Default: `true`**
-
-### sidecar Feature Gate
-
-Set the `sidecar` feature gate to enable using our sidecar hooks for injecting custom logic into the VMI startup flow.
-
-**Default: `true`**
-
-### snapshot Feature Gate
-
-Set the `snapshot` feature gate to enable the alpha offline snapshot functionality
-
-**Default: `true`**
-
 ### Feature Gates Example
 
 ```yaml

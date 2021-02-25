@@ -1,10 +1,24 @@
 # Contributing to Hyperconverged Cluster Operator
 
+The Hyperconverged Cluster Operator represents an opinionated deployment of KubeVirt. Its purpose is to deploy KubeVirt
+and accompanying projects with good defaults, so they work together well for most people, in a testable and reproducible
+manner.
+
+This means that the API of HCO should be kept simple. HCO should do everything right out of the box, so it is easy to
+test and deploy. Sometimes, however, HCO cannot guess what is the right thing to do. On these rare occasions, a
+configurable is exposed in its Resource. Each configurable must be documented, so it is clear for a human operator when
+it should be used, and why the correct value cannot be guessed automatically.
+
 ## ***This document is a work in progress***
 
 ## Contributing to the HyperConverged API
 
 ### Add new Feature Gate
+
+Think twice before you do. Feature gates make HCO very hard to test; each of them essentially duplicates our test
+matrix. They also complicate life for the human operator, who has to read the documentation to understand the
+implications of pressing a knob. You should add new featureGate only if hard-coding it to true considerably harms our
+typical users.
 
 1. Add the new feature gate to the HyperConvergedFeatureGates struct
    in [pkg/apis/hco/v1beta1/hyperconverged_types.go](pkg/apis/hco/v1beta1/hyperconverged_types.go)

@@ -114,10 +114,10 @@ var _ = Describe("HyperconvergedController", func() {
 				enabled := true
 				disabled := false
 				hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
-					DataVolumes:   &enabled,
-					SRIOV:         &enabled,
-					LiveMigration: &enabled,
-					CPUManager:    &disabled,
+					SRIOVLiveMigration: &enabled,
+					HotplugVolumes:     &enabled,
+					GPU:                &disabled,
+					HostDevices:        &enabled,
 				}
 
 				cl := commonTestUtils.InitClient([]runtime.Object{hco})
@@ -173,8 +173,10 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(kvList.Items).Should(HaveLen(1))
 				kv := kvList.Items[0]
 				Expect(kv.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(3))
-				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements("DataVolumes", "SRIOV", "LiveMigration"))
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(10))
+
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements("DataVolumes", "SRIOV", "LiveMigration", "CPUManager", "CPUNodeDiscovery", "Sidecar", "Snapshot"))
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements("SRIOVLiveMigration", "HotplugVolumes", "HostDevices"))
 			})
 
 			It("should find all managed resources", func() {

@@ -335,13 +335,6 @@ var _ = Describe("HyperconvergedTypes", func() {
 
 			It("Should return true for each enabled gate", func() {
 				fgs := &HyperConvergedFeatureGates{
-					DataVolumes:            &enabled,
-					SRIOV:                  &enabled,
-					LiveMigration:          &enabled,
-					CPUManager:             &enabled,
-					CPUNodeDiscovery:       &enabled,
-					Sidecar:                &enabled,
-					Snapshot:               &enabled,
 					SRIOVLiveMigration:     &enabled,
 					HotplugVolumes:         &enabled,
 					GPU:                    &enabled,
@@ -351,14 +344,7 @@ var _ = Describe("HyperconvergedTypes", func() {
 					HypervStrictCheck:      &enabled,
 				}
 				m := fgs.RebuildEnabledGateMap()
-				Expect(m).To(HaveLen(14))
-				Expect(m["DataVolumes"]).To(BeTrue())
-				Expect(m["SRIOV"]).To(BeTrue())
-				Expect(m["LiveMigration"]).To(BeTrue())
-				Expect(m["CPUManager"]).To(BeTrue())
-				Expect(m["CPUNodeDiscovery"]).To(BeTrue())
-				Expect(m["Sidecar"]).To(BeTrue())
-				Expect(m["Snapshot"]).To(BeTrue())
+				Expect(m).To(HaveLen(7))
 				Expect(m["SRIOVLiveMigration"]).To(BeTrue())
 				Expect(m["HotplugVolumes"]).To(BeTrue())
 				Expect(m["GPU"]).To(BeTrue())
@@ -376,7 +362,7 @@ var _ = Describe("HyperconvergedTypes", func() {
 
 			It("should return nil if RebuildEnabledGateMap was not called first", func() {
 				Expect((&HyperConvergedFeatureGates{}).GetEnabledGateMap()).To(BeNil())
-				Expect((&HyperConvergedFeatureGates{DataVolumes: &enabled}).GetEnabledGateMap()).To(BeNil())
+				Expect((&HyperConvergedFeatureGates{HostDevices: &enabled}).GetEnabledGateMap()).To(BeNil())
 			})
 
 			It("should return the same result as the previous RebuildEnabledGateMap", func() {
@@ -386,9 +372,9 @@ var _ = Describe("HyperconvergedTypes", func() {
 				Expect(fgs.GetEnabledGateMap()).To(BeEmpty())
 				Expect(fgs.GetEnabledGateMap()).Should(Equal(expected))
 
-				fgs.DataVolumes = &enabled
-				fgs.CPUManager = &enabled
-				fgs.SRIOV = &disabled
+				fgs.HostDevices = &enabled
+				fgs.HotplugVolumes = &enabled
+				fgs.HypervStrictCheck = &disabled
 
 				Expect(fgs.GetEnabledGateMap()).To(BeEmpty())
 				expected = fgs.RebuildEnabledGateMap()
@@ -396,8 +382,8 @@ var _ = Describe("HyperconvergedTypes", func() {
 				actual := fgs.GetEnabledGateMap()
 				Expect(actual).To(HaveLen(2))
 				Expect(actual).Should(Equal(expected))
-				Expect(actual).Should(HaveKeyWithValue("DataVolumes", true))
-				Expect(actual).Should(HaveKeyWithValue("CPUManager", true))
+				Expect(actual).Should(HaveKeyWithValue("HostDevices", true))
+				Expect(actual).Should(HaveKeyWithValue("HotplugVolumes", true))
 			})
 		})
 	})

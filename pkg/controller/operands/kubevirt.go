@@ -43,15 +43,54 @@ const (
 	machineTypeEnvName  = "MACHINETYPE"
 )
 
-// KubeVirt FeatureGates
+// KubeVirt hard coded FeatureGates
 const (
-	kvDataVolumesGate        = "DataVolumes"
-	kvSRIOVGate              = "SRIOV"
-	kvLiveMigrationGate      = "LiveMigration"
-	kvCPUManagerGate         = "CPUManager"
-	kvCPUNodeDiscoveryGate   = "CPUNodeDiscovery"
-	kvSidecarGate            = "Sidecar"
-	kvSnapshotGate           = "Snapshot"
+	// indicates that we support turning on DataVolume workflows. This means using DataVolumes in the VM and VMI
+	// definitions. There was a period of time where this was in alpha and needed to be explicility enabled.
+	// It also means that someone is using KubeVirt with CDI. So by not enabling this feature gate, someone can safely
+	// use kubevirt without CDI and know that users of kubevirt will not be able to post VM/VMIs that use CDI workflows
+	// that aren't available to them
+	kvDataVolumesGate = "DataVolumes"
+
+	// TODO add description
+	kvSRIOVGate = "SRIOV"
+
+	// Enables VMIs to be live migrated. Without this, migrations are not possible and will be blocked
+	kvLiveMigrationGate = "LiveMigration"
+
+	// Enables the CPUManager feature gate to label the nodes which have the Kubernetes CPUManager running. VMIs that
+	// require dedicated CPU resources will automatically be scheduled on the labeled nodes
+	kvCPUManagerGate = "CPUManager"
+
+	// Enables schedule VMIs according to their CPU model
+	kvCPUNodeDiscoveryGate = "CPUNodeDiscovery"
+
+	// Enables using our sidecar hooks for injecting custom logic into the VMI startup flow. This is a very advanced
+	// feature that has security implications, which is why it is opt-in only
+	// TODO: Remove this feature gate because it creates a security issue:
+	// it allows anyone to execute arbitrary third party code in the VMI pod.
+	// Since the VMI pods execute with capabilities that a user may not actually
+	// have, it's a path to privilege escalation.
+	kvSidecarGate = "Sidecar"
+
+	// Enables the alpha offline snapshot functionality
+	kvSnapshotGate = "Snapshot"
+)
+
+var (
+	hardCodeKvFgs = []string{
+		kvDataVolumesGate,
+		kvSRIOVGate,
+		kvLiveMigrationGate,
+		kvCPUManagerGate,
+		kvCPUNodeDiscoveryGate,
+		kvSidecarGate,
+		kvSnapshotGate,
+	}
+)
+
+// KubeVirt feature gates that are exposed in HCO API
+const (
 	HotplugVolumesGate       = "HotplugVolumes"
 	kvWithHostPassthroughCPU = "WithHostPassthroughCPU"
 	kvWithHostModelCPU       = "WithHostModelCPU"
@@ -64,13 +103,6 @@ const (
 
 var (
 	kvFeatureGateList = []string{
-		kvDataVolumesGate,
-		kvSRIOVGate,
-		kvLiveMigrationGate,
-		kvCPUManagerGate,
-		kvCPUNodeDiscoveryGate,
-		kvSidecarGate,
-		kvSnapshotGate,
 		HotplugVolumesGate,
 		kvWithHostPassthroughCPU,
 		kvWithHostModelCPU,
@@ -551,14 +583,15 @@ func NewKubeVirtConfigForCR(cr *hcov1beta1.HyperConverged, namespace string) *co
 
 // Take only KV FGs from the HC enabled FG list
 func getKvFeatureGateList(fgs *hcov1beta1.HyperConvergedFeatureGates) []string {
+	res := make([]string, 0, len(kvFeatureGateList)+len(hardCodeKvFgs))
+	res = append(res, hardCodeKvFgs...)
+
 	generalEnabledFGs := fgs.GetEnabledGateMap()
-	if generalEnabledFGs == nil {
-		return nil
-	}
-	res := make([]string, 0, len(kvFeatureGateList))
-	for _, fg := range kvFeatureGateList {
-		if generalEnabledFGs[fg] {
-			res = append(res, fg)
+	if generalEnabledFGs != nil {
+		for _, fg := range kvFeatureGateList {
+			if generalEnabledFGs[fg] {
+				res = append(res, fg)
+			}
 		}
 	}
 
