@@ -147,7 +147,7 @@ generate-doc: build-docgen
 	_out/docgen ./pkg/apis/hco/v1beta1/hyperconverged_types.go > docs/api.md
 
 build-docgen:
-	go build -o _out/docgen ./tools/docgen
+	go build -i -ldflags="-s -w" -o _out/docgen ./tools/docgen
 
 help: ## Show this help screen
 	@echo 'Usage: make <OPTIONS> ... <TARGETS>'
