@@ -19,7 +19,7 @@ DO=eval
 export JOB_TYPE=prow
 endif
 
-sanity:
+sanity: apidocs
 	go version
 	go fmt ./...
 	go mod tidy -v
@@ -166,6 +166,11 @@ local:
 deploy_cr:
 	./hack/deploy_only_cr.sh
 
+
+apidocs:
+	docker build -f docs/apis/Dockerfile --rm -t apidocs-gen . && \
+	docker run -it --rm -v ${GOPATH}/src/github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis:/go/src/github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis -v ${PWD}/docs/apis:/go/gen-crd-api-reference-docs/apidocs apidocs-gen
+
 .PHONY: start \
 		clean \
 		build \
@@ -200,3 +205,4 @@ deploy_cr:
 		kubevirt-nightly-test \
 		local \
 		deploy_cr \
+		apidocs \
