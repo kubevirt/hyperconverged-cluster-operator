@@ -206,3 +206,5 @@ deploy_cr:
 		kubevirt-nightly-test \
 		local \
 		deploy_cr \
+		build-docgen \
+		generate-doc

@@ -56,6 +56,10 @@ var (
 	typesDoc  = map[string]KubeTypes{}
 )
 
+const (
+	kubebuilderDefaultPrefix = "// +kubebuilder:default="
+)
+
 func toSectionLink(name string) string {
 	name = strings.ToLower(name)
 	name = strings.Replace(name, " ", "-", -1)
@@ -92,11 +96,11 @@ func printAPIDocs(paths []string) {
 		if len(t) > 1 {
 			fmt.Printf("\n## %s\n\n%s\n\n", strukt.Name, strukt.Doc)
 
-			fmt.Println("| Field | Description | Scheme | Required |")
-			fmt.Println("| ----- | ----------- | ------ | -------- |")
+			fmt.Println("| Field | Description | Scheme | Default | Required |")
+			fmt.Println("| ----- | ----------- | ------ | -------- |-------- |")
 			fields := t[1:(len(t))]
 			for _, f := range fields {
-				fmt.Println("|", f.Name, "|", f.Doc, "|", f.Type, "|", f.Mandatory, "|")
+				fmt.Println("|", f.Name, "|", f.Doc, "|", f.Type, "|", f.Default, "|", f.Mandatory, "|")
 			}
 			fmt.Println("")
 			fmt.Println("[Back to TOC](#table-of-contents)")
@@ -106,8 +110,8 @@ func printAPIDocs(paths []string) {
 
 // Pair of strings. We keed the name of fields and the doc
 type Pair struct {
-	Name, Doc, Type string
-	Mandatory       bool
+	Name, Doc, Type, Default string
+	Mandatory                bool
 }
 
 // KubeTypes is an array to represent all available types in a parsed file. [0] is for the type itself
@@ -126,7 +130,7 @@ func ParseDocumentationFrom(srcs []string) []KubeTypes {
 		for _, kubType := range pkg.Types {
 			if structType, ok := kubType.Decl.Specs[0].(*ast.TypeSpec).Type.(*ast.StructType); ok {
 				var ks KubeTypes
-				ks = append(ks, Pair{kubType.Name, fmtRawDoc(kubType.Doc), "", false})
+				ks = append(ks, Pair{Name: kubType.Name, Doc: fmtRawDoc(kubType.Doc), Type: "", Default: "", Mandatory: false})
 
 				for _, field := range structType.Fields.List {
 					// Treat inlined fields separately as we don't want the original types to appear in the doc.
@@ -138,11 +142,14 @@ func ParseDocumentationFrom(srcs []string) []KubeTypes {
 						continue
 					}
 
-					typeString := fieldType(field.Type)
-					fieldMandatory := fieldRequired(field)
 					if n := fieldName(field); n != "-" {
 						fieldDoc := fmtRawDoc(field.Doc.Text())
-						ks = append(ks, Pair{n, fieldDoc, typeString, fieldMandatory})
+						ks = append(ks, Pair{
+							Name:      n,
+							Doc:       fieldDoc,
+							Type:      fieldType(field.Type),
+							Default:   fieldDefault(field),
+							Mandatory: fieldRequired(field)})
 					}
 				}
 				docForTypes = append(docForTypes, ks)
@@ -274,6 +281,19 @@ func fieldRequired(field *ast.Field) bool {
 	}
 
 	return false
+}
+
+// fieldDefault returns the default value of the field set by kubebuilder:default
+func fieldDefault(field *ast.Field) string {
+	if field.Doc != nil {
+		for _, doc := range field.Doc.List {
+			if strings.HasPrefix(doc.Text, kubebuilderDefaultPrefix) {
+				def := doc.Text[len(kubebuilderDefaultPrefix):]
+				return def
+			}
+		}
+	}
+	return ""
 }
 
 func fieldType(typ ast.Expr) string {
