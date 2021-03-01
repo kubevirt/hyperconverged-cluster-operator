@@ -694,22 +694,25 @@ Version: 1.2.3`)
 
 		defer os.Unsetenv(smbiosEnvName)
 		defer os.Unsetenv(machineTypeEnvName)
+		defer os.Unsetenv(kvmEmulationEnvName)
 
 		BeforeEach(func() {
 			hco = commonTestUtils.NewHco()
 			req = commonTestUtils.NewReq(hco)
-		})
-
-		enabled := true
-
-		It("should create if not present", func() {
 			os.Setenv(smbiosEnvName,
 				`Family: smbios family
 Product: smbios product
 Manufacturer: smbios manufacturer
 Sku: 1.2.3
 Version: 1.2.3`)
+
 			os.Setenv(machineTypeEnvName, "machine-type")
+			os.Setenv(kvmEmulationEnvName, "false")
+		})
+
+		enabled := true
+
+		It("should create if not present", func() {
 			hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
 				HotplugVolumes: &enabled,
 			}
@@ -859,6 +862,24 @@ Version: 1.2.3`)
 			Expect(foundResource.Spec.Configuration.NetworkConfiguration.NetworkInterface).Should(Equal(string(kubevirtv1.MasqueradeInterface)))
 
 			Expect(foundResource.Spec.Configuration.EmulatedMachines).Should(BeEmpty())
+		})
+
+		It("should fail if the SMBIOS is wrongly formatted mandatory configurations", func() {
+			hco.Spec.FeatureGates = &hcov1beta1.HyperConvergedFeatureGates{
+				HotplugVolumes: &enabled,
+			}
+
+			_ = os.Setenv(smbiosEnvName, "WRONG YAML")
+
+			_, err := NewKubeVirt(hco, commonTestUtils.Namespace)
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("should fail if the KVM_EMULATION is wrongly formatted mandatory configurations", func() {
+			_ = os.Setenv(kvmEmulationEnvName, "WRONG_BOOLEAN")
+
+			_, err := NewKubeVirt(hco, commonTestUtils.Namespace)
+			Expect(err).To(HaveOccurred())
 		})
 
 		It("should set default UninstallStrategy if missing", func() {
