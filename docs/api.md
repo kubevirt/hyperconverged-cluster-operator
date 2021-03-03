@@ -32,7 +32,7 @@ HyperConvergedConfig defines a set of configurations to pass to components
 
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | -------- |-------- |
-| nodePlacement | NodePlacement describes node scheduling configuration. | *sdkapi.NodePlacement |  | false |
+| nodePlacement | NodePlacement describes node scheduling configuration. | *[sdkapi.NodePlacement](https://github.com/kubevirt/controller-lifecycle-operator-sdk/blob/bbf16167410b7a781c7b08a3f088fc39551c7a00/pkg/sdk/api/types.go#L49) |  | false |
 
 [Back to TOC](#table-of-contents)
 

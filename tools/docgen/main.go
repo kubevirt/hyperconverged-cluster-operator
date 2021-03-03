@@ -52,8 +52,10 @@ var (
 		"apiextensionsv1.JSON":     "https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#json-v1-apiextensions-k8s-io",
 	}
 
-	selfLinks = map[string]string{}
-	typesDoc  = map[string]KubeTypes{}
+	selfLinks = map[string]string{
+		"sdkapi.NodePlacement": "https://github.com/kubevirt/controller-lifecycle-operator-sdk/blob/bbf16167410b7a781c7b08a3f088fc39551c7a00/pkg/sdk/api/types.go#L49",
+	}
+	typesDoc = map[string]KubeTypes{}
 )
 
 const (
