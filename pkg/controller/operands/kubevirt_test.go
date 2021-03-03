@@ -1926,10 +1926,6 @@ Version: 1.2.3`)
 	})
 })
 
-//func requestWithFeatureGates(featureGates *hcov1beta1.HyperConvergedFeatureGates) *common.HcoRequest {
-//	return &common.HcoRequest{Instance: &hcov1beta1.HyperConverged{Spec: hcov1beta1.HyperConvergedSpec{FeatureGates: featureGates}}}
-//}
-
 func reconcileCm(hco *hcov1beta1.HyperConverged, req *common.HcoRequest, expectUpdate bool, existingCM, foundCm *corev1.ConfigMap) {
 	cl := commonTestUtils.InitClient([]runtime.Object{hco, existingCM})
 	handler := (*genericOperand)(newKvConfigHandler(cl, commonTestUtils.GetScheme()))

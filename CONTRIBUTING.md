@@ -5,7 +5,7 @@
 ## Contributing to the HyperConverged API
 
 The Hyperconverged Cluster Operator represents an opinionated deployment of KubeVirt. Its purpose is to deploy KubeVirt
-and accompanying projects with good defaults, so they work together well for most people, in a testable and reproducible
+and accompanying projects with good defaults and hard-coded values, so they work together well for most people, in a testable and reproducible
 manner.
 
 This means that the API of HCO should be kept simple. HCO should do everything right out of the box, so it is easy to
@@ -53,7 +53,14 @@ SRIOVLiveMigration FeatureGate `json:"sriovLiveMigration,omitempty"`
 return (fgs != nil) && (fgs.HotplugVolumes != nil) && (*fgs.HotplugVolumes)
 }
   ```
-
+1. Run openapi-gen code generation (the GOPATH below is an example. use the right value for your settings)
+    ```shell
+    GOPATH=~/go GO111MODULE=auto openapi-gen --output-file-base zz_generated.openapi --input-dirs="github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1" --output-package github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1
+    ```
+1. Run deepcopy code generation (the GOPATH below is an example. use the right value for your settings):
+    ```shell
+    GOPATH=~/go GO111MODULE=auto deepcopy-gen --input-dirs="github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1" --output-file-base zz_generated.deepcopy ~/go/src/github.com/kubevirt/hyperconverged-cluster-operator
+    ```
 1. Add a set of unit tests
    in [pkg/apis/hco/v1beta1/hyperconverged_types_test.go](pkg/apis/hco/v1beta1/hyperconverged_types_test.go)
    to check this new function.
@@ -65,4 +72,8 @@ return (fgs != nil) && (fgs.HotplugVolumes != nil) && (*fgs.HotplugVolumes)
       the `// KubeVirt feature gates that are exposed in HCO API`
       comment.
     - Add the new feature gate and the new IsEnabled function to the map in the `getFeatureGateChecks` function.
+1. Rebuild the manifests:
+    ```shell
+    make build-manifests
+    ```
     
