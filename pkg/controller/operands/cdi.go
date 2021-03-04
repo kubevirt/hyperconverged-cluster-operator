@@ -19,6 +19,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
+const (
+	cdiConfigAuthorityAnnotation = "cdi.kubevirt.io/configAuthority"
+)
+
 type cdiHandler genericOperand
 
 func newCdiHandler(Client client.Client, Scheme *runtime.Scheme) *cdiHandler {
@@ -65,11 +69,15 @@ func (h *cdiHooks) updateCr(req *common.HcoRequest, Client client.Client, exists
 
 	// HCO reconciles the CR for CDI excluding the `spec.CDIConfig`,
 	if found.Spec.Config != nil {
-		cdi.Spec.Config = &cdiv1beta1.CDIConfigSpec{}
-		found.Spec.Config.DeepCopyInto(cdi.Spec.Config)
+		cdi.Spec.Config = found.Spec.Config.DeepCopy()
+	} else {
+		cdi.Spec.Config = nil
 	}
 
-	setDefaultFeatureGates(&cdi.Spec)
+	// only set feature gates if annotation exists
+	if _, ok := found.Annotations[cdiConfigAuthorityAnnotation]; ok {
+		setDefaultFeatureGates(&cdi.Spec)
+	}
 
 	if !reflect.DeepEqual(found.Spec, cdi.Spec) {
 		overwritten := false
@@ -136,9 +144,10 @@ func NewCDI(hc *hcov1beta1.HyperConverged, opts ...string) *cdiv1beta1.CDI {
 
 	return &cdiv1beta1.CDI{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "cdi-" + hc.Name,
-			Labels:    getLabels(hc),
-			Namespace: getNamespace(hcoutil.UndefinedNamespace, opts),
+			Name:        "cdi-" + hc.Name,
+			Labels:      getLabels(hc),
+			Namespace:   getNamespace(hcoutil.UndefinedNamespace, opts),
+			Annotations: map[string]string{cdiConfigAuthorityAnnotation: ""},
 		},
 		Spec: spec,
 	}
