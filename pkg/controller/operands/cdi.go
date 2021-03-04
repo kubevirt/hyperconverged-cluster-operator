@@ -82,6 +82,7 @@ func (h *cdiHooks) updateCr(req *common.HcoRequest, Client client.Client, exists
 		return false, false, errors.New("can't convert to CDI")
 	}
 
+	// HCO reconciles the CR for CDI excluding the `spec.CDIConfig`,
 	if found.Spec.Config != nil {
 		cdi.Spec.Config = found.Spec.Config.DeepCopy()
 	} else {
