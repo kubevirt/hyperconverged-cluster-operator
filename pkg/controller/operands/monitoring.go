@@ -260,21 +260,21 @@ func NewPrometheusRule(hc *hcov1beta1.HyperConverged, namespace string) *monitor
 
 // NewPrometheusRuleSpec creates PrometheusRuleSpec for alert rules
 func NewPrometheusRuleSpec() *monitoringv1.PrometheusRuleSpec {
-        return &monitoringv1.PrometheusRuleSpec{
-                Groups: []monitoringv1.RuleGroup{{
-                        Name: alertRuleGroup,
-                        Rules: []monitoringv1.Rule{{
-                                Alert: outOfBandUpdateAlert,
-                                Expr:  intstr.FromString("sum(hyperconverged_cluster_operator_out_of_band_modifications) by (component_name) > 0"),
-                                For:   "10m",
-                                Annotations: map[string]string{
-                                        "description": "Out-of-band modification for {{ $labels.component_name }} .",
-                                        "summary":     "Out-of-band CR modification was detected",
-                                },
-                                Labels: map[string]string{
-                                        "severity": "warning",
-                                },
-                        }},
-                }},
-        }
+	return &monitoringv1.PrometheusRuleSpec{
+		Groups: []monitoringv1.RuleGroup{{
+			Name: alertRuleGroup,
+			Rules: []monitoringv1.Rule{{
+				Alert: outOfBandUpdateAlert,
+				Expr:  intstr.FromString("sum(hyperconverged_cluster_operator_out_of_band_modifications) by (component_name) > 0"),
+				For:   "10m",
+				Annotations: map[string]string{
+					"description": "Out-of-band modification for {{ $labels.component_name }} .",
+					"summary":     "Out-of-band CR modification was detected",
+				},
+				Labels: map[string]string{
+					"severity": "warning",
+				},
+			}},
+		}},
+	}
 }
