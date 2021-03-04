@@ -93,8 +93,7 @@ HyperConvergedStatus defines the observed state of HyperConverged
 
 ## LiveMigrationConfigurations
 
-LiveMigrationConfigurations - Live migration limits and timeouts are applied so that migration processes do not
-overwhelm the cluster.
+LiveMigrationConfigurations - Live migration limits and timeouts are applied so that migration processes do not overwhelm the cluster.
 
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | -------- |-------- |
@@ -107,6 +106,8 @@ overwhelm the cluster.
 [Back to TOC](#table-of-contents)
 
 ## Version
+
+
 
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | -------- |-------- |
