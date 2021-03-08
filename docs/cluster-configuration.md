@@ -119,13 +119,13 @@ disables the feature.
 
 ### withHostPassthroughCPU Feature Gate
 Set the `withHostPassthroughCPU` feature gate in order to allow migrating a virtual machine with CPU host-passthrough
-mode.
+mode. This can provide slightly better CPU performance, but should be enabled only when the Cluster is homogeneous from
+CPU HW perspective.
 
 **Default**: `false`
 
 Additional information: [LibvirtXMLCPUModel](https://wiki.openstack.org/wiki/LibvirtXMLCPUModel)
 
-**note**: This should be enabled only when the Cluster is homogeneous from CPU HW perspective doc here
 
 ### Feature Gates Example
 ```yaml
