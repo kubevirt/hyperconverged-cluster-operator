@@ -342,3 +342,5 @@ FIELDS:
 Using the jsonpatch annotation feature incorrectly might lead to unexpected results and could potentially render the Kubevirt-Hyperconverged system unstable.  
 The jsonpatch annotation feature is particularly dangerous when upgrading Kubevirt-Hyperconverged, as the structure or the semantics of the underlying components' CR might be changed. Please remove any jsonpatch annotation usage prior the upgrade, to avoid any potential issues.
 **USE WITH CAUTION!**
+
+Testing only. Check if changing this file will trigger the test (it shouldn't)

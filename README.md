@@ -204,3 +204,4 @@ For example:
 ```bash
 $ ./cluster/kubectl.sh get pods --all-namespaces
 ```
+Testing only. Check if changing this file will trigger the test (it shouldn't)
