@@ -13,19 +13,13 @@ import (
 	"time"
 )
 
-type QuickStartTestCase struct {
-	Name        string
-	DisplayName string
-}
-
-var defaultCases = []QuickStartTestCase{{Name: "test-quick-start", DisplayName: "Test Quickstart Tour"}}
+var defaultItems = []tests.QuickStartTestItem{{Name: "test-quick-start", DisplayName: "Test Quickstart Tour"}}
 
 var _ = Describe("[rfe_id:xxx][crit:xxx][vendor:cnv-qe@redhat.com][level:system]ConsoleQuickStart objects", func() {
 	flag.Parse()
 
 	BeforeEach(func() {
 		tests.BeforeEach()
-
 	})
 
 	It("[test_id:xxx]should create ConsoleQuickStart objects", func() {
@@ -36,7 +30,8 @@ var _ = Describe("[rfe_id:xxx][crit:xxx][vendor:cnv-qe@redhat.com][level:system]
 		Expect(err).ToNot(HaveOccurred())
 
 		skipIfQuickStartCrdDoesNotExist(virtCli)
-		checkExpectedQuickStarts(client, defaultCases)
+
+		checkExpectedQuickStarts(client)
 	})
 
 })
@@ -51,14 +46,17 @@ func skipIfQuickStartCrdDoesNotExist(cli kubecli.KubevirtClient) {
 	ExpectWithOffset(1, err).Should(BeNil())
 }
 
-func checkExpectedQuickStarts(client kubecli.KubevirtClient, cases []QuickStartTestCase) {
+func checkExpectedQuickStarts(client kubecli.KubevirtClient) {
 	By("Checking expected quickstart objects")
-
 	s := scheme.Scheme
 	_ = consolev1.Install(s)
 	s.AddKnownTypes(consolev1.GroupVersion)
 
-	for _, qs := range cases {
+	items := defaultItems
+	if tests.GetConfig().QuickStart.TestItems != nil {
+		items = tests.GetConfig().QuickStart.TestItems
+	}
+	for _, qs := range items {
 		// use a fresh object for each loop. get requests only override non-empty fields
 		var cqs consolev1.ConsoleQuickStart
 		err := client.RestClient().Get().
