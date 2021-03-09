@@ -886,8 +886,7 @@ func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (
 		return false, err
 	}
 
-	backupCm := cm.DeepCopy()
-	backupCm.Name = backupKvCmName
+	backupCm := makeCmBackup(cm)
 
 	req.Logger.Info("creating KubeVirt configmap backup")
 	if err := r.client.Create(req.Ctx, backupCm); err != nil {
@@ -903,15 +902,46 @@ func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (
 
 	modified := adoptOldKvConfigs(req, cm)
 
-	req.Logger.Info("removing the kubevirt configMap")
-	err := hcoutil.ComponentResourceRemoval(req.Ctx, r.client, cm, req.Name, req.Logger, false, true)
+	err := r.removeKvConfigMap(req, cm)
 	if err != nil {
 		return false, err
 	}
 
+	return modified, nil
+}
+
+func (r *ReconcileHyperConverged) removeKvConfigMap(req *common.HcoRequest, cm *corev1.ConfigMap) error {
+	req.Logger.Info("removing the kubevirt configMap")
+	err := hcoutil.ComponentResourceRemoval(req.Ctx, r.client, cm, req.Name, req.Logger, false, true)
+	if err != nil {
+		return err
+	}
+
 	r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "Killing", fmt.Sprintf("Removed ConfigMap %s", kvCmName))
 
-	return modified, nil
+	refs := make([]corev1.ObjectReference, 0, len(req.Instance.Status.RelatedObjects))
+	for _, obj := range req.Instance.Status.RelatedObjects {
+		if obj.Kind == "ConfigMap" && obj.Name == kvCmName {
+			continue
+		}
+		refs = append(refs, obj)
+	}
+
+	req.Instance.Status.RelatedObjects = refs
+	req.StatusDirty = true
+
+	return nil
+}
+
+func makeCmBackup(cm *corev1.ConfigMap) *corev1.ConfigMap {
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      backupKvCmName,
+			Namespace: cm.Namespace,
+			Labels:    cm.Labels,
+		},
+		Data: cm.Data,
+	}
 }
 
 // Read the old KubeVit configuration from the config map, and move them to the HyperConverged CR

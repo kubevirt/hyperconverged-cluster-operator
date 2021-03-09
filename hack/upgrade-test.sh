@@ -220,7 +220,7 @@ Msg "Read the CSV to make sure the deployment is done"
 ./hack/retry.sh 30 10 "${CMD} get ClusterServiceVersion  -n ${HCO_NAMESPACE} kubevirt-hyperconverged-operator.v${INITIAL_CHANNEL} -o jsonpath='{ .status.phase }' | grep 'Succeeded'"
 
 # When upgrading from 1.3.0, we expect to have the KV configMap, that will be dropped during upgrade
-if ${CMD} get cm game-config; then
+if ${CMD} get cm kubevirt-config; then
   KV_CM_FOUND=TRUE
 fi
 

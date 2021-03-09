@@ -1115,6 +1115,8 @@ var _ = Describe("HyperconvergedController", func() {
 					foundKvCm, foundBackup := searchKvConfigMaps(cl)
 					Expect(foundKvCm).To(BeFalse())
 					Expect(foundBackup).To(BeTrue())
+
+					Expect(searchInRelatedObjects(foundResource.Status.RelatedObjects, "ConfigMap", kvCmName)).To(BeFalse())
 				})
 
 				It("should adopt KubeVirt configMap into HC CR, drop it and create backup", func() {
@@ -1165,6 +1167,8 @@ progressTimeout: 150`,
 					Expect(foundKvCm).To(BeFalse())
 					Expect(foundBackup).To(BeTrue())
 
+					Expect(searchInRelatedObjects(foundResource.Status.RelatedObjects, "ConfigMap", kvCmName)).To(BeFalse())
+
 					By("Run reconclie again")
 					foundResource, requeue = doReconcile(cl, expected.hco)
 					Expect(requeue).To(BeFalse())
@@ -1183,6 +1187,9 @@ progressTimeout: 150`,
 					foundKvCm, foundBackup = searchKvConfigMaps(cl)
 					Expect(foundKvCm).To(BeFalse())
 					Expect(foundBackup).To(BeTrue())
+
+					Expect(searchInRelatedObjects(foundResource.Status.RelatedObjects, "ConfigMap", kvCmName)).To(BeFalse())
+
 				})
 
 				It("should adopt KubeVirt configMap into HC CR if the values are different, drop the cm and create backup", func() {
@@ -1238,6 +1245,8 @@ progressTimeout: 300`,
 					Expect(foundKvCm).To(BeFalse())
 					Expect(foundBackup).To(BeTrue())
 
+					Expect(searchInRelatedObjects(foundResource.Status.RelatedObjects, "ConfigMap", kvCmName)).To(BeFalse())
+
 					By("Run reconclie again")
 					foundResource, requeue = doReconcile(cl, expected.hco)
 					Expect(requeue).To(BeFalse())
@@ -1256,6 +1265,8 @@ progressTimeout: 300`,
 					foundKvCm, foundBackup = searchKvConfigMaps(cl)
 					Expect(foundKvCm).To(BeFalse())
 					Expect(foundBackup).To(BeTrue())
+
+					Expect(searchInRelatedObjects(foundResource.Status.RelatedObjects, "ConfigMap", kvCmName)).To(BeFalse())
 				})
 
 				It("should ignore KubeVirt configMap into HC CR if there is no change, drop the cm and create backup", func() {
@@ -1310,6 +1321,8 @@ progressTimeout: 150`,
 					foundKvCm, foundBackup := searchKvConfigMaps(cl)
 					Expect(foundKvCm).To(BeFalse())
 					Expect(foundBackup).To(BeTrue())
+
+					Expect(searchInRelatedObjects(foundResource.Status.RelatedObjects, "ConfigMap", kvCmName)).To(BeFalse())
 				})
 			})
 		})
@@ -2370,4 +2383,13 @@ func searchKvConfigMaps(cl client.Client) (bool, bool) {
 	}
 
 	return foundKvCm, foundBackup
+}
+
+func searchInRelatedObjects(relatedObjects []corev1.ObjectReference, kind, name string) bool {
+	for _, obj := range relatedObjects {
+		if obj.Kind == kind && obj.Name == name {
+			return true
+		}
+	}
+	return false
 }
