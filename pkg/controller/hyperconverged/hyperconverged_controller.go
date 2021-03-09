@@ -4,6 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"reflect"
+	"strings"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/google/uuid"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
@@ -305,11 +310,24 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 
 	if !r.upgradeMode && !init && knownHcoVersion != r.ownVersion {
 		r.upgradeMode = true
+
 		r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "UpgradeHCO", "Upgrading the HyperConverged to version "+r.ownVersion)
 		req.Logger.Info(fmt.Sprintf("Start upgrading from version %s to version %s", knownHcoVersion, r.ownVersion))
 	}
 
 	req.SetUpgradeMode(r.upgradeMode)
+
+	if r.upgradeMode {
+		modified, err := r.migrateBeforeUpgrade(req)
+		if err != nil {
+			return reconcile.Result{Requeue: init}, err
+		}
+
+		if modified {
+			r.updateConditions(req)
+			return reconcile.Result{Requeue: true}, nil
+		}
+	}
 
 	r.cliDownloadHandler.Ensure(req)
 
@@ -841,6 +859,109 @@ func (r *ReconcileHyperConverged) recoverHCOVersion(request *common.HcoRequest) 
 		request.Instance.Spec.Version = r.ownVersion
 		request.Dirty = true
 	}
+}
+
+// This function performs migrations before starting the upgrade process
+// return true if the HyperConverged CR was modified; else, return false
+//
+// If the kubevirt-config configMap exists:
+// 1. create a backup of the configMap, if not exists
+// 2. if the configMap includes the live migration configurations, and they are not match to the default values,
+//    update the HyperConverged CR
+// 3. remove the kubevirt-config configMap
+// 4. return true if the CR was modified in #2
+const (
+	kvCmName         = "kubevirt-config"
+	backupKvCmName   = kvCmName + "-backup"
+	liveMigrationKey = "migrations"
+)
+
+func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (bool, error) {
+
+	req.Logger.Info("read KubeVirt configmap")
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      kvCmName,
+			Namespace: req.Namespace,
+		},
+	}
+
+	if err := hcoutil.GetRuntimeObject(req.Ctx, r.client, cm, req.Logger); err != nil {
+		if apierrors.IsNotFound(err) {
+			req.Logger.Info("KubeVirt configmap already removed")
+			return false, nil
+		}
+		req.Logger.Info("failed to create KubeVirt configmap", "error", err.Error())
+		return false, err
+	}
+
+	backupCm := cm.DeepCopy()
+	backupCm.Name = backupKvCmName
+
+	req.Logger.Info("creating KubeVirt configmap backup")
+	if err := r.client.Create(req.Ctx, backupCm); err != nil {
+		if apierrors.IsAlreadyExists(err) {
+			req.Logger.Info("KubeVirt configmap backup already exists")
+		} else {
+			req.Logger.Info("failed to create KubeVirt configmap backup", "error", err.Error())
+			return false, err
+		}
+	} else {
+		r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "Created", fmt.Sprintf("Created ConfigMap %s", backupKvCmName))
+	}
+
+	modified := r.adoptOldKvConfigs(req, cm)
+
+	req.Logger.Info("removing the kubevirt configMap")
+	err := hcoutil.ComponentResourceRemoval(req.Ctx, r.client, cm, req.Name, req.Logger, false, true)
+	if err != nil {
+		return false, err
+	}
+
+	r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "Killing", fmt.Sprintf("Removed ConfigMap %s", kvCmName))
+
+	return modified, nil
+}
+
+// Read the old KubeVit configuration from the config map, and move them to the HyperConverged CR
+//
+// In case of wrong foramt of the configmap, the HCO ignores this error (but print it to the log) in order to prevent
+// an infinite loop (returning error will cause the same error again and again, and the only way to stop the loop
+// is to manually fix or delete the wrong configMap).
+func (r *ReconcileHyperConverged) adoptOldKvConfigs(req *common.HcoRequest, cm *corev1.ConfigMap) bool {
+	modified := false
+	kvLiveMigrationConfig, ok := cm.Data[liveMigrationKey]
+	if ok {
+		hcoLiveMigrationConfig := hcov1beta1.LiveMigrationConfigurations{}
+		err := yaml.NewYAMLOrJSONDecoder(strings.NewReader(kvLiveMigrationConfig), 1024).Decode(&hcoLiveMigrationConfig)
+		if err != nil {
+			req.Logger.Error(err, "Failed to read the KubeVirt ConfigMap, and its content was ignored. This ConfigMap will be deleted. The backup ConfigMap called "+backupKvCmName)
+			return false
+		}
+
+		if !reflect.DeepEqual(req.Instance.Spec.LiveMigrationConfig, hcoLiveMigrationConfig) {
+			req.Logger.Info("updating the HyperConverged CR from the KeubeVirt configMap")
+			if hcoLiveMigrationConfig.BandwidthPerMigration != nil {
+				req.Instance.Spec.LiveMigrationConfig.BandwidthPerMigration = hcoLiveMigrationConfig.BandwidthPerMigration
+			}
+			if hcoLiveMigrationConfig.CompletionTimeoutPerGiB != nil {
+				req.Instance.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB = hcoLiveMigrationConfig.CompletionTimeoutPerGiB
+			}
+			if hcoLiveMigrationConfig.ParallelMigrationsPerCluster != nil {
+				req.Instance.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster = hcoLiveMigrationConfig.ParallelMigrationsPerCluster
+			}
+			if hcoLiveMigrationConfig.ParallelOutboundMigrationsPerNode != nil {
+				req.Instance.Spec.LiveMigrationConfig.ParallelOutboundMigrationsPerNode = hcoLiveMigrationConfig.ParallelOutboundMigrationsPerNode
+			}
+			if hcoLiveMigrationConfig.ProgressTimeout != nil {
+				req.Instance.Spec.LiveMigrationConfig.ProgressTimeout = hcoLiveMigrationConfig.ProgressTimeout
+			}
+
+			req.Dirty = true
+			modified = true
+		}
+	}
+	return modified
 }
 
 // getHyperConvergedNamespacedName returns the name/namespace of the HyperConverged resource
