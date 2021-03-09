@@ -15,14 +15,14 @@ import (
 
 var defaultItems = []tests.QuickStartTestItem{{Name: "test-quick-start", DisplayName: "Test Quickstart Tour"}}
 
-var _ = Describe("[rfe_id:xxx][crit:xxx][vendor:cnv-qe@redhat.com][level:system]ConsoleQuickStart objects", func() {
+var _ = Describe("[rfe_id:5882][crit:high][vendor:cnv-qe@redhat.com][level:system]ConsoleQuickStart objects", func() {
 	flag.Parse()
 
 	BeforeEach(func() {
 		tests.BeforeEach()
 	})
 
-	It("[test_id:xxx]should create ConsoleQuickStart objects", func() {
+	It("[test_id:5883]should create ConsoleQuickStart objects", func() {
 		virtCli, err := kubecli.GetKubevirtClient()
 		Expect(err).ToNot(HaveOccurred())
 
