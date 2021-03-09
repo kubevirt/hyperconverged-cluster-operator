@@ -30,6 +30,8 @@ The deployment is completed when HCO custom resource reports its condition as `A
 
 For more explanation and advanced options for HCO deployment using kustomize, refer to [kustomize deployment documentation](deploy/kustomize/README.md).
 
+Just checking
+
 ## Installing Unreleased Bundle Using A Custom Catalog Source  
 
 Hyperconverged Cluster Operator is publishing the latest bundle to [quay.io/kubevirt](https://quay.io/repository/kubevirt) 
