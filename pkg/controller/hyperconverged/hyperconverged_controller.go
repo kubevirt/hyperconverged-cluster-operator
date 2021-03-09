@@ -281,21 +281,8 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 	// negative conditions (!Available, Degraded, Progressing)
 	req.Conditions = common.NewHcoConditions()
 
-	finDropped := false
 	// Handle finalizers
-	if hcoutil.ContainsString(req.Instance.ObjectMeta.Finalizers, badFinalizerName) {
-		req.Logger.Info("removing a finalizer set in the past (without a fully qualified name)")
-		req.Instance.ObjectMeta.Finalizers, finDropped = drop(req.Instance.ObjectMeta.Finalizers, badFinalizerName)
-		req.Dirty = req.Dirty || finDropped
-	}
-	if req.Instance.ObjectMeta.DeletionTimestamp.IsZero() {
-		// Add the finalizer if it's not there
-		if !hcoutil.ContainsString(req.Instance.ObjectMeta.Finalizers, FinalizerName) {
-			req.Logger.Info("setting a finalizer (with fully qualified name)")
-			req.Instance.ObjectMeta.Finalizers = append(req.Instance.ObjectMeta.Finalizers, FinalizerName)
-			req.Dirty = req.Dirty || finDropped
-		}
-	} else {
+	if !checkFinalizers(req) {
 		if !req.HCOTriggered {
 			// this is just the effect of a delete request created by HCO
 			// in the previous iteration, ignore it
@@ -329,9 +316,13 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 		}
 	}
 
+	return r.EnsureOperandAndComplete(req, init)
+}
+
+func (r *ReconcileHyperConverged) EnsureOperandAndComplete(req *common.HcoRequest, init bool) (reconcile.Result, error) {
 	r.cliDownloadHandler.Ensure(req)
 
-	err = r.operandHandler.Ensure(req)
+	err := r.operandHandler.Ensure(req)
 	if err != nil {
 		r.updateConditions(req)
 		hcoutil.SetReady(false)
@@ -910,7 +901,7 @@ func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (
 		r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "Created", fmt.Sprintf("Created ConfigMap %s", backupKvCmName))
 	}
 
-	modified := r.adoptOldKvConfigs(req, cm)
+	modified := adoptOldKvConfigs(req, cm)
 
 	req.Logger.Info("removing the kubevirt configMap")
 	err := hcoutil.ComponentResourceRemoval(req.Ctx, r.client, cm, req.Name, req.Logger, false, true)
@@ -928,40 +919,46 @@ func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (
 // In case of wrong foramt of the configmap, the HCO ignores this error (but print it to the log) in order to prevent
 // an infinite loop (returning error will cause the same error again and again, and the only way to stop the loop
 // is to manually fix or delete the wrong configMap).
-func (r *ReconcileHyperConverged) adoptOldKvConfigs(req *common.HcoRequest, cm *corev1.ConfigMap) bool {
+func adoptOldKvConfigs(req *common.HcoRequest, cm *corev1.ConfigMap) bool {
 	modified := false
 	kvLiveMigrationConfig, ok := cm.Data[liveMigrationKey]
-	if ok {
-		hcoLiveMigrationConfig := hcov1beta1.LiveMigrationConfigurations{}
-		err := yaml.NewYAMLOrJSONDecoder(strings.NewReader(kvLiveMigrationConfig), 1024).Decode(&hcoLiveMigrationConfig)
-		if err != nil {
-			req.Logger.Error(err, "Failed to read the KubeVirt ConfigMap, and its content was ignored. This ConfigMap will be deleted. The backup ConfigMap called "+backupKvCmName)
-			return false
-		}
-
-		if !reflect.DeepEqual(req.Instance.Spec.LiveMigrationConfig, hcoLiveMigrationConfig) {
-			req.Logger.Info("updating the HyperConverged CR from the KeubeVirt configMap")
-			if hcoLiveMigrationConfig.BandwidthPerMigration != nil {
-				req.Instance.Spec.LiveMigrationConfig.BandwidthPerMigration = hcoLiveMigrationConfig.BandwidthPerMigration
-			}
-			if hcoLiveMigrationConfig.CompletionTimeoutPerGiB != nil {
-				req.Instance.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB = hcoLiveMigrationConfig.CompletionTimeoutPerGiB
-			}
-			if hcoLiveMigrationConfig.ParallelMigrationsPerCluster != nil {
-				req.Instance.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster = hcoLiveMigrationConfig.ParallelMigrationsPerCluster
-			}
-			if hcoLiveMigrationConfig.ParallelOutboundMigrationsPerNode != nil {
-				req.Instance.Spec.LiveMigrationConfig.ParallelOutboundMigrationsPerNode = hcoLiveMigrationConfig.ParallelOutboundMigrationsPerNode
-			}
-			if hcoLiveMigrationConfig.ProgressTimeout != nil {
-				req.Instance.Spec.LiveMigrationConfig.ProgressTimeout = hcoLiveMigrationConfig.ProgressTimeout
-			}
-
-			req.Dirty = true
-			modified = true
-		}
+	if !ok {
+		return false
 	}
+	hcoLiveMigrationConfig := hcov1beta1.LiveMigrationConfigurations{}
+	err := yaml.NewYAMLOrJSONDecoder(strings.NewReader(kvLiveMigrationConfig), 1024).Decode(&hcoLiveMigrationConfig)
+	if err != nil {
+		req.Logger.Error(err, "Failed to read the KubeVirt ConfigMap, and its content was ignored. This ConfigMap will be deleted. The backup ConfigMap called "+backupKvCmName)
+		return false
+	}
+
+	if !reflect.DeepEqual(req.Instance.Spec.LiveMigrationConfig, hcoLiveMigrationConfig) {
+		req.Logger.Info("updating the HyperConverged CR from the KeubeVirt configMap")
+		kvConfigMapToHyperConvergedCr(req, hcoLiveMigrationConfig)
+
+		req.Dirty = true
+		modified = true
+	}
+
 	return modified
+}
+
+func kvConfigMapToHyperConvergedCr(req *common.HcoRequest, hcoLiveMigrationConfig hcov1beta1.LiveMigrationConfigurations) {
+	if hcoLiveMigrationConfig.BandwidthPerMigration != nil {
+		req.Instance.Spec.LiveMigrationConfig.BandwidthPerMigration = hcoLiveMigrationConfig.BandwidthPerMigration
+	}
+	if hcoLiveMigrationConfig.CompletionTimeoutPerGiB != nil {
+		req.Instance.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB = hcoLiveMigrationConfig.CompletionTimeoutPerGiB
+	}
+	if hcoLiveMigrationConfig.ParallelMigrationsPerCluster != nil {
+		req.Instance.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster = hcoLiveMigrationConfig.ParallelMigrationsPerCluster
+	}
+	if hcoLiveMigrationConfig.ParallelOutboundMigrationsPerNode != nil {
+		req.Instance.Spec.LiveMigrationConfig.ParallelOutboundMigrationsPerNode = hcoLiveMigrationConfig.ParallelOutboundMigrationsPerNode
+	}
+	if hcoLiveMigrationConfig.ProgressTimeout != nil {
+		req.Instance.Spec.LiveMigrationConfig.ProgressTimeout = hcoLiveMigrationConfig.ProgressTimeout
+	}
 }
 
 // getHyperConvergedNamespacedName returns the name/namespace of the HyperConverged resource
@@ -1011,4 +1008,24 @@ func drop(slice []string, s string) ([]string, bool) {
 
 func init() {
 	randomConstSuffix = uuid.New().String()
+}
+
+func checkFinalizers(req *common.HcoRequest) bool {
+	finDropped := false
+
+	if hcoutil.ContainsString(req.Instance.ObjectMeta.Finalizers, badFinalizerName) {
+		req.Logger.Info("removing a finalizer set in the past (without a fully qualified name)")
+		req.Instance.ObjectMeta.Finalizers, finDropped = drop(req.Instance.ObjectMeta.Finalizers, badFinalizerName)
+		req.Dirty = req.Dirty || finDropped
+	}
+	if req.Instance.ObjectMeta.DeletionTimestamp.IsZero() {
+		// Add the finalizer if it's not there
+		if !hcoutil.ContainsString(req.Instance.ObjectMeta.Finalizers, FinalizerName) {
+			req.Logger.Info("setting a finalizer (with fully qualified name)")
+			req.Instance.ObjectMeta.Finalizers = append(req.Instance.ObjectMeta.Finalizers, FinalizerName)
+			req.Dirty = req.Dirty || finDropped
+		}
+		return true
+	}
+	return false
 }
