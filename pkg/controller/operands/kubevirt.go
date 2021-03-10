@@ -24,7 +24,7 @@ const (
 )
 
 const (
-	cmFeatureGates = "DataVolumes,SRIOV,LiveMigration,CPUManager,CPUNodeDiscovery,Sidecar,Snapshot"
+	cmFeatureGates = "DataVolumes,SRIOV,LiveMigration,CPUManager,CPUNodeDiscovery,Snapshot"
 )
 
 // ************  KubeVirt Handler  **************
