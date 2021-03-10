@@ -58,8 +58,8 @@ func initReconciler(client client.Client) *ReconcileHyperConverged {
 }
 
 type BasicExpected struct {
-	hco *hcov1beta1.HyperConverged
-	pc  *schedulingv1.PriorityClass
+	hco                  *hcov1beta1.HyperConverged
+	pc                   *schedulingv1.PriorityClass
 	kvStorageConfig      *corev1.ConfigMap
 	kvStorageRole        *rbacv1.Role
 	kvStorageRoleBinding *rbacv1.RoleBinding
