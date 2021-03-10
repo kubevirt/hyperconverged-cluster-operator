@@ -53,7 +53,7 @@ jobs:
       - name: Udate the PR
         uses: Sibz/github-status-action@v1
         with:
-          authToken: ${{secrets.GITHUB_TOKEN}}
+          authToken: ${{ secrets.HCO_BOT_TOKEN }}
           context: 'sanity-test'
           description: 'Passed'
           state: 'success'
