@@ -60,7 +60,6 @@ func initReconciler(client client.Client) *ReconcileHyperConverged {
 type BasicExpected struct {
 	hco *hcov1beta1.HyperConverged
 	pc  *schedulingv1.PriorityClass
-	//	kvConfig             *corev1.ConfigMap
 	kvStorageConfig      *corev1.ConfigMap
 	kvStorageRole        *rbacv1.Role
 	kvStorageRoleBinding *rbacv1.RoleBinding
@@ -79,7 +78,6 @@ func (be BasicExpected) toArray() []runtime.Object {
 	return []runtime.Object{
 		be.hco,
 		be.pc,
-		//		be.kvConfig,
 		be.kvStorageConfig,
 		be.kvStorageRole,
 		be.kvStorageRoleBinding,
