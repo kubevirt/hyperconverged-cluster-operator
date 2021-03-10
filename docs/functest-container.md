@@ -31,10 +31,10 @@ kubectl run functest --image=quay.io/kubevirt/hyperconverged-cluster-functest:1.
 
 The arguments passed to this container image are directly passed to `func-tests.test` binary in the image. See [the example](#example-command)
 
-There is a special flag in the test binary which allows you to provide test specific configuration. You can mount your configuration file into the image and pass it with the flag. 
+To provide test configuration, use `--config-file` flag and mount your configuration file into that path. 
 ```shell
 docker run \
-  -v /my-test-conf.yaml:/tmp/testconf \
+  -v /put-your-configuration-file-here.yaml:/tmp/testconf \
   quay.io/kubevirt/hyperconverged-cluster-functest:1.4.0-unstable \
   --config-file /tmp/testconf    
 ```
@@ -45,8 +45,8 @@ The content of the configuration file must be a valid yaml representation of `Te
 ```yaml
 quickStart:
   testItems:
-    - name: create-rhel-vm
-      displayName: Creating a Red Hat Enterprise Linux virtual machine
+    - name: test-quick-start
+      displayName: Test Quickstart Tour
 ```
 
 ## Example Command
