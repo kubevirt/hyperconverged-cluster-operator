@@ -50,8 +50,8 @@ jobs:
       - name: Verify the current manifests pass validation
         run: make container-build-operator-courier
 
-      - name: Udate the PR
-        uses: Sibz/github-status-action@v1
+      - name: github-status-action
+        uses: Sibz/github-status-action@v1.1.4
         with:
           authToken: ${{ secrets.HCO_BOT_TOKEN }}
           context: 'sanity-test'
