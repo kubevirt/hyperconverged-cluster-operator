@@ -882,7 +882,7 @@ func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (
 			req.Logger.Info("KubeVirt configmap already removed")
 			return false, nil
 		}
-		req.Logger.Info("failed to create KubeVirt configmap", "error", err.Error())
+		req.Logger.Info("failed to get KubeVirt configmap", "error", err.Error())
 		return false, err
 	}
 
