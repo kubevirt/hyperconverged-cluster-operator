@@ -220,7 +220,7 @@ Msg "Read the CSV to make sure the deployment is done"
 ./hack/retry.sh 30 10 "${CMD} get ClusterServiceVersion  -n ${HCO_NAMESPACE} kubevirt-hyperconverged-operator.v${INITIAL_CHANNEL} -o jsonpath='{ .status.phase }' | grep 'Succeeded'"
 
 # When upgrading from 1.3.0, we expect to have the KV configMap, that will be dropped during upgrade
-if ${CMD} get cm kubevirt-config; then
+if ${CMD} get cm kubevirt-config -n ${HCO_NAMESPACE}; then
   KV_CM_FOUND=TRUE
 fi
 
@@ -311,11 +311,15 @@ Msg "Check that managed objects has correct labels"
 
 # If we found the KV config map before the upgrade, let's check that it's not
 # exists anymore, and its backup was created.
+Msg "Check that the kubevirt-config ConfigMap was removed"
 if [[ -n ${KV_CM_FOUND} ]]; then
-  if ${CMD} get cm kubevirt-config; then
-    echo "The kubevirt-config should not be found; it had to be removed."
+  if ${CMD} get cm kubevirt-config -n ${HCO_NAMESPACE}; then
+    echo "The kubevirt-config ConfigMap should not be found; it had to be removed."
+    exit 1
+  else
+    echo "kubevirt-config ConfigMap was removed"
   fi
-  ${CMD} get cm kubevirt-config-back
+  ${CMD} get cm kubevirt-config-backup -n ${HCO_NAMESPACE}
 fi
 
 Msg "Brutally delete HCO removing the namespace where it's running"
