@@ -50,10 +50,14 @@ jobs:
       - name: Verify the current manifests pass validation
         run: make container-build-operator-courier
 
-      - name: github-status-action
-        run: |-
-          curl \
-          -X POST \
-          -H "Accept: application/vnd.github.v3+json" \
-          "https://api.github.com/repos/${GITHUB_REPOSITORY}/check-runs" \
-          -d '{"name":"sanity-test","head_sha":"${GITHUB_SHA}","status":"completed","conclusion":"success"}'
+      - uses: octokit/request-action@v2.x
+        id: update_check_run
+        with:
+          route: PATCH /repos/{owner}/{repo}/check-runs/{check_run_id}
+          owner: kubevirt
+          repo: hyperconverged-cluster-operator
+          check_run_id: ${{ fromJson(steps.create_check_run.outputs.data).id }}
+          conclusion: "success"
+          status: "completed"
+        env:
+          GITHUB_TOKEN: ${{ secrets.HCO_BOT_TOKEN }}
