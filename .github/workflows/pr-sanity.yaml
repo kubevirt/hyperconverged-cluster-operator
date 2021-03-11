@@ -51,6 +51,22 @@ jobs:
         run: make container-build-operator-courier
 
       - uses: octokit/request-action@v2.x
+        id: create_check_run
+        with:
+          route: POST /repos/{owner}/{repo}/check-runs
+          owner: kubevirt
+          repo: hyperconverged-cluster-operator
+          name: "sanity-test"
+          head_sha: ${{ github.sha }}
+          output: |-
+            title: Sanity test
+            summary: Quick test to make sure that basic things are working
+          conclusion: "success"
+          status: "completed"
+        env:
+          GITHUB_TOKEN: ${{ secrets.HCO_BOT_TOKEN }}
+
+      - uses: octokit/request-action@v2.x
         id: update_check_run
         with:
           route: PATCH /repos/{owner}/{repo}/check-runs/{check_run_id}
