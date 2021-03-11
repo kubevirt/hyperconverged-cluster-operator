@@ -51,10 +51,9 @@ jobs:
         run: make container-build-operator-courier
 
       - name: github-status-action
-        uses: Sibz/github-status-action@v1.1.4
-        with:
-          authToken: ${{ secrets.HCO_BOT_TOKEN }}
-          context: 'sanity-test'
-          description: 'Passed'
-          state: 'success'
-          sha: ${{github.event.pull_request.head.sha || github.sha}}
+        run: |-
+          curl \
+          -X POST \
+          -H "Accept: application/vnd.github.v3+json" \
+          "https://api.github.com/repos/${GITHUB_REPOSITORY}/check-runs" \
+          -d '{"name":"sanity-test","head_sha":"${GITHUB_SHA}","status":"completed","conclusion":"success"}'
