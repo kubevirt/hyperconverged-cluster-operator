@@ -7,7 +7,6 @@ require (
 	github.com/coreos/prometheus-operator v0.41.1
 	github.com/evanphx/json-patch v4.9.0+incompatible
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
-	github.com/go-logfmt/logfmt v0.5.0 // indirect
 	github.com/go-logr/logr v0.3.0
 	github.com/go-openapi/spec v0.19.7
 	github.com/google/go-cmp v0.5.4 // indirect
@@ -133,7 +132,6 @@ replace (
 	github.com/go-kit/kit => github.com/go-kit/kit v0.3.0
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.5.1 // indirect
 	github.com/openshift/machine-api-operator => github.com/openshift/machine-api-operator v0.2.1-0.20191025120018-fb3724fc7bdf
-	github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.0.0-20190424153033-d3245f150225
 	kubevirt.io/client-go => kubevirt.io/client-go v0.39.0
 )
 
