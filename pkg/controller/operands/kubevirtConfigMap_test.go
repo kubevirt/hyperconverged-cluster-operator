@@ -56,15 +56,8 @@ var _ = Describe("Test kubeVirtCmHandler", func() {
 	})
 
 	It("should remove the configMap if it exists", func() {
-		cm := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      kvCmName,
-				Namespace: commonTestUtils.Namespace,
-			},
-			Data: map[string]string{
-				"fakeKey": "fakeValue",
-			},
-		}
+		cm := newKvConfigMap()
+
 		c := commonTestUtils.InitClient([]runtime.Object{hco, cm})
 		handler := newKubeVirtCmHandler(c, emitter)
 
@@ -75,12 +68,7 @@ var _ = Describe("Test kubeVirtCmHandler", func() {
 
 		Expect(emitter.CheckEvents(expectedEvents)).To(BeTrue())
 
-		resCm := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      kvCmName,
-				Namespace: commonTestUtils.Namespace,
-			},
-		}
+		resCm := newEmptyKvConfigMap()
 
 		err := hcoutils.GetRuntimeObject(context.TODO(), c, resCm, req.Logger)
 		Expect(err).To(HaveOccurred())
@@ -90,15 +78,8 @@ var _ = Describe("Test kubeVirtCmHandler", func() {
 	It("should not remove the configMap during upgrade", func() {
 		req.SetUpgradeMode(true)
 
-		cm := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      kvCmName,
-				Namespace: commonTestUtils.Namespace,
-			},
-			Data: map[string]string{
-				"fakeKey": "fakeValue",
-			},
-		}
+		cm := newKvConfigMap()
+
 		c := commonTestUtils.InitClient([]runtime.Object{hco, cm})
 		handler := newKubeVirtCmHandler(c, emitter)
 
@@ -109,12 +90,7 @@ var _ = Describe("Test kubeVirtCmHandler", func() {
 
 		Expect(emitter.CheckEvents(expectedEvents)).To(BeFalse())
 
-		resCm := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      kvCmName,
-				Namespace: commonTestUtils.Namespace,
-			},
-		}
+		resCm := newEmptyKvConfigMap()
 
 		err := hcoutils.GetRuntimeObject(context.TODO(), c, resCm, req.Logger)
 		Expect(err).ToNot(HaveOccurred())
@@ -123,15 +99,7 @@ var _ = Describe("Test kubeVirtCmHandler", func() {
 	})
 
 	It("should return error if failed to read the configMap", func() {
-		cm := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      kvCmName,
-				Namespace: commonTestUtils.Namespace,
-			},
-			Data: map[string]string{
-				"fakeKey": "fakeValue",
-			},
-		}
+		cm := newKvConfigMap()
 		c := commonTestUtils.InitClient([]runtime.Object{hco, cm})
 		fakeError := fmt.Errorf("fake get error")
 		c.InitiateGetErrors(func(key client.ObjectKey) error {
@@ -151,12 +119,7 @@ var _ = Describe("Test kubeVirtCmHandler", func() {
 
 		Expect(emitter.CheckEvents(expectedEvents)).To(BeFalse())
 
-		resCm := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      kvCmName,
-				Namespace: commonTestUtils.Namespace,
-			},
-		}
+		resCm := newEmptyKvConfigMap()
 
 		c.InitiateGetErrors(nil) // cancel fake error
 		err := hcoutils.GetRuntimeObject(context.TODO(), c, resCm, req.Logger)
@@ -166,20 +129,12 @@ var _ = Describe("Test kubeVirtCmHandler", func() {
 	})
 
 	It("should return error if failed to delete the configMap", func() {
-		cm := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      kvCmName,
-				Namespace: commonTestUtils.Namespace,
-			},
-			Data: map[string]string{
-				"fakeKey": "fakeValue",
-			},
-		}
+		cm := newKvConfigMap()
 		c := commonTestUtils.InitClient([]runtime.Object{hco, cm})
 		fakeError := fmt.Errorf("fake delete error")
 		c.InitiateDeleteErrors(func(obj client.Object) error {
-			if unstructed, ok := obj.(runtime.Unstructured); ok {
-				kind := unstructed.GetObjectKind()
+			if unstructured, ok := obj.(runtime.Unstructured); ok {
+				kind := unstructured.GetObjectKind()
 				if kind.GroupVersionKind().Kind == "ConfigMap" && obj.GetName() == kvCmName {
 					return fakeError
 				}
@@ -197,12 +152,7 @@ var _ = Describe("Test kubeVirtCmHandler", func() {
 
 		Expect(emitter.CheckEvents(expectedEvents)).To(BeFalse())
 
-		resCm := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      kvCmName,
-				Namespace: commonTestUtils.Namespace,
-			},
-		}
+		resCm := newEmptyKvConfigMap()
 
 		err := hcoutils.GetRuntimeObject(context.TODO(), c, resCm, req.Logger)
 		Expect(err).ToNot(HaveOccurred())
@@ -210,3 +160,21 @@ var _ = Describe("Test kubeVirtCmHandler", func() {
 		Expect(resCm.Data["fakeKey"]).Should(Equal("fakeValue"))
 	})
 })
+
+func newEmptyKvConfigMap() *corev1.ConfigMap {
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      kvCmName,
+			Namespace: commonTestUtils.Namespace,
+		},
+	}
+}
+
+func newKvConfigMap() *corev1.ConfigMap {
+	cm := newEmptyKvConfigMap()
+	cm.Data = map[string]string{
+		"fakeKey": "fakeValue",
+	}
+
+	return cm
+}

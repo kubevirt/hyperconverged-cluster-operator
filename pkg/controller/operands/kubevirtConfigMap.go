@@ -56,7 +56,7 @@ func (handler kubeVirtCmHandler) ensure(req *common.HcoRequest) *EnsureResult {
 
 	unstructuredCm, err := hcoutils.ToUnstructured(cm)
 	if err != nil {
-		return res.Error(fmt.Errorf("failed to get Unstructured object form the %s ConfigMap; %w", kvCmName, err))
+		return res.Error(fmt.Errorf("failed to get Unstructured object from the %s ConfigMap; %w", kvCmName, err))
 	}
 
 	policy := metav1.DeletePropagationForeground
