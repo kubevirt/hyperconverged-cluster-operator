@@ -41,6 +41,7 @@ type OperandHandler struct {
 	operands []Operand
 	// save for deletions
 	quickStartObjects []*consolev1.ConsoleQuickStart
+	configMaps        []*corev1.ConfigMap
 	eventEmitter      hcoutil.EventEmitter
 }
 
@@ -100,6 +101,25 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, isOpenshiftC
 		} else if len(qsHandlers) > 0 {
 			h.operands = append(h.operands, qsHandlers...)
 		}
+
+		dsHandlers, err := getDashboardHandlers(logger, h.client, scheme, hc)
+		if numDs := len(dsHandlers); numDs > 0 {
+			h.configMaps = make([]*corev1.ConfigMap, numDs)
+			for i, op := range dsHandlers {
+				ds, err := op.(*genericOperand).hooks.getFullCr(hc)
+				if err != nil {
+					logger.Error(err, "can't create ConsoleQuickStarts object")
+					continue
+				}
+
+				h.configMaps[i] = ds.(*corev1.ConfigMap)
+			}
+		}
+		if err != nil {
+			logger.Error(err, "can't create ConsoleQuickStarts objects")
+		} else if len(dsHandlers) > 0 {
+			h.operands = append(h.operands, dsHandlers...)
+		}
 	}
 }
 
@@ -154,6 +174,10 @@ func (h OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 
 	for _, qs := range h.quickStartObjects {
 		resources = append(resources, qs)
+	}
+
+	for _, cm := range h.configMaps {
+		resources = append(resources, cm)
 	}
 
 	wg.Add(len(resources))

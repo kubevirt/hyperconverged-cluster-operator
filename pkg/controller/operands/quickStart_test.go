@@ -24,7 +24,7 @@ var _ = Describe("QuickStart tests", func() {
 
 	var (
 		logger            = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("quickstart_test")
-		testFilesLocation = getTestFilesLocation()
+		testFilesLocation = getTestFilesLocation() + "/quickstarts"
 		hco               = commonTestUtils.NewHco()
 	)
 
@@ -49,7 +49,7 @@ var _ = Describe("QuickStart tests", func() {
 		It("should use env var to override the yaml locations", func() {
 			// create temp folder for the test
 			dir := path.Join(os.TempDir(), fmt.Sprint(time.Now().UTC().Unix()))
-			_ = os.Setenv(manifestLocationVarName, dir)
+			_ = os.Setenv(quickStartManifestLocationVarName, dir)
 			By("CRD is not deployed", func() {
 				cli := commonTestUtils.InitClient([]runtime.Object{})
 				handlers, err := getQuickStartHandlers(logger, cli, schemeForTest, hco)
@@ -107,7 +107,7 @@ var _ = Describe("QuickStart tests", func() {
 		})
 
 		It("should return error if quickstart path is not a directory", func() {
-			filePath := "/testFiles/quickstart.yaml"
+			filePath := "/testFiles/quickstarts/quickstart.yaml"
 			const currentDir = "/pkg/controller/operands"
 			wd, _ := os.Getwd()
 			if !strings.HasSuffix(wd, currentDir) {
@@ -123,7 +123,7 @@ var _ = Describe("QuickStart tests", func() {
 			})
 
 			// quickstart directory path of a file
-			_ = os.Setenv(manifestLocationVarName, filePath)
+			_ = os.Setenv(quickStartManifestLocationVarName, filePath)
 			By("check that getQuickStartHandlers returns error", func() {
 				cli := commonTestUtils.InitClient([]runtime.Object{qsCrd})
 				handlers, err := getQuickStartHandlers(logger, cli, schemeForTest, hco)
@@ -138,7 +138,7 @@ var _ = Describe("QuickStart tests", func() {
 
 		var exists *consolev1.ConsoleQuickStart = nil
 		It("should create the ConsoleQuickStart resource if not exists", func() {
-			_ = os.Setenv(manifestLocationVarName, testFilesLocation)
+			_ = os.Setenv(quickStartManifestLocationVarName, testFilesLocation)
 
 			cli := commonTestUtils.InitClient([]runtime.Object{qsCrd})
 			handlers, err := getQuickStartHandlers(logger, cli, schemeForTest, hco)
@@ -173,7 +173,7 @@ var _ = Describe("QuickStart tests", func() {
 			Expect(exists).ToNot(BeNil(), "Must run the previous test first")
 			exists.Spec.DurationMinutes = exists.Spec.DurationMinutes * 2
 
-			_ = os.Setenv(manifestLocationVarName, testFilesLocation)
+			_ = os.Setenv(quickStartManifestLocationVarName, testFilesLocation)
 
 			cli := commonTestUtils.InitClient([]runtime.Object{qsCrd, exists})
 			handlers, err := getQuickStartHandlers(logger, cli, schemeForTest, hco)

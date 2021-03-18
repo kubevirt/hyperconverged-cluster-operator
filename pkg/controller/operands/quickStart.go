@@ -27,10 +27,10 @@ import (
 
 // ConsoleQuickStart resources are a short user guids
 const (
-	consoleQuickStartCrdName     = "consolequickstarts.console.openshift.io"
-	customResourceDefinitionName = "CustomResourceDefinition"
-	manifestLocationVarName      = "QUICK_START_FILES_LOCATION"
-	defaultManifestLocation      = "./quickStart"
+	consoleQuickStartCrdName          = "consolequickstarts.console.openshift.io"
+	customResourceDefinitionName      = "CustomResourceDefinition"
+	quickStartManifestLocationVarName = "QUICK_START_FILES_LOCATION"
+	quickStartDefaultManifestLocation = "./quickStart"
 )
 
 func newQuickStartHandler(Client client.Client, Scheme *runtime.Scheme, required *consolev1.ConsoleQuickStart) Operand {
@@ -150,9 +150,9 @@ func getQuickStartHandlers(logger log.Logger, Client client.Client, Scheme *runt
 }
 
 func getQuickstartDirPath() string {
-	filesLocation := os.Getenv(manifestLocationVarName)
+	filesLocation := os.Getenv(quickStartManifestLocationVarName)
 	if filesLocation == "" {
-		return defaultManifestLocation
+		return quickStartDefaultManifestLocation
 	}
 
 	return filesLocation
