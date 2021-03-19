@@ -2,9 +2,7 @@ package operands
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	corev1 "k8s.io/api/core/v1"
 	"os"
 	"path"
@@ -70,7 +68,7 @@ var _ = Describe("Dashboard tests", func() {
 				Expect(handlers).To(BeEmpty())
 			})
 
-			err = copyFile2(path.Join(dir, "dashboard.yaml"), path.Join(testFilesLocation, "grafana-dashboard-kubevirt-top-consumers.yaml"))
+			err = commonTestUtils.CopyFile(path.Join(dir, "dashboard.yaml"), path.Join(testFilesLocation, "kubevirt-top-consumers.yaml"))
 			Expect(err).ToNot(HaveOccurred())
 
 			By("yaml file exists", func() {
@@ -83,7 +81,7 @@ var _ = Describe("Dashboard tests", func() {
 		})
 
 		It("should return error if dashboard path is not a directory", func() {
-			filePath := "/testFiles/dashboards/grafana-dashboard-kubevirt-top-consumers.yaml"
+			filePath := "/testFiles/dashboards/kubevirt-top-consumers.yaml"
 			const currentDir = "/pkg/controller/operands"
 			wd, _ := os.Getwd()
 			if !strings.HasSuffix(wd, currentDir) {
@@ -91,12 +89,6 @@ var _ = Describe("Dashboard tests", func() {
 			} else {
 				filePath = wd + filePath
 			}
-
-			By("check that validateDashboardDir return wrapped error", func() {
-				err := validateDashboardDir(filePath)
-				Expect(err).Should(HaveOccurred())
-				Expect(errors.Unwrap(err)).ShouldNot(BeNil())
-			})
 
 			_ = os.Setenv(dashboardManifestLocationVarName, filePath)
 			By("check that getDashboardHandlers returns error", func() {
@@ -175,24 +167,3 @@ var _ = Describe("Dashboard tests", func() {
 		})
 	})
 })
-
-func copyFile2(dest, src string) error {
-	fin, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer fin.Close()
-
-	fout, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
-	defer fout.Close()
-
-	_, err = io.Copy(fout, fin)
-
-	if err != nil {
-		return err
-	}
-	return nil
-}

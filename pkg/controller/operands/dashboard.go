@@ -2,16 +2,12 @@ package operands
 
 import (
 	"errors"
-	"fmt"
-	"io"
-	"io/ioutil"
 	v1 "k8s.io/api/core/v1"
 	"os"
 	filepath "path/filepath"
 	"reflect"
 	"strings"
 
-	"github.com/ghodss/yaml"
 	log "github.com/go-logr/logr"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
@@ -103,44 +99,14 @@ func (h dashboardHooks) updateCr(req *common.HcoRequest, Client client.Client, e
 }
 
 func getDashboardHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]Operand, error) {
-	filesLocation := getDashboardDirPath()
+	filesLocation := util.GetManifestDirPath(dashboardManifestLocationVarName, dashboardManifestLocationDefault)
 
-	err := validateDashboardDir(filesLocation)
+	err := util.ValidateManifestDir(filesLocation)
 	if err != nil {
 		return nil, errors.Unwrap(err) // if not wrapped, then it's not an error that stops processing, and it return nil
 	}
 
 	return createDashboardHandlersFromFiles(logger, Client, Scheme, hc, filesLocation)
-}
-
-func getDashboardDirPath() string {
-	filesLocation := os.Getenv(dashboardManifestLocationVarName)
-	if filesLocation == "" {
-		return dashboardManifestLocationDefault
-	}
-
-	return filesLocation
-}
-
-// This function returns 3-state error:
-//   err := validateDashboardDir(...)
-//   err == nil - OK: dashboards directory exists
-//   err != nil && errors.Unwrap(err) == nil - dashboards directory does not exist, but that ok
-//   err != nil && errors.Unwrap(err) != nil - actual error
-func validateDashboardDir(filesLocation string) error {
-	info, err := os.Stat(filesLocation)
-	if err != nil {
-		if os.IsNotExist(err) { // don't return error if there is no dashboards dir, just ignore it
-			return newProcessingError(nil) // return error, but don't stop processing
-		}
-		return newProcessingError(err)
-	}
-
-	if !info.IsDir() {
-		err := fmt.Errorf("%s is not a directory", filesLocation)
-		return newProcessingError(err) // return error
-	}
-	return nil
 }
 
 func createDashboardHandlersFromFiles(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, filesLocation string) ([]Operand, error) {
@@ -173,7 +139,8 @@ func processDashboardConfigMapFile(path string, info os.FileInfo, logger log.Log
 			return nil, err
 		}
 
-		cm, err := yamlToConfigMap(file)
+		cm := &v1.ConfigMap{}
+		err = util.UnmarshalYamlFileToObject(file, cm)
 		if err != nil {
 			logger.Error(err, "Can't generate a Configmap object from yaml file", "file name", path)
 		} else {
@@ -182,19 +149,4 @@ func processDashboardConfigMapFile(path string, info os.FileInfo, logger log.Log
 		}
 	}
 	return nil, nil
-}
-
-func yamlToConfigMap(file io.Reader) (*v1.ConfigMap, error) {
-	qs := &v1.ConfigMap{}
-
-	yamlBytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = yaml.Unmarshal(yamlBytes, qs); err != nil {
-		return nil, err
-	}
-
-	return qs, nil
 }

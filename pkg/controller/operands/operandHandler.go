@@ -6,8 +6,7 @@ import (
 	"sync"
 	"time"
 
-	consolev1 "github.com/openshift/api/console/v1"
-
+	log "github.com/go-logr/logr"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/metrics"
@@ -40,9 +39,8 @@ type OperandHandler struct {
 	client   client.Client
 	operands []Operand
 	// save for deletions
-	quickStartObjects []*consolev1.ConsoleQuickStart
-	configMaps        []*corev1.ConfigMap
-	eventEmitter      hcoutil.EventEmitter
+	objects      []client.Object
+	eventEmitter hcoutil.EventEmitter
 }
 
 func NewOperandHandler(client client.Client, scheme *runtime.Scheme, isOpenshiftCluster bool, eventEmitter hcoutil.EventEmitter) *OperandHandler {
@@ -83,43 +81,28 @@ func Initiate(isOpenshiftCluster bool) {
 // Initial operations that need to read/write from the cluster can only be done when the client is already working.
 func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, isOpenshiftCluster bool, hc *hcov1beta1.HyperConverged) {
 	if isOpenshiftCluster {
-		qsHandlers, err := getQuickStartHandlers(logger, h.client, scheme, hc)
-		if numQs := len(qsHandlers); numQs > 0 {
-			h.quickStartObjects = make([]*consolev1.ConsoleQuickStart, numQs)
-			for i, op := range qsHandlers {
-				qs, err := op.(*genericOperand).hooks.getFullCr(hc)
-				if err != nil {
-					logger.Error(err, "can't create ConsoleQuickStarts object")
-					continue
-				}
+		h.objects = make([]client.Object, 0)
+		h.addOperands(scheme, hc, getQuickStartHandlers)
+		h.addOperands(scheme, hc, getDashboardHandlers)
+	}
+}
 
-				h.quickStartObjects[i] = qs.(*consolev1.ConsoleQuickStart)
+type GetHandler func(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]Operand, error)
+
+func (h *OperandHandler) addOperands(scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, getHandler GetHandler) {
+	handlers, err := getHandler(logger, h.client, scheme, hc)
+	if err != nil {
+		logger.Error(err, "can't create ConsoleQuickStarts objects")
+	} else if len(handlers) > 0 {
+		for _, handler := range handlers {
+			obj, err := handler.(*genericOperand).hooks.getFullCr(hc)
+			if err != nil {
+				logger.Error(err, "can't create object")
+				continue
 			}
+			h.objects = append(h.objects, obj)
 		}
-		if err != nil {
-			logger.Error(err, "can't create ConsoleQuickStarts objects")
-		} else if len(qsHandlers) > 0 {
-			h.operands = append(h.operands, qsHandlers...)
-		}
-
-		dsHandlers, err := getDashboardHandlers(logger, h.client, scheme, hc)
-		if numDs := len(dsHandlers); numDs > 0 {
-			h.configMaps = make([]*corev1.ConfigMap, numDs)
-			for i, op := range dsHandlers {
-				ds, err := op.(*genericOperand).hooks.getFullCr(hc)
-				if err != nil {
-					logger.Error(err, "can't create ConsoleQuickStarts object")
-					continue
-				}
-
-				h.configMaps[i] = ds.(*corev1.ConfigMap)
-			}
-		}
-		if err != nil {
-			logger.Error(err, "can't create ConsoleQuickStarts objects")
-		} else if len(dsHandlers) > 0 {
-			h.operands = append(h.operands, dsHandlers...)
-		}
+		h.operands = append(h.operands, handlers...)
 	}
 }
 
@@ -172,12 +155,8 @@ func (h OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		NewVMImportForCR(req.Instance),
 	}
 
-	for _, qs := range h.quickStartObjects {
-		resources = append(resources, qs)
-	}
-
-	for _, cm := range h.configMaps {
-		resources = append(resources, cm)
+	for _, o := range h.objects {
+		resources = append(resources, o)
 	}
 
 	wg.Add(len(resources))

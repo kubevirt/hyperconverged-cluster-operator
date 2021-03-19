@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"strings"
@@ -94,7 +93,7 @@ var _ = Describe("QuickStart tests", func() {
 				Expect(handlers).To(BeEmpty())
 			})
 
-			err = copyFile(path.Join(dir, "quickStart.yaml"), path.Join(testFilesLocation, "quickstart.yaml"))
+			err = commonTestUtils.CopyFile(path.Join(dir, "quickStart.yaml"), path.Join(testFilesLocation, "quickstart.yaml"))
 			Expect(err).ToNot(HaveOccurred())
 
 			By("yaml file exists", func() {
@@ -115,12 +114,6 @@ var _ = Describe("QuickStart tests", func() {
 			} else {
 				filePath = wd + filePath
 			}
-
-			By("check that validateQuickstartDir return wrapped error", func() {
-				err := validateQuickstartDir(filePath)
-				Expect(err).Should(HaveOccurred())
-				Expect(errors.Unwrap(err)).ShouldNot(BeNil())
-			})
 
 			// quickstart directory path of a file
 			_ = os.Setenv(quickStartManifestLocationVarName, filePath)
@@ -198,24 +191,3 @@ var _ = Describe("QuickStart tests", func() {
 		})
 	})
 })
-
-func copyFile(dest, src string) error {
-	fin, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer fin.Close()
-
-	fout, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
-	defer fout.Close()
-
-	_, err = io.Copy(fout, fin)
-
-	if err != nil {
-		return err
-	}
-	return nil
-}
