@@ -1,0 +1,26 @@
+name: Auto-Bump Component's Versions
+on:
+  schedule:
+    - cron:  '0 5 * * *'
+jobs:
+  build:
+    name: Update Dashboard ConfigMaps
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@v2
+        with:
+          ref: master
+          path: hco
+
+      - name: Checkout monitoring repository
+        uses: actions/checkout@v2
+        with:
+          repository: sradco/monitoring
+          ref: add_initial_dashboard
+          path: monitoring
+
+
+      - name: Check for update
+        run: |
+          ls -la
