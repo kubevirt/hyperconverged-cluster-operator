@@ -1,4 +1,4 @@
-name: Auto-Bump Component's Versions
+name: Update Dashboard ConfigMaps
 on:
   schedule:
     - cron:  '0 5 * * *'
