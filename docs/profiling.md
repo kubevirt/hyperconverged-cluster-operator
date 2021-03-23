@@ -1,6 +1,6 @@
 # Profiling
 
-<abbr title="Hyperconverged Cluster Operator">HCO</abbr> has [pprof][1] instrumentation build in, so cpu and memory usage of a running HCO installation can be profiled.
+HCO<sup>[1](#hco-footnote)</sup> has [pprof][1] instrumentation build in, so cpu and memory usage of a running HCO installation can be profiled.
 
 The profiling information can be accessed by setting the environment variable `HCO_PPROF_ADDR` on either the `hco-operator` or `hco-webhook` deployments, which will startup an extra [http endpoint][2] to grap heap and allocation profiles and to run CPU profiling.
 
@@ -19,7 +19,7 @@ Example: `HCO_PROF_ADDR=":8070"`
 
 ### With OLM
 
-To set the `HCO_PROF_ADDR` environment variable when <abbr title="Hyperconverged Cluster Operator">HCO</abbr> is deployed with <abbr title="Operator Lifecycle Manager">OLM</abbr>, locate the `Subscription` object in the `kubevirt-hyperconverged` Namespace.
+To set the `HCO_PROF_ADDR` environment variable when HCO<sup>[1](#hco-footnote)</sup> is deployed with OLM<sup>[2](#olm-footnote)</sup>, locate the `Subscription` object in the `kubevirt-hyperconverged` Namespace.
 
 ```
 $ kubectl get subscription -n kubevirt-hyperconverged
@@ -52,7 +52,7 @@ spec:
   startingCSV: kubevirt-hyperconverged-operator.v1.3.0
 ```
 
-OLM should now reconcile the `hco-operator` Deployment in the `kubevirt-hyperconverged` Namespace to add this new environment variable.
+OLM<sup>[2](#olm-footnote)</sup> should now reconcile the `hco-operator` Deployment in the `kubevirt-hyperconverged` Namespace to add this new environment variable.
 
 ## Accessing the profiling data
 
@@ -109,6 +109,15 @@ Time: Mar 17, 2021 at 11:49am (CET)
 Entering interactive mode (type "help" for commands, "o" for options)
 (pprof) 
 ```
+
+## Footnotes
+
+<dl>
+  <dt id="hco-footnote">HCO</dt>
+  <dd>Hyperconverged Cluster Operator</dd>
+  <dt id="olm-footnote">OLM</dt>
+  <dd>Operator Lifecycle Manager</dd>
+</dl>
 
 [1]: https://blog.golang.org/pprof
 [2]: https://golang.org/pkg/net/http/pprof/
