@@ -420,6 +420,96 @@ var _ = Describe("CDI Operand", func() {
 			})
 		})
 
+		Context("Test ScratchSpaceStorageClass", func() {
+
+			hcoScratchSpaceStorageClassValue := "hcoScratchSpaceStorageClassValue"
+			cdiScratchSpaceStorageClassValue := "cdiScratchSpaceStorageClassValue"
+
+			It("should add ScratchSpaceStorageClass if missing in CDI", func() {
+				existingResource, err := NewCDI(hco)
+				Expect(err).ToNot(HaveOccurred())
+				hco.Spec.ScratchSpaceStorageClass = &hcoScratchSpaceStorageClassValue
+
+				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
+				handler := (*genericOperand)(newCdiHandler(cl, commonTestUtils.GetScheme()))
+				res := handler.ensure(req)
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Updated).To(BeTrue())
+				Expect(res.Overwritten).To(BeFalse())
+				Expect(res.Err).To(BeNil())
+
+				foundCdi := &cdiv1beta1.CDI{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+						foundCdi),
+				).To(BeNil())
+
+				Expect(foundCdi.Spec.Config).ToNot(BeNil())
+				Expect(foundCdi.Spec.Config.ScratchSpaceStorageClass).ToNot(BeNil())
+				Expect(*foundCdi.Spec.Config.ScratchSpaceStorageClass).Should(Equal(hcoScratchSpaceStorageClassValue))
+			})
+
+			It("should remove ScratchSpaceStorageClass if missing in HCO CR", func() {
+				hcoResourceRequirements := commonTestUtils.NewHco()
+
+				existingCdi, err := NewCDI(hcoResourceRequirements)
+				Expect(err).ToNot(HaveOccurred())
+				existingCdi.Spec.Config.ScratchSpaceStorageClass = &cdiScratchSpaceStorageClassValue
+
+				Expect(existingCdi.Spec.Config).ToNot(BeNil())
+				Expect(existingCdi.Spec.Config.ScratchSpaceStorageClass).ToNot(BeNil())
+				Expect(*existingCdi.Spec.Config.ScratchSpaceStorageClass).Should(Equal(cdiScratchSpaceStorageClassValue))
+
+				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingCdi})
+				handler := (*genericOperand)(newCdiHandler(cl, commonTestUtils.GetScheme()))
+				res := handler.ensure(req)
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Updated).To(BeTrue())
+				Expect(res.Overwritten).To(BeFalse())
+				Expect(res.Err).To(BeNil())
+
+				foundCDI := &cdiv1beta1.CDI{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: existingCdi.Name, Namespace: existingCdi.Namespace},
+						foundCDI),
+				).To(BeNil())
+
+				Expect(foundCDI.Spec.Config).ToNot(BeNil())
+				Expect(foundCDI.Spec.Config.ScratchSpaceStorageClass).To(BeNil())
+			})
+
+			It("should modify ScratchSpaceStorageClass according to HCO CR", func() {
+				hco.Spec.ScratchSpaceStorageClass = &cdiScratchSpaceStorageClassValue
+				existingCDI, err := NewCDI(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(existingCDI.Spec.Config).ToNot(BeNil())
+				Expect(*existingCDI.Spec.Config.ScratchSpaceStorageClass).To(Equal(cdiScratchSpaceStorageClassValue))
+
+				hco.Spec.ScratchSpaceStorageClass = &hcoScratchSpaceStorageClassValue
+
+				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingCDI})
+				handler := (*genericOperand)(newCdiHandler(cl, commonTestUtils.GetScheme()))
+				res := handler.ensure(req)
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Updated).To(BeTrue())
+				Expect(res.Overwritten).To(BeFalse())
+				Expect(res.Err).To(BeNil())
+
+				foundCDI := &cdiv1beta1.CDI{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: existingCDI.Name, Namespace: existingCDI.Namespace},
+						foundCDI),
+				).To(BeNil())
+
+				Expect(foundCDI.Spec.Config.ScratchSpaceStorageClass).ToNot(BeNil())
+				Expect(*foundCDI.Spec.Config.ScratchSpaceStorageClass).To(Equal(hcoScratchSpaceStorageClassValue))
+			})
+		})
+
 		It("should override CDI config field", func() {
 			expectedResource, err := NewCDI(hco)
 			Expect(err).ToNot(HaveOccurred())
