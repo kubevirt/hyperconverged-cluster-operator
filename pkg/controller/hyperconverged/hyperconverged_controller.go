@@ -1004,7 +1004,9 @@ func adoptCdiConfigs(req *common.HcoRequest, cdiCfg *cdiv1beta1.CDIConfigSpec) b
 	modified := false
 	if cdiCfg != nil {
 		if req.Instance.Spec.ScratchSpaceStorageClass == nil && cdiCfg.ScratchSpaceStorageClass != nil {
-			modified = req.Instance.Spec.ScratchSpaceStorageClass != nil
+			req.Instance.Spec.ScratchSpaceStorageClass = new(string)
+			*req.Instance.Spec.ScratchSpaceStorageClass = *cdiCfg.ScratchSpaceStorageClass
+			modified = true
 		}
 
 		if cdiCfg.PodResourceRequirements != nil {
