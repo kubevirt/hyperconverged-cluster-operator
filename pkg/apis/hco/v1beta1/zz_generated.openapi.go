@@ -163,7 +163,7 @@ func schema_pkg_apis_hco_v1beta1_HyperConvergedSpec(ref common.ReferenceCallback
 					},
 					"scratchSpaceStorageClass": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Override the storage class to used for scratch space during transfer operations. The scratch space storage class is determined in the following order:\n\nvalue of scratchSpaceStorageClass, if that doesn't exist, use the default storage class, if there is no default storage class, use the storage class of the DataVolume, if no storage class specified, use no storage class for scratch space",
+							Description: "Override the storage class used for scratch space during transfer operations. The scratch space storage class is determined in the following order: value of scratchSpaceStorageClass, if that doesn't exist, use the default storage class, if there is no default storage class, use the storage class of the DataVolume, if no storage class specified, use no storage class for scratch space",
 							Type:        []string{"string"},
 							Format:      "",
 						},

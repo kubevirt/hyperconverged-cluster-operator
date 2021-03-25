@@ -58,9 +58,8 @@ type HyperConvergedSpec struct {
 	// +optional
 	ResourceRequirements *OperandResourceRequirements `json:"resourceRequirements,omitempty"`
 
-	// Override the storage class to used for scratch space during transfer operations. The scratch space storage class
+	// Override the storage class used for scratch space during transfer operations. The scratch space storage class
 	// is determined in the following order:
-	//
 	// value of scratchSpaceStorageClass, if that doesn't exist, use the default storage class, if there is no default
 	// storage class, use the storage class of the DataVolume, if no storage class specified, use no storage class for
 	// scratch space

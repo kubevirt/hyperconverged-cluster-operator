@@ -255,7 +255,7 @@ spec:
 
 ## Storage Class for Scratch Space
 
-Administrators can Override the storage class to used for scratch space during transfer operations by setting the
+Administrators can Override the storage class used for scratch space during transfer operations by setting the
 `scratchSpaceStorageClass` field under the HyperConverged `spec` field.
 
 The scratch space storage class is determined in the following order:
@@ -263,7 +263,7 @@ The scratch space storage class is determined in the following order:
 value of scratchSpaceStorageClass, if that doesn't exist, use the default storage class, if there is no default storage
 class, use the storage class of the DataVolume, if no storage class specified, use no storage class for scratch space
 
-## Storage Class for Scratch Space Example
+### Storage Class for Scratch Space Example
 
 ```yaml
 apiVersion: hco.kubevirt.io/v1beta1
@@ -282,7 +282,7 @@ content of the `storageWorkloads` field is
 the [standard kubernetes resource configuration](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.19/#resourcerequirements-v1-core)
 .
 
-## Storage Resource Configurations Example
+### Storage Resource Configurations Example
 
 ```yaml
 apiVersion: hco.kubevirt.io/v1beta1
