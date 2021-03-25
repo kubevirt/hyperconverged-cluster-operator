@@ -82,11 +82,6 @@ func (h *cdiHooks) updateCr(req *common.HcoRequest, Client client.Client, exists
 		return false, false, errors.New("can't convert to CDI")
 	}
 
-	// only set feature gates if annotation exists
-	if _, ok := found.Annotations[cdiConfigAuthorityAnnotation]; ok {
-		setDefaultFeatureGates(&cdi.Spec)
-	}
-
 	if !reflect.DeepEqual(found.Spec, cdi.Spec) ||
 		!reflect.DeepEqual(found.Labels, cdi.Labels) {
 		overwritten := false
@@ -105,18 +100,6 @@ func (h *cdiHooks) updateCr(req *common.HcoRequest, Client client.Client, exists
 		return true, overwritten, nil
 	}
 	return false, false, nil
-}
-
-func setDefaultFeatureGates(spec *cdiv1beta1.CDISpec) {
-	if spec.Config == nil {
-		spec.Config = &cdiv1beta1.CDIConfigSpec{}
-	}
-
-	if hcoutil.ContainsString(spec.Config.FeatureGates, HonorWaitForFirstConsumerGate) {
-		return
-	}
-
-	spec.Config.FeatureGates = append(spec.Config.FeatureGates, getDefaultFeatureGates()...)
 }
 
 func getDefaultFeatureGates() []string {
