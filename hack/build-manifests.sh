@@ -47,6 +47,15 @@ PROJECT_ROOT="$(readlink -e $(dirname "${BASH_SOURCE[0]}")/../)"
 source "${PROJECT_ROOT}"/hack/config
 source "${PROJECT_ROOT}"/deploy/images.env
 
+# TODO: Remove this once kubevirt v0.40.0 will available
+# pinning to kubevirt 20210331_4987c1102
+KUBEVIRT_OPERATOR_IMAGE="quay.io/kubevirt/virt-operator@sha256:61e8771a14f1b14b1a19303203198ee80d28406b5939c21c6c61323e6da5662d"
+KUBEVIRT_API_IMAGE="quay.io/kubevirt/virt-api@sha256:87c224897372a98d00f714b7836c29a865e7e6189fa1ae6f0818c93cca9371d5"
+KUBEVIRT_CONTROLLER_IMAGE="quay.io/kubevirt/virt-controller@sha256:4d949d39f1ba0565de1716d8ec9af28108f7ccb89a4945b2a07c8869b5d0d114"
+KUBEVIRT_LAUNCHER_IMAGE="quay.io/kubevirt/virt-launcher@sha256:61aeb241c5781eb9ee8fcf17920ce7b68b57e0312b475d095e51869cb77f87dc"
+KUBEVIRT_HANDLER_IMAGE="quay.io/kubevirt/virt-handler@sha256:78b5e76359f954f608e5bec9446d68f859526c8ff6455b44a0b560e6e0a7e58c"
+# TODO: Remove till here once kubevirt v0.40.0 will available
+
 DEPLOY_DIR="${PROJECT_ROOT}/deploy"
 CRD_DIR="${DEPLOY_DIR}/crds"
 OLM_DIR="${DEPLOY_DIR}/olm-catalog"
