@@ -34,6 +34,7 @@ const (
 	Namespace        = "kubevirt-hyperconverged"
 	Conversion_image = "quay.io/kubevirt/kubevirt-v2v-conversion:v2.0.0"
 	Vmware_image     = "quay.io/kubevirt/kubevirt-vmware:v2.0.0"
+	VirtioWinImage   = "quay.io/kubevirt/virtio-container-disk:v2.0.0"
 )
 
 var (
