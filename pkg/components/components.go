@@ -46,6 +46,7 @@ const (
 	kubevirtProjectName = "KubeVirt project"
 )
 
+//just a comment for the fake PR
 type DeploymentOperatorParams struct {
 	Namespace           string
 	Image               string
