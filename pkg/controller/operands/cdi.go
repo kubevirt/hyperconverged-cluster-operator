@@ -353,8 +353,8 @@ func (h *storageConfigHooks) updateCr(req *common.HcoRequest, Client client.Clie
 
 func NewKubeVirtStorageConfigForCR(cr *hcov1beta1.HyperConverged, namespace string) *corev1.ConfigMap {
 	localSC := "local-sc"
-	if *(&cr.Spec.LocalStorageClassName) != "" {
-		localSC = *(&cr.Spec.LocalStorageClassName)
+	if cr.Spec.LocalStorageClassName != "" {
+		localSC = cr.Spec.LocalStorageClassName
 	}
 
 	ocsRBD := "ocs-storagecluster-ceph-rbd"
