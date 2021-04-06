@@ -75,6 +75,16 @@ RunCmd "${CMD} get clusterserviceversions -n kubevirt-hyperconverged -o yaml"
 
 cat <<EOF
 
+======================
+PackageManifest
+======================
+EOF
+
+RunCmd "${CMD} get packagemanifest community-kubevirt-hyperconverged"
+RunCmd "${CMD} get packagemanifest community-kubevirt-hyperconverged -o yaml"
+
+cat <<EOF
+
 ============
 InstallPlans
 ============

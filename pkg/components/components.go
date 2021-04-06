@@ -34,6 +34,8 @@ import (
 	crdmarkers "sigs.k8s.io/controller-tools/pkg/crd/markers"
 )
 
+// TODO: remove me, just a test to trigger all
+// the CI lanes
 const (
 	crName              = util.HyperConvergedName
 	packageName         = util.HyperConvergedName
