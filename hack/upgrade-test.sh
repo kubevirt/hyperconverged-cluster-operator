@@ -178,6 +178,21 @@ EOF
 # hco-operator to be created. Otherwise kubectl wait will report EOF.
 ./hack/retry.sh 20 30 "${CMD} get subscription -n ${HCO_NAMESPACE} | grep -v EOF"
 
+######################
+# DEBUG
+${CMD} patch OperatorHub cluster --type json -p '[{"op": "add", "path": "/spec/disableAllDefaultSources", "value": true}]'
+mkdir -p registry
+cd registry
+${CMD} image extract ${REGISTRY_IMAGE_UPGRADE} --path /registry/:.
+tree .
+cd ..
+
+${CMD} get pods -n ${HCO_CATALOG_NAMESPACE}
+${CMD} get installplan -n ${HCO_NAMESPACE}
+${CMD} get packagemanifests
+${CMD} get packagemanifests community-kubevirt-hyperconverged -o yaml
+#######################
+
 # Wait for the CSV to be created
 ./hack/retry.sh 20 30 "${CMD} get csv -n ${HCO_NAMESPACE} | grep -v EOF"
 # Adjust the OperatorGroup to the supported InstallMode of the CSV
