@@ -205,7 +205,9 @@ func (h *cdiHooks) ensureKubeVirtStorageRole(req *common.HcoRequest) error {
 	if err != nil {
 		return err
 	}
-	objectreferencesv1.SetObjectReference(&req.Instance.Status.RelatedObjects, *objectRef)
+	if err = objectreferencesv1.SetObjectReference(&req.Instance.Status.RelatedObjects, *objectRef); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -236,7 +238,10 @@ func (h *cdiHooks) ensureKubeVirtStorageRoleBinding(req *common.HcoRequest) erro
 	if err != nil {
 		return err
 	}
-	objectreferencesv1.SetObjectReference(&req.Instance.Status.RelatedObjects, *objectRef)
+	err = objectreferencesv1.SetObjectReference(&req.Instance.Status.RelatedObjects, *objectRef)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

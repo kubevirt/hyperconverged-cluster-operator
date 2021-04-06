@@ -37,7 +37,11 @@ func (h CLIDownloadHandler) Ensure(req *common.HcoRequest) error {
 			req.Logger.Error(err, "failed getting object reference for ConsoleCLIDownload")
 			return err
 		}
-		objectreferencesv1.SetObjectReference(&req.Instance.Status.RelatedObjects, *objectRef)
+		err = objectreferencesv1.SetObjectReference(&req.Instance.Status.RelatedObjects, *objectRef)
+		if err != nil {
+			req.Logger.Error(err, "failed setting object reference for ConsoleCLIDownload")
+			return err
+		}
 
 		if reflect.DeepEqual(found.Labels, ccd.Labels) {
 			return nil
