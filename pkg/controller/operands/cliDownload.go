@@ -50,12 +50,8 @@ func (h CLIDownloadHandler) Ensure(req *common.HcoRequest) error {
 
 	ccd.Spec.DeepCopyInto(&found.Spec)
 	util.DeepCopyLabels(&ccd.ObjectMeta, &found.ObjectMeta)
-	err = h.Client.Update(req.Ctx, found)
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return h.Client.Update(req.Ctx, found)
 }
 
 func NewConsoleCLIDownload(hc *hcov1beta1.HyperConverged) *consolev1.ConsoleCLIDownload {
