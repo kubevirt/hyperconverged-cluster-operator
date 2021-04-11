@@ -3,6 +3,7 @@ package hyperconverged
 import (
 	"context"
 	"fmt"
+	consolev1 "github.com/openshift/api/console/v1"
 	"os"
 
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
@@ -73,6 +74,7 @@ type BasicExpected struct {
 	mService             *corev1.Service
 	serviceMonitor       *monitoringv1.ServiceMonitor
 	promRule             *monitoringv1.PrometheusRule
+	cliDownload          *consolev1.ConsoleCLIDownload
 }
 
 func (be BasicExpected) toArray() []runtime.Object {
@@ -91,6 +93,7 @@ func (be BasicExpected) toArray() []runtime.Object {
 		be.mService,
 		be.serviceMonitor,
 		be.promRule,
+		be.cliDownload,
 	}
 }
 
@@ -186,6 +189,10 @@ func getBasicDeployment() *BasicExpected {
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	res.imsConfig.Data["v2v-conversion-image"] = commonTestUtils.ConversionImage
 	res.imsConfig.Data["kubevirt-vmware-image"] = commonTestUtils.VmwareImage
+
+	expectedCliDownload := operands.NewConsoleCLIDownload(hco)
+	expectedCliDownload.SelfLink = fmt.Sprintf("/apis/console.openshift.io/v1/consoleclidownloads/%s", expectedCliDownload.Name)
+	res.cliDownload = expectedCliDownload
 
 	return res
 }

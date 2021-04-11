@@ -16,50 +16,50 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type cLIDownloadHandler genericOperand
+type cliDownloadHandler genericOperand
 
-func newCLIDownloadHandler(Client client.Client, Scheme *runtime.Scheme) *cLIDownloadHandler {
-	return &cLIDownloadHandler{
+func newCLIDownloadHandler(Client client.Client, Scheme *runtime.Scheme) *cliDownloadHandler {
+	return &cliDownloadHandler{
 		Client:                 Client,
 		Scheme:                 Scheme,
 		crType:                 "ConsoleCLIDownload",
 		removeExistingOwner:    false,
 		setControllerReference: false,
-		hooks:                  &cLIDownloadHooks{},
+		hooks:                  &cliDownloadHooks{},
 	}
 }
 
-type cLIDownloadHooks struct{}
+type cliDownloadHooks struct{}
 
-func (h cLIDownloadHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h cliDownloadHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
 	return NewConsoleCLIDownload(hc), nil
 }
 
-func (h cLIDownloadHooks) getEmptyCr() client.Object {
+func (h cliDownloadHooks) getEmptyCr() client.Object {
 	return &consolev1.ConsoleCLIDownload{}
 }
 
-func (h cLIDownloadHooks) postFound(_ *common.HcoRequest, _ runtime.Object) error { return nil }
+func (h cliDownloadHooks) postFound(_ *common.HcoRequest, _ runtime.Object) error { return nil }
 
-func (h cLIDownloadHooks) getObjectMeta(cr runtime.Object) *metav1.ObjectMeta {
+func (h cliDownloadHooks) getObjectMeta(cr runtime.Object) *metav1.ObjectMeta {
 	return &cr.(*consolev1.ConsoleCLIDownload).ObjectMeta
 }
 
-func (h *cLIDownloadHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
-	desired, ok1 := required.(*consolev1.ConsoleCLIDownload)
+func (h *cliDownloadHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
+	ccd, ok1 := required.(*consolev1.ConsoleCLIDownload)
 	found, ok2 := exists.(*consolev1.ConsoleCLIDownload)
 	if !ok1 || !ok2 {
 		return false, false, errors.New("can't convert to ConsoleCLIDownload")
 	}
-	if !reflect.DeepEqual(found.Spec, desired.Spec) ||
-		!reflect.DeepEqual(found.Labels, desired.Labels) {
+	if !reflect.DeepEqual(found.Spec, ccd.Spec) ||
+		!reflect.DeepEqual(found.Labels, ccd.Labels) {
 		if req.HCOTriggered {
 			req.Logger.Info("Updating existing ConsoleCLIDownload's Spec to new opinionated values")
 		} else {
 			req.Logger.Info("Reconciling an externally updated ConsoleCLIDownload's Spec to its opinionated values")
 		}
-		util.DeepCopyLabels(&desired.ObjectMeta, &found.ObjectMeta)
-		desired.Spec.DeepCopyInto(&found.Spec)
+		util.DeepCopyLabels(&ccd.ObjectMeta, &found.ObjectMeta)
+		ccd.Spec.DeepCopyInto(&found.Spec)
 		err := Client.Update(req.Ctx, found)
 		if err != nil {
 			return false, false, err
