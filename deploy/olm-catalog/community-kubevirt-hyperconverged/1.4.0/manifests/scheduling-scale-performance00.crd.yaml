@@ -12,6 +12,15 @@ spec:
     listKind: SSPList
     plural: ssps
     singular: ssp
+  relatedImages:
+  - image: quay.io/kubevirt/node-labeller@sha256:45391da5e8ecdd393830650061f8d68248a3b2961d60f42a04e4e0c58a7d3a3b
+    name: node-labeller
+  - image: quay.io/kubevirt/kvm-info-nfd-plugin@sha256:c74083d42f9503007712dea435289e5f10a846433df2d3af4358463adb3fc9ff
+    name: kvm-info-nfd-plugin
+  - image: quay.io/kubevirt/cpu-nfd-plugin@sha256:20225a3d7569295fa7607e069bdc75b3235bc2218dbe52c4302ec4e2e55df8b9
+    name: cpu-nfd-plugin
+  - image: quay.io/kubevirt/virt-launcher@sha256:970a078f150d14b053b69db66a9fc035182e5e7010d65b524a28f70498c158f3
+    name: virt-launcher
   scope: Namespaced
   versions:
   - name: v1beta1
@@ -832,6 +841,10 @@ spec:
                   - type
                   type: object
                 type: array
+              observedGeneration:
+                description: ObservedGeneration is the latest generation observed by the operator.
+                format: int64
+                type: integer
               observedVersion:
                 description: The observed version of the resource
                 type: string
