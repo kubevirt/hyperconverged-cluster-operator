@@ -6,14 +6,19 @@ group_eval_order:
   - kubevirt.hyperconverged.rules
 
 tests:
-  # CR out of band update detected
   - interval: 1m
     input_series:
       - series: 'kubevirt_hco_out_of_band_modifications_count{component_name="kubevirt"}'
-        values: "0 1 1 1 1 1 1 1 1 1 1 1"
+        values: "0 0 0 1 1 1 1 1 1 1 1 1 1"
 
     alert_rule_test:
-      - eval_time: 11m
+      #  No CR out of band updates
+      - eval_time: 2m
+        alertname: KubevirtHyperconvergedClusterOperatorCRModification
+        exp_alerts: [ ]
+
+      # CR out of band update detected
+      - eval_time: 5m
         alertname: KubevirtHyperconvergedClusterOperatorCRModification
         exp_alerts:
           - exp_annotations:
@@ -22,6 +27,11 @@ tests:
             exp_labels:
               severity: "warning"
               component_name: "kubevirt"
+
+      # Should resolve after 10 minutes
+      - eval_time: 15m
+        alertname: KubevirtHyperconvergedClusterOperatorCRModification
+        exp_alerts: []
 
   # No CR out of band updates
   - interval: 1m
