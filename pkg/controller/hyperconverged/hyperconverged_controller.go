@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/operator-framework/operator-sdk/pkg/ready"
@@ -1303,11 +1304,58 @@ func (r *ReconcileHyperConverged) ensureKubeVirtCommonTemplateBundle(req *hcoReq
 	}
 	objectreferencesv1.SetObjectReference(&req.instance.Status.RelatedObjects, *objectRef)
 
+	// workaround for https://bugzilla.redhat.com/1909975
+	// SSP operator occasionally can get stuck on upgrades and
+	// it will stay in that state forever.
+	// As a workaround we can periodically (every 12 minutes)
+	// refresh an annotation on KubeVirtCommonTemplateBundle CR just
+	// to trigger another reconciliation loop on the ansible operator.
+	// The annotation will be removed at the end of the upgrade process.
+	const hcoForceUpdate = "hcoForceUpdate"
+	if r.upgradeMode {
+		progressing := false
+		for _, condition := range found.Status.Conditions {
+			switch condition.Type {
+			case conditionsv1.ConditionProgressing:
+				if condition.Status == corev1.ConditionTrue {
+					progressing = true
+				}
+			}
+		}
+		if progressing {
+			var period int64 = 12 * 60
+			timestamp := time.Now().Unix()
+			flooredTimestamp := fmt.Sprint(timestamp / period * period)
+			if found.Annotations[hcoForceUpdate] != flooredTimestamp {
+				ann := found.ObjectMeta.Annotations
+				if ann == nil {
+					ann = make(map[string]string)
+				}
+				ann[hcoForceUpdate] = flooredTimestamp
+				found.SetAnnotations(ann)
+				err = r.client.Update(req.ctx, found)
+				if err != nil {
+					return res.Error(err)
+				}
+				return res.Error(errors.New("forcing a reconciliation loop on SSP operator updating a label on KubevirtCommonTemplatesBundle"))
+			}
+		}
+	}
+
 	isReady := handleComponentConditions(r, req, "KubevirtCommonTemplatesBundle", found.Status.Conditions)
 
 	upgradeInProgress := false
 	if isReady {
 		upgradeInProgress = r.upgradeMode && r.checkComponentVersion(hcoutil.SspVersionEnvV, found.Status.ObservedVersion)
+		if found.ObjectMeta.Annotations[hcoForceUpdate] != "" {
+			ann := found.ObjectMeta.Annotations
+			delete(ann, hcoForceUpdate)
+			found.SetAnnotations(ann)
+			err = r.client.Update(req.ctx, found)
+			if err != nil {
+				return res.Error(err)
+			}
+		}
 		if (upgradeInProgress || !r.upgradeMode) && r.shouldRemoveOldCrd[commonTemplatesBundleOldCrdName] {
 			if r.removeCrd(req, commonTemplatesBundleOldCrdName) {
 				r.shouldRemoveOldCrd[commonTemplatesBundleOldCrdName] = false
