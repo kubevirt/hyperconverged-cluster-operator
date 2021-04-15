@@ -20,6 +20,7 @@ import (
 	virtconfig "kubevirt.io/kubevirt/pkg/virt-config"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -30,6 +31,8 @@ import (
 
 	"k8s.io/client-go/tools/reference"
 )
+
+const hcoForceUpdate = "hcoForceUpdate"
 
 var _ = Describe("HyperConverged Components", func() {
 
@@ -1164,69 +1167,361 @@ var _ = Describe("HyperConverged Components", func() {
 
 		// TODO: add tests to ensure that HCO properly propagates NodePlacement from its CR
 
-		// TODO: temporary avoid checking conditions on KubevirtCommonTemplatesBundle because it's currently
-		// broken on k8s. Revert this when we will be able to fix it
-		/*
-			It("should handle conditions", func() {
-				expectedResource := newKubeVirtCommonTemplateBundleForCR(hco, OpenshiftNamespace)
-				expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
-				expectedResource.Status.Conditions = []conditionsv1.Condition{
-					conditionsv1.Condition{
-						Type:    conditionsv1.ConditionAvailable,
-						Status:  corev1.ConditionFalse,
-						Reason:  "Foo",
-						Message: "Bar",
-					},
-					conditionsv1.Condition{
-						Type:    conditionsv1.ConditionProgressing,
-						Status:  corev1.ConditionTrue,
-						Reason:  "Foo",
-						Message: "Bar",
-					},
-					conditionsv1.Condition{
-						Type:    conditionsv1.ConditionDegraded,
-						Status:  corev1.ConditionTrue,
-						Reason:  "Foo",
-						Message: "Bar",
-					},
-				}
-				cl := initClient([]runtime.Object{hco, expectedResource})
-				r := initReconciler(cl)
-				Expect(r.ensureKubeVirtCommonTemplateBundle(req)).To(BeNil())
-
-				// Check HCO's status
-				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
-				objectRef, err := reference.GetReference(r.scheme, expectedResource)
-				Expect(err).To(BeNil())
-				// ObjectReference should have been added
-				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
-				// Check conditions
-				Expect(req.conditions[]).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+		It("should handle conditions", func() {
+			expectedResource := hco.NewKubeVirtCommonTemplateBundle()
+			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
+			expectedResource.Status.Conditions = []conditionsv1.Condition{
+				conditionsv1.Condition{
 					Type:    conditionsv1.ConditionAvailable,
 					Status:  corev1.ConditionFalse,
-					Reason:  "KubevirtCommonTemplatesBundleNotAvailable",
-					Message: "KubevirtCommonTemplatesBundle is not available: Bar",
-				})))
-				Expect(req.conditions[]).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+				conditionsv1.Condition{
 					Type:    conditionsv1.ConditionProgressing,
 					Status:  corev1.ConditionTrue,
-					Reason:  "KubevirtCommonTemplatesBundleProgressing",
-					Message: "KubevirtCommonTemplatesBundle is progressing: Bar",
-				})))
-				Expect(req.conditions[]).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
-					Type:    conditionsv1.ConditionUpgradeable,
-					Status:  corev1.ConditionFalse,
-					Reason:  "KubevirtCommonTemplatesBundleProgressing",
-					Message: "KubevirtCommonTemplatesBundle is progressing: Bar",
-				})))
-				Expect(req.conditions[]).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+				conditionsv1.Condition{
 					Type:    conditionsv1.ConditionDegraded,
 					Status:  corev1.ConditionTrue,
-					Reason:  "KubevirtCommonTemplatesBundleDegraded",
-					Message: "KubevirtCommonTemplatesBundle is degraded: Bar",
-				})))
-			})
-		*/
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+			}
+			cl := initClient([]runtime.Object{hco, expectedResource})
+			r := initReconciler(cl)
+			res := r.ensureKubeVirtCommonTemplateBundle(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Err).To(BeNil())
+
+			// Check HCO's status
+			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			objectRef, err := reference.GetReference(r.scheme, expectedResource)
+			Expect(err).To(BeNil())
+			// ObjectReference should have been added
+			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
+			// Check conditions
+			Expect(req.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				Type:    conditionsv1.ConditionAvailable,
+				Status:  corev1.ConditionFalse,
+				Reason:  "KubevirtCommonTemplatesBundleNotAvailable",
+				Message: "KubevirtCommonTemplatesBundle is not available: Bar",
+			})))
+			Expect(req.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				Type:    conditionsv1.ConditionProgressing,
+				Status:  corev1.ConditionTrue,
+				Reason:  "KubevirtCommonTemplatesBundleProgressing",
+				Message: "KubevirtCommonTemplatesBundle is progressing: Bar",
+			})))
+			Expect(req.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				Type:    conditionsv1.ConditionUpgradeable,
+				Status:  corev1.ConditionFalse,
+				Reason:  "KubevirtCommonTemplatesBundleProgressing",
+				Message: "KubevirtCommonTemplatesBundle is progressing: Bar",
+			})))
+			Expect(req.conditions).To(ContainElement(testlib.RepresentCondition(conditionsv1.Condition{
+				Type:    conditionsv1.ConditionDegraded,
+				Status:  corev1.ConditionTrue,
+				Reason:  "KubevirtCommonTemplatesBundleDegraded",
+				Message: "KubevirtCommonTemplatesBundle is degraded: Bar",
+			})))
+		})
+
+		It("should add an annotation with a timestamp if KubeVirtCommonTemplateBundle is progressing and HCO is in upgrade mode", func() {
+			expectedResource := hco.NewKubeVirtCommonTemplateBundle()
+			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
+			expectedResource.Status.Conditions = []conditionsv1.Condition{
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionAvailable,
+					Status:  corev1.ConditionTrue,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionProgressing,
+					Status:  corev1.ConditionTrue,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionDegraded,
+					Status:  corev1.ConditionFalse,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+			}
+
+			cl := initClient([]runtime.Object{hco, expectedResource})
+			r := initReconciler(cl)
+
+			// force upgrade mode
+			r.upgradeMode = true
+
+			res := r.ensureKubeVirtCommonTemplateBundle(req)
+
+			foundResource := &sspv1.KubevirtCommonTemplatesBundle{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
+					foundResource),
+			).To(BeNil())
+
+			Expect(foundResource.ObjectMeta.Annotations).To(HaveKey(hcoForceUpdate))
+
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Err).To(HaveOccurred(), "forcing a reconciliation loop on SSP operator updating a label on KubevirtCommonTemplatesBundle")
+		})
+
+		It("should not add an annotation if KubeVirtCommonTemplateBundle is progressing and HCO is not in upgrade mode", func() {
+			expectedResource := hco.NewKubeVirtCommonTemplateBundle()
+			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
+			expectedResource.Status.Conditions = []conditionsv1.Condition{
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionAvailable,
+					Status:  corev1.ConditionTrue,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionProgressing,
+					Status:  corev1.ConditionTrue,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionDegraded,
+					Status:  corev1.ConditionFalse,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+			}
+
+			cl := initClient([]runtime.Object{hco, expectedResource})
+			r := initReconciler(cl)
+
+			// force not upgrade mode
+			r.upgradeMode = false
+
+			res := r.ensureKubeVirtCommonTemplateBundle(req)
+
+			foundResource := &sspv1.KubevirtCommonTemplatesBundle{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
+					foundResource),
+			).To(BeNil())
+
+			Expect(foundResource.ObjectMeta.Annotations).To(Not(HaveKey(hcoForceUpdate)))
+
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Err).ToNot(HaveOccurred(), "forcing a reconciliation loop on SSP operator updating a label on KubevirtCommonTemplatesBundle")
+		})
+
+		It("should not add an annotation if KubeVirtCommonTemplateBundle is not progressing and HCO is in upgrade mode", func() {
+			expectedResource := hco.NewKubeVirtCommonTemplateBundle()
+			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
+			expectedResource.Status.Conditions = []conditionsv1.Condition{
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionAvailable,
+					Status:  corev1.ConditionTrue,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionProgressing,
+					Status:  corev1.ConditionFalse,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionDegraded,
+					Status:  corev1.ConditionFalse,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+			}
+
+			cl := initClient([]runtime.Object{hco, expectedResource})
+			r := initReconciler(cl)
+
+			// force upgrade mode
+			r.upgradeMode = true
+
+			res := r.ensureKubeVirtCommonTemplateBundle(req)
+
+			foundResource := &sspv1.KubevirtCommonTemplatesBundle{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
+					foundResource),
+			).To(BeNil())
+
+			Expect(foundResource.ObjectMeta.Annotations).To(Not(HaveKey(hcoForceUpdate)))
+
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Err).ToNot(HaveOccurred(), "forcing a reconciliation loop on SSP operator updating a label on KubevirtCommonTemplatesBundle")
+		})
+
+		It("should update an outdated annotation with a timestamp if KubeVirtCommonTemplateBundle is progressing and HCO is in upgrade mode", func() {
+			expectedResource := hco.NewKubeVirtCommonTemplateBundle()
+			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
+			expectedResource.Status.Conditions = []conditionsv1.Condition{
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionAvailable,
+					Status:  corev1.ConditionTrue,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionProgressing,
+					Status:  corev1.ConditionTrue,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionDegraded,
+					Status:  corev1.ConditionFalse,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+			}
+			var period int64 = 12 * 60
+			timestamp := time.Now().Unix()
+			ann := make(map[string]string)
+			ann[hcoForceUpdate] = fmt.Sprint((timestamp - 2*period) / period * period)
+			expectedResource.ObjectMeta.Annotations = ann
+
+			cl := initClient([]runtime.Object{hco, expectedResource})
+			r := initReconciler(cl)
+
+			// force upgrade mode
+			r.upgradeMode = true
+
+			res := r.ensureKubeVirtCommonTemplateBundle(req)
+
+			foundResource := &sspv1.KubevirtCommonTemplatesBundle{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
+					foundResource),
+			).To(BeNil())
+
+			Expect(foundResource.ObjectMeta.Annotations).To(HaveKey("hcoForceUpdate"))
+
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Err).To(HaveOccurred(), "forcing a reconciliation loop on SSP operator updating a label on KubevirtCommonTemplatesBundle")
+		})
+
+		It("should not update an up to date annotation with a timestamp if KubeVirtCommonTemplateBundle is progressing and HCO is in upgrade mode", func() {
+			expectedResource := hco.NewKubeVirtCommonTemplateBundle()
+			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
+			expectedResource.Status.Conditions = []conditionsv1.Condition{
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionAvailable,
+					Status:  corev1.ConditionTrue,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionProgressing,
+					Status:  corev1.ConditionTrue,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionDegraded,
+					Status:  corev1.ConditionFalse,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+			}
+			var period int64 = 12 * 60
+			timestamp := time.Now().Unix()
+			ann := make(map[string]string)
+			annValue := fmt.Sprint(timestamp / period * period)
+			ann[hcoForceUpdate] = annValue
+			expectedResource.ObjectMeta.Annotations = ann
+
+			cl := initClient([]runtime.Object{hco, expectedResource})
+			r := initReconciler(cl)
+
+			// force upgrade mode
+			r.upgradeMode = true
+
+			res := r.ensureKubeVirtCommonTemplateBundle(req)
+
+			foundResource := &sspv1.KubevirtCommonTemplatesBundle{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
+					foundResource),
+			).To(BeNil())
+
+			Expect(foundResource.ObjectMeta.Annotations).To(HaveKeyWithValue("hcoForceUpdate", annValue))
+
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Err).ToNot(HaveOccurred(), "forcing a reconciliation loop on SSP operator updating a label on KubevirtCommonTemplatesBundle")
+		})
+
+		It("should not remove the timestamp annotation if KubeVirtCommonTemplateBundle is not progressing and HCO is in not upgrade mode", func() {
+			expectedResource := hco.NewKubeVirtCommonTemplateBundle()
+			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
+			expectedResource.Status.Conditions = []conditionsv1.Condition{
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionAvailable,
+					Status:  corev1.ConditionTrue,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionProgressing,
+					Status:  corev1.ConditionFalse,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+				conditionsv1.Condition{
+					Type:    conditionsv1.ConditionDegraded,
+					Status:  corev1.ConditionFalse,
+					Reason:  "Foo",
+					Message: "Bar",
+				},
+			}
+			var period int64 = 12 * 60
+			timestamp := time.Now().Unix()
+			ann := make(map[string]string)
+			annValue := fmt.Sprint(timestamp / period * period)
+			ann[hcoForceUpdate] = annValue
+			expectedResource.ObjectMeta.Annotations = ann
+
+			cl := initClient([]runtime.Object{hco, expectedResource})
+			r := initReconciler(cl)
+
+			// force not upgrade mode
+			r.upgradeMode = false
+
+			res := r.ensureKubeVirtCommonTemplateBundle(req)
+
+			foundResource := &sspv1.KubevirtCommonTemplatesBundle{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
+					foundResource),
+			).To(BeNil())
+
+			Expect(foundResource.ObjectMeta.Annotations).ToNot(HaveKey("hcoForceUpdate"))
+
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Err).ToNot(HaveOccurred(), "forcing a reconciliation loop on SSP operator updating a label on KubevirtCommonTemplatesBundle")
+		})
 	})
 
 	Context("KubeVirtNodeLabellerBundle", func() {
