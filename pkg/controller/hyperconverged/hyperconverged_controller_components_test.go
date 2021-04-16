@@ -1394,9 +1394,11 @@ var _ = Describe("HyperConverged Components", func() {
 			var period int64 = 12 * 60
 			timestamp := time.Now().Unix()
 			ann := make(map[string]string)
-			ann[hcoForceUpdate] = fmt.Sprint((timestamp - 2*period) / period * period)
+			outdatedValue := fmt.Sprint((timestamp - 2*period) / period * period)
+			ann[hcoForceUpdate] = outdatedValue
 			expectedResource.ObjectMeta.Annotations = ann
 
+			expectedValueBefore := fmt.Sprint((timestamp) / period * period)
 			cl := initClient([]runtime.Object{hco, expectedResource})
 			r := initReconciler(cl)
 
@@ -1404,6 +1406,7 @@ var _ = Describe("HyperConverged Components", func() {
 			r.upgradeMode = true
 
 			res := r.ensureKubeVirtCommonTemplateBundle(req)
+			expectedValueAfter := fmt.Sprint((timestamp) / period * period)
 
 			foundResource := &sspv1.KubevirtCommonTemplatesBundle{}
 			Expect(
@@ -1413,6 +1416,8 @@ var _ = Describe("HyperConverged Components", func() {
 			).To(BeNil())
 
 			Expect(foundResource.ObjectMeta.Annotations).To(HaveKey("hcoForceUpdate"))
+			Expect(foundResource.ObjectMeta.Annotations["hcoForceUpdate"]).To(BeElementOf([]string{expectedValueBefore, expectedValueAfter}))
+			Expect(foundResource.ObjectMeta.Annotations["hcoForceUpdate"]).ToNot(Equal(outdatedValue))
 
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeFalse())
