@@ -138,12 +138,10 @@ Version: 1.2.3`)
 			os.Setenv(kvmEmulationEnvName, "false")
 		})
 
-		enabled := true
-
 		It("should create if not present", func() {
 			Initiate(true)
 			hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-				WithHostPassthroughCPU: &enabled,
+				WithHostPassthroughCPU: true,
 			}
 
 			expectedResource, err := NewKubeVirt(hco, commonTestUtils.Namespace)
@@ -240,7 +238,7 @@ Version: 1.2.3`)
 		It("should force mandatory configurations", func() {
 			Initiate(true)
 			hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-				WithHostPassthroughCPU: &enabled,
+				WithHostPassthroughCPU: true,
 			}
 
 			os.Setenv(smbiosEnvName,
@@ -338,7 +336,7 @@ Version: 1.2.3`)
 
 		It("should fail if the SMBIOS is wrongly formatted mandatory configurations", func() {
 			hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-				WithHostPassthroughCPU: &enabled,
+				WithHostPassthroughCPU: true,
 			}
 
 			_ = os.Setenv(smbiosEnvName, "WRONG YAML")
@@ -909,15 +907,11 @@ Version: 1.2.3`)
 		})
 
 		Context("Feature Gates", func() {
-			var (
-				enabled  = true
-				disabled = false
-			)
 			Context("test feature gates in NewKubeVirt", func() {
 				It("should add the WithHostPassthroughCPU feature gate if it's set in HyperConverged CR", func() {
 					// one enabled, one disabled and one missing
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						WithHostPassthroughCPU: &enabled,
+						WithHostPassthroughCPU: true,
 					}
 
 					existingResource, err := NewKubeVirt(hco)
@@ -931,7 +925,7 @@ Version: 1.2.3`)
 				It("should not add the WithHostPassthroughCPU feature gate if it's disabled in HyperConverged CR", func() {
 					// one enabled, one disabled and one missing
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						WithHostPassthroughCPU: &disabled,
+						WithHostPassthroughCPU: false,
 					}
 
 					existingResource, err := NewKubeVirt(hco)
@@ -945,7 +939,7 @@ Version: 1.2.3`)
 				It("should add the SRIOVLiveMigration feature gate if it's set in HyperConverged CR", func() {
 					// one enabled, one disabled and one missing
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						SRIOVLiveMigration: &enabled,
+						SRIOVLiveMigration: true,
 					}
 
 					existingResource, err := NewKubeVirt(hco)
@@ -959,7 +953,7 @@ Version: 1.2.3`)
 				It("should not add the SRIOVLiveMigration feature gate if it's disabled in HyperConverged CR", func() {
 					// one enabled, one disabled and one missing
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						SRIOVLiveMigration: &disabled,
+						SRIOVLiveMigration: false,
 					}
 
 					existingResource, err := NewKubeVirt(hco)
@@ -991,8 +985,8 @@ Version: 1.2.3`)
 					Expect(err).ToNot(HaveOccurred())
 
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						WithHostPassthroughCPU: &enabled,
-						SRIOVLiveMigration:     &enabled,
+						WithHostPassthroughCPU: true,
+						SRIOVLiveMigration:     true,
 					}
 
 					cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
@@ -1022,8 +1016,8 @@ Version: 1.2.3`)
 					Expect(err).ToNot(HaveOccurred())
 
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						WithHostPassthroughCPU: &disabled,
-						SRIOVLiveMigration:     &disabled,
+						WithHostPassthroughCPU: false,
+						SRIOVLiveMigration:     false,
 					}
 
 					cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
@@ -1086,14 +1080,14 @@ Version: 1.2.3`)
 					Initiate(false)
 					fgs := append(hardCodeKvFgs, kvWithHostPassthroughCPU, kvSRIOVLiveMigration)
 					existingResource, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
+					Expect(err).To(BeNil())
 					existingResource.Spec.Configuration.DeveloperConfiguration = &kubevirtv1.DeveloperConfiguration{
 						FeatureGates: fgs,
 					}
 
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						WithHostPassthroughCPU: &enabled,
-						SRIOVLiveMigration:     &enabled,
+						WithHostPassthroughCPU: true,
+						SRIOVLiveMigration:     true,
 					}
 
 					By("Make sure the existing KV is with the the expected FGs", func() {
@@ -1137,8 +1131,8 @@ Version: 1.2.3`)
 					})
 
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						WithHostPassthroughCPU: &disabled,
-						SRIOVLiveMigration:     &disabled,
+						WithHostPassthroughCPU: false,
+						SRIOVLiveMigration:     false,
 					}
 
 					cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
@@ -1246,18 +1240,6 @@ Version: 1.2.3`)
 							Expect(fgList).Should(ContainElements(expected))
 						}
 					},
-					Entry("When running in openshift and FG is nil",
-						true,
-						nil,
-						basicNumFgOnOpenshift,
-						[][]string{hardCodeKvFgs, sspConditionKvFgs},
-					),
-					Entry("When not running in openshift and FG is nil",
-						false,
-						nil,
-						len(hardCodeKvFgs),
-						[][]string{hardCodeKvFgs},
-					),
 					Entry("When running in openshift and FG is empty",
 						true,
 						&hcov1beta1.HyperConvergedFeatureGates{},
@@ -1272,25 +1254,25 @@ Version: 1.2.3`)
 					),
 					Entry("When running in openshift and all FGs are disabled",
 						true,
-						&hcov1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: &disabled},
+						&hcov1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: false},
 						basicNumFgOnOpenshift,
 						[][]string{hardCodeKvFgs, sspConditionKvFgs},
 					),
 					Entry("When not running in openshift all FGs are disabled",
 						false,
-						&hcov1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: &disabled},
+						&hcov1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: false},
 						len(hardCodeKvFgs),
 						[][]string{hardCodeKvFgs},
 					),
 					Entry("When running in openshift and all FGs are enabled",
 						true,
-						&hcov1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: &enabled},
+						&hcov1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: true},
 						basicNumFgOnOpenshift+1,
 						[][]string{hardCodeKvFgs, sspConditionKvFgs, {kvWithHostPassthroughCPU}},
 					),
 					Entry("When not running in openshift all FGs are enabled",
 						false,
-						&hcov1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: &enabled},
+						&hcov1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: true},
 						len(hardCodeKvFgs)+1,
 						[][]string{hardCodeKvFgs, {kvWithHostPassthroughCPU}},
 					))

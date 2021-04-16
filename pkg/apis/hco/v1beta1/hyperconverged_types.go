@@ -38,22 +38,21 @@ type HyperConvergedSpec struct {
 
 	// featureGates is a map of feature gate flags. Setting a flag to `true` will enable
 	// the feature. Setting `false` or removing the feature gate, disables the feature.
-	// +optional
-	FeatureGates HyperConvergedFeatureGates `json:"featureGates,omitempty"`
+	// +kubebuilder:default={}
+	FeatureGates HyperConvergedFeatureGates `json:"featureGates"`
 
 	// Live migration limits and timeouts are applied so that migration processes do not
 	// overwhelm the cluster.
-	// +optional
-	LiveMigrationConfig LiveMigrationConfigurations `json:"liveMigrationConfig,omitempty"`
+	// +kubebuilder:default={}
+	LiveMigrationConfig LiveMigrationConfigurations `json:"liveMigrationConfig"`
 
 	// PermittedHostDevices holds inforamtion about devices allowed for passthrough
 	// +optional
 	PermittedHostDevices *PermittedHostDevices `json:"permittedHostDevices,omitempty"`
 
 	// certConfig holds the rotation policy for internal, self-signed certificates
-	// +kubebuilder:default={ca: {duration: "48h", renewBefore: "24h"}, server: {duration: "24h", renewBefore: "12h"}}
-	// +optional
-	CertConfig HyperConvergedCertConfig `json:"certConfig,omitempty"`
+	// +kubebuilder:default={}
+	CertConfig HyperConvergedCertConfig `json:"certConfig"`
 
 	// ResourceRequirements describes the resource requirements for the operand workloads.
 	// +optional
@@ -79,32 +78,46 @@ type HyperConvergedSpec struct {
 	Version string `json:"version,omitempty"`
 }
 
-// CertConfig contains the tunables for TLS certificates.
+// CertRotateConfigCA contains the tunables for TLS certificates.
 // +k8s:openapi-gen=true
-type CertRotateConfig struct {
+type CertRotateConfigCA struct {
 	// The requested 'duration' (i.e. lifetime) of the Certificate.
 	// This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration)
-	Duration metav1.Duration `json:"duration,omitempty"`
+	// +kubebuilder:default="48h0m0s"
+	Duration metav1.Duration `json:"duration"`
 
 	// The amount of time before the currently issued certificate's `notAfter`
 	// time that we will begin to attempt to renew the certificate.
 	// This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration)
-	RenewBefore metav1.Duration `json:"renewBefore,omitempty"`
+	// +kubebuilder:default="24h0m0s"
+	RenewBefore metav1.Duration `json:"renewBefore"`
+}
+
+// CertRotateConfigServer contains the tunables for TLS certificates.
+// +k8s:openapi-gen=true
+type CertRotateConfigServer struct {
+	// The requested 'duration' (i.e. lifetime) of the Certificate.
+	// This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration)
+	// +kubebuilder:default="24h0m0s"
+	Duration metav1.Duration `json:"duration"`
+
+	// The amount of time before the currently issued certificate's `notAfter`
+	// time that we will begin to attempt to renew the certificate.
+	// This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration)
+	// +kubebuilder:default="12h0m0s"
+	RenewBefore metav1.Duration `json:"renewBefore"`
 }
 
 // HyperConvergedCertConfig holds the CertConfig entries for the HCO operands
 // +k8s:openapi-gen=true
-// +optional
 type HyperConvergedCertConfig struct {
 	// CA configuration -
 	// CA certs are kept in the CA bundle as long as they are valid
-	// +kubebuilder:default={duration: "48h", renewBefore: "24h"}
-	CA CertRotateConfig `json:"ca,omitempty"`
+	CA CertRotateConfigCA `json:"ca"`
 
 	// Server configuration -
 	// Certs are rotated and discarded
-	// +kubebuilder:default={duration: "24h", renewBefore: "12h"}
-	Server CertRotateConfig `json:"server,omitempty"`
+	Server CertRotateConfigServer `json:"server"`
 }
 
 // HyperConvergedConfig defines a set of configurations to pass to components
@@ -147,37 +160,24 @@ type LiveMigrationConfigurations struct {
 	ProgressTimeout *int64 `json:"progressTimeout,omitempty"`
 }
 
-type FeatureGate *bool
-
 // HyperConvergedFeatureGates is a set of optional feature gates to enable or disable new features that are not enabled
 // by default yet.
-// +optional
 // +k8s:openapi-gen=true
 type HyperConvergedFeatureGates struct {
 	// Allow migrating a virtual machine with CPU host-passthrough mode. This should be
 	// enabled only when the Cluster is homogeneous from CPU HW perspective doc here
-	// +optional
 	// +kubebuilder:default=false
-	WithHostPassthroughCPU FeatureGate `json:"withHostPassthroughCPU,omitempty"`
+	WithHostPassthroughCPU bool `json:"withHostPassthroughCPU"`
 
 	// Allow migrating a virtual machine with SRIOV interfaces.
 	// When enabled virt-launcher pods of virtual machines with SRIOV
 	// interfaces run with CAP_SYS_RESOURCE capability.
 	// This may degrade virt-launcher security.
-	// +optional
 	// +kubebuilder:default=false
-	SRIOVLiveMigration FeatureGate `json:"sriovLiveMigration,omitempty"`
+	SRIOVLiveMigration bool `json:"sriovLiveMigration"`
 }
 
-func (fgs *HyperConvergedFeatureGates) IsWithHostPassthroughCPUEnabled() bool {
-	return (fgs != nil) && (fgs.WithHostPassthroughCPU != nil) && (*fgs.WithHostPassthroughCPU)
-}
-
-func (fgs *HyperConvergedFeatureGates) IsSRIOVLiveMigrationEnabled() bool {
-	return (fgs != nil) && (fgs.SRIOVLiveMigration != nil) && (*fgs.SRIOVLiveMigration)
-}
-
-// PermittedHostDevices holds inforamtion about devices allowed for passthrough
+// PermittedHostDevices holds information about devices allowed for passthrough
 // +k8s:openapi-gen=true
 type PermittedHostDevices struct {
 	// +listType=atomic
@@ -202,7 +202,7 @@ type MediatedHostDevice struct {
 	ExternalResourceProvider bool   `json:"externalResourceProvider,omitempty"`
 }
 
-// ResourceRequirements is a list of resource requirements for the operand workloads pods
+// OperandResourceRequirements is a list of resource requirements for the operand workloads pods
 // +k8s:openapi-gen=true
 type OperandResourceRequirements struct {
 	// StorageWorkloads defines the resources requirements for storage workloads. It will propagate to the CDI custom
@@ -309,7 +309,8 @@ type HyperConverged struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   HyperConvergedSpec   `json:"spec,omitempty"`
+	// +kubebuilder:default={}
+	Spec   HyperConvergedSpec   `json:"spec"`
 	Status HyperConvergedStatus `json:"status,omitempty"`
 }
 

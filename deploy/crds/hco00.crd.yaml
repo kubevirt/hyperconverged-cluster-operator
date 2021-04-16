@@ -43,58 +43,61 @@ spec:
                 type: string
             type: object
           spec:
+            default: null
             description: HyperConvergedSpec defines the desired state of HyperConverged
             properties:
               certConfig:
-                default:
-                  ca:
-                    duration: 48h
-                    renewBefore: 24h
-                  server:
-                    duration: 24h
-                    renewBefore: 12h
+                default: null
                 description: certConfig holds the rotation policy for internal, self-signed
                   certificates
                 properties:
                   ca:
-                    default:
-                      duration: 48h
-                      renewBefore: 24h
                     description: CA configuration - CA certs are kept in the CA bundle
                       as long as they are valid
                     properties:
                       duration:
+                        default: 48h0m0s
                         description: The requested 'duration' (i.e. lifetime) of the
                           Certificate. This should comply with golang's ParseDuration
                           format (https://golang.org/pkg/time/#ParseDuration)
                         type: string
                       renewBefore:
+                        default: 24h0m0s
                         description: The amount of time before the currently issued
                           certificate's `notAfter` time that we will begin to attempt
                           to renew the certificate. This should comply with golang's
                           ParseDuration format (https://golang.org/pkg/time/#ParseDuration)
                         type: string
+                    required:
+                    - duration
+                    - renewBefore
                     type: object
                   server:
-                    default:
-                      duration: 24h
-                      renewBefore: 12h
                     description: Server configuration - Certs are rotated and discarded
                     properties:
                       duration:
+                        default: 24h0m0s
                         description: The requested 'duration' (i.e. lifetime) of the
                           Certificate. This should comply with golang's ParseDuration
                           format (https://golang.org/pkg/time/#ParseDuration)
                         type: string
                       renewBefore:
+                        default: 12h0m0s
                         description: The amount of time before the currently issued
                           certificate's `notAfter` time that we will begin to attempt
                           to renew the certificate. This should comply with golang's
                           ParseDuration format (https://golang.org/pkg/time/#ParseDuration)
                         type: string
+                    required:
+                    - duration
+                    - renewBefore
                     type: object
+                required:
+                - ca
+                - server
                 type: object
               featureGates:
+                default: null
                 description: featureGates is a map of feature gate flags. Setting
                   a flag to `true` will enable the feature. Setting `false` or removing
                   the feature gate, disables the feature.
@@ -112,6 +115,9 @@ spec:
                       mode. This should be enabled only when the Cluster is homogeneous
                       from CPU HW perspective doc here
                     type: boolean
+                required:
+                - sriovLiveMigration
+                - withHostPassthroughCPU
                 type: object
               infra:
                 description: infra HyperConvergedConfig influences the pod configuration
@@ -824,6 +830,7 @@ spec:
                     type: object
                 type: object
               liveMigrationConfig:
+                default: null
                 description: Live migration limits and timeouts are applied so that
                   migration processes do not overwhelm the cluster.
                 properties:
@@ -1676,6 +1683,10 @@ spec:
                         type: array
                     type: object
                 type: object
+            required:
+            - certConfig
+            - featureGates
+            - liveMigrationConfig
             type: object
           status:
             description: HyperConvergedStatus defines the observed state of HyperConverged
@@ -1786,6 +1797,8 @@ spec:
                   type: object
                 type: array
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true
