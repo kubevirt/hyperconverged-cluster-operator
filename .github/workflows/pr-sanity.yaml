@@ -39,6 +39,7 @@ jobs:
         with:
           skip-go-installation: true
           skip-pkg-cache: true
+          args: --timeout=5m
 
       - name: Verify we can actually build the operator
         run: make build
