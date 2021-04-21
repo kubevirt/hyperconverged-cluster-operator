@@ -36,6 +36,9 @@ jobs:
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v2.5.2
+        with:
+          skip-go-installation: true
+          skip-pkg-cache: true
 
       - name: Verify we can actually build the operator
         run: make build
