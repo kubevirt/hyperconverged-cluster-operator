@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-      - release-*
+      - release-[12]*
 jobs:
   build_push:
     if: (github.repository == 'kubevirt/hyperconverged-cluster-operator')
