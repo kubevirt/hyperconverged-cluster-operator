@@ -54,8 +54,6 @@ var (
 	}
 )
 
-// TEST!!!
-
 func main() {
 	cmdHelper.InitiateCommand()
 
