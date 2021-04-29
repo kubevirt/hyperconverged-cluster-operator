@@ -910,7 +910,7 @@ Version: 1.2.3`)
 
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
-					By("KV CR should contain the HotplugVolumes feature gate", func() {
+					By("KV CR should contain the WithHostPassthroughCPU feature gate", func() {
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvWithHostPassthroughCPU))
 					})
@@ -924,7 +924,7 @@ Version: 1.2.3`)
 
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
-					By("KV CR should contain the HotplugVolumes feature gate", func() {
+					By("KV CR should contain the WithHostPassthroughCPU feature gate", func() {
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement("WithHostPassthroughCPU"))
 					})
@@ -938,7 +938,7 @@ Version: 1.2.3`)
 
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
-					By("KV CR should contain the HotplugVolumes feature gate", func() {
+					By("KV CR should contain the SRIOVLiveMigration feature gate", func() {
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvSRIOVLiveMigration))
 					})
@@ -952,9 +952,35 @@ Version: 1.2.3`)
 
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
-					By("KV CR should contain the HotplugVolumes feature gate", func() {
+					By("KV CR should contain the SRIOVLiveMigration feature gate", func() {
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement("SRIOVLiveMigration"))
+					})
+				})
+
+				It("should add the NonRoot feature gate if it's set in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						NonRoot: true,
+					}
+
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					By("KV CR should contain the NonRoot feature gate", func() {
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvNonRoot))
+					})
+				})
+
+				It("should not add the NonRoot feature gate if it's disabled in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						NonRoot: false,
+					}
+
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					By("KV CR should contain the NonRoot feature gate", func() {
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement("NonRoot"))
 					})
 				})
 

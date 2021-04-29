@@ -194,6 +194,12 @@ type HyperConvergedFeatureGates struct {
 	// +optional
 	// +kubebuilder:default=false
 	SRIOVLiveMigration bool `json:"sriovLiveMigration"`
+
+	// Enables non-root implementation of virt-launcher with subset of feauters.
+	// Features that requires root will be run as root.
+	// This should increase security as Kubernetes doesn't use user-namespaces yet.
+	// +kubebuilder:default=false
+	NonRoot bool `json:"nonRoot"`
 }
 
 // PermittedHostDevices holds information about devices allowed for passthrough
