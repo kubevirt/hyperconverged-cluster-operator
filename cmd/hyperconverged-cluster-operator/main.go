@@ -54,6 +54,8 @@ var (
 	}
 )
 
+// TEST CI: do not merge!
+
 func main() {
 	cmdHelper.InitiateCommand()
 
