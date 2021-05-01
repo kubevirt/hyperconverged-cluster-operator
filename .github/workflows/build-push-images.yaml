@@ -29,7 +29,14 @@ jobs:
         run: |
           PACKAGE_DIR="./deploy/olm-catalog/community-kubevirt-hyperconverged"
           CSV_VERSION=$(ls -d ${PACKAGE_DIR}/*/ | sort -rV | awk "NR==$((RELEASE_DELTA+1))" | cut -d '/' -f 5)
+          REPLACES_CSV_VERSION=$(ls -d ${PACKAGE_DIR}/*/ | sort -rV | awk "NR==$((RELEASE_DELTA+2))" | cut -d '/' -f 5)
           echo "CSV_VERSION=${CSV_VERSION}" >> $GITHUB_ENV
+          if git ls-remote --tags | grep $(echo ${REPLACES_CSV_VERSION} | sed s/\\./\\\\./g)$; then
+            echo "REPLACES_CSV_VERSION=${REPLACES_CSV_VERSION}" >> $GITHUB_ENV
+          else
+            echo "REPLACES_CSV_VERSION=${REPLACES_CSV_VERSION}-unstable" >> $GITHUB_ENV
+          fi
+
       - name: set tag for master
         if: ${{ github.ref == 'refs/heads/master' }}
         run: |
@@ -55,10 +62,11 @@ jobs:
       - name: Build Manifests with unique CSV semver
         env:
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          REPLACES_CSV_VERSION: ${{ env.REPLACES_CSV_VERSION }}
         run: |
           export HCO_OPERATOR_IMAGE=$(tools/digester/digester --image="quay.io/kubevirt/hyperconverged-cluster-operator:${IMAGE_TAG}")
           export HCO_WEBHOOK_IMAGE=$(tools/digester/digester --image="quay.io/kubevirt/hyperconverged-cluster-webhook:${IMAGE_TAG}")
-          ./hack/build-manifests.sh UNIQUE
+          REPLACES_CSV_VERSION=${REPLACES_CSV_VERSION} ./hack/build-manifests.sh UNIQUE
       - name: Get opm client
         run: |
           wget https://github.com/operator-framework/operator-registry/releases/download/v1.15.1/linux-amd64-opm
