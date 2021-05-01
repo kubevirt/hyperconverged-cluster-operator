@@ -225,7 +225,7 @@ ${TESTS_BINARY} \
     -ginkgo.focus='(rfe_id:1177)|(rfe_id:273)|(rfe_id:151)' \
     -ginkgo.noColor \
     -ginkgo.seed=0 \
-    -ginkgo.skip='(Slirp Networking)|(with CPU spec)|(with TX offload disabled)|(with cni flannel and ptp plugin interface)|(with ovs-cni plugin)|(test_id:1752)|(SRIOV)|(with EFI)|(Operator)|(GPU)|(DataVolume Integration)|(when virt-handler is not responsive)|(with default cpu model)|(should set the default MachineType when created without explicit value)|(should fail to start when a volume is backed by PVC created by DataVolume instead of the DataVolume itself)|(test_id:3468)|(test_id:3466)|(test_id:1015)|(rfe_id:393)' \
+    -ginkgo.skip='(Slirp Networking)|(with CPU spec)|(with TX offload disabled)|(with cni flannel and ptp plugin interface)|(with ovs-cni plugin)|(test_id:1752)|(SRIOV)|(with EFI)|(Operator)|(GPU)|(DataVolume Integration)|(when virt-handler is not responsive)|(with default cpu model)|(should set the default MachineType when created without explicit value)|(should fail to start when a volume is backed by PVC created by DataVolume instead of the DataVolume itself)|(test_id:3468)|(test_id:3466)|(test_id:1015)|(rfe_id:393)|(test_id:4659)' \
     -ginkgo.slowSpecThreshold=60 \
     -ginkgo.succinct \
     -oc-path="$(which oc)" \
