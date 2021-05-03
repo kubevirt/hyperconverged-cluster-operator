@@ -54,6 +54,9 @@ var (
 	}
 )
 
+// can I write (sorry, test only!!!)
+// whitelist instead of allowlist?
+
 func main() {
 	cmdHelper.InitiateCommand()
 
