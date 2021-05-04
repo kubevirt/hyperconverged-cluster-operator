@@ -80,6 +80,13 @@ type VirtualMachineInstanceList struct {
 // +k8s:openapi-gen=true
 type EvictionStrategy string
 
+// +k8s:openapi-gen=true
+type StartStrategy string
+
+const (
+	StartStrategyPaused StartStrategy = "Paused"
+)
+
 // VirtualMachineInstanceSpec is a description of a VirtualMachineInstance.
 //
 // +k8s:openapi-gen=true
@@ -112,7 +119,10 @@ type VirtualMachineInstanceSpec struct {
 	//
 	// +optional
 	EvictionStrategy *EvictionStrategy `json:"evictionStrategy,omitempty"`
-
+	// StartStrategy can be set to "Paused" if Virtual Machine should be started in paused state.
+	//
+	// +optional
+	StartStrategy *StartStrategy `json:"startStrategy,omitempty"`
 	// Grace period observed after signalling a VirtualMachineInstance to stop after which the VirtualMachineInstance is force terminated.
 	TerminationGracePeriodSeconds *int64 `json:"terminationGracePeriodSeconds,omitempty"`
 	// List of volumes that can be mounted by disks belonging to the vmi.
@@ -304,6 +314,11 @@ func (v *VirtualMachineInstance) WantsToHaveQOSGuaranteed() bool {
 	resources := v.Spec.Domain.Resources
 	return !resources.Requests.Memory().IsZero() && resources.Requests.Memory().Cmp(*resources.Limits.Memory()) == 0 &&
 		!resources.Requests.Cpu().IsZero() && resources.Requests.Cpu().Cmp(*resources.Limits.Cpu()) == 0
+}
+
+// ShouldStartPaused returns true if VMI should be started in paused state
+func (v *VirtualMachineInstance) ShouldStartPaused() bool {
+	return v.Spec.StartStrategy != nil && *v.Spec.StartStrategy == StartStrategyPaused
 }
 
 //
@@ -559,6 +574,10 @@ const (
 	MigrationJobNameAnnotation                    string = "kubevirt.io/migrationJobName"
 	ControllerAPILatestVersionObservedAnnotation  string = "kubevirt.io/latest-observed-api-version"
 	ControllerAPIStorageVersionObservedAnnotation string = "kubevirt.io/storage-observed-api-version"
+	// Used by functional tests to force a VMI to fail the migration internally within launcher
+	FuncTestForceLauncherMigrationFailureAnnotation string = "kubevirt.io/func-test-force-launcher-migration-failure"
+	// Used by functional tests to prevent virt launcher from finishing the target pod preparation.
+	FuncTestBlockLauncherPrepareMigrationTargetAnnotation string = "kubevirt.io/func-test-block-migration-target-preparation"
 	// This label is used to match virtual machine instance IDs with pods.
 	// Similar to kubevirt.io/domain. Used on Pod.
 	// Internal use only.
@@ -641,6 +660,8 @@ const (
 	CPUModelLabel = "cpu-model.node.kubevirt.io/"
 	// This label represents supported HyperV features on the node
 	HypervLabel = "hyperv.node.kubevirt.io/"
+	// This label represents vendor of cpu model on the node
+	CPUModelVendorLabel = "cpu-vendor.node.kubevirt.io/"
 
 	VirtualMachineLabel        = AppLabel + "/vm"
 	MemfdMemoryBackend  string = "kubevirt.io/memfd"
@@ -1581,6 +1602,9 @@ type VirtualMachineInstanceGuestAgentInfo struct {
 	metav1.TypeMeta `json:",inline"`
 	// GAVersion is a version of currently installed guest agent
 	GAVersion string `json:"guestAgentVersion,omitempty"`
+	// Return command list the guest agent supports
+	// +listType=atomic
+	SupportedCommands []GuestAgentCommandInfo `json:"supportedCommands,omitempty"`
 	// Hostname represents FQDN of a guest
 	Hostname string `json:"hostname,omitempty"`
 	// OS contains the guest operating system information
@@ -1591,6 +1615,14 @@ type VirtualMachineInstanceGuestAgentInfo struct {
 	UserList []VirtualMachineInstanceGuestOSUser `json:"userList,omitempty"`
 	// FSInfo is a guest os filesystem information containing the disk mapping and disk mounts with usage
 	FSInfo VirtualMachineInstanceFileSystemInfo `json:"fsInfo,omitempty"`
+}
+
+// List of commands that QEMU guest agent supports
+//
+// +k8s:openapi-gen=true
+type GuestAgentCommandInfo struct {
+	Name    string `json:"name"`
+	Enabled bool   `json:"enabled,omitempty"`
 }
 
 // VirtualMachineInstanceGuestOSUserList comprises the list of all active users on guest machine
@@ -1668,22 +1700,23 @@ type RemoveVolumeOptions struct {
 // KubeVirtConfiguration holds all kubevirt configurations
 // +k8s:openapi-gen=true
 type KubeVirtConfiguration struct {
-	CPUModel                    string                  `json:"cpuModel,omitempty"`
-	CPURequest                  *resource.Quantity      `json:"cpuRequest,omitempty"`
-	DeveloperConfiguration      *DeveloperConfiguration `json:"developerConfiguration,omitempty"`
-	EmulatedMachines            []string                `json:"emulatedMachines,omitempty"`
-	ImagePullPolicy             k8sv1.PullPolicy        `json:"imagePullPolicy,omitempty"`
-	MigrationConfiguration      *MigrationConfiguration `json:"migrations,omitempty"`
-	MachineType                 string                  `json:"machineType,omitempty"`
-	NetworkConfiguration        *NetworkConfiguration   `json:"network,omitempty"`
-	OVMFPath                    string                  `json:"ovmfPath,omitempty"`
-	SELinuxLauncherType         string                  `json:"selinuxLauncherType,omitempty"`
-	SMBIOSConfig                *SMBiosConfiguration    `json:"smbios,omitempty"`
-	SupportedGuestAgentVersions []string                `json:"supportedGuestAgentVersions,omitempty"`
-	MemBalloonStatsPeriod       *uint32                 `json:"memBalloonStatsPeriod,omitempty"`
-	PermittedHostDevices        *PermittedHostDevices   `json:"permittedHostDevices,omitempty"`
-	MinCPUModel                 string                  `json:"minCPUModel,omitempty"`
-	ObsoleteCPUModels           map[string]bool         `json:"obsoleteCPUModels,omitempty"`
+	CPUModel               string                  `json:"cpuModel,omitempty"`
+	CPURequest             *resource.Quantity      `json:"cpuRequest,omitempty"`
+	DeveloperConfiguration *DeveloperConfiguration `json:"developerConfiguration,omitempty"`
+	EmulatedMachines       []string                `json:"emulatedMachines,omitempty"`
+	ImagePullPolicy        k8sv1.PullPolicy        `json:"imagePullPolicy,omitempty"`
+	MigrationConfiguration *MigrationConfiguration `json:"migrations,omitempty"`
+	MachineType            string                  `json:"machineType,omitempty"`
+	NetworkConfiguration   *NetworkConfiguration   `json:"network,omitempty"`
+	OVMFPath               string                  `json:"ovmfPath,omitempty"`
+	SELinuxLauncherType    string                  `json:"selinuxLauncherType,omitempty"`
+	SMBIOSConfig           *SMBiosConfiguration    `json:"smbios,omitempty"`
+	// deprecated
+	SupportedGuestAgentVersions []string              `json:"supportedGuestAgentVersions,omitempty"`
+	MemBalloonStatsPeriod       *uint32               `json:"memBalloonStatsPeriod,omitempty"`
+	PermittedHostDevices        *PermittedHostDevices `json:"permittedHostDevices,omitempty"`
+	MinCPUModel                 string                `json:"minCPUModel,omitempty"`
+	ObsoleteCPUModels           map[string]bool       `json:"obsoleteCPUModels,omitempty"`
 }
 
 //
