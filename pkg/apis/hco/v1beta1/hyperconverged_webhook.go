@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/go-logr/logr"
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -19,6 +18,8 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 const (
@@ -88,7 +89,10 @@ func (r *HyperConverged) SetupWebhookWithManager(ctx context.Context, mgr ctrl.M
 	return bldr.Complete()
 }
 
-var _ webhook.Validator = &HyperConverged{}
+var (
+	_ webhook.Validator = &HyperConverged{}
+	_ webhook.Defaulter = &HyperConverged{}
+)
 
 func (r *HyperConverged) ValidateCreate() error {
 	return whHandler.ValidateCreate(r)
@@ -190,4 +194,23 @@ func allowWatchAllNamespaces(ctx context.Context, mgr ctrl.Manager) error {
 func (a *nsMutator) InjectDecoder(d *admission.Decoder) error {
 	a.decoder = d
 	return nil
+}
+
+func (r *HyperConverged) Default() {
+	hcolog.Info("handle the HyperConverged default values")
+	if r.Spec.PermittedHostDevices == nil {
+		hcolog.Info("add default values for HyperConverged")
+		r.Spec.PermittedHostDevices = &PermittedHostDevices{
+			PciHostDevices: []PciHostDevice{
+				{
+					PCIVendorSelector: "10DE:1DB6",
+					ResourceName:      "nvidia.com/GV100GL_Tesla_V100",
+				},
+				{
+					PCIVendorSelector: "10DE:1EB8",
+					ResourceName:      "nvidia.com/TU104GL_Tesla_T4",
+				},
+			},
+		}
+	}
 }
