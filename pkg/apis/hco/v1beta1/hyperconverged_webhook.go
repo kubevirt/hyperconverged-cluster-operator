@@ -198,7 +198,7 @@ func (a *nsMutator) InjectDecoder(d *admission.Decoder) error {
 
 func (r *HyperConverged) Default() {
 	hcolog.Info("handle the HyperConverged default values")
-	if r.Spec.PermittedHostDevices == nil {
+	if r.Spec.PermittedHostDevices == nil || r.Spec.PermittedHostDevices.PciHostDevices == nil {
 		hcolog.Info("add default values for HyperConverged")
 		r.Spec.PermittedHostDevices = &PermittedHostDevices{
 			PciHostDevices: []PciHostDevice{

@@ -169,6 +169,7 @@ MediatedHostDevice represents a host mediated device allowed for passthrough
 | mdevNameSelector |  | string |  | true |
 | resourceName |  | string |  | true |
 | externalResourceProvider |  | bool |  | false |
+| disabled |  | bool |  | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -191,6 +192,7 @@ PciHostDevice represents a host PCI device allowed for passthrough
 | pciVendorSelector |  | string |  | true |
 | resourceName |  | string |  | true |
 | externalResourceProvider |  | bool |  | false |
+| disabled |  | bool |  | false |
 
 [Back to TOC](#table-of-contents)
 

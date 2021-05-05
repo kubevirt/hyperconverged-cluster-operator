@@ -2681,10 +2681,7 @@ spec:
     containerPort: 4343
     deploymentName: hco-webhook
     failurePolicy: Fail
-    generateName: defualter-hco.kubevirt.io
-    objectSelector:
-      matchLabels:
-        name: kubevirt-hyperconverged
+    generateName: defaulter-hco.kubevirt.io
     rules:
     - apiGroups:
       - hco.kubevirt.io

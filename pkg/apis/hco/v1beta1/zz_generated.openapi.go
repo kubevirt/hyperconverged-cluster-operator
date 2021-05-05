@@ -462,6 +462,12 @@ func schema_pkg_apis_hco_v1beta1_MediatedHostDevice(ref common.ReferenceCallback
 							Format: "",
 						},
 					},
+					"disabled": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
 				},
 				Required: []string{"mdevNameSelector", "resourceName"},
 			},
@@ -510,6 +516,12 @@ func schema_pkg_apis_hco_v1beta1_PciHostDevice(ref common.ReferenceCallback) com
 						},
 					},
 					"externalResourceProvider": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"boolean"},
+							Format: "",
+						},
+					},
+					"disabled": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"boolean"},
 							Format: "",
