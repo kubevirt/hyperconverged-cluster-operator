@@ -333,11 +333,15 @@ func toKvPciHostDevices(hcoPciHostdevices []hcov1beta1.PciHostDevice) []kubevirt
 func toKvMediatedDevices(hcoMediatedDevices []hcov1beta1.MediatedHostDevice) []kubevirtv1.MediatedHostDevice {
 	if len(hcoMediatedDevices) > 0 {
 		mediatedDevices := make([]kubevirtv1.MediatedHostDevice, len(hcoMediatedDevices))
-		for i, hcoMediatedHostDevice := range hcoMediatedDevices {
-			mediatedDevices[i] = kubevirtv1.MediatedHostDevice{
-				MDEVNameSelector:         hcoMediatedHostDevice.MDEVNameSelector,
-				ResourceName:             hcoMediatedHostDevice.ResourceName,
-				ExternalResourceProvider: hcoMediatedHostDevice.ExternalResourceProvider,
+		i := 0
+		for _, hcoMediatedHostDevice := range hcoMediatedDevices {
+			if !hcoMediatedHostDevice.Disabled {
+				mediatedDevices[i] = kubevirtv1.MediatedHostDevice{
+					MDEVNameSelector:         hcoMediatedHostDevice.MDEVNameSelector,
+					ResourceName:             hcoMediatedHostDevice.ResourceName,
+					ExternalResourceProvider: hcoMediatedHostDevice.ExternalResourceProvider,
+				}
+				i++
 			}
 		}
 

@@ -211,6 +211,7 @@ type PciHostDevice struct {
 	PCIVendorSelector        string `json:"pciVendorSelector"`
 	ResourceName             string `json:"resourceName"`
 	ExternalResourceProvider bool   `json:"externalResourceProvider,omitempty"`
+	Disabled                 bool   `json:"disabled,omitempty"`
 }
 
 // MediatedHostDevice represents a host mediated device allowed for passthrough
@@ -219,6 +220,7 @@ type MediatedHostDevice struct {
 	MDEVNameSelector         string `json:"mdevNameSelector"`
 	ResourceName             string `json:"resourceName"`
 	ExternalResourceProvider bool   `json:"externalResourceProvider,omitempty"`
+	Disabled                 bool   `json:"disabled,omitempty"`
 }
 
 // ResourceRequirements is a list of resource requirements for the operand workloads pods

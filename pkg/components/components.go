@@ -1119,7 +1119,7 @@ func GetCSVBase(params *CSVBaseParams) *csvv1alpha1.ClusterServiceVersion {
 	}
 
 	defaulterWebhookSideEffects := admissionregistrationv1.SideEffectClassNone
-	defalterWebhookPath := util.DefaulterWebhookPath
+	defaulterWebhookPath := util.DefaulterWebhookPath
 
 	defalterWebhook := csvv1alpha1.WebhookDescription{
 		GenerateName:            util.HcoDefaulterWebhookNS,
@@ -1130,9 +1130,6 @@ func GetCSVBase(params *CSVBaseParams) *csvv1alpha1.ClusterServiceVersion {
 		SideEffects:             &defaulterWebhookSideEffects,
 		FailurePolicy:           &failurePolicy,
 		TimeoutSeconds:          &webhookTimeout,
-		ObjectSelector: &metav1.LabelSelector{
-			MatchLabels: map[string]string{"name": params.Namespace},
-		},
 		Rules: []admissionregistrationv1.RuleWithOperations{
 			{
 				Operations: []admissionregistrationv1.OperationType{
@@ -1146,7 +1143,7 @@ func GetCSVBase(params *CSVBaseParams) *csvv1alpha1.ClusterServiceVersion {
 				},
 			},
 		},
-		WebhookPath: &defalterWebhookPath,
+		WebhookPath: &defaulterWebhookPath,
 	}
 
 	return &csvv1alpha1.ClusterServiceVersion{
