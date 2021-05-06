@@ -213,7 +213,7 @@ spec:
     progressTimeout: 150
 ```
 
-## Listing Permitted Devices
+## Listing Permitted Host Devices
 Administrators can control which host devices are exposed and permitted to be used in the cluster. Permitted host
 devices in the cluster will need to be allowlisted in KubeVirt CR by its `vendor:product` selector for PCI devices or
 mediated device names. Use the `permittedHostDevices` field in order to manage the permitted host devices.
@@ -234,27 +234,47 @@ The `pciHostDevices` array is an array of `PciHostDevice` objects. The fields of
   
 * `resourceName` - name by which a device is advertised and being requested.
 * `externalResourceProvider` - indicates that this resource is being provided by an external device plugin.
-  
-  KubeVirt in this case will only permit the usage of this device in the cluster but will leave the allocation and 
+
+  KubeVirt in this case will only permit the usage of this device in the cluster but will leave the allocation and
   monitoring to an external device plugin.
 
   **default**: `false`
+* `disabled` - set to `true` to disable default host devices, because these device cannot be removed
 
 The `mediatedDevices` array is an array of `MediatedDevice` objects. The fields of this object are:
 * `mdevNameSelector` - name of a mediated device type required to identify a mediated device on a host.
 
    For example: mdev type nvidia-226 represents GRID T4-2A.
-  
-   The selector is matched against the content of `/sys/class/mdev_bus/$mdevUUID/mdev_type/name`.                   
-* `resourceName` - name by which a device is advertised and being requested.    
+
+  The selector is matched against the content of `/sys/class/mdev_bus/$mdevUUID/mdev_type/name`.
+* `resourceName` - name by which a device is advertised and being requested.
 * `externalResourceProvider` - indicates that this resource is being provided by an external device plugin.
 
   KubeVirt in this case will only permit the usage of this device in the cluster but will leave the allocation and
   monitoring to an external device plugin.
-  
+
   **default**: `false`
 
+### Permitted Host Devices Default Values
+
+HCO enforces the existence of two PCI Host Devices in the list:
+
+```yaml
+pciHostDevices:
+- pciVendorSelector: "10DE:1DB6"
+  resourceName: "nvidia.com/GV100GL_Tesla_V100",
+- pciVendorSelector: "10DE:1EB8",
+  resourceName: "nvidia.com/TU104GL_Tesla_T4",
+```
+
+It is possible to add more devices, but these two devices must be in the list. If you need to remove them, use the
+`disabled` filed instead of deleting them.
+
 ### Permitted Host Devices Example
+
+In this example, we're adding a new device in addition to two default ones, and disabling the default "
+nvidia.com/TU104GL_Tesla_T4" device:
+
 ```yaml
 apiVersion: hco.kubevirt.io/v1beta1
 kind: HyperConverged
@@ -263,14 +283,17 @@ metadata:
 spec:
   permittedHostDevices:
     pciHostDevices:
-      - pciVendorSelector: "10DE:1EB8"
-        resourceName: "nvidia.com/TU104GL_Tesla_T4"
-        externalResourceProvider: true
-      - pciVendorSelector: "8086:6F54"
-        resourceName: "intel.com/qat"
+    - pciVendorSelector: "10DE:1DB6"
+      resourceName: "nvidia.com/GV100GL_Tesla_V100",
+    - pciVendorSelector: "10DE:1EB8"
+      resourceName: "nvidia.com/TU104GL_Tesla_T4"
+      disabled: true
+    - pciVendorSelector: "8086:6F54"
+      resourceName: "intel.com/qat"
+      externalResourceProvider: true
     mediatedDevices:
-      - mdevNameSelector: "GRID T4-1Q"
-        resourceName: "nvidia.com/GRID_T4-1Q"
+    - mdevNameSelector: "GRID T4-1Q"
+      resourceName: "nvidia.com/GRID_T4-1Q"
 ```
 
 ## Storage Class for Scratch Space
