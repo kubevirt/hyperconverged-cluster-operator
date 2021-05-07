@@ -79,7 +79,7 @@ spec:
             path: /livez
             port: 6060
             scheme: HTTP
-          initialDelaySeconds: 5
+          initialDelaySeconds: 30
           periodSeconds: 5
         name: hyperconverged-cluster-operator
         readinessProbe:
@@ -144,7 +144,7 @@ spec:
             path: /livez
             port: 6060
             scheme: HTTP
-          initialDelaySeconds: 5
+          initialDelaySeconds: 30
           periodSeconds: 5
         name: hyperconverged-cluster-webhook
         readinessProbe:
