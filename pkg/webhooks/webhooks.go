@@ -53,6 +53,10 @@ func (wh WebhookHandler) ValidateCreate(hc *v1beta1.HyperConverged) error {
 		return fmt.Errorf("invalid namespace for v1beta1.HyperConverged - please use the %s namespace", wh.namespace)
 	}
 
+	if err := validatePermittedHostDevices(hc.Spec.PermittedHostDevices); err != nil {
+		return err
+	}
+
 	if _, err := operands.NewKubeVirt(hc); err != nil {
 		return err
 	}
@@ -79,6 +83,10 @@ func (wh WebhookHandler) ValidateUpdate(requested *v1beta1.HyperConverged, exist
 	if reflect.DeepEqual(exists.Spec, requested.Spec) &&
 		reflect.DeepEqual(exists.Annotations, requested.Annotations) {
 		return nil
+	}
+
+	if err := validatePermittedHostDevices(requested.Spec.PermittedHostDevices); err != nil {
+		return err
 	}
 
 	if err := wh.validateCertConfig(requested); err != nil {
@@ -281,6 +289,48 @@ func (wh WebhookHandler) validateCertConfig(hc *v1beta1.HyperConverged) error {
 
 	if hc.Spec.CertConfig.CA.Duration.Duration < hc.Spec.CertConfig.Server.Duration.Duration {
 		return errors.New("spec.certConfig: ca.duration is smaller than server.duration")
+	}
+
+	return nil
+}
+
+func validatePermittedHostDevices(phds *v1beta1.PermittedHostDevices) error {
+	if phds == nil {
+		return nil
+	}
+
+	if err := validatePciHostDevices(phds.PciHostDevices); err != nil {
+		return err
+	}
+
+	if err := validateMediatedHostDevices(phds.MediatedDevices); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Allow only one instance from each PCI host device
+func validatePciHostDevices(list []v1beta1.PciHostDevice) error {
+	found := make(map[string]bool)
+	for _, device := range list {
+		if found[device.PCIVendorSelector] {
+			return fmt.Errorf("%s pci host device is already exist", device.PCIVendorSelector)
+		}
+		found[device.PCIVendorSelector] = true
+	}
+
+	return nil
+}
+
+// Allow only one instance from each Mediated host device
+func validateMediatedHostDevices(list []v1beta1.MediatedHostDevice) error {
+	found := make(map[string]bool)
+	for _, device := range list {
+		if found[device.MDEVNameSelector] {
+			return fmt.Errorf("%s mediate host device is already exist", device.MDEVNameSelector)
+		}
+		found[device.MDEVNameSelector] = true
 	}
 
 	return nil

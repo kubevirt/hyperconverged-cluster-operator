@@ -219,16 +219,16 @@ func (r *HyperConverged) Default() {
 		copy(r.Spec.PermittedHostDevices.PciHostDevices, defaultPciHostDevices)
 	} else {
 		for _, phd := range defaultPciHostDevices {
-			if !findPciHosDevice(r.Spec.PermittedHostDevices.PciHostDevices, phd) {
+			if !findPciHostDevice(r.Spec.PermittedHostDevices.PciHostDevices, phd) {
 				r.Spec.PermittedHostDevices.PciHostDevices = append(r.Spec.PermittedHostDevices.PciHostDevices, phd)
 			}
 		}
 	}
 }
 
-func findPciHosDevice(list []PciHostDevice, dev PciHostDevice) bool {
+func findPciHostDevice(list []PciHostDevice, dev PciHostDevice) bool {
 	for _, phd := range list {
-		if phd.PCIVendorSelector == dev.PCIVendorSelector && phd.ResourceName == dev.ResourceName {
+		if phd.PCIVendorSelector == dev.PCIVendorSelector {
 			return true
 		}
 	}

@@ -14,7 +14,7 @@ var _ = Describe("Hyperconverged API: Webhook", func() {
 				Expect(hco.Spec.PermittedHostDevices.PciHostDevices).To(HaveLen(len(defaultPciHostDevices)))
 
 				for _, phd := range defaultPciHostDevices {
-					Expect(findPciHosDevice(hco.Spec.PermittedHostDevices.PciHostDevices, phd)).Should(BeTrue())
+					Expect(findPciHostDevice(hco.Spec.PermittedHostDevices.PciHostDevices, phd)).Should(BeTrue())
 				}
 			})
 
@@ -28,7 +28,7 @@ var _ = Describe("Hyperconverged API: Webhook", func() {
 				Expect(hco.Spec.PermittedHostDevices.PciHostDevices).To(HaveLen(len(defaultPciHostDevices)))
 
 				for _, phd := range defaultPciHostDevices {
-					Expect(findPciHosDevice(hco.Spec.PermittedHostDevices.PciHostDevices, phd)).Should(BeTrue())
+					Expect(findPciHostDevice(hco.Spec.PermittedHostDevices.PciHostDevices, phd)).Should(BeTrue())
 				}
 			})
 
@@ -45,7 +45,7 @@ var _ = Describe("Hyperconverged API: Webhook", func() {
 				Expect(hco.Spec.PermittedHostDevices.PciHostDevices).To(HaveLen(len(defaultPciHostDevices)))
 
 				for _, phd := range defaultPciHostDevices {
-					Expect(findPciHosDevice(hco.Spec.PermittedHostDevices.PciHostDevices, phd)).Should(BeTrue())
+					Expect(findPciHostDevice(hco.Spec.PermittedHostDevices.PciHostDevices, phd)).Should(BeTrue())
 				}
 			})
 
@@ -61,7 +61,7 @@ var _ = Describe("Hyperconverged API: Webhook", func() {
 				Expect(hco.Spec.PermittedHostDevices.PciHostDevices).To(HaveLen(len(defaultPciHostDevices)))
 
 				for _, phd := range defaultPciHostDevices {
-					Expect(findPciHosDevice(hco.Spec.PermittedHostDevices.PciHostDevices, phd)).Should(BeTrue())
+					Expect(findPciHostDevice(hco.Spec.PermittedHostDevices.PciHostDevices, phd)).Should(BeTrue())
 				}
 			})
 
@@ -79,7 +79,7 @@ var _ = Describe("Hyperconverged API: Webhook", func() {
 				Expect(hco.Spec.PermittedHostDevices.PciHostDevices).To(HaveLen(len(defaultPciHostDevices)))
 
 				for _, phd := range defaultPciHostDevices {
-					Expect(findPciHosDevice(hco.Spec.PermittedHostDevices.PciHostDevices, phd)).Should(BeTrue())
+					Expect(findPciHostDevice(hco.Spec.PermittedHostDevices.PciHostDevices, phd)).Should(BeTrue())
 				}
 			})
 
@@ -99,7 +99,7 @@ var _ = Describe("Hyperconverged API: Webhook", func() {
 				Expect(hco.Spec.PermittedHostDevices.PciHostDevices).To(HaveLen(len(defaultPciHostDevices)))
 
 				for _, phd := range defaultPciHostDevices {
-					Expect(findPciHosDevice(hco.Spec.PermittedHostDevices.PciHostDevices, phd)).Should(BeTrue())
+					Expect(findPciHostDevice(hco.Spec.PermittedHostDevices.PciHostDevices, phd)).Should(BeTrue())
 				}
 
 				By("check that the Default() function didn't change the modification we made", func() {

@@ -18,10 +18,6 @@
 #
 # This script checks the defaulting mechanism
 
-# TEMP: TODO: Remove the following two lines
-echo "Read all MutatingWebhookConfiguration's, to debug the defaulter webhook"
-${KUBECTL_BINARY} get MutatingWebhookConfiguration -n "${INSTALLED_NAMESPACE}" -o yaml
-
 echo "Read the CR's spec before starting the test"
 ${KUBECTL_BINARY} get hco -n "${INSTALLED_NAMESPACE}" kubevirt-hyperconverged -o json | jq '.spec'
 
