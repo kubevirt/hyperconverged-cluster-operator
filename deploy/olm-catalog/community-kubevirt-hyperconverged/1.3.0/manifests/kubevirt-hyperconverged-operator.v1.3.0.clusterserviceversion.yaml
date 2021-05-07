@@ -8,7 +8,7 @@ metadata:
     categories: OpenShift Optional
     certified: "false"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator@sha256:46b81b9c5c9ff6be953bddcbf3537258d5f96ade8ddfbf355e67075fbe670368
-    createdAt: "2021-03-17 12:16:11"
+    createdAt: "2021-05-10 14:43:48"
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -1846,7 +1846,7 @@ spec:
                     path: /livez
                     port: 6060
                     scheme: HTTP
-                  initialDelaySeconds: 5
+                  initialDelaySeconds: 30
                   periodSeconds: 5
                 name: hyperconverged-cluster-operator
                 readinessProbe:
@@ -1899,7 +1899,7 @@ spec:
                     path: /livez
                     port: 6060
                     scheme: HTTP
-                  initialDelaySeconds: 5
+                  initialDelaySeconds: 30
                   periodSeconds: 5
                 name: hyperconverged-cluster-webhook
                 readinessProbe:
