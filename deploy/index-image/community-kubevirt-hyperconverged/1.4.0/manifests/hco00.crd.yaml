@@ -945,7 +945,9 @@ spec:
                       - resourceName
                       type: object
                     type: array
-                    x-kubernetes-list-type: atomic
+                    x-kubernetes-list-map-keys:
+                    - mdevNameSelector
+                    x-kubernetes-list-type: map
                   pciHostDevices:
                     items:
                       description: PciHostDevice represents a host PCI device allowed
@@ -973,7 +975,9 @@ spec:
                       - resourceName
                       type: object
                     type: array
-                    x-kubernetes-list-type: atomic
+                    x-kubernetes-list-map-keys:
+                    - pciVendorSelector
+                    x-kubernetes-list-type: map
                 type: object
               resourceRequirements:
                 description: ResourceRequirements describes the resource requirements

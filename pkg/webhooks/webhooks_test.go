@@ -190,27 +190,6 @@ var _ = Describe("webhooks handler", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			It("should reject non-unique PCI Host Device", func() {
-				cr.Spec.PermittedHostDevices = &v1beta1.PermittedHostDevices{
-					PciHostDevices: []v1beta1.PciHostDevice{
-						{
-							PCIVendorSelector: "non-unique",
-							ResourceName:      "name",
-						},
-						{
-							PCIVendorSelector: "222",
-							ResourceName:      "name",
-						},
-						{
-							PCIVendorSelector: "non-unique",
-							ResourceName:      "name",
-						},
-					},
-				}
-				err := wh.ValidateCreate(cr)
-				Expect(err).To(HaveOccurred())
-			})
-
 			It("should allow unique Mediate Host Device", func() {
 				cr.Spec.PermittedHostDevices = &v1beta1.PermittedHostDevices{
 					MediatedDevices: []v1beta1.MediatedHostDevice{
@@ -230,27 +209,6 @@ var _ = Describe("webhooks handler", func() {
 				}
 				err := wh.ValidateCreate(cr)
 				Expect(err).ToNot(HaveOccurred())
-			})
-
-			It("should reject non-unique Mediate Host Device", func() {
-				cr.Spec.PermittedHostDevices = &v1beta1.PermittedHostDevices{
-					MediatedDevices: []v1beta1.MediatedHostDevice{
-						{
-							MDEVNameSelector: "non-unique",
-							ResourceName:     "name",
-						},
-						{
-							MDEVNameSelector: "222",
-							ResourceName:     "name",
-						},
-						{
-							MDEVNameSelector: "non-unique",
-							ResourceName:     "name",
-						},
-					},
-				}
-				err := wh.ValidateCreate(cr)
-				Expect(err).To(HaveOccurred())
 			})
 		})
 	})
@@ -524,32 +482,6 @@ var _ = Describe("webhooks handler", func() {
 				Expect(wh.ValidateUpdate(newHco, hco)).ToNot(HaveOccurred())
 			})
 
-			It("should reject non-unique PCI Host Device", func() {
-				cli := getFakeClient(hco)
-				wh := &WebhookHandler{}
-				wh.Init(logger, cli, HcoValidNamespace, true)
-
-				newHco := &v1beta1.HyperConverged{}
-				hco.DeepCopyInto(newHco)
-				newHco.Spec.PermittedHostDevices = &v1beta1.PermittedHostDevices{
-					PciHostDevices: []v1beta1.PciHostDevice{
-						{
-							PCIVendorSelector: "non-unique",
-							ResourceName:      "name",
-						},
-						{
-							PCIVendorSelector: "222",
-							ResourceName:      "name",
-						},
-						{
-							PCIVendorSelector: "non-unique",
-							ResourceName:      "name",
-						},
-					},
-				}
-				Expect(wh.ValidateUpdate(newHco, hco)).To(HaveOccurred())
-			})
-
 			It("should allow unique Mediate Host Device", func() {
 				cli := getFakeClient(hco)
 				wh := &WebhookHandler{}
@@ -574,32 +506,6 @@ var _ = Describe("webhooks handler", func() {
 					},
 				}
 				Expect(wh.ValidateUpdate(newHco, hco)).ToNot(HaveOccurred())
-			})
-
-			It("should reject non-unique Mediate Host Device", func() {
-				cli := getFakeClient(hco)
-				wh := &WebhookHandler{}
-				wh.Init(logger, cli, HcoValidNamespace, true)
-
-				newHco := &v1beta1.HyperConverged{}
-				hco.DeepCopyInto(newHco)
-				newHco.Spec.PermittedHostDevices = &v1beta1.PermittedHostDevices{
-					MediatedDevices: []v1beta1.MediatedHostDevice{
-						{
-							MDEVNameSelector: "non-unique",
-							ResourceName:     "name",
-						},
-						{
-							MDEVNameSelector: "222",
-							ResourceName:     "name",
-						},
-						{
-							MDEVNameSelector: "non-unique",
-							ResourceName:     "name",
-						},
-					},
-				}
-				Expect(wh.ValidateUpdate(newHco, hco)).To(HaveOccurred())
 			})
 		})
 

@@ -199,9 +199,11 @@ type HyperConvergedFeatureGates struct {
 // PermittedHostDevices holds information about devices allowed for passthrough
 // +k8s:openapi-gen=true
 type PermittedHostDevices struct {
-	// +listType=atomic
+	// +listType=map
+	// +listMapKey=pciVendorSelector
 	PciHostDevices []PciHostDevice `json:"pciHostDevices,omitempty"`
-	// +listType=atomic
+	// +listType=map
+	// +listMapKey=mdevNameSelector
 	MediatedDevices []MediatedHostDevice `json:"mediatedDevices,omitempty"`
 }
 
