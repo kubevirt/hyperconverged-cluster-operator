@@ -552,7 +552,10 @@ func schema_pkg_apis_hco_v1beta1_PermittedHostDevices(ref common.ReferenceCallba
 					"pciHostDevices": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
+								"x-kubernetes-list-map-keys": []interface{}{
+									"pciVendorSelector",
+								},
+								"x-kubernetes-list-type": "map",
 							},
 						},
 						SchemaProps: spec.SchemaProps{
@@ -569,7 +572,10 @@ func schema_pkg_apis_hco_v1beta1_PermittedHostDevices(ref common.ReferenceCallba
 					"mediatedDevices": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
+								"x-kubernetes-list-map-keys": []interface{}{
+									"mdevNameSelector",
+								},
+								"x-kubernetes-list-type": "map",
 							},
 						},
 						SchemaProps: spec.SchemaProps{
