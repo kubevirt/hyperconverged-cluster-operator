@@ -320,7 +320,7 @@ func toKvPciHostDevices(hcoPciHostdevices []hcov1beta1.PciHostDevice) []kubevirt
 		for _, hcoPciHostDevice := range hcoPciHostdevices {
 			if !hcoPciHostDevice.Disabled {
 				pciHostDevices = append(pciHostDevices, kubevirtv1.PciHostDevice{
-					PCIVendorSelector:        hcoPciHostDevice.PCIVendorSelector,
+					PCIVendorSelector:        hcoPciHostDevice.PCIDeviceSelector,
 					ResourceName:             hcoPciHostDevice.ResourceName,
 					ExternalResourceProvider: hcoPciHostDevice.ExternalResourceProvider,
 				})

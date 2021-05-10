@@ -189,7 +189,7 @@ PciHostDevice represents a host PCI device allowed for passthrough
 
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | -------- |-------- |
-| pciVendorSelector | a combination of a vendor_id:product_id required to identify a PCI device on a host. | string |  | true |
+| pciDeviceSelector | a combination of a vendor_id:product_id required to identify a PCI device on a host. | string |  | true |
 | resourceName | name by which a device is advertised and being requested | string |  | true |
 | externalResourceProvider | indicates that this resource is being provided by an external device plugin | bool |  | false |
 | disabled | HCO enforces the existence of several PciHostDevice objects. Set disabled field to true instead of remove these objects. | bool |  | false |

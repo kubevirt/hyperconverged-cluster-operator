@@ -198,11 +198,11 @@ func (a *nsMutator) InjectDecoder(d *admission.Decoder) error {
 
 var defaultPciHostDevices = []PciHostDevice{
 	{
-		PCIVendorSelector: "10DE:1DB6",
+		PCIDeviceSelector: "10DE:1DB6",
 		ResourceName:      "nvidia.com/GV100GL_Tesla_V100",
 	},
 	{
-		PCIVendorSelector: "10DE:1EB8",
+		PCIDeviceSelector: "10DE:1EB8",
 		ResourceName:      "nvidia.com/TU104GL_Tesla_T4",
 	},
 }
@@ -228,7 +228,7 @@ func (r *HyperConverged) Default() {
 
 func findPciHostDevice(list []PciHostDevice, dev PciHostDevice) bool {
 	for _, phd := range list {
-		if phd.PCIVendorSelector == dev.PCIVendorSelector {
+		if phd.PCIDeviceSelector == dev.PCIDeviceSelector {
 			return true
 		}
 	}

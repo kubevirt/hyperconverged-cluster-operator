@@ -200,7 +200,7 @@ type HyperConvergedFeatureGates struct {
 // +k8s:openapi-gen=true
 type PermittedHostDevices struct {
 	// +listType=map
-	// +listMapKey=pciVendorSelector
+	// +listMapKey=pciDeviceSelector
 	PciHostDevices []PciHostDevice `json:"pciHostDevices,omitempty"`
 	// +listType=map
 	// +listMapKey=mdevNameSelector
@@ -211,7 +211,7 @@ type PermittedHostDevices struct {
 // +k8s:openapi-gen=true
 type PciHostDevice struct {
 	// a combination of a vendor_id:product_id required to identify a PCI device on a host.
-	PCIVendorSelector string `json:"pciVendorSelector"`
+	PCIDeviceSelector string `json:"pciDeviceSelector"`
 	// name by which a device is advertised and being requested
 	ResourceName string `json:"resourceName"`
 	// indicates that this resource is being provided by an external device plugin

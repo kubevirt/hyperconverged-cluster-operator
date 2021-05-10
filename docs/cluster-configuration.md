@@ -225,7 +225,7 @@ The `permittedHostDevices` field contains two optional arrays: the `pciHostDevic
 HCO propagates these arrays as is to the KubeVirt custom resource; i.e. no merge is done, but a replacement.
 
 The `pciHostDevices` array is an array of `PciHostDevice` objects. The fields of this object are:
-* `pciVendorSelector` - a combination of a **`vendor_id:product_id`** required to identify a PCI device on a host.
+* `pciDeviceSelector` - a combination of a **`vendor_id:product_id`** required to identify a PCI device on a host.
 
    This identifier 10de:1eb8 can be found using `lspci`; for example:
    ```shell
@@ -261,9 +261,9 @@ HCO enforces the existence of two PCI Host Devices in the list:
 
 ```yaml
 pciHostDevices:
-- pciVendorSelector: "10DE:1DB6"
+- pciDeviceSelector: "10DE:1DB6"
   resourceName: "nvidia.com/GV100GL_Tesla_V100",
-- pciVendorSelector: "10DE:1EB8",
+- pciDeviceSelector: "10DE:1EB8",
   resourceName: "nvidia.com/TU104GL_Tesla_T4",
 ```
 
@@ -283,12 +283,12 @@ metadata:
 spec:
   permittedHostDevices:
     pciHostDevices:
-    - pciVendorSelector: "10DE:1DB6"
+    - pciDeviceSelector: "10DE:1DB6"
       resourceName: "nvidia.com/GV100GL_Tesla_V100",
-    - pciVendorSelector: "10DE:1EB8"
+    - pciDeviceSelector: "10DE:1EB8"
       resourceName: "nvidia.com/TU104GL_Tesla_T4"
       disabled: true
-    - pciVendorSelector: "8086:6F54"
+    - pciDeviceSelector: "8086:6F54"
       resourceName: "intel.com/qat"
       externalResourceProvider: true
     mediatedDevices:

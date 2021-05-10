@@ -173,15 +173,15 @@ var _ = Describe("webhooks handler", func() {
 				cr.Spec.PermittedHostDevices = &v1beta1.PermittedHostDevices{
 					PciHostDevices: []v1beta1.PciHostDevice{
 						{
-							PCIVendorSelector: "111",
+							PCIDeviceSelector: "111",
 							ResourceName:      "name",
 						},
 						{
-							PCIVendorSelector: "222",
+							PCIDeviceSelector: "222",
 							ResourceName:      "name",
 						},
 						{
-							PCIVendorSelector: "333",
+							PCIDeviceSelector: "333",
 							ResourceName:      "name",
 						},
 					},
@@ -466,15 +466,15 @@ var _ = Describe("webhooks handler", func() {
 				newHco.Spec.PermittedHostDevices = &v1beta1.PermittedHostDevices{
 					PciHostDevices: []v1beta1.PciHostDevice{
 						{
-							PCIVendorSelector: "111",
+							PCIDeviceSelector: "111",
 							ResourceName:      "name",
 						},
 						{
-							PCIVendorSelector: "222",
+							PCIDeviceSelector: "222",
 							ResourceName:      "name",
 						},
 						{
-							PCIVendorSelector: "333",
+							PCIDeviceSelector: "333",
 							ResourceName:      "name",
 						},
 					},
