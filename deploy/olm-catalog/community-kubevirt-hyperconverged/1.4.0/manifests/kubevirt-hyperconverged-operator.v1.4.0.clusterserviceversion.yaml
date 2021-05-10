@@ -9,7 +9,7 @@ metadata:
     categories: OpenShift Optional
     certified: "false"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.4.0-unstable
-    createdAt: "2021-04-27 05:21:18"
+    createdAt: "2021-05-10 14:38:02"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     operatorframework.io/initialization-resource: '{"apiVersion":"hco.kubevirt.io/v1beta1","kind":"HyperConverged","metadata":{"annotations":{"deployOVS":"false"},"name":"kubevirt-hyperconverged","namespace":"kubevirt-hyperconverged"},"spec":{}}'
@@ -1858,7 +1858,7 @@ spec:
                     path: /livez
                     port: 6060
                     scheme: HTTP
-                  initialDelaySeconds: 5
+                  initialDelaySeconds: 30
                   periodSeconds: 5
                 name: hyperconverged-cluster-operator
                 readinessProbe:
@@ -1921,7 +1921,7 @@ spec:
                     path: /livez
                     port: 6060
                     scheme: HTTP
-                  initialDelaySeconds: 5
+                  initialDelaySeconds: 30
                   periodSeconds: 5
                 name: hyperconverged-cluster-webhook
                 readinessProbe:
