@@ -71,6 +71,8 @@ var (
 )
 
 func main() {
+	// TODO: test only, just to rebuild
+
 	cmdHelper.InitiateCommand()
 
 	watchNamespace := cmdHelper.GetWatchNS()

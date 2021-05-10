@@ -70,6 +70,9 @@ EOF
   ${CMD} wait deployment ${HCO_DEPLOYMENT_NAME} --for condition=Available -n ${HCO_NAMESPACE} --timeout="1200s"
 fi
 
+PATCH="[{\"op\":\"add\",\"path\":\"/spec/configuration/developerConfiguration/logVerbosity\",\"value\":{\"virtAPI\":4,\"virtController\":4,\"virtHandler\":4,\"virtLauncher\":4,\"virtOperator\":4}}]"
+sed "/^metadata:$/a\  annotations:\n    kubevirt.kubevirt.io/jsonpatch: '${PATCH}'" _out/hco.cr.yaml
+
 ${CMD} apply -n kubevirt-hyperconverged -f _out/hco.cr.yaml
 
 ${CMD} wait -n "${HCO_NAMESPACE}" "${HCO_KIND}" "${HCO_RESOURCE_NAME}" --for condition=Available --timeout="30m"

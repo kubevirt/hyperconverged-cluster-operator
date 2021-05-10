@@ -7,7 +7,9 @@ INSTALLED_NAMESPACE=${INSTALLED_NAMESPACE:-"kubevirt-hyperconverged"}
 source hack/common.sh
 source cluster/kubevirtci.sh
 
+
 export KUBECTL_BINARY="kubectl"
+
 
 if [ "${JOB_TYPE}" == "stdci" ]; then
     KUBECONFIG=$(kubevirtci::kubeconfig)
@@ -18,6 +20,8 @@ fi
 if [[ ${JOB_TYPE} = "prow" ]]; then
     KUBECTL_BINARY="oc"
 fi
+
+KUBECTL_BINARY=${KUBECTL_BINARY} INSTALLED_NAMESPACE=${INSTALLED_NAMESPACE} ./hack/check_operator_condition.sh
 
 # when the tests are run in a pod, in-cluster config will be used
 KUBECONFIG_FLAG=""
