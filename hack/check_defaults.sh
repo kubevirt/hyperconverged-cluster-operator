@@ -24,8 +24,8 @@ ${KUBECTL_BINARY} get hco -n "${INSTALLED_NAMESPACE}" kubevirt-hyperconverged -o
 CERTCONFIGDEFAULTS='{"ca":{"duration":"48h0m0s","renewBefore":"24h0m0s"},"server":{"duration":"24h0m0s","renewBefore":"12h0m0s"}}'
 FGDEFAULTS='{"sriovLiveMigration":false,"withHostPassthroughCPU":false}'
 LMDEFAULTS='{"bandwidthPerMigration":"64Mi","completionTimeoutPerGiB":800,"parallelMigrationsPerCluster":5,"parallelOutboundMigrationsPerNode":2,"progressTimeout":150}'
-PERMITTED_HOST_DEVICES_DEFAULT1='{"pciVendorSelector":"10DE:1DB6","resourceName":"nvidia.com/GV100GL_Tesla_V100"}'
-PERMITTED_HOST_DEVICES_DEFAULT2='{"pciVendorSelector":"10DE:1EB8","resourceName":"nvidia.com/TU104GL_Tesla_T4"}'
+PERMITTED_HOST_DEVICES_DEFAULT1='{"pciDeviceSelector":"10DE:1DB6","resourceName":"nvidia.com/GV100GL_Tesla_V100"}'
+PERMITTED_HOST_DEVICES_DEFAULT2='{"pciDeviceSelector":"10DE:1EB8","resourceName":"nvidia.com/TU104GL_Tesla_T4"}'
 
 CERTCONFIGPATHS=(
     "/spec/certConfig/ca/duration"
@@ -122,7 +122,7 @@ done
 
 ./hack/retry.sh 10 3 "${KUBECTL_BINARY} patch hco -n \"${INSTALLED_NAMESPACE}\" --type=json kubevirt-hyperconverged -p '[{ \"op\": \"replace\", \"path\": /spec, \"value\": {} }]'"
 JPATH="/spec/permittedHostDevices/pciHostDevices/-"
-OBJ='{"pciVendorSelector":"new_one","resourceName":"new_one"}'
+OBJ='{"pciDeviceSelector":"new_one","resourceName":"new_one"}'
 ./hack/retry.sh 10 3 "${KUBECTL_BINARY} patch hco -n \"${INSTALLED_NAMESPACE}\" --type=json kubevirt-hyperconverged -p '[{ \"op\": \"add\", \"path\": \"${JPATH}\", \"value\": ${OBJ}}]'"
 PHD=$(${KUBECTL_BINARY} get hco -n "${INSTALLED_NAMESPACE}" kubevirt-hyperconverged -o jsonpath='{.spec.permittedHostDevices}')
 if ! echo "${PHD}" | grep "${PERMITTED_HOST_DEVICES_DEFAULT1}"; then
@@ -142,11 +142,11 @@ fi
 sleep 2
 
 JPATH="/spec/permittedHostDevices/pciHostDevices/0/disabled"
-OBJ='{"pciVendorSelector":"new_one","resourceName":"new_one"}'
+OBJ='{"pciDeviceSelector":"new_one","resourceName":"new_one"}'
 
 ./hack/retry.sh 10 3 "${KUBECTL_BINARY} patch hco -n \"${INSTALLED_NAMESPACE}\" --type=json kubevirt-hyperconverged -p '[{ \"op\": \"add\", \"path\": \"${JPATH}\", \"value\": true}]'"
 PHD=$(${KUBECTL_BINARY} get hco -n "${INSTALLED_NAMESPACE}" kubevirt-hyperconverged -o jsonpath='{.spec.permittedHostDevices.pciHostDevices[0]}')
-if [[ "${PHD}" != '{"disabled":true,"pciVendorSelector":"10DE:1DB6","resourceName":"nvidia.com/GV100GL_Tesla_V100"}' ]]; then
+if [[ "${PHD}" != '{"disabled":true,"pciDeviceSelector":"10DE:1DB6","resourceName":"nvidia.com/GV100GL_Tesla_V100"}' ]]; then
     echo "Failed checking CR defaults for permittedHostDevices"
     exit 1
 fi

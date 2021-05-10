@@ -428,23 +428,23 @@ Version: 1.2.3`)
 				hco.Spec.PermittedHostDevices = &hcov1beta1.PermittedHostDevices{
 					PciHostDevices: []hcov1beta1.PciHostDevice{
 						{
-							PCIVendorSelector:        "vendor1",
+							PCIDeviceSelector:        "vendor1",
 							ResourceName:             "resourceName1",
 							ExternalResourceProvider: true,
 						},
 						{
-							PCIVendorSelector:        "vendor2",
+							PCIDeviceSelector:        "vendor2",
 							ResourceName:             "resourceName2",
 							ExternalResourceProvider: false,
 						},
 						{
-							PCIVendorSelector:        "vendor3",
+							PCIDeviceSelector:        "vendor3",
 							ResourceName:             "resourceName3",
 							ExternalResourceProvider: true,
 							Disabled:                 false,
 						},
 						{
-							PCIVendorSelector:        "disabled4",
+							PCIDeviceSelector:        "disabled4",
 							ResourceName:             "disabled4",
 							ExternalResourceProvider: true,
 							Disabled:                 true,
@@ -591,23 +591,23 @@ Version: 1.2.3`)
 				hco.Spec.PermittedHostDevices = &hcov1beta1.PermittedHostDevices{
 					PciHostDevices: []hcov1beta1.PciHostDevice{
 						{
-							PCIVendorSelector:        "vendor1",
+							PCIDeviceSelector:        "vendor1",
 							ResourceName:             "resourceName1",
 							ExternalResourceProvider: true,
 						},
 						{
-							PCIVendorSelector:        "vendor2",
+							PCIDeviceSelector:        "vendor2",
 							ResourceName:             "resourceName2",
 							ExternalResourceProvider: false,
 						},
 						{
-							PCIVendorSelector:        "vendor3",
+							PCIDeviceSelector:        "vendor3",
 							ResourceName:             "resourceName3",
 							ExternalResourceProvider: true,
 							Disabled:                 false,
 						},
 						{
-							PCIVendorSelector:        "disabled4",
+							PCIDeviceSelector:        "disabled4",
 							ResourceName:             "disabled4",
 							ExternalResourceProvider: true,
 							Disabled:                 true,
@@ -2071,23 +2071,23 @@ Version: 1.2.3`)
 			hcoCopy := &hcov1beta1.PermittedHostDevices{
 				PciHostDevices: []hcov1beta1.PciHostDevice{
 					{
-						PCIVendorSelector:        "vendor1",
+						PCIDeviceSelector:        "vendor1",
 						ResourceName:             "resourceName1",
 						ExternalResourceProvider: true,
 					},
 					{
-						PCIVendorSelector:        "vendor2",
+						PCIDeviceSelector:        "vendor2",
 						ResourceName:             "resourceName2",
 						ExternalResourceProvider: false,
 					},
 					{
-						PCIVendorSelector:        "vendor3",
+						PCIDeviceSelector:        "vendor3",
 						ResourceName:             "resourceName3",
 						ExternalResourceProvider: true,
 						Disabled:                 false,
 					},
 					{
-						PCIVendorSelector:        "disabledSelector",
+						PCIDeviceSelector:        "disabledSelector",
 						ResourceName:             "disabledName",
 						ExternalResourceProvider: true,
 						Disabled:                 true,

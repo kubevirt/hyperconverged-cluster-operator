@@ -507,7 +507,7 @@ func schema_pkg_apis_hco_v1beta1_PciHostDevice(ref common.ReferenceCallback) com
 				Description: "PciHostDevice represents a host PCI device allowed for passthrough",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"pciVendorSelector": {
+					"pciDeviceSelector": {
 						SchemaProps: spec.SchemaProps{
 							Description: "a combination of a vendor_id:product_id required to identify a PCI device on a host.",
 							Type:        []string{"string"},
@@ -536,7 +536,7 @@ func schema_pkg_apis_hco_v1beta1_PciHostDevice(ref common.ReferenceCallback) com
 						},
 					},
 				},
-				Required: []string{"pciVendorSelector", "resourceName"},
+				Required: []string{"pciDeviceSelector", "resourceName"},
 			},
 		},
 	}
@@ -553,7 +553,7 @@ func schema_pkg_apis_hco_v1beta1_PermittedHostDevices(ref common.ReferenceCallba
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
 								"x-kubernetes-list-map-keys": []interface{}{
-									"pciVendorSelector",
+									"pciDeviceSelector",
 								},
 								"x-kubernetes-list-type": "map",
 							},
