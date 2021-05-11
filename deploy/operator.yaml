@@ -48,7 +48,7 @@ spec:
         - name: VMWARE_CONTAINER
           value: quay.io/kubevirt/kubevirt-vmware@sha256:ae5ccd98a49ab9e154ce482d2fa73f044b00211f273210a9cd371b40746d3c92
         - name: VIRTIOWIN_CONTAINER
-          value: quay.io/kubevirt/virtio-container-disk@sha256:373fae39339fb0b77a101c825b66b5ceadd79397119e46d0c540df26f74fc06a
+          value: quay.io/kubevirt/virtio-container-disk@sha256:77c448875247bf4dbeaa0b9b1b720c0f30bb8177628061c592ce7a68863a96c2
         - name: SMBIOS
           value: |-
             Family: KubeVirt
@@ -58,7 +58,7 @@ spec:
         - name: HCO_KV_IO_VERSION
           value: 1.5.0
         - name: KUBEVIRT_VERSION
-          value: v0.40.0-rc.2
+          value: v0.41.0-rc.1
         - name: CDI_VERSION
           value: v1.34.0
         - name: NETWORK_ADDONS_VERSION
@@ -298,7 +298,7 @@ spec:
             fieldRef:
               fieldPath: metadata.annotations['olm.targetNamespaces']
         - name: KUBEVIRT_VERSION
-          value: v0.40.0-rc.2
+          value: v0.41.0-rc.1
         - name: VIRT_API_SHASUM
           value: sha256:0e0ae908962d132d6190e7e956d19b7a93d90b2e9fad32729c49dc39852a0899
         - name: VIRT_CONTROLLER_SHASUM
