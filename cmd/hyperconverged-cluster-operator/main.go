@@ -47,6 +47,8 @@ func printVersion() {
 	log.Info(fmt.Sprintf("Go OS/Arch: %s/%s", runtime.GOOS, runtime.GOARCH))
 }
 
+// TODO: just to trigger a rebuild
+
 func main() {
 
 	// Add flags registered by imported packages (e.g. glog and
