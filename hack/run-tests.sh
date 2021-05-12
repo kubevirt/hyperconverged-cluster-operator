@@ -26,6 +26,8 @@ else
     export KUBECTL_BINARY="cluster/kubectl.sh"
 fi
 
+export GOLANG_PROTOBUF_REGISTRATION_CONFLICT=warn
+
 ./${TEST_OUT_PATH}/func-tests.test -ginkgo.v -kubeconfig="${KUBECONFIG}" -installed-namespace=kubevirt-hyperconverged -cdi-namespace=kubevirt-hyperconverged
 
 if [ -f ${CSV_FILE} ]; then
