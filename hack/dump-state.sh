@@ -49,6 +49,9 @@ RunCmd "${CMD} get hyperconvergeds -n kubevirt-hyperconverged kubevirt-hyperconv
 
 ShowOperatorSummary  hyperconvergeds.hco.kubevirt.io kubevirt-hyperconverged kubevirt-hyperconverged
 
+# TODO: debug only, remove me!
+RunCmd "${CMD} get kubevirt/kubevirt-kubevirt-hyperconverged -n kubevirt-hyperconverged -o yaml"
+
 RELATED_OBJECTS=`${CMD} get hyperconvergeds.hco.kubevirt.io kubevirt-hyperconverged -n kubevirt-hyperconverged -o go-template='{{range .status.relatedObjects }}{{if .namespace }}{{ printf "%s %s %s\n" .kind .name .namespace }}{{ else }}{{ printf "%s %s .\n" .kind .name }}{{ end }}{{ end }}'`
 
 echo "${RELATED_OBJECTS}" | while read line; do 
