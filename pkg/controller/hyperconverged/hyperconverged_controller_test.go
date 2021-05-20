@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	"os"
 	"time"
 
@@ -1221,12 +1222,12 @@ progressTimeout: 150`,
 					Expect(kv.Spec.Configuration.MigrationConfiguration.ProgressTimeout).To(BeNil())
 
 					foundKvCm, foundBackup := searchKvConfigMaps(cl)
-					Expect(foundKvCm).To(BeFalse())
+					Expect(foundKvCm).To(BeTrue())
 					Expect(foundBackup).To(BeTrue())
 
-					Expect(searchInRelatedObjects(foundResource.Status.RelatedObjects, "ConfigMap", kvCmName)).To(BeFalse())
+					Expect(searchInRelatedObjects(foundResource.Status.RelatedObjects, "ConfigMap", kvCmName)).To(BeTrue())
 
-					By("Run reconclie again")
+					By("Run reconcile again")
 					foundResource, requeue = doReconcile(cl, expected.hco)
 					Expect(requeue).To(BeFalse())
 					checkAvailability(foundResource, corev1.ConditionTrue)
@@ -1303,12 +1304,12 @@ progressTimeout: 300`,
 					Expect(kv.Spec.Configuration.MigrationConfiguration.ProgressTimeout).To(BeNil())
 
 					foundKvCm, foundBackup := searchKvConfigMaps(cl)
-					Expect(foundKvCm).To(BeFalse())
+					Expect(foundKvCm).To(BeTrue())
 					Expect(foundBackup).To(BeTrue())
 
-					Expect(searchInRelatedObjects(foundResource.Status.RelatedObjects, "ConfigMap", kvCmName)).To(BeFalse())
+					Expect(searchInRelatedObjects(foundResource.Status.RelatedObjects, "ConfigMap", kvCmName)).To(BeTrue())
 
-					By("Run reconclie again")
+					By("Run reconcile again")
 					foundResource, requeue = doReconcile(cl, expected.hco)
 					Expect(requeue).To(BeFalse())
 					checkAvailability(foundResource, corev1.ConditionTrue)
@@ -1322,6 +1323,79 @@ progressTimeout: 300`,
 					Expect(*kv.Spec.Configuration.MigrationConfiguration.ParallelMigrationsPerCluster).Should(Equal(uint32(4)))
 					Expect(*kv.Spec.Configuration.MigrationConfiguration.ParallelOutboundMigrationsPerNode).Should(Equal(uint32(4)))
 					Expect(*kv.Spec.Configuration.MigrationConfiguration.ProgressTimeout).Should(Equal(int64(300)))
+
+					foundKvCm, foundBackup = searchKvConfigMaps(cl)
+					Expect(foundKvCm).To(BeFalse())
+					Expect(foundBackup).To(BeTrue())
+
+					Expect(searchInRelatedObjects(foundResource.Status.RelatedObjects, "ConfigMap", kvCmName)).To(BeFalse())
+				})
+
+				It("should adopt real KubeVirt configMap into HC CR if the values are different, drop the cm and create backup", func() {
+					expected.hco.Status.UpdateVersion(hcoVersionName, oldVersion)
+					expected.hco.Spec.Version = oldVersion
+					expected.hco.Spec.LiveMigrationConfig.BandwidthPerMigration = &bandwidthPerMigration
+					expected.hco.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB = &completionTimeoutPerGiB
+					expected.hco.Spec.LiveMigrationConfig.ParallelOutboundMigrationsPerNode = &parallelOutboundMigrationsPerNode
+					expected.hco.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster = &parallelMigrationsPerCluster
+					expected.hco.Spec.LiveMigrationConfig.ProgressTimeout = &progressTimeout
+
+					cmFile, err := os.Open(getTestFilesLocation() + "/kubevirt-config.yaml")
+					Expect(err).ToNot(HaveOccurred())
+
+					kvCM := &corev1.ConfigMap{}
+					yamlReader := yaml.NewYAMLOrJSONDecoder(cmFile, 1024)
+					err = yamlReader.Decode(kvCM)
+					Expect(err).ToNot(HaveOccurred())
+
+					kvCMRef, err := reference.GetReference(commonTestUtils.GetScheme(), kvCM)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(v1.SetObjectReference(&expected.hco.Status.RelatedObjects, *kvCMRef)).ToNot(HaveOccurred())
+					resources := append(expected.toArray(), kvCM)
+
+					cl := commonTestUtils.InitClient(resources)
+					foundResource, requeue := doReconcile(cl, expected.hco)
+					Expect(requeue).To(BeTrue())
+					checkAvailability(foundResource, corev1.ConditionUnknown)
+
+					By("Check that the LifeMigrationConfig field contains the configmap values")
+					lmc := foundResource.Spec.LiveMigrationConfig
+					Expect(*lmc.BandwidthPerMigration).Should(Equal("32Mi"))
+					Expect(*lmc.CompletionTimeoutPerGiB).Should(Equal(int64(444)))
+					Expect(*lmc.ParallelMigrationsPerCluster).Should(Equal(uint32(3)))
+					Expect(*lmc.ParallelOutboundMigrationsPerNode).Should(Equal(uint32(2)))
+					Expect(*lmc.ProgressTimeout).Should(Equal(int64(150)))
+
+					By("Check that KV's MigrationConfiguration field does not contain the configmap values, yet")
+					kv := operands.NewKubeVirtWithNameOnly(foundResource)
+					err = hcoutil.GetRuntimeObject(context.TODO(), cl, kv, log)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(kv.Spec.Configuration.MigrationConfiguration.BandwidthPerMigration).To(BeNil())
+					Expect(kv.Spec.Configuration.MigrationConfiguration.CompletionTimeoutPerGiB).To(BeNil())
+					Expect(kv.Spec.Configuration.MigrationConfiguration.ParallelMigrationsPerCluster).To(BeNil())
+					Expect(kv.Spec.Configuration.MigrationConfiguration.ParallelOutboundMigrationsPerNode).To(BeNil())
+					Expect(kv.Spec.Configuration.MigrationConfiguration.ProgressTimeout).To(BeNil())
+
+					foundKvCm, foundBackup := searchKvConfigMaps(cl)
+					Expect(foundKvCm).To(BeTrue())
+					Expect(foundBackup).To(BeTrue())
+
+					Expect(searchInRelatedObjects(foundResource.Status.RelatedObjects, "ConfigMap", kvCmName)).To(BeTrue())
+
+					By("Run reconcile again")
+					foundResource, requeue = doReconcile(cl, expected.hco)
+					Expect(requeue).To(BeFalse())
+					checkAvailability(foundResource, corev1.ConditionTrue)
+
+					By("Check that KV's MigrationConfiguration field contains the configmap values")
+					kv = operands.NewKubeVirtWithNameOnly(foundResource)
+					err = hcoutil.GetRuntimeObject(context.TODO(), cl, kv, log)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(*kv.Spec.Configuration.MigrationConfiguration.BandwidthPerMigration).Should(Equal(resource.MustParse("32Mi")))
+					Expect(*kv.Spec.Configuration.MigrationConfiguration.CompletionTimeoutPerGiB).Should(Equal(int64(444)))
+					Expect(*kv.Spec.Configuration.MigrationConfiguration.ParallelMigrationsPerCluster).Should(Equal(uint32(3)))
+					Expect(*kv.Spec.Configuration.MigrationConfiguration.ParallelOutboundMigrationsPerNode).Should(Equal(uint32(2)))
+					Expect(*kv.Spec.Configuration.MigrationConfiguration.ProgressTimeout).Should(Equal(int64(150)))
 
 					foundKvCm, foundBackup = searchKvConfigMaps(cl)
 					Expect(foundKvCm).To(BeFalse())
@@ -2096,6 +2170,21 @@ progressTimeout: 150`,
 				expected = getBasicDeployment()
 			})
 
+			createBackupEvent := []commonTestUtils.MockEvent{
+				{
+					EventType: corev1.EventTypeNormal,
+					Reason:    "Created",
+					Msg:       "Created ConfigMap kubevirt-config-backup",
+				},
+			}
+			rmCmEvent := []commonTestUtils.MockEvent{
+				{
+					EventType: corev1.EventTypeNormal,
+					Reason:    "Killing",
+					Msg:       "Removed ConfigMap kubevirt-config",
+				},
+			}
+
 			Context("Positive Tests - KV Config", func() {
 				It("Should delete the CM and create a backup", func() {
 					resources := append(expected.toArray(), &corev1.ConfigMap{
@@ -2257,7 +2346,7 @@ progressTimeout: 150`,
 					Expect(modified).To(BeTrue())
 
 					foundKvCm, foundBackup := searchKvConfigMaps(cl)
-					Expect(foundKvCm).To(BeFalse())
+					Expect(foundKvCm).To(BeTrue())
 					Expect(foundBackup).To(BeTrue())
 
 					Expect(*req.Instance.Spec.LiveMigrationConfig.BandwidthPerMigration).Should(Equal(bandwidthPerMigration))
@@ -2268,19 +2357,87 @@ progressTimeout: 150`,
 
 					By("Check events")
 					events := r.eventEmitter.(*commonTestUtils.EventEmitterMock)
-					expectedEvents := []commonTestUtils.MockEvent{
-						{
-							EventType: corev1.EventTypeNormal,
-							Reason:    "Created",
-							Msg:       "Created ConfigMap kubevirt-config-backup",
-						},
-						{
-							EventType: corev1.EventTypeNormal,
-							Reason:    "Killing",
-							Msg:       "Removed ConfigMap kubevirt-config",
-						},
-					}
-					Expect(events.CheckEvents(expectedEvents)).To(BeTrue())
+					Expect(events.CheckEvents(createBackupEvent)).To(BeTrue())
+					Expect(events.CheckEvents(rmCmEvent)).To(BeFalse())
+
+					By("Run again, to simulate the next reconcile loop")
+					events.Reset()
+					modified, err = r.migrateBeforeUpgrade(req)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(modified).To(BeFalse())
+
+					foundKvCm, foundBackup = searchKvConfigMaps(cl)
+					Expect(foundKvCm).To(BeFalse())
+					Expect(foundBackup).To(BeTrue())
+
+					Expect(*req.Instance.Spec.LiveMigrationConfig.BandwidthPerMigration).Should(Equal(bandwidthPerMigration))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB).Should(Equal(completionTimeoutPerGiB))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster).Should(Equal(parallelMigrationsPerCluster))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.ParallelOutboundMigrationsPerNode).Should(Equal(parallelOutboundMigrationsPerNode))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.ProgressTimeout).Should(Equal(progressTimeout))
+
+					By("Check events")
+					Expect(events.CheckEvents(createBackupEvent)).To(BeFalse())
+					Expect(events.CheckEvents(rmCmEvent)).To(BeTrue())
+				})
+
+				It("Should adopt KV configuration from a real configMap, if missing in HCO", func() {
+					yamlFile, err := os.Open(getTestFilesLocation() + "/kubevirt-config.yaml")
+					Expect(err).ToNot(HaveOccurred())
+
+					realBandwidthPerMigration := "32Mi"
+					realCompletionTimeoutPerGiB := int64(444)
+					realParallelMigrationsPerCluster := uint32(3)
+
+					cm := &corev1.ConfigMap{}
+					yamlDec := yaml.NewYAMLOrJSONDecoder(yamlFile, 1024)
+					err = yamlDec.Decode(cm)
+					Expect(err).ToNot(HaveOccurred())
+
+					resources := append(expected.toArray(), cm)
+					cl := commonTestUtils.InitClient(resources)
+
+					r := initReconciler(cl)
+					req := commonTestUtils.NewReq(expected.hco)
+
+					modified, err := r.migrateBeforeUpgrade(req)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(modified).To(BeTrue())
+
+					foundKvCm, foundBackup := searchKvConfigMaps(cl)
+					Expect(foundKvCm).To(BeTrue())
+					Expect(foundBackup).To(BeTrue())
+
+					Expect(*req.Instance.Spec.LiveMigrationConfig.BandwidthPerMigration).Should(Equal(realBandwidthPerMigration))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB).Should(Equal(realCompletionTimeoutPerGiB))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster).Should(Equal(realParallelMigrationsPerCluster))
+					Expect(req.Instance.Spec.LiveMigrationConfig.ParallelOutboundMigrationsPerNode).Should(BeNil())
+					Expect(req.Instance.Spec.LiveMigrationConfig.ProgressTimeout).Should(BeNil())
+
+					By("Check events")
+					events := r.eventEmitter.(*commonTestUtils.EventEmitterMock)
+					Expect(events.CheckEvents(createBackupEvent)).To(BeTrue())
+					Expect(events.CheckEvents(rmCmEvent)).To(BeFalse())
+
+					By("Run again, to simulate the next reconcile loop")
+					events.Reset()
+					modified, err = r.migrateBeforeUpgrade(req)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(modified).To(BeFalse())
+
+					foundKvCm, foundBackup = searchKvConfigMaps(cl)
+					Expect(foundKvCm).To(BeFalse())
+					Expect(foundBackup).To(BeTrue())
+
+					Expect(*req.Instance.Spec.LiveMigrationConfig.BandwidthPerMigration).Should(Equal(realBandwidthPerMigration))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB).Should(Equal(realCompletionTimeoutPerGiB))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster).Should(Equal(realParallelMigrationsPerCluster))
+					Expect(req.Instance.Spec.LiveMigrationConfig.ParallelOutboundMigrationsPerNode).Should(BeNil())
+					Expect(req.Instance.Spec.LiveMigrationConfig.ProgressTimeout).Should(BeNil())
+
+					By("Check events")
+					Expect(events.CheckEvents(createBackupEvent)).To(BeFalse())
+					Expect(events.CheckEvents(rmCmEvent)).To(BeTrue())
 				})
 
 				It("Should adopt KV configuration from the configMap, with unknown key", func() {
@@ -2311,6 +2468,21 @@ unknownKey: 42`,
 					Expect(modified).To(BeTrue())
 
 					foundKvCm, foundBackup := searchKvConfigMaps(cl)
+					Expect(foundKvCm).To(BeTrue())
+					Expect(foundBackup).To(BeTrue())
+
+					Expect(*req.Instance.Spec.LiveMigrationConfig.BandwidthPerMigration).Should(Equal(bandwidthPerMigration))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB).Should(Equal(completionTimeoutPerGiB))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster).Should(Equal(parallelMigrationsPerCluster))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.ParallelOutboundMigrationsPerNode).Should(Equal(parallelOutboundMigrationsPerNode))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.ProgressTimeout).Should(Equal(progressTimeout))
+
+					By("Run again, to simulate the next reconcile loop")
+					modified, err = r.migrateBeforeUpgrade(req)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(modified).To(BeFalse())
+
+					foundKvCm, foundBackup = searchKvConfigMaps(cl)
 					Expect(foundKvCm).To(BeFalse())
 					Expect(foundBackup).To(BeTrue())
 
@@ -2346,6 +2518,21 @@ progressTimeout: 150`,
 					Expect(modified).To(BeTrue())
 
 					foundKvCm, foundBackup := searchKvConfigMaps(cl)
+					Expect(foundKvCm).To(BeTrue())
+					Expect(foundBackup).To(BeTrue())
+
+					Expect(req.Instance.Spec.LiveMigrationConfig.BandwidthPerMigration).Should(BeNil())
+					Expect(*req.Instance.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB).Should(Equal(completionTimeoutPerGiB))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster).Should(Equal(parallelMigrationsPerCluster))
+					Expect(req.Instance.Spec.LiveMigrationConfig.ParallelOutboundMigrationsPerNode).Should(BeNil())
+					Expect(*req.Instance.Spec.LiveMigrationConfig.ProgressTimeout).Should(Equal(progressTimeout))
+
+					By("Run again, to simulate the next reconcile loop")
+					modified, err = r.migrateBeforeUpgrade(req)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(modified).To(BeFalse())
+
+					foundKvCm, foundBackup = searchKvConfigMaps(cl)
 					Expect(foundKvCm).To(BeFalse())
 					Expect(foundBackup).To(BeTrue())
 
@@ -2434,6 +2621,21 @@ progressTimeout: 300`,
 					Expect(modified).To(BeTrue())
 
 					foundKvCm, foundBackup := searchKvConfigMaps(cl)
+					Expect(foundKvCm).To(BeTrue())
+					Expect(foundBackup).To(BeTrue())
+
+					Expect(*req.Instance.Spec.LiveMigrationConfig.BandwidthPerMigration).Should(Equal("16Mi"))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB).Should(Equal(int64(400)))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster).Should(Equal(uint32(4)))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.ParallelOutboundMigrationsPerNode).Should(Equal(uint32(4)))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.ProgressTimeout).Should(Equal(int64(300)))
+
+					By("Run again, to simulate the next reconcile loop")
+					modified, err = r.migrateBeforeUpgrade(req)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(modified).To(BeFalse())
+
+					foundKvCm, foundBackup = searchKvConfigMaps(cl)
 					Expect(foundKvCm).To(BeFalse())
 					Expect(foundBackup).To(BeTrue())
 
@@ -2476,6 +2678,21 @@ progressTimeout: 300`,
 					Expect(modified).To(BeTrue())
 
 					foundKvCm, foundBackup := searchKvConfigMaps(cl)
+					Expect(foundKvCm).To(BeTrue())
+					Expect(foundBackup).To(BeTrue())
+
+					Expect(*req.Instance.Spec.LiveMigrationConfig.BandwidthPerMigration).Should(Equal(bandwidthPerMigration))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB).Should(Equal(int64(400)))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster).Should(Equal(uint32(4)))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.ParallelOutboundMigrationsPerNode).Should(Equal(parallelOutboundMigrationsPerNode))
+					Expect(*req.Instance.Spec.LiveMigrationConfig.ProgressTimeout).Should(Equal(int64(300)))
+
+					By("Run again, to simulate the next reconcile loop")
+					modified, err = r.migrateBeforeUpgrade(req)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(modified).To(BeFalse())
+
+					foundKvCm, foundBackup = searchKvConfigMaps(cl)
 					Expect(foundKvCm).To(BeFalse())
 					Expect(foundBackup).To(BeTrue())
 
