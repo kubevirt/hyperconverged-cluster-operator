@@ -1,7 +1,6 @@
 name: Auto-Bump Component's Versions
 on:
-  schedule:
-    - cron:  '0 5 * * *'
+  workflow_dispatch:
 jobs:
   build:
     name: HCO Release Bump Job
@@ -10,7 +9,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          ref: master
+          ref: release-1.4
 
       - uses: actions/setup-go@v2
         with:
