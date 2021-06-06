@@ -37,6 +37,13 @@ import (
 
 const (
 	nodeLabellerVolumePath = "/var/lib/kubevirt-node-labeller"
+
+	VirtAPIName        = "virt-api"
+	VirtControllerName = "virt-controller"
+	VirtOperatorName   = "virt-operator"
+
+	kubevirtLabelKey              = "kubevirt.io"
+	kubernetesHostnameTopologyKey = "kubernetes.io/hostname"
 )
 
 func NewPrometheusService(namespace string) *corev1.Service {
@@ -49,13 +56,13 @@ func NewPrometheusService(namespace string) *corev1.Service {
 			Namespace: namespace,
 			Name:      "kubevirt-prometheus-metrics",
 			Labels: map[string]string{
-				virtv1.AppLabel:          "",
-				"prometheus.kubevirt.io": "",
+				virtv1.AppLabel:    "",
+				prometheusLabelKey: "",
 			},
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
-				"prometheus.kubevirt.io": "",
+				prometheusLabelKey: "",
 			},
 			Ports: []corev1.ServicePort{
 				{
@@ -81,14 +88,14 @@ func NewApiServerService(namespace string) *corev1.Service {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      "virt-api",
+			Name:      VirtAPIName,
 			Labels: map[string]string{
-				virtv1.AppLabel: "virt-api",
+				virtv1.AppLabel: VirtAPIName,
 			},
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
-				virtv1.AppLabel: "virt-api",
+				virtv1.AppLabel: VirtAPIName,
 			},
 			Ports: []corev1.ServicePort{
 				{
@@ -112,8 +119,8 @@ func newPodTemplateSpec(podName string, imageName string, repository string, ver
 	podTemplateSpec := &corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
 			Labels: map[string]string{
-				virtv1.AppLabel:          podName,
-				"prometheus.kubevirt.io": "",
+				virtv1.AppLabel:    podName,
+				prometheusLabelKey: "",
 			},
 			Annotations: map[string]string{
 				"scheduler.alpha.kubernetes.io/critical-pod": "",
@@ -194,7 +201,7 @@ func newBaseDeployment(deploymentName string, imageName string, namespace string
 			Replicas: int32Ptr(2),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"kubevirt.io": deploymentName,
+					kubevirtLabelKey: deploymentName,
 				},
 			},
 			Template: *podTemplateSpec,
@@ -237,8 +244,8 @@ func newPodAntiAffinity(key, topologyKey string, operator metav1.LabelSelectorOp
 }
 
 func NewApiServerDeployment(namespace string, repository string, imagePrefix string, version string, productName string, productVersion string, pullPolicy corev1.PullPolicy, verbosity string, extraEnv map[string]string) (*appsv1.Deployment, error) {
-	podAntiAffinity := newPodAntiAffinity("kubevirt.io", "kubernetes.io/hostname", metav1.LabelSelectorOpIn, []string{"virt-api"})
-	deploymentName := "virt-api"
+	podAntiAffinity := newPodAntiAffinity(kubevirtLabelKey, kubernetesHostnameTopologyKey, metav1.LabelSelectorOpIn, []string{VirtAPIName})
+	deploymentName := VirtAPIName
 	imageName := fmt.Sprintf("%s%s", imagePrefix, deploymentName)
 	env := operatorutil.NewEnvVarMap(extraEnv)
 	deployment, err := newBaseDeployment(deploymentName, imageName, namespace, repository, version, productName, productVersion, pullPolicy, podAntiAffinity, env)
@@ -256,7 +263,7 @@ func NewApiServerDeployment(namespace string, repository string, imagePrefix str
 
 	container := &deployment.Spec.Template.Spec.Containers[0]
 	container.Command = []string{
-		"virt-api",
+		VirtAPIName,
 		"--port",
 		"8443",
 		"--console-server-port",
@@ -267,7 +274,7 @@ func NewApiServerDeployment(namespace string, repository string, imagePrefix str
 	}
 	container.Ports = []corev1.ContainerPort{
 		{
-			Name:          "virt-api",
+			Name:          VirtAPIName,
 			Protocol:      corev1.ProtocolTCP,
 			ContainerPort: 8443,
 		},
@@ -303,8 +310,8 @@ func NewApiServerDeployment(namespace string, repository string, imagePrefix str
 }
 
 func NewControllerDeployment(namespace string, repository string, imagePrefix string, controllerVersion string, launcherVersion string, productName string, productVersion string, pullPolicy corev1.PullPolicy, verbosity string, extraEnv map[string]string) (*appsv1.Deployment, error) {
-	podAntiAffinity := newPodAntiAffinity("kubevirt.io", "kubernetes.io/hostname", metav1.LabelSelectorOpIn, []string{"virt-controller"})
-	deploymentName := "virt-controller"
+	podAntiAffinity := newPodAntiAffinity(kubevirtLabelKey, kubernetesHostnameTopologyKey, metav1.LabelSelectorOpIn, []string{VirtControllerName})
+	deploymentName := VirtControllerName
 	imageName := fmt.Sprintf("%s%s", imagePrefix, deploymentName)
 	env := operatorutil.NewEnvVarMap(extraEnv)
 	deployment, err := newBaseDeployment(deploymentName, imageName, namespace, repository, controllerVersion, productName, productVersion, pullPolicy, podAntiAffinity, env)
@@ -322,7 +329,7 @@ func NewControllerDeployment(namespace string, repository string, imagePrefix st
 
 	container := &deployment.Spec.Template.Spec.Containers[0]
 	container.Command = []string{
-		"virt-controller",
+		VirtControllerName,
 		"--launcher-image",
 		fmt.Sprintf("%s/%s%s%s", repository, imagePrefix, "virt-launcher", launcherVersion),
 		"--port",
@@ -385,10 +392,9 @@ func NewOperatorDeployment(namespace string, repository string, imagePrefix stri
 	kubeVirtVersionEnv string, virtApiShaEnv string, virtControllerShaEnv string,
 	virtHandlerShaEnv string, virtLauncherShaEnv string) (*appsv1.Deployment, error) {
 
-	podAntiAffinity := newPodAntiAffinity("kubevirt.io", "kubernetes.io/hostname", metav1.LabelSelectorOpIn, []string{"virt-operator"})
-	name := "virt-operator"
+	podAntiAffinity := newPodAntiAffinity(kubevirtLabelKey, kubernetesHostnameTopologyKey, metav1.LabelSelectorOpIn, []string{VirtOperatorName})
 	version = AddVersionSeparatorPrefix(version)
-	image := fmt.Sprintf("%s/%s%s%s", repository, imagePrefix, name, version)
+	image := fmt.Sprintf("%s/%s%s%s", repository, imagePrefix, VirtOperatorName, version)
 
 	deployment := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
@@ -397,16 +403,16 @@ func NewOperatorDeployment(namespace string, repository string, imagePrefix stri
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
-			Name:      name,
+			Name:      VirtOperatorName,
 			Labels: map[string]string{
-				virtv1.AppLabel: name,
+				virtv1.AppLabel: VirtOperatorName,
 			},
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: int32Ptr(2),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					virtv1.AppLabel: name,
+					virtv1.AppLabel: VirtOperatorName,
 				},
 			},
 			Strategy: appsv1.DeploymentStrategy{
@@ -415,13 +421,13 @@ func NewOperatorDeployment(namespace string, repository string, imagePrefix stri
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						virtv1.AppLabel:          name,
-						"prometheus.kubevirt.io": "",
+						virtv1.AppLabel:    VirtOperatorName,
+						prometheusLabelKey: "",
 					},
 					Annotations: map[string]string{
 						"scheduler.alpha.kubernetes.io/critical-pod": "",
 					},
-					Name: name,
+					Name: VirtOperatorName,
 				},
 				Spec: corev1.PodSpec{
 					PriorityClassName:  "kubevirt-cluster-critical",
@@ -430,11 +436,11 @@ func NewOperatorDeployment(namespace string, repository string, imagePrefix stri
 					ServiceAccountName: "kubevirt-operator",
 					Containers: []corev1.Container{
 						{
-							Name:            name,
+							Name:            VirtOperatorName,
 							Image:           image,
 							ImagePullPolicy: pullPolicy,
 							Command: []string{
-								"virt-operator",
+								VirtOperatorName,
 								"--port",
 								"8443",
 								"-v",
