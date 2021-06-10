@@ -32,6 +32,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/cache"
 
+	"kubevirt.io/kubevirt/pkg/downwardmetrics"
+
 	hostdisk "kubevirt.io/kubevirt/pkg/host-disk"
 
 	networkv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
@@ -61,11 +63,10 @@ const virtiofsDebugLogs = "virtiofsdDebugLogs"
 const MultusNetworksAnnotation = "k8s.v1.cni.cncf.io/networks"
 
 const (
-	CAP_NET_ADMIN    = "NET_ADMIN"
-	CAP_NET_RAW      = "NET_RAW"
-	CAP_SYS_ADMIN    = "SYS_ADMIN"
-	CAP_SYS_NICE     = "SYS_NICE"
-	CAP_SYS_RESOURCE = "SYS_RESOURCE"
+	CAP_NET_ADMIN = "NET_ADMIN"
+	CAP_NET_RAW   = "NET_RAW"
+	CAP_SYS_ADMIN = "SYS_ADMIN"
+	CAP_SYS_NICE  = "SYS_NICE"
 )
 
 // LibvirtStartupDelay is added to custom liveness and readiness probes initial delay value.
@@ -608,6 +609,23 @@ func (t *templateService) renderLaunchManifest(vmi *v1.VirtualMachineInstance, t
 			serviceAccountName = volume.ServiceAccount.ServiceAccountName
 		}
 
+		if volume.DownwardMetrics != nil {
+			sizeLimit := resource.MustParse("1Mi")
+			volumes = append(volumes, k8sv1.Volume{
+				Name: volume.Name,
+				VolumeSource: k8sv1.VolumeSource{
+					EmptyDir: &k8sv1.EmptyDirVolumeSource{
+						Medium:    "Memory",
+						SizeLimit: &sizeLimit,
+					},
+				},
+			})
+			volumeMounts = append(volumeMounts, k8sv1.VolumeMount{
+				Name:      volume.Name,
+				MountPath: config.DownwardMetricDisksDir,
+			})
+		}
+
 		if volume.CloudInitNoCloud != nil {
 			if volume.CloudInitNoCloud.UserDataSecretRef != nil {
 				// attach a secret referenced by the user
@@ -1078,6 +1096,12 @@ func (t *templateService) renderLaunchManifest(vmi *v1.VirtualMachineInstance, t
 	containersDisks := containerdisk.GenerateContainers(vmi, "container-disks", "virt-bin-share-dir")
 	containers = append(containers, containersDisks...)
 
+	kernelBootContainer := containerdisk.GenerateKernelBootContainer(vmi, "container-disks", "virt-bin-share-dir")
+	if kernelBootContainer != nil {
+		log.Log.Object(vmi).Infof("kernel boot container generated")
+		containers = append(containers, *kernelBootContainer)
+	}
+
 	volumes = append(volumes,
 		k8sv1.Volume{
 			Name: "virt-bin-share-dir",
@@ -1187,7 +1211,7 @@ func (t *templateService) renderLaunchManifest(vmi *v1.VirtualMachineInstance, t
 
 	var initContainers []k8sv1.Container
 
-	if HaveContainerDiskVolume(vmi.Spec.Volumes) {
+	if HaveContainerDiskVolume(vmi.Spec.Volumes) || util.HasKernelBootContainerImage(vmi) {
 
 		initContainerVolumeMounts := []k8sv1.VolumeMount{
 			{
@@ -1438,12 +1462,6 @@ func getRequiredCapabilities(vmi *v1.VirtualMachineInstance, config *virtconfig.
 		capabilities = append(capabilities, getVirtiofsCapabilities()...)
 	}
 
-	// add SYS_RESOURCE capability to enable Live Migration for VM with SRIOV interfaces
-	// until https://bugzilla.redhat.com/show_bug.cgi?id=1916346 is resolved.
-	if config.SRIOVLiveMigrationEnabled() && util.IsSRIOVVmi(vmi) {
-		capabilities = append(capabilities, CAP_SYS_RESOURCE)
-	}
-
 	return capabilities
 }
 
@@ -1545,6 +1563,12 @@ func getMemoryOverhead(vmi *v1.VirtualMachineInstance, cpuArch string) *resource
 	// Additial information can be found here: https://www.redhat.com/archives/libvir-list/2015-November/msg00329.html
 	if util.IsVFIOVMI(vmi) {
 		overhead.Add(resource.MustParse("1Gi"))
+	}
+
+	// DownardMetrics volumes are using emptyDirs backed by memory.
+	// the max. disk size is only 256Ki.
+	if downwardmetrics.HasDownwardMetricDisk(vmi) {
+		overhead.Add(resource.MustParse("1Mi"))
 	}
 
 	return overhead

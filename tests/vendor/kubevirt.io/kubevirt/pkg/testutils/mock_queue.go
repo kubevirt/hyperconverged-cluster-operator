@@ -58,6 +58,11 @@ func (q *MockWorkQueue) AddRateLimited(item interface{}) {
 func (q *MockWorkQueue) AddAfter(item interface{}, duration time.Duration) {
 	q.RateLimitingInterface.AddAfter(item, duration)
 	atomic.AddInt32(&q.addAfterEnque, 1)
+	q.wgLock.Lock()
+	defer q.wgLock.Unlock()
+	if q.addWG != nil {
+		q.addWG.Done()
+	}
 }
 
 func (q *MockWorkQueue) GetRateLimitedEnqueueCount() int {
@@ -79,9 +84,14 @@ func (q *MockWorkQueue) ExpectAdds(diff int) {
 // Wait waits until the expected amount of ExpectedAdds has happened.
 // It will not block if there were no expectations set.
 func (q *MockWorkQueue) Wait() {
-	if q.addWG != nil {
-		q.addWG.Wait()
+	q.wgLock.Lock()
+	wg := q.addWG
+	q.wgLock.Unlock()
+	if wg != nil {
+		wg.Wait()
+		q.wgLock.Lock()
 		q.addWG = nil
+		q.wgLock.Unlock()
 	}
 }
 

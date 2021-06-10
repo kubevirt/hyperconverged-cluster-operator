@@ -8,9 +8,7 @@ require (
 	github.com/evanphx/json-patch v4.11.0+incompatible
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-logr/logr v0.4.0
-	github.com/go-openapi/jsonpointer v0.19.5 // indirect
-	github.com/go-openapi/spec v0.19.14
-	github.com/go-openapi/swag v0.19.12 // indirect
+	github.com/go-openapi/spec v0.20.3
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.1.4
 	github.com/imdario/mergo v0.3.12
@@ -33,7 +31,7 @@ require (
 	k8s.io/apimachinery v0.21.1
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20210305001622-591a79e4bda7
-	kubevirt.io/client-go v0.41.0
+	kubevirt.io/client-go v0.42.1
 	kubevirt.io/containerized-data-importer v1.34.1
 	kubevirt.io/controller-lifecycle-operator-sdk v0.1.3-0.20210112105647-bbf16167410b
 	kubevirt.io/ssp-operator v0.11.0
@@ -119,7 +117,7 @@ replace (
 	github.com/go-kit/kit => github.com/go-kit/kit v0.3.0
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.5.1 // indirect
 	github.com/openshift/machine-api-operator => github.com/openshift/machine-api-operator v0.2.1-0.20191025120018-fb3724fc7bdf
-	kubevirt.io/client-go => kubevirt.io/client-go v0.41.0
+	kubevirt.io/client-go => kubevirt.io/client-go v0.42.1
 )
 
 // Aligning with https://github.com/kubevirt/containerized-data-importer/blob/release-v1.34.1
