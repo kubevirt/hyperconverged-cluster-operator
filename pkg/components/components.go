@@ -38,7 +38,7 @@ const (
 	hcoWhDeploymentName = "hco-webhook"
 )
 
-func GetDeploymentOperator(namespace, image, imagePullPolicy, conversionContainer, vmwareContainerString, smbios, machinetype, hcoKvIoVersion, kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion, vmImportVersion string, env []corev1.EnvVar) appsv1.Deployment {
+func GetDeploymentOperator(namespace, image, imagePullPolicy, conversionContainer, vmwareContainerString, virtiowinContainer, smbios, machinetype, hcoKvIoVersion, kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion, vmImportVersion string, env []corev1.EnvVar) appsv1.Deployment {
 	return appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "apps/v1",
@@ -50,7 +50,7 @@ func GetDeploymentOperator(namespace, image, imagePullPolicy, conversionContaine
 				"name": hcoName,
 			},
 		},
-		Spec: GetDeploymentSpecOperator(namespace, image, imagePullPolicy, conversionContainer, vmwareContainerString, smbios, machinetype, hcoKvIoVersion, kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion, vmImportVersion, env),
+		Spec: GetDeploymentSpecOperator(namespace, image, imagePullPolicy, conversionContainer, vmwareContainerString, virtiowinContainer, smbios, machinetype, hcoKvIoVersion, kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion, vmImportVersion, env),
 	}
 }
 
@@ -70,7 +70,7 @@ func GetDeploymentWebhook(namespace, image, imagePullPolicy string, env []corev1
 	}
 }
 
-func GetDeploymentSpecOperator(namespace, image, imagePullPolicy, conversionContainer, vmwareContainer, smbios, machinetype, hcoKvIoVersion, kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion, vmImportVersion string, env []corev1.EnvVar) appsv1.DeploymentSpec {
+func GetDeploymentSpecOperator(namespace, image, imagePullPolicy, conversionContainer, vmwareContainer, virtiowinContainer, smbios, machinetype, hcoKvIoVersion, kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion, vmImportVersion string, env []corev1.EnvVar) appsv1.DeploymentSpec {
 	return appsv1.DeploymentSpec{
 		Replicas: int32Ptr(1),
 		Selector: &metav1.LabelSelector{
@@ -171,6 +171,10 @@ func GetDeploymentSpecOperator(namespace, image, imagePullPolicy, conversionCont
 							{
 								Name:  "VMWARE_CONTAINER",
 								Value: vmwareContainer,
+							},
+							{
+								Name:  "VIRTIOWIN_CONTAINER",
+								Value: virtiowinContainer,
 							},
 							{
 								Name:  "SMBIOS",
@@ -893,12 +897,12 @@ func GetOperatorCR() *hcov1beta1.HyperConverged {
 }
 
 // GetInstallStrategyBase returns the basics of an HCO InstallStrategy
-func GetInstallStrategyBase(namespace, image, webhookImage, imagePullPolicy, conversionContainer, vmwareContainer, smbios, machinetype, hcoKvIoVersion, kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion, vmImportVersion string, env []corev1.EnvVar) *csvv1alpha1.StrategyDetailsDeployment {
+func GetInstallStrategyBase(namespace, image, webhookImage, imagePullPolicy, conversionContainer, vmwareContainer, virtiowinContainer, smbios, machinetype, hcoKvIoVersion, kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion, vmImportVersion string, env []corev1.EnvVar) *csvv1alpha1.StrategyDetailsDeployment {
 	return &csvv1alpha1.StrategyDetailsDeployment{
 		DeploymentSpecs: []csvv1alpha1.StrategyDeploymentSpec{
 			csvv1alpha1.StrategyDeploymentSpec{
 				Name: hcoDeploymentName,
-				Spec: GetDeploymentSpecOperator(namespace, image, imagePullPolicy, conversionContainer, vmwareContainer, smbios, machinetype, hcoKvIoVersion, kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion, vmImportVersion, env),
+				Spec: GetDeploymentSpecOperator(namespace, image, imagePullPolicy, conversionContainer, vmwareContainer, virtiowinContainer, smbios, machinetype, hcoKvIoVersion, kubevirtVersion, cdiVersion, cnaoVersion, sspVersion, nmoVersion, hppoVersion, vmImportVersion, env),
 			},
 			csvv1alpha1.StrategyDeploymentSpec{
 				Name: hcoWhDeploymentName,

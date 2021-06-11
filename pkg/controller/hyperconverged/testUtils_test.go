@@ -186,6 +186,7 @@ func getBasicDeployment() *BasicExpected {
 	res.imsConfig = operands.NewIMSConfigForCR(hco, namespace)
 	res.imsConfig.Data["v2v-conversion-image"] = commonTestUtils.Conversion_image
 	res.imsConfig.Data["kubevirt-vmware-image"] = commonTestUtils.Vmware_image
+	res.imsConfig.Data["virtio-win-image"] = commonTestUtils.VirtioWinImage
 
 	return res
 }

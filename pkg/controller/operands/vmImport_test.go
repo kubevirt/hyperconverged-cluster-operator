@@ -263,13 +263,35 @@ var _ = Describe("VM-Import", func() {
 		BeforeEach(func() {
 			os.Setenv("CONVERSION_CONTAINER", "new-conversion-container-value")
 			os.Setenv("VMWARE_CONTAINER", "new-vmware-container-value")
+			os.Setenv("VIRTIOWIN_CONTAINER", "new-virtiowin-container-value")
 			hco = commonTestUtils.NewHco()
 			req = commonTestUtils.NewReq(hco)
 		})
 
-		It("should error if environment vars not specified", func() {
+		It("should error if CONVERSION_CONTAINER environment var not specified", func() {
 			os.Unsetenv("CONVERSION_CONTAINER")
+
+			cl := commonTestUtils.InitClient([]runtime.Object{})
+			handler := (*genericOperand)(newImsConfigHandler(cl, commonTestUtils.GetScheme()))
+
+			res := handler.ensure(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Err).ToNot(BeNil())
+		})
+
+		It("should error if VMWARE_CONTAINER environment var not specified", func() {
 			os.Unsetenv("VMWARE_CONTAINER")
+
+			cl := commonTestUtils.InitClient([]runtime.Object{})
+			handler := (*genericOperand)(newImsConfigHandler(cl, commonTestUtils.GetScheme()))
+
+			res := handler.ensure(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Err).ToNot(BeNil())
+		})
+
+		It("should error if VIRTIOWIN_CONTAINER environment var not specified", func() {
+			os.Unsetenv("VIRTIOWIN_CONTAINER")
 
 			cl := commonTestUtils.InitClient([]runtime.Object{})
 			handler := (*genericOperand)(newImsConfigHandler(cl, commonTestUtils.GetScheme()))
@@ -322,7 +344,8 @@ var _ = Describe("VM-Import", func() {
 		It("should (partially!!!) reconcile according to env values", func() {
 			convk := "v2v-conversion-image"
 			vmwarek := "kubevirt-vmware-image"
-			updatableKeys := [...]string{convk, vmwarek}
+			virtiowink := "virtio-win-image"
+			updatableKeys := [...]string{convk, vmwarek, virtiowink}
 			unupdatableKeyValues := map[string]string{
 				"ext_key_1": "ext_value_1",
 				"ext_key_2": "ext_value_2",
@@ -335,6 +358,7 @@ var _ = Describe("VM-Import", func() {
 			// values we should update
 			outdatedResource.Data[convk] = "old-conversion-container-value-we-have-to-update"
 			outdatedResource.Data[vmwarek] = "old-vmware-container-value-we-have-to-update"
+			outdatedResource.Data[virtiowink] = "old-virtiowin-container-value-we-have-to-update"
 			// add values we should not touch
 			for k, v := range unupdatableKeyValues {
 				outdatedResource.Data[k] = v

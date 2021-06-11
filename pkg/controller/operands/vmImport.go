@@ -124,6 +124,11 @@ func (h imsConfigHooks) validate() error {
 	if os.Getenv("VMWARE_CONTAINER") == "" {
 		return errors.New("ims-vmware-container not specified")
 	}
+
+	if os.Getenv("VIRTIOWIN_CONTAINER") == "" {
+		return errors.New("kv-virtiowin-image-name not specified")
+	}
+
 	return nil
 }
 func (h imsConfigHooks) postFound(_ *common.HcoRequest, _ runtime.Object) error  { return nil }
@@ -175,6 +180,7 @@ func NewIMSConfigForCR(cr *hcov1beta1.HyperConverged, namespace string) *corev1.
 		Data: map[string]string{
 			"v2v-conversion-image":              os.Getenv("CONVERSION_CONTAINER"),
 			"kubevirt-vmware-image":             os.Getenv("VMWARE_CONTAINER"),
+			"virtio-win-image":                  os.Getenv("VIRTIOWIN_CONTAINER"),
 			"kubevirt-vmware-image-pull-policy": "IfNotPresent",
 		},
 	}
