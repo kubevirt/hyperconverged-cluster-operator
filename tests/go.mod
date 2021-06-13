@@ -4,9 +4,6 @@ go 1.16
 
 require (
 	github.com/coreos/prometheus-operator v0.41.1 // indirect
-	github.com/go-openapi/jsonpointer v0.19.5 // indirect
-	github.com/go-openapi/spec v0.19.14 // indirect
-	github.com/go-openapi/swag v0.19.12 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.1.4 // indirect
 	github.com/kubevirt/cluster-network-addons-operator v0.55.0
@@ -25,7 +22,7 @@ require (
 	kubevirt.io/client-go v0.41.0
 	kubevirt.io/containerized-data-importer v1.34.1 // indirect
 	kubevirt.io/controller-lifecycle-operator-sdk v0.1.3-0.20210112105647-bbf16167410b // indirect
-	kubevirt.io/kubevirt v0.41.0
+	kubevirt.io/kubevirt v0.42.1
 	kubevirt.io/qe-tools v0.1.7
 	sigs.k8s.io/controller-runtime v0.9.0 // indirect
 )
@@ -108,7 +105,7 @@ replace (
 	github.com/go-kit/kit => github.com/go-kit/kit v0.3.0
 	github.com/googleapis/gnostic => github.com/googleapis/gnostic v0.5.1 // indirect
 	github.com/openshift/machine-api-operator => github.com/openshift/machine-api-operator v0.2.1-0.20191025120018-fb3724fc7bdf
-	kubevirt.io/client-go => kubevirt.io/client-go v0.41.0
+	kubevirt.io/client-go => kubevirt.io/client-go v0.42.1
 )
 
 // Aligning with https://github.com/kubevirt/containerized-data-importer/blob/release-v1.34.1

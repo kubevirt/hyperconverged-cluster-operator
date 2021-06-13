@@ -11,6 +11,7 @@ go_library(
     deps = [
         "//pkg/config:go_default_library",
         "//pkg/container-disk:go_default_library",
+        "//pkg/downwardmetrics:go_default_library",
         "//pkg/hooks:go_default_library",
         "//pkg/host-disk:go_default_library",
         "//pkg/util:go_default_library",
@@ -40,6 +41,7 @@ go_test(
     ],
     embed = [":go_default_library"],
     deps = [
+        "//pkg/config:go_default_library",
         "//pkg/hooks:go_default_library",
         "//pkg/testutils:go_default_library",
         "//pkg/virt-config:go_default_library",
@@ -47,6 +49,7 @@ go_test(
         "//staging/src/kubevirt.io/client-go/generated/network-attachment-definition-client/clientset/versioned/fake:go_default_library",
         "//staging/src/kubevirt.io/client-go/kubecli:go_default_library",
         "//staging/src/kubevirt.io/client-go/testutils:go_default_library",
+        "//tools/vms-generator/utils:go_default_library",
         "//vendor/github.com/golang/mock/gomock:go_default_library",
         "//vendor/github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1:go_default_library",
         "//vendor/github.com/onsi/ginkgo:go_default_library",
