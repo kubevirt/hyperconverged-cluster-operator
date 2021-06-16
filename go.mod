@@ -16,8 +16,8 @@ require (
 	github.com/google/uuid v1.1.4
 	github.com/googleapis/gnostic v0.5.3 // indirect
 	github.com/imdario/mergo v0.3.11
-	github.com/kubevirt/cluster-network-addons-operator v0.55.0
-	github.com/kubevirt/vm-import-operator v0.3.4
+	github.com/kubevirt/cluster-network-addons-operator v0.56.0
+	github.com/kubevirt/vm-import-operator v0.3.6
 	github.com/onsi/ginkgo v1.16.1
 	github.com/onsi/gomega v1.11.0
 	github.com/openshift/api v3.9.1-0.20190924102528-32369d4db2ad+incompatible
@@ -45,8 +45,8 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20210113233702-8566a335510f
 	kubevirt.io/client-go v0.41.0
-	kubevirt.io/containerized-data-importer v1.34.1
-	kubevirt.io/controller-lifecycle-operator-sdk v0.1.3-0.20210112105647-bbf16167410b
+	kubevirt.io/containerized-data-importer v1.35.0
+	kubevirt.io/controller-lifecycle-operator-sdk v0.2.0
 	kubevirt.io/kubevirt v0.41.0
 	kubevirt.io/qe-tools v0.1.7
 	kubevirt.io/ssp-operator v0.11.2
@@ -137,7 +137,7 @@ replace (
 	kubevirt.io/client-go => kubevirt.io/client-go v0.41.0
 )
 
-// Aligning with https://github.com/kubevirt/containerized-data-importer/blob/release-v1.34.1
+// Aligning with https://github.com/kubevirt/containerized-data-importer/blob/release-v1.35.0
 replace (
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20201120165435-072a4cd8ca42
 	github.com/openshift/client-go => github.com/openshift/client-go v0.0.0-20200521150516-05eb9880269c
