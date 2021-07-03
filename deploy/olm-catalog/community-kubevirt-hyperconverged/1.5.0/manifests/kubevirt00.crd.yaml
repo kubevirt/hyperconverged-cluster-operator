@@ -1,39 +1,28 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  labels:
-    operator.kubevirt.io: ''
+  labels: {operator.kubevirt.io: ''}
   name: kubevirts.kubevirt.io
 spec:
   group: kubevirt.io
   names:
-    categories:
-    - all
+    categories: [all]
     kind: KubeVirt
     plural: kubevirts
-    shortNames:
-    - kv
-    - kvs
+    shortNames: [kv, kvs]
     singular: kubevirt
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .metadata.creationTimestamp
-      name: Age
-      type: date
-    - jsonPath: .status.phase
-      name: Phase
-      type: string
+    - {jsonPath: .metadata.creationTimestamp, name: Age, type: date}
+    - {jsonPath: .status.phase, name: Phase, type: string}
     name: v1
     schema:
       openAPIV3Schema:
         properties:
-          apiVersion:
-            type: string
-          kind:
-            type: string
-          metadata:
-            type: object
+          apiVersion: {type: string}
+          kind: {type: string}
+          metadata: {type: object}
           spec:
             properties:
               certificateRotateStrategy:
@@ -42,180 +31,123 @@ spec:
                     properties:
                       ca:
                         properties:
-                          duration:
-                            type: string
-                          renewBefore:
-                            type: string
+                          duration: {type: string}
+                          renewBefore: {type: string}
                         type: object
-                      caOverlapInterval:
-                        type: string
-                      caRotateInterval:
-                        type: string
-                      certRotateInterval:
-                        type: string
+                      caOverlapInterval: {type: string}
+                      caRotateInterval: {type: string}
+                      certRotateInterval: {type: string}
                       server:
                         properties:
-                          duration:
-                            type: string
-                          renewBefore:
-                            type: string
+                          duration: {type: string}
+                          renewBefore: {type: string}
                         type: object
                     type: object
                 type: object
               configuration:
                 properties:
-                  cpuModel:
-                    type: string
+                  cpuModel: {type: string}
                   cpuRequest:
                     anyOf:
-                    - type: integer
-                    - type: string
+                    - {type: integer}
+                    - {type: string}
                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     x-kubernetes-int-or-string: true
                   developerConfiguration:
                     properties:
-                      cpuAllocationRatio:
-                        type: integer
+                      cpuAllocationRatio: {type: integer}
                       featureGates:
-                        items:
-                          type: string
+                        items: {type: string}
                         type: array
                       logVerbosity:
                         properties:
                           nodeVerbosity:
-                            additionalProperties:
-                              type: integer
+                            additionalProperties: {type: integer}
                             type: object
-                          virtAPI:
-                            type: integer
-                          virtController:
-                            type: integer
-                          virtHandler:
-                            type: integer
-                          virtLauncher:
-                            type: integer
-                          virtOperator:
-                            type: integer
+                          virtAPI: {type: integer}
+                          virtController: {type: integer}
+                          virtHandler: {type: integer}
+                          virtLauncher: {type: integer}
+                          virtOperator: {type: integer}
                         type: object
-                      memoryOvercommit:
-                        type: integer
+                      memoryOvercommit: {type: integer}
+                      minimumClusterTSCFrequency: {format: int64, type: integer}
+                      minimumReservePVCBytes: {format: int64, type: integer}
                       nodeSelectors:
-                        additionalProperties:
-                          type: string
+                        additionalProperties: {type: string}
                         type: object
-                      pvcTolerateLessSpaceUpToPercent:
-                        type: integer
-                      useEmulation:
-                        type: boolean
+                      pvcTolerateLessSpaceUpToPercent: {type: integer}
+                      useEmulation: {type: boolean}
                     type: object
                   emulatedMachines:
-                    items:
-                      type: string
+                    items: {type: string}
                     type: array
-                  imagePullPolicy:
-                    type: string
-                  machineType:
-                    type: string
-                  memBalloonStatsPeriod:
-                    format: int32
-                    type: integer
+                  imagePullPolicy: {type: string}
+                  machineType: {type: string}
+                  memBalloonStatsPeriod: {format: int32, type: integer}
                   migrations:
                     properties:
-                      allowAutoConverge:
-                        type: boolean
-                      allowPostCopy:
-                        type: boolean
+                      allowAutoConverge: {type: boolean}
+                      allowPostCopy: {type: boolean}
                       bandwidthPerMigration:
                         anyOf:
-                        - type: integer
-                        - type: string
+                        - {type: integer}
+                        - {type: string}
                         pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                         x-kubernetes-int-or-string: true
-                      completionTimeoutPerGiB:
-                        format: int64
-                        type: integer
-                      nodeDrainTaintKey:
-                        type: string
-                      parallelMigrationsPerCluster:
-                        format: int32
-                        type: integer
-                      parallelOutboundMigrationsPerNode:
-                        format: int32
-                        type: integer
-                      progressTimeout:
-                        format: int64
-                        type: integer
-                      unsafeMigrationOverride:
-                        type: boolean
+                      completionTimeoutPerGiB: {format: int64, type: integer}
+                      disableTLS: {type: boolean}
+                      nodeDrainTaintKey: {type: string}
+                      parallelMigrationsPerCluster: {format: int32, type: integer}
+                      parallelOutboundMigrationsPerNode: {format: int32, type: integer}
+                      progressTimeout: {format: int64, type: integer}
+                      unsafeMigrationOverride: {type: boolean}
                     type: object
-                  minCPUModel:
-                    type: string
+                  minCPUModel: {type: string}
                   network:
                     properties:
-                      defaultNetworkInterface:
-                        type: string
-                      permitBridgeInterfaceOnPodNetwork:
-                        type: boolean
-                      permitSlirpInterface:
-                        type: boolean
+                      defaultNetworkInterface: {type: string}
+                      permitBridgeInterfaceOnPodNetwork: {type: boolean}
+                      permitSlirpInterface: {type: boolean}
                     type: object
                   obsoleteCPUModels:
-                    additionalProperties:
-                      type: boolean
+                    additionalProperties: {type: boolean}
                     type: object
-                  ovmfPath:
-                    type: string
+                  ovmfPath: {type: string}
                   permittedHostDevices:
                     properties:
                       mediatedDevices:
                         items:
                           properties:
-                            externalResourceProvider:
-                              type: boolean
-                            mdevNameSelector:
-                              type: string
-                            resourceName:
-                              type: string
-                          required:
-                          - mdevNameSelector
-                          - resourceName
+                            externalResourceProvider: {type: boolean}
+                            mdevNameSelector: {type: string}
+                            resourceName: {type: string}
+                          required: [mdevNameSelector, resourceName]
                           type: object
                         type: array
                         x-kubernetes-list-type: atomic
                       pciHostDevices:
                         items:
                           properties:
-                            externalResourceProvider:
-                              type: boolean
-                            pciVendorSelector:
-                              type: string
-                            resourceName:
-                              type: string
-                          required:
-                          - pciVendorSelector
-                          - resourceName
+                            externalResourceProvider: {type: boolean}
+                            pciVendorSelector: {type: string}
+                            resourceName: {type: string}
+                          required: [pciVendorSelector, resourceName]
                           type: object
                         type: array
                         x-kubernetes-list-type: atomic
                     type: object
-                  selinuxLauncherType:
-                    type: string
+                  selinuxLauncherType: {type: string}
                   smbios:
                     properties:
-                      family:
-                        type: string
-                      manufacturer:
-                        type: string
-                      product:
-                        type: string
-                      sku:
-                        type: string
-                      version:
-                        type: string
+                      family: {type: string}
+                      manufacturer: {type: string}
+                      product: {type: string}
+                      sku: {type: string}
+                      version: {type: string}
                     type: object
                   supportedGuestAgentVersions:
-                    items:
-                      type: string
+                    items: {type: string}
                     type: array
                 type: object
               customizeComponents:
@@ -223,46 +155,30 @@ spec:
                   flags:
                     properties:
                       api:
-                        additionalProperties:
-                          type: string
+                        additionalProperties: {type: string}
                         type: object
                       controller:
-                        additionalProperties:
-                          type: string
+                        additionalProperties: {type: string}
                         type: object
                       handler:
-                        additionalProperties:
-                          type: string
+                        additionalProperties: {type: string}
                         type: object
                     type: object
                   patches:
                     items:
                       properties:
-                        patch:
-                          type: string
-                        resourceName:
-                          minLength: 1
-                          type: string
-                        resourceType:
-                          minLength: 1
-                          type: string
-                        type:
-                          type: string
-                      required:
-                      - patch
-                      - resourceName
-                      - resourceType
-                      - type
+                        patch: {type: string}
+                        resourceName: {minLength: 1, type: string}
+                        resourceType: {minLength: 1, type: string}
+                        type: {type: string}
+                      required: [patch, resourceName, resourceType, type]
                       type: object
                     type: array
                     x-kubernetes-list-type: atomic
                 type: object
-              imagePullPolicy:
-                type: string
-              imageRegistry:
-                type: string
-              imageTag:
-                type: string
+              imagePullPolicy: {type: string}
+              imageRegistry: {type: string}
+              imageTag: {type: string}
               infra:
                 properties:
                   nodePlacement:
@@ -279,42 +195,28 @@ spec:
                                         matchExpressions:
                                           items:
                                             properties:
-                                              key:
-                                                type: string
-                                              operator:
-                                                type: string
+                                              key: {type: string}
+                                              operator: {type: string}
                                               values:
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                         matchFields:
                                           items:
                                             properties:
-                                              key:
-                                                type: string
-                                              operator:
-                                                type: string
+                                              key: {type: string}
+                                              operator: {type: string}
                                               values:
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                       type: object
-                                    weight:
-                                      format: int32
-                                      type: integer
-                                  required:
-                                  - preference
-                                  - weight
+                                    weight: {format: int32, type: integer}
+                                  required: [preference, weight]
                                   type: object
                                 type: array
                               requiredDuringSchedulingIgnoredDuringExecution:
@@ -325,39 +227,28 @@ spec:
                                         matchExpressions:
                                           items:
                                             properties:
-                                              key:
-                                                type: string
-                                              operator:
-                                                type: string
+                                              key: {type: string}
+                                              operator: {type: string}
                                               values:
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                         matchFields:
                                           items:
                                             properties:
-                                              key:
-                                                type: string
-                                              operator:
-                                                type: string
+                                              key: {type: string}
+                                              operator: {type: string}
                                               values:
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                       type: object
                                     type: array
-                                required:
-                                - nodeSelectorTerms
+                                required: [nodeSelectorTerms]
                                 type: object
                             type: object
                           podAffinity:
@@ -372,39 +263,26 @@ spec:
                                             matchExpressions:
                                               items:
                                                 properties:
-                                                  key:
-                                                    type: string
-                                                  operator:
-                                                    type: string
+                                                  key: {type: string}
+                                                  operator: {type: string}
                                                   values:
-                                                    items:
-                                                      type: string
+                                                    items: {type: string}
                                                     type: array
-                                                required:
-                                                - key
-                                                - operator
+                                                required: [key, operator]
                                                 type: object
                                               type: array
                                             matchLabels:
-                                              additionalProperties:
-                                                type: string
+                                              additionalProperties: {type: string}
                                               type: object
                                           type: object
                                         namespaces:
-                                          items:
-                                            type: string
+                                          items: {type: string}
                                           type: array
-                                        topologyKey:
-                                          type: string
-                                      required:
-                                      - topologyKey
+                                        topologyKey: {type: string}
+                                      required: [topologyKey]
                                       type: object
-                                    weight:
-                                      format: int32
-                                      type: integer
-                                  required:
-                                  - podAffinityTerm
-                                  - weight
+                                    weight: {format: int32, type: integer}
+                                  required: [podAffinityTerm, weight]
                                   type: object
                                 type: array
                               requiredDuringSchedulingIgnoredDuringExecution:
@@ -415,32 +293,23 @@ spec:
                                         matchExpressions:
                                           items:
                                             properties:
-                                              key:
-                                                type: string
-                                              operator:
-                                                type: string
+                                              key: {type: string}
+                                              operator: {type: string}
                                               values:
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                         matchLabels:
-                                          additionalProperties:
-                                            type: string
+                                          additionalProperties: {type: string}
                                           type: object
                                       type: object
                                     namespaces:
-                                      items:
-                                        type: string
+                                      items: {type: string}
                                       type: array
-                                    topologyKey:
-                                      type: string
-                                  required:
-                                  - topologyKey
+                                    topologyKey: {type: string}
+                                  required: [topologyKey]
                                   type: object
                                 type: array
                             type: object
@@ -456,39 +325,26 @@ spec:
                                             matchExpressions:
                                               items:
                                                 properties:
-                                                  key:
-                                                    type: string
-                                                  operator:
-                                                    type: string
+                                                  key: {type: string}
+                                                  operator: {type: string}
                                                   values:
-                                                    items:
-                                                      type: string
+                                                    items: {type: string}
                                                     type: array
-                                                required:
-                                                - key
-                                                - operator
+                                                required: [key, operator]
                                                 type: object
                                               type: array
                                             matchLabels:
-                                              additionalProperties:
-                                                type: string
+                                              additionalProperties: {type: string}
                                               type: object
                                           type: object
                                         namespaces:
-                                          items:
-                                            type: string
+                                          items: {type: string}
                                           type: array
-                                        topologyKey:
-                                          type: string
-                                      required:
-                                      - topologyKey
+                                        topologyKey: {type: string}
+                                      required: [topologyKey]
                                       type: object
-                                    weight:
-                                      format: int32
-                                      type: integer
-                                  required:
-                                  - podAffinityTerm
-                                  - weight
+                                    weight: {format: int32, type: integer}
+                                  required: [podAffinityTerm, weight]
                                   type: object
                                 type: array
                               requiredDuringSchedulingIgnoredDuringExecution:
@@ -499,77 +355,53 @@ spec:
                                         matchExpressions:
                                           items:
                                             properties:
-                                              key:
-                                                type: string
-                                              operator:
-                                                type: string
+                                              key: {type: string}
+                                              operator: {type: string}
                                               values:
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                         matchLabels:
-                                          additionalProperties:
-                                            type: string
+                                          additionalProperties: {type: string}
                                           type: object
                                       type: object
                                     namespaces:
-                                      items:
-                                        type: string
+                                      items: {type: string}
                                       type: array
-                                    topologyKey:
-                                      type: string
-                                  required:
-                                  - topologyKey
+                                    topologyKey: {type: string}
+                                  required: [topologyKey]
                                   type: object
                                 type: array
                             type: object
                         type: object
                       nodeSelector:
-                        additionalProperties:
-                          type: string
+                        additionalProperties: {type: string}
                         type: object
                       tolerations:
                         items:
                           properties:
-                            effect:
-                              type: string
-                            key:
-                              type: string
-                            operator:
-                              type: string
-                            tolerationSeconds:
-                              format: int64
-                              type: integer
-                            value:
-                              type: string
+                            effect: {type: string}
+                            key: {type: string}
+                            operator: {type: string}
+                            tolerationSeconds: {format: int64, type: integer}
+                            value: {type: string}
                           type: object
                         type: array
                     type: object
                 type: object
-              monitorAccount:
-                type: string
-              monitorNamespace:
-                type: string
-              productName:
-                type: string
-              productVersion:
-                type: string
-              uninstallStrategy:
-                type: string
+              monitorAccount: {type: string}
+              monitorNamespace: {type: string}
+              productName: {type: string}
+              productVersion: {type: string}
+              uninstallStrategy: {type: string}
               workloadUpdateStrategy:
                 properties:
-                  batchEvictionInterval:
-                    type: string
-                  batchEvictionSize:
-                    type: integer
+                  batchEvictionInterval: {type: string}
+                  batchEvictionSize: {type: integer}
                   workloadUpdateMethods:
-                    items:
-                      type: string
+                    items: {type: string}
                     type: array
                     x-kubernetes-list-type: atomic
                 type: object
@@ -589,42 +421,28 @@ spec:
                                         matchExpressions:
                                           items:
                                             properties:
-                                              key:
-                                                type: string
-                                              operator:
-                                                type: string
+                                              key: {type: string}
+                                              operator: {type: string}
                                               values:
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                         matchFields:
                                           items:
                                             properties:
-                                              key:
-                                                type: string
-                                              operator:
-                                                type: string
+                                              key: {type: string}
+                                              operator: {type: string}
                                               values:
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                       type: object
-                                    weight:
-                                      format: int32
-                                      type: integer
-                                  required:
-                                  - preference
-                                  - weight
+                                    weight: {format: int32, type: integer}
+                                  required: [preference, weight]
                                   type: object
                                 type: array
                               requiredDuringSchedulingIgnoredDuringExecution:
@@ -635,39 +453,28 @@ spec:
                                         matchExpressions:
                                           items:
                                             properties:
-                                              key:
-                                                type: string
-                                              operator:
-                                                type: string
+                                              key: {type: string}
+                                              operator: {type: string}
                                               values:
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                         matchFields:
                                           items:
                                             properties:
-                                              key:
-                                                type: string
-                                              operator:
-                                                type: string
+                                              key: {type: string}
+                                              operator: {type: string}
                                               values:
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                       type: object
                                     type: array
-                                required:
-                                - nodeSelectorTerms
+                                required: [nodeSelectorTerms]
                                 type: object
                             type: object
                           podAffinity:
@@ -682,39 +489,26 @@ spec:
                                             matchExpressions:
                                               items:
                                                 properties:
-                                                  key:
-                                                    type: string
-                                                  operator:
-                                                    type: string
+                                                  key: {type: string}
+                                                  operator: {type: string}
                                                   values:
-                                                    items:
-                                                      type: string
+                                                    items: {type: string}
                                                     type: array
-                                                required:
-                                                - key
-                                                - operator
+                                                required: [key, operator]
                                                 type: object
                                               type: array
                                             matchLabels:
-                                              additionalProperties:
-                                                type: string
+                                              additionalProperties: {type: string}
                                               type: object
                                           type: object
                                         namespaces:
-                                          items:
-                                            type: string
+                                          items: {type: string}
                                           type: array
-                                        topologyKey:
-                                          type: string
-                                      required:
-                                      - topologyKey
+                                        topologyKey: {type: string}
+                                      required: [topologyKey]
                                       type: object
-                                    weight:
-                                      format: int32
-                                      type: integer
-                                  required:
-                                  - podAffinityTerm
-                                  - weight
+                                    weight: {format: int32, type: integer}
+                                  required: [podAffinityTerm, weight]
                                   type: object
                                 type: array
                               requiredDuringSchedulingIgnoredDuringExecution:
@@ -725,32 +519,23 @@ spec:
                                         matchExpressions:
                                           items:
                                             properties:
-                                              key:
-                                                type: string
-                                              operator:
-                                                type: string
+                                              key: {type: string}
+                                              operator: {type: string}
                                               values:
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                         matchLabels:
-                                          additionalProperties:
-                                            type: string
+                                          additionalProperties: {type: string}
                                           type: object
                                       type: object
                                     namespaces:
-                                      items:
-                                        type: string
+                                      items: {type: string}
                                       type: array
-                                    topologyKey:
-                                      type: string
-                                  required:
-                                  - topologyKey
+                                    topologyKey: {type: string}
+                                  required: [topologyKey]
                                   type: object
                                 type: array
                             type: object
@@ -766,39 +551,26 @@ spec:
                                             matchExpressions:
                                               items:
                                                 properties:
-                                                  key:
-                                                    type: string
-                                                  operator:
-                                                    type: string
+                                                  key: {type: string}
+                                                  operator: {type: string}
                                                   values:
-                                                    items:
-                                                      type: string
+                                                    items: {type: string}
                                                     type: array
-                                                required:
-                                                - key
-                                                - operator
+                                                required: [key, operator]
                                                 type: object
                                               type: array
                                             matchLabels:
-                                              additionalProperties:
-                                                type: string
+                                              additionalProperties: {type: string}
                                               type: object
                                           type: object
                                         namespaces:
-                                          items:
-                                            type: string
+                                          items: {type: string}
                                           type: array
-                                        topologyKey:
-                                          type: string
-                                      required:
-                                      - topologyKey
+                                        topologyKey: {type: string}
+                                      required: [topologyKey]
                                       type: object
-                                    weight:
-                                      format: int32
-                                      type: integer
-                                  required:
-                                  - podAffinityTerm
-                                  - weight
+                                    weight: {format: int32, type: integer}
+                                  required: [podAffinityTerm, weight]
                                   type: object
                                 type: array
                               requiredDuringSchedulingIgnoredDuringExecution:
@@ -809,54 +581,38 @@ spec:
                                         matchExpressions:
                                           items:
                                             properties:
-                                              key:
-                                                type: string
-                                              operator:
-                                                type: string
+                                              key: {type: string}
+                                              operator: {type: string}
                                               values:
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                         matchLabels:
-                                          additionalProperties:
-                                            type: string
+                                          additionalProperties: {type: string}
                                           type: object
                                       type: object
                                     namespaces:
-                                      items:
-                                        type: string
+                                      items: {type: string}
                                       type: array
-                                    topologyKey:
-                                      type: string
-                                  required:
-                                  - topologyKey
+                                    topologyKey: {type: string}
+                                  required: [topologyKey]
                                   type: object
                                 type: array
                             type: object
                         type: object
                       nodeSelector:
-                        additionalProperties:
-                          type: string
+                        additionalProperties: {type: string}
                         type: object
                       tolerations:
                         items:
                           properties:
-                            effect:
-                              type: string
-                            key:
-                              type: string
-                            operator:
-                              type: string
-                            tolerationSeconds:
-                              format: int64
-                              type: integer
-                            value:
-                              type: string
+                            effect: {type: string}
+                            key: {type: string}
+                            operator: {type: string}
+                            tolerationSeconds: {format: int64, type: integer}
+                            value: {type: string}
                           type: object
                         type: array
                     type: object
@@ -867,105 +623,65 @@ spec:
               conditions:
                 items:
                   properties:
-                    lastProbeTime:
-                      format: date-time
-                      nullable: true
-                      type: string
-                    lastTransitionTime:
-                      format: date-time
-                      nullable: true
-                      type: string
-                    message:
-                      type: string
-                    reason:
-                      type: string
-                    status:
-                      type: string
-                    type:
-                      type: string
-                  required:
-                  - status
-                  - type
+                    lastProbeTime: {format: date-time, nullable: true, type: string}
+                    lastTransitionTime: {format: date-time, nullable: true, type: string}
+                    message: {type: string}
+                    reason: {type: string}
+                    status: {type: string}
+                    type: {type: string}
+                  required: [status, type]
                   type: object
                 type: array
               generations:
                 items:
                   properties:
-                    group:
-                      type: string
-                    hash:
-                      type: string
-                    lastGeneration:
-                      format: int64
-                      type: integer
-                    name:
-                      type: string
-                    namespace:
-                      type: string
-                    resource:
-                      type: string
-                  required:
-                  - group
-                  - lastGeneration
-                  - name
-                  - resource
+                    group: {type: string}
+                    hash: {type: string}
+                    lastGeneration: {format: int64, type: integer}
+                    name: {type: string}
+                    namespace: {type: string}
+                    resource: {type: string}
+                  required: [group, lastGeneration, name, resource]
                   type: object
                 type: array
                 x-kubernetes-list-type: atomic
-              observedDeploymentConfig:
-                type: string
-              observedDeploymentID:
-                type: string
-              observedKubeVirtRegistry:
-                type: string
-              observedKubeVirtVersion:
-                type: string
-              operatorVersion:
-                type: string
-              outdatedVirtualMachineInstanceWorkloads:
-                type: integer
-              phase:
-                type: string
-              targetDeploymentConfig:
-                type: string
-              targetDeploymentID:
-                type: string
-              targetKubeVirtRegistry:
-                type: string
-              targetKubeVirtVersion:
-                type: string
+              observedDeploymentConfig: {type: string}
+              observedDeploymentID: {type: string}
+              observedKubeVirtRegistry: {type: string}
+              observedKubeVirtVersion: {type: string}
+              operatorVersion: {type: string}
+              outdatedVirtualMachineInstanceWorkloads: {type: integer}
+              phase: {type: string}
+              targetDeploymentConfig: {type: string}
+              targetDeploymentID: {type: string}
+              targetKubeVirtRegistry: {type: string}
+              targetKubeVirtVersion: {type: string}
             type: object
-        required:
-        - spec
+        required: [spec]
         type: object
     served: true
     storage: false
     subresources:
       status: {}
   - additionalPrinterColumns:
-    - jsonPath: .metadata.creationTimestamp
-      name: Age
-      type: date
-    - jsonPath: .status.phase
-      name: Phase
-      type: string
+    - {jsonPath: .metadata.creationTimestamp, name: Age, type: date}
+    - {jsonPath: .status.phase, name: Phase, type: string}
     name: v1alpha3
     schema:
       openAPIV3Schema:
         description: KubeVirt represents the object deploying all KubeVirt resources
         properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          metadata:
-            type: object
+          apiVersion: {description: 'APIVersion defines the versioned schema of this
+              representation of an object. Servers should convert recognized schemas
+              to the latest internal value, and may reject unrecognized values. More
+              info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources',
+            type: string}
+          kind: {description: 'Kind is a string value representing the REST resource
+              this object represents. Servers may infer this from the endpoint the
+              client submits requests to. Cannot be updated. In CamelCase. More info:
+              https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds',
+            type: string}
+          metadata: {type: object}
           spec:
             properties:
               certificateRotateStrategy:
@@ -976,154 +692,113 @@ spec:
                         description: CA configuration CA certs are kept in the CA
                           bundle as long as they are valid
                         properties:
-                          duration:
-                            description: The requested 'duration' (i.e. lifetime)
-                              of the Certificate.
-                            type: string
-                          renewBefore:
-                            description: The amount of time before the currently issued
-                              certificate's "notAfter" time that we will begin to
-                              attempt to renew the certificate.
-                            type: string
+                          duration: {description: The requested 'duration' (i.e. lifetime)
+                              of the Certificate., type: string}
+                          renewBefore: {description: The amount of time before the
+                              currently issued certificate's "notAfter" time that
+                              we will begin to attempt to renew the certificate.,
+                            type: string}
                         type: object
-                      caOverlapInterval:
-                        description: Deprecated. Use CA.Duration and CA.RenewBefore
-                          instead
-                        type: string
-                      caRotateInterval:
-                        description: Deprecated. Use CA.Duration instead
-                        type: string
-                      certRotateInterval:
-                        description: Deprecated. Use Server.Duration instead
-                        type: string
+                      caOverlapInterval: {description: Deprecated. Use CA.Duration
+                          and CA.RenewBefore instead, type: string}
+                      caRotateInterval: {description: Deprecated. Use CA.Duration
+                          instead, type: string}
+                      certRotateInterval: {description: Deprecated. Use Server.Duration
+                          instead, type: string}
                       server:
                         description: Server configuration Certs are rotated and discarded
                         properties:
-                          duration:
-                            description: The requested 'duration' (i.e. lifetime)
-                              of the Certificate.
-                            type: string
-                          renewBefore:
-                            description: The amount of time before the currently issued
-                              certificate's "notAfter" time that we will begin to
-                              attempt to renew the certificate.
-                            type: string
+                          duration: {description: The requested 'duration' (i.e. lifetime)
+                              of the Certificate., type: string}
+                          renewBefore: {description: The amount of time before the
+                              currently issued certificate's "notAfter" time that
+                              we will begin to attempt to renew the certificate.,
+                            type: string}
                         type: object
                     type: object
                 type: object
               configuration:
                 description: holds kubevirt configurations. same as the virt-configMap
                 properties:
-                  cpuModel:
-                    type: string
+                  cpuModel: {type: string}
                   cpuRequest:
                     anyOf:
-                    - type: integer
-                    - type: string
+                    - {type: integer}
+                    - {type: string}
                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     x-kubernetes-int-or-string: true
                   developerConfiguration:
                     description: DeveloperConfiguration holds developer options
                     properties:
-                      cpuAllocationRatio:
-                        type: integer
+                      cpuAllocationRatio: {type: integer}
                       featureGates:
-                        items:
-                          type: string
+                        items: {type: string}
                         type: array
                       logVerbosity:
                         description: LogVerbosity sets log verbosity level of  various
                           components
                         properties:
                           nodeVerbosity:
-                            additionalProperties:
-                              type: integer
+                            additionalProperties: {type: integer}
                             description: NodeVerbosity represents a map of nodes with
                               a specific verbosity level
                             type: object
-                          virtAPI:
-                            type: integer
-                          virtController:
-                            type: integer
-                          virtHandler:
-                            type: integer
-                          virtLauncher:
-                            type: integer
-                          virtOperator:
-                            type: integer
+                          virtAPI: {type: integer}
+                          virtController: {type: integer}
+                          virtHandler: {type: integer}
+                          virtLauncher: {type: integer}
+                          virtOperator: {type: integer}
                         type: object
-                      memoryOvercommit:
-                        type: integer
+                      memoryOvercommit: {type: integer}
+                      minimumClusterTSCFrequency: {description: Allow overriding the
+                          automatically determined minimum TSC frequency of the cluster
+                          and fixate the minimum to this frequency., format: int64,
+                        type: integer}
+                      minimumReservePVCBytes: {format: int64, type: integer}
                       nodeSelectors:
-                        additionalProperties:
-                          type: string
+                        additionalProperties: {type: string}
                         type: object
-                      pvcTolerateLessSpaceUpToPercent:
-                        type: integer
-                      useEmulation:
-                        type: boolean
+                      pvcTolerateLessSpaceUpToPercent: {type: integer}
+                      useEmulation: {type: boolean}
                     type: object
                   emulatedMachines:
-                    items:
-                      type: string
+                    items: {type: string}
                     type: array
-                  imagePullPolicy:
-                    description: PullPolicy describes a policy for if/when to pull
-                      a container image
-                    type: string
-                  machineType:
-                    type: string
-                  memBalloonStatsPeriod:
-                    format: int32
-                    type: integer
+                  imagePullPolicy: {description: PullPolicy describes a policy for
+                      if/when to pull a container image, type: string}
+                  machineType: {type: string}
+                  memBalloonStatsPeriod: {format: int32, type: integer}
                   migrations:
                     description: MigrationConfiguration holds migration options
                     properties:
-                      allowAutoConverge:
-                        type: boolean
-                      allowPostCopy:
-                        type: boolean
+                      allowAutoConverge: {type: boolean}
+                      allowPostCopy: {type: boolean}
                       bandwidthPerMigration:
                         anyOf:
-                        - type: integer
-                        - type: string
+                        - {type: integer}
+                        - {type: string}
                         pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                         x-kubernetes-int-or-string: true
-                      completionTimeoutPerGiB:
-                        format: int64
-                        type: integer
-                      nodeDrainTaintKey:
-                        type: string
-                      parallelMigrationsPerCluster:
-                        format: int32
-                        type: integer
-                      parallelOutboundMigrationsPerNode:
-                        format: int32
-                        type: integer
-                      progressTimeout:
-                        format: int64
-                        type: integer
-                      unsafeMigrationOverride:
-                        type: boolean
+                      completionTimeoutPerGiB: {format: int64, type: integer}
+                      disableTLS: {type: boolean}
+                      nodeDrainTaintKey: {type: string}
+                      parallelMigrationsPerCluster: {format: int32, type: integer}
+                      parallelOutboundMigrationsPerNode: {format: int32, type: integer}
+                      progressTimeout: {format: int64, type: integer}
+                      unsafeMigrationOverride: {type: boolean}
                     type: object
-                  minCPUModel:
-                    type: string
+                  minCPUModel: {type: string}
                   network:
                     description: NetworkConfiguration holds network options
                     properties:
-                      defaultNetworkInterface:
-                        type: string
-                      permitBridgeInterfaceOnPodNetwork:
-                        type: boolean
-                      permitSlirpInterface:
-                        type: boolean
+                      defaultNetworkInterface: {type: string}
+                      permitBridgeInterfaceOnPodNetwork: {type: boolean}
+                      permitSlirpInterface: {type: boolean}
                     type: object
                   obsoleteCPUModels:
-                    additionalProperties:
-                      type: boolean
+                    additionalProperties: {type: boolean}
                     type: object
-                  ovmfPath:
-                    type: string
+                  ovmfPath: {type: string}
                   permittedHostDevices:
                     description: PermittedHostDevices holds inforamtion about devices
                       allowed for passthrough
@@ -1133,15 +808,10 @@ spec:
                           description: MediatedHostDevice represents a host mediated
                             device allowed for passthrough
                           properties:
-                            externalResourceProvider:
-                              type: boolean
-                            mdevNameSelector:
-                              type: string
-                            resourceName:
-                              type: string
-                          required:
-                          - mdevNameSelector
-                          - resourceName
+                            externalResourceProvider: {type: boolean}
+                            mdevNameSelector: {type: string}
+                            resourceName: {type: string}
+                          required: [mdevNameSelector, resourceName]
                           type: object
                         type: array
                         x-kubernetes-list-type: atomic
@@ -1150,38 +820,34 @@ spec:
                           description: PciHostDevice represents a host PCI device
                             allowed for passthrough
                           properties:
-                            externalResourceProvider:
-                              type: boolean
-                            pciVendorSelector:
-                              type: string
-                            resourceName:
-                              type: string
-                          required:
-                          - pciVendorSelector
-                          - resourceName
+                            externalResourceProvider: {description: 'If true, KubeVirt
+                                will leave the allocation and monitoring to an external
+                                device plugin', type: boolean}
+                            pciVendorSelector: {description: 'The vendor_id:product_id
+                                tupple of the PCI device', type: string}
+                            resourceName: {description: The name of the resource that
+                                is representing the device. Exposed by a device plugin
+                                and requested by VMs. Typically of the form vendor.com/product_nameThe
+                                name of the resource that is representing the device.
+                                Exposed by a device plugin and requested by VMs. Typically
+                                of the form vendor.com/product_name, type: string}
+                          required: [pciVendorSelector, resourceName]
                           type: object
                         type: array
                         x-kubernetes-list-type: atomic
                     type: object
-                  selinuxLauncherType:
-                    type: string
+                  selinuxLauncherType: {type: string}
                   smbios:
                     properties:
-                      family:
-                        type: string
-                      manufacturer:
-                        type: string
-                      product:
-                        type: string
-                      sku:
-                        type: string
-                      version:
-                        type: string
+                      family: {type: string}
+                      manufacturer: {type: string}
+                      product: {type: string}
+                      sku: {type: string}
+                      version: {type: string}
                     type: object
                   supportedGuestAgentVersions:
                     description: deprecated
-                    items:
-                      type: string
+                    items: {type: string}
                     type: array
                 type: object
               customizeComponents:
@@ -1191,52 +857,34 @@ spec:
                       resources
                     properties:
                       api:
-                        additionalProperties:
-                          type: string
+                        additionalProperties: {type: string}
                         type: object
                       controller:
-                        additionalProperties:
-                          type: string
+                        additionalProperties: {type: string}
                         type: object
                       handler:
-                        additionalProperties:
-                          type: string
+                        additionalProperties: {type: string}
                         type: object
                     type: object
                   patches:
                     items:
                       properties:
-                        patch:
-                          type: string
-                        resourceName:
-                          minLength: 1
-                          type: string
-                        resourceType:
-                          minLength: 1
-                          type: string
-                        type:
-                          type: string
-                      required:
-                      - patch
-                      - resourceName
-                      - resourceType
-                      - type
+                        patch: {type: string}
+                        resourceName: {minLength: 1, type: string}
+                        resourceType: {minLength: 1, type: string}
+                        type: {type: string}
+                      required: [patch, resourceName, resourceType, type]
                       type: object
                     type: array
                     x-kubernetes-list-type: atomic
                 type: object
-              imagePullPolicy:
-                description: The ImagePullPolicy to use.
-                type: string
-              imageRegistry:
-                description: The image registry to pull the container images from
-                  Defaults to the same registry the operator's container image is
-                  pulled from.
-                type: string
-              imageTag:
-                description: The image tag to use for the continer images installed.
-                  Defaults to the same tag as the operator's container image.
-                type: string
+              imagePullPolicy: {description: The ImagePullPolicy to use., type: string}
+              imageRegistry: {description: The image registry to pull the container
+                  images from Defaults to the same registry the operator's container
+                  image is pulled from., type: string}
+              imageTag: {description: The image tag to use for the continer images
+                  installed. Defaults to the same tag as the operator's container
+                  image., type: string}
               infra:
                 description: selectors and tolerations that should apply to KubeVirt
                   infrastructure components
@@ -1288,16 +936,13 @@ spec:
                                               a key, and an operator that relates
                                               the key and values.
                                             properties:
-                                              key:
-                                                description: The label key that the
-                                                  selector applies to.
-                                                type: string
-                                              operator:
-                                                description: Represents a key's relationship
-                                                  to a set of values. Valid operators
-                                                  are In, NotIn, Exists, DoesNotExist.
-                                                  Gt, and Lt.
-                                                type: string
+                                              key: {description: The label key that
+                                                  the selector applies to., type: string}
+                                              operator: {description: 'Represents
+                                                  a key''s relationship to a set of
+                                                  values. Valid operators are In,
+                                                  NotIn, Exists, DoesNotExist. Gt,
+                                                  and Lt.', type: string}
                                               values:
                                                 description: An array of string values.
                                                   If the operator is In or NotIn,
@@ -1309,12 +954,9 @@ spec:
                                                   element, which will be interpreted
                                                   as an integer. This array is replaced
                                                   during a strategic merge patch.
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                         matchFields:
@@ -1326,16 +968,13 @@ spec:
                                               a key, and an operator that relates
                                               the key and values.
                                             properties:
-                                              key:
-                                                description: The label key that the
-                                                  selector applies to.
-                                                type: string
-                                              operator:
-                                                description: Represents a key's relationship
-                                                  to a set of values. Valid operators
-                                                  are In, NotIn, Exists, DoesNotExist.
-                                                  Gt, and Lt.
-                                                type: string
+                                              key: {description: The label key that
+                                                  the selector applies to., type: string}
+                                              operator: {description: 'Represents
+                                                  a key''s relationship to a set of
+                                                  values. Valid operators are In,
+                                                  NotIn, Exists, DoesNotExist. Gt,
+                                                  and Lt.', type: string}
                                               values:
                                                 description: An array of string values.
                                                   If the operator is In or NotIn,
@@ -1347,24 +986,16 @@ spec:
                                                   element, which will be interpreted
                                                   as an integer. This array is replaced
                                                   during a strategic merge patch.
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                       type: object
-                                    weight:
-                                      description: Weight associated with matching
-                                        the corresponding nodeSelectorTerm, in the
-                                        range 1-100.
-                                      format: int32
-                                      type: integer
-                                  required:
-                                  - preference
-                                  - weight
+                                    weight: {description: 'Weight associated with
+                                        matching the corresponding nodeSelectorTerm,
+                                        in the range 1-100.', format: int32, type: integer}
+                                  required: [preference, weight]
                                   type: object
                                 type: array
                               requiredDuringSchedulingIgnoredDuringExecution:
@@ -1394,16 +1025,13 @@ spec:
                                               a key, and an operator that relates
                                               the key and values.
                                             properties:
-                                              key:
-                                                description: The label key that the
-                                                  selector applies to.
-                                                type: string
-                                              operator:
-                                                description: Represents a key's relationship
-                                                  to a set of values. Valid operators
-                                                  are In, NotIn, Exists, DoesNotExist.
-                                                  Gt, and Lt.
-                                                type: string
+                                              key: {description: The label key that
+                                                  the selector applies to., type: string}
+                                              operator: {description: 'Represents
+                                                  a key''s relationship to a set of
+                                                  values. Valid operators are In,
+                                                  NotIn, Exists, DoesNotExist. Gt,
+                                                  and Lt.', type: string}
                                               values:
                                                 description: An array of string values.
                                                   If the operator is In or NotIn,
@@ -1415,12 +1043,9 @@ spec:
                                                   element, which will be interpreted
                                                   as an integer. This array is replaced
                                                   during a strategic merge patch.
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                         matchFields:
@@ -1432,16 +1057,13 @@ spec:
                                               a key, and an operator that relates
                                               the key and values.
                                             properties:
-                                              key:
-                                                description: The label key that the
-                                                  selector applies to.
-                                                type: string
-                                              operator:
-                                                description: Represents a key's relationship
-                                                  to a set of values. Valid operators
-                                                  are In, NotIn, Exists, DoesNotExist.
-                                                  Gt, and Lt.
-                                                type: string
+                                              key: {description: The label key that
+                                                  the selector applies to., type: string}
+                                              operator: {description: 'Represents
+                                                  a key''s relationship to a set of
+                                                  values. Valid operators are In,
+                                                  NotIn, Exists, DoesNotExist. Gt,
+                                                  and Lt.', type: string}
                                               values:
                                                 description: An array of string values.
                                                   If the operator is In or NotIn,
@@ -1453,18 +1075,14 @@ spec:
                                                   element, which will be interpreted
                                                   as an integer. This array is replaced
                                                   during a strategic merge patch.
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                       type: object
                                     type: array
-                                required:
-                                - nodeSelectorTerms
+                                required: [nodeSelectorTerms]
                                 type: object
                             type: object
                           podAffinity:
@@ -1509,17 +1127,14 @@ spec:
                                                   a key, and an operator that relates
                                                   the key and values.
                                                 properties:
-                                                  key:
-                                                    description: key is the label
+                                                  key: {description: key is the label
                                                       key that the selector applies
-                                                      to.
-                                                    type: string
-                                                  operator:
-                                                    description: operator represents
-                                                      a key's relationship to a set
-                                                      of values. Valid operators are
-                                                      In, NotIn, Exists and DoesNotExist.
-                                                    type: string
+                                                      to., type: string}
+                                                  operator: {description: 'operator
+                                                      represents a key''s relationship
+                                                      to a set of values. Valid operators
+                                                      are In, NotIn, Exists and DoesNotExist.',
+                                                    type: string}
                                                   values:
                                                     description: values is an array
                                                       of string values. If the operator
@@ -1529,17 +1144,13 @@ spec:
                                                       values array must be empty.
                                                       This array is replaced during
                                                       a strategic merge patch.
-                                                    items:
-                                                      type: string
+                                                    items: {type: string}
                                                     type: array
-                                                required:
-                                                - key
-                                                - operator
+                                                required: [key, operator]
                                                 type: object
                                               type: array
                                             matchLabels:
-                                              additionalProperties:
-                                                type: string
+                                              additionalProperties: {type: string}
                                               description: matchLabels is a map of
                                                 {key,value} pairs. A single {key,value}
                                                 in the matchLabels map is equivalent
@@ -1555,32 +1166,23 @@ spec:
                                             namespaces the labelSelector applies to
                                             (matches against); null or empty list
                                             means "this pod's namespace"
-                                          items:
-                                            type: string
+                                          items: {type: string}
                                           type: array
-                                        topologyKey:
-                                          description: This pod should be co-located
-                                            (affinity) or not co-located (anti-affinity)
-                                            with the pods matching the labelSelector
-                                            in the specified namespaces, where co-located
-                                            is defined as running on a node whose
-                                            value of the label with key topologyKey
-                                            matches that of any node on which any
-                                            of the selected pods is running. Empty
-                                            topologyKey is not allowed.
-                                          type: string
-                                      required:
-                                      - topologyKey
+                                        topologyKey: {description: 'This pod should
+                                            be co-located (affinity) or not co-located
+                                            (anti-affinity) with the pods matching
+                                            the labelSelector in the specified namespaces,
+                                            where co-located is defined as running
+                                            on a node whose value of the label with
+                                            key topologyKey matches that of any node
+                                            on which any of the selected pods is running.
+                                            Empty topologyKey is not allowed.', type: string}
+                                      required: [topologyKey]
                                       type: object
-                                    weight:
-                                      description: weight associated with matching
-                                        the corresponding podAffinityTerm, in the
-                                        range 1-100.
-                                      format: int32
-                                      type: integer
-                                  required:
-                                  - podAffinityTerm
-                                  - weight
+                                    weight: {description: 'weight associated with
+                                        matching the corresponding podAffinityTerm,
+                                        in the range 1-100.', format: int32, type: integer}
+                                  required: [podAffinityTerm, weight]
                                   type: object
                                 type: array
                               requiredDuringSchedulingIgnoredDuringExecution:
@@ -1618,16 +1220,14 @@ spec:
                                               a key, and an operator that relates
                                               the key and values.
                                             properties:
-                                              key:
-                                                description: key is the label key
-                                                  that the selector applies to.
-                                                type: string
-                                              operator:
-                                                description: operator represents a
-                                                  key's relationship to a set of values.
-                                                  Valid operators are In, NotIn, Exists
-                                                  and DoesNotExist.
-                                                type: string
+                                              key: {description: key is the label
+                                                  key that the selector applies to.,
+                                                type: string}
+                                              operator: {description: 'operator represents
+                                                  a key''s relationship to a set of
+                                                  values. Valid operators are In,
+                                                  NotIn, Exists and DoesNotExist.',
+                                                type: string}
                                               values:
                                                 description: values is an array of
                                                   string values. If the operator is
@@ -1637,17 +1237,13 @@ spec:
                                                   array must be empty. This array
                                                   is replaced during a strategic merge
                                                   patch.
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                         matchLabels:
-                                          additionalProperties:
-                                            type: string
+                                          additionalProperties: {type: string}
                                           description: matchLabels is a map of {key,value}
                                             pairs. A single {key,value} in the matchLabels
                                             map is equivalent to an element of matchExpressions,
@@ -1660,21 +1256,18 @@ spec:
                                       description: namespaces specifies which namespaces
                                         the labelSelector applies to (matches against);
                                         null or empty list means "this pod's namespace"
-                                      items:
-                                        type: string
+                                      items: {type: string}
                                       type: array
-                                    topologyKey:
-                                      description: This pod should be co-located (affinity)
-                                        or not co-located (anti-affinity) with the
-                                        pods matching the labelSelector in the specified
-                                        namespaces, where co-located is defined as
-                                        running on a node whose value of the label
-                                        with key topologyKey matches that of any node
-                                        on which any of the selected pods is running.
-                                        Empty topologyKey is not allowed.
-                                      type: string
-                                  required:
-                                  - topologyKey
+                                    topologyKey: {description: 'This pod should be
+                                        co-located (affinity) or not co-located (anti-affinity)
+                                        with the pods matching the labelSelector in
+                                        the specified namespaces, where co-located
+                                        is defined as running on a node whose value
+                                        of the label with key topologyKey matches
+                                        that of any node on which any of the selected
+                                        pods is running. Empty topologyKey is not
+                                        allowed.', type: string}
+                                  required: [topologyKey]
                                   type: object
                                 type: array
                             type: object
@@ -1720,17 +1313,14 @@ spec:
                                                   a key, and an operator that relates
                                                   the key and values.
                                                 properties:
-                                                  key:
-                                                    description: key is the label
+                                                  key: {description: key is the label
                                                       key that the selector applies
-                                                      to.
-                                                    type: string
-                                                  operator:
-                                                    description: operator represents
-                                                      a key's relationship to a set
-                                                      of values. Valid operators are
-                                                      In, NotIn, Exists and DoesNotExist.
-                                                    type: string
+                                                      to., type: string}
+                                                  operator: {description: 'operator
+                                                      represents a key''s relationship
+                                                      to a set of values. Valid operators
+                                                      are In, NotIn, Exists and DoesNotExist.',
+                                                    type: string}
                                                   values:
                                                     description: values is an array
                                                       of string values. If the operator
@@ -1740,17 +1330,13 @@ spec:
                                                       values array must be empty.
                                                       This array is replaced during
                                                       a strategic merge patch.
-                                                    items:
-                                                      type: string
+                                                    items: {type: string}
                                                     type: array
-                                                required:
-                                                - key
-                                                - operator
+                                                required: [key, operator]
                                                 type: object
                                               type: array
                                             matchLabels:
-                                              additionalProperties:
-                                                type: string
+                                              additionalProperties: {type: string}
                                               description: matchLabels is a map of
                                                 {key,value} pairs. A single {key,value}
                                                 in the matchLabels map is equivalent
@@ -1766,32 +1352,23 @@ spec:
                                             namespaces the labelSelector applies to
                                             (matches against); null or empty list
                                             means "this pod's namespace"
-                                          items:
-                                            type: string
+                                          items: {type: string}
                                           type: array
-                                        topologyKey:
-                                          description: This pod should be co-located
-                                            (affinity) or not co-located (anti-affinity)
-                                            with the pods matching the labelSelector
-                                            in the specified namespaces, where co-located
-                                            is defined as running on a node whose
-                                            value of the label with key topologyKey
-                                            matches that of any node on which any
-                                            of the selected pods is running. Empty
-                                            topologyKey is not allowed.
-                                          type: string
-                                      required:
-                                      - topologyKey
+                                        topologyKey: {description: 'This pod should
+                                            be co-located (affinity) or not co-located
+                                            (anti-affinity) with the pods matching
+                                            the labelSelector in the specified namespaces,
+                                            where co-located is defined as running
+                                            on a node whose value of the label with
+                                            key topologyKey matches that of any node
+                                            on which any of the selected pods is running.
+                                            Empty topologyKey is not allowed.', type: string}
+                                      required: [topologyKey]
                                       type: object
-                                    weight:
-                                      description: weight associated with matching
-                                        the corresponding podAffinityTerm, in the
-                                        range 1-100.
-                                      format: int32
-                                      type: integer
-                                  required:
-                                  - podAffinityTerm
-                                  - weight
+                                    weight: {description: 'weight associated with
+                                        matching the corresponding podAffinityTerm,
+                                        in the range 1-100.', format: int32, type: integer}
+                                  required: [podAffinityTerm, weight]
                                   type: object
                                 type: array
                               requiredDuringSchedulingIgnoredDuringExecution:
@@ -1829,16 +1406,14 @@ spec:
                                               a key, and an operator that relates
                                               the key and values.
                                             properties:
-                                              key:
-                                                description: key is the label key
-                                                  that the selector applies to.
-                                                type: string
-                                              operator:
-                                                description: operator represents a
-                                                  key's relationship to a set of values.
-                                                  Valid operators are In, NotIn, Exists
-                                                  and DoesNotExist.
-                                                type: string
+                                              key: {description: key is the label
+                                                  key that the selector applies to.,
+                                                type: string}
+                                              operator: {description: 'operator represents
+                                                  a key''s relationship to a set of
+                                                  values. Valid operators are In,
+                                                  NotIn, Exists and DoesNotExist.',
+                                                type: string}
                                               values:
                                                 description: values is an array of
                                                   string values. If the operator is
@@ -1848,17 +1423,13 @@ spec:
                                                   array must be empty. This array
                                                   is replaced during a strategic merge
                                                   patch.
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                         matchLabels:
-                                          additionalProperties:
-                                            type: string
+                                          additionalProperties: {type: string}
                                           description: matchLabels is a map of {key,value}
                                             pairs. A single {key,value} in the matchLabels
                                             map is equivalent to an element of matchExpressions,
@@ -1871,28 +1442,24 @@ spec:
                                       description: namespaces specifies which namespaces
                                         the labelSelector applies to (matches against);
                                         null or empty list means "this pod's namespace"
-                                      items:
-                                        type: string
+                                      items: {type: string}
                                       type: array
-                                    topologyKey:
-                                      description: This pod should be co-located (affinity)
-                                        or not co-located (anti-affinity) with the
-                                        pods matching the labelSelector in the specified
-                                        namespaces, where co-located is defined as
-                                        running on a node whose value of the label
-                                        with key topologyKey matches that of any node
-                                        on which any of the selected pods is running.
-                                        Empty topologyKey is not allowed.
-                                      type: string
-                                  required:
-                                  - topologyKey
+                                    topologyKey: {description: 'This pod should be
+                                        co-located (affinity) or not co-located (anti-affinity)
+                                        with the pods matching the labelSelector in
+                                        the specified namespaces, where co-located
+                                        is defined as running on a node whose value
+                                        of the label with key topologyKey matches
+                                        that of any node on which any of the selected
+                                        pods is running. Empty topologyKey is not
+                                        allowed.', type: string}
+                                  required: [topologyKey]
                                   type: object
                                 type: array
                             type: object
                         type: object
                       nodeSelector:
-                        additionalProperties:
-                          type: string
+                        additionalProperties: {type: string}
                         description: 'nodeSelector is the node selector applied to
                           the relevant kind of pods It specifies a map of key-value
                           pairs: for the pod to be eligible to run on a node, the
@@ -1909,79 +1476,59 @@ spec:
                             any taint that matches the triple <key,value,effect> using
                             the matching operator <operator>.
                           properties:
-                            effect:
-                              description: Effect indicates the taint effect to match.
-                                Empty means match all taint effects. When specified,
-                                allowed values are NoSchedule, PreferNoSchedule and
-                                NoExecute.
-                              type: string
-                            key:
-                              description: Key is the taint key that the toleration
+                            effect: {description: 'Effect indicates the taint effect
+                                to match. Empty means match all taint effects. When
+                                specified, allowed values are NoSchedule, PreferNoSchedule
+                                and NoExecute.', type: string}
+                            key: {description: 'Key is the taint key that the toleration
                                 applies to. Empty means match all taint keys. If the
                                 key is empty, operator must be Exists; this combination
-                                means to match all values and all keys.
-                              type: string
-                            operator:
-                              description: Operator represents a key's relationship
-                                to the value. Valid operators are Exists and Equal.
-                                Defaults to Equal. Exists is equivalent to wildcard
-                                for value, so that a pod can tolerate all taints of
-                                a particular category.
-                              type: string
-                            tolerationSeconds:
-                              description: TolerationSeconds represents the period
-                                of time the toleration (which must be of effect NoExecute,
-                                otherwise this field is ignored) tolerates the taint.
-                                By default, it is not set, which means tolerate the
-                                taint forever (do not evict). Zero and negative values
-                                will be treated as 0 (evict immediately) by the system.
-                              format: int64
-                              type: integer
-                            value:
-                              description: Value is the taint value the toleration
+                                means to match all values and all keys.', type: string}
+                            operator: {description: 'Operator represents a key''s
+                                relationship to the value. Valid operators are Exists
+                                and Equal. Defaults to Equal. Exists is equivalent
+                                to wildcard for value, so that a pod can tolerate
+                                all taints of a particular category.', type: string}
+                            tolerationSeconds: {description: 'TolerationSeconds represents
+                                the period of time the toleration (which must be of
+                                effect NoExecute, otherwise this field is ignored)
+                                tolerates the taint. By default, it is not set, which
+                                means tolerate the taint forever (do not evict). Zero
+                                and negative values will be treated as 0 (evict immediately)
+                                by the system.', format: int64, type: integer}
+                            value: {description: 'Value is the taint value the toleration
                                 matches to. If the operator is Exists, the value should
-                                be empty, otherwise just a regular string.
-                              type: string
+                                be empty, otherwise just a regular string.', type: string}
                           type: object
                         type: array
                     type: object
                 type: object
-              monitorAccount:
-                description: The name of the Prometheus service account that needs
-                  read-access to KubeVirt endpoints Defaults to prometheus-k8s
-                type: string
-              monitorNamespace:
-                description: The namespace Prometheus is deployed in Defaults to openshift-monitor
-                type: string
-              productName:
-                description: Designate the apps.kubevirt.io/part-of label for KubeVirt
-                  components. Useful if KubeVirt is included as part of a product.
-                  If ProductName is not specified, the part-of label will be omitted.
-                type: string
-              productVersion:
-                description: Designate the apps.kubevirt.io/version label for KubeVirt
-                  components. Useful if KubeVirt is included as part of a product.
-                  If ProductVersion is not specified, KubeVirt's version will be used.
-                type: string
-              uninstallStrategy:
-                description: Specifies if kubevirt can be deleted if workloads are
-                  still present. This is mainly a precaution to avoid accidental data
-                  loss
-                type: string
+              monitorAccount: {description: The name of the Prometheus service account
+                  that needs read-access to KubeVirt endpoints Defaults to prometheus-k8s,
+                type: string}
+              monitorNamespace: {description: The namespace Prometheus is deployed
+                  in Defaults to openshift-monitor, type: string}
+              productName: {description: 'Designate the apps.kubevirt.io/part-of label
+                  for KubeVirt components. Useful if KubeVirt is included as part
+                  of a product. If ProductName is not specified, the part-of label
+                  will be omitted.', type: string}
+              productVersion: {description: 'Designate the apps.kubevirt.io/version
+                  label for KubeVirt components. Useful if KubeVirt is included as
+                  part of a product. If ProductVersion is not specified, KubeVirt''s
+                  version will be used.', type: string}
+              uninstallStrategy: {description: Specifies if kubevirt can be deleted
+                  if workloads are still present. This is mainly a precaution to avoid
+                  accidental data loss, type: string}
               workloadUpdateStrategy:
                 description: WorkloadUpdateStrategy defines at the cluster level how
                   to handle automated workload updates
                 properties:
-                  batchEvictionInterval:
-                    description: "BatchEvictionInterval Represents the interval to\
-                      \ wait before issuing the next batch of shutdowns \n Defaults\
-                      \ to 1 minute"
-                    type: string
-                  batchEvictionSize:
-                    description: "BatchEvictionSize Represents the number of VMIs\
-                      \ that can be forced updated per the BatchShutdownInteral interval\
-                      \ \n Defaults to 10"
-                    type: integer
+                  batchEvictionInterval: {description: "BatchEvictionInterval Represents\
+                      \ the interval to wait before issuing the next batch of shutdowns\
+                      \ \n Defaults to 1 minute", type: string}
+                  batchEvictionSize: {description: "BatchEvictionSize Represents the\
+                      \ number of VMIs that can be forced updated per the BatchShutdownInteral\
+                      \ interval \n Defaults to 10", type: integer}
                   workloadUpdateMethods:
                     description: "WorkloadUpdateMethods defines the methods that can\
                       \ be used to disrupt workloads during automated workload updates.\
@@ -1990,8 +1537,7 @@ spec:
                       \ if both LiveMigrate and Shutdown methods are listed, only\
                       \ VMs which are not live migratable will be restarted/shutdown\
                       \ \n An empty list defaults to no automated workload updating"
-                    items:
-                      type: string
+                    items: {type: string}
                     type: array
                     x-kubernetes-list-type: atomic
                 type: object
@@ -2046,16 +1592,13 @@ spec:
                                               a key, and an operator that relates
                                               the key and values.
                                             properties:
-                                              key:
-                                                description: The label key that the
-                                                  selector applies to.
-                                                type: string
-                                              operator:
-                                                description: Represents a key's relationship
-                                                  to a set of values. Valid operators
-                                                  are In, NotIn, Exists, DoesNotExist.
-                                                  Gt, and Lt.
-                                                type: string
+                                              key: {description: The label key that
+                                                  the selector applies to., type: string}
+                                              operator: {description: 'Represents
+                                                  a key''s relationship to a set of
+                                                  values. Valid operators are In,
+                                                  NotIn, Exists, DoesNotExist. Gt,
+                                                  and Lt.', type: string}
                                               values:
                                                 description: An array of string values.
                                                   If the operator is In or NotIn,
@@ -2067,12 +1610,9 @@ spec:
                                                   element, which will be interpreted
                                                   as an integer. This array is replaced
                                                   during a strategic merge patch.
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                         matchFields:
@@ -2084,16 +1624,13 @@ spec:
                                               a key, and an operator that relates
                                               the key and values.
                                             properties:
-                                              key:
-                                                description: The label key that the
-                                                  selector applies to.
-                                                type: string
-                                              operator:
-                                                description: Represents a key's relationship
-                                                  to a set of values. Valid operators
-                                                  are In, NotIn, Exists, DoesNotExist.
-                                                  Gt, and Lt.
-                                                type: string
+                                              key: {description: The label key that
+                                                  the selector applies to., type: string}
+                                              operator: {description: 'Represents
+                                                  a key''s relationship to a set of
+                                                  values. Valid operators are In,
+                                                  NotIn, Exists, DoesNotExist. Gt,
+                                                  and Lt.', type: string}
                                               values:
                                                 description: An array of string values.
                                                   If the operator is In or NotIn,
@@ -2105,24 +1642,16 @@ spec:
                                                   element, which will be interpreted
                                                   as an integer. This array is replaced
                                                   during a strategic merge patch.
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                       type: object
-                                    weight:
-                                      description: Weight associated with matching
-                                        the corresponding nodeSelectorTerm, in the
-                                        range 1-100.
-                                      format: int32
-                                      type: integer
-                                  required:
-                                  - preference
-                                  - weight
+                                    weight: {description: 'Weight associated with
+                                        matching the corresponding nodeSelectorTerm,
+                                        in the range 1-100.', format: int32, type: integer}
+                                  required: [preference, weight]
                                   type: object
                                 type: array
                               requiredDuringSchedulingIgnoredDuringExecution:
@@ -2152,16 +1681,13 @@ spec:
                                               a key, and an operator that relates
                                               the key and values.
                                             properties:
-                                              key:
-                                                description: The label key that the
-                                                  selector applies to.
-                                                type: string
-                                              operator:
-                                                description: Represents a key's relationship
-                                                  to a set of values. Valid operators
-                                                  are In, NotIn, Exists, DoesNotExist.
-                                                  Gt, and Lt.
-                                                type: string
+                                              key: {description: The label key that
+                                                  the selector applies to., type: string}
+                                              operator: {description: 'Represents
+                                                  a key''s relationship to a set of
+                                                  values. Valid operators are In,
+                                                  NotIn, Exists, DoesNotExist. Gt,
+                                                  and Lt.', type: string}
                                               values:
                                                 description: An array of string values.
                                                   If the operator is In or NotIn,
@@ -2173,12 +1699,9 @@ spec:
                                                   element, which will be interpreted
                                                   as an integer. This array is replaced
                                                   during a strategic merge patch.
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                         matchFields:
@@ -2190,16 +1713,13 @@ spec:
                                               a key, and an operator that relates
                                               the key and values.
                                             properties:
-                                              key:
-                                                description: The label key that the
-                                                  selector applies to.
-                                                type: string
-                                              operator:
-                                                description: Represents a key's relationship
-                                                  to a set of values. Valid operators
-                                                  are In, NotIn, Exists, DoesNotExist.
-                                                  Gt, and Lt.
-                                                type: string
+                                              key: {description: The label key that
+                                                  the selector applies to., type: string}
+                                              operator: {description: 'Represents
+                                                  a key''s relationship to a set of
+                                                  values. Valid operators are In,
+                                                  NotIn, Exists, DoesNotExist. Gt,
+                                                  and Lt.', type: string}
                                               values:
                                                 description: An array of string values.
                                                   If the operator is In or NotIn,
@@ -2211,18 +1731,14 @@ spec:
                                                   element, which will be interpreted
                                                   as an integer. This array is replaced
                                                   during a strategic merge patch.
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                       type: object
                                     type: array
-                                required:
-                                - nodeSelectorTerms
+                                required: [nodeSelectorTerms]
                                 type: object
                             type: object
                           podAffinity:
@@ -2267,17 +1783,14 @@ spec:
                                                   a key, and an operator that relates
                                                   the key and values.
                                                 properties:
-                                                  key:
-                                                    description: key is the label
+                                                  key: {description: key is the label
                                                       key that the selector applies
-                                                      to.
-                                                    type: string
-                                                  operator:
-                                                    description: operator represents
-                                                      a key's relationship to a set
-                                                      of values. Valid operators are
-                                                      In, NotIn, Exists and DoesNotExist.
-                                                    type: string
+                                                      to., type: string}
+                                                  operator: {description: 'operator
+                                                      represents a key''s relationship
+                                                      to a set of values. Valid operators
+                                                      are In, NotIn, Exists and DoesNotExist.',
+                                                    type: string}
                                                   values:
                                                     description: values is an array
                                                       of string values. If the operator
@@ -2287,17 +1800,13 @@ spec:
                                                       values array must be empty.
                                                       This array is replaced during
                                                       a strategic merge patch.
-                                                    items:
-                                                      type: string
+                                                    items: {type: string}
                                                     type: array
-                                                required:
-                                                - key
-                                                - operator
+                                                required: [key, operator]
                                                 type: object
                                               type: array
                                             matchLabels:
-                                              additionalProperties:
-                                                type: string
+                                              additionalProperties: {type: string}
                                               description: matchLabels is a map of
                                                 {key,value} pairs. A single {key,value}
                                                 in the matchLabels map is equivalent
@@ -2313,32 +1822,23 @@ spec:
                                             namespaces the labelSelector applies to
                                             (matches against); null or empty list
                                             means "this pod's namespace"
-                                          items:
-                                            type: string
+                                          items: {type: string}
                                           type: array
-                                        topologyKey:
-                                          description: This pod should be co-located
-                                            (affinity) or not co-located (anti-affinity)
-                                            with the pods matching the labelSelector
-                                            in the specified namespaces, where co-located
-                                            is defined as running on a node whose
-                                            value of the label with key topologyKey
-                                            matches that of any node on which any
-                                            of the selected pods is running. Empty
-                                            topologyKey is not allowed.
-                                          type: string
-                                      required:
-                                      - topologyKey
+                                        topologyKey: {description: 'This pod should
+                                            be co-located (affinity) or not co-located
+                                            (anti-affinity) with the pods matching
+                                            the labelSelector in the specified namespaces,
+                                            where co-located is defined as running
+                                            on a node whose value of the label with
+                                            key topologyKey matches that of any node
+                                            on which any of the selected pods is running.
+                                            Empty topologyKey is not allowed.', type: string}
+                                      required: [topologyKey]
                                       type: object
-                                    weight:
-                                      description: weight associated with matching
-                                        the corresponding podAffinityTerm, in the
-                                        range 1-100.
-                                      format: int32
-                                      type: integer
-                                  required:
-                                  - podAffinityTerm
-                                  - weight
+                                    weight: {description: 'weight associated with
+                                        matching the corresponding podAffinityTerm,
+                                        in the range 1-100.', format: int32, type: integer}
+                                  required: [podAffinityTerm, weight]
                                   type: object
                                 type: array
                               requiredDuringSchedulingIgnoredDuringExecution:
@@ -2376,16 +1876,14 @@ spec:
                                               a key, and an operator that relates
                                               the key and values.
                                             properties:
-                                              key:
-                                                description: key is the label key
-                                                  that the selector applies to.
-                                                type: string
-                                              operator:
-                                                description: operator represents a
-                                                  key's relationship to a set of values.
-                                                  Valid operators are In, NotIn, Exists
-                                                  and DoesNotExist.
-                                                type: string
+                                              key: {description: key is the label
+                                                  key that the selector applies to.,
+                                                type: string}
+                                              operator: {description: 'operator represents
+                                                  a key''s relationship to a set of
+                                                  values. Valid operators are In,
+                                                  NotIn, Exists and DoesNotExist.',
+                                                type: string}
                                               values:
                                                 description: values is an array of
                                                   string values. If the operator is
@@ -2395,17 +1893,13 @@ spec:
                                                   array must be empty. This array
                                                   is replaced during a strategic merge
                                                   patch.
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                         matchLabels:
-                                          additionalProperties:
-                                            type: string
+                                          additionalProperties: {type: string}
                                           description: matchLabels is a map of {key,value}
                                             pairs. A single {key,value} in the matchLabels
                                             map is equivalent to an element of matchExpressions,
@@ -2418,21 +1912,18 @@ spec:
                                       description: namespaces specifies which namespaces
                                         the labelSelector applies to (matches against);
                                         null or empty list means "this pod's namespace"
-                                      items:
-                                        type: string
+                                      items: {type: string}
                                       type: array
-                                    topologyKey:
-                                      description: This pod should be co-located (affinity)
-                                        or not co-located (anti-affinity) with the
-                                        pods matching the labelSelector in the specified
-                                        namespaces, where co-located is defined as
-                                        running on a node whose value of the label
-                                        with key topologyKey matches that of any node
-                                        on which any of the selected pods is running.
-                                        Empty topologyKey is not allowed.
-                                      type: string
-                                  required:
-                                  - topologyKey
+                                    topologyKey: {description: 'This pod should be
+                                        co-located (affinity) or not co-located (anti-affinity)
+                                        with the pods matching the labelSelector in
+                                        the specified namespaces, where co-located
+                                        is defined as running on a node whose value
+                                        of the label with key topologyKey matches
+                                        that of any node on which any of the selected
+                                        pods is running. Empty topologyKey is not
+                                        allowed.', type: string}
+                                  required: [topologyKey]
                                   type: object
                                 type: array
                             type: object
@@ -2478,17 +1969,14 @@ spec:
                                                   a key, and an operator that relates
                                                   the key and values.
                                                 properties:
-                                                  key:
-                                                    description: key is the label
+                                                  key: {description: key is the label
                                                       key that the selector applies
-                                                      to.
-                                                    type: string
-                                                  operator:
-                                                    description: operator represents
-                                                      a key's relationship to a set
-                                                      of values. Valid operators are
-                                                      In, NotIn, Exists and DoesNotExist.
-                                                    type: string
+                                                      to., type: string}
+                                                  operator: {description: 'operator
+                                                      represents a key''s relationship
+                                                      to a set of values. Valid operators
+                                                      are In, NotIn, Exists and DoesNotExist.',
+                                                    type: string}
                                                   values:
                                                     description: values is an array
                                                       of string values. If the operator
@@ -2498,17 +1986,13 @@ spec:
                                                       values array must be empty.
                                                       This array is replaced during
                                                       a strategic merge patch.
-                                                    items:
-                                                      type: string
+                                                    items: {type: string}
                                                     type: array
-                                                required:
-                                                - key
-                                                - operator
+                                                required: [key, operator]
                                                 type: object
                                               type: array
                                             matchLabels:
-                                              additionalProperties:
-                                                type: string
+                                              additionalProperties: {type: string}
                                               description: matchLabels is a map of
                                                 {key,value} pairs. A single {key,value}
                                                 in the matchLabels map is equivalent
@@ -2524,32 +2008,23 @@ spec:
                                             namespaces the labelSelector applies to
                                             (matches against); null or empty list
                                             means "this pod's namespace"
-                                          items:
-                                            type: string
+                                          items: {type: string}
                                           type: array
-                                        topologyKey:
-                                          description: This pod should be co-located
-                                            (affinity) or not co-located (anti-affinity)
-                                            with the pods matching the labelSelector
-                                            in the specified namespaces, where co-located
-                                            is defined as running on a node whose
-                                            value of the label with key topologyKey
-                                            matches that of any node on which any
-                                            of the selected pods is running. Empty
-                                            topologyKey is not allowed.
-                                          type: string
-                                      required:
-                                      - topologyKey
+                                        topologyKey: {description: 'This pod should
+                                            be co-located (affinity) or not co-located
+                                            (anti-affinity) with the pods matching
+                                            the labelSelector in the specified namespaces,
+                                            where co-located is defined as running
+                                            on a node whose value of the label with
+                                            key topologyKey matches that of any node
+                                            on which any of the selected pods is running.
+                                            Empty topologyKey is not allowed.', type: string}
+                                      required: [topologyKey]
                                       type: object
-                                    weight:
-                                      description: weight associated with matching
-                                        the corresponding podAffinityTerm, in the
-                                        range 1-100.
-                                      format: int32
-                                      type: integer
-                                  required:
-                                  - podAffinityTerm
-                                  - weight
+                                    weight: {description: 'weight associated with
+                                        matching the corresponding podAffinityTerm,
+                                        in the range 1-100.', format: int32, type: integer}
+                                  required: [podAffinityTerm, weight]
                                   type: object
                                 type: array
                               requiredDuringSchedulingIgnoredDuringExecution:
@@ -2587,16 +2062,14 @@ spec:
                                               a key, and an operator that relates
                                               the key and values.
                                             properties:
-                                              key:
-                                                description: key is the label key
-                                                  that the selector applies to.
-                                                type: string
-                                              operator:
-                                                description: operator represents a
-                                                  key's relationship to a set of values.
-                                                  Valid operators are In, NotIn, Exists
-                                                  and DoesNotExist.
-                                                type: string
+                                              key: {description: key is the label
+                                                  key that the selector applies to.,
+                                                type: string}
+                                              operator: {description: 'operator represents
+                                                  a key''s relationship to a set of
+                                                  values. Valid operators are In,
+                                                  NotIn, Exists and DoesNotExist.',
+                                                type: string}
                                               values:
                                                 description: values is an array of
                                                   string values. If the operator is
@@ -2606,17 +2079,13 @@ spec:
                                                   array must be empty. This array
                                                   is replaced during a strategic merge
                                                   patch.
-                                                items:
-                                                  type: string
+                                                items: {type: string}
                                                 type: array
-                                            required:
-                                            - key
-                                            - operator
+                                            required: [key, operator]
                                             type: object
                                           type: array
                                         matchLabels:
-                                          additionalProperties:
-                                            type: string
+                                          additionalProperties: {type: string}
                                           description: matchLabels is a map of {key,value}
                                             pairs. A single {key,value} in the matchLabels
                                             map is equivalent to an element of matchExpressions,
@@ -2629,28 +2098,24 @@ spec:
                                       description: namespaces specifies which namespaces
                                         the labelSelector applies to (matches against);
                                         null or empty list means "this pod's namespace"
-                                      items:
-                                        type: string
+                                      items: {type: string}
                                       type: array
-                                    topologyKey:
-                                      description: This pod should be co-located (affinity)
-                                        or not co-located (anti-affinity) with the
-                                        pods matching the labelSelector in the specified
-                                        namespaces, where co-located is defined as
-                                        running on a node whose value of the label
-                                        with key topologyKey matches that of any node
-                                        on which any of the selected pods is running.
-                                        Empty topologyKey is not allowed.
-                                      type: string
-                                  required:
-                                  - topologyKey
+                                    topologyKey: {description: 'This pod should be
+                                        co-located (affinity) or not co-located (anti-affinity)
+                                        with the pods matching the labelSelector in
+                                        the specified namespaces, where co-located
+                                        is defined as running on a node whose value
+                                        of the label with key topologyKey matches
+                                        that of any node on which any of the selected
+                                        pods is running. Empty topologyKey is not
+                                        allowed.', type: string}
+                                  required: [topologyKey]
                                   type: object
                                 type: array
                             type: object
                         type: object
                       nodeSelector:
-                        additionalProperties:
-                          type: string
+                        additionalProperties: {type: string}
                         description: 'nodeSelector is the node selector applied to
                           the relevant kind of pods It specifies a map of key-value
                           pairs: for the pod to be eligible to run on a node, the
@@ -2667,39 +2132,29 @@ spec:
                             any taint that matches the triple <key,value,effect> using
                             the matching operator <operator>.
                           properties:
-                            effect:
-                              description: Effect indicates the taint effect to match.
-                                Empty means match all taint effects. When specified,
-                                allowed values are NoSchedule, PreferNoSchedule and
-                                NoExecute.
-                              type: string
-                            key:
-                              description: Key is the taint key that the toleration
+                            effect: {description: 'Effect indicates the taint effect
+                                to match. Empty means match all taint effects. When
+                                specified, allowed values are NoSchedule, PreferNoSchedule
+                                and NoExecute.', type: string}
+                            key: {description: 'Key is the taint key that the toleration
                                 applies to. Empty means match all taint keys. If the
                                 key is empty, operator must be Exists; this combination
-                                means to match all values and all keys.
-                              type: string
-                            operator:
-                              description: Operator represents a key's relationship
-                                to the value. Valid operators are Exists and Equal.
-                                Defaults to Equal. Exists is equivalent to wildcard
-                                for value, so that a pod can tolerate all taints of
-                                a particular category.
-                              type: string
-                            tolerationSeconds:
-                              description: TolerationSeconds represents the period
-                                of time the toleration (which must be of effect NoExecute,
-                                otherwise this field is ignored) tolerates the taint.
-                                By default, it is not set, which means tolerate the
-                                taint forever (do not evict). Zero and negative values
-                                will be treated as 0 (evict immediately) by the system.
-                              format: int64
-                              type: integer
-                            value:
-                              description: Value is the taint value the toleration
+                                means to match all values and all keys.', type: string}
+                            operator: {description: 'Operator represents a key''s
+                                relationship to the value. Valid operators are Exists
+                                and Equal. Defaults to Equal. Exists is equivalent
+                                to wildcard for value, so that a pod can tolerate
+                                all taints of a particular category.', type: string}
+                            tolerationSeconds: {description: 'TolerationSeconds represents
+                                the period of time the toleration (which must be of
+                                effect NoExecute, otherwise this field is ignored)
+                                tolerates the taint. By default, it is not set, which
+                                means tolerate the taint forever (do not evict). Zero
+                                and negative values will be treated as 0 (evict immediately)
+                                by the system.', format: int64, type: integer}
+                            value: {description: 'Value is the taint value the toleration
                                 matches to. If the operator is Exists, the value should
-                                be empty, otherwise just a regular string.
-                              type: string
+                                be empty, otherwise just a regular string.', type: string}
                           type: object
                         type: array
                     type: object
@@ -2714,25 +2169,13 @@ spec:
                   description: KubeVirtCondition represents a condition of a KubeVirt
                     deployment
                   properties:
-                    lastProbeTime:
-                      format: date-time
-                      nullable: true
-                      type: string
-                    lastTransitionTime:
-                      format: date-time
-                      nullable: true
-                      type: string
-                    message:
-                      type: string
-                    reason:
-                      type: string
-                    status:
-                      type: string
-                    type:
-                      type: string
-                  required:
-                  - status
-                  - type
+                    lastProbeTime: {format: date-time, nullable: true, type: string}
+                    lastTransitionTime: {format: date-time, nullable: true, type: string}
+                    message: {type: string}
+                    reason: {type: string}
+                    status: {type: string}
+                    type: {type: string}
+                  required: [status, type]
                   type: object
                 type: array
               generations:
@@ -2741,63 +2184,37 @@ spec:
                     a given resource so that decisions about forced updates can be
                     made.
                   properties:
-                    group:
-                      description: group is the group of the thing you're tracking
-                      type: string
-                    hash:
-                      description: hash is an optional field set for resources without
-                        generation that are content sensitive like secrets and configmaps
-                      type: string
-                    lastGeneration:
-                      description: lastGeneration is the last generation of the workload
-                        controller involved
-                      format: int64
-                      type: integer
-                    name:
-                      description: name is the name of the thing you're tracking
-                      type: string
-                    namespace:
-                      description: namespace is where the thing you're tracking is
-                      type: string
-                    resource:
-                      description: resource is the resource type of the thing you're
-                        tracking
-                      type: string
-                  required:
-                  - group
-                  - lastGeneration
-                  - name
-                  - resource
+                    group: {description: group is the group of the thing you're tracking,
+                      type: string}
+                    hash: {description: hash is an optional field set for resources
+                        without generation that are content sensitive like secrets
+                        and configmaps, type: string}
+                    lastGeneration: {description: lastGeneration is the last generation
+                        of the workload controller involved, format: int64, type: integer}
+                    name: {description: name is the name of the thing you're tracking,
+                      type: string}
+                    namespace: {description: namespace is where the thing you're tracking
+                        is, type: string}
+                    resource: {description: resource is the resource type of the thing
+                        you're tracking, type: string}
+                  required: [group, lastGeneration, name, resource]
                   type: object
                 type: array
                 x-kubernetes-list-type: atomic
-              observedDeploymentConfig:
-                type: string
-              observedDeploymentID:
-                type: string
-              observedKubeVirtRegistry:
-                type: string
-              observedKubeVirtVersion:
-                type: string
-              operatorVersion:
-                type: string
-              outdatedVirtualMachineInstanceWorkloads:
-                type: integer
-              phase:
-                description: KubeVirtPhase is a label for the phase of a KubeVirt
-                  deployment at the current time.
-                type: string
-              targetDeploymentConfig:
-                type: string
-              targetDeploymentID:
-                type: string
-              targetKubeVirtRegistry:
-                type: string
-              targetKubeVirtVersion:
-                type: string
+              observedDeploymentConfig: {type: string}
+              observedDeploymentID: {type: string}
+              observedKubeVirtRegistry: {type: string}
+              observedKubeVirtVersion: {type: string}
+              operatorVersion: {type: string}
+              outdatedVirtualMachineInstanceWorkloads: {type: integer}
+              phase: {description: KubeVirtPhase is a label for the phase of a KubeVirt
+                  deployment at the current time., type: string}
+              targetDeploymentConfig: {type: string}
+              targetDeploymentID: {type: string}
+              targetKubeVirtRegistry: {type: string}
+              targetKubeVirtVersion: {type: string}
             type: object
-        required:
-        - spec
+        required: [spec]
         type: object
     served: true
     storage: true
