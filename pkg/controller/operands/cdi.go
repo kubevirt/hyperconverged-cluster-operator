@@ -99,8 +99,6 @@ func getDefaultFeatureGates() []string {
 	return []string{HonorWaitForFirstConsumerGate}
 }
 
-func (h *cdiHooks) postFound(req *common.HcoRequest, exists runtime.Object) error { return nil }
-
 func NewCDI(hc *hcov1beta1.HyperConverged, opts ...string) (*cdiv1beta1.CDI, error) {
 	uninstallStrategy := cdiv1beta1.CDIUninstallStrategyBlockUninstallIfWorkloadsExist
 
@@ -188,8 +186,7 @@ type storageConfigHooks struct{}
 func (h storageConfigHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
 	return NewKubeVirtStorageConfigForCR(hc, hc.Namespace), nil
 }
-func (h storageConfigHooks) getEmptyCr() client.Object                              { return &corev1.ConfigMap{} }
-func (h storageConfigHooks) postFound(_ *common.HcoRequest, _ runtime.Object) error { return nil }
+func (h storageConfigHooks) getEmptyCr() client.Object { return &corev1.ConfigMap{} }
 func (h storageConfigHooks) getObjectMeta(cr runtime.Object) *metav1.ObjectMeta {
 	return &cr.(*corev1.ConfigMap).ObjectMeta
 }
@@ -271,8 +268,7 @@ type configReaderRoleHooks struct{}
 func (h configReaderRoleHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
 	return NewConfigReaderRoleForCR(hc, hc.Namespace), nil
 }
-func (h configReaderRoleHooks) getEmptyCr() client.Object                              { return &rbacv1.Role{} }
-func (h configReaderRoleHooks) postFound(_ *common.HcoRequest, _ runtime.Object) error { return nil }
+func (h configReaderRoleHooks) getEmptyCr() client.Object { return &rbacv1.Role{} }
 func (h configReaderRoleHooks) getObjectMeta(cr runtime.Object) *metav1.ObjectMeta {
 	return &cr.(*rbacv1.Role).ObjectMeta
 }
@@ -342,9 +338,6 @@ func (h configReaderRoleBindingHooks) getFullCr(hc *hcov1beta1.HyperConverged) (
 	return NewConfigReaderRoleBindingForCR(hc, hc.Namespace), nil
 }
 func (h configReaderRoleBindingHooks) getEmptyCr() client.Object { return &rbacv1.RoleBinding{} }
-func (h configReaderRoleBindingHooks) postFound(_ *common.HcoRequest, _ runtime.Object) error {
-	return nil
-}
 func (h configReaderRoleBindingHooks) getObjectMeta(cr runtime.Object) *metav1.ObjectMeta {
 	return &cr.(*rbacv1.RoleBinding).ObjectMeta
 }
