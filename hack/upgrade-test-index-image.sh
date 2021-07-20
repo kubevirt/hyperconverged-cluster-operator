@@ -60,6 +60,9 @@ function Msg {
 
 source ./hack/upgrade-openshiftci-config
 
+echo "----- Require custom MUST_GATHER_IMAGE image"
+echo "MUST_GATHER_IMAGE=quay.io/kubevirt/must-gather:latest\n" > ${SHARED_DIR}/must-gather-image.sh
+
 function cleanup() {
     rv=$?
     if [ "x$rv" != "x0" ]; then
