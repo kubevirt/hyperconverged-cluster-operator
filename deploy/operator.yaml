@@ -60,15 +60,15 @@ spec:
         - name: KUBEVIRT_VERSION
           value: v0.41.0
         - name: CDI_VERSION
-          value: v1.35.0
+          value: v1.34.1
         - name: NETWORK_ADDONS_VERSION
-          value: v0.56.0
+          value: v0.53.6
         - name: SSP_VERSION
           value: v0.11.2
         - name: NMO_VERSION
-          value: v0.9.0
+          value: v0.9.1
         - name: HPPO_VERSION
-          value: v0.8.0
+          value: v0.8.2
         - name: VM_IMPORT_VERSION
           value: v0.3.6
         image: quay.io/kubevirt/hyperconverged-cluster-operator:1.4.0-unstable
@@ -221,7 +221,7 @@ spec:
         - name: OPERATOR_NAME
           value: cluster-network-addons-operator
         - name: OPERATOR_VERSION
-          value: v0.56.0
+          value: v0.53.6
         - name: OPERATOR_NAMESPACE
           valueFrom:
             fieldRef:
@@ -442,7 +442,7 @@ spec:
         - name: DEPLOY_CLUSTER_RESOURCES
           value: "true"
         - name: OPERATOR_VERSION
-          value: v1.35.0
+          value: v1.34.1
         - name: CONTROLLER_IMAGE
           value: quay.io/kubevirt/cdi-controller@sha256:069a2a57643ca17231d5af1d3469dfae8a0c8fe8c65caad12e206a56426ed5f3
         - name: IMPORTER_IMAGE
