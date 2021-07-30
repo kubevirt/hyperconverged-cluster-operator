@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"os"
 	"time"
@@ -1713,6 +1714,62 @@ progressTimeout: 150`,
 					Expect(err).ToNot(HaveOccurred())
 					Expect(vmiCM.Data).ShouldNot(BeNil())
 					Expect(vmiCM.Data).To(HaveKeyWithValue(vddkk, vddkInitImageValue))
+				})
+
+			})
+
+			Context("Remove deprecated versions from .status.storedVersions on the CRD", func() {
+
+				It("should update .status.storedVersions on the HCO CRD during upgrades", func() {
+					// Simulate ongoing upgrade
+					expected.hco.Status.UpdateVersion(hcoVersionName, oldVersion)
+
+					expected.hcoCRD.Status.StoredVersions = []string{"v1alpha1", "v1beta1", "v1"}
+
+					cl := expected.initClient()
+
+					foundHC, requeue := doReconcile(cl, expected.hco)
+					Expect(requeue).To(BeTrue())
+
+					foundCrd := &apiextensionsv1.CustomResourceDefinition{}
+					Expect(
+						cl.Get(context.TODO(),
+							client.ObjectKeyFromObject(expected.hcoCRD),
+							foundCrd),
+					).To(BeNil())
+					Expect(foundCrd.Status.StoredVersions).ShouldNot(ContainElement("v1alpha1"))
+					Expect(foundCrd.Status.StoredVersions).Should(ContainElement("v1beta1"))
+					Expect(foundCrd.Status.StoredVersions).Should(ContainElement("v1"))
+
+					By("Run reconcile again")
+					foundHC, requeue = doReconcile(cl, foundHC)
+					Expect(requeue).To(BeFalse())
+
+					checkAvailability(foundHC, corev1.ConditionTrue)
+					ver, ok := foundHC.Status.GetVersion(hcoVersionName)
+					Expect(ok).To(BeTrue())
+					Expect(ver).Should(Equal(newVersion))
+				})
+
+				It("should not update .status.storedVersions on the HCO CRD if not in upgrade mode", func() {
+					expected.hcoCRD.Status.StoredVersions = []string{"v1alpha1", "v1beta1", "v1"}
+
+					cl := expected.initClient()
+
+					foundHC, requeue := doReconcile(cl, expected.hco)
+					checkAvailability(foundHC, corev1.ConditionTrue)
+					Expect(requeue).To(BeFalse())
+
+					foundCrd := &apiextensionsv1.CustomResourceDefinition{}
+					Expect(
+						cl.Get(context.TODO(),
+							client.ObjectKeyFromObject(expected.hcoCRD),
+							foundCrd),
+					).To(BeNil())
+					Expect(foundCrd.Status.StoredVersions).Should(ContainElement("v1alpha1"))
+					Expect(foundCrd.Status.StoredVersions).Should(ContainElement("v1beta1"))
+					Expect(foundCrd.Status.StoredVersions).Should(ContainElement("v1"))
+
 				})
 
 			})
