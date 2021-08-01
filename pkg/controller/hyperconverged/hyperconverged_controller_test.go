@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"os"
 	"time"
 
@@ -37,6 +38,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kubevirtv1 "kubevirt.io/client-go/api/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // name and namespace of our primary resource
@@ -1067,6 +1069,69 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cond.Reason).Should(Equal(reconcileCompleted))
 				Expect(cond.Message).Should(Equal(reconcileCompletedMessage))
 			})
+
+			Context("Remove deprecated versions from .status.storedVersions on the CRD", func() {
+
+				It("should update .status.storedVersions on the HCO CRD during upgrades", func() {
+					// Simulate ongoing upgrade
+					expected.hco.Status.UpdateVersion(hcoVersionName, oldVersion)
+
+					expected.hcoCRD.Status.StoredVersions = []string{"v1alpha1", "v1beta1", "v1"}
+
+					cl := expected.initClient()
+
+					foundHC, requeue := doReconcile(cl, expected.hco)
+					Expect(requeue).To(BeTrue())
+
+					foundCrd := &apiextensionsv1.CustomResourceDefinition{}
+					crdKey, err := client.ObjectKeyFromObject(expected.hcoCRD)
+					Expect(err).To(BeNil())
+					Expect(
+						cl.Get(context.TODO(),
+							crdKey,
+							foundCrd),
+					).To(BeNil())
+					Expect(foundCrd.Status.StoredVersions).ShouldNot(ContainElement("v1alpha1"))
+					Expect(foundCrd.Status.StoredVersions).Should(ContainElement("v1beta1"))
+					Expect(foundCrd.Status.StoredVersions).Should(ContainElement("v1"))
+
+					By("Run reconcile again")
+					foundHC, requeue = doReconcile(cl, foundHC)
+					Expect(requeue).To(BeFalse())
+
+					checkAvailability(foundHC, corev1.ConditionTrue)
+					ver, ok := foundHC.Status.GetVersion(hcoVersionName)
+					Expect(ok).To(BeTrue())
+					Expect(ver).Should(Equal(newVersion))
+				})
+
+				It("should not update .status.storedVersions on the HCO CRD if not in upgrade mode", func() {
+					expected.hcoCRD.Status.StoredVersions = []string{"v1alpha1", "v1beta1", "v1"}
+					// exclude upgrade mode
+					expected.hco.Status.UpdateVersion(hcoVersionName, newVersion)
+
+					cl := expected.initClient()
+
+					foundHC, requeue := doReconcile(cl, expected.hco)
+					checkAvailability(foundHC, corev1.ConditionTrue)
+					Expect(requeue).To(BeFalse())
+
+					foundCrd := &apiextensionsv1.CustomResourceDefinition{}
+					crdKey, err := client.ObjectKeyFromObject(expected.hcoCRD)
+					Expect(err).To(BeNil())
+					Expect(
+						cl.Get(context.TODO(),
+							crdKey,
+							foundCrd),
+					).To(BeNil())
+					Expect(foundCrd.Status.StoredVersions).Should(ContainElement("v1alpha1"))
+					Expect(foundCrd.Status.StoredVersions).Should(ContainElement("v1beta1"))
+					Expect(foundCrd.Status.StoredVersions).Should(ContainElement("v1"))
+
+				})
+
+			})
+
 		})
 
 		Context("Aggregate Negative Conditions", func() {

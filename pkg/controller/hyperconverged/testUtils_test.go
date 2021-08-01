@@ -3,6 +3,7 @@ package hyperconverged
 import (
 	"context"
 	"fmt"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"os"
 
 	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -72,6 +73,7 @@ type BasicExpected struct {
 	mService             *corev1.Service
 	serviceMonitor       *monitoringv1.ServiceMonitor
 	promRule             *monitoringv1.PrometheusRule
+	hcoCRD               *apiextensionsv1.CustomResourceDefinition
 }
 
 func (be BasicExpected) toArray() []runtime.Object {
@@ -91,6 +93,7 @@ func (be BasicExpected) toArray() []runtime.Object {
 		be.mService,
 		be.serviceMonitor,
 		be.promRule,
+		be.hcoCRD,
 	}
 }
 
@@ -187,6 +190,13 @@ func getBasicDeployment() *BasicExpected {
 	res.imsConfig.Data["v2v-conversion-image"] = commonTestUtils.Conversion_image
 	res.imsConfig.Data["kubevirt-vmware-image"] = commonTestUtils.Vmware_image
 	res.imsConfig.Data["virtio-win-image"] = commonTestUtils.VirtioWinImage
+
+	hcoCrd := &apiextensionsv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "hyperconvergeds.hco.kubevirt.io",
+		},
+	}
+	res.hcoCRD = hcoCrd
 
 	return res
 }

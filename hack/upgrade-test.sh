@@ -41,7 +41,7 @@
 # to verify that it is updated to the new operator image from 
 # the local registry.
 
-MAX_STEPS=15
+MAX_STEPS=16
 CUR_STEP=1
 RELEASE_DELTA="${RELEASE_DELTA:-1}"
 HCO_DEPLOYMENT_NAME=hco-operator
@@ -214,6 +214,13 @@ PREVIOUS_OVS_STATE=$(${CMD} get networkaddonsconfigs cluster -o jsonpath='{.spec
 Msg "Read the CSV to make sure the deployment is done"
 ./hack/retry.sh 30 10 "${CMD} get ClusterServiceVersion  -n ${HCO_NAMESPACE} kubevirt-hyperconverged-operator.v${INITIAL_CHANNEL} -o jsonpath='{ .status.phase }' | grep 'Succeeded'"
 
+echo "----- Inject v1alpha1 in .status.storedVersions on the CRD to be sure it got properly removed"
+${CMD} proxy &
+PROXYPID=$!
+sleep 3
+curl --header "Content-Type: application/json-patch+json" --request PATCH http://localhost:8001/apis/apiextensions.k8s.io/v1/customresourcedefinitions/hyperconvergeds.hco.kubevirt.io/status --data '[{"op": "replace", "path": "/status/storedVersions", "value":["v1beta1", "v1alpha1"]}]'
+kill ${PROXYPID}
+${CMD} get crd hyperconvergeds.hco.kubevirt.io -o jsonpath='{.status.storedVersions}'
 
 # Create a new version based off of latest. The new version appends ".1" to the latest version.
 # The new version replaces the hco-operator image from quay.io with the image pushed to the local registry.
@@ -284,6 +291,13 @@ KUBECTL_BINARY=${CMD} ./hack/test_quick_start.sh
 Msg "Check that OVS is deployed or not deployed according to deployOVS annotation in HCO CR."
 ./hack/retry.sh 40 15 "CMD=${CMD} PREVIOUS_OVS_ANNOTATION=${PREVIOUS_OVS_ANNOTATION}\
  PREVIOUS_OVS_STATE=${PREVIOUS_OVS_STATE} ./hack/check_upgrade_ovs.sh"
+
+Msg "Check that v1alpha1 is not listed anymore on .status.storedVersions on the CRD"
+STORED_VERSION=$(${CMD} get crd hyperconvergeds.hco.kubevirt.io -o jsonpath='{.status.storedVersions}')
+if [[ ${STORED_VERSION} == *"v1alpha1"* ]]; then
+  echo "error: v1alpha1 is still present in .status.storedVersions"
+  exit 1
+fi
 
 Msg "Brutally delete HCO removing the namespace where it's running"
 source hack/test_delete_ns.sh
