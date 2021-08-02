@@ -82,6 +82,7 @@ var (
 	vmImportCsv         = flag.String("vmimport-csv", "", "Virtual Machine Import Operator CSV String")
 	operatorImage       = flag.String("operator-image-name", "", "HyperConverged Cluster Operator image")
 	webhookImage        = flag.String("webhook-image-name", "", "HyperConverged Cluster Webhook image")
+	downloadsImage      = flag.String("downloads-image-name", "", "Downloads Server image")
 	imsConversionImage  = flag.String("ims-conversion-image-name", "", "IMS conversion image")
 	imsVMWareImage      = flag.String("ims-vmware-image-name", "", "IMS VMWare image")
 	kvVirtIOWinImage    = flag.String("kv-virtiowin-image-name", "", "KubeVirt VirtIO Win image")
@@ -490,6 +491,7 @@ func getDeploymentParams() *components.DeploymentOperatorParams {
 		Namespace:           *namespace,
 		Image:               *operatorImage,
 		WebhookImage:        *webhookImage,
+		DownloadsImage:      *downloadsImage,
 		ImagePullPolicy:     "IfNotPresent",
 		ConversionContainer: *imsConversionImage,
 		VmwareContainer:     *imsVMWareImage,

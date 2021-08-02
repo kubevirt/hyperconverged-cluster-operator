@@ -183,6 +183,42 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
+    app.kubernetes.io/component: deployment
+    app.kubernetes.io/part-of: hyperconverged-cluster
+    app.kubernetes.io/version: 1.5.0
+    name: downloads
+  name: downloads
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: downloads
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: deployment
+        app.kubernetes.io/part-of: hyperconverged-cluster
+        app.kubernetes.io/version: 1.5.0
+        name: downloads
+    spec:
+      containers:
+      - image: quay.io/kubevirt/virt-artifacts-server:1.5.0-unstable
+        imagePullPolicy: IfNotPresent
+        name: server
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        resources:
+          requests:
+            cpu: 10m
+            memory: 96Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
     app.kubernetes.io/component: network
     app.kubernetes.io/part-of: hyperconverged-cluster
     app.kubernetes.io/version: 1.5.0

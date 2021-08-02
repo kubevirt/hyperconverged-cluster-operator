@@ -65,6 +65,8 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, isOpenshift
 			(*genericOperand)(newMetricsServiceMonitorHandler(client, scheme)),
 			(*genericOperand)(newMonitoringPrometheusRuleHandler(client, scheme)),
 			(*genericOperand)(newCLIDownloadHandler(client, scheme)),
+			(*genericOperand)(newDownloadsRouteHandler(client, scheme)),
+			(*genericOperand)(newDownloadsServiceHandler(client, scheme)),
 		}...)
 	}
 
