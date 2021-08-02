@@ -598,6 +598,21 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		},
 		{
 			APIGroups: []string{
+				"apiextensions.k8s.io",
+			},
+			Resources: []string{
+				"customresourcedefinitions/status",
+			},
+			Verbs: []string{
+				"get",
+				"list",
+				"watch",
+				"patch",
+				"update",
+			},
+		},
+		{
+			APIGroups: []string{
 				"security.openshift.io",
 			},
 			Resources: []string{
