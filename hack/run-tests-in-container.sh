@@ -54,7 +54,7 @@ $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" delete pod functest --ignore-not-fou
 $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" run functest \
  --image="$FUNC_TEST_IMAGE" --serviceaccount=functest \
  --env="INSTALLED_NAMESPACE=${INSTALLED_NAMESPACE}" \
- --restart=Never -- --config-file hack/testFiles/test_config.yaml
+ --restart=Never -- --config-file hack/testFiles/test_config.yaml --junit-output=/var/report.xml
 
 phase="Running"
 for i in $(seq 1 60); do
@@ -69,6 +69,10 @@ for i in $(seq 1 60); do
 done
 
 $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" logs functest
+
+if [[ -n ${ARTIFACT_DIR} ]]; then
+  $KUBECTL_BINARY cp -n "${INSTALLED_NAMESPACE}" functest:/var/report.xml "${ARTIFACT_DIR}/junit/report.xml"
+fi
 
 echo "Exiting... Last phase status: $phase"
 
