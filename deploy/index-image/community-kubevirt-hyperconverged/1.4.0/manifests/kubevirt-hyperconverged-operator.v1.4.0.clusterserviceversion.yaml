@@ -1847,7 +1847,7 @@ spec:
                 - name: HCO_KV_IO_VERSION
                   value: 1.4.0
                 - name: KUBEVIRT_VERSION
-                  value: v0.41.3
+                  value: v0.41.0
                 - name: CDI_VERSION
                   value: v1.34.1
                 - name: NETWORK_ADDONS_VERSION
@@ -1855,7 +1855,7 @@ spec:
                 - name: SSP_VERSION
                   value: v0.11.2
                 - name: NMO_VERSION
-                  value: v0.9.0
+                  value: v0.9.1
                 - name: HPPO_VERSION
                   value: v0.8.2
                 - name: VM_IMPORT_VERSION
@@ -2067,7 +2067,7 @@ spec:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: KUBEVIRT_VERSION
-                  value: v0.41.3
+                  value: v0.41.0
                 - name: VIRT_API_SHASUM
                   value: sha256:a6db801c80b10f54b7769b28fdd3b1003bdbd37bd0f2447aa1b03a760dbcc058
                 - name: VIRT_CONTROLLER_SHASUM
