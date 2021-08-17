@@ -3,7 +3,8 @@
 set -x
 
 # Setup Environment Variables
-HCO_VERSION="${HCO_VERSION:-1.4.0}"
+HCO_VERSION="${HCO_VERSION:-1.4.1}"
+# TODO: move to channel 1.4
 HCO_CHANNEL="${HCO_CHANNEL:-1.4.0}"
 MARKETPLACE_MODE="${MARKETPLACE_MODE:-true}"
 PRIVATE_REPO="${PRIVATE_REPO:-false}"

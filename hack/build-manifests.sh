@@ -279,10 +279,11 @@ rm -fr "${CSV_DIR}"
 mkdir -p "${CSV_DIR}/metadata" "${CSV_DIR}/manifests"
 
 
+# TODO: use the right channel!
 cat << EOF > "${CSV_DIR}/metadata/annotations.yaml"
 annotations:
-  operators.operatorframework.io.bundle.channel.default.v1: ${CSV_VERSION}
-  operators.operatorframework.io.bundle.channels.v1: ${CSV_VERSION}
+  operators.operatorframework.io.bundle.channel.default.v1: ${CSV_VERSION::3}.0
+  operators.operatorframework.io.bundle.channels.v1: ${CSV_VERSION::3}.0
   operators.operatorframework.io.bundle.manifests.v1: manifests/
   operators.operatorframework.io.bundle.mediatype.v1: registry+v1
   operators.operatorframework.io.bundle.metadata.v1: metadata/

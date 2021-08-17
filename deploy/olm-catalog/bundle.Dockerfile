@@ -1,5 +1,6 @@
 FROM scratch
 
+# TODO: move to channel 1.4
 ARG VERSION=1.4.0
 
 LABEL operators.operatorframework.io.bundle.mediatype.v1=registry+v1
