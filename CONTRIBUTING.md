@@ -60,7 +60,7 @@ typical users. Think if you can just add the new feature gate in a hard code man
 If there is a real need for a new feature gate, please follow these steps:
 
 1. In the PR message, describe the new feature gate, what it does and why it needed to be added to the HCO API.
-1. Add the new feature gate to the HyperConvergedFeatureGates struct
+2. Add the new feature gate to the HyperConvergedFeatureGates struct
    in [pkg/apis/hco/v1beta1/hyperconverged_types.go](pkg/apis/hco/v1beta1/hyperconverged_types.go)
     - make sure the name of the feature gate field is as the feature gate field in the target operand, including casing.
       It also must start with a capital letter, to be exposed from the api package.
@@ -72,33 +72,35 @@ If there is a real need for a new feature gate, please follow these steps:
         - optional annotation
 for example:
     ```golang
-	// Allow migrating a virtual machine with CPU host-passthrough mode. This should be
+    // Allow migrating a virtual machine with CPU host-passthrough mode. This should be
     // enabled only when the Cluster is homogeneous from CPU HW perspective doc here
     // +optional
     // +kubebuilder:default=false
     WithHostPassthroughCPU bool `json:"withHostPassthroughCPU,omitempty"`
     ```
 
-1. Run openapi-gen code generation (the GOPATH below is an example. use the right value for your settings)
+3. Run openapi-gen code generation (the GOPATH below is an example. use the right value for your settings)
     ```shell
     GOPATH=~/go GO111MODULE=auto openapi-gen --output-file-base zz_generated.openapi --input-dirs="github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1" --output-package github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1
     ```
-1. Run deepcopy code generation (the GOPATH below is an example. use the right value for your settings):
+4. Run deepcopy code generation (the GOPATH below is an example. use the right value for your settings):
     ```shell
     GOPATH=~/go GO111MODULE=auto deepcopy-gen --input-dirs="github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1" --output-file-base zz_generated.deepcopy ~/go/src/github.com/kubevirt/hyperconverged-cluster-operator
     ```
-1. Add a set of unit tests
+5. Add a set of unit tests
    in [pkg/apis/hco/v1beta1/hyperconverged_types_test.go](pkg/apis/hco/v1beta1/hyperconverged_types_test.go)
    to check this new function.
-1. Add the new feature gate to the relevant operator handler. Currently, this is only supported for KubeVirt. For
+6. Add the new feature gate to the relevant operator handler. Currently, this is only supported for KubeVirt. For
    KubeVirt, do the following:
    In [pkg/controller/operands/kubevirt.go](pkg/controller/operands/kubevirt.go)
     - Add a constant for the feature gate name in the constant block marked with
       the `// KubeVirt feature gates that are exposed in HCO API`
       comment.
     - Add the new feature gate and the new IsEnabled function to the map in the `getFeatureGateChecks` function.
-1. Rebuild the manifests:
+7. Rebuild the manifests:
     ```shell
     make build-manifests
     ```
-1. If you are specifying a default value, please add a functional test for it in hack/check_defaults.sh (it's a bash script and not a golang code to be sure that the default mechanism is properly working at user eyes regardless of any client-go implementation).
+8. If you are specifying a default value, please add a functional test for it in hack/check_defaults.sh (it's a bash script and not a golang code to be sure that the default mechanism is properly working at user eyes regardless of any client-go implementation).
+
+9. run openapi-gen and deepcopy-gen
