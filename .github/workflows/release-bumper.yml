@@ -1,7 +1,5 @@
 name: Auto-Bump Component's Versions
 on:
-  schedule:
-    - cron:  '0 5 * * *'
   workflow_dispatch:
     inputs:
       component:
@@ -15,10 +13,12 @@ jobs:
     name: HCO Release Bump Job
     if: (github.repository == 'kubevirt/hyperconverged-cluster-operator')
     runs-on: ubuntu-latest
+    env:
+      TARGET_BRANCH: release-1.5
     steps:
       - uses: actions/checkout@v2
         with:
-          ref: main
+          ref: ${{ env.TARGET_BRANCH }}
 
       - uses: actions/setup-go@v2
         with:
@@ -61,14 +61,14 @@ jobs:
 
             Signed-off-by: HCO Bump Bot <noreply@github.com>
           committer: HCO Bump Bot <noreply@github.com>
-          title: "Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }}"
+          title: "[${{ env.TARGET_BRANCH }}] Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }}"
           body: |
             Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }}
             Executed by HCO Release-Bumper Bot.
             ```release-note
-            Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }}
+            Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }} on ${{ env.TARGET_BRANCH }}
             ```
           assignees: tiraboschi,orenc1,nunnatsa
           reviewers: tiraboschi,orenc1,nunnatsa
           team-reviewers: owners, maintainers
-          branch: bump_${{ env.UPDATED_COMPONENT }}_${{ env.UPDATED_VERSION }}
+          branch: bump_${{ env.UPDATED_COMPONENT }}_${{ env.UPDATED_VERSION }}_${{ env.TARGET_BRANCH }}
