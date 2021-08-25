@@ -73,6 +73,8 @@ var (
 )
 
 func main() {
+	// TODO: remove me, just to trigger a fake change
+
 	cmdHelper.InitiateCommand()
 
 	watchNamespace := cmdHelper.GetWatchNS()
