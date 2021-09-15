@@ -50,24 +50,23 @@ var deploymentType = metav1.TypeMeta{
 }
 
 type DeploymentOperatorParams struct {
-	Namespace           string
-	Image               string
-	WebhookImage        string
-	CliDownloadsImage   string
-	ImagePullPolicy     string
-	ConversionContainer string
-	VmwareContainer     string
-	VirtIOWinContainer  string
-	Smbios              string
-	Machinetype         string
-	HcoKvIoVersion      string
-	KubevirtVersion     string
-	CdiVersion          string
-	CnaoVersion         string
-	SspVersion          string
-	NmoVersion          string
-	HppoVersion         string
-	Env                 []corev1.EnvVar
+	Namespace          string
+	Image              string
+	WebhookImage       string
+	CliDownloadsImage  string
+	ImagePullPolicy    string
+	VirtIOWinContainer string
+	VirtHandlerImage   string
+	Smbios             string
+	Machinetype        string
+	HcoKvIoVersion     string
+	KubevirtVersion    string
+	CdiVersion         string
+	CnaoVersion        string
+	SspVersion         string
+	NmoVersion         string
+	HppoVersion        string
+	Env                []corev1.EnvVar
 }
 
 func GetDeploymentOperator(params *DeploymentOperatorParams) appsv1.Deployment {
@@ -241,6 +240,10 @@ func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.Deployme
 							{
 								Name:  util.HppoVersionEnvV,
 								Value: params.HppoVersion,
+							},
+							{
+								Name:  util.VirtHandlerImageV,
+								Value: params.VirtHandlerImage,
 							},
 						}, params.Env...),
 						Resources: v1.ResourceRequirements{
@@ -446,6 +449,7 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			Resources: stringListToSlice("deployments", "replicasets"),
 			Verbs:     stringListToSlice("get", "list"),
 		},
+		roleWithAllPermissions("apps", stringListToSlice("daemonsets")),
 		roleWithAllPermissions("rbac.authorization.k8s.io", stringListToSlice("roles", "rolebindings")),
 		{
 			APIGroups: stringListToSlice("apiextensions.k8s.io"),

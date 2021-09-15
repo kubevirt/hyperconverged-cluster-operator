@@ -3,6 +3,7 @@ package hyperconverged
 import (
 	"context"
 	"fmt"
+	appsv1 "k8s.io/api/apps/v1"
 	"os"
 	"reflect"
 	"strings"
@@ -183,6 +184,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) er
 		&corev1.Service{},
 		&rbacv1.Role{},
 		&rbacv1.RoleBinding{},
+		&appsv1.DaemonSet{},
 	}
 	if ci.IsOpenshift() {
 		secondaryResources = append(secondaryResources, []client.Object{

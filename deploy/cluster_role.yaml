@@ -311,6 +311,17 @@ rules:
   - get
   - list
 - apiGroups:
+  - apps
+  resources:
+  - daemonsets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+- apiGroups:
   - rbac.authorization.k8s.io
   resources:
   - roles

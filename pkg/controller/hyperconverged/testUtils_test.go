@@ -3,6 +3,7 @@ package hyperconverged
 import (
 	"context"
 	"fmt"
+	appsv1 "k8s.io/api/apps/v1"
 	"os"
 
 	"github.com/go-logr/logr"
@@ -119,6 +120,7 @@ type BasicExpected struct {
 	cliDownload          *consolev1.ConsoleCLIDownload
 	cliDownloadsRoute    *routev1.Route
 	cliDownloadsService  *corev1.Service
+	pds                  *appsv1.DaemonSet
 	hcoCRD               *apiextensionsv1.CustomResourceDefinition
 }
 
@@ -139,6 +141,7 @@ func (be BasicExpected) toArray() []runtime.Object {
 		be.cliDownload,
 		be.cliDownloadsRoute,
 		be.cliDownloadsService,
+		be.pds,
 		be.hcoCRD,
 	}
 }
@@ -238,6 +241,10 @@ func getBasicDeployment() *BasicExpected {
 	expectedCliDownloadsService := operands.NewCliDownloadsService(hco)
 	expectedCliDownloadsService.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/services/%s", expectedCliDownloadsService.Namespace, expectedCliDownloadsService.Name)
 	res.cliDownloadsService = expectedCliDownloadsService
+
+	expectedPrefetchDS, err := operands.NewPrefetchDS(hco, namespace)
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	res.pds = expectedPrefetchDS
 
 	hcoCrd := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{

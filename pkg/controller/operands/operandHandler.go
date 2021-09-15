@@ -53,6 +53,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, isOpenshift
 		(*genericOperand)(newConfigReaderRoleHandler(client, scheme)),
 		(*genericOperand)(newConfigReaderRoleBindingHandler(client, scheme)),
 		(*genericOperand)(newCnaHandler(client, scheme)),
+		newPrefetchDSHandler(client, scheme),
 		newKubeVirtCmHandler(client, eventEmitter),
 	}
 

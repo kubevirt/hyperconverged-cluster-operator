@@ -47,29 +47,30 @@ var (
 
 // flags for the command line arguments we accept
 var (
-	cwd, _            = os.Getwd()
-	deployDir         = flag.String("deploy-dir", "deploy", "Directory where manifests should be written")
-	cnaCsv            = flag.String("cna-csv", "", "Cluster Network Addons CSV string")
-	virtCsv           = flag.String("virt-csv", "", "KubeVirt CSV string")
-	sspCsv            = flag.String("ssp-csv", "", "Scheduling Scale Performance CSV string")
-	cdiCsv            = flag.String("cdi-csv", "", "Containerized Data Importer CSV String")
-	nmoCsv            = flag.String("nmo-csv", "", "Node Maintenance Operator CSV String")
-	hppCsv            = flag.String("hpp-csv", "", "HostPath Provisioner Operator CSV String")
-	operatorNamespace = flag.String("operator-namespace", "kubevirt-hyperconverged", "Name of the Operator")
-	operatorImage     = flag.String("operator-image", "", "HyperConverged Cluster Operator image")
-	webhookImage      = flag.String("webhook-image", "", "HyperConverged Cluster Webhook image")
-	cliDownloadsImage = flag.String("cli-downloads-image", "", "Downloads Server image")
-	kvVirtIOWinImage  = flag.String("kv-virtiowin-image-name", "", "KubeVirt VirtIO Win image")
-	smbios            = flag.String("smbios", "", "Custom SMBIOS string for KubeVirt ConfigMap")
-	machinetype       = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap")
-	hcoKvIoVersion    = flag.String("hco-kv-io-version", "", "KubeVirt version")
-	kubevirtVersion   = flag.String("kubevirt-version", "", "Kubevirt operator version")
-	cdiVersion        = flag.String("cdi-version", "", "CDI operator version")
-	cnaoVersion       = flag.String("cnao-version", "", "CNA operator version")
-	sspVersion        = flag.String("ssp-version", "", "SSP operator version")
-	nmoVersion        = flag.String("nmo-version", "", "NM operator version")
-	hppoVersion       = flag.String("hppo-version", "", "HPP operator version")
-	apiSources        = flag.String("api-sources", cwd+"/...", "Project sources")
+	cwd, _             = os.Getwd()
+	deployDir          = flag.String("deploy-dir", "deploy", "Directory where manifests should be written")
+	cnaCsv             = flag.String("cna-csv", "", "Cluster Network Addons CSV string")
+	virtCsv            = flag.String("virt-csv", "", "KubeVirt CSV string")
+	sspCsv             = flag.String("ssp-csv", "", "Scheduling Scale Performance CSV string")
+	cdiCsv             = flag.String("cdi-csv", "", "Containerized Data Importer CSV String")
+	nmoCsv             = flag.String("nmo-csv", "", "Node Maintenance Operator CSV String")
+	hppCsv             = flag.String("hpp-csv", "", "HostPath Provisioner Operator CSV String")
+	operatorNamespace  = flag.String("operator-namespace", "kubevirt-hyperconverged", "Name of the Operator")
+	operatorImage      = flag.String("operator-image", "", "HyperConverged Cluster Operator image")
+	webhookImage       = flag.String("webhook-image", "", "HyperConverged Cluster Webhook image")
+	cliDownloadsImage  = flag.String("cli-downloads-image", "", "Downloads Server image")
+	kvVirtIOWinImage   = flag.String("kv-virtiowin-image-name", "", "KubeVirt VirtIO Win image")
+	kvVirtHandlerImage = flag.String("kv-virt-handler-image-name", "", "KubeVirt virt-handler image")
+	smbios             = flag.String("smbios", "", "Custom SMBIOS string for KubeVirt ConfigMap")
+	machinetype        = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap")
+	hcoKvIoVersion     = flag.String("hco-kv-io-version", "", "KubeVirt version")
+	kubevirtVersion    = flag.String("kubevirt-version", "", "Kubevirt operator version")
+	cdiVersion         = flag.String("cdi-version", "", "CDI operator version")
+	cnaoVersion        = flag.String("cnao-version", "", "CNA operator version")
+	sspVersion         = flag.String("ssp-version", "", "SSP operator version")
+	nmoVersion         = flag.String("nmo-version", "", "NM operator version")
+	hppoVersion        = flag.String("hppo-version", "", "HPP operator version")
+	apiSources         = flag.String("api-sources", cwd+"/...", "Project sources")
 )
 
 // check handles errors
@@ -404,6 +405,7 @@ func getOperatorParameters() *components.DeploymentOperatorParams {
 		CliDownloadsImage:  *cliDownloadsImage,
 		ImagePullPolicy:    "IfNotPresent",
 		VirtIOWinContainer: *kvVirtIOWinImage,
+		VirtHandlerImage:   *kvVirtHandlerImage,
 		Smbios:             *smbios,
 		Machinetype:        *machinetype,
 		HcoKvIoVersion:     *hcoKvIoVersion,

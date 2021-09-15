@@ -283,6 +283,7 @@ ${PROJECT_ROOT}/tools/manifest-templator/manifest-templator \
   --nmo-csv="$(<${nmoCsv})" \
   --hpp-csv="$(<${hppCsv})" \
   --kv-virtiowin-image-name="${KUBEVIRT_VIRTIO_IMAGE}" \
+  --kv-virt-handler-image-name="${KUBEVIRT_HANDLER_IMAGE}" \
   --operator-namespace="${OPERATOR_NAMESPACE}" \
   --smbios="${SMBIOS}" \
   --hco-kv-io-version="${CSV_VERSION}" \
@@ -316,6 +317,7 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --nmo-csv="$(<${nmoCsv})" \
   --hpp-csv="$(<${hppCsv})" \
   --kv-virtiowin-image-name="${KUBEVIRT_VIRTIO_IMAGE}" \
+  --kv-virt-handler-image-name="${KUBEVIRT_HANDLER_IMAGE}" \
   --csv-version=${CSV_VERSION_PARAM} \
   --replaces-csv-version=${REPLACES_CSV_VERSION} \
   --hco-kv-io-version="${CSV_VERSION}" \

@@ -14,6 +14,7 @@ const (
 	SspVersionEnvV         = "SSP_VERSION"
 	NmoVersionEnvV         = "NMO_VERSION"
 	HppoVersionEnvV        = "HPPO_VERSION"
+	VirtHandlerImageV      = "VIRT_HANDLER_IMAGE"
 	HcoValidatingWebhook   = "validate-hco.kubevirt.io"
 	HcoMutatingWebhookNS   = "mutate-ns-hco.kubevirt.io"
 	AppLabel               = "app"
@@ -64,7 +65,6 @@ type AppComponent string
 const (
 	AppComponentCompute    AppComponent = "compute"
 	AppComponentStorage    AppComponent = "storage"
-	AppComponentImport     AppComponent = "import"
 	AppComponentNetwork    AppComponent = "network"
 	AppComponentMonitoring AppComponent = "monitoring"
 	AppComponentSchedule   AppComponent = "schedule"
