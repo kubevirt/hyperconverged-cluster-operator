@@ -71,6 +71,9 @@ $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" logs functest
 
 echo "Exiting... Last phase status: $phase"
 
+# wait for debugging
+sleep 2h
+
 # exit non-zero if the last phase is not Succeeded
 [[ "${phase}" == "Succeeded" ]]
 
