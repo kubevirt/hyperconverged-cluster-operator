@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -euo pipefail
+set -exuo pipefail
 
 INSTALLED_NAMESPACE=${INSTALLED_NAMESPACE:-"kubevirt-hyperconverged"}
 
@@ -17,8 +17,7 @@ fi
 
 if [[ ${JOB_TYPE} = "prow" ]]; then
     KUBECTL_BINARY="oc"
-    component=hyperconverged-cluster-functest
-    computed_test_image=`eval echo ${IMAGE_FORMAT}`
+    computed_test_image=${FUNCTEST_IMAGE}
 else
     operator_image="$($KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" get pod -l name=hyperconverged-cluster-operator -o jsonpath='{.items[0] .spec .containers[?(@.name=="hyperconverged-cluster-operator")] .image}')"
     computed_test_image="${operator_image//hyperconverged-cluster-operator/hyperconverged-cluster-functest}"
@@ -57,7 +56,7 @@ $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" run functest \
  --restart=Never -- --config-file hack/testFiles/test_config.yaml
 
 phase="Running"
-for i in $(seq 1 60); do
+for i in $(seq 1 90); do
   phase=$($KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" get pod/functest -o jsonpath='{.status.phase}')
 
   if [[ "${phase}" == "Succeeded" || "${phase}" == "Failed" ]]; then
