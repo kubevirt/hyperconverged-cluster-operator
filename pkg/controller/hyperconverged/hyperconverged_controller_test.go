@@ -1101,7 +1101,7 @@ var _ = Describe("HyperconvergedController", func() {
 			)
 
 			Context("Drop KubeVirt configMap", func() {
-				bandwidthPerMigration := "64Mi"
+				bandwidthPerMigration := "128Mi"
 				completionTimeoutPerGiB := int64(800)
 				parallelMigrationsPerCluster := uint32(5)
 				parallelOutboundMigrationsPerNode := uint32(2)
@@ -1151,7 +1151,7 @@ var _ = Describe("HyperconvergedController", func() {
 						Data: map[string]string{
 							liveMigrationKey: `parallelMigrationsPerCluster: 5
 parallelOutboundMigrationsPerNode: 2
-bandwidthPerMigration: 64Mi
+bandwidthPerMigration: 128Mi
 completionTimeoutPerGiB: 800
 progressTimeout: 150`,
 						},
@@ -1200,7 +1200,6 @@ progressTimeout: 150`,
 					kv = operands.NewKubeVirtWithNameOnly(foundResource)
 					err = hcoutil.GetRuntimeObject(context.TODO(), cl, kv, log)
 					Expect(err).ToNot(HaveOccurred())
-					Expect(*kv.Spec.Configuration.MigrationConfiguration.BandwidthPerMigration).Should(Equal(resource.MustParse(bandwidthPerMigration)))
 					Expect(*kv.Spec.Configuration.MigrationConfiguration.CompletionTimeoutPerGiB).Should(Equal(completionTimeoutPerGiB))
 					Expect(*kv.Spec.Configuration.MigrationConfiguration.ParallelMigrationsPerCluster).Should(Equal(parallelMigrationsPerCluster))
 					Expect(*kv.Spec.Configuration.MigrationConfiguration.ParallelOutboundMigrationsPerNode).Should(Equal(parallelOutboundMigrationsPerNode))
@@ -1384,7 +1383,7 @@ progressTimeout: 300`,
 						Data: map[string]string{
 							liveMigrationKey: `parallelMigrationsPerCluster: 5
 parallelOutboundMigrationsPerNode: 2
-bandwidthPerMigration: 64Mi
+bandwidthPerMigration: 128Mi
 completionTimeoutPerGiB: 800
 progressTimeout: 150`,
 						},
@@ -1734,6 +1733,39 @@ progressTimeout: 150`,
 					Expect(foundCrd.Status.StoredVersions).Should(ContainElement("v1beta1"))
 					Expect(foundCrd.Status.StoredVersions).Should(ContainElement("v1"))
 
+				})
+
+			})
+
+			Context("Amend bad defaults", func() {
+				badBandwidthPerMigration := "64Mi"
+				customBandwidthPerMigration := "32Mi"
+
+				It("should drop spec.livemigrationconfig.bandwidthpermigration if == 64Mi", func() {
+					expected.hco.Status.UpdateVersion(hcoVersionName, oldVersion)
+					expected.hco.Spec.LiveMigrationConfig.BandwidthPerMigration = &badBandwidthPerMigration
+
+					cl := expected.initClient()
+					_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+					Expect(requeue).To(BeTrue())
+					foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
+					Expect(requeue).To(BeTrue())
+					_, _, requeue = doReconcile(cl, expected.hco, reconciler)
+					Expect(requeue).To(BeFalse())
+					Expect(foundResource.Spec.LiveMigrationConfig.BandwidthPerMigration).Should(BeNil())
+				})
+
+				It("should preserve spec.livemigrationconfig.bandwidthpermigration if != 64Mi", func() {
+					expected.hco.Status.UpdateVersion(hcoVersionName, oldVersion)
+					expected.hco.Spec.LiveMigrationConfig.BandwidthPerMigration = &customBandwidthPerMigration
+
+					cl := expected.initClient()
+					_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+					Expect(requeue).To(BeTrue())
+					foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
+					Expect(requeue).To(BeFalse())
+					Expect(foundResource.Spec.LiveMigrationConfig.BandwidthPerMigration).Should(Not(BeNil()))
+					Expect(*foundResource.Spec.LiveMigrationConfig.BandwidthPerMigration).Should(Equal(customBandwidthPerMigration))
 				})
 
 			})
@@ -2658,7 +2690,7 @@ progressTimeout: 150`,
 		})
 
 		Context("Test migrateBeforeUpgrade", func() {
-			bandwidthPerMigration := "64Mi"
+			bandwidthPerMigration := "128Mi"
 			completionTimeoutPerGiB := int64(800)
 			parallelMigrationsPerCluster := uint32(5)
 			parallelOutboundMigrationsPerNode := uint32(2)
@@ -2830,7 +2862,7 @@ progressTimeout: 150`,
 						Data: map[string]string{
 							liveMigrationKey: `parallelMigrationsPerCluster: 5
 parallelOutboundMigrationsPerNode: 2
-bandwidthPerMigration: 64Mi
+bandwidthPerMigration: 128Mi
 completionTimeoutPerGiB: 800
 progressTimeout: 150`,
 						},
@@ -2951,7 +2983,7 @@ progressTimeout: 150`,
 						Data: map[string]string{
 							liveMigrationKey: `parallelMigrationsPerCluster: 5
 parallelOutboundMigrationsPerNode: 2
-bandwidthPerMigration: 64Mi
+bandwidthPerMigration: 128Mi
 completionTimeoutPerGiB: 800
 progressTimeout: 150
 unknownKey: 42`,
@@ -3054,7 +3086,7 @@ progressTimeout: 150`,
 						Data: map[string]string{
 							liveMigrationKey: `parallelMigrationsPerCluster: 5
 parallelOutboundMigrationsPerNode: 2
-bandwidthPerMigration: 64Mi
+bandwidthPerMigration: 128Mi
 completionTimeoutPerGiB: 800
 progressTimeout: 150`,
 						},
