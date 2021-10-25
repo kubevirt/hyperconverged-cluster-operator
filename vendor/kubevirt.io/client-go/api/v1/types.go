@@ -238,6 +238,11 @@ type VirtualMachineInstanceStatus struct {
 
 	// +optional
 	TopologyHints *TopologyHints `json:"topologyHints,omitempty"`
+
+	//VirtualMachineRevisionName is used to get the vm revision of the vmi when doing
+	// an online vm snapshot
+	// +optional
+	VirtualMachineRevisionName string `json:"virtualMachineRevisionName,omitempty"`
 }
 
 // VolumeStatus represents information about the status of volumes attached to the VirtualMachineInstance.
@@ -1244,6 +1249,8 @@ type VirtualMachineStartFailure struct {
 type VirtualMachineStatus struct {
 	// SnapshotInProgress is the name of the VirtualMachineSnapshot currently executing
 	SnapshotInProgress *string `json:"snapshotInProgress,omitempty"`
+	// RestoreInProgress is the name of the VirtualMachineRestore currently executing
+	RestoreInProgress *string `json:"restoreInProgress,omitempty"`
 	// Created indicates if the virtual machine is created in the cluster
 	Created bool `json:"created,omitempty"`
 	// Ready indicates if the virtual machine is running and ready
@@ -1886,6 +1893,37 @@ type RemoveVolumeOptions struct {
 	Name string `json:"name"`
 }
 
+// +k8s:openapi-gen=true
+type TokenBucketRateLimiter struct {
+	// QPS indicates the maximum QPS to the apiserver from this client.
+	// If it's zero, the component default will be used
+	QPS float32 `json:"qps"`
+
+	// Maximum burst for throttle.
+	// If it's zero, the component default will be used
+	Burst int `json:"burst"`
+}
+
+// +k8s:openapi-gen=true
+type RateLimiter struct {
+	TokenBucketRateLimiter *TokenBucketRateLimiter `json:"tokenBucketRateLimiter,omitempty"`
+}
+
+// RESTClientConfiguration allows configuring certain aspects of the k8s rest client.
+// +k8s:openapi-gen=true
+type RESTClientConfiguration struct {
+	//RateLimiter allows selecting and configuring different rate limiters for the k8s client.
+	RateLimiter *RateLimiter `json:"rateLimiter,omitempty"`
+}
+
+// ReloadableComponentConfiguration holds all generic k8s configuration options which can
+// be reloaded by components without requiring a restart.
+// +k8s:openapi-gen=true
+type ReloadableComponentConfiguration struct {
+	//RestClient can be used to tune certain aspects of the k8s client in use.
+	RestClient *RESTClientConfiguration `json:"restClient,omitempty"`
+}
+
 // KubeVirtConfiguration holds all kubevirt configurations
 // +k8s:openapi-gen=true
 type KubeVirtConfiguration struct {
@@ -1902,12 +1940,16 @@ type KubeVirtConfiguration struct {
 	DefaultRuntimeClass    string                  `json:"defaultRuntimeClass,omitempty"`
 	SMBIOSConfig           *SMBiosConfiguration    `json:"smbios,omitempty"`
 	// deprecated
-	SupportedGuestAgentVersions    []string              `json:"supportedGuestAgentVersions,omitempty"`
-	MemBalloonStatsPeriod          *uint32               `json:"memBalloonStatsPeriod,omitempty"`
-	PermittedHostDevices           *PermittedHostDevices `json:"permittedHostDevices,omitempty"`
-	MinCPUModel                    string                `json:"minCPUModel,omitempty"`
-	ObsoleteCPUModels              map[string]bool       `json:"obsoleteCPUModels,omitempty"`
-	VirtualMachineInstancesPerNode *int                  `json:"virtualMachineInstancesPerNode,omitempty"`
+	SupportedGuestAgentVersions    []string                          `json:"supportedGuestAgentVersions,omitempty"`
+	MemBalloonStatsPeriod          *uint32                           `json:"memBalloonStatsPeriod,omitempty"`
+	PermittedHostDevices           *PermittedHostDevices             `json:"permittedHostDevices,omitempty"`
+	MinCPUModel                    string                            `json:"minCPUModel,omitempty"`
+	ObsoleteCPUModels              map[string]bool                   `json:"obsoleteCPUModels,omitempty"`
+	VirtualMachineInstancesPerNode *int                              `json:"virtualMachineInstancesPerNode,omitempty"`
+	APIConfiguration               *ReloadableComponentConfiguration `json:"apiConfiguration,omitempty"`
+	WebhookConfiguration           *ReloadableComponentConfiguration `json:"webhookConfiguration,omitempty"`
+	ControllerConfiguration        *ReloadableComponentConfiguration `json:"controllerConfiguration,omitempty"`
+	HandlerConfiguration           *ReloadableComponentConfiguration `json:"handlerConfiguration,omitempty"`
 }
 
 //

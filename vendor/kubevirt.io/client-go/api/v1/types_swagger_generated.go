@@ -73,6 +73,7 @@ func (VirtualMachineInstanceStatus) SwaggerDoc() map[string]string {
 		"volumeStatus":                  "VolumeStatus contains the statuses of all the volumes\n+optional\n+listType=atomic",
 		"fsFreezeStatus":                "FSFreezeStatus is the state of the fs of the guest\nit can be either frozen or thawed\n+optional",
 		"topologyHints":                 "+optional",
+		"virtualMachineRevisionName":    "VirtualMachineRevisionName is used to get the vm revision of the vmi when doing\nan online vm snapshot\n+optional",
 	}
 }
 
@@ -307,6 +308,7 @@ func (VirtualMachineStatus) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"":                       "VirtualMachineStatus represents the status returned by the\ncontroller to describe how the VirtualMachine is doing\n\n+k8s:openapi-gen=true",
 		"snapshotInProgress":     "SnapshotInProgress is the name of the VirtualMachineSnapshot currently executing",
+		"restoreInProgress":      "RestoreInProgress is the name of the VirtualMachineRestore currently executing",
 		"created":                "Created indicates if the virtual machine is created in the cluster",
 		"ready":                  "Ready indicates if the virtual machine is running and ready",
 		"printableStatus":        "PrintableStatus is a human readable, high-level representation of the status of the virtual machine",
@@ -570,6 +572,34 @@ func (RemoveVolumeOptions) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"":     "RemoveVolumeOptions is provided when dynamically hot unplugging volume and disk\n+k8s:openapi-gen=true",
 		"name": "Name represents the name that maps to both the disk and volume that\nshould be removed",
+	}
+}
+
+func (TokenBucketRateLimiter) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":      "+k8s:openapi-gen=true",
+		"qps":   "QPS indicates the maximum QPS to the apiserver from this client.\nIf it's zero, the component default will be used",
+		"burst": "Maximum burst for throttle.\nIf it's zero, the component default will be used",
+	}
+}
+
+func (RateLimiter) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"": "+k8s:openapi-gen=true",
+	}
+}
+
+func (RESTClientConfiguration) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":            "RESTClientConfiguration allows configuring certain aspects of the k8s rest client.\n+k8s:openapi-gen=true",
+		"rateLimiter": "RateLimiter allows selecting and configuring different rate limiters for the k8s client.",
+	}
+}
+
+func (ReloadableComponentConfiguration) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":           "ReloadableComponentConfiguration holds all generic k8s configuration options which can\nbe reloaded by components without requiring a restart.\n+k8s:openapi-gen=true",
+		"restClient": "RestClient can be used to tune certain aspects of the k8s client in use.",
 	}
 }
 
