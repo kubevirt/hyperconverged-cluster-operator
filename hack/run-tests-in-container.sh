@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 set -exuo pipefail
-
+# test  change
 INSTALLED_NAMESPACE=${INSTALLED_NAMESPACE:-"kubevirt-hyperconverged"}
 
 source hack/common.sh
