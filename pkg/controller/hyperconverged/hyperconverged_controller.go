@@ -2,6 +2,7 @@ package hyperconverged
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/metrics"
@@ -12,6 +13,8 @@ import (
 	"os"
 	"reflect"
 	"strings"
+
+	"github.com/blang/semver/v4"
 
 	"github.com/google/uuid"
 	operatorhandler "github.com/operator-framework/operator-lib/handler"
@@ -317,6 +320,12 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 	req.SetUpgradeMode(r.upgradeMode)
 
 	if r.upgradeMode {
+
+		err = validateUpgradePatches(req)
+		if err != nil {
+			return reconcile.Result{Requeue: true}, err
+		}
+
 		crdStatusUpdated, err := r.updateCrdStoredVersions(req)
 		if err != nil {
 			return reconcile.Result{Requeue: true}, err
@@ -970,7 +979,12 @@ func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (
 		return false, err
 	}
 
-	return kvConfigModified || cdiConfigModified || imsConfigModified || defaultsAmended, nil
+	upgradePatched, err := r.applyUpgradePatches(req)
+	if err != nil {
+		return false, err
+	}
+
+	return kvConfigModified || cdiConfigModified || imsConfigModified || defaultsAmended || upgradePatched, nil
 }
 
 func (r ReconcileHyperConverged) migrateKvConfigurations(req *common.HcoRequest) (bool, error) {
@@ -1051,6 +1065,62 @@ func (r ReconcileHyperConverged) amendBadDefaults(req *common.HcoRequest) (bool,
 		req.Dirty = true
 	}
 	return modified, nil
+}
+
+func (r ReconcileHyperConverged) applyUpgradePatches(req *common.HcoRequest) (bool, error) {
+	modified := false
+
+	knownHcoVersion, _ := req.Instance.Status.GetVersion(hcoVersionName)
+	if knownHcoVersion == "" {
+		knownHcoVersion = "0.0.0"
+	}
+	knownHcoSV, err := semver.Parse(knownHcoVersion)
+	if err != nil {
+		req.Logger.Error(err, "Error!")
+		return false, err
+	}
+
+	hcoJson, err := json.Marshal(req.Instance)
+	if err != nil {
+		return false, err
+	}
+
+	for _, p := range hcoUpgradeChanges.HCOCRPatchList {
+		hcoJson, err = r.applyUpgradePatch(req, hcoJson, knownHcoSV, p)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	tmpInstance := &hcov1beta1.HyperConverged{}
+	err = json.Unmarshal(hcoJson, tmpInstance)
+	if err != nil {
+		return false, err
+	}
+	if !reflect.DeepEqual(tmpInstance.Spec, req.Instance.Spec) {
+		req.Logger.Info("updating HCO spec as a result of upgrade patches")
+		tmpInstance.Spec.DeepCopyInto(&req.Instance.Spec)
+		modified = true
+		req.Dirty = true
+	}
+
+	return modified, nil
+}
+
+func (r ReconcileHyperConverged) applyUpgradePatch(req *common.HcoRequest, hcoJson []byte, knownHcoSV semver.Version, p hcoCRPatch) ([]byte, error) {
+	affectedRange, err := semver.ParseRange(p.SemverRange)
+	if err != nil {
+		return hcoJson, err
+	}
+	if affectedRange(knownHcoSV) {
+		req.Logger.Info("applying upgrade patch", "knownHcoSV", knownHcoSV, "affectedRange", p.SemverRange, "patches", p.JSONPatch)
+		patchedBytes, err := p.JSONPatch.Apply(hcoJson)
+		if err != nil {
+			return hcoJson, err
+		}
+		return patchedBytes, nil
+	}
+	return hcoJson, nil
 }
 
 func (r *ReconcileHyperConverged) removeConfigMap(req *common.HcoRequest, cm *corev1.ConfigMap, cmName string) error {

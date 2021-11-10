@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/blang/semver/v4 v4.0.0
-	github.com/evanphx/json-patch v4.11.0+incompatible
+	github.com/evanphx/json-patch v5.6.0+incompatible
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-logr/logr v0.4.0
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect

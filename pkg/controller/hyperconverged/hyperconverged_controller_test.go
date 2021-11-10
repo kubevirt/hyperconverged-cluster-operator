@@ -7,6 +7,7 @@ import (
 	"fmt"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"os"
+	"path"
 	"time"
 
 	apimetav1 "k8s.io/apimachinery/pkg/api/meta"
@@ -51,6 +52,24 @@ const (
 )
 
 var _ = Describe("HyperconvergedController", func() {
+
+	var (
+		testFilesLocation = getTestFilesLocation() + "/upgradePatches"
+		destFile          string
+	)
+
+	BeforeSuite(func() {
+		wd, _ := os.Getwd()
+		destFile = path.Join(wd, "upgradePatches.json")
+		err := commonTestUtils.CopyFile(destFile, path.Join(testFilesLocation, "upgradePatches.json"))
+		Expect(err).ToNot(HaveOccurred())
+
+	})
+
+	AfterSuite(func() {
+		err := os.Remove(destFile)
+		Expect(err).ToNot(HaveOccurred())
+	})
 
 	Describe("Reconcile HyperConverged", func() {
 		Context("HCO Lifecycle", func() {
@@ -1766,6 +1785,33 @@ progressTimeout: 150`,
 					Expect(requeue).To(BeFalse())
 					Expect(foundResource.Spec.LiveMigrationConfig.BandwidthPerMigration).Should(Not(BeNil()))
 					Expect(*foundResource.Spec.LiveMigrationConfig.BandwidthPerMigration).Should(Equal(customBandwidthPerMigration))
+				})
+
+				It("should amend spec.featureGates.sriovLiveMigration upgrading from <= 1.5.0", func() {
+					expected.hco.Status.UpdateVersion(hcoVersionName, "1.4.99")
+					expected.hco.Spec.FeatureGates.SRIOVLiveMigration = false
+
+					cl := expected.initClient()
+					_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+					Expect(requeue).To(BeTrue())
+					_, reconciler, requeue = doReconcile(cl, expected.hco, reconciler)
+					Expect(requeue).To(BeTrue())
+					foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
+					Expect(requeue).To(BeFalse())
+
+					Expect(foundResource.Spec.FeatureGates.SRIOVLiveMigration).Should(BeTrue())
+				})
+
+				It("should not amend spec.featureGates.sriovLiveMigration upgrading from >= 1.5.1", func() {
+					expected.hco.Status.UpdateVersion(hcoVersionName, "1.5.1")
+					expected.hco.Spec.FeatureGates.SRIOVLiveMigration = false
+
+					cl := expected.initClient()
+					foundResource, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+					Expect(requeue).To(BeTrue())
+					foundResource, _, requeue = doReconcile(cl, foundResource, reconciler)
+					Expect(requeue).To(BeFalse())
+					Expect(foundResource.Spec.FeatureGates.SRIOVLiveMigration).Should(Not(BeTrue()))
 				})
 
 			})
