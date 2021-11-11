@@ -143,6 +143,8 @@ func getBasicDeployment() *BasicExpected {
 		},
 	}
 	res.hco = hco
+	// avoid an upgrade patch loop
+	res.hco.Spec.FeatureGates.SRIOVLiveMigration = true
 
 	res.pc = operands.NewKubeVirtPriorityClass(hco)
 	res.mService = operands.NewMetricsService(hco, namespace)
