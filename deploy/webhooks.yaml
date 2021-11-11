@@ -157,7 +157,6 @@ webhooks:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  namespace: hostpath-provisioner
   name: hostpath-provisioner-operator-webhook-service-cert
   labels:
     name: hostpath-provisioner-operator
@@ -182,7 +181,6 @@ webhooks:
   clientConfig:
     service:
       name: hostpath-provisioner-operator-webhook-service
-      namespace: hostpath-provisioner
       path: /validate-hostpathprovisioner-kubevirt-io-v1beta1-hostpathprovisioner
       port: 443
   failurePolicy: Fail
