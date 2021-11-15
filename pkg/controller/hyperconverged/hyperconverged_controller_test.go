@@ -2000,8 +2000,8 @@ progressTimeout: 150`,
 				badBandwidthPerMigration := "64Mi"
 				customBandwidthPerMigration := "32Mi"
 
-				It("should drop spec.livemigrationconfig.bandwidthpermigration if == 64Mi when upgrading from <= 1.6.0", func() {
-					expected.hco.Status.UpdateVersion(hcoVersionName, "1.5.99")
+				It("should drop spec.livemigrationconfig.bandwidthpermigration if == 64Mi when upgrading from < 1.5.0", func() {
+					expected.hco.Status.UpdateVersion(hcoVersionName, "1.4.99")
 					expected.hco.Spec.LiveMigrationConfig.BandwidthPerMigration = &badBandwidthPerMigration
 
 					cl := expected.initClient()
@@ -2014,21 +2014,23 @@ progressTimeout: 150`,
 					Expect(foundResource.Spec.LiveMigrationConfig.BandwidthPerMigration).Should(BeNil())
 				})
 
-				It("should preserve spec.livemigrationconfig.bandwidthpermigration if != 64Mi when upgrading from <= 1.6.0", func() {
-					expected.hco.Status.UpdateVersion(hcoVersionName, "1.5.99")
+				It("should preserve spec.livemigrationconfig.bandwidthpermigration if != 64Mi when upgrading from < 1.5.0", func() {
+					expected.hco.Status.UpdateVersion(hcoVersionName, "1.4.99")
 					expected.hco.Spec.LiveMigrationConfig.BandwidthPerMigration = &customBandwidthPerMigration
 
 					cl := expected.initClient()
 					_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
 					Expect(requeue).To(BeTrue())
 					foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
+					Expect(requeue).To(BeTrue())
+					_, _, requeue = doReconcile(cl, expected.hco, reconciler)
 					Expect(requeue).To(BeFalse())
 					Expect(foundResource.Spec.LiveMigrationConfig.BandwidthPerMigration).Should(Not(BeNil()))
 					Expect(*foundResource.Spec.LiveMigrationConfig.BandwidthPerMigration).Should(Equal(customBandwidthPerMigration))
 				})
 
-				It("should preserve spec.livemigrationconfig.bandwidthpermigration even if == 64Mi when upgrading from >= 1.6.1", func() {
-					expected.hco.Status.UpdateVersion(hcoVersionName, "1.6.1")
+				It("should preserve spec.livemigrationconfig.bandwidthpermigration even if == 64Mi when upgrading from >= 1.5.1", func() {
+					expected.hco.Status.UpdateVersion(hcoVersionName, "1.5.1")
 					expected.hco.Spec.LiveMigrationConfig.BandwidthPerMigration = &badBandwidthPerMigration
 
 					cl := expected.initClient()
