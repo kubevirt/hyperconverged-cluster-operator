@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -28,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -1046,7 +1044,7 @@ func (r *ReconcileHyperConverged) updateCrdStoredVersions(req *common.HcoRequest
 }
 
 func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (bool, error) {
-	kvConfigModified, err := r.migrateKvConfigurations(req)
+	kvCMRemoved, err := r.removeOldKvCM(req)
 	if err != nil {
 		return false, err
 	}
@@ -1058,10 +1056,10 @@ func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (
 
 	removeOldQuickStartGuides(req, r.client, r.operandHandler.GetQuickStartNames())
 
-	return kvConfigModified || upgradePatched, nil
+	return kvCMRemoved || upgradePatched, nil
 }
 
-func (r ReconcileHyperConverged) migrateKvConfigurations(req *common.HcoRequest) (bool, error) {
+func (r ReconcileHyperConverged) removeOldKvCM(req *common.HcoRequest) (bool, error) {
 	cm, err := r.getCm(kvCmName, req)
 	if err != nil {
 		return false, err
@@ -1073,16 +1071,16 @@ func (r ReconcileHyperConverged) migrateKvConfigurations(req *common.HcoRequest)
 		return false, err
 	}
 
-	modified := adoptOldKvConfigs(req, cm)
+	_, ok := cm.Data[liveMigrationKey]
 
-	if !modified {
+	if !ok {
 		err = r.removeConfigMap(req, cm)
 		if err != nil {
 			return false, err
 		}
 	}
 
-	return modified, nil
+	return ok, nil
 }
 
 func (r ReconcileHyperConverged) applyUpgradePatches(req *common.HcoRequest) (bool, error) {
@@ -1202,54 +1200,6 @@ func (r *ReconcileHyperConverged) makeCmBackup(cm *corev1.ConfigMap, backupName 
 	}
 
 	return nil
-}
-
-// Read the old KubeVit configuration from the config map, and move them to the HyperConverged CR
-//
-// In case of wrong foramt of the configmap, the HCO ignores this error (but print it to the log) in order to prevent
-// an infinite loop (returning error will cause the same error again and again, and the only way to stop the loop
-// is to manually fix or delete the wrong configMap).
-func adoptOldKvConfigs(req *common.HcoRequest, cm *corev1.ConfigMap) bool {
-	modified := false
-	kvLiveMigrationConfig, ok := cm.Data[liveMigrationKey]
-	if !ok {
-		return false
-	}
-	kvCmLiveMigrationConfig := hcov1beta1.LiveMigrationConfigurations{}
-	req.Instance.Spec.LiveMigrationConfig.DeepCopyInto(&kvCmLiveMigrationConfig)
-	err := yaml.NewYAMLOrJSONDecoder(strings.NewReader(kvLiveMigrationConfig), 1024).Decode(&kvCmLiveMigrationConfig)
-	if err != nil {
-		req.Logger.Error(err, "Failed to read the KubeVirt ConfigMap, and its content was ignored. This ConfigMap will be deleted. The backup ConfigMap called "+backupKvCmName)
-		return false
-	}
-
-	if !reflect.DeepEqual(req.Instance.Spec.LiveMigrationConfig, kvCmLiveMigrationConfig) {
-		req.Logger.Info("updating the HyperConverged CR from the KubeVirt configMap")
-		kvConfigMapToHyperConvergedCr(req, kvCmLiveMigrationConfig)
-
-		modified = true
-		req.Dirty = true
-	}
-
-	return modified
-}
-
-func kvConfigMapToHyperConvergedCr(req *common.HcoRequest, kvCmLMConfig hcov1beta1.LiveMigrationConfigurations) {
-	if kvCmLMConfig.BandwidthPerMigration != nil {
-		req.Instance.Spec.LiveMigrationConfig.BandwidthPerMigration = kvCmLMConfig.BandwidthPerMigration
-	}
-	if kvCmLMConfig.CompletionTimeoutPerGiB != nil {
-		req.Instance.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB = kvCmLMConfig.CompletionTimeoutPerGiB
-	}
-	if kvCmLMConfig.ParallelMigrationsPerCluster != nil {
-		req.Instance.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster = kvCmLMConfig.ParallelMigrationsPerCluster
-	}
-	if kvCmLMConfig.ParallelOutboundMigrationsPerNode != nil {
-		req.Instance.Spec.LiveMigrationConfig.ParallelOutboundMigrationsPerNode = kvCmLMConfig.ParallelOutboundMigrationsPerNode
-	}
-	if kvCmLMConfig.ProgressTimeout != nil {
-		req.Instance.Spec.LiveMigrationConfig.ProgressTimeout = kvCmLMConfig.ProgressTimeout
-	}
 }
 
 func removeOldQuickStartGuides(req *common.HcoRequest, cl client.Client, requiredQSList []string) {
