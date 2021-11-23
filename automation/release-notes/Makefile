@@ -11,7 +11,7 @@ run:
 	@[ "${GITHUB_TOKEN_FILE}" ] || ( echo "GITHUB_TOKEN_FILE is not set"; exit 1 )
 	@[ "${RELEASE}" ] || ( echo "RELEASE is not set"; exit 1 )
 
-	go run release-notes.go \
+	go run . \
 		--org kubevirt \
 		--repo hyperconverged-cluster-operator \
 		--github-token-file $(GITHUB_TOKEN_FILE) \
