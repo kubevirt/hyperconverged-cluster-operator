@@ -1,0 +1,18 @@
+.PHONY: all format build run
+all: format build
+
+format:
+	gofmt -w .
+
+build: 
+	go build .
+
+run:
+	@[ "${GITHUB_TOKEN_FILE}" ] || ( echo "GITHUB_TOKEN_FILE is not set"; exit 1 )
+	@[ "${RELEASE}" ] || ( echo "RELEASE is not set"; exit 1 )
+
+	go run release-notes.go \
+		--org kubevirt \
+		--repo hyperconverged-cluster-operator \
+		--github-token-file $(GITHUB_TOKEN_FILE) \
+		--new-release $(RELEASE)
