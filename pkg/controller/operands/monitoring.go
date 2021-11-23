@@ -264,7 +264,9 @@ func NewPrometheusRuleSpec() *monitoringv1.PrometheusRuleSpec {
 						"runbook_url": outOfBandUpdateRunbookUrl,
 					},
 					Labels: map[string]string{
-						"severity": "warning",
+						"severity":           "warning",
+						"operator_part_of":   "kubevirt",
+						"operator_component": "hyperconverged-cluster-operator",
 					},
 				},
 				{
@@ -276,7 +278,9 @@ func NewPrometheusRuleSpec() *monitoringv1.PrometheusRuleSpec {
 						"runbook_url": unsafeModificationRunbookUrl,
 					},
 					Labels: map[string]string{
-						"severity": "info",
+						"severity":           "info",
+						"operator_part_of":   "kubevirt",
+						"operator_component": "hyperconverged-cluster-operator",
 					},
 				},
 				// Recording rules for openshift/cluster-monitoring-operator
