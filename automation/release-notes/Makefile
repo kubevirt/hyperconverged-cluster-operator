@@ -12,7 +12,5 @@ run:
 	@[ "${RELEASE}" ] || ( echo "RELEASE is not set"; exit 1 )
 
 	go run . \
-		--org kubevirt \
-		--repo hyperconverged-cluster-operator \
 		--github-token-file $(GITHUB_TOKEN_FILE) \
-		--new-release $(RELEASE)
+		--release $(RELEASE)

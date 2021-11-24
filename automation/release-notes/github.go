@@ -5,33 +5,23 @@ import (
 	"fmt"
 	"github.com/google/go-github/v32/github"
 	"golang.org/x/oauth2"
-	"io/ioutil"
 	"log"
 	"strings"
 )
 
-func (r *releaseData) gitHubInitClient() {
-	tokenBytes, err := ioutil.ReadFile(r.githubTokenPath)
-	if err != nil {
-		log.Fatalf("ERROR accessing github token: %s ", err)
-	}
-	r.gitToken = strings.TrimSpace(string(tokenBytes))
-
-	r.repoUrl = fmt.Sprintf("https://%s@github.com/%s/%s.git", r.gitToken, r.org, r.repo)
-	r.infraUrl = fmt.Sprintf("https://%s@github.com/kubevirt/project-infra.git", r.gitToken)
-
+func gitHubInitClient(token string) {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: r.gitToken},
+		&oauth2.Token{AccessToken: token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 
-	r.githubClient = github.NewClient(tc)
+	githubClient = github.NewClient(tc)
 }
 
-func (r *releaseData) gitHubGetReleaseNote(number int) (string, error) {
-	log.Printf("Searching for release note for PR #%d", number)
-	pr, _, err := r.githubClient.PullRequests.Get(context.Background(), r.org, r.repo, number)
+func (p *project) gitHubGetReleaseNote(number int) (string, error) {
+	log.Printf("Searching for `%s` release note for PR #%d", p.name, number)
+	pr, _, err := githubClient.PullRequests.Get(context.Background(), "kubevirt", p.name, number)
 	if err != nil {
 		return "", err
 	}
@@ -80,12 +70,12 @@ func gitHubParseReleaseNote(index int, line string, body []string) (string, erro
 	return "", fmt.Errorf("release note not found")
 }
 
-func (r *releaseData) gitHubGetBranches() ([]*github.Branch, error) {
-	if len(r.allBranches) != 0 {
-		return r.allBranches, nil
+func (p *project) gitHubGetBranches() ([]*github.Branch, error) {
+	if len(p.allBranches) != 0 {
+		return p.allBranches, nil
 	}
 
-	branches, _, err := r.githubClient.Repositories.ListBranches(context.Background(), r.org, r.repo, &github.BranchListOptions{
+	branches, _, err := githubClient.Repositories.ListBranches(context.Background(), "kubevirt", p.name, &github.BranchListOptions{
 		ListOptions: github.ListOptions{
 			PerPage: 10000,
 		},
@@ -93,23 +83,23 @@ func (r *releaseData) gitHubGetBranches() ([]*github.Branch, error) {
 	if err != nil {
 		return nil, err
 	}
-	r.allBranches = branches
+	p.allBranches = branches
 
-	return r.allBranches, nil
+	return p.allBranches, nil
 
 }
 
-func (r *releaseData) gitHubGetReleases() ([]*github.RepositoryRelease, error) {
-	if len(r.allReleases) != 0 {
-		return r.allReleases, nil
+func (p *project) gitHubGetReleases() ([]*github.RepositoryRelease, error) {
+	if len(p.allReleases) != 0 {
+		return p.allReleases, nil
 	}
 
-	releases, _, err := r.githubClient.Repositories.ListReleases(context.Background(), r.org, r.repo, &github.ListOptions{PerPage: 10000})
+	releases, _, err := githubClient.Repositories.ListReleases(context.Background(), "kubevirt", p.name, &github.ListOptions{PerPage: 10000})
 
 	if err != nil {
 		return nil, err
 	}
-	r.allReleases = releases
+	p.allReleases = releases
 
-	return r.allReleases, nil
+	return p.allReleases, nil
 }

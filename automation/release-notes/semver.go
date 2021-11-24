@@ -8,6 +8,15 @@ import (
 	"sort"
 )
 
+func semverGetBranchFromTag(tag string) (*semver.Version, string, error) {
+	tagSemver, err := semver.NewVersion(tag)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return tagSemver, fmt.Sprintf("release-%d.%d", tagSemver.Major(), tagSemver.Minor()), nil
+}
+
 func semverGetVersions(releases []*github.RepositoryRelease) []*semver.Version {
 	var vs []*semver.Version
 
@@ -32,21 +41,21 @@ func semverGetVersions(releases []*github.RepositoryRelease) []*semver.Version {
 }
 
 func (r *releaseData) semverCalculatePreviousRelease(tagSemver *semver.Version) error {
-	releases, err := r.gitHubGetReleases()
+	releases, err := r.hco.gitHubGetReleases()
 	if err != nil {
 		return err
 	}
 
 	for _, release := range releases {
-		if *release.TagName == r.tag {
-			log.Printf("WARNING: Release tag [%s] already exists", r.tag)
+		if *release.TagName == r.hco.currentTag {
+			log.Printf("WARNING: Release tag [%s] already exists", r.hco.currentTag)
 		}
 	}
 
 	vs := semverGetVersions(releases)
 	for _, v := range vs {
 		if v.LessThan(tagSemver) {
-			r.previousTag = fmt.Sprintf("v%v", v)
+			r.hco.previousTag = fmt.Sprintf("v%v", v)
 			break
 		}
 	}
@@ -55,7 +64,7 @@ func (r *releaseData) semverCalculatePreviousRelease(tagSemver *semver.Version) 
 }
 
 func (r *releaseData) semverVerifyReleaseBranch(expectedBranch string) error {
-	branches, err := r.gitHubGetBranches()
+	branches, err := r.hco.gitHubGetBranches()
 	if err != nil {
 		return err
 	}
@@ -69,30 +78,27 @@ func (r *releaseData) semverVerifyReleaseBranch(expectedBranch string) error {
 	}
 
 	if releaseBranch == nil {
-		return fmt.Errorf("release branch [%s] not found for new release [%s]", expectedBranch, r.tag)
+		return fmt.Errorf("release branch [%s] not found for new release [%s]", expectedBranch, r.hco.currentTag)
 	}
 
 	return nil
 }
 
 func (r *releaseData) semverVerifyTag() error {
-	// must be a valid semver version
-	tagSemver, err := semver.NewVersion(r.tag)
+	tagSemver, expectedBranch, err := semverGetBranchFromTag(r.hco.currentTag)
 	if err != nil {
 		return err
 	}
-
-	expectedBranch := fmt.Sprintf("release-%d.%d", tagSemver.Major(), tagSemver.Minor())
 
 	err = r.semverCalculatePreviousRelease(tagSemver)
 	if err != nil {
 		return err
 	}
 
-	if r.previousTag == "" {
-		log.Printf("No previous release tag found for tag [%s]", r.tag)
+	if r.hco.previousTag == "" {
+		log.Printf("No previous release tag found for tag [%s]", r.hco.currentTag)
 	} else {
-		log.Printf("Previous Tag [%s]", r.previousTag)
+		log.Printf("Previous Tag [%s]", r.hco.previousTag)
 	}
 
 	err = r.semverVerifyReleaseBranch(expectedBranch)
@@ -100,6 +106,12 @@ func (r *releaseData) semverVerifyTag() error {
 		return err
 	}
 
-	r.tagBranch = expectedBranch
+	r.hco.tagBranch = expectedBranch
+
+	_, r.hco.previousTagBranch, err = semverGetBranchFromTag(r.hco.previousTag)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
