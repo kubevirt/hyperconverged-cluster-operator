@@ -27,7 +27,7 @@ func (r *releaseData) writeHeader(span string, contributorList []string) error {
 	r.outFile.WriteString("\n")
 	r.outFile.WriteString(fmt.Sprintf("The source code and selected binaries are available for download at: %s.\n", tagUrl))
 	r.outFile.WriteString("\n")
-	r.outFile.WriteString("The primary release artifact of KubeVirt is the git tree. The release tag is\n")
+	r.outFile.WriteString("The primary release artifact of hyperconverged-cluster-operator is the git tree. The release tag is\n")
 	r.outFile.WriteString(fmt.Sprintf("signed and can be verified using `git tag -v %s`.\n", r.hco.currentTag))
 	r.outFile.WriteString("\n")
 	r.outFile.WriteString("Pre-built containers are published on Quay and can be viewed at: <https://quay.io/kubevirt/>.\n")
