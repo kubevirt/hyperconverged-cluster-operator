@@ -152,7 +152,7 @@ func (r *releaseData) writeNotableChanges() error {
 	return nil
 }
 
-func isBot(contributor string) bool {
+func isNotBot(contributor string) bool {
 	bots := []string{
 		"kubevirt-bot",
 		"hco-bot",
@@ -160,25 +160,28 @@ func isBot(contributor string) bool {
 
 	for _, bot := range bots {
 		if strings.Contains(contributor, bot) {
-			return true
+			return false
 		}
 	}
-	return false
+
+	return true
 }
 
 func (r *releaseData) writeContributors(contributorList []string) {
+	var sb strings.Builder
+	numContributors := 0
+	for _, contributor := range contributorList {
+		if isNotBot(contributor) && len(contributor) != 0 {
+			numContributors++
+			sb.WriteString(fmt.Sprintf(" - %s\n", strings.TrimSpace(contributor)))
+		}
+	}
+
 	r.outFile.WriteString("\n")
 	r.outFile.WriteString("Contributors\n------------\n")
-	r.outFile.WriteString(fmt.Sprintf("%d people contributed to this HCO release:\n\n", len(contributorList)))
-
-	for _, contributor := range contributorList {
-		if isBot(contributor) || len(contributor) == 0 {
-			// skip the bot
-			continue
-		}
-		r.outFile.WriteString(fmt.Sprintf(" - %s\n", strings.TrimSpace(contributor)))
-		r.outFile.WriteString("\n")
-	}
+	r.outFile.WriteString(fmt.Sprintf("%d people contributed to this HCO release:\n\n", numContributors))
+	r.outFile.WriteString(sb.String())
+	r.outFile.WriteString("\n")
 }
 
 func (r *releaseData) writeAdditionalResources() {
