@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func (r *releaseData) writeHeader(span string, contributorList []string) error {
+func (r *releaseData) writeHeader(span string) error {
 	tagUrl := fmt.Sprintf("https://github.com/kubevirt/%s/releases/tag/%s", "hyperconverged-cluster-operator", r.hco.currentTag)
 
 	numChanges, err := r.hco.gitGetNumChanges(span)
@@ -23,7 +23,7 @@ func (r *releaseData) writeHeader(span string, contributorList []string) error {
 		return err
 	}
 
-	r.outFile.WriteString(fmt.Sprintf("This release follows %s and consists of %d changes, contributed by %d people, leading to %s.\n", r.hco.previousTag, numChanges, len(contributorList), typeOfChanges))
+	r.outFile.WriteString(fmt.Sprintf("This release follows %s and consists of %d changes, leading to %s.\n", r.hco.previousTag, numChanges, typeOfChanges))
 	r.outFile.WriteString("\n")
 	r.outFile.WriteString(fmt.Sprintf("The source code and selected binaries are available for download at: %s.\n", tagUrl))
 	r.outFile.WriteString("\n")
@@ -167,7 +167,12 @@ func isNotBot(contributor string) bool {
 	return true
 }
 
-func (r *releaseData) writeContributors(contributorList []string) {
+func (r *releaseData) writeContributors(span string) error {
+	contributorList, err := r.hco.gitGetContributors(span)
+	if err != nil {
+		return err
+	}
+
 	var sb strings.Builder
 	numContributors := 0
 	for _, contributor := range contributorList {
@@ -182,6 +187,8 @@ func (r *releaseData) writeContributors(contributorList []string) {
 	r.outFile.WriteString(fmt.Sprintf("%d people contributed to this HCO release:\n\n", numContributors))
 	r.outFile.WriteString(sb.String())
 	r.outFile.WriteString("\n")
+
+	return nil
 }
 
 func (r *releaseData) writeAdditionalResources() {
@@ -214,12 +221,7 @@ func (r *releaseData) generateReleaseNotes() error {
 
 	span := fmt.Sprintf("%s..origin/%s", r.hco.previousTag, r.hco.tagBranch)
 
-	contributorList, err := r.hco.gitGetContributors(span)
-	if err != nil {
-		return err
-	}
-
-	err = r.writeHeader(span, contributorList)
+	err = r.writeHeader(span)
 	if err != nil {
 		return err
 	}
@@ -229,7 +231,11 @@ func (r *releaseData) generateReleaseNotes() error {
 		return err
 	}
 
-	r.writeContributors(contributorList)
+	err = r.writeContributors(span)
+	if err != nil {
+		return err
+	}
+
 	r.writeAdditionalResources()
 
 	return nil
