@@ -108,10 +108,5 @@ func (r *releaseData) semverVerifyTag() error {
 
 	r.hco.tagBranch = expectedBranch
 
-	_, r.hco.previousTagBranch, err = semverGetBranchFromTag(r.hco.previousTag)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }

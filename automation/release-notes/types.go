@@ -29,7 +29,6 @@ type project struct {
 	currentTag 	  	  string
 	previousTag 	  string
 	tagBranch         string
-	previousTagBranch string
 
 	repoDir string
 	repoUrl string

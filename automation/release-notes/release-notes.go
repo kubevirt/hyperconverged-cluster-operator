@@ -113,7 +113,7 @@ func (r *releaseData) findProjectsCurrentAndPreviousReleases() error {
 	if err != nil {
 		return err
 	}
-	oldConfig, err := r.getConfig(r.hco.previousTagBranch)
+	oldConfig, err := r.getConfig(r.hco.previousTag)
 	if err != nil {
 		return err
 	}
