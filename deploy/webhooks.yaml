@@ -166,7 +166,7 @@ spec:
   dnsNames:
   - hostpath-provisioner-operator-webhook-service.hostpath-provisioner.svc
   issuerRef:
-    name: selfsigned-issuer
+    name: selfsigned
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
