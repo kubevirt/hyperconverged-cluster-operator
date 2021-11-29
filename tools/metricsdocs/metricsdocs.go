@@ -25,7 +25,7 @@ const (
 
 	// footer
 	footerHeading = "## Developing new metrics\n"
-	footerContent = "After developing new metrics or changing old ones, please run `make metricsdocs` to regenerate this document.\n\n" +
+	footerContent = "After developing new metrics or changing old ones, please run `make generate-doc` to regenerate this document.\n\n" +
 		"If you feel that the new metric doesn't follow these rules, please change `tools/metricsdocs` with your needs.\n"
 
 	footer = footerHeading + footerContent
