@@ -13,22 +13,31 @@ const (
 	counterLabelAnnName  = "annotation_name"
 )
 
+type metricDesc struct {
+	prometheusType  prometheus.ValueType
+	fqName 			string
+	help 			string
+	constLabelPairs []string
+}
+
+var overwrittenModifications = metricDesc{
+	prometheus.CounterValue,
+	"kubevirt_hco_out_of_band_modifications_count",
+	"Count of out-of-band modifications overwritten by HCO",
+	[]string{counterLabelCompName},
+}
+
+var unsafeModifications = metricDesc{
+	prometheus.GaugeValue,
+	"kubevirt_hco_unsafe_modification_count",
+	"Count of unsafe modifications in the HyperConverged annotations",
+	[]string{counterLabelAnnName},
+}
+
 // HcoMetrics wrapper for all hco metrics
 var HcoMetrics = hcoMetrics{
-	overwrittenModifications: prometheus.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "kubevirt_hco_out_of_band_modifications_count",
-			Help: "Count of out-of-band modifications overwritten by HCO",
-		},
-		[]string{counterLabelCompName},
-	),
-	unsafeModifications: prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "kubevirt_hco_unsafe_modification_count",
-			Help: "count of unsafe modifications in the HyperConverged annotations",
-		},
-		[]string{counterLabelAnnName},
-	),
+	overwrittenModifications: initOverwrittenModifications(),
+	unsafeModifications: initUnsafeModifications(),
 }
 
 // hcoMetrics holds all HCO metrics
@@ -38,6 +47,26 @@ type hcoMetrics struct {
 
 	// unsafeModifications counts the modifications done using the jsonpatch annotations
 	unsafeModifications *prometheus.GaugeVec
+}
+
+func initOverwrittenModifications() *prometheus.CounterVec {
+	return prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: overwrittenModifications.fqName,
+			Help: overwrittenModifications.help,
+		},
+		overwrittenModifications.constLabelPairs,
+	)
+}
+
+func initUnsafeModifications() *prometheus.GaugeVec {
+	return prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: unsafeModifications.fqName,
+			Help: unsafeModifications.help,
+		},
+		unsafeModifications.constLabelPairs,
+	)
 }
 
 func init() {

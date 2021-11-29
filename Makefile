@@ -205,6 +205,9 @@ deploy_cr:
 validate-no-offensive-lang:
 	./hack/validate-no-offensive-lang.sh
 
+metricsdocs:
+	go run tools/doc-generator/*.go
+
 .PHONY: start \
 		clean \
 		build \
