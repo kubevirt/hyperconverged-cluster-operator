@@ -8,6 +8,6 @@ Count of out-of-band modifications overwritten by HCO
 ### kubevirt_hco_unsafe_modification_count
 Count of unsafe modifications in the HyperConverged annotations
 ## Developing new metrics
-After developing new metrics or changing old ones, please run `make metricsdocs` to regenerate this document.
+After developing new metrics or changing old ones, please run `make generate-doc` to regenerate this document.
 
 If you feel that the new metric doesn't follow these rules, please change `tools/metricsdocs` with your needs.
