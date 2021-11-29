@@ -175,9 +175,11 @@ bump-kubevirtci:
 
 generate-doc: build-docgen
 	_out/docgen ./pkg/apis/hco/v1beta1/hyperconverged_types.go > docs/api.md
+	_out/metricsdocs > docs/metrics.md
 
 build-docgen:
 	go build -ldflags="-s -w" -o _out/docgen ./tools/docgen
+	go build -ldflags="-s -w" -o _out/metricsdocs ./tools/metricsdocs
 
 help: ## Show this help screen
 	@echo 'Usage: make <OPTIONS> ... <TARGETS>'
@@ -204,9 +206,6 @@ deploy_cr:
 
 validate-no-offensive-lang:
 	./hack/validate-no-offensive-lang.sh
-
-metricsdocs:
-	go run tools/doc-generator/*.go
 
 .PHONY: start \
 		clean \
