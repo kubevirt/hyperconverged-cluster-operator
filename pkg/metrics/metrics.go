@@ -15,8 +15,8 @@ const (
 
 type metricDesc struct {
 	prometheusType  prometheus.ValueType
-	fqName 			string
-	help 			string
+	fqName          string
+	help            string
 	constLabelPairs []string
 }
 
@@ -37,7 +37,7 @@ var unsafeModifications = metricDesc{
 // HcoMetrics wrapper for all hco metrics
 var HcoMetrics = hcoMetrics{
 	overwrittenModifications: initOverwrittenModifications(),
-	unsafeModifications: initUnsafeModifications(),
+	unsafeModifications:      initUnsafeModifications(),
 }
 
 // hcoMetrics holds all HCO metrics
