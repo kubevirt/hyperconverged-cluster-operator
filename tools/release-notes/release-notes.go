@@ -37,8 +37,7 @@ func (r *releaseData) writeHeader(span string) error {
 	return nil
 }
 
-func (r *releaseData) writeHcoChanges() error {
-	span := fmt.Sprintf("%s..origin/%s", r.hco.previousTag, r.hco.tagBranch)
+func (r *releaseData) writeHcoChanges(span string) error {
 	releaseNotes, err := r.hco.gitGetReleaseNotes(span)
 	if err != nil {
 		return err
@@ -58,14 +57,10 @@ func (r *releaseData) writeHcoChanges() error {
 }
 
 func (p *project) writeOtherChangesIfVersionUpdated(f *os.File) error {
-	span := fmt.Sprintf("%s..origin/%s", p.previousTag, p.tagBranch)
+	span := fmt.Sprintf("%s..%s", p.previousTag, p.currentTag)
 	releaseNotes, err := p.gitGetReleaseNotes(span)
 	if err != nil {
-		span = fmt.Sprintf("%s..%s", p.previousTag, p.currentTag)
-		releaseNotes, err = p.gitGetReleaseNotes(span)
-		if err != nil {
-			return err
-		}
+		return err
 	}
 
 	f.WriteString(fmt.Sprintf("### %s: %s -> %s\n", p.name, p.previousTag, p.currentTag))
@@ -110,7 +105,7 @@ func (r *releaseData) getConfig(branch string) (map[string]string, error) {
 }
 
 func (r *releaseData) findProjectsCurrentAndPreviousReleases() error {
-	newConfig, err := r.getConfig(r.hco.tagBranch)
+	newConfig, err := r.getConfig(r.hco.currentTag)
 	if err != nil {
 		return err
 	}
@@ -120,22 +115,18 @@ func (r *releaseData) findProjectsCurrentAndPreviousReleases() error {
 	}
 
 	for _, p := range r.projects {
-		p.currentTag = newConfig[p.short+"_VERSION"]
-		_, p.tagBranch, err = semverGetBranchFromTag(p.currentTag)
-		if err != nil {
-			return err
-		}
-		p.previousTag = oldConfig[p.short+"_VERSION"]
+		p.currentTag = newConfig[p.short + "_VERSION"]
+		p.previousTag = oldConfig[p.short + "_VERSION"]
 	}
 
 	return nil
 }
 
-func (r *releaseData) writeNotableChanges() error {
+func (r *releaseData) writeNotableChanges(span string) error {
 	r.outFile.WriteString("Notable changes\n---------------\n")
 	r.outFile.WriteString("\n")
 
-	err := r.writeHcoChanges()
+	err := r.writeHcoChanges(span)
 	if err != nil {
 		return err
 	}
@@ -220,14 +211,14 @@ func (r *releaseData) generateReleaseNotes() error {
 	}
 	defer r.outFile.Close()
 
-	span := fmt.Sprintf("%s..origin/%s", r.hco.previousTag, r.hco.tagBranch)
+	span := fmt.Sprintf("%s..%s", r.hco.previousTag, r.hco.currentTag)
 
 	err = r.writeHeader(span)
 	if err != nil {
 		return err
 	}
 
-	err = r.writeNotableChanges()
+	err = r.writeNotableChanges(span)
 	if err != nil {
 		return err
 	}
