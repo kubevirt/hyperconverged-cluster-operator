@@ -86,7 +86,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	k8s.io/component-base v0.22.3 // indirect
-	k8s.io/klog/v2 v2.9.0 // indirect
+	k8s.io/klog/v2 v2.10.0 // indirect
 	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.1.2 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
@@ -194,3 +194,13 @@ replace (
 	golang.org/x/crypto => golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	golang.org/x/crypto/ssh/terminal => golang.org/x/crypto/ssh/terminal v0.0.0-20201221181555-eec23a3978ad
 )
+
+replace kubevirt.io/client-go => ./kubevirt/staging/src/kubevirt.io/client-go
+
+replace kubevirt.io/api => ./kubevirt/staging/src/kubevirt.io/api
+
+replace kubevirt.io/kubevirt => ./kubevirt
+
+replace kubevirt.io/containerized-data-importer-api => kubevirt.io/containerized-data-importer-api v1.41.1
+
+replace kubevirt.io/containerized-data-importer => kubevirt.io/containerized-data-importer v1.41.1
