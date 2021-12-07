@@ -3,12 +3,13 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/metrics"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"sort"
 	"strings"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/metrics"
 )
 
 // constant parts of the file

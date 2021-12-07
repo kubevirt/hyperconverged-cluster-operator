@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/metrics"
 	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/metrics"
 )
 
 type fakeCollector struct {
