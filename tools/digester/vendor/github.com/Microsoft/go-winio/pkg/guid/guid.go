@@ -1,4 +1,3 @@
-//go:build windows
 // +build windows
 
 // Package guid provides a GUID type. The backing structure for a GUID is

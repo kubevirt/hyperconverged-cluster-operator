@@ -39,19 +39,18 @@ var _ = Describe("VirtioWin", func() {
 			os.Unsetenv("VIRTIOWIN_CONTAINER")
 
 			cl := commonTestUtils.InitClient([]runtime.Object{})
-			handler := (*genericOperand)(newVirtioWinCmHandler(cl, commonTestUtils.GetScheme()))
+			handler, err := newVirtioWinCmHandler(logger, cl, commonTestUtils.GetScheme(), hco)
 
-			res := handler.ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
-			Expect(res.Err).ToNot(BeNil())
+			Expect(err).ToNot(BeNil())
+			Expect(handler).To(BeNil())
 		})
 
 		It("should create if not present", func() {
-			expectedResource, err := NewVirtioWinCm(hco, commonTestUtils.Namespace)
+			expectedResource, err := NewVirtioWinCm(hco)
 			Expect(err).ToNot(HaveOccurred())
 			cl := commonTestUtils.InitClient([]runtime.Object{})
-			handler := (*genericOperand)(newVirtioWinCmHandler(cl, commonTestUtils.GetScheme()))
-			res := handler.ensure(req)
+			handler, _ := newVirtioWinCmHandler(logger, cl, commonTestUtils.GetScheme(), hco)
+			res := handler[0].ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).To(BeNil())
 
@@ -67,19 +66,19 @@ var _ = Describe("VirtioWin", func() {
 		})
 
 		It("should find if present", func() {
-			expectedResource, err := NewVirtioWinCm(hco, commonTestUtils.Namespace)
+			expectedResource, err := NewVirtioWinCm(hco)
 			Expect(err).ToNot(HaveOccurred())
 
 			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
 			cl := commonTestUtils.InitClient([]runtime.Object{hco, expectedResource})
-			handler := (*genericOperand)(newVirtioWinCmHandler(cl, commonTestUtils.GetScheme()))
-			res := handler.ensure(req)
+			handler, _ := newVirtioWinCmHandler(logger, cl, commonTestUtils.GetScheme(), hco)
+			res := handler[0].ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).To(BeNil())
 
 			// Check HCO's status
 			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
-			objectRef, err := reference.GetReference(handler.Scheme, expectedResource)
+			objectRef, err := reference.GetReference(commonTestUtils.GetScheme(), expectedResource)
 			Expect(err).To(BeNil())
 			// ObjectReference should have been added
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
@@ -90,11 +89,11 @@ var _ = Describe("VirtioWin", func() {
 			updatableKeys := [...]string{virtiowink}
 			toBeRemovedKey := "toberemoved"
 
-			expectedResource, err := NewVirtioWinCm(hco, commonTestUtils.Namespace)
+			expectedResource, err := NewVirtioWinCm(hco)
 			Expect(err).ToNot(HaveOccurred())
 
 			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
-			outdatedResource, err := NewVirtioWinCm(hco, commonTestUtils.Namespace)
+			outdatedResource, err := NewVirtioWinCm(hco)
 			Expect(err).ToNot(HaveOccurred())
 
 			outdatedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", outdatedResource.Namespace, outdatedResource.Name)
@@ -105,8 +104,8 @@ var _ = Describe("VirtioWin", func() {
 			outdatedResource.Data[toBeRemovedKey] = "value-we-should-remove"
 
 			cl := commonTestUtils.InitClient([]runtime.Object{hco, outdatedResource})
-			handler := (*genericOperand)(newVirtioWinCmHandler(cl, commonTestUtils.GetScheme()))
-			res := handler.ensure(req)
+			handler, _ := newVirtioWinCmHandler(logger, cl, commonTestUtils.GetScheme(), hco)
+			res := handler[0].ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).To(BeNil())
@@ -127,9 +126,9 @@ var _ = Describe("VirtioWin", func() {
 
 			// ObjectReference should have been updated
 			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
-			objectRefOutdated, err := reference.GetReference(handler.Scheme, outdatedResource)
+			objectRefOutdated, err := reference.GetReference(commonTestUtils.GetScheme(), outdatedResource)
 			Expect(err).To(BeNil())
-			objectRefFound, err := reference.GetReference(handler.Scheme, foundResource)
+			objectRefFound, err := reference.GetReference(commonTestUtils.GetScheme(), foundResource)
 			Expect(err).To(BeNil())
 			Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
@@ -147,11 +146,11 @@ var _ = Describe("VirtioWin", func() {
 			req = commonTestUtils.NewReq(hco)
 		})
 		It("should do nothing if exists", func() {
-			expectedRole := NewVirtioWinCmReaderRole(hco, hco.Namespace)
+			expectedRole := NewVirtioWinCmReaderRole(hco)
 			cl := commonTestUtils.InitClient([]runtime.Object{hco, expectedRole})
 
-			handler := (*genericOperand)(newVirtioWinCmReaderRoleHandler(cl, commonTestUtils.GetScheme()))
-			res := handler.ensure(req)
+			handler, _ := newVirtioWinCmReaderRoleHandler(logger, cl, commonTestUtils.GetScheme(), hco)
+			res := handler[0].ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			foundRole := &rbacv1.Role{}
@@ -166,14 +165,14 @@ var _ = Describe("VirtioWin", func() {
 		})
 
 		It("should update if labels are missing", func() {
-			expectedRole := NewVirtioWinCmReaderRole(hco, hco.Namespace)
+			expectedRole := NewVirtioWinCmReaderRole(hco)
 			expectedLabels := expectedRole.Labels
 			expectedRole.Labels = nil
 
 			cl := commonTestUtils.InitClient([]runtime.Object{hco, expectedRole})
 
-			handler := (*genericOperand)(newVirtioWinCmReaderRoleHandler(cl, commonTestUtils.GetScheme()))
-			res := handler.ensure(req)
+			handler, _ := newVirtioWinCmReaderRoleHandler(logger, cl, commonTestUtils.GetScheme(), hco)
+			res := handler[0].ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			foundRole := &rbacv1.Role{}
@@ -197,12 +196,12 @@ var _ = Describe("VirtioWin", func() {
 			req = commonTestUtils.NewReq(hco)
 		})
 		It("should do nothing if exists", func() {
-			expectedRoleBinding := NewVirtioWinCmReaderRoleBinding(hco, hco.Namespace)
+			expectedRoleBinding := NewVirtioWinCmReaderRoleBinding(hco)
 
 			cl := commonTestUtils.InitClient([]runtime.Object{hco, expectedRoleBinding})
 
-			handler := (*genericOperand)(newVirtioWinCmReaderRoleBindingHandler(cl, commonTestUtils.GetScheme()))
-			res := handler.ensure(req)
+			handler, _ := newVirtioWinCmReaderRoleBindingHandler(logger, cl, commonTestUtils.GetScheme(), hco)
+			res := handler[0].ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			foundRoleBinding := &rbacv1.RoleBinding{}
@@ -216,14 +215,14 @@ var _ = Describe("VirtioWin", func() {
 		})
 
 		It("should update if labels are missing", func() {
-			expectedRoleBinding := NewVirtioWinCmReaderRoleBinding(hco, hco.Namespace)
+			expectedRoleBinding := NewVirtioWinCmReaderRoleBinding(hco)
 			expectedLabels := expectedRoleBinding.Labels
 			expectedRoleBinding.Labels = nil
 
 			cl := commonTestUtils.InitClient([]runtime.Object{hco, expectedRoleBinding})
 
-			handler := (*genericOperand)(newVirtioWinCmReaderRoleBindingHandler(cl, commonTestUtils.GetScheme()))
-			res := handler.ensure(req)
+			handler, _ := newVirtioWinCmReaderRoleBindingHandler(logger, cl, commonTestUtils.GetScheme(), hco)
+			res := handler[0].ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			foundRoleBinding := &rbacv1.RoleBinding{}
