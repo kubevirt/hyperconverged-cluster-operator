@@ -1,13 +1,8 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"io"
-	"net/http"
-	"net/http/httptest"
 	"sort"
-	"strings"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/metrics"
 )
@@ -33,25 +28,9 @@ const (
 )
 
 func main() {
-	handler := metrics.Handler(1)
-	RegisterFakeCollector()
-
-	req, err := http.NewRequest(http.MethodGet, "/metrics", nil)
-	checkError(err)
-
-	recorder := httptest.NewRecorder()
-
-	handler.ServeHTTP(recorder, req)
-
-	var metricsList metricList
-	if status := recorder.Code; status == http.StatusOK {
-		err := parseVirtMetrics(recorder.Body, &metricsList)
-		checkError(err)
-
-	} else {
-		panic(fmt.Errorf("got HTTP status code of %d from /metrics", recorder.Code))
-	}
-	writeToFile(metricsList)
+	hcoMetricList := metricDescriptionListToMetricList(metrics.HcoMetrics.GetMetricDesc())
+	sort.Sort(hcoMetricList)
+	writeToFile(hcoMetricList)
 }
 
 func writeToFile(metricsList metricList) {
@@ -65,12 +44,28 @@ type metric struct {
 	description string
 }
 
+func metricDescriptionToMetric(md metrics.MetricDescription) metric {
+	return metric{
+		name:        md.FqName,
+		description: md.Help,
+	}
+}
+
 func (m metric) writeOut() {
 	fmt.Println("###", m.name)
 	fmt.Println(m.description)
 }
 
 type metricList []metric
+
+func metricDescriptionListToMetricList(mdl []metrics.MetricDescription) metricList {
+	res := make([]metric, len(mdl))
+	for i, md := range mdl {
+		res[i] = metricDescriptionToMetric(md)
+	}
+
+	return res
+}
 
 // Len implements sort.Interface.Len
 func (m metricList) Len() int {
@@ -87,44 +82,8 @@ func (m metricList) Swap(i, j int) {
 	m[i], m[j] = m[j], m[i]
 }
 
-func (m *metricList) add(line string) {
-	split := strings.Split(line, " ")
-	name := split[2]
-	split[3] = strings.Title(split[3])
-	description := strings.Join(split[3:], " ")
-	*m = append(*m, metric{name: name, description: description})
-}
-
 func (m metricList) writeOut() {
 	for _, met := range m {
 		met.writeOut()
-	}
-}
-
-const filter = "kubevirt_hco_"
-
-func parseVirtMetrics(r io.Reader, metricsList *metricList) error {
-	scan := bufio.NewScanner(r)
-	for scan.Scan() {
-		helpLine := scan.Text()
-		if strings.HasPrefix(helpLine, "# HELP ") {
-			if strings.Contains(helpLine, filter) {
-				metricsList.add(helpLine)
-			}
-		}
-	}
-
-	if scan.Err() != nil {
-		return fmt.Errorf("failed to parse metrics from prometheus endpoint, %w", scan.Err())
-	}
-
-	sort.Sort(metricsList)
-
-	return nil
-}
-
-func checkError(err error) {
-	if err != nil {
-		panic(err)
 	}
 }
