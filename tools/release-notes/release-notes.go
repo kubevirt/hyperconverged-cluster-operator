@@ -115,8 +115,8 @@ func (r *releaseData) findProjectsCurrentAndPreviousReleases() error {
 	}
 
 	for _, p := range r.projects {
-		p.currentTag = newConfig[p.short + "_VERSION"]
-		p.previousTag = oldConfig[p.short + "_VERSION"]
+		p.currentTag = newConfig[p.short+"_VERSION"]
+		p.previousTag = oldConfig[p.short+"_VERSION"]
 	}
 
 	return nil
