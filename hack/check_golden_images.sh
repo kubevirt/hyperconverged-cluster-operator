@@ -7,7 +7,7 @@ IMAGES_NS=${IMAGES_NS:-kubevirt-os-images}
 if [[ $(${KUBECTL_BINARY} get ssp -n ${INSTALLED_NAMESPACE}) ]]; then
   # Test image streams
   [[ $(${KUBECTL_BINARY} get imageStream centos8  -n ${IMAGES_NS} --no-headers | wc -l) -eq 1 ]]
-  [[ "$(${KUBECTL_BINARY} get imageStream centos8  -n ${IMAGES_NS} -o json | jq -cM '.spec.tags[0].from')" == '{"kind":"DockerImage","name":"quay.io/kubevirt/centos8-container-disk-images"}' ]]
+  [[ "$(${KUBECTL_BINARY} get imageStream centos8  -n ${IMAGES_NS} -o json | jq -cM '.spec.tags[0].from')" == '{"kind":"DockerImage","name":"quay.io/containerdisks/centos:8.4"}' ]]
 
   #check that HCO reconciles the image stream
   ./hack/retry.sh 10 3 "${KUBECTL_BINARY} patch imageStream -n ${IMAGES_NS} centos8 --type=json -p '[{\"op\": \"add\", \"path\": \"/metadata/labels/test-label\", \"value\": \"test\"}]'"

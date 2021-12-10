@@ -10,7 +10,7 @@ spec:
   - annotations: null
     from:
       kind: DockerImage
-      name: quay.io/kubevirt/centos8-container-disk-images
+      name: quay.io/containerdisks/centos
     importPolicy:
       scheduled: true
-    name: latest
+    name: 8.4
