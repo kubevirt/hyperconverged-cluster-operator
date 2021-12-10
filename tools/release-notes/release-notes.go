@@ -91,7 +91,7 @@ func (r *releaseData) writeOtherChanges() error {
 }
 
 func (r *releaseData) getConfig(branch string) (map[string]string, error) {
-	err := r.hco.switchToBranch(branch)
+	err := r.hco.gitSwitchToBranch(branch)
 	if err != nil {
 		return nil, err
 	}
@@ -288,6 +288,10 @@ func parseArguments() *releaseData {
 
 func (r *releaseData) checkoutProjects() {
 	err := r.hco.gitCheckoutUpstream()
+	if err != nil {
+		log.Fatalf("ERROR checking out upstream: %s\n", err)
+	}
+	err = r.hco.gitCheckCurrentTagExists()
 	if err != nil {
 		log.Fatalf("ERROR checking out upstream: %s\n", err)
 	}
