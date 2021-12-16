@@ -38,4 +38,11 @@ var _ = Describe("[rfe_id:393][crit:medium][vendor:cnv-qe@redhat.com][level:syst
 		Expect(configmap.Data["local-sc.volumeMode"]).To(Equal("Filesystem"))
 		Expect(configmap.Data["local-sc.accessMode"]).To(Equal("ReadWriteOnce"))
 	})
+
+	It("should be able to read v2v-vmware ConfigMap", func() {
+		configmap, err := unprivClient.CoreV1().ConfigMaps(flags.KubeVirtInstallNamespace).Get(context.TODO(), "v2v-vmware", metav1.GetOptions{})
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(configmap.Data["virtio-win-image"]).NotTo(BeEmpty())
+	})
 })

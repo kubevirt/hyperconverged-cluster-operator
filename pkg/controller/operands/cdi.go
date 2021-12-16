@@ -311,7 +311,7 @@ func NewConfigReaderRoleForCR(cr *hcov1beta1.HyperConverged, namespace string) *
 			{
 				APIGroups:     []string{""},
 				Resources:     []string{"configmaps"},
-				ResourceNames: []string{"kubevirt-storage-class-defaults"},
+				ResourceNames: []string{"kubevirt-storage-class-defaults", "v2v-vmware"},
 				Verbs:         []string{"get", "watch", "list"},
 			},
 		},
