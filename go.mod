@@ -13,7 +13,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.1.4
 	github.com/imdario/mergo v0.3.12
-	github.com/kubevirt/cluster-network-addons-operator v0.58.2
+	github.com/kubevirt/cluster-network-addons-operator v0.58.5
 	github.com/kubevirt/vm-import-operator v0.4.0
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.14.0
