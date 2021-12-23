@@ -15,7 +15,6 @@ const (
 )
 
 type metricDesc struct {
-	prometheusType  prometheus.ValueType
 	fqName          string
 	help            string
 	constLabelPairs []string
@@ -30,7 +29,6 @@ func (md metricDesc) init() prometheus.Collector {
 var HcoMetrics = func() hcoMetrics {
 	metricDescList := map[string]metricDesc{
 		"overwrittenModifications": {
-			prometheusType:  prometheus.CounterValue,
 			fqName:          "kubevirt_hco_out_of_band_modifications_count",
 			help:            "Count of out-of-band modifications overwritten by HCO",
 			constLabelPairs: []string{counterLabelCompName},
@@ -45,7 +43,6 @@ var HcoMetrics = func() hcoMetrics {
 			},
 		},
 		"unsafeModifications": {
-			prometheusType:  prometheus.GaugeValue,
 			fqName:          "kubevirt_hco_unsafe_modification_count",
 			help:            "Count of unsafe modifications in the HyperConverged annotations",
 			constLabelPairs: []string{counterLabelAnnName},
