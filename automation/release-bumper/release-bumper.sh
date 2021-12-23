@@ -109,7 +109,7 @@ function get_updated_versions {
 }
 
 function get_latest_release() {
-  RELEASES=$(curl -s -L --silent "https://api.github.com/repos/$1/releases" | jq -r '.[].tag_name')
+  RELEASES=$(curl -s -L "https://api.github.com/repos/$1/releases" | jq -r '.[].tag_name')
   semversort "${RELEASES[*]}"
 }
 
@@ -155,13 +155,27 @@ function version_weight() {
 }
 
 function update_versions() {
+  PR=$(curl -s -L https://api.github.com/repos/kubevirt/hyperconverged-cluster-operator/pulls | jq "[.[] | {title: .title, ref: .base.ref}]" )
+
   for component in "${SHOULD_UPDATED[@]}"; do
     echo INFO: Checking update for "$component";
 
     # Check if pull request for that component and version already exists
     search_pattern=$(echo "$component.*${UPDATED_VERSIONS[$component]}" | tr -d '"')
-    if curl -s -L  https://api.github.com/repos/kubevirt/hyperconverged-cluster-operator/pulls | jq .[].title | \
-    grep -q "$search_pattern"; then
+
+    if [ -n "$TARGET_BRANCH" ]
+    then
+      target_branch=$TARGET_BRANCH
+    elif [ -n "$GITHUB_REF" ]
+    then
+      target_branch=${GITHUB_REF#refs/heads/}
+    else
+      target_branch=main
+    fi
+
+    search_pr=$(jq "[.[] | select((.title | test(\"${search_pattern}\")) and (.ref == \"${target_branch}\"))] | length" <<< "$PR")
+
+    if [[ $search_pr -ne 0 ]] ; then
       echo "INFO: An existing pull request for bumping $component to version ${UPDATED_VERSIONS[$component]} has been found. \
 Continuing to next component."
       continue
