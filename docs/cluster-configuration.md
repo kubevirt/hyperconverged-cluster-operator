@@ -588,9 +588,9 @@ Subsequent upgrades to newer versions will preserve the state from previous vers
 HCO enables users to modify the operand CRs directly using jsonpatch annotations in HyperConverged CR.  
 Modifications done to CRs using jsonpatch annotations won't be reconciled back by HCO to the opinionated defaults.  
 The following annotations are supported in the HyperConverged CR:
-* `kubevirt.kubevirt.io/jsonpatch` - for KubeVirt configurations
-* `containerizeddataimporter.kubevirt.io/jsonpatch` - for CDI configurations
-* `networkaddonsconfigs.kubevirt.io/jsonpatch` - for CNAO configurations
+* `kubevirt.kubevirt.io/jsonpatch` - for [KubeVirt configurations](https://github.com/kubevirt/api)
+* `containerizeddataimporter.kubevirt.io/jsonpatch` - for [CDI configurations](https://github.com/kubevirt/containerized-data-importer-api)
+* `networkaddonsconfigs.kubevirt.io/jsonpatch` - for [CNAO](https://github.com/kubevirt/cluster-network-addons-operator) configurations
 
 The content of the annotation will be a json array of patch objects, as defined in [RFC6902](https://tools.ietf.org/html/rfc6902).
 
