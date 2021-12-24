@@ -590,7 +590,7 @@ Modifications done to CRs using jsonpatch annotations won't be reconciled back b
 The following annotations are supported in the HyperConverged CR:
 * `kubevirt.kubevirt.io/jsonpatch` - for KubeVirt configurations
 * `containerizeddataimporter.kubevirt.io/jsonpatch` - for CDI configurations
-* `networkaddonsconfig.kubevirt.io/jsonpatch` - for CNAO configurations
+* `networkaddonsconfigs.kubevirt.io/jsonpatch` - for CNAO configurations
 
 The content of the annotation will be a json array of patch objects, as defined in [RFC6902](https://tools.ietf.org/html/rfc6902).
 
@@ -700,6 +700,12 @@ metadata:
           "value": "myproxy.example.com"
         }
       ]
+```
+
+##### Disable KubeMacPool
+If KubeMacPool is buggy on your cluster and you do not immediately need it you can ask CNAO not to deploy it
+```bash
+kubectl annotate --overwrite -n kubevirt-hyperconverged hco kubevirt-hyperconverged 'networkaddonsconfigs.kubevirt.io/jsonpatch=[{"op": "replace","path": "/spec/kubeMacPool","value": null}]'
 ```
 
 **_Note:_** The full configurations options for Kubevirt, CDI and CNAO which are available on the cluster, can be explored by using `kubectl explain <resource name>.spec`. For example:  
