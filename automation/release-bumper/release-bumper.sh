@@ -157,21 +157,21 @@ function version_weight() {
 function update_versions() {
   PR=$(curl -s -L https://api.github.com/repos/kubevirt/hyperconverged-cluster-operator/pulls | jq "[.[] | {title: .title, ref: .base.ref}]" )
 
+  if [ -n "$TARGET_BRANCH" ]
+  then
+    target_branch=$TARGET_BRANCH
+  elif [ -n "$GITHUB_REF" ]
+  then
+    target_branch=${GITHUB_REF#refs/heads/}
+  else
+    target_branch=main
+  fi
+
   for component in "${SHOULD_UPDATED[@]}"; do
     echo INFO: Checking update for "$component";
 
     # Check if pull request for that component and version already exists
     search_pattern=$(echo "$component.*${UPDATED_VERSIONS[$component]}" | tr -d '"')
-
-    if [ -n "$TARGET_BRANCH" ]
-    then
-      target_branch=$TARGET_BRANCH
-    elif [ -n "$GITHUB_REF" ]
-    then
-      target_branch=${GITHUB_REF#refs/heads/}
-    else
-      target_branch=main
-    fi
 
     search_pr=$(jq "[.[] | select((.title | test(\"${search_pattern}\")) and (.ref == \"${target_branch}\"))] | length" <<< "$PR")
 
