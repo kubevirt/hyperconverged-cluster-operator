@@ -59,8 +59,6 @@ function get_current_branch() {
     exit 1
   fi
 
-  TARGET_BRANCH="main"
-
   if [ "$TARGET_BRANCH" == "main" ]
   then
     UPDATE_TYPE="all"
