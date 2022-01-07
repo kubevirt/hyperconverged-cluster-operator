@@ -27,7 +27,7 @@ class GraphGenerator(object):
         oc_command = "oc exec -n openshift-monitoring prometheus-k8s-0 -c prometheus -- " \
                      "curl --silent --data-urlencode \'query={}\' " \
                      "http://127.0.0.1:9090/api/v1/query".format(prometheus_query)
-        result_as_json_string = subprocess.check_output(oc_command, shell=True, stderr=subprocess.STDOUT)
+        result_as_json_string = subprocess.check_output(oc_command, shell=False, stderr=subprocess.STDOUT)
         result = json.loads(result_as_json_string.decode('UTF-8'))
 
         if result['status'] != 'success':

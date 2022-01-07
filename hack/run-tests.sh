@@ -50,6 +50,9 @@ KUBECTL_BINARY=${KUBECTL_BINARY} ./hack/check_defaults.sh
 # check golden images
 KUBECTL_BINARY=${KUBECTL_BINARY} ./hack/check_golden_images.sh
 
+# generate components graphs
+./tools/k8s-label-visualizer/run.sh
+
 # TODO: workaround for https://bugzilla.redhat.com/show_bug.cgi?id=2037312
 # remove once fixed
 echo "Explictly disabling CommonBootImageImport to be able to safely remove the product"
