@@ -10,7 +10,7 @@ spec:
           url: docker://quay.io/kubevirt/fedora
   managedDataSource: fedora
 metadata:
-  name: centos8-image-cron
+  name: centos-stream9-image-cron
   namespace: golden-image-namespace
 spec:
   schedule: "* */1 * * *"
@@ -18,5 +18,5 @@ spec:
     spec:
       source:
         registry:
-          url: docker://quay.io/kubevirt/centos8
-  managedDataSource: centos8
+          url: docker://quay.io/kubevirt/centos-stream9
+  managedDataSource: centos-stream9

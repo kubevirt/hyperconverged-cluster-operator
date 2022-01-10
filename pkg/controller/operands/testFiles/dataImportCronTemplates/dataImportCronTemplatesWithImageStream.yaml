@@ -6,7 +6,7 @@
       spec:
         source:
           registry:
-            url: docker://quay.io/kubevirt/fedora
+            url: docker://quay.io/containerdisks/fedora
             imageStream: fedora
     managedDataSource: fedora
 - metadata:
@@ -20,12 +20,12 @@
             imageStream: test-is
     managedDataSource: test-is
 - metadata:
-    name: centos8-image-cron
+    name: centos-stream9-image-cron
   spec:
     schedule: "* */1 * * *"
     template:
       spec:
         source:
           registry:
-            url: docker://quay.io/kubevirt/centos8
-    managedDataSource: centos8
+            url: docker://quay.io/containerdisks/centos-stream:9
+    managedDataSource: centos-stream9
