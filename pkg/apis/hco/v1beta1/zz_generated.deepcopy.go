@@ -370,6 +370,11 @@ func (in *LiveMigrationConfigurations) DeepCopyInto(out *LiveMigrationConfigurat
 		*out = new(int64)
 		**out = **in
 	}
+	if in.Network != nil {
+		in, out := &in.Network, &out.Network
+		*out = new(string)
+		**out = **in
+	}
 	return
 }
 
