@@ -20,7 +20,7 @@ DO=eval
 export JOB_TYPE=prow
 endif
 
-sanity: generate-doc validate-no-offensive-lang
+sanity: generate generate-doc validate-no-offensive-lang
 	go version
 	go fmt ./...
 	go install golang.org/x/tools/cmd/goimports@latest
@@ -31,7 +31,7 @@ sanity: generate-doc validate-no-offensive-lang
 	git difftool -y --trust-exit-code --extcmd=./hack/diff-csv.sh
 
 lint:
-	golangci-lint run
+	golangci-lint run --verbose --skip-files pkg/apis/hco/v1beta1/zz_generated.*.go 
 
 build: build-operator build-csv-merger build-webhook
 
@@ -172,6 +172,9 @@ dump-state:
 bump-kubevirtci:
 	rm -rf _kubevirtci
 	./hack/bump-kubevirtci.sh
+
+generate:
+	./hack/generate.sh
 
 generate-doc: build-docgen
 	_out/docgen ./pkg/apis/hco/v1beta1/hyperconverged_types.go > docs/api.md

@@ -378,18 +378,23 @@ type HyperConvergedStatus struct {
 	// +patchMergeKey=type
 	// +patchStrategy=merge
 	// +optional
-	Conditions []metav1.Condition `json:"conditions,omitempty"  patchStrategy:"merge" patchMergeKey:"type"`
+	// +listType=map
+	// +listMapKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 
 	// RelatedObjects is a list of objects created and maintained by this
 	// operator. Object references will be added to this list after they have
 	// been created AND found in the cluster.
 	// +optional
+	// +listType=set
 	RelatedObjects []corev1.ObjectReference `json:"relatedObjects,omitempty"`
 
-	// Versions is a list of HCO component versions, as name/version pairs. The version with a name of "operator"
-	// is the HCO version itself, as described here:
-	// https://github.com/openshift/cluster-version-operator/blob/master/docs/dev/clusteroperator.md#version
+	// Versions is a list of HCO component versions, as name/version pairs.
+	// The version with a name of "operator" is the HCO version itself, as described here:
+	// https://github.com/openshift/enhancements/blob/master/dev-guide/cluster-version-operator/dev/clusteroperator.md#version
 	// +optional
+	// +listType=map
+	// +listMapKey=name
 	Versions []Version `json:"versions,omitempty"`
 
 	// ObservedGeneration reflects the HyperConverged resource generation. If the ObservedGeneration is less than the
