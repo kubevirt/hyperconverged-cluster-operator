@@ -1045,7 +1045,7 @@ func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (
 
 	removeOldQuickStartGuides(req, r.client, r.operandHandler.GetQuickStartNames())
 
-	return upgradePatched, nil
+	return upgradePatched || oldMetricsSVCRemoved, nil
 }
 
 func (r ReconcileHyperConverged) applyUpgradePatches(req *common.HcoRequest) (bool, error) {
