@@ -1742,6 +1742,116 @@ var _ = Describe("HyperconvergedController", func() {
 				})
 
 			})
+
+			Context("Remove old metrics services and endpoints", func() {
+				services := []string{
+					"hyperconverged-cluster-operator-metrics",
+					"hyperconverged-cluster-webhook-metrics",
+				}
+
+				serviceEvents := make([]commonTestUtils.MockEvent, 0)
+				for _, service := range services {
+					serviceEvents = append(serviceEvents, commonTestUtils.MockEvent{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Killing",
+						Msg:       fmt.Sprintf("Removed %s Service", service),
+					})
+
+				}
+
+				endpoints := []string{
+					"hyperconverged-cluster-operator-metrics",
+				}
+
+				endpointsEvents := make([]commonTestUtils.MockEvent, 0)
+				for _, endpoint := range endpoints {
+					endpointsEvents = append(endpointsEvents, commonTestUtils.MockEvent{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Killing",
+						Msg:       fmt.Sprintf("Removed %s Endpoints", endpoint),
+					})
+
+				}
+
+				BeforeEach(func() {
+					expected.hco.Spec = hcov1beta1.HyperConvergedSpec{}
+					expected.kv, _ = operands.NewKubeVirt(expected.hco, namespace)
+				})
+
+				It("Should do nothing if resources do not exist", func() {
+					cl := expected.initClient()
+
+					r := initReconciler(cl, nil)
+					req := commonTestUtils.NewReq(expected.hco)
+
+					modified, err := r.migrateBeforeUpgrade(req)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(modified).To(BeFalse())
+
+					By("Check events")
+					events := r.eventEmitter.(*commonTestUtils.EventEmitterMock)
+					Expect(events.CheckEvents(serviceEvents)).To(BeFalse())
+					Expect(events.CheckEvents(endpointsEvents)).To(BeFalse())
+				})
+
+				It("Should remove services", func() {
+					resources := expected.toArray()
+					for _, service := range services {
+						resources = append(resources, &corev1.Service{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      service,
+								Namespace: namespace,
+								Labels: map[string]string{
+									hcoutil.AppLabel: expected.hco.Name,
+								},
+							},
+						})
+					}
+
+					cl := commonTestUtils.InitClient(resources)
+
+					r := initReconciler(cl, nil)
+
+					req := commonTestUtils.NewReq(expected.hco)
+
+					modified, err := r.migrateBeforeUpgrade(req)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(modified).To(BeTrue())
+
+					By("Check events")
+					events := r.eventEmitter.(*commonTestUtils.EventEmitterMock)
+					Expect(events.CheckEvents(serviceEvents)).To(BeTrue())
+				})
+
+				It("Should remove endpoints", func() {
+					resources := expected.toArray()
+					for _, endpoint := range endpoints {
+						resources = append(resources, &corev1.Endpoints{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      endpoint,
+								Namespace: namespace,
+								Labels: map[string]string{
+									hcoutil.AppLabel: expected.hco.Name,
+								},
+							},
+						})
+					}
+
+					cl := commonTestUtils.InitClient(resources)
+
+					r := initReconciler(cl, nil)
+
+					req := commonTestUtils.NewReq(expected.hco)
+
+					modified, err := r.migrateBeforeUpgrade(req)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(modified).To(BeTrue())
+
+					By("Check events")
+					events := r.eventEmitter.(*commonTestUtils.EventEmitterMock)
+					Expect(events.CheckEvents(endpointsEvents)).To(BeTrue())
+				})
+			})
 		})
 
 		Context("Aggregate Negative Conditions", func() {

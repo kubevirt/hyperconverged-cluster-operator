@@ -1038,9 +1038,14 @@ func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (
 		return false, err
 	}
 
+	oldMetricsSVCRemoved, err := r.removeOldMetricsObjs(req)
+	if err != nil {
+		return false, err
+	}
+
 	removeOldQuickStartGuides(req, r.client, r.operandHandler.GetQuickStartNames())
 
-	return upgradePatched, nil
+	return upgradePatched || oldMetricsSVCRemoved, nil
 }
 
 func (r ReconcileHyperConverged) applyUpgradePatches(req *common.HcoRequest) (bool, error) {
@@ -1101,6 +1106,94 @@ func (r ReconcileHyperConverged) applyUpgradePatch(req *common.HcoRequest, hcoJs
 		return patchedBytes, nil
 	}
 	return hcoJson, nil
+}
+
+func (r ReconcileHyperConverged) removeOldMetricsObjs(req *common.HcoRequest) (bool, error) {
+	anyServiceRemoved, err := r.removeObjs(req, corev1.Service{}, []string{
+		"hyperconverged-cluster-operator-metrics",
+		"hyperconverged-cluster-webhook-metrics",
+	})
+	if err != nil {
+		return false, err
+	}
+
+	anyEndpointRemoved, err := r.removeObjs(req, corev1.Endpoints{}, []string{
+		"hyperconverged-cluster-operator-metrics",
+	})
+	if err != nil {
+		return false, err
+	}
+
+	return anyServiceRemoved || anyEndpointRemoved, nil
+}
+
+func (r ReconcileHyperConverged) removeObjs(req *common.HcoRequest, objType interface{}, objNames []string) (bool, error) {
+	anyRemoved := false
+
+	for _, objName := range objNames {
+		removed, err := r.removeObj(req, objType, objName)
+		if err != nil {
+			return false, err
+		}
+		anyRemoved = anyRemoved || removed
+	}
+
+	return anyRemoved, nil
+}
+
+func (r ReconcileHyperConverged) removeObj(req *common.HcoRequest, objType interface{}, objName string) (bool, error) {
+	obj, err := r.getObj(req, objType, objName)
+	if err != nil {
+		return false, err
+	} else if obj == nil {
+		return false, nil
+	}
+
+	err = r.deleteObj(req, obj)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (r *ReconcileHyperConverged) getObj(req *common.HcoRequest, objType interface{}, objName string) (client.Object, error) {
+	var obj client.Object
+
+	switch objType.(type) {
+	case corev1.Service:
+		obj = &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: objName, Namespace: req.Namespace}}
+	case corev1.Endpoints:
+		obj = &corev1.Endpoints{ObjectMeta: metav1.ObjectMeta{Name: objName, Namespace: req.Namespace}}
+	}
+
+	if err := hcoutil.GetRuntimeObject(req.Ctx, r.client, obj, req.Logger); err != nil {
+		if apierrors.IsNotFound(err) {
+			req.Logger.Info(fmt.Sprintf("%s %s already removed", objName, obj.GetObjectKind().GroupVersionKind().Kind))
+			return nil, nil
+		}
+		req.Logger.Info(
+			fmt.Sprintf("failed to get %s %s", objName, obj.GetObjectKind().GroupVersionKind().Kind),
+			"error", err.Error(),
+		)
+		return nil, err
+	}
+
+	return obj, nil
+}
+
+func (r *ReconcileHyperConverged) deleteObj(req *common.HcoRequest, obj client.Object) error {
+	req.Logger.Info(fmt.Sprintf("removing the %s %s", obj.GetName(), obj.GetObjectKind().GroupVersionKind().Kind))
+	_, err := hcoutil.ComponentResourceRemoval(req.Ctx, r.client, obj, req.Name, req.Logger, false, true)
+	if err != nil {
+		return err
+	}
+
+	r.eventEmitter.EmitEvent(
+		req.Instance, corev1.EventTypeNormal, "Killing",
+		fmt.Sprintf("Removed %s %s", obj.GetName(), obj.GetObjectKind().GroupVersionKind().Kind))
+
+	return nil
 }
 
 func removeOldQuickStartGuides(req *common.HcoRequest, cl client.Client, requiredQSList []string) {
