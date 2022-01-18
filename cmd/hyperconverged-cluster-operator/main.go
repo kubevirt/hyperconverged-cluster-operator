@@ -77,6 +77,9 @@ var (
 )
 
 func main() {
+
+	// TODO: remove me!
+
 	cmdHelper.InitiateCommand()
 
 	watchNamespace := cmdHelper.GetWatchNS()
