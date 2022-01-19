@@ -828,3 +828,22 @@ Labels
     annotation_name="kubevirt.kubevirt.io/jsonpatch"
     severity=info
 ```
+## Log verbosity
+Currently logging verbosity is only supported for Kubevirt.
+
+### Kubevirt
+In order to define logging verbosity for Kubevirt, the following can be done:
+```yaml
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  logVerbosityConfig:
+    kubevirt:
+      virtLauncher: 8
+      virtHandler: 4
+      virtController: 1
+```
+
+All the values defined [here](https://kubevirt.io/api-reference/master/definitions.html#_v1_logverbosity)
+can be applied.
