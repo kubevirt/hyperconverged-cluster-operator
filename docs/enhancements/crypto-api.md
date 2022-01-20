@@ -15,7 +15,7 @@ Starting from OCP/OKD 4.6, a [cluster-wide API](https://github.com/openshift/enh
 ### Non-Goals
 
 1. Describe the technical implementation of TLS security policy for each operand of a sibling operator of HCO (just a quick hint).
-2. The Mozilla Recommended Configurations mandate also `Certificate type` and `Certificate lifespan` as part of each profile while this is not covered by [Openshift implementation](https://github.com/openshift/enhancements/blob/master/enhancements/kube-apiserver/tls-config.md) so it's not covered by this API.  
+2. The Mozilla Recommended Configurations mandate also `Certificate type` and `Certificate lifespan` as part of each profile while this is not covered by [OpenShift implementation](https://github.com/openshift/enhancements/blob/master/enhancements/kube-apiserver/tls-config.md) so it's not covered by this API.
 
 ## Overview
 
@@ -149,8 +149,7 @@ spec:
 ## Proposal
 
 Hyperconverged-cluster-operator (HCO) will read the global configuration for TLS security profile of the APIServer, without storing it in HCO CR, and will propagate the .spec.tlsSecurityProfile stanza to all underlying HCO managed custom resources, and will reconcile them, to achieve alignment and consistency of security profiles between Hyperconverged Kubevirt and OCP/OKD control plane components.
-The idea is that the code to read the Openshift API can be coded once in HCO without the need to replicate it for each single component. Moreover, a few components like kubevirt/kubevirt are pretty independent of Openshift specific APIs so HCO looks like a good candidate for this.  
-
+The idea is that the code to read the OpenShift API can be coded once in HCO without the need to replicate it for each single component. Moreover, a few components like kubevirt/kubevirt are pretty independent of OpenShift-specific APIs so HCO looks like a good candidate for this.
 
 The underlying HCO managed custom resources to which HCO will propagate the security profile stanza to, are:
 * `kubevirt.kubevirt.io/kubevirt-kubevirt-hyperconverged`
@@ -230,9 +229,9 @@ The custom resources that the TLS Security Profile stanza will be propagated to,
 ## Open Questions
 1. In plain kubernetes HCO deployment, will we use the default intermediate profile for all HCO managed components, or give the option for the administrator to set it on the HCO CR, which will propagate to all components?
    1. The TLS Security Profile configuration feature will be available only on OCP/OKD platforms.
-   2. We can decide to expose the API to let the user optionally fine-tune/override the configuration for all the Hyperconverged Kubevirt having HCO reading the Openshift API server one as its default only if the user didn't express custom values. This will work also on plain k8s.
+   2. We can decide to expose the API to let the user optionally fine-tune/override the configuration for all the Hyperconverged Kubevirt having HCO reading the OpenShift API server one as its default only if the user didn't express custom values. This will work also on plain k8s.
 
-2. [Openshift API design](https://github.com/openshift/enhancements/blob/master/enhancements/kube-apiserver/tls-config.md) explicitly mentions API servers, but it never mentions admission webhooks that are also TLS protected.
+2. [OpenShift API design](https://github.com/openshift/enhancements/blob/master/enhancements/kube-apiserver/tls-config.md) explicitly mentions API servers, but it never mentions admission webhooks that are also TLS protected.
 Is there any technical reason for us to ignore the admission webhooks? 
 
 ## Implementation hints
