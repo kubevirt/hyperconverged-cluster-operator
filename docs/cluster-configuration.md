@@ -843,6 +843,9 @@ spec:
       virtLauncher: 8
       virtHandler: 4
       virtController: 1
+      nodeVerbosity:
+        node01: 4
+        node02: 3
 ```
 
 All the values defined [here](https://kubevirt.io/api-reference/master/definitions.html#_v1_logverbosity)
