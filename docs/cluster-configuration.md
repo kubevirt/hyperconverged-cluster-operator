@@ -832,7 +832,7 @@ Labels
 Currently logging verbosity is only supported for Kubevirt.
 
 ### Kubevirt
-In order to define logging verbosity for Kubevirt, the following can be done:
+In order to define logging verbosity for Kubevirt, the following can be configured on HyperConverged CR:
 ```yaml
 kind: HyperConverged
 metadata:
