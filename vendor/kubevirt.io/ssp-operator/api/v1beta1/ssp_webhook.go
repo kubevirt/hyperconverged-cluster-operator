@@ -44,7 +44,7 @@ func (r *SSP) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// +kubebuilder:webhook:verbs=create;update,path=/validate-ssp-kubevirt-io-v1beta1-ssp,mutating=false,failurePolicy=fail,groups=ssp.kubevirt.io,resources=ssps,versions=v1beta1,name=validation.ssp.kubevirt.io,webhookVersions=v1,sideEffects=None
+// +kubebuilder:webhook:verbs=create;update,path=/validate-ssp-kubevirt-io-v1beta1-ssp,mutating=false,failurePolicy=fail,groups=ssp.kubevirt.io,resources=ssps,versions=v1beta1,name=validation.ssp.kubevirt.io,admissionReviewVersions={v1,v1beta1},sideEffects=None
 
 var _ webhook.Validator = &SSP{}
 
@@ -74,6 +74,10 @@ func (r *SSP) ValidateCreate() error {
 		return errors.Wrap(err, "placement api validation error")
 	}
 
+	if err := validateDataImportCronTemplates(r); err != nil {
+		return errors.Wrap(err, "dataImportCronTemplates validation error")
+	}
+
 	return nil
 }
 
@@ -81,15 +85,12 @@ func (r *SSP) ValidateCreate() error {
 func (r *SSP) ValidateUpdate(old runtime.Object) error {
 	ssplog.Info("validate update", "name", r.Name)
 
-	oldSsp := old.(*SSP)
-	if r.Spec.CommonTemplates.Namespace != oldSsp.Spec.CommonTemplates.Namespace {
-		return fmt.Errorf("commonTemplates.namespace cannot be changed. Attempting to change from: %v to %v",
-			oldSsp.Spec.CommonTemplates.Namespace,
-			r.Spec.CommonTemplates.Namespace)
-	}
-
 	if err := validatePlacement(r); err != nil {
 		return errors.Wrap(err, "placement api validation error")
+	}
+
+	if err := validateDataImportCronTemplates(r); err != nil {
+		return errors.Wrap(err, "dataImportCronTemplates validation error")
 	}
 
 	return nil
@@ -106,17 +107,16 @@ func setClientForWebhook(c client.Client) {
 }
 
 func validatePlacement(ssp *SSP) error {
-	return validateOperandPlacement(ssp.Spec.TemplateValidator.Placement)
+	return validateOperandPlacement(ssp.Namespace, ssp.Spec.TemplateValidator.Placement)
 }
 
-func validateOperandPlacement(placement *api.NodePlacement) error {
+func validateOperandPlacement(namespace string, placement *api.NodePlacement) error {
 	if placement == nil {
 		return nil
 	}
 
 	const (
 		dplName          = "ssp-webhook-placement-verification-deployment"
-		namespace        = "default"
 		webhookTestLabel = "webhook.ssp.kubevirt.io/placement-verification-pod"
 		podName          = "ssp-webhook-placement-verification-pod"
 		naImage          = "ssp.kubevirt.io/not-available"
@@ -159,4 +159,17 @@ func validateOperandPlacement(placement *api.NodePlacement) error {
 	}
 
 	return clt.Create(context.TODO(), deployment, &client.CreateOptions{DryRun: []string{metav1.DryRunAll}})
+}
+
+// TODO: also validate DataImportCronTemplates in general once CDI exposes its own validation
+func validateDataImportCronTemplates(r *SSP) error {
+	for _, cron := range r.Spec.CommonTemplates.DataImportCronTemplates {
+		if cron.Name == "" {
+			return fmt.Errorf("missing name in DataImportCronTemplate")
+		}
+		if len(cron.Namespace) > 0 && cron.Namespace != GoldenImagesNSname {
+			return fmt.Errorf("invalid namespace in DataImportCronTemplate %s: must be empty or %s", cron.Name, GoldenImagesNSname)
+		}
+	}
+	return nil
 }

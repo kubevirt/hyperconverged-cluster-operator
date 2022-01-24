@@ -83,13 +83,17 @@ rules:
   - patch
   - delete
 - apiGroups:
-  - ""
+  - coordination.k8s.io
   resources:
-  - configmaps/status
+  - leases
   verbs:
   - get
+  - list
+  - watch
+  - create
   - update
   - patch
+  - delete
 - apiGroups:
   - ""
   resources:
@@ -1116,7 +1120,9 @@ rules:
   resources:
   - customresourcedefinitions
   verbs:
+  - get
   - list
+  - watch
 - apiGroups:
   - apps
   resources:
@@ -1144,6 +1150,30 @@ rules:
 - apiGroups:
   - cdi.kubevirt.io
   resources:
+  - dataimportcrons
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cdi.kubevirt.io
+  resources:
+  - datasources
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cdi.kubevirt.io
+  resources:
   - datavolumes
   verbs:
   - create
@@ -1160,16 +1190,12 @@ rules:
   verbs:
   - create
 - apiGroups:
-  - coordination.k8s.io
+  - config.openshift.io
   resources:
-  - leases
+  - infrastructures
   verbs:
-  - create
-  - delete
   - get
   - list
-  - patch
-  - update
   - watch
 - apiGroups:
   - ""
@@ -1236,6 +1262,14 @@ rules:
   - list
   - patch
   - update
+  - watch
+- apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachines
+  verbs:
+  - get
+  - list
   - watch
 - apiGroups:
   - monitoring.coreos.com
