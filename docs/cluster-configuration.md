@@ -693,33 +693,6 @@ metadata:
       ]
 ```
 
-
-##### Higher Log Verbosity
-The user wants to configure kubevirt pods to log more verbosely
-```yaml
-metadata:
-  annotations:
-    kubevirt.kubevirt.io/jsonpatch: |-
-      [
-        {
-          "op":"add",
-          "path":"/spec/configuration/developerConfiguration/logVerbosity",
-          "value":{
-            "virtAPI":4,
-            "virtController":4,
-            "virtHandler":4,
-            "virtLauncher":4,
-            "virtOperator":4
-          }
-        }
-      ]
-```
-
-From CLI it will be:
-```bash
-$ patch hco kubevirt-hyperconverged --type=merge -p='{"metadata":{"annotations":{"kubevirt.kubevirt.io/jsonpatch":"[{\"op\":\"add\",\"path\":\"/spec/configuration/developerConfiguration/logVerbosity\",\"value\":{\"virtAPI\":4,\"virtController\":4,\"virtHandler\":4,\"virtLauncher\":4,\"virtOperator\":4}}]"}}}'
-```
-
 ##### Virt-handler Customization
 The user wants to forcefully customize virt-handler configuration by setting custom values under `/spec/customizeComponents/patches` or the KV CR. In order to do that, the following annotation should be added to the HyperConverged CR:
 ```yaml
