@@ -582,7 +582,12 @@ spec:
 Currently logging verbosity is only supported for Kubevirt.
 
 ### Kubevirt
-In order to define logging verbosity for Kubevirt, the following can be configured on HyperConverged CR:
+In order to define logging verbosity for Kubevirt, it's possible to define per-component (e.g. `virt-handler`,
+`virt-launcher`, etc) value, or per-node value. All the log verbosity definitions are optional and would automatically
+set to a default value by Kubevirt if not value is defined. While there is no tight definition on the behavior for each
+component and log verbosity value, the higher the log verbosity value is the higher the verbosity will get.
+
+For example, the following can be configured on HyperConverged CR:
 ```yaml
 kind: HyperConverged
 metadata:
