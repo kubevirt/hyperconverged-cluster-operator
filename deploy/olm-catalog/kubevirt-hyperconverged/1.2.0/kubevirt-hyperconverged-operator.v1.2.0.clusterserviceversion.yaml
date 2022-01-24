@@ -8,7 +8,7 @@ metadata:
     categories: OpenShift Optional
     certified: "false"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator@sha256:b827d847bf46643f7aa643cfad5d46cefff8b8b090d65f2162e9481fd268bdac
-    createdAt: "2020-11-09 14:26:01"
+    createdAt: "2022-01-24 09:25:00"
     description: |-
       **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
       Specifcally, the HyperConverged Cluster Operator manages the deployment of KubeVirt,
@@ -1728,7 +1728,7 @@ spec:
                 - name: SSP_VERSION
                   value: v1.2.1
                 - name: NMO_VERSION
-                  value: v0.7.0
+                  value: v0.10.0
                 - name: HPPO_VERSION
                   value: v0.5.2
                 - name: VM_IMPORT_VERSION
@@ -2030,13 +2030,6 @@ spec:
               labels:
                 name: node-maintenance-operator
             spec:
-              affinity:
-                nodeAffinity:
-                  requiredDuringSchedulingIgnoredDuringExecution:
-                    nodeSelectorTerms:
-                    - matchExpressions:
-                      - key: node-role.kubernetes.io/master
-                        operator: Exists
               containers:
               - env:
                 - name: WATCH_NAMESPACE
@@ -2049,7 +2042,7 @@ spec:
                       fieldPath: metadata.name
                 - name: OPERATOR_NAME
                   value: node-maintenance-operator
-                image: quay.io/kubevirt/node-maintenance-operator:v0.7.0
+                image: quay.io/kubevirt/node-maintenance-operator:v0.10.0
                 imagePullPolicy: Always
                 name: node-maintenance-operator
                 resources: {}
@@ -2388,6 +2381,7 @@ spec:
     webhookPath: /validate-hco-kubevirt-io-v1beta1-hyperconverged
   - admissionReviewVersions:
     - v1beta1
+    - v1
     containerPort: 8443
     deploymentName: node-maintenance-operator
     failurePolicy: Fail
