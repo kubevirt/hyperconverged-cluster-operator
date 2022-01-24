@@ -578,6 +578,29 @@ spec:
       managedDataSource: custom2
 ```
 
+## Log verbosity
+Currently logging verbosity is only supported for Kubevirt.
+
+### Kubevirt
+In order to define logging verbosity for Kubevirt, the following can be configured on HyperConverged CR:
+```yaml
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  logVerbosityConfig:
+    kubevirt:
+      virtLauncher: 8
+      virtHandler: 4
+      virtController: 1
+      nodeVerbosity:
+        node01: 4
+        node02: 3
+```
+
+All the values defined [here](https://kubevirt.io/api-reference/master/definitions.html#_v1_logverbosity)
+can be applied.
+
 ## Workloads protection on uninstall
 
 `UninstallStrategy` defines how to proceed on uninstall when workloads (VirtualMachines, DataVolumes) still exist:
@@ -801,25 +824,3 @@ Labels
     annotation_name="kubevirt.kubevirt.io/jsonpatch"
     severity=info
 ```
-## Log verbosity
-Currently logging verbosity is only supported for Kubevirt.
-
-### Kubevirt
-In order to define logging verbosity for Kubevirt, the following can be configured on HyperConverged CR:
-```yaml
-kind: HyperConverged
-metadata:
-  name: kubevirt-hyperconverged
-spec:
-  logVerbosityConfig:
-    kubevirt:
-      virtLauncher: 8
-      virtHandler: 4
-      virtController: 1
-      nodeVerbosity:
-        node01: 4
-        node02: 3
-```
-
-All the values defined [here](https://kubevirt.io/api-reference/master/definitions.html#_v1_logverbosity)
-can be applied.
