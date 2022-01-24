@@ -89,7 +89,7 @@ jobs:
 
             Signed-off-by: HCO Bump Bot <noreply@github.com>
           committer: HCO Bump Bot <noreply@github.com>
-          title: "Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }}"
+          title: "[${{ matrix.branches.branch }}] Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }}"
           body: |
             Bump ${{ env.UPDATED_COMPONENT }} to ${{ env.UPDATED_VERSION }}
             Executed by HCO Release-Bumper Bot.
