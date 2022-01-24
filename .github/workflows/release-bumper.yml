@@ -94,4 +94,4 @@ jobs:
           assignees: tiraboschi,orenc1,nunnatsa
           reviewers: tiraboschi,orenc1,nunnatsa
           team-reviewers: owners, maintainers
-          branch: bump_${{ env.UPDATED_COMPONENT }}_${{ env.UPDATED_VERSION }}
+          branch: bump_${{ env.UPDATED_COMPONENT }}_${{ env.UPDATED_VERSION }}_${{ matrix.branches.branch }}
