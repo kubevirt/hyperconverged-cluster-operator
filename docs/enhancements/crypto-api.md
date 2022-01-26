@@ -8,6 +8,11 @@ Starting from OCP/OKD 4.6, a [cluster-wide API](https://github.com/openshift/enh
 
 ## Motivation
 
+A really security-conscious cluster-admin, is seeking an option to configure ciphers that would apply to all OpenShift-proper components both for internal and external traffic (on OCP/OKD).
+
+In an OpenShift cluster (OCP/OKD), secure communications is expected between system level pods and application level pods within the cluster (in other words east-west traffic in the control plane, system plane and data plane). In addition, secure communication is expected for traffic that ingress into the cluster from external clients as well as egressing from the cluster to external entities.
+This RFE proposes to have all the HyperConverged Kubevirt components comply with Cluster-wide cryptographic policies on OpenShift (OCP/OKD) that provide a convenient way to ensure that OpenShift system pods and application pods can use cryptographic libraries that do not allow known insecure protocols, ciphers, or algorithms.
+
 ### Goals
 
 1. Describe how a configuration of a TLS security profile for OCP/OKD control plane will be propagated to all the Hyperconverged Kubevirt control plane components, using existing OCP/OKD API.
