@@ -15,7 +15,7 @@ VIRT_ARTIFACTS_SERVER ?= $(REGISTRY_NAMESPACE)/virt-artifacts-server
 
 # Prow doesn't have docker command
 DO=./hack/in-docker.sh
-ifeq (, $(shell which docker))
+ifeq (, $(shell (which docker 2> /dev/null || which podman 2> /dev/null)))
 DO=eval
 export JOB_TYPE=prow
 endif
