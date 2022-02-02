@@ -39,8 +39,7 @@ if [[ $(${KUBECTL_BINARY} get ssp -n ${INSTALLED_NAMESPACE}) ]]; then
   ${KUBECTL_BINARY} get DataImportCron -o yaml -n ${IMAGES_NS} fedora-image-cron
   ${KUBECTL_BINARY} get DataImportCron -o yaml -n ${IMAGES_NS} centos8-image-cron-is || true
 
-  # TODO: reenable after the SSP/DDI bug is resolved (bz 2037290):
-  # [[ $(${KUBECTL_BINARY} get DataImportCron -o json -n ${IMAGES_NS} centos8-image-cron-is | jq -cM '.spec.template.spec.source.registry') == '{"imageStream":"centos8","pullMethod":"node"}' ]]
+  [[ $(${KUBECTL_BINARY} get DataImportCron -o json -n ${IMAGES_NS} centos8-image-cron-is | jq -cM '.spec.template.spec.source.registry') == '{"imageStream":"centos8","pullMethod":"node"}' ]]
 
   # disable the feature
   ./hack/retry.sh 10 3 "${KUBECTL_BINARY} patch hco -n \"${INSTALLED_NAMESPACE}\" --type=json kubevirt-hyperconverged -p '[{ \"op\": \"replace\", \"path\": \"/spec/featureGates/enableCommonBootImageImport\", \"value\": false }]'"
@@ -50,6 +49,15 @@ if [[ $(${KUBECTL_BINARY} get ssp -n ${INSTALLED_NAMESPACE}) ]]; then
   ./hack/retry.sh 10 3 "[[ $(${KUBECTL_BINARY} get imageStream centos8  -n ${IMAGES_NS} --no-headers | wc -l) -eq 0 ]]"
   ./hack/retry.sh 10 3 "[[ $(${KUBECTL_BINARY} get DataImportCron -A --no-headers | wc -l) -eq 0 ]]"
 
+  # clean up after turn off the feature
+  for dv in $(${KUBECTL_BINARY} get -n "${IMAGES_NS}" datavolumes -o custom-columns=NAME:.metadata.name --no-headers); do
+    ${KUBECTL_BINARY} delete -n "${IMAGES_NS}" datavolume "${dv}"
+  done
+
+  for ds in $(${KUBECTL_BINARY} get -n "${IMAGES_NS}" datasources -o custom-columns=NAME:.metadata.name --no-headers); do
+    ${KUBECTL_BINARY} delete -n "${IMAGES_NS}" datasource "${ds}"
+  done
+
   # enable it back
   ./hack/retry.sh 10 3 "${KUBECTL_BINARY} patch hco -n \"${INSTALLED_NAMESPACE}\" --type=json kubevirt-hyperconverged -p '[{ \"op\": \"replace\", \"path\": \"/spec/featureGates/enableCommonBootImageImport\", \"value\": true }]'"
   sleep 10
@@ -58,4 +66,6 @@ if [[ $(${KUBECTL_BINARY} get ssp -n ${INSTALLED_NAMESPACE}) ]]; then
   [[ $(${KUBECTL_BINARY} get imageStream centos8  -n ${IMAGES_NS} --no-headers | wc -l) -eq 1 ]]
   [[ "$(${KUBECTL_BINARY} get imageStream centos8  -n ${IMAGES_NS} -o json | jq -cM '.spec.tags[0].from')" == '{"kind":"DockerImage","name":"quay.io/kubevirt/centos8-container-disk-images"}' ]]
 
+  # make sure all the DataImportCrons are back
+  ./hack/retry.sh 20 30 "[[ \$(count_data_import_crons) -eq 4 ]]" "${KUBECTL_BINARY} get DataImportCron -A"
 fi
