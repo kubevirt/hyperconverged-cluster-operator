@@ -47,6 +47,15 @@ if [[ $(${KUBECTL_BINARY} get ssp -n ${INSTALLED_NAMESPACE}) ]]; then
   ./hack/retry.sh 10 3 "[[ $(${KUBECTL_BINARY} get imageStream centos8  -n ${IMAGES_NS} --no-headers | wc -l) -eq 0 ]]"
   ./hack/retry.sh 10 3 "[[ $(${KUBECTL_BINARY} get DataImportCron -A --no-headers | wc -l) -eq 0 ]]"
 
+  # clean up after turn off the feature
+  for dv in $(${KUBECTL_BINARY} get -n "${IMAGES_NS}" datavolumes -o custom-columns=NAME:.metadata.name --no-headers); do
+    ${KUBECTL_BINARY} delete -n "${IMAGES_NS}" datavolume "${dv}"
+  done
+
+  for ds in $(${KUBECTL_BINARY} get -n "${IMAGES_NS}" datasources -o custom-columns=NAME:.metadata.name --no-headers); do
+    ${KUBECTL_BINARY} delete -n "${IMAGES_NS}" datasource "${ds}"
+  done
+
   # enable it back
   ./hack/retry.sh 10 3 "${KUBECTL_BINARY} patch hco -n \"${INSTALLED_NAMESPACE}\" --type=json kubevirt-hyperconverged -p '[{ \"op\": \"replace\", \"path\": \"/spec/featureGates/enableCommonBootImageImport\", \"value\": true }]'"
   sleep 10
