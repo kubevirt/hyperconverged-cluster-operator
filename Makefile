@@ -87,21 +87,21 @@ container-build-webhook:
 	source "hack/cri-bin.sh" && $$CRI_BIN build -f build/Dockerfile.webhook -t $(IMAGE_REGISTRY)/$(WEBHOOK_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
 
 container-build-operator-courier:
-	docker build -f tools/operator-courier/Dockerfile -t hco-courier .
+	podman build -f tools/operator-courier/Dockerfile -t hco-courier .
 
 container-build-validate-bundles:
-	docker build -f tools/operator-sdk-validate/Dockerfile -t operator-sdk-validate-hco .
+	podman build -f tools/operator-sdk-validate/Dockerfile -t operator-sdk-validate-hco .
 
 container-build-functest:
-	docker build -f build/Dockerfile.functest -t $(IMAGE_REGISTRY)/$(FUNC_TEST_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
+	podman build -f build/Dockerfile.functest -t $(IMAGE_REGISTRY)/$(FUNC_TEST_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
 
 container-build-artifacts-server:
-	docker build -f build/Dockerfile.artifacts -t $(IMAGE_REGISTRY)/$(VIRT_ARTIFACTS_SERVER):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
+	podman build -f build/Dockerfile.artifacts -t $(IMAGE_REGISTRY)/$(VIRT_ARTIFACTS_SERVER):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
 
 container-push: quay-login container-push-operator container-push-webhook container-push-functest container-push-artifacts-server
 
 quay-login:
-	docker login $(IMAGE_REGISTRY) -u $(QUAY_USERNAME) -p $(QUAY_PASSWORD)
+	podman login $(IMAGE_REGISTRY) -u $(QUAY_USERNAME) -p $(QUAY_PASSWORD)
 
 container-push-operator:
 	source "hack/cri-bin.sh" && $$CRI_BIN push $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG)
@@ -110,10 +110,10 @@ container-push-webhook:
 	source "hack/cri-bin.sh" && $$CRI_BIN push $(IMAGE_REGISTRY)/$(WEBHOOK_IMAGE):$(IMAGE_TAG)
 
 container-push-functest:
-	docker push $(IMAGE_REGISTRY)/$(FUNC_TEST_IMAGE):$(IMAGE_TAG)
+	podman push $(IMAGE_REGISTRY)/$(FUNC_TEST_IMAGE):$(IMAGE_TAG)
 
 container-push-artifacts-server:
-	docker push $(IMAGE_REGISTRY)/$(VIRT_ARTIFACTS_SERVER):$(IMAGE_TAG)
+	podman push $(IMAGE_REGISTRY)/$(VIRT_ARTIFACTS_SERVER):$(IMAGE_TAG)
 
 cluster-up:
 	./cluster/up.sh
