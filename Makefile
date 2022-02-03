@@ -81,12 +81,10 @@ hack-clean: ## Run ./hack/clean.sh
 container-build: container-build-operator container-build-webhook container-build-operator-courier container-build-functest container-build-artifacts-server
 
 container-build-operator:
-	source "hack/cri-bin.sh"
-	$CRI_BIN build -f build/Dockerfile -t $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
+	source "hack/cri-bin.sh" && $$CRI_BIN build -f build/Dockerfile -t $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
 
 container-build-webhook:
-	source "hack/cri-bin.sh"
-	$CRI_BIN build -f build/Dockerfile.webhook -t $(IMAGE_REGISTRY)/$(WEBHOOK_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
+	source "hack/cri-bin.sh" && $$CRI_BIN build -f build/Dockerfile.webhook -t $(IMAGE_REGISTRY)/$(WEBHOOK_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
 
 container-build-operator-courier:
 	docker build -f tools/operator-courier/Dockerfile -t hco-courier .
@@ -106,12 +104,10 @@ quay-login:
 	docker login $(IMAGE_REGISTRY) -u $(QUAY_USERNAME) -p $(QUAY_PASSWORD)
 
 container-push-operator:
-	source "hack/cri-bin.sh"
-    $CRI_BIN push $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG)
+	source "hack/cri-bin.sh" && $$CRI_BIN push $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG)
 
 container-push-webhook:
-	source "hack/cri-bin.sh"
-    $CRI_BIN push $(IMAGE_REGISTRY)/$(WEBHOOK_IMAGE):$(IMAGE_TAG)
+	source "hack/cri-bin.sh" && $$CRI_BIN push $(IMAGE_REGISTRY)/$(WEBHOOK_IMAGE):$(IMAGE_TAG)
 
 container-push-functest:
 	docker push $(IMAGE_REGISTRY)/$(FUNC_TEST_IMAGE):$(IMAGE_TAG)
