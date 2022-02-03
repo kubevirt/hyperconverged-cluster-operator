@@ -67,6 +67,22 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   labels:
+    name: node-maintenance-operator-controller-manager
+  name: node-maintenance-operator-controller-manager
+  namespace: kubevirt-hyperconverged
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: node-maintenance-operator-controller-manager
+subjects:
+- kind: ServiceAccount
+  name: node-maintenance-operator-controller-manager
+  namespace: kubevirt-hyperconverged
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
     name: hostpath-provisioner-operator
   name: hostpath-provisioner-operator
   namespace: kubevirt-hyperconverged
@@ -158,15 +174,15 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    name: node-maintenance-operator
-  name: node-maintenance-operator
+    name: node-maintenance-operator-controller-manager
+  name: node-maintenance-operator-controller-manager
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: node-maintenance-operator
+  name: node-maintenance-operator-controller-manager
 subjects:
 - kind: ServiceAccount
-  name: node-maintenance-operator
+  name: node-maintenance-operator-controller-manager
   namespace: kubevirt-hyperconverged
 ---
 apiVersion: rbac.authorization.k8s.io/v1
