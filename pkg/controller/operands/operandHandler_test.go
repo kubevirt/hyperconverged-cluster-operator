@@ -12,13 +12,16 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/commonTestUtils"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
+	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
 )
 
 var _ = Describe("Test operandHandler", func() {
@@ -480,4 +483,187 @@ var _ = Describe("Test operandHandler", func() {
 			})
 		})
 	})
+
+	Context("Test CleanupBeforeDeletion", func() {
+		GetClusterInfoFunc := hcoutil.GetClusterInfo
+		BeforeEach(func() {
+			hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
+				return commonTestUtils.ClusterInfoMock{}
+			}
+		})
+
+		AfterEach(func() {
+			hcoutil.GetClusterInfo = GetClusterInfoFunc
+		})
+
+		It("Should ignore if not on openshift cluster", func() {
+			origFunc := hcoutil.GetClusterInfo
+			defer func() {
+				hcoutil.GetClusterInfo = origFunc
+			}()
+
+			hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
+				return commonTestUtils.ClusterInfoK8sMock{}
+			}
+
+			hco := commonTestUtils.NewHco()
+			hco.Spec.FeatureGates.EnableCommonBootImageImport = true
+			ssp, err := NewSSP(hco)
+			ssp.Spec.CommonTemplates.DataImportCronTemplates = dataImportCronTemplates()
+			Expect(err).ToNot(HaveOccurred())
+
+			cli := commonTestUtils.InitClient([]runtime.Object{hco, ssp})
+			eventEmitter := commonTestUtils.NewEventEmitterMock()
+			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), false, eventEmitter)
+			handler.FirstUseInitiation(commonTestUtils.GetScheme(), false, hco)
+
+			req := commonTestUtils.NewReq(hco)
+
+			requeue, err := handler.CleanupBeforeDeletion(req)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(requeue).To(BeFalse())
+
+			Expect(hco.Spec.FeatureGates.EnableCommonBootImageImport).To(BeTrue())
+
+			Expect(req.Dirty).To(BeFalse())
+
+			// not a real scenario. No SSP on K8s cluster. This is only to check that the function skips the SSP
+			// modification in K8s.
+			foundSSP := &sspv1beta1.SSP{}
+			Expect(
+				cli.Get(context.TODO(),
+					types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
+					foundSSP),
+			).ToNot(HaveOccurred())
+
+			Expect(foundSSP).ToNot(BeNil())
+			Expect(foundSSP.Spec.CommonTemplates.DataImportCronTemplates).To(Equal(dataImportCronTemplates()))
+		})
+
+		It("should not require requeue if ssp was already deleted", func() {
+			hco := commonTestUtils.NewHco()
+			hco.Spec.FeatureGates.EnableCommonBootImageImport = true
+
+			cli := commonTestUtils.InitClient([]runtime.Object{hco})
+			eventEmitter := commonTestUtils.NewEventEmitterMock()
+			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), true, eventEmitter)
+			handler.FirstUseInitiation(commonTestUtils.GetScheme(), true, hco)
+
+			req := commonTestUtils.NewReq(hco)
+
+			requeue, err := handler.CleanupBeforeDeletion(req)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(requeue).To(BeFalse())
+
+			Expect(hco.Spec.FeatureGates.EnableCommonBootImageImport).To(BeTrue())
+
+			Expect(req.Dirty).To(BeFalse())
+		})
+
+		It("should remove the dataImportCronTemplates from SSP", func() {
+			hco := commonTestUtils.NewHco()
+			hco.Spec.FeatureGates.EnableCommonBootImageImport = true
+			ssp, err := NewSSP(hco)
+			Expect(err).ToNot(HaveOccurred())
+
+			ssp.Spec.CommonTemplates.DataImportCronTemplates = dataImportCronTemplates()
+
+			cli := commonTestUtils.InitClient([]runtime.Object{ssp, hco})
+			eventEmitter := commonTestUtils.NewEventEmitterMock()
+			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), true, eventEmitter)
+			handler.FirstUseInitiation(commonTestUtils.GetScheme(), true, hco)
+
+			req := commonTestUtils.NewReq(hco)
+
+			requeue, err := handler.CleanupBeforeDeletion(req)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(requeue).To(BeTrue())
+
+			Expect(hco.Spec.FeatureGates.EnableCommonBootImageImport).To(BeTrue())
+			Expect(req.Dirty).To(BeFalse())
+
+			foundSSP := &sspv1beta1.SSP{}
+			Expect(
+				cli.Get(context.TODO(),
+					types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
+					foundSSP),
+			).ToNot(HaveOccurred())
+
+			Expect(foundSSP).ToNot(BeNil())
+			Expect(foundSSP.Spec.CommonTemplates.DataImportCronTemplates).To(BeEmpty())
+		})
+
+		It("should set the EnableCommonBootImageImport FG to false", func() {
+			hco := commonTestUtils.NewHco()
+			hco.Spec.FeatureGates.EnableCommonBootImageImport = true
+			ssp, err := NewSSP(hco)
+			ssp.Spec.CommonTemplates.DataImportCronTemplates = nil
+			Expect(err).ToNot(HaveOccurred())
+
+			cli := commonTestUtils.InitClient([]runtime.Object{ssp, hco})
+			eventEmitter := commonTestUtils.NewEventEmitterMock()
+			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), true, eventEmitter)
+			handler.FirstUseInitiation(commonTestUtils.GetScheme(), true, hco)
+
+			req := commonTestUtils.NewReq(hco)
+
+			requeue, err := handler.CleanupBeforeDeletion(req)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(requeue).To(BeTrue())
+
+			Expect(hco.Spec.FeatureGates.EnableCommonBootImageImport).To(BeFalse())
+			Expect(req.Dirty).To(BeTrue())
+		})
+	})
 })
+
+func dataImportCronTemplates() []sspv1beta1.DataImportCronTemplate {
+	url1 := "docker://someregistry/image1"
+	url2 := "docker://someregistry/image2"
+	url3 := "docker://someregistry/image3"
+
+	return []sspv1beta1.DataImportCronTemplate{
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "image1"},
+			Spec: cdiv1beta1.DataImportCronSpec{
+				Schedule: "1 */12 * * *",
+				Template: cdiv1beta1.DataVolume{
+					Spec: cdiv1beta1.DataVolumeSpec{
+						Source: &cdiv1beta1.DataVolumeSource{
+							Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: &url1},
+						},
+					},
+				},
+				ManagedDataSource: "image1",
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "image2"},
+			Spec: cdiv1beta1.DataImportCronSpec{
+				Schedule: "1 */12 * * *",
+				Template: cdiv1beta1.DataVolume{
+					Spec: cdiv1beta1.DataVolumeSpec{
+						Source: &cdiv1beta1.DataVolumeSource{
+							Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: &url2},
+						},
+					},
+				},
+				ManagedDataSource: "image2",
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "image3"},
+			Spec: cdiv1beta1.DataImportCronSpec{
+				Schedule: "1 */12 * * *",
+				Template: cdiv1beta1.DataVolume{
+					Spec: cdiv1beta1.DataVolumeSpec{
+						Source: &cdiv1beta1.DataVolumeSource{
+							Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: &url3},
+						},
+					},
+				},
+				ManagedDataSource: "image3",
+			},
+		},
+	}
+}

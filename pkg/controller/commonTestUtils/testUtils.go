@@ -5,8 +5,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gomegatypes "github.com/onsi/gomega/types"
@@ -20,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -266,5 +265,30 @@ func (ClusterInfoSRCPHAIMock) IsInfrastructureHighlyAvailable() bool {
 	return true
 }
 func (ClusterInfoSRCPHAIMock) GetDomain() string {
+	return "domain"
+}
+
+// ClusterInfoK8sMock mocks K8s cluster, with no OLM
+type ClusterInfoK8sMock struct{}
+
+func (ClusterInfoK8sMock) Init(_ context.Context, _ client.Client, _ logr.Logger) error {
+	return nil
+}
+func (ClusterInfoK8sMock) IsOpenshift() bool {
+	return false
+}
+func (ClusterInfoK8sMock) IsRunningLocally() bool {
+	return false
+}
+func (ClusterInfoK8sMock) IsManagedByOLM() bool {
+	return false
+}
+func (ClusterInfoK8sMock) IsControlPlaneHighlyAvailable() bool {
+	return true
+}
+func (ClusterInfoK8sMock) IsInfrastructureHighlyAvailable() bool {
+	return true
+}
+func (ClusterInfoK8sMock) GetDomain() string {
 	return "domain"
 }

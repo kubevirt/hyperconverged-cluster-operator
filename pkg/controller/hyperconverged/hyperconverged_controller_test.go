@@ -715,6 +715,83 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(apierrors.IsNotFound(err)).To(BeTrue())
 			})
 
+			It(`should delete HCO + cleanup`, func() {
+
+				// First, create HCO and check it
+				expected := getBasicDeployment()
+				expected.hco.Spec.FeatureGates.EnableCommonBootImageImport = true
+				expected.ssp.Spec.CommonTemplates.DataImportCronTemplates = dataImportCronTemplates()
+				cl := expected.initClient()
+				r := initReconciler(cl, nil)
+				res, err := r.Reconcile(context.TODO(), request)
+				Expect(err).To(BeNil())
+				Expect(res).Should(Equal(reconcile.Result{}))
+
+				foundResource := &hcov1beta1.HyperConverged{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
+						foundResource),
+				).To(BeNil())
+
+				Expect(foundResource.Status.RelatedObjects).ToNot(BeNil())
+				Expect(len(foundResource.Status.RelatedObjects)).Should(Equal(17))
+				Expect(foundResource.ObjectMeta.Finalizers).Should(Equal([]string{FinalizerName}))
+
+				// Now, delete HCO
+				delTime := time.Now().UTC().Add(-1 * time.Minute)
+				expected.hco.ObjectMeta.DeletionTimestamp = &k8sTime.Time{Time: delTime}
+				expected.hco.ObjectMeta.Finalizers = []string{FinalizerName}
+				cl = expected.initClient()
+
+				// cleanup: expect to clean the SSP dataImportCron template
+				r = initReconciler(cl, nil)
+				res, err = r.Reconcile(context.TODO(), request)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res).Should(Equal(reconcile.Result{Requeue: true, RequeueAfter: time.Minute}))
+
+				// cleanup: expect that the EnableCommonBootImageImport FG is false
+				// make sure that we didn't add the DIC templates it back even though the FG is still set
+				// check that now the FG is false
+				hcoKey := client.ObjectKeyFromObject(expected.hco)
+				sspKey := client.ObjectKeyFromObject(expected.ssp)
+
+				ssp := &sspv1beta1.SSP{}
+				Expect(cl.Get(context.TODO(), sspKey, ssp)).ToNot(HaveOccurred())
+				Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(BeEmpty())
+				hco := &hcov1beta1.HyperConverged{}
+				Expect(cl.Get(context.TODO(), hcoKey, hco)).ToNot(HaveOccurred())
+				Expect(hco.Spec.FeatureGates.EnableCommonBootImageImport).To(BeTrue())
+
+				r = initReconciler(cl, nil)
+				res, err = r.Reconcile(context.TODO(), request)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res).Should(Equal(reconcile.Result{Requeue: true, RequeueAfter: time.Minute}))
+				ssp = &sspv1beta1.SSP{}
+				Expect(cl.Get(context.TODO(), sspKey, ssp)).ToNot(HaveOccurred())
+				Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(BeEmpty())
+				hco = &hcov1beta1.HyperConverged{}
+				Expect(cl.Get(context.TODO(), hcoKey, hco)).ToNot(HaveOccurred())
+				Expect(hco.Spec.FeatureGates.EnableCommonBootImageImport).To(BeFalse())
+
+				// now can continue with the regular deletion
+				r = initReconciler(cl, nil)
+				res, err = r.Reconcile(context.TODO(), request)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res).Should(Equal(reconcile.Result{Requeue: true}))
+
+				res, err = r.Reconcile(context.TODO(), request)
+				Expect(err).To(BeNil())
+				Expect(res).Should(Equal(reconcile.Result{Requeue: false}))
+
+				foundResource = &hcov1beta1.HyperConverged{}
+				err = cl.Get(context.TODO(),
+					types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
+					foundResource)
+				Expect(err).To(HaveOccurred())
+				Expect(apierrors.IsNotFound(err)).To(BeTrue())
+			})
+
 			It(`should set a finalizer on HCO CR`, func() {
 				expected := getBasicDeployment()
 				cl := expected.initClient()
@@ -2690,4 +2767,55 @@ func searchInRelatedObjects(relatedObjects []corev1.ObjectReference, kind, name 
 		}
 	}
 	return false
+}
+
+func dataImportCronTemplates() []sspv1beta1.DataImportCronTemplate {
+	url1 := "docker://someregistry/image1"
+	url2 := "docker://someregistry/image2"
+	url3 := "docker://someregistry/image3"
+
+	return []sspv1beta1.DataImportCronTemplate{
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "image1"},
+			Spec: cdiv1beta1.DataImportCronSpec{
+				Schedule: "1 */12 * * *",
+				Template: cdiv1beta1.DataVolume{
+					Spec: cdiv1beta1.DataVolumeSpec{
+						Source: &cdiv1beta1.DataVolumeSource{
+							Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: &url1},
+						},
+					},
+				},
+				ManagedDataSource: "image1",
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "image2"},
+			Spec: cdiv1beta1.DataImportCronSpec{
+				Schedule: "1 */12 * * *",
+				Template: cdiv1beta1.DataVolume{
+					Spec: cdiv1beta1.DataVolumeSpec{
+						Source: &cdiv1beta1.DataVolumeSource{
+							Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: &url2},
+						},
+					},
+				},
+				ManagedDataSource: "image2",
+			},
+		},
+		{
+			ObjectMeta: metav1.ObjectMeta{Name: "image3"},
+			Spec: cdiv1beta1.DataImportCronSpec{
+				Schedule: "1 */12 * * *",
+				Template: cdiv1beta1.DataVolume{
+					Spec: cdiv1beta1.DataVolumeSpec{
+						Source: &cdiv1beta1.DataVolumeSource{
+							Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: &url3},
+						},
+					},
+				},
+				ManagedDataSource: "image3",
+			},
+		},
+	}
 }

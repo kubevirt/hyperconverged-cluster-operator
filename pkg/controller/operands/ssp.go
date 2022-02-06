@@ -9,16 +9,16 @@ import (
 	"path/filepath"
 	"reflect"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
 )
 
 const (
@@ -251,4 +251,40 @@ func overrideDataImportSchedule(schedule string) {
 	for i := 0; i < len(dataImportCronTemplateHardCodedList); i++ {
 		dataImportCronTemplateHardCodedList[i].Spec.Schedule = schedule
 	}
+}
+
+// cleanupDataImportCron makes sure there are no DIC template left before deleting the HyperConverged CR.
+// the function returns requeue, error
+// workaround for https://bugzilla.redhat.com/show_bug.cgi?id=2037312
+func cleanupDataImportCron(req *common.HcoRequest, cl client.Client) (bool, error) {
+	requeue := false
+
+	ssp := NewSSPWithNameOnly(req.Instance)
+	err := cl.Get(req.Ctx, client.ObjectKeyFromObject(ssp), ssp)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	if len(ssp.Spec.CommonTemplates.DataImportCronTemplates) > 0 {
+		req.Logger.Info("removing custom dataImportCrons from SSP")
+		ssp.Spec.CommonTemplates.DataImportCronTemplates = nil
+		err = cl.Update(req.Ctx, ssp)
+		if err != nil {
+			req.Logger.Error(err, "failed to remove custom dataImportCrons from SSP")
+			return false, err
+		}
+
+		requeue = true
+	} else if req.Instance.Spec.FeatureGates.EnableCommonBootImageImport {
+		req.Logger.Info("setting the EnableCommonBootImageImport feature gate to false")
+		req.Instance.Spec.FeatureGates.EnableCommonBootImageImport = false
+		req.Dirty = true
+
+		requeue = true
+	}
+
+	return requeue, nil
 }

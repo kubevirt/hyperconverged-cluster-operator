@@ -13,13 +13,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	kubevirtcorev1 "kubevirt.io/api/core/v1"
-	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
-
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/metrics"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	kubevirtcorev1 "kubevirt.io/api/core/v1"
+	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 )
 
 const (
@@ -170,8 +169,15 @@ func (h OperandHandler) handleUpdatedOperand(req *common.HcoRequest, res *Ensure
 	}
 }
 
-func (h OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
+// CleanupBeforeDeletion makes sure the operands are ready to be deleted
+func (h OperandHandler) CleanupBeforeDeletion(req *common.HcoRequest) (bool, error) {
+	if hcoutil.GetClusterInfo().IsOpenshift() {
+		return cleanupDataImportCron(req, h.client)
+	}
+	return false, nil
+}
 
+func (h OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 	tCtx, cancel := context.WithTimeout(req.Ctx, deleteTimeOut)
 	defer cancel()
 

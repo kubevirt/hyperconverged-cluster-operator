@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"time"
 
 	"github.com/blang/semver/v4"
 	jsonpatch "github.com/evanphx/json-patch"
@@ -592,12 +593,17 @@ func (r *ReconcileHyperConverged) setInitialConditions(req *common.HcoRequest) {
 }
 
 func (r *ReconcileHyperConverged) ensureHcoDeleted(req *common.HcoRequest) (reconcile.Result, error) {
-	err := r.operandHandler.EnsureDeleted(req)
+	requeue, err := r.operandHandler.CleanupBeforeDeletion(req)
+	if err != nil || requeue {
+		return reconcile.Result{Requeue: requeue, RequeueAfter: time.Minute}, err
+	}
+
+	err = r.operandHandler.EnsureDeleted(req)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	requeue := false
+	requeue = false
 
 	// Remove the finalizers
 	finDropped := false
