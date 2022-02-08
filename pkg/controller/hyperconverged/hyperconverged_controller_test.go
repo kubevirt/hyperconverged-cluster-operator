@@ -1744,33 +1744,25 @@ var _ = Describe("HyperconvergedController", func() {
 			})
 
 			Context("Remove old metrics services and endpoints", func() {
-				services := []string{
-					"hyperconverged-cluster-operator-metrics",
-					"hyperconverged-cluster-webhook-metrics",
-				}
-
-				serviceEvents := make([]commonTestUtils.MockEvent, 0)
-				for _, service := range services {
-					serviceEvents = append(serviceEvents, commonTestUtils.MockEvent{
+				serviceEvents := []commonTestUtils.MockEvent{
+					{
 						EventType: corev1.EventTypeNormal,
 						Reason:    "Killing",
-						Msg:       fmt.Sprintf("Removed %s Service", service),
-					})
-
-				}
-
-				endpoints := []string{
-					"hyperconverged-cluster-operator-metrics",
-				}
-
-				endpointsEvents := make([]commonTestUtils.MockEvent, 0)
-				for _, endpoint := range endpoints {
-					endpointsEvents = append(endpointsEvents, commonTestUtils.MockEvent{
+						Msg:       fmt.Sprintf("Removed %s Service", operatorMetrics),
+					},
+					{
 						EventType: corev1.EventTypeNormal,
 						Reason:    "Killing",
-						Msg:       fmt.Sprintf("Removed %s Endpoints", endpoint),
-					})
+						Msg:       fmt.Sprintf("Removed %s Service", webhookMetrics),
+					},
+				}
 
+				endpointsEvents := []commonTestUtils.MockEvent{
+					{
+						EventType: corev1.EventTypeNormal,
+						Reason:    "Killing",
+						Msg:       fmt.Sprintf("Removed %s Endpoints", operatorMetrics),
+					},
 				}
 
 				BeforeEach(func() {
@@ -1784,9 +1776,8 @@ var _ = Describe("HyperconvergedController", func() {
 					r := initReconciler(cl, nil)
 					req := commonTestUtils.NewReq(expected.hco)
 
-					modified, err := r.migrateBeforeUpgrade(req)
+					_, err := r.migrateBeforeUpgrade(req)
 					Expect(err).ToNot(HaveOccurred())
-					Expect(modified).To(BeFalse())
 
 					By("Check events")
 					events := r.eventEmitter.(*commonTestUtils.EventEmitterMock)
@@ -1795,46 +1786,60 @@ var _ = Describe("HyperconvergedController", func() {
 				})
 
 				It("Should remove services", func() {
-					resources := expected.toArray()
-					for _, service := range services {
-						resources = append(resources, &corev1.Service{
+					resources := []runtime.Object{
+						&corev1.Service{
 							ObjectMeta: metav1.ObjectMeta{
-								Name:      service,
+								Name:      operatorMetrics,
 								Namespace: namespace,
 								Labels: map[string]string{
 									hcoutil.AppLabel: expected.hco.Name,
 								},
 							},
-						})
+						},
+						&corev1.Service{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      webhookMetrics,
+								Namespace: namespace,
+								Labels: map[string]string{
+									hcoutil.AppLabel: expected.hco.Name,
+								},
+							},
+						},
 					}
 
 					cl := commonTestUtils.InitClient(resources)
-
 					r := initReconciler(cl, nil)
-
 					req := commonTestUtils.NewReq(expected.hco)
 
-					modified, err := r.migrateBeforeUpgrade(req)
+					_, err := r.migrateBeforeUpgrade(req)
 					Expect(err).ToNot(HaveOccurred())
-					Expect(modified).To(BeTrue())
 
 					By("Check events")
 					events := r.eventEmitter.(*commonTestUtils.EventEmitterMock)
 					Expect(events.CheckEvents(serviceEvents)).To(BeTrue())
+
+					By("Verify services do not exist anymore")
+					foundResource := &corev1.Service{}
+					err = cl.Get(context.TODO(), types.NamespacedName{Name: operatorMetrics, Namespace: expected.hco.Namespace}, foundResource)
+					Expect(err).To(HaveOccurred())
+					Expect(apierrors.IsNotFound(err)).To(BeTrue())
+
+					err = cl.Get(context.TODO(), types.NamespacedName{Name: webhookMetrics, Namespace: expected.hco.Namespace}, foundResource)
+					Expect(err).To(HaveOccurred())
+					Expect(apierrors.IsNotFound(err)).To(BeTrue())
 				})
 
 				It("Should remove endpoints", func() {
-					resources := expected.toArray()
-					for _, endpoint := range endpoints {
-						resources = append(resources, &corev1.Endpoints{
+					resources := []runtime.Object{
+						&corev1.Endpoints{
 							ObjectMeta: metav1.ObjectMeta{
-								Name:      endpoint,
+								Name:      operatorMetrics,
 								Namespace: namespace,
 								Labels: map[string]string{
 									hcoutil.AppLabel: expected.hco.Name,
 								},
 							},
-						})
+						},
 					}
 
 					cl := commonTestUtils.InitClient(resources)
@@ -1843,13 +1848,18 @@ var _ = Describe("HyperconvergedController", func() {
 
 					req := commonTestUtils.NewReq(expected.hco)
 
-					modified, err := r.migrateBeforeUpgrade(req)
+					_, err := r.migrateBeforeUpgrade(req)
 					Expect(err).ToNot(HaveOccurred())
-					Expect(modified).To(BeTrue())
 
 					By("Check events")
 					events := r.eventEmitter.(*commonTestUtils.EventEmitterMock)
 					Expect(events.CheckEvents(endpointsEvents)).To(BeTrue())
+
+					By("Verify endpoint do not exist anymore")
+					foundResource := &corev1.Endpoints{}
+					err = cl.Get(context.TODO(), types.NamespacedName{Name: operatorMetrics, Namespace: expected.hco.Namespace}, foundResource)
+					Expect(err).To(HaveOccurred())
+					Expect(apierrors.IsNotFound(err)).To(BeTrue())
 				})
 			})
 		})
