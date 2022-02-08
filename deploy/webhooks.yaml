@@ -64,7 +64,7 @@ metadata:
   labels:
     name: node-maintenance-operator
 spec:
-  secretName: node-maintenance-operator-service-cert
+  secretName: node-maintenance-operator-controller-manager-service-cert
   dnsNames:
   - node-maintenance-operator-service.kubevirt-hyperconverged.svc
   issuerRef:
