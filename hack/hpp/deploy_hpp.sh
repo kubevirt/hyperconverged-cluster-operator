@@ -15,8 +15,15 @@ CLUSTER_TOPOLOGY=$(
     --output=jsonpath='{$.status.controlPlaneTopology}'
 )
 
-if [[ "${CLUSTER_TOPOLOGY}" != 'SingleReplica' ]]; then
-  "${SCRIPT_DIR}"/configure_hpp_legacy.sh
-else
-  "${SCRIPT_DIR}"/configure_hpp_pool.sh
+CLUSTER_VERSION=$(
+  oc get clusterversion version \
+    --output=jsonpath='{.status.desired.version}')
+
+if [[ "$CLUSTER_VERSION" != *"okd"* ]]; then
+  # skipping configuring HPP in case of an OKD cluster
+  if [[ "${CLUSTER_TOPOLOGY}" != 'SingleReplica' ]]; then
+    "${SCRIPT_DIR}"/configure_hpp_legacy.sh
+  else
+    "${SCRIPT_DIR}"/configure_hpp_pool.sh
+  fi
 fi
