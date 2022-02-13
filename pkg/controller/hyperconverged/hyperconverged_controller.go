@@ -1118,33 +1118,25 @@ var (
 	operatorMetrics = "hyperconverged-cluster-operator-metrics"
 	webhookMetrics  = "hyperconverged-cluster-webhook-metrics"
 
-	oldMetricsServices  map[string]corev1.Service
-	oldMetricsEndpoints map[string]corev1.Endpoints
+	oldMetricsObjects map[string]client.Object
 )
 
-func initOldMetricsServices(req *common.HcoRequest) {
-	if oldMetricsServices == nil {
-		oldMetricsServices = map[string]corev1.Service{
-			operatorMetrics: {
+func initOldMetricsObjects(req *common.HcoRequest) {
+	if oldMetricsObjects == nil {
+		oldMetricsObjects = map[string]client.Object{
+			"operatorService": &corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      operatorMetrics,
 					Namespace: req.Namespace,
 				},
 			},
-			webhookMetrics: {
+			"webhookService": &corev1.Service{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      webhookMetrics,
 					Namespace: req.Namespace,
 				},
 			},
-		}
-	}
-}
-
-func initOldMetricsEndpoints(req *common.HcoRequest) {
-	if oldMetricsEndpoints == nil {
-		oldMetricsEndpoints = map[string]corev1.Endpoints{
-			operatorMetrics: {
+			"operatorEndpoint": &corev1.Endpoints{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      operatorMetrics,
 					Namespace: req.Namespace,
@@ -1155,30 +1147,17 @@ func initOldMetricsEndpoints(req *common.HcoRequest) {
 }
 
 func (r ReconcileHyperConverged) removeOldMetricsObjs(req *common.HcoRequest) error {
-	initOldMetricsServices(req)
-	initOldMetricsEndpoints(req)
+	initOldMetricsObjects(req)
 
-	for name, service := range oldMetricsServices {
-		removed, err := r.deleteObj(req, &service)
-
-		if err != nil {
-			return err
-		}
-
-		if removed {
-			delete(oldMetricsServices, name)
-		}
-	}
-
-	for name, endpoint := range oldMetricsEndpoints {
-		removed, err := r.deleteObj(req, &endpoint)
+	for name, object := range oldMetricsObjects {
+		removed, err := r.deleteObj(req, object)
 
 		if err != nil {
 			return err
 		}
 
 		if removed {
-			delete(oldMetricsEndpoints, name)
+			delete(oldMetricsObjects, name)
 		}
 	}
 
