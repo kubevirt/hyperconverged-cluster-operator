@@ -16,6 +16,7 @@ import (
 	operatorhandler "github.com/operator-framework/operator-lib/handler"
 	"github.com/pkg/errors"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
@@ -1041,6 +1042,11 @@ func (r *ReconcileHyperConverged) updateCrdStoredVersions(req *common.HcoRequest
 func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (bool, error) {
 	upgradePatched, err := r.applyUpgradePatches(req)
 	if err != nil {
+		return false, err
+	}
+
+	err = r.client.DeleteAllOf(req.Ctx, &appsv1.Deployment{}, client.MatchingLabels{"name": "node-maintenance-operator"}, client.InNamespace(req.Instance.Namespace))
+	if err != nil && !apierrors.IsNotFound(err) {
 		return false, err
 	}
 

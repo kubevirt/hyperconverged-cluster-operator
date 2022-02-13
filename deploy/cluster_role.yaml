@@ -513,6 +513,7 @@ rules:
   verbs:
   - get
   - list
+  - deletecollection
 - apiGroups:
   - rbac.authorization.k8s.io
   resources:

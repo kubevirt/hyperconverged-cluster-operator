@@ -15,6 +15,7 @@ import (
 	consolev1 "github.com/openshift/api/console/v1"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 	v1 "github.com/openshift/custom-resource-status/objectreferences/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -1860,6 +1861,64 @@ var _ = Describe("HyperconvergedController", func() {
 					err = cl.Get(context.TODO(), types.NamespacedName{Name: operatorMetrics, Namespace: expected.hco.Namespace}, foundResource)
 					Expect(err).To(HaveOccurred())
 					Expect(apierrors.IsNotFound(err)).To(BeTrue())
+				})
+			})
+
+			Context("remove old NMO deployment", func() {
+				It("should drop old NMO deployment", func() {
+
+					UpdateVersion(&expected.hco.Status, hcoVersionName, oldVersion)
+
+					oldDeploy := &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "node-maintenance-operator",
+							Namespace: namespace,
+							Labels: map[string]string{
+								"name": "node-maintenance-operator",
+							},
+						},
+					}
+
+					resources := append(expected.toArray(), oldDeploy)
+
+					anotherNsDeploy := &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "node-maintenance-operator",
+							Namespace: "anotherNs",
+							Labels: map[string]string{
+								"name": "node-maintenance-operator",
+							},
+						},
+					}
+					resources = append(resources, anotherNsDeploy)
+
+					noLabelsNsDeploy := &appsv1.Deployment{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "no-labelsNs-deploy",
+							Namespace: namespace,
+						},
+					}
+
+					resources = append(resources, noLabelsNsDeploy)
+
+					cl := commonTestUtils.InitClient(resources)
+
+					foundOldDeploy := &appsv1.Deployment{}
+					err := cl.Get(context.Background(), client.ObjectKeyFromObject(oldDeploy), foundOldDeploy)
+					Expect(err).ToNot(HaveOccurred())
+
+					foundResource, _, requeue := doReconcile(cl, expected.hco, nil)
+					Expect(requeue).To(BeTrue())
+					checkAvailability(foundResource, metav1.ConditionTrue)
+
+					err = cl.Get(context.Background(), client.ObjectKeyFromObject(oldDeploy), foundOldDeploy)
+					Expect(apierrors.IsNotFound(err)).To(BeTrue())
+
+					err = cl.Get(context.Background(), client.ObjectKeyFromObject(anotherNsDeploy), foundOldDeploy)
+					Expect(err).ToNot(HaveOccurred())
+
+					err = cl.Get(context.Background(), client.ObjectKeyFromObject(noLabelsNsDeploy), foundOldDeploy)
+					Expect(err).ToNot(HaveOccurred())
 				})
 			})
 		})
