@@ -2030,6 +2030,20 @@ rules:
   verbs:
   - create
 - apiGroups:
+  - batch
+  resources:
+  - cronjobs
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - batch
+  resources:
+  - jobs
+  verbs:
+  - list
+  - watch
+- apiGroups:
   - ""
   resources:
   - persistentvolumeclaims
