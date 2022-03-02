@@ -2,9 +2,18 @@ package commonTestUtils
 
 import (
 	"context"
+	"errors"
+	"reflect"
+
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -16,12 +25,45 @@ type FakeReadErrorGenerator func(key client.ObjectKey) error
 
 // implements the client.Client interface (proxy pattern)
 type HcoTestClient struct {
-	client      client.Client
-	sw          *HcoTestStatusWriter
-	getError    FakeReadErrorGenerator
-	createError FakeWriteErrorGenerator
-	updateError FakeWriteErrorGenerator
-	deleteError FakeWriteErrorGenerator
+	client                 client.Client
+	sw                     *HcoTestStatusWriter
+	getError               FakeReadErrorGenerator
+	createError            FakeWriteErrorGenerator
+	updateError            FakeWriteErrorGenerator
+	deleteError            FakeWriteErrorGenerator
+	cacheSelectorsByObject cache.SelectorsByObject
+}
+
+func (c *HcoTestClient) getSelector(obj client.Object) (cache.ObjectSelector, error) {
+	for key, selector := range c.cacheSelectorsByObject {
+		keyType := reflect.TypeOf(key).String()
+		objType := reflect.TypeOf(obj).String()
+
+		if keyType == objType {
+			return selector, nil
+		}
+	}
+
+	return cache.ObjectSelector{}, errors.New("no selector for requested object")
+}
+
+func (c *HcoTestClient) filterBySelector(obj client.Object) error {
+	selector, selectorErr := c.getSelector(obj)
+
+	if selectorErr != nil || selector.Label == nil {
+		return nil
+	}
+
+	ls := labels.Set{}
+	for k, v := range obj.GetLabels() {
+		ls[k] = v
+	}
+
+	if selector.Label.Matches(ls) {
+		return nil
+	}
+
+	return apierrors.NewNotFound(schema.GroupResource{}, obj.GetName())
 }
 
 func (c *HcoTestClient) Get(ctx context.Context, key client.ObjectKey, obj client.Object) error {
@@ -30,7 +72,12 @@ func (c *HcoTestClient) Get(ctx context.Context, key client.ObjectKey, obj clien
 			return err
 		}
 	}
-	return c.client.Get(ctx, key, obj)
+
+	if err := c.client.Get(ctx, key, obj); err != nil {
+		return err
+	}
+
+	return c.filterBySelector(obj)
 }
 
 func (c *HcoTestClient) List(ctx context.Context, list client.ObjectList, opts ...client.ListOption) error {
@@ -163,5 +210,5 @@ func InitClient(clientObjects []runtime.Object) *HcoTestClient {
 		WithScheme(GetScheme()).
 		Build()
 
-	return &HcoTestClient{client: cl, sw: &HcoTestStatusWriter{client: cl}}
+	return &HcoTestClient{client: cl, sw: &HcoTestStatusWriter{client: cl}, cacheSelectorsByObject: cmdcommon.GetCacheSelectorsByObject("")}
 }

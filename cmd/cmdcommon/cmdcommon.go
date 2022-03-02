@@ -9,6 +9,22 @@ import (
 	"os"
 	"runtime"
 
+	imagev1 "github.com/openshift/api/image/v1"
+	openshiftroutev1 "github.com/openshift/api/route/v1"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	schedulingv1 "k8s.io/api/scheduling/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+
+	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
+	kubevirtcorev1 "kubevirt.io/api/core/v1"
+	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
+	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
+
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -170,4 +186,48 @@ func stringInSlice(a string, list []string) bool {
 		}
 	}
 	return false
+}
+
+func GetCacheSelectorsByObject(operatorNamespace string) cache.SelectorsByObject {
+	namespaceSelector := fields.Set{"metadata.namespace": operatorNamespace}.AsSelector()
+	labelSelector := labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}.AsSelector()
+
+	return cache.SelectorsByObject{
+		&hcov1beta1.HyperConverged{}:           {},
+		&kubevirtcorev1.KubeVirt{}:             {},
+		&cdiv1beta1.CDI{}:                      {},
+		&networkaddonsv1.NetworkAddonsConfig{}: {},
+		&sspv1beta1.SSP{}:                      {},
+		&schedulingv1.PriorityClass{}: {
+			Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
+		},
+		&corev1.ConfigMap{}: {
+			Label: labelSelector,
+		},
+		&corev1.Service{}: {
+			Field: namespaceSelector,
+		},
+		&monitoringv1.ServiceMonitor{}: {
+			Label: labelSelector,
+			Field: namespaceSelector,
+		},
+		&monitoringv1.PrometheusRule{}: {
+			Label: labelSelector,
+			Field: namespaceSelector,
+		},
+		&rbacv1.Role{}: {
+			Label: labelSelector,
+			Field: namespaceSelector,
+		},
+		&rbacv1.RoleBinding{}: {
+			Label: labelSelector,
+			Field: namespaceSelector,
+		},
+		&openshiftroutev1.Route{}: {
+			Field: namespaceSelector,
+		},
+		&imagev1.ImageStream{}: {
+			Label: labelSelector,
+		},
+	}
 }

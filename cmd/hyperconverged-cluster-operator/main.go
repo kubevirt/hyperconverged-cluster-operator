@@ -21,8 +21,6 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/labels"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -175,48 +173,9 @@ func main() {
 // Restricts the cache's ListWatch to specific fields/labels per GVK at the specified object to control the memory impact
 // this is used to completely overwrite the NewCache function so all the interesting objects should be explicitly listed here
 func getNewManagerCache(operatorNamespace string) cache.NewCacheFunc {
-	namespaceSelector := fields.Set{"metadata.namespace": operatorNamespace}.AsSelector()
-	labelSelector := labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}.AsSelector()
 	return cache.BuilderWithOptions(
 		cache.Options{
-			SelectorsByObject: cache.SelectorsByObject{
-				&hcov1beta1.HyperConverged{}:           {},
-				&kubevirtcorev1.KubeVirt{}:             {},
-				&cdiv1beta1.CDI{}:                      {},
-				&networkaddonsv1.NetworkAddonsConfig{}: {},
-				&sspv1beta1.SSP{}:                      {},
-				&schedulingv1.PriorityClass{}: {
-					Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
-				},
-				&corev1.ConfigMap{}: {
-					Label: labelSelector,
-				},
-				&corev1.Service{}: {
-					Field: namespaceSelector,
-				},
-				&monitoringv1.ServiceMonitor{}: {
-					Label: labelSelector,
-					Field: namespaceSelector,
-				},
-				&monitoringv1.PrometheusRule{}: {
-					Label: labelSelector,
-					Field: namespaceSelector,
-				},
-				&rbacv1.Role{}: {
-					Label: labelSelector,
-					Field: namespaceSelector,
-				},
-				&rbacv1.RoleBinding{}: {
-					Label: labelSelector,
-					Field: namespaceSelector,
-				},
-				&openshiftroutev1.Route{}: {
-					Field: namespaceSelector,
-				},
-				&imagev1.ImageStream{}: {
-					Label: labelSelector,
-				},
-			},
+			SelectorsByObject: cmdcommon.GetCacheSelectorsByObject(operatorNamespace),
 		},
 	)
 }

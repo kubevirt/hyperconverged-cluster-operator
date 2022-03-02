@@ -36,10 +36,12 @@ var _ = Describe("KubeVirt Operand", func() {
 
 		var hco *hcov1beta1.HyperConverged
 		var req *common.HcoRequest
+		var labels map[string]string
 
 		BeforeEach(func() {
 			hco = commonTestUtils.NewHco()
 			req = commonTestUtils.NewReq(hco)
+			labels = getLabels(hco, hcoutil.AppComponentCompute)
 		})
 
 		It("should create if not present", func() {
@@ -47,6 +49,7 @@ var _ = Describe("KubeVirt Operand", func() {
 			cl := commonTestUtils.InitClient([]runtime.Object{})
 			handler := (*genericOperand)(newKvPriorityClassHandler(cl, commonTestUtils.GetScheme()))
 			res := handler.ensure(req)
+			Expect(res.Created).To(BeTrue())
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).To(BeNil())
 
@@ -63,6 +66,8 @@ var _ = Describe("KubeVirt Operand", func() {
 			cl := commonTestUtils.InitClient([]runtime.Object{expectedResource})
 			handler := (*genericOperand)(newKvPriorityClassHandler(cl, commonTestUtils.GetScheme()))
 			res := handler.ensure(req)
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).To(BeNil())
 
@@ -71,10 +76,13 @@ var _ = Describe("KubeVirt Operand", func() {
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 		})
 
-		DescribeTable("should update if something changed", func(modifiedResource *schedulingv1.PriorityClass) {
+		DescribeTable("should update if something changed", func(getModifiedResource func() *schedulingv1.PriorityClass) {
+			modifiedResource := getModifiedResource()
 			cl := commonTestUtils.InitClient([]runtime.Object{modifiedResource})
 			handler := (*genericOperand)(newKvPriorityClassHandler(cl, commonTestUtils.GetScheme()))
 			res := handler.ensure(req)
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeTrue())
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).To(BeNil())
 
@@ -85,37 +93,60 @@ var _ = Describe("KubeVirt Operand", func() {
 			Expect(foundResource.Name).To(Equal(expectedResource.Name))
 			Expect(foundResource.Value).To(Equal(expectedResource.Value))
 			Expect(foundResource.GlobalDefault).To(Equal(expectedResource.GlobalDefault))
+			Expect(foundResource.Labels).To(Equal(expectedResource.Labels))
 
 			newReference, err := reference.GetReference(cl.Scheme(), foundResource)
 			Expect(err).To(BeNil())
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*newReference))
 		},
-			Entry("with modified value",
-				&schedulingv1.PriorityClass{
+			Entry("with modified value", func() *schedulingv1.PriorityClass {
+				return &schedulingv1.PriorityClass{
 					TypeMeta: metav1.TypeMeta{
 						APIVersion: "scheduling.k8s.io/v1",
 						Kind:       "PriorityClass",
 					},
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "kubevirt-cluster-critical",
+						Name:   "kubevirt-cluster-critical",
+						Labels: labels,
 					},
 					Value:         1,
 					GlobalDefault: false,
 					Description:   "",
-				}),
-			Entry("with modified global default",
-				&schedulingv1.PriorityClass{
+				}
+			}),
+			Entry("with modified global default", func() *schedulingv1.PriorityClass {
+				return &schedulingv1.PriorityClass{
 					TypeMeta: metav1.TypeMeta{
 						APIVersion: "scheduling.k8s.io/v1",
 						Kind:       "PriorityClass",
 					},
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "kubevirt-cluster-critical",
+						Name:   "kubevirt-cluster-critical",
+						Labels: labels,
 					},
 					Value:         1000000000,
 					GlobalDefault: true,
 					Description:   "",
-				}),
+				}
+			}),
+			Entry("without AppLabel label", func() *schedulingv1.PriorityClass {
+				updatedLabels := labels
+				delete(updatedLabels, hcoutil.AppLabel)
+
+				return &schedulingv1.PriorityClass{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "scheduling.k8s.io/v1",
+						Kind:       "PriorityClass",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "kubevirt-cluster-critical",
+						Labels: updatedLabels,
+					},
+					Value:         1000000000,
+					GlobalDefault: false,
+					Description:   "This priority class should be used for KubeVirt core components only.",
+				}
+			}),
 		)
 
 		DescribeTable("should return error when there is something wrong", func(initiateErrors func(testClient *commonTestUtils.HcoTestClient) error) {

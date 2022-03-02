@@ -93,7 +93,14 @@ func (h *genericOperand) ensure(req *common.HcoRequest) *EnsureResult {
 	found := h.hooks.getEmptyCr()
 	err = h.Client.Get(req.Ctx, key, found)
 	if err != nil {
-		return h.createNewCr(req, err, cr, res)
+		e := h.createNewCr(req, err, cr, res)
+		if e.Err != nil && strings.Contains(e.Err.Error(), "already exists") {
+			res.Err = nil
+			found.SetName(cr.GetName())
+		} else {
+			req.Logger.Error(err, "Failed to create object for "+h.crType)
+			return e
+		}
 	}
 
 	return h.handleExistingCr(req, key, found, cr, res)
@@ -198,7 +205,6 @@ func (h *genericOperand) createNewCr(req *common.HcoRequest, err error, cr clien
 		req.Logger.Info("Creating " + h.crType)
 		err = h.Client.Create(req.Ctx, cr)
 		if err != nil {
-			req.Logger.Error(err, "Failed to create object for "+h.crType)
 			return res.Error(err)
 		}
 		return res.SetCreated()
