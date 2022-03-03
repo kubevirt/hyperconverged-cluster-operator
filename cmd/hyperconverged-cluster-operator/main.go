@@ -7,6 +7,7 @@ import (
 
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
+	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
 	imagev1 "github.com/openshift/api/image/v1"
 	openshiftroutev1 "github.com/openshift/api/route/v1"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -64,6 +65,7 @@ var (
 		csvv1alpha1.AddToScheme,
 		admissionregistrationv1.AddToScheme,
 		consolev1.Install,
+		consolev1alpha1.Install,
 		openshiftconfigv1.Install,
 		openshiftroutev1.Install,
 		monitoringv1.AddToScheme,

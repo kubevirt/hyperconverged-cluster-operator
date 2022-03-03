@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
+
 	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -153,6 +155,7 @@ func GetScheme() *runtime.Scheme {
 		apiextensionsv1.AddToScheme,
 		routev1.Install,
 		imagev1.Install,
+		consolev1alpha1.Install,
 	} {
 		Expect(f(testScheme)).ToNot(HaveOccurred())
 	}

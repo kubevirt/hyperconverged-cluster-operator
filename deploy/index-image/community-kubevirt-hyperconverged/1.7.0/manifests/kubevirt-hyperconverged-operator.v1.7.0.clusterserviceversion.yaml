@@ -3323,6 +3323,8 @@ spec:
     name: hyperconverged-cluster-webhook
   - image: quay.io/kubevirt/kubemacpool@sha256:7df2177401406874ff0f2b3b296624eba4a291b9485829c52a9b3491fefc2753
     name: kubemacpool
+  - image: quay.io/kubevirt-ui/kubevirt-plugin@sha256:41d400ef9c6d1c28119fdd3438dc5146b638382abe1289fee9b7bd904de3e9ff
+    name: kubevirt-plugin
   - image: quay.io/kubevirt/libguestfs-tools@sha256:96cef1f296d337922c82ed916e3dcca18dc594e8c60cd90c4a02565d0af4d5ec
     name: libguestfs-tools
   - image: k8s.gcr.io/sig-storage/livenessprobe@sha256:1b7c978a792a8fa4e96244e8059bd71bb49b07e2e5a897fb0c867bdc6db20d5d

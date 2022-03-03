@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	consolev1 "github.com/openshift/api/console/v1"
@@ -124,6 +127,9 @@ type BasicExpected struct {
 	virtioWinRole        *rbacv1.Role
 	virtioWinRoleBinding *rbacv1.RoleBinding
 	hcoCRD               *apiextensionsv1.CustomResourceDefinition
+	consolePluginDeploy  *appsv1.Deployment
+	consolePluginSvc     *corev1.Service
+	consolePlugin        *consolev1alpha1.ConsolePlugin
 }
 
 func (be BasicExpected) toArray() []runtime.Object {
@@ -148,6 +154,9 @@ func (be BasicExpected) toArray() []runtime.Object {
 		be.virtioWinRole,
 		be.virtioWinRoleBinding,
 		be.hcoCRD,
+		be.consolePluginDeploy,
+		be.consolePluginSvc,
+		be.consolePlugin,
 	}
 }
 
@@ -271,6 +280,16 @@ func getBasicDeployment() *BasicExpected {
 
 	expectedVirtioWinRoleBinding := operands.NewVirtioWinCmReaderRoleBinding(hco)
 	res.virtioWinRoleBinding = expectedVirtioWinRoleBinding
+
+	expectedConsolePluginDeployment, err := operands.NewKvUiPluginDeplymnt(hco)
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	res.consolePluginDeploy = expectedConsolePluginDeployment
+
+	expectedConsolePluginService := operands.NewKvUiPluginSvc(hco)
+	res.consolePluginSvc = expectedConsolePluginService
+
+	expectedConsolePlugin := operands.NewKvConsolePlugin(hco)
+	res.consolePlugin = expectedConsolePlugin
 
 	hcoCrd := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{

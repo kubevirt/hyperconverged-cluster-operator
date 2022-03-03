@@ -85,6 +85,10 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, isOpenshiftC
 		h.addOperands(scheme, hc, newVirtioWinCmHandler)
 		h.addOperands(scheme, hc, newVirtioWinCmReaderRoleHandler)
 		h.addOperands(scheme, hc, newVirtioWinCmReaderRoleBindingHandler)
+		h.addOperands(scheme, hc, newKvUiPluginDplymntHandler)
+		h.addOperands(scheme, hc, newKvUiPluginSvcHandler)
+		h.addOperands(scheme, hc, newKvUiPluginCRHandler)
+
 	}
 	// Role and RoleBinding for kvStorage Config Map should be created both on Openshift and plain k8s
 	h.addOperands(scheme, hc, NewConfigReaderRoleHandler)
