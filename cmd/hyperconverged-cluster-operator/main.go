@@ -180,6 +180,7 @@ func main() {
 func getNewManagerCache(operatorNamespace string) cache.NewCacheFunc {
 	namespaceSelector := fields.Set{"metadata.namespace": operatorNamespace}.AsSelector()
 	labelSelector := labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}.AsSelector()
+	labelSelectorForNamespace := labels.Set{hcoutil.KubernetesMetadataName: operatorNamespace}.AsSelector()
 	return cache.BuilderWithOptions(
 		cache.Options{
 			SelectorsByObject: cache.SelectorsByObject{
@@ -218,6 +219,9 @@ func getNewManagerCache(operatorNamespace string) cache.NewCacheFunc {
 				},
 				&imagev1.ImageStream{}: {
 					Label: labelSelector,
+				},
+				&corev1.Namespace{}: {
+					Label: labelSelectorForNamespace,
 				},
 			},
 		},
