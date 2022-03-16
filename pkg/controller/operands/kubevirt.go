@@ -517,7 +517,7 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates) [
 		fgs = append(fgs, kvWithHostPassthroughCPU)
 	}
 
-	if featureGates.SRIOVLiveMigration {
+	if featureGates.SRIOVLiveMigration && hcoutil.GetClusterInfo().IsInfrastructureHighlyAvailable() {
 		fgs = append(fgs, kvSRIOVLiveMigration)
 	}
 
