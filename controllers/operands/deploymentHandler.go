@@ -4,14 +4,15 @@ import (
 	"errors"
 	"reflect"
 
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+
 	appsv1 "k8s.io/api/apps/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -55,9 +56,7 @@ func (h deploymentHooks) updateCr(req *common.HcoRequest, Client client.Client, 
 	if !ok {
 		return false, false, errors.New("can't convert to Deployment")
 	}
-
-	if !reflect.DeepEqual(found, h.required) ||
-		!reflect.DeepEqual(found.Labels, h.required.Labels) {
+	if !hasCorrectDeploymentFields(found, h.required) {
 		if req.HCOTriggered {
 			req.Logger.Info("Updating existing Deployment to new opinionated values", "name", h.required.Name)
 		} else {
@@ -73,4 +72,16 @@ func (h deploymentHooks) updateCr(req *common.HcoRequest, Client client.Client, 
 	}
 
 	return false, false, nil
+}
+
+// We need to check only certain fields in the deployment resource, since some of the fields
+// are being set by k8s.
+func hasCorrectDeploymentFields(found *appsv1.Deployment, required *appsv1.Deployment) bool {
+	return reflect.DeepEqual(found.Labels, required.Labels) &&
+		reflect.DeepEqual(found.Spec.Selector, required.Spec.Selector) &&
+		reflect.DeepEqual(found.Spec.Replicas, required.Spec.Replicas) &&
+		reflect.DeepEqual(found.Spec.Template.Spec.Containers, required.Spec.Template.Spec.Containers) &&
+		reflect.DeepEqual(found.Spec.Template.Spec.ServiceAccountName, required.Spec.Template.Spec.ServiceAccountName) &&
+		reflect.DeepEqual(found.Spec.Template.Spec.PriorityClassName, required.Spec.Template.Spec.PriorityClassName)
+
 }

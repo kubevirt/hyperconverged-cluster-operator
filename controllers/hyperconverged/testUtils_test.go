@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	operatorv1 "github.com/openshift/api/operator/v1"
+
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 
@@ -30,7 +32,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commonTestUtils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
-	components "github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/version"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
@@ -130,6 +132,7 @@ type BasicExpected struct {
 	consolePluginDeploy  *appsv1.Deployment
 	consolePluginSvc     *corev1.Service
 	consolePlugin        *consolev1alpha1.ConsolePlugin
+	consoleConfig        *operatorv1.Console
 }
 
 func (be BasicExpected) toArray() []runtime.Object {
@@ -157,6 +160,7 @@ func (be BasicExpected) toArray() []runtime.Object {
 		be.consolePluginDeploy,
 		be.consolePluginSvc,
 		be.consolePlugin,
+		be.consoleConfig,
 	}
 }
 
@@ -290,6 +294,17 @@ func getBasicDeployment() *BasicExpected {
 
 	expectedConsolePlugin := operands.NewKvConsolePlugin(hco)
 	res.consolePlugin = expectedConsolePlugin
+
+	expectedConsoleConfig := &operatorv1.Console{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Console",
+			APIVersion: "operator.openshift.io/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "cluster",
+		},
+	}
+	res.consoleConfig = expectedConsoleConfig
 
 	hcoCrd := &apiextensionsv1.CustomResourceDefinition{
 		ObjectMeta: metav1.ObjectMeta{

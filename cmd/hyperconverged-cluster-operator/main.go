@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	operatorv1 "github.com/openshift/api/operator/v1"
+
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
@@ -66,6 +68,7 @@ var (
 		admissionregistrationv1.AddToScheme,
 		consolev1.Install,
 		consolev1alpha1.Install,
+		operatorv1.Install,
 		openshiftconfigv1.Install,
 		openshiftroutev1.Install,
 		monitoringv1.AddToScheme,

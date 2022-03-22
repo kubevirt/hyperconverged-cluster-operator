@@ -88,6 +88,7 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, isOpenshiftC
 		h.addOperands(scheme, hc, newKvUiPluginDplymntHandler)
 		h.addOperands(scheme, hc, newKvUiPluginSvcHandler)
 		h.addOperands(scheme, hc, newKvUiPluginCRHandler)
+		h.addOperands(scheme, hc, newConsoleHandler)
 
 	}
 	// Role and RoleBinding for kvStorage Config Map should be created both on Openshift and plain k8s
@@ -118,6 +119,8 @@ func (h *OperandHandler) addOperands(scheme *runtime.Scheme, hc *hcov1beta1.Hype
 				obj, err = h.hooks.getFullCr(hc)
 			case *imageStreamOperand:
 				obj, err = h.operand.hooks.getFullCr(hc)
+			case *consoleHandler:
+				continue
 			default:
 				err = fmt.Errorf("unknown handler with type %v", h)
 			}

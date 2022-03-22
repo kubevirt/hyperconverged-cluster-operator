@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	operatorv1 "github.com/openshift/api/operator/v1"
+
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
 
 	"github.com/go-logr/logr"
@@ -156,6 +158,7 @@ func GetScheme() *runtime.Scheme {
 		routev1.Install,
 		imagev1.Install,
 		consolev1alpha1.Install,
+		operatorv1.Install,
 	} {
 		Expect(f(testScheme)).ToNot(HaveOccurred())
 	}

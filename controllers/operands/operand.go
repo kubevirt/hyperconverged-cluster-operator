@@ -45,7 +45,7 @@ type genericOperand struct {
 	removeExistingOwner bool
 	// Should the handler add the controller reference
 	setControllerReference bool
-	// Set of resource handler hooks, to be implement in each handler
+	// Set of resource handler hooks, to be implemented in each handler
 	hooks hcoResourceHooks
 }
 

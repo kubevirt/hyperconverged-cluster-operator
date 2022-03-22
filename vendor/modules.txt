@@ -162,6 +162,7 @@ github.com/openshift/api/console/v1alpha1
 github.com/openshift/api/image/docker10
 github.com/openshift/api/image/dockerpre012
 github.com/openshift/api/image/v1
+github.com/openshift/api/operator/v1
 github.com/openshift/api/route/v1
 # github.com/openshift/custom-resource-status v1.1.2
 ## explicit; go 1.12

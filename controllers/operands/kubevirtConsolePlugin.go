@@ -2,8 +2,16 @@ package operands
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"reflect"
+
+	operatorv1 "github.com/openshift/api/operator/v1"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
+
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 
 	log "github.com/go-logr/logr"
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
@@ -14,14 +22,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
-
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 const (
 	kvUIPluginName    = "kubevirt-plugin"
+	kvUIPluginSvcName = kvUIPluginName + "-service"
 	kvUIPluginNameEnv = "UI_PLUGIN_NAME"
 )
 
@@ -59,7 +65,7 @@ func NewKvUiPluginDeplymnt(hc *hcov1beta1.HyperConverged) (*appsv1.Deployment, e
 			Replicas: int32Ptr(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					"name": kvUIPluginName,
+					"app": kvUIPluginName,
 				},
 			},
 			Strategy: appsv1.DeploymentStrategy{
@@ -68,17 +74,22 @@ func NewKvUiPluginDeplymnt(hc *hcov1beta1.HyperConverged) (*appsv1.Deployment, e
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"name": kvUIPluginName,
+						"app": kvUIPluginName,
 					},
 				},
 				Spec: corev1.PodSpec{
 					ServiceAccountName: "default",
 					Containers: []corev1.Container{
 						{
-							Name: kvUIPluginName,
-							// TODO: pass as a parameter
+							Name:            kvUIPluginName,
 							Image:           "quay.io/kubevirt-ui/kubevirt-plugin:latest",
-							ImagePullPolicy: "IfNotPresent",
+							ImagePullPolicy: corev1.PullAlways,
+							Ports: []corev1.ContainerPort{{
+								ContainerPort: hcoutil.UiPluginServerPort,
+								Protocol:      corev1.ProtocolTCP,
+							}},
+							TerminationMessagePath:   corev1.TerminationMessagePathDefault,
+							TerminationMessagePolicy: corev1.TerminationMessageReadFile,
 						},
 					},
 					PriorityClassName: "system-cluster-critical",
@@ -97,7 +108,7 @@ func NewKvUiPluginSvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
 	if ok && val != "" {
 		pluginName = val
 	}
-	labelSelect := map[string]string{"name": pluginName}
+	labelSelect := map[string]string{"app": pluginName}
 
 	spec := corev1.ServiceSpec{
 		Ports:    servicePorts,
@@ -106,7 +117,7 @@ func NewKvUiPluginSvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
 
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      kvUIPluginName,
+			Name:      kvUIPluginSvcName,
 			Labels:    getLabels(hc, hcoutil.AppComponentDeployment),
 			Namespace: hc.Namespace,
 		},
@@ -123,7 +134,7 @@ func NewKvConsolePlugin(hc *hcov1beta1.HyperConverged) *consolev1alpha1.ConsoleP
 		Spec: consolev1alpha1.ConsolePluginSpec{
 			DisplayName: "Kubevirt Console Plugin",
 			Service: consolev1alpha1.ConsolePluginService{
-				Name:      kvUIPluginName + "-service",
+				Name:      kvUIPluginSvcName,
 				Namespace: hc.Namespace,
 				Port:      int32(hcoutil.UiPluginServerPort),
 				BasePath:  "/",
@@ -187,8 +198,55 @@ func (h consolePluginHooks) updateCr(req *common.HcoRequest, Client client.Clien
 		}
 		return true, !req.HCOTriggered, nil
 	}
-
 	return false, false, nil
+}
+
+type consoleHandler struct {
+	// K8s client
+	Client client.Client
+	Scheme *runtime.Scheme
+}
+
+func (h consoleHandler) ensure(req *common.HcoRequest) *EnsureResult {
+	// Enable console plugin for kubevirt if not already enabled
+	consoleKey := client.ObjectKey{Namespace: hcoutil.UndefinedNamespace, Name: "cluster"}
+	consoleObj := &operatorv1.Console{}
+	err := h.Client.Get(req.Ctx, consoleKey, consoleObj)
+	if err != nil {
+		req.Logger.Error(err, fmt.Sprintf("Could not find resource - APIVersion: %s, Kind: %s, Name: %s",
+			consoleObj.APIVersion, consoleObj.Kind, consoleObj.Name))
+		return &EnsureResult{
+			Err: nil,
+		}
+	}
+
+	plugins := consoleObj.Spec.Plugins
+	if !cmdcommon.StringInSlice(kvUIPluginName, plugins) {
+		req.Logger.Info("Enabling kubevirt plugin in Console")
+		plugins = append(plugins, kvUIPluginName)
+		consoleObj.Spec.Plugins = plugins
+		err := h.Client.Update(req.Ctx, consoleObj)
+		if err != nil {
+			req.Logger.Error(err, fmt.Sprintf("Could not update resource - APIVersion: %s, Kind: %s, Name: %s",
+				consoleObj.APIVersion, consoleObj.Kind, consoleObj.Name))
+			return &EnsureResult{
+				Err: err,
+			}
+		}
+	}
+	return &EnsureResult{
+		Err: nil,
+	}
+}
+
+func (h consoleHandler) reset() { /* no implementation */ }
+
+func newConsoleHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]Operand, error) {
+	h := &consoleHandler{
+		Client: Client,
+		Scheme: Scheme,
+	}
+	return []Operand{h}, nil
 }
 
 func int32Ptr(i int32) *int32 {

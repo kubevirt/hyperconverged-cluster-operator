@@ -300,6 +300,7 @@ spec:
           - get
           - list
           - delete
+          - watch
         - apiGroups:
           - ""
           resources:
@@ -318,6 +319,10 @@ spec:
           verbs:
           - get
           - list
+          - watch
+          - create
+          - update
+          - delete
         - apiGroups:
           - rbac.authorization.k8s.io
           resources:
@@ -449,9 +454,29 @@ spec:
           - get
           - list
           - watch
-          - update
           - create
+          - update
           - delete
+        - apiGroups:
+          - console.openshift.io
+          resources:
+          - consoleplugins
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
+        - apiGroups:
+          - operator.openshift.io
+          resources:
+          - consoles
+          verbs:
+          - get
+          - list
+          - watch
+          - update
         serviceAccountName: hyperconverged-cluster-operator
       - rules:
         - apiGroups:
@@ -3323,7 +3348,7 @@ spec:
     name: hyperconverged-cluster-webhook
   - image: quay.io/kubevirt/kubemacpool@sha256:7df2177401406874ff0f2b3b296624eba4a291b9485829c52a9b3491fefc2753
     name: kubemacpool
-  - image: quay.io/kubevirt-ui/kubevirt-plugin@sha256:41d400ef9c6d1c28119fdd3438dc5146b638382abe1289fee9b7bd904de3e9ff
+  - image: quay.io/kubevirt-ui/kubevirt-plugin@sha256:7ce869bb7e13e450b2c64c3178b9d9510c921576945ba4171121cff7b3e8c012
     name: kubevirt-plugin
   - image: quay.io/kubevirt/libguestfs-tools@sha256:96cef1f296d337922c82ed916e3dcca18dc594e8c60cd90c4a02565d0af4d5ec
     name: libguestfs-tools

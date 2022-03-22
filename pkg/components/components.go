@@ -450,7 +450,7 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		{
 			APIGroups: emptyAPIGroup,
 			Resources: stringListToSlice("endpoints"),
-			Verbs:     stringListToSlice("get", "list", "delete"),
+			Verbs:     stringListToSlice("get", "list", "delete", "watch"),
 		},
 		{
 			APIGroups: emptyAPIGroup,
@@ -460,7 +460,7 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		{
 			APIGroups: stringListToSlice("apps"),
 			Resources: stringListToSlice("deployments", "replicasets"),
-			Verbs:     stringListToSlice("get", "list"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
 		roleWithAllPermissions("rbac.authorization.k8s.io", stringListToSlice("roles", "rolebindings")),
 		{
@@ -502,10 +502,12 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			Resources: stringListToSlice("operatorconditions"),
 			Verbs:     stringListToSlice("get", "list", "watch", "update", "patch"),
 		},
+		roleWithAllPermissions("image.openshift.io", stringListToSlice("imagestreams")),
+		roleWithAllPermissions("console.openshift.io", stringListToSlice("consoleplugins")),
 		{
-			APIGroups: stringListToSlice("image.openshift.io"),
-			Resources: stringListToSlice("imagestreams"),
-			Verbs:     stringListToSlice("get", "list", "watch", "update", "create", "delete"),
+			APIGroups: stringListToSlice("operator.openshift.io"),
+			Resources: stringListToSlice("consoles"),
+			Verbs:     stringListToSlice("get", "list", "watch", "update"),
 		},
 	}
 }

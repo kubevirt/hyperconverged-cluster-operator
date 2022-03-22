@@ -2,15 +2,15 @@ package operands
 
 import (
 	"errors"
-	"reflect"
+
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/pkg/apis/hco/v1beta1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/controller/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -48,28 +48,26 @@ func (h serviceHooks) getObjectMeta(cr runtime.Object) *metav1.ObjectMeta {
 
 func (h serviceHooks) reset() { /* no implementation */ }
 
-func (h serviceHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
-	found, ok := exists.(*corev1.Service)
-
-	if !ok {
+func (h serviceHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
+	service, ok1 := required.(*corev1.Service)
+	found, ok2 := exists.(*corev1.Service)
+	if !ok1 || !ok2 {
 		return false, false, errors.New("can't convert to Service")
 	}
-
-	if !reflect.DeepEqual(found, h.required) ||
-		!reflect.DeepEqual(found.Labels, h.required.Labels) {
+	if !hasServiceRightFields(found, service) {
 		if req.HCOTriggered {
-			req.Logger.Info("Updating existing Service to new opinionated values", "name", h.required.Name)
+			req.Logger.Info("Updating existing Service Spec to new opinionated values")
 		} else {
-			req.Logger.Info("Reconciling an externally updated Service to its opinionated values", "name", h.required.Name)
+			req.Logger.Info("Reconciling an externally updated Service's Spec to its opinionated values")
 		}
-		util.DeepCopyLabels(&h.required.ObjectMeta, &found.ObjectMeta)
-		h.required.DeepCopyInto(found)
+		util.DeepCopyLabels(&service.ObjectMeta, &found.ObjectMeta)
+		service.Spec.ClusterIP = found.Spec.ClusterIP
+		service.Spec.DeepCopyInto(&found.Spec)
 		err := Client.Update(req.Ctx, found)
 		if err != nil {
 			return false, false, err
 		}
 		return true, !req.HCOTriggered, nil
 	}
-
 	return false, false, nil
 }
