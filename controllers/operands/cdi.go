@@ -18,7 +18,6 @@ import (
 )
 
 const (
-	cdiRoleName                   = "hco.kubevirt.io:config-reader"
 	HonorWaitForFirstConsumerGate = "HonorWaitForFirstConsumer"
 	cdiConfigAuthorityAnnotation  = "cdi.kubevirt.io/configAuthority"
 )
