@@ -48,6 +48,8 @@ func (h serviceHooks) getObjectMeta(cr runtime.Object) *metav1.ObjectMeta {
 
 func (h serviceHooks) reset() { /* no implementation */ }
 
+func (h serviceHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+
 func (h serviceHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
 	service, ok1 := required.(*corev1.Service)
 	found, ok2 := exists.(*corev1.Service)

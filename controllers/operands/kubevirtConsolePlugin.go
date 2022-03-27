@@ -177,6 +177,8 @@ func (h consolePluginHooks) getObjectMeta(cr runtime.Object) *metav1.ObjectMeta 
 
 func (h consolePluginHooks) reset() { /* no implementation */ }
 
+func (h consolePluginHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+
 func (h consolePluginHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
 	found, ok := exists.(*consolev1alpha1.ConsolePlugin)
 
@@ -232,10 +234,18 @@ func (h consoleHandler) ensure(req *common.HcoRequest) *EnsureResult {
 			return &EnsureResult{
 				Err: err,
 			}
+		} else {
+			return &EnsureResult{
+				Err:         nil,
+				Updated:     true,
+				UpgradeDone: true,
+			}
 		}
 	}
 	return &EnsureResult{
-		Err: nil,
+		Err:         nil,
+		Updated:     false,
+		UpgradeDone: true,
 	}
 }
 

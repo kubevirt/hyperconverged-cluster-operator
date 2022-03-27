@@ -120,6 +120,7 @@ func (h *OperandHandler) addOperands(scheme *runtime.Scheme, hc *hcov1beta1.Hype
 			case *imageStreamOperand:
 				obj, err = h.operand.hooks.getFullCr(hc)
 			case *consoleHandler:
+				// the Console singleton CR should not be deleted.
 				continue
 			default:
 				err = fmt.Errorf("unknown handler with type %v", h)

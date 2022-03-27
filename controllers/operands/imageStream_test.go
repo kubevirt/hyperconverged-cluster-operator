@@ -3,8 +3,6 @@ package operands
 import (
 	"context"
 
-	operatorv1 "github.com/openshift/api/operator/v1"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	imagev1 "github.com/openshift/api/image/v1"
@@ -25,19 +23,10 @@ var _ = Describe("imageStream tests", func() {
 	schemeForTest := commonTestUtils.GetScheme()
 
 	var (
-		logger                = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("imageStream_test")
-		testFilesLocation     = getTestFilesLocation() + "/imageStreams"
-		hco                   = commonTestUtils.NewHco()
-		storeOrigFunc         = getImageStreamFileLocation
-		expectedConsoleConfig = &operatorv1.Console{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Console",
-				APIVersion: "operator.openshift.io/v1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "cluster",
-			},
-		}
+		logger            = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("imageStream_test")
+		testFilesLocation = getTestFilesLocation() + "/imageStreams"
+		hco               = commonTestUtils.NewHco()
+		storeOrigFunc     = getImageStreamFileLocation
 	)
 
 	AfterEach(func() {
@@ -134,7 +123,7 @@ var _ = Describe("imageStream tests", func() {
 			hco := commonTestUtils.NewHco()
 			hco.Spec.FeatureGates.EnableCommonBootImageImport = true
 			eventEmitter := commonTestUtils.NewEventEmitterMock()
-			cli := commonTestUtils.InitClient([]runtime.Object{hcoNamespace, hco, expectedConsoleConfig})
+			cli := commonTestUtils.InitClient([]runtime.Object{hcoNamespace, hco})
 			handler := NewOperandHandler(cli, commonTestUtils.GetScheme(), true, eventEmitter)
 			handler.FirstUseInitiation(commonTestUtils.GetScheme(), true, hco)
 
