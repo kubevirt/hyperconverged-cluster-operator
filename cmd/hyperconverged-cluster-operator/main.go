@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	operatorv1 "github.com/openshift/api/operator/v1"
-
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
 	imagev1 "github.com/openshift/api/image/v1"
+	operatorv1 "github.com/openshift/api/operator/v1"
 	openshiftroutev1 "github.com/openshift/api/route/v1"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operatorsapiv2 "github.com/operator-framework/api/pkg/operators/v2"
@@ -155,6 +154,15 @@ func main() {
 	// re-create the condition, this time with the final client
 	upgradeableCondition, err = hcoutil.NewOperatorCondition(ci, mgr.GetClient(), operatorsapiv2.Upgradeable)
 	cmdHelper.ExitOnError(err, "Cannot create Upgradeable Operator Condition")
+
+	// check if required environment variable is defined on OpenShift clusters
+	_, varExists := os.LookupEnv(hcoutil.KvUiPluginImageEnvV)
+	if !varExists && ci.IsOpenshift() {
+		errMsg := fmt.Sprintf("%s environment variable was not set", hcoutil.KvUiPluginImageEnvV)
+		logger.Error(fmt.Errorf(errMsg), errMsg)
+		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", errMsg)
+		os.Exit(1)
+	}
 
 	// Create a new reconciler
 	if err := hyperconverged.RegisterReconciler(mgr, ci, upgradeableCondition); err != nil {

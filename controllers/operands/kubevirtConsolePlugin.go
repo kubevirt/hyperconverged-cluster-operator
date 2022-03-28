@@ -6,15 +6,11 @@ import (
 	"os"
 	"reflect"
 
-	operatorv1 "github.com/openshift/api/operator/v1"
-
-	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
-
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"k8s.io/utils/pointer"
 
 	log "github.com/go-logr/logr"
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
+	operatorv1 "github.com/openshift/api/operator/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,6 +18,9 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -32,8 +31,8 @@ const (
 )
 
 // **** Kubevirt UI Plugin Deployment Handler ****
-func newKvUiPluginDplymntHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]Operand, error) {
-	kvUiPluginDeplymnt, err := NewKvUiPluginDeplymnt(hc)
+func newKvUiPluginDplymntHandler(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]Operand, error) {
+	kvUiPluginDeplymnt, err := NewKvUiPluginDeplymnt(logger, hc)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +53,12 @@ func newKvUiPluginCRHandler(_ log.Logger, Client client.Client, Scheme *runtime.
 	return []Operand{newConsolePluginHandler(Client, Scheme, kvUiConsolePluginCR)}, nil
 }
 
-func NewKvUiPluginDeplymnt(hc *hcov1beta1.HyperConverged) (*appsv1.Deployment, error) {
+func NewKvUiPluginDeplymnt(logger log.Logger, hc *hcov1beta1.HyperConverged) (*appsv1.Deployment, error) {
+	kvUiPluginImage, varExists := os.LookupEnv(hcoutil.KvUiPluginImageEnvV)
+	if !varExists {
+		errMsg := fmt.Sprintf("%s environment variable was not set", hcoutil.KvUiPluginImageEnvV)
+		logger.Error(fmt.Errorf(errMsg), errMsg)
+	}
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIPluginName,
@@ -62,7 +66,7 @@ func NewKvUiPluginDeplymnt(hc *hcov1beta1.HyperConverged) (*appsv1.Deployment, e
 			Namespace: hc.Namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: int32Ptr(1),
+			Replicas: pointer.Int32Ptr(1),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{
 					"app": kvUIPluginName,
@@ -82,7 +86,7 @@ func NewKvUiPluginDeplymnt(hc *hcov1beta1.HyperConverged) (*appsv1.Deployment, e
 					Containers: []corev1.Container{
 						{
 							Name:            kvUIPluginName,
-							Image:           "quay.io/kubevirt-ui/kubevirt-plugin:latest",
+							Image:           kvUiPluginImage,
 							ImagePullPolicy: corev1.PullAlways,
 							Ports: []corev1.ContainerPort{{
 								ContainerPort: hcoutil.UiPluginServerPort,
@@ -136,7 +140,7 @@ func NewKvConsolePlugin(hc *hcov1beta1.HyperConverged) *consolev1alpha1.ConsoleP
 			Service: consolev1alpha1.ConsolePluginService{
 				Name:      kvUIPluginSvcName,
 				Namespace: hc.Namespace,
-				Port:      int32(hcoutil.UiPluginServerPort),
+				Port:      hcoutil.UiPluginServerPort,
 				BasePath:  "/",
 			},
 		},
@@ -206,7 +210,6 @@ func (h consolePluginHooks) updateCr(req *common.HcoRequest, Client client.Clien
 type consoleHandler struct {
 	// K8s client
 	Client client.Client
-	Scheme *runtime.Scheme
 }
 
 func (h consoleHandler) ensure(req *common.HcoRequest) *EnsureResult {
@@ -222,11 +225,9 @@ func (h consoleHandler) ensure(req *common.HcoRequest) *EnsureResult {
 		}
 	}
 
-	plugins := consoleObj.Spec.Plugins
-	if !cmdcommon.StringInSlice(kvUIPluginName, plugins) {
+	if !cmdcommon.StringInSlice(kvUIPluginName, consoleObj.Spec.Plugins) {
 		req.Logger.Info("Enabling kubevirt plugin in Console")
-		plugins = append(plugins, kvUIPluginName)
-		consoleObj.Spec.Plugins = plugins
+		consoleObj.Spec.Plugins = append(consoleObj.Spec.Plugins, kvUIPluginName)
 		err := h.Client.Update(req.Ctx, consoleObj)
 		if err != nil {
 			req.Logger.Error(err, fmt.Sprintf("Could not update resource - APIVersion: %s, Kind: %s, Name: %s",
@@ -251,14 +252,9 @@ func (h consoleHandler) ensure(req *common.HcoRequest) *EnsureResult {
 
 func (h consoleHandler) reset() { /* no implementation */ }
 
-func newConsoleHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]Operand, error) {
+func newConsoleHandler(Client client.Client) Operand {
 	h := &consoleHandler{
 		Client: Client,
-		Scheme: Scheme,
 	}
-	return []Operand{h}, nil
-}
-
-func int32Ptr(i int32) *int32 {
-	return &i
+	return h
 }

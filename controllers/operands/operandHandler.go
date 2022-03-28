@@ -13,13 +13,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	kubevirtcorev1 "kubevirt.io/api/core/v1"
-	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
-
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/metrics"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	kubevirtcorev1 "kubevirt.io/api/core/v1"
+	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 )
 
 const (
@@ -64,6 +63,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, isOpenshift
 			(*genericOperand)(newCliDownloadsRouteHandler(client, scheme)),
 			(*genericOperand)(newCliDownloadsServiceHandler(client, scheme)),
 			newNamespaceHandler(client, scheme),
+			newConsoleHandler(client),
 		}...)
 	}
 
@@ -88,7 +88,6 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, isOpenshiftC
 		h.addOperands(scheme, hc, newKvUiPluginDplymntHandler)
 		h.addOperands(scheme, hc, newKvUiPluginSvcHandler)
 		h.addOperands(scheme, hc, newKvUiPluginCRHandler)
-		h.addOperands(scheme, hc, newConsoleHandler)
 
 	}
 	// Role and RoleBinding for kvStorage Config Map should be created both on Openshift and plain k8s
@@ -119,9 +118,6 @@ func (h *OperandHandler) addOperands(scheme *runtime.Scheme, hc *hcov1beta1.Hype
 				obj, err = h.hooks.getFullCr(hc)
 			case *imageStreamOperand:
 				obj, err = h.operand.hooks.getFullCr(hc)
-			case *consoleHandler:
-				// the Console singleton CR should not be deleted.
-				continue
 			default:
 				err = fmt.Errorf("unknown handler with type %v", h)
 			}

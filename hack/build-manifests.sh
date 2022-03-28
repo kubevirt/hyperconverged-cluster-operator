@@ -343,6 +343,7 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --related-images-list="${DIGEST_LIST}" \
   --operator-image-name="${HCO_OPERATOR_IMAGE}" \
   --webhook-image-name="${HCO_WEBHOOK_IMAGE}" \
+  --kubevirt-consoleplugin-image-name="${KUBEVIRT_CONSOLE_PLUGIN_IMAGE}" \
   --cli-downloads-image-name="${HCO_DOWNLOADS_IMAGE}" > "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}"
 
 rendered_csv="$(cat "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}")"

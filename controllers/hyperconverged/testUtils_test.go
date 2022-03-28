@@ -5,18 +5,16 @@ import (
 	"fmt"
 	"os"
 
-	operatorv1 "github.com/openshift/api/operator/v1"
-
-	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	consolev1 "github.com/openshift/api/console/v1"
+	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
+	operatorv1 "github.com/openshift/api/operator/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 	operatorsapiv2 "github.com/operator-framework/api/pkg/operators/v2"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
@@ -285,7 +283,7 @@ func getBasicDeployment() *BasicExpected {
 	expectedVirtioWinRoleBinding := operands.NewVirtioWinCmReaderRoleBinding(hco)
 	res.virtioWinRoleBinding = expectedVirtioWinRoleBinding
 
-	expectedConsolePluginDeployment, err := operands.NewKvUiPluginDeplymnt(hco)
+	expectedConsolePluginDeployment, err := operands.NewKvUiPluginDeplymnt(log, hco)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	res.consolePluginDeploy = expectedConsolePluginDeployment
 

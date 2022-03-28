@@ -14,6 +14,7 @@ const (
 	SspVersionEnvV         = "SSP_VERSION"
 	NmoVersionEnvV         = "NMO_VERSION"
 	HppoVersionEnvV        = "HPPO_VERSION"
+	KvUiPluginImageEnvV    = "KV_CONSOLE_PLUGIN_IMAGE"
 	HcoValidatingWebhook   = "validate-hco.kubevirt.io"
 	HcoMutatingWebhookNS   = "mutate-ns-hco.kubevirt.io"
 	AppLabel               = "app"
@@ -58,8 +59,8 @@ const (
 	WebhookKeyName        = "apiserver.key"
 	DefaultWebhookCertDir = "/apiserver.local.config/certificates"
 
-	CliDownloadsServerPort = 8080
-	UiPluginServerPort     = 8082
+	CliDownloadsServerPort       = 8080
+	UiPluginServerPort     int32 = 8082
 )
 
 type AppComponent string
