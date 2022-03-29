@@ -134,7 +134,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		})
 
 		It("should create if not present", func() {
-			expectedResource, err := NewKvUiPluginDeplymnt(logger, hco)
+			expectedResource, err := NewKvUiPluginDeplymnt(hco)
 			Expect(err).ToNot(HaveOccurred())
 
 			cl := commonTestUtils.InitClient([]runtime.Object{})
@@ -157,7 +157,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		})
 
 		It("should find plugin deployment if present", func() {
-			expectedResource, err := NewKvUiPluginDeplymnt(logger, hco)
+			expectedResource, err := NewKvUiPluginDeplymnt(hco)
 			Expect(err).ToNot(HaveOccurred())
 
 			expectedResource.ObjectMeta.SelfLink = fmt.Sprintf("/apis/v1/namespaces/%s/dummies/%s", expectedResource.Namespace, expectedResource.Name)
@@ -185,8 +185,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		})
 
 		It("should reconcile deployment to default if changed", func() {
-			expectedResource, _ := NewKvUiPluginDeplymnt(logger, hco)
-			outdatedResource, _ := NewKvUiPluginDeplymnt(logger, hco)
+			expectedResource, _ := NewKvUiPluginDeplymnt(hco)
+			outdatedResource, _ := NewKvUiPluginDeplymnt(hco)
 
 			outdatedResource.ObjectMeta.Labels[hcoutil.AppLabel] = "wrong label"
 			outdatedResource.Spec.Template.Spec.Containers[0].Image = "quay.io/fake/image:latest"

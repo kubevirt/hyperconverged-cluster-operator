@@ -155,15 +155,6 @@ func main() {
 	upgradeableCondition, err = hcoutil.NewOperatorCondition(ci, mgr.GetClient(), operatorsapiv2.Upgradeable)
 	cmdHelper.ExitOnError(err, "Cannot create Upgradeable Operator Condition")
 
-	// check if required environment variable is defined on OpenShift clusters
-	_, varExists := os.LookupEnv(hcoutil.KvUiPluginImageEnvV)
-	if !varExists && ci.IsOpenshift() {
-		errMsg := fmt.Sprintf("%s environment variable was not set", hcoutil.KvUiPluginImageEnvV)
-		logger.Error(fmt.Errorf(errMsg), errMsg)
-		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", errMsg)
-		os.Exit(1)
-	}
-
 	// Create a new reconciler
 	if err := hyperconverged.RegisterReconciler(mgr, ci, upgradeableCondition); err != nil {
 		logger.Error(err, "")

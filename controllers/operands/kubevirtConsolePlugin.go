@@ -32,7 +32,7 @@ const (
 
 // **** Kubevirt UI Plugin Deployment Handler ****
 func newKvUiPluginDplymntHandler(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]Operand, error) {
-	kvUiPluginDeplymnt, err := NewKvUiPluginDeplymnt(logger, hc)
+	kvUiPluginDeplymnt, err := NewKvUiPluginDeplymnt(hc)
 	if err != nil {
 		return nil, err
 	}
@@ -53,12 +53,10 @@ func newKvUiPluginCRHandler(_ log.Logger, Client client.Client, Scheme *runtime.
 	return []Operand{newConsolePluginHandler(Client, Scheme, kvUiConsolePluginCR)}, nil
 }
 
-func NewKvUiPluginDeplymnt(logger log.Logger, hc *hcov1beta1.HyperConverged) (*appsv1.Deployment, error) {
-	kvUiPluginImage, varExists := os.LookupEnv(hcoutil.KvUiPluginImageEnvV)
-	if !varExists {
-		errMsg := fmt.Sprintf("%s environment variable was not set", hcoutil.KvUiPluginImageEnvV)
-		logger.Error(fmt.Errorf(errMsg), errMsg)
-	}
+func NewKvUiPluginDeplymnt(hc *hcov1beta1.HyperConverged) (*appsv1.Deployment, error) {
+	// The env var was validated prior to handler creation
+	kvUiPluginImage, _ := os.LookupEnv(hcoutil.KvUiPluginImageEnvV)
+
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIPluginName,

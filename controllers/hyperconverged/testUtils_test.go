@@ -51,7 +51,8 @@ var (
 func initReconciler(client client.Client, old *ReconcileHyperConverged) *ReconcileHyperConverged {
 	s := commonTestUtils.GetScheme()
 	eventEmitter := commonTestUtils.NewEventEmitterMock()
-	operandHandler := operands.NewOperandHandler(client, s, true, eventEmitter)
+	ci := commonTestUtils.ClusterInfoMock{}
+	operandHandler := operands.NewOperandHandler(client, s, ci, eventEmitter)
 	upgradeMode := false
 	firstLoop := true
 	upgradeableCondition := newStubOperatorCondition()
@@ -283,7 +284,7 @@ func getBasicDeployment() *BasicExpected {
 	expectedVirtioWinRoleBinding := operands.NewVirtioWinCmReaderRoleBinding(hco)
 	res.virtioWinRoleBinding = expectedVirtioWinRoleBinding
 
-	expectedConsolePluginDeployment, err := operands.NewKvUiPluginDeplymnt(log, hco)
+	expectedConsolePluginDeployment, err := operands.NewKvUiPluginDeplymnt(hco)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	res.consolePluginDeploy = expectedConsolePluginDeployment
 

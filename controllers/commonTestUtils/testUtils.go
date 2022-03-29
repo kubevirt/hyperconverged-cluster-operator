@@ -229,6 +229,9 @@ func (ClusterInfoMock) IsInfrastructureHighlyAvailable() bool {
 func (ClusterInfoMock) GetDomain() string {
 	return "domain"
 }
+func (c ClusterInfoMock) IsConsolePluginImageProvided() bool {
+	return true
+}
 
 // ClusterInfoSNOMock mocks Openshift SNO
 type ClusterInfoSNOMock struct{}
@@ -255,6 +258,10 @@ func (ClusterInfoSNOMock) GetDomain() string {
 	return "domain"
 }
 
+func (ClusterInfoSNOMock) IsConsolePluginImageProvided() bool {
+	return true
+}
+
 // ClusterInfoSRCPHAIMock mocks Openshift with SingleReplica ControlPlane and HighAvailable Infrastructure
 type ClusterInfoSRCPHAIMock struct{}
 
@@ -278,4 +285,7 @@ func (ClusterInfoSRCPHAIMock) IsInfrastructureHighlyAvailable() bool {
 }
 func (ClusterInfoSRCPHAIMock) GetDomain() string {
 	return "domain"
+}
+func (ClusterInfoSRCPHAIMock) IsConsolePluginImageProvided() bool {
+	return true
 }

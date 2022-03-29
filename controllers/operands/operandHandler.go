@@ -44,7 +44,7 @@ type OperandHandler struct {
 	eventEmitter hcoutil.EventEmitter
 }
 
-func NewOperandHandler(client client.Client, scheme *runtime.Scheme, isOpenshiftCluster bool, eventEmitter hcoutil.EventEmitter) *OperandHandler {
+func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.ClusterInfo, eventEmitter hcoutil.EventEmitter) *OperandHandler {
 	operands := []Operand{
 		(*genericOperand)(newKvPriorityClassHandler(client, scheme)),
 		(*genericOperand)(newKubevirtHandler(client, scheme)),
@@ -53,7 +53,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, isOpenshift
 		(*genericOperand)(newCnaHandler(client, scheme)),
 	}
 
-	if isOpenshiftCluster {
+	if ci.IsOpenshift() {
 		operands = append(operands, []Operand{
 			newSspHandler(client, scheme),
 			(*genericOperand)(newMetricsServiceHandler(client, scheme)),
@@ -63,8 +63,11 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, isOpenshift
 			(*genericOperand)(newCliDownloadsRouteHandler(client, scheme)),
 			(*genericOperand)(newCliDownloadsServiceHandler(client, scheme)),
 			newNamespaceHandler(client, scheme),
-			newConsoleHandler(client),
 		}...)
+	}
+
+	if ci.IsOpenshift() && ci.IsConsolePluginImageProvided() {
+		operands = append(operands, newConsoleHandler(client))
 	}
 
 	return &OperandHandler{
@@ -76,24 +79,26 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, isOpenshift
 
 // The k8s client is not available when calling to NewOperandHandler.
 // Initial operations that need to read/write from the cluster can only be done when the client is already working.
-func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, isOpenshiftCluster bool, hc *hcov1beta1.HyperConverged) {
+func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.ClusterInfo, hc *hcov1beta1.HyperConverged) {
 	h.objects = make([]client.Object, 0)
-	if isOpenshiftCluster {
+	if ci.IsOpenshift() {
 		h.addOperands(scheme, hc, getQuickStartHandlers)
 		h.addOperands(scheme, hc, getDashboardHandlers)
 		h.addOperands(scheme, hc, getImageStreamHandlers)
 		h.addOperands(scheme, hc, newVirtioWinCmHandler)
 		h.addOperands(scheme, hc, newVirtioWinCmReaderRoleHandler)
 		h.addOperands(scheme, hc, newVirtioWinCmReaderRoleBindingHandler)
-		h.addOperands(scheme, hc, newKvUiPluginDplymntHandler)
-		h.addOperands(scheme, hc, newKvUiPluginSvcHandler)
-		h.addOperands(scheme, hc, newKvUiPluginCRHandler)
-
 	}
+
 	// Role and RoleBinding for kvStorage Config Map should be created both on Openshift and plain k8s
 	h.addOperands(scheme, hc, NewConfigReaderRoleHandler)
 	h.addOperands(scheme, hc, newConfigReaderRoleBindingHandler)
 
+	if ci.IsOpenshift() && ci.IsConsolePluginImageProvided() {
+		h.addOperands(scheme, hc, newKvUiPluginDplymntHandler)
+		h.addOperands(scheme, hc, newKvUiPluginSvcHandler)
+		h.addOperands(scheme, hc, newKvUiPluginCRHandler)
+	}
 }
 
 func (h *OperandHandler) GetQuickStartNames() []string {
