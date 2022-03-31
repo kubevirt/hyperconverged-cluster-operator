@@ -60,7 +60,7 @@ const (
 	DefaultWebhookCertDir = "/apiserver.local.config/certificates"
 
 	CliDownloadsServerPort       = 8080
-	UiPluginServerPort     int32 = 8082
+	UiPluginServerPort     int32 = 9443
 )
 
 type AppComponent string

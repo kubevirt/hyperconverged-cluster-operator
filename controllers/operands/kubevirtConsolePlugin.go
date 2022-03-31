@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 
 	"k8s.io/utils/pointer"
 
@@ -25,9 +26,11 @@ import (
 )
 
 const (
-	kvUIPluginName    = "kubevirt-plugin"
-	kvUIPluginSvcName = kvUIPluginName + "-service"
-	kvUIPluginNameEnv = "UI_PLUGIN_NAME"
+	kvUIPluginName     = "kubevirt-plugin"
+	kvUIPluginSvcName  = kvUIPluginName + "-service"
+	kvUIPluginNameEnv  = "UI_PLUGIN_NAME"
+	kvServingCertName  = "plugin-serving-cert"
+	nginxConfigMapName = "nginx-conf"
 )
 
 // **** Kubevirt UI Plugin Deployment Handler ****
@@ -44,6 +47,13 @@ func newKvUiPluginSvcHandler(_ log.Logger, Client client.Client, Scheme *runtime
 	kvUiPluginSvc := NewKvUiPluginSvc(hc)
 
 	return []Operand{newServiceHandler(Client, Scheme, kvUiPluginSvc)}, nil
+}
+
+// **** nginx config map Handler ****
+func newKvUiNginxCmHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]Operand, error) {
+	kvUiNginxCm := NewKvUiNginxCm(hc)
+
+	return []Operand{newCmHandler(Client, Scheme, kvUiNginxCm)}, nil
 }
 
 // **** Kubevirt UI Console Plugin Custom Resource Handler ****
@@ -92,9 +102,43 @@ func NewKvUiPluginDeplymnt(hc *hcov1beta1.HyperConverged) (*appsv1.Deployment, e
 							}},
 							TerminationMessagePath:   corev1.TerminationMessagePathDefault,
 							TerminationMessagePolicy: corev1.TerminationMessageReadFile,
+							VolumeMounts: []corev1.VolumeMount{
+								{
+									Name:      kvServingCertName,
+									MountPath: "/var/serving-cert",
+									ReadOnly:  true,
+								},
+								{
+									Name:      nginxConfigMapName,
+									MountPath: "/etc/nginx/nginx.conf",
+									SubPath:   "nginx.conf",
+									ReadOnly:  true,
+								},
+							},
 						},
 					},
-					PriorityClassName: "system-cluster-critical",
+					PriorityClassName: "kubevirt-cluster-critical",
+					Volumes: []corev1.Volume{
+						{
+							Name: kvServingCertName,
+							VolumeSource: corev1.VolumeSource{
+								Secret: &corev1.SecretVolumeSource{
+									SecretName:  kvServingCertName,
+									DefaultMode: pointer.Int32Ptr(420),
+								},
+							},
+						},
+						{
+							Name: nginxConfigMapName,
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: nginxConfigMapName,
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -119,11 +163,43 @@ func NewKvUiPluginSvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
 
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      kvUIPluginSvcName,
-			Labels:    getLabels(hc, hcoutil.AppComponentDeployment),
+			Name:   kvUIPluginSvcName,
+			Labels: getLabels(hc, hcoutil.AppComponentDeployment),
+			Annotations: map[string]string{
+				"service.beta.openshift.io/serving-cert-secret-name": kvServingCertName,
+			},
 			Namespace: hc.Namespace,
 		},
 		Spec: spec,
+	}
+}
+
+func NewKvUiNginxCm(hc *hcov1beta1.HyperConverged) *corev1.ConfigMap {
+	nginxConfig := `error_log /dev/stdout info;
+events {}
+http {
+	access_log         /dev/stdout;
+	include            /etc/nginx/mime.types;
+	default_type       application/octet-stream;
+	keepalive_timeout  65;
+		server {
+			listen              $SERVER_PORT ssl;
+			ssl_certificate     /var/serving-cert/tls.crt;
+			ssl_certificate_key /var/serving-cert/tls.key;
+			root                /usr/share/nginx/html;
+		}
+	}
+`
+	nginxConfig = strings.ReplaceAll(nginxConfig, "$SERVER_PORT", string(hcoutil.UiPluginServerPort))
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      nginxConfigMapName,
+			Labels:    getLabels(hc, hcoutil.AppComponentDeployment),
+			Namespace: hc.Namespace,
+		},
+		Data: map[string]string{
+			"nginx.conf": nginxConfig,
+		},
 	}
 }
 

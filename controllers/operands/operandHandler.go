@@ -97,6 +97,7 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 	if ci.IsOpenshift() && ci.IsConsolePluginImageProvided() {
 		h.addOperands(scheme, hc, newKvUiPluginDplymntHandler)
 		h.addOperands(scheme, hc, newKvUiPluginSvcHandler)
+		h.addOperands(scheme, hc, newKvUiNginxCmHandler)
 		h.addOperands(scheme, hc, newKvUiPluginCRHandler)
 	}
 }
