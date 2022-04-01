@@ -12,7 +12,7 @@ JOB_NAME=periodic-ci-kubevirt-hyperconverged-cluster-operator-main-hco-e2e-deplo
 SUFFIX=artifacts/hco-e2e-deploy-nightly-main-aws/test/artifacts
 
 declare -a filelist=("component.gv" "component.gv.svg" "managed-by.gv" "managed-by.gv.svg")
-graphs_files_dir="$2"
+graphs_files_dir="$1"
 
 LATEST_BUILD=$(curl -L ${PREFIX}/${JOB_NAME}/latest-build.txt)
 ARTIFACTS_FOLDER=${PREFIX}/${JOB_NAME}/${LATEST_BUILD}/${SUFFIX}
