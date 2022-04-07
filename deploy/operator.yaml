@@ -880,6 +880,28 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
+  creationTimestamp: null
+  labels:
+    prometheus.ssp.kubevirt.io: "true"
+  name: ssp-operator-metrics
+spec:
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: metrics
+    port: 443
+    protocol: TCP
+    targetPort: metrics
+  selector:
+    name: ssp-operator
+    prometheus.ssp.kubevirt.io: "true"
+  sessionAffinity: None
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
   labels:
     name: node-maintenance-operator
   name: node-maintenance-operator-service
