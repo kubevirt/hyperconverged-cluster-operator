@@ -11,16 +11,17 @@ import (
 	"sort"
 	"strings"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
-
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
+	sdkpkgapi "kubevirt.io/controller-lifecycle-operator-sdk/pkg/sdk/api"
+	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
 )
 
 const (
@@ -111,7 +112,7 @@ func (h *sspHooks) updateCr(req *common.HcoRequest, client client.Client, exists
 		} else {
 			req.Logger.Info("Reconciling an externally updated SSP's Spec to its opinionated values")
 		}
-		util.DeepCopyLabels(&ssp.ObjectMeta, &found.ObjectMeta)
+		hcoutil.DeepCopyLabels(&ssp.ObjectMeta, &found.ObjectMeta)
 		ssp.Spec.DeepCopyInto(&found.Spec)
 		err := client.Update(req.Ctx, found)
 		if err != nil {
@@ -164,11 +165,11 @@ func NewSSP(hc *hcov1beta1.HyperConverged, _ ...string) (*sspv1beta1.SSP, []hcov
 	}
 
 	if hc.Spec.Infra.NodePlacement != nil {
-		spec.TemplateValidator.Placement = hc.Spec.Infra.NodePlacement.DeepCopy()
+		spec.TemplateValidator.Placement = hcoConfig2SSPPlacement(hc.Spec.Infra.NodePlacement)
 	}
 
 	if hc.Spec.Workloads.NodePlacement != nil {
-		spec.NodeLabeller.Placement = hc.Spec.Workloads.NodePlacement.DeepCopy()
+		spec.NodeLabeller.Placement = hcoConfig2SSPPlacement(hc.Spec.Workloads.NodePlacement)
 	}
 
 	ssp := NewSSPWithNameOnly(hc)
@@ -196,7 +197,7 @@ func readDataImportCronTemplatesFromFile() error {
 
 	fileLocation := getDataImportCronTemplatesFileLocation()
 
-	err := util.ValidateManifestDir(fileLocation)
+	err := hcoutil.ValidateManifestDir(fileLocation)
 	if err != nil {
 		return errors.Unwrap(err) // if not wrapped, then it's not an error that stops processing, and it returns nil
 	}
@@ -214,7 +215,7 @@ func readDataImportCronTemplatesFromFile() error {
 			}
 
 			dataImportCronTemplateFromFile := make([]sspv1beta1.DataImportCronTemplate, 0)
-			internalErr = util.UnmarshalYamlFileToObject(file, &dataImportCronTemplateFromFile)
+			internalErr = hcoutil.UnmarshalYamlFileToObject(file, &dataImportCronTemplateFromFile)
 			if internalErr != nil {
 				return internalErr
 			}
@@ -324,3 +325,35 @@ type dataImportTemplateSlice []hcov1beta1.DataImportCronTemplateStatus
 func (d dataImportTemplateSlice) Len() int           { return len(d) }
 func (d dataImportTemplateSlice) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
 func (d dataImportTemplateSlice) Less(i, j int) bool { return d[i].Name < d[j].Name }
+
+func hcoConfig2SSPPlacement(hcoConf *sdkapi.NodePlacement) *sdkpkgapi.NodePlacement {
+	if hcoConf == nil {
+		return nil
+	}
+	empty := true
+	sspPlacement := &sdkpkgapi.NodePlacement{}
+	if hcoConf.Affinity != nil {
+		empty = false
+		sspPlacement.Affinity = hcoConf.Affinity.DeepCopy()
+	}
+
+	for _, hcoTol := range hcoConf.Tolerations {
+		empty = false
+		cnaoTol := corev1.Toleration{}
+		hcoTol.DeepCopyInto(&cnaoTol)
+		sspPlacement.Tolerations = append(sspPlacement.Tolerations, cnaoTol)
+	}
+
+	if len(hcoConf.NodeSelector) > 0 {
+		empty = false
+		sspPlacement.NodeSelector = make(map[string]string)
+		for k, v := range hcoConf.NodeSelector {
+			sspPlacement.NodeSelector[k] = v
+		}
+	}
+
+	if empty {
+		return nil
+	}
+	return sspPlacement
+}

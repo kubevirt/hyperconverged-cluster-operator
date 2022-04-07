@@ -34,7 +34,7 @@ import (
 	ttov1alpha1 "github.com/kubevirt/tekton-tasks-operator/api/v1alpha1"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
-	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/pkg/sdk/api"
+	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
 )
 

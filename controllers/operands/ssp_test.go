@@ -7,8 +7,6 @@ import (
 	"path"
 	"time"
 
-	"k8s.io/utils/pointer"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -16,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
+	"k8s.io/utils/pointer"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
@@ -155,8 +154,8 @@ var _ = Describe("SSP Operands", func() {
 
 				Expect(existingResource.Spec.NodeLabeller.Placement).To(BeZero())
 				Expect(existingResource.Spec.TemplateValidator.Placement).To(BeZero())
-				Expect(*foundResource.Spec.NodeLabeller.Placement).To(Equal(*hco.Spec.Workloads.NodePlacement))
-				Expect(*foundResource.Spec.TemplateValidator.Placement).To(Equal(*hco.Spec.Infra.NodePlacement))
+				Expect(*foundResource.Spec.NodeLabeller.Placement).To(Equal(*hcoConfig2SSPPlacement(hco.Spec.Workloads.NodePlacement)))
+				Expect(*foundResource.Spec.TemplateValidator.Placement).To(Equal(*hcoConfig2SSPPlacement(hco.Spec.Infra.NodePlacement)))
 				Expect(req.Conditions).To(BeEmpty())
 			})
 
