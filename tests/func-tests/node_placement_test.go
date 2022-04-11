@@ -162,12 +162,12 @@ func getNetworkAddonsConfigs(client kubecli.KubevirtClient) *networkaddonsv1.Net
 
 	s := scheme.Scheme
 	_ = networkaddonsv1.AddToScheme(s)
-	s.AddKnownTypes(networkaddonsv1.SchemeGroupVersion)
+	s.AddKnownTypes(networkaddonsv1.GroupVersion)
 
 	err := client.RestClient().Get().
 		Resource("networkaddonsconfigs").
 		Name("cluster").
-		AbsPath("/apis", networkaddonsv1.SchemeGroupVersion.Group, networkaddonsv1.SchemeGroupVersion.Version).
+		AbsPath("/apis", networkaddonsv1.GroupVersion.Group, networkaddonsv1.GroupVersion.Version).
 		Timeout(10 * time.Second).
 		Do(context.TODO()).Into(&cnaoCR)
 
