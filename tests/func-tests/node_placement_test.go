@@ -18,7 +18,6 @@ import (
 
 	kvtutil "kubevirt.io/kubevirt/tests/util"
 
-	"github.com/kubevirt/cluster-network-addons-operator/pkg/apis"
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	"kubevirt.io/client-go/kubecli"
 	"kubevirt.io/kubevirt/tests/flags"
@@ -162,13 +161,13 @@ func getNetworkAddonsConfigs(client kubecli.KubevirtClient) *networkaddonsv1.Net
 	var cnaoCR networkaddonsv1.NetworkAddonsConfig
 
 	s := scheme.Scheme
-	_ = apis.AddToScheme(s)
-	s.AddKnownTypes(networkaddonsv1.SchemeGroupVersion)
+	_ = networkaddonsv1.AddToScheme(s)
+	s.AddKnownTypes(networkaddonsv1.GroupVersion)
 
 	err := client.RestClient().Get().
 		Resource("networkaddonsconfigs").
 		Name("cluster").
-		AbsPath("/apis", networkaddonsv1.SchemeGroupVersion.Group, networkaddonsv1.SchemeGroupVersion.Version).
+		AbsPath("/apis", networkaddonsv1.GroupVersion.Group, networkaddonsv1.GroupVersion.Version).
 		Timeout(10 * time.Second).
 		Do(context.TODO()).Into(&cnaoCR)
 
