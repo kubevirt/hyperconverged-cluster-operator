@@ -35,11 +35,7 @@ const (
 
 // **** Kubevirt UI Plugin Deployment Handler ****
 func newKvUiPluginDplymntHandler(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]Operand, error) {
-	kvUiPluginDeplymnt, err := NewKvUiPluginDeplymnt(hc)
-	if err != nil {
-		return nil, err
-	}
-	return []Operand{newDeploymentHandler(Client, Scheme, kvUiPluginDeplymnt)}, nil
+	return []Operand{newDeploymentHandler(Client, Scheme, NewKvUiPluginDeplymnt(hc))}, nil
 }
 
 // **** nginx config map Handler ****
@@ -56,9 +52,9 @@ func newKvUiPluginCRHandler(_ log.Logger, Client client.Client, Scheme *runtime.
 	return []Operand{newConsolePluginHandler(Client, Scheme, kvUiConsolePluginCR)}, nil
 }
 
-func NewKvUiPluginDeplymnt(hc *hcov1beta1.HyperConverged) (*appsv1.Deployment, error) {
+func NewKvUiPluginDeplymnt(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
 	// The env var was validated prior to handler creation
-	kvUiPluginImage, _ := os.LookupEnv(hcoutil.KvUiPluginImageEnvV)
+	kvUiPluginImage := os.Getenv(hcoutil.KvUiPluginImageEnvV)
 
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -135,7 +131,7 @@ func NewKvUiPluginDeplymnt(hc *hcov1beta1.HyperConverged) (*appsv1.Deployment, e
 				},
 			},
 		},
-	}, nil
+	}
 }
 
 func NewKvUiPluginSvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
