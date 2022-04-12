@@ -1129,6 +1129,7 @@ func (r ReconcileHyperConverged) removeLeftover(req *common.HcoRequest, knownHco
 		return false, err
 	}
 	if affectedRange(knownHcoSV) {
+		removeRelatedObject(req, p.GroupVersionKind, p.ObjectKey)
 		u := &unstructured.Unstructured{}
 		u.SetGroupVersionKind(p.GroupVersionKind)
 		gerr := r.client.Get(req.Ctx, p.ObjectKey, u)
@@ -1140,7 +1141,6 @@ func (r ReconcileHyperConverged) removeLeftover(req *common.HcoRequest, knownHco
 				return false, gerr
 			}
 		}
-		removeRelatedObject(req, p.GroupVersionKind, p.ObjectKey)
 		return r.deleteObj(req, u, false)
 
 	}
@@ -1275,7 +1275,8 @@ func removeRelatedObject(req *common.HcoRequest, gvk schema.GroupVersionKind, ob
 	foundRO := false
 
 	for _, obj := range req.Instance.Status.RelatedObjects {
-		if obj.GroupVersionKind() == gvk && obj.Namespace == objectKey.Namespace && obj.Name == objectKey.Name {
+		apiVersion, kind := gvk.ToAPIVersionAndKind()
+		if obj.APIVersion == apiVersion && obj.Kind == kind && obj.Namespace == objectKey.Namespace && obj.Name == objectKey.Name {
 			foundRO = true
 			continue
 		}
@@ -1285,6 +1286,7 @@ func removeRelatedObject(req *common.HcoRequest, gvk schema.GroupVersionKind, ob
 	if foundRO {
 		req.Instance.Status.RelatedObjects = refs
 		req.StatusDirty = true
+		req.Logger.Info("Removed relatedObject entry for", "gvk", gvk, "objectKey", objectKey)
 	}
 
 }
