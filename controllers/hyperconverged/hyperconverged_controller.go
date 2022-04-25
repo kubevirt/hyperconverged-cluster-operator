@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	nodemaintenancev1 "github.com/medik8s/node-maintenance-operator/api/v1beta1"
 	"os"
 	"reflect"
 
@@ -233,6 +234,18 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) er
 			return err
 		}
 	}
+
+	msg := "Reconciling for NodeMaintenance"
+	err = c.Watch(
+		&source.Kind{Type: &nodemaintenancev1.NodeMaintenance{}},
+		handler.EnqueueRequestsFromMapFunc(func(a client.Object) []reconcile.Request {
+			log.Info(msg)
+			return []reconcile.Request{
+				{NamespacedName: apiServerCRPlaceholder},
+			}
+		}),
+	)
+
 	return nil
 }
 
@@ -426,6 +439,10 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 		}
 	}
 
+	if result, err := r.handleNMO(req, init); result != nil {
+		return *result, err
+	}
+
 	return r.EnsureOperandAndComplete(req, init)
 }
 
@@ -473,6 +490,18 @@ func (r *ReconcileHyperConverged) handleUpgrade(req *common.HcoRequest, init boo
 		r.updateConditions(req)
 		return &reconcile.Result{Requeue: true}, nil
 	}
+	return nil, nil
+}
+
+func (r *ReconcileHyperConverged) handleNMO(req *common.HcoRequest, init bool) (*reconcile.Result, error) {
+	nmoCRs := &nodemaintenancev1.NodeMaintenanceList{}
+	err := r.client.List(req.Ctx, nmoCRs)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Info("nmo CR name: %s", nmoCRs)
+
 	return nil, nil
 }
 

@@ -1580,11 +1580,6 @@ var _ = Describe("HyperconvergedController", func() {
 						},
 						{
 							ObjectMeta: metav1.ObjectMeta{
-								Name: "nodemaintenances.nodemaintenance.kubevirt.io",
-							},
-						},
-						{
-							ObjectMeta: metav1.ObjectMeta{
 								Name: "ssps.ssp.kubevirt.io",
 							},
 						},
@@ -1608,6 +1603,11 @@ var _ = Describe("HyperconvergedController", func() {
 						{
 							ObjectMeta: metav1.ObjectMeta{
 								Name: "ovirtproviders.v2v.kubevirt.io",
+							},
+						},
+						{
+							ObjectMeta: metav1.ObjectMeta{
+								Name: "nodemaintenances.nodemaintenance.kubevirt.io",
 							},
 						},
 					}

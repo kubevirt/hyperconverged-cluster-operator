@@ -39,6 +39,8 @@ require (
 	sigs.k8s.io/controller-tools v0.8.0
 )
 
+require github.com/medik8s/node-maintenance-operator v0.12.1
+
 require (
 	cloud.google.com/go v0.97.0 // indirect
 	github.com/PuerkitoBio/purell v1.1.1 // indirect

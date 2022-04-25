@@ -46,6 +46,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	ttov1alpha1 "github.com/kubevirt/tekton-tasks-operator/api/v1alpha1"
+	nmoapioldv1beta1 "github.com/medik8s/node-maintenance-operator/api/v1beta1"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
@@ -78,6 +79,7 @@ var (
 		coordinationv1.AddToScheme,
 		operatorsapiv2.AddToScheme,
 		imagev1.Install,
+		nmoapiv1beta1.AddToScheme,
 	}
 )
 

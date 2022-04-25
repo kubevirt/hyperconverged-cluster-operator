@@ -241,10 +241,6 @@ func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.Deployme
 								Value: params.TtoVersion,
 							},
 							{
-								Name:  util.NmoVersionEnvV,
-								Value: params.NmoVersion,
-							},
-							{
 								Name:  util.HppoVersionEnvV,
 								Value: params.HppoVersion,
 							},
