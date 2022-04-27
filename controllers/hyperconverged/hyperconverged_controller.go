@@ -1221,9 +1221,12 @@ func (r ReconcileHyperConverged) removeLeftover(req *common.HcoRequest, knownHco
 		return false, err
 	}
 	if affectedRange(knownHcoSV) {
+		req.Logger.Info("Removing leftover during upgrade", "GVK", p.GroupVersionKind, "ObjectKey", p.ObjectKey)
 		removeRelatedObject(req, p.GroupVersionKind, p.ObjectKey)
 		u := &unstructured.Unstructured{}
 		u.SetGroupVersionKind(p.GroupVersionKind)
+		u.SetName(p.ObjectKey.Name)
+		u.SetNamespace(p.ObjectKey.Namespace)
 		gerr := r.client.Get(req.Ctx, p.ObjectKey, u)
 		if gerr != nil {
 			if apierrors.IsNotFound(gerr) {

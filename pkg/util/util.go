@@ -159,7 +159,7 @@ func doDeleteResource(ctx context.Context, c client.Client, resource *unstructur
 func shouldDeleteResource(resource *unstructured.Unstructured, hcoName string, logger logr.Logger) bool {
 	labels := resource.GetLabels()
 	if app, labelExists := labels[AppLabel]; !labelExists || app != hcoName {
-		logger.Info("Existing resource wasn't deployed by HCO, ignoring", "Kind", resource.GetObjectKind())
+		logger.Info("Existing resource wasn't deployed by HCO, ignoring", "GVK", resource.GetObjectKind().GroupVersionKind())
 		return false
 	}
 	return true
@@ -181,7 +181,7 @@ func getResourceForDeletion(ctx context.Context, c client.Client, resource *unst
 	err := c.Get(ctx, types.NamespacedName{Name: resource.GetName(), Namespace: resource.GetNamespace()}, resource)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			logger.Info("Resource doesn't exist, there is nothing to remove", "Kind", resource.GetObjectKind())
+			logger.Info("Resource doesn't exist, there is nothing to remove", "GVK", resource.GetObjectKind().GroupVersionKind())
 			return false, nil
 		}
 		return false, err
@@ -213,11 +213,11 @@ func EnsureDeleted(ctx context.Context, c client.Client, obj client.Object, hcoN
 
 	if err != nil {
 		if apierrors.IsNotFound(err) || meta.IsNoMatchError(err) {
-			logger.Info("Resource doesn't exist, there is nothing to remove", "Kind", obj.GetObjectKind())
+			logger.Info("Resource doesn't exist, there is nothing to remove", "GVK", obj.GetObjectKind().GroupVersionKind())
 			return false, nil
 		}
 
-		logger.Error(err, "failed to get object from kubernetes", "Kind", obj.GetObjectKind())
+		logger.Error(err, "failed to get object from kubernetes", "GVK", obj.GetObjectKind().GroupVersionKind())
 		return false, err
 	}
 

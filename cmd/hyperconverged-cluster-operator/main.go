@@ -197,7 +197,7 @@ func getNewManagerCache(operatorNamespace string) cache.NewCacheFunc {
 					Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
 				},
 				&corev1.ConfigMap{}: {
-					Label: labelSelector,
+					Field: namespaceSelector,
 				},
 				&corev1.Service{}: {
 					Field: namespaceSelector,
