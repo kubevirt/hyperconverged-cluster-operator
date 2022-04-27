@@ -82,6 +82,8 @@ var (
 )
 
 func main() {
+	// test, don't merge!
+
 	cmdHelper.InitiateCommand()
 
 	watchNamespace := cmdHelper.GetWatchNS()
