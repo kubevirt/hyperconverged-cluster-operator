@@ -21,25 +21,27 @@ import (
 )
 
 const (
-	operatorPortName         = "http-metrics"
-	defaultOperatorName      = "hyperconverged-cluster-operator"
-	operatorNameEnv          = "OPERATOR_NAME"
-	metricsSuffix            = "-operator-metrics"
-	alertRuleGroup           = "kubevirt.hyperconverged.rules"
-	outOfBandUpdateAlert     = "KubevirtHyperconvergedClusterOperatorCRModification"
-	unsafeModificationAlert  = "KubevirtHyperconvergedClusterOperatorUSModification"
-	severityAlertLabelKey    = "severity"
-	partOfAlertLabelKey      = "kubernetes_operator_part_of"
-	partOfAlertLabelValue    = "kubevirt"
-	componentAlertLabelKey   = "kubernetes_operator_component"
-	componentAlertLabelValue = "hyperconverged-cluster-operator"
+	operatorPortName              = "http-metrics"
+	defaultOperatorName           = "hyperconverged-cluster-operator"
+	operatorNameEnv               = "OPERATOR_NAME"
+	metricsSuffix                 = "-operator-metrics"
+	alertRuleGroup                = "kubevirt.hyperconverged.rules"
+	outOfBandUpdateAlert          = "KubevirtHyperconvergedClusterOperatorCRModification"
+	unsafeModificationAlert       = "KubevirtHyperconvergedClusterOperatorUSModification"
+	installationNotCompletedAlert = "KubevirtHyperconvergedClusterOperatorInstallationNotCompletedAlert"
+	severityAlertLabelKey         = "severity"
+	partOfAlertLabelKey           = "kubernetes_operator_part_of"
+	partOfAlertLabelValue         = "kubevirt"
+	componentAlertLabelKey        = "kubernetes_operator_component"
+	componentAlertLabelValue      = "hyperconverged-cluster-operator"
 )
 
 var (
 	runbookUrlTemplate = "https://kubevirt.io/monitoring/runbooks/%s"
 
-	outOfBandUpdateRunbookUrl    = fmt.Sprintf(runbookUrlTemplate, outOfBandUpdateAlert)
-	unsafeModificationRunbookUrl = fmt.Sprintf(runbookUrlTemplate, unsafeModificationAlert)
+	outOfBandUpdateRunbookUrl          = fmt.Sprintf(runbookUrlTemplate, outOfBandUpdateAlert)
+	unsafeModificationRunbookUrl       = fmt.Sprintf(runbookUrlTemplate, unsafeModificationAlert)
+	installationNotCompletedRunbookUrl = fmt.Sprintf(runbookUrlTemplate, installationNotCompletedAlert)
 )
 
 // NewMetricsService creates service for prometheus metrics
@@ -235,6 +237,20 @@ func NewPrometheusRuleSpec() *monitoringv1.PrometheusRuleSpec {
 						"description": "unsafe modification for the {{ $labels.annotation_name }} annotation in the HyperConverged resource.",
 						"summary":     "{{ $value }} unsafe modifications were detected in the HyperConverged resource.",
 						"runbook_url": unsafeModificationRunbookUrl,
+					},
+					Labels: map[string]string{
+						severityAlertLabelKey:  "info",
+						partOfAlertLabelKey:    partOfAlertLabelValue,
+						componentAlertLabelKey: componentAlertLabelValue,
+					},
+				},
+				{
+					Alert: installationNotCompletedAlert,
+					Expr:  intstr.FromString("(1 - kubevirt_hco_hyperconverged_cr_exists) > 0"),
+					Annotations: map[string]string{
+						"description": "the installation was not completed; the HyperConverged custom resource is missing.",
+						"summary":     "the installation was not completed; the HyperConverged custom resource is missing.",
+						"runbook_url": installationNotCompletedRunbookUrl,
 					},
 					Labels: map[string]string{
 						severityAlertLabelKey:  "info",
