@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/mutator"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/validator"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/webhooks/mutator"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/webhooks/validator"
 
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,7 +16,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/controllers/util"
 )
 
 const (
