@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	nmoapiv1beta1 "github.com/medik8s/node-maintenance-operator/api/v1beta1"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
@@ -159,7 +160,7 @@ func main() {
 
 	// Create a new reconciler
 	if err := hyperconverged.RegisterReconciler(mgr, ci, upgradeableCondition); err != nil {
-		logger.Error(err, "")
+		logger.Error(err, "failed to register the HyperConverged controller")
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register HyperConverged controller; "+err.Error())
 		os.Exit(1)
 	}

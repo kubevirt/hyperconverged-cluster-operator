@@ -7,6 +7,8 @@ import (
 	"os"
 	"reflect"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
+
 	"github.com/blang/semver/v4"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/go-logr/logr"
@@ -107,7 +109,7 @@ func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond 
 		ownVersion = version.Version
 	}
 
-	return &ReconcileHyperConverged{
+	r := &ReconcileHyperConverged{
 		client:               mgr.GetClient(),
 		scheme:               mgr.GetScheme(),
 		operandHandler:       operands.NewOperandHandler(mgr.GetClient(), mgr.GetScheme(), ci, hcoutil.GetEventEmitter()),
@@ -117,6 +119,12 @@ func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond 
 		firstLoop:            true,
 		upgradeableCondition: upgradeableCond,
 	}
+
+	if ci.IsOpenshift() {
+		r.alertReconciler = alerts.NewAlertRuleReconciler(r.client, ci)
+	}
+
+	return r
 }
 
 // newCRDremover returns a new CRDRemover
@@ -251,6 +259,7 @@ type ReconcileHyperConverged struct {
 	eventEmitter         hcoutil.EventEmitter
 	firstLoop            bool
 	upgradeableCondition hcoutil.Condition
+	alertReconciler      *alerts.AlertRuleReconciler
 }
 
 // Reconcile reads that state of the cluster for a HyperConverged object and makes changes based on the state read
@@ -266,6 +275,11 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 		return reconcile.Result{}, err
 	}
 	hcoRequest := common.NewHcoRequest(ctx, resolvedRequest, log, r.upgradeMode, hcoTriggered)
+
+	err = r.alertReconciler.Reconcile(ctx, hcoRequest.Logger)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 
 	// Fetch the HyperConverged instance
 	instance, err := r.getHyperConverged(hcoRequest)
