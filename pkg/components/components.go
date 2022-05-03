@@ -521,6 +521,15 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			Resources: stringListToSlice("consoles"),
 			Verbs:     stringListToSlice("get", "list", "watch", "update"),
 		},
+		{
+			APIGroups: stringListToSlice("nodemaintenance.kubevirt.io"),
+			Resources: stringListToSlice("nodemaintenances"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		}, {
+			APIGroups: stringListToSlice("nodemaintenance.medik8s.io"),
+			Resources: stringListToSlice("nodemaintenances"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create"),
+		},
 	}
 }
 

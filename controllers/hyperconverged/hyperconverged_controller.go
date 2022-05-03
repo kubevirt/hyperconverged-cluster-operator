@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	nodemaintenancev1 "github.com/medik8s/node-maintenance-operator/api/v1beta1"
 	"os"
 	"reflect"
 
@@ -23,6 +22,7 @@ import (
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimachineryerrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -40,6 +40,8 @@ import (
 
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 
+	nmoapiv1beta1 "github.com/medik8s/node-maintenance-operator/api/v1beta1"
+
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
@@ -50,6 +52,7 @@ import (
 	ttov1alpha1 "github.com/kubevirt/tekton-tasks-operator/api/v1alpha1"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
+	nmoapioldv1beta1 "kubevirt.io/node-maintenance-operator/api/v1beta1"
 	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
 )
 
@@ -234,18 +237,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) er
 			return err
 		}
 	}
-
-	msg := "Reconciling for NodeMaintenance"
-	err = c.Watch(
-		&source.Kind{Type: &nodemaintenancev1.NodeMaintenance{}},
-		handler.EnqueueRequestsFromMapFunc(func(a client.Object) []reconcile.Request {
-			log.Info(msg)
-			return []reconcile.Request{
-				{NamespacedName: apiServerCRPlaceholder},
-			}
-		}),
-	)
-
 	return nil
 }
 
@@ -439,10 +430,6 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 		}
 	}
 
-	if result, err := r.handleNMO(req, init); result != nil {
-		return *result, err
-	}
-
 	return r.EnsureOperandAndComplete(req, init)
 }
 
@@ -493,16 +480,31 @@ func (r *ReconcileHyperConverged) handleUpgrade(req *common.HcoRequest, init boo
 	return nil, nil
 }
 
-func (r *ReconcileHyperConverged) handleNMO(req *common.HcoRequest, init bool) (*reconcile.Result, error) {
-	nmoCRs := &nodemaintenancev1.NodeMaintenanceList{}
-	err := r.client.List(req.Ctx, nmoCRs)
+func (r *ReconcileHyperConverged) handleNMO(req *common.HcoRequest) error {
+	oldNmoCRs := &nmoapioldv1beta1.NodeMaintenanceList{}
+	err := r.client.List(req.Ctx, oldNmoCRs)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	log.Info("nmo CR name: %s", nmoCRs)
+	for _, oldNmoCr := range oldNmoCRs.Items {
+		newNmoCr := &nmoapiv1beta1.NodeMaintenance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: oldNmoCr.Name,
+			},
+			Spec: nmoapiv1beta1.NodeMaintenanceSpec{
+				NodeName: oldNmoCr.Spec.NodeName,
+				Reason:   oldNmoCr.Spec.Reason,
+			},
+		}
+		err := r.client.Create(req.Ctx, newNmoCr)
+		if err != nil && !apimachineryerrors.IsAlreadyExists(err) {
+			return err
+		}
+		log.Info(fmt.Sprintf("Old Custom Resource Kind: %s Name: %s was converted to the new API", oldNmoCr.Kind, oldNmoCr.Name))
+	}
 
-	return nil, nil
+	return nil
 }
 
 func (r *ReconcileHyperConverged) EnsureOperandAndComplete(req *common.HcoRequest, init bool) (reconcile.Result, error) {
@@ -1134,6 +1136,10 @@ func (r *ReconcileHyperConverged) updateCrdStoredVersions(req *common.HcoRequest
 }
 
 func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (bool, error) {
+	if err := r.handleNMO(req); err != nil {
+		return false, err
+	}
+
 	upgradePatched, err := r.applyUpgradePatches(req)
 	if err != nil {
 		return false, err

@@ -39,7 +39,10 @@ require (
 	sigs.k8s.io/controller-tools v0.8.0
 )
 
-require github.com/medik8s/node-maintenance-operator v0.12.1
+require (
+	github.com/medik8s/node-maintenance-operator v0.12.1
+	kubevirt.io/node-maintenance-operator v0.11.3
+)
 
 require (
 	cloud.google.com/go v0.97.0 // indirect

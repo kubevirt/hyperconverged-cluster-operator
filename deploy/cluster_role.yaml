@@ -708,6 +708,23 @@ rules:
   - list
   - watch
   - update
+- apiGroups:
+  - nodemaintenance.kubevirt.io
+  resources:
+  - nodemaintenances
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - nodemaintenance.medik8s.io
+  resources:
+  - nodemaintenances
+  verbs:
+  - get
+  - list
+  - watch
+  - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
