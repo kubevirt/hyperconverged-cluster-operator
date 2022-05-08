@@ -7,7 +7,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/controllers/util"
+)
+
+const (
+	ResourceInvalidNamespace = "an-arbitrary-namespace"
+	HcoValidNamespace        = "kubevirt-hyperconverged"
 )
 
 func TestWebhooks(t *testing.T) {

@@ -1,4 +1,4 @@
-package mutator
+package webhooks
 
 import (
 	"context"
@@ -9,11 +9,10 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/controllers/util"
 )
 
 const (
@@ -23,27 +22,25 @@ const (
 )
 
 var (
-	logger = logf.Log.WithName("mutator")
-
-	_ admission.Handler = &NsMutator{}
+	_ admission.Handler = &nsMutator{}
 )
 
-// NsMutator mutates Ns requests
-type NsMutator struct {
+// nsMutator mutates Ns requests
+type nsMutator struct {
 	decoder   *admission.Decoder
 	cli       client.Client
 	namespace string
 }
 
-func NewNsMutator(cli client.Client, namespace string) *NsMutator {
-	return &NsMutator{
+func newNsMutator(cli client.Client, namespace string) *nsMutator {
+	return &nsMutator{
 		cli:       cli,
 		namespace: namespace,
 	}
 }
 
-func (nm *NsMutator) Handle(_ context.Context, req admission.Request) admission.Response {
-	logger.Info("reaching NsMutator.Handle")
+func (nm *nsMutator) Handle(_ context.Context, req admission.Request) admission.Response {
+	logger.Info("reaching nsMutator.Handle")
 
 	if req.Operation == admissionv1.Delete {
 		return nm.handleNsDelete(req)
@@ -54,7 +51,7 @@ func (nm *NsMutator) Handle(_ context.Context, req admission.Request) admission.
 
 }
 
-func (nm *NsMutator) handleNsDelete(req admission.Request) admission.Response {
+func (nm *nsMutator) handleNsDelete(req admission.Request) admission.Response {
 	ns := &corev1.Namespace{}
 
 	// In reference to PR: https://github.com/kubernetes/kubernetes/pull/76346
@@ -77,16 +74,16 @@ func (nm *NsMutator) handleNsDelete(req admission.Request) admission.Response {
 	return admission.Denied(deniedDeletionMessage)
 }
 
-// NsMutator implements admission.DecoderInjector.
+// nsMutator implements admission.DecoderInjector.
 // A decoder will be automatically injected.
 
 // InjectDecoder injects the decoder.
-func (nm *NsMutator) InjectDecoder(d *admission.Decoder) error {
+func (nm *nsMutator) InjectDecoder(d *admission.Decoder) error {
 	nm.decoder = d
 	return nil
 }
 
-func (nm *NsMutator) handleMutatingNsDelete(ns *corev1.Namespace) (bool, error) {
+func (nm *nsMutator) handleMutatingNsDelete(ns *corev1.Namespace) (bool, error) {
 	logger.Info("validating namespace deletion", "name", ns.Name)
 
 	if ns.Name != nm.namespace {

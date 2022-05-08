@@ -5,10 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/mutator"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/validator"
-
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -16,7 +12,8 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/controllers/util"
 )
 
 const (
@@ -43,10 +40,10 @@ func SetupWebhookWithManager(ctx context.Context, mgr ctrl.Manager, isOpenshift 
 		return nserr
 	}
 
-	whHandler := validator.NewWebhookHandler(logger, mgr.GetClient(), operatorNsEnv, isOpenshift)
+	whHandler := newWebhookHandler(logger, mgr.GetClient(), operatorNsEnv, isOpenshift)
 	hcov1beta1.SetValidatorWebhookHandler(whHandler)
 
-	nsMutator := mutator.NewNsMutator(mgr.GetClient(), operatorNsEnv)
+	nsMutator := newNsMutator(mgr.GetClient(), operatorNsEnv)
 
 	// Make sure the certificates are mounted, this should be handled by the OLM
 	webhookCertDir := GetWebhookCertDir()

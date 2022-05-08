@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/metrics"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/metrics"
 )
 
 // constant parts of the file

@@ -12,7 +12,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commonTestUtils"
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/controllers/util"
 
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/runtime"

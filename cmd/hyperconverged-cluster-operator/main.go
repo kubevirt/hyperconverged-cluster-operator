@@ -46,7 +46,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/hyperconverged"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/controllers/util"
 	ttov1alpha1 "github.com/kubevirt/tekton-tasks-operator/api/v1alpha1"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"

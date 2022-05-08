@@ -37,8 +37,8 @@ import (
 	"github.com/imdario/mergo"
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/controllers/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
 
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"

@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 
-	hcoutils "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	hcoutils "github.com/kubevirt/hyperconverged-cluster-operator/controllers/util"
 )
 
 var (

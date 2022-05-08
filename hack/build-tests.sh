@@ -6,16 +6,17 @@ export PATH=$PATH:$HOME/gopath/bin
 JOB_TYPE="${JOB_TYPE:-}"
 
 if [ "${JOB_TYPE}" == "travis" ]; then
-    go get -v -t ./...
+    go mod tidy
     go install github.com/mattn/goveralls@latest
-    go install github.com/onsi/ginkgo/v2/ginkgo@v2.1.3
-    go mod vendor
-    PKG_PACKAGE_PATH="./pkg/"
-    CONTROLLERS_PACKAGE_PATH="./controllers/"
+    go install github.com/onsi/ginkgo/v2/ginkgo@latest
     mkdir -p coverprofiles
     # Workaround - run tests on webhooks first to prevent failure when running all the test in the following line.
-    ginkgo -r ${PKG_PACKAGE_PATH}webhooks
-    ginkgo -cover -output-dir=./coverprofiles -coverprofile=cover.coverprofile -r ${PKG_PACKAGE_PATH} -r ${CONTROLLERS_PACKAGE_PATH}
+    ginkgo run -cover -output-dir=./coverprofiles -coverprofile=cover.coverprofile -procs=1 \
+      ./controllers/util \
+      ./controllers/common \
+      ./controllers/operands \
+      ./controllers/webhooks \
+      ./controllers/hyperconverged
 else
     test_path="tests/func-tests"
     (cd $test_path; GOFLAGS='' go install github.com/onsi/ginkgo/v2/ginkgo@latest)

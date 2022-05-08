@@ -27,7 +27,7 @@ import (
 	"sort"
 	"strconv"
 
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/controllers/util"
 
 	"github.com/ghodss/yaml"
 

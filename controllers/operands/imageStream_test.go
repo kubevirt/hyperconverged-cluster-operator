@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commonTestUtils"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/util"
 )
 
 var _ = Describe("imageStream tests", func() {

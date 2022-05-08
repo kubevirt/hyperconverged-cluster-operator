@@ -11,7 +11,7 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/util"
 )
 
 func newCmHandler(Client client.Client, Scheme *runtime.Scheme, required *corev1.ConfigMap) Operand {

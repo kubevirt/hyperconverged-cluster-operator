@@ -1,10 +1,9 @@
-package mutator
+package webhooks
 
 import (
 	"context"
 	"errors"
 	"os"
-	"testing"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -14,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commonTestUtils"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/util"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,19 +27,9 @@ import (
 	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
 )
 
-const (
-	ResourceInvalidNamespace = "an-arbitrary-namespace"
-	HcoValidNamespace        = "kubevirt-hyperconverged"
-)
-
 var (
 	ErrFakeHcoError = errors.New("fake HyperConverged error")
 )
-
-func TestMutatorWebhook(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Mutator Webhooks Suite")
-}
 
 var _ = Describe("webhooks mutator", func() {
 	s := scheme.Scheme
@@ -150,8 +139,8 @@ var _ = Describe("webhooks mutator", func() {
 
 })
 
-func initMutator(s *runtime.Scheme, testClient client.Client) *NsMutator {
-	nsMutator := NewNsMutator(testClient, HcoValidNamespace)
+func initMutator(s *runtime.Scheme, testClient client.Client) *nsMutator {
+	nsMutator := newNsMutator(testClient, HcoValidNamespace)
 
 	decoder, err := admission.NewDecoder(s)
 	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())

@@ -1,4 +1,4 @@
-package validator
+package webhooks
 
 import (
 	"context"
@@ -20,24 +20,24 @@ import (
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/controllers/util"
 )
 
 const (
 	updateDryRunTimeOut = time.Second * 3
 )
 
-var _ v1beta1.ValidatorWebhookHandler = &WebhookHandler{}
+var _ v1beta1.ValidatorWebhookHandler = &webhookHandler{}
 
-type WebhookHandler struct {
+type webhookHandler struct {
 	logger      logr.Logger
 	cli         client.Client
 	namespace   string
 	isOpenshift bool
 }
 
-func NewWebhookHandler(logger logr.Logger, cli client.Client, namespace string, isOpenshift bool) *WebhookHandler {
-	return &WebhookHandler{
+func newWebhookHandler(logger logr.Logger, cli client.Client, namespace string, isOpenshift bool) *webhookHandler {
+	return &webhookHandler{
 		logger:      logger,
 		cli:         cli,
 		namespace:   namespace,
@@ -45,7 +45,7 @@ func NewWebhookHandler(logger logr.Logger, cli client.Client, namespace string, 
 	}
 }
 
-func (wh WebhookHandler) ValidateCreate(hc *v1beta1.HyperConverged) error {
+func (wh webhookHandler) ValidateCreate(hc *v1beta1.HyperConverged) error {
 	wh.logger.Info("Validating create", "name", hc.Name, "namespace:", hc.Namespace)
 
 	if err := wh.validateCertConfig(hc); err != nil {
@@ -73,7 +73,7 @@ func (wh WebhookHandler) ValidateCreate(hc *v1beta1.HyperConverged) error {
 
 // ValidateUpdate is the ValidateUpdate webhook implementation. It calls all the resources in parallel, to dry-run the
 // upgrade.
-func (wh WebhookHandler) ValidateUpdate(requested *v1beta1.HyperConverged, exists *v1beta1.HyperConverged) error {
+func (wh webhookHandler) ValidateUpdate(requested *v1beta1.HyperConverged, exists *v1beta1.HyperConverged) error {
 	wh.logger.Info("Validating update", "name", requested.Name)
 	ctx, cancel := context.WithTimeout(context.Background(), updateDryRunTimeOut)
 	defer cancel()
@@ -155,7 +155,7 @@ func (wh WebhookHandler) ValidateUpdate(requested *v1beta1.HyperConverged, exist
 	}
 }
 
-func (wh WebhookHandler) updateOperatorCr(ctx context.Context, hc *v1beta1.HyperConverged, exists client.Object, opts *client.UpdateOptions) error {
+func (wh webhookHandler) updateOperatorCr(ctx context.Context, hc *v1beta1.HyperConverged, exists client.Object, opts *client.UpdateOptions) error {
 	err := hcoutil.GetRuntimeObject(ctx, wh.cli, exists, wh.logger)
 	if err != nil {
 		wh.logger.Error(err, "failed to get object from kubernetes", "kind", exists.GetObjectKind())
@@ -209,7 +209,7 @@ func (wh WebhookHandler) updateOperatorCr(ctx context.Context, hc *v1beta1.Hyper
 	return nil
 }
 
-func (wh WebhookHandler) ValidateDelete(hc *v1beta1.HyperConverged) error {
+func (wh webhookHandler) ValidateDelete(hc *v1beta1.HyperConverged) error {
 	wh.logger.Info("Validating delete", "name", hc.Name, "namespace", hc.Namespace)
 
 	ctx := context.TODO()
@@ -231,7 +231,7 @@ func (wh WebhookHandler) ValidateDelete(hc *v1beta1.HyperConverged) error {
 	return nil
 }
 
-func (wh WebhookHandler) validateCertConfig(hc *v1beta1.HyperConverged) error {
+func (wh webhookHandler) validateCertConfig(hc *v1beta1.HyperConverged) error {
 	minimalDuration := metav1.Duration{Duration: 10 * time.Minute}
 
 	ccValues := make(map[string]time.Duration)
