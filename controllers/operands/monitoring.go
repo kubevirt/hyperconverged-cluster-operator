@@ -248,7 +248,7 @@ func NewPrometheusRuleSpec() *monitoringv1.PrometheusRuleSpec {
 					Alert: installationNotCompletedAlert,
 					Expr:  intstr.FromString("kubevirt_hco_hyperconverged_cr_exists == 0"),
 					Annotations: map[string]string{
-						"description": "the installation was not completed; the HyperConverged custom resource is missing.",
+						"description": "the installation was not completed; the HyperConverged custom resource is missing. In order to complete the installation of the Hyperconverged Cluster Operator you should create the HyperConverged custom resource.",
 						"summary":     "the installation was not completed; to complete the installation, create a HyperConverged custom resource.",
 						"runbook_url": installationNotCompletedRunbookUrl,
 					},

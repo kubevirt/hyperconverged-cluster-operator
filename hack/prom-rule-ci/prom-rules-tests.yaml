@@ -356,7 +356,7 @@ tests:
     alertname: KubevirtHyperconvergedClusterOperatorInstallationNotCompletedAlert
     exp_alerts:
     - exp_annotations:
-        description: "the installation was not completed; the HyperConverged custom resource is missing."
+        description: "the installation was not completed; the HyperConverged custom resource is missing. In order to complete the installation of the Hyperconverged Cluster Operator you should create the HyperConverged custom resource."
         summary: "the installation was not completed; to complete the installation, create a HyperConverged custom resource."
         runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorInstallationNotCompletedAlert"
       exp_labels:
@@ -369,7 +369,7 @@ tests:
     alertname: KubevirtHyperconvergedClusterOperatorInstallationNotCompletedAlert
     exp_alerts:
     - exp_annotations:
-        description: "the installation was not completed; the HyperConverged custom resource is missing."
+        description: "the installation was not completed; the HyperConverged custom resource is missing. In order to complete the installation of the Hyperconverged Cluster Operator you should create the HyperConverged custom resource."
         summary: "the installation was not completed; to complete the installation, create a HyperConverged custom resource."
         runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorInstallationNotCompletedAlert"
       exp_labels:
@@ -382,7 +382,7 @@ tests:
     alertname: KubevirtHyperconvergedClusterOperatorInstallationNotCompletedAlert
     exp_alerts:
     - exp_annotations:
-        description: "the installation was not completed; the HyperConverged custom resource is missing."
+        description: "the installation was not completed; the HyperConverged custom resource is missing. In order to complete the installation of the Hyperconverged Cluster Operator you should create the HyperConverged custom resource."
         summary: "the installation was not completed; to complete the installation, create a HyperConverged custom resource."
         runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorInstallationNotCompletedAlert"
       exp_labels:

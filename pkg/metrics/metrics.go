@@ -17,8 +17,8 @@ const (
 	HCOMetricUnsafeModifications      = "unsafeModifications"
 	HCOMetricHyperConvergedExists     = "HyperConvergedCRExists"
 
-	HyperConvergedExists   = float64(1)
-	HyperConvergedNotExist = float64(0)
+	HyperConvergedExists    = float64(1)
+	HyperConvergedNotExists = float64(0)
 )
 
 type metricDesc struct {
@@ -215,7 +215,7 @@ func (hm *hcoMetrics) SetHCOMetricHyperConvergedExists() error {
 
 // SetHCOMetricHyperConvergedNotExists sets the counter to 0 (false)
 func (hm *hcoMetrics) SetHCOMetricHyperConvergedNotExists() error {
-	return hm.SetMetric(HCOMetricHyperConvergedExists, nil, HyperConvergedNotExist)
+	return hm.SetMetric(HCOMetricHyperConvergedExists, nil, HyperConvergedNotExists)
 }
 
 // IsHCOMetricHyperConvergedExists returns true if the HyperConverged custom resource exists; else, return false
