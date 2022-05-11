@@ -48,7 +48,7 @@ spec:
         - name: VMWARE_CONTAINER
           value: quay.io/kubevirt/kubevirt-vmware@sha256:ae5ccd98a49ab9e154ce482d2fa73f044b00211f273210a9cd371b40746d3c92
         - name: VIRTIOWIN_CONTAINER
-          value: quay.io/kubevirt/virtio-container-disk@sha256:77c448875247bf4dbeaa0b9b1b720c0f30bb8177628061c592ce7a68863a96c2
+          value: quay.io/kubevirt/virtio-container-disk@sha256:3e88b9bde8792ba21d6cdaad70c79d5e9b339ef676402e932c6fcc2bda100d04
         - name: SMBIOS
           value: |-
             Family: KubeVirt
@@ -58,7 +58,7 @@ spec:
         - name: HCO_KV_IO_VERSION
           value: 1.5.0
         - name: KUBEVIRT_VERSION
-          value: v0.44.3
+          value: v0.53.0
         - name: CDI_VERSION
           value: v1.38.1
         - name: NETWORK_ADDONS_VERSION
@@ -318,14 +318,13 @@ spec:
     type: RollingUpdate
   template:
     metadata:
-      annotations:
-        scheduler.alpha.kubernetes.io/critical-pod: ""
       labels:
         app.kubernetes.io/component: compute
         app.kubernetes.io/part-of: hyperconverged-cluster
         app.kubernetes.io/version: 1.5.0
         kubevirt.io: virt-operator
-        prometheus.kubevirt.io: ""
+        name: virt-operator
+        prometheus.kubevirt.io: "true"
       name: virt-operator
     spec:
       affinity:
@@ -349,24 +348,24 @@ spec:
         - "2"
         env:
         - name: OPERATOR_IMAGE
-          value: quay.io/kubevirt/virt-operator@sha256:1c12d7350a0768c7ab4b42720a525d375c0d3d5cb3d67dff9d5a7f2d908ece7f
+          value: quay.io/kubevirt/virt-operator@sha256:8aad9d2aae94eb9f7022804f70a2d1a914bb7553327d0bdd7e8aff60f2b6ed35
         - name: WATCH_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.annotations['olm.targetNamespaces']
         - name: KUBEVIRT_VERSION
-          value: v0.44.3
+          value: v0.53.0
         - name: VIRT_API_SHASUM
-          value: sha256:c2d3759d6074f5b4e741f9eee8698f44b8317bb1296cc07d1b5236baa160189a
+          value: sha256:a6ff01c3831f7dee5322b29136356c4d69023c2f6d175c64f9a7e16c4dc8e874
         - name: VIRT_CONTROLLER_SHASUM
-          value: sha256:a7c5dfb8ad70e8ae7a1b40e41ee12fddd28f898a96b609048072764571e7aaa8
+          value: sha256:a8065d20544094bd1a8efbe70b1ff163a666a5d86d1f9f636096f1a8daa2ab8e
         - name: VIRT_HANDLER_SHASUM
-          value: sha256:c627052e98c2466afd049d7c36937eeee3a952ef9811c71028b5fa886cc9a6d9
+          value: sha256:b09b70f11a7e024feefa32a0f9600a3b1b005ce3c01bfee888cf3f0ef1470bec
         - name: VIRT_LAUNCHER_SHASUM
-          value: sha256:44eff59240f0af7c1cbbab97ba0a47ca436e55aadc71c177b1943ffefb634f99
+          value: sha256:0e32db71a05b16c835737f6bfa31305b233e9e98788cc948876eb11908e79603
         - name: GS_SHASUM
-          value: sha256:183df7d4fbf4f3c9ba13c99f7c5bd1a180a79a8c658b5a4bb4f908c790c66560
-        image: quay.io/kubevirt/virt-operator@sha256:1c12d7350a0768c7ab4b42720a525d375c0d3d5cb3d67dff9d5a7f2d908ece7f
+          value: sha256:34f3394c56688002b2ad9721063d967435a4be1e96f632d053136b36d9c639fc
+        image: quay.io/kubevirt/virt-operator@sha256:8aad9d2aae94eb9f7022804f70a2d1a914bb7553327d0bdd7e8aff60f2b6ed35
         imagePullPolicy: IfNotPresent
         name: virt-operator
         ports:
@@ -391,6 +390,8 @@ spec:
         - mountPath: /etc/virt-operator/certificates
           name: kubevirt-operator-certs
           readOnly: true
+        - mountPath: /profile-data
+          name: profile-data
       priorityClassName: kubevirt-cluster-critical
       securityContext:
         runAsNonRoot: true
@@ -403,6 +404,8 @@ spec:
         secret:
           optional: true
           secretName: kubevirt-operator-certs
+      - emptyDir: {}
+        name: profile-data
 ---
 apiVersion: apps/v1
 kind: Deployment
