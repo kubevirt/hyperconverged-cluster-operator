@@ -434,14 +434,6 @@ metadata:
   name: kubevirt-operator
 rules:
 - apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - create
-  - get
-  - update
-- apiGroups:
   - kubevirt.io
   resources:
   - kubevirts
@@ -482,6 +474,16 @@ rules:
   - get
   - list
   - watch
+  - create
+  - delete
+  - patch
+- apiGroups:
+  - apps
+  resources:
+  - controllerrevisions
+  verbs:
+  - watch
+  - list
   - create
   - delete
   - patch
@@ -596,18 +598,13 @@ rules:
 - apiGroups:
   - subresources.kubevirt.io
   resources:
-  - virtualmachines/start
-  - virtualmachines/stop
-  - virtualmachines/restart
-  verbs:
-  - put
-- apiGroups:
-  - subresources.kubevirt.io
-  resources:
   - virtualmachineinstances/pause
   - virtualmachineinstances/unpause
   - virtualmachineinstances/addvolume
   - virtualmachineinstances/removevolume
+  - virtualmachineinstances/freeze
+  - virtualmachineinstances/unfreeze
+  - virtualmachineinstances/softreboot
   verbs:
   - update
   - get
@@ -704,6 +701,30 @@ rules:
   - list
   - watch
 - apiGroups:
+  - cdi.kubevirt.io
+  resources:
+  - datasources
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - flavor.kubevirt.io
+  resources:
+  - virtualmachineflavors
+  - virtualmachineclusterflavors
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - migrations.kubevirt.io
+  resources:
+  - migrationpolicies
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - ""
   resources:
   - configmaps
@@ -758,6 +779,12 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - pods/status
+  verbs:
+  - patch
+- apiGroups:
+  - ""
+  resources:
   - nodes
   verbs:
   - get
@@ -771,6 +798,15 @@ rules:
   - daemonsets
   verbs:
   - list
+- apiGroups:
+  - apps
+  resources:
+  - controllerrevisions
+  verbs:
+  - watch
+  - list
+  - create
+  - delete
 - apiGroups:
   - ""
   resources:
@@ -790,6 +826,19 @@ rules:
   verbs:
   - '*'
 - apiGroups:
+  - pool.kubevirt.io
+  resources:
+  - virtualmachinepools
+  - virtualmachinepools/finalizers
+  verbs:
+  - watch
+  - list
+  - create
+  - delete
+  - update
+  - patch
+  - get
+- apiGroups:
   - kubevirt.io
   resources:
   - '*'
@@ -800,6 +849,9 @@ rules:
   resources:
   - virtualmachineinstances/addvolume
   - virtualmachineinstances/removevolume
+  - virtualmachineinstances/freeze
+  - virtualmachineinstances/unfreeze
+  - virtualmachineinstances/softreboot
   verbs:
   - update
 - apiGroups:
@@ -858,6 +910,28 @@ rules:
   - list
   - watch
 - apiGroups:
+  - flavor.kubevirt.io
+  resources:
+  - virtualmachineflavors
+  - virtualmachineclusterflavors
+  verbs:
+  - list
+  - watch
+- apiGroups:
+  - migrations.kubevirt.io
+  resources:
+  - migrationpolicies
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
+- apiGroups:
   - kubevirt.io
   resources:
   - virtualmachineinstances
@@ -865,12 +939,6 @@ rules:
   - update
   - list
   - watch
-- apiGroups:
-  - ""
-  resources:
-  - persistentvolumeclaims
-  verbs:
-  - get
 - apiGroups:
   - ""
   resources:
@@ -912,6 +980,14 @@ rules:
   - list
   - watch
 - apiGroups:
+  - migrations.kubevirt.io
+  resources:
+  - migrationpolicies
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - ""
   resources:
   - configmaps
@@ -943,6 +1019,9 @@ rules:
   - virtualmachineinstances/unpause
   - virtualmachineinstances/addvolume
   - virtualmachineinstances/removevolume
+  - virtualmachineinstances/freeze
+  - virtualmachineinstances/unfreeze
+  - virtualmachineinstances/softreboot
   verbs:
   - update
 - apiGroups:
@@ -951,6 +1030,8 @@ rules:
   - virtualmachines/start
   - virtualmachines/stop
   - virtualmachines/restart
+  - virtualmachines/addvolume
+  - virtualmachines/removevolume
   verbs:
   - update
 - apiGroups:
@@ -985,6 +1066,41 @@ rules:
   - list
   - watch
   - deletecollection
+- apiGroups:
+  - flavor.kubevirt.io
+  resources:
+  - virtualmachineflavors
+  - virtualmachineclusterflavors
+  verbs:
+  - get
+  - delete
+  - create
+  - update
+  - patch
+  - list
+  - watch
+  - deletecollection
+- apiGroups:
+  - pool.kubevirt.io
+  resources:
+  - virtualmachinepools
+  verbs:
+  - get
+  - delete
+  - create
+  - update
+  - patch
+  - list
+  - watch
+  - deletecollection
+- apiGroups:
+  - migrations.kubevirt.io
+  resources:
+  - migrationpolicies
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - subresources.kubevirt.io
   resources:
@@ -1002,6 +1118,9 @@ rules:
   - virtualmachineinstances/unpause
   - virtualmachineinstances/addvolume
   - virtualmachineinstances/removevolume
+  - virtualmachineinstances/freeze
+  - virtualmachineinstances/unfreeze
+  - virtualmachineinstances/softreboot
   verbs:
   - update
 - apiGroups:
@@ -1010,6 +1129,8 @@ rules:
   - virtualmachines/start
   - virtualmachines/stop
   - virtualmachines/restart
+  - virtualmachines/addvolume
+  - virtualmachines/removevolume
   verbs:
   - update
 - apiGroups:
@@ -1043,12 +1164,45 @@ rules:
   - list
   - watch
 - apiGroups:
+  - flavor.kubevirt.io
+  resources:
+  - virtualmachineflavors
+  - virtualmachineclusterflavors
+  verbs:
+  - get
+  - delete
+  - create
+  - update
+  - patch
+  - list
+  - watch
+- apiGroups:
+  - pool.kubevirt.io
+  resources:
+  - virtualmachinepools
+  verbs:
+  - get
+  - delete
+  - create
+  - update
+  - patch
+  - list
+  - watch
+- apiGroups:
   - kubevirt.io
   resources:
   - kubevirts
   verbs:
   - get
   - list
+- apiGroups:
+  - migrations.kubevirt.io
+  resources:
+  - migrationpolicies
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - subresources.kubevirt.io
   resources:
@@ -1075,6 +1229,31 @@ rules:
   - virtualmachinesnapshots
   - virtualmachinesnapshotcontents
   - virtualmachinerestores
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - flavor.kubevirt.io
+  resources:
+  - virtualmachineflavors
+  - virtualmachineclusterflavors
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - pool.kubevirt.io
+  resources:
+  - virtualmachinepools
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - migrations.kubevirt.io
+  resources:
+  - migrationpolicies
   verbs:
   - get
   - list
