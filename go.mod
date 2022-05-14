@@ -34,8 +34,8 @@ require (
 	// Remove this once SSP will also consume v0.2.4
 	kubevirt.io/controller-lifecycle-operator-sdk v0.2.3
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4
-	kubevirt.io/ssp-operator/api v0.14.1
-	sigs.k8s.io/controller-runtime v0.11.1
+	kubevirt.io/ssp-operator/api v0.15.0
+	sigs.k8s.io/controller-runtime v0.11.2
 	sigs.k8s.io/controller-tools v0.8.0
 )
 
