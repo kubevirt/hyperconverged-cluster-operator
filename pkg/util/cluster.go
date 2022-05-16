@@ -2,6 +2,7 @@ package util
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	corev1 "k8s.io/api/core/v1"
@@ -13,6 +14,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -24,6 +26,7 @@ type ClusterInfo interface {
 	IsManagedByOLM() bool
 	IsControlPlaneHighlyAvailable() bool
 	IsInfrastructureHighlyAvailable() bool
+	IsRunningOnOpenshift411OrLater(cl client.Client) bool
 }
 
 type ClusterInfoImp struct {
@@ -160,4 +163,26 @@ func init() {
 		runningLocally:     IsRunModeLocal(),
 		runningInOpenshift: false,
 	}
+}
+
+func (c *ClusterInfoImp) IsRunningOnOpenshift411OrLater(cl client.Client) bool {
+	ocpVersion, err := c.getOpenshiftDesiredVersion(cl)
+	if err != nil {
+		return false
+	}
+	var major, minor int
+	_, err = fmt.Sscanf(ocpVersion, "%d.%d", &major, &minor)
+	if err != nil {
+		return false
+	}
+	return major >= 4 && minor >= 11
+}
+
+func (c *ClusterInfoImp) getOpenshiftDesiredVersion(cl client.Client) (string, error) {
+	clusterVersion := &openshiftconfigv1.ClusterVersion{}
+	err := cl.Get(context.TODO(), types.NamespacedName{Name: "version"}, clusterVersion)
+	if err != nil {
+		return "", err
+	}
+	return clusterVersion.Status.Desired.Version, nil
 }

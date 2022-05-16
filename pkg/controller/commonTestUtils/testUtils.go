@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gomegatypes "github.com/onsi/gomega/types"
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -31,6 +32,7 @@ import (
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/pkg/sdk/api"
+	nmoapiv1beta1 "kubevirt.io/node-maintenance-operator/api/v1beta1"
 	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
 )
 
@@ -153,6 +155,8 @@ func GetScheme() *runtime.Scheme {
 		apiextensionsv1.AddToScheme,
 		routev1.Install,
 		imagev1.Install,
+		nmoapiv1beta1.AddToScheme,
+		openshiftconfigv1.Install,
 	} {
 		Expect(f(testScheme)).To(BeNil())
 	}
@@ -227,6 +231,10 @@ func (ClusterInfoMock) GetDomain() string {
 	return "domain"
 }
 
+func (ClusterInfoMock) IsRunningOnOpenshift411OrLater(_ client.Client) bool {
+	return true
+}
+
 // ClusterInfoSNOMock mocks Openshift SNO
 type ClusterInfoSNOMock struct{}
 
@@ -252,6 +260,10 @@ func (ClusterInfoSNOMock) GetDomain() string {
 	return "domain"
 }
 
+func (ClusterInfoSNOMock) IsRunningOnOpenshift411OrLater(_ client.Client) bool {
+	return true
+}
+
 // ClusterInfoSRCPHAIMock mocks Openshift with SingleReplica ControlPlane and HighAvailable Infrastructure
 type ClusterInfoSRCPHAIMock struct{}
 
@@ -275,4 +287,8 @@ func (ClusterInfoSRCPHAIMock) IsInfrastructureHighlyAvailable() bool {
 }
 func (ClusterInfoSRCPHAIMock) GetDomain() string {
 	return "domain"
+}
+
+func (ClusterInfoSRCPHAIMock) IsRunningOnOpenshift411OrLater(_ client.Client) bool {
+	return true
 }

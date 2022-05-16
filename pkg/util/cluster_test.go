@@ -253,4 +253,32 @@ var _ = Describe("test clusterInfo", func() {
 		),
 	)
 
+	It("Check OpenShift Version >= 4.11", func() {
+		clusterVersion.Status.Desired.Version = "4.11.1"
+		cl := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			WithRuntimeObjects(clusterVersion).
+			Build()
+
+		Expect(GetClusterInfo().IsRunningOnOpenshift411OrLater(cl)).To(BeTrue())
+	})
+
+	It("Check OpenShift Version < 4.11", func() {
+		clusterVersion.Status.Desired.Version = "4.10.2"
+		cl := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			WithRuntimeObjects(clusterVersion).
+			Build()
+
+		Expect(GetClusterInfo().IsRunningOnOpenshift411OrLater(cl)).To(BeFalse())
+	})
+
+	It("Fail to Check OpenShift Version when clusterversion is absent", func() {
+		cl := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			Build()
+
+		Expect(GetClusterInfo().IsRunningOnOpenshift411OrLater(cl)).To(BeFalse())
+	})
+
 })

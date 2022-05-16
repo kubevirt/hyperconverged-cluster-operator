@@ -453,6 +453,14 @@ spec:
           - update
           - create
           - delete
+        - apiGroups:
+          - nodemaintenance.kubevirt.io
+          resources:
+          - nodemaintenances
+          verbs:
+          - get
+          - list
+          - watch
         serviceAccountName: hyperconverged-cluster-operator
       - rules:
         - apiGroups:
