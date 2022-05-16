@@ -4,6 +4,9 @@ import (
 	"context"
 	"sync"
 
+	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -35,7 +38,7 @@ func (eem *EventEmitterMock) Reset() {
 	eem.storedEvents = make([]MockEvent, 0)
 }
 
-func (EventEmitterMock) Init(_ context.Context, _ client.Client, _ record.EventRecorder, _ logr.Logger) {
+func (EventEmitterMock) Init(_ *corev1.Pod, _ *csvv1alpha1.ClusterServiceVersion, _ record.EventRecorder) {
 	/* not implemented; mock only */
 }
 

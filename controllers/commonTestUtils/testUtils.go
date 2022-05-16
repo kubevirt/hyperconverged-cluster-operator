@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
+
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 
 	"github.com/go-logr/logr"
@@ -242,6 +245,17 @@ func (ClusterInfoMock) GetDomain() string {
 func (c ClusterInfoMock) IsConsolePluginImageProvided() bool {
 	return true
 }
+func (c ClusterInfoMock) GetPod() *corev1.Pod {
+	return nil
+}
+
+func (c ClusterInfoMock) GetDeployment() *appsv1.Deployment {
+	return nil
+}
+
+func (c ClusterInfoMock) GetCSV() *csvv1alpha1.ClusterServiceVersion {
+	return nil
+}
 func (ClusterInfoMock) GetTLSSecurityProfile(_ *openshiftconfigv1.TLSSecurityProfile) *openshiftconfigv1.TLSSecurityProfile {
 	return &openshiftconfigv1.TLSSecurityProfile{
 		Type:         openshiftconfigv1.TLSProfileIntermediateType,
@@ -275,6 +289,17 @@ func (ClusterInfoSNOMock) IsInfrastructureHighlyAvailable() bool {
 }
 func (ClusterInfoSNOMock) GetDomain() string {
 	return "domain"
+}
+func (c ClusterInfoSNOMock) GetPod() *corev1.Pod {
+	return nil
+}
+
+func (c ClusterInfoSNOMock) GetDeployment() *appsv1.Deployment {
+	return nil
+}
+
+func (c ClusterInfoSNOMock) GetCSV() *csvv1alpha1.ClusterServiceVersion {
+	return nil
 }
 func (ClusterInfoSNOMock) GetTLSSecurityProfile(_ *openshiftconfigv1.TLSSecurityProfile) *openshiftconfigv1.TLSSecurityProfile {
 	return &openshiftconfigv1.TLSSecurityProfile{
@@ -310,6 +335,17 @@ func (ClusterInfoSRCPHAIMock) IsControlPlaneHighlyAvailable() bool {
 }
 func (ClusterInfoSRCPHAIMock) IsInfrastructureHighlyAvailable() bool {
 	return true
+}
+func (ClusterInfoSRCPHAIMock) GetPod() *corev1.Pod {
+	return nil
+}
+
+func (ClusterInfoSRCPHAIMock) GetDeployment() *appsv1.Deployment {
+	return nil
+}
+
+func (ClusterInfoSRCPHAIMock) GetCSV() *csvv1alpha1.ClusterServiceVersion {
+	return nil
 }
 func (ClusterInfoSRCPHAIMock) GetDomain() string {
 	return "domain"
