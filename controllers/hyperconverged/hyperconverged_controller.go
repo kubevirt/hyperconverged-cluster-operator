@@ -186,7 +186,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) er
 		secondaryResources = append(secondaryResources, []client.Object{
 			&corev1.Service{},
 			&monitoringv1.ServiceMonitor{},
-			&monitoringv1.PrometheusRule{},
 			&routev1.Route{},
 			&consolev1.ConsoleCLIDownload{},
 			&imagev1.ImageStream{},

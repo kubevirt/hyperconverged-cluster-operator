@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	nmoapiv1beta1 "github.com/medik8s/node-maintenance-operator/api/v1beta1"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"
@@ -38,13 +39,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 
-	nmoapiv1beta1 "github.com/medik8s/node-maintenance-operator/api/v1beta1"
-
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/api"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/hyperconverged"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/monitoring"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	ttov1alpha1 "github.com/kubevirt/tekton-tasks-operator/api/v1alpha1"
@@ -164,9 +164,17 @@ func main() {
 
 	// Create a new reconciler
 	if err := hyperconverged.RegisterReconciler(mgr, ci, upgradeableCondition); err != nil {
-		logger.Error(err, "")
+		logger.Error(err, "failed to register the HyperConverged controller")
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register HyperConverged controller; "+err.Error())
 		os.Exit(1)
+	}
+
+	if ci.IsOpenshift() {
+		if err := monitoring.RegisterReconciler(mgr, ci); err != nil {
+			logger.Error(err, "failed to register the AlertRule controller")
+			eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register AlertRule controller; "+err.Error())
+			os.Exit(1)
+		}
 	}
 
 	err = createPriorityClass(ctx, mgr)
