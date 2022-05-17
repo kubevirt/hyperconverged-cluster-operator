@@ -225,6 +225,12 @@ func getNewManagerCache(operatorNamespace string) cache.NewCacheFunc {
 				&corev1.Namespace{}: {
 					Label: labelSelectorForNamespace,
 				},
+				&consolev1.ConsoleCLIDownload{}: {
+					Label: labelSelector,
+				},
+				&consolev1.ConsoleQuickStart{}: {
+					Label: labelSelector,
+				},
 			},
 		},
 	)
