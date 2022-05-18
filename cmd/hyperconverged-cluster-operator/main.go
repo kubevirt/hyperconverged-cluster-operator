@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	nmoapiv1beta1 "github.com/medik8s/node-maintenance-operator/api/v1beta1"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	consolev1alpha1 "github.com/openshift/api/console/v1alpha1"

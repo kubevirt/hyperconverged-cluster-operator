@@ -7,12 +7,11 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
-
 	"github.com/blang/semver/v4"
 	jsonpatch "github.com/evanphx/json-patch"
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -39,10 +38,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	openshiftconfigv1 "github.com/openshift/api/config/v1"
-
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/metrics"
@@ -121,7 +119,7 @@ func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond 
 	}
 
 	if ci.IsOpenshift() {
-		r.alertReconciler = alerts.NewAlertRuleReconciler(r.client, ci)
+		r.alertReconciler = alerts.NewAlertRuleReconciler(r.client, ci, hcoutil.GetEventEmitter())
 	}
 
 	return r

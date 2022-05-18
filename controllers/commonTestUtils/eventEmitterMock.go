@@ -72,6 +72,13 @@ func (eem EventEmitterMock) CheckEvents(expectedEvents []MockEvent) bool {
 	return true
 }
 
+func (eem EventEmitterMock) CheckNoEventEmitted() bool {
+	eem.lock.Lock()
+	defer eem.lock.Unlock()
+
+	return len(eem.storedEvents) == 0
+}
+
 func eventInArray(eventList []MockEvent, event MockEvent) bool {
 	for _, expectedEvent := range eventList {
 		if event == expectedEvent {

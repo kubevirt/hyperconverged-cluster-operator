@@ -11,9 +11,9 @@ import (
 	"reflect"
 
 	"github.com/go-logr/logr"
-
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -45,19 +45,21 @@ var (
 )
 
 type AlertRuleReconciler struct {
-	client    client.Client
-	namespace string
-	theRule   *monitoringv1.PrometheusRule
+	client       client.Client
+	namespace    string
+	theRule      *monitoringv1.PrometheusRule
+	eventEmitter hcoutil.EventEmitter
 }
 
 // NewAlertRuleReconciler creates new AlertRuleReconciler instance and returns a pointer to it.
-func NewAlertRuleReconciler(cl client.Client, ci hcoutil.ClusterInfo) *AlertRuleReconciler {
+func NewAlertRuleReconciler(cl client.Client, ci hcoutil.ClusterInfo, ee hcoutil.EventEmitter) *AlertRuleReconciler {
 	deployment := ci.GetDeployment()
 	namespace := deployment.Namespace
 	return &AlertRuleReconciler{
-		client:    cl,
-		theRule:   newPrometheusRule(namespace, deployment),
-		namespace: namespace,
+		client:       cl,
+		theRule:      newPrometheusRule(namespace, deployment),
+		namespace:    namespace,
+		eventEmitter: ee,
 	}
 }
 
@@ -67,21 +69,24 @@ func (r *AlertRuleReconciler) Reconcile(ctx context.Context, logger logr.Logger)
 		return nil // not initialized (not running on openshift). do nothing
 	}
 
-	logger.Info("Reconciling the PrometheusRule")
+	logger.V(5).Info("Reconciling the PrometheusRule")
 
 	rule := &monitoringv1.PrometheusRule{}
-	logger.Info("Reading the current PrometheusRule")
+	logger.V(5).Info("Reading the current PrometheusRule")
 	err := r.client.Get(ctx, client.ObjectKey{Namespace: r.namespace, Name: ruleName}, rule)
 
 	if err != nil {
 		if errors.IsNotFound(err) {
 			logger.Info("Can't find the Prometheus rule; creating a new one")
-			err := r.client.Create(ctx, r.theRule.DeepCopy())
+			rule := r.theRule.DeepCopy()
+			err := r.client.Create(ctx, rule)
 			if err != nil {
 				logger.Error(err, "failed to create PrometheusRule")
+				r.eventEmitter.EmitEvent(rule, corev1.EventTypeWarning, "UnexpectedError", fmt.Sprintf("failed to create the %s %s", ruleName, monitoringv1.PrometheusRuleKind))
 				return err
 			}
 			logger.Info("successfully created the PrometheusRule")
+			r.eventEmitter.EmitEvent(rule, corev1.EventTypeNormal, "Created", fmt.Sprintf("Created %s %s", monitoringv1.PrometheusRuleKind, ruleName))
 			return nil
 		}
 
@@ -116,8 +121,11 @@ func (r AlertRuleReconciler) updateAlert(ctx context.Context, rule *monitoringv1
 		err := r.client.Update(ctx, rule)
 		if err != nil {
 			logger.Error(err, "failed to update the PrometheusRule")
+			r.eventEmitter.EmitEvent(rule, corev1.EventTypeWarning, "UnexpectedError", fmt.Sprintf("failed to update the %s %s", ruleName, monitoringv1.PrometheusRuleKind))
 			return err
 		}
+		logger.Info("successfully updated the PrometheusRule")
+		r.eventEmitter.EmitEvent(rule, corev1.EventTypeNormal, "Updated", fmt.Sprintf("Updated %s %s", monitoringv1.PrometheusRuleKind, ruleName))
 	}
 
 	return nil
