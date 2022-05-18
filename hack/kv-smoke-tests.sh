@@ -233,4 +233,5 @@ ${TESTS_BINARY} \
     -kubectl-path="$(which oc)" \
     -utility-container-prefix=quay.io/kubevirt \
     -test.timeout=2h \
-    -artifacts=${ARTIFACT_DIR}/kubevirt_dump
+    -artifacts=${ARTIFACT_DIR}/kubevirt_dump \
+    -ginkgo.flakeAttempts=3
