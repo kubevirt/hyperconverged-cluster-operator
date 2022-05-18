@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 	v1 "github.com/openshift/custom-resource-status/objectreferences/v1"
@@ -38,6 +39,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/version"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
+	nmoapiv1beta1 "kubevirt.io/node-maintenance-operator/api/v1beta1"
 	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
 )
 
@@ -1855,6 +1857,50 @@ var _ = Describe("HyperconvergedController", func() {
 					err = cl.Get(context.TODO(), types.NamespacedName{Name: operatorMetrics, Namespace: expected.hco.Namespace}, foundResource)
 					Expect(err).To(HaveOccurred())
 					Expect(apierrors.IsNotFound(err)).To(BeTrue())
+				})
+			})
+
+			Context("deny upgrade if NMO CR exists", func() {
+				It("should set Upgradeable Condition to false if NMO CR is found", func() {
+					nmoCr := &nmoapiv1beta1.NodeMaintenance{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "maintenance-node-1",
+						},
+						Spec: nmoapiv1beta1.NodeMaintenanceSpec{
+							NodeName: "node-1",
+							Reason:   "fake reason",
+						},
+					}
+					nmoCrd := &apiextensionsv1.CustomResourceDefinition{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nmoCrdName,
+							Namespace: "",
+						},
+					}
+					clusterVersion := &openshiftconfigv1.ClusterVersion{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "version",
+						},
+						Status: openshiftconfigv1.ClusterVersionStatus{
+							Desired: openshiftconfigv1.Release{
+								Version: "4.11.0",
+							},
+						},
+					}
+					resources := append(expected.toArray(), nmoCr, nmoCrd, clusterVersion)
+					cl := commonTestUtils.InitClient(resources)
+
+					foundResource, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+					Expect(requeue).To(BeFalse())
+					checkAvailability(foundResource, metav1.ConditionTrue)
+					validateOperatorCondition(reconciler, metav1.ConditionFalse, nmoCrExistErrorReason, nmoCrExistErrorMessage)
+
+					Expect(foundResource.Status.Conditions).To(ContainElement(commonTestUtils.RepresentCondition(metav1.Condition{
+						Type:    hcov1beta1.ConditionUpgradeable,
+						Status:  metav1.ConditionFalse,
+						Reason:  nmoCrExistErrorReason,
+						Message: nmoCrExistErrorMessage,
+					})))
 				})
 			})
 

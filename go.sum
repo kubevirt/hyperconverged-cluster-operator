@@ -2052,6 +2052,7 @@ k8s.io/utils v0.0.0-20210111153108-fddb29f9d009/go.mod h1:jPW/WVKK9YHAvNhRxK0md/
 k8s.io/utils v0.0.0-20210527160623-6fdb442a123b/go.mod h1:jPW/WVKK9YHAvNhRxK0md/EJ228hCsBRufyofKtW8HA=
 k8s.io/utils v0.0.0-20210709001253-0e1f9d693477/go.mod h1:jPW/WVKK9YHAvNhRxK0md/EJ228hCsBRufyofKtW8HA=
 k8s.io/utils v0.0.0-20210802155522-efc7438f0176/go.mod h1:jPW/WVKK9YHAvNhRxK0md/EJ228hCsBRufyofKtW8HA=
+k8s.io/utils v0.0.0-20210820185131-d34e5cb4466e/go.mod h1:jPW/WVKK9YHAvNhRxK0md/EJ228hCsBRufyofKtW8HA=
 k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b h1:wxEMGetGMur3J1xuGLQY7GEQYg9bZxKn3tKo5k/eYcs=
 k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b/go.mod h1:jPW/WVKK9YHAvNhRxK0md/EJ228hCsBRufyofKtW8HA=
 kubevirt.io/api v0.49.0 h1:KQsZHxsU4kyTT/rF8HHMhyqs3lNggliS+wEozcOe+uU=
@@ -2066,6 +2067,8 @@ kubevirt.io/controller-lifecycle-operator-sdk v0.2.0/go.mod h1:ZJhLceiY2Gl5CXFGS
 kubevirt.io/controller-lifecycle-operator-sdk v0.2.1/go.mod h1:ZJhLceiY2Gl5CXFGSp5eMGt/sksOiJP0289nAZFCQf0=
 kubevirt.io/controller-lifecycle-operator-sdk v0.2.3 h1:auv8LrA7gnLfQREnlGVPwgJpTxOEgnw4+mzXlUqKTxY=
 kubevirt.io/controller-lifecycle-operator-sdk v0.2.3/go.mod h1:ZJhLceiY2Gl5CXFGSp5eMGt/sksOiJP0289nAZFCQf0=
+kubevirt.io/node-maintenance-operator v0.11.3 h1:DNCChJMFtIURjT6mZZaevrH1BenVUkprDu1OhIP6KRQ=
+kubevirt.io/node-maintenance-operator v0.11.3/go.mod h1:2hXTz8940TJQNv1POow5qHGl0b/N0zDlUQZI13ADUww=
 kubevirt.io/qe-tools v0.1.6/go.mod h1:PJyH/YXC4W0AmxfheDmXWMbLNsMSboVGXKpMAwfKzVE=
 kubevirt.io/qe-tools v0.1.7/go.mod h1:O1EynUeGswOi4Embakmv+SsGwr+U3ILHgit9pptK2qk=
 kubevirt.io/ssp-operator v0.13.2 h1:BA51bJnbe4TRLzhDHd+vDCNMo6Khb2q5jJyYZVSRYcU=
@@ -2082,6 +2085,7 @@ sigs.k8s.io/controller-runtime v0.6.0/go.mod h1:CpYf5pdNY/B352A1TFLAS2JVSlnGQ5O2
 sigs.k8s.io/controller-runtime v0.8.0/go.mod h1:v9Lbj5oX443uR7GXYY46E0EE2o7k2YxQ58GxVNeXSW4=
 sigs.k8s.io/controller-runtime v0.8.3/go.mod h1:U/l+DUopBc1ecfRZ5aviA9JDmGFQKvLf5YkZNx2e0sU=
 sigs.k8s.io/controller-runtime v0.9.0/go.mod h1:TgkfvrhhEw3PlI0BRL/5xM+89y3/yc0ZDfdbTl84si8=
+sigs.k8s.io/controller-runtime v0.9.2/go.mod h1:TxzMCHyEUpaeuOiZx/bIdc2T81vfs/aKdvJt9wuu0zk=
 sigs.k8s.io/controller-runtime v0.9.3/go.mod h1:TxzMCHyEUpaeuOiZx/bIdc2T81vfs/aKdvJt9wuu0zk=
 sigs.k8s.io/controller-runtime v0.10.0/go.mod h1:GCdh6kqV6IY4LK0JLwX0Zm6g233RtVGdb/f0+KSfprg=
 sigs.k8s.io/controller-runtime v0.11.0/go.mod h1:KKwLiTooNGu+JmLZGn9Sl3Gjmfj66eMbCQznLP5zcqA=

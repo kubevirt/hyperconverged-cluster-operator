@@ -507,6 +507,11 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			Resources: stringListToSlice("imagestreams"),
 			Verbs:     stringListToSlice("get", "list", "watch", "update", "create", "delete"),
 		},
+		{
+			APIGroups: stringListToSlice("nodemaintenance.kubevirt.io"),
+			Resources: stringListToSlice("nodemaintenances"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
 	}
 }
 

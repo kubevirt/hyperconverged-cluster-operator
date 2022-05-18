@@ -46,6 +46,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/version"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
+	nmoapiv1beta1 "kubevirt.io/node-maintenance-operator/api/v1beta1"
 	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
 )
 
@@ -72,6 +73,8 @@ const (
 	commonProgressingReason     = "HCOProgressing"
 	taintedConfigurationReason  = "UnsupportedFeatureAnnotation"
 	taintedConfigurationMessage = "Unsupported feature was activated via an HCO annotation"
+	nmoCrExistErrorReason       = "UpgradeBlocked"
+	nmoCrExistErrorMessage      = "NMO custom resources have been found"
 
 	hcoVersionName    = "operator"
 	secondaryCRPrefix = "hco-controlled-cr-"
@@ -80,6 +83,7 @@ const (
 	v2vGroup = "v2v.kubevirt.io"
 
 	requestedStatusKey = "requested status"
+	nmoCrdName         = "nodemaintenances.nodemaintenance.kubevirt.io"
 )
 
 // JSONPatchAnnotationNames - annotations used to patch operand CRs with unsupported/unofficial/hidden features.
@@ -182,6 +186,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) er
 			&consolev1.ConsoleQuickStart{},
 			&imagev1.ImageStream{},
 			&corev1.Namespace{},
+			&nmoapiv1beta1.NodeMaintenance{},
 		}...)
 	}
 
@@ -420,7 +425,56 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 		}
 	}
 
+	// Prevent upgrade if NMO is being used
+	err = r.checkNMO(req)
+	if err != nil {
+		return reconcile.Result{Requeue: true}, err
+	}
+
 	return r.EnsureOperandAndComplete(req, init)
+}
+
+func (r *ReconcileHyperConverged) checkNMO(req *common.HcoRequest) error {
+	if hcoutil.GetClusterInfo().IsOpenshift() && hcoutil.GetClusterInfo().IsRunningOnOpenshift411OrLater(r.client) {
+		nmoCrdObj := &apiextensionsv1.CustomResourceDefinition{}
+		nmoCrdKey := client.ObjectKey{
+			Namespace: "",
+			Name:      nmoCrdName,
+		}
+
+		err := r.client.Get(req.Ctx, nmoCrdKey, nmoCrdObj)
+		if err != nil {
+			if apierrors.IsNotFound(err) {
+				return nil
+			} else {
+				return err
+			}
+		}
+
+		nmoCRs := &nmoapiv1beta1.NodeMaintenanceList{}
+		if err := r.client.List(req.Ctx, nmoCRs); err != nil {
+			return err
+		}
+
+		if len(nmoCRs.Items) > 0 {
+			req.Conditions.SetStatusCondition(metav1.Condition{
+				Type:               hcov1beta1.ConditionUpgradeable,
+				Status:             metav1.ConditionFalse,
+				Reason:             nmoCrExistErrorReason,
+				Message:            nmoCrExistErrorMessage,
+				ObservedGeneration: req.Instance.Generation,
+			})
+			r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeWarning, "NotUpgradeable",
+				fmt.Sprintf("Node Maintenance Operator custom resources %s have been found. Please remove them to allow upgrade. "+
+					"You can use NMO standalone operator if keeping the node(s) under maintenance is still required.", nmoCrdName))
+			req.Upgradeable = false
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func (r *ReconcileHyperConverged) EnsureOperandAndComplete(req *common.HcoRequest, init bool) (reconcile.Result, error) {

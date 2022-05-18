@@ -45,6 +45,7 @@ import (
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
+	nmoapiv1beta1 "kubevirt.io/node-maintenance-operator/api/v1beta1"
 	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
 )
 
@@ -72,6 +73,7 @@ var (
 		coordinationv1.AddToScheme,
 		operatorsapiv2.AddToScheme,
 		imagev1.Install,
+		nmoapiv1beta1.AddToScheme,
 	}
 )
 
@@ -225,6 +227,7 @@ func getNewManagerCache(operatorNamespace string) cache.NewCacheFunc {
 				&corev1.Namespace{}: {
 					Label: labelSelectorForNamespace,
 				},
+				&nmoapiv1beta1.NodeMaintenance{}: {},
 				&consolev1.ConsoleCLIDownload{}: {
 					Label: labelSelector,
 				},
