@@ -119,7 +119,7 @@ func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond 
 	}
 
 	if ci.IsOpenshift() {
-		r.alertReconciler = alerts.NewAlertRuleReconciler(r.client, ci, hcoutil.GetEventEmitter())
+		r.alertReconciler = alerts.NewAlertRuleReconciler(r.client, ci, hcoutil.GetEventEmitter(), r.scheme)
 	}
 
 	return r
@@ -301,6 +301,11 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 			r.eventEmitter.EmitEvent(hcoRequest.Instance, corev1.EventTypeWarning, "Failed validating upgrade patches file", err.Error())
 			os.Exit(1)
 		}
+	}
+
+	if err = r.alertReconciler.UpdateRelatedObjects(hcoRequest); err != nil {
+		logger.Error(err, "Failed to update the PrometheusRule as a related object")
+		return reconcile.Result{}, err
 	}
 
 	result, err := r.doReconcile(hcoRequest)

@@ -16,10 +16,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -48,11 +50,13 @@ type AlertRuleReconciler struct {
 	client       client.Client
 	namespace    string
 	theRule      *monitoringv1.PrometheusRule
+	latestRule   *monitoringv1.PrometheusRule
 	eventEmitter hcoutil.EventEmitter
+	scheme       *runtime.Scheme
 }
 
 // NewAlertRuleReconciler creates new AlertRuleReconciler instance and returns a pointer to it.
-func NewAlertRuleReconciler(cl client.Client, ci hcoutil.ClusterInfo, ee hcoutil.EventEmitter) *AlertRuleReconciler {
+func NewAlertRuleReconciler(cl client.Client, ci hcoutil.ClusterInfo, ee hcoutil.EventEmitter, scheme *runtime.Scheme) *AlertRuleReconciler {
 	deployment := ci.GetDeployment()
 	namespace := deployment.Namespace
 	return &AlertRuleReconciler{
@@ -60,6 +64,7 @@ func NewAlertRuleReconciler(cl client.Client, ci hcoutil.ClusterInfo, ee hcoutil
 		theRule:      newPrometheusRule(namespace, deployment),
 		namespace:    namespace,
 		eventEmitter: ee,
+		scheme:       scheme,
 	}
 }
 
@@ -71,13 +76,13 @@ func (r *AlertRuleReconciler) Reconcile(ctx context.Context, logger logr.Logger)
 
 	logger.V(5).Info("Reconciling the PrometheusRule")
 
-	rule := &monitoringv1.PrometheusRule{}
+	existingRule := &monitoringv1.PrometheusRule{}
 	logger.V(5).Info("Reading the current PrometheusRule")
-	err := r.client.Get(ctx, client.ObjectKey{Namespace: r.namespace, Name: ruleName}, rule)
+	err := r.client.Get(ctx, client.ObjectKey{Namespace: r.namespace, Name: ruleName}, existingRule)
 
 	if err != nil {
 		if errors.IsNotFound(err) {
-			logger.Info("Can't find the Prometheus rule; creating a new one")
+			logger.Info("Can't find the PrometheusRule; creating a new one")
 			rule := r.theRule.DeepCopy()
 			err := r.client.Create(ctx, rule)
 			if err != nil {
@@ -87,6 +92,13 @@ func (r *AlertRuleReconciler) Reconcile(ctx context.Context, logger logr.Logger)
 			}
 			logger.Info("successfully created the PrometheusRule")
 			r.eventEmitter.EmitEvent(rule, corev1.EventTypeNormal, "Created", fmt.Sprintf("Created %s %s", monitoringv1.PrometheusRuleKind, ruleName))
+
+			// read back the new PrometheusRule
+			err = r.client.Get(ctx, client.ObjectKey{Namespace: r.namespace, Name: ruleName}, existingRule)
+			if err != nil {
+				logger.Error(err, "failed to read PrometheusRule")
+			}
+			r.latestRule = existingRule
 			return nil
 		}
 
@@ -94,7 +106,26 @@ func (r *AlertRuleReconciler) Reconcile(ctx context.Context, logger logr.Logger)
 		return err
 	}
 
-	return r.updateAlert(ctx, rule, logger)
+	r.latestRule = existingRule
+
+	return r.updateAlert(ctx, existingRule, logger)
+}
+
+func (r *AlertRuleReconciler) UpdateRelatedObjects(req *common.HcoRequest) error {
+	if r == nil {
+		return nil // not initialized (not running on openshift). do nothing
+	}
+
+	changed, err := hcoutil.AddCrToTheRelatedObjectList(&req.Instance.Status.RelatedObjects, r.latestRule, r.scheme)
+	if err != nil {
+		return err
+	}
+
+	if changed {
+		req.StatusDirty = true
+	}
+
+	return nil
 }
 
 func (r AlertRuleReconciler) updateAlert(ctx context.Context, rule *monitoringv1.PrometheusRule, logger logr.Logger) error {
@@ -139,7 +170,7 @@ func newPrometheusRule(namespace string, deployment *appsv1.Deployment) *monitor
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ruleName,
-			Labels:    map[string]string{hcoutil.AppLabel: hcoutil.HyperConvergedName},
+			Labels:    hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring),
 			Namespace: namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				getDeploymentReference(deployment),

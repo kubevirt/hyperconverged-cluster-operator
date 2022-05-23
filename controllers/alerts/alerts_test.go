@@ -12,7 +12,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/reference"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -42,7 +44,7 @@ var _ = Describe("test the alert package", func() {
 		It("should create if not present", func() {
 			cl := commonTestUtils.InitClient([]runtime.Object{})
 
-			reconciler := NewAlertRuleReconciler(cl, ci, ee)
+			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 			Expect(reconciler).NotTo(BeNil())
 
 			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
@@ -71,7 +73,7 @@ var _ = Describe("test the alert package", func() {
 			existRule := newPrometheusRule(commonTestUtils.Namespace, ci.GetDeployment())
 			cl := commonTestUtils.InitClient([]runtime.Object{existRule})
 
-			reconciler := NewAlertRuleReconciler(cl, ci, ee)
+			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 			Expect(reconciler).NotTo(BeNil())
 
 			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
@@ -95,7 +97,7 @@ var _ = Describe("test the alert package", func() {
 
 			cl := commonTestUtils.InitClient([]runtime.Object{existRule})
 
-			reconciler := NewAlertRuleReconciler(cl, ci, ee)
+			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 			Expect(reconciler).NotTo(BeNil())
 
 			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
@@ -133,7 +135,7 @@ var _ = Describe("test the alert package", func() {
 
 			cl := commonTestUtils.InitClient([]runtime.Object{existRule})
 
-			reconciler := NewAlertRuleReconciler(cl, ci, ee)
+			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 			Expect(reconciler).NotTo(BeNil())
 
 			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
@@ -174,7 +176,7 @@ var _ = Describe("test the alert package", func() {
 
 			cl := commonTestUtils.InitClient([]runtime.Object{existRule})
 
-			reconciler := NewAlertRuleReconciler(cl, ci, ee)
+			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 			Expect(reconciler).NotTo(BeNil())
 
 			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
@@ -214,7 +216,7 @@ var _ = Describe("test the alert package", func() {
 
 			cl := commonTestUtils.InitClient([]runtime.Object{existRule})
 
-			reconciler := NewAlertRuleReconciler(cl, ci, ee)
+			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 			Expect(reconciler).NotTo(BeNil())
 
 			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
@@ -237,7 +239,7 @@ var _ = Describe("test the alert package", func() {
 					return fakeError
 				})
 
-				reconciler := NewAlertRuleReconciler(cl, ci, ee)
+				reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 				Expect(reconciler).NotTo(BeNil())
 
 				err := reconciler.Reconcile(context.Background(), logger)
@@ -266,7 +268,7 @@ var _ = Describe("test the alert package", func() {
 					return fakeError
 				})
 
-				reconciler := NewAlertRuleReconciler(cl, ci, ee)
+				reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 				Expect(reconciler).NotTo(BeNil())
 
 				err := reconciler.Reconcile(context.Background(), logger)
@@ -301,6 +303,98 @@ var _ = Describe("test the alert package", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(errors.IsNotFound(err)).To(BeTrue())
 			})
+		})
+	})
+
+	Context("test UpdateRelatedObjects", func() {
+		ci := commonTestUtils.ClusterInfoMock{}
+		ee := commonTestUtils.NewEventEmitterMock()
+
+		BeforeEach(func() {
+			ee.Reset()
+		})
+
+		It("should add a related object when creating the new rule", func() {
+			cl := commonTestUtils.InitClient([]runtime.Object{})
+
+			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
+			Expect(reconciler).NotTo(BeNil())
+
+			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
+			res := &monitoringv1.PrometheusRule{}
+			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
+
+			hco := commonTestUtils.NewHco()
+			req := commonTestUtils.NewReq(hco)
+
+			Expect(reconciler.UpdateRelatedObjects(req)).To(Succeed())
+
+			Expect(req.StatusDirty).To(BeTrue())
+			Expect(hco.Status.RelatedObjects).To(HaveLen(1))
+			ref, err := reference.GetReference(commonTestUtils.GetScheme(), res)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hco.Status.RelatedObjects[0]).To(Equal(*ref))
+		})
+
+		It("should do nothing if the related object already exist", func() {
+
+			rule := newPrometheusRule(commonTestUtils.Namespace, ci.GetDeployment())
+			rule.UID = "12345678"
+			rule.ResourceVersion = "123"
+			cl := commonTestUtils.InitClient([]runtime.Object{rule})
+
+			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
+			Expect(reconciler).NotTo(BeNil())
+
+			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
+			res := &monitoringv1.PrometheusRule{}
+			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
+
+			ref, err := reference.GetReference(commonTestUtils.GetScheme(), res)
+			Expect(err).ToNot(HaveOccurred())
+
+			hco := commonTestUtils.NewHco()
+			hco.Status.RelatedObjects = []corev1.ObjectReference{*ref}
+			req := commonTestUtils.NewReq(hco)
+
+			Expect(reconciler.UpdateRelatedObjects(req)).To(Succeed())
+
+			Expect(req.StatusDirty).To(BeFalse())
+			Expect(hco.Status.RelatedObjects).To(HaveLen(1))
+			Expect(hco.Status.RelatedObjects[0]).To(Equal(*ref))
+		})
+
+		It("should fix the object already the object was changed", func() {
+			hco := commonTestUtils.NewHco()
+			hcoRef := metav1.NewControllerRef(hco, schema.GroupVersionKind{})
+			rule := newPrometheusRule(commonTestUtils.Namespace, ci.GetDeployment())
+			rule.UID = "12345678"
+			rule.ResourceVersion = "123"
+			rule.OwnerReferences = []metav1.OwnerReference{*hcoRef}
+
+			cl := commonTestUtils.InitClient([]runtime.Object{rule})
+
+			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
+			Expect(reconciler).NotTo(BeNil())
+
+			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
+			res := &monitoringv1.PrometheusRule{}
+			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
+
+			oldRef, err := reference.GetReference(commonTestUtils.GetScheme(), rule)
+			Expect(err).ToNot(HaveOccurred())
+
+			newRef, err := reference.GetReference(commonTestUtils.GetScheme(), res)
+			Expect(err).ToNot(HaveOccurred())
+
+			hco.Status.RelatedObjects = []corev1.ObjectReference{*oldRef}
+			req := commonTestUtils.NewReq(hco)
+
+			Expect(reconciler.UpdateRelatedObjects(req)).To(Succeed())
+
+			Expect(req.StatusDirty).To(BeTrue())
+			Expect(hco.Status.RelatedObjects).To(HaveLen(1))
+			Expect(hco.Status.RelatedObjects[0]).To(Equal(*newRef))
 		})
 	})
 })

@@ -6,15 +6,20 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
+	objectreferencesv1 "github.com/openshift/custom-resource-status/objectreferences/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -235,4 +240,36 @@ func GetHcoKvIoVersion() string {
 		hcoKvIoVersion = os.Getenv(HcoKvIoVersionName)
 	}
 	return hcoKvIoVersion
+}
+
+func AddCrToTheRelatedObjectList(relatedObjects *[]corev1.ObjectReference, found client.Object, scheme *runtime.Scheme) (bool, error) {
+	// Add it to the list of RelatedObjects if found
+	objectRef, err := reference.GetReference(scheme, found)
+	if err != nil {
+		return false, err
+	}
+
+	existingRef, err := objectreferencesv1.FindObjectReference(*relatedObjects, *objectRef)
+	if err != nil {
+		return false, err
+	}
+	if existingRef == nil || !reflect.DeepEqual(existingRef, objectRef) {
+		err = objectreferencesv1.SetObjectReference(relatedObjects, *objectRef)
+		if err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func GetLabels(hcName string, component AppComponent) map[string]string {
+	return map[string]string{
+		AppLabel:          hcName,
+		AppLabelManagedBy: OperatorName,
+		AppLabelVersion:   GetHcoKvIoVersion(),
+		AppLabelPartOf:    HyperConvergedCluster,
+		AppLabelComponent: string(component),
+	}
 }
