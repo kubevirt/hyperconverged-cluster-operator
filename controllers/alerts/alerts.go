@@ -26,24 +26,22 @@ import (
 )
 
 const (
-	alertRuleGroup                = "kubevirt.hyperconverged.rules"
-	outOfBandUpdateAlert          = "KubevirtHyperconvergedClusterOperatorCRModification"
-	unsafeModificationAlert       = "KubevirtHyperconvergedClusterOperatorUSModification"
-	installationNotCompletedAlert = "KubevirtHyperconvergedClusterOperatorInstallationNotCompletedAlert"
-	severityAlertLabelKey         = "severity"
-	partOfAlertLabelKey           = "kubernetes_operator_part_of"
-	partOfAlertLabelValue         = "kubevirt"
-	componentAlertLabelKey        = "kubernetes_operator_component"
-	componentAlertLabelValue      = "hyperconverged-cluster-operator"
-	ruleName                      = hcoutil.HyperConvergedName + "-prometheus-rule"
+	alertRuleGroup           = "kubevirt.hyperconverged.rules"
+	outOfBandUpdateAlert     = "KubevirtHyperconvergedClusterOperatorCRModification"
+	unsafeModificationAlert  = "KubevirtHyperconvergedClusterOperatorUSModification"
+	severityAlertLabelKey    = "severity"
+	partOfAlertLabelKey      = "kubernetes_operator_part_of"
+	partOfAlertLabelValue    = "kubevirt"
+	componentAlertLabelKey   = "kubernetes_operator_component"
+	componentAlertLabelValue = "hyperconverged-cluster-operator"
+	ruleName                 = hcoutil.HyperConvergedName + "-prometheus-rule"
 )
 
 var (
 	runbookUrlTemplate = "https://kubevirt.io/monitoring/runbooks/%s"
 
-	outOfBandUpdateRunbookUrl          = fmt.Sprintf(runbookUrlTemplate, outOfBandUpdateAlert)
-	unsafeModificationRunbookUrl       = fmt.Sprintf(runbookUrlTemplate, unsafeModificationAlert)
-	installationNotCompletedRunbookUrl = fmt.Sprintf(runbookUrlTemplate, installationNotCompletedAlert)
+	outOfBandUpdateRunbookUrl    = fmt.Sprintf(runbookUrlTemplate, outOfBandUpdateAlert)
+	unsafeModificationRunbookUrl = fmt.Sprintf(runbookUrlTemplate, unsafeModificationAlert)
 )
 
 type AlertRuleReconciler struct {
@@ -199,7 +197,6 @@ func NewPrometheusRuleSpec() *monitoringv1.PrometheusRuleSpec {
 			Rules: []monitoringv1.Rule{
 				createOutOfBandUpdateAlertRule(),
 				createUnsafeModificationAlertRule(),
-				createInstallationNotCompletedAlertRule(),
 				createRequestCPUCoresRule(),
 			},
 		}},
@@ -232,24 +229,6 @@ func createUnsafeModificationAlertRule() monitoringv1.Rule {
 			"summary":     "{{ $value }} unsafe modifications were detected in the HyperConverged resource.",
 			"runbook_url": unsafeModificationRunbookUrl,
 		},
-		Labels: map[string]string{
-			severityAlertLabelKey:  "info",
-			partOfAlertLabelKey:    partOfAlertLabelValue,
-			componentAlertLabelKey: componentAlertLabelValue,
-		},
-	}
-}
-
-func createInstallationNotCompletedAlertRule() monitoringv1.Rule {
-	return monitoringv1.Rule{
-		Alert: installationNotCompletedAlert,
-		Expr:  intstr.FromString("kubevirt_hco_hyperconverged_cr_exists == 0"),
-		Annotations: map[string]string{
-			"description": "the installation was not completed; the HyperConverged custom resource is missing. In order to complete the installation of the Hyperconverged Cluster Operator you should create the HyperConverged custom resource.",
-			"summary":     "the installation was not completed; to complete the installation, create a HyperConverged custom resource.",
-			"runbook_url": installationNotCompletedRunbookUrl,
-		},
-		For: "1h",
 		Labels: map[string]string{
 			severityAlertLabelKey:  "info",
 			partOfAlertLabelKey:    partOfAlertLabelValue,

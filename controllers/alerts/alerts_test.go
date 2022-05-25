@@ -53,7 +53,7 @@ var _ = Describe("test the alert package", func() {
 			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
 
 			Expect(res.Spec.Groups).To(HaveLen(1))
-			Expect(res.Spec.Groups[0].Rules).To(HaveLen(4))
+			Expect(res.Spec.Groups[0].Rules).To(HaveLen(3))
 			Expect(res.Labels).Should(HaveKeyWithValue(hcoutil.AppLabel, commonTestUtils.Name))
 			testOwnerReferences(res.OwnerReferences)
 
@@ -82,7 +82,7 @@ var _ = Describe("test the alert package", func() {
 			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
 
 			Expect(res.Spec.Groups).To(HaveLen(1))
-			Expect(res.Spec.Groups[0].Rules).To(HaveLen(4))
+			Expect(res.Spec.Groups[0].Rules).To(HaveLen(3))
 			Expect(res.Labels).Should(HaveKeyWithValue(hcoutil.AppLabel, commonTestUtils.Name))
 			testOwnerReferences(res.OwnerReferences)
 
@@ -106,7 +106,7 @@ var _ = Describe("test the alert package", func() {
 			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
 
 			Expect(res.Spec.Groups).To(HaveLen(1))
-			Expect(res.Spec.Groups[0].Rules).To(HaveLen(4))
+			Expect(res.Spec.Groups[0].Rules).To(HaveLen(3))
 
 			testOwnerReferences(res.OwnerReferences)
 
@@ -128,7 +128,6 @@ var _ = Describe("test the alert package", func() {
 			existRule.Spec.Groups[0].Rules = []monitoringv1.Rule{
 				existRule.Spec.Groups[0].Rules[0],
 				existRule.Spec.Groups[0].Rules[2],
-				existRule.Spec.Groups[0].Rules[3],
 			}
 			// modify the first rule
 			existRule.Spec.Groups[0].Rules[0].Alert = "modified alert"
@@ -144,7 +143,7 @@ var _ = Describe("test the alert package", func() {
 			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
 
 			Expect(res.Spec.Groups).To(HaveLen(1))
-			Expect(res.Spec.Groups[0].Rules).To(HaveLen(4))
+			Expect(res.Spec.Groups[0].Rules).To(HaveLen(3))
 			Expect(res.Spec.Groups[0].Rules[0].Alert).Should(Equal(outOfBandUpdateAlert))
 
 			testOwnerReferences(res.OwnerReferences)
@@ -185,7 +184,7 @@ var _ = Describe("test the alert package", func() {
 			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
 
 			Expect(res.Spec.Groups).To(HaveLen(1))
-			Expect(res.Spec.Groups[0].Rules).To(HaveLen(4))
+			Expect(res.Spec.Groups[0].Rules).To(HaveLen(3))
 
 			testOwnerReferences(res.OwnerReferences)
 		})
@@ -225,7 +224,7 @@ var _ = Describe("test the alert package", func() {
 			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
 
 			Expect(res.Spec.Groups).To(HaveLen(1))
-			Expect(res.Spec.Groups[0].Rules).To(HaveLen(4))
+			Expect(res.Spec.Groups[0].Rules).To(HaveLen(3))
 
 			testOwnerReferences(res.OwnerReferences)
 		})
