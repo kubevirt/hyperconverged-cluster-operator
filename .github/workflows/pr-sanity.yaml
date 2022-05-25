@@ -5,9 +5,9 @@ name: Sanity Checks
 # Controls when the action will run.
 on:
   push:
-    branches: [ main ]
+    branches: [ release-1.7 ]
   pull_request:
-    branches: [ main ]
+    branches: [ release-1.7 ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
