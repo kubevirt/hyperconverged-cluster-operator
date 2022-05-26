@@ -28,6 +28,7 @@ const (
 	alertRuleGroup           = "kubevirt.hyperconverged.rules"
 	outOfBandUpdateAlert     = "KubevirtHyperconvergedClusterOperatorCRModification"
 	unsafeModificationAlert  = "KubevirtHyperconvergedClusterOperatorUSModification"
+	nmoInUseAlert            = "KubevirtHyperconvergedClusterOperatorNMOInUseAlert"
 	runbookUrlTemplate       = "https://kubevirt.io/monitoring/runbooks/%s"
 	severityAlertLabelKey    = "severity"
 	partOfAlertLabelKey      = "kubernetes_operator_part_of"
@@ -39,6 +40,7 @@ const (
 var (
 	outOfBandUpdateRunbookUrl    = fmt.Sprintf(runbookUrlTemplate, outOfBandUpdateAlert)
 	unsafeModificationRunbookUrl = fmt.Sprintf(runbookUrlTemplate, unsafeModificationAlert)
+	nmoInUseRunbookUrl           = fmt.Sprintf(runbookUrlTemplate, nmoInUseAlert)
 )
 
 type metricsServiceHandler genericOperand
@@ -284,6 +286,23 @@ func NewPrometheusRuleSpec() *monitoringv1.PrometheusRuleSpec {
 					},
 					Labels: map[string]string{
 						severityAlertLabelKey:  "info",
+						partOfAlertLabelKey:    partOfAlertLabelValue,
+						componentAlertLabelKey: componentAlertLabelValue,
+					},
+				},
+				{
+					Alert: nmoInUseAlert,
+					Expr:  intstr.FromString("kubevirt_hco_nmo_in_use == 1"),
+					Annotations: map[string]string{
+						"description": "Integrated Node Maintenance Operator is being used and upgrade to OpenShift Virtualization v4.11 is blocked",
+						"summary": "Usage of nodemaintenances.nodemaintenance.kubevirt.io custom resource(s) has been found, and OpenShift version is v4.11. " +
+							"OpenShift Virtualization v4.11 package doesn't include NMO. Please remove all NMO custom resources to unblock the upgrade. " +
+							"If it is necessary to keep the node(s) under maintenance, please install the standalone Node Maintenance Operator and create the appropriate " +
+							"custom resource(s) of nodemaintenances.nodemaintenance.medik8s.io",
+						"runbook_url": nmoInUseRunbookUrl,
+					},
+					Labels: map[string]string{
+						severityAlertLabelKey:  "warning",
 						partOfAlertLabelKey:    partOfAlertLabelValue,
 						componentAlertLabelKey: componentAlertLabelValue,
 					},

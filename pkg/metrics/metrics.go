@@ -12,6 +12,9 @@ import (
 const (
 	counterLabelCompName = "component_name"
 	counterLabelAnnName  = "annotation_name"
+
+	NMOInUse    = float64(1)
+	NMONotInUse = float64(0)
 )
 
 type metricDesc struct {
@@ -53,6 +56,18 @@ var HcoMetrics = func() hcoMetrics {
 						Help: md.help,
 					},
 					md.constLabelPairs,
+				)
+			},
+		},
+		"nmoInUse": {
+			fqName: "kubevirt_hco_nmo_in_use",
+			help:   "Indicates whether integrated Node Maintenance Operator is being used (1) or not (0)",
+			initFunc: func(md metricDesc) prometheus.Collector {
+				return prometheus.NewGauge(
+					prometheus.GaugeOpts{
+						Name: md.fqName,
+						Help: md.help,
+					},
 				)
 			},
 		},
@@ -109,6 +124,12 @@ func (hm *hcoMetrics) GetMetricValue(metricName string, label prometheus.Labels)
 			return 0, err
 		}
 		return res.Gauge.GetValue(), nil
+	case prometheus.Gauge:
+		err := m.Write(res)
+		if err != nil {
+			return 0, err
+		}
+		return res.Gauge.GetValue(), nil
 	default:
 		return 0, fmt.Errorf("%s is with unknown metric type", metricName)
 	}
@@ -134,14 +155,21 @@ func (hm *hcoMetrics) IncMetric(metricName string, label prometheus.Labels) erro
 func (hm *hcoMetrics) SetMetric(metricName string, label prometheus.Labels, value float64) error {
 	metric, found := hm.metricList[metricName]
 	if !found {
-		return fmt.Errorf("unknown metric name %s", metricName)
+		return unknownMetricNameError(metricName)
 	}
 
-	if m, ok := metric.(*prometheus.GaugeVec); ok {
+	switch m := metric.(type) {
+	case *prometheus.GaugeVec:
 		m.With(label).Set(value)
-		return nil
+
+	case prometheus.Gauge:
+		m.Set(value)
+
+	default:
+		return unknownMetricTypeError(metricName)
 	}
-	return fmt.Errorf("%s is with unknown metric type", metricName)
+
+	return nil
 }
 
 // IncOverwrittenModifications increments counter by 1
@@ -162,6 +190,25 @@ func (hm *hcoMetrics) SetUnsafeModificationCount(count int, unsafeAnnotation str
 // GetUnsafeModificationsCount returns current value of counter. If error is not nil then value is undefined
 func (hm *hcoMetrics) GetUnsafeModificationsCount(unsafeAnnotation string) (float64, error) {
 	return hm.GetMetricValue("unsafeModifications", getLabelsForUnsafeAnnotation(unsafeAnnotation))
+}
+
+// SetNmoInUseGauge sets the metric to 1 to indicate NMO is in use
+func (hm *hcoMetrics) SetNmoInUseGauge() error {
+	return hm.SetMetric("nmoInUse", nil, NMOInUse)
+}
+
+// SetNmoNotInUseGauge sets the metric to 0 to indicate NMO is not in use
+func (hm *hcoMetrics) SetNmoNotInUseGauge() error {
+	return hm.SetMetric("nmoInUse", nil, NMONotInUse)
+}
+
+// IsNmoInUse returns current value of the metric. If error is not nil then value is undefined
+func (hm *hcoMetrics) IsNmoInUse() (bool, error) {
+	val, err := hm.GetMetricValue("nmoInUse", nil)
+	if err != nil {
+		return false, err
+	}
+	return val == NMOInUse, nil
 }
 
 func getLabelsForObj(kind string, name string) prometheus.Labels {
@@ -186,4 +233,12 @@ func (hm hcoMetrics) GetMetricDesc() []MetricDescription {
 	}
 
 	return res
+}
+
+func unknownMetricNameError(metricName string) error {
+	return fmt.Errorf("unknown metric name %s", metricName)
+}
+
+func unknownMetricTypeError(metricName string) error {
+	return fmt.Errorf("%s is with unknown metric type", metricName)
 }
