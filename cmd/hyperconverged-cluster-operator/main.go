@@ -82,6 +82,8 @@ var (
 )
 
 func main() {
+	// FAKE PR to verify CI configuration
+
 	cmdHelper.InitiateCommand()
 
 	watchNamespace := cmdHelper.GetWatchNS()
