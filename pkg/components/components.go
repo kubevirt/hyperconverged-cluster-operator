@@ -398,6 +398,61 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion 
 	}
 }
 
+func GetMetricsRole(namespace string) rbacv1.Role {
+	const roleName = hcoName + "-monitoring"
+
+	return rbacv1.Role{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: rbacv1.GroupName + "/v1",
+			Kind:       "Role",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      roleName,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"name": hcoName,
+			},
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: emptyAPIGroup,
+				Resources: stringListToSlice("services", "endpoints", "pods"),
+				Verbs:     stringListToSlice("get", "list", "watch"),
+			},
+		},
+	}
+}
+
+func GetMetricsRoleBinding(namespace string) rbacv1.RoleBinding {
+	const roleName = hcoName + "-monitoring"
+
+	return rbacv1.RoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: rbacv1.GroupName + "/v1",
+			Kind:       "RoleBinding",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      roleName,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"name": hcoName,
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: rbacv1.GroupName,
+			Kind:     "Role",
+			Name:     roleName,
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      rbacv1.ServiceAccountKind,
+				Name:      "prometheus-k8s",
+				Namespace: "openshift-monitoring",
+			},
+		},
+	}
+}
+
 func GetClusterRole() rbacv1.ClusterRole {
 	return rbacv1.ClusterRole{
 		TypeMeta: metav1.TypeMeta{

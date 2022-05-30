@@ -133,8 +133,12 @@ func main() {
 	serviceAccounts := map[string]v1.ServiceAccount{
 		"hyperconverged-cluster-operator": components.GetServiceAccount(*operatorNamespace),
 	}
-	permissions := make([]rbacv1.Role, 0)
-	roleBindings := make([]rbacv1.RoleBinding, 0)
+	permissions := []rbacv1.Role{
+		components.GetMetricsRole(*operatorNamespace),
+	}
+	roleBindings := []rbacv1.RoleBinding{
+		components.GetMetricsRoleBinding(*operatorNamespace),
+	}
 	clusterPermissions := []rbacv1.ClusterRole{
 		components.GetClusterRole(),
 	}
