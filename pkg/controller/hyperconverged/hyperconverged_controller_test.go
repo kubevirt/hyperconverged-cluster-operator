@@ -1901,6 +1901,45 @@ var _ = Describe("HyperconvergedController", func() {
 						Reason:  nmoCrExistErrorReason,
 						Message: nmoCrExistErrorMessage,
 					})))
+
+					verifyNMOInUseMetricTrue()
+				})
+			})
+
+			Context("allow upgrade if NMO CR doesn't exist", func() {
+				It("should set Upgradeable Condition to true if NMO CR is not found", func() {
+					nmoCrd := &apiextensionsv1.CustomResourceDefinition{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      nmoCrdName,
+							Namespace: "",
+						},
+					}
+					clusterVersion := &openshiftconfigv1.ClusterVersion{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "version",
+						},
+						Status: openshiftconfigv1.ClusterVersionStatus{
+							Desired: openshiftconfigv1.Release{
+								Version: "4.11.0",
+							},
+						},
+					}
+					resources := append(expected.toArray(), nmoCrd, clusterVersion)
+					cl := commonTestUtils.InitClient(resources)
+
+					foundResource, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+					Expect(requeue).To(BeFalse())
+					checkAvailability(foundResource, metav1.ConditionTrue)
+					validateOperatorCondition(reconciler, metav1.ConditionTrue, hcoutil.UpgradeableAllowReason, hcoutil.UpgradeableAllowMessage)
+
+					Expect(foundResource.Status.Conditions).To(ContainElement(commonTestUtils.RepresentCondition(metav1.Condition{
+						Type:    hcov1beta1.ConditionUpgradeable,
+						Status:  metav1.ConditionTrue,
+						Reason:  reconcileCompleted,
+						Message: reconcileCompletedMessage,
+					})))
+
+					verifyNMOInUseMetricFalse()
 				})
 			})
 
@@ -3184,4 +3223,16 @@ func searchInRelatedObjects(relatedObjects []corev1.ObjectReference, kind, name 
 		}
 	}
 	return false
+}
+
+func verifyNMOInUseMetricTrue() {
+	nmoExists, err := metrics.HcoMetrics.IsNmoInUse()
+	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+	ExpectWithOffset(1, nmoExists).Should(BeTrue())
+}
+
+func verifyNMOInUseMetricFalse() {
+	nmoExists, err := metrics.HcoMetrics.IsNmoInUse()
+	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+	ExpectWithOffset(1, nmoExists).Should(BeFalse())
 }

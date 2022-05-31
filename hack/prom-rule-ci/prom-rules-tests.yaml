@@ -313,6 +313,49 @@ tests:
             kubernetes_operator_part_of:   "kubevirt"
             kubernetes_operator_component: "hyperconverged-cluster-operator"
             annotation_name: "networkaddonsconfigs.kubevirt.io/jsonpatch"
+
+
+  # Test NMO In Use Alert
+  - interval: 1m
+    input_series:
+      - series: 'kubevirt_hco_nmo_in_use'
+        # time:  0 1 2 3 4 5 6 7 8 9 10
+        values: "_ 0 0 1 1 1 0 1 0 1 0"
+
+    alert_rule_test:
+      # No metric, no alert
+      - eval_time: 1m
+        alertname: KubevirtHyperconvergedClusterOperatorNMOInUseAlert
+        exp_alerts: []
+
+      # First increase must trigger an alert
+      - eval_time: 3m
+        alertname: KubevirtHyperconvergedClusterOperatorNMOInUseAlert
+        exp_alerts:
+          - exp_annotations:
+              description: "Integrated Node Maintenance Operator is being used and upgrade to OpenShift Virtualization v4.11 is blocked"
+              summary: "Usage of nodemaintenances.nodemaintenance.kubevirt.io custom resource(s) has been found, and OpenShift version is v4.11. OpenShift Virtualization v4.11 package doesn't include NMO. Please remove all NMO custom resources to unblock the upgrade. If it is necessary to keep the node(s) under maintenance, please install the standalone Node Maintenance Operator and create the appropriate custom resource(s) of nodemaintenances.nodemaintenance.medik8s.io"
+              runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorNMOInUseAlert"
+            exp_labels:
+              severity:           "warning"
+              kubernetes_operator_part_of:   "kubevirt"
+              kubernetes_operator_component: "hyperconverged-cluster-operator"
+      - eval_time: 7m
+        alertname: KubevirtHyperconvergedClusterOperatorNMOInUseAlert
+        exp_alerts:
+          - exp_annotations:
+              description: "Integrated Node Maintenance Operator is being used and upgrade to OpenShift Virtualization v4.11 is blocked"
+              summary: "Usage of nodemaintenances.nodemaintenance.kubevirt.io custom resource(s) has been found, and OpenShift version is v4.11. OpenShift Virtualization v4.11 package doesn't include NMO. Please remove all NMO custom resources to unblock the upgrade. If it is necessary to keep the node(s) under maintenance, please install the standalone Node Maintenance Operator and create the appropriate custom resource(s) of nodemaintenances.nodemaintenance.medik8s.io"
+              runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorNMOInUseAlert"
+            exp_labels:
+              severity:           "warning"
+              kubernetes_operator_part_of:   "kubevirt"
+              kubernetes_operator_component: "hyperconverged-cluster-operator"
+      - eval_time: 10m
+        alertname: KubevirtHyperconvergedClusterOperatorNMOInUseAlert
+        exp_alerts: []
+
+
   # Test recording rule
   - interval: 1m
     input_series:

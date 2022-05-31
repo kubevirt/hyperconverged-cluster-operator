@@ -468,8 +468,12 @@ func (r *ReconcileHyperConverged) checkNMO(req *common.HcoRequest) error {
 				fmt.Sprintf("Node Maintenance Operator custom resources %s have been found. Please remove them to allow upgrade. "+
 					"You can use NMO standalone operator if keeping the node(s) under maintenance is still required.", nmoCrdName))
 			req.Upgradeable = false
-			if err != nil {
-				return err
+			if metricErr := metrics.HcoMetrics.SetNmoInUseGauge(); metricErr != nil {
+				req.Logger.Error(metricErr, "failed to update the kubevirt_hco_nmo_in_use metric")
+			}
+		} else {
+			if metricErr := metrics.HcoMetrics.SetNmoNotInUseGauge(); metricErr != nil {
+				req.Logger.Error(metricErr, "failed to update the kubevirt_hco_nmo_in_use metric")
 			}
 		}
 	}
