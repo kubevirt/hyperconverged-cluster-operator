@@ -39,6 +39,9 @@ trap "cleanup" INT TERM EXIT
 # the test image can be overwritten by the caller
 FUNC_TEST_IMAGE=${FUNC_TEST_IMAGE:-${computed_test_image}}
 
+echo "Ensuring we have a token for prometheus-k8s SA"
+$KUBECTL_BINARY create token -n openshift-monitoring prometheus-k8s || true
+
 echo "Running tests with $FUNC_TEST_IMAGE"
 
 $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" create serviceaccount functest \
