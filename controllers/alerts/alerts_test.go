@@ -230,6 +230,45 @@ var _ = Describe("test the alert package", func() {
 			testOwnerReferences(res.OwnerReferences)
 		})
 
+		It("should update if a label added", func() {
+			ci := commonTestUtils.ClusterInfoMock{}
+			existRule := newPrometheusRule(commonTestUtils.Namespace, ci.GetDeployment())
+			existRule.Labels["wrongLabel"] = "wrongLabelText"
+
+			cl := commonTestUtils.InitClient([]runtime.Object{existRule})
+
+			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
+			Expect(reconciler).NotTo(BeNil())
+
+			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
+
+			res := &monitoringv1.PrometheusRule{}
+			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
+
+			_, LabelFound := res.Labels["wrongLabel"]
+			Expect(LabelFound).To(BeFalse())
+		})
+
+		It("should update if a label is missing", func() {
+			ci := commonTestUtils.ClusterInfoMock{}
+			existRule := newPrometheusRule(commonTestUtils.Namespace, ci.GetDeployment())
+			delete(existRule.Labels, hcoutil.AppLabelComponent)
+
+			cl := commonTestUtils.InitClient([]runtime.Object{existRule})
+
+			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
+			Expect(reconciler).NotTo(BeNil())
+
+			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
+
+			res := &monitoringv1.PrometheusRule{}
+			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
+
+			label, LabelFound := res.Labels[hcoutil.AppLabelComponent]
+			Expect(LabelFound).To(BeTrue())
+			Expect(label).To(BeEquivalentTo(hcoutil.AppComponentMonitoring))
+		})
+
 		Context("error cases", func() {
 			fakeError := fmt.Errorf("unexpected error")
 
