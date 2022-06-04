@@ -147,6 +147,11 @@ func (r AlertRuleReconciler) updateAlert(ctx context.Context, rule *monitoringv1
 		}
 	}
 
+	if !reflect.DeepEqual(r.theRule.Labels, rule.Labels) {
+		needUpdate = true
+		rule.SetLabels(hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring))
+	}
+
 	if needUpdate {
 		logger.Info("updating the PrometheusRule")
 		err := r.client.Update(ctx, rule)
