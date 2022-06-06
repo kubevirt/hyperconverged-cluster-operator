@@ -198,28 +198,33 @@ func (g *Project) GetReleaseNotes() ([]string, error) {
 
 func (g *Project) releaseNoteFromSquashCommit(releaseNotes []string, matches []string) []string {
 	for _, match := range matches {
-		num, err := strconv.Atoi(match[2 : len(match)-1])
+		// Get the Pull Request number from a Squash Commit message information (p.e. "(#1820)") and convert it to int
+		pullRequestNumber, err := strconv.Atoi(match[2 : len(match)-1])
 		if err != nil {
 			continue
 		}
-		releaseNotes = g.readReleaseNote(releaseNotes, num)
+		releaseNotes = g.readReleaseNote(releaseNotes, pullRequestNumber)
 	}
 
 	return releaseNotes
 }
 
+// releaseNoteFromMergeCommit takes a Merge Commit message
+// (p.e. "Merge pull request #7494 from prnaraya/vm-force-stop"), splits it by spaces, then it fetches the part with the
+// Pull Request number and removes the prefix "#". Finally, it executes readReleaseNote to read the release note of that
+// Pull Request on GitHub and append it in the given release notes list.
 func (g *Project) releaseNoteFromMergeCommit(releaseNotes []string, line string) []string {
 	pr := strings.Split(line, " ")
-
-	num, err := strconv.Atoi(strings.TrimPrefix(pr[3], "#"))
+	pullRequestNumber, err := strconv.Atoi(strings.TrimPrefix(pr[3], "#"))
 	if err != nil {
 		return releaseNotes
 	}
-	return g.readReleaseNote(releaseNotes, num)
+
+	return g.readReleaseNote(releaseNotes, pullRequestNumber)
 }
 
-func (g *Project) readReleaseNote(releaseNotes []string, num int) []string {
-	note, err := g.github.getReleaseNote(num)
+func (g *Project) readReleaseNote(releaseNotes []string, pullRequestNumber int) []string {
+	note, err := g.github.getReleaseNote(pullRequestNumber)
 	if err != nil {
 		return releaseNotes
 	}
