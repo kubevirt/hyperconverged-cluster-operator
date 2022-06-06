@@ -34,8 +34,6 @@ const (
 	defaultCommonTemplatesNamespace = hcoutil.OpenshiftNamespace
 
 	dataImportCronTemplatesFileLocation = "./dataImportCronTemplates"
-
-	dataImportCronEnabledAnnotation = "dataimportcrontemplate.kubevirt.io/enable"
 )
 
 var (
@@ -275,7 +273,7 @@ func getCommonDicts(list []hcov1beta1.DataImportCronTemplateStatus, crDicts map[
 }
 
 func isDataImportCronTemplateEnabled(dict hcov1beta1.DataImportCronTemplate) bool {
-	annotationVal, found := dict.Annotations[dataImportCronEnabledAnnotation]
+	annotationVal, found := dict.Annotations[hcoutil.DataImportCronEnabledAnnotation]
 	return !found || strings.ToLower(annotationVal) == "true"
 }
 

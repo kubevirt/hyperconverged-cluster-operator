@@ -1392,32 +1392,32 @@ var _ = Describe("SSP Operands", func() {
 				})
 
 				It("should be true if the annotation is set to 'true'", func() {
-					image.Annotations = map[string]string{dataImportCronEnabledAnnotation: "true"}
+					image.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: "true"}
 					Expect(isDataImportCronTemplateEnabled(*image)).To(BeTrue())
 				})
 
 				It("should be true if the annotation is set to 'TRUE'", func() {
-					image.Annotations = map[string]string{dataImportCronEnabledAnnotation: "TRUE"}
+					image.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: "TRUE"}
 					Expect(isDataImportCronTemplateEnabled(*image)).To(BeTrue())
 				})
 
 				It("should be true if the annotation is set to 'TrUe'", func() {
-					image.Annotations = map[string]string{dataImportCronEnabledAnnotation: "TrUe"}
+					image.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: "TrUe"}
 					Expect(isDataImportCronTemplateEnabled(*image)).To(BeTrue())
 				})
 
 				It("should be false if the annotation is empty", func() {
-					image.Annotations = map[string]string{dataImportCronEnabledAnnotation: ""}
+					image.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: ""}
 					Expect(isDataImportCronTemplateEnabled(*image)).To(BeFalse())
 				})
 
 				It("should be false if the annotation is set to 'false'", func() {
-					image.Annotations = map[string]string{dataImportCronEnabledAnnotation: "false"}
+					image.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: "false"}
 					Expect(isDataImportCronTemplateEnabled(*image)).To(BeFalse())
 				})
 
 				It("should be false if the annotation is set to 'something-else'", func() {
-					image.Annotations = map[string]string{dataImportCronEnabledAnnotation: "something-else"}
+					image.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: "something-else"}
 					Expect(isDataImportCronTemplateEnabled(*image)).To(BeFalse())
 				})
 			})
@@ -1429,12 +1429,12 @@ func enableDict(dict *hcov1beta1.DataImportCronTemplate) {
 	if dict.Annotations == nil {
 		dict.Annotations = make(map[string]string)
 	}
-	dict.Annotations[dataImportCronEnabledAnnotation] = "true"
+	dict.Annotations[hcoutil.DataImportCronEnabledAnnotation] = "true"
 }
 
 func disableDict(dict *hcov1beta1.DataImportCronTemplate) {
 	if dict.Annotations == nil {
 		dict.Annotations = make(map[string]string)
 	}
-	dict.Annotations[dataImportCronEnabledAnnotation] = "false"
+	dict.Annotations[hcoutil.DataImportCronEnabledAnnotation] = "false"
 }
