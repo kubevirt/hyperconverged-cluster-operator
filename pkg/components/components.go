@@ -834,6 +834,7 @@ func GetCSVBase(params *CSVBaseParams) *csvv1alpha1.ClusterServiceVersion {
 				"operatorframework.io/suggested-namespace":       params.Namespace,
 				"operators.openshift.io/infrastructure-features": `["disconnected","proxy-aware"]`,
 				"operatorframework.io/initialization-resource":   string(almExamples),
+				"operatorframework.io/cluster-monitoring":        "true",
 			},
 		},
 		Spec: csvv1alpha1.ClusterServiceVersionSpec{
