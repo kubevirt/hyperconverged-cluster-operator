@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-INSTALLED_NAMESPACE=${INSTALLED_NAMESPACE:-"kubevirt-hyperconverged"}
+export INSTALLED_NAMESPACE=${INSTALLED_NAMESPACE:-"kubevirt-hyperconverged"}
 
 source hack/common.sh
 source cluster/kubevirtci.sh

@@ -13,6 +13,7 @@ function check_priority_class() {
   [[ "${OLD_PC_UID}" != "${NEW_PC_UID}" ]]
 
   # read the UID from the HyperConverged relatedObject list
+  NEW_PC_REF_UID=$(${KUBECTL_BINARY} get hco -n ${INSTALLED_NAMESPACE} kubevirt-hyperconverged -o json | jq -r '.status.relatedObjects[]')
   NEW_PC_REF_UID=$(${KUBECTL_BINARY} get hco -n ${INSTALLED_NAMESPACE} kubevirt-hyperconverged -o json | jq -r '.status.relatedObjects[] | select(.kind == "PriorityClass" and .name == "kubevirt-cluster-critical") | .uid')
 
   [[ "${NEW_PC_UID}" == "${NEW_PC_REF_UID}" ]]
@@ -24,6 +25,7 @@ function check_priority_class() {
 
 export -f check_priority_class
 
+OLD_PC_REF_UID=$(${KUBECTL_BINARY} get hco -n ${INSTALLED_NAMESPACE} kubevirt-hyperconverged -o json | jq -r '.status.relatedObjects[]')
 OLD_PC_REF_UID=$(${KUBECTL_BINARY} get hco -n ${INSTALLED_NAMESPACE} kubevirt-hyperconverged -o json | jq -r '.status.relatedObjects[] | select(.kind == "PriorityClass" and .name == "kubevirt-cluster-critical") | .uid')
 OLD_PC_UID=$(${KUBECTL_BINARY} get priorityclass -n ${INSTALLED_NAMESPACE} kubevirt-cluster-critical -o jsonpath='{.metadata.uid}')
 [[ "${OLD_PC_REF_UID}" == "${OLD_PC_UID}" ]]
