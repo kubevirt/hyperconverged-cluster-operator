@@ -54,7 +54,7 @@ spec:
         - name: HCO_KV_IO_VERSION
           value: 1.7.0
         - name: KUBEVIRT_VERSION
-          value: v0.53.1
+          value: v0.53.2
         - name: CDI_VERSION
           value: v1.49.0
         - name: NETWORK_ADDONS_VERSION
@@ -348,32 +348,33 @@ spec:
               topologyKey: kubernetes.io/hostname
             weight: 1
       containers:
-      - command:
-        - virt-operator
+      - args:
         - --port
         - "8443"
         - -v
         - "2"
+        command:
+        - virt-operator
         env:
         - name: OPERATOR_IMAGE
-          value: quay.io/kubevirt/virt-operator@sha256:05edb3b52d4da97556e1c91e33df3242c3c8fd4bb97a76ceefcb1b28ce7bd368
+          value: quay.io/kubevirt/virt-operator@sha256:973ba143088731c06befd8652ef742b99ec6948e2e696a3b76031846098b4aac
         - name: WATCH_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.annotations['olm.targetNamespaces']
         - name: KUBEVIRT_VERSION
-          value: v0.53.1
+          value: v0.53.2
         - name: VIRT_API_SHASUM
-          value: sha256:8a4a093177668854ee5f23281a0a64499c40ef5401d81d51f3554713819640a0
+          value: sha256:10b0aae00fb79ccc385c01389cb77761372e250daa4e2dc84736371f041e37bf
         - name: VIRT_CONTROLLER_SHASUM
-          value: sha256:a1d36307a80adff02794e2f8af5ea78a8272359fd26f679f0cf5339142f399de
+          value: sha256:6a87b36cd35a353afd27de61e2aa73e093db60b707c31f3d5f4a3bd134561499
         - name: VIRT_HANDLER_SHASUM
-          value: sha256:f58e352bfeb75e5e820915cad0feaba146f518449a453e600e28427e404131f1
+          value: sha256:4d0aabaf676c142cc74a17889f8bb5011bbbf539b53e03a81c1a1fc14123aa3a
         - name: VIRT_LAUNCHER_SHASUM
-          value: sha256:2d48d03f789185aa2dfb93ab5710fd98c86e0deb6f26b080c3f727340a54929a
+          value: sha256:7291ad6e7955dc1f26a0ab0afcdf89aca004fe6f8fc2d48b6e058b3c6dfc7314
         - name: GS_SHASUM
-          value: sha256:4897b48e48dfb8c7153aaafd59840640feee94389afa70a4fa122686ac3d6203
-        image: quay.io/kubevirt/virt-operator@sha256:05edb3b52d4da97556e1c91e33df3242c3c8fd4bb97a76ceefcb1b28ce7bd368
+          value: sha256:0fbc7ca34306be70e9e7fbf5a37c52b7fd7cd77b3d236edad65b4955dae6a762
+        image: quay.io/kubevirt/virt-operator@sha256:973ba143088731c06befd8652ef742b99ec6948e2e696a3b76031846098b4aac
         imagePullPolicy: IfNotPresent
         name: virt-operator
         ports:
