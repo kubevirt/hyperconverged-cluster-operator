@@ -17,14 +17,11 @@ import (
 	"k8s.io/client-go/tools/reference"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commonTestUtils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/metrics"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-)
-
-var (
-	logger = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("alerts-test")
 )
 
 func TestAlerts(t *testing.T) {
@@ -33,6 +30,12 @@ func TestAlerts(t *testing.T) {
 }
 
 var _ = Describe("test the alert package", func() {
+	var req *common.HcoRequest
+
+	BeforeEach(func() {
+		req = commonTestUtils.NewReq(nil)
+	})
+
 	Context("Prometheus rule in openshift", func() {
 		ci := commonTestUtils.ClusterInfoMock{}
 		ee := commonTestUtils.NewEventEmitterMock()
@@ -47,7 +50,7 @@ var _ = Describe("test the alert package", func() {
 			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 			Expect(reconciler).NotTo(BeNil())
 
-			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
+			Expect(reconciler.Reconcile(req)).To(Succeed())
 
 			res := &monitoringv1.PrometheusRule{}
 			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
@@ -76,7 +79,7 @@ var _ = Describe("test the alert package", func() {
 			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 			Expect(reconciler).NotTo(BeNil())
 
-			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
+			Expect(reconciler.Reconcile(req)).To(Succeed())
 
 			res := &monitoringv1.PrometheusRule{}
 			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
@@ -100,7 +103,7 @@ var _ = Describe("test the alert package", func() {
 			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 			Expect(reconciler).NotTo(BeNil())
 
-			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
+			Expect(reconciler.Reconcile(req)).To(Succeed())
 
 			res := &monitoringv1.PrometheusRule{}
 			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
@@ -137,7 +140,7 @@ var _ = Describe("test the alert package", func() {
 			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 			Expect(reconciler).NotTo(BeNil())
 
-			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
+			Expect(reconciler.Reconcile(req)).To(Succeed())
 
 			res := &monitoringv1.PrometheusRule{}
 			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
@@ -159,6 +162,49 @@ var _ = Describe("test the alert package", func() {
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 		})
 
+		It("should reconcile the rules if modified; not HCO triggered", func() {
+			req.HCOTriggered = false
+			currentMetric, err := metrics.HcoMetrics.GetOverwrittenModificationsCount(monitoringv1.PrometheusRuleKind, ruleName)
+			Expect(err).ToNot(HaveOccurred())
+
+			ci := commonTestUtils.ClusterInfoMock{}
+			existRule := newPrometheusRule(commonTestUtils.Namespace, ci.GetDeployment())
+			// remove the 2nd rule
+			existRule.Spec.Groups[0].Rules = []monitoringv1.Rule{
+				existRule.Spec.Groups[0].Rules[0],
+				existRule.Spec.Groups[0].Rules[2],
+			}
+			// modify the first rule
+			existRule.Spec.Groups[0].Rules[0].Alert = "modified alert"
+
+			cl := commonTestUtils.InitClient([]runtime.Object{existRule})
+
+			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
+			Expect(reconciler).NotTo(BeNil())
+
+			Expect(reconciler.Reconcile(req)).To(Succeed())
+
+			res := &monitoringv1.PrometheusRule{}
+			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
+
+			Expect(res.Spec.Groups).To(HaveLen(1))
+			Expect(res.Spec.Groups[0].Rules).To(HaveLen(3))
+			Expect(res.Spec.Groups[0].Rules[0].Alert).Should(Equal(outOfBandUpdateAlert))
+
+			testOwnerReferences(res.OwnerReferences)
+
+			expectedEvents := []commonTestUtils.MockEvent{
+				{
+					EventType: corev1.EventTypeWarning,
+					Reason:    "Overwritten",
+					Msg:       "Overwritten PrometheusRule " + ruleName,
+				},
+			}
+
+			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
+			Expect(metrics.HcoMetrics.GetOverwrittenModificationsCount(monitoringv1.PrometheusRuleKind, ruleName)).Should(BeEquivalentTo(currentMetric + 1))
+		})
+
 		It("should fix the owner reference if pointing to another owner", func() {
 			ci := commonTestUtils.ClusterInfoMock{}
 			existRule := newPrometheusRule(commonTestUtils.Namespace, ci.GetDeployment())
@@ -178,7 +224,7 @@ var _ = Describe("test the alert package", func() {
 			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 			Expect(reconciler).NotTo(BeNil())
 
-			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
+			Expect(reconciler.Reconcile(req)).To(Succeed())
 
 			res := &monitoringv1.PrometheusRule{}
 			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
@@ -218,7 +264,7 @@ var _ = Describe("test the alert package", func() {
 			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 			Expect(reconciler).NotTo(BeNil())
 
-			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
+			Expect(reconciler.Reconcile(req)).To(Succeed())
 
 			res := &monitoringv1.PrometheusRule{}
 			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
@@ -239,7 +285,7 @@ var _ = Describe("test the alert package", func() {
 			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 			Expect(reconciler).NotTo(BeNil())
 
-			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
+			Expect(reconciler.Reconcile(req)).To(Succeed())
 
 			res := &monitoringv1.PrometheusRule{}
 			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
@@ -258,7 +304,7 @@ var _ = Describe("test the alert package", func() {
 			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 			Expect(reconciler).NotTo(BeNil())
 
-			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
+			Expect(reconciler.Reconcile(req)).To(Succeed())
 
 			res := &monitoringv1.PrometheusRule{}
 			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
@@ -280,7 +326,7 @@ var _ = Describe("test the alert package", func() {
 				reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 				Expect(reconciler).NotTo(BeNil())
 
-				err := reconciler.Reconcile(context.Background(), logger)
+				err := reconciler.Reconcile(req)
 				Expect(err).To(HaveOccurred())
 				Expect(err).Should(Equal(fakeError))
 
@@ -309,7 +355,7 @@ var _ = Describe("test the alert package", func() {
 				reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 				Expect(reconciler).NotTo(BeNil())
 
-				err := reconciler.Reconcile(context.Background(), logger)
+				err := reconciler.Reconcile(req)
 				Expect(err).To(HaveOccurred())
 				Expect(err).Should(Equal(fakeError))
 
@@ -332,7 +378,7 @@ var _ = Describe("test the alert package", func() {
 			It("should not return error even if it actually nil", func() {
 				var reconciler *AlertRuleReconciler = nil
 
-				Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
+				Expect(reconciler.Reconcile(req)).To(Succeed())
 
 				By("Make sure that the Prometheus rule was not created")
 				cl := commonTestUtils.InitClient([]runtime.Object{})
@@ -358,7 +404,7 @@ var _ = Describe("test the alert package", func() {
 			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 			Expect(reconciler).NotTo(BeNil())
 
-			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
+			Expect(reconciler.Reconcile(req)).To(Succeed())
 			res := &monitoringv1.PrometheusRule{}
 			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
 
@@ -384,7 +430,7 @@ var _ = Describe("test the alert package", func() {
 			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 			Expect(reconciler).NotTo(BeNil())
 
-			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
+			Expect(reconciler.Reconcile(req)).To(Succeed())
 			res := &monitoringv1.PrometheusRule{}
 			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
 
@@ -415,7 +461,7 @@ var _ = Describe("test the alert package", func() {
 			reconciler := NewAlertRuleReconciler(cl, ci, ee, commonTestUtils.GetScheme())
 			Expect(reconciler).NotTo(BeNil())
 
-			Expect(reconciler.Reconcile(context.Background(), logger)).To(Succeed())
+			Expect(reconciler.Reconcile(req)).To(Succeed())
 			res := &monitoringv1.PrometheusRule{}
 			Expect(cl.Get(context.Background(), types.NamespacedName{Namespace: commonTestUtils.Namespace, Name: ruleName}, res)).To(Succeed())
 

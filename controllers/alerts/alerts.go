@@ -6,11 +6,11 @@ package alerts
 // not created.
 
 import (
-	"context"
 	"fmt"
 	"reflect"
 
-	"github.com/go-logr/logr"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/metrics"
+
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -67,46 +67,46 @@ func NewAlertRuleReconciler(cl client.Client, ci hcoutil.ClusterInfo, ee hcoutil
 }
 
 // Reconcile makes sure that the required PrometheusRule resource is present with the required fields
-func (r *AlertRuleReconciler) Reconcile(ctx context.Context, logger logr.Logger) error {
+func (r *AlertRuleReconciler) Reconcile(req *common.HcoRequest) error {
 	if r == nil {
 		return nil // not initialized (not running on openshift). do nothing
 	}
 
-	logger.V(5).Info("Reconciling the PrometheusRule")
+	req.Logger.V(5).Info("Reconciling the PrometheusRule")
 
 	existingRule := &monitoringv1.PrometheusRule{}
-	logger.V(5).Info("Reading the current PrometheusRule")
-	err := r.client.Get(ctx, client.ObjectKey{Namespace: r.namespace, Name: ruleName}, existingRule)
+	req.Logger.V(5).Info("Reading the current PrometheusRule")
+	err := r.client.Get(req.Ctx, client.ObjectKey{Namespace: r.namespace, Name: ruleName}, existingRule)
 
 	if err != nil {
 		if errors.IsNotFound(err) {
-			logger.Info("Can't find the PrometheusRule; creating a new one")
+			req.Logger.Info("Can't find the PrometheusRule; creating a new one")
 			rule := r.theRule.DeepCopy()
-			err := r.client.Create(ctx, rule)
+			err := r.client.Create(req.Ctx, rule)
 			if err != nil {
-				logger.Error(err, "failed to create PrometheusRule")
+				req.Logger.Error(err, "failed to create PrometheusRule")
 				r.eventEmitter.EmitEvent(rule, corev1.EventTypeWarning, "UnexpectedError", fmt.Sprintf("failed to create the %s %s", ruleName, monitoringv1.PrometheusRuleKind))
 				return err
 			}
-			logger.Info("successfully created the PrometheusRule")
+			req.Logger.Info("successfully created the PrometheusRule")
 			r.eventEmitter.EmitEvent(rule, corev1.EventTypeNormal, "Created", fmt.Sprintf("Created %s %s", monitoringv1.PrometheusRuleKind, ruleName))
 
 			// read back the new PrometheusRule
-			err = r.client.Get(ctx, client.ObjectKey{Namespace: r.namespace, Name: ruleName}, existingRule)
+			err = r.client.Get(req.Ctx, client.ObjectKey{Namespace: r.namespace, Name: ruleName}, existingRule)
 			if err != nil {
-				logger.Error(err, "failed to read PrometheusRule")
+				req.Logger.Error(err, "failed to read PrometheusRule")
 			}
 			r.latestRule = existingRule
 			return nil
 		}
 
-		logger.Error(err, "unexpected error while reading the PrometheusRule")
+		req.Logger.Error(err, "unexpected error while reading the PrometheusRule")
 		return err
 	}
 
 	r.latestRule = existingRule
 
-	return r.updateAlert(ctx, existingRule, logger)
+	return r.updateAlert(req, existingRule)
 }
 
 func (r *AlertRuleReconciler) UpdateRelatedObjects(req *common.HcoRequest) error {
@@ -126,7 +126,7 @@ func (r *AlertRuleReconciler) UpdateRelatedObjects(req *common.HcoRequest) error
 	return nil
 }
 
-func (r AlertRuleReconciler) updateAlert(ctx context.Context, rule *monitoringv1.PrometheusRule, logger logr.Logger) error {
+func (r AlertRuleReconciler) updateAlert(req *common.HcoRequest, rule *monitoringv1.PrometheusRule) error {
 	needUpdate := false
 	if !reflect.DeepEqual(r.theRule.Spec, rule.Spec) {
 		needUpdate = true
@@ -151,15 +151,23 @@ func (r AlertRuleReconciler) updateAlert(ctx context.Context, rule *monitoringv1
 	}
 
 	if needUpdate {
-		logger.Info("updating the PrometheusRule")
-		err := r.client.Update(ctx, rule)
+		req.Logger.Info("updating the PrometheusRule")
+		err := r.client.Update(req.Ctx, rule)
 		if err != nil {
-			logger.Error(err, "failed to update the PrometheusRule")
+			req.Logger.Error(err, "failed to update the PrometheusRule")
 			r.eventEmitter.EmitEvent(rule, corev1.EventTypeWarning, "UnexpectedError", fmt.Sprintf("failed to update the %s %s", ruleName, monitoringv1.PrometheusRuleKind))
 			return err
 		}
-		logger.Info("successfully updated the PrometheusRule")
-		r.eventEmitter.EmitEvent(rule, corev1.EventTypeNormal, "Updated", fmt.Sprintf("Updated %s %s", monitoringv1.PrometheusRuleKind, ruleName))
+		req.Logger.Info("successfully updated the PrometheusRule")
+		if req.HCOTriggered {
+			r.eventEmitter.EmitEvent(rule, corev1.EventTypeNormal, "Updated", fmt.Sprintf("Updated %s %s", monitoringv1.PrometheusRuleKind, ruleName))
+		} else {
+			r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeWarning, "Overwritten", fmt.Sprintf("Overwritten %s %s", monitoringv1.PrometheusRuleKind, ruleName))
+			err := metrics.HcoMetrics.IncOverwrittenModifications(monitoringv1.PrometheusRuleKind, ruleName)
+			if err != nil {
+				req.Logger.Error(err, "couldn't update 'OverwrittenModifications' metric")
+			}
+		}
 	}
 
 	return nil
