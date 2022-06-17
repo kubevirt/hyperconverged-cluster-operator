@@ -274,7 +274,7 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 	}
 	hcoRequest := common.NewHcoRequest(ctx, resolvedRequest, log, r.upgradeMode, hcoTriggered)
 
-	err = r.alertReconciler.Reconcile(ctx, hcoRequest.Logger)
+	err = r.alertReconciler.Reconcile(hcoRequest)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
