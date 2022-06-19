@@ -160,9 +160,9 @@ func (r AlertRuleReconciler) updateAlert(req *common.HcoRequest, rule *monitorin
 		}
 		req.Logger.Info("successfully updated the PrometheusRule")
 		if req.HCOTriggered {
-			r.eventEmitter.EmitEvent(rule, corev1.EventTypeNormal, "Updated", fmt.Sprintf("Updated %s %s", monitoringv1.PrometheusRuleKind, ruleName))
+			r.eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Updated", fmt.Sprintf("Updated %s %s", monitoringv1.PrometheusRuleKind, ruleName))
 		} else {
-			r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeWarning, "Overwritten", fmt.Sprintf("Overwritten %s %s", monitoringv1.PrometheusRuleKind, ruleName))
+			r.eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "Overwritten", fmt.Sprintf("Overwritten %s %s", monitoringv1.PrometheusRuleKind, ruleName))
 			err := metrics.HcoMetrics.IncOverwrittenModifications(monitoringv1.PrometheusRuleKind, ruleName)
 			if err != nil {
 				req.Logger.Error(err, "couldn't update 'OverwrittenModifications' metric")
