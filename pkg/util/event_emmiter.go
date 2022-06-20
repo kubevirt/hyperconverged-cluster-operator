@@ -41,7 +41,7 @@ func (ee eventEmitter) EmitEvent(object runtime.Object, eventType, reason, msg s
 
 	// checking object != nil does not work because object is an interface, and nil interface instance is not nil.
 	// We need to check that it's actually nil, using reflection.
-	if t := reflect.ValueOf(object); t.Kind() != reflect.Ptr || !t.IsNil() {
+	if t := reflect.ValueOf(object); t.Kind() != reflect.Pointer || !t.IsNil() {
 		ee.recorder.Event(object, eventType, reason, msg)
 	}
 
