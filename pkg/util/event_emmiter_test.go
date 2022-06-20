@@ -19,7 +19,11 @@ var _ = Describe("", func() {
 			namespace = "kubevirt-hyperconverged"
 		)
 
-		recorder := newEventRecorderMock()
+		var recorder *EventRecorderMock
+		BeforeEach(func() {
+			recorder = newEventRecorderMock()
+		})
+
 		ee := eventEmitter{
 			pod: nil,
 			csv: nil,
@@ -47,6 +51,7 @@ var _ = Describe("", func() {
 				ee.EmitEvent(justACmForTest, corev1.EventTypeNormal, "justTesting", "this is a test message")
 				mock := ee.recorder.(*EventRecorderMock)
 
+				Expect(mock.events).To(HaveLen(1))
 				rsEvent, found := mock.events["ConfigMap"]
 				Expect(found).To(BeTrue())
 				Expect(rsEvent).Should(Equal(expectedEvent))
@@ -126,6 +131,8 @@ var _ = Describe("", func() {
 				ee.EmitEvent(rs, corev1.EventTypeNormal, "justTesting", "this is a test message")
 				mock := ee.recorder.(*EventRecorderMock)
 
+				Expect(mock.events).To(HaveLen(3))
+
 				rsEvent, found := mock.events["ReplicaSet"]
 				Expect(found).To(BeTrue())
 				Expect(rsEvent).Should(Equal(expectedEvent))
@@ -139,6 +146,29 @@ var _ = Describe("", func() {
 				Expect(rsEvent).Should(Equal(expectedEvent))
 			})
 
+		})
+
+		It("should not update resource if it's nil", func() {
+			ee.Init(nil, nil, recorder)
+
+			By("should not emmit event for all three resources", func() {
+				ee.EmitEvent(nil, corev1.EventTypeNormal, "justTesting", "this is a test message")
+				mock := ee.recorder.(*EventRecorderMock)
+				Expect(mock.events).To(BeEmpty())
+			})
+
+		})
+
+		It("should not update resource if it's empty", func() {
+			var rs *appsv1.ReplicaSet = nil
+
+			ee.Init(nil, nil, recorder)
+
+			By("should not emmit event for all three resources", func() {
+				ee.EmitEvent(rs, corev1.EventTypeNormal, "justTesting", "this is a test message")
+				mock := ee.recorder.(*EventRecorderMock)
+				Expect(mock.events).To(BeEmpty())
+			})
 		})
 	})
 })
