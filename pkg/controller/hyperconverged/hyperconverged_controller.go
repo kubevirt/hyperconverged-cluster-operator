@@ -74,12 +74,13 @@ const (
 	taintedConfigurationReason  = "UnsupportedFeatureAnnotation"
 	taintedConfigurationMessage = "Unsupported feature was activated via an HCO annotation"
 	nmoCrExistErrorReason       = "UpgradeBlocked"
-	nmoCrExistErrorMessage      = "NMO custom resources have been found"
+	nmoCrExistErrorMessage      = "Upgrade is blocked because Node Maintenance Operator custom resources have been found. " +
+		"Please remove all " + nmoCrdName + " CRs to unblock the upgrade. You can install the standalone NMO if needed."
 
 	hcoVersionName    = "operator"
 	secondaryCRPrefix = "hco-controlled-cr-"
 
-	// These group are no longer supported. Use these constants to remove unused resources
+	// These groups are no longer supported. Use these constants to remove unused resources
 	v2vGroup = "v2v.kubevirt.io"
 
 	requestedStatusKey = "requested status"
