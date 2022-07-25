@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.7.0-unstable
-    createdAt: "2022-06-28 05:24:34"
+    createdAt: "2022-07-26 15:18:39"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     operatorframework.io/initialization-resource: '{"apiVersion":"hco.kubevirt.io/v1beta1","kind":"HyperConverged","metadata":{"annotations":{"deployOVS":"false"},"name":"kubevirt-hyperconverged","namespace":"kubevirt-hyperconverged"},"spec":{}}'
@@ -2435,7 +2435,16 @@ spec:
                   requests:
                     cpu: 10m
                     memory: 96Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
               priorityClassName: system-cluster-critical
+              securityContext:
+                runAsNonRoot: true
+                seccompProfile:
+                  type: RuntimeDefault
               serviceAccountName: hyperconverged-cluster-operator
       - label:
           app.kubernetes.io/component: deployment
@@ -2502,7 +2511,16 @@ spec:
                   requests:
                     cpu: 5m
                     memory: 48Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
               priorityClassName: system-node-critical
+              securityContext:
+                runAsNonRoot: true
+                seccompProfile:
+                  type: RuntimeDefault
               serviceAccountName: hyperconverged-cluster-operator
       - label:
           app.kubernetes.io/component: deployment
@@ -2538,7 +2556,16 @@ spec:
                   requests:
                     cpu: 10m
                     memory: 96Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
               priorityClassName: system-cluster-critical
+              securityContext:
+                runAsNonRoot: true
+                seccompProfile:
+                  type: RuntimeDefault
       - label:
           app.kubernetes.io/component: network
           app.kubernetes.io/managed-by: olm
