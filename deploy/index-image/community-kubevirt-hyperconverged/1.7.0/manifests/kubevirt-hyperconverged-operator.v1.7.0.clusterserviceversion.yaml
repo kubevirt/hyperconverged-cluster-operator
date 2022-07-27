@@ -2435,7 +2435,16 @@ spec:
                   requests:
                     cpu: 10m
                     memory: 96Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
               priorityClassName: system-cluster-critical
+              securityContext:
+                runAsNonRoot: true
+                seccompProfile:
+                  type: RuntimeDefault
               serviceAccountName: hyperconverged-cluster-operator
       - label:
           app.kubernetes.io/component: deployment
@@ -2502,7 +2511,16 @@ spec:
                   requests:
                     cpu: 5m
                     memory: 48Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
               priorityClassName: system-node-critical
+              securityContext:
+                runAsNonRoot: true
+                seccompProfile:
+                  type: RuntimeDefault
               serviceAccountName: hyperconverged-cluster-operator
       - label:
           app.kubernetes.io/component: deployment
@@ -2538,7 +2556,16 @@ spec:
                   requests:
                     cpu: 10m
                     memory: 96Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
               priorityClassName: system-cluster-critical
+              securityContext:
+                runAsNonRoot: true
+                seccompProfile:
+                  type: RuntimeDefault
       - label:
           app.kubernetes.io/component: network
           app.kubernetes.io/managed-by: olm
