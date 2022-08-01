@@ -82,6 +82,8 @@ var (
 )
 
 func main() {
+	// TODO: tset only!
+
 	cmdHelper.InitiateCommand()
 
 	watchNamespace := cmdHelper.GetWatchNS()
