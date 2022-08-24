@@ -106,7 +106,6 @@ var (
 		kvHostDevicesGate,
 		kvDownwardMetricsGate,
 		kvNUMA,
-		kvLiveMigrationGate,
 		kvVMExportGate,
 	}
 
