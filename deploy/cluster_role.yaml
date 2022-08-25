@@ -1241,6 +1241,7 @@ rules:
   - subresources.kubevirt.io
   resources:
   - version
+  - guestfs
   verbs:
   - get
   - list
@@ -1272,6 +1273,8 @@ rules:
   - virtualmachines/start
   - virtualmachines/stop
   - virtualmachines/restart
+  - virtualmachines/addvolume
+  - virtualmachines/removevolume
   verbs:
   - update
 - apiGroups:
@@ -1369,6 +1372,8 @@ rules:
   - virtualmachines/start
   - virtualmachines/stop
   - virtualmachines/restart
+  - virtualmachines/addvolume
+  - virtualmachines/removevolume
   verbs:
   - update
 - apiGroups:
