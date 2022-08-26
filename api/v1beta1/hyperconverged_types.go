@@ -379,6 +379,9 @@ type StorageImportConfig struct {
 	// +listType=set
 	// +optional
 	InsecureRegistries []string `json:"insecureRegistries,omitempty"`
+	// DataVolumeTTLSeconds is the time in seconds after DataVolume completion it can be garbage collected.
+	// +optional
+	DataVolumeTTLSeconds *int32 `json:"dataVolumeTTLSeconds,omitempty"`
 }
 
 //

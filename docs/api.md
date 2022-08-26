@@ -315,6 +315,7 @@ StorageImportConfig contains configuration for importing containerized data
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | -------- |-------- |
 | insecureRegistries | InsecureRegistries is a list of image registries URLs that are not secured. Setting an insecure registry URL in this list allows pulling images from this registry. | []string |  | false |
+| dataVolumeTTLSeconds | DataVolumeTTLSeconds is the time in seconds after DataVolume completion it can be garbage collected. | *int32 |  | false |
 
 [Back to TOC](#table-of-contents)
 

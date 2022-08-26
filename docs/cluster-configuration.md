@@ -606,8 +606,8 @@ spec:
     batchEvictionInterval: "1m"
 ```
 
-## Insecure Registries for Imported Data containerized Images
-If there is a need to import data images from an insecure registry, these registries should be added to the
+## Import from Insecure Registry
+If there is a need to import data images from an insecure registry, it should be added to the
 `insecureRegistries` field under the `storageImport` in the `HyperConverged`'s `spec` field.
 
 ### Insecure Registry Example
@@ -621,6 +621,19 @@ spec:
     insecureRegistries:
       - "private-registry-example-1:5000"
       - "private-registry-example-2:5000"
+      ...
+```
+## Garbage Collection of successfully completed DataVolumes
+Once the `PVC` population process is completed, its corresponding `DV` has no use, so it is better garbage collected. Garbage collection can be configured in the `dataVolumeTTLSeconds` field under the `storageImport` in the `HyperConverged`'s `spec` field. It defines the time in seconds after `DataVolume` completion it can be garbage collected.
+### Garbage Collection Example
+```yaml
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  storageImport:
+    dataVolumeTTLSeconds: 0
       ...
 ```
 ## Modify common golden images

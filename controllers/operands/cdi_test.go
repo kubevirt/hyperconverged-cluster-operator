@@ -603,11 +603,14 @@ var _ = Describe("CDI Operand", func() {
 
 		Context("Test StorageImport", func() {
 
-			It("should add InsecureRegistries if exists in HC and missing in CDI", func() {
+			testTTL := int32(1)
+
+			It("should add missing CDIConfig fields as set in HCO CR", func() {
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
 				hco.Spec.StorageImport = &hcov1beta1.StorageImportConfig{
-					InsecureRegistries: []string{"first:5000", "second:5000", "third:5000"},
+					InsecureRegistries:   []string{"first:5000", "second:5000", "third:5000"},
+					DataVolumeTTLSeconds: &testTTL,
 				}
 
 				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
@@ -629,12 +632,15 @@ var _ = Describe("CDI Operand", func() {
 				Expect(foundCdi.Spec.Config.InsecureRegistries).ToNot(BeEmpty())
 				Expect(foundCdi.Spec.Config.InsecureRegistries).Should(HaveLen(3))
 				Expect(foundCdi.Spec.Config.InsecureRegistries).Should(ContainElements("first:5000", "second:5000", "third:5000"))
+				Expect(foundCdi.Spec.Config.DataVolumeTTLSeconds).ToNot(BeNil())
+				Expect(*foundCdi.Spec.Config.DataVolumeTTLSeconds).To(Equal(testTTL))
 			})
 
-			It("should remove InsecureRegistries if missing in HCO CR", func() {
+			It("should undo CDIConfig settings missing in HCO CR", func() {
 				existingCdi, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
 				existingCdi.Spec.Config.InsecureRegistries = []string{"first:5000", "second:5000", "third:5000"}
+				existingCdi.Spec.Config.DataVolumeTTLSeconds = &testTTL
 
 				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingCdi})
 				handler := (*genericOperand)(newCdiHandler(cl, commonTestUtils.GetScheme()))
@@ -653,15 +659,18 @@ var _ = Describe("CDI Operand", func() {
 
 				Expect(foundCDI.Spec.Config).ToNot(BeNil())
 				Expect(foundCDI.Spec.Config.InsecureRegistries).To(BeNil())
+				Expect(foundCDI.Spec.Config.DataVolumeTTLSeconds).To(BeNil())
 			})
 
-			It("should modify InsecureRegistries according to HCO CR", func() {
+			It("should modify CDIConfig according to HCO CR", func() {
 				existingCDI, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
 				existingCDI.Spec.Config.InsecureRegistries = []string{"first:5000", "second:5000", "third:5000"}
+				existingCDI.Spec.Config.DataVolumeTTLSeconds = &[]int32{2}[0]
 
 				hco.Spec.StorageImport = &hcov1beta1.StorageImportConfig{
-					InsecureRegistries: []string{"other1:5000", "other2:5000"},
+					InsecureRegistries:   []string{"other1:5000", "other2:5000"},
+					DataVolumeTTLSeconds: &testTTL,
 				}
 
 				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingCDI})
@@ -681,6 +690,8 @@ var _ = Describe("CDI Operand", func() {
 
 				Expect(foundCDI.Spec.Config.InsecureRegistries).To(HaveLen(2))
 				Expect(foundCDI.Spec.Config.InsecureRegistries).To(ContainElements("other1:5000", "other2:5000"))
+				Expect(foundCDI.Spec.Config.DataVolumeTTLSeconds).ToNot(BeNil())
+				Expect(*foundCDI.Spec.Config.DataVolumeTTLSeconds).To(Equal(testTTL))
 			})
 		})
 

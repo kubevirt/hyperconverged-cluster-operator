@@ -122,6 +122,7 @@ func NewCDI(hc *hcov1beta1.HyperConverged, opts ...string) (*cdiv1beta1.CDI, err
 			spec.Config.InsecureRegistries = make([]string, length)
 			copy(spec.Config.InsecureRegistries, hc.Spec.StorageImport.InsecureRegistries)
 		}
+		spec.Config.DataVolumeTTLSeconds = hc.Spec.StorageImport.DataVolumeTTLSeconds
 	}
 
 	if hc.Spec.Infra.NodePlacement != nil {
