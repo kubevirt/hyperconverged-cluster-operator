@@ -151,6 +151,14 @@ type HyperConvergedSpec struct {
 	// be deployed.
 	// +optional
 	TektonPipelinesNamespace *string `json:"tektonPipelinesNamespace,omitempty"`
+
+	// EvictionStrategy defines at the cluster level if the VirtualMachineInstance should be
+	// migrated instead of shut-off in case of a node drain. If the VirtualMachineInstance specific
+	// field is set it overrides the cluster level one.
+	// +kubebuilder:default=EvictionStrategyLiveMigrate
+	// +kubebuilder:validation:Enum=EvictionStrategyNone;EvictionStrategyLiveMigrate;EvictionStrategyExternal
+	// +optional
+	EvictionStrategy *v1.EvictionStrategy `json:"evictionStrategy,omitempty"`
 }
 
 // CertRotateConfigCA contains the tunables for TLS certificates.

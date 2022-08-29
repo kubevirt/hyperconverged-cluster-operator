@@ -315,6 +315,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 		MediatedDevicesConfiguration: toKvMediatedDevicesConfiguration(hc.Spec.MediatedDevicesConfiguration),
 		ObsoleteCPUModels:            obsoleteCPUs,
 		MinCPUModel:                  minCPUModel,
+		EvictionStrategy:             hc.Spec.EvictionStrategy,
 	}
 
 	if smbiosConfig, ok := os.LookupEnv(smbiosEnvName); ok {

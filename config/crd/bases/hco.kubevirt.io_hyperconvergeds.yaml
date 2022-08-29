@@ -861,6 +861,17 @@ spec:
                   host-model will be set. Default CPU model can be changed when kubevirt
                   is running.'
                 type: string
+              evictionStrategy:
+                default: EvictionStrategyLiveMigrate
+                description: EvictionStrategy defines at the cluster level if the
+                  VirtualMachineInstance should be migrated instead of shut-off in
+                  case of a node drain. If the VirtualMachineInstance specific field
+                  is set it overrides the cluster level one.
+                enum:
+                - EvictionStrategyNone
+                - EvictionStrategyLiveMigrate
+                - EvictionStrategyExternal
+                type: string
               featureGates:
                 default:
                   deployTektonTaskResources: false
