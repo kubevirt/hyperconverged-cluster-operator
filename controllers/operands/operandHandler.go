@@ -166,9 +166,11 @@ func (h OperandHandler) handleUpdatedOperand(req *common.HcoRequest, res *Ensure
 		h.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "Updated", fmt.Sprintf("Updated %s %s", res.Type, res.Name))
 	} else {
 		h.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeWarning, "Overwritten", fmt.Sprintf("Overwritten %s %s", res.Type, res.Name))
-		err := metrics.HcoMetrics.IncOverwrittenModifications(res.Type, res.Name)
-		if err != nil {
-			req.Logger.Error(err, "couldn't update 'OverwrittenModifications' metric")
+		if !req.UpgradeMode {
+			err := metrics.HcoMetrics.IncOverwrittenModifications(res.Type, res.Name)
+			if err != nil {
+				req.Logger.Error(err, "couldn't update 'OverwrittenModifications' metric")
+			}
 		}
 	}
 }
