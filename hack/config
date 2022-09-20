@@ -1,6 +1,9 @@
 #!/bin/bash
 
-KUBEVIRT_VERSION="v0.57.1"
+# hack: consume untagged kubevirt, do not merge this!
+#KUBEVIRT_VERSION="v0.57.1"
+KUBEVIRT_VERSION="20220911_3621975fd"
+# ---
 CDI_VERSION="v1.54.0"
 NETWORK_ADDONS_VERSION="v0.78.0"
 SSP_VERSION="v0.16.1"
