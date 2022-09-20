@@ -403,7 +403,7 @@ func (wh WebhookHandler) MutateTLSConfig(cfg *tls.Config) {
 	cfg.GetConfigForClient = func(_ *tls.ClientHelloInfo) (*tls.Config, error) {
 		cipherNames, minTypedTLSVersion := wh.selectCipherSuitesAndMinTLSVersion()
 		wh.logger.Info("Mutating TLS config - callback", "CipherSuites", cfg.CipherSuites, "MinVersion", cfg.MinVersion)
-		cfg.CipherSuites = crypto.CipherSuitesOrDie(crypto.OpenSSLToIANACipherSuites(cipherNames))
+		cfg.CipherSuites = crypto.CipherSuitesOrDie(hcoutil.OpenSSLToIANACipherSuites(cipherNames))
 		cfg.MinVersion = crypto.TLSVersionOrDie(string(minTypedTLSVersion))
 		return cfg, nil
 	}
