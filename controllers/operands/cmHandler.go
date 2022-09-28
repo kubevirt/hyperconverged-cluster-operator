@@ -41,8 +41,6 @@ func (h cmHooks) getEmptyCr() client.Object {
 	}
 }
 
-func (cmHooks) reset() { /* no implementation */ }
-
 func (h cmHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
 	found, ok := exists.(*corev1.ConfigMap)
 

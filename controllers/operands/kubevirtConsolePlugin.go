@@ -249,8 +249,6 @@ func (h consolePluginHooks) getEmptyCr() client.Object {
 	}
 }
 
-func (consolePluginHooks) reset() { /* no implementation */ }
-
 func (consolePluginHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
 func (h consolePluginHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
