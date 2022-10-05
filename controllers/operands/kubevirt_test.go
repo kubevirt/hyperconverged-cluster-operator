@@ -2,7 +2,6 @@ package operands
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"time"
 
@@ -13,14 +12,12 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	schedulingv1 "k8s.io/api/scheduling/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
@@ -34,140 +31,6 @@ var _ = Describe("KubeVirt Operand", func() {
 	var (
 		basicNumFgOnOpenshift = len(hardCodeKvFgs) + len(sspConditionKvFgs)
 	)
-
-	Context("KubeVirt Priority Classes", func() {
-
-		var hco *hcov1beta1.HyperConverged
-		var req *common.HcoRequest
-
-		BeforeEach(func() {
-			hco = commonTestUtils.NewHco()
-			req = commonTestUtils.NewReq(hco)
-		})
-
-		It("should create if not present", func() {
-			expectedResource := NewKubeVirtPriorityClass(hco)
-			cl := commonTestUtils.InitClient([]runtime.Object{})
-			handler := (*genericOperand)(newKvPriorityClassHandler(cl, commonTestUtils.GetScheme()))
-			res := handler.ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
-			Expect(res.Err).ToNot(HaveOccurred())
-
-			key := client.ObjectKeyFromObject(expectedResource)
-			foundResource := &schedulingv1.PriorityClass{}
-			Expect(cl.Get(context.TODO(), key, foundResource)).ToNot(HaveOccurred())
-			Expect(foundResource.Name).To(Equal(expectedResource.Name))
-			Expect(foundResource.Value).To(Equal(expectedResource.Value))
-			Expect(foundResource.GlobalDefault).To(Equal(expectedResource.GlobalDefault))
-		})
-
-		It("should do nothing if already exists", func() {
-			expectedResource := NewKubeVirtPriorityClass(hco)
-			cl := commonTestUtils.InitClient([]runtime.Object{expectedResource})
-			handler := (*genericOperand)(newKvPriorityClassHandler(cl, commonTestUtils.GetScheme()))
-			res := handler.ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
-			Expect(res.Err).ToNot(HaveOccurred())
-
-			objectRef, err := reference.GetReference(handler.Scheme, expectedResource)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
-		})
-
-		DescribeTable("should update if something changed", func(modifiedResource *schedulingv1.PriorityClass) {
-			cl := commonTestUtils.InitClient([]runtime.Object{modifiedResource})
-			handler := (*genericOperand)(newKvPriorityClassHandler(cl, commonTestUtils.GetScheme()))
-			res := handler.ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
-			Expect(res.Err).ToNot(HaveOccurred())
-
-			expectedResource := NewKubeVirtPriorityClass(hco)
-			key := client.ObjectKeyFromObject(expectedResource)
-			foundResource := &schedulingv1.PriorityClass{}
-			Expect(cl.Get(context.TODO(), key, foundResource))
-			Expect(foundResource.Name).To(Equal(expectedResource.Name))
-			Expect(foundResource.Value).To(Equal(expectedResource.Value))
-			Expect(foundResource.GlobalDefault).To(Equal(expectedResource.GlobalDefault))
-
-			newReference, err := reference.GetReference(cl.Scheme(), foundResource)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(hco.Status.RelatedObjects).To(ContainElement(*newReference))
-		},
-			Entry("with modified value",
-				&schedulingv1.PriorityClass{
-					TypeMeta: metav1.TypeMeta{
-						APIVersion: "scheduling.k8s.io/v1",
-						Kind:       "PriorityClass",
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "kubevirt-cluster-critical",
-					},
-					Value:         1,
-					GlobalDefault: false,
-					Description:   "",
-				}),
-			Entry("with modified global default",
-				&schedulingv1.PriorityClass{
-					TypeMeta: metav1.TypeMeta{
-						APIVersion: "scheduling.k8s.io/v1",
-						Kind:       "PriorityClass",
-					},
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "kubevirt-cluster-critical",
-					},
-					Value:         1000000000,
-					GlobalDefault: true,
-					Description:   "",
-				}),
-		)
-
-		DescribeTable("should return error when there is something wrong", func(initiateErrors func(testClient *commonTestUtils.HcoTestClient) error) {
-			modifiedResource := NewKubeVirtPriorityClass(hco)
-			modifiedResource.Labels = map[string]string{"foo": "bar"}
-
-			cl := commonTestUtils.InitClient([]runtime.Object{modifiedResource})
-			expectedError := initiateErrors(cl)
-
-			handler := (*genericOperand)(newKvPriorityClassHandler(cl, commonTestUtils.GetScheme()))
-			res := handler.ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
-			Expect(res.Err).To(Equal(expectedError))
-		},
-			Entry("creation error", func(testClient *commonTestUtils.HcoTestClient) error {
-				expectedError := fmt.Errorf("fake PriorityClass creation error")
-				testClient.InitiateCreateErrors(func(obj client.Object) error {
-					if _, ok := obj.(*schedulingv1.PriorityClass); ok {
-						return expectedError
-					}
-					return nil
-				})
-				return expectedError
-			}),
-			Entry("deletion error", func(testClient *commonTestUtils.HcoTestClient) error {
-				expectedError := fmt.Errorf("fake PriorityClass deletion error")
-				testClient.InitiateDeleteErrors(func(obj client.Object) error {
-					if _, ok := obj.(*schedulingv1.PriorityClass); ok {
-						return expectedError
-					}
-					return nil
-				})
-
-				return expectedError
-			}),
-			Entry("get error", func(testClient *commonTestUtils.HcoTestClient) error {
-				expectedError := fmt.Errorf("fake PriorityClass get error")
-				testClient.InitiateGetErrors(func(key client.ObjectKey) error {
-					if key.Name == "kubevirt-cluster-critical" {
-						return expectedError
-					}
-					return nil
-				})
-
-				return expectedError
-			}),
-		)
-
-	})
 
 	Context("KubeVirt", func() {
 		var hco *hcov1beta1.HyperConverged

@@ -17,7 +17,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	schedulingv1 "k8s.io/api/scheduling/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -113,7 +112,6 @@ func validateOperatorCondition(r *ReconcileHyperConverged, status metav1.Conditi
 type BasicExpected struct {
 	namespace            *corev1.Namespace
 	hco                  *hcov1beta1.HyperConverged
-	pc                   *schedulingv1.PriorityClass
 	kv                   *kubevirtcorev1.KubeVirt
 	cdi                  *cdiv1beta1.CDI
 	cna                  *networkaddonsv1.NetworkAddonsConfig
@@ -138,7 +136,6 @@ func (be BasicExpected) toArray() []runtime.Object {
 	return []runtime.Object{
 		be.namespace,
 		be.hco,
-		be.pc,
 		be.kv,
 		be.cdi,
 		be.cna,
@@ -204,8 +201,6 @@ func getBasicDeployment() *BasicExpected {
 			},
 		},
 	}
-
-	res.pc = operands.NewKubeVirtPriorityClass(hco)
 
 	deploymentRef := metav1.OwnerReference{
 		APIVersion:         appsv1.SchemeGroupVersion.String(),

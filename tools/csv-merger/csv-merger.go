@@ -132,6 +132,15 @@ func genHcoCrds() error {
 		return err
 	}
 
+	// TODO: temporary handling additional objects in bundles as fake CRDs
+	// see: https://github.com/operator-framework/operator-lifecycle-manager/pull/1564
+	additionalObjects := components.GetAdditionalObjectsForBundle()
+	for _, obj := range additionalObjects {
+		if err := util.MarshallObject(obj, os.Stdout); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

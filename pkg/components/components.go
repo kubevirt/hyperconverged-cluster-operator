@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/blang/semver/v4"
 	csvVersion "github.com/operator-framework/api/pkg/lib/version"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -15,6 +17,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	schedulingv1 "k8s.io/api/scheduling/v1"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -511,11 +514,6 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			Verbs:     stringListToSlice("get", "list", "watch"),
 		},
 		{
-			APIGroups: stringListToSlice("scheduling.k8s.io"),
-			Resources: stringListToSlice("priorityclasses"),
-			Verbs:     stringListToSlice("get", "list", "watch", "create", "delete"),
-		},
-		{
 			APIGroups: stringListToSlice("admissionregistration.k8s.io"),
 			Resources: stringListToSlice("validatingwebhookconfigurations"),
 			Verbs:     stringListToSlice("list", "watch", "update", "patch"),
@@ -661,6 +659,31 @@ func GetOperatorCRD(relPath string) *extv1.CustomResourceDefinition {
 		}
 	}
 	return &c
+}
+
+func getKubevirtPriorityClass() *schedulingv1.PriorityClass {
+	preemptionPolicy := corev1.PreemptLowerPriority
+	return &schedulingv1.PriorityClass{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "scheduling.k8s.io/v1",
+			Kind:       "PriorityClass",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "kubevirt-cluster-critical",
+		},
+		// 1 billion is the highest value we can set
+		// https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass
+		Value:            1000000000,
+		GlobalDefault:    false,
+		Description:      "This priority class should be used for KubeVirt core components only.",
+		PreemptionPolicy: &preemptionPolicy,
+	}
+}
+
+func GetAdditionalObjectsForBundle() []client.Object {
+	return []client.Object{
+		getKubevirtPriorityClass(),
+	}
 }
 
 func GetOperatorCR() *hcov1beta1.HyperConverged {

@@ -13,7 +13,6 @@ import (
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 
 	corev1 "k8s.io/api/core/v1"
-	schedulingv1 "k8s.io/api/scheduling/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -578,82 +577,6 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates) [
 	}
 
 	return fgs
-}
-
-// ***********  KubeVirt Priority Class  ************
-type kvPriorityClassHandler genericOperand
-
-func newKvPriorityClassHandler(Client client.Client, Scheme *runtime.Scheme) *kvPriorityClassHandler {
-	return &kvPriorityClassHandler{
-		Client:                 Client,
-		Scheme:                 Scheme,
-		crType:                 "KubeVirtPriorityClass",
-		setControllerReference: false,
-		hooks:                  &kvPriorityClassHooks{},
-	}
-}
-
-type kvPriorityClassHooks struct{}
-
-func (kvPriorityClassHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	return NewKubeVirtPriorityClass(hc), nil
-}
-func (kvPriorityClassHooks) getEmptyCr() client.Object { return &schedulingv1.PriorityClass{} }
-
-func (kvPriorityClassHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
-	pc, ok1 := required.(*schedulingv1.PriorityClass)
-	found, ok2 := exists.(*schedulingv1.PriorityClass)
-	if !ok1 || !ok2 {
-		return false, false, errors.New("can't convert to PriorityClass")
-	}
-
-	// at this point we found the object in the cache and we check if something was changed
-	if (pc.Name == found.Name) && (pc.Value == found.Value) &&
-		(pc.Description == found.Description) && reflect.DeepEqual(pc.Labels, found.Labels) {
-		return false, false, nil
-	}
-
-	if req.HCOTriggered {
-		req.Logger.Info("Updating existing PriorityClass's Spec to new opinionated values")
-	} else {
-		req.Logger.Info("Reconciling an externally updated PriorityClass's Spec to its opinionated values")
-	}
-
-	// something was changed but since we can't patch a priority class object, we remove it
-	err := Client.Delete(req.Ctx, found, &client.DeleteOptions{})
-	if err != nil {
-		return false, false, err
-	}
-
-	// create the new object
-	err = Client.Create(req.Ctx, pc, &client.CreateOptions{})
-	if err != nil {
-		return false, false, err
-	}
-
-	pc.DeepCopyInto(found)
-
-	return true, !req.HCOTriggered, nil
-}
-
-func (kvPriorityClassHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
-
-func NewKubeVirtPriorityClass(hc *hcov1beta1.HyperConverged) *schedulingv1.PriorityClass {
-	return &schedulingv1.PriorityClass{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "scheduling.k8s.io/v1",
-			Kind:       "PriorityClass",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:   "kubevirt-cluster-critical",
-			Labels: getLabels(hc, hcoutil.AppComponentCompute),
-		},
-		// 1 billion is the highest value we can set
-		// https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass
-		Value:         1000000000,
-		GlobalDefault: false,
-		Description:   "This priority class should be used for KubeVirt core components only.",
-	}
 }
 
 // translateKubeVirtConds translates list of KubeVirt conditions to a list of custom resource

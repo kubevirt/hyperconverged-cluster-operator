@@ -46,7 +46,6 @@ type OperandHandler struct {
 
 func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.ClusterInfo, eventEmitter hcoutil.EventEmitter) *OperandHandler {
 	operands := []Operand{
-		(*genericOperand)(newKvPriorityClassHandler(client, scheme)),
 		(*genericOperand)(newKubevirtHandler(client, scheme)),
 		(*genericOperand)(newCdiHandler(client, scheme)),
 		(*genericOperand)(newCnaHandler(client, scheme)),

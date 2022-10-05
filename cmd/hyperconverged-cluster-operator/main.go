@@ -19,9 +19,7 @@ import (
 	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	schedulingv1 "k8s.io/api/scheduling/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -43,7 +41,6 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/hyperconverged"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	ttov1alpha1 "github.com/kubevirt/tekton-tasks-operator/api/v1alpha1"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
@@ -57,7 +54,6 @@ var (
 	cmdHelper            = cmdcommon.NewHelper(logger, "operator")
 	resourcesSchemeFuncs = []func(*apiruntime.Scheme) error{
 		api.AddToScheme,
-		schedulingv1.AddToScheme,
 		corev1.AddToScheme,
 		appsv1.AddToScheme,
 		rbacv1.AddToScheme,
@@ -164,9 +160,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = createPriorityClass(ctx, mgr)
-	cmdHelper.ExitOnError(err, "Failed creating PriorityClass")
-
 	logger.Info("Starting the Cmd.")
 	eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Init", "Starting the HyperConverged Pod")
 
@@ -193,9 +186,6 @@ func getNewManagerCache(operatorNamespace string) cache.NewCacheFunc {
 				&networkaddonsv1.NetworkAddonsConfig{}: {},
 				&sspv1beta1.SSP{}:                      {},
 				&ttov1alpha1.TektonTasks{}:             {},
-				&schedulingv1.PriorityClass{}: {
-					Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
-				},
 				&corev1.ConfigMap{}: {
 					Label: labelSelector,
 				},
@@ -259,21 +249,4 @@ func getManagerOptions(watchNamespace string, operatorNamespace string, needLead
 		NewCache:                   getNewManagerCache(operatorNamespace),
 		Scheme:                     scheme,
 	}
-}
-
-// KubeVirtPriorityClass is needed by virt-operator but OLM is not able to
-// create it so we have to create it ASAP.
-// When the user deletes HCO CR virt-operator should continue running
-// so we are never supposed to delete it: because the priority class
-// is completely opaque to OLM it will remain as a leftover on the cluster
-func createPriorityClass(ctx context.Context, mgr manager.Manager) error {
-	pc := operands.NewKubeVirtPriorityClass(&hcov1beta1.HyperConverged{})
-
-	err := mgr.GetAPIReader().Get(ctx, client.ObjectKeyFromObject(pc), pc)
-	if err != nil && apierrors.IsNotFound(err) {
-		logger.Info("Creating KubeVirt PriorityClass")
-		return mgr.GetClient().Create(ctx, pc, &client.CreateOptions{})
-	}
-
-	return err
 }

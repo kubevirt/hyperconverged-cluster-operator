@@ -54,11 +54,6 @@ var _ = Describe("Test operandHandler", func() {
 				{
 					EventType: corev1.EventTypeNormal,
 					Reason:    "Created",
-					Msg:       "Created PriorityClass kubevirt-cluster-critical",
-				},
-				{
-					EventType: corev1.EventTypeNormal,
-					Reason:    "Created",
 					Msg:       "Created KubeVirt kubevirt-kubevirt-hyperconverged",
 				},
 				{

@@ -389,16 +389,6 @@ spec:
           - list
           - watch
         - apiGroups:
-          - scheduling.k8s.io
-          resources:
-          - priorityclasses
-          verbs:
-          - get
-          - list
-          - watch
-          - create
-          - delete
-        - apiGroups:
           - admissionregistration.k8s.io
           resources:
           - validatingwebhookconfigurations

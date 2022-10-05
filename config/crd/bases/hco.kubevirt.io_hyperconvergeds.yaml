@@ -4179,3 +4179,11 @@ spec:
     storage: true
     subresources:
       status: {}
+---
+apiVersion: scheduling.k8s.io/v1
+description: This priority class should be used for KubeVirt core components only.
+kind: PriorityClass
+metadata:
+  name: kubevirt-cluster-critical
+preemptionPolicy: PreemptLowerPriority
+value: 1000000000
