@@ -21,7 +21,7 @@ RUN \
     rm -rf go${GO_VERSION}.linux-amd64.tar.gz && \
     export PATH=${GOPATH}/bin:$PATH && \
     eval $(go env) && \
-    go install github.com/onsi/ginkgo/v2/ginkgo@latest && \
+    go install github.com/onsi/ginkgo/v2/ginkgo@v2.2.0 && \
     go install golang.org/x/tools/cmd/goimports@latest && \
     go install golang.org/x/lint/golint@latest && \
     go install github.com/rmohr/go-swagger-utils/swagger-doc@latest && \
