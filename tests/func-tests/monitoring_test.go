@@ -24,6 +24,7 @@ import (
 	promConfig "github.com/prometheus/common/config"
 	"k8s.io/client-go/kubernetes/scheme"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 	"kubevirt.io/client-go/kubecli"
 )
@@ -92,6 +93,27 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			alerts, err := promClient.Alerts(context.TODO())
 			Expect(err).ShouldNot(HaveOccurred())
 			alert := getAlertByName(alerts, "KubevirtHyperconvergedClusterOperatorCRModification")
+			return alert
+		}, 60*time.Second, time.Second).ShouldNot(BeNil())
+
+	})
+
+	It("KubevirtHyperconvergedClusterOperatorUSModification alert should fired when there is an jsonpatch annotation to modify an operand CRs", func() {
+		By("Updating HCO object with a new label")
+		var hco v1beta1.HyperConverged
+		err = virtCli.RestClient().Get().
+			AbsPath("/apis", "hco.kubevirt.io", "v1beta1").
+			Namespace(flags.KubeVirtInstallNamespace).
+			Resource("hyperconvergeds").
+			Name("kubevirt-hyperconverged").
+			Timeout(10 * time.Second).
+			Do(context.TODO()).Into(&hco)
+		Expect(err).ShouldNot(HaveOccurred())
+
+		Eventually(func() *promApiv1.Alert {
+			alerts, err := promClient.Alerts(context.TODO())
+			Expect(err).ShouldNot(HaveOccurred())
+			alert := getAlertByName(alerts, "KubevirtHyperconvergedClusterOperatorUSModification")
 			return alert
 		}, 60*time.Second, time.Second).ShouldNot(BeNil())
 
