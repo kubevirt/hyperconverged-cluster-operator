@@ -100,15 +100,12 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 
 	It("KubevirtHyperconvergedClusterOperatorUSModification alert should fired when there is an jsonpatch annotation to modify an operand CRs", func() {
 		By("Updating HCO object with a new label")
-		var hco v1beta1.HyperConverged
-		err = virtCli.RestClient().Get().
-			AbsPath("/apis", "hco.kubevirt.io", "v1beta1").
-			Namespace(flags.KubeVirtInstallNamespace).
-			Resource("hyperconvergeds").
-			Name("kubevirt-hyperconverged").
-			Timeout(10 * time.Second).
-			Do(context.TODO()).Into(&hco)
-		Expect(err).ShouldNot(HaveOccurred())
+		hco := getHCO(virtCli)
+
+		hco.Annotations = map[string]string{
+			"kubevirt.kubevirt.io/jsonpatch": `[{"op": "add", "path": "/spec/configuration/migrations", "value": {"allowPostCopy": true}}]`,
+		}
+		updateHCO(virtCli, hco)
 
 		Eventually(func() *promApiv1.Alert {
 			alerts, err := promClient.Alerts(context.TODO())
@@ -120,6 +117,43 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 	})
 
 })
+
+func getHCO(client kubecli.KubevirtClient) v1beta1.HyperConverged {
+	s := scheme.Scheme
+	_ = v1beta1.AddToScheme(s)
+	s.AddKnownTypes(v1beta1.SchemeGroupVersion)
+
+	var hco v1beta1.HyperConverged
+	err := client.RestClient().Get().
+		Resource("hyperconvergeds").
+		Name("kubevirt-hyperconverged").
+		Namespace(flags.KubeVirtInstallNamespace).
+		AbsPath("/apis", v1beta1.SchemeGroupVersion.Group, v1beta1.SchemeGroupVersion.Version).
+		Timeout(10 * time.Second).
+		Do(context.TODO()).Into(&hco)
+
+	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+
+	return hco
+}
+
+func updateHCO(client kubecli.KubevirtClient, hco v1beta1.HyperConverged) v1beta1.HyperConverged {
+	hco.Kind = "HyperConverged"
+	hco.APIVersion = v1beta1.SchemeGroupVersion.String()
+
+	err := client.RestClient().Put().
+		Resource("hyperconvergeds").
+		Name("kubevirt-hyperconverged").
+		Namespace(flags.KubeVirtInstallNamespace).
+		AbsPath("/apis", v1beta1.SchemeGroupVersion.Group, v1beta1.SchemeGroupVersion.Version).
+		Body(&hco).
+		Timeout(10 * time.Second).
+		Do(context.TODO()).Into(&hco)
+
+	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+
+	return hco
+}
 
 func getAlertByName(alerts promApiv1.AlertsResult, alertName string) *promApiv1.Alert {
 	for _, alert := range alerts.Alerts {
