@@ -85,6 +85,7 @@ func main() {
 	cmdHelper.InitiateCommand()
 
 	watchNamespace := cmdHelper.GetWatchNS()
+	// only to trigger CI, do not merge
 	operatorNamespace, err := hcoutil.GetOperatorNamespaceFromEnv()
 	cmdHelper.ExitOnError(err, "can't get operator expected namespace")
 
