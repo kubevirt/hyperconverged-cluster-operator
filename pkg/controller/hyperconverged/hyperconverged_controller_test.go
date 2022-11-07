@@ -204,7 +204,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(kvList.Items).Should(HaveLen(1))
 				kv := kvList.Items[0]
 				Expect(kv.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(16))
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(15))
 
 				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(
 					"DataVolumes",
@@ -221,7 +221,6 @@ var _ = Describe("HyperconvergedController", func() {
 					"DownwardMetrics",
 					"ExpandDisks",
 					"NUMA",
-					"PSA",
 				),
 				)
 				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement("WithHostPassthroughCPU"))
