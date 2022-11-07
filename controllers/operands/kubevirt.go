@@ -91,9 +91,6 @@ const (
 
 	// Allow automatic numa mapping on VMs with dedicated CPUs, if requested
 	kvNUMA = "NUMA"
-
-	// enable Pod Security Admission handling
-	kvPSA = "PSA"
 )
 
 var (
@@ -110,7 +107,6 @@ var (
 		kvDownwardMetricsGate,
 		kvNUMA,
 		kvLiveMigrationGate,
-		kvPSA,
 	}
 
 	// holds a list of mandatory KubeVirt feature gates. Some of them are the hard coded feature gates and some of
