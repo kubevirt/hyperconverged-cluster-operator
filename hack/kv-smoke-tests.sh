@@ -16,6 +16,10 @@ TESTS_BINARY="$BIN_DIR/kv_smoke_tests.test"
 curl -Lo "$TESTS_BINARY" "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/tests.test"
 chmod +x "$TESTS_BINARY"
 
+# TODO: brutal workaround to bypass SCC -> PSA on OCP >= 4.12, remove ASAP!!!
+${CMD} adm policy add-scc-to-group privileged system:authenticated
+######
+
 echo "create testing infrastructure"
 
 cat <<EOF | ${CMD} apply -f -
