@@ -23,6 +23,10 @@ curl -Lo "$TESTS_BINARY" "https://storage.googleapis.com/kubevirt-prow/devel/nig
 ######
 chmod +x "$TESTS_BINARY"
 
+# TODO: brutal workaround to bypass SCC -> PSA on OCP >= 4.12, remove ASAP!!!
+${CMD} adm policy add-scc-to-group privileged system:authenticated
+######
+
 echo "create testing infrastructure"
 
 cat <<EOF | ${CMD} apply -f -
