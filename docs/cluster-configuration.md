@@ -893,7 +893,7 @@ metadata:
       ]
 ```
 ##### Disable DataVolume garbage collection
-To disable DataVolume garbage collection the following annotation should be added to the HyperConverged CR:
+To disable [DataVolume garbage collection](https://github.com/kubevirt/containerized-data-importer/blob/main/doc/datavolumes.md#garbage-collection-of-successfully-completed-datavolumes), the following annotation should be added to the HyperConverged CR:
 ```yaml
 metadata:
   annotations:
@@ -913,6 +913,7 @@ $ kubectl annotate --overwrite -n kubevirt-hyperconverged hco kubevirt-hyperconv
     "path": "/spec/config/dataVolumeTTLSeconds", \
     "value": -1 }]'
 ```
+To enable DataVolume garbage collection put any non-negative value for the `dataVolumeTTLSeconds`, which is the time in seconds after DataVolume completion it can be garbage collected.
 ##### Modify DataVolume Upload URL
 The user wants to override the default URL used when uploading to a DataVolume, by setting the CDI CR's `spec.config.uploadProxyURLOverride` to `myproxy.example.com`. In order to do that, the following annotation should be added to the HyperConverged CR:
 ```yaml
