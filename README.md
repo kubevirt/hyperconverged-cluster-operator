@@ -1,3 +1,4 @@
+Test Jira sync 
 [![Nightly CI](https://prow.ci.openshift.org/badge.svg?jobs=periodic-ci-kubevirt-hyperconverged-cluster-operator-main-hco-e2e-deploy-nightly-main-aws)](https://prow.ci.openshift.org/job-history/gs/origin-ci-test/logs/periodic-ci-kubevirt-hyperconverged-cluster-operator-main-hco-e2e-deploy-nightly-main-aws)
 [![Nightly CI images](https://prow.ci.kubevirt.io/badge.svg?jobs=periodic-hco-push-nightly-build-main)](https://prow.ci.kubevirt.io/job-history/gs/kubevirt-prow/logs/periodic-hco-push-nightly-build-main)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kubevirt/hyperconverged-cluster-operator)](https://goreportcard.com/report/github.com/kubevirt/hyperconverged-cluster-operator)
