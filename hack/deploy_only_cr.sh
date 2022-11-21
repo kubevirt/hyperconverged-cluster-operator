@@ -70,6 +70,9 @@ EOF
   ${CMD} wait deployment ${HCO_DEPLOYMENT_NAME} --for condition=Available -n ${HCO_NAMESPACE} --timeout="1200s"
 fi
 
+echo "HCO namespace before creating HCO CR"
+${CMD} get namespace "${HCO_NAMESPACE}" -o yaml
+
 ${CMD} apply -n kubevirt-hyperconverged -f _out/hco.cr.yaml
 
 ${CMD} wait -n "${HCO_NAMESPACE}" "${HCO_KIND}" "${HCO_RESOURCE_NAME}" --for condition=Available --timeout="30m"
