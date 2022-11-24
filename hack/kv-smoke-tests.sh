@@ -13,14 +13,7 @@ BIN_DIR="$(pwd)/_out" && mkdir -p "${BIN_DIR}"
 export BIN_DIR
 
 TESTS_BINARY="$BIN_DIR/kv_smoke_tests.test"
-######
-# workaround for DataVolume GC on CDI v1.55.0:
-# https://github.com/kubevirt/kubevirt/pull/8584 didn't landed in Kubevirt v0.58.0,
-# TODO: remove this once https://github.com/kubevirt/kubevirt/pull/8584 will land in
-# Kubevirt v0.58.1
-#curl -Lo "$TESTS_BINARY" "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/tests.test"
-curl -Lo "$TESTS_BINARY" "https://storage.googleapis.com/kubevirt-prow/devel/nightly/release/kubevirt/kubevirt/20221018/testing/tests.test"
-######
+curl -Lo "$TESTS_BINARY" "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/tests.test"
 chmod +x "$TESTS_BINARY"
 
 echo "create testing infrastructure"
@@ -235,6 +228,14 @@ echo "waiting for testing infrastructure to be ready"
 ${CMD} wait deployment cdi-http-import-server -n "${INSTALLED_NAMESPACE}" --for condition=Available --timeout=10m
 ${CMD} wait pods -l "kubevirt.io=disks-images-provider" -n "${INSTALLED_NAMESPACE}" --for condition=Ready --timeout=10m
 
+######
+# workaround for DataVolume GC on CDI v1.55.0:
+# https://github.com/kubevirt/kubevirt/pull/8584 didn't landed in Kubevirt v0.58.0,
+# TODO: remove this once https://github.com/kubevirt/kubevirt/pull/8584 will land in
+# Kubevirt v0.58.1
+CDI_GC_SKIPS="|(test_id:1520)|(test_id:1525)"
+######
+
 echo "starting tests"
 ${TESTS_BINARY} \
     -cdi-namespace="$INSTALLED_NAMESPACE" \
@@ -245,7 +246,7 @@ ${TESTS_BINARY} \
     -ginkgo.focus='(rfe_id:1177)|(rfe_id:273)|(rfe_id:151)' \
     -ginkgo.no-color \
     -ginkgo.seed=0 \
-    -ginkgo.skip='(Slirp Networking)|(with CPU spec)|(with TX offload disabled)|(with cni flannel and ptp plugin interface)|(with ovs-cni plugin)|(test_id:1752)|(SRIOV)|(with EFI)|(Operator)|(GPU)|(DataVolume Integration)|(when virt-handler is not responsive)|(with default cpu model)|(should set the default MachineType when created without explicit value)|(should fail to start when a volume is backed by PVC created by DataVolume instead of the DataVolume itself)|(test_id:3468)|(test_id:3466)|(test_id:1015)|(rfe_id:393)|(test_id:4646)|(test_id:4647)|(test_id:4648)|(test_id:4649)|(test_id:4650)|(test_id:4651)|(test_id:4652)|(test_id:4654)|(test_id:4655)|(test_id:4656)|(test_id:4657)|(test_id:4658)|(test_id:4659)|(should obey the disk verification limits in the KubeVirt CR)' \
+    -ginkgo.skip="(Slirp Networking)|(with CPU spec)|(with TX offload disabled)|(with cni flannel and ptp plugin interface)|(with ovs-cni plugin)|(test_id:1752)|(SRIOV)|(with EFI)|(Operator)|(GPU)|(DataVolume Integration)|(when virt-handler is not responsive)|(with default cpu model)|(should set the default MachineType when created without explicit value)|(should fail to start when a volume is backed by PVC created by DataVolume instead of the DataVolume itself)|(test_id:3468)|(test_id:3466)|(test_id:1015)|(rfe_id:393)|(test_id:4646)|(test_id:4647)|(test_id:4648)|(test_id:4649)|(test_id:4650)|(test_id:4651)|(test_id:4652)|(test_id:4654)|(test_id:4655)|(test_id:4656)|(test_id:4657)|(test_id:4658)|(test_id:4659)|(should obey the disk verification limits in the KubeVirt CR)${CDI_GC_SKIPS}" \
     -ginkgo.slow-spec-threshold=60s \
     -ginkgo.succinct \
     -ginkgo.flake-attempts=3 \
