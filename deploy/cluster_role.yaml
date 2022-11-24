@@ -726,6 +726,7 @@ rules:
   - get
   - list
   - watch
+  - use
 - apiGroups:
   - operator.openshift.io
   resources:
