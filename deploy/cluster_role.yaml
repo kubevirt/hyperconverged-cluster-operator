@@ -751,6 +751,7 @@ rules:
   - get
   - list
   - watch
+  - use
 - apiGroups:
   - networkaddonsoperator.network.kubevirt.io
   resources:

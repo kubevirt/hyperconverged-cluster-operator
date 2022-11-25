@@ -58,7 +58,7 @@ spec:
         - name: CDI_VERSION
           value: v1.55.0
         - name: NETWORK_ADDONS_VERSION
-          value: v0.79.0
+          value: v0.79.1
         - name: SSP_VERSION
           value: v0.16.1
         - name: TTO_VERSION
@@ -275,19 +275,19 @@ spec:
         - name: LINUX_BRIDGE_MARKER_IMAGE
           value: quay.io/kubevirt/bridge-marker@sha256:5d24c6d1ecb0556896b7b81c7e5260b54173858425777b7a84df8a706c07e6d2
         - name: OVS_CNI_IMAGE
-          value: quay.io/kubevirt/ovs-cni-plugin@sha256:3654b80dd5e459c3e73dd027d732620ed8b488b8a15dfe7922457d16c7e834c3
+          value: quay.io/kubevirt/ovs-cni-plugin@sha256:e95d8f40bf611f1eb3514d50df9195caf9cebfa3716eca26ceafb2e49fefa6da
         - name: KUBEMACPOOL_IMAGE
-          value: quay.io/kubevirt/kubemacpool@sha256:fb07b1be9e0990e3846ef628e993694bf0765602af5907abf98f7e218db0cb4a
+          value: quay.io/kubevirt/kubemacpool@sha256:9dee66dba5655e2dc70561d4d882d7ee204735ad82f81b24d0b338c428cb918b
         - name: MACVTAP_CNI_IMAGE
           value: quay.io/kubevirt/macvtap-cni@sha256:583a3346cdb04374d4d802d5f5d37c4dc2f6897e6e62010648f8f28c9a5a5a07
         - name: KUBE_RBAC_PROXY_IMAGE
           value: quay.io/openshift/origin-kube-rbac-proxy@sha256:baedb268ac66456018fb30af395bb3d69af5fff3252ff5d549f0231b1ebb6901
         - name: OPERATOR_IMAGE
-          value: quay.io/kubevirt/cluster-network-addons-operator@sha256:6b10d3b9914d25a37f63471fd27890237353da8be83c2209c38a3a4817c1152f
+          value: quay.io/kubevirt/cluster-network-addons-operator@sha256:d5d41f0ca135a08696ab9b0d02c1ea5a1670908e243172a0151d5bf84a70379e
         - name: OPERATOR_NAME
           value: cluster-network-addons-operator
         - name: OPERATOR_VERSION
-          value: v0.79.0
+          value: v0.79.1
         - name: OPERATOR_NAMESPACE
           valueFrom:
             fieldRef:
@@ -305,7 +305,7 @@ spec:
           value: openshift-monitoring
         - name: MONITORING_SERVICE_ACCOUNT
           value: prometheus-k8s
-        image: quay.io/kubevirt/cluster-network-addons-operator@sha256:6b10d3b9914d25a37f63471fd27890237353da8be83c2209c38a3a4817c1152f
+        image: quay.io/kubevirt/cluster-network-addons-operator@sha256:d5d41f0ca135a08696ab9b0d02c1ea5a1670908e243172a0151d5bf84a70379e
         imagePullPolicy: IfNotPresent
         name: cluster-network-addons-operator
         resources:
