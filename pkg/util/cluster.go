@@ -241,6 +241,7 @@ func (c *ClusterInfoImp) GetTLSSecurityProfile(hcoTLSSecurityProfile *openshiftc
 }
 
 func (c *ClusterInfoImp) RefreshAPIServerCR(ctx context.Context, cl client.Client) error {
+	c.logger.Info("RefreshAPIServerCR")
 	if c.IsOpenshift() {
 		instance := &openshiftconfigv1.APIServer{}
 
@@ -258,6 +259,7 @@ func (c *ClusterInfoImp) RefreshAPIServerCR(ctx context.Context, cl client.Clien
 }
 
 func (c *ClusterInfoImp) validateAPIServerTLSSecurityProfile(apiServerTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile) *openshiftconfigv1.TLSSecurityProfile {
+	c.logger.Info("validateAPIServerTLSSecurityProfile", "apiServerTLSSecurityProfile", apiServerTLSSecurityProfile)
 	if apiServerTLSSecurityProfile == nil || apiServerTLSSecurityProfile.Type != openshiftconfigv1.TLSProfileCustomType {
 		return apiServerTLSSecurityProfile
 	}

@@ -31,6 +31,7 @@ var (
 var _ reconcile.Reconciler = &ReconcileAPIServer{}
 
 func (r *ReconcileAPIServer) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
+	logger.Info("Reconciling APIServer CR")
 	err := r.ci.RefreshAPIServerCR(ctx, r.client)
 	// TODO: once https://github.com/kubernetes-sigs/controller-runtime/issues/2032
 	// is properly addressed, avoid polling on the APIServer CR

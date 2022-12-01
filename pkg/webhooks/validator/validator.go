@@ -434,6 +434,7 @@ func (wh WebhookHandler) MutateTLSConfig(cfg *tls.Config) {
 	// This callback executes on each client call returning a new config to be used
 	// please be aware that the APIServer is using http keepalive so this is going to
 	// be executed only after a while for fresh connections and not on existing ones
+	wh.logger.Info("MutateTLSConfig", "cfg", cfg)
 	cfg.GetConfigForClient = func(_ *tls.ClientHelloInfo) (*tls.Config, error) {
 		cipherNames, minTypedTLSVersion := wh.selectCipherSuitesAndMinTLSVersion()
 		cfg.CipherSuites = crypto.CipherSuitesOrDie(crypto.OpenSSLToIANACipherSuites(cipherNames))
