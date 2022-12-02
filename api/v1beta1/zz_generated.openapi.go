@@ -287,6 +287,13 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 							Format:      "",
 						},
 					},
+					"tuningPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TuningPolicy allows to configure the mode in which the RateLimits of kubevirt are set. If TuningPolicy is not present the default kubevirt values are used. It can be set to `static-policy` for fine-tuning the kubevirt queryPerSeconds (qps) and burst values. Qps and burst values are taken from the `static-policy` ConfigMap in the same namespace of HCO.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 					"infra": {
 						SchemaProps: spec.SchemaProps{
 							Description: "infra HyperConvergedConfig influences the pod configuration (currently only placement) for all the infra components needed on the virtualization enabled cluster but not necessarily directly on each node running VMs/VMIs.",

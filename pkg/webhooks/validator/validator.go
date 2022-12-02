@@ -145,8 +145,12 @@ func (wh *WebhookHandler) ValidateCreate(ctx context.Context, dryrun bool, hc *v
 		return err
 	}
 
-	if _, err := operands.NewKubeVirt(hc); err != nil {
-		return err
+	if _, err := operands.NewKubeVirt(ctx, wh.cli, hc); err != nil {
+		if _, ok := err.(*operands.RateTuningError); ok {
+			wh.logger.Error(err, "failed to set the rate limit")
+		} else if err != nil {
+			return err
+		}
 	}
 
 	if _, err := operands.NewCDI(hc); err != nil {
@@ -168,13 +172,15 @@ func (wh *WebhookHandler) ValidateCreate(ctx context.Context, dryrun bool, hc *v
 	return nil
 }
 
-func (wh *WebhookHandler) getOperands(requested *v1beta1.HyperConverged) (*kubevirtcorev1.KubeVirt, *cdiv1beta1.CDI, *networkaddonsv1.NetworkAddonsConfig, error) {
+func (wh *WebhookHandler) getOperands(ctx context.Context, requested *v1beta1.HyperConverged) (*kubevirtcorev1.KubeVirt, *cdiv1beta1.CDI, *networkaddonsv1.NetworkAddonsConfig, error) {
 	if err := wh.validateCertConfig(requested); err != nil {
 		return nil, nil, nil, err
 	}
 
-	kv, err := operands.NewKubeVirt(requested)
-	if err != nil {
+	kv, err := operands.NewKubeVirt(ctx, wh.cli, requested)
+	if _, ok := err.(*operands.RateTuningError); ok {
+		wh.logger.Error(err, "failed to set the rate limit")
+	} else if err != nil {
 		return nil, nil, nil, err
 	}
 
@@ -212,7 +218,7 @@ func (wh *WebhookHandler) ValidateUpdate(extCtx context.Context, dryrun bool, re
 		return nil
 	}
 
-	kv, cdi, cna, err := wh.getOperands(requested)
+	kv, cdi, cna, err := wh.getOperands(extCtx, requested)
 	if err != nil {
 		return err
 	}
@@ -286,8 +292,11 @@ func (wh WebhookHandler) updateOperatorCr(ctx context.Context, hc *v1beta1.Hyper
 
 	switch existing := exists.(type) {
 	case *kubevirtcorev1.KubeVirt:
-		required, err := operands.NewKubeVirt(hc)
-		if err != nil {
+		required, err := operands.NewKubeVirt(ctx, wh.cli, hc)
+
+		if _, ok := err.(*operands.RateTuningError); ok {
+			wh.logger.Error(err, "failed to set the rate limit")
+		} else if err != nil {
 			return err
 		}
 		required.Spec.DeepCopyInto(&existing.Spec)

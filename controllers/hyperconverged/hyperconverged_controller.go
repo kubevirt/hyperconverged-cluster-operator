@@ -80,11 +80,22 @@ const (
 	hcoVersionName    = "operator"
 	secondaryCRPrefix = "hco-controlled-cr-"
 	apiServerCRPrefix = "api-server-cr-"
+	configMapCRPrefix = "cm-policy-cr-"
 
 	// These group are no longer supported. Use these constants to remove unused resources
 	v2vGroup = "v2v.kubevirt.io"
 
 	requestedStatusKey = "requested status"
+)
+
+// triggeredBy informs which resource has triggered the Reconcile loop
+type triggeredBy int8
+
+const (
+	triggeredByHCO triggeredBy = iota
+	triggeredByAPI
+	triggeredByStaticRateLimitCM
+	triggeredByOther
 )
 
 // JSONPatchAnnotationNames - annotations used to patch operand CRs with unsupported/unofficial/hidden features.
@@ -177,7 +188,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) er
 		&cdiv1beta1.CDI{},
 		&networkaddonsv1.NetworkAddonsConfig{},
 		&schedulingv1.PriorityClass{},
-		&corev1.ConfigMap{},
 		&corev1.Service{},
 		&rbacv1.Role{},
 		&rbacv1.RoleBinding{},
@@ -242,7 +252,37 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) er
 			return err
 		}
 	}
+	configMapPlaceholder, err := getStaticRateLimitConfigMapCRPlaceholder()
+	if err != nil {
+		return err
+	}
+
+	msg := "Reconciling for ConfiMaps"
+	err = c.Watch(
+		&source.Kind{Type: &corev1.ConfigMap{}},
+		handler.EnqueueRequestsFromMapFunc(func(a client.Object) []reconcile.Request {
+			// enqueue using a placeholder to signal that the change is not
+			// directly on HCO CR but on the configMap used for the rateLimiting CR
+			// controlled by HCO
+			log.Info(msg)
+			if a.GetName() == string(hcov1beta1.HyperConvergedTuningPolicyConfigMap) {
+				return []reconcile.Request{
+					{NamespacedName: configMapPlaceholder},
+				}
+			}
+			// In case the CM is not the RateLimiting CM, handle it as a regular secondary CR.
+			return []reconcile.Request{
+				{NamespacedName: secCRPlaceholder},
+			}
+		}),
+	)
+
+	if err != nil {
+		return err
+	}
+
 	return nil
+
 }
 
 var _ reconcile.Reconciler = &ReconcileHyperConverged{}
@@ -270,14 +310,21 @@ type ReconcileHyperConverged struct {
 func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	logger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 
-	resolvedRequest, hcoTriggered, err := r.resolveReconcileRequest(ctx, logger, request)
+	resolvedRequest, whoTriggered, err := r.resolveReconcileRequest(ctx, logger, request)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
+
+	hcoTriggered := whoTriggered == triggeredByHCO
 	hcoRequest := common.NewHcoRequest(ctx, resolvedRequest, log, r.upgradeMode, hcoTriggered)
 
 	if hcoTriggered {
 		r.operandHandler.Reset()
+	}
+
+	if whoTriggered == triggeredByStaticRateLimitCM {
+		// Reset only the KubeVirt to give it the opportunity to pick up the ConfigMap Tuning configuration
+		r.operandHandler.ResetKubeVirt()
 	}
 
 	err = r.monitoringReconciler.Reconcile(hcoRequest)
@@ -334,20 +381,20 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 
 // resolveReconcileRequest returns a reconcile.Request to be used throughout the reconciliation cycle,
 // regardless of which resource has triggered it.
-func (r *ReconcileHyperConverged) resolveReconcileRequest(ctx context.Context, logger logr.Logger, originalRequest reconcile.Request) (reconcile.Request, bool, error) {
+func (r *ReconcileHyperConverged) resolveReconcileRequest(ctx context.Context, logger logr.Logger, originalRequest reconcile.Request) (reconcile.Request, triggeredBy, error) {
 
 	hcoTriggered, err := isTriggeredByHyperConverged(originalRequest)
 	if err != nil {
-		return reconcile.Request{}, hcoTriggered, err
+		return reconcile.Request{}, triggeredByOther, err
 	}
 	if hcoTriggered {
 		logger.Info("Reconciling HyperConverged operator")
-		return originalRequest, hcoTriggered, nil
+		return originalRequest, triggeredByHCO, nil
 	}
 
 	hc, err := getHyperConvergedNamespacedName()
 	if err != nil {
-		return reconcile.Request{}, hcoTriggered, err
+		return reconcile.Request{}, triggeredByOther, err
 	}
 	resolvedRequest := reconcile.Request{
 		NamespacedName: hc,
@@ -355,34 +402,60 @@ func (r *ReconcileHyperConverged) resolveReconcileRequest(ctx context.Context, l
 
 	apiServerCRTriggered, err := isTriggeredByApiServerCR(originalRequest)
 	if err != nil {
-		return reconcile.Request{}, hcoTriggered, err
+		return reconcile.Request{}, triggeredByOther, err
 	}
 	if apiServerCRTriggered {
 		logger.Info("Triggered by ApiServer CR, refreshing it")
 		err = hcoutil.GetClusterInfo().RefreshAPIServerCR(ctx, r.client)
 		if err != nil {
-			return reconcile.Request{}, hcoTriggered, err
+			return reconcile.Request{}, triggeredByOther, err
 		}
 		// consider a change in APIServerCr like a change in HCO
-		hcoTriggered = true
-		return resolvedRequest, hcoTriggered, nil
+		return resolvedRequest, triggeredByHCO, nil
+	}
+
+	cmTriggered, err := isTriggeredByConfigMap(originalRequest)
+
+	if err != nil {
+		return reconcile.Request{}, triggeredByOther, err
+	}
+
+	if cmTriggered {
+		return resolvedRequest, triggeredByStaticRateLimitCM, nil
 	}
 
 	logger.Info("The reconciliation got triggered by a secondary CR object")
-	return resolvedRequest, hcoTriggered, nil
+	return resolvedRequest, triggeredByOther, nil
 }
+func isTriggeredByConfigMap(request reconcile.Request) (bool, error) {
+	placeholder, err := getStaticRateLimitConfigMapCRPlaceholder()
 
-func isTriggeredByHyperConverged(request reconcile.Request) (bool, error) {
-	placeholder, err := getSecondaryCRPlaceholder()
 	if err != nil {
 		return false, err
 	}
+
+	isCm := request.NamespacedName == placeholder
+	return isCm, nil
+}
+func isTriggeredByHyperConverged(request reconcile.Request) (bool, error) {
+	placeholderSecondary, err := getSecondaryCRPlaceholder()
+	if err != nil {
+		return false, err
+	}
+
+	placeholderCM, err := getStaticRateLimitConfigMapCRPlaceholder()
+
+	if err != nil {
+		return false, err
+	}
+
 	apiServerPlaceholder, err := getApiServerCRPlaceholder()
 	if err != nil {
 		return false, err
 	}
 
-	isHyperConverged := request.NamespacedName != placeholder && request.NamespacedName != apiServerPlaceholder
+	isHyperConverged := request.NamespacedName != placeholderSecondary && request.NamespacedName != apiServerPlaceholder && request.NamespacedName != placeholderCM
+
 	return isHyperConverged, nil
 }
 
@@ -1425,6 +1498,20 @@ func getApiServerCRPlaceholder() (types.NamespacedName, error) {
 	}
 
 	namespace, err := hcoutil.GetOperatorNamespaceFromEnv()
+	if err != nil {
+		return fakeHco, err
+	}
+	fakeHco.Namespace = namespace
+
+	return fakeHco, nil
+}
+
+func getStaticRateLimitConfigMapCRPlaceholder() (types.NamespacedName, error) {
+	fakeHco := types.NamespacedName{
+		Name: configMapCRPrefix + randomConstSuffix,
+	}
+	namespace, err := hcoutil.GetOperatorNamespaceFromEnv()
+
 	if err != nil {
 		return fakeHco, err
 	}

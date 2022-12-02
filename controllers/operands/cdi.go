@@ -37,9 +37,9 @@ type cdiHooks struct {
 	cache  *cdiv1beta1.CDI
 }
 
-func (h *cdiHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *cdiHooks) getFullCr(req *common.HcoRequest) (client.Object, error) {
 	if h.cache == nil {
-		cdi, err := NewCDI(hc)
+		cdi, err := NewCDI(req.Instance)
 		if err != nil {
 			return nil, err
 		}

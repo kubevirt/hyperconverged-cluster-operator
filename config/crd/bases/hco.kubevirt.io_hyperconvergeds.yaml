@@ -2236,6 +2236,16 @@ spec:
                     - Custom
                     type: string
                 type: object
+              tuningPolicy:
+                description: TuningPolicy allows to configure the mode in which the
+                  RateLimits of kubevirt are set. If TuningPolicy is not present the
+                  default kubevirt values are used. It can be set to `static-policy`
+                  for fine-tuning the kubevirt queryPerSeconds (qps) and burst values.
+                  Qps and burst values are taken from the `static-policy` ConfigMap
+                  in the same namespace of HCO.
+                enum:
+                - static-policy
+                type: string
               uninstallStrategy:
                 default: BlockUninstallIfWorkloadsExist
                 description: 'UninstallStrategy defines how to proceed on uninstall

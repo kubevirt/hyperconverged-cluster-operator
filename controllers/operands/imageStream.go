@@ -97,7 +97,7 @@ func newIsHook(required *imagev1.ImageStream) *isHooks {
 	return &isHooks{required: required, tags: tags}
 }
 
-func (h isHooks) getFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h isHooks) getFullCr(_ *common.HcoRequest) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
 

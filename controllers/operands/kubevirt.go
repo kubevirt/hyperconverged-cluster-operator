@@ -1,6 +1,7 @@
 package operands
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -17,15 +18,25 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	kubevirtcorev1 "kubevirt.io/api/core/v1"
 )
+
+type RateTuningError string
+
+func (e RateTuningError) Error() string {
+	return string(e)
+}
+func NewTuningPolicyError(e string) *RateTuningError {
+	err := RateTuningError(e)
+	return &err
+}
 
 const (
 	SELinuxLauncherType = "virt_launcher.process"
@@ -140,6 +151,12 @@ const (
 	kvNonRoot                = "NonRoot"
 )
 
+// Kubevirt rateLimiters configuration parameters
+const (
+	burst = "burst"
+	qps   = "queryPerSeconds"
+)
+
 // CPU Plugin default values
 var (
 	hardcodedObsoleteCPUModels = []string{
@@ -169,24 +186,30 @@ var (
 // ************  KubeVirt Handler  **************
 type kubevirtHandler genericOperand
 
-func newKubevirtHandler(Client client.Client, Scheme *runtime.Scheme) *kubevirtHandler {
+func newKubevirtHandler(Client client.Client, Scheme *runtime.Scheme, eventEmitter hcoutil.EventEmitter) *kubevirtHandler {
 	return &kubevirtHandler{
 		Client:                 Client,
 		Scheme:                 Scheme,
 		crType:                 "KubeVirt",
 		setControllerReference: true,
-		hooks:                  &kubevirtHooks{},
+		hooks:                  &kubevirtHooks{client: Client, eventEmitter: eventEmitter},
 	}
 }
 
 type kubevirtHooks struct {
-	cache *kubevirtcorev1.KubeVirt
+	cache        *kubevirtcorev1.KubeVirt
+	client       client.Client
+	eventEmitter hcoutil.EventEmitter
 }
 
-func (h *kubevirtHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *kubevirtHooks) getFullCr(req *common.HcoRequest) (client.Object, error) {
 	if h.cache == nil {
-		kv, err := NewKubeVirt(hc)
-		if err != nil {
+		kv, err := NewKubeVirt(req.Ctx, h.client, req.Instance)
+
+		if errT, ok := err.(*RateTuningError); ok {
+			logger.Error(errT, "TuningPolicyError")
+			h.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeWarning, "TuningPolicyError", errT.Error())
+		} else if err != nil {
 			return nil, err
 		}
 		h.cache = kv
@@ -232,8 +255,12 @@ func (*kubevirtHooks) updateCr(req *common.HcoRequest, Client client.Client, exi
 
 func (*kubevirtHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
-func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtcorev1.KubeVirt, error) {
-	config, err := getKVConfig(hc)
+func NewKubeVirt(ctx context.Context, client client.Client, hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtcorev1.KubeVirt, error) {
+
+	rateLimiter, errTuning := hcoTuning2Kv(ctx, client, &hc.Spec.TuningPolicy, hc.Namespace)
+
+	config, err := getKVConfig(hc, rateLimiter)
+
 	if err != nil {
 		return nil, err
 	}
@@ -262,11 +289,13 @@ func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtcorev1
 
 	kv := NewKubeVirtWithNameOnly(hc, opts...)
 	kv.Spec = spec
-
 	if err := applyPatchToSpec(hc, common.JSONPatchKVAnnotationName, kv); err != nil {
 		return nil, err
 	}
 
+	if errTuning != nil {
+		return kv, errTuning
+	}
 	return kv, nil
 }
 
@@ -294,7 +323,75 @@ func hcWorkloadUpdateStrategyToKv(hcObject *hcov1beta1.HyperConvergedWorkloadUpd
 	return kvObject
 }
 
-func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfiguration, error) {
+func getRatesFromConfigMap(configMap *corev1.ConfigMap) (*kubevirtcorev1.ReloadableComponentConfiguration, *RateTuningError) {
+
+	qpsRead, ok := configMap.Data[qps]
+
+	if !ok {
+
+		return nil, NewTuningPolicyError(fmt.Sprintf("queryPerSeconds parameter not found in configmap %s", configMap.Name))
+	}
+
+	qpsConverted, err := strconv.ParseFloat(qpsRead, 32)
+
+	if err != nil {
+		return nil, NewTuningPolicyError(fmt.Sprintf("failed to convert queryPerSeconds parameter to float; %s", err.Error()))
+	}
+
+	burstRead, ok := configMap.Data[burst]
+	if !ok {
+
+		return nil, NewTuningPolicyError(fmt.Sprintf("burstRead parameter not found in configmap %s", configMap.Name))
+	}
+
+	burstConverted, err := strconv.Atoi(burstRead)
+
+	if err != nil {
+		return nil, NewTuningPolicyError(fmt.Sprintf("failed to convert burstRead parameter to integer; %s", err.Error()))
+	}
+
+	return &kubevirtcorev1.ReloadableComponentConfiguration{
+		RestClient: &kubevirtcorev1.RESTClientConfiguration{
+			RateLimiter: &kubevirtcorev1.RateLimiter{
+				TokenBucketRateLimiter: &kubevirtcorev1.TokenBucketRateLimiter{
+					QPS:   float32(qpsConverted),
+					Burst: burstConverted,
+				},
+			},
+		},
+	}, nil
+
+}
+
+func hcoTuning2Kv(ctx context.Context, client client.Client, hcTuning *hcov1beta1.HyperConvergedTuningPolicy, hcNamespace string) (*kubevirtcorev1.ReloadableComponentConfiguration, *RateTuningError) {
+	var kvReloadable *kubevirtcorev1.ReloadableComponentConfiguration
+
+	if *hcTuning == hcov1beta1.HyperConvergedTuningPolicyConfigMap {
+		var errT *RateTuningError
+		configMap := &corev1.ConfigMap{}
+		configMapNameSpace := types.NamespacedName{
+			Namespace: hcNamespace,
+			Name:      string(hcov1beta1.HyperConvergedTuningPolicyConfigMap),
+		}
+
+		err := client.Get(ctx, configMapNameSpace, configMap)
+
+		if err != nil {
+			return nil, NewTuningPolicyError(err.Error())
+		}
+
+		kvReloadable, errT = getRatesFromConfigMap(configMap)
+
+		if errT != nil {
+			return nil, errT
+		}
+	}
+
+	return kvReloadable, nil
+}
+
+func getKVConfig(hc *hcov1beta1.HyperConverged, rateLimiter *kubevirtcorev1.ReloadableComponentConfiguration) (*kubevirtcorev1.KubeVirtConfiguration, error) {
+
 	devConfig, err := getKVDevConfig(hc)
 	if err != nil {
 		return nil, err
@@ -319,6 +416,10 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 		ObsoleteCPUModels:            obsoleteCPUs,
 		MinCPUModel:                  minCPUModel,
 		TLSConfiguration:             hcTLSSecurityProfileToKv(hcoutil.GetClusterInfo().GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile)),
+		APIConfiguration:             rateLimiter,
+		WebhookConfiguration:         rateLimiter,
+		ControllerConfiguration:      rateLimiter,
+		HandlerConfiguration:         rateLimiter,
 	}
 
 	if smbiosConfig, ok := os.LookupEnv(smbiosEnvName); ok {
@@ -591,8 +692,8 @@ func newKvPriorityClassHandler(Client client.Client, Scheme *runtime.Scheme) *kv
 
 type kvPriorityClassHooks struct{}
 
-func (kvPriorityClassHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	return NewKubeVirtPriorityClass(hc), nil
+func (kvPriorityClassHooks) getFullCr(req *common.HcoRequest) (client.Object, error) {
+	return NewKubeVirtPriorityClass(req.Instance), nil
 }
 func (kvPriorityClassHooks) getEmptyCr() client.Object { return &schedulingv1.PriorityClass{} }
 

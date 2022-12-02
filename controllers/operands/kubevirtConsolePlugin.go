@@ -237,7 +237,7 @@ type consolePluginHooks struct {
 	required *consolev1alpha1.ConsolePlugin
 }
 
-func (h consolePluginHooks) getFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h consolePluginHooks) getFullCr(_ *common.HcoRequest) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
 

@@ -32,8 +32,8 @@ type serviceHooks struct {
 	newCrFunc newSvcFunc
 }
 
-func (h serviceHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	return h.newCrFunc(hc), nil
+func (h serviceHooks) getFullCr(req *common.HcoRequest) (client.Object, error) {
+	return h.newCrFunc(req.Instance), nil
 }
 
 func (serviceHooks) getEmptyCr() client.Object {

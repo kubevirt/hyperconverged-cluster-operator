@@ -1012,3 +1012,41 @@ Labels
     annotation_name="kubevirt.kubevirt.io/jsonpatch"
     severity=info
 ```
+
+## Tune Kubevirt Rate Limits
+Kubevirt API clients come with a token bucket rate limiter which avoids to congest the kube-apiserver bandwidth.
+The rate limiters are configurable through `burst` and `Query Per Second (QPS)` parameters.
+Whilst the rate limiter may avoid congestion, it may also limit the number of VMs that can be deployed in the cluster.
+Therefore, HCO enables the feature `tuningPolicy` for allowing to tune the rate limiters parameters.
+The `tuningPolicy` can be set as `static-policy`.
+
+> **_Note_:** If no `tuningPolicy` is configured or the `tuningPolicy` feature is not well configured, Kubevirt will use the
+> [default](https://github.com/kubevirt/kubevirt/blob/a3e92eb499636cbab46763fbdd1dbccaca716c29/pkg/virt-config/virt-config.go#L78-L86) rate limiter values.
+
+The `static-policy` relies on a ConfigMap to specify the desired values of `burst` and `QPS` parameters.
+Therefore, a new ConfigMap named `static-policy` has to be created in the same namespace where the HCO operator has been deployed.
+The structure of the `static-policy` ConfigMap is the following one:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: static-policy
+  labels:
+    app: "kubevirt-hyperconverged"
+data:
+  queryPerSeconds: "100"
+  burst: "200"
+```
+
+Where the values of `data.queryPerSeconds` and `data.burst` can be replaced by any desired value of `QPS` and `burst`, respectively. 
+For instance, in the above example the `QPS` parameter is set to 100 and the `burst` parameter is set to 200.
+
+> **_Note_:** HCO will not consider any ConfigMap for setting the rate limiters values outside the namespace where the HCO operator has been
+> deployed, without the label `app: "kubeviry-hyperconverged"` or with ConfigMap name different from `static-policy`.
+
+The `tuningPolicy` feature can be enabled using the following patch:
+
+```bash
+kubectl patch -n kubevirt-hyperconverged hco kubevirt-hyperconverged --type=json -p='[{"op": "add", "path": "/spec/tuningPolicy", "value": "static-policy"}]'
+```

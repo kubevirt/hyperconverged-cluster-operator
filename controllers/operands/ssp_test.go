@@ -306,7 +306,7 @@ var _ = Describe("SSP Operands", func() {
 			})
 
 			It("should update the cache when reading full CR", func() {
-				cr, err := handler.hooks.getFullCr(hco)
+				cr, err := handler.hooks.getFullCr(req)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(cr).ToNot(BeNil())
 				Expect(handler.hooks.(*sspHooks).cache).ToNot(BeNil())
@@ -314,7 +314,7 @@ var _ = Describe("SSP Operands", func() {
 				By("compare pointers to make sure cache is working", func() {
 					Expect(handler.hooks.(*sspHooks).cache == cr).Should(BeTrue())
 
-					cdi1, err := handler.hooks.getFullCr(hco)
+					cdi1, err := handler.hooks.getFullCr(req)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(cdi1).ToNot(BeNil())
 					Expect(cr == cdi1).Should(BeTrue())
@@ -327,7 +327,7 @@ var _ = Describe("SSP Operands", func() {
 			})
 
 			It("check that reset actually cause creating of a new cached instance", func() {
-				crI, err := handler.hooks.getFullCr(hco)
+				crI, err := handler.hooks.getFullCr(req)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(crI).ToNot(BeNil())
 				Expect(handler.hooks.(*sspHooks).cache).ToNot(BeNil())
@@ -335,7 +335,7 @@ var _ = Describe("SSP Operands", func() {
 				handler.hooks.(*sspHooks).reset()
 				Expect(handler.hooks.(*sspHooks).cache).To(BeNil())
 
-				crII, err := handler.hooks.getFullCr(hco)
+				crII, err := handler.hooks.getFullCr(req)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(crII).ToNot(BeNil())
 				Expect(handler.hooks.(*sspHooks).cache).ToNot(BeNil())

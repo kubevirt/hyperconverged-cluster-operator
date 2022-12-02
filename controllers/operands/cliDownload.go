@@ -41,8 +41,8 @@ func newCliDownloadHandler(Client client.Client, Scheme *runtime.Scheme) *cliDow
 
 type cliDownloadHooks struct{}
 
-func (*cliDownloadHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	return NewConsoleCLIDownload(hc), nil
+func (*cliDownloadHooks) getFullCr(req *common.HcoRequest) (client.Object, error) {
+	return NewConsoleCLIDownload(req.Instance), nil
 }
 
 func (*cliDownloadHooks) getEmptyCr() client.Object {
@@ -147,8 +147,8 @@ func newCliDownloadsRouteHandler(Client client.Client, Scheme *runtime.Scheme) *
 
 type cliDownloadsRouteHooks struct{}
 
-func (cliDownloadsRouteHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	return NewCliDownloadsRoute(hc), nil
+func (cliDownloadsRouteHooks) getFullCr(req *common.HcoRequest) (client.Object, error) {
+	return NewCliDownloadsRoute(req.Instance), nil
 }
 
 func (cliDownloadsRouteHooks) getEmptyCr() client.Object {

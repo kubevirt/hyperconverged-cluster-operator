@@ -25,6 +25,11 @@ const (
 	HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist HyperConvergedUninstallStrategy = "BlockUninstallIfWorkloadsExist"
 )
 
+type HyperConvergedTuningPolicy string
+
+// HyperConvergedTuningPolicyConfigMap static-policy defines a static configuration of the kubevirt query per seconds (qps) and burst values.
+const HyperConvergedTuningPolicyConfigMap HyperConvergedTuningPolicy = "static-policy"
+
 // HyperConvergedSpec defines the desired state of HyperConverged
 // +k8s:openapi-gen=true
 type HyperConvergedSpec struct {
@@ -34,6 +39,14 @@ type HyperConvergedSpec struct {
 
 	// Deprecated: LocalStorageClassName the name of the local storage class.
 	LocalStorageClassName string `json:"localStorageClassName,omitempty"`
+
+	// TuningPolicy allows to configure the mode in which the RateLimits of kubevirt are set.
+	// If TuningPolicy is not present the default kubevirt values are used.
+	// It can be set to `static-policy` for fine-tuning the kubevirt queryPerSeconds (qps) and burst values.
+	// Qps and burst values are taken from the `static-policy` ConfigMap in the same namespace of HCO.
+	// +kubebuilder:validation:Enum=static-policy
+	// +optional
+	TuningPolicy HyperConvergedTuningPolicy `json:"tuningPolicy,omitempty"`
 
 	// infra HyperConvergedConfig influences the pod configuration (currently only placement)
 	// for all the infra components needed on the virtualization enabled cluster

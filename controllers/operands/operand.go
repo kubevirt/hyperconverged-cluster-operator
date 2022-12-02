@@ -42,7 +42,7 @@ type genericOperand struct {
 // Set of resource handler hooks, to be implement in each handler
 type hcoResourceHooks interface {
 	// Generate the required resource, with all the required fields)
-	getFullCr(*hcov1beta1.HyperConverged) (client.Object, error)
+	getFullCr(*common.HcoRequest) (client.Object, error)
 	// Generate an empty resource, to be used as the input of the client.Get method. After calling this method, it will
 	// contains the actual values in K8s.
 	getEmptyCr() client.Object
@@ -67,7 +67,7 @@ type reseter interface {
 }
 
 func (h *genericOperand) ensure(req *common.HcoRequest) *EnsureResult {
-	cr, err := h.hooks.getFullCr(req.Instance)
+	cr, err := h.hooks.getFullCr(req)
 	if err != nil {
 		return &EnsureResult{
 			Err: err,

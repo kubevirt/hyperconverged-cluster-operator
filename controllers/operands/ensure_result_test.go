@@ -1,6 +1,7 @@
 package operands
 
 import (
+	"context"
 	"errors"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -12,7 +13,7 @@ import (
 var _ = Describe("HyperConverged Ensure Result", func() {
 
 	Context("HyperConverged Ensure Result", func() {
-		kv, err := NewKubeVirt(commonTestUtils.NewHco())
+		kv, err := NewKubeVirt(context.TODO(), nil, commonTestUtils.NewHco())
 		Expect(err).ToNot(HaveOccurred())
 
 		It("should create new EnsureResult with default values", func() {

@@ -39,9 +39,9 @@ type cnaHooks struct {
 	cache *networkaddonsv1.NetworkAddonsConfig
 }
 
-func (h *cnaHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *cnaHooks) getFullCr(req *common.HcoRequest) (client.Object, error) {
 	if h.cache == nil {
-		cna, err := NewNetworkAddons(hc)
+		cna, err := NewNetworkAddons(req.Instance)
 		if err != nil {
 			return nil, err
 		}

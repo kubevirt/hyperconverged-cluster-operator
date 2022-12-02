@@ -47,7 +47,7 @@ type OperandHandler struct {
 func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.ClusterInfo, eventEmitter hcoutil.EventEmitter) *OperandHandler {
 	operands := []Operand{
 		(*genericOperand)(newKvPriorityClassHandler(client, scheme)),
-		(*genericOperand)(newKubevirtHandler(client, scheme)),
+		(*genericOperand)(newKubevirtHandler(client, scheme, eventEmitter)),
 		(*genericOperand)(newCdiHandler(client, scheme)),
 		(*genericOperand)(newCnaHandler(client, scheme)),
 	}
@@ -114,9 +114,9 @@ func (h *OperandHandler) addOperands(scheme *runtime.Scheme, hc *hcov1beta1.Hype
 
 			switch h := handler.(type) {
 			case *genericOperand:
-				obj, err = h.hooks.getFullCr(hc)
+				obj, err = h.hooks.getFullCr(&common.HcoRequest{Instance: hc})
 			case *imageStreamOperand:
-				obj, err = h.operand.hooks.getFullCr(hc)
+				obj, err = h.operand.hooks.getFullCr(&common.HcoRequest{Instance: hc})
 			default:
 				err = fmt.Errorf("unknown handler with type %v", h)
 			}
@@ -249,5 +249,13 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 func (h *OperandHandler) Reset() {
 	for _, op := range h.operands {
 		op.reset()
+	}
+}
+
+func (h *OperandHandler) ResetKubeVirt() {
+	for _, op := range h.operands {
+		if op.(*genericOperand).crType == "KubeVirt" {
+			op.reset()
+		}
 	}
 }

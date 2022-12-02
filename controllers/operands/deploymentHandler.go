@@ -9,7 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -29,7 +28,7 @@ type deploymentHooks struct {
 	required *appsv1.Deployment
 }
 
-func (h deploymentHooks) getFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h deploymentHooks) getFullCr(_ *common.HcoRequest) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
 

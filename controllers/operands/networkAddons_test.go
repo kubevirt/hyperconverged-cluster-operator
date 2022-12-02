@@ -826,7 +826,7 @@ var _ = Describe("CNA Operand", func() {
 			})
 
 			It("should update the cache when reading full CR", func() {
-				cr, err := handler.hooks.getFullCr(hco)
+				cr, err := handler.hooks.getFullCr(req)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(cr).ToNot(BeNil())
 				Expect(handler.hooks.(*cnaHooks).cache).ToNot(BeNil())
@@ -834,7 +834,7 @@ var _ = Describe("CNA Operand", func() {
 				By("compare pointers to make sure cache is working", func() {
 					Expect(handler.hooks.(*cnaHooks).cache == cr).Should(BeTrue())
 
-					crII, err := handler.hooks.getFullCr(hco)
+					crII, err := handler.hooks.getFullCr(req)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(crII).ToNot(BeNil())
 					Expect(cr == crII).Should(BeTrue())
@@ -847,7 +847,7 @@ var _ = Describe("CNA Operand", func() {
 			})
 
 			It("check that reset actually cause creating of a new cached instance", func() {
-				crI, err := handler.hooks.getFullCr(hco)
+				crI, err := handler.hooks.getFullCr(req)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(crI).ToNot(BeNil())
 				Expect(handler.hooks.(*cnaHooks).cache).ToNot(BeNil())
@@ -855,7 +855,7 @@ var _ = Describe("CNA Operand", func() {
 				handler.hooks.(*cnaHooks).reset()
 				Expect(handler.hooks.(*cnaHooks).cache).To(BeNil())
 
-				crII, err := handler.hooks.getFullCr(hco)
+				crII, err := handler.hooks.getFullCr(req)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(crII).ToNot(BeNil())
 				Expect(handler.hooks.(*cnaHooks).cache).ToNot(BeNil())

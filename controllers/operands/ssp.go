@@ -65,9 +65,9 @@ type sspHooks struct {
 	dictStatuses []hcov1beta1.DataImportCronTemplateStatus
 }
 
-func (h *sspHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *sspHooks) getFullCr(req *common.HcoRequest) (client.Object, error) {
 	if h.cache == nil {
-		ssp, dictStatus, err := NewSSP(hc)
+		ssp, dictStatus, err := NewSSP(req.Instance)
 		if err != nil {
 			return nil, err
 		}

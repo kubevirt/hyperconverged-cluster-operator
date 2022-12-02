@@ -9,7 +9,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -30,7 +29,7 @@ type roleHooks struct {
 	required *rbacv1.Role
 }
 
-func (h roleHooks) getFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h roleHooks) getFullCr(_ *common.HcoRequest) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
 func (h roleHooks) getEmptyCr() client.Object {
@@ -86,7 +85,7 @@ type roleBindingHooks struct {
 	required *rbacv1.RoleBinding
 }
 
-func (h roleBindingHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h roleBindingHooks) getFullCr(hc *common.HcoRequest) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
 func (h roleBindingHooks) getEmptyCr() client.Object {

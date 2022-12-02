@@ -33,9 +33,9 @@ type ttoHooks struct {
 	cache *ttov1alpha1.TektonTasks
 }
 
-func (h *ttoHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *ttoHooks) getFullCr(req *common.HcoRequest) (client.Object, error) {
 	if h.cache == nil {
-		h.cache = NewTTO(hc)
+		h.cache = NewTTO(req.Instance)
 	}
 	return h.cache, nil
 }

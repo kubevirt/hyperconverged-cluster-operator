@@ -46,7 +46,7 @@ type qsHooks struct {
 	required *consolev1.ConsoleQuickStart
 }
 
-func (h qsHooks) getFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h qsHooks) getFullCr(_ *common.HcoRequest) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
 
