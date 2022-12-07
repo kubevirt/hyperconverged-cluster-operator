@@ -2452,6 +2452,7 @@ rules:
   - create
   - update
   - delete
+  - deletecollection
 - apiGroups:
   - ""
   resources:
