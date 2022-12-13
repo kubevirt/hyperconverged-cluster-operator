@@ -395,8 +395,7 @@ type HyperConvergedWorkloadUpdateStrategy struct {
 	//
 	// +listType=atomic
 	// +kubebuilder:default={"LiveMigrate"}
-	// +optional
-	WorkloadUpdateMethods []string `json:"workloadUpdateMethods,omitempty"`
+	WorkloadUpdateMethods []string `json:"workloadUpdateMethods"`
 
 	// BatchEvictionSize Represents the number of VMIs that can be forced updated per
 	// the BatchShutdownInterval interval
