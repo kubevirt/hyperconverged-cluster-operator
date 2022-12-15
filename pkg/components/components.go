@@ -735,6 +735,7 @@ func GetCSVBase(params *CSVBaseParams) *csvv1alpha1.ClusterServiceVersion {
 				"namespace": params.Namespace,
 				"annotations": map[string]string{
 					"deployOVS": "false",
+					"deployKSD": "false",
 				},
 			},
 			"spec": map[string]interface{}{},

@@ -801,6 +801,31 @@ kubectl annotate HyperConverged kubevirt-hyperconverged -n kubevirt-hyperconverg
 If HCO was upgraded to 1.3.0 from a previous version, the annotation will be added as `true` and OvS will be deployed.  
 Subsequent upgrades to newer versions will preserve the state from previous version, i.e. OvS will be deployed in the upgraded version if and only if it was deployed in the previous one.
 
+### KubeSecondaryDNS (KSD) Opt-In Annotation
+
+Starting from HCO version 1.8.0, KSD CNI support is disabled by default on new installations.  
+In order to enable the deployment of KSD Deployment on all _workload_ nodes, an annotation of `deployKSD: true` must
+be set on HyperConverged CR.  
+It can be set while creating the HyperConverged custom resource during the initial deployment, or during run time.
+
+* To enable KSD on the cluster, the HyperConverged CR should be similar to:
+
+```yaml
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  annotations:
+    deployKSD: "true"
+...
+```
+* KSD can also be enabled during run time of HCO, by annotating its CR:
+```
+kubectl annotate HyperConverged kubevirt-hyperconverged -n kubevirt-hyperconverged deployKSD=true --overwrite
+```
+
+If HCO was upgraded to 1.8.0 from a previous version, the annotation will be added as `true` and KSD will be deployed.  
+Subsequent upgrades to newer versions will preserve the state from previous version, i.e. KSD will be deployed in the upgraded version if and only if it was deployed in the previous one.
+
 ### jsonpatch Annotations
 HCO enables users to modify the operand CRs directly using jsonpatch annotations in HyperConverged CR.  
 Modifications done to CRs using jsonpatch annotations won't be reconciled back by HCO to the opinionated defaults.  

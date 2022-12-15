@@ -507,6 +507,58 @@ var _ = Describe("CNA Operand", func() {
 			}),
 		)
 
+		type ksdAnnotationParams struct {
+			annotationExists  bool
+			annotationValue   string
+			ksdDeployExpected bool
+		}
+		DescribeTable("when reconciling kube-secondary-dns", func(o ksdAnnotationParams) {
+			hcoKSDConfig := commonTestUtils.NewHco()
+			hcoKSDConfig.Annotations = map[string]string{}
+
+			if o.annotationExists {
+				hcoKSDConfig.Annotations["deployKSD"] = o.annotationValue
+			}
+
+			existingResource, err := NewNetworkAddons(hcoKSDConfig)
+			Expect(err).ToNot(HaveOccurred())
+
+			cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
+			handler := (*genericOperand)(newCnaHandler(cl, commonTestUtils.GetScheme()))
+			res := handler.ensure(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Err).ToNot(HaveOccurred())
+
+			foundResource := &networkaddonsv1.NetworkAddonsConfig{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+			).ToNot(HaveOccurred())
+
+			if o.ksdDeployExpected {
+				Expect(existingResource.Spec.KubeSecondaryDNS).ToNot(BeNil(), "KSD spec should be added")
+			} else {
+				Expect(existingResource.Spec.KubeSecondaryDNS).To(BeNil(), "KSD spec should not be added")
+			}
+		},
+			Entry("should have ksd if deployKSD annotation is set to true", ksdAnnotationParams{
+				annotationExists:  true,
+				annotationValue:   "true",
+				ksdDeployExpected: true,
+			}),
+			Entry("should not have ksd if deployKSD annotation is not set to true", ksdAnnotationParams{
+				annotationExists:  true,
+				annotationValue:   "false",
+				ksdDeployExpected: false,
+			}),
+			Entry("should not have ksd if deployKSD annotation does not exist", ksdAnnotationParams{
+				annotationExists:  false,
+				annotationValue:   "",
+				ksdDeployExpected: false,
+			}),
+		)
+
 		It("should handle conditions", func() {
 			expectedResource, err := NewNetworkAddons(hco)
 			Expect(err).ToNot(HaveOccurred())

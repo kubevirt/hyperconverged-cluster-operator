@@ -215,6 +215,10 @@ echo "----- HCO deployOVS annotation and OVS state in CNAO CR before the upgrade
 PREVIOUS_OVS_ANNOTATION=$(${CMD} get ${HCO_KIND} ${HCO_RESOURCE_NAME} -n ${HCO_NAMESPACE} -o jsonpath='{.metadata.annotations.deployOVS}')
 PREVIOUS_OVS_STATE=$(${CMD} get networkaddonsconfigs cluster -o jsonpath='{.spec.ovs}')
 
+echo "----- HCO deployKSD annotation and KSD state in CNAO CR before the upgrade"
+PREVIOUS_KSD_ANNOTATION=$(${CMD} get ${HCO_KIND} ${HCO_RESOURCE_NAME} -n ${HCO_NAMESPACE} -o jsonpath='{.metadata.annotations.deployKSD}')
+PREVIOUS_KSD_STATE=$(${CMD} get networkaddonsconfigs cluster -o jsonpath='{.spec.kubeSecondaryDNS}')
+
 # Before starting the upgrade, make sure the CSV is installed properly.
 Msg "Read the CSV to make sure the deployment is done"
 ./hack/retry.sh 30 10 "${CMD} get ClusterServiceVersion  -n ${HCO_NAMESPACE} kubevirt-hyperconverged-operator.v${INITIAL_CHANNEL} -o jsonpath='{ .status.phase }' | grep 'Succeeded'"
@@ -300,6 +304,10 @@ KUBECTL_BINARY=${CMD} ./hack/test_quick_start.sh
 Msg "Check that OVS is deployed or not deployed according to deployOVS annotation in HCO CR."
 ./hack/retry.sh 40 15 "CMD=${CMD} PREVIOUS_OVS_ANNOTATION=${PREVIOUS_OVS_ANNOTATION}\
  PREVIOUS_OVS_STATE=${PREVIOUS_OVS_STATE} ./hack/check_upgrade_ovs.sh"
+
+Msg "Check that KSD is deployed or not deployed according to deployKSD annotation in HCO CR."
+./hack/retry.sh 40 15 "CMD=${CMD} PREVIOUS_KSD_ANNOTATION=${PREVIOUS_KSD_ANNOTATION}\
+ PREVIOUS_KSD_STATE=${PREVIOUS_KSD_STATE} ./hack/check_upgrade_ksd.sh"
 
 Msg "Check that managed objects has correct labels"
 ./hack/retry.sh 10 30 "KUBECTL_BINARY=${CMD} ./hack/check_labels.sh"

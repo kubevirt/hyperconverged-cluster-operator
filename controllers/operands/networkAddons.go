@@ -26,6 +26,11 @@ type cnaHandler genericOperand
 
 var defaultHco = components.GetOperatorCR()
 
+const (
+	deployOVS = "deployOVS"
+	deployKSD = "deployKSD"
+)
+
 func newCnaHandler(Client client.Client, Scheme *runtime.Scheme) *cnaHandler {
 	return &cnaHandler{
 		Client: Client,
@@ -70,7 +75,8 @@ func (h *cnaHooks) updateCr(req *common.HcoRequest, Client client.Client, exists
 		return false, false, errors.New("can't convert to CNA")
 	}
 
-	setDeployOvsAnnotation(req, found)
+	setCnaoAnnotation(req, found, deployOVS)
+	setCnaoAnnotation(req, found, deployKSD)
 
 	changed := h.updateSpec(req, found, networkAddons)
 	changed = h.updateLabels(found, networkAddons) || changed
@@ -113,25 +119,37 @@ func (*cnaHooks) updateSpec(req *common.HcoRequest, found *networkaddonsv1.Netwo
 	return false
 }
 
-// If deployOVS annotation doesn't exists prior the upgrade - set this annotation to true;
+// If annotation doesn't exists prior the upgrade - set this annotation to true;
 // Otherwise - remain the value as it is.
-func setDeployOvsAnnotation(req *common.HcoRequest, found *networkaddonsv1.NetworkAddonsConfig) {
+func setCnaoAnnotation(req *common.HcoRequest, found *networkaddonsv1.NetworkAddonsConfig, annotation string) {
 	if req.UpgradeMode {
-		_, exists := req.Instance.Annotations["deployOVS"]
+		_, exists := req.Instance.Annotations[annotation]
 		if !exists {
 			if req.Instance.Annotations == nil {
 				req.Instance.Annotations = map[string]string{}
 			}
-			if found.Spec.Ovs != nil {
-				req.Instance.Annotations["deployOVS"] = "true"
-				req.Logger.Info("deployOVS annotation is set to true.")
+			if cnaoComponentExists(found.Spec, annotation) {
+				req.Instance.Annotations[annotation] = "true"
+				req.Logger.Info(annotation + " annotation is set to true.")
 			} else {
-				req.Instance.Annotations["deployOVS"] = "false"
-				req.Logger.Info("deployOVS annotation is set to false.")
+				req.Instance.Annotations[annotation] = "false"
+				req.Logger.Info(annotation + " annotation is set to false.")
 			}
 
 			req.Dirty = true
 		}
+	}
+}
+
+func cnaoComponentExists(spec networkaddonsshared.NetworkAddonsConfigSpec, annotation string) bool {
+	switch annotation {
+	case deployOVS:
+		return spec.Ovs != nil
+	case deployKSD:
+		return spec.KubeSecondaryDNS != nil
+	default:
+		logger.Error(errors.New("cnaoComponentExists error"), "unknown annotation")
+		return false
 	}
 }
 
@@ -143,7 +161,8 @@ func NewNetworkAddons(hc *hcov1beta1.HyperConverged, opts ...string) (*networkad
 		KubeMacPool: &networkaddonsshared.KubeMacPool{},
 	}
 
-	cnaoSpec.Ovs = hcoAnnotation2CnaoSpec(hc.ObjectMeta.Annotations)
+	cnaoSpec.Ovs = hcoAnnotation2CnaoSpecOVS(hc.ObjectMeta.Annotations)
+	cnaoSpec.KubeSecondaryDNS = hcoAnnotation2CnaoSpecKSD(hc.ObjectMeta.Annotations)
 	cnaoInfra := hcoConfig2CnaoPlacement(hc.Spec.Infra.NodePlacement)
 	cnaoWorkloads := hcoConfig2CnaoPlacement(hc.Spec.Workloads.NodePlacement)
 	if cnaoInfra != nil || cnaoWorkloads != nil {
@@ -208,10 +227,18 @@ func hcoConfig2CnaoPlacement(hcoConf *sdkapi.NodePlacement) *networkaddonsshared
 	return cnaoPlacement
 }
 
-func hcoAnnotation2CnaoSpec(hcoAnnotations map[string]string) *networkaddonsshared.Ovs {
-	val, exists := hcoAnnotations["deployOVS"]
+func hcoAnnotation2CnaoSpecOVS(hcoAnnotations map[string]string) *networkaddonsshared.Ovs {
+	val, exists := hcoAnnotations[deployOVS]
 	if exists && val == "true" {
 		return &networkaddonsshared.Ovs{}
+	}
+	return nil
+}
+
+func hcoAnnotation2CnaoSpecKSD(hcoAnnotations map[string]string) *networkaddonsshared.KubeSecondaryDNS {
+	val, exists := hcoAnnotations[deployKSD]
+	if exists && val == "true" {
+		return &networkaddonsshared.KubeSecondaryDNS{}
 	}
 	return nil
 }
