@@ -145,7 +145,8 @@ function create_cna_csv() {
     --container-tag=${CNA_OPERATOR_IMAGE/*:/} \
     --container-prefix=${containerPrefix} \
     --image-name=${imageName/:*/} \
-    --kube-rbac-proxy-image=${KUBE_RBAC_PROXY_IMAGE}
+    --kube-rbac-proxy-image=${KUBE_RBAC_PROXY_IMAGE} \
+    --core-dns-image=${CORE_DNS_IMAGE}
   "
 
   gen_csv ${DEFAULT_CSV_GENERATOR} ${operatorName} "${CNA_OPERATOR_IMAGE}" ${dumpCRDsArg} ${operatorArgs}
