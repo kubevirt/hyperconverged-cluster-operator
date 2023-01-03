@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright 2022 Red Hat, Inc.
+ * Copyright 2023 Red Hat, Inc.
  *
  */
 
@@ -291,6 +291,13 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 					"localStorageClassName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Deprecated: LocalStorageClassName the name of the local storage class.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"tuningPolicy": {
+						SchemaProps: spec.SchemaProps{
+							Description: "TuningPolicy allows to configure the mode in which the RateLimits of kubevirt are set. If TuningPolicy is not present the default kubevirt values are used. It can be set to `annotation` for fine-tuning the kubevirt queryPerSeconds (qps) and burst values. Qps and burst values are taken from the annotation hco.kubevirt.io/tuningPolicy",
 							Type:        []string{"string"},
 							Format:      "",
 						},
