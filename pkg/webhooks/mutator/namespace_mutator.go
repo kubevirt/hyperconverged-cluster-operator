@@ -23,7 +23,7 @@ const (
 )
 
 var (
-	logger = logf.Log.WithName("mutator")
+	logger = logf.Log.WithName("namespace mutator")
 
 	_ admission.Handler = &NsMutator{}
 )
