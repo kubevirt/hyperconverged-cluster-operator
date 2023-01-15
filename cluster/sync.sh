@@ -15,8 +15,8 @@ function set_env() {
         export REGISTRY=registry:5000
         export CMD="./cluster/kubectl.sh"
     else
-        if [ -z "${IMAGE_REGISTRY}" ]; then
-            echo "IMAGE_REGISTRY must be provided when using KUBEVIRT_PROVIDER external"
+        if [ "${REGISTRY_NAMESPACE}" == "kubevirt" ]; then
+            echo "REGISTRY_NAMESPACE cant be kubevirt when using KUBEVIRT_PROVIDER=external"
             exit 1
         fi
         export REGISTRY=$IMAGE_REGISTRY
@@ -32,8 +32,8 @@ function update_manifests() {
     cp -r deploy _out/
 
     # Sed from quay.io to local registry
-    sed -r -i 's|: quay.io/kubevirt/hyperconverged-cluster-operator(@sha256)?:.*$|: '"$REGISTRY"'/kubevirt/hyperconverged-cluster-operator:latest|g' _out/operator.yaml
-    sed -r -i 's|: quay.io/kubevirt/hyperconverged-cluster-webhook(@sha256)?:.*$|: '"$REGISTRY"'/kubevirt/hyperconverged-cluster-webhook:latest|g' _out/operator.yaml
+    sed -r -i 's|: quay.io/kubevirt/hyperconverged-cluster-operator(@sha256)?:.*$|: '"$REGISTRY/$REGISTRY_NAMESPACE"'/hyperconverged-cluster-operator:latest|g' _out/operator.yaml
+    sed -r -i 's|: quay.io/kubevirt/hyperconverged-cluster-webhook(@sha256)?:.*$|: '"$REGISTRY/$REGISTRY_NAMESPACE"'/hyperconverged-cluster-webhook:latest|g' _out/operator.yaml
 }
 
 function cluster_clean() {
@@ -63,8 +63,8 @@ function update_nodes {
 
     if [ ${KUBEVIRT_PROVIDER} != "external" ]; then
         for node in ${nodes[@]}; do
-            ./cluster/ssh.sh ${node} "echo $REGISTRY/kubevirt/hyperconverged-cluster-operator | xargs \-\-max-args=1 sudo ${pull_command} pull"
-            ./cluster/ssh.sh ${node} "echo $REGISTRY/kubevirt/hyperconverged-cluster-webhook | xargs \-\-max-args=1 sudo ${pull_command} pull"
+            ./cluster/ssh.sh ${node} "echo $REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-operator | xargs \-\-max-args=1 sudo ${pull_command} pull"
+            ./cluster/ssh.sh ${node} "echo $REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-webhook | xargs \-\-max-args=1 sudo ${pull_command} pull"
             # Temporary until image is updated with provisioner that sets this field
             # This field is required by buildah tool
             ./cluster/ssh.sh ${node} "echo user.max_user_namespaces=1024 | xargs \-\-max-args=1 sudo sysctl -w"
@@ -73,7 +73,7 @@ function update_nodes {
 }
 
 function deploy() {
-    HCO_IMAGE="$REGISTRY/kubevirt/hyperconverged-cluster-operator:latest" WEBHOOK_IMAGE="$REGISTRY/kubevirt/hyperconverged-cluster-webhook:latest" ./hack/deploy.sh
+    HCO_IMAGE="$REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-operator:latest" WEBHOOK_IMAGE="$REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-webhook:latest" ./hack/deploy.sh
 }
 
 set_env
