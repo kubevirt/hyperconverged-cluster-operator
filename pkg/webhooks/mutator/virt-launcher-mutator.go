@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/go-logr/logr"
 	"gomodules.xyz/jsonpatch/v2"
@@ -18,6 +21,13 @@ import (
 )
 
 var _ admission.Handler = &VirtLauncherMutator{}
+
+const (
+	cpuLimitToRequestRatioAnnotation    = "kubevirt.io/cpu-limit-to-request-ratio"
+	memoryLimitToRequestRatioAnnotation = "kubevirt.io/memory-limit-to-request-ratio"
+
+	launcherMutatorStr = "virtLauncherMutator"
+)
 
 type VirtLauncherMutator struct {
 	cli          client.Client
@@ -67,8 +77,61 @@ func (m *VirtLauncherMutator) Handle(ctx context.Context, req admission.Request)
 }
 
 func (m *VirtLauncherMutator) handleVirtLauncherCreation(launcherPod *k8sv1.Pod, hco *v1beta1.HyperConverged) error {
-	// TODO: implement
+	cpuRatioStr, cpuRatioExists := hco.Annotations[cpuLimitToRequestRatioAnnotation]
+	memRatioStr, memRatioExists := hco.Annotations[memoryLimitToRequestRatioAnnotation]
+
+	if !cpuRatioExists && !memRatioExists {
+		return nil
+	}
+
+	if cpuRatioExists {
+		err := m.setResourceRatio(launcherPod, cpuRatioStr, cpuLimitToRequestRatioAnnotation, k8sv1.ResourceCPU)
+		if err != nil {
+			return err
+		}
+	}
+	if memRatioExists {
+		err := m.setResourceRatio(launcherPod, memRatioStr, memoryLimitToRequestRatioAnnotation, k8sv1.ResourceMemory)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
+}
+
+func (m *VirtLauncherMutator) setResourceRatio(launcherPod *k8sv1.Pod, ratioStr, annotationKey string, resourceName k8sv1.ResourceName) error {
+	ratio, err := strconv.ParseFloat(ratioStr, 64)
+	if err != nil {
+		return fmt.Errorf("%s can't parse ratio %s to float: %w. The ratio is the value of annotation key %s", launcherMutatorStr, ratioStr, err, annotationKey)
+	}
+
+	if ratio < 1 {
+		return fmt.Errorf("%s doesn't support negative ratio: %v. The ratio is the value of annotation key %s", launcherMutatorStr, ratio, annotationKey)
+	}
+
+	for i, container := range launcherPod.Spec.Containers {
+		request, requestExists := container.Resources.Requests[resourceName]
+		_, limitExists := container.Resources.Limits[resourceName]
+
+		if requestExists && !limitExists {
+			newQuantity := m.multiplyResource(request, ratio)
+			m.logInfo("Replacing %s old quantity (%s) with new quantity (%s) for pod %s/%s, UID: %s, accodring to ratio: %v",
+				resourceName, request.String(), newQuantity.String(), launcherPod.Namespace, launcherPod.Name, launcherPod.UID, ratio)
+
+			launcherPod.Spec.Containers[i].Resources.Limits[resourceName] = newQuantity
+		}
+	}
+
+	return nil
+}
+
+func (m *VirtLauncherMutator) multiplyResource(quantity resource.Quantity, ratio float64) resource.Quantity {
+	oldValue := quantity.ScaledValue(resource.Milli)
+	newValue := ratio * float64(oldValue)
+	newQuantity := *resource.NewScaledQuantity(int64(newValue), resource.Milli)
+
+	return newQuantity
 }
 
 // InjectDecoder injects the decoder.
