@@ -237,6 +237,9 @@ func getNewManagerCache(operatorNamespace string) cache.NewCacheFunc {
 				&consolev1.ConsoleQuickStart{}: {
 					Label: labelSelector,
 				},
+				&consolev1alpha1.ConsolePlugin{}: {
+					Label: labelSelector,
+				},
 				&appsv1.Deployment{}: {
 					Label: labelSelector,
 					Field: namespaceSelector,
