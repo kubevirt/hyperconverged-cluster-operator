@@ -295,6 +295,7 @@ spec:
           - ""
           resources:
           - pods
+          - resourcequotas
           verbs:
           - get
           - list

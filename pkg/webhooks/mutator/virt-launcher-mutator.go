@@ -66,7 +66,16 @@ func (m *VirtLauncherMutator) Handle(ctx context.Context, req admission.Request)
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
-	if err := m.handleVirtLauncherCreation(launcherPod, hco); err != nil {
+	enforceCpuLimits, enforceMemoryLimits, err := m.getResourcesToEnforce(ctx, launcherPod.Namespace, hco)
+	if err != nil {
+		return admission.Errored(http.StatusBadRequest, err)
+	}
+
+	if !enforceCpuLimits && !enforceMemoryLimits {
+		return admission.Allowed(ignoreOperationMessage)
+	}
+
+	if err := m.handleVirtLauncherCreation(launcherPod, hco, enforceCpuLimits, enforceMemoryLimits); err != nil {
 		m.logErr(err, "failed handling launcher pod %s", launcherPod.Name)
 		return admission.Errored(http.StatusBadRequest, err)
 	}
@@ -76,21 +85,18 @@ func (m *VirtLauncherMutator) Handle(ctx context.Context, req admission.Request)
 	return allowResponse
 }
 
-func (m *VirtLauncherMutator) handleVirtLauncherCreation(launcherPod *k8sv1.Pod, hco *v1beta1.HyperConverged) error {
-	cpuRatioStr, cpuRatioExists := hco.Annotations[cpuLimitToRequestRatioAnnotation]
-	memRatioStr, memRatioExists := hco.Annotations[memoryLimitToRequestRatioAnnotation]
+func (m *VirtLauncherMutator) handleVirtLauncherCreation(launcherPod *k8sv1.Pod, hco *v1beta1.HyperConverged, enforceCpuLimits, enforceMemoryLimits bool) error {
+	var cpuRatioStr, memRatioStr string
 
-	if !cpuRatioExists && !memRatioExists {
-		return nil
-	}
-
-	if cpuRatioExists {
+	if enforceCpuLimits {
+		cpuRatioStr = hco.Annotations[cpuLimitToRequestRatioAnnotation]
 		err := m.setResourceRatio(launcherPod, cpuRatioStr, cpuLimitToRequestRatioAnnotation, k8sv1.ResourceCPU)
 		if err != nil {
 			return err
 		}
 	}
-	if memRatioExists {
+	if enforceMemoryLimits {
+		memRatioStr = hco.Annotations[memoryLimitToRequestRatioAnnotation]
 		err := m.setResourceRatio(launcherPod, memRatioStr, memoryLimitToRequestRatioAnnotation, k8sv1.ResourceMemory)
 		if err != nil {
 			return err
@@ -176,4 +182,49 @@ func (m *VirtLauncherMutator) getAllowedResponseWithPatches(launcherPod, origina
 	}
 
 	return allowedResponse
+}
+
+func (m *VirtLauncherMutator) listResourceQuotas(ctx context.Context, namespace string) ([]k8sv1.ResourceQuota, error) {
+	quotaList := &k8sv1.ResourceQuotaList{}
+	err := m.cli.List(ctx, quotaList, &client.ListOptions{Namespace: namespace})
+	if err != nil {
+		return nil, err
+	}
+
+	return quotaList.Items, nil
+}
+
+func (m *VirtLauncherMutator) getResourcesToEnforce(ctx context.Context, namespace string, hco *v1beta1.HyperConverged) (enforceCpuLimits, enforceMemoryLimits bool, err error) {
+	_, cpuRatioExists := hco.Annotations[cpuLimitToRequestRatioAnnotation]
+	_, memRatioExists := hco.Annotations[memoryLimitToRequestRatioAnnotation]
+
+	if !cpuRatioExists && !memRatioExists {
+		return false, false, nil
+	}
+
+	resourceQuotaList, err := m.listResourceQuotas(ctx, namespace)
+	if err != nil {
+		m.logErr(err, "could not list resource quotas")
+		return
+	}
+
+	isQuotaEnforcingResource := func(resourceQuota k8sv1.ResourceQuota, resource k8sv1.ResourceName) bool {
+		_, exists := resourceQuota.Spec.Hard[resource]
+		return exists
+	}
+
+	for _, resourceQuota := range resourceQuotaList {
+		if cpuRatioExists && isQuotaEnforcingResource(resourceQuota, "limits.cpu") {
+			enforceCpuLimits = true
+		}
+		if memRatioExists && isQuotaEnforcingResource(resourceQuota, "limits.memory") {
+			enforceMemoryLimits = true
+		}
+
+		if enforceCpuLimits && enforceMemoryLimits {
+			break
+		}
+	}
+
+	return
 }
