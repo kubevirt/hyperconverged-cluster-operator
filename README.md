@@ -88,6 +88,76 @@ EOF
 Then, create the HyperConverged custom resource to complete the installation.  
 Further information about the HyperConverged CR and its possible configuration options can be found 
 in the [Cluster Configuration](docs/cluster-configuration.md) doc.
+
+## Deploying HCO on CRC
+
+[CRC - Runs Containers](https://github.com/crc-org/crc) is a really convenient way to get a development/testing single node OpenShift cluster (OCP or OKD).
+CRC is mainly targeted at running on developers' desktops, not for production use (it's an ephemeral cluster inside a VM).
+
+The generic CRC requirements are:
+- 4 physical CPU cores
+- 9 GB of free memory
+- 35 GB of storage space
+
+but in order to have a properly sized environment to play with HCO we recommend:
+- 4 physical CPU cores
+- 20 GB of free memory
+- 64 GB of storage space
+- nested virtualization support on your laptop
+
+You can size your CRC instance with:
+```bash
+$ crc config set disk-size 64
+$ crc config set memory 20480
+```
+
+Monitoring can be optionally enable with:
+```bash
+$ crc config set enable-cluster-monitoring true
+```
+
+Starting from 4.12, CRC is already pre-configured to use kubevirt-hostpath-provisioner as a dynamic provisioner for PVs backed by CRC VM's filesystem (`crc-csi-hostpath-provisioner` is the name of this default storage class).
+No other manual actions are required on the CRC VM in order to be able to store and execute nested VMs inside the CRC VM.
+
+You can switch from OCP to OKD with:
+```bash
+$ crc config set preset okd
+```
+
+### Enabling nested virtualization in KVM
+Nested virtualization allows you to run a virtual machine (VM) inside another VM while still using hardware acceleration from the host.
+CRC runs as a VM, so in order to run Kubevirt on CRC to execute VMs with great performances you have to enable it.
+
+#### Checking if nested virtualization is supported
+For Intel processors, check the /sys/module/kvm_intel/parameters/nested file. For AMD processors, check the /sys/module/kvm_amd/parameters/nested file. If you see 1 or Y, nested virtualization is supported.
+
+#### Enabling nested virtualization
+To enable nested virtualization for Intel processors:
+
+```bash
+$ sudo modprobe -r kvm_intel
+$ sudo modprobe kvm_intel nested=1
+```
+Nested virtualization is enabled until the host is rebooted. To enable it permanently, add `options kvm_intel nested=1` to /etc/modprobe.d/kvm.conf.
+
+To enable nested virtualization for AMD processors:
+```bash
+$ sudo modprobe -r kvm_amd
+$ sudo modprobe kvm_amd nested=1
+```
+Nested virtualization is enabled until the host is rebooted. To enable it permanently, add `options kvm_amd nested=1` to /etc/modprobe.d/kvm.conf.
+
+### Starting CRC
+Once ready you can start your CRC environment with:
+```bash
+$ crc setup
+$ crc start
+```
+
+### Deploying HCO on CRC
+KubeVirt HyperConverged Cluster Operator will be available out of the box in the Community Operators catalog in the OperatorHub page of your Openshift (OCP/OKD) cluster:
+![](images/CRC_OperatorHub.png)
+
 ## Using the HCO without OLM or Marketplace
 
 Run the following script to apply the HCO operator:
@@ -174,7 +244,7 @@ CDI, Network-addons, VM import, TTO and SSP.
 kubectl create -f deploy/hco.cr.yaml -n kubevirt-hyperconverged
 ```
 
-## Create a Cluster & Launch the HCO
+### Create a Cluster & Launch the HCO
 1. Choose the provider
 ```bash
 #For k8s cluster:
@@ -209,7 +279,7 @@ For example:
 $ ./cluster/kubectl.sh get pods --all-namespaces
 ```
 
-## Deploying HCO on top of external provider
+### Build and deploy HCO on top of external provider
 
 In order to use HCO on top of external provider, i.e CRC, use:
 ```
