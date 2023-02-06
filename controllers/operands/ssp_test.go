@@ -44,7 +44,7 @@ var _ = Describe("SSP Operands", func() {
 
 		It("should create if not present", func() {
 			expectedResource, _, err := NewSSP(hco)
-			Expect(err).ToNot(HaveOccurred())
+			Expect(err).To(Equal(nil))
 			cl := commonTestUtils.InitClient([]runtime.Object{})
 			handler := (*genericOperand)(newSspHandler(cl, commonTestUtils.GetScheme()))
 			res := handler.ensure(req)
