@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -166,6 +167,9 @@ func main() {
 	err = createPriorityClass(ctx, mgr)
 	cmdHelper.ExitOnError(err, "Failed creating PriorityClass")
 
+	err = readNodeImages(ctx, mgr)
+	cmdHelper.ExitOnError(err, "Failed reading NodeImages")
+
 	logger.Info("Starting the Cmd.")
 	eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Init", "Starting the HyperConverged Pod")
 
@@ -278,4 +282,42 @@ func createPriorityClass(ctx context.Context, mgr manager.Manager) error {
 	}
 
 	return err
+}
+
+func readNodeImages(ctx context.Context, mgr manager.Manager) error {
+	type Kubeletconfig struct {
+		Kubeletconfig struct {
+			NodeStatusMaxImages int `json:"nodeStatusMaxImages"`
+		} `json:"kubeletconfig"`
+	}
+
+	nodeList := corev1.NodeList{}
+	err := mgr.GetAPIReader().List(ctx, &nodeList)
+	if err != nil {
+		return err
+	}
+
+	node := corev1.Node{}
+
+	restClient, err := hcoutil.GetRESTClientFor(&node, mgr.GetConfig(), mgr.GetScheme())
+	if err != nil {
+		return err
+	}
+
+	for _, node := range nodeList.Items {
+		resp, err := restClient.Get().Resource("nodes").Name(node.Name).
+			Suffix("proxy", "configz").
+			Do(ctx).Raw()
+		if err != nil {
+			return err
+		}
+		var kc Kubeletconfig
+		err = json.Unmarshal(resp, &kc)
+		if err != nil {
+			return err
+		}
+		logger.Info("Reading node images", "node", node.Name, "statusImages", len(node.Status.Images), "nodeStatusMaxImages", kc.Kubeletconfig.NodeStatusMaxImages)
+
+	}
+	return nil
 }

@@ -9,6 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/runtime/serializer"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+
 	"github.com/go-logr/logr"
 	objectreferencesv1 "github.com/openshift/custom-resource-status/objectreferences/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -18,6 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -280,4 +284,16 @@ func GetLabels(hcName string, component AppComponent) map[string]string {
 		AppLabelPartOf:    HyperConvergedCluster,
 		AppLabelComponent: string(component),
 	}
+}
+
+func GetRESTClientFor(obj runtime.Object, config *rest.Config, scheme *runtime.Scheme) (rest.Interface, error) {
+	gvk, err := apiutil.GVKForObject(obj, scheme)
+	if err != nil {
+		return nil, err
+	}
+	restClient, err := apiutil.RESTClientForGVK(gvk, true, config, serializer.NewCodecFactory(scheme))
+	if err != nil {
+		return nil, err
+	}
+	return restClient, nil
 }
