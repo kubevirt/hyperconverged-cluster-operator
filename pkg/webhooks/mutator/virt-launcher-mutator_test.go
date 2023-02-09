@@ -64,7 +64,13 @@ var _ = Describe("virt-launcher webhook mutator", func() {
 		}
 
 		launcherPod.Spec.Containers[0].Resources = podResources
-		Expect(mutator.handleVirtLauncherCreation(launcherPod, hco, true, true)).To(Succeed())
+		creationConfig := virtLauncherCreationConfig{
+			enforceCpuLimits:    true,
+			cpuRatioStr:         cpuRatio,
+			enforceMemoryLimits: true,
+			memRatioStr:         memRatio,
+		}
+		Expect(mutator.handleVirtLauncherCreation(launcherPod, hco, creationConfig)).To(Succeed())
 
 		resources := launcherPod.Spec.Containers[0].Resources
 		Expect(resources.Limits[k8sv1.ResourceCPU].Equal(expectedResources.Limits[k8sv1.ResourceCPU])).To(BeTrue())
@@ -122,13 +128,13 @@ var _ = Describe("virt-launcher webhook mutator", func() {
 				}
 			}
 
-			enforceCpuLimits, enforceMemoryLimits, err := mutator.getResourcesToEnforce(context.TODO(), podNamespace, hco)
+			creationConfig, err := mutator.getResourcesToEnforce(context.TODO(), podNamespace, hco, virtLauncherCreationConfig{})
 			Expect(err).ToNot(HaveOccurred())
 
 			if resourceName == k8sv1.ResourceCPU {
-				Expect(enforceCpuLimits).To(Equal(shouldEnforce))
+				Expect(creationConfig.enforceCpuLimits).To(Equal(shouldEnforce))
 			} else {
-				Expect(enforceMemoryLimits).To(Equal(shouldEnforce))
+				Expect(creationConfig.enforceMemoryLimits).To(Equal(shouldEnforce))
 			}
 		},
 			Entry("memory: setRatio, setLimit - shouldEnforce", k8sv1.ResourceMemory, setRatio, setLimit, shouldEnforce),
