@@ -1,4 +1,4 @@
-FROM fedora:34
+FROM fedora:37
 
 MAINTAINER "The KubeVirt Project" <kubevirt-dev@googlegroups.com>
 
@@ -22,7 +22,7 @@ RUN \
     export PATH=${GOPATH}/bin:$PATH && \
     eval $(go env) && \
     go install github.com/onsi/ginkgo/ginkgo@latest && \
-    go get github.com/onsi/gomega && \
+    go get github.com/onsi/gomega@v1.22.1 && \
     go install golang.org/x/tools/cmd/goimports@latest && \
     go get -u -d golang.org/x/lint/golint && \
     go install github.com/rmohr/go-swagger-utils/swagger-doc@latest && \
