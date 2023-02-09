@@ -94,9 +94,17 @@ const (
 						"value": "Always"
 					}
 			]`
+	validSspAnnotation = `[
+					{
+						"op": "replace",
+						"path": "/spec/templateValidator/replicas",
+						"value": 5
+					}
+			]`
 	invalidKvAnnotation  = `[{"op": "wrongOp", "path": "/spec/configuration/cpuRequest", "value": "12m"}]`
 	invalidCdiAnnotation = `[{"op": "wrongOp", "path": "/spec/config/featureGates/-", "value": "fg1"}]`
 	invalidCnaAnnotation = `[{"op": "wrongOp", "path": "/spec/kubeMacPool", "value": {"rangeStart": "1.1.1.1.1.1", "rangeEnd": "5.5.5.5.5.5" }}]`
+	invalidSspAnnotation = `[{"op": "wrongOp", "path": "/spec/templateValidator/replicas", "value": 5}]`
 )
 
 var _ = Describe("webhooks validator", func() {
@@ -222,6 +230,18 @@ var _ = Describe("webhooks validator", func() {
 
 		It("should reject creation of a resource with an invalid cna annotation", func() {
 			cr.Annotations = map[string]string{common.JSONPatchCNAOAnnotationName: invalidCnaAnnotation}
+			err := wh.ValidateCreate(ctx, dryRun, cr)
+			Expect(err).To(HaveOccurred())
+		})
+
+		It("should accept creation of a resource with a valid SSP annotation", func() {
+			cr.Annotations = map[string]string{common.JSONPatchSSPAnnotationName: validSspAnnotation}
+			err := wh.ValidateCreate(ctx, dryRun, cr)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should reject creation of a resource with an invalid SSP annotation", func() {
+			cr.Annotations = map[string]string{common.JSONPatchSSPAnnotationName: invalidSspAnnotation}
 			err := wh.ValidateCreate(ctx, dryRun, cr)
 			Expect(err).To(HaveOccurred())
 		})
@@ -1269,6 +1289,7 @@ var _ = Describe("webhooks validator", func() {
 			Entry("should accept if kv annotation is valid", common.JSONPatchKVAnnotationName, validKvAnnotation),
 			Entry("should accept if cdi annotation is valid", common.JSONPatchCDIAnnotationName, validCdiAnnotation),
 			Entry("should accept if cna annotation is valid", common.JSONPatchCNAOAnnotationName, validCnaAnnotation),
+			Entry("should accept if ssp annotation is valid", common.JSONPatchSSPAnnotationName, validSspAnnotation),
 		)
 
 		DescribeTable("should reject if annotation is invalid",
@@ -1294,6 +1315,7 @@ var _ = Describe("webhooks validator", func() {
 			Entry("should reject if kv annotation is invalid", common.JSONPatchKVAnnotationName, invalidKvAnnotation),
 			Entry("should reject if cdi annotation is invalid", common.JSONPatchCDIAnnotationName, invalidCdiAnnotation),
 			Entry("should reject if cna annotation is invalid", common.JSONPatchCNAOAnnotationName, invalidCnaAnnotation),
+			Entry("should accept if ssp annotation is invalid", common.JSONPatchSSPAnnotationName, invalidSspAnnotation),
 		)
 	})
 

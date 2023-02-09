@@ -94,6 +94,7 @@ var JSONPatchAnnotationNames = []string{
 	common.JSONPatchKVAnnotationName,
 	common.JSONPatchCDIAnnotationName,
 	common.JSONPatchCNAOAnnotationName,
+	common.JSONPatchSSPAnnotationName,
 }
 
 // RegisterReconciler creates a new HyperConverged Reconciler and registers it into manager.
