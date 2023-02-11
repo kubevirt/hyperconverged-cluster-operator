@@ -9,8 +9,10 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	v1 "kubevirt.io/api/core/v1"
+	generatedscheme "kubevirt.io/client-go/generated/kubevirt/clientset/versioned/scheme"
 	"kubevirt.io/client-go/log"
 )
 
@@ -83,6 +85,16 @@ func IsVFIOVMI(vmi *v1.VirtualMachineInstance) bool {
 
 	if IsHostDevVMI(vmi) || IsGPUVMI(vmi) || IsSRIOVVmi(vmi) {
 		return true
+	}
+	return false
+}
+
+// Check if the VMI includes passt network interface(s)
+func IsPasstVMI(vmi *v1.VirtualMachineInstance) bool {
+	for _, net := range vmi.Spec.Domain.Devices.Interfaces {
+		if net.Passt != nil {
+			return true
+		}
 	}
 	return false
 }
@@ -243,4 +255,18 @@ func GenerateSecureRandomString(n int) (string, error) {
 	}
 
 	return string(ret), nil
+}
+
+// GenerateKubeVirtGroupVersionKind ensures a provided object registered with KubeVirts generated schema
+// has GVK set correctly. This is required as client-go continues to return objects without
+// TypeMeta set as set out in the following issue: https://github.com/kubernetes/client-go/issues/413
+func GenerateKubeVirtGroupVersionKind(obj runtime.Object) (runtime.Object, error) {
+	objCopy := obj.DeepCopyObject()
+	gvks, _, err := generatedscheme.Scheme.ObjectKinds(objCopy)
+	if err != nil {
+		return nil, fmt.Errorf("could not get GroupVersionKind for object: %w", err)
+	}
+	objCopy.GetObjectKind().SetGroupVersionKind(gvks[0])
+
+	return objCopy, nil
 }

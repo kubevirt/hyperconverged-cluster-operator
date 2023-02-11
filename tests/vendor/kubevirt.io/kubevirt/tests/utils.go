@@ -44,6 +44,8 @@ import (
 	"sync"
 	"time"
 
+	v12 "k8s.io/api/apps/v1"
+
 	migrationsv1 "kubevirt.io/api/migrations/v1alpha1"
 
 	expect "github.com/google/goexpect"
@@ -301,9 +303,13 @@ func RunVMIAndExpectLaunchIgnoreWarnings(vmi *v1.VirtualMachineInstance, timeout
 }
 
 func RunVMIAndExpectScheduling(vmi *v1.VirtualMachineInstance, timeout int) *v1.VirtualMachineInstance {
+	wp := watcher.WarningsPolicy{FailOnWarnings: true}
+	return RunVMIAndExpectSchedulingWithWarningPolicy(vmi, timeout, wp)
+}
+
+func RunVMIAndExpectSchedulingWithWarningPolicy(vmi *v1.VirtualMachineInstance, timeout int, wp watcher.WarningsPolicy) *v1.VirtualMachineInstance {
 	obj := RunVMI(vmi, timeout)
 	By("Waiting until the VirtualMachineInstance will be scheduled")
-	wp := watcher.WarningsPolicy{FailOnWarnings: true}
 	return waitForVMIScheduling(obj, timeout, wp)
 }
 
@@ -354,6 +360,49 @@ func getPodsByLabel(label, labelType, namespace string) (*k8sv1.PodList, error) 
 	}
 
 	return pods, nil
+}
+
+func GetProcessName(pod *k8sv1.Pod, pid string) (output string, err error) {
+	virtClient, err := kubecli.GetKubevirtClient()
+	if err != nil {
+		return
+	}
+
+	fPath := "/proc/" + pid + "/comm"
+	output, err = ExecuteCommandOnPod(
+		virtClient,
+		pod,
+		"compute",
+		[]string{"cat", fPath},
+	)
+
+	return
+}
+
+func ListCgroupThreads(pod *k8sv1.Pod) (output string, err error) {
+	virtClient, err := kubecli.GetKubevirtClient()
+	if err != nil {
+		return
+	}
+
+	output, err = ExecuteCommandOnPod(
+		virtClient,
+		pod,
+		"compute",
+		[]string{"cat", "/sys/fs/cgroup/cpuset/tasks"},
+	)
+
+	if err == nil {
+		// Cgroup V1
+		return
+	}
+	output, err = ExecuteCommandOnPod(
+		virtClient,
+		pod,
+		"compute",
+		[]string{"cat", "/sys/fs/cgroup/cgroup.threads"},
+	)
+	return
 }
 
 func GetPodCPUSet(pod *k8sv1.Pod) (output string, err error) {
@@ -1068,6 +1117,11 @@ func waitForVMIPhase(ctx context.Context, phases []v1.VirtualMachineInstancePhas
 
 	objectEventWatcher := watcher.New(vmi).SinceWatchedObjectResourceVersion().Timeout(time.Duration(seconds+2) * time.Second)
 	if wp.FailOnWarnings == true {
+		// let's ignore PSA events as kubernetes internally uses a namespace informer
+		// that might not be up to date after virt-controller relabeled the namespace
+		// to use a 'privileged' policy
+		// TODO: remove this when KubeVirt will be able to run VMs under the 'restricted' level
+		wp.WarningsIgnoreList = append(wp.WarningsIgnoreList, "violates PodSecurity")
 		objectEventWatcher.SetWarningsPolicy(wp)
 	}
 
@@ -1301,6 +1355,17 @@ func ChangeImgFilePermissionsToNonQEMU(pvc *k8sv1.PersistentVolumeClaim) {
 	By("changing disk.img permissions to non qemu")
 	pod := libstorage.RenderPodWithPVC("change-permissions-disk-img-pod", []string{"/bin/bash", "-c"}, args, pvc)
 
+	// overwrite securityContext
+	rootUser := int64(0)
+	pod.Spec.Containers[0].SecurityContext = &k8sv1.SecurityContext{
+		Capabilities: &k8sv1.Capabilities{
+			Drop: []k8sv1.Capability{"ALL"},
+		},
+		Privileged:   NewBool(true),
+		RunAsUser:    &rootUser,
+		RunAsNonRoot: NewBool(false),
+	}
+
 	RunPodAndExpectCompletion(pod)
 }
 
@@ -1338,6 +1403,17 @@ func renderContainerSpec(imgPath string, name string, cmd []string, args []strin
 		Image:   imgPath,
 		Command: cmd,
 		Args:    args,
+		SecurityContext: &k8sv1.SecurityContext{
+			Privileged:               NewBool(false),
+			AllowPrivilegeEscalation: NewBool(false),
+			RunAsNonRoot:             NewBool(true),
+			SeccompProfile: &k8sv1.SeccompProfile{
+				Type: k8sv1.SeccompProfileTypeRuntimeDefault,
+			},
+			Capabilities: &k8sv1.Capabilities{
+				Drop: []k8sv1.Capability{"ALL"},
+			},
+		},
 	}
 }
 
@@ -1559,7 +1635,7 @@ func RemoveHostDiskImage(diskPath string, nodeName string) {
 	virtClient, err := kubecli.GetKubevirtClient()
 	util2.PanicOnError(err)
 	procPath := filepath.Join("/proc/1/root", diskPath)
-	virtHandlerPod, err := kubecli.NewVirtHandlerClient(virtClient).Namespace(flags.KubeVirtInstallNamespace).ForNode(nodeName).Pod()
+	virtHandlerPod, err := libnode.GetVirtHandlerPod(virtClient, nodeName)
 	Expect(err).ToNot(HaveOccurred())
 	_, _, err = ExecuteCommandOnPodV2(virtClient, virtHandlerPod, "virt-handler", []string{"rm", "-rf", procPath})
 	Expect(err).ToNot(HaveOccurred())
@@ -2500,7 +2576,7 @@ func GetIdOfLauncher(vmi *v1.VirtualMachineInstance) string {
 }
 
 func ExecuteCommandOnNodeThroughVirtHandler(virtCli kubecli.KubevirtClient, nodeName string, command []string) (stdout string, stderr string, err error) {
-	virtHandlerPod, err := kubecli.NewVirtHandlerClient(virtCli).Namespace(flags.KubeVirtInstallNamespace).ForNode(nodeName).Pod()
+	virtHandlerPod, err := libnode.GetVirtHandlerPod(virtCli, nodeName)
 	if err != nil {
 		return "", "", err
 	}
@@ -2672,4 +2748,20 @@ func dvSizeBySourceURL(url string) string {
 	}
 
 	return cd.CirrosVolumeSize
+}
+
+func GetDefaultVirtApiDeployment(namespace string, config *util.KubeVirtDeploymentConfig) (*v12.Deployment, error) {
+	return components.NewApiServerDeployment(namespace, config.GetImageRegistry(), config.GetImagePrefix(), config.GetApiVersion(), "", "", "", config.VirtApiImage, config.GetImagePullPolicy(), config.GetVerbosity(), config.GetExtraEnv())
+}
+
+func GetDefaultVirtControllerDeployment(namespace string, config *util.KubeVirtDeploymentConfig) (*v12.Deployment, error) {
+	return components.NewControllerDeployment(namespace, config.GetImageRegistry(), config.GetImagePrefix(), config.GetControllerVersion(), config.GetLauncherVersion(), config.GetExportServerVersion(), "", "", "", config.VirtControllerImage, config.VirtLauncherImage, config.VirtExportServerImage, config.GetImagePullPolicy(), config.GetVerbosity(), config.GetExtraEnv())
+}
+
+func GetDefaultVirtHandlerDaemonSet(namespace string, config *util.KubeVirtDeploymentConfig) (*v12.DaemonSet, error) {
+	return components.NewHandlerDaemonSet(namespace, config.GetImageRegistry(), config.GetImagePrefix(), config.GetHandlerVersion(), "", "", "", config.GetLauncherVersion(), config.VirtHandlerImage, config.VirtLauncherImage, config.GetImagePullPolicy(), nil, config.GetVerbosity(), config.GetExtraEnv())
+}
+
+func GetDefaultExportProxyDeployment(namespace string, config *util.KubeVirtDeploymentConfig) (*v12.Deployment, error) {
+	return components.NewExportProxyDeployment(namespace, config.GetImageRegistry(), config.GetImagePrefix(), config.GetExportProxyVersion(), "", "", "", config.VirtExportProxyImage, config.GetImagePullPolicy(), config.GetVerbosity(), config.GetExtraEnv())
 }
