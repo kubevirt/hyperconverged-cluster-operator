@@ -33,6 +33,8 @@ import (
 const (
 	GroupNameSubresources  = "subresources.kubevirt.io"
 	GroupNameSnapshot      = "snapshot.kubevirt.io"
+	GroupNameExport        = "export.kubevirt.io"
+	GroupNameClone         = "clone.kubevirt.io"
 	GroupNameInstancetype  = "instancetype.kubevirt.io"
 	GroupNamePool          = "pool.kubevirt.io"
 	NameDefault            = "kubevirt.io:default"
@@ -141,6 +143,7 @@ func newAdminClusterRole() *rbacv1.ClusterRole {
 					"virtualmachineinstances/console",
 					"virtualmachineinstances/vnc",
 					"virtualmachineinstances/vnc/screenshot",
+					"virtualmachineinstances/portforward",
 					VMInstancesGuestOSInfo,
 					VMInstancesFileSysList,
 					VMInstancesUserList,
@@ -161,10 +164,21 @@ func newAdminClusterRole() *rbacv1.ClusterRole {
 					"virtualmachineinstances/freeze",
 					"virtualmachineinstances/unfreeze",
 					"virtualmachineinstances/softreboot",
-					"virtualmachineinstances/portforward",
 				},
 				Verbs: []string{
 					"update",
+				},
+			},
+			{
+				APIGroups: []string{
+					GroupNameSubresources,
+				},
+				Resources: []string{
+					"virtualmachines/expand-spec",
+					"virtualmachines/portforward",
+				},
+				Verbs: []string{
+					"get",
 				},
 			},
 			{
@@ -179,6 +193,17 @@ func newAdminClusterRole() *rbacv1.ClusterRole {
 					"virtualmachines/removevolume",
 					"virtualmachines/migrate",
 					"virtualmachines/memorydump",
+				},
+				Verbs: []string{
+					"update",
+				},
+			},
+			{
+				APIGroups: []string{
+					GroupNameSubresources,
+				},
+				Resources: []string{
+					"expand-vm-spec",
 				},
 				Verbs: []string{
 					"update",
@@ -207,6 +232,28 @@ func newAdminClusterRole() *rbacv1.ClusterRole {
 					"virtualmachinesnapshots",
 					"virtualmachinesnapshotcontents",
 					"virtualmachinerestores",
+				},
+				Verbs: []string{
+					"get", "delete", "create", "update", "patch", "list", "watch", "deletecollection",
+				},
+			},
+			{
+				APIGroups: []string{
+					GroupNameExport,
+				},
+				Resources: []string{
+					"virtualmachineexports",
+				},
+				Verbs: []string{
+					"get", "delete", "create", "update", "patch", "list", "watch", "deletecollection",
+				},
+			},
+			{
+				APIGroups: []string{
+					GroupNameClone,
+				},
+				Resources: []string{
+					"virtualmachineclones",
 				},
 				Verbs: []string{
 					"get", "delete", "create", "update", "patch", "list", "watch", "deletecollection",
@@ -274,6 +321,7 @@ func newEditClusterRole() *rbacv1.ClusterRole {
 					"virtualmachineinstances/console",
 					"virtualmachineinstances/vnc",
 					"virtualmachineinstances/vnc/screenshot",
+					"virtualmachineinstances/portforward",
 					VMInstancesGuestOSInfo,
 					VMInstancesFileSysList,
 					VMInstancesUserList,
@@ -294,10 +342,21 @@ func newEditClusterRole() *rbacv1.ClusterRole {
 					"virtualmachineinstances/freeze",
 					"virtualmachineinstances/unfreeze",
 					"virtualmachineinstances/softreboot",
-					"virtualmachineinstances/portforward",
 				},
 				Verbs: []string{
 					"update",
+				},
+			},
+			{
+				APIGroups: []string{
+					GroupNameSubresources,
+				},
+				Resources: []string{
+					"virtualmachines/expand-spec",
+					"virtualmachines/portforward",
+				},
+				Verbs: []string{
+					"get",
 				},
 			},
 			{
@@ -312,6 +371,17 @@ func newEditClusterRole() *rbacv1.ClusterRole {
 					"virtualmachines/removevolume",
 					"virtualmachines/migrate",
 					"virtualmachines/memorydump",
+				},
+				Verbs: []string{
+					"update",
+				},
+			},
+			{
+				APIGroups: []string{
+					GroupNameSubresources,
+				},
+				Resources: []string{
+					"expand-vm-spec",
 				},
 				Verbs: []string{
 					"update",
@@ -340,6 +410,28 @@ func newEditClusterRole() *rbacv1.ClusterRole {
 					"virtualmachinesnapshots",
 					"virtualmachinesnapshotcontents",
 					"virtualmachinerestores",
+				},
+				Verbs: []string{
+					"get", "delete", "create", "update", "patch", "list", "watch",
+				},
+			},
+			{
+				APIGroups: []string{
+					GroupNameExport,
+				},
+				Resources: []string{
+					"virtualmachineexports",
+				},
+				Verbs: []string{
+					"get", "delete", "create", "update", "patch", "list", "watch",
+				},
+			},
+			{
+				APIGroups: []string{
+					GroupNameClone,
+				},
+				Resources: []string{
+					"virtualmachineclones",
 				},
 				Verbs: []string{
 					"get", "delete", "create", "update", "patch", "list", "watch",
@@ -415,12 +507,24 @@ func newViewClusterRole() *rbacv1.ClusterRole {
 					GroupNameSubresources,
 				},
 				Resources: []string{
+					"virtualmachines/expand-spec",
 					VMInstancesGuestOSInfo,
 					VMInstancesFileSysList,
 					VMInstancesUserList,
 				},
 				Verbs: []string{
 					"get",
+				},
+			},
+			{
+				APIGroups: []string{
+					GroupNameSubresources,
+				},
+				Resources: []string{
+					"expand-vm-spec",
+				},
+				Verbs: []string{
+					"update",
 				},
 			},
 			{
@@ -446,6 +550,28 @@ func newViewClusterRole() *rbacv1.ClusterRole {
 					"virtualmachinesnapshots",
 					"virtualmachinesnapshotcontents",
 					"virtualmachinerestores",
+				},
+				Verbs: []string{
+					"get", "list", "watch",
+				},
+			},
+			{
+				APIGroups: []string{
+					GroupNameExport,
+				},
+				Resources: []string{
+					"virtualmachineexports",
+				},
+				Verbs: []string{
+					"get", "list", "watch",
+				},
+			},
+			{
+				APIGroups: []string{
+					GroupNameClone,
+				},
+				Resources: []string{
+					"virtualmachineclones",
 				},
 				Verbs: []string{
 					"get", "list", "watch",

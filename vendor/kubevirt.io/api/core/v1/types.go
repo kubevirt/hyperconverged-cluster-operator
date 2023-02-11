@@ -475,6 +475,8 @@ const (
 	VirtualMachineInstanceReasonSEVNotMigratable = "SEVNotLiveMigratable"
 	// Reason means that VMI is not live migratable because it uses HyperV Reenlightenment while TSC Frequency is not available
 	VirtualMachineInstanceReasonNoTSCFrequencyMigratable = "NoTSCFrequencyNotLiveMigratable"
+	// Reason means that VMI is not live migratable because it uses dedicated CPU and emulator thread isolation
+	VirtualMachineInstanceReasonDedicatedCPU = "DedicatedCPUNotLiveMigratable"
 )
 
 const (
@@ -723,6 +725,10 @@ const (
 
 	// Used by functional tests to simulate virt-launcher crash looping
 	FuncTestLauncherFailFastAnnotation string = "kubevirt.io/func-test-virt-launcher-fail-fast"
+
+	// Used by functional tests to ignore backoff applied to migrations
+	FuncTestForceIgnoreMigrationBackoffAnnotation string = "kubevirt.io/func-test-ignore-migration-backoff"
+
 	// This label is used to match virtual machine instance IDs with pods.
 	// Similar to kubevirt.io/domain. Used on Pod.
 	// Internal use only.

@@ -25,7 +25,10 @@ import (
 	"strconv"
 	"strings"
 
+	"kubevirt.io/kubevirt/pkg/virt-controller/watch/topology"
+
 	"k8s.io/kubectl/pkg/cmd/util/podcmd"
+	"k8s.io/utils/pointer"
 
 	k8sv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -119,10 +122,12 @@ const ephemeralStorageOverheadSize = "50M"
 const (
 	VirtLauncherMonitorOverhead = "25Mi"  // The `ps` RSS for virt-launcher-monitor
 	VirtLauncherOverhead        = "100Mi" // The `ps` RSS for the virt-launcher process
-	VirtlogdOverhead            = "18Mi"  // The `ps` RSS for virtlogd
+	VirtlogdOverhead            = "20Mi"  // The `ps` RSS for virtlogd
 	LibvirtdOverhead            = "35Mi"  // The `ps` RSS for libvirtd
 	QemuOverhead                = "30Mi"  // The `ps` RSS for qemu, minus the RAM of its (stressed) guest, minus the virtual page table
 )
+
+const customSELinuxType = "virt_launcher.process"
 
 type TemplateService interface {
 	RenderMigrationManifest(vmi *v1.VirtualMachineInstance, sourcePod *k8sv1.Pod) (*k8sv1.Pod, error)
@@ -492,11 +497,7 @@ func (t *templateService) renderLaunchManifest(vmi *v1.VirtualMachineInstance, i
 		pod.Spec.SecurityContext.RunAsNonRoot = &nonRoot
 	}
 
-	// If an SELinux type was specified, use that--otherwise don't set an SELinux type
-	selinuxType := t.clusterConfig.GetSELinuxLauncherType()
-	if selinuxType != "" {
-		alignPodMultiCategorySecurity(&pod, selinuxType, t.clusterConfig.DockerSELinuxMCSWorkaroundEnabled())
-	}
+	alignPodMultiCategorySecurity(&pod, vmi, t.clusterConfig.GetSELinuxLauncherType(), t.clusterConfig.DockerSELinuxMCSWorkaroundEnabled())
 
 	// If we have a runtime class specified, use it, otherwise don't set a runtimeClassName
 	runtimeClassName := t.clusterConfig.GetDefaultRuntimeClass()
@@ -546,7 +547,7 @@ func (t *templateService) newNodeSelectorRenderer(vmi *v1.VirtualMachineInstance
 		)
 	}
 
-	if vmi.Status.TopologyHints != nil && vmi.Status.TopologyHints.TSCFrequency != nil {
+	if topology.IsManualTSCFrequencyRequired(vmi) {
 		opts = append(opts, WithTSCTimer(vmi.Status.TopologyHints.TSCFrequency))
 	}
 
@@ -719,19 +720,10 @@ func (t *templateService) RenderHotplugAttachmentPodTemplate(volumes []*v1.Volum
 		Spec: k8sv1.PodSpec{
 			Containers: []k8sv1.Container{
 				{
-					Name:    hotplugDisk,
-					Image:   t.launcherImage,
-					Command: command,
-					Resources: k8sv1.ResourceRequirements{ //Took the request and limits from containerDisk init container.
-						Limits: map[k8sv1.ResourceName]resource.Quantity{
-							k8sv1.ResourceCPU:    resource.MustParse("100m"),
-							k8sv1.ResourceMemory: resource.MustParse("80M"),
-						},
-						Requests: map[k8sv1.ResourceName]resource.Quantity{
-							k8sv1.ResourceCPU:    resource.MustParse("10m"),
-							k8sv1.ResourceMemory: resource.MustParse("2M"),
-						},
-					},
+					Name:      hotplugDisk,
+					Image:     t.launcherImage,
+					Command:   command,
+					Resources: hotplugContainerResourceRequirementsForVMI(vmi),
 					SecurityContext: &k8sv1.SecurityContext{
 						SELinuxOptions: &k8sv1.SELinuxOptions{
 							// FIXME: Forcing an SELinux level without categories is a security risk
@@ -744,7 +736,6 @@ func (t *templateService) RenderHotplugAttachmentPodTemplate(volumes []*v1.Volum
 							// enter the mount namespace of virt-launcher and check the level of any file/directory.
 							// We need a way to ask virt-handler to do that.
 							Level: "s0",
-							Type:  t.clusterConfig.GetSELinuxLauncherType(),
 						},
 					},
 					VolumeMounts: []k8sv1.VolumeMount{
@@ -825,7 +816,7 @@ func (t *templateService) RenderHotplugAttachmentPodTemplate(volumes []*v1.Volum
 	return pod, nil
 }
 
-func (t *templateService) RenderHotplugAttachmentTriggerPodTemplate(volume *v1.Volume, ownerPod *k8sv1.Pod, _ *v1.VirtualMachineInstance, pvcName string, isBlock bool, tempPod bool) (*k8sv1.Pod, error) {
+func (t *templateService) RenderHotplugAttachmentTriggerPodTemplate(volume *v1.Volume, ownerPod *k8sv1.Pod, vmi *v1.VirtualMachineInstance, pvcName string, isBlock bool, tempPod bool) (*k8sv1.Pod, error) {
 	zero := int64(0)
 	sharedMount := k8sv1.MountPropagationHostToContainer
 	var command []string
@@ -861,22 +852,12 @@ func (t *templateService) RenderHotplugAttachmentTriggerPodTemplate(volume *v1.V
 		Spec: k8sv1.PodSpec{
 			Containers: []k8sv1.Container{
 				{
-					Name:    hotplugDisk,
-					Image:   t.launcherImage,
-					Command: command,
-					Resources: k8sv1.ResourceRequirements{ //Took the request and limits from containerDisk init container.
-						Limits: map[k8sv1.ResourceName]resource.Quantity{
-							k8sv1.ResourceCPU:    resource.MustParse("100m"),
-							k8sv1.ResourceMemory: resource.MustParse("80M"),
-						},
-						Requests: map[k8sv1.ResourceName]resource.Quantity{
-							k8sv1.ResourceCPU:    resource.MustParse("10m"),
-							k8sv1.ResourceMemory: resource.MustParse("2M"),
-						},
-					},
+					Name:      hotplugDisk,
+					Image:     t.launcherImage,
+					Command:   command,
+					Resources: hotplugContainerResourceRequirementsForVMI(vmi),
 					SecurityContext: &k8sv1.SecurityContext{
 						SELinuxOptions: &k8sv1.SELinuxOptions{
-							Type:  t.clusterConfig.GetSELinuxLauncherType(),
 							Level: "s0",
 						},
 					},
@@ -968,6 +949,10 @@ func (t *templateService) RenderExporterManifest(vmExport *exportv1.VirtualMachi
 								},
 							},
 						},
+					},
+					SecurityContext: &k8sv1.SecurityContext{
+						AllowPrivilegeEscalation: pointer.Bool(false),
+						Capabilities:             &k8sv1.Capabilities{Drop: []k8sv1.Capability{"ALL"}},
 					},
 				},
 			},
@@ -1115,7 +1100,20 @@ func wrapGuestAgentPingWithVirtProbe(vmi *v1.VirtualMachineInstance, probe *k8sv
 	return
 }
 
-func alignPodMultiCategorySecurity(pod *k8sv1.Pod, selinuxType string, dockerSELinuxMCSWorkaround bool) {
+func alignPodMultiCategorySecurity(pod *k8sv1.Pod, vmi *v1.VirtualMachineInstance, selinuxType string, dockerSELinuxMCSWorkaround bool) {
+	if selinuxType == "" {
+		if util.HasHugePages(vmi) || util.IsVMIVirtiofsEnabled(vmi) || util.IsPasstVMI(vmi) {
+			// If no SELinux type was specified, use our custom type for VMIs that need it
+			selinuxType = customSELinuxType
+		} else {
+			// If no SELinux type was specified and the VMI can run as container_t, do nothing
+			return
+		}
+	}
+
+	if pod.Spec.SecurityContext == nil {
+		pod.Spec.SecurityContext = &k8sv1.PodSecurityContext{}
+	}
 	pod.Spec.SecurityContext.SELinuxOptions = &k8sv1.SELinuxOptions{Type: selinuxType}
 	// more info on https://github.com/kubernetes/kubernetes/issues/90759
 	// Since the compute container needs to be able to communicate with the
