@@ -70,7 +70,7 @@ var _ = Describe("virt-launcher webhook mutator", func() {
 			enforceMemoryLimits: true,
 			memRatioStr:         memRatio,
 		}
-		Expect(mutator.handleVirtLauncherCreation(launcherPod, hco, creationConfig)).To(Succeed())
+		Expect(mutator.handleVirtLauncherCreation(context.Background(), launcherPod, creationConfig)).To(Succeed())
 
 		resources := launcherPod.Spec.Containers[0].Resources
 		Expect(resources.Limits[k8sv1.ResourceCPU].Equal(expectedResources.Limits[k8sv1.ResourceCPU])).To(BeTrue())

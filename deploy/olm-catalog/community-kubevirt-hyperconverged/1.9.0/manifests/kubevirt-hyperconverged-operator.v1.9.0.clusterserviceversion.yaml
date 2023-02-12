@@ -301,6 +301,14 @@ spec:
           - list
           - watch
         - apiGroups:
+          - kubevirt.io
+          resources:
+          - virtualmachineinstances
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
           - ""
           resources:
           - nodes

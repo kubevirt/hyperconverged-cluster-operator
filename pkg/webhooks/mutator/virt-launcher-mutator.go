@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	v1 "kubevirt.io/api/core/v1"
+
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/go-logr/logr"
@@ -28,6 +30,9 @@ const (
 	cpuLimitToRequestRatioAnnotation    = kubevirtIoAnnotationPrefix + "cpu-limit-to-request-ratio"
 	memoryLimitToRequestRatioAnnotation = kubevirtIoAnnotationPrefix + "memory-limit-to-request-ratio"
 
+	enableMemoryHeadroomAnnotation = kubevirtIoAnnotationPrefix + "enable-guest-to-request-memory-headroom"
+	customMemoryHeadroomAnnotation = kubevirtIoAnnotationPrefix + "custom-guest-to-request-memory-headroom"
+
 	launcherMutatorStr = "virtLauncherMutator"
 )
 
@@ -43,6 +48,9 @@ type virtLauncherCreationConfig struct {
 	cpuRatioStr         string
 	enforceMemoryLimits bool
 	memRatioStr         string
+
+	addMemoryHeadroom bool
+	memoryHeadroom    string
 }
 
 func NewVirtLauncherMutator(cli client.Client, hcoNamespace string) *VirtLauncherMutator {
@@ -80,7 +88,7 @@ func (m *VirtLauncherMutator) Handle(ctx context.Context, req admission.Request)
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
-	if err := m.handleVirtLauncherCreation(launcherPod, hco, creationConfig); err != nil {
+	if err := m.handleVirtLauncherCreation(ctx, launcherPod, creationConfig); err != nil {
 		m.logErr(err, "failed handling launcher pod %s", launcherPod.Name)
 		return admission.Errored(http.StatusBadRequest, err)
 	}
@@ -96,13 +104,28 @@ func (m *VirtLauncherMutator) generateCreationConfig(ctx context.Context, namesp
 		return
 	}
 
+	if val, exists := hco.Annotations[enableMemoryHeadroomAnnotation]; exists && val == "true" {
+		creationConfig.addMemoryHeadroom = true
+
+		if customSystemMemory, customSystemMemoryExists := hco.Annotations[customMemoryHeadroomAnnotation]; customSystemMemoryExists {
+			creationConfig.memoryHeadroom = customSystemMemory
+		} else {
+			creationConfig.memoryHeadroom = "2G"
+		}
+	}
+
 	return
 }
 
-func (m *VirtLauncherMutator) handleVirtLauncherCreation(launcherPod *k8sv1.Pod, hco *v1beta1.HyperConverged, creationConfig virtLauncherCreationConfig) error {
+func (m *VirtLauncherMutator) handleVirtLauncherCreation(ctx context.Context, launcherPod *k8sv1.Pod, creationConfig virtLauncherCreationConfig) error {
 	err := m.handleVirtLauncherResourceRatio(launcherPod, creationConfig)
 	if err != nil {
 		return err
+	}
+
+	err = m.handleVirtLauncherMemoryHeadroom(ctx, launcherPod, creationConfig)
+	if err != nil {
+		m.logger.Error(err, "setting memory headroom for pod %s/%s is skipped", launcherPod.Namespace, launcherPod.Name)
 	}
 
 	return nil
@@ -121,6 +144,57 @@ func (m *VirtLauncherMutator) handleVirtLauncherResourceRatio(launcherPod *k8sv1
 			return err
 		}
 	}
+
+	return nil
+}
+
+func (m *VirtLauncherMutator) handleVirtLauncherMemoryHeadroom(ctx context.Context, launcherPod *k8sv1.Pod, creationConfig virtLauncherCreationConfig) error {
+	if !creationConfig.addMemoryHeadroom {
+		return nil
+	}
+
+	var err error
+	var memoryRequest resource.Quantity
+	var computeContainerIdx = -1
+
+	// fetch VMI
+	var vmi *v1.VirtualMachineInstance
+	if vmiName, exists := launcherPod.Labels["vm.kubevirt.io/name"]; exists {
+		vmi, err = getVmi(ctx, m.cli, vmiName, launcherPod.Namespace)
+		if err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("warning: cannot find label key %s in virt launcher pod %s/%s", "vm.kubevirt.io/name", launcherPod.Namespace, launcherPod.Name)
+	}
+
+	if _, memoryLimitExists := vmi.Spec.Domain.Resources.Limits[k8sv1.ResourceMemory]; memoryLimitExists {
+		m.logger.Info("memory limit exists for vmi %s/%s. skipping setting memory memory headroom", vmi.Namespace, vmi.Name)
+		return nil
+	}
+
+	// Find compute container and original memory request
+	for idx, container := range launcherPod.Spec.Containers {
+		if container.Name != "compute" {
+			continue
+		}
+
+		var exists bool
+		memoryRequest, exists = container.Resources.Requests[k8sv1.ResourceMemory]
+		if !exists {
+			return fmt.Errorf("compute container doesn't request any memory. skipping reserving system memory")
+		}
+
+		computeContainerIdx = idx
+		break
+	}
+
+	if computeContainerIdx == -1 {
+		return fmt.Errorf("could not find compute container for pod %s/%s", launcherPod.Namespace, launcherPod.Name)
+	}
+
+	memoryRequest.Add(resource.MustParse(creationConfig.memoryHeadroom))
+	launcherPod.Spec.Containers[computeContainerIdx].Resources.Requests[k8sv1.ResourceMemory] = memoryRequest
 
 	return nil
 }

@@ -2,6 +2,9 @@ package mutator
 
 import (
 	"context"
+	"fmt"
+
+	v1 "kubevirt.io/api/core/v1"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,4 +34,24 @@ func getHcoObject(ctx context.Context, cli client.Client, namespace string) (*v1
 	}
 
 	return hco, nil
+}
+
+func getVmi(ctx context.Context, cli client.Client, name, namespace string) (*v1.VirtualMachineInstance, error) {
+	vmi := &v1.VirtualMachineInstance{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+
+	err := cli.Get(ctx, client.ObjectKeyFromObject(vmi), vmi)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil, fmt.Errorf("VMI %s/%s does not exist", namespace, name)
+		}
+
+		return nil, fmt.Errorf("failed getting VMI %s/%s: %v", namespace, name, err)
+	}
+
+	return vmi, nil
 }

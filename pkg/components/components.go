@@ -475,6 +475,11 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			Verbs:     stringListToSlice("get", "list", "watch"),
 		},
 		{
+			APIGroups: stringListToSlice("kubevirt.io"),
+			Resources: stringListToSlice("virtualmachineinstances"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
+		{
 			APIGroups: emptyAPIGroup,
 			Resources: stringListToSlice("nodes", "nodes/proxy"),
 			Verbs:     stringListToSlice("get", "list", "watch"),
