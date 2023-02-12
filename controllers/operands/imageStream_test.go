@@ -168,7 +168,7 @@ var _ = Describe("imageStream tests", func() {
 			ImageStreamObjects = &imagev1.ImageStreamList{}
 			err = cli.List(context.TODO(), ImageStreamObjects)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(ImageStreamObjects.Items).To(HaveLen(0))
+			Expect(ImageStreamObjects.Items).To(BeEmpty())
 
 			By("check that the delete event was emitted")
 			expectedEvents := []commonTestUtils.MockEvent{

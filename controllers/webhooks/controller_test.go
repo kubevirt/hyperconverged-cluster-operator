@@ -40,7 +40,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(ok).To(BeTrue())
 
 				// we should have no runnable before registering the controller
-				Expect(mockmgr.GetRunnables()).To(HaveLen(0))
+				Expect(mockmgr.GetRunnables()).To(BeEmpty())
 
 				// we should have one runnable after registering it on Openshift
 				err = RegisterReconciler(mgr, ci)
@@ -61,12 +61,12 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(ok).To(BeTrue())
 
 				// we should have no runnable before registering the controller
-				Expect(mockmgr.GetRunnables()).To(HaveLen(0))
+				Expect(mockmgr.GetRunnables()).To(BeEmpty())
 
 				// we should have still no runnable after registering if not on Openshift
 				err = RegisterReconciler(mgr, ci)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(mockmgr.GetRunnables()).To(HaveLen(0))
+				Expect(mockmgr.GetRunnables()).To(BeEmpty())
 			})
 
 		})
