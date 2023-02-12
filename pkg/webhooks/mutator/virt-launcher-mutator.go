@@ -34,6 +34,8 @@ const (
 	customMemoryHeadroomAnnotation = kubevirtIoAnnotationPrefix + "custom-guest-to-request-memory-headroom"
 
 	launcherMutatorStr = "virtLauncherMutator"
+
+	virtLauncherVmiNameLabel = "vm.kubevirt.io/name"
 )
 
 type VirtLauncherMutator struct {
@@ -159,13 +161,13 @@ func (m *VirtLauncherMutator) handleVirtLauncherMemoryHeadroom(ctx context.Conte
 
 	// fetch VMI
 	var vmi *v1.VirtualMachineInstance
-	if vmiName, exists := launcherPod.Labels["vm.kubevirt.io/name"]; exists {
+	if vmiName, exists := launcherPod.Labels[virtLauncherVmiNameLabel]; exists {
 		vmi, err = getVmi(ctx, m.cli, vmiName, launcherPod.Namespace)
 		if err != nil {
 			return err
 		}
 	} else {
-		return fmt.Errorf("warning: cannot find label key %s in virt launcher pod %s/%s", "vm.kubevirt.io/name", launcherPod.Namespace, launcherPod.Name)
+		return fmt.Errorf("warning: cannot find label key %s in virt launcher pod %s/%s", virtLauncherVmiNameLabel, launcherPod.Namespace, launcherPod.Name)
 	}
 
 	if _, memoryLimitExists := vmi.Spec.Domain.Resources.Limits[k8sv1.ResourceMemory]; memoryLimitExists {

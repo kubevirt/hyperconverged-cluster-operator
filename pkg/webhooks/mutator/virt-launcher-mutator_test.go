@@ -54,156 +54,161 @@ var _ = Describe("virt-launcher webhook mutator", func() {
 
 	})
 
-	DescribeTable("set resource ratio", func(memRatio, cpuRatio string, podResources, expectedResources k8sv1.ResourceRequirements) {
-		mutator := getVirtLauncherMutator()
-		launcherPod := getFakeLauncherPod()
-		hco := getHco()
-		hco.Annotations = map[string]string{
-			cpuLimitToRequestRatioAnnotation:    cpuRatio,
-			memoryLimitToRequestRatioAnnotation: memRatio,
-		}
-
-		launcherPod.Spec.Containers[0].Resources = podResources
-		creationConfig := virtLauncherCreationConfig{
-			enforceCpuLimits:    true,
-			cpuRatioStr:         cpuRatio,
-			enforceMemoryLimits: true,
-			memRatioStr:         memRatio,
-		}
-		Expect(mutator.handleVirtLauncherCreation(context.Background(), launcherPod, creationConfig)).To(Succeed())
-
-		resources := launcherPod.Spec.Containers[0].Resources
-		Expect(resources.Limits[k8sv1.ResourceCPU].Equal(expectedResources.Limits[k8sv1.ResourceCPU])).To(BeTrue())
-		Expect(resources.Requests[k8sv1.ResourceCPU].Equal(expectedResources.Requests[k8sv1.ResourceCPU])).To(BeTrue())
-		Expect(resources.Limits[k8sv1.ResourceMemory].Equal(expectedResources.Limits[k8sv1.ResourceMemory])).To(BeTrue())
-		Expect(resources.Requests[k8sv1.ResourceMemory].Equal(expectedResources.Requests[k8sv1.ResourceMemory])).To(BeTrue())
-	},
-		Entry("200m cpu with ratio 2", "1.0", "2.0",
-			getResources(withCpuRequest("200m")),
-			getResources(withCpuRequest("200m"), withCpuLimit("400m")),
-		),
-		Entry("100M memory with ratio 1.5", "1.5", "1.0",
-			getResources(withMemRequest("100M")),
-			getResources(withMemRequest("100M"), withMemLimit("150M")),
-		),
-		Entry("200m cpu with ratio 2, 100M memory with ratio 1.5", "1.5", "2.0",
-			getResources(withCpuRequest("200m"), withMemRequest("100M")),
-			getResources(withCpuRequest("200m"), withCpuLimit("400m"), withMemRequest("100M"), withMemLimit("150M")),
-		),
-		Entry("requests and limits are already set", "1.5", "2.0",
-			getResources(withCpuRequest("200m"), withCpuLimit("400m"), withMemRequest("100M"), withMemLimit("150M")),
-			getResources(withCpuRequest("200m"), withCpuLimit("400m"), withMemRequest("100M"), withMemLimit("150M")),
-		),
-		Entry("requests and limits aren't set - nothing should be done", "1.5", "2.0",
-			getResources(),
-			getResources(),
-		),
-	)
-
-	Context("resources to enforce", func() {
-		const (
-			setRatio, dontSetRatio          = true, false
-			setLimit, dontSetLimit          = true, false
-			shouldEnforce, shouldNotEnforce = true, false
-		)
-
-		DescribeTable("should behave as expected", func(resourceName k8sv1.ResourceName, setRatio, setResourceQuotaLimit, shouldEnforce bool) {
-			Expect(resourceName).To(Or(Equal(k8sv1.ResourceMemory), Equal(k8sv1.ResourceCPU)))
-
+	Context("resource ratio enforcement", func() {
+		DescribeTable("set resource ratio", func(memRatio, cpuRatio string, podResources, expectedResources k8sv1.ResourceRequirements) {
+			mutator := getVirtLauncherMutator()
+			launcherPod := getFakeLauncherPod()
 			hco := getHco()
-			if setRatio {
-				if resourceName == k8sv1.ResourceCPU {
-					hco.Annotations[cpuLimitToRequestRatioAnnotation] = "1.2"
-				} else {
-					hco.Annotations[memoryLimitToRequestRatioAnnotation] = "3.4"
-				}
+			hco.Annotations = map[string]string{
+				cpuLimitToRequestRatioAnnotation:    cpuRatio,
+				memoryLimitToRequestRatioAnnotation: memRatio,
 			}
 
-			mutator := getVirtLauncherMutatorWithoutResourceQuotas(true, true)
-			if setResourceQuotaLimit {
-				if resourceName == k8sv1.ResourceCPU {
-					mutator = getVirtLauncherMutatorWithoutResourceQuotas(false, true)
-				} else {
-					mutator = getVirtLauncherMutatorWithoutResourceQuotas(true, false)
-				}
+			launcherPod.Spec.Containers[0].Resources = podResources
+			creationConfig := virtLauncherCreationConfig{
+				enforceCpuLimits:    true,
+				cpuRatioStr:         cpuRatio,
+				enforceMemoryLimits: true,
+				memRatioStr:         memRatio,
 			}
-
-			creationConfig, err := mutator.getResourcesToEnforce(context.TODO(), podNamespace, hco, virtLauncherCreationConfig{})
+			err := mutator.handleVirtLauncherCreation(context.Background(), launcherPod, creationConfig)
 			Expect(err).ToNot(HaveOccurred())
 
-			if resourceName == k8sv1.ResourceCPU {
-				Expect(creationConfig.enforceCpuLimits).To(Equal(shouldEnforce))
-			} else {
-				Expect(creationConfig.enforceMemoryLimits).To(Equal(shouldEnforce))
-			}
+			resources := launcherPod.Spec.Containers[0].Resources
+			Expect(resources.Limits[k8sv1.ResourceCPU].Equal(expectedResources.Limits[k8sv1.ResourceCPU])).To(BeTrue())
+			Expect(resources.Requests[k8sv1.ResourceCPU].Equal(expectedResources.Requests[k8sv1.ResourceCPU])).To(BeTrue())
+			Expect(resources.Limits[k8sv1.ResourceMemory].Equal(expectedResources.Limits[k8sv1.ResourceMemory])).To(BeTrue())
+			Expect(resources.Requests[k8sv1.ResourceMemory].Equal(expectedResources.Requests[k8sv1.ResourceMemory])).To(BeTrue())
 		},
-			Entry("memory: setRatio, setLimit - shouldEnforce", k8sv1.ResourceMemory, setRatio, setLimit, shouldEnforce),
-			Entry("memory: setRatio, dontSetLimit - shouldNotEnforce", k8sv1.ResourceMemory, setRatio, dontSetLimit, shouldNotEnforce),
-			Entry("memory: dontSetRatio, setLimit - shouldNotEnforce", k8sv1.ResourceMemory, dontSetRatio, setLimit, shouldNotEnforce),
-			Entry("memory: dontSetRatio, dontSetLimit - shouldNotEnforce", k8sv1.ResourceMemory, dontSetRatio, dontSetLimit, shouldNotEnforce),
-
-			Entry("cpu: setRatio, setLimit - shouldEnforce", k8sv1.ResourceCPU, setRatio, setLimit, shouldEnforce),
-			Entry("cpu: setRatio, dontSetLimit - shouldNotEnforce", k8sv1.ResourceCPU, setRatio, dontSetLimit, shouldNotEnforce),
-			Entry("cpu: dontSetRatio, setLimit - shouldNotEnforce", k8sv1.ResourceCPU, dontSetRatio, setLimit, shouldNotEnforce),
-			Entry("cpu: dontSetRatio, dontSetLimit - shouldNotEnforce", k8sv1.ResourceCPU, dontSetRatio, dontSetLimit, shouldNotEnforce),
-		)
-	})
-
-	Context("invalid requests", func() {
-		const resourceAnnotationKey = "fake-key" // this is not important for this test
-
-		DescribeTable("invalid ratio", func(ratio string, resourceName k8sv1.ResourceName) {
-			launcherPod := getFakeLauncherPod()
-			mutator := getVirtLauncherMutator()
-
-			Expect(mutator.setResourceRatio(launcherPod, ratio, resourceAnnotationKey, resourceName)).ToNot(Succeed())
-		},
-			Entry("zero ratio", "0", k8sv1.ResourceCPU),
-			Entry("negative ratio", "-1.2", k8sv1.ResourceMemory),
+			Entry("200m cpu with ratio 2", "1.0", "2.0",
+				getResources(withCpuRequest("200m")),
+				getResources(withCpuRequest("200m"), withCpuLimit("400m")),
+			),
+			Entry("100M memory with ratio 1.5", "1.5", "1.0",
+				getResources(withMemRequest("100M")),
+				getResources(withMemRequest("100M"), withMemLimit("150M")),
+			),
+			Entry("200m cpu with ratio 2, 100M memory with ratio 1.5", "1.5", "2.0",
+				getResources(withCpuRequest("200m"), withMemRequest("100M")),
+				getResources(withCpuRequest("200m"), withCpuLimit("400m"), withMemRequest("100M"), withMemLimit("150M")),
+			),
+			Entry("requests and limits are already set", "1.5", "2.0",
+				getResources(withCpuRequest("200m"), withCpuLimit("400m"), withMemRequest("100M"), withMemLimit("150M")),
+				getResources(withCpuRequest("200m"), withCpuLimit("400m"), withMemRequest("100M"), withMemLimit("150M")),
+			),
+			Entry("requests and limits aren't set - nothing should be done", "1.5", "2.0",
+				getResources(),
+				getResources(),
+			),
 		)
 
-		Context("objects do not exist", func() {
-			newRequest := func(operation admissionv1.Operation, object runtime.Object, encoder runtime.Encoder) admissionv1.AdmissionRequest {
-				return admissionv1.AdmissionRequest{
-					Operation: operation,
-					Object: runtime.RawExtension{
-						Raw:    []byte(runtime.EncodeOrDie(encoder, object)),
-						Object: object,
-					},
+		Context("resources to enforce", func() {
+			const (
+				setRatio, dontSetRatio          = true, false
+				setLimit, dontSetLimit          = true, false
+				shouldEnforce, shouldNotEnforce = true, false
+			)
+
+			DescribeTable("should behave as expected", func(resourceName k8sv1.ResourceName, setRatio, setResourceQuotaLimit, shouldEnforce bool) {
+				Expect(resourceName).To(Or(Equal(k8sv1.ResourceMemory), Equal(k8sv1.ResourceCPU)))
+
+				hco := getHco()
+				if setRatio {
+					if resourceName == k8sv1.ResourceCPU {
+						hco.Annotations[cpuLimitToRequestRatioAnnotation] = "1.2"
+					} else {
+						hco.Annotations[memoryLimitToRequestRatioAnnotation] = "3.4"
+					}
 				}
-			}
 
-			It("HCO CR object does not exist", func() {
-				codecFactory := serializer.NewCodecFactory(scheme.Scheme)
-				corev1Codec := codecFactory.LegacyCodec(k8sv1.SchemeGroupVersion)
+				mutator := getVirtLauncherMutatorWithoutResourceQuotas(true, true)
+				if setResourceQuotaLimit {
+					if resourceName == k8sv1.ResourceCPU {
+						mutator = getVirtLauncherMutatorWithoutResourceQuotas(false, true)
+					} else {
+						mutator = getVirtLauncherMutatorWithoutResourceQuotas(true, false)
+					}
+				}
 
-				launcherPod := getFakeLauncherPod()
-				mutator := getVirtLauncherMutatorWithoutHco()
-				req := admission.Request{AdmissionRequest: newRequest(admissionv1.Create, launcherPod, corev1Codec)}
+				creationConfig, err := mutator.getResourcesToEnforce(context.TODO(), podNamespace, hco, virtLauncherCreationConfig{})
+				Expect(err).ToNot(HaveOccurred())
 
-				res := mutator.Handle(context.TODO(), req)
-				Expect(res.Allowed).To(BeFalse())
-				Expect(res.Result.Message).To(ContainSubstring("not found"))
-			})
+				if resourceName == k8sv1.ResourceCPU {
+					Expect(creationConfig.enforceCpuLimits).To(Equal(shouldEnforce))
+				} else {
+					Expect(creationConfig.enforceMemoryLimits).To(Equal(shouldEnforce))
+				}
+			},
+				Entry("memory: setRatio, setLimit - shouldEnforce", k8sv1.ResourceMemory, setRatio, setLimit, shouldEnforce),
+				Entry("memory: setRatio, dontSetLimit - shouldNotEnforce", k8sv1.ResourceMemory, setRatio, dontSetLimit, shouldNotEnforce),
+				Entry("memory: dontSetRatio, setLimit - shouldNotEnforce", k8sv1.ResourceMemory, dontSetRatio, setLimit, shouldNotEnforce),
+				Entry("memory: dontSetRatio, dontSetLimit - shouldNotEnforce", k8sv1.ResourceMemory, dontSetRatio, dontSetLimit, shouldNotEnforce),
+
+				Entry("cpu: setRatio, setLimit - shouldEnforce", k8sv1.ResourceCPU, setRatio, setLimit, shouldEnforce),
+				Entry("cpu: setRatio, dontSetLimit - shouldNotEnforce", k8sv1.ResourceCPU, setRatio, dontSetLimit, shouldNotEnforce),
+				Entry("cpu: dontSetRatio, setLimit - shouldNotEnforce", k8sv1.ResourceCPU, dontSetRatio, setLimit, shouldNotEnforce),
+				Entry("cpu: dontSetRatio, dontSetLimit - shouldNotEnforce", k8sv1.ResourceCPU, dontSetRatio, dontSetLimit, shouldNotEnforce),
+			)
 		})
 
-		It("should not apply if only limit is set", func() {
-			launcherPod := getFakeLauncherPod()
-			mutator := getVirtLauncherMutator()
+		Context("invalid requests", func() {
+			const resourceAnnotationKey = "fake-key" // this is not important for this test
 
-			launcherPod.Spec.Containers[0].Resources = k8sv1.ResourceRequirements{
-				Limits: map[k8sv1.ResourceName]resource.Quantity{
-					k8sv1.ResourceCPU:    resource.MustParse("1"),
-					k8sv1.ResourceMemory: resource.MustParse("1"),
-				},
-			}
+			DescribeTable("invalid ratio", func(ratio string, resourceName k8sv1.ResourceName) {
+				launcherPod := getFakeLauncherPod()
+				mutator := getVirtLauncherMutator()
 
-			const ratio = "1.23"
-			Expect(mutator.setResourceRatio(launcherPod, ratio, resourceAnnotationKey, k8sv1.ResourceCPU)).To(Succeed())
+				Expect(mutator.setResourceRatio(launcherPod, ratio, resourceAnnotationKey, resourceName)).ToNot(Succeed())
+			},
+				Entry("zero ratio", "0", k8sv1.ResourceCPU),
+				Entry("negative ratio", "-1.2", k8sv1.ResourceMemory),
+			)
 
-			Expect(mutator.setResourceRatio(launcherPod, ratio, resourceAnnotationKey, k8sv1.ResourceMemory)).To(Succeed())
+			Context("objects do not exist", func() {
+				newRequest := func(operation admissionv1.Operation, object runtime.Object, encoder runtime.Encoder) admissionv1.AdmissionRequest {
+					return admissionv1.AdmissionRequest{
+						Operation: operation,
+						Object: runtime.RawExtension{
+							Raw:    []byte(runtime.EncodeOrDie(encoder, object)),
+							Object: object,
+						},
+					}
+				}
 
-			Expect(launcherPod.Spec.Containers[0].Resources.Requests).To(BeEmpty())
+				It("HCO CR object does not exist", func() {
+					codecFactory := serializer.NewCodecFactory(scheme.Scheme)
+					corev1Codec := codecFactory.LegacyCodec(k8sv1.SchemeGroupVersion)
+
+					launcherPod := getFakeLauncherPod()
+					mutator := getVirtLauncherMutatorWithoutHco()
+					req := admission.Request{AdmissionRequest: newRequest(admissionv1.Create, launcherPod, corev1Codec)}
+
+					res := mutator.Handle(context.TODO(), req)
+					Expect(res.Allowed).To(BeFalse())
+					Expect(res.Result.Message).To(ContainSubstring("not found"))
+				})
+			})
+
+			It("should not apply if only limit is set", func() {
+				launcherPod := getFakeLauncherPod()
+				mutator := getVirtLauncherMutator()
+
+				launcherPod.Spec.Containers[0].Resources = k8sv1.ResourceRequirements{
+					Limits: map[k8sv1.ResourceName]resource.Quantity{
+						k8sv1.ResourceCPU:    resource.MustParse("1"),
+						k8sv1.ResourceMemory: resource.MustParse("1"),
+					},
+				}
+
+				const ratio = "1.23"
+				err := mutator.setResourceRatio(launcherPod, ratio, resourceAnnotationKey, k8sv1.ResourceCPU)
+				Expect(err).ToNot(HaveOccurred())
+
+				err = mutator.setResourceRatio(launcherPod, ratio, resourceAnnotationKey, k8sv1.ResourceMemory)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(launcherPod.Spec.Containers[0].Resources.Requests).To(BeEmpty())
+			})
 		})
 	})
 
@@ -219,37 +224,49 @@ var _ = Describe("virt-launcher webhook mutator", func() {
 		Expect(res.Allowed).To(BeFalse())
 	},
 		Entry("update", admissionv1.Update),
-		Entry("update", admissionv1.Delete),
-		Entry("update", admissionv1.Connect),
+		Entry("delete", admissionv1.Delete),
+		Entry("connect", admissionv1.Connect),
 	)
 
 })
 
 func getVirtLauncherMutator() *VirtLauncherMutator {
-	return getVirtLauncherMutatorHelper(true, true, true)
+	return getVirtLauncherMutatorWithResourceQuotas(true, true, true)
 }
 
 func getVirtLauncherMutatorWithoutHco() *VirtLauncherMutator {
-	return getVirtLauncherMutatorHelper(false, true, true)
+	return getVirtLauncherMutatorWithResourceQuotas(false, true, true)
 }
 
 func getVirtLauncherMutatorWithoutResourceQuotas(avoidCpuLimit, avoidMemoryLimit bool) *VirtLauncherMutator {
-	return getVirtLauncherMutatorHelper(true, !avoidCpuLimit, !avoidMemoryLimit)
+	return getVirtLauncherMutatorWithResourceQuotas(true, !avoidCpuLimit, !avoidMemoryLimit)
 }
 
-func getVirtLauncherMutatorHelper(hcoExists, resourceQuotaCpuExists, resourceQuotaMemoryExists bool) *VirtLauncherMutator {
-	var cli *commonTestUtils.HcoTestClient
-	var clusterObjects []runtime.Object
-
+func getVirtLauncherMutatorWithResourceQuotas(hcoExists, resourceQuotaCpuExists, resourceQuotaMemoryExists bool) *VirtLauncherMutator {
+	var hco *v1beta1.HyperConverged
 	if hcoExists {
-		clusterObjects = append(clusterObjects, getHco())
+		hco = getHco()
 	}
+
+	var clusterObjects []runtime.Object
 	if resourceQuotaCpuExists {
 		clusterObjects = append(clusterObjects, getResourceQuota(true, false))
 	}
 	if resourceQuotaMemoryExists {
 		clusterObjects = append(clusterObjects, getResourceQuota(false, true))
 	}
+
+	return getVirtLauncherMutatorHelperWithHco(hco, clusterObjects...)
+}
+
+func getVirtLauncherMutatorHelperWithHco(hco *v1beta1.HyperConverged, objects ...runtime.Object) *VirtLauncherMutator {
+	var cli *commonTestUtils.HcoTestClient
+	var clusterObjects []runtime.Object
+
+	if hco != nil {
+		clusterObjects = append(clusterObjects, hco)
+	}
+	clusterObjects = append(clusterObjects, objects...)
 
 	cli = commonTestUtils.InitClient(clusterObjects)
 	mutator := NewVirtLauncherMutator(cli, hcoNamespace)
