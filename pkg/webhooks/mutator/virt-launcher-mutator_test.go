@@ -4,6 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/utils/pointer"
+
+	v1 "kubevirt.io/api/core/v1"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -19,11 +23,16 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commonTestUtils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
 	hcoNamespace = HcoValidNamespace
 	podNamespace = "fake-namespace"
+
+	podName = "virt-launcher-vmi-test"
+	vmiName = "test-vmi"
 )
 
 var _ = Describe("virt-launcher webhook mutator", func() {
@@ -212,6 +221,191 @@ var _ = Describe("virt-launcher webhook mutator", func() {
 		})
 	})
 
+	Context("system reserved memory", func() {
+
+		var (
+			enableReservedMemory = pointer.String("true")
+			//disableReservedMemory = pointer.String("false")
+		)
+
+		getHco := func(enableReservedMemoryAnnotation, customReservedMemoryAnnotation *string) *v1beta1.HyperConverged {
+			hco := getHco()
+			if hco.Annotations == nil {
+				hco.Annotations = map[string]string{}
+			}
+
+			if enableReservedMemoryAnnotation != nil {
+				hco.Annotations[enableMemoryHeadroomAnnotation] = *enableReservedMemoryAnnotation
+			}
+			if customReservedMemoryAnnotation != nil {
+				hco.Annotations[customMemoryHeadroomAnnotation] = *customReservedMemoryAnnotation
+			}
+
+			return hco
+		}
+
+		getVmi := func(guestMemory, memoryRequest, memoryLimit string) *v1.VirtualMachineInstance {
+			vmi := &v1.VirtualMachineInstance{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      vmiName,
+					Namespace: podNamespace,
+				},
+				Spec: v1.VirtualMachineInstanceSpec{
+					Domain: v1.DomainSpec{
+						Memory: &v1.Memory{},
+						Resources: v1.ResourceRequirements{
+							Limits:   map[k8sv1.ResourceName]resource.Quantity{},
+							Requests: map[k8sv1.ResourceName]resource.Quantity{},
+						},
+					},
+				},
+			}
+
+			if guestMemory != "" {
+				guestMemoryQuantity := resource.MustParse(guestMemory)
+				vmi.Spec.Domain.Memory.Guest = &guestMemoryQuantity
+			}
+			if memoryRequest != "" {
+				vmi.Spec.Domain.Resources.Requests[k8sv1.ResourceMemory] = resource.MustParse(memoryRequest)
+			}
+			if memoryLimit != "" {
+				vmi.Spec.Domain.Resources.Limits[k8sv1.ResourceMemory] = resource.MustParse(memoryLimit)
+			}
+
+			return vmi
+		}
+
+		getMutator := func(enableReservedMemoryAnnotation, customReservedMemoryAnnotation *string, vmi *v1.VirtualMachineInstance) *VirtLauncherMutator {
+			hco := getHco(enableReservedMemoryAnnotation, customReservedMemoryAnnotation)
+
+			var clusterObjects []runtime.Object
+			if vmi != nil {
+				clusterObjects = append(clusterObjects, vmi)
+			}
+
+			return getVirtLauncherMutatorHelperWithHco(hco, clusterObjects...)
+		}
+
+		DescribeTable("generateCreationConfig", func(enableReservedMemoryAnnotation, customReservedMemoryAnnotation *string, expectedConfig virtLauncherCreationConfig) {
+			mutator := getMutator(enableReservedMemoryAnnotation, customReservedMemoryAnnotation, nil)
+			hco := getHco(enableReservedMemoryAnnotation, customReservedMemoryAnnotation)
+
+			config, err := mutator.generateCreationConfig(context.Background(), podNamespace, hco)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(config).To(Equal(expectedConfig))
+		},
+			Entry("enable annotation is nil, without custom memory reservation", nil, nil, virtLauncherCreationConfig{}),
+			Entry("enable annotation is false, without custom memory reservation", pointer.String("false"), nil, virtLauncherCreationConfig{}),
+			Entry("enable annotation is nil, with custom memory reservation", nil, pointer.String("123G"), virtLauncherCreationConfig{}),
+			Entry("enable annotation is false, with custom memory reservation", pointer.String("false"), pointer.String("123G"), virtLauncherCreationConfig{}),
+
+			Entry("enable annotation is true, without custom memory reservation", pointer.String("true"), nil,
+				virtLauncherCreationConfig{
+					addMemoryHeadroom: true,
+					memoryHeadroom:    "2G",
+				}),
+			Entry("enable annotation is true, with custom memory reservation", pointer.String("true"), pointer.String("123G"),
+				virtLauncherCreationConfig{
+					addMemoryHeadroom: true,
+					memoryHeadroom:    "123G",
+				}),
+		)
+
+		Context("handleVirtLauncherMemoryHeadroom()", func() {
+
+			getFakeLauncherPod := func(memRequest, memLimit string) *k8sv1.Pod {
+				pod := getFakeLauncherPod()
+				if memRequest != "" {
+					pod.Spec.Containers[0].Resources.Requests[k8sv1.ResourceMemory] = resource.MustParse(memRequest)
+				}
+				if memLimit != "" {
+					pod.Spec.Containers[0].Resources.Limits[k8sv1.ResourceMemory] = resource.MustParse(memLimit)
+				}
+
+				return pod
+			}
+
+			getDefaultCreationConfig := func() virtLauncherCreationConfig {
+				return virtLauncherCreationConfig{
+					addMemoryHeadroom: true,
+					memoryHeadroom:    "2G",
+				}
+			}
+
+			It("should skip if limits are set", func() {
+				vmi := getVmi("1G", "2G", "3G")
+				mutator := getMutator(enableReservedMemory, nil, vmi)
+				launcherPod := getFakeLauncherPod("2G", "3G")
+				originalLauncherPod := launcherPod.DeepCopy()
+
+				err := mutator.handleVirtLauncherMemoryHeadroom(context.Background(), launcherPod, getDefaultCreationConfig())
+				Expect(err).ToNot(HaveOccurred())
+				Expect(originalLauncherPod).To(Equal(launcherPod), "expect nothing to be changed")
+			})
+
+			It("should provide error if VMI does not exist", func() {
+				mutator := getMutator(enableReservedMemory, nil, nil)
+				launcherPod := getFakeLauncherPod("2G", "3G")
+				originalLauncherPod := launcherPod.DeepCopy()
+
+				err := mutator.handleVirtLauncherMemoryHeadroom(context.Background(), launcherPod, getDefaultCreationConfig())
+				Expect(err).To(HaveOccurred())
+				Expect(originalLauncherPod).To(Equal(launcherPod), "expect nothing to be changed")
+			})
+
+			It("should provide error if VMI name label doesn't exist", func() {
+				vmi := getVmi("1G", "2G", "3G")
+				mutator := getMutator(enableReservedMemory, nil, vmi)
+				launcherPod := getFakeLauncherPod("2G", "3G")
+				launcherPod.Labels = map[string]string{}
+				originalLauncherPod := launcherPod.DeepCopy()
+
+				err := mutator.handleVirtLauncherMemoryHeadroom(context.Background(), launcherPod, getDefaultCreationConfig())
+				Expect(err).To(HaveOccurred())
+				Expect(originalLauncherPod).To(Equal(launcherPod), "expect nothing to be changed")
+			})
+
+			It("should provide error if compute container doesn't exist", func() {
+				vmi := getVmi("1G", "2G", "")
+				mutator := getMutator(enableReservedMemory, nil, vmi)
+				launcherPod := getFakeLauncherPod("2G", "")
+				launcherPod.Spec.Containers[0].Name = "something-that-is-not-compute"
+				originalLauncherPod := launcherPod.DeepCopy()
+
+				err := mutator.handleVirtLauncherMemoryHeadroom(context.Background(), launcherPod, getDefaultCreationConfig())
+				Expect(err).To(HaveOccurred())
+				Expect(originalLauncherPod).To(Equal(launcherPod), "expect nothing to be changed")
+			})
+
+			DescribeTable("should add system reserved memory to requests", func(guestMemory string) {
+				const memRequest = "2G"
+
+				vmi := getVmi(guestMemory, memRequest, "")
+				mutator := getMutator(enableReservedMemory, nil, vmi)
+				launcherPod := getFakeLauncherPod(memRequest, "")
+
+				originalLauncherPod := launcherPod.DeepCopy()
+				creationConfig := getDefaultCreationConfig()
+
+				err := mutator.handleVirtLauncherMemoryHeadroom(context.Background(), launcherPod, creationConfig)
+				Expect(err).ToNot(HaveOccurred())
+
+				expectedMemRequest := originalLauncherPod.Spec.Containers[0].Resources.Requests[k8sv1.ResourceMemory]
+				expectedMemRequest.Add(resource.MustParse(creationConfig.memoryHeadroom))
+				Expect(expectedMemRequest).To(Equal(launcherPod.Spec.Containers[0].Resources.Requests[k8sv1.ResourceMemory]), "system reserved memory should be added")
+
+				updatedVmi := &v1.VirtualMachineInstance{}
+				err = mutator.cli.Get(context.Background(), client.ObjectKeyFromObject(vmi), updatedVmi)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(updatedVmi.Spec.Domain.Memory).To(Equal(vmi.Spec.Domain.Memory), "memory guest should not be changed")
+			},
+				Entry("with guest memory defined", "1G"),
+				Entry("without guest memory defined", ""),
+			)
+		})
+
+	})
+
 	DescribeTable("any operation other than CREATE should be allowed", func(operation admissionv1.Operation) {
 		mutator := getVirtLauncherMutator()
 		codecFactory := serializer.NewCodecFactory(scheme.Scheme)
@@ -292,11 +486,18 @@ func getHco() *v1beta1.HyperConverged {
 func getFakeLauncherPod() *k8sv1.Pod {
 	return &k8sv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "virt-launcher-vmi-" + rand.String(5),
+			Name:      podName,
 			Namespace: podNamespace,
+			Labels:    map[string]string{virtLauncherVmiNameLabel: vmiName},
 		},
 		Spec: k8sv1.PodSpec{
-			Containers: []k8sv1.Container{k8sv1.Container{}},
+			Containers: []k8sv1.Container{{
+				Name: "compute",
+				Resources: k8sv1.ResourceRequirements{
+					Requests: map[k8sv1.ResourceName]resource.Quantity{},
+					Limits:   map[k8sv1.ResourceName]resource.Quantity{},
+				},
+			}},
 		},
 	}
 }
