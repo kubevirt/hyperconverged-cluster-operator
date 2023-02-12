@@ -1167,3 +1167,79 @@ When these annotations are enabled along with a ResourceQuota object, a mutating
 ```
 
 Bear in mind that if the limit is already set, HCO will not fix it according to the annotations.
+
+## Add guest-to-request memory headroom to virt-launchers
+### Overview
+This PR introduces a mechanism to add sguest-to-request memory headroom (a.k.a. "wiggle-room") to virt-launcher pods.
+
+Please note that the additional memory is being added solely to the virt-launcher pod while the the VMI object remains untouched.
+This means that the guest memory will remain the same as defined at the VMI level (either explicitly through
+`vmi.spec.domain.memory.guest` or implicitly by `vmi.spec.domain.resources.requests[memory]`). If the VMI sets limits,
+the mechanism would skip adding memory headroom.
+
+### Motivation
+Currently, Kubevirt's [overhead calculation](https://github.com/kubevirt/kubevirt/blob/v0.59.0-rc.1/pkg/virt-controller/services/renderresources.go#L272) [1] is not accurate. Therefore, during memory bursts that cause a high memory pressure, VMIs are being OOM killed.
+
+This mechanism ensures that less VMIs are being scheduled to a node, therefore would have a lot of free space on the node that could be used by VMIs during bursts. We know from empiric testings that this dramatically reduces the probability of workloads being killed.
+
+In the future, we plan to improve the memory overhead calculation in Kubevirt. Once the memory overhead calculation is accurate enough and we'd get to a more stable situation, this mechanism will be deleted.
+
+[1] https://github.com/kubevirt/kubevirt/blob/v0.59.0-rc.1/pkg/virt-controller/services/renderresources.go#L272
+
+### How to use this mechanism
+The following two HCO annotations would control the mechanism:
+* `kubevirt.io/enable-guest-to-request-memory-headroom: "true"` needs to be used in order to enable this mechanism.
+* `kubevirt.io/custom-guest-to-request-memory-headroom: <quantity>` overrides the default memory headroom amount, which is `2GB`.
+
+As an example, let's add the enablement annotation to the HCO object:
+```yaml
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  annotations:
+    kubevirt.io/enable-guest-to-request-memory-headroom: "true"
+```
+
+Then, we can create vmi-fedora (this is not the full manifest):
+```yaml
+apiVersion: kubevirt.io/v1
+kind: VirtualMachineInstance
+metadata:
+  name: vmi-fedora
+spec:
+  domain:
+    resources:
+      requests:
+        memory: 1024M
+```
+
+The virt-launcher pod then will be created as the following (this is, again, not the full manifest):
+```yaml
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: compute
+    resources:
+      limits:
+        devices.kubevirt.io/kvm: "1"
+        devices.kubevirt.io/tun: "1"
+        devices.kubevirt.io/vhost-net: "1"
+      requests:
+        cpu: 100m
+        devices.kubevirt.io/kvm: "1"
+        devices.kubevirt.io/tun: "1"
+        devices.kubevirt.io/vhost-net: "1"
+        ephemeral-storage: 50M
+        memory: "3279755392"  # <-- 1024M + 2GB
+```
+
+Then, if we check how the memory size from the guest's perspective:
+```bash
+$> virtctl console vmi-fedora
+[fedora@vmi-fedora ~]$ free -h
+
+               total        used        free      shared  buff/cache   available
+Mem:           912Mi       154Mi       601Mi       0.0Ki       156Mi       622Mi
+Swap:          911Mi          0B       911Mi
+```
