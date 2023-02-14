@@ -75,10 +75,10 @@ var _ = Describe("virt-launcher webhook mutator", func() {
 
 			launcherPod.Spec.Containers[0].Resources = podResources
 			creationConfig := virtLauncherCreationConfig{
-				enforceCpuLimits:    true,
-				cpuRatioStr:         cpuRatio,
-				enforceMemoryLimits: true,
-				memRatioStr:         memRatio,
+				enforceCpuLimitsRatio:    true,
+				cpuRatioStr:              cpuRatio,
+				enforceMemoryLimitsRatio: true,
+				memRatioStr:              memRatio,
 			}
 			err := mutator.handleVirtLauncherCreation(context.Background(), launcherPod, creationConfig)
 			Expect(err).ToNot(HaveOccurred())
@@ -143,9 +143,9 @@ var _ = Describe("virt-launcher webhook mutator", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				if resourceName == k8sv1.ResourceCPU {
-					Expect(creationConfig.enforceCpuLimits).To(Equal(shouldEnforce))
+					Expect(creationConfig.enforceCpuLimitsRatio).To(Equal(shouldEnforce))
 				} else {
-					Expect(creationConfig.enforceMemoryLimits).To(Equal(shouldEnforce))
+					Expect(creationConfig.enforceMemoryLimitsRatio).To(Equal(shouldEnforce))
 				}
 			},
 				Entry("memory: setRatio, setLimit - shouldEnforce", k8sv1.ResourceMemory, setRatio, setLimit, shouldEnforce),

@@ -30,6 +30,9 @@ const (
 	cpuLimitToRequestRatioAnnotation    = kubevirtIoAnnotationPrefix + "cpu-limit-to-request-ratio"
 	memoryLimitToRequestRatioAnnotation = kubevirtIoAnnotationPrefix + "memory-limit-to-request-ratio"
 
+	cpuLimitToRequestDeltaAnnotation    = kubevirtIoAnnotationPrefix + "cpu-limit-to-request-delta"
+	memoryLimitToRequestDeltaAnnotation = kubevirtIoAnnotationPrefix + "memory-limit-to-request-delta"
+
 	enableMemoryHeadroomAnnotation = kubevirtIoAnnotationPrefix + "enable-guest-to-request-memory-headroom"
 	customMemoryHeadroomAnnotation = kubevirtIoAnnotationPrefix + "custom-guest-to-request-memory-headroom"
 
@@ -46,10 +49,15 @@ type VirtLauncherMutator struct {
 }
 
 type virtLauncherCreationConfig struct {
-	enforceCpuLimits    bool
-	cpuRatioStr         string
-	enforceMemoryLimits bool
-	memRatioStr         string
+	enforceCpuLimitsRatio    bool
+	cpuRatioStr              string
+	enforceMemoryLimitsRatio bool
+	memRatioStr              string
+
+	enforceCpuLimitsDelta    bool
+	cpuDeltaStr              string
+	enforceMemoryLimitsDelta bool
+	memDeltaStr              string
 
 	addMemoryHeadroom bool
 	memoryHeadroom    string
@@ -120,7 +128,7 @@ func (m *VirtLauncherMutator) generateCreationConfig(ctx context.Context, namesp
 }
 
 func (m *VirtLauncherMutator) handleVirtLauncherCreation(ctx context.Context, launcherPod *k8sv1.Pod, creationConfig virtLauncherCreationConfig) error {
-	err := m.handleVirtLauncherResourceRatio(launcherPod, creationConfig)
+	err := m.handleVirtLauncherResourceLimits(launcherPod, creationConfig)
 	if err != nil {
 		return err
 	}
@@ -133,15 +141,28 @@ func (m *VirtLauncherMutator) handleVirtLauncherCreation(ctx context.Context, la
 	return nil
 }
 
-func (m *VirtLauncherMutator) handleVirtLauncherResourceRatio(launcherPod *k8sv1.Pod, creationConfig virtLauncherCreationConfig) error {
-	if creationConfig.enforceCpuLimits {
+func (m *VirtLauncherMutator) handleVirtLauncherResourceLimits(launcherPod *k8sv1.Pod, creationConfig virtLauncherCreationConfig) error {
+	if creationConfig.enforceCpuLimitsRatio {
 		err := m.setResourceRatio(launcherPod, creationConfig.cpuRatioStr, cpuLimitToRequestRatioAnnotation, k8sv1.ResourceCPU)
 		if err != nil {
 			return err
 		}
 	}
-	if creationConfig.enforceMemoryLimits {
+	if creationConfig.enforceMemoryLimitsRatio {
 		err := m.setResourceRatio(launcherPod, creationConfig.memRatioStr, memoryLimitToRequestRatioAnnotation, k8sv1.ResourceMemory)
+		if err != nil {
+			return err
+		}
+	}
+
+	if creationConfig.enforceCpuLimitsDelta {
+		err := m.setResourceDelta(launcherPod, creationConfig.cpuDeltaStr, cpuLimitToRequestDeltaAnnotation, k8sv1.ResourceCPU)
+		if err != nil {
+			return err
+		}
+	}
+	if creationConfig.enforceMemoryLimitsDelta {
+		err := m.setResourceDelta(launcherPod, creationConfig.memDeltaStr, memoryLimitToRequestDeltaAnnotation, k8sv1.ResourceMemory)
 		if err != nil {
 			return err
 		}
@@ -227,6 +248,29 @@ func (m *VirtLauncherMutator) setResourceRatio(launcherPod *k8sv1.Pod, ratioStr,
 	return nil
 }
 
+func (m *VirtLauncherMutator) setResourceDelta(launcherPod *k8sv1.Pod, deltaStr, annotationKey string, resourceName k8sv1.ResourceName) error {
+	deltaQuantity, err := resource.ParseQuantity(deltaStr)
+	if err != nil {
+		return fmt.Errorf("couldn't parse delta %s to quantity: %v. The delta is the value of annotation key %s", deltaStr, err, annotationKey)
+	}
+
+	for i, container := range launcherPod.Spec.Containers {
+		request, requestExists := container.Resources.Requests[resourceName]
+		_, limitExists := container.Resources.Limits[resourceName]
+
+		if requestExists && !limitExists {
+			newQuantity := request.DeepCopy()
+			newQuantity.Add(deltaQuantity)
+			m.logInfo("Replacing %s old quantity (%s) with new quantity (%s) for pod %s/%s, UID: %s, accodring to delta: %v",
+				resourceName, request.String(), newQuantity.String(), launcherPod.Namespace, launcherPod.Name, launcherPod.UID, deltaStr)
+
+			launcherPod.Spec.Containers[i].Resources.Limits[resourceName] = newQuantity
+		}
+	}
+
+	return nil
+}
+
 func (m *VirtLauncherMutator) multiplyResource(quantity resource.Quantity, ratio float64) resource.Quantity {
 	oldValue := quantity.ScaledValue(resource.Milli)
 	newValue := ratio * float64(oldValue)
@@ -293,8 +337,42 @@ func (m *VirtLauncherMutator) getResourcesToEnforce(ctx context.Context, namespa
 	cpuRatioStr, cpuRatioExists := hco.Annotations[cpuLimitToRequestRatioAnnotation]
 	memRatioStr, memRatioExists := hco.Annotations[memoryLimitToRequestRatioAnnotation]
 
-	if !cpuRatioExists && !memRatioExists {
+	cpuDeltaStr, cpuDeltaExists := hco.Annotations[cpuLimitToRequestDeltaAnnotation]
+	memDeltaStr, memDeltaExists := hco.Annotations[memoryLimitToRequestDeltaAnnotation]
+
+	if cpuRatioExists && cpuDeltaExists {
+		return config, fmt.Errorf("it is invalid to define both %s and %s annotations", cpuLimitToRequestRatioAnnotation, cpuLimitToRequestDeltaAnnotation)
+	}
+	if memRatioExists && memDeltaExists {
+		return config, fmt.Errorf("it is invalid to define both %s and %s annotations", memoryLimitToRequestRatioAnnotation, memoryLimitToRequestDeltaAnnotation)
+	}
+
+	if !cpuRatioExists && !memRatioExists && !cpuDeltaExists && !memDeltaExists {
 		return config, nil
+	}
+
+	setCpuLimit := func() {
+		if cpuRatioExists {
+			config.enforceCpuLimitsRatio = true
+			config.cpuRatioStr = cpuRatioStr
+		} else if cpuDeltaExists {
+			config.enforceCpuLimitsDelta = true
+			config.cpuDeltaStr = cpuDeltaStr
+		}
+	}
+
+	setMemoryLimit := func() {
+		if memRatioExists {
+			config.enforceMemoryLimitsRatio = true
+			config.memRatioStr = memRatioStr
+		} else if memDeltaExists {
+			config.enforceMemoryLimitsDelta = true
+			config.memDeltaStr = memDeltaStr
+		}
+	}
+
+	areAllLimitsSet := func() bool {
+		return (config.enforceCpuLimitsRatio || config.enforceCpuLimitsDelta) && (config.enforceMemoryLimitsRatio || config.enforceMemoryLimitsDelta)
 	}
 
 	resourceQuotaList, err := m.listResourceQuotas(ctx, namespace)
@@ -309,16 +387,14 @@ func (m *VirtLauncherMutator) getResourcesToEnforce(ctx context.Context, namespa
 	}
 
 	for _, resourceQuota := range resourceQuotaList {
-		if cpuRatioExists && isQuotaEnforcingResource(resourceQuota, "limits.cpu") {
-			config.enforceCpuLimits = true
-			config.cpuRatioStr = cpuRatioStr
+		if (cpuRatioExists || cpuDeltaExists) && isQuotaEnforcingResource(resourceQuota, "limits.cpu") {
+			setCpuLimit()
 		}
-		if memRatioExists && isQuotaEnforcingResource(resourceQuota, "limits.memory") {
-			config.enforceMemoryLimits = true
-			config.memRatioStr = memRatioStr
+		if (memRatioExists || memDeltaExists) && isQuotaEnforcingResource(resourceQuota, "limits.memory") {
+			setMemoryLimit()
 		}
 
-		if config.enforceCpuLimits && config.enforceMemoryLimits {
+		if areAllLimitsSet() {
 			break
 		}
 	}
