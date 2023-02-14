@@ -42,7 +42,7 @@ var _ = Describe("virt-launcher webhook mutator", func() {
 			inputQuantity := resource.MustParse(inputQuantityStr)
 			expectedOutputQuantity := resource.MustParse(expectedOutputQuantityStr)
 
-			mutator := getVirtLauncherMutator()
+			mutator := getVirtLauncherMutatorWithHcoAndQuotas()
 			actualOutput := mutator.multiplyResource(inputQuantity, ratio)
 			Expect(actualOutput.Equal(expectedOutputQuantity)).To(BeTrue(), fmt.Sprintf("expected %s to equal %s", actualOutput.String(), expectedOutputQuantity.String()))
 		},
@@ -65,7 +65,7 @@ var _ = Describe("virt-launcher webhook mutator", func() {
 
 	Context("resource ratio enforcement", func() {
 		DescribeTable("set resource ratio", func(memRatio, cpuRatio string, podResources, expectedResources k8sv1.ResourceRequirements) {
-			mutator := getVirtLauncherMutator()
+			mutator := getVirtLauncherMutatorWithHcoAndQuotas()
 			launcherPod := getFakeLauncherPod()
 			hco := getHco()
 			hco.Annotations = map[string]string{
@@ -110,6 +110,110 @@ var _ = Describe("virt-launcher webhook mutator", func() {
 				getResources(),
 			),
 		)
+
+		DescribeTable("set resource delta", func(memDelta, cpuDelta string, podResources, expectedResources k8sv1.ResourceRequirements) {
+			mutator := getVirtLauncherMutatorWithHcoAndQuotas()
+			launcherPod := getFakeLauncherPod()
+			hco := getHco()
+			hco.Annotations = map[string]string{
+				cpuLimitToRequestDeltaAnnotation:    cpuDelta,
+				memoryLimitToRequestDeltaAnnotation: memDelta,
+			}
+
+			launcherPod.Spec.Containers[0].Resources = podResources
+			creationConfig := virtLauncherCreationConfig{
+				enforceCpuLimitsDelta:    true,
+				cpuDeltaStr:              cpuDelta,
+				enforceMemoryLimitsDelta: true,
+				memDeltaStr:              memDelta,
+			}
+			err := mutator.handleVirtLauncherCreation(context.Background(), launcherPod, creationConfig)
+			Expect(err).ToNot(HaveOccurred())
+
+			resources := launcherPod.Spec.Containers[0].Resources
+			Expect(resources.Limits[k8sv1.ResourceCPU].Equal(expectedResources.Limits[k8sv1.ResourceCPU])).To(BeTrue())
+			Expect(resources.Requests[k8sv1.ResourceCPU].Equal(expectedResources.Requests[k8sv1.ResourceCPU])).To(BeTrue())
+			Expect(resources.Limits[k8sv1.ResourceMemory].Equal(expectedResources.Limits[k8sv1.ResourceMemory])).To(BeTrue())
+			Expect(resources.Requests[k8sv1.ResourceMemory].Equal(expectedResources.Requests[k8sv1.ResourceMemory])).To(BeTrue())
+		},
+			Entry("200m cpu with delta 100m", "0", "100m",
+				getResources(withCpuRequest("200m")),
+				getResources(withCpuRequest("200m"), withCpuLimit("300m")),
+			),
+			Entry("100M memory with delta 100M", "100M", "0",
+				getResources(withMemRequest("100M")),
+				getResources(withMemRequest("100M"), withMemLimit("200M")),
+			),
+			Entry("200m cpu with delta 200m, 100M memory with delta 150M", "150M", "200m",
+				getResources(withCpuRequest("200m"), withMemRequest("100M")),
+				getResources(withCpuRequest("200m"), withCpuLimit("400m"), withMemRequest("100M"), withMemLimit("250M")),
+			),
+			Entry("requests and limits are already set", "170M", "210m",
+				getResources(withCpuRequest("200m"), withCpuLimit("400m"), withMemRequest("100M"), withMemLimit("150M")),
+				getResources(withCpuRequest("200m"), withCpuLimit("400m"), withMemRequest("100M"), withMemLimit("150M")),
+			),
+			Entry("requests and limits aren't set - nothing should be done", "100M", "20m",
+				getResources(),
+				getResources(),
+			),
+		)
+
+		Context("generateCreationConfig", func() {
+			getHco := func(memoryRatio, memoryDelta, cpuRatio, cpuDelta *string) *v1beta1.HyperConverged {
+				hco := getHco()
+
+				if memoryRatio != nil {
+					hco.Annotations[memoryLimitToRequestRatioAnnotation] = *memoryRatio
+				}
+				if memoryDelta != nil {
+					hco.Annotations[memoryLimitToRequestDeltaAnnotation] = *memoryDelta
+				}
+				if cpuRatio != nil {
+					hco.Annotations[cpuLimitToRequestRatioAnnotation] = *cpuRatio
+				}
+				if cpuDelta != nil {
+					hco.Annotations[cpuLimitToRequestDeltaAnnotation] = *cpuDelta
+				}
+
+				return hco
+			}
+
+			DescribeTable("with annotations", func(memoryRatio, memoryDelta, cpuRatio, cpuDelta *string, expectErr bool, expectedConfig virtLauncherCreationConfig) {
+				hco := getHco(memoryRatio, memoryDelta, cpuRatio, cpuDelta)
+				mutator := getVirtLauncherMutatorWithResourceQuotas(hco, true, true)
+
+				config, err := mutator.generateCreationConfig(context.Background(), podNamespace, hco)
+				if expectErr {
+					Expect(err).To(HaveOccurred())
+				} else {
+					Expect(err).ToNot(HaveOccurred())
+					Expect(config).To(Equal(expectedConfig))
+				}
+			},
+				Entry("memory ratio only", pointer.String("1.3"), nil, nil, nil, false,
+					virtLauncherCreationConfig{enforceMemoryLimitsRatio: true, memRatioStr: "1.3"}),
+				Entry("memory delta only", nil, pointer.String("100M"), nil, nil, false,
+					virtLauncherCreationConfig{enforceMemoryLimitsDelta: true, memDeltaStr: "100M"}),
+				Entry("cpu ratio only", nil, nil, pointer.String("1.5"), nil, false,
+					virtLauncherCreationConfig{enforceCpuLimitsRatio: true, cpuRatioStr: "1.5"}),
+				Entry("cpu delta only", nil, nil, nil, pointer.String("123m"), false,
+					virtLauncherCreationConfig{enforceCpuLimitsDelta: true, cpuDeltaStr: "123m"}),
+
+				Entry("memory ratio + cpu ratio", pointer.String("1.3"), nil, pointer.String("1.7"), nil, false,
+					virtLauncherCreationConfig{enforceMemoryLimitsRatio: true, memRatioStr: "1.3", enforceCpuLimitsRatio: true, cpuRatioStr: "1.7"}),
+				Entry("memory ratio + cpu delta", pointer.String("1.3"), nil, nil, pointer.String("22m"), false,
+					virtLauncherCreationConfig{enforceMemoryLimitsRatio: true, memRatioStr: "1.3", enforceCpuLimitsDelta: true, cpuDeltaStr: "22m"}),
+				Entry("memory delta + cpu ratio", nil, pointer.String("1.3"), pointer.String("1.7"), nil, false,
+					virtLauncherCreationConfig{enforceMemoryLimitsDelta: true, memDeltaStr: "1.3", enforceCpuLimitsRatio: true, cpuRatioStr: "1.7"}),
+				Entry("memory delta + cpu delta", nil, pointer.String("1.3"), nil, pointer.String("22m"), false,
+					virtLauncherCreationConfig{enforceMemoryLimitsDelta: true, memDeltaStr: "1.3", enforceCpuLimitsDelta: true, cpuDeltaStr: "22m"}),
+
+				Entry("memory ratio + memory delta => should fail", pointer.String("1.3"), pointer.String("100M"), nil, nil, true,
+					virtLauncherCreationConfig{}),
+				Entry("cpu ratio + cpu delta => should fail", nil, nil, pointer.String("1.7"), pointer.String("130m"), true,
+					virtLauncherCreationConfig{enforceMemoryLimitsRatio: true, memRatioStr: "1.3", enforceCpuLimitsRatio: true, cpuRatioStr: "1.7"}),
+			)
+		})
 
 		Context("resources to enforce", func() {
 			const (
@@ -165,7 +269,7 @@ var _ = Describe("virt-launcher webhook mutator", func() {
 
 			DescribeTable("invalid ratio", func(ratio string, resourceName k8sv1.ResourceName) {
 				launcherPod := getFakeLauncherPod()
-				mutator := getVirtLauncherMutator()
+				mutator := getVirtLauncherMutatorWithHcoAndQuotas()
 
 				Expect(mutator.setResourceRatio(launcherPod, ratio, resourceAnnotationKey, resourceName)).ToNot(Succeed())
 			},
@@ -189,7 +293,7 @@ var _ = Describe("virt-launcher webhook mutator", func() {
 					corev1Codec := codecFactory.LegacyCodec(k8sv1.SchemeGroupVersion)
 
 					launcherPod := getFakeLauncherPod()
-					mutator := getVirtLauncherMutatorWithoutHco()
+					mutator := getVirtLauncherMutatorWithQuotasWithoutHco()
 					req := admission.Request{AdmissionRequest: newRequest(admissionv1.Create, launcherPod, corev1Codec)}
 
 					res := mutator.Handle(context.TODO(), req)
@@ -200,7 +304,7 @@ var _ = Describe("virt-launcher webhook mutator", func() {
 
 			It("should not apply if only limit is set", func() {
 				launcherPod := getFakeLauncherPod()
-				mutator := getVirtLauncherMutator()
+				mutator := getVirtLauncherMutatorWithHcoAndQuotas()
 
 				launcherPod.Spec.Containers[0].Resources = k8sv1.ResourceRequirements{
 					Limits: map[k8sv1.ResourceName]resource.Quantity{
@@ -407,7 +511,7 @@ var _ = Describe("virt-launcher webhook mutator", func() {
 	})
 
 	DescribeTable("any operation other than CREATE should be allowed", func(operation admissionv1.Operation) {
-		mutator := getVirtLauncherMutator()
+		mutator := getVirtLauncherMutatorWithHcoAndQuotas()
 		codecFactory := serializer.NewCodecFactory(scheme.Scheme)
 		corev1Codec := codecFactory.LegacyCodec(k8sv1.SchemeGroupVersion)
 		launcherPod := getFakeLauncherPod()
@@ -424,24 +528,19 @@ var _ = Describe("virt-launcher webhook mutator", func() {
 
 })
 
-func getVirtLauncherMutator() *VirtLauncherMutator {
-	return getVirtLauncherMutatorWithResourceQuotas(true, true, true)
+func getVirtLauncherMutatorWithHcoAndQuotas() *VirtLauncherMutator {
+	return getVirtLauncherMutatorWithResourceQuotas(getHco(), true, true)
 }
 
-func getVirtLauncherMutatorWithoutHco() *VirtLauncherMutator {
-	return getVirtLauncherMutatorWithResourceQuotas(false, true, true)
+func getVirtLauncherMutatorWithQuotasWithoutHco() *VirtLauncherMutator {
+	return getVirtLauncherMutatorWithResourceQuotas(nil, true, true)
 }
 
 func getVirtLauncherMutatorWithoutResourceQuotas(avoidCpuLimit, avoidMemoryLimit bool) *VirtLauncherMutator {
-	return getVirtLauncherMutatorWithResourceQuotas(true, !avoidCpuLimit, !avoidMemoryLimit)
+	return getVirtLauncherMutatorWithResourceQuotas(getHco(), !avoidCpuLimit, !avoidMemoryLimit)
 }
 
-func getVirtLauncherMutatorWithResourceQuotas(hcoExists, resourceQuotaCpuExists, resourceQuotaMemoryExists bool) *VirtLauncherMutator {
-	var hco *v1beta1.HyperConverged
-	if hcoExists {
-		hco = getHco()
-	}
-
+func getVirtLauncherMutatorWithResourceQuotas(hco *v1beta1.HyperConverged, resourceQuotaCpuExists, resourceQuotaMemoryExists bool) *VirtLauncherMutator {
 	var clusterObjects []runtime.Object
 	if resourceQuotaCpuExists {
 		clusterObjects = append(clusterObjects, getResourceQuota(true, false))
