@@ -1124,7 +1124,23 @@ spec:
         memory: "1279755392"
 ```
 
-As can be seen, this `virt-launcher` has only CPU and memory requests - but not limits. This means that if this VMI is being created in a namespace that has a ResourceQuota defined in it - the virt-launcher Pod won't be able to start. This now can be solved using this feature.
+As can be seen, this `virt-launcher` has only CPU and memory requests - but not limits. This means that if this VMI is
+being created in a namespace that has a ResourceQuota defined in it - the virt-launcher Pod won't be able to start.
+This now can be solved using this feature.
+
+This feature supports either setting a ratio between request and limits or via setting a delta of additional resources.
+The two can be used, but not together. In other words, if a memory ratio is being set, setting a memory delta is not allowed and vice-versa.
+The same rules are applied to cpu.
+
+These two annotations control ratios:
+* `kubevirt.io/cpu-limit-to-request-ratio`
+* `kubevirt.io/memory-limit-to-request-ratio`
+
+And these two annotations control deltas:
+* `kubevirt.io/cpu-limit-to-request-delta`
+* `kubevirt.io/memory-limit-to-request-delta`
+
+The following examples uses ratios, but deltas could be used in a similar way.
 
 To enable this mechanism, first a ratio between memory/CPU limits to request needs to be defined as an annotation in HCO object:
 ```yaml
