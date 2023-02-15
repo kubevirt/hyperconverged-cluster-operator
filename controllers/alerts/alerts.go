@@ -34,7 +34,7 @@ const (
 )
 
 var (
-	runbookUrlTemplate = "https://kubevirt.io/monitoring/runbooks/%s"
+	runbookUrlTemplate = "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/%s.md"
 
 	outOfBandUpdateRunbookUrl          = fmt.Sprintf(runbookUrlTemplate, outOfBandUpdateAlert)
 	unsafeModificationRunbookUrl       = fmt.Sprintf(runbookUrlTemplate, unsafeModificationAlert)

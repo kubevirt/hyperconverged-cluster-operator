@@ -26,7 +26,7 @@ tests:
     - exp_annotations:
         description: "Out-of-band modification for kubevirt/kubevirt-kubevirt-hyperconverged."
         summary: "1 out-of-band CR modifications were detected in the last 10 minutes."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorCRModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorCRModification.md"
       exp_labels:
         severity: "warning"
         operator_health_impact: "warning"
@@ -41,7 +41,7 @@ tests:
     - exp_annotations:
         description: "Out-of-band modification for kubevirt/kubevirt-kubevirt-hyperconverged."
         summary: "3 out-of-band CR modifications were detected in the last 10 minutes."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorCRModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorCRModification.md"
       exp_labels:
         severity: "warning"
         operator_health_impact: "warning"
@@ -56,7 +56,7 @@ tests:
     - exp_annotations:
         description: "Out-of-band modification for kubevirt/kubevirt-kubevirt-hyperconverged."
         summary: "1 out-of-band CR modifications were detected in the last 10 minutes."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorCRModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorCRModification.md"
       exp_labels:
         severity: "warning"
         operator_health_impact: "warning"
@@ -81,7 +81,7 @@ tests:
     - exp_annotations:
         description: "Out-of-band modification for kubevirt/kubevirt-kubevirt-hyperconverged."
         summary: "1 out-of-band CR modifications were detected in the last 10 minutes."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorCRModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorCRModification.md"
       exp_labels:
         severity: "warning"
         operator_health_impact: "warning"
@@ -96,7 +96,7 @@ tests:
     - exp_annotations:
         description: "Out-of-band modification for kubevirt/kubevirt-kubevirt-hyperconverged."
         summary: "2 out-of-band CR modifications were detected in the last 10 minutes."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorCRModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorCRModification.md"
       exp_labels:
         severity: "warning"
         operator_health_impact: "warning"
@@ -132,7 +132,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the kubevirt.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "1 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -142,7 +142,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the containerizeddataimporter.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "1 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -151,7 +151,7 @@ tests:
         annotation_name: "containerizeddataimporter.kubevirt.io/jsonpatch"
     - exp_annotations:
         description: "unsafe modification for the networkaddonsconfigs.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
         summary: "5 unsafe modifications were detected in the HyperConverged resource."
       exp_labels:
         severity: "info"
@@ -161,7 +161,7 @@ tests:
         annotation_name: "networkaddonsconfigs.kubevirt.io/jsonpatch"
     - exp_annotations:
         description: "unsafe modification for the ssp.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
         summary: "5 unsafe modifications were detected in the HyperConverged resource."
       exp_labels:
         severity: "info"
@@ -177,7 +177,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the kubevirt.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "3 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -187,7 +187,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the containerizeddataimporter.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "3 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -198,7 +198,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the networkaddonsconfigs.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "1 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -208,7 +208,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the ssp.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "3 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -223,7 +223,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the kubevirt.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "3 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -234,7 +234,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the containerizeddataimporter.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "1 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -244,7 +244,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the networkaddonsconfigs.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "1 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -254,7 +254,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the ssp.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "2 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -269,7 +269,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the kubevirt.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "3 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -279,7 +279,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the containerizeddataimporter.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "3 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -299,7 +299,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the kubevirt.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "1 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -310,7 +310,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the containerizeddataimporter.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "2 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -320,7 +320,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the networkaddonsconfigs.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "3 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -330,7 +330,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the ssp.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "3 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -350,7 +350,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the kubevirt.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "2 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -361,7 +361,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the containerizeddataimporter.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "3 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -371,7 +371,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the networkaddonsconfigs.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "1 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -381,7 +381,7 @@ tests:
     - exp_annotations:
         description: "unsafe modification for the ssp.kubevirt.io/jsonpatch annotation in the HyperConverged resource."
         summary: "1 unsafe modifications were detected in the HyperConverged resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorUSModification"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorUSModification.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "warning"
@@ -433,7 +433,7 @@ tests:
     - exp_annotations:
         description: "the installation was not completed; the HyperConverged custom resource is missing. In order to complete the installation of the Hyperconverged Cluster Operator you should create the HyperConverged custom resource."
         summary: "the installation was not completed; to complete the installation, create a HyperConverged custom resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorInstallationNotCompletedAlert"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorInstallationNotCompletedAlert.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "critical"
@@ -447,7 +447,7 @@ tests:
     - exp_annotations:
         description: "the installation was not completed; the HyperConverged custom resource is missing. In order to complete the installation of the Hyperconverged Cluster Operator you should create the HyperConverged custom resource."
         summary: "the installation was not completed; to complete the installation, create a HyperConverged custom resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorInstallationNotCompletedAlert"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorInstallationNotCompletedAlert.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "critical"
@@ -461,7 +461,7 @@ tests:
     - exp_annotations:
         description: "the installation was not completed; the HyperConverged custom resource is missing. In order to complete the installation of the Hyperconverged Cluster Operator you should create the HyperConverged custom resource."
         summary: "the installation was not completed; to complete the installation, create a HyperConverged custom resource."
-        runbook_url: "https://kubevirt.io/monitoring/runbooks/KubevirtHyperconvergedClusterOperatorInstallationNotCompletedAlert"
+        runbook_url: "https://github.com/openshift/runbooks/tree/master/alerts/openshift-virtualization-operator/KubevirtHyperconvergedClusterOperatorInstallationNotCompletedAlert.md"
       exp_labels:
         severity: "info"
         operator_health_impact: "critical"
