@@ -60,7 +60,7 @@ func (m *VirtLauncherMutator) Handle(ctx context.Context, req admission.Request)
 	}
 	originalPod := launcherPod.DeepCopy()
 
-	hco, err := getHcoObject(ctx, m.cli, m.hcoNamespace)
+	hco, err := GetHcoObject(ctx, m.cli, m.hcoNamespace)
 	if err != nil {
 		m.logErr(err, "cannot get the HyperConverged object")
 		return admission.Errored(http.StatusBadRequest, err)

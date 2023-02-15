@@ -11,7 +11,7 @@ import (
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-func getHcoObject(ctx context.Context, cli client.Client, namespace string) (*v1beta1.HyperConverged, error) {
+func GetHcoObject(ctx context.Context, cli client.Client, namespace string) (*v1beta1.HyperConverged, error) {
 	hco := &v1beta1.HyperConverged{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      hcoutil.HyperConvergedName,

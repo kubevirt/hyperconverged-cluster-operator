@@ -92,7 +92,7 @@ func (nm *NsMutator) handleMutatingNsDelete(ctx context.Context, ns *corev1.Name
 
 	// Block the deletion if the hcoNamespace with a clear error message
 	// if HCO CR is still there
-	_, err := getHcoObject(ctx, nm.cli, nm.namespace)
+	_, err := GetHcoObject(ctx, nm.cli, nm.namespace)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			return true, nil
