@@ -486,6 +486,14 @@ rules:
   - update
   - delete
 - apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachineinstancemigrations
+  - virtualmachineinstances
+  verbs:
+  - list
+  - watch
+- apiGroups:
   - ""
   resources:
   - configmaps

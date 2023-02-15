@@ -462,6 +462,11 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		roleWithAllPermissions("ssp.kubevirt.io", stringListToSlice("ssps", "ssps/finalizers")),
 		roleWithAllPermissions("tektontasks.kubevirt.io", stringListToSlice("tektontasks", "tektontasks/finalizers")),
 		roleWithAllPermissions("networkaddonsoperator.network.kubevirt.io", stringListToSlice("networkaddonsconfigs", "networkaddonsconfigs/finalizers")),
+		{
+			APIGroups: stringListToSlice("kubevirt.io"),
+			Resources: stringListToSlice("virtualmachineinstancemigrations", "virtualmachineinstances"),
+			Verbs:     stringListToSlice("list", "watch"),
+		},
 		roleWithAllPermissions("", stringListToSlice("configmaps")),
 		{
 			APIGroups: emptyAPIGroup,
@@ -780,6 +785,30 @@ func GetCSVBase(params *CSVBaseParams) *csvv1alpha1.ClusterServiceVersion {
 		WebhookPath: &webhookPath,
 	}
 
+	migrationCapacityValidatorWebhook := csvv1alpha1.WebhookDescription{
+		GenerateName:            util.MigrationCapacityValidatorWebhook,
+		Type:                    csvv1alpha1.ValidatingAdmissionWebhook,
+		DeploymentName:          hcoWhDeploymentName,
+		ContainerPort:           util.WebhookPort,
+		AdmissionReviewVersions: stringListToSlice("v1beta1", "v1"),
+		SideEffects:             &sideEffect,
+		FailurePolicy:           &failurePolicy,
+		TimeoutSeconds:          &webhookTimeout,
+		Rules: []admissionregistrationv1.RuleWithOperations{
+			{
+				Operations: []admissionregistrationv1.OperationType{
+					admissionregistrationv1.Create,
+				},
+				Rule: admissionregistrationv1.Rule{
+					APIGroups:   []string{""},
+					APIVersions: stringListToSlice("v1"),
+					Resources:   stringListToSlice("pods"),
+				},
+			},
+		},
+		WebhookPath: pointer.String(util.HCOMigrationCapacityWebhookPath),
+	}
+
 	mutatingWebhookSideEffects := admissionregistrationv1.SideEffectClassNoneOnDryRun
 
 	mutatingNamespaceWebhook := csvv1alpha1.WebhookDescription{
@@ -955,6 +984,7 @@ func GetCSVBase(params *CSVBaseParams) *csvv1alpha1.ClusterServiceVersion {
 				mutatingNamespaceWebhook,
 				mutatingVirtLauncherWebhook,
 				mutatingHyperConvergedWebhook,
+				migrationCapacityValidatorWebhook,
 			},
 			CustomResourceDefinitions: csvv1alpha1.CustomResourceDefinitions{
 				Owned: []csvv1alpha1.CRDDescription{

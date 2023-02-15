@@ -260,6 +260,14 @@ spec:
           - update
           - delete
         - apiGroups:
+          - kubevirt.io
+          resources:
+          - virtualmachineinstancemigrations
+          - virtualmachineinstances
+          verbs:
+          - list
+          - watch
+        - apiGroups:
           - ""
           resources:
           - configmaps
@@ -3889,6 +3897,26 @@ spec:
     timeoutSeconds: 10
     type: MutatingAdmissionWebhook
     webhookPath: /mutate-hco-kubevirt-io-v1beta1-hyperconverged
+  - admissionReviewVersions:
+    - v1beta1
+    - v1
+    containerPort: 4343
+    deploymentName: hco-webhook
+    failurePolicy: Fail
+    generateName: validate-migration-capacity-hco.kubevirt.io
+    rules:
+    - apiGroups:
+      - ""
+      apiVersions:
+      - v1
+      operations:
+      - CREATE
+      resources:
+      - pods
+    sideEffects: None
+    timeoutSeconds: 10
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-migration-capacity-hco.kubevirt.io
   - admissionReviewVersions:
     - v1
     - v1beta1
