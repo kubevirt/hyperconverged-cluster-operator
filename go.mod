@@ -29,8 +29,10 @@ require (
 	k8s.io/api v0.26.1
 	k8s.io/apiextensions-apiserver v0.26.1
 	k8s.io/apimachinery v0.26.1
+	k8s.io/apiserver v0.26.1
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20221207184640-f3cff1453715
+	k8s.io/kubernetes v1.26.1
 	k8s.io/utils v0.0.0-20230115233650-391b47cb4029
 	kubevirt.io/api v0.59.0-rc.0
 	kubevirt.io/containerized-data-importer-api v1.55.2
@@ -48,6 +50,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/emicklei/go-restful/v3 v3.10.1 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
@@ -70,6 +73,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
@@ -91,8 +95,8 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiserver v0.26.1 // indirect
 	k8s.io/component-base v0.26.1 // indirect
+	k8s.io/component-helpers v0.0.0 // indirect
 	k8s.io/klog/v2 v2.90.0 // indirect
 	kubevirt.io/controller-lifecycle-operator-sdk v0.2.3 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
@@ -148,15 +152,15 @@ exclude k8s.io/sample-apiserver v0.0.0
 replace (
 	k8s.io/api => k8s.io/api v0.26.1
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.26.1
-	k8s.io/apimachinery => k8s.io/apimachinery v0.26.1
+	k8s.io/apimachinery => k8s.io/apimachinery v0.26.2-rc.0
 	k8s.io/apiserver => k8s.io/apiserver v0.26.1
 	k8s.io/cli-runtime => k8s.io/cli-runtime v0.26.1
 	k8s.io/client-go => k8s.io/client-go v0.26.1
 	k8s.io/cloud-provider => k8s.io/cloud-provider v0.26.1
 	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.26.1
-	k8s.io/code-generator => k8s.io/code-generator v0.26.1
+	k8s.io/code-generator => k8s.io/code-generator v0.26.2-rc.0
 	k8s.io/component-base => k8s.io/component-base v0.26.1
-	k8s.io/cri-api => k8s.io/cri-api v0.26.1
+	k8s.io/cri-api => k8s.io/cri-api v0.26.2-rc.0
 	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.26.1
 	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.26.1
 	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.26.1
@@ -200,3 +204,15 @@ replace (
 
 // FIX: Unhandled exception in gopkg.in/yaml.v3
 replace gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.1
+
+replace k8s.io/component-helpers => k8s.io/component-helpers v0.26.1
+
+replace k8s.io/controller-manager => k8s.io/controller-manager v0.26.1
+
+replace k8s.io/dynamic-resource-allocation => k8s.io/dynamic-resource-allocation v0.26.1
+
+replace k8s.io/kms => k8s.io/kms v0.26.2-rc.0
+
+replace k8s.io/mount-utils => k8s.io/mount-utils v0.26.2-rc.0
+
+replace k8s.io/pod-security-admission => k8s.io/pod-security-admission v0.26.1
