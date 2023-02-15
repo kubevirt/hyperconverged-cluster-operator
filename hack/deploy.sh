@@ -150,7 +150,6 @@ fi
 # when a new webhook (deployed by OLM in production) is introduced, 
 # it must be added into webhooks.yaml as well.
 echo "Creating resources for webhooks"
-"${CMD}" apply $LABEL_SELECTOR_ARG -f _out/webhooks.yaml
 
 if [ "${CI}" != "true" ]; then
 	"${CMD}" apply $LABEL_SELECTOR_ARG -f _out/operator.yaml
@@ -159,6 +158,8 @@ else
 	cat _out/operator-ci.yaml
 	"${CMD}" apply $LABEL_SELECTOR_ARG -f _out/operator-ci.yaml
 fi
+
+"${CMD}" apply $LABEL_SELECTOR_ARG -f _out/webhooks.yaml
 
 # Wait for the HCO to be ready
 sleep 20

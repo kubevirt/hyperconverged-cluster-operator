@@ -44,8 +44,8 @@ kubectl -n cert-manager wait deployment/cert-manager-webhook --for=condition=Ava
 kubectl apply ${LABEL_SELECTOR_ARG} -n $hco_namespace -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/deploy/cluster_role.yaml
 kubectl apply ${LABEL_SELECTOR_ARG} -n $hco_namespace -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/deploy/service_account.yaml
 kubectl apply ${LABEL_SELECTOR_ARG} -n $hco_namespace -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/deploy/cluster_role_binding.yaml
-kubectl apply ${LABEL_SELECTOR_ARG} -n $hco_namespace -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/deploy/webhooks.yaml
 kubectl apply ${LABEL_SELECTOR_ARG} -n $hco_namespace -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/deploy/operator.yaml
+kubectl apply ${LABEL_SELECTOR_ARG} -n $hco_namespace -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/deploy/webhooks.yaml
 
 kubectl -n $hco_namespace wait deployment/hyperconverged-cluster-webhook --for=condition=Available --timeout="300s"
 
