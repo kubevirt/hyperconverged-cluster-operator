@@ -15,8 +15,10 @@ require (
 	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.1
 	k8s.io/client-go v12.0.0+incompatible
+	k8s.io/utils v0.0.0-20230115233650-391b47cb4029
 	kubevirt.io/api v0.59.0-rc.0
 	kubevirt.io/client-go v0.59.0-alpha.2
+	kubevirt.io/containerized-data-importer-api v1.55.2
 	kubevirt.io/kubevirt v0.59.0-alpha.2
 	kubevirt.io/qe-tools v0.1.8
 )
@@ -109,11 +111,11 @@ require (
 	github.com/vishvananda/netlink v1.1.1-0.20210330154013-f5de75959ad5 // indirect
 	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f // indirect
 	golang.org/x/crypto v0.5.0 // indirect
-	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.4.0 // indirect
-	golang.org/x/sys v0.4.0 // indirect
-	golang.org/x/term v0.4.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/term v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230125152338-dcaf20b6aeaa // indirect
@@ -126,8 +128,6 @@ require (
 	k8s.io/kube-aggregator v0.23.5 // indirect
 	k8s.io/kube-openapi v0.0.0-20230123231816-1cb3ae25d79a // indirect
 	k8s.io/kubectl v0.26.1 // indirect
-	k8s.io/utils v0.0.0-20230115233650-391b47cb4029 // indirect
-	kubevirt.io/containerized-data-importer-api v1.55.2 // indirect
 	sigs.k8s.io/controller-runtime v0.14.1 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
