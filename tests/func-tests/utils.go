@@ -3,12 +3,10 @@ package tests
 import (
 	"context"
 	"flag"
-	"fmt"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/onsi/ginkgo/v2"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -48,7 +46,7 @@ func SkipIfNotOpenShift(cli kubecli.KubevirtClient, testName string) {
 	kvtutil.PanicOnError(err)
 
 	if !isOpenShift {
-		ginkgo.Skip(fmt.Sprintf("Skipping %s tests when the cluster is not OpenShift", testName))
+		//ginkgo.Skip(fmt.Sprintf("Skipping %s tests when the cluster is not OpenShift", testName))
 	}
 }
 
