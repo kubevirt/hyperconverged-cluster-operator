@@ -18,26 +18,28 @@ import (
 	"kubevirt.io/client-go/kubecli"
 )
 
-var _ = Describe("[rfe_id:5100][crit:medium][vendor:cnv-qe@redhat.com][level:system]HyperConverged Cluster Operator should create ConsoleCliDownload objects", func() {
-	flag.Parse()
+var _ = Describe("[rfe_id:5100][crit:medium][vendor:cnv-qe@redhat.com][level:system]HyperConverged Cluster Operator should create ConsoleCliDownload objects",
+	Label("clidownload"),
+	func() {
+		flag.Parse()
 
-	BeforeEach(func() {
-		tests.BeforeEach()
+		BeforeEach(func() {
+			tests.BeforeEach()
+		})
+
+		It("[test_id:6956]should create ConsoleCliDownload objects with expected spec", func() {
+			virtCli, err := kubecli.GetKubevirtClient()
+			Expect(err).ToNot(HaveOccurred())
+
+			client, err := kubecli.GetKubevirtClientFromRESTConfig(virtCli.Config())
+			Expect(err).ToNot(HaveOccurred())
+
+			skipIfConsoleCliDownloadsCrdDoesNotExist(virtCli)
+
+			checkConsoleCliDownloadSpec(client)
+		})
+
 	})
-
-	It("[test_id:6956]should create ConsoleCliDownload objects with expected spec", func() {
-		virtCli, err := kubecli.GetKubevirtClient()
-		Expect(err).ToNot(HaveOccurred())
-
-		client, err := kubecli.GetKubevirtClientFromRESTConfig(virtCli.Config())
-		Expect(err).ToNot(HaveOccurred())
-
-		skipIfConsoleCliDownloadsCrdDoesNotExist(virtCli)
-
-		checkConsoleCliDownloadSpec(client)
-	})
-
-})
 
 func skipIfConsoleCliDownloadsCrdDoesNotExist(cli kubecli.KubevirtClient) {
 	By("Checking ConsoleCLIDownload CRD exists or not")
@@ -65,17 +67,24 @@ func checkConsoleCliDownloadSpec(client kubecli.KubevirtClient) {
 
 	ExpectWithOffset(1, ccd.Spec.Links).Should(HaveLen(3))
 
+	httpClient := &http.Client{Transport: &http.Transport{
+		// ssl of the route is irrelevant
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}}
 	for _, link := range ccd.Spec.Links {
 		By("Checking links. Link:" + link.Href)
-		client := &http.Client{Transport: &http.Transport{
-			// ssl of the route is irrelevant
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}}
-		resp, err := client.Get(link.Href)
-		_ = resp.Body.Close()
-
-		ExpectWithOffset(1, err).ToNot(HaveOccurred())
-		ExpectWithOffset(1, resp).Should(HaveHTTPStatus(http.StatusOK))
-
+		checkoneLink(httpClient, link)
 	}
+}
+
+func checkoneLink(client *http.Client, link consolev1.CLIDownloadLink) {
+	resp, err := client.Get(link.Href)
+	if resp != nil && resp.Body != nil {
+		defer func() {
+			_ = resp.Body.Close()
+		}()
+	}
+
+	ExpectWithOffset(2, err).ToNot(HaveOccurred())
+	ExpectWithOffset(2, resp).Should(HaveHTTPStatus(http.StatusOK))
 }
