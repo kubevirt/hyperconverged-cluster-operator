@@ -14,7 +14,15 @@
 - [ ] Uninstallation Scenario
 - [ ] Backward Compatibility
 - [ ] Troubleshooting Friendly
-  
+
+**Jira Ticket**:
+<!--  Write the link to the Jira ticket:
+If the task is not tracked by a Jira ticket, just write "NONE".
+-->
+```jira-ticket
+
+```
+
 **Release note**:
 <!--  Write your release note:
 1. Enter your extended release note in the below block. If the PR requires additional action from users switching to the new release, include the string "action required".
@@ -23,4 +31,3 @@
 ```release-note
 
 ```
-
