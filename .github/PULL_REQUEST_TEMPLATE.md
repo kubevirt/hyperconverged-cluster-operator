@@ -1,3 +1,9 @@
+<!--  Thanks for sending a pull request!  Here are some tips for you:
+1. Follow the instructions for writing a release note from k8s: https://git.k8s.io/community/contributors/guide/release-notes.md
+-->
+
+**What this PR does / why we need it**:
+
 **Reviewer Checklist**
 <!-- Check [Expectations from a PR](/CONTRIBUTING.md#expectations-from-a-pr) for the details -->
 
