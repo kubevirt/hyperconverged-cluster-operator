@@ -44,16 +44,16 @@ lint:
 
 build: build-operator build-csv-merger build-webhook
 
-build-operator: $(SOURCES) ## Build binary from source
+build-operator: $(SOURCES) ## Build HCO binary from source from source under cmd/hyperconverged-cluster-operator
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-operator ./cmd/hyperconverged-cluster-operator
 
-build-csv-merger: ## Build binary from source
+build-csv-merger: ## Build csv-merger binary from source under tools/csv-merger/csv-merger.go
 	go build -ldflags="${LDFLAGS}" -o _out/csv-merger tools/csv-merger/csv-merger.go
 
-build-webhook: $(SOURCES) ## Build binary from source
+build-webhook: $(SOURCES) ## Build HCO webhook binary from source under cmd/hyperconverged-cluster-webhook
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-webhook ./cmd/hyperconverged-cluster-webhook
 
-build-manifests:
+build-manifests: ## Generate CSVs and place them under deploy/ directory
 	./hack/build-manifests.sh
 
 build-manifests-prev:
@@ -158,7 +158,7 @@ test-kv-smoke-prow:
 stageRegistry:
 	@APP_REGISTRY_NAMESPACE=redhat-operators-stage PACKAGE=kubevirt-hyperconverged ./tools/quay-registry.sh $(QUAY_USERNAME) $(QUAY_PASSWORD)
 
-bundleRegistry:
+bundleRegistry: ## Build and push the container image used for CatalogSource
 	REGISTRY_NAMESPACE=$(REGISTRY_NAMESPACE) IMAGE_REGISTRY=$(IMAGE_REGISTRY) ./hack/build-registry-bundle.sh
 
 container-clusterserviceversion:

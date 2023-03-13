@@ -99,9 +99,12 @@ $ curl https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operato
 If you want to make changes to the HCO, here's how you can test your changes
 through [OLM](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md#installing-olm).
 
+If you have made changes to the Operator and/or the webhook part of the code, first run `make build-operator` and/or 
+`make build-webhook`.
+
 Build the HCO container using the Makefile recipes `make container-build` and
 `make container-push` with vars `IMAGE_REGISTRY`, `REGISTRY_NAMESPACE`, and `CONTAINER_TAG`
-to direct it's location.
+to direct its location.
 
 To use the HCO's container, we'll use a registry image to serve metadata to OLM.
 Build and push the HCO's registry image.
@@ -114,6 +117,16 @@ export CONTAINER_TAG=example
 # builds the registry image and pushes it to 
 # $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hco-container-registry:$CONTAINER_TAG
 make bundleRegistry
+```
+Modify all the occurrences of `+IMAGE_TO_REPLACE+` in `deploy/index-image/community-kubevirt-hyperconverged/1.9.
+0/manifests/kubevirt-hyperconverged-operator.v1.9.0.clusterserviceversion.yaml` with the container image created by 
+`make container-build` command. Do the same for all the occurrences of `quay.
+io/kubevirt/hyperconverged-cluster-operator:1.9.0-unstable` in the file 
+`deploy/olm-catalog/community-kubevirt-hyperconverged/1.9.0/manifests/kubevirt-hyperconverged-operator.v1.9.0.clusterserviceversion.yaml`.
+
+Build the index image if you would like to use a custom index image to start the Operator:
+```shell
+$ ./hack/build-index-image.sh {ALL|LATEST|<version>} [UNSTABLE]
 ```
 
 Create the namespace for the HCO.
@@ -136,7 +149,7 @@ EOF
 Create a CatalogSource and a Subscription.
 
 > If OLM Operator and Catalog Operator run in a namespace different than `openshift-marketplace`, replace `openshift-marketplace` with it in the CatalogSource and Subscription below.
-
+> Use the container image created during `make bundleRegistry` as `.spec.image` in the CatalogSource.
 ```bash
 cat <<EOF | kubectl create -f -
 apiVersion: operators.coreos.com/v1alpha1
@@ -146,7 +159,7 @@ metadata:
   namespace: openshift-marketplace
 spec:
   sourceType: grpc
-  image: $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hco-container-registry:$CONTAINER_TAG
+  image: $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:1.9.0
   displayName: KubeVirt HyperConverged
   publisher: Red Hat
 EOF
