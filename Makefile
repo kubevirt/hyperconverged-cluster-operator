@@ -11,6 +11,7 @@ WEBHOOK_IMAGE      ?= $(REGISTRY_NAMESPACE)/hyperconverged-cluster-webhook
 FUNC_TEST_IMAGE    ?= $(REGISTRY_NAMESPACE)/hyperconverged-cluster-functest
 VIRT_ARTIFACTS_SERVER ?= $(REGISTRY_NAMESPACE)/virt-artifacts-server
 LDFLAGS            ?= -w -s
+GOLANDCI_LINT_VERSION ?= v1.51.2
 
 
 
@@ -36,10 +37,9 @@ goimport:
 
 
 lint:
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@${GOLANDCI_LINT_VERSION}
 	golangci-lint run
-	go install github.com/nunnatsa/ginkgolinter/cmd/ginkgolinter@latest
-	ginkgolinter ./...
-	(cd tests && ginkgolinter ./...)
+	(cd tests && golangci-lint run)
 
 build: build-operator build-csv-merger build-webhook
 
@@ -101,7 +101,7 @@ container-build-validate-bundles:
 	podman build -f tools/operator-sdk-validate/Dockerfile -t operator-sdk-validate-hco .
 
 container-build-functest:
-	podman build -f build/Dockerfile.functest -t $(IMAGE_REGISTRY)/$(FUNC_TEST_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
+	. "hack/cri-bin.sh" && $$CRI_BIN build -f build/Dockerfile.functest -t $(IMAGE_REGISTRY)/$(FUNC_TEST_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
 
 container-build-artifacts-server:
 	podman build -f build/Dockerfile.artifacts -t $(IMAGE_REGISTRY)/$(VIRT_ARTIFACTS_SERVER):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
@@ -118,7 +118,7 @@ container-push-webhook:
 	. "hack/cri-bin.sh" && $$CRI_BIN push $$CRI_INSECURE $(IMAGE_REGISTRY)/$(WEBHOOK_IMAGE):$(IMAGE_TAG)
 
 container-push-functest:
-	podman push $(IMAGE_REGISTRY)/$(FUNC_TEST_IMAGE):$(IMAGE_TAG)
+	. "hack/cri-bin.sh" && $$CRI_BIN push $$CRI_INSECURE $(IMAGE_REGISTRY)/$(FUNC_TEST_IMAGE):$(IMAGE_TAG)
 
 container-push-artifacts-server:
 	podman push $(IMAGE_REGISTRY)/$(VIRT_ARTIFACTS_SERVER):$(IMAGE_TAG)
@@ -130,7 +130,7 @@ cluster-down:
 	./cluster/down.sh
 
 cluster-sync:
-	./cluster/sync.sh
+	IMAGE_REGISTRY=$(IMAGE_REGISTRY) REGISTRY_NAMESPACE=$(REGISTRY_NAMESPACE) ./cluster/sync.sh
 
 cluster-clean:
 	CMD="./cluster/kubectl.sh" ./hack/clean.sh
