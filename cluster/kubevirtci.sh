@@ -12,11 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export KUBEVIRT_PROVIDER=${KUBEVIRT_PROVIDER:-'k8s-1.23'}
-export KUBEVIRTCI_TAG=$(curl -L -Ss https://storage.googleapis.com/kubevirt-prow/release/kubevirt/kubevirtci/latest)
+export KUBEVIRT_PROVIDER=${KUBEVIRT_PROVIDER:-'k8s-1.24'}
+######
+# workaround for https://github.com/kubevirt/kubevirt/issues/9434
+# we started setting SELinux boolean for chardev access
+# with https://github.com/kubevirt/kubevirtci/pull/968
+# but it got reverted with https://github.com/kubevirt/kubevirtci/pull/975
+# altough it's still needed with Kubevirt v0.58.1
+# TODO: let's remove this once https://github.com/kubevirt/kubevirt/issues/9434
+# is fixed
+#
+# export KUBEVIRTCI_TAG=$(curl -L -Ss https://storage.googleapis.com/kubevirt-prow/release/kubevirt/kubevirtci/latest)
+export KUBEVIRTCI_TAG=2302221824-e1cf770
+######
+
 KUBEVIRTCI_PATH="${PWD}/_kubevirtci"
+KUBEVIRTCI_REPO='https://github.com/kubevirt/kubevirtci.git'
+
+function cluster::_get_repo() {
+    git --git-dir ${KUBEVIRTCI_PATH}/.git remote get-url origin
+}
+
+function cluster::_get_tag() {
+    git -C ${KUBEVIRTCI_PATH} describe --tags
+}
 
 function kubevirtci::install() {
+    # Remove cloned kubevirtci repository if it does not match the requested one
+    if [ -d ${KUBEVIRTCI_PATH} ]; then
+        if [ $(cluster::_get_repo) != ${KUBEVIRTCI_REPO} ] || [ $(cluster::_get_tag) != ${KUBEVIRTCI_TAG} ]; then
+            rm -rf ${KUBEVIRTCI_PATH}
+        fi
+    fi
+
     if [ ! -d ${KUBEVIRTCI_PATH} ]; then
         git clone https://github.com/kubevirt/kubevirtci.git ${KUBEVIRTCI_PATH}
         (
