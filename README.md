@@ -99,6 +99,13 @@ $ curl https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operato
 If you want to make changes to the HCO, here's how you can test your changes
 through [OLM](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md#installing-olm).
 
+The make target `sync-olm` automates the steps in this section:
+```shell
+$ make cluster-sync-olm
+```
+
+If you would rather want to understand the details, you can find it below.
+
 If you have made changes to the Operator and/or the webhook part of the code, first run `make build-operator` and/or 
 `make build-webhook`.
 
@@ -126,7 +133,7 @@ io/kubevirt/hyperconverged-cluster-operator:1.9.0-unstable` in the file
 
 Build the index image if you would like to use a custom index image to start the Operator:
 ```shell
-$ ./hack/build-index-image.sh {ALL|LATEST|<version>} [UNSTABLE]
+$ ./hack/build-index-image.sh latest
 ```
 
 Create the namespace for the HCO.

@@ -18,10 +18,11 @@
 
 # tag for the bundle image
 CONTAINER_TAG="${CONTAINER_TAG:-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1)}"
-IMAGE_REGISTRY="${IMAGE_REGISTRY:-docker.io}"
+IMAGE_REGISTRY="${IMAGE_REGISTRY:-quay.io}"
 # image to be replaced in CSV yaml files
 IMAGE_TO_REPLACE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-operator:$CONTAINER_TAG
 OPERATOR_GROUP_NAME=kubevirt-hyperconverged-group
+VERSION=1.10.0
 
 function create_catsrc() {
   cat <<EOF | kubectl create -f -
@@ -32,7 +33,7 @@ function create_catsrc() {
         namespace: $CATSRC_NAMESPACE
       spec:
         sourceType: grpc
-        image: $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:1.10.0
+        image: $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$VERSION
         displayName: KubeVirt HyperConverged
         publisher: Red Hat
 EOF
@@ -59,14 +60,13 @@ function create_subscription() {
           source: $CATSRC_NAME
           sourceNamespace: openshift-marketplace
           name: community-kubevirt-hyperconverged
-          channel: "1.10.0"
+          channel: $VERSION
 EOF
 }
 
 if [ -z "${REGISTRY_NAMESPACE}" ]; then
   echo "Please set REGISTRY_NAMESPACE"
-  echo "   REGISTRY_NAMESPACE=rthallisey make cluster-sync-olm"
-  echo "   make cluster-sync-olm REGISTRY_NAMESPACE=rthallisey"
+  echo "   REGISTRY_NAMESPACE=kubevirt make cluster-sync-olm"
   exit 1
 fi
 
@@ -90,7 +90,7 @@ CATSRC_NAME="test-hco-catalogsource"
 # namespace to create subscription in
 SUB_NAMESPACE="kubevirt-hyperconverged"
 SUB_NAME="hco-operatorhub"
-CSV_NAME="kubevirt-hyperconverged-operator.v1.10.0"
+CSV_NAME="kubevirt-hyperconverged-operator.v$VERSION"
 
 cluster=$(kubectl get ns openshift-operators 2>/dev/null)
 if [ -z "$cluster" ]
