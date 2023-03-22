@@ -99,7 +99,7 @@ $ curl https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operato
 If you want to make changes to the HCO, here's how you can test your changes
 through [OLM](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md#installing-olm).
 
-The make target `sync-olm` automates the steps in this section:
+The make target `cluster-sync-olm` automates the steps in this section:
 ```shell
 $ make cluster-sync-olm
 ```
