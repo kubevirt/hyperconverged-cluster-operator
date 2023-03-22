@@ -982,3 +982,118 @@ Labels
     annotation_name="kubevirt.kubevirt.io/jsonpatch"
     severity=info
 ```
+
+## Tune Kubevirt Rate Limits
+Kubevirt API clients come with a token bucket rate limiter which avoids to congest the kube-apiserver bandwidth.
+The rate limiters are configurable through `burst` and `Query Per Second (QPS)` parameters.
+Whilst the rate limiter may avoid congestion, it may also limit the number of VMs that can be deployed in the cluster.
+Therefore, HCO enables the feature `tuningPolicy` for allowing to tune the rate limiters parameters.
+The `tuningPolicy` field can be set as `annotation`.
+
+> **_Note_:** If no `tuningPolicy` is configured or the `tuningPolicy` feature is not well configured, Kubevirt will use the
+> [default](https://github.com/kubevirt/kubevirt/blob/a3e92eb499636cbab46763fbdd1dbccaca716c29/pkg/virt-config/virt-config.go#L78-L86) rate limiter values.
+
+The `annotation` policy relies on the annotation `hco.kubevirt.io/tuningPolicy` to specify the desired values of `burst` and `QPS` parameters.
+The structure of the annotation is the following one:
+
+```yaml
+apiVersion: hco.kubevirt.io/v1beta1
+kind: hco
+metadata:
+  annotations:
+    hco.kubevirt.io/tuningPolicy: '{"qps":100,"burst":200}'
+...
+spec:
+  tuningPolicy: annotation
+```
+
+Where the values of `qps` and `burst` can be replaced by any desired value of `QPS` and `burst`, respectively. 
+For instance, in the above example the `QPS` parameter is set to 100 and the `burst` parameter is set to 200.
+The annotation can be created with the following command:
+
+```bash
+kubectl annotate -n kubevirt-hyperconverged hco kubevirt-hyperconverged hco.kubevirt.io/tuningPolicy='{"qps":100,"burst":200}'
+```
+
+> **_Note_:**  HCO will not configure the rate limiters if both the annotation and the `spec.tuningPolicy` are not populated correctly.
+> Moreover, if `spec.tuningPolicy` is set but the annotation is not present, HCO will reject the changes in the HyperConverged CR.
+> In case that the annotation is defined but the `spec.tuningPolicy` is not set, HCO will ignore the rate limit configurations.
+
+The `tuningPolicy` feature can be enabled using the following patch:
+
+```bash
+kubectl patch -n kubevirt-hyperconverged hco kubevirt-hyperconverged --type=json -p='[{"op": "add", "path": "/spec/tuningPolicy", "value": "annotation"}]'
+```
+
+## Enforce CPU/memory limits on namespaces with ResourceQuotas
+This mechanism allows to align Kubevirt `virt-launcher` Pods with ResourceQuotas that are applied to the
+namespace.
+
+As an example, let's say that we are creating Kubevirt's `examples/vmi-fedora.yaml`.
+
+When this VMI is created, the following `virt-launcher` pod is created (some details are omitted for simplicity):
+```yaml
+kind: Pod
+metadata:
+  name: virt-launcher-vmi-fedora-lzzn6
+  namespace: kubevirt-hyperconverged
+spec:
+  containers:
+    name: compute
+    resources:
+      limits:
+        devices.kubevirt.io/kvm: "1"
+        devices.kubevirt.io/tun: "1"
+        devices.kubevirt.io/vhost-net: "1"
+      requests:
+        cpu: 100m
+        devices.kubevirt.io/kvm: "1"
+        devices.kubevirt.io/tun: "1"
+        devices.kubevirt.io/vhost-net: "1"
+        ephemeral-storage: 50M
+        memory: "1279755392"
+```
+
+As can be seen, this `virt-launcher` has only CPU and memory requests - but not limits. This means that if this VMI is being created in a namespace that has a ResourceQuota defined in it - the virt-launcher Pod won't be able to start. This now can be solved using this feature.
+
+To enable this mechanism, first a ratio between memory/CPU limits to request needs to be defined as an annotation in HCO object:
+```yaml
+kind: HyperConverged
+metadata:
+  annotations:
+    kubevirt.io/cpu-limit-to-request-ratio: "2"
+    kubevirt.io/memory-limit-to-request-ratio: "1.5"
+```
+
+In addition, a ResourceQuota needs to exist on the relevant namespace. As an example, it's possible to create the following object:
+```yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: test-rq 
+spec:
+  hard:
+    limits.cpu: "200"
+    limits.memory: "2000G"
+```
+Please take into account that if a ResourceQuota only sets a limit on `limits.cpu` or `limits.memory`, then CPU/memory limits will be set accordingly. If multiple ResourceQuota exist within the relevant namespace, it takes only one of then to limit CPU/memory limits in order to enforce these limits.
+
+When these annotations are enabled along with a ResourceQuota object, a mutating webhook that's targeted to virt-launcher pods will enforce limits on the pod. It would now look like the following:
+```yaml
+    resources:
+      limits:
+        cpu: 200m
+        devices.kubevirt.io/kvm: "1"
+        devices.kubevirt.io/tun: "1"
+        devices.kubevirt.io/vhost-net: "1"
+        memory: "1919633088"
+      requests:
+        cpu: 100m
+        devices.kubevirt.io/kvm: "1"
+        devices.kubevirt.io/tun: "1"
+        devices.kubevirt.io/vhost-net: "1"
+        ephemeral-storage: 50M
+        memory: "1279755392"
+```
+
+Bear in mind that if the limit is already set, HCO will not fix it according to the annotations.
