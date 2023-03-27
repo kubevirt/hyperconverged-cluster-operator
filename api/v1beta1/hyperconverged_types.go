@@ -381,7 +381,6 @@ type StorageImportConfig struct {
 	InsecureRegistries []string `json:"insecureRegistries,omitempty"`
 }
 
-//
 // HyperConvergedWorkloadUpdateStrategy defines options related to updating a KubeVirt install
 //
 // +k8s:openapi-gen=true
