@@ -105,9 +105,9 @@ const (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type Domain struct {
 	metav1.TypeMeta
-	ObjectMeta metav1.ObjectMeta
-	Spec       DomainSpec
-	Status     DomainStatus
+	metav1.ObjectMeta `json:"ObjectMeta"`
+	Spec              DomainSpec
+	Status            DomainStatus
 }
 
 type DomainStatus struct {
@@ -730,6 +730,11 @@ type Interface struct {
 	Alias               *Alias           `xml:"alias,omitempty"`
 	Driver              *InterfaceDriver `xml:"driver,omitempty"`
 	Rom                 *Rom             `xml:"rom,omitempty"`
+	ACPI                *ACPI            `xml:"acpi,omitempty"`
+}
+
+type ACPI struct {
+	Index uint `xml:"index,attr"`
 }
 
 type InterfaceDriver struct {

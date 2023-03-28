@@ -572,6 +572,16 @@ var CRDsValidation map[string]string = map[string]string{
         configuration:
           description: holds kubevirt configurations. same as the virt-configMap
           properties:
+            additionalGuestMemoryOverheadRatio:
+              description: AdditionalGuestMemoryOverheadRatio can be used to increase
+                the virtualization infrastructure overhead. This is useful, since
+                the calculation of this overhead is not accurate and cannot be entirely
+                known in advance. The ratio that is being set determines by which
+                factor to increase the overhead calculated by Kubevirt. A higher ratio
+                means that the VMs would be less compromised by node pressures, but
+                would mean that fewer VMs could be scheduled to a node. If not set,
+                the default is 1.
+              type: string
             apiConfiguration:
               description: ReloadableComponentConfiguration holds all generic k8s
                 configuration options which can be reloaded by components without
@@ -967,6 +977,25 @@ var CRDsValidation map[string]string = map[string]string{
                     type: object
                   type: array
                   x-kubernetes-list-type: atomic
+              type: object
+            seccompConfiguration:
+              description: SeccompConfiguration holds Seccomp configuration for Kubevirt
+                components
+              properties:
+                virtualMachineInstanceProfile:
+                  description: VirtualMachineInstanceProfile defines what profile
+                    should be used with virt-launcher. Defaults to none
+                  properties:
+                    customProfile:
+                      description: CustomProfile allows to request arbitrary profile
+                        for virt-launcher
+                      properties:
+                        localhostProfile:
+                          type: string
+                        runtimeDefaultProfile:
+                          type: boolean
+                      type: object
+                  type: object
               type: object
             selinuxLauncherType:
               type: string
@@ -5213,6 +5242,13 @@ var CRDsValidation map[string]string = map[string]string{
                             are added to the vmi.
                           items:
                             properties:
+                              acpiIndex:
+                                description: If specified, the ACPI index is used
+                                  to provide network interface device naming, that
+                                  is stable across changes in PCI addresses assigned
+                                  to the device. This value is required to be unique
+                                  across all devices and be between 1 and (16*1024-1).
+                                type: integer
                               bootOrder:
                                 description: BootOrder is an integer value > 0, used
                                   to determine ordering of boot devices. Lower values
@@ -6699,6 +6735,39 @@ var CRDsValidation map[string]string = map[string]string{
           description: Created indicates if the virtual machine is created in the
             cluster
           type: boolean
+        desiredGeneration:
+          description: DesiredGeneration is the generation which is desired for the
+            VMI. This will be used in comparisons with ObservedGeneration to understand
+            when the VMI is out of sync. This will be changed at the same time as
+            ObservedGeneration to remove errors which could occur if Generation is
+            updated through an Update() before ObservedGeneration in Status.
+          format: int64
+          type: integer
+        interfaceRequests:
+          description: InterfaceRequests indicates a list of interfaces added to the
+            VMI template and hot-plugged on an active running VMI.
+          items:
+            properties:
+              addInterfaceOptions:
+                description: AddInterfaceOptions when set indicates a network interface
+                  should be added. The details within this field specify how to add
+                  the interface
+                properties:
+                  name:
+                    description: Name indicates the logical name of the interface.
+                    type: string
+                  networkAttachmentDefinitionName:
+                    description: 'NetworkAttachmentDefinitionName references a NetworkAttachmentDefinition
+                      CRD object. Format: <networkAttachmentDefinitionName>, <namespace>/<networkAttachmentDefinitionName>.
+                      If namespace is not specified, VMI namespace is assumed.'
+                    type: string
+                required:
+                - name
+                - networkAttachmentDefinitionName
+                type: object
+            type: object
+          type: array
+          x-kubernetes-list-type: atomic
         memoryDumpRequest:
           description: MemoryDumpRequest tracks memory dump request phase and info
             of getting a memory dump to the given pvc
@@ -6734,6 +6803,11 @@ var CRDsValidation map[string]string = map[string]string{
           - claimName
           - phase
           type: object
+        observedGeneration:
+          description: ObservedGeneration is the generation observed by the vmi when
+            started.
+          format: int64
+          type: integer
         printableStatus:
           description: PrintableStatus is a human readable, high-level representation
             of the status of the virtual machine
@@ -7905,6 +7979,28 @@ var CRDsValidation map[string]string = map[string]string{
                 cert:
                   description: Cert is the public CA certificate base64 encoded
                   type: string
+                manifests:
+                  description: Manifests is a list of available manifests for the
+                    export
+                  items:
+                    description: VirtualMachineExportManifest contains the type and
+                      URL of the exported manifest
+                    properties:
+                      type:
+                        description: Type is the type of manifest returned
+                        type: string
+                      url:
+                        description: Url is the url of the endpoint that returns the
+                          manifest
+                        type: string
+                    required:
+                    - type
+                    - url
+                    type: object
+                  type: array
+                  x-kubernetes-list-map-keys:
+                  - type
+                  x-kubernetes-list-type: map
                 volumes:
                   description: Volumes is a list of available volumes to export
                   items:
@@ -7952,6 +8048,28 @@ var CRDsValidation map[string]string = map[string]string{
                 cert:
                   description: Cert is the public CA certificate base64 encoded
                   type: string
+                manifests:
+                  description: Manifests is a list of available manifests for the
+                    export
+                  items:
+                    description: VirtualMachineExportManifest contains the type and
+                      URL of the exported manifest
+                    properties:
+                      type:
+                        description: Type is the type of manifest returned
+                        type: string
+                      url:
+                        description: Url is the url of the endpoint that returns the
+                          manifest
+                        type: string
+                    required:
+                    - type
+                    - url
+                    type: object
+                  type: array
+                  x-kubernetes-list-map-keys:
+                  - type
+                  x-kubernetes-list-type: map
                 volumes:
                   description: Volumes is a list of available volumes to export
                   items:
@@ -8009,6 +8127,12 @@ var CRDsValidation map[string]string = map[string]string{
           description: The time at which the VM Export will be completely removed
             according to specified TTL Formula is CreationTimestamp + TTL
           format: date-time
+          type: string
+        virtualMachineName:
+          description: VirtualMachineName shows the name of the source virtual machine
+            if the source is either a VirtualMachine or a VirtualMachineSnapshot.
+            This is mainly to easily identify the source VirtualMachine in case of
+            a VirtualMachineSnapshot
           type: string
       type: object
   required:
@@ -9390,6 +9514,12 @@ var CRDsValidation map[string]string = map[string]string{
                     to the vmi.
                   items:
                     properties:
+                      acpiIndex:
+                        description: If specified, the ACPI index is used to provide
+                          network interface device naming, that is stable across changes
+                          in PCI addresses assigned to the device. This value is required
+                          to be unique across all devices and be between 1 and (16*1024-1).
+                        type: integer
                       bootOrder:
                         description: BootOrder is an integer value > 0, used to determine
                           ordering of boot devices. Lower values take precedence.
@@ -10840,7 +10970,7 @@ var CRDsValidation map[string]string = map[string]string{
             properties:
               infoSource:
                 description: 'Specifies the origin of the interface data collected.
-                  values: domain, guest-agent, or both'
+                  values: domain, guest-agent, multus-status.'
                 type: string
               interfaceName:
                 description: The interface name inside the Virtual Machine
@@ -11249,6 +11379,151 @@ var CRDsValidation map[string]string = map[string]string{
             - type
             type: object
           type: array
+        migrationState:
+          description: Represents the status of a live migration
+          properties:
+            abortRequested:
+              description: Indicates that the migration has been requested to abort
+              type: boolean
+            abortStatus:
+              description: Indicates the final status of the live migration abortion
+              type: string
+            completed:
+              description: Indicates the migration completed
+              type: boolean
+            endTimestamp:
+              description: The time the migration action ended
+              format: date-time
+              nullable: true
+              type: string
+            failed:
+              description: Indicates that the migration failed
+              type: boolean
+            migrationConfiguration:
+              description: Migration configurations to apply
+              properties:
+                allowAutoConverge:
+                  description: AllowAutoConverge allows the platform to compromise
+                    performance/availability of VMIs to guarantee successful VMI live
+                    migrations. Defaults to false
+                  type: boolean
+                allowPostCopy:
+                  description: AllowPostCopy enables post-copy live migrations. Such
+                    migrations allow even the busiest VMIs to successfully live-migrate.
+                    However, events like a network failure can cause a VMI crash.
+                    If set to true, migrations will still start in pre-copy, but switch
+                    to post-copy when CompletionTimeoutPerGiB triggers. Defaults to
+                    false
+                  type: boolean
+                bandwidthPerMigration:
+                  anyOf:
+                  - type: integer
+                  - type: string
+                  description: BandwidthPerMigration limits the amount of network
+                    bandwith live migrations are allowed to use. The value is in quantity
+                    per second. Defaults to 0 (no limit)
+                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                  x-kubernetes-int-or-string: true
+                completionTimeoutPerGiB:
+                  description: CompletionTimeoutPerGiB is the maximum number of seconds
+                    per GiB a migration is allowed to take. If a live-migration takes
+                    longer to migrate than this value multiplied by the size of the
+                    VMI, the migration will be cancelled, unless AllowPostCopy is
+                    true. Defaults to 800
+                  format: int64
+                  type: integer
+                disableTLS:
+                  description: When set to true, DisableTLS will disable the additional
+                    layer of live migration encryption provided by KubeVirt. This
+                    is usually a bad idea. Defaults to false
+                  type: boolean
+                network:
+                  description: Network is the name of the CNI network to use for live
+                    migrations. By default, migrations go through the pod network.
+                  type: string
+                nodeDrainTaintKey:
+                  description: 'NodeDrainTaintKey defines the taint key that indicates
+                    a node should be drained. Note: this option relies on the deprecated
+                    node taint feature. Default: kubevirt.io/drain'
+                  type: string
+                parallelMigrationsPerCluster:
+                  description: ParallelMigrationsPerCluster is the total number of
+                    concurrent live migrations allowed cluster-wide. Defaults to 5
+                  format: int32
+                  type: integer
+                parallelOutboundMigrationsPerNode:
+                  description: ParallelOutboundMigrationsPerNode is the maximum number
+                    of concurrent outgoing live migrations allowed per node. Defaults
+                    to 2
+                  format: int32
+                  type: integer
+                progressTimeout:
+                  description: ProgressTimeout is the maximum number of seconds a
+                    live migration is allowed to make no progress. Hitting this timeout
+                    means a migration transferred 0 data for that many seconds. The
+                    migration is then considered stuck and therefore cancelled. Defaults
+                    to 150
+                  format: int64
+                  type: integer
+                unsafeMigrationOverride:
+                  description: UnsafeMigrationOverride allows live migrations to occur
+                    even if the compatibility check indicates the migration will be
+                    unsafe to the guest. Defaults to false
+                  type: boolean
+              type: object
+            migrationPolicyName:
+              description: Name of the migration policy. If string is empty, no policy
+                is matched
+              type: string
+            migrationUid:
+              description: The VirtualMachineInstanceMigration object associated with
+                this migration
+              type: string
+            mode:
+              description: Lets us know if the vmi is currently running pre or post
+                copy migration
+              type: string
+            sourceNode:
+              description: The source node that the VMI originated on
+              type: string
+            startTimestamp:
+              description: The time the migration action began
+              format: date-time
+              nullable: true
+              type: string
+            targetAttachmentPodUID:
+              description: The UID of the target attachment pod for hotplug volumes
+              type: string
+            targetCPUSet:
+              description: If the VMI requires dedicated CPUs, this field will hold
+                the dedicated CPU set on the target node
+              items:
+                type: integer
+              type: array
+              x-kubernetes-list-type: atomic
+            targetDirectMigrationNodePorts:
+              additionalProperties:
+                type: integer
+              description: The list of ports opened for live migration on the destination
+                node
+              type: object
+            targetNode:
+              description: The target node that the VMI is moving to
+              type: string
+            targetNodeAddress:
+              description: The address of the target node to use for the migration
+              type: string
+            targetNodeDomainDetected:
+              description: The Target Node has seen the Domain Start Event
+              type: boolean
+            targetNodeTopology:
+              description: If the VMI requires dedicated CPUs, this field will hold
+                the numa topology on the target node
+              type: string
+            targetPod:
+              description: The target pod that the VMI is moving to
+              type: string
+          type: object
         phase:
           description: VirtualMachineInstanceMigrationPhase is a label for the condition
             of a VirtualMachineInstanceMigration at the current time.
@@ -11740,6 +12015,12 @@ var CRDsValidation map[string]string = map[string]string{
                     to the vmi.
                   items:
                     properties:
+                      acpiIndex:
+                        description: If specified, the ACPI index is used to provide
+                          network interface device naming, that is stable across changes
+                          in PCI addresses assigned to the device. This value is required
+                          to be unique across all devices and be between 1 and (16*1024-1).
+                        type: integer
                       bootOrder:
                         description: BootOrder is an integer value > 0, used to determine
                           ordering of boot devices. Lower values take precedence.
@@ -13832,6 +14113,13 @@ var CRDsValidation map[string]string = map[string]string{
                             are added to the vmi.
                           items:
                             properties:
+                              acpiIndex:
+                                description: If specified, the ACPI index is used
+                                  to provide network interface device naming, that
+                                  is stable across changes in PCI addresses assigned
+                                  to the device. This value is required to be unique
+                                  across all devices and be between 1 and (16*1024-1).
+                                type: integer
                               bootOrder:
                                 description: BootOrder is an integer value > 0, used
                                   to determine ordering of boot devices. Lower values
@@ -17796,6 +18084,14 @@ var CRDsValidation map[string]string = map[string]string{
                                     which are added to the vmi.
                                   items:
                                     properties:
+                                      acpiIndex:
+                                        description: If specified, the ACPI index
+                                          is used to provide network interface device
+                                          naming, that is stable across changes in
+                                          PCI addresses assigned to the device. This
+                                          value is required to be unique across all
+                                          devices and be between 1 and (16*1024-1).
+                                        type: integer
                                       bootOrder:
                                         description: BootOrder is an integer value
                                           > 0, used to determine ordering of boot
@@ -19373,6 +19669,9 @@ var CRDsValidation map[string]string = map[string]string{
           description: Canonical form of the label selector for HPA which consumes
             it through the scale subresource.
           type: string
+        readyReplicas:
+          format: int32
+          type: integer
         replicas:
           format: int32
           type: integer
@@ -22489,6 +22788,15 @@ var CRDsValidation map[string]string = map[string]string{
                                         which are added to the vmi.
                                       items:
                                         properties:
+                                          acpiIndex:
+                                            description: If specified, the ACPI index
+                                              is used to provide network interface
+                                              device naming, that is stable across
+                                              changes in PCI addresses assigned to
+                                              the device. This value is required to
+                                              be unique across all devices and be
+                                              between 1 and (16*1024-1).
+                                            type: integer
                                           bootOrder:
                                             description: BootOrder is an integer value
                                               > 0, used to determine ordering of boot
@@ -24122,6 +24430,44 @@ var CRDsValidation map[string]string = map[string]string{
                       description: Created indicates if the virtual machine is created
                         in the cluster
                       type: boolean
+                    desiredGeneration:
+                      description: DesiredGeneration is the generation which is desired
+                        for the VMI. This will be used in comparisons with ObservedGeneration
+                        to understand when the VMI is out of sync. This will be changed
+                        at the same time as ObservedGeneration to remove errors which
+                        could occur if Generation is updated through an Update() before
+                        ObservedGeneration in Status.
+                      format: int64
+                      type: integer
+                    interfaceRequests:
+                      description: InterfaceRequests indicates a list of interfaces
+                        added to the VMI template and hot-plugged on an active running
+                        VMI.
+                      items:
+                        properties:
+                          addInterfaceOptions:
+                            description: AddInterfaceOptions when set indicates a
+                              network interface should be added. The details within
+                              this field specify how to add the interface
+                            properties:
+                              name:
+                                description: Name indicates the logical name of the
+                                  interface.
+                                type: string
+                              networkAttachmentDefinitionName:
+                                description: 'NetworkAttachmentDefinitionName references
+                                  a NetworkAttachmentDefinition CRD object. Format:
+                                  <networkAttachmentDefinitionName>, <namespace>/<networkAttachmentDefinitionName>.
+                                  If namespace is not specified, VMI namespace is
+                                  assumed.'
+                                type: string
+                            required:
+                            - name
+                            - networkAttachmentDefinitionName
+                            type: object
+                        type: object
+                      type: array
+                      x-kubernetes-list-type: atomic
                     memoryDumpRequest:
                       description: MemoryDumpRequest tracks memory dump request phase
                         and info of getting a memory dump to the given pvc
@@ -24160,6 +24506,11 @@ var CRDsValidation map[string]string = map[string]string{
                       - claimName
                       - phase
                       type: object
+                    observedGeneration:
+                      description: ObservedGeneration is the generation observed by
+                        the vmi when started.
+                      format: int64
+                      type: integer
                     printableStatus:
                       description: PrintableStatus is a human readable, high-level
                         representation of the status of the virtual machine

@@ -570,7 +570,7 @@ type VirtualMachineInstanceNetworkInterface struct {
 	IPs []string `json:"ipAddresses,omitempty"`
 	// The interface name inside the Virtual Machine
 	InterfaceName string `json:"interfaceName,omitempty"`
-	// Specifies the origin of the interface data collected. values: domain, guest-agent, or both
+	// Specifies the origin of the interface data collected. values: domain, guest-agent, multus-status.
 	InfoSource string `json:"infoSource,omitempty"`
 	// Specifies how many queues are allocated by MultiQueue
 	QueueCount int32 `json:"queueCount,omitempty"`
@@ -901,6 +901,13 @@ const (
 	// PVCMemoryDumpAnnotation is the name of the memory dump representing the vm name,
 	// pvc name and the timestamp the memory dump was collected
 	PVCMemoryDumpAnnotation string = "kubevirt.io/memory-dump"
+
+	// AllowPodBridgeNetworkLiveMigrationAnnotation allow to run live migration when the
+	// vm has the pod networking bind with a bridge
+	AllowPodBridgeNetworkLiveMigrationAnnotation string = "kubevirt.io/allow-pod-bridge-network-live-migration"
+
+	// VirtualMachineGenerationAnnotation is the generation of a Virtual Machine.
+	VirtualMachineGenerationAnnotation string = "kubevirt.io/vm-generation"
 )
 
 func NewVMI(name string, uid types.UID) *VirtualMachineInstance {
@@ -1450,6 +1457,23 @@ type VirtualMachineStatus struct {
 	// +nullable
 	// +optional
 	MemoryDumpRequest *VirtualMachineMemoryDumpRequest `json:"memoryDumpRequest,omitempty" optional:"true"`
+
+	// ObservedGeneration is the generation observed by the vmi when started.
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty" optional:"true"`
+
+	// DesiredGeneration is the generation which is desired for the VMI.
+	// This will be used in comparisons with ObservedGeneration to understand when
+	// the VMI is out of sync. This will be changed at the same time as
+	// ObservedGeneration to remove errors which could occur if Generation is
+	// updated through an Update() before ObservedGeneration in Status.
+	// +optional
+	DesiredGeneration int64 `json:"desiredGeneration,omitempty" optional:"true"`
+
+	// InterfaceRequests indicates a list of interfaces added to the VMI template and
+	// hot-plugged on an active running VMI.
+	// +listType=atomic
+	InterfaceRequests []VirtualMachineInterfaceRequest `json:"interfaceRequests,omitempty" optional:"true"`
 }
 
 type VolumeSnapshotStatus struct {
@@ -1477,6 +1501,12 @@ type VirtualMachineStateChangeRequest struct {
 	Data map[string]string `json:"data,omitempty" optional:"true"`
 	// Indicates the UUID of an existing Virtual Machine Instance that this change request applies to -- if applicable
 	UID *types.UID `json:"uid,omitempty" optional:"true" protobuf:"bytes,5,opt,name=uid,casttype=k8s.io/kubernetes/pkg/types.UID"`
+}
+
+type VirtualMachineInterfaceRequest struct {
+	// AddInterfaceOptions when set indicates a network interface should be added.
+	// The details within this field specify how to add the interface
+	AddInterfaceOptions *AddInterfaceOptions `json:"addInterfaceOptions,omitempty" optional:"true"`
 }
 
 // VirtualMachineCondition represents the state of VirtualMachine
@@ -1548,9 +1578,6 @@ const (
 	// IONative - Kernel native I/O tasks (AIO) offer a better performance but can block the VM if the file is not fully
 	// allocated so this method recommended only when the backing file/disk/etc is fully preallocated.
 	IONative DriverIO = "native"
-	// IODefault - Fallback to the default value from the kernel. With recent Kernel versions (for example RHEL-7) the
-	// default is AIO.
-	IODefault DriverIO = "default"
 )
 
 // Handler defines a specific action that should be taken
@@ -2165,6 +2192,17 @@ type RemoveVolumeOptions struct {
 	DryRun []string `json:"dryRun,omitempty"`
 }
 
+// AddInterfaceOptions is provided when dynamically hot plugging a network interface
+type AddInterfaceOptions struct {
+	// NetworkAttachmentDefinitionName references a NetworkAttachmentDefinition CRD object. Format:
+	// <networkAttachmentDefinitionName>, <namespace>/<networkAttachmentDefinitionName>. If namespace is not
+	// specified, VMI namespace is assumed.
+	NetworkAttachmentDefinitionName string `json:"networkAttachmentDefinitionName"`
+
+	// Name indicates the logical name of the interface.
+	Name string `json:"name"`
+}
+
 type TokenBucketRateLimiter struct {
 	// QPS indicates the maximum QPS to the apiserver from this client.
 	// If it's zero, the component default will be used
@@ -2211,6 +2249,14 @@ type KubeVirtConfiguration struct {
 	// migrated instead of shut-off in case of a node drain. If the VirtualMachineInstance specific
 	// field is set it overrides the cluster level one.
 	EvictionStrategy *EvictionStrategy `json:"evictionStrategy,omitempty"`
+
+	// AdditionalGuestMemoryOverheadRatio can be used to increase the virtualization infrastructure
+	// overhead. This is useful, since the calculation of this overhead is not accurate and cannot
+	// be entirely known in advance. The ratio that is being set determines by which factor to increase
+	// the overhead calculated by Kubevirt. A higher ratio means that the VMs would be less compromised
+	// by node pressures, but would mean that fewer VMs could be scheduled to a node.
+	// If not set, the default is 1.
+	AdditionalGuestMemoryOverheadRatio *string `json:"additionalGuestMemoryOverheadRatio,omitempty"`
 
 	// deprecated
 	SupportedGuestAgentVersions    []string                          `json:"supportedGuestAgentVersions,omitempty"`
@@ -2468,6 +2514,11 @@ type ClusterProfilerRequest struct {
 	PageSize      int64  `json:"pageSize"`
 }
 
+type Matcher interface {
+	GetName() string
+	GetRevisionName() string
+}
+
 // InstancetypeMatcher references a instancetype that is used to fill fields in the VMI template.
 type InstancetypeMatcher struct {
 	// Name is the name of the VirtualMachineInstancetype or VirtualMachineClusterInstancetype
@@ -2497,6 +2548,14 @@ type InstancetypeMatcher struct {
 	InferFromVolume string `json:"inferFromVolume,omitempty"`
 }
 
+func (i InstancetypeMatcher) GetName() string {
+	return i.Name
+}
+
+func (i InstancetypeMatcher) GetRevisionName() string {
+	return i.RevisionName
+}
+
 // PreferenceMatcher references a set of preference that is used to fill fields in the VMI template.
 type PreferenceMatcher struct {
 	// Name is the name of the VirtualMachinePreference or VirtualMachineClusterPreference
@@ -2524,4 +2583,12 @@ type PreferenceMatcher struct {
 	//
 	// +optional
 	InferFromVolume string `json:"inferFromVolume,omitempty"`
+}
+
+func (p PreferenceMatcher) GetName() string {
+	return p.Name
+}
+
+func (p PreferenceMatcher) GetRevisionName() string {
+	return p.RevisionName
 }

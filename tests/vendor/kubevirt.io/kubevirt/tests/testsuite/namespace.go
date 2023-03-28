@@ -25,6 +25,8 @@ import (
 	"strings"
 	"time"
 
+	"kubevirt.io/kubevirt/tests/framework/kubevirt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -114,7 +116,7 @@ func CleanNamespaces() {
 		util.PanicOnError(err)
 		for _, vmi := range vmis.Items {
 			if controller.HasFinalizer(&vmi, v1.VirtualMachineInstanceFinalizer) {
-				_, err := virtCli.VirtualMachineInstance(vmi.Namespace).Patch(vmi.Name, types.JSONPatchType, []byte("[{ \"op\": \"remove\", \"path\": \"/metadata/finalizers\" }]"), &metav1.PatchOptions{})
+				_, err := virtCli.VirtualMachineInstance(vmi.Namespace).Patch(context.Background(), vmi.Name, types.JSONPatchType, []byte("[{ \"op\": \"remove\", \"path\": \"/metadata/finalizers\" }]"), &metav1.PatchOptions{})
 				if !errors.IsNotFound(err) {
 					util.PanicOnError(err)
 				}
@@ -248,8 +250,7 @@ func CleanNamespaces() {
 }
 
 func removeNamespaces() {
-	virtCli, err := kubecli.GetKubevirtClient()
-	util.PanicOnError(err)
+	virtCli := kubevirt.Client()
 
 	// First send an initial delete to every namespace
 	for _, namespace := range TestNamespaces {
@@ -270,10 +271,7 @@ func removeNamespaces() {
 }
 
 func removeAllGroupVersionResourceFromNamespace(groupVersionResource schema.GroupVersionResource, namespace string) error {
-	virtCli, err := kubecli.GetKubevirtClient()
-	if err != nil {
-		return err
-	}
+	virtCli := kubevirt.Client()
 
 	gvr, err := virtCli.DynamicClient().Resource(groupVersionResource).Namespace(namespace).List(context.Background(), metav1.ListOptions{})
 	if errors.IsNotFound(err) {
@@ -293,8 +291,7 @@ func removeAllGroupVersionResourceFromNamespace(groupVersionResource schema.Grou
 }
 
 func detectInstallNamespace() {
-	virtCli, err := kubecli.GetKubevirtClient()
-	util.PanicOnError(err)
+	virtCli := kubevirt.Client()
 	kvs, err := virtCli.KubeVirt("").List(&metav1.ListOptions{})
 	util.PanicOnError(err)
 	if len(kvs.Items) == 0 {
@@ -313,6 +310,7 @@ func GetLabelsForNamespace(namespace string) map[string]string {
 	if namespace == NamespacePrivileged {
 		labels["pod-security.kubernetes.io/enforce"] = "privileged"
 		labels["pod-security.kubernetes.io/warn"] = "privileged"
+		labels["security.openshift.io/scc.podSecurityLabelSync"] = "false"
 	}
 
 	return labels
@@ -328,8 +326,7 @@ func resetNamespaceLabelsToDefault(client kubecli.KubevirtClient, namespace stri
 }
 
 func createNamespaces() {
-	virtCli, err := kubecli.GetKubevirtClient()
-	util.PanicOnError(err)
+	virtCli := kubevirt.Client()
 
 	// Create a Test Namespaces
 	for _, namespace := range TestNamespaces {
@@ -340,7 +337,7 @@ func createNamespaces() {
 			},
 		}
 
-		_, err = virtCli.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
+		_, err := virtCli.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
 		if err != nil {
 			util.PanicOnError(err)
 		}

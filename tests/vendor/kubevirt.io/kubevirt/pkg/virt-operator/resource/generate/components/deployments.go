@@ -35,7 +35,6 @@ import (
 
 	virtv1 "kubevirt.io/api/core/v1"
 
-	"kubevirt.io/kubevirt/pkg/virt-operator/resource/generate/rbac"
 	operatorutil "kubevirt.io/kubevirt/pkg/virt-operator/util"
 )
 
@@ -326,7 +325,7 @@ func NewApiServerDeployment(namespace, repository, imagePrefix, version, product
 	attachProfileVolume(&deployment.Spec.Template.Spec)
 
 	pod := &deployment.Spec.Template.Spec
-	pod.ServiceAccountName = rbac.ApiServiceAccountName
+	pod.ServiceAccountName = ApiServiceAccountName
 	pod.SecurityContext = &corev1.PodSecurityContext{
 		RunAsNonRoot:   boolPtr(true),
 		SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
@@ -375,7 +374,7 @@ func NewApiServerDeployment(namespace, repository, imagePrefix, version, product
 	container.Resources = corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
 			corev1.ResourceCPU:    resource.MustParse("5m"),
-			corev1.ResourceMemory: resource.MustParse("400Mi"),
+			corev1.ResourceMemory: resource.MustParse("500Mi"),
 		},
 	}
 
@@ -407,7 +406,7 @@ func NewControllerDeployment(namespace, repository, imagePrefix, controllerVersi
 	}
 
 	pod := &deployment.Spec.Template.Spec
-	pod.ServiceAccountName = rbac.ControllerServiceAccountName
+	pod.ServiceAccountName = ControllerServiceAccountName
 	pod.SecurityContext = &corev1.PodSecurityContext{
 		RunAsNonRoot:   boolPtr(true),
 		SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
@@ -472,7 +471,7 @@ func NewControllerDeployment(namespace, repository, imagePrefix, controllerVersi
 	container.Resources = corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
 			corev1.ResourceCPU:    resource.MustParse("10m"),
-			corev1.ResourceMemory: resource.MustParse("250Mi"),
+			corev1.ResourceMemory: resource.MustParse("275Mi"),
 		},
 	}
 
@@ -594,7 +593,7 @@ func NewOperatorDeployment(namespace, repository, imagePrefix, version, verbosit
 							Resources: corev1.ResourceRequirements{
 								Requests: corev1.ResourceList{
 									corev1.ResourceCPU:    resource.MustParse("10m"),
-									corev1.ResourceMemory: resource.MustParse("400Mi"),
+									corev1.ResourceMemory: resource.MustParse("450Mi"),
 								},
 							},
 							SecurityContext: &corev1.SecurityContext{
@@ -645,7 +644,7 @@ func NewExportProxyDeployment(namespace, repository, imagePrefix, version, produ
 	attachProfileVolume(&deployment.Spec.Template.Spec)
 
 	pod := &deployment.Spec.Template.Spec
-	pod.ServiceAccountName = rbac.ExportProxyServiceAccountName
+	pod.ServiceAccountName = ExportProxyServiceAccountName
 	pod.SecurityContext = &corev1.PodSecurityContext{
 		RunAsNonRoot: boolPtr(true),
 	}
