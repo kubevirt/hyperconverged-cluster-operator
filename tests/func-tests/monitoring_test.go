@@ -69,7 +69,8 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		promClient = initializePromClient(getPrometheusUrl(virtCli), getAuthorizationTokenForPrometheus(virtCli))
 		prometheusRule = getPrometheusRule(virtCli)
 
-		initialOperatorHealthMetricValue = getMetricValue(promClient, "kubevirt_hyperconverged_operator_health_status")
+		g := NewGomega(Fail)
+		initialOperatorHealthMetricValue = getMetricValue(g, promClient, "kubevirt_hyperconverged_operator_health_status")
 	})
 
 	It("Alert rules should have all the required annotations", func() {
@@ -211,22 +212,24 @@ func getAlertByName(alerts promApiv1.AlertsResult, alertName string) *promApiv1.
 }
 
 func verifyOperatorHealthMetricValue(promClient promApiv1.API, initialOperatorHealthMetricValue, alertImpact float64) {
-	systemHealthMetricValue := getMetricValue(promClient, "kubevirt_hco_system_health_status")
-	operatorHealthMetricValue := getMetricValue(promClient, "kubevirt_hyperconverged_operator_health_status")
+	Eventually(func(g Gomega) {
+		systemHealthMetricValue := getMetricValue(g, promClient, "kubevirt_hco_system_health_status")
+		operatorHealthMetricValue := getMetricValue(g, promClient, "kubevirt_hyperconverged_operator_health_status")
 
-	expectedOperatorHealthMetricValue := math.Max(alertImpact, math.Max(systemHealthMetricValue, initialOperatorHealthMetricValue))
-	ExpectWithOffset(1, operatorHealthMetricValue).To(Equal(expectedOperatorHealthMetricValue))
+		expectedOperatorHealthMetricValue := math.Max(alertImpact, math.Max(systemHealthMetricValue, initialOperatorHealthMetricValue))
+		g.Expect(operatorHealthMetricValue).To(Equal(expectedOperatorHealthMetricValue))
+	}).WithOffset(1).WithPolling(time.Second * 5).WithTimeout(time.Minute * 5).Should(Succeed())
 }
 
-func getMetricValue(promClient promApiv1.API, metricName string) float64 {
+func getMetricValue(g Gomega, promClient promApiv1.API, metricName string) float64 {
 	queryResult, _, err := promClient.Query(context.TODO(), metricName, time.Now())
-	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+	g.ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
 
 	resultVector := queryResult.(promModel.Vector)
-	ExpectWithOffset(1, resultVector).To(HaveLen(1))
+	g.ExpectWithOffset(1, resultVector).To(HaveLen(1))
 
 	metricValue, err := strconv.ParseFloat(resultVector[0].Value.String(), 64)
-	ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
+	g.ExpectWithOffset(1, err).ShouldNot(HaveOccurred())
 
 	return metricValue
 }
