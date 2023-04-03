@@ -23,34 +23,54 @@ import (
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
-const nodePlacementSamplingSize = 20
+const (
+	nodePlacementSamplingSize = 20
+	label                     = "node.kubernetes.io/hco-test-node-type"
+	infra                     = "infra"
+	workloads                 = "workloads"
+)
 
 var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:system]Node Placement", func() {
-
 	var workloadsNode *v1.Node
 
 	tests.FlagParse()
 	client, err := kubecli.GetKubevirtClient()
 	kvtutil.PanicOnError(err)
 
-	workloadsNodes, err := client.CoreV1().Nodes().List(context.TODO(), k8smetav1.ListOptions{
-		LabelSelector: "node.kubernetes.io/hco-test-node-type==workloads",
-	})
-	kvtutil.PanicOnError(err)
+	BeforeEach(func() {
+		nodes, err := client.CoreV1().Nodes().List(context.TODO(), k8smetav1.ListOptions{LabelSelector: "node-role.kubernetes.io/worker"})
+		kvtutil.PanicOnError(err)
+		totalNodes := len(nodes.Items)
 
-	if workloadsNodes != nil && len(workloadsNodes.Items) == 1 {
-		workloadsNode = &workloadsNodes.Items[0]
+		// Label all but first node with "node.kubernetes.io/hco-test-node-type=infra"
+		// We are doing this to remove dependency of this Describe block on a shell script that
+		// labels the nodes this way
+		for i := 0; i < totalNodes-1; i++ {
+			err = setHcoNodeTypeLabel(client, &nodes.Items[i], infra)
+			kvtutil.PanicOnError(err)
+		}
+		// Label the last node with "node.kubernetes.io/hco-test-node-type=workloads"
+		err = setHcoNodeTypeLabel(client, &nodes.Items[totalNodes-1], workloads)
+
+		workloadsNode = &nodes.Items[0]
 		fmt.Fprintf(GinkgoWriter, "Found Workloads Node. Node name: %s; node labels:\n", workloadsNode.Name)
 		w := json.NewEncoder(GinkgoWriter)
 		w.SetIndent("", "  ")
 		_ = w.Encode(workloadsNode.Labels)
-	}
-
-	BeforeEach(func() {
-		if workloadsNode == nil {
-			Skip("Skipping Node Placement tests")
-		}
 		tests.BeforeEach()
+	})
+
+	AfterEach(func() {
+		nodes, err := client.CoreV1().Nodes().List(context.TODO(), k8smetav1.ListOptions{LabelSelector: "node.kubernetes.io/hco-test-node-type"})
+		kvtutil.PanicOnError(err)
+		for i := 0; i < len(nodes.Items); i++ {
+			node := &nodes.Items[i]
+			labels := node.GetLabels()
+			delete(labels, "node.kubernetes.io/hco-test-node-type")
+			node.SetLabels(labels)
+			_, err = client.CoreV1().Nodes().Update(context.TODO(), node, k8smetav1.UpdateOptions{})
+			kvtutil.PanicOnError(err)
+		}
 	})
 
 	Context("validate node placement in workloads nodes", func() {
@@ -157,4 +177,12 @@ func getNetworkAddonsConfigs(client kubecli.KubevirtClient) *networkaddonsv1.Net
 		Do(context.TODO()).Into(&cnaoCR)).To(Succeed())
 
 	return &cnaoCR
+}
+
+func setHcoNodeTypeLabel(client kubecli.KubevirtClient, node *v1.Node, value string) error {
+	labels := node.GetLabels()
+	labels[label] = value
+	node.SetLabels(labels)
+	_, err := client.CoreV1().Nodes().Update(context.TODO(), node, k8smetav1.UpdateOptions{})
+	return err
 }
