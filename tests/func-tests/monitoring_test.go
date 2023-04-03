@@ -211,17 +211,11 @@ func getAlertByName(alerts promApiv1.AlertsResult, alertName string) *promApiv1.
 }
 
 func verifyOperatorHealthMetricValue(promClient promApiv1.API, initialOperatorHealthMetricValue, alertImpact float64) {
-	Eventually(func(g Gomega) {
-		systemHealthMetricValue := getMetricValue(promClient, "kubevirt_hco_system_health_status")
-		expectedOperatorHealthMetricValue := math.Max(alertImpact, systemHealthMetricValue)
+	systemHealthMetricValue := getMetricValue(promClient, "kubevirt_hco_system_health_status")
+	operatorHealthMetricValue := getMetricValue(promClient, "kubevirt_hyperconverged_operator_health_status")
 
-		if expectedOperatorHealthMetricValue <= initialOperatorHealthMetricValue {
-			Skip("Operator health metric value is not expected to be changed")
-		}
-
-		operatorHealthMetricValue := getMetricValue(promClient, "kubevirt_hyperconverged_operator_health_status")
-		g.ExpectWithOffset(1, operatorHealthMetricValue).To(Equal(expectedOperatorHealthMetricValue))
-	}, 5*time.Minute, 10*time.Second).Should(Succeed())
+	expectedOperatorHealthMetricValue := math.Max(alertImpact, math.Max(systemHealthMetricValue, initialOperatorHealthMetricValue))
+	ExpectWithOffset(1, operatorHealthMetricValue).To(Equal(expectedOperatorHealthMetricValue))
 }
 
 func getMetricValue(promClient promApiv1.API, metricName string) float64 {
