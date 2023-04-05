@@ -4,9 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
+	"gopkg.in/yaml.v3"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/dynamic"
 
 	k8smetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -25,19 +32,45 @@ import (
 
 const (
 	nodePlacementSamplingSize = 20
-	label                     = "node.kubernetes.io/hco-test-node-type"
+	hcoLabel                  = "node.kubernetes.io/hco-test-node-type"
 	infra                     = "infra"
 	workloads                 = "workloads"
+	pathToFile                = "../../_out"
+	fileName                  = "hco.cr.yaml"
+	deployPath                = "../../deploy"
+	group                     = "hco.kubevirt.io"
+	version                   = "v1beta1"
+	kind                      = "HyperConverged"
+	resource                  = "hyperconvergeds"
+	namespace                 = "kubevirt-hyperconverged"
 )
 
-var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:system]Node Placement", func() {
+var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:system]Node Placement", Ordered, func() {
 	var workloadsNode *v1.Node
+	infraVal := map[string]interface{}{
+		"nodePlacement": map[string]interface{}{
+			"nodeSelector": map[string]interface{}{
+				hcoLabel: infra,
+			},
+		},
+	}
+	workloadsVal := map[string]interface{}{
+		"nodePlacement": map[string]interface{}{
+			"nodeSelector": map[string]interface{}{
+				hcoLabel: workloads,
+			},
+		},
+	}
 
 	tests.FlagParse()
 	client, err := kubecli.GetKubevirtClient()
 	kvtutil.PanicOnError(err)
+	dynamicClient, err := dynamic.NewForConfig(client.Config())
+	kvtutil.PanicOnError(err)
 
-	BeforeEach(func() {
+	var hco unstructured.Unstructured
+
+	BeforeAll(func() {
 		nodes, err := client.CoreV1().Nodes().List(context.TODO(), k8smetav1.ListOptions{LabelSelector: "node-role.kubernetes.io/worker"})
 		kvtutil.PanicOnError(err)
 		totalNodes := len(nodes.Items)
@@ -51,26 +84,89 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 		}
 		// Label the last node with "node.kubernetes.io/hco-test-node-type=workloads"
 		err = setHcoNodeTypeLabel(client, &nodes.Items[totalNodes-1], workloads)
+		kvtutil.PanicOnError(err)
 
+		// read the hco CR
+		file, err := os.ReadFile(filepath.Join(deployPath, fileName))
+		kvtutil.PanicOnError(err)
+		yamlFile := make(map[string]interface{})
+		err = yaml.Unmarshal(file, &yamlFile)
+		kvtutil.PanicOnError(err)
+		// get the "spec"
+		data := yamlFile["spec"].(map[string]interface{})
+		// modify the "infra" and "workloads" keys
+		data["infra"] = infraVal
+		data["workloads"] = workloadsVal
+		file, err = yaml.Marshal(yamlFile)
+		kvtutil.PanicOnError(err)
+		// create directory "_out" if it doesn't already exist
+		if err = os.Mkdir(pathToFile, os.ModePerm); !os.IsExist(err) {
+			kvtutil.PanicOnError(err)
+		}
+		// write the modified yaml
+		err = os.WriteFile(filepath.Join(pathToFile, fileName), file, os.ModePerm)
+		kvtutil.PanicOnError(err)
+		// use the same yaml to create resources on the cluster
+		hco = unstructured.Unstructured{Object: yamlFile}
+		hco.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   group,
+			Version: version,
+			Kind:    kind,
+		})
+		r, err := dynamicClient.Resource(schema.GroupVersionResource{
+			Group:    group,
+			Version:  version,
+			Resource: resource,
+		}).Namespace(namespace).Create(context.TODO(), &hco, k8smetav1.CreateOptions{})
+		kvtutil.PanicOnError(err)
+		err = wait.PollImmediate(5*time.Second, 1200*time.Second, func() (bool, error) {
+			obj, err := dynamicClient.Resource(schema.GroupVersionResource{
+				Group:    group,
+				Version:  version,
+				Resource: resource,
+			}).Namespace(namespace).Get(context.TODO(), r.GetName(), k8smetav1.GetOptions{})
+			if err != nil {
+				return false, err
+			}
+			if obj != nil {
+				return true, nil
+			}
+			return false, nil
+		})
+		kvtutil.PanicOnError(err)
 		workloadsNode = &nodes.Items[0]
 		fmt.Fprintf(GinkgoWriter, "Found Workloads Node. Node name: %s; node labels:\n", workloadsNode.Name)
 		w := json.NewEncoder(GinkgoWriter)
 		w.SetIndent("", "  ")
 		_ = w.Encode(workloadsNode.Labels)
-		tests.BeforeEach()
 	})
 
-	AfterEach(func() {
-		nodes, err := client.CoreV1().Nodes().List(context.TODO(), k8smetav1.ListOptions{LabelSelector: "node.kubernetes.io/hco-test-node-type"})
+	AfterAll(func() {
+		// remove the HCO CR created in BeforeAll step
+		err = dynamicClient.Resource(schema.GroupVersionResource{
+			Group:    group,
+			Version:  version,
+			Resource: resource,
+		}).Namespace(namespace).Delete(context.TODO(), hco.GetName(), k8smetav1.DeleteOptions{})
+		kvtutil.PanicOnError(err)
+
+		// unlabel the nodes
+		nodes, err := client.CoreV1().Nodes().List(context.TODO(), k8smetav1.ListOptions{LabelSelector: hcoLabel})
 		kvtutil.PanicOnError(err)
 		for i := 0; i < len(nodes.Items); i++ {
 			node := &nodes.Items[i]
 			labels := node.GetLabels()
-			delete(labels, "node.kubernetes.io/hco-test-node-type")
+			delete(labels, hcoLabel)
+			node, err = client.CoreV1().Nodes().Get(context.TODO(), node.Name, k8smetav1.GetOptions{})
+			kvtutil.PanicOnError(err)
 			node.SetLabels(labels)
 			_, err = client.CoreV1().Nodes().Update(context.TODO(), node, k8smetav1.UpdateOptions{})
 			kvtutil.PanicOnError(err)
 		}
+	})
+
+	BeforeEach(func() {
+		tests.BeforeEach()
 	})
 
 	Context("validate node placement in workloads nodes", func() {
@@ -181,8 +277,12 @@ func getNetworkAddonsConfigs(client kubecli.KubevirtClient) *networkaddonsv1.Net
 
 func setHcoNodeTypeLabel(client kubecli.KubevirtClient, node *v1.Node, value string) error {
 	labels := node.GetLabels()
-	labels[label] = value
+	labels[hcoLabel] = value
+	node, err := client.CoreV1().Nodes().Get(context.TODO(), node.Name, k8smetav1.GetOptions{})
+	if err != nil {
+		return err
+	}
 	node.SetLabels(labels)
-	_, err := client.CoreV1().Nodes().Update(context.TODO(), node, k8smetav1.UpdateOptions{})
+	_, err = client.CoreV1().Nodes().Update(context.TODO(), node, k8smetav1.UpdateOptions{})
 	return err
 }
