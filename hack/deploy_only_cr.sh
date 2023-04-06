@@ -27,15 +27,8 @@ function cleanup() {
 
 trap "cleanup" INT TERM EXIT
 
-WORKERS=$(${CMD} get nodes -l "node-role.kubernetes.io/master!=" -o name)
-WORKERS_ARR=(${WORKERS})
-
 mkdir -p _out
 cp deploy/hco.cr.yaml _out/
-
-if [[ ${#WORKERS_ARR[@]} -ge 2 ]]; then
-  hack/np-config-hook.sh
-fi
 
 ${CMD} get nodes -o wide --show-labels
 
