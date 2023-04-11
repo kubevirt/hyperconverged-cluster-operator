@@ -2,7 +2,6 @@ package components
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/coreos/prometheus-operator/pkg/apis/monitoring"
 	v1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
@@ -90,30 +89,6 @@ func NewPrometheusRuleSpec(ns string, workloadUpdatesEnabled bool) *v1.Prometheu
 	getErrorRatio := func(ns string, podName string, errorCodeRegex string, durationInMinutes int) string {
 		errorRatioQuery := "sum ( rate ( rest_client_requests_total{namespace=\"%s\",pod=~\"%s-.*\",code=~\"%s\"} [%dm] ) )  /  sum ( rate ( rest_client_requests_total{namespace=\"%s\",pod=~\"%s-.*\"} [%dm] ) )"
 		return fmt.Sprintf(errorRatioQuery, ns, podName, errorCodeRegex, durationInMinutes, ns, podName, durationInMinutes)
-	}
-
-	vmStuckInStatusRule := func(status string) v1.Rule {
-		const fiveMinutesInSec = 60 * 5
-
-		alertName := fmt.Sprintf("KubeVirtVMStuckIn%sState", strings.Title(status))
-		metric := fmt.Sprintf("kubevirt_vm_%s_status_last_transition_timestamp_seconds", status)
-		expr := fmt.Sprintf("time() - %s >= %d and %s != 0", metric, fiveMinutesInSec, metric)
-		description := fmt.Sprintf("VirtualMachine {{ $labels.name }} is in %s state for {{ humanizeDuration $value }}", status)
-		summary := fmt.Sprintf("A Virtual Machine has been in an unwanted %s state for more than 5 minutes", status)
-
-		return v1.Rule{
-			Alert: alertName,
-			Expr:  intstr.FromString(expr),
-			Annotations: map[string]string{
-				"description": description,
-				"summary":     summary,
-				"runbook_url": runbookUrlBasePath + alertName,
-			},
-			Labels: map[string]string{
-				severityAlertLabelKey:        "warning",
-				operatorHealthImpactLabelKey: "none",
-			},
-		}
 	}
 
 	ruleSpec := &v1.PrometheusRuleSpec{
@@ -539,7 +514,7 @@ func NewPrometheusRuleSpec(ns string, workloadUpdatesEnabled bool) *v1.Prometheu
 					},
 					{
 						Alert: "KubeVirtVMIExcessiveMigrations",
-						Expr:  intstr.FromString("sum by (vmi) (max_over_time(kubevirt_migrate_vmi_succeeded_total[1d])) >= 12"),
+						Expr:  intstr.FromString("sum by (vmi) (max_over_time(kubevirt_migrate_vmi_succeeded[1d])) >= 12"),
 						Annotations: map[string]string{
 							"description": "VirtualMachineInstance {{ $labels.vmi }} has been migrated more than 12 times during the last 24 hours",
 							"summary":     "An excessive amount of migrations have been detected on a VirtualMachineInstance in the last 24 hours.",
@@ -550,13 +525,24 @@ func NewPrometheusRuleSpec(ns string, workloadUpdatesEnabled bool) *v1.Prometheu
 							operatorHealthImpactLabelKey: "none",
 						},
 					},
-					vmStuckInStatusRule("starting"),
-					vmStuckInStatusRule("migrating"),
-					vmStuckInStatusRule("error"),
+					{
+						Alert: "KubeVirtNoAvailableNodesToRunVMs",
+						Expr:  intstr.FromString("((sum(kube_node_status_allocatable{resource='devices_kubevirt_io_kvm'}) or on() vector(0)) == 0 and (sum(kubevirt_configuration_emulation_enabled) or on() vector(0)) == 0) or (sum(kube_node_labels{label_kubevirt_io_schedulable='true'}) or on() vector(0)) == 0"),
+						For:   "5m",
+						Annotations: map[string]string{
+							"summary": "There are no available nodes in the cluster to run VMs.",
+						},
+						Labels: map[string]string{
+							severityAlertLabelKey:        "warning",
+							operatorHealthImpactLabelKey: "critical",
+						},
+					},
 				},
 			},
 		},
 	}
+
+	// ((sum(kube_node_status_allocatable{resource='devices_kubevirt_io_kvm'}) or on() vector(0)) == 0 and (sum(kubevirt_configuration_emulation_enabled) or on() vector(0)) == 0) or (sum(kube_node_labels{label_kubevirt_io_schedulable='true'}) or on() vector(0)) == 0
 
 	if workloadUpdatesEnabled {
 		ruleSpec.Groups[0].Rules = append(ruleSpec.Groups[0].Rules, v1.Rule{
