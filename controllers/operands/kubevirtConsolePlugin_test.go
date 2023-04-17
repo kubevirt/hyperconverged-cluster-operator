@@ -4,6 +4,8 @@ import (
 	"context"
 	"reflect"
 
+	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	consolev1 "github.com/openshift/api/console/v1"
@@ -202,6 +204,9 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		})
 
 		It("should create if not present", func() {
+			hco.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{
+				NodeSelector: map[string]string{"key": "value"},
+			}
 			expectedResource, err := NewKvUiPluginDeplymnt(hco)
 			Expect(err).ToNot(HaveOccurred())
 

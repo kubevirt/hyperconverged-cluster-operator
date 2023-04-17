@@ -61,7 +61,7 @@ func NewKvUiPluginDeplymnt(hc *hcov1beta1.HyperConverged) (*appsv1.Deployment, e
 	// The env var was validated prior to handler creation
 	kvUiPluginImage, _ := os.LookupEnv(hcoutil.KvUiPluginImageEnvV)
 
-	return &appsv1.Deployment{
+	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIPluginDeploymentName,
 			Labels:    getLabels(hc, hcoutil.AppComponentDeployment),
@@ -144,7 +144,14 @@ func NewKvUiPluginDeplymnt(hc *hcov1beta1.HyperConverged) (*appsv1.Deployment, e
 				},
 			},
 		},
-	}, nil
+	}
+
+	if hc.Spec.Infra.NodePlacement != nil {
+		deployment.Spec.Template.Spec.NodeSelector = hc.Spec.Infra.NodePlacement.NodeSelector
+		deployment.Spec.Template.Spec.Affinity = hc.Spec.Infra.NodePlacement.Affinity
+		deployment.Spec.Template.Spec.Tolerations = hc.Spec.Infra.NodePlacement.Tolerations
+	}
+	return deployment, nil
 }
 
 func NewKvUiPluginSvc(hc *hcov1beta1.HyperConverged) *corev1.Service {

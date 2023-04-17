@@ -9,7 +9,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 )
 
-// hcoRequest - gather data for a specific request
+// HcoRequest - gather data for a specific request
 type HcoRequest struct {
 	reconcile.Request                                     // inheritance of operator request
 	Logger                     logr.Logger                // request logger
