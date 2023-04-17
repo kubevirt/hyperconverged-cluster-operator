@@ -55,9 +55,12 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 		// Label all but first node with "node.kubernetes.io/hco-test-node-type=infra"
 		// We are doing this to remove dependency of this Describe block on a shell script that
 		// labels the nodes this way
-		for i := 0; i < totalNodes-1; i++ {
+		for i := 0; i < totalNodes; i++ {
 			err = setHcoNodeTypeLabel(client, &nodes.Items[i], infra)
 			kvtutil.PanicOnError(err)
+			if i == totalNodes-1 {
+				break
+			}
 		}
 		// Label the last node with "node.kubernetes.io/hco-test-node-type=workloads"
 		err = setHcoNodeTypeLabel(client, &nodes.Items[totalNodes-1], workloads)
