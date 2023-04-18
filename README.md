@@ -97,16 +97,18 @@ Run the following script to apply the HCO operator:
 $ curl https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/deploy/deploy.sh | bash
 ```
 
-## Developer Workflow
-If you want to make changes to the HCO, here's how you can test your changes
-through [OLM](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md#installing-olm).
+## Developer Workflow (using [OLM](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md#installing-olm))
 
-The make target `cluster-sync-olm` automates the steps in this section:
+### Using the make target 
+To use the HCO's container, we'll use a registry image to serve metadata to OLM. To test the changes you made 
+locally, use the below make target:
 ```shell
 $ make cluster-sync-olm
 ```
 
-If you would rather want to understand the details, you can find it below.
+### Details of the make target
+The details of what this make target does are outlined below. You can also run these steps manually instead of running 
+`make cluster-sync-olm`.
 
 If you have made changes to the Operator and/or the webhook part of the code, first run `make build-operator` and/or 
 `make build-webhook`.
@@ -115,29 +117,28 @@ Build the HCO container using the Makefile recipes `make container-build` and
 `make container-push` with vars `IMAGE_REGISTRY`, `REGISTRY_NAMESPACE`, and `CONTAINER_TAG`
 to direct its location.
 
-To use the HCO's container, we'll use a registry image to serve metadata to OLM.
 Build and push the HCO's registry image.
 ```bash
 # e.g. quay.io, docker.io
 export IMAGE_REGISTRY=<image_registry>
 export REGISTRY_NAMESPACE=<container_org>
 export CONTAINER_TAG=example
+export HCO_OPERATOR_IMAGE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-operator:$CONTAINER_TAG
+
+# Image to be used in CSV manifests
+HCO_OPERATOR_IMAGE=$HCO_OPERATOR_IMAGE CSV_VERSION=$CSV_VERSION make build-manifests
 
 # builds the registry image and pushes it to 
 # $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hco-container-registry:$CONTAINER_TAG
 make bundleRegistry
 ```
-Modify all the occurrences of `+IMAGE_TO_REPLACE+` in `deploy/index-image/community-kubevirt-hyperconverged/1.10.0/manifests/kubevirt-hyperconverged-operator.v1.10.0.clusterserviceversion.yaml` with the container image created by
-`make container-build` command. Do the same for all the occurrences of
-`quay.io/kubevirt/hyperconverged-cluster-operator:1.10.0-unstable` in the file
-`deploy/olm-catalog/community-kubevirt-hyperconverged/1.10.0/manifests/kubevirt-hyperconverged-operator.v1.10.0.clusterserviceversion.yaml`.
 
-Build the index image if you would like to use a custom index image to start the Operator:
+Build the index image since we would need to use a custom index image to start the Operator with the modified code:
 ```shell
 ./hack/build-index-image.sh latest
 ```
 
-Create the namespace for the HCO installation.
+On the cluster, create a namespace for HCO installation.
 ```bash
 kubectl create ns kubevirt-hyperconverged
 ```
@@ -167,7 +168,7 @@ metadata:
   namespace: openshift-marketplace
 spec:
   sourceType: grpc
-  image: $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:1.10.0
+  image: $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$CONTAINER_TAG
   displayName: KubeVirt HyperConverged
   publisher: Red Hat
 EOF
@@ -189,7 +190,8 @@ EOF
 ```
 
 Create an HCO CustomResource, which creates the KubeVirt CR, launching KubeVirt,
-CDI, Network-addons, VM import, TTO and SSP.
+CDI (Containerized Data Importer), Network-addons, VM import, TTO (Tekton Tasks Operator) and SSP (Scheduling, Scale 
+and Performance) Operator.
 ```bash
 kubectl create -f deploy/hco.cr.yaml -n kubevirt-hyperconverged
 ```
@@ -238,4 +240,4 @@ export IMAGE_REGISTRY=<container image repository, such as quay.io, default: qua
 export REGISTRY_NAMESPACE=<your org under IMAGE_REGISTRY, i.e your_name if you use quay.io/your_name, default: kubevirt>
 make cluster-sync
 ```
-`oc` binary should exists, and the cluster should be reachable via `oc` commands.
+`oc` binary should exist, and the cluster should be reachable via `oc` commands.

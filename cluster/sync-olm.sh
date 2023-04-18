@@ -13,14 +13,18 @@
 # - ./hack/build-index-image.sh
 #
 # Prerequisites:
-# - Bunch of variables to build container images and push them to a container registry.
+# - Following variables to build container images and push them to a container registry.
+#   - QUAY_USERNAME: username to be used to login to the quay registry
+#   - QUAY_PASSWORD: password to authenticaye QUAY_USERNAME with quay registry. Helpful documentation - https://docs.quay.io/glossary/robot-accounts.html
+#   - IMAGE_TAG: The tag to be used for index image
+#   - REGISTRY_NAMESPACE: Your namespace on quay.io
+#   - IMAGE_REGISTRY: quay.io or the image registry you're using
+#   - CONTAINER_TAG: The tag to be used for hyperconverged-cluster-operator image
 # - Access to a k8s/OCP cluster that has OLM enabled on it.
 
 # tag for the bundle image
 CONTAINER_TAG="${CONTAINER_TAG:-$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1)}"
 IMAGE_REGISTRY="${IMAGE_REGISTRY:-quay.io}"
-# image to be replaced in CSV yaml files
-IMAGE_TO_REPLACE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-operator:$CONTAINER_TAG
 OPERATOR_GROUP_NAME=kubevirt-hyperconverged-group
 VERSION=1.10.0
 
@@ -79,7 +83,7 @@ if [ -z "${CSV_VERSION}"]; then
   CSV_VERSION=latest
 fi
 # Image to be used in CSV manifests
-HCO_OPERATOR_IMAGE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-operator
+HCO_OPERATOR_IMAGE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-operator:$CONTAINER_TAG
 HCO_OPERATOR_IMAGE=$HCO_OPERATOR_IMAGE CSV_VERSION=$CSV_VERSION make build-manifests
 make bundleRegistry
 ./hack/build-index-image.sh IMAGE_TAG
