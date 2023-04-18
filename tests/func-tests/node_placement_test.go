@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 	"kubevirt.io/kubevirt/tests/flags"
 
@@ -21,7 +23,6 @@ import (
 
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
-	v1 "k8s.io/api/core/v1"
 	"kubevirt.io/client-go/kubecli"
 )
 
