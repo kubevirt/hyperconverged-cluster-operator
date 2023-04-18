@@ -44,6 +44,7 @@ The unreleased bundle can be consumed on a cluster by creating a CatalogSource p
 that bundle: `quay.io/kubevirt/hyperconverged-cluster-index:1.10.0-unstable`.
 
 Make the bundle available in the cluster's packagemanifest by adding the following CatalogSource:
+
 ```bash
 cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1alpha1
@@ -59,6 +60,7 @@ spec:
 EOF
 ```
 Then, create a namespace, subscription and an OperatorGroup to deploy HCO via OLM:
+
 ```bash
 cat <<EOF | oc apply -f -
 apiVersion: v1
@@ -125,18 +127,17 @@ export CONTAINER_TAG=example
 # $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hco-container-registry:$CONTAINER_TAG
 make bundleRegistry
 ```
-Modify all the occurrences of `+IMAGE_TO_REPLACE+` in `deploy/index-image/community-kubevirt-hyperconverged/1.9.
-0/manifests/kubevirt-hyperconverged-operator.v1.9.0.clusterserviceversion.yaml` with the container image created by 
-`make container-build` command. Do the same for all the occurrences of `quay.
-io/kubevirt/hyperconverged-cluster-operator:1.9.0-unstable` in the file 
-`deploy/olm-catalog/community-kubevirt-hyperconverged/1.9.0/manifests/kubevirt-hyperconverged-operator.v1.9.0.clusterserviceversion.yaml`.
+Modify all the occurrences of `+IMAGE_TO_REPLACE+` in `deploy/index-image/community-kubevirt-hyperconverged/1.10.0/manifests/kubevirt-hyperconverged-operator.v1.10.0.clusterserviceversion.yaml` with the container image created by
+`make container-build` command. Do the same for all the occurrences of
+`quay.io/kubevirt/hyperconverged-cluster-operator:1.10.0-unstable` in the file
+`deploy/olm-catalog/community-kubevirt-hyperconverged/1.10.0/manifests/kubevirt-hyperconverged-operator.v1.10.0.clusterserviceversion.yaml`.
 
 Build the index image if you would like to use a custom index image to start the Operator:
 ```shell
-$ ./hack/build-index-image.sh latest
+./hack/build-index-image.sh latest
 ```
 
-Create the namespace for the HCO.
+Create the namespace for the HCO installation.
 ```bash
 kubectl create ns kubevirt-hyperconverged
 ```
@@ -166,7 +167,7 @@ metadata:
   namespace: openshift-marketplace
 spec:
   sourceType: grpc
-  image: $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:1.9.0
+  image: $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:1.10.0
   displayName: KubeVirt HyperConverged
   publisher: Red Hat
 EOF
