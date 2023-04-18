@@ -95,9 +95,7 @@ Run the following script to apply the HCO operator:
 $ curl https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/deploy/deploy.sh | bash
 ```
 
-## Developer Workflow
-If you want to make changes to the HCO, here's how you can test your changes
-through [OLM](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md#installing-olm).
+## Developer Workflow (using [OLM](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md#installing-olm))
 
 Build the HCO container using the Makefile recipes `make container-build` and
 `make container-push` with vars `IMAGE_REGISTRY`, `REGISTRY_NAMESPACE`, and `CONTAINER_TAG`
@@ -110,6 +108,10 @@ Build and push the HCO's registry image.
 export IMAGE_REGISTRY=<image_registry>
 export REGISTRY_NAMESPACE=<container_org>
 export CONTAINER_TAG=example
+export HCO_OPERATOR_IMAGE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-operator:$CONTAINER_TAG
+
+# Image to be used in CSV manifests
+HCO_OPERATOR_IMAGE=$HCO_OPERATOR_IMAGE CSV_VERSION=$CSV_VERSION make build-manifests
 
 # builds the registry image and pushes it to 
 # $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hco-container-registry:$CONTAINER_TAG
@@ -136,7 +138,7 @@ EOF
 Create a CatalogSource and a Subscription.
 
 > If OLM Operator and Catalog Operator run in a namespace different than `openshift-marketplace`, replace `openshift-marketplace` with it in the CatalogSource and Subscription below.
-
+> Use the container image created during `make bundleRegistry` as `.spec.image` in the CatalogSource.
 ```bash
 cat <<EOF | kubectl create -f -
 apiVersion: operators.coreos.com/v1alpha1
@@ -146,7 +148,7 @@ metadata:
   namespace: openshift-marketplace
 spec:
   sourceType: grpc
-  image: $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hco-container-registry:$CONTAINER_TAG
+  image: $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$CONTAINER_TAG
   displayName: KubeVirt HyperConverged
   publisher: Red Hat
 EOF
@@ -168,7 +170,8 @@ EOF
 ```
 
 Create an HCO CustomResource, which creates the KubeVirt CR, launching KubeVirt,
-CDI, Network-addons, VM import, TTO and SSP.
+CDI (Containerized Data Importer), Network-addons, VM import, TTO (Tekton Tasks Operator) and SSP (Scheduling, Scale 
+and Performance) Operator.
 ```bash
 kubectl create -f deploy/hco.cr.yaml -n kubevirt-hyperconverged
 ```
@@ -217,4 +220,4 @@ export IMAGE_REGISTRY=<container image repository, such as quay.io, default: qua
 export REGISTRY_NAMESPACE=<your org under IMAGE_REGISTRY, i.e your_name if you use quay.io/your_name, default: kubevirt>
 make cluster-sync
 ```
-`oc` binary should exists, and the cluster should be reachable via `oc` commands.
+`oc` binary should exist, and the cluster should be reachable via `oc` commands.
