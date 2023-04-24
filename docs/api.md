@@ -130,6 +130,7 @@ HyperConvergedFeatureGates is a set of optional feature gates to enable or disab
 | enableCommonBootImageImport | Opt-in to automatic delivery/updates of the common data import cron templates. There are two sources for the data import cron templates: hard coded list of common templates, and custom templates that can be added to the dataImportCronTemplates field. This feature gates only control the common templates. It is possible to use custom templates by adding them to the dataImportCronTemplates field. | bool | true | true |
 | deployTektonTaskResources | deploy resources (kubevirt tekton tasks and example pipelines) in Tekton tasks operator | bool | false | true |
 | nonRoot | Enables rootless virt-launcher. | bool | true | true |
+| disableMDevConfiguration | Disable mediated devices handling on KubeVirt | bool | false | true |
 
 [Back to TOC](#table-of-contents)
 

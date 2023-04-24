@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright 2022 Red Hat, Inc.
+ * Copyright 2023 Red Hat, Inc.
  *
  */
 
@@ -218,6 +218,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					"nonRoot": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Enables rootless virt-launcher.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"disableMDevConfiguration": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Disable mediated devices handling on KubeVirt",
 							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
