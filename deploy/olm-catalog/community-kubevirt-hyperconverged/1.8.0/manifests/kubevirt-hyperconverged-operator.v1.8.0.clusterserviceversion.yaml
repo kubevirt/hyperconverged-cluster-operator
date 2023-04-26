@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.8.0-unstable
-    createdAt: "2023-03-08 12:20:54"
+    createdAt: "2023-04-24 15:58:55"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     operatorframework.io/initialization-resource: '{"apiVersion":"hco.kubevirt.io/v1beta1","kind":"HyperConverged","metadata":{"annotations":{"deployOVS":"false"},"name":"kubevirt-hyperconverged","namespace":"kubevirt-hyperconverged"},"spec":{}}'
@@ -2660,7 +2660,7 @@ spec:
                 - name: HPPO_VERSION
                   value: v0.14.0
                 - name: KV_CONSOLE_PLUGIN_IMAGE
-                  value: quay.io/kubevirt-ui/kubevirt-plugin@sha256:253cb213f052faec5b41e56860133ebb7508715f6abe691b2609c9e36dec62ab
+                  value: quay.io/kubevirt-ui/kubevirt-plugin@sha256:d3a4ac69f99f3ba6f5cd3514e6b1fd31e0c5b303e0d8fe1cb2a783759537bf5a
                 image: quay.io/kubevirt/hyperconverged-cluster-operator:1.8.0-unstable
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
@@ -3801,7 +3801,7 @@ spec:
     name: hyperconverged-cluster-webhook
   - image: quay.io/kubevirt/kubemacpool@sha256:9dee66dba5655e2dc70561d4d882d7ee204735ad82f81b24d0b338c428cb918b
     name: kubemacpool
-  - image: quay.io/kubevirt-ui/kubevirt-plugin@sha256:253cb213f052faec5b41e56860133ebb7508715f6abe691b2609c9e36dec62ab
+  - image: quay.io/kubevirt-ui/kubevirt-plugin@sha256:d3a4ac69f99f3ba6f5cd3514e6b1fd31e0c5b303e0d8fe1cb2a783759537bf5a
     name: kubevirt-plugin
   - image: quay.io/kubevirt/libguestfs-tools@sha256:0b35e72b5a53aea24be0c1b1b2247e65e5c57ed342bca936491c544b5b8ff70a
     name: libguestfs-tools
