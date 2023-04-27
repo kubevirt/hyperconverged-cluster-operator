@@ -28,46 +28,6 @@ IMAGE_REGISTRY="${IMAGE_REGISTRY:-quay.io}"
 OPERATOR_GROUP_NAME=kubevirt-hyperconverged-group
 VERSION=1.10.0
 
-function create_catsrc() {
-  cat <<EOF | kubectl create -f -
-      apiVersion: operators.coreos.com/v1alpha1
-      kind: CatalogSource
-      metadata:
-        name: $CATSRC_NAME
-        namespace: $CATSRC_NAMESPACE
-      spec:
-        sourceType: grpc
-        image: $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$VERSION
-        displayName: KubeVirt HyperConverged
-        publisher: Red Hat
-EOF
-}
-
-function create_og() {
-    cat <<EOF | oc apply -f -
-    apiVersion: operators.coreos.com/v1
-    kind: OperatorGroup
-    metadata:
-        name: $OPERATOR_GROUP_NAME
-        namespace: $SUB_NAMESPACE
-EOF
-}
-
-function create_subscription() {
-  cat <<EOF | kubectl create -f -
-      apiVersion: operators.coreos.com/v1alpha1
-      kind: Subscription
-      metadata:
-          name: $SUB_NAME
-          namespace: $SUB_NAMESPACE
-      spec:
-          source: $CATSRC_NAME
-          sourceNamespace: openshift-marketplace
-          name: community-kubevirt-hyperconverged
-          channel: $VERSION
-EOF
-}
-
 if [ -z "${REGISTRY_NAMESPACE}" ]; then
   echo "Please set REGISTRY_NAMESPACE"
   echo "   REGISTRY_NAMESPACE=kubevirt make cluster-sync-olm"
@@ -109,10 +69,32 @@ fi
 catsrc=$(kubectl get -n $CATSRC_NAMESPACE catsrc $CATSRC_NAME 2>/dev/null)
 if [ -z "$catsrc" ]
 then
-  create_catsrc
+  cat <<EOF | kubectl create -f -
+        apiVersion: operators.coreos.com/v1alpha1
+        kind: CatalogSource
+        metadata:
+          name: $CATSRC_NAME
+          namespace: $CATSRC_NAMESPACE
+        spec:
+          sourceType: grpc
+          image: $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$VERSION
+          displayName: KubeVirt HyperConverged
+          publisher: Red Hat
+EOF
 else
   kubectl delete -n $CATSRC_NAMESPACE catsrc $CATSRC_NAME
-  create_catsrc
+  cat <<EOF | kubectl create -f -
+        apiVersion: operators.coreos.com/v1alpha1
+        kind: CatalogSource
+        metadata:
+          name: $CATSRC_NAME
+          namespace: $CATSRC_NAMESPACE
+        spec:
+          sourceType: grpc
+          image: $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$VERSION
+          displayName: KubeVirt HyperConverged
+          publisher: Red Hat
+EOF
 fi
 
 kubectl create namespace kubevirt-hyperconverged 2>/dev/null
@@ -120,17 +102,45 @@ kubectl create namespace kubevirt-hyperconverged 2>/dev/null
 og=$(kubectl get -n $SUB_NAMESPACE og $OPERATOR_GROUP_NAME)
 if [ -z "$og" ]
 then
-  create_og
+  cat <<EOF | oc apply -f -
+      apiVersion: operators.coreos.com/v1
+      kind: OperatorGroup
+      metadata:
+          name: $OPERATOR_GROUP_NAME
+          namespace: $SUB_NAMESPACE
+EOF
 fi
 
 sub=$(kubectl get -n $SUB_NAMESPACE subscription $SUB_NAME 2>/dev/null)
 if [ -z "$sub" ]
 then
   # create subscription since it doesn't exist
-  create_subscription
+  cat <<EOF | kubectl apply -f -
+        apiVersion: operators.coreos.com/v1alpha1
+        kind: Subscription
+        metadata:
+            name: $SUB_NAME
+            namespace: $SUB_NAMESPACE
+        spec:
+            source: $CATSRC_NAME
+            sourceNamespace: openshift-marketplace
+            name: community-kubevirt-hyperconverged
+            channel: $VERSION
+EOF
 else
   # delete the subscription and the CSV, and create sub again
   kubectl delete -n $SUB_NAMESPACE subscription $SUB_NAME
   kubectl delete -n $SUB_NAMESPACE csv $CSV_NAME
-  create_subscription
+  cat <<EOF | kubectl apply -f -
+        apiVersion: operators.coreos.com/v1alpha1
+        kind: Subscription
+        metadata:
+            name: $SUB_NAME
+            namespace: $SUB_NAMESPACE
+        spec:
+            source: $CATSRC_NAME
+            sourceNamespace: openshift-marketplace
+            name: community-kubevirt-hyperconverged
+            channel: $VERSION
+EOF
 fi

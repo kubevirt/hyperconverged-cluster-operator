@@ -44,13 +44,13 @@ lint:
 
 build: build-operator build-csv-merger build-webhook
 
-build-operator: $(SOURCES) ## Build HCO binary from source from source under cmd/hyperconverged-cluster-operator
+build-operator: $(SOURCES) ## Build HCO binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-operator ./cmd/hyperconverged-cluster-operator
 
 build-csv-merger: ## Build csv-merger binary from source under tools/csv-merger/csv-merger.go
 	go build -ldflags="${LDFLAGS}" -o _out/csv-merger tools/csv-merger/csv-merger.go
 
-build-webhook: $(SOURCES) ## Build HCO webhook binary from source under cmd/hyperconverged-cluster-webhook
+build-webhook: $(SOURCES) ## Build HCO webhook binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-webhook ./cmd/hyperconverged-cluster-webhook
 
 build-manifests: ## Generate CSVs and place them under deploy/ directory
