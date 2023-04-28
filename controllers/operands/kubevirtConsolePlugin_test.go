@@ -194,7 +194,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		})
 	})
 
-	Context("Kubevirt Plugin Deployment", func() {
+	Context("Kubevirt Console Plugin Deployment", func() {
 		var hco *hcov1beta1.HyperConverged
 		var req *common.HcoRequest
 
@@ -291,6 +291,59 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
+		})
+
+		Context("Node Placement", func() {
+			It("should add node placement if present in HCO CR", func() {
+				hco.Spec.Workloads.NodePlacement = commonTestUtils.NewNodePlacement()
+				hco.Spec.Infra.NodePlacement = commonTestUtils.NewOtherNodePlacement()
+
+				existingResource, err := NewKvUiPluginDeplymnt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
+				handler := newConsoleHandler(cl)
+				res := handler.ensure(req)
+				Expect(res.Created).To(BeFalse())
+				Expect(res.Updated).To(BeFalse())
+				Expect(res.Overwritten).To(BeFalse())
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Err).ToNot(HaveOccurred())
+
+				foundResource := &appsv1.Deployment{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+						foundResource),
+				).ToNot(HaveOccurred())
+
+				Expect(existingResource.Spec.Template.Spec.NodeSelector).ToNot(BeNil())
+				Expect(foundResource.Spec.Template.Spec.NodeSelector).ToNot(BeNil())
+				Expect(foundResource.Spec.Template.Spec.NodeSelector).To(Equal(existingResource.Spec.Template.Spec.NodeSelector))
+			})
+			It("should not add node placement if not present in HCO CR", func() {
+				existingResource, err := NewKvUiPluginDeplymnt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
+				handler := newConsoleHandler(cl)
+				res := handler.ensure(req)
+				Expect(res.Created).To(BeFalse())
+				Expect(res.Updated).To(BeFalse())
+				Expect(res.Overwritten).To(BeFalse())
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Err).ToNot(HaveOccurred())
+
+				foundResource := &appsv1.Deployment{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+						foundResource),
+				).ToNot(HaveOccurred())
+
+				Expect(existingResource.Spec.Template.Spec.NodeSelector).To(BeNil())
+				Expect(foundResource.Spec.Template.Spec.NodeSelector).To(BeNil())
+			})
 		})
 	})
 
