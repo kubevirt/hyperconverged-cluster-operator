@@ -9,7 +9,7 @@ require (
 	github.com/go-logr/logr v1.2.3
 	github.com/google/uuid v1.3.0
 	github.com/imdario/mergo v0.3.13
-	github.com/kubevirt/cluster-network-addons-operator v0.85.0
+	github.com/kubevirt/cluster-network-addons-operator v0.85.2
 	github.com/kubevirt/tekton-tasks-operator/api v0.5.0
 	github.com/onsi/ginkgo/v2 v2.7.0
 	github.com/onsi/gomega v1.26.0
