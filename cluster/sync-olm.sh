@@ -34,12 +34,7 @@ if [ -z "${REGISTRY_NAMESPACE}" ]; then
   exit 1
 fi
 
-make build-operator
-make build-webhook
-make container-build
-make container-push
-
-if [ -z "${CSV_VERSION}"]; then
+if [ -z "${CSV_VERSION}" ]; then
   CSV_VERSION=latest
 fi
 # Image to be used in CSV manifests
@@ -54,7 +49,6 @@ CATSRC_NAME="test-hco-catalogsource"
 # namespace to create subscription in
 SUB_NAMESPACE="kubevirt-hyperconverged"
 SUB_NAME="hco-operatorhub"
-CSV_NAME="kubevirt-hyperconverged-operator.v$VERSION"
 
 cluster=$(kubectl get ns openshift-operators 2>/dev/null)
 if [ -z "$cluster" ]
@@ -99,48 +93,24 @@ fi
 
 kubectl create namespace kubevirt-hyperconverged 2>/dev/null
 
-og=$(kubectl get -n $SUB_NAMESPACE og $OPERATOR_GROUP_NAME)
-if [ -z "$og" ]
-then
-  cat <<EOF | oc apply -f -
+cat <<EOF | oc apply -f -
       apiVersion: operators.coreos.com/v1
       kind: OperatorGroup
       metadata:
           name: $OPERATOR_GROUP_NAME
           namespace: $SUB_NAMESPACE
 EOF
-fi
 
-sub=$(kubectl get -n $SUB_NAMESPACE subscription $SUB_NAME 2>/dev/null)
-if [ -z "$sub" ]
-then
-  # create subscription since it doesn't exist
-  cat <<EOF | kubectl apply -f -
-        apiVersion: operators.coreos.com/v1alpha1
-        kind: Subscription
-        metadata:
-            name: $SUB_NAME
-            namespace: $SUB_NAMESPACE
-        spec:
-            source: $CATSRC_NAME
-            sourceNamespace: openshift-marketplace
-            name: community-kubevirt-hyperconverged
-            channel: $VERSION
+# create subscription since it doesn't exist
+cat <<EOF | kubectl apply -f -
+      apiVersion: operators.coreos.com/v1alpha1
+      kind: Subscription
+      metadata:
+          name: $SUB_NAME
+          namespace: $SUB_NAMESPACE
+      spec:
+          source: $CATSRC_NAME
+          sourceNamespace: openshift-marketplace
+          name: community-kubevirt-hyperconverged
+          channel: $VERSION
 EOF
-else
-  # delete the subscription and the CSV, and create sub again
-  kubectl delete -n $SUB_NAMESPACE subscription $SUB_NAME
-  kubectl delete -n $SUB_NAMESPACE csv $CSV_NAME
-  cat <<EOF | kubectl apply -f -
-        apiVersion: operators.coreos.com/v1alpha1
-        kind: Subscription
-        metadata:
-            name: $SUB_NAME
-            namespace: $SUB_NAMESPACE
-        spec:
-            source: $CATSRC_NAME
-            sourceNamespace: openshift-marketplace
-            name: community-kubevirt-hyperconverged
-            channel: $VERSION
-EOF
-fi

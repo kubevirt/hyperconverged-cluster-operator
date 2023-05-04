@@ -133,7 +133,7 @@ cluster-down:
 cluster-sync: ## Sync local code changes to a cluster without OLM
 	IMAGE_REGISTRY=$(IMAGE_REGISTRY) REGISTRY_NAMESPACE=$(REGISTRY_NAMESPACE) ./cluster/sync.sh
 
-cluster-sync-olm: ## Sync local code changes to a cluster with OLM enabled
+cluster-sync-olm: build-operator build-webhook container-build container-push ## Sync local code changes to a cluster with OLM enabled
 	IMAGE_REGISTRY=$(IMAGE_REGISTRY) REGISTRY_NAMESPACE=$(REGISTRY_NAMESPACE) IMAGE_TAG=$(IMAGE_TAG) ./cluster/sync-olm.sh
 
 cluster-clean:
@@ -280,4 +280,5 @@ lint-metrics:
 		validate-no-offensive-lang \
 		lint-metrics \
 		sanity \
-		goimport
+		goimport \
+		cluster-sync-olm
