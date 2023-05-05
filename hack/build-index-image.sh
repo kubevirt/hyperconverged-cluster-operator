@@ -22,6 +22,7 @@ BUNDLE_REGISTRY_IMAGE_NAME=${BUNDLE_REGISTRY_IMAGE_NAME:-hyperconverged-cluster-
 INDEX_REGISTRY_IMAGE_NAME=${INDEX_REGISTRY_IMAGE_NAME:-hyperconverged-cluster-index}
 OPM=${OPM:-opm}
 UNSTABLE=$2
+KUBEVIRT_INDEX_IMAGE="quay.io/kubevirt/hyperconverged-cluster-index:1.10.0-unstable"
 
 
 function create_index_image() {
@@ -56,12 +57,23 @@ function create_index_image() {
     ${OPM} index add --bundles "${BUNDLE_IMAGE_NAME}" ${INDEX_IMAGE_PARAM} --tag "${INDEX_IMAGE_NAME}" -u podman --mode semver
   else
     mkdir -p "${OUT_DIR}"
-    (cd "${OUT_DIR}" && create_file_based_catalog)
+    (cd "${OUT_DIR}" && pull_index_image && create_file_based_catalog)
   fi
 
   podman push "${INDEX_IMAGE_NAME}"
 
   mv ${PACKAGE_NAME}/${CURRENT_VERSION} ${PACKAGE_NAME}/${INITIAL_VERSION}
+}
+
+function pull_index_image() {
+    # pull kubevirt index image and tag it if we can't find the image $INDEX_IMAGE_NAME
+    podman pull $INDEX_IMAGE_NAME
+    if [ ! -z $? ]
+    then
+      podman pull $KUBEVIRT_INDEX_IMAGE
+      podman tag $KUBEVIRT_INDEX_IMAGE $INDEX_IMAGE_NAME
+      podman push $INDEX_IMAGE_NAME
+    fi
 }
 
 function create_file_based_catalog() {
