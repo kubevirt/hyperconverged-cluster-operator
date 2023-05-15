@@ -113,18 +113,36 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 
 	AfterAll(func() {
 		// undo the modification to HCO CR done in BeforeAll stage
-		originalHco.SetGroupVersionKind(schema.GroupVersionKind{
-			Group:   group,
-			Version: version,
-			Kind:    kind,
-		})
-		r := client.RestClient().Put().
+		modifiedHco := &hcov1beta1.HyperConverged{}
+
+		Expect(client.RestClient().Get().
 			Resource(hcoResource).
 			Name(name).
 			Namespace(flags.KubeVirtInstallNamespace).
 			AbsPath("/apis", hcov1beta1.SchemeGroupVersion.Group, hcov1beta1.SchemeGroupVersion.Version).
 			Timeout(10 * time.Second).
 			Body(originalHco).
+			Do(context.TODO()).
+			Into(modifiedHco),
+		).To(Succeed())
+
+		hco := &hcov1beta1.HyperConverged{}
+		modifiedHco.DeepCopyInto(hco)
+		hco.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   group,
+			Version: version,
+			Kind:    kind,
+		})
+		hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{}
+		hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{}
+
+		r := client.RestClient().Put().
+			Resource(hcoResource).
+			Name(name).
+			Namespace(flags.KubeVirtInstallNamespace).
+			AbsPath("/apis", hcov1beta1.SchemeGroupVersion.Group, hcov1beta1.SchemeGroupVersion.Version).
+			Timeout(10 * time.Second).
+			Body(hco).
 			Do(context.TODO())
 		Expect(r.Error()).ToNot(HaveOccurred())
 
