@@ -56,12 +56,9 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 		// Label all but first node with "node.kubernetes.io/hco-test-node-type=infra"
 		// We are doing this to remove dependency of this Describe block on a shell script that
 		// labels the nodes this way
-		for i := 0; i < totalNodes; i++ {
-			err = setHcoNodeTypeLabel(client, &nodes.Items[i], infra)
+		for _, node := range nodes.Items[:len(nodes.Items) - 1] {
+			err = setHcoNodeTypeLabel(client, &node, infra)
 			kvtutil.PanicOnError(err)
-			if i == totalNodes-1 {
-				break
-			}
 		}
 		// Label the last node with "node.kubernetes.io/hco-test-node-type=workloads"
 		err = setHcoNodeTypeLabel(client, &nodes.Items[totalNodes-1], workloads)
@@ -78,11 +75,17 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 			Into(originalHco),
 		).To(Succeed())
 		// modify the "infra" and "workloads" keys
-		infraVal := hcov1beta1.HyperConvergedConfig{NodePlacement: &sdkapi.NodePlacement{}}
-		workloadsVal := hcov1beta1.HyperConvergedConfig{NodePlacement: &sdkapi.NodePlacement{}}
-
-		infraVal.NodePlacement.NodeSelector = map[string]string{hcoLabel: infra}
-		workloadsVal.NodePlacement.NodeSelector = map[string]string{hcoLabel: workloads}
+		infraVal := hcov1beta1.HyperConvergedConfig{
+			NodePlacement: &sdkapi.NodePlacement{
+				NodeSelector: map[string]string{hcoLabel: infra},
+			},
+		}
+		
+		workloadsVal := hcov1beta1.HyperConvergedConfig{
+			NodePlacement: &sdkapi.NodePlacement{
+				NodeSelector: map[string]string{hcoLabel: workloads},
+			},
+		}
 
 		hco := &hcov1beta1.HyperConverged{}
 		originalHco.DeepCopyInto(hco)
