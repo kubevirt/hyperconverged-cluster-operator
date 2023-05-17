@@ -8,13 +8,14 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 	"kubevirt.io/kubevirt/tests/flags"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	k8smetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
+	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -27,60 +28,44 @@ import (
 )
 
 const (
-	nodePlacementSamplingSize = 20
-	hcoLabel                  = "node.kubernetes.io/hco-test-node-type"
-	infra                     = "infra"
-	workloads                 = "workloads"
-	group                     = "hco.kubevirt.io"
-	version                   = "v1beta1"
-	kind                      = "HyperConverged"
-	hcoResource               = "hyperconvergeds"
-	name                      = "kubevirt-hyperconverged"
+	hcoLabel    = "node.kubernetes.io/hco-test-node-type"
+	infra       = "infra"
+	workloads   = "workloads"
+	hcoResource = "hyperconvergeds"
 )
 
 var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:system]Node Placement", Ordered, func() {
 	var workloadsNode *v1.Node
-
+	ctx := context.TODO()
 	tests.FlagParse()
 	client, err := kubecli.GetKubevirtClient()
 	kvtutil.PanicOnError(err)
 
-	// store the existing HCO CR obtained in BeforeALl and revert in AfterAll stage
-	originalHco := &hcov1beta1.HyperConverged{}
-
 	BeforeAll(func() {
-		nodes, err := client.CoreV1().Nodes().List(context.TODO(), k8smetav1.ListOptions{LabelSelector: "node-role.kubernetes.io/worker"})
+		nodes, err := client.CoreV1().Nodes().List(context.TODO(), k8smetav1.ListOptions{LabelSelector: "node-role.kubernetes.io/control-plane!="})
 		kvtutil.PanicOnError(err)
-		totalNodes := len(nodes.Items)
-
+		if len(nodes.Items) < 2 {
+			Skip("Skipping Node Placement tests due to insufficient cluster nodes")
+		}
 		// Label all but first node with "node.kubernetes.io/hco-test-node-type=infra"
 		// We are doing this to remove dependency of this Describe block on a shell script that
 		// labels the nodes this way
-		for _, node := range nodes.Items[:len(nodes.Items) - 1] {
+		for _, node := range nodes.Items[:len(nodes.Items)-1] {
 			err = setHcoNodeTypeLabel(client, &node, infra)
 			kvtutil.PanicOnError(err)
 		}
 		// Label the last node with "node.kubernetes.io/hco-test-node-type=workloads"
-		err = setHcoNodeTypeLabel(client, &nodes.Items[totalNodes-1], workloads)
+		err = setHcoNodeTypeLabel(client, &nodes.Items[len(nodes.Items)-1], workloads)
 		kvtutil.PanicOnError(err)
 
-		Expect(client.RestClient().
-			Get().
-			Resource(hcoResource).
-			Name(name).
-			Namespace(flags.KubeVirtInstallNamespace).
-			AbsPath("/apis", hcov1beta1.SchemeGroupVersion.Group, hcov1beta1.SchemeGroupVersion.Version).
-			Timeout(10 * time.Second).
-			Do(context.TODO()).
-			Into(originalHco),
-		).To(Succeed())
+		// modify the HCO CR to use the labels we just applied to the nodes
+		originalHco := tests.GetHCO(ctx, client)
 		// modify the "infra" and "workloads" keys
 		infraVal := hcov1beta1.HyperConvergedConfig{
 			NodePlacement: &sdkapi.NodePlacement{
 				NodeSelector: map[string]string{hcoLabel: infra},
 			},
 		}
-		
 		workloadsVal := hcov1beta1.HyperConvergedConfig{
 			NodePlacement: &sdkapi.NodePlacement{
 				NodeSelector: map[string]string{hcoLabel: workloads},
@@ -93,22 +78,20 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 		hco.Spec.Infra = infraVal
 		hco.Spec.Workloads = workloadsVal
 		hco.SetGroupVersionKind(schema.GroupVersionKind{
-			Group:   group,
-			Version: version,
-			Kind:    kind,
+			Group:   util.APIVersionGroup,
+			Version: util.CurrentAPIVersion,
+			Kind:    util.HyperConvergedKind,
 		})
-		r := client.RestClient().Put().
-			Resource(hcoResource).
-			Name(name).
-			Namespace(flags.KubeVirtInstallNamespace).
-			AbsPath("/apis", hcov1beta1.SchemeGroupVersion.Group, hcov1beta1.SchemeGroupVersion.Version).
-			Timeout(10 * time.Second).
-			Body(hco).
-			Do(context.TODO())
-		Expect(r.Error()).ToNot(HaveOccurred())
+		tests.UpdateHCORetry(ctx, client, hco)
 
-		workloadsNode = &nodes.Items[0]
-		fmt.Fprintf(GinkgoWriter, "Found Workloads Node. Node name: %s; node labels:\n", workloadsNode.Name)
+		workloadsNodes, err := client.CoreV1().Nodes().List(context.TODO(), k8smetav1.ListOptions{
+			LabelSelector: "node.kubernetes.io/hco-test-node-type==workloads",
+		})
+		kvtutil.PanicOnError(err)
+		Expect(workloadsNodes.Items).To(HaveLen(1))
+
+		workloadsNode = &workloadsNodes.Items[0]
+		GinkgoWriter.Printf("Found Workloads Node. Node name: %s; node labels:\n", workloadsNode.Name)
 		w := json.NewEncoder(GinkgoWriter)
 		w.SetIndent("", "  ")
 		_ = w.Encode(workloadsNode.Labels)
@@ -116,50 +99,31 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 
 	AfterAll(func() {
 		// undo the modification to HCO CR done in BeforeAll stage
-		modifiedHco := &hcov1beta1.HyperConverged{}
-
-		Expect(client.RestClient().Get().
-			Resource(hcoResource).
-			Name(name).
-			Namespace(flags.KubeVirtInstallNamespace).
-			AbsPath("/apis", hcov1beta1.SchemeGroupVersion.Group, hcov1beta1.SchemeGroupVersion.Version).
-			Timeout(10 * time.Second).
-			Body(originalHco).
-			Do(context.TODO()).
-			Into(modifiedHco),
-		).To(Succeed())
+		modifiedHco := tests.GetHCO(ctx, client)
 
 		hco := &hcov1beta1.HyperConverged{}
 		modifiedHco.DeepCopyInto(hco)
 		hco.SetGroupVersionKind(schema.GroupVersionKind{
-			Group:   group,
-			Version: version,
-			Kind:    kind,
+			Group:   util.APIVersionGroup,
+			Version: util.CurrentAPIVersion,
+			Kind:    util.HyperConvergedKind,
 		})
 		hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{}
 		hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{}
 
-		r := client.RestClient().Put().
-			Resource(hcoResource).
-			Name(name).
-			Namespace(flags.KubeVirtInstallNamespace).
-			AbsPath("/apis", hcov1beta1.SchemeGroupVersion.Group, hcov1beta1.SchemeGroupVersion.Version).
-			Timeout(10 * time.Second).
-			Body(hco).
-			Do(context.TODO())
-		Expect(r.Error()).ToNot(HaveOccurred())
+		tests.UpdateHCORetry(ctx, client, hco)
 
 		// unlabel the nodes
 		nodes, err := client.CoreV1().Nodes().List(context.TODO(), k8smetav1.ListOptions{LabelSelector: hcoLabel})
 		kvtutil.PanicOnError(err)
-		for i := 0; i < len(nodes.Items); i++ {
-			node := &nodes.Items[i]
-			labels := node.GetLabels()
+		for _, node := range nodes.Items {
+			n := &node
+			labels := n.GetLabels()
 			delete(labels, hcoLabel)
-			node, err = client.CoreV1().Nodes().Get(context.TODO(), node.Name, k8smetav1.GetOptions{})
+			n, err = client.CoreV1().Nodes().Get(context.TODO(), n.Name, k8smetav1.GetOptions{})
 			kvtutil.PanicOnError(err)
-			node.SetLabels(labels)
-			_, err = client.CoreV1().Nodes().Update(context.TODO(), node, k8smetav1.UpdateOptions{})
+			n.SetLabels(labels)
+			_, err = client.CoreV1().Nodes().Update(context.TODO(), n, k8smetav1.UpdateOptions{})
 			kvtutil.PanicOnError(err)
 		}
 	})
@@ -188,14 +152,16 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 				delete(expectedWorkloadsPods, "secondary-dns")
 			}
 
-			By("Listing pods in infra node")
-			pods := listPodsInNode(client, workloadsNode.Name)
+			Eventually(func(g Gomega) {
+				By("Listing pods in infra node")
+				pods := listPodsInNode(g, client, workloadsNode.Name)
 
-			By("Collecting nodes of pods")
-			updatePodAssignments(pods, expectedWorkloadsPods, "workload", workloadsNode.Name)
+				By("Collecting nodes of pods")
+				updatePodAssignments(pods, expectedWorkloadsPods, "workload", workloadsNode.Name)
 
-			By("Verifying that all expected workload pods exist in workload nodes")
-			Expect(expectedWorkloadsPods).ToNot(ContainElement(false))
+				By("Verifying that all expected workload pods exist in workload nodes")
+				g.Expect(expectedWorkloadsPods).ToNot(ContainElement(false))
+			}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 		})
 	})
 
@@ -210,19 +176,21 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 				"virt-controller": false,
 			}
 
-			By("Listing infra nodes")
-			infraNodes := listInfraNodes(client)
+			Eventually(func(g Gomega) {
+				By("Listing infra nodes")
+				infraNodes := listInfraNodes(client)
 
-			for _, node := range infraNodes.Items {
-				By("Listing pods in " + node.Name)
-				pods := listPodsInNode(client, node.Name)
+				for _, node := range infraNodes.Items {
+					By("Listing pods in " + node.Name)
+					pods := listPodsInNode(g, client, node.Name)
 
-				By("Collecting nodes of pods")
-				updatePodAssignments(pods, expectedInfraPods, "infra", node.Name)
-			}
+					By("Collecting nodes of pods")
+					updatePodAssignments(pods, expectedInfraPods, "infra", node.Name)
+				}
 
-			By("Verifying that all expected infra pods exist in infra nodes")
-			Expect(expectedInfraPods).ToNot(ContainElement(false))
+				By("Verifying that all expected infra pods exist in infra nodes")
+				g.Expect(expectedInfraPods).ToNot(ContainElement(false))
+			}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 		})
 	})
 })
@@ -239,11 +207,11 @@ func updatePodAssignments(pods *v1.PodList, podMap map[string]bool, nodeType str
 	}
 }
 
-func listPodsInNode(client kubecli.KubevirtClient, nodeName string) *v1.PodList {
+func listPodsInNode(g Gomega, client kubecli.KubevirtClient, nodeName string) *v1.PodList {
 	pods, err := client.CoreV1().Pods(flags.KubeVirtInstallNamespace).List(context.TODO(), k8smetav1.ListOptions{
 		FieldSelector: fmt.Sprintf("spec.nodeName=%s", nodeName),
 	})
-	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	g.ExpectWithOffset(1, err).ToNot(HaveOccurred())
 
 	return pods
 }
