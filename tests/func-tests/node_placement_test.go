@@ -7,6 +7,7 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"kubevirt.io/kubevirt/tests/flags"
@@ -247,11 +248,22 @@ func getNetworkAddonsConfigs(client kubecli.KubevirtClient) *networkaddonsv1.Net
 func setHcoNodeTypeLabel(client kubecli.KubevirtClient, node *v1.Node, value string) error {
 	labels := node.GetLabels()
 	labels[hcoLabel] = value
-	node, err := client.CoreV1().Nodes().Get(context.TODO(), node.Name, k8smetav1.GetOptions{})
-	if err != nil {
-		return err
+	conflict := false
+	for {
+		node, err := client.CoreV1().Nodes().Get(context.TODO(), node.Name, k8smetav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		node.SetLabels(labels)
+		_, err = client.CoreV1().Nodes().Update(context.TODO(), node, k8smetav1.UpdateOptions{})
+		if errors.IsConflict(err) {
+			conflict = true
+		} else {
+			return err
+		}
+		if !conflict {
+			break
+		}
 	}
-	node.SetLabels(labels)
-	_, err = client.CoreV1().Nodes().Update(context.TODO(), node, k8smetav1.UpdateOptions{})
-	return err
+	return nil
 }
