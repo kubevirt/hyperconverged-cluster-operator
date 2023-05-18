@@ -8,13 +8,15 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"kubevirt.io/kubevirt/tests/flags"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	k8smetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
+
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 
 	. "github.com/onsi/ginkgo/v2"
