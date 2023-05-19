@@ -47,7 +47,6 @@ func SetupWebhookWithManager(ctx context.Context, mgr ctrl.Manager, isOpenshift 
 	hcov1beta1.SetValidatorWebhookHandler(whHandler)
 
 	nsMutator := mutator.NewNsMutator(mgr.GetClient(), operatorNsEnv)
-	virtLauncherMutator := mutator.NewVirtLauncherMutator(mgr.GetClient(), operatorNsEnv)
 
 	// Make sure the certificates are mounted, this should be handled by the OLM
 	webhookCertDir := GetWebhookCertDir()
@@ -71,7 +70,6 @@ func SetupWebhookWithManager(ctx context.Context, mgr ctrl.Manager, isOpenshift 
 	srv.KeyName = hcoutil.WebhookKeyName
 	srv.Port = hcoutil.WebhookPort
 	srv.Register(hcoutil.HCONSWebhookPath, &webhook.Admission{Handler: nsMutator})
-	srv.Register(hcoutil.HCOVirtLauncherWebhookPath, &webhook.Admission{Handler: virtLauncherMutator})
 
 	return bldr.Complete()
 }
