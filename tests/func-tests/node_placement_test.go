@@ -7,15 +7,9 @@ import (
 	"time"
 
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	"kubevirt.io/kubevirt/tests/flags"
-
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-
 	k8smetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
+	"kubevirt.io/kubevirt/tests/flags"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
@@ -31,10 +25,9 @@ import (
 )
 
 const (
-	hcoLabel    = "node.kubernetes.io/hco-test-node-type"
-	infra       = "infra"
-	workloads   = "workloads"
-	hcoResource = "hyperconvergeds"
+	hcoLabel  = "node.kubernetes.io/hco-test-node-type"
+	infra     = "infra"
+	workloads = "workloads"
 )
 
 var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:system]Node Placement", Ordered, func() {
@@ -43,6 +36,9 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 	tests.FlagParse()
 	client, err := kubecli.GetKubevirtClient()
 	kvtutil.PanicOnError(err)
+	hco := &hcov1beta1.HyperConverged{}
+	var originalInfraSpec hcov1beta1.HyperConvergedConfig
+	var originalWorkloadSpec hcov1beta1.HyperConvergedConfig
 
 	BeforeAll(func() {
 		nodes, err := client.CoreV1().Nodes().List(context.TODO(), k8smetav1.ListOptions{LabelSelector: "node-role.kubernetes.io/control-plane!="})
@@ -54,15 +50,25 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 		// We are doing this to remove dependency of this Describe block on a shell script that
 		// labels the nodes this way
 		for _, node := range nodes.Items[:len(nodes.Items)-1] {
-			err = setHcoNodeTypeLabel(client, &node, infra)
-			kvtutil.PanicOnError(err)
+			Eventually(func(g Gomega) bool {
+				done, err := setHcoNodeTypeLabel(client, &node, infra)
+				g.Expect(err).ToNot(HaveOccurred())
+				return done
+			}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 		}
 		// Label the last node with "node.kubernetes.io/hco-test-node-type=workloads"
-		err = setHcoNodeTypeLabel(client, &nodes.Items[len(nodes.Items)-1], workloads)
-		kvtutil.PanicOnError(err)
+		Eventually(func(g Gomega) bool {
+			done, err := setHcoNodeTypeLabel(client, &nodes.Items[len(nodes.Items)-1], workloads)
+			g.Expect(err).ToNot(HaveOccurred())
+			return done
+		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 
 		// modify the HCO CR to use the labels we just applied to the nodes
 		originalHco := tests.GetHCO(ctx, client)
+		originalHco.DeepCopyInto(hco)
+		originalInfraSpec = originalHco.Spec.Infra
+		originalWorkloadSpec = originalHco.Spec.Workloads
+
 		// modify the "infra" and "workloads" keys
 		infraVal := hcov1beta1.HyperConvergedConfig{
 			NodePlacement: &sdkapi.NodePlacement{
@@ -75,16 +81,9 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 			},
 		}
 
-		hco := &hcov1beta1.HyperConverged{}
-		originalHco.DeepCopyInto(hco)
-
 		hco.Spec.Infra = infraVal
 		hco.Spec.Workloads = workloadsVal
-		hco.SetGroupVersionKind(schema.GroupVersionKind{
-			Group:   util.APIVersionGroup,
-			Version: util.CurrentAPIVersion,
-			Kind:    util.HyperConvergedKind,
-		})
+
 		tests.UpdateHCORetry(ctx, client, hco)
 
 		workloadsNodes, err := client.CoreV1().Nodes().List(context.TODO(), k8smetav1.ListOptions{
@@ -104,31 +103,29 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 		// undo the modification to HCO CR done in BeforeAll stage
 		modifiedHco := tests.GetHCO(ctx, client)
 
-		hco := &hcov1beta1.HyperConverged{}
 		modifiedHco.DeepCopyInto(hco)
-		hco.SetGroupVersionKind(schema.GroupVersionKind{
-			Group:   util.APIVersionGroup,
-			Version: util.CurrentAPIVersion,
-			Kind:    util.HyperConvergedKind,
-		})
-		hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{}
-		hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{}
+		hco.Spec.Infra = originalInfraSpec
+		hco.Spec.Workloads = originalWorkloadSpec
 
 		tests.UpdateHCORetry(ctx, client, hco)
 
 		// unlabel the nodes
 		nodes, err := client.CoreV1().Nodes().List(context.TODO(), k8smetav1.ListOptions{LabelSelector: hcoLabel})
 		kvtutil.PanicOnError(err)
-		for _, node := range nodes.Items {
-			n := &node
-			labels := n.GetLabels()
-			delete(labels, hcoLabel)
-			n, err = client.CoreV1().Nodes().Get(context.TODO(), n.Name, k8smetav1.GetOptions{})
-			kvtutil.PanicOnError(err)
-			n.SetLabels(labels)
-			_, err = client.CoreV1().Nodes().Update(context.TODO(), n, k8smetav1.UpdateOptions{})
-			kvtutil.PanicOnError(err)
-		}
+		// wrap unlabelling in Eventually because for resourceVersion errors
+		Eventually(func(g Gomega) bool {
+			for _, node := range nodes.Items {
+				n := &node
+				labels := n.GetLabels()
+				delete(labels, hcoLabel)
+				n, err = client.CoreV1().Nodes().Get(context.TODO(), n.Name, k8smetav1.GetOptions{})
+				g.Expect(err).ToNot(HaveOccurred())
+				n.SetLabels(labels)
+				_, err = client.CoreV1().Nodes().Update(context.TODO(), n, k8smetav1.UpdateOptions{})
+				g.Expect(err).ToNot(HaveOccurred())
+			}
+			return true
+		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 	})
 
 	BeforeEach(func() {
@@ -245,25 +242,17 @@ func getNetworkAddonsConfigs(client kubecli.KubevirtClient) *networkaddonsv1.Net
 	return &cnaoCR
 }
 
-func setHcoNodeTypeLabel(client kubecli.KubevirtClient, node *v1.Node, value string) error {
+func setHcoNodeTypeLabel(client kubecli.KubevirtClient, node *v1.Node, value string) (bool, error) {
 	labels := node.GetLabels()
 	labels[hcoLabel] = value
-	conflict := false
-	for {
-		node, err := client.CoreV1().Nodes().Get(context.TODO(), node.Name, k8smetav1.GetOptions{})
-		if err != nil {
-			return err
-		}
-		node.SetLabels(labels)
-		_, err = client.CoreV1().Nodes().Update(context.TODO(), node, k8smetav1.UpdateOptions{})
-		if errors.IsConflict(err) {
-			conflict = true
-		} else {
-			return err
-		}
-		if !conflict {
-			break
-		}
+	node, err := client.CoreV1().Nodes().Get(context.TODO(), node.Name, k8smetav1.GetOptions{})
+	if err != nil {
+		return false, err
 	}
-	return nil
+	node.SetLabels(labels)
+	_, err = client.CoreV1().Nodes().Update(context.TODO(), node, k8smetav1.UpdateOptions{})
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
