@@ -331,7 +331,7 @@ type HyperConvergedFeatureGates struct {
 	// +default=true
 	EnableCommonBootImageImport *bool `json:"enableCommonBootImageImport,omitempty"`
 
-	// deploy resources (kubevirt tekton tasks and example pipelines) in Tekton tasks operator
+	// deploy resources (kubevirt tekton tasks and example pipelines) in SSP operator
 	// +optional
 	// +kubebuilder:default=false
 	// +default=false
