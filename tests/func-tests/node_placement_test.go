@@ -9,6 +9,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	k8smetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
+
 	"kubevirt.io/kubevirt/tests/flags"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
@@ -49,18 +50,18 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 		// Label all but first node with "node.kubernetes.io/hco-test-node-type=infra"
 		// We are doing this to remove dependency of this Describe block on a shell script that
 		// labels the nodes this way
-		for _, node := range nodes.Items[:len(nodes.Items)-1] {
-			Eventually(func(g Gomega) bool {
+		Eventually(func(g Gomega) {
+			for _, node := range nodes.Items[:len(nodes.Items)-1] {
 				done, err := setHcoNodeTypeLabel(client, &node, infra)
 				g.Expect(err).ToNot(HaveOccurred())
-				return done
-			}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
-		}
+				g.Expect(done).To(BeTrue())
+			}
+		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 		// Label the last node with "node.kubernetes.io/hco-test-node-type=workloads"
-		Eventually(func(g Gomega) bool {
+		Eventually(func(g Gomega) {
 			done, err := setHcoNodeTypeLabel(client, &nodes.Items[len(nodes.Items)-1], workloads)
 			g.Expect(err).ToNot(HaveOccurred())
-			return done
+			g.Expect(done).To(BeTrue())
 		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 
 		// modify the HCO CR to use the labels we just applied to the nodes
@@ -113,7 +114,7 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 		nodes, err := client.CoreV1().Nodes().List(context.TODO(), k8smetav1.ListOptions{LabelSelector: hcoLabel})
 		kvtutil.PanicOnError(err)
 		// wrap unlabelling in Eventually because for resourceVersion errors
-		Eventually(func(g Gomega) bool {
+		Eventually(func(g Gomega) {
 			for _, node := range nodes.Items {
 				n := &node
 				labels := n.GetLabels()
@@ -124,7 +125,6 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 				_, err = client.CoreV1().Nodes().Update(context.TODO(), n, k8smetav1.UpdateOptions{})
 				g.Expect(err).ToNot(HaveOccurred())
 			}
-			return true
 		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 	})
 
