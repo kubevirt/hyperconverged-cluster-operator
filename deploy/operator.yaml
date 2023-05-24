@@ -60,7 +60,7 @@ spec:
         - name: NETWORK_ADDONS_VERSION
           value: v0.85.2
         - name: SSP_VERSION
-          value: v0.17.0
+          value: v0.17.1
         - name: TTO_VERSION
           value: v0.5.0
         - name: HPPO_VERSION
@@ -509,13 +509,13 @@ spec:
         env:
         - name: KVM_INFO_IMAGE
         - name: VALIDATOR_IMAGE
-          value: quay.io/kubevirt/kubevirt-template-validator:v0.17.0
+          value: quay.io/kubevirt/kubevirt-template-validator:v0.17.1
         - name: VIRT_LAUNCHER_IMAGE
         - name: NODE_LABELLER_IMAGE
         - name: CPU_PLUGIN_IMAGE
         - name: OPERATOR_VERSION
-          value: v0.17.0
-        image: quay.io/kubevirt/ssp-operator@sha256:e93f2b49f2189ee60e17a756942b9847cc9d09602f23bc25ab95d5fe332e0256
+          value: v0.17.1
+        image: quay.io/kubevirt/ssp-operator@sha256:3181775f6c149362d3733433f5e2cd1b7bf406ff3ded619bfc626d05796ef705
         livenessProbe:
           httpGet:
             path: /healthz
