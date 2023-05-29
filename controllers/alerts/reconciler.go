@@ -38,6 +38,9 @@ type MonitoringReconciler struct {
 
 func NewMonitoringReconciler(ci hcoutil.ClusterInfo, cl client.Client, ee hcoutil.EventEmitter, scheme *runtime.Scheme) *MonitoringReconciler {
 	deployment := ci.GetDeployment()
+	if deployment == nil {
+		return nil
+	}
 	namespace := deployment.Namespace
 	owner := getDeploymentReference(deployment)
 
