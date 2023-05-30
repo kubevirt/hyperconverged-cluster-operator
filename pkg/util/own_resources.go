@@ -59,14 +59,14 @@ func findOwnResources(ctx context.Context, cl client.Reader, logger logr.Logger)
 	}
 
 	operatorNs, err := GetOperatorNamespace(logger)
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrRunLocal) {
 		logger.Error(err, "Can't get operator namespace")
 		return
 	}
 
 	or.deployment, err = getDeploymentFromPod(or.pod, cl, operatorNs, logger)
 	if err != nil {
-		logger.Error(err, "Can't the deployment")
+		logger.Error(err, "Can't get the deployment")
 		return
 	}
 	if GetClusterInfo().IsOpenshift() {
@@ -117,13 +117,22 @@ func getPod(ctx context.Context, c client.Reader, logger logr.Logger) (*corev1.P
 }
 
 func getDeploymentFromPod(pod *corev1.Pod, c client.Reader, operatorNs string, logger logr.Logger) (*appsv1.Deployment, error) {
+	deployment := &appsv1.Deployment{}
 	if pod == nil {
-		return nil, nil
+		// we might be running locally
+		if GetClusterInfo().IsRunningLocally() {
+			err := c.Get(context.TODO(), client.ObjectKey{
+				Name:      "hyperconverged-cluster-operator",
+				Namespace: "kubevirt-hyperconverged",
+			}, deployment)
+			if err != nil {
+				return nil, err
+			}
+			return deployment, nil
+		} else {
+			return nil, nil
+		}
 	}
-	//operatorNs, err := GetOperatorNamespace(logger)
-	//if err != nil {
-	//	return nil, err
-	//}
 	rsReference := metav1.GetControllerOf(pod)
 	if rsReference == nil || rsReference.Kind != "ReplicaSet" {
 		err := errors.New("failed getting HCO replicaSet reference")
@@ -146,7 +155,6 @@ func getDeploymentFromPod(pod *corev1.Pod, c client.Reader, operatorNs string, l
 		logger.Error(err, "Failed getting HCO deployment reference")
 		return nil, err
 	}
-	deployment := &appsv1.Deployment{}
 	err = c.Get(context.TODO(), client.ObjectKey{
 		Namespace: operatorNs,
 		Name:      dReference.Name,
