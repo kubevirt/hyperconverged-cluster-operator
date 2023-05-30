@@ -2619,7 +2619,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					toBeRemovedRelatedObjects := []corev1.ObjectReference{
 						{
-							APIVersion:      "v1alpha1",
+							APIVersion:      "tektontasks.kubevirt.io/v1alpha1",
 							Kind:            "TektonTasks",
 							Name:            "tto-kubevirt-hyperconverged",
 							Namespace:       "kubevirt-hyperconverged",

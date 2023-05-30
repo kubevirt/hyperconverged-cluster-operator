@@ -1287,7 +1287,7 @@ func (r *ReconcileHyperConverged) removeLeftover(req *common.HcoRequest, knownHc
 		return false, err
 	}
 	if affectedRange(knownHcoSV) {
-		removeRelatedObject(req, p.GroupVersionKind, p.ObjectKey)
+		removeRelatedObject(req, r.client, p.GroupVersionKind, p.ObjectKey)
 		u := &unstructured.Unstructured{}
 		u.SetGroupVersionKind(p.GroupVersionKind)
 		gerr := r.client.Get(req.Ctx, p.ObjectKey, u)
@@ -1428,15 +1428,26 @@ func removeRelatedQSObjects(req *common.HcoRequest, requiredNames []string) {
 
 }
 
-func removeRelatedObject(req *common.HcoRequest, gvk schema.GroupVersionKind, objectKey types.NamespacedName) {
+func removeRelatedObject(req *common.HcoRequest, cl client.Client, gvk schema.GroupVersionKind, objectKey types.NamespacedName) {
 	refs := make([]corev1.ObjectReference, 0, len(req.Instance.Status.RelatedObjects))
 	foundRO := false
+
+	crdGVK := schema.GroupVersionKind{Group: "apiextensions.k8s.io", Version: "v1", Kind: "CustomResourceDefinition"}
 
 	for _, obj := range req.Instance.Status.RelatedObjects {
 		apiVersion, kind := gvk.ToAPIVersionAndKind()
 		if obj.APIVersion == apiVersion && obj.Kind == kind && obj.Namespace == objectKey.Namespace && obj.Name == objectKey.Name {
 			foundRO = true
+			req.Logger.Info("Removed relatedObject entry for", "gvk", gvk, "objectKey", objectKey)
 			continue
+		}
+		if reflect.DeepEqual(gvk, crdGVK) {
+			mapping, err := cl.RESTMapper().RESTMapping(obj.GroupVersionKind().GroupKind(), obj.GroupVersionKind().Version)
+			if err == nil && mapping != nil && mapping.Resource.GroupResource().String() == objectKey.Name {
+				foundRO = true
+				req.Logger.Info("Removed relatedObject on CRD removal for", "gvk", gvk, "objectKey", objectKey)
+				continue
+			}
 		}
 		refs = append(refs, obj)
 	}
@@ -1444,7 +1455,6 @@ func removeRelatedObject(req *common.HcoRequest, gvk schema.GroupVersionKind, ob
 	if foundRO {
 		req.Instance.Status.RelatedObjects = refs
 		req.StatusDirty = true
-		req.Logger.Info("Removed relatedObject entry for", "gvk", gvk, "objectKey", objectKey)
 	}
 
 }
