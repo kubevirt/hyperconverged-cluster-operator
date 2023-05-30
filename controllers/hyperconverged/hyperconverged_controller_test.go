@@ -2600,6 +2600,80 @@ var _ = Describe("HyperconvergedController", func() {
 					Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(cmNotToBeRemoved2), foundCM)).To(Succeed())
 				})
 
+				It("should remove TTO CRD upgrading from < 1.10.0", func() {
+					crdToBeRemoved := &apiextensionsv1.CustomResourceDefinition{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "tektontasks.tektontasks.kubevirt.io",
+						},
+					}
+
+					cmNotToBeRemoved := &corev1.ConfigMap{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "other",
+							Namespace: namespace,
+							Labels: map[string]string{
+								hcoutil.AppLabel: expected.hco.Name,
+							},
+						},
+					}
+
+					toBeRemovedRelatedObjects := []corev1.ObjectReference{
+						{
+							APIVersion:      "v1alpha1",
+							Kind:            "TektonTasks",
+							Name:            "tto-kubevirt-hyperconverged",
+							Namespace:       "kubevirt-hyperconverged",
+							ResourceVersion: "999",
+						},
+					}
+					otherRelatedObjects := []corev1.ObjectReference{
+						{
+							APIVersion:      "v1",
+							Kind:            "ConfigMap",
+							Name:            cmNotToBeRemoved.Name,
+							Namespace:       cmNotToBeRemoved.Namespace,
+							ResourceVersion: "999",
+						},
+					}
+
+					UpdateVersion(&expected.hco.Status, hcoVersionName, "1.9.0")
+
+					for _, objRef := range toBeRemovedRelatedObjects {
+						Expect(v1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
+					}
+					for _, objRef := range otherRelatedObjects {
+						Expect(v1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
+					}
+
+					resources := append(expected.toArray(), crdToBeRemoved, cmNotToBeRemoved)
+
+					cl := commontestutils.InitClient(resources)
+					foundResource, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+					Expect(requeue).To(BeTrue())
+					checkAvailability(foundResource, metav1.ConditionTrue)
+
+					foundResource, _, requeue = doReconcile(cl, expected.hco, reconciler)
+					Expect(requeue).To(BeFalse())
+					checkAvailability(foundResource, metav1.ConditionTrue)
+
+					foundCRD := &apiextensionsv1.CustomResourceDefinition{}
+
+					err := cl.Get(context.TODO(), client.ObjectKeyFromObject(crdToBeRemoved), foundCRD)
+					Expect(err).To(HaveOccurred())
+					Expect(apierrors.IsNotFound(err)).To(BeTrue())
+
+					foundCM := &corev1.ConfigMap{}
+					Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(cmNotToBeRemoved), foundCM)).To(Succeed())
+
+					for _, objRef := range toBeRemovedRelatedObjects {
+						Expect(foundResource.Status.RelatedObjects).ToNot(ContainElement(objRef))
+					}
+					for _, objRef := range otherRelatedObjects {
+						Expect(foundResource.Status.RelatedObjects).To(ContainElement(objRef))
+					}
+
+				})
+
 			})
 		})
 
