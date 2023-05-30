@@ -240,6 +240,7 @@ func getCacheOption(operatorNamespace string) cache.Options {
 				Label: labelSelector,
 				Field: namespaceSelector,
 			},
+			&apiextensionsv1.CustomResourceDefinition{}: {},
 		},
 	}
 }
