@@ -2147,6 +2147,11 @@ func (in *KubeVirtConfiguration) DeepCopyInto(out *KubeVirtConfiguration) {
 		*out = new(EvictionStrategy)
 		**out = **in
 	}
+	if in.AdditionalGuestMemoryOverheadRatio != nil {
+		in, out := &in.AdditionalGuestMemoryOverheadRatio, &out.AdditionalGuestMemoryOverheadRatio
+		*out = new(string)
+		**out = **in
+	}
 	if in.SupportedGuestAgentVersions != nil {
 		in, out := &in.SupportedGuestAgentVersions, &out.SupportedGuestAgentVersions
 		*out = make([]string, len(*in))
@@ -2474,6 +2479,11 @@ func (in *MediatedDevicesConfiguration) DeepCopyInto(out *MediatedDevicesConfigu
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.MediatedDeviceTypes != nil {
+		in, out := &in.MediatedDeviceTypes, &out.MediatedDeviceTypes
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.NodeMediatedDeviceTypes != nil {
 		in, out := &in.NodeMediatedDeviceTypes, &out.NodeMediatedDeviceTypes
 		*out = make([]NodeMediatedDeviceTypesConfig, len(*in))
@@ -2780,6 +2790,11 @@ func (in *NodeMediatedDeviceTypesConfig) DeepCopyInto(out *NodeMediatedDeviceTyp
 	}
 	if in.MediatedDevicesTypes != nil {
 		in, out := &in.MediatedDevicesTypes, &out.MediatedDevicesTypes
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.MediatedDeviceTypes != nil {
+		in, out := &in.MediatedDeviceTypes, &out.MediatedDeviceTypes
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}

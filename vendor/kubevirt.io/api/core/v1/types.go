@@ -261,6 +261,10 @@ type VirtualMachineInstanceStatus struct {
 	// RuntimeUser is used to determine what user will be used in launcher
 	// +optional
 	RuntimeUser uint64 `json:"runtimeUser"`
+
+	// SELinuxContext is the actual SELinux context of the virt-launcher pod
+	// +optional
+	SelinuxContext string `json:"selinuxContext,omitempty"`
 }
 
 // PersistentVolumeClaimInfo contains the relavant information virt-handler needs cached about a PVC
@@ -2189,6 +2193,14 @@ type KubeVirtConfiguration struct {
 	// field is set it overrides the cluster level one.
 	EvictionStrategy *EvictionStrategy `json:"evictionStrategy,omitempty"`
 
+	// AdditionalGuestMemoryOverheadRatio can be used to increase the virtualization infrastructure
+	// overhead. This is useful, since the calculation of this overhead is not accurate and cannot
+	// be entirely known in advance. The ratio that is being set determines by which factor to increase
+	// the overhead calculated by Kubevirt. A higher ratio means that the VMs would be less compromised
+	// by node pressures, but would mean that fewer VMs could be scheduled to a node.
+	// If not set, the default is 1.
+	AdditionalGuestMemoryOverheadRatio *string `json:"additionalGuestMemoryOverheadRatio,omitempty"`
+
 	// deprecated
 	SupportedGuestAgentVersions    []string                          `json:"supportedGuestAgentVersions,omitempty"`
 	MemBalloonStatsPeriod          *uint32                           `json:"memBalloonStatsPeriod,omitempty"`
@@ -2374,8 +2386,13 @@ type MediatedHostDevice struct {
 
 // MediatedDevicesConfiguration holds information about MDEV types to be defined, if available
 type MediatedDevicesConfiguration struct {
+	// Deprecated. Use mediatedDeviceTypes instead.
+	// +optional
 	// +listType=atomic
 	MediatedDevicesTypes []string `json:"mediatedDevicesTypes,omitempty"`
+	// +optional
+	// +listType=atomic
+	MediatedDeviceTypes []string `json:"mediatedDeviceTypes,omitempty"`
 	// +optional
 	// +listType=atomic
 	NodeMediatedDeviceTypes []NodeMediatedDeviceTypesConfig `json:"nodeMediatedDeviceTypes,omitempty"`
@@ -2388,8 +2405,13 @@ type NodeMediatedDeviceTypesConfig struct {
 	// Selector which must match a node's labels for the vmi to be scheduled on that node.
 	// More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
 	NodeSelector map[string]string `json:"nodeSelector"`
+	// Deprecated. Use mediatedDeviceTypes instead.
+	// +optional
 	// +listType=atomic
-	MediatedDevicesTypes []string `json:"mediatedDevicesTypes"`
+	MediatedDevicesTypes []string `json:"mediatedDevicesTypes,omitempty"`
+	// +optional
+	// +listType=atomic
+	MediatedDeviceTypes []string `json:"mediatedDeviceTypes"`
 }
 
 // NetworkConfiguration holds network options
