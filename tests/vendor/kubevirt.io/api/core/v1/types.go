@@ -1178,6 +1178,8 @@ type VirtualMachineInstanceMigrationStatus struct {
 	// +listType=atomic
 	// +optional
 	PhaseTransitionTimestamps []VirtualMachineInstanceMigrationPhaseTransitionTimestamp `json:"phaseTransitionTimestamps,omitempty"`
+	// Represents the status of a live migration
+	MigrationState *VirtualMachineInstanceMigrationState `json:"migrationState,omitempty"`
 }
 
 // VirtualMachineInstanceMigrationPhase is a label for the condition of a VirtualMachineInstanceMigration at the current time.
@@ -1546,9 +1548,6 @@ const (
 	// IONative - Kernel native I/O tasks (AIO) offer a better performance but can block the VM if the file is not fully
 	// allocated so this method recommended only when the backing file/disk/etc is fully preallocated.
 	IONative DriverIO = "native"
-	// IODefault - Fallback to the default value from the kernel. With recent Kernel versions (for example RHEL-7) the
-	// default is AIO.
-	IODefault DriverIO = "default"
 )
 
 // Handler defines a specific action that should be taken
@@ -2210,6 +2209,14 @@ type KubeVirtConfiguration struct {
 	// field is set it overrides the cluster level one.
 	EvictionStrategy *EvictionStrategy `json:"evictionStrategy,omitempty"`
 
+	// AdditionalGuestMemoryOverheadRatio can be used to increase the virtualization infrastructure
+	// overhead. This is useful, since the calculation of this overhead is not accurate and cannot
+	// be entirely known in advance. The ratio that is being set determines by which factor to increase
+	// the overhead calculated by Kubevirt. A higher ratio means that the VMs would be less compromised
+	// by node pressures, but would mean that fewer VMs could be scheduled to a node.
+	// If not set, the default is 1.
+	AdditionalGuestMemoryOverheadRatio *string `json:"additionalGuestMemoryOverheadRatio,omitempty"`
+
 	// deprecated
 	SupportedGuestAgentVersions    []string                          `json:"supportedGuestAgentVersions,omitempty"`
 	MemBalloonStatsPeriod          *uint32                           `json:"memBalloonStatsPeriod,omitempty"`
@@ -2223,6 +2230,7 @@ type KubeVirtConfiguration struct {
 	ControllerConfiguration        *ReloadableComponentConfiguration `json:"controllerConfiguration,omitempty"`
 	HandlerConfiguration           *ReloadableComponentConfiguration `json:"handlerConfiguration,omitempty"`
 	TLSConfiguration               *TLSConfiguration                 `json:"tlsConfiguration,omitempty"`
+	SeccompConfiguration           *SeccompConfiguration             `json:"seccompConfiguration,omitempty"`
 }
 
 type SMBiosConfiguration struct {
@@ -2245,6 +2253,22 @@ const (
 	// VersionTLS13 is version 1.3 of the TLS security protocol.
 	VersionTLS13 TLSProtocolVersion = "VersionTLS13"
 )
+
+type CustomProfile struct {
+	LocalhostProfile      *string `json:"localhostProfile,omitempty"`
+	RuntimeDefaultProfile bool    `json:"runtimeDefaultProfile,omitempty"`
+}
+
+type VirtualMachineInstanceProfile struct {
+	// CustomProfile allows to request arbitrary profile for virt-launcher
+	CustomProfile *CustomProfile `json:"customProfile,omitempty"`
+}
+
+// SeccompConfiguration holds Seccomp configuration for Kubevirt components
+type SeccompConfiguration struct {
+	// VirtualMachineInstanceProfile defines what profile should be used with virt-launcher. Defaults to none
+	VirtualMachineInstanceProfile *VirtualMachineInstanceProfile `json:"virtualMachineInstanceProfile,omitempty"`
+}
 
 // TLSConfiguration holds TLS options
 type TLSConfiguration struct {
@@ -2449,6 +2473,11 @@ type ClusterProfilerRequest struct {
 	PageSize      int64  `json:"pageSize"`
 }
 
+type Matcher interface {
+	GetName() string
+	GetRevisionName() string
+}
+
 // InstancetypeMatcher references a instancetype that is used to fill fields in the VMI template.
 type InstancetypeMatcher struct {
 	// Name is the name of the VirtualMachineInstancetype or VirtualMachineClusterInstancetype
@@ -2478,6 +2507,14 @@ type InstancetypeMatcher struct {
 	InferFromVolume string `json:"inferFromVolume,omitempty"`
 }
 
+func (i InstancetypeMatcher) GetName() string {
+	return i.Name
+}
+
+func (i InstancetypeMatcher) GetRevisionName() string {
+	return i.RevisionName
+}
+
 // PreferenceMatcher references a set of preference that is used to fill fields in the VMI template.
 type PreferenceMatcher struct {
 	// Name is the name of the VirtualMachinePreference or VirtualMachineClusterPreference
@@ -2505,4 +2542,12 @@ type PreferenceMatcher struct {
 	//
 	// +optional
 	InferFromVolume string `json:"inferFromVolume,omitempty"`
+}
+
+func (p PreferenceMatcher) GetName() string {
+	return p.Name
+}
+
+func (p PreferenceMatcher) GetRevisionName() string {
+	return p.RevisionName
 }
