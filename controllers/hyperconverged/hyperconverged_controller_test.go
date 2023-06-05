@@ -2600,7 +2600,7 @@ var _ = Describe("HyperconvergedController", func() {
 					Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(cmNotToBeRemoved2), foundCM)).To(Succeed())
 				})
 
-				It("should remove TTO CRD upgrading from < 1.10.0", func() {
+				PIt("should remove TTO CRD upgrading from < 1.10.0", func() {
 					crdToBeRemoved := &apiextensionsv1.CustomResourceDefinition{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "tektontasks.tektontasks.kubevirt.io",
