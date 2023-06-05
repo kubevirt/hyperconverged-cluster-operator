@@ -2600,7 +2600,7 @@ var _ = Describe("HyperconvergedController", func() {
 					Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(cmNotToBeRemoved2), foundCM)).To(Succeed())
 				})
 
-				PIt("should remove TTO CRD upgrading from < 1.10.0", func() {
+				It("should remove TTO CRD upgrading from < 1.10.0", func() {
 					crdToBeRemoved := &apiextensionsv1.CustomResourceDefinition{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "tektontasks.tektontasks.kubevirt.io",
@@ -2648,6 +2648,15 @@ var _ = Describe("HyperconvergedController", func() {
 					resources := append(expected.toArray(), crdToBeRemoved, cmNotToBeRemoved)
 
 					cl := commontestutils.InitClient(resources)
+					restMapper := cl.RESTMapper()
+					Expect(restMapper).To(Not(BeNil()))
+					dRestMapper := restMapper.(*apimetav1.DefaultRESTMapper)
+					dRestMapper.AddSpecific(
+						schema.GroupVersionKind{Group: "tektontasks.kubevirt.io", Version: "v1alpha1", Kind: "TektonTasks"},
+						schema.GroupVersionResource{Group: "tektontasks.kubevirt.io", Version: "v1alpha1", Resource: "tektontasks"},
+						schema.GroupVersionResource{Group: "tektontasks.kubevirt.io", Version: "v1alpha1", Resource: "tektontask"},
+						apimetav1.RESTScopeNamespace)
+
 					foundResource, reconciler, requeue := doReconcile(cl, expected.hco, nil)
 					Expect(requeue).To(BeTrue())
 					checkAvailability(foundResource, metav1.ConditionTrue)
