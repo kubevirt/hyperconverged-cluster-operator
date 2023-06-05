@@ -101,6 +101,9 @@ const (
 
 	// Allow attaching a NIC to a running VMI
 	kvHotplugNicsGate = "HotplugNICs"
+
+	// Enable persistent reservation of a LUN through the SCSI Persistent Reserve commands
+	kvPersistentReservation = "PersistentReservation"
 )
 
 const (
@@ -125,6 +128,7 @@ var (
 		kvDisableCustomSELinuxPolicyGate,
 		kvKubevirtSeccompProfile,
 		kvHotplugNicsGate,
+		kvPersistentReservation,
 	}
 
 	// holds a list of mandatory KubeVirt feature gates. Some of them are the hard coded feature gates and some of
