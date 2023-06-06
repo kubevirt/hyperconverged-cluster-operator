@@ -13,6 +13,7 @@ spec:
       renewBefore: 12h0m0s
   featureGates:
     deployTektonTaskResources: false
+    disableMDevConfiguration: false
     enableCommonBootImageImport: false
     nonRoot: true
     withHostPassthroughCPU: false

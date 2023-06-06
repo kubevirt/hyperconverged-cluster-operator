@@ -1392,6 +1392,32 @@ Version: 1.2.3`)
 					})
 				})
 
+				It("should add the DisableMDevConfiguration feature gate if DisableMDevConfiguration is true in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						DisableMDevConfiguration: true,
+					}
+
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					By("KV CR should contain the DisableMDevConfiguration feature gate", func() {
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvDisableMDevConfig))
+					})
+				})
+
+				It("should not add the DisableMDevConfiguration feature gate if DisableMDevConfiguration is false in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						DisableMDevConfiguration: false,
+					}
+
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					By("KV CR should contain the DisableMDevConfiguration feature gate", func() {
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvDisableMDevConfig))
+					})
+				})
+
 				It("should not add the feature gates if FeatureGates field is empty", func() {
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{}
@@ -1426,7 +1452,8 @@ Version: 1.2.3`)
 					Expect(err).ToNot(HaveOccurred())
 
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						WithHostPassthroughCPU: true,
+						WithHostPassthroughCPU:   true,
+						DisableMDevConfiguration: true,
 					}
 
 					cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
@@ -1456,7 +1483,8 @@ Version: 1.2.3`)
 					Expect(err).ToNot(HaveOccurred())
 
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						WithHostPassthroughCPU: false,
+						WithHostPassthroughCPU:   false,
+						DisableMDevConfiguration: false,
 					}
 
 					cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
