@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
@@ -33,6 +33,7 @@ var _ = Describe("Deployment Handler", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "modifiedDeployment",
 					Labels: map[string]string{"key1": "value1"},
+					UID:    "testuid",
 				},
 				Spec: appsv1.DeploymentSpec{},
 			}
@@ -42,22 +43,23 @@ var _ = Describe("Deployment Handler", func() {
 
 		It("should recreate the Deployment as LabelSelector has changed", func() {
 			// create a fake client using original deployment
-			cl := commontestutils.InitClient([]runtime.Object{originalDeployment})
+			cl := commontestutils.InitClient([]client.Object{originalDeployment})
 			foundResource := &appsv1.Deployment{}
 			Expect(
 				cl.Get(context.TODO(),
 					types.NamespacedName{Namespace: originalDeployment.GetNamespace(), Name: originalDeployment.GetName()},
 					foundResource),
 			).ToNot(HaveOccurred())
-			rv1 := foundResource.GetResourceVersion()
 
 			// modify the LabelSelector
 			modifiedDeployment.Spec.Selector = &metav1.LabelSelector{
 				MatchLabels: map[string]string{"key2": "value2"},
 			}
+			modifiedDeployment.SetUID("")
+
 			handler := newDeploymentHandler(cl, commontestutils.GetScheme(), modifiedDeployment)
 			res := handler.ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			Expect(
@@ -65,21 +67,19 @@ var _ = Describe("Deployment Handler", func() {
 					types.NamespacedName{Namespace: modifiedDeployment.GetNamespace(), Name: modifiedDeployment.GetName()},
 					foundResource),
 			).ToNot(HaveOccurred())
-			rv2 := foundResource.GetResourceVersion()
 
 			Expect(foundResource.Spec.Selector).Should(Equal(modifiedDeployment.Spec.Selector))
-			Expect(rv1).ToNot(Equal(rv2))
+			Expect(foundResource.GetUID()).ToNot(Equal(originalDeployment.GetUID()))
 		})
 
 		It("should only update, not recreate, the Deployment since LabelSelector hasn't changed", func() {
-			cl := commontestutils.InitClient([]runtime.Object{originalDeployment})
+			cl := commontestutils.InitClient([]client.Object{originalDeployment})
 			foundResource := &appsv1.Deployment{}
 			Expect(
 				cl.Get(context.TODO(),
 					types.NamespacedName{Namespace: originalDeployment.GetNamespace(), Name: originalDeployment.GetName()},
 					foundResource),
 			).ToNot(HaveOccurred())
-			rv1 := foundResource.GetResourceVersion()
 
 			// modify only the labels
 			gotLabels := originalDeployment.GetLabels()
@@ -88,7 +88,7 @@ var _ = Describe("Deployment Handler", func() {
 
 			handler := newDeploymentHandler(cl, commontestutils.GetScheme(), modifiedDeployment)
 			res := handler.ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			Expect(
@@ -96,11 +96,10 @@ var _ = Describe("Deployment Handler", func() {
 					types.NamespacedName{Namespace: modifiedDeployment.GetNamespace(), Name: modifiedDeployment.GetName()},
 					foundResource),
 			).ToNot(HaveOccurred())
-			rv2 := foundResource.GetResourceVersion()
 
 			Expect(foundResource.Spec.Selector).To(BeNil())
 			Expect(foundResource.Labels).Should(Equal(gotLabels))
-			Expect(rv1).ToNot(Equal(rv2))
+			Expect(foundResource.GetUID()).To(Equal(originalDeployment.GetUID()))
 		})
 	})
 })
