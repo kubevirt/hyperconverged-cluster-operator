@@ -19,13 +19,13 @@ var _ = Describe("Deployment Handler", func() {
 	Context("update or recreate the Deployment as required", func() {
 		var hco *hcov1beta1.HyperConverged
 		var req *common.HcoRequest
-		var originalDeployment *appsv1.Deployment
-		var modifiedDeployment *appsv1.Deployment
+		var expectedDeployment *appsv1.Deployment
 
 		BeforeEach(func() {
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
-			originalDeployment = &appsv1.Deployment{
+
+			expectedDeployment = &appsv1.Deployment{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "Deployment",
 					APIVersion: "apps/v1",
@@ -33,73 +33,89 @@ var _ = Describe("Deployment Handler", func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:   "modifiedDeployment",
 					Labels: map[string]string{"key1": "value1"},
-					UID:    "testuid",
 				},
-				Spec: appsv1.DeploymentSpec{},
+				Spec: appsv1.DeploymentSpec{
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"key1": "value1"},
+					},
+				},
 			}
-			modifiedDeployment = &appsv1.Deployment{}
-			originalDeployment.DeepCopyInto(modifiedDeployment)
 		})
 
 		It("should recreate the Deployment as LabelSelector has changed", func() {
-			// create a fake client using original deployment
-			cl := commontestutils.InitClient([]client.Object{originalDeployment})
-			foundResource := &appsv1.Deployment{}
-			Expect(
-				cl.Get(context.TODO(),
-					types.NamespacedName{Namespace: originalDeployment.GetNamespace(), Name: originalDeployment.GetName()},
-					foundResource),
-			).ToNot(HaveOccurred())
-
+			modifiedDeployment := &appsv1.Deployment{}
+			expectedDeployment.DeepCopyInto(modifiedDeployment)
 			// modify the LabelSelector
 			modifiedDeployment.Spec.Selector = &metav1.LabelSelector{
 				MatchLabels: map[string]string{"key2": "value2"},
 			}
-			modifiedDeployment.SetUID("")
+			modifiedDeployment.ObjectMeta.UID = "oldObjectUID"
 
-			handler := newDeploymentHandler(cl, commontestutils.GetScheme(), modifiedDeployment)
-			res := handler.ensure(req)
-			Expect(res.Updated).To(BeTrue())
-			Expect(res.Err).ToNot(HaveOccurred())
+			// let's initialize the fake client with a modified object
+			cl := commontestutils.InitClient([]client.Object{modifiedDeployment})
 
-			Expect(
-				cl.Get(context.TODO(),
-					types.NamespacedName{Namespace: modifiedDeployment.GetNamespace(), Name: modifiedDeployment.GetName()},
-					foundResource),
-			).ToNot(HaveOccurred())
-
-			Expect(foundResource.Spec.Selector).Should(Equal(modifiedDeployment.Spec.Selector))
-			Expect(foundResource.GetUID()).ToNot(Equal(originalDeployment.GetUID()))
-		})
-
-		It("should only update, not recreate, the Deployment since LabelSelector hasn't changed", func() {
-			cl := commontestutils.InitClient([]client.Object{originalDeployment})
 			foundResource := &appsv1.Deployment{}
 			Expect(
 				cl.Get(context.TODO(),
-					types.NamespacedName{Namespace: originalDeployment.GetNamespace(), Name: originalDeployment.GetName()},
+					types.NamespacedName{Namespace: modifiedDeployment.GetNamespace(), Name: modifiedDeployment.GetName()},
 					foundResource),
 			).ToNot(HaveOccurred())
+			Expect(foundResource.GetUID()).To(Equal(types.UID("oldObjectUID")))
 
-			// modify only the labels
-			gotLabels := originalDeployment.GetLabels()
-			gotLabels["key2"] = "value2"
-			modifiedDeployment.SetLabels(gotLabels)
-
-			handler := newDeploymentHandler(cl, commontestutils.GetScheme(), modifiedDeployment)
+			// let's ensure the handler properly reconcile it back to the expected state
+			handler := newDeploymentHandler(cl, commontestutils.GetScheme(), expectedDeployment)
 			res := handler.ensure(req)
 			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
 
+			foundResource = &appsv1.Deployment{}
 			Expect(
 				cl.Get(context.TODO(),
 					types.NamespacedName{Namespace: modifiedDeployment.GetNamespace(), Name: modifiedDeployment.GetName()},
 					foundResource),
 			).ToNot(HaveOccurred())
 
-			Expect(foundResource.Spec.Selector).To(BeNil())
-			Expect(foundResource.Labels).Should(Equal(gotLabels))
-			Expect(foundResource.GetUID()).To(Equal(originalDeployment.GetUID()))
+			Expect(foundResource.Spec.Selector).Should(Equal(expectedDeployment.Spec.Selector))
+			// let's check the object UID to ensure that the object get really deleted and recreated
+			Expect(foundResource.ObjectMeta.UID).ToNot(Equal(modifiedDeployment.ObjectMeta.UID))
+		})
+
+		It("should only update, not recreate, the Deployment since LabelSelector hasn't changed", func() {
+			modifiedDeployment := &appsv1.Deployment{}
+			expectedDeployment.DeepCopyInto(modifiedDeployment)
+			// modify only the labels
+			gotLabels := modifiedDeployment.GetLabels()
+			gotLabels["key2"] = "value2"
+			modifiedDeployment.SetLabels(gotLabels)
+			modifiedDeployment.ObjectMeta.UID = "oldObjectUID"
+
+			// let's initialize the fake client with a modified object
+			cl := commontestutils.InitClient([]client.Object{modifiedDeployment})
+			foundResource := &appsv1.Deployment{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Namespace: modifiedDeployment.GetNamespace(), Name: modifiedDeployment.GetName()},
+					foundResource),
+			).ToNot(HaveOccurred())
+			Expect(foundResource.GetUID()).To(Equal(types.UID("oldObjectUID")))
+
+			// let's ensure the handler properly reconcile it back to the expected state
+			handler := newDeploymentHandler(cl, commontestutils.GetScheme(), expectedDeployment)
+			res := handler.ensure(req)
+			Expect(res.Updated).To(BeTrue())
+			Expect(res.Err).ToNot(HaveOccurred())
+
+			foundResource = &appsv1.Deployment{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Namespace: modifiedDeployment.GetNamespace(), Name: modifiedDeployment.GetName()},
+					foundResource),
+			).ToNot(HaveOccurred())
+
+			Expect(foundResource.Spec.Selector).Should(Equal(expectedDeployment.Spec.Selector))
+			// let's check the object UID to ensure that the object get updated and not deleted and recreated
+			Expect(foundResource.GetUID()).To(Equal(types.UID("oldObjectUID")))
 		})
 	})
+
 })

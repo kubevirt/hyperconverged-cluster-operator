@@ -44,41 +44,38 @@ func (h deploymentHooks) getEmptyCr() client.Object {
 
 func (deploymentHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
-func (h deploymentHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
-	requiredDep, ok1 := required.(*appsv1.Deployment)
-	foundDep, ok2 := exists.(*appsv1.Deployment)
+func (h deploymentHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
+	found, ok := exists.(*appsv1.Deployment)
 
-	if !ok1 || !ok2 {
+	if !ok {
 		return false, false, errors.New("can't convert to Deployment")
 	}
-	if !hasCorrectDeploymentFields(foundDep, requiredDep) {
+	if !hasCorrectDeploymentFields(found, h.required) {
 		if req.HCOTriggered {
 			req.Logger.Info("Updating existing Deployment to new opinionated values", "name", h.required.Name)
 		} else {
 			req.Logger.Info("Reconciling an externally updated Deployment to its opinionated values", "name", h.required.Name)
 		}
-		if recreateDep(foundDep.Spec.Selector, requiredDep.Spec.Selector) {
-			// updating LabelSelector (it's immutable) would be rejected by API server; create new Deployment instead
-			err := Client.Delete(req.Ctx, foundDep, &client.DeleteOptions{})
+		if shouldRecreate(found, h.required) {
+			err := Client.Delete(req.Ctx, found, &client.DeleteOptions{})
 			if err != nil {
 				return false, false, err
 			}
-			err = Client.Create(req.Ctx, requiredDep, &client.CreateOptions{})
+			err = Client.Create(req.Ctx, h.required, &client.CreateOptions{})
 			if err != nil {
 				return false, false, err
 			}
-			requiredDep.DeepCopyInto(foundDep)
 			return true, !req.HCOTriggered, nil
 		}
-		// LabelSelector hasn't changed, so we only update the Deployment
-		util.DeepCopyLabels(&requiredDep.ObjectMeta, &foundDep.ObjectMeta)
-		requiredDep.DeepCopyInto(foundDep)
-		err := Client.Update(req.Ctx, foundDep)
+		util.DeepCopyLabels(&h.required.ObjectMeta, &found.ObjectMeta)
+		h.required.Spec.DeepCopyInto(&found.Spec)
+		err := Client.Update(req.Ctx, found)
 		if err != nil {
 			return false, false, err
 		}
 		return true, !req.HCOTriggered, nil
 	}
+
 	return false, false, nil
 }
 
@@ -93,8 +90,7 @@ func hasCorrectDeploymentFields(found *appsv1.Deployment, required *appsv1.Deplo
 		reflect.DeepEqual(found.Spec.Template.Spec.PriorityClassName, required.Spec.Template.Spec.PriorityClassName)
 }
 
-// recreateDep indicates if the Deployment should be recreated, which is decided based on the diff between LabelSelector
-// values for new and existing Deployments
-func recreateDep(found, required *metav1.LabelSelector) bool {
-	return !reflect.DeepEqual(found, required)
+func shouldRecreate(found, required *appsv1.Deployment) bool {
+	// updating LabelSelector (it's immutable) would be rejected by API server; create new Deployment instead
+	return !reflect.DeepEqual(found.Spec.Selector, required.Spec.Selector)
 }
