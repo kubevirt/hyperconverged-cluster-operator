@@ -35,7 +35,7 @@ const (
 )
 
 // **** Kubevirt UI Plugin Deployment Handler ****
-func newKvUiPluginDplymntHandler(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]Operand, error) {
+func newKvUiPluginDplymntHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]Operand, error) {
 	kvUiPluginDeplymnt, err := NewKvUiPluginDeplymnt(hc)
 	if err != nil {
 		return nil, err
@@ -60,28 +60,25 @@ func newKvUiPluginCRHandler(_ log.Logger, Client client.Client, Scheme *runtime.
 func NewKvUiPluginDeplymnt(hc *hcov1beta1.HyperConverged) (*appsv1.Deployment, error) {
 	// The env var was validated prior to handler creation
 	kvUiPluginImage, _ := os.LookupEnv(hcoutil.KvUiPluginImageEnvV)
+	labels := getLabels(hc, hcoutil.AppComponentDeployment)
 
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIPluginDeploymentName,
-			Labels:    getLabels(hc, hcoutil.AppComponentDeployment),
+			Labels:    labels,
 			Namespace: hc.Namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: pointer.Int32(1),
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"app": kvUIPluginDeploymentName,
-				},
+				MatchLabels: labels,
 			},
 			Strategy: appsv1.DeploymentStrategy{
 				Type: appsv1.RollingUpdateDeploymentStrategyType,
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						"app": kvUIPluginDeploymentName,
-					},
+					Labels: labels,
 				},
 				Spec: corev1.PodSpec{
 					ServiceAccountName: "default",
