@@ -348,14 +348,14 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		Context("Node Placement", func() {
 
 			It("should add node placement if missing", func() {
-				existingResource, err := NewKvUiPluginDeplymnt(hco)
+				existingResource, err := NewKvUIPluginDeplymnt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.Workloads.NodePlacement = commonTestUtils.NewNodePlacement()
-				hco.Spec.Infra.NodePlacement = commonTestUtils.NewOtherNodePlacement()
+				hco.Spec.Workloads.NodePlacement = commontestutils.NewNodePlacement()
+				hco.Spec.Infra.NodePlacement = commontestutils.NewOtherNodePlacement()
 
-				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
-				handler, err := newKvUiPluginDplymntHandler(logger, cl, commonTestUtils.GetScheme(), hco)
+				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+				handler, err := newKvUIPluginDeploymentHandler(logger, cl, commontestutils.GetScheme(), hco)
 				Expect(err).ToNot(HaveOccurred())
 				res := handler[0].ensure(req)
 				Expect(res.Created).To(BeFalse())
@@ -382,14 +382,14 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 
 			It("should remove node placement if missing in HCO CR", func() {
 
-				hcoNodePlacement := commonTestUtils.NewHco()
-				hcoNodePlacement.Spec.Workloads.NodePlacement = commonTestUtils.NewNodePlacement()
-				hcoNodePlacement.Spec.Infra.NodePlacement = commonTestUtils.NewOtherNodePlacement()
-				existingResource, err := NewKvUiPluginDeplymnt(hcoNodePlacement)
+				hcoNodePlacement := commontestutils.NewHco()
+				hcoNodePlacement.Spec.Workloads.NodePlacement = commontestutils.NewNodePlacement()
+				hcoNodePlacement.Spec.Infra.NodePlacement = commontestutils.NewOtherNodePlacement()
+				existingResource, err := NewKvUIPluginDeplymnt(hcoNodePlacement)
 				Expect(err).ToNot(HaveOccurred())
 
-				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
-				handler, err := newKvUiPluginDplymntHandler(logger, cl, commonTestUtils.GetScheme(), hco)
+				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+				handler, err := newKvUIPluginDeploymentHandler(logger, cl, commontestutils.GetScheme(), hco)
 				Expect(err).ToNot(HaveOccurred())
 				res := handler[0].ensure(req)
 				Expect(res.Created).To(BeFalse())
@@ -416,9 +416,9 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 
 			It("should modify node placement according to HCO CR", func() {
 
-				hco.Spec.Workloads.NodePlacement = commonTestUtils.NewNodePlacement()
-				hco.Spec.Infra.NodePlacement = commonTestUtils.NewOtherNodePlacement()
-				existingResource, err := NewKvUiPluginDeplymnt(hco)
+				hco.Spec.Workloads.NodePlacement = commontestutils.NewNodePlacement()
+				hco.Spec.Infra.NodePlacement = commontestutils.NewOtherNodePlacement()
+				existingResource, err := NewKvUIPluginDeplymnt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
 				// now, modify HCO's node placement
@@ -428,8 +428,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				})
 				hco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "something entirely else"
 
-				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
-				handler, err := newKvUiPluginDplymntHandler(logger, cl, commonTestUtils.GetScheme(), hco)
+				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+				handler, err := newKvUIPluginDeploymentHandler(logger, cl, commontestutils.GetScheme(), hco)
 				Expect(err).ToNot(HaveOccurred())
 				res := handler[0].ensure(req)
 				Expect(res.Created).To(BeFalse())
@@ -457,9 +457,9 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			})
 
 			It("should overwrite node placement if directly set on Kubevirt Console Plugin Deployment", func() {
-				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewNodePlacement()}
-				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commonTestUtils.NewOtherNodePlacement()}
-				existingResource, err := NewKvUiPluginDeplymnt(hco)
+				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewOtherNodePlacement()}
+				existingResource, err := NewKvUIPluginDeplymnt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
 				// mock a reconciliation triggered by a change in the deployment
@@ -472,8 +472,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				})
 				existingResource.Spec.Template.Spec.NodeSelector["key3"] = "BADvalue3"
 
-				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
-				handler, err := newKvUiPluginDplymntHandler(logger, cl, commonTestUtils.GetScheme(), hco)
+				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+				handler, err := newKvUIPluginDeploymentHandler(logger, cl, commontestutils.GetScheme(), hco)
 				Expect(err).ToNot(HaveOccurred())
 				res := handler[0].ensure(req)
 				Expect(res.UpgradeDone).To(BeFalse())
