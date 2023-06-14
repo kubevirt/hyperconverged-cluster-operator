@@ -9,7 +9,7 @@ require (
 	github.com/go-logr/logr v1.2.4
 	github.com/google/uuid v1.3.0
 	github.com/imdario/mergo v0.3.15
-	github.com/kubevirt/cluster-network-addons-operator v0.85.2
+	github.com/kubevirt/cluster-network-addons-operator v0.86.0
 	github.com/onsi/ginkgo/v2 v2.9.5
 	github.com/onsi/gomega v1.27.7
 	github.com/openshift/api v3.9.1-0.20190517100836-d5b34b957e91+incompatible
