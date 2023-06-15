@@ -371,9 +371,9 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 						foundResource),
 				).ToNot(HaveOccurred())
 
-				Expect(existingResource.Spec.Template.Spec.NodeSelector).To(BeZero())
-				Expect(existingResource.Spec.Template.Spec.Affinity).To(BeZero())
-				Expect(existingResource.Spec.Template.Spec.Tolerations).To(BeZero())
+				Expect(existingResource.Spec.Template.Spec.NodeSelector).To(BeEmpty())
+				Expect(existingResource.Spec.Template.Spec.Affinity).To(BeNil())
+				Expect(existingResource.Spec.Template.Spec.Tolerations).To(BeEmpty())
 
 				Expect(foundResource.Spec.Template.Spec.NodeSelector).To(BeEquivalentTo(hco.Spec.Infra.NodePlacement.NodeSelector))
 				Expect(foundResource.Spec.Template.Spec.Affinity).To(BeEquivalentTo(hco.Spec.Infra.NodePlacement.Affinity))
@@ -405,12 +405,12 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 						foundResource),
 				).ToNot(HaveOccurred())
 
-				Expect(existingResource.Spec.Template.Spec.NodeSelector).ToNot(BeZero())
-				Expect(existingResource.Spec.Template.Spec.Affinity).ToNot(BeZero())
-				Expect(existingResource.Spec.Template.Spec.Tolerations).ToNot(BeZero())
-				Expect(foundResource.Spec.Template.Spec.NodeSelector).To(BeZero())
-				Expect(foundResource.Spec.Template.Spec.Affinity).To(BeZero())
-				Expect(foundResource.Spec.Template.Spec.Tolerations).To(BeZero())
+				Expect(existingResource.Spec.Template.Spec.NodeSelector).ToNot(BeEmpty())
+				Expect(existingResource.Spec.Template.Spec.Affinity).ToNot(BeNil())
+				Expect(existingResource.Spec.Template.Spec.Tolerations).ToNot(BeEmpty())
+				Expect(foundResource.Spec.Template.Spec.NodeSelector).To(BeEmpty())
+				Expect(foundResource.Spec.Template.Spec.Affinity).To(BeNil())
+				Expect(foundResource.Spec.Template.Spec.Tolerations).To(BeEmpty())
 				Expect(req.Conditions).To(BeEmpty())
 			})
 
@@ -445,13 +445,13 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 						foundResource),
 				).ToNot(HaveOccurred())
 
-				Expect(existingResource.Spec.Template.Spec.Affinity.NodeAffinity).ToNot(BeZero())
+				Expect(existingResource.Spec.Template.Spec.Affinity.NodeAffinity).ToNot(BeNil())
 				Expect(existingResource.Spec.Template.Spec.Tolerations).To(HaveLen(2))
-				Expect(existingResource.Spec.Template.Spec.NodeSelector["key3"]).Should(Equal("value3"))
+				Expect(existingResource.Spec.Template.Spec.NodeSelector).Should(HaveKeyWithValue("key3", "value3"))
 
 				Expect(foundResource.Spec.Template.Spec.Affinity.NodeAffinity).ToNot(BeNil())
 				Expect(foundResource.Spec.Template.Spec.Tolerations).To(HaveLen(3))
-				Expect(foundResource.Spec.Template.Spec.NodeSelector["key3"]).Should(Equal("something entirely else"))
+				Expect(foundResource.Spec.Template.Spec.NodeSelector).Should(HaveKeyWithValue("key3", "something entirely else"))
 
 				Expect(req.Conditions).To(BeEmpty())
 			})
@@ -489,10 +489,10 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				).ToNot(HaveOccurred())
 
 				Expect(existingResource.Spec.Template.Spec.Tolerations).To(HaveLen(3))
-				Expect(existingResource.Spec.Template.Spec.NodeSelector["key3"]).Should(Equal("BADvalue3"))
+				Expect(existingResource.Spec.Template.Spec.NodeSelector).Should(HaveKeyWithValue("key3", "BADvalue3"))
 
 				Expect(foundResource.Spec.Template.Spec.Tolerations).To(HaveLen(2))
-				Expect(foundResource.Spec.Template.Spec.NodeSelector["key3"]).Should(Equal("value3"))
+				Expect(foundResource.Spec.Template.Spec.NodeSelector).Should(HaveKeyWithValue("key3", "value3"))
 
 				Expect(req.Conditions).To(BeEmpty())
 			})
