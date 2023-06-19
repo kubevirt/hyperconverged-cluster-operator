@@ -10,26 +10,23 @@ import (
 	"sync"
 	"time"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-
-	openshiftconfigv1 "github.com/openshift/api/config/v1"
-
 	"github.com/go-logr/logr"
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
+	"github.com/samber/lo"
 	admissionv1 "k8s.io/api/admission/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
-	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
+	sspv1beta2 "kubevirt.io/ssp-operator/api/v1beta2"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-
-	"github.com/samber/lo"
 )
 
 const (
@@ -285,7 +282,7 @@ func (wh *WebhookHandler) updateOperatorCr(ctx context.Context, hc *v1beta1.Hype
 		}
 		required.Spec.DeepCopyInto(&existing.Spec)
 
-	case *sspv1beta1.SSP:
+	case *sspv1beta2.SSP:
 		required, _, err := operands.NewSSP(hc)
 		if err != nil {
 			return err

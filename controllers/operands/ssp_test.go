@@ -8,26 +8,24 @@ import (
 	"strings"
 	"time"
 
-	openshiftconfigv1 "github.com/openshift/api/config/v1"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
+	sspv1beta2 "kubevirt.io/ssp-operator/api/v1beta2"
+
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
-	lifecycleapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
-	sspv1beta1 "kubevirt.io/ssp-operator/api/v1beta1"
 )
 
 var _ = Describe("SSP Operands", func() {
@@ -56,7 +54,7 @@ var _ = Describe("SSP Operands", func() {
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).ToNot(HaveOccurred())
 
-			foundResource := &sspv1beta1.SSP{}
+			foundResource := &sspv1beta2.SSP{}
 			Expect(
 				cl.Get(context.TODO(),
 					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -96,9 +94,6 @@ var _ = Describe("SSP Operands", func() {
 
 			replicas := int32(defaultTemplateValidatorReplicas * 2) // non-default value
 			existingResource.Spec.TemplateValidator.Replicas = &replicas
-			existingResource.Spec.NodeLabeller.Placement = &lifecycleapi.NodePlacement{
-				NodeSelector: map[string]string{"foo": "bar"},
-			}
 
 			req.HCOTriggered = false // mock a reconciliation triggered by a change in NewKubeVirtCommonTemplateBundle CR
 
@@ -111,7 +106,7 @@ var _ = Describe("SSP Operands", func() {
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).ToNot(HaveOccurred())
 
-			foundResource := &sspv1beta1.SSP{}
+			foundResource := &sspv1beta2.SSP{}
 			Expect(
 				cl.Get(context.TODO(),
 					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
@@ -148,17 +143,15 @@ var _ = Describe("SSP Operands", func() {
 				Expect(res.UpgradeDone).To(BeFalse())
 				Expect(res.Err).ToNot(HaveOccurred())
 
-				foundResource := &sspv1beta1.SSP{}
+				foundResource := &sspv1beta2.SSP{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
 						foundResource),
 				).ToNot(HaveOccurred())
 
-				Expect(existingResource.Spec.NodeLabeller.Placement).To(BeZero())
 				Expect(existingResource.Spec.TemplateValidator.Placement).To(BeZero())
 				// TODO: replace BeEquivalentTo with BeEqual once SSP will consume kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4
-				Expect(*foundResource.Spec.NodeLabeller.Placement).To(BeEquivalentTo(*hco.Spec.Workloads.NodePlacement))
 				Expect(*foundResource.Spec.TemplateValidator.Placement).To(BeEquivalentTo(*hco.Spec.Infra.NodePlacement))
 				Expect(req.Conditions).To(BeEmpty())
 			})
@@ -180,17 +173,15 @@ var _ = Describe("SSP Operands", func() {
 				Expect(res.UpgradeDone).To(BeFalse())
 				Expect(res.Err).ToNot(HaveOccurred())
 
-				foundResource := &sspv1beta1.SSP{}
+				foundResource := &sspv1beta2.SSP{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
 						foundResource),
 				).ToNot(HaveOccurred())
 
-				Expect(existingResource.Spec.NodeLabeller.Placement).ToNot(BeZero())
-				Expect(existingResource.Spec.TemplateValidator.Placement).ToNot(BeZero())
-				Expect(foundResource.Spec.NodeLabeller.Placement).To(BeZero())
-				Expect(foundResource.Spec.TemplateValidator.Placement).To(BeZero())
+				Expect(existingResource.Spec.TemplateValidator.Placement).ToNot(BeNil())
+				Expect(foundResource.Spec.TemplateValidator.Placement).To(BeNil())
 				Expect(req.Conditions).To(BeEmpty())
 			})
 
@@ -223,26 +214,20 @@ var _ = Describe("SSP Operands", func() {
 				Expect(res.UpgradeDone).To(BeFalse())
 				Expect(res.Err).ToNot(HaveOccurred())
 
-				foundResource := &sspv1beta1.SSP{}
+				foundResource := &sspv1beta2.SSP{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
 						foundResource),
 				).ToNot(HaveOccurred())
 
-				Expect(existingResource.Spec.NodeLabeller.Placement.Affinity.NodeAffinity).ToNot(BeZero())
-				Expect(existingResource.Spec.NodeLabeller.Placement.Tolerations).To(HaveLen(2))
-				Expect(existingResource.Spec.NodeLabeller.Placement.NodeSelector["key1"]).Should(Equal("value1"))
-				Expect(existingResource.Spec.TemplateValidator.Placement.Affinity.NodeAffinity).ToNot(BeZero())
+				Expect(existingResource.Spec.TemplateValidator.Placement.Affinity.NodeAffinity).ToNot(BeNil())
 				Expect(existingResource.Spec.TemplateValidator.Placement.Tolerations).To(HaveLen(2))
-				Expect(existingResource.Spec.TemplateValidator.Placement.NodeSelector["key3"]).Should(Equal("value3"))
+				Expect(existingResource.Spec.TemplateValidator.Placement.NodeSelector).Should(HaveKeyWithValue("key3", "value3"))
 
-				Expect(foundResource.Spec.NodeLabeller.Placement.Affinity.NodeAffinity).ToNot(BeNil())
-				Expect(foundResource.Spec.NodeLabeller.Placement.Tolerations).To(HaveLen(3))
-				Expect(foundResource.Spec.NodeLabeller.Placement.NodeSelector["key1"]).Should(Equal("something else"))
 				Expect(foundResource.Spec.TemplateValidator.Placement.Affinity.NodeAffinity).ToNot(BeNil())
 				Expect(foundResource.Spec.TemplateValidator.Placement.Tolerations).To(HaveLen(3))
-				Expect(foundResource.Spec.TemplateValidator.Placement.NodeSelector["key3"]).Should(Equal("something entirely else"))
+				Expect(foundResource.Spec.TemplateValidator.Placement.NodeSelector).Should(HaveKeyWithValue("key3", "something entirely else"))
 
 				Expect(req.Conditions).To(BeEmpty())
 			})
@@ -256,17 +241,9 @@ var _ = Describe("SSP Operands", func() {
 				// mock a reconciliation triggered by a change in NewKubeVirtNodeLabellerBundle CR
 				req.HCOTriggered = false
 
-				// now, modify NodeLabeller node placement
-				seconds12 := int64(12)
-				existingResource.Spec.NodeLabeller.Placement.Tolerations = append(hco.Spec.Workloads.NodePlacement.Tolerations, corev1.Toleration{
-					Key: "key12", Operator: "operator12", Value: "value12", Effect: "effect12", TolerationSeconds: &seconds12,
-				})
-				existingResource.Spec.NodeLabeller.Placement.NodeSelector["key1"] = "BADvalue1"
-
 				// and modify TemplateValidator node placement
-				seconds34 := int64(34)
 				existingResource.Spec.TemplateValidator.Placement.Tolerations = append(hco.Spec.Infra.NodePlacement.Tolerations, corev1.Toleration{
-					Key: "key34", Operator: "operator34", Value: "value34", Effect: "effect34", TolerationSeconds: &seconds34,
+					Key: "key34", Operator: "operator34", Value: "value34", Effect: "effect34", TolerationSeconds: pointer.Int64(34),
 				})
 				existingResource.Spec.TemplateValidator.Placement.NodeSelector["key3"] = "BADvalue3"
 
@@ -278,22 +255,18 @@ var _ = Describe("SSP Operands", func() {
 				Expect(res.Overwritten).To(BeTrue())
 				Expect(res.Err).ToNot(HaveOccurred())
 
-				foundResource := &sspv1beta1.SSP{}
+				foundResource := &sspv1beta2.SSP{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
 						foundResource),
 				).ToNot(HaveOccurred())
 
-				Expect(existingResource.Spec.NodeLabeller.Placement.Tolerations).To(HaveLen(3))
-				Expect(existingResource.Spec.NodeLabeller.Placement.NodeSelector["key1"]).Should(Equal("BADvalue1"))
 				Expect(existingResource.Spec.TemplateValidator.Placement.Tolerations).To(HaveLen(3))
-				Expect(existingResource.Spec.TemplateValidator.Placement.NodeSelector["key3"]).Should(Equal("BADvalue3"))
+				Expect(existingResource.Spec.TemplateValidator.Placement.NodeSelector).Should(HaveKeyWithValue("key3", "BADvalue3"))
 
-				Expect(foundResource.Spec.NodeLabeller.Placement.Tolerations).To(HaveLen(2))
-				Expect(foundResource.Spec.NodeLabeller.Placement.NodeSelector["key1"]).Should(Equal("value1"))
 				Expect(foundResource.Spec.TemplateValidator.Placement.Tolerations).To(HaveLen(2))
-				Expect(foundResource.Spec.TemplateValidator.Placement.NodeSelector["key3"]).Should(Equal("value3"))
+				Expect(foundResource.Spec.TemplateValidator.Placement.NodeSelector).Should(HaveKeyWithValue("key3", "value3"))
 
 				Expect(req.Conditions).To(BeEmpty())
 			})
@@ -345,7 +318,7 @@ var _ = Describe("SSP Operands", func() {
 				Expect(res.UpgradeDone).To(BeFalse())
 				Expect(res.Err).ToNot(HaveOccurred())
 
-				ssp := &sspv1beta1.SSP{}
+				ssp := &sspv1beta2.SSP{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -372,7 +345,7 @@ var _ = Describe("SSP Operands", func() {
 				res := handler.ensure(req)
 				Expect(res.Err).To(HaveOccurred())
 
-				ssp := &sspv1beta1.SSP{}
+				ssp := &sspv1beta2.SSP{}
 
 				err := cl.Get(context.TODO(),
 					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -402,7 +375,7 @@ var _ = Describe("SSP Operands", func() {
 				Expect(res.Updated).To(BeTrue())
 				Expect(res.UpgradeDone).To(BeFalse())
 
-				ssp := &sspv1beta1.SSP{}
+				ssp := &sspv1beta2.SSP{}
 
 				expectedResource := NewSSPWithNameOnly(hco)
 				Expect(
@@ -433,7 +406,7 @@ var _ = Describe("SSP Operands", func() {
 				res := handler.ensure(req)
 				Expect(res.Err).To(HaveOccurred())
 
-				ssp := &sspv1beta1.SSP{}
+				ssp := &sspv1beta2.SSP{}
 
 				expectedResource := NewSSPWithNameOnly(hco)
 				Expect(
@@ -1201,7 +1174,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.UpgradeDone).To(BeFalse())
 						Expect(res.Err).ToNot(HaveOccurred())
 
-						foundResource := &sspv1beta1.SSP{}
+						foundResource := &sspv1beta2.SSP{}
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -1230,7 +1203,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.UpgradeDone).To(BeFalse())
 						Expect(res.Err).ToNot(HaveOccurred())
 
-						foundResource := &sspv1beta1.SSP{}
+						foundResource := &sspv1beta2.SSP{}
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -1259,7 +1232,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.UpgradeDone).To(BeFalse())
 						Expect(res.Err).ToNot(HaveOccurred())
 
-						foundResource := &sspv1beta1.SSP{}
+						foundResource := &sspv1beta2.SSP{}
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -1297,7 +1270,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.UpgradeDone).To(BeFalse())
 						Expect(res.Err).ToNot(HaveOccurred())
 
-						foundResource := &sspv1beta1.SSP{}
+						foundResource := &sspv1beta2.SSP{}
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -1341,7 +1314,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.UpgradeDone).To(BeFalse())
 						Expect(res.Err).ToNot(HaveOccurred())
 
-						foundResource := &sspv1beta1.SSP{}
+						foundResource := &sspv1beta2.SSP{}
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -1386,7 +1359,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.UpgradeDone).To(BeFalse())
 						Expect(res.Err).ToNot(HaveOccurred())
 
-						foundResource := &sspv1beta1.SSP{}
+						foundResource := &sspv1beta2.SSP{}
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -1418,7 +1391,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.UpgradeDone).To(BeFalse())
 						Expect(res.Err).ToNot(HaveOccurred())
 
-						foundResource := &sspv1beta1.SSP{}
+						foundResource := &sspv1beta2.SSP{}
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -1450,7 +1423,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.UpgradeDone).To(BeFalse())
 						Expect(res.Err).ToNot(HaveOccurred())
 
-						foundResource := &sspv1beta1.SSP{}
+						foundResource := &sspv1beta2.SSP{}
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -1490,7 +1463,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.UpgradeDone).To(BeFalse())
 						Expect(res.Err).ToNot(HaveOccurred())
 
-						foundResource := &sspv1beta1.SSP{}
+						foundResource := &sspv1beta2.SSP{}
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -1532,7 +1505,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.UpgradeDone).To(BeFalse())
 						Expect(res.Err).ToNot(HaveOccurred())
 
-						foundResource := &sspv1beta1.SSP{}
+						foundResource := &sspv1beta2.SSP{}
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -1639,7 +1612,7 @@ var _ = Describe("SSP Operands", func() {
 				Expect(res.Updated).To(BeTrue())
 				Expect(res.Err).ToNot(HaveOccurred())
 
-				foundResource := &sspv1beta1.SSP{}
+				foundResource := &sspv1beta2.SSP{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
@@ -1670,7 +1643,7 @@ var _ = Describe("SSP Operands", func() {
 				Expect(res.Overwritten).To(BeTrue())
 				Expect(res.Err).ToNot(HaveOccurred())
 
-				foundResource := &sspv1beta1.SSP{}
+				foundResource := &sspv1beta2.SSP{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
