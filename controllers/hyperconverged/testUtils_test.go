@@ -275,11 +275,11 @@ func getBasicDeployment() *BasicExpected {
 	expectedVirtioWinRoleBinding := operands.NewVirtioWinCmReaderRoleBinding(hco)
 	res.virtioWinRoleBinding = expectedVirtioWinRoleBinding
 
-	expectedConsolePluginDeployment, err := operands.NewKvUiPluginDeplymnt(hco)
+	expectedConsolePluginDeployment, err := operands.NewKvUIPluginDeplymnt(hco)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	res.consolePluginDeploy = expectedConsolePluginDeployment
 
-	expectedConsolePluginService := operands.NewKvUiPluginSvc(hco)
+	expectedConsolePluginService := operands.NewKvUIPluginSvc(hco)
 	res.consolePluginSvc = expectedConsolePluginService
 
 	expectedConsolePlugin := operands.NewKvConsolePlugin(hco)

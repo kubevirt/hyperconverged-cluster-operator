@@ -79,7 +79,7 @@ func (c *ClusterInfoImp) Init(ctx context.Context, cl client.Client, logger logr
 		return err
 	}
 
-	varValue, varExists := os.LookupEnv(KvUiPluginImageEnvV)
+	varValue, varExists := os.LookupEnv(KvUIPluginImageEnvV)
 	c.consolePluginImageProvided = varExists && len(varValue) > 0
 
 	err = c.RefreshAPIServerCR(ctx, cl)
