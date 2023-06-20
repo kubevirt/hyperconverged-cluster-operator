@@ -8,6 +8,7 @@ import (
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/discovery"
+	"k8s.io/utils/net"
 
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -33,6 +34,7 @@ type ClusterInfo interface {
 	IsInfrastructureHighlyAvailable() bool
 	IsConsolePluginImageProvided() bool
 	IsMonitoringAvailable() bool
+	IsSingleStackIPv6() bool
 	GetTLSSecurityProfile(hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile) *openshiftconfigv1.TLSSecurityProfile
 	RefreshAPIServerCR(ctx context.Context, c client.Client) error
 	GetPod() *corev1.Pod
@@ -48,6 +50,7 @@ type ClusterInfoImp struct {
 	infrastructureHighlyAvailable bool
 	consolePluginImageProvided    bool
 	monitoringAvailable           bool
+	singlestackipv6               bool
 	domain                        string
 	baseDomain                    string
 	ownResources                  *OwnResources
@@ -82,6 +85,9 @@ func (c *ClusterInfoImp) Init(ctx context.Context, cl client.Client, logger logr
 	}
 	if err != nil {
 		return err
+	}
+	if c.runningInOpenshift && c.singlestackipv6 {
+		return errors.New("OpenShift Virtualization is not supported on single stack IPv6 setup")
 	}
 
 	uiPluginVarValue, uiPluginVarExists := os.LookupEnv(KVUIPluginImageEnvV)
@@ -148,6 +154,24 @@ func (c *ClusterInfoImp) initOpenshift(ctx context.Context, cl client.Client) er
 
 	c.controlPlaneHighlyAvailable = clusterInfrastructure.Status.ControlPlaneTopology == openshiftconfigv1.HighlyAvailableTopologyMode
 	c.infrastructureHighlyAvailable = clusterInfrastructure.Status.InfrastructureTopology == openshiftconfigv1.HighlyAvailableTopologyMode
+
+	clusterNetwork := &openshiftconfigv1.Network{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "cluster",
+		},
+	}
+	err = cl.Get(ctx, client.ObjectKeyFromObject(clusterNetwork), clusterNetwork)
+	if err != nil {
+		return err
+	}
+	cn := clusterNetwork.Status.ClusterNetwork
+	for _, i := range cn {
+		c.logger.Info("Cluster Network",
+			"CIDR", i.CIDR,
+			"Host Prefix", i.HostPrefix,
+		)
+	}
+	c.singlestackipv6 = len(cn) == 1 && net.IsIPv6CIDRString(cn[0].CIDR)
 	return nil
 }
 
@@ -169,6 +193,10 @@ func (c *ClusterInfoImp) IsMonitoringAvailable() bool {
 
 func (c *ClusterInfoImp) IsRunningLocally() bool {
 	return c.runningLocally
+}
+
+func (c *ClusterInfoImp) IsSingleStackIPv6() bool {
+	return c.singlestackipv6
 }
 
 func (c *ClusterInfoImp) IsControlPlaneHighlyAvailable() bool {
