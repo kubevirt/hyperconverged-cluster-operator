@@ -281,6 +281,7 @@ func (VirtualMachineInstanceMigrationStatus) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"":                          "VirtualMachineInstanceMigration reprents information pertaining to a VMI's migration.",
 		"phaseTransitionTimestamps": "PhaseTransitionTimestamp is the timestamp of when the last phase change occurred\n+listType=atomic\n+optional",
+		"migrationState":            "Represents the status of a live migration",
 	}
 }
 
@@ -682,14 +683,32 @@ func (ReloadableComponentConfiguration) SwaggerDoc() map[string]string {
 
 func (KubeVirtConfiguration) SwaggerDoc() map[string]string {
 	return map[string]string{
-		"":                            "KubeVirtConfiguration holds all kubevirt configurations",
-		"evictionStrategy":            "EvictionStrategy defines at the cluster level if the VirtualMachineInstance should be\nmigrated instead of shut-off in case of a node drain. If the VirtualMachineInstance specific\nfield is set it overrides the cluster level one.",
-		"supportedGuestAgentVersions": "deprecated",
+		"":                                   "KubeVirtConfiguration holds all kubevirt configurations",
+		"evictionStrategy":                   "EvictionStrategy defines at the cluster level if the VirtualMachineInstance should be\nmigrated instead of shut-off in case of a node drain. If the VirtualMachineInstance specific\nfield is set it overrides the cluster level one.",
+		"additionalGuestMemoryOverheadRatio": "AdditionalGuestMemoryOverheadRatio can be used to increase the virtualization infrastructure\noverhead. This is useful, since the calculation of this overhead is not accurate and cannot\nbe entirely known in advance. The ratio that is being set determines by which factor to increase\nthe overhead calculated by Kubevirt. A higher ratio means that the VMs would be less compromised\nby node pressures, but would mean that fewer VMs could be scheduled to a node.\nIf not set, the default is 1.",
+		"supportedGuestAgentVersions":        "deprecated",
 	}
 }
 
 func (SMBiosConfiguration) SwaggerDoc() map[string]string {
 	return map[string]string{}
+}
+
+func (CustomProfile) SwaggerDoc() map[string]string {
+	return map[string]string{}
+}
+
+func (VirtualMachineInstanceProfile) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"customProfile": "CustomProfile allows to request arbitrary profile for virt-launcher",
+	}
+}
+
+func (SeccompConfiguration) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":                              "SeccompConfiguration holds Seccomp configuration for Kubevirt components",
+		"virtualMachineInstanceProfile": "VirtualMachineInstanceProfile defines what profile should be used with virt-launcher. Defaults to none",
+	}
 }
 
 func (TLSConfiguration) SwaggerDoc() map[string]string {

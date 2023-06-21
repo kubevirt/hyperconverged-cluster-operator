@@ -267,6 +267,10 @@ func getConfig(registry, tag, namespace string, additionalProperties map[string]
 	imageString := GetOperatorImageWithEnvVarManager(envVarManager)
 	imageRegEx := regexp.MustCompile(operatorImageRegex)
 	matches := imageRegEx.FindAllStringSubmatch(imageString, 1)
+	kubeVirtVersion := envVarManager.Getenv(KubeVirtVersionEnvName)
+	if kubeVirtVersion == "" {
+		kubeVirtVersion = "latest"
+	}
 
 	tagFromOperator := ""
 	operatorSha := ""
@@ -290,7 +294,7 @@ func getConfig(registry, tag, namespace string, additionalProperties map[string]
 		} else {
 			// we have a shasum... chances are high that we get the shasums for the other images as well from env vars,
 			// but as a fallback use latest tag
-			tagFromOperator = "latest"
+			tagFromOperator = kubeVirtVersion
 			operatorSha = strings.TrimPrefix(version, "@")
 		}
 
@@ -298,6 +302,13 @@ func getConfig(registry, tag, namespace string, additionalProperties map[string]
 		// and if it was given, don't look for shasums
 		if tag == "" {
 			tag = tagFromOperator
+		} else {
+			skipShasums = true
+		}
+	} else {
+		// operator image name has unexpected syntax.
+		if tag == "" {
+			tag = kubeVirtVersion
 		} else {
 			skipShasums = true
 		}
@@ -327,7 +338,6 @@ func getConfig(registry, tag, namespace string, additionalProperties map[string]
 	exportProxySha := envVarManager.Getenv(VirtExportProxyShasumEnvName)
 	exportServerSha := envVarManager.Getenv(VirtExportServerShasumEnvName)
 	gsSha := envVarManager.Getenv(GsEnvShasumName)
-	kubeVirtVersion := envVarManager.Getenv(KubeVirtVersionEnvName)
 	if operatorSha != "" && apiSha != "" && controllerSha != "" && handlerSha != "" && launcherSha != "" && kubeVirtVersion != "" {
 		config = newDeploymentConfigWithShasums(registry, imagePrefix, kubeVirtVersion, operatorSha, apiSha, controllerSha, handlerSha, launcherSha, exportProxySha, exportServerSha, gsSha, namespace, additionalProperties, passthroughEnv)
 	}
@@ -412,6 +422,11 @@ func (c *KubeVirtDeploymentConfig) GetOperatorVersion() string {
 	if c.UseShasums() {
 		return c.VirtOperatorSha
 	}
+
+	if digest := DigestFromImageName(c.VirtOperatorImage); digest != "" {
+		return digest
+	}
+
 	return c.KubeVirtVersion
 }
 
@@ -419,6 +434,11 @@ func (c *KubeVirtDeploymentConfig) GetApiVersion() string {
 	if c.UseShasums() {
 		return c.VirtApiSha
 	}
+
+	if digest := DigestFromImageName(c.VirtApiImage); digest != "" {
+		return digest
+	}
+
 	return c.KubeVirtVersion
 }
 
@@ -426,6 +446,11 @@ func (c *KubeVirtDeploymentConfig) GetControllerVersion() string {
 	if c.UseShasums() {
 		return c.VirtControllerSha
 	}
+
+	if digest := DigestFromImageName(c.VirtControllerImage); digest != "" {
+		return digest
+	}
+
 	return c.KubeVirtVersion
 }
 
@@ -433,6 +458,11 @@ func (c *KubeVirtDeploymentConfig) GetHandlerVersion() string {
 	if c.UseShasums() {
 		return c.VirtHandlerSha
 	}
+
+	if digest := DigestFromImageName(c.VirtHandlerImage); digest != "" {
+		return digest
+	}
+
 	return c.KubeVirtVersion
 }
 
@@ -440,6 +470,11 @@ func (c *KubeVirtDeploymentConfig) GetLauncherVersion() string {
 	if c.UseShasums() {
 		return c.VirtLauncherSha
 	}
+
+	if digest := DigestFromImageName(c.VirtLauncherImage); digest != "" {
+		return digest
+	}
+
 	return c.KubeVirtVersion
 }
 
@@ -447,6 +482,11 @@ func (c *KubeVirtDeploymentConfig) GetExportProxyVersion() string {
 	if c.UseShasums() {
 		return c.VirtExportProxySha
 	}
+
+	if digest := DigestFromImageName(c.VirtExportProxyImage); digest != "" {
+		return digest
+	}
+
 	return c.KubeVirtVersion
 }
 
@@ -454,6 +494,11 @@ func (c *KubeVirtDeploymentConfig) GetExportServerVersion() string {
 	if c.UseShasums() {
 		return c.VirtExportServerSha
 	}
+
+	if digest := DigestFromImageName(c.VirtExportServerImage); digest != "" {
+		return digest
+	}
+
 	return c.KubeVirtVersion
 }
 
@@ -666,4 +711,12 @@ func IsValidLabel(label string) bool {
 	// entire string must not exceed 63 chars
 	r := regexp.MustCompile(`^([a-z0-9A-Z]([a-z0-9A-Z\-\_\.]{0,61}[a-z0-9A-Z])?)?$`)
 	return r.Match([]byte(label))
+}
+
+func DigestFromImageName(name string) (digest string) {
+	if name != "" && strings.LastIndex(name, "@sha256:") != -1 {
+		digest = strings.Split(name, "@sha256:")[1]
+	}
+
+	return
 }
