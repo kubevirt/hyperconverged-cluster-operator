@@ -483,8 +483,6 @@ const (
 	VirtualMachineInstanceReasonSEVNotMigratable = "SEVNotLiveMigratable"
 	// Reason means that VMI is not live migratable because it uses HyperV Reenlightenment while TSC Frequency is not available
 	VirtualMachineInstanceReasonNoTSCFrequencyMigratable = "NoTSCFrequencyNotLiveMigratable"
-	// Reason means that VMI is not live migratable because it uses dedicated CPU and emulator thread isolation
-	VirtualMachineInstanceReasonDedicatedCPU = "DedicatedCPUNotLiveMigratable"
 )
 
 const (
@@ -506,7 +504,8 @@ type VirtualMachineInstanceMigrationConditionType string
 // These are valid conditions of VMIs.
 const (
 	// VirtualMachineInstanceMigrationAbortRequested indicates that live migration abort has been requested
-	VirtualMachineInstanceMigrationAbortRequested VirtualMachineInstanceMigrationConditionType = "migrationAbortRequested"
+	VirtualMachineInstanceMigrationAbortRequested          VirtualMachineInstanceMigrationConditionType = "migrationAbortRequested"
+	VirtualMachineInstanceMigrationRejectedByResourceQuota VirtualMachineInstanceMigrationConditionType = "migrationRejectedByResourceQuota"
 )
 
 type VirtualMachineInstanceCondition struct {
@@ -1548,9 +1547,6 @@ const (
 	// IONative - Kernel native I/O tasks (AIO) offer a better performance but can block the VM if the file is not fully
 	// allocated so this method recommended only when the backing file/disk/etc is fully preallocated.
 	IONative DriverIO = "native"
-	// IODefault - Fallback to the default value from the kernel. With recent Kernel versions (for example RHEL-7) the
-	// default is AIO.
-	IODefault DriverIO = "default"
 )
 
 // Handler defines a specific action that should be taken
@@ -2212,6 +2208,14 @@ type KubeVirtConfiguration struct {
 	// field is set it overrides the cluster level one.
 	EvictionStrategy *EvictionStrategy `json:"evictionStrategy,omitempty"`
 
+	// AdditionalGuestMemoryOverheadRatio can be used to increase the virtualization infrastructure
+	// overhead. This is useful, since the calculation of this overhead is not accurate and cannot
+	// be entirely known in advance. The ratio that is being set determines by which factor to increase
+	// the overhead calculated by Kubevirt. A higher ratio means that the VMs would be less compromised
+	// by node pressures, but would mean that fewer VMs could be scheduled to a node.
+	// If not set, the default is 1.
+	AdditionalGuestMemoryOverheadRatio *string `json:"additionalGuestMemoryOverheadRatio,omitempty"`
+
 	// deprecated
 	SupportedGuestAgentVersions    []string                          `json:"supportedGuestAgentVersions,omitempty"`
 	MemBalloonStatsPeriod          *uint32                           `json:"memBalloonStatsPeriod,omitempty"`
@@ -2468,6 +2472,11 @@ type ClusterProfilerRequest struct {
 	PageSize      int64  `json:"pageSize"`
 }
 
+type Matcher interface {
+	GetName() string
+	GetRevisionName() string
+}
+
 // InstancetypeMatcher references a instancetype that is used to fill fields in the VMI template.
 type InstancetypeMatcher struct {
 	// Name is the name of the VirtualMachineInstancetype or VirtualMachineClusterInstancetype
@@ -2497,6 +2506,14 @@ type InstancetypeMatcher struct {
 	InferFromVolume string `json:"inferFromVolume,omitempty"`
 }
 
+func (i InstancetypeMatcher) GetName() string {
+	return i.Name
+}
+
+func (i InstancetypeMatcher) GetRevisionName() string {
+	return i.RevisionName
+}
+
 // PreferenceMatcher references a set of preference that is used to fill fields in the VMI template.
 type PreferenceMatcher struct {
 	// Name is the name of the VirtualMachinePreference or VirtualMachineClusterPreference
@@ -2524,4 +2541,12 @@ type PreferenceMatcher struct {
 	//
 	// +optional
 	InferFromVolume string `json:"inferFromVolume,omitempty"`
+}
+
+func (p PreferenceMatcher) GetName() string {
+	return p.Name
+}
+
+func (p PreferenceMatcher) GetRevisionName() string {
+	return p.RevisionName
 }
