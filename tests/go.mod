@@ -9,7 +9,7 @@ require (
 	github.com/go-openapi/swag v0.19.12 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.1.4 // indirect
-	github.com/kubevirt/cluster-network-addons-operator v0.55.0
+	github.com/kubevirt/cluster-network-addons-operator v0.65.4
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/onsi/ginkgo v1.16.4
 	github.com/onsi/gomega v1.13.0

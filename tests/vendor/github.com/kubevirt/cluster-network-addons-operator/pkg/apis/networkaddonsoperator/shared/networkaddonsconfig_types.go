@@ -36,8 +36,8 @@ type SelfSignConfiguration struct {
 // +k8s:openapi-gen=true
 // PlacementConfiguration defines node placement configuration
 type PlacementConfiguration struct {
-	// Infra defines placement configuration for master nodes
-	Infra     *Placement `json:"infra,omitempty"`
+	// Infra defines placement configuration for control-plane nodes
+	Infra *Placement `json:"infra,omitempty"`
 	// Workloads defines placement configuration for worker nodes
 	Workloads *Placement `json:"workloads,omitempty"`
 }
@@ -71,7 +71,7 @@ type KubeMacPool struct {
 	// RangeStart defines the first mac in range
 	RangeStart string `json:"rangeStart,omitempty"`
 	// RangeEnd defines the last mac in range
-	RangeEnd   string `json:"rangeEnd,omitempty"`
+	RangeEnd string `json:"rangeEnd,omitempty"`
 }
 
 // MacvtapCni plugin allows users to define Kubernetes networks on top of existing host interfaces
