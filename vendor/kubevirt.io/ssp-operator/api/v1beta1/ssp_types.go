@@ -146,7 +146,7 @@ type SSPStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
-
+// +kubebuilder:deprecatedversion:warning="ssp.kubevirt.io/v1beta1 ssp is deprecated"
 // SSP is the Schema for the ssps API
 // +kubebuilder:printcolumn:name="Phase",type="string",JSONPath=".status.phase"
 type SSP struct {
