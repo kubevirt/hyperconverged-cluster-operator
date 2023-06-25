@@ -595,6 +595,12 @@ var _ = Describe("CNA Operand", func() {
 					expectedBaseDomain: "",
 				}),
 			)
+
+			It("Should deploy linux-bridge", func() {
+				existingCNAO, err := NewNetworkAddons(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(existingCNAO.Spec.LinuxBridge).ToNot(BeNil(), "Linux Bridge spec should be added")
+			})
 		})
 
 		Context("With Openshift Mock", func() {
@@ -633,6 +639,13 @@ var _ = Describe("CNA Operand", func() {
 					expectedBaseDomain: "",
 				}),
 			)
+
+			It("Should not deploy linux-bridge", func() {
+				existingCNAO, err := NewNetworkAddons(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(existingCNAO.Spec.LinuxBridge).To(BeNil(), "Linux Bridge spec should not be added")
+			})
 		})
 
 		It("should handle conditions", func() {

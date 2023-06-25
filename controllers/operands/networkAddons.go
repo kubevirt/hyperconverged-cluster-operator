@@ -140,8 +140,11 @@ func NewNetworkAddons(hc *hcov1beta1.HyperConverged, opts ...string) (*networkad
 
 	cnaoSpec := networkaddonsshared.NetworkAddonsConfigSpec{
 		Multus:      &networkaddonsshared.Multus{},
-		LinuxBridge: &networkaddonsshared.LinuxBridge{},
 		KubeMacPool: &networkaddonsshared.KubeMacPool{},
+	}
+
+	if !hcoutil.GetClusterInfo().IsOpenshift() {
+		cnaoSpec.LinuxBridge = &networkaddonsshared.LinuxBridge{}
 	}
 
 	nameServerIP, err := getKSDNameServerIP(hc.Spec.KubeSecondaryDNSNameServerIP)
