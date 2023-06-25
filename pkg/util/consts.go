@@ -14,6 +14,7 @@ const (
 	SspVersionEnvV                   = "SSP_VERSION"
 	HppoVersionEnvV                  = "HPPO_VERSION"
 	KVUIPluginImageEnvV              = "KV_CONSOLE_PLUGIN_IMAGE"
+	KVUIProxyImageEnvV               = "KV_CONSOLE_PROXY_IMAGE"
 	HcoValidatingWebhook             = "validate-hco.kubevirt.io"
 	HcoMutatingWebhookNS             = "mutate-ns-hco.kubevirt.io"
 	HcoMutatingWebhookHyperConverged = "mutate-hyperconverged-hco.kubevirt.io"
@@ -64,6 +65,7 @@ const (
 
 	CliDownloadsServerPort       = 8080
 	UIPluginServerPort     int32 = 9443
+	UIProxyServerPort      int32 = 8080
 
 	APIServerCRName = "cluster"
 
@@ -80,4 +82,5 @@ const (
 	AppComponentSchedule   AppComponent = "schedule"
 	AppComponentDeployment AppComponent = "deployment"
 	AppComponentUIPlugin   AppComponent = "kubevirt-console-plugin"
+	AppComponentUIProxy    AppComponent = "kubevirt-apiserver-proxy"
 )
