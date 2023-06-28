@@ -342,6 +342,10 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 		config.CPUModel = *hc.Spec.DefaultCPUModel
 	}
 
+	if hc.Spec.DefaultRuntimeClass != nil {
+		config.DefaultRuntimeClass = *hc.Spec.DefaultRuntimeClass
+	}
+
 	return config, nil
 }
 
