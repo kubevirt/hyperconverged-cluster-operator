@@ -304,7 +304,7 @@ metadata:
   name: kubevirt-hyperconverged
 spec:
   mediatedDevicesConfiguration:
-    mediatedDevicesTypes:
+    mediatedDeviceTypes:
       - nvidia-222
       - nvidia-228
       - i915-GVTg_V5_4
@@ -323,18 +323,18 @@ metadata:
   name: kubevirt-hyperconverged
 spec:
   mediatedDevicesConfiguration:
-    mediatedDevicesTypes:
+    mediatedDeviceTypes:
       - nvidia-222
       - nvidia-228
       - i915-GVTg_V5_4
-    nodeMediatedDevices:
+    nodeMediatedDeviceTypes:
       - nodeSelector:
-        someLabel1: ""
-        mediatedDevicesTypes:
+          someLabel1: ""
+        mediatedDeviceTypes:
         - nvidia-222
       - nodeSelector:
-        kubernetes.io/hostname=nodeName
-        mediatedDevicesTypes:
+          kubernetes.io/hostname: nodeName
+        mediatedDeviceTypes:
         - nvidia-228
 ```
 
@@ -396,7 +396,7 @@ spec:
   permittedHostDevices:
     pciHostDevices:
     - pciDeviceSelector: "10DE:1DB6"
-      resourceName: "nvidia.com/GV100GL_Tesla_V100",
+      resourceName: "nvidia.com/GV100GL_Tesla_V100"
     - pciDeviceSelector: "10DE:1EB8"
       resourceName: "nvidia.com/TU104GL_Tesla_T4"
     mediatedDevices:
@@ -504,7 +504,7 @@ metadata:
   name: kubevirt-hyperconverged
   namespace: kubevirt-hyperconverged
 spec:
-  certificateRotation:
+  certConfig:
     ca:
       duration: 48h0m0s
       renewBefore: 24h0m0s
@@ -681,7 +681,6 @@ spec:
     insecureRegistries:
       - "private-registry-example-1:5000"
       - "private-registry-example-2:5000"
-      ...
 ```
 
 ## KubeSecondaryDNS Name Server IP
@@ -1061,7 +1060,7 @@ kubectl annotate --overwrite -n kubevirt-hyperconverged hco kubevirt-hyperconver
 ```
 
 **_Note:_** The full configurations options for Kubevirt, CDI and CNAO which are available on the cluster, can be explored by using `kubectl explain <resource name>.spec`. For example:  
-```yaml
+```bash
 $ kubectl explain kv.spec
 KIND:     KubeVirt
 VERSION:  kubevirt.io/v1
@@ -1090,7 +1089,7 @@ FIELDS:
 ```
 
 To inspect lower-level objects under `spec`, they can be specified in `kubectl explain`, recursively. e.g.  
-```yaml
+```bash
 $ kubectl explain kv.spec.configuration.network
 KIND:     KubeVirt
 VERSION:  kubevirt.io/v1
@@ -1150,8 +1149,9 @@ The structure of the annotation is the following one:
 
 ```yaml
 apiVersion: hco.kubevirt.io/v1beta1
-kind: hco
+kind: HyperConverged
 metadata:
+  name: kubevirt-hyperconverged
   annotations:
     hco.kubevirt.io/tuningPolicy: '{"qps":100,"burst":200}'
 ...
