@@ -17,9 +17,13 @@ const (
 	HCOMetricUnsafeModifications      = "unsafeModifications"
 	HCOMetricHyperConvergedExists     = "HyperConvergedCRExists"
 	HCOMetricSystemHealthStatus       = "systemHealthStatus"
+	HCOMetricSingleStackIPv6          = "singleStackIpv6"
 
 	HyperConvergedExists    = float64(1)
 	HyperConvergedNotExists = float64(0)
+
+	SingleStackIPv6True  = float64(1)
+	SingleStackIPv6False = float64(0)
 )
 
 const (
@@ -99,6 +103,19 @@ var HcoMetrics = func() hcoMetrics {
 						Help: md.help,
 					},
 				)
+			},
+		},
+		HCOMetricSingleStackIPv6: {
+			fqName:          "kubevirt_hco_single_stack_ipv6",
+			help:            "Indicates whether the underlying cluster is single stack IPv6 (1) or not (0)",
+			mType:           "Gauge",
+			constLabelPairs: []string{counterLabelAnnName},
+			initFunc: func(md metricDesc) prometheus.Collector {
+				return prometheus.NewGauge(
+					prometheus.GaugeOpts{
+						Name: md.fqName,
+						Help: md.help,
+					})
 			},
 		},
 	}
@@ -265,6 +282,21 @@ func (hm *hcoMetrics) SetHCOMetricSystemHealthStatus(status float64) error {
 // GetHCOMetricSystemHealthStatus returns current value of gauge. If error is not nil then value is undefined
 func (hm *hcoMetrics) GetHCOMetricSystemHealthStatus() (float64, error) {
 	return hm.GetMetricValue(HCOMetricSystemHealthStatus, nil)
+}
+
+func (hm *hcoMetrics) SetHCOMetricSingleStackIPv6True() error {
+	return hm.SetMetric(HCOMetricSingleStackIPv6, nil, SingleStackIPv6True)
+}
+
+// IsHCOMetricSingleStackIPv6 returns true if underlying OCP cluster is single stack IPv6
+func (hm *hcoMetrics) IsHCOMetricSingleStackIPv6() (bool, error) {
+
+	val, err := hm.GetMetricValue(HCOMetricSingleStackIPv6, nil)
+	if err != nil {
+		return false, err
+	}
+
+	return val == SingleStackIPv6True, nil
 }
 
 func getLabelsForObj(kind string, name string) prometheus.Labels {

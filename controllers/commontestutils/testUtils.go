@@ -299,6 +299,9 @@ func (c ClusterInfoMock) IsConsolePluginImageProvided() bool {
 func (c ClusterInfoMock) IsMonitoringAvailable() bool {
 	return true
 }
+func (c ClusterInfoMock) IsSingleStackIPv6() bool {
+	return true
+}
 func (c ClusterInfoMock) GetPod() *corev1.Pod {
 	return pod
 }
