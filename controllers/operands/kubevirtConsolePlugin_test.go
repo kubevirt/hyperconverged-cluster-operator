@@ -4,6 +4,8 @@ import (
 	"context"
 	"reflect"
 
+	"k8s.io/utils/pointer"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	consolev1 "github.com/openshift/api/console/v1"
@@ -221,6 +223,11 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			).ToNot(HaveOccurred())
 			Expect(foundResource.Name).To(Equal(expectedResource.Name))
 			Expect(foundResource.Labels).Should(HaveKeyWithValue(hcoutil.AppLabel, commonTestUtils.Name))
+			Expect(foundResource.Spec.Template.Labels).Should(HaveKeyWithValue(hcoutil.AppLabel, commonTestUtils.Name))
+			Expect(foundResource.Spec.Template.Labels).Should(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentDeployment)))
+			Expect(foundResource.Spec.Template.Labels).Should(HaveKeyWithValue(hcoutil.AppLabelManagedBy, hcoutil.OperatorName))
+			Expect(foundResource.Spec.Template.Labels).Should(HaveKeyWithValue(hcoutil.AppLabelVersion, hcoutil.GetHcoKvIoVersion()))
+			Expect(foundResource.Spec.Template.Labels).Should(HaveKeyWithValue(hcoutil.AppLabelPartOf, hcoutil.HyperConvergedCluster))
 			Expect(foundResource.Namespace).To(Equal(expectedResource.Namespace))
 			Expect(reflect.DeepEqual(expectedResource.Spec, foundResource.Spec)).To(BeTrue())
 		})
@@ -255,9 +262,55 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		It("should reconcile deployment to default if changed", func() {
 			expectedResource, _ := NewKvUiPluginDeplymnt(hco)
 			outdatedResource, _ := NewKvUiPluginDeplymnt(hco)
+			outdatedResource.ObjectMeta.UID = "oldObjectUID"
+			outdatedResource.ObjectMeta.ResourceVersion = "1234"
+
+			outdatedResource.Spec.Replicas = pointer.Int32(123)
+			outdatedResource.Spec.Template.Spec.Containers[0].Image = "quay.io/fake/image:latest"
+
+			cl := commonTestUtils.InitClient([]runtime.Object{hco, outdatedResource})
+			handler, err := newKvUiPluginDplymntHandler(logger, cl, commonTestUtils.GetScheme(), hco)
+			Expect(err).ToNot(HaveOccurred())
+			res := handler[0].ensure(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeTrue())
+			Expect(res.Err).ToNot(HaveOccurred())
+
+			foundResource := &appsv1.Deployment{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
+					foundResource),
+			).ToNot(HaveOccurred())
+
+			Expect(foundResource.Spec.Replicas).ToNot(Equal(outdatedResource.Spec.Replicas))
+			Expect(foundResource.Spec.Replicas).To(Equal(expectedResource.Spec.Replicas))
+			Expect(foundResource.Spec.Template.Spec.Containers[0].Image).To(Equal(expectedResource.Spec.Template.Spec.Containers[0].Image))
+			Expect(reflect.DeepEqual(expectedResource.Spec, foundResource.Spec)).To(BeTrue())
+
+			// ObjectReference should have been updated
+			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			objectRefOutdated, err := reference.GetReference(commonTestUtils.GetScheme(), outdatedResource)
+			Expect(err).ToNot(HaveOccurred())
+			objectRefFound, err := reference.GetReference(commonTestUtils.GetScheme(), foundResource)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
+			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
+
+			// let's check the object UID to ensure that the object get updated and not deleted and recreated
+			Expect(foundResource.GetUID()).To(Equal(types.UID("oldObjectUID")))
+		})
+
+		It("should reconcile deployment to default if changed - (immutable fields)", func() {
+			expectedResource, _ := NewKvUiPluginDeplymnt(hco)
+			outdatedResource, _ := NewKvUiPluginDeplymnt(hco)
+
+			outdatedResource.ObjectMeta.UID = "oldObjectUID"
+			outdatedResource.ObjectMeta.ResourceVersion = "1234"
 
 			outdatedResource.ObjectMeta.Labels[hcoutil.AppLabel] = "wrong label"
-			outdatedResource.Spec.Template.Spec.Containers[0].Image = "quay.io/fake/image:latest"
+			outdatedResource.Spec.Selector.MatchLabels[hcoutil.AppLabel] = "wrong label"
+			outdatedResource.Spec.Template.Labels[hcoutil.AppLabel] = "wrong label"
 
 			cl := commonTestUtils.InitClient([]runtime.Object{hco, outdatedResource})
 			handler, err := newKvUiPluginDplymntHandler(logger, cl, commonTestUtils.GetScheme(), hco)
@@ -286,6 +339,9 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
+
+			// let's check the object UID to ensure that the object get really deleted and recreated
+			Expect(foundResource.GetUID()).ToNot(Equal(types.UID("oldObjectUID")))
 		})
 	})
 
