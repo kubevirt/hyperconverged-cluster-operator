@@ -73,9 +73,10 @@ spec:
       - mountPath: /test/output
         name: output-volume
     securityContext:
-      runAsUser: 0
+      allowPrivilegeEscalation: false
       capabilities:
-        add: ["NET_RAW"]
+        drop:
+        - ALL
   - name: copy
     image: $computed_test_image
     command: ["/bin/sh"]
@@ -84,12 +85,17 @@ spec:
       - mountPath: /test/output
         name: output-volume
     securityContext:
-      runAsUser: 0
+      allowPrivilegeEscalation: false
       capabilities:
-        add: ["NET_RAW"]
+        drop:
+        - ALL
   volumes:
     - name: output-volume
       emptyDir: { }
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
   serviceAccount: functest
   restartPolicy: Never
 EOF

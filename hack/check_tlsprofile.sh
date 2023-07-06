@@ -55,13 +55,6 @@ else
     exit 1
 fi
 
-if ! which nmap ; then
-    echo "Try to install nmap"
-    rpm -vhU --nodeps https://nmap.org/dist/nmap-7.92-1.x86_64.rpm
-    rpm -vhU https://nmap.org/dist/ncat-7.92-1.x86_64.rpm
-    rpm -vhU https://nmap.org/dist/nping-0.7.92-1.x86_64.rpm
-fi
-
 if [ -n "${OPENSHIFT_BUILD_NAMESPACE:-}" ]; then
   # on openshift-ci we are building with rhel-8-release-golang-1.19-openshift-4.12
   # which is FIPS compliant so only a subset of the allowed ciphers are available
