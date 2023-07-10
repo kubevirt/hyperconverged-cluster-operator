@@ -10,6 +10,8 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/utils/net"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/metrics"
+
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -87,7 +89,9 @@ func (c *ClusterInfoImp) Init(ctx context.Context, cl client.Client, logger logr
 		return err
 	}
 	if c.runningInOpenshift && c.singlestackipv6 {
-		return errors.New("OpenShift Virtualization is not supported on single stack IPv6 setup")
+		if err := metrics.HcoMetrics.SetHCOMetricSingleStackIPv6True(); err != nil {
+			return err
+		}
 	}
 
 	uiPluginVarValue, uiPluginVarExists := os.LookupEnv(KVUIPluginImageEnvV)

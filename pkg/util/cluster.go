@@ -5,11 +5,12 @@ import (
 	"errors"
 	"os"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/metrics"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/discovery"
 	"k8s.io/utils/net"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/metrics"
 
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
