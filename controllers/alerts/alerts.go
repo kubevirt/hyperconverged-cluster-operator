@@ -221,10 +221,10 @@ func createOperatorHealthStatusRule() monitoringv1.Rule {
 func createSingleStackIPv6AlertRule() monitoringv1.Rule {
 	return monitoringv1.Rule{
 		Alert: singleStackIPv6Alert,
-		Expr:  intstr.FromString("kubevirt_hco_hyperconverged_single_stack_ipv6 == 1"),
+		Expr:  intstr.FromString("kubevirt_hco_single_stack_ipv6 == 1"),
 		Annotations: map[string]string{
-			"description": "OpenShift Virtualization is not supported on a single stack IPv6 cluster",
-			"summary":     "OpenShift Virtualization is not supported on a single stack IPv6 cluster",
+			"description": "KubeVirt Hyperconverged is not supported on a single stack IPv6 cluster",
+			"summary":     "KubeVirt Hyperconverged is not supported on a single stack IPv6 cluster",
 		},
 		Labels: map[string]string{
 			severityAlertLabelKey:     "critical",
