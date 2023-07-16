@@ -14,7 +14,7 @@ const (
 	SspVersionEnvV                   = "SSP_VERSION"
 	TtoVersionEnvV                   = "TTO_VERSION"
 	HppoVersionEnvV                  = "HPPO_VERSION"
-	KvUiPluginImageEnvV              = "KV_CONSOLE_PLUGIN_IMAGE"
+	KvUIPluginImageEnvV              = "KV_CONSOLE_PLUGIN_IMAGE"
 	HcoValidatingWebhook             = "validate-hco.kubevirt.io"
 	HcoMutatingWebhookNS             = "mutate-ns-hco.kubevirt.io"
 	HcoMutatingWebhookHyperConverged = "mutate-hyperconverged-hco.kubevirt.io"
@@ -64,7 +64,7 @@ const (
 	DefaultWebhookCertDir = "/apiserver.local.config/certificates"
 
 	CliDownloadsServerPort       = 8080
-	UiPluginServerPort     int32 = 9443
+	UIPluginServerPort     int32 = 9443
 
 	ApiServerCRName = "cluster"
 
@@ -81,4 +81,5 @@ const (
 	AppComponentSchedule   AppComponent = "schedule"
 	AppComponentDeployment AppComponent = "deployment"
 	AppComponentTekton     AppComponent = "tekton"
+	AppComponentUIPlugin   AppComponent = "kubevirt-console-plugin"
 )

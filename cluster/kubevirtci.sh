@@ -13,7 +13,9 @@
 # limitations under the License.
 
 export KUBEVIRT_PROVIDER=${KUBEVIRT_PROVIDER:-'k8s-1.25'}
-export KUBEVIRTCI_TAG=$(curl -L -Ss https://storage.googleapis.com/kubevirt-prow/release/kubevirt/kubevirtci/latest)
+# TODO: pin to a specific kubevirtci tag due to an issue in latest. see: https://github.com/kubevirt/kubevirt/pull/10103#issuecomment-1637077797 for details
+# export KUBEVIRTCI_TAG=$(curl -L -Ss https://storage.googleapis.com/kubevirt-prow/release/kubevirt/kubevirtci/latest)
+export KUBEVIRTCI_TAG=2307121202-6724dec
 KUBEVIRTCI_PATH="${PWD}/_kubevirtci"
 KUBEVIRTCI_REPO='https://github.com/kubevirt/kubevirtci.git'
 

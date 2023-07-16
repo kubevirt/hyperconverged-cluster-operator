@@ -247,7 +247,7 @@ func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.Deployme
 								Value: params.HppoVersion,
 							},
 							{
-								Name:  util.KvUiPluginImageEnvV,
+								Name:  util.KvUIPluginImageEnvV,
 								Value: params.KvUiPluginImage,
 							},
 						}, params.Env...),
