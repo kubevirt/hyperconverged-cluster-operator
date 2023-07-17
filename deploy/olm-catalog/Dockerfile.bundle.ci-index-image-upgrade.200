@@ -1,10 +1,10 @@
-# Dockerfile.bundle.ci-index-image-upgrade.200 is a copy of this Dockerfile except the difference in TARGET_VERSION.
-# Any change being made in this file should be considered for the other file as well.
+# This Dockerfile is a copy of Dockerfile.bundle.ci-index-image-upgrade but to test two consecutive upgrades, e.g.
+# version X to Y to Z.
 
 FROM quay.io/fedora/fedora:37-x86_64 AS builder
 ARG INITIAL_VERSION=1.10.0
 ARG INITIAL_VERSION_SED="1\.10\.0"
-ARG TARGET_VERSION=100.0.0
+ARG TARGET_VERSION=200.0.0
 ARG PACKAGE_NAME=community-kubevirt-hyperconverged
 ARG CSV_FILE=/manifests/kubevirt-hyperconverged-operator.v${TARGET_VERSION}.clusterserviceversion.yaml
 ARG OLM_SKIP_RANGE="<${TARGET_VERSION}"
@@ -19,7 +19,7 @@ RUN mv /manifests/kubevirt-hyperconverged-operator.v${INITIAL_VERSION}.clusterse
 
 
 FROM scratch
-ARG VERSION=100.0.0
+ARG VERSION=200.0.0
 ARG PACKAGE_NAME=community-kubevirt-hyperconverged
 
 LABEL operators.operatorframework.io.bundle.mediatype.v1=registry+v1

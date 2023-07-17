@@ -1,3 +1,6 @@
+# Dockerfile.bundle.ci-index-image-upgrade.200 is a copy of this Dockerfile except the difference in TARGET_VERSION.
+# Any change being made in this file should be considered for the other file as well.
+
 FROM quay.io/fedora/fedora:37-x86_64 AS builder
 ARG INITIAL_VERSION=1.10.0
 ARG INITIAL_VERSION_SED="1\.10\.0"
