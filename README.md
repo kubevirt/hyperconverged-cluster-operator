@@ -108,14 +108,18 @@ Build and push the HCO's registry image.
 export IMAGE_REGISTRY=<image_registry>
 export REGISTRY_NAMESPACE=<container_org>
 export CONTAINER_TAG=example
+
+# build the container images and push them to registry
+make container-build container-push
+
 export HCO_OPERATOR_IMAGE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-operator:$CONTAINER_TAG
+export HCO_WEBHOOK_IMAGE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-webhook:$CONTAINER_TAG
+export ARTIFACTS_SERVER_IMAGE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/virt-artifacts-server:$CONTAINER_TAG
 
 # Image to be used in CSV manifests
 HCO_OPERATOR_IMAGE=$HCO_OPERATOR_IMAGE CSV_VERSION=$CSV_VERSION make build-manifests
-
-# builds the registry image and pushes it to 
-# $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hco-container-registry:$CONTAINER_TAG
-make bundleRegistry
+sed -i "s|+WEBHOOK_IMAGE_TO_REPLACE+|${HCO_WEBHOOK_IMAGE}|g" deploy/index-image/community-kubevirt-hyperconverged/1.11.0/manifests/kubevirt-hyperconverged-operator.v1.11.0.clusterserviceversion.yaml
+sed -i "s|+ARTIFACTS_SERVER_IMAGE_TO_REPLACE+|${ARTIFACTS_SERVER_IMAGE}|g" deploy/index-image/community-kubevirt-hyperconverged/1.11.0/manifests/kubevirt-hyperconverged-operator.v1.11.0.clusterserviceversion.yaml
 ```
 
 Create the namespace for the HCO.
@@ -123,50 +127,19 @@ Create the namespace for the HCO.
 kubectl create ns kubevirt-hyperconverged
 ```
 
-Create an OperatorGroup that watches all namespaces.
-```bash
-cat <<EOF | kubectl create -f -
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  name: hco-operatorgroup
-  namespace: kubevirt-hyperconverged
-spec: {}
-EOF
-```
+For the next set of commands, we will use the
+[`operator-sdk`](https://github.com/operator-framework/operator-sdk/releases) CLI tool. Below commands will create a 
+bundle and an index image, push the index image, and finally use that index image to install the HyperConverged 
+cluster Operator on the OLM-enabled cluster.
 
-Create a CatalogSource and a Subscription.
-
-> If OLM Operator and Catalog Operator run in a namespace different than `openshift-marketplace`, replace `openshift-marketplace` with it in the CatalogSource and Subscription below.
-> Use the container image created during `make bundleRegistry` as `.spec.image` in the CatalogSource.
-```bash
-cat <<EOF | kubectl create -f -
-apiVersion: operators.coreos.com/v1alpha1
-kind: CatalogSource
-metadata:
-  name: hco-catalogsource
-  namespace: openshift-marketplace
-spec:
-  sourceType: grpc
-  image: $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$CONTAINER_TAG
-  displayName: KubeVirt HyperConverged
-  publisher: Red Hat
-EOF
-```
-
-```bash
-cat <<EOF | kubectl create -f -
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: hco-subscription
-  namespace: kubevirt-hyperconverged
-spec:
-  channel: "1.11.0"
-  name: community-kubevirt-hyperconverged
-  source: hco-catalogsource
-  sourceNamespace: openshift-marketplace
-EOF
+```shell
+operator-sdk generate bundle --input-dir deploy/index-image/ --output-dir _out/bundle
+operator-sdk bundle validate _out/bundle  # optional
+podman build -f deploy/index-image/bundle.Dockerfile -t $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$CONTAINER_TAG 
+deploy/index-image
+podman push $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$CONTAINER_TAG deploy/index-image
+operator-sdk bundle validate $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$CONTAINER_TAG
+operator-sdk run bundle $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$CONTAINER_TAG
 ```
 
 Create an HCO CustomResource, which creates the KubeVirt CR, launching KubeVirt,
