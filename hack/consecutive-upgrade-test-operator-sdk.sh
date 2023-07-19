@@ -209,106 +209,105 @@ END
 
   Msg "operator conditions after upgrade"
   KUBECTL_BINARY=${CMD} INSTALLED_NAMESPACE=${HCO_NAMESPACE} printOperatorCondition "${T_VERSION}"
-
-  Msg "Ensure that old SSP operator resources are removed from the cluster"
-  ./hack/retry.sh 5 30 "CMD=${CMD} HCO_RESOURCE_NAME=${HCO_RESOURCE_NAME} HCO_NAMESPACE=${HCO_NAMESPACE} ./hack/check_old_ssp_removed.sh"
-
-  [[ -n ${found_new_running_hco_pod} ]]
-
-  echo "----- Images after upgrade"
-  # TODO: compare all of them with the list of images in RelatedImages in the new CSV
-  ${CMD} get deployments -n ${HCO_NAMESPACE} -o yaml | grep image | grep -v imagePullPolicy
-
-  OUTPUT_DIR=${OUTPUT_DIR} dump_sccs_after
-
-  Msg "make sure that the VM is still running, after the upgrade"
-  ${CMD} get vm -n ${VMS_NAMESPACE} -o yaml testvm
-  ${CMD} get vmi -n ${VMS_NAMESPACE} -o yaml testvm
-  ${CMD} get vmi -n ${VMS_NAMESPACE} testvm -o jsonpath='{ .status.phase }' | grep 'Running'
-  CURRENT_BOOTTIME=$(check_uptime 10 60)
-
-  if ((INITIAL_BOOTTIME - CURRENT_BOOTTIME > 3)) || ((CURRENT_BOOTTIME - INITIAL_BOOTTIME > 3)); then
-      echo "ERROR: The test VM got restarted during the upgrade process."
-      exit 1
-  else
-      echo "The test VM survived the upgrade process."
-  fi
-
-  Msg "make sure that we don't have outdated VMs"
-
-  INFRASTRUCTURETOPOLOGY=$(${CMD} get infrastructure.config.openshift.io cluster -o json | jq -j '.status.infrastructureTopology')
-  UPDATE_METHODS=$(${CMD} get hco ${HCO_RESOURCE_NAME} -n ${HCO_NAMESPACE} -o jsonpath='{.spec .workloadUpdateStrategy .workloadUpdateMethods}')
-
-  if [[ "${INFRASTRUCTURETOPOLOGY}" == "SingleReplica" ]]; then
-    echo "Skipping the check on SNO clusters"
-  elif [[ "${UPDATE_METHODS}" == "" || "${UPDATE_METHODS}" == "[]" ]]; then
-    echo "Skipping while workloadUpdateMethods methods are empty "
-  else
-    ./hack/retry.sh 10 30 "[[ \$(${CMD} get vmi -l kubevirt.io/outdatedLauncherImage -A --no-headers | wc -l) -eq 0 ]]" "${CMD} get vmi -l kubevirt.io/outdatedLauncherImage -A"
-    echo "All the running VMs got upgraded"
-  fi
-
-  ./hack/retry.sh 5 30 "~/virtctl stop testvm -n ${VMS_NAMESPACE}"
-  ${CMD} delete vm -n ${VMS_NAMESPACE} testvm
-
-  KUBECTL_BINARY=${CMD} ./hack/test_quick_start.sh
-
-  Msg "Check that OVS is deployed or not deployed according to deployOVS annotation in HCO CR."
-  ./hack/retry.sh 40 15 "CMD=${CMD} PREVIOUS_OVS_ANNOTATION=${PREVIOUS_OVS_ANNOTATION}\
-   PREVIOUS_OVS_STATE=${PREVIOUS_OVS_STATE} ./hack/check_upgrade_ovs.sh"
-
-  Msg "Ensure that console plugin deployment and service has been renamed successfully"
-  KUBECTL_BINARY=${CMD} INSTALLED_NAMESPACE=${HCO_NAMESPACE} ./hack/check_upgrade_console_plugin.sh
-
-  Msg "Check that the v2v CRDs and deployments were removed"
-  if ${CMD} get crd | grep -q v2v.kubevirt.io; then
-      echo "The v2v CRDs should not be found; they had to be removed."
-      exit 1
-  else
-      echo "v2v CRDs removed"
-  fi
-  if ${CMD} get deployments -n ${HCO_NAMESPACE} | grep -q vm-import; then
-      echo "v2v deployments should not be found; they had to be removed."
-      exit 1
-  else
-      echo "v2v deployments removed"
-  fi
-
-  Msg "Check that the v2v references were removed from .status.relatedObjects"
-  if ${CMD} -n ${HCO_NAMESPACE} ${HCO_KIND} ${HCO_RESOURCE_NAME} -o=jsonpath={.status.relatedObjects[*].apiVersion} | grep -q v2v.kubevirt.io; then
-      echo "v2v references should not be found in relatedObjects; they had to be removed."
-      exit 1
-  else
-      echo "v2v references removed from .status.relatedObjects"
-  fi
-
-  Msg "Check that the TTO CRD was removed"
-  if ${CMD} get crd | grep -q tektontasks.tektontasks.kubevirt.io; then
-      echo "The TTO CRD should not be found; it had to be removed."
-      exit 1
-  else
-      echo "TTO CRD removed"
-  fi
-
-  Msg "Check that the TTO references were removed from .status.relatedObjects"
-  if ${CMD} -n ${HCO_NAMESPACE} ${HCO_KIND} ${HCO_RESOURCE_NAME} -o=jsonpath={.status.relatedObjects[*].apiVersion} | grep -q tektontasks.kubevirt.io; then
-      echo "TTO reference should not be found in relatedObjects; it has to be removed."
-      exit 1
-  else
-      echo "TTO reference removed from .status.relatedObjects"
-  fi
-
-  Msg "check virtio-win image is in configmap"
-  VIRTIOWIN_IMAGE_CSV=$(${CMD} get ${CSV} -n ${HCO_NAMESPACE} \
-    -o jsonpath='{.spec.install.spec.deployments[?(@.name=="hco-operator")].spec.template.spec.containers[0].env[?(@.name=="VIRTIOWIN_CONTAINER")].value}')
-  VIRTIOWIN_IMAGE_CM=$(${CMD} get cm virtio-win -n ${HCO_NAMESPACE} -o jsonpath='{.data.virtio-win-image}')
-
-  [[ "${VIRTIOWIN_IMAGE_CSV}" == "${VIRTIOWIN_IMAGE_CM}" ]]
-
 }
 
 upgrade $INITIAL_VERSION $MID_VERSION $OO_MID_BUNDLE
 upgrade $MID_VERSION $TARGET_VERSION $OO_LAST_BUNDLE
+
+Msg "Ensure that old SSP operator resources are removed from the cluster"
+./hack/retry.sh 5 30 "CMD=${CMD} HCO_RESOURCE_NAME=${HCO_RESOURCE_NAME} HCO_NAMESPACE=${HCO_NAMESPACE} ./hack/check_old_ssp_removed.sh"
+
+[[ -n ${found_new_running_hco_pod} ]]
+
+echo "----- Images after upgrade"
+# TODO: compare all of them with the list of images in RelatedImages in the new CSV
+${CMD} get deployments -n ${HCO_NAMESPACE} -o yaml | grep image | grep -v imagePullPolicy
+
+OUTPUT_DIR=${OUTPUT_DIR} dump_sccs_after
+
+Msg "make sure that the VM is still running, after the upgrade"
+${CMD} get vm -n ${VMS_NAMESPACE} -o yaml testvm
+${CMD} get vmi -n ${VMS_NAMESPACE} -o yaml testvm
+${CMD} get vmi -n ${VMS_NAMESPACE} testvm -o jsonpath='{ .status.phase }' | grep 'Running'
+CURRENT_BOOTTIME=$(check_uptime 10 60)
+
+if ((INITIAL_BOOTTIME - CURRENT_BOOTTIME > 3)) || ((CURRENT_BOOTTIME - INITIAL_BOOTTIME > 3)); then
+    echo "ERROR: The test VM got restarted during the upgrade process."
+    exit 1
+else
+    echo "The test VM survived the upgrade process."
+fi
+
+Msg "make sure that we don't have outdated VMs"
+
+INFRASTRUCTURETOPOLOGY=$(${CMD} get infrastructure.config.openshift.io cluster -o json | jq -j '.status.infrastructureTopology')
+UPDATE_METHODS=$(${CMD} get hco ${HCO_RESOURCE_NAME} -n ${HCO_NAMESPACE} -o jsonpath='{.spec .workloadUpdateStrategy .workloadUpdateMethods}')
+
+if [[ "${INFRASTRUCTURETOPOLOGY}" == "SingleReplica" ]]; then
+  echo "Skipping the check on SNO clusters"
+elif [[ "${UPDATE_METHODS}" == "" || "${UPDATE_METHODS}" == "[]" ]]; then
+  echo "Skipping while workloadUpdateMethods methods are empty "
+else
+  ./hack/retry.sh 10 30 "[[ \$(${CMD} get vmi -l kubevirt.io/outdatedLauncherImage -A --no-headers | wc -l) -eq 0 ]]" "${CMD} get vmi -l kubevirt.io/outdatedLauncherImage -A"
+  echo "All the running VMs got upgraded"
+fi
+
+./hack/retry.sh 5 30 "~/virtctl stop testvm -n ${VMS_NAMESPACE}"
+${CMD} delete vm -n ${VMS_NAMESPACE} testvm
+
+KUBECTL_BINARY=${CMD} ./hack/test_quick_start.sh
+
+Msg "Check that OVS is deployed or not deployed according to deployOVS annotation in HCO CR."
+./hack/retry.sh 40 15 "CMD=${CMD} PREVIOUS_OVS_ANNOTATION=${PREVIOUS_OVS_ANNOTATION}\
+ PREVIOUS_OVS_STATE=${PREVIOUS_OVS_STATE} ./hack/check_upgrade_ovs.sh"
+
+Msg "Ensure that console plugin deployment and service has been renamed successfully"
+KUBECTL_BINARY=${CMD} INSTALLED_NAMESPACE=${HCO_NAMESPACE} ./hack/check_upgrade_console_plugin.sh
+
+Msg "Check that the v2v CRDs and deployments were removed"
+if ${CMD} get crd | grep -q v2v.kubevirt.io; then
+    echo "The v2v CRDs should not be found; they had to be removed."
+    exit 1
+else
+    echo "v2v CRDs removed"
+fi
+if ${CMD} get deployments -n ${HCO_NAMESPACE} | grep -q vm-import; then
+    echo "v2v deployments should not be found; they had to be removed."
+    exit 1
+else
+    echo "v2v deployments removed"
+fi
+
+Msg "Check that the v2v references were removed from .status.relatedObjects"
+if ${CMD} -n ${HCO_NAMESPACE} ${HCO_KIND} ${HCO_RESOURCE_NAME} -o=jsonpath={.status.relatedObjects[*].apiVersion} | grep -q v2v.kubevirt.io; then
+    echo "v2v references should not be found in relatedObjects; they had to be removed."
+    exit 1
+else
+    echo "v2v references removed from .status.relatedObjects"
+fi
+
+Msg "Check that the TTO CRD was removed"
+if ${CMD} get crd | grep -q tektontasks.tektontasks.kubevirt.io; then
+    echo "The TTO CRD should not be found; it had to be removed."
+    exit 1
+else
+    echo "TTO CRD removed"
+fi
+
+Msg "Check that the TTO references were removed from .status.relatedObjects"
+if ${CMD} -n ${HCO_NAMESPACE} ${HCO_KIND} ${HCO_RESOURCE_NAME} -o=jsonpath={.status.relatedObjects[*].apiVersion} | grep -q tektontasks.kubevirt.io; then
+    echo "TTO reference should not be found in relatedObjects; it has to be removed."
+    exit 1
+else
+    echo "TTO reference removed from .status.relatedObjects"
+fi
+
+Msg "check virtio-win image is in configmap"
+VIRTIOWIN_IMAGE_CSV=$(${CMD} get ${CSV} -n ${HCO_NAMESPACE} \
+  -o jsonpath='{.spec.install.spec.deployments[?(@.name=="hco-operator")].spec.template.spec.containers[0].env[?(@.name=="VIRTIOWIN_CONTAINER")].value}')
+VIRTIOWIN_IMAGE_CM=$(${CMD} get cm virtio-win -n ${HCO_NAMESPACE} -o jsonpath='{.data.virtio-win-image}')
+
+[[ "${VIRTIOWIN_IMAGE_CSV}" == "${VIRTIOWIN_IMAGE_CM}" ]]
 
 Msg "Read the HCO operator log before it is deleted"
 LOG_DIR="${ARTIFACT_DIR}/logs"
