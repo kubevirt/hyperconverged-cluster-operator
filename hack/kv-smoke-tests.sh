@@ -14,6 +14,9 @@ export BIN_DIR
 
 TESTS_BINARY="$BIN_DIR/kv_smoke_tests.test"
 
+### HACK
+KUBEVIRT_VERSION=v1.0.0
+###
 curl -Lo "$TESTS_BINARY" "https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VERSION}/tests.test"
 chmod +x "$TESTS_BINARY"
 

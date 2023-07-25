@@ -461,6 +461,7 @@ spec:
                         type: integer
                     type: object
                   machineType:
+                    description: Deprecated. Use architectureConfiguration instead.
                     type: string
                   mediatedDevicesConfiguration:
                     description: MediatedDevicesConfiguration holds information about
@@ -603,6 +604,17 @@ spec:
                   network:
                     description: NetworkConfiguration holds network options
                     properties:
+                      binding:
+                        additionalProperties:
+                          properties:
+                            sidecarImage:
+                              description: 'SidecarImage references a container image
+                                that runs in the virt-launcher pod. The sidecar handles
+                                (libvirt) domain configuration and optional services.
+                                version: 1alphav1'
+                              type: string
+                          type: object
+                        type: object
                       defaultNetworkInterface:
                         type: string
                       permitBridgeInterfaceOnPodNetwork:
@@ -811,6 +823,14 @@ spec:
                           false and the vmi is not requesting any high performance
                           feature (dedicatedCPU/realtime/hugePages), in which free
                           page reporting is always disabled.
+                        type: object
+                      disableSerialConsoleLog:
+                        description: DisableSerialConsoleLog disables the to log the
+                          auto-attached default serial console. If not set, serial
+                          console logs will be collect to a file and then streamed
+                          from a named 'guest-console-log'. The value can be individually
+                          overridden for each VM, not relevant if AutoattachSerialConsole
+                          is disabled.
                         type: object
                     type: object
                   vmStateStorageClass:
@@ -3459,6 +3479,7 @@ spec:
                         type: integer
                     type: object
                   machineType:
+                    description: Deprecated. Use architectureConfiguration instead.
                     type: string
                   mediatedDevicesConfiguration:
                     description: MediatedDevicesConfiguration holds information about
@@ -3601,6 +3622,17 @@ spec:
                   network:
                     description: NetworkConfiguration holds network options
                     properties:
+                      binding:
+                        additionalProperties:
+                          properties:
+                            sidecarImage:
+                              description: 'SidecarImage references a container image
+                                that runs in the virt-launcher pod. The sidecar handles
+                                (libvirt) domain configuration and optional services.
+                                version: 1alphav1'
+                              type: string
+                          type: object
+                        type: object
                       defaultNetworkInterface:
                         type: string
                       permitBridgeInterfaceOnPodNetwork:
@@ -3809,6 +3841,14 @@ spec:
                           false and the vmi is not requesting any high performance
                           feature (dedicatedCPU/realtime/hugePages), in which free
                           page reporting is always disabled.
+                        type: object
+                      disableSerialConsoleLog:
+                        description: DisableSerialConsoleLog disables the to log the
+                          auto-attached default serial console. If not set, serial
+                          console logs will be collect to a file and then streamed
+                          from a named 'guest-console-log'. The value can be individually
+                          overridden for each VM, not relevant if AutoattachSerialConsole
+                          is disabled.
                         type: object
                     type: object
                   vmStateStorageClass:

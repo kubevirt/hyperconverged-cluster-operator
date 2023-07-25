@@ -13,6 +13,7 @@ USER 1001
 ARG download_url=https://github.com/kubevirt/kubevirt/releases/download
 
 RUN eval $(cat /tmp/config  |grep KUBEVIRT_VERSION=) && \
+    KUBEVIRT_VERSION=v1.0.0 && \
     echo "KUBEVIRT_VERSION: $KUBEVIRT_VERSION" && \
     for arch in amd64 arm64; do \
         for os in linux darwin windows; do \
