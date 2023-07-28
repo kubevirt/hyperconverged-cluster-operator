@@ -9,10 +9,10 @@ The Hyperconverged Cluster Operator configures kubevirt and its supporting opera
 Users are expected to not modify the operands directly. The HyperConverged custom resource is the source of truth for the configuration.
 
 To make it more visible and clear for end users, the Hyperconverged Cluster Operator will count the number of these revert actions in a metric named kubevirt_hco_out_of_band_modifications_total.
-According to the value of that metric in the last 10 minutes, an alert named KubevirtHyperconvergedClusterOperatorCRModification will be eventually fired:
+According to the value of that metric in the last 10 minutes, an alert named KubeVirtCRModified will be eventually fired:
 ```
 Labels
-    alertname=KubevirtHyperconvergedClusterOperatorCRModification
+    alertname=KubeVirtCRModified
     component_name=kubevirt-kubevirt-hyperconverged
     severity=warning
 ```
