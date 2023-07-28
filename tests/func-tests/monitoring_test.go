@@ -113,7 +113,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		verifyOperatorHealthMetricValue(promClient, initialOperatorHealthMetricValue, warningImpact)
 	})
 
-	It("KubevirtHyperconvergedClusterOperatorUSModification alert should fired when there is an jsonpatch annotation to modify an operand CRs", func() {
+	It("UnsupportedHCOModification alert should fired when there is an jsonpatch annotation to modify an operand CRs", func() {
 		By("Updating HCO object with a new label")
 		hco := tests.GetHCO(ctx, virtCli)
 
@@ -125,7 +125,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		Eventually(func() *promApiv1.Alert {
 			alerts, err := promClient.Alerts(context.TODO())
 			Expect(err).ShouldNot(HaveOccurred())
-			alert := getAlertByName(alerts, "KubevirtHyperconvergedClusterOperatorUSModification")
+			alert := getAlertByName(alerts, "UnsupportedHCOModification")
 			return alert
 		}, 60*time.Second, time.Second).ShouldNot(BeNil())
 		verifyOperatorHealthMetricValue(promClient, initialOperatorHealthMetricValue, warningImpact)
