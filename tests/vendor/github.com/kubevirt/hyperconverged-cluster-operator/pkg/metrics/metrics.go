@@ -48,7 +48,7 @@ func (md metricDesc) init() prometheus.Collector {
 var HcoMetrics = func() hcoMetrics {
 	metricDescList := map[string]metricDesc{
 		HCOMetricOverwrittenModifications: {
-			fqName:          "kubevirt_hco_out_of_band_modifications_count",
+			fqName:          "kubevirt_hco_out_of_band_modifications_total",
 			help:            "Count of out-of-band modifications overwritten by HCO",
 			mType:           "Counter",
 			constLabelPairs: []string{counterLabelCompName},
@@ -63,7 +63,7 @@ var HcoMetrics = func() hcoMetrics {
 			},
 		},
 		HCOMetricUnsafeModifications: {
-			fqName:          "kubevirt_hco_unsafe_modification_count",
+			fqName:          "kubevirt_hco_unsafe_modifications",
 			help:            "Count of unsafe modifications in the HyperConverged annotations",
 			mType:           "Gauge",
 			constLabelPairs: []string{counterLabelAnnName},
