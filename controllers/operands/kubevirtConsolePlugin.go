@@ -143,7 +143,7 @@ func NewKvUIPluginDeplymnt(hc *hcov1beta1.HyperConverged) (*appsv1.Deployment, e
 	}
 
 	if hc.Spec.Infra.NodePlacement != nil {
-		if hc.Spec.Infra.NodePlacement.Affinity != nil {
+		if hc.Spec.Infra.NodePlacement.NodeSelector != nil {
 			deployment.Spec.Template.Spec.NodeSelector = make(map[string]string)
 			for key, value := range hc.Spec.Infra.NodePlacement.NodeSelector {
 				deployment.Spec.Template.Spec.NodeSelector[key] = value

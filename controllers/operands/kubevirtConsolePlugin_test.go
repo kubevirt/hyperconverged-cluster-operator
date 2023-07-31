@@ -6,6 +6,8 @@ import (
 
 	"k8s.io/utils/pointer"
 
+	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	consolev1 "github.com/openshift/api/console/v1"
@@ -194,7 +196,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		})
 	})
 
-	Context("Kubevirt Plugin Deployment", func() {
+	Context("Kubevirt Console Plugin and UI Proxy Deployments", func() {
 		var hco *hcov1beta1.HyperConverged
 		var req *common.HcoRequest
 
@@ -494,6 +496,93 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Expect(foundResource.Spec.Template.Spec.NodeSelector).Should(HaveKeyWithValue("key3", "value3"))
 
 				Expect(req.Conditions).To(BeEmpty())
+			})
+
+			It("should apply only NodeSelector if missing", func() {
+				existingResource, err := NewKvUIPluginDeplymnt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				hco.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{}
+				hco.Spec.Infra.NodePlacement.NodeSelector = commonTestUtils.NewNodePlacement().NodeSelector
+
+				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
+				handlers, err := newKvUIPluginDeploymentHandler(logger, cl, commonTestUtils.GetScheme(), hco)
+
+				Expect(err).ToNot(HaveOccurred())
+				res := handlers[0].ensure(req)
+				Expect(res.Created).To(BeFalse())
+				Expect(res.Updated).To(BeTrue())
+				Expect(res.Overwritten).To(BeFalse())
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Err).ToNot(HaveOccurred())
+
+				foundResource := &appsv1.Deployment{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+						foundResource),
+				).To(Succeed())
+
+				Expect(existingResource.Spec.Template.Spec.NodeSelector).To(BeEmpty())
+				Expect(foundResource.Spec.Template.Spec.NodeSelector).To(BeEquivalentTo(hco.Spec.Infra.NodePlacement.NodeSelector))
+			})
+
+			It("apply only Affinity if missing", func() {
+				existingResource, err := NewKvUIPluginDeplymnt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				hco.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{}
+				hco.Spec.Infra.NodePlacement.Affinity = commonTestUtils.NewNodePlacement().Affinity
+
+				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
+				handlers, err := newKvUIPluginDeploymentHandler(logger, cl, commonTestUtils.GetScheme(), hco)
+
+				Expect(err).ToNot(HaveOccurred())
+				res := handlers[0].ensure(req)
+				Expect(res.Created).To(BeFalse())
+				Expect(res.Updated).To(BeTrue())
+				Expect(res.Overwritten).To(BeFalse())
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Err).ToNot(HaveOccurred())
+
+				foundResource := &appsv1.Deployment{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+						foundResource),
+				).To(Succeed())
+
+				Expect(existingResource.Spec.Template.Spec.Affinity).To(BeNil())
+				Expect(foundResource.Spec.Template.Spec.Affinity).To(BeEquivalentTo(hco.Spec.Infra.NodePlacement.Affinity))
+			})
+
+			It("apply only Tolerations if missing", func() {
+				existingResource, err := NewKvUIPluginDeplymnt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				hco.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{}
+				hco.Spec.Infra.NodePlacement.Tolerations = commonTestUtils.NewNodePlacement().Tolerations
+
+				cl := commonTestUtils.InitClient([]runtime.Object{hco, existingResource})
+				handlers, err := newKvUIPluginDeploymentHandler(logger, cl, commonTestUtils.GetScheme(), hco)
+
+				Expect(err).ToNot(HaveOccurred())
+				res := handlers[0].ensure(req)
+				Expect(res.Created).To(BeFalse())
+				Expect(res.Updated).To(BeTrue())
+				Expect(res.Overwritten).To(BeFalse())
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Err).ToNot(HaveOccurred())
+
+				foundResource := &appsv1.Deployment{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+						foundResource),
+				).To(Succeed())
+
+				Expect(existingResource.Spec.Template.Spec.Tolerations).To(BeEmpty())
+				Expect(foundResource.Spec.Template.Spec.Tolerations).To(BeEquivalentTo(hco.Spec.Infra.NodePlacement.Tolerations))
 			})
 		})
 	})
