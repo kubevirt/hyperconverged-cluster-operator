@@ -161,7 +161,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = createPriorityClass(ctx, mgr)
+	err = createPriorityClass(ctx, mgr, eventEmitter)
 	cmdHelper.ExitOnError(err, "Failed creating PriorityClass")
 
 	logger.Info("Starting the Cmd.")
@@ -265,13 +265,17 @@ func getManagerOptions(watchNamespace string, operatorNamespace string, needLead
 // When the user deletes HCO CR virt-operator should continue running
 // so we are never supposed to delete it: because the priority class
 // is completely opaque to OLM it will remain as a leftover on the cluster
-func createPriorityClass(ctx context.Context, mgr manager.Manager) error {
+func createPriorityClass(ctx context.Context, mgr manager.Manager, emitter hcoutil.EventEmitter) error {
 	pc := operands.NewKubeVirtPriorityClass(&hcov1beta1.HyperConverged{})
 
 	err := mgr.GetAPIReader().Get(ctx, client.ObjectKeyFromObject(pc), pc)
 	if err != nil && apierrors.IsNotFound(err) {
 		logger.Info("Creating KubeVirt PriorityClass")
-		return mgr.GetClient().Create(ctx, pc, &client.CreateOptions{})
+		err = mgr.GetClient().Create(ctx, pc, &client.CreateOptions{})
+		if err != nil {
+			emitter.EmitEvent(nil, corev1.EventTypeNormal, "Created", fmt.Sprintf("Created PriorityClass %s", pc.Name))
+			return nil
+		}
 	}
 
 	return err
