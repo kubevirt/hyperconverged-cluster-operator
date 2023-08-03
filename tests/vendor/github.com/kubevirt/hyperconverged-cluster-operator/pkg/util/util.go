@@ -224,6 +224,10 @@ func EnsureDeleted(ctx context.Context, c client.Client, obj client.Object, hcoN
 		return false, err
 	}
 
+	if ts := obj.GetDeletionTimestamp(); ts != nil && (*ts).After(time.UnixMilli(0)) {
+		return false, nil
+	}
+
 	return ComponentResourceRemoval(ctx, c, obj, hcoName, logger, dryRun, wait, protectNonHCOObjects)
 }
 
