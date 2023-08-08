@@ -135,15 +135,24 @@ func (c *cacheIsOpenShift) IsOpenShiftSingleStackIPv6(cli kubecli.KubevirtClient
 			Name: "cluster",
 		},
 	}
-	err = cli.RestClient().Get().
-		Resource("networks").
-		Name("cluster").
-		AbsPath("/apis", openshiftconfigv1.GroupVersion.Group, openshiftconfigv1.GroupVersion.Version).
-		Timeout(10 * time.Second).
-		Do(context.TODO()).Into(clusterNetwork)
+	gvr := schema.GroupVersionResource{
+		Group:    openshiftconfigv1.GroupVersion.Group,
+		Version:  openshiftconfigv1.GroupVersion.Version,
+		Resource: "networks",
+	}
+
+	clustnet, err := cli.DynamicClient().
+		Resource(gvr).
+		Get(context.TODO(), "cluster", metav1.GetOptions{})
 	if err != nil {
 		return false, err
 	}
+
+	err = runtime.DefaultUnstructuredConverter.FromUnstructured(clustnet.Object, clusterNetwork)
+	if err != nil {
+		return false, err
+	}
+
 	cn := clusterNetwork.Status.ClusterNetwork
 	isSingleStackIPv6 := len(cn) == 1 && net.IsIPv6CIDRString(cn[0].CIDR)
 	return isSingleStackIPv6, nil
