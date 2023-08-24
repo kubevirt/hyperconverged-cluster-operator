@@ -76,9 +76,9 @@ var _ = Describe("CSV Operand", func() {
 
 func ensure(req *common.HcoRequest, hco *hcov1beta1.HyperConverged, ci hcoutil.ClusterInfo) *csvv1alpha1.ClusterServiceVersion {
 	cl := commontestutils.InitClient([]client.Object{hco, ci.GetCSV()})
-	handler := (*genericOperand)(newCsvHandler(cl, commontestutils.GetScheme(), ci))
+	handler := newCsvHandler(cl, ci)
 	res := handler.ensure(req)
-	Expect(res.UpgradeDone).To(BeFalse())
+	Expect(res.UpgradeDone).To(BeTrue())
 	Expect(res.Err).ToNot(HaveOccurred())
 
 	foundResource := &csvv1alpha1.ClusterServiceVersion{}
