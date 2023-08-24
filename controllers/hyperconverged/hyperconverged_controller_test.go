@@ -144,8 +144,9 @@ var _ = Describe("HyperconvergedController", func() {
 					DeployTektonTaskResources: pointer.Bool(true),
 				}
 
-				cl := commontestutils.InitClient([]client.Object{hcoNamespace, hco})
-				monitoringReconciler := alerts.NewMonitoringReconciler(hcoutil.GetClusterInfo(), cl, commontestutils.NewEventEmitterMock(), commontestutils.GetScheme())
+				ci := hcoutil.GetClusterInfo()
+				cl := commontestutils.InitClient([]client.Object{hcoNamespace, hco, ci.GetCSV()})
+				monitoringReconciler := alerts.NewMonitoringReconciler(ci, cl, commontestutils.NewEventEmitterMock(), commontestutils.GetScheme())
 
 				r := initReconciler(cl, nil)
 				r.monitoringReconciler = monitoringReconciler
@@ -249,7 +250,7 @@ var _ = Describe("HyperconvergedController", func() {
 						foundResource),
 				).ToNot(HaveOccurred())
 				// Check conditions
-				Expect(foundResource.Status.RelatedObjects).To(HaveLen(23))
+				Expect(foundResource.Status.RelatedObjects).To(HaveLen(22))
 				expectedRef := corev1.ObjectReference{
 					Kind:            "PrometheusRule",
 					Namespace:       namespace,
@@ -269,8 +270,9 @@ var _ = Describe("HyperconvergedController", func() {
 					EnableManagedTenantQuota:  pointer.Bool(true),
 				}
 
-				cl := commontestutils.InitClient([]client.Object{hcoNamespace, hco})
-				monitoringReconciler := alerts.NewMonitoringReconciler(hcoutil.GetClusterInfo(), cl, commontestutils.NewEventEmitterMock(), commontestutils.GetScheme())
+				ci := hcoutil.GetClusterInfo()
+				cl := commontestutils.InitClient([]client.Object{hcoNamespace, hco, ci.GetCSV()})
+				monitoringReconciler := alerts.NewMonitoringReconciler(ci, cl, commontestutils.NewEventEmitterMock(), commontestutils.GetScheme())
 
 				r := initReconciler(cl, nil)
 				r.monitoringReconciler = monitoringReconciler
@@ -335,7 +337,7 @@ var _ = Describe("HyperconvergedController", func() {
 						foundResource),
 				).ToNot(HaveOccurred())
 				// Check conditions
-				Expect(foundResource.Status.RelatedObjects).To(HaveLen(24))
+				Expect(foundResource.Status.RelatedObjects).To(HaveLen(23))
 				expectedRef := corev1.ObjectReference{
 					Kind:            "MTQ",
 					Name:            "mtq-kubevirt-hyperconverged",
@@ -1157,6 +1159,7 @@ var _ = Describe("HyperconvergedController", func() {
 				expected := getBasicDeployment()
 				Expect(expected.hco.Spec.TLSSecurityProfile).To(BeNil())
 
+				expected.csv = commontestutils.ClusterInfoMock{}.GetCSV()
 				resources := expected.toArray()
 				resources = append(resources, clusterVersion, infrastructure, ingress, apiServer, dns, ipv4network)
 				cl := commontestutils.InitClient(resources)

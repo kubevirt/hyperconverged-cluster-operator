@@ -1,12 +1,10 @@
 package operands
 
 import (
-	"errors"
 	"fmt"
-	"strings"
+	"strconv"
 
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -16,67 +14,70 @@ import (
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-type csvHandler genericOperand
+const disableOperandDeletionPatch = `[{"op": "replace", "path": "/metadata/annotations/console.openshift.io~1disable-operand-delete", "value": "%t"}]`
 
-func newCsvHandler(Client client.Client, Scheme *runtime.Scheme, ci hcoutil.ClusterInfo) *csvHandler {
+var _ Operand = &csvHandler{}
+
+type csvHandler struct {
+	client client.Client
+	csvKey client.ObjectKey
+}
+
+func newCsvHandler(cli client.Client, ci hcoutil.ClusterInfo) Operand {
 	return &csvHandler{
-		Client:                 Client,
-		Scheme:                 Scheme,
-		crType:                 "CSV",
-		setControllerReference: false,
-		hooks: &csvHooks{
-			ci: ci,
-		},
+		client: cli,
+		csvKey: client.ObjectKeyFromObject(ci.GetCSV()),
 	}
 }
 
-type csvHooks struct {
-	ci hcoutil.ClusterInfo
+func (c csvHandler) ensure(req *common.HcoRequest) *EnsureResult {
+	csv, err := c.getCsv(req)
+	er := NewEnsureResult(csv)
+	if err != nil {
+		return er.Error(err)
+	}
+
+	foundDisableOperandDeletion := csv.Annotations[components.DisableOperandDeletionAnnotation]
+	requiredDisableOperandDeletion := req.Instance.Spec.UninstallStrategy == hcov1beta1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
+
+	if foundDisableOperandDeletion != strconv.FormatBool(requiredDisableOperandDeletion) {
+		updateErr := c.updateCsv(req, csv, requiredDisableOperandDeletion)
+		if updateErr != nil {
+			return er.Error(updateErr)
+		}
+		return er.SetUpdated().SetUpgradeDone(true)
+	}
+
+	return er.SetUpgradeDone(true)
 }
 
-func (c csvHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	csv := c.ci.GetCSV()
-	csv.Annotations[components.DisableOperandDeletionAnnotation] = "true"
-	if hc.Spec.UninstallStrategy == hcov1beta1.HyperConvergedUninstallStrategyRemoveWorkloads {
-		csv.Annotations[components.DisableOperandDeletionAnnotation] = "false"
+func (c csvHandler) getCsv(req *common.HcoRequest) (*csvv1alpha1.ClusterServiceVersion, error) {
+	csv := &csvv1alpha1.ClusterServiceVersion{}
+	err := c.client.Get(req.Ctx, c.csvKey, csv)
+	if err != nil {
+		req.Logger.Error(err, fmt.Sprintf("Could not find resource - APIVersion: %s, Kind: %s, Name: %s",
+			csv.APIVersion, csv.Kind, csv.Name))
+		return nil, err
 	}
 	return csv, nil
 }
 
-func (c csvHooks) getEmptyCr() client.Object { return &csvv1alpha1.ClusterServiceVersion{} }
-
-func (c csvHooks) updateCr(req *common.HcoRequest, cli client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
-	found, ok1 := exists.(*csvv1alpha1.ClusterServiceVersion)
-	csv, ok2 := required.(*csvv1alpha1.ClusterServiceVersion)
-	if !ok1 || !ok2 {
-		return false, false, errors.New("can't convert to CSV")
+func (c csvHandler) updateCsv(req *common.HcoRequest, csv *csvv1alpha1.ClusterServiceVersion, disableOperandDeletion bool) error {
+	if req.HCOTriggered {
+		req.Logger.Info("Updating existing CSV disable-operand-delete annotation to new opinionated values")
+	} else {
+		req.Logger.Info("Reconciling an externally updated CSV disable-operand-delete annotation to its opinionated values")
 	}
 
-	foundDisableOperandDeletion := found.Annotations[components.DisableOperandDeletionAnnotation]
-	csvDisableOperandDeletion := csv.Annotations[components.DisableOperandDeletionAnnotation]
-
-	if csvDisableOperandDeletion != foundDisableOperandDeletion {
-		if req.HCOTriggered {
-			req.Logger.Info("Updating existing CSV disable-operand-delete annotation to new opinionated values")
-		} else {
-			req.Logger.Info("Reconciling an externally updated CSV disable-operand-delete annotation to its opinionated values")
-		}
-
-		patch := fmt.Sprintf(
-			"[{\"op\": \"replace\",\"path\": \"/metadata/annotations/%s\",\"value\": \"%s\"}]\n",
-			strings.ReplaceAll(components.DisableOperandDeletionAnnotation, "/", "~1"),
-			csvDisableOperandDeletion,
-		)
-		err := cli.Patch(req.Ctx, found, client.RawPatch(types.JSONPatchType, []byte(patch)))
-		if err != nil {
-			req.Logger.Error(err, "Failed to update CSV disable-operand-delete annotation")
-			return false, false, err
-		}
-		req.Logger.Info("Updated CSV disable-operand-delete annotation")
-		return true, false, nil
+	patch := fmt.Sprintf(disableOperandDeletionPatch, disableOperandDeletion)
+	err := c.client.Patch(req.Ctx, csv, client.RawPatch(types.JSONPatchType, []byte(patch)))
+	if err != nil {
+		req.Logger.Error(err, "Failed to update CSV disable-operand-delete annotation")
+		return err
 	}
 
-	return false, false, nil
+	req.Logger.Info("Updated CSV disable-operand-delete annotation")
+	return nil
 }
 
-func (c csvHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+func (c csvHandler) reset() { /* no implementation */ }
