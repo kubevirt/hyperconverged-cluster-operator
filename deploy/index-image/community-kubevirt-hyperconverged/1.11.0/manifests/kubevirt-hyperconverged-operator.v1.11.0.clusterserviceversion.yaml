@@ -511,6 +511,14 @@ spec:
           - list
           - watch
           - update
+        - apiGroups:
+          - machineconfiguration.openshift.io
+          resources:
+          - machineconfigs
+          verbs:
+          - get
+          - list
+          - watch
         serviceAccountName: hyperconverged-cluster-operator
       - rules:
         - apiGroups:

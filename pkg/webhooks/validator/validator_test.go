@@ -769,7 +769,7 @@ var _ = Describe("webhooks validator", func() {
 				hco := &v1beta1.HyperConverged{}
 				ctx := context.TODO()
 				cli := getFakeClient(hco)
-				kv, err := operands.NewKubeVirt(hco)
+				kv, err := operands.NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(cli.Delete(ctx, kv)).To(Succeed())
 				wh := NewWebhookHandler(logger, cli, decoder, HcoValidNamespace, false, nil)
@@ -1826,7 +1826,7 @@ func newHyperConvergedConfig() *sdkapi.NodePlacement {
 }
 
 func getFakeClient(hco *v1beta1.HyperConverged) *commontestutils.HcoTestClient {
-	kv, err := operands.NewKubeVirt(hco)
+	kv, err := operands.NewKubeVirt(hco, nil)
 	Expect(err).ToNot(HaveOccurred())
 
 	cdi, err := operands.NewCDI(hco)

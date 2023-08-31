@@ -12,6 +12,7 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	openshiftroutev1 "github.com/openshift/api/route/v1"
+	mcov1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operatorsapiv2 "github.com/operator-framework/api/pkg/operators/v2"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -79,6 +80,7 @@ var (
 		operatorsapiv2.AddToScheme,
 		imagev1.Install,
 		mtqv1alpha1.AddToScheme,
+		mcov1.AddToScheme,
 	}
 )
 
@@ -253,6 +255,7 @@ func getCacheOption(operatorNamespace string, isMonitoringAvailable, isOpenshift
 		&consolev1.ConsolePlugin{}: {
 			Label: labelSelector,
 		},
+		&mcov1.MachineConfig{}: {},
 	}
 
 	if isMonitoringAvailable {

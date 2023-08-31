@@ -5,6 +5,9 @@ go 1.20
 require (
 	dario.cat/mergo v1.0.0
 	github.com/blang/semver/v4 v4.0.0
+	github.com/coreos/ign-converter v0.0.0-20230417193809-cee89ea7d8ff
+	github.com/coreos/ignition v0.35.0
+	github.com/coreos/ignition/v2 v2.15.0
 	github.com/evanphx/json-patch v5.7.0+incompatible
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-logr/logr v1.2.4
@@ -16,6 +19,7 @@ require (
 	github.com/openshift/api v3.9.1-0.20190517100836-d5b34b957e91+incompatible
 	github.com/openshift/custom-resource-status v1.1.2
 	github.com/openshift/library-go v0.0.0-20230915122714-b753831a0dce
+	github.com/openshift/machine-config-operator v0.0.0-00010101000000-000000000000
 	github.com/operator-framework/api v0.17.7
 	github.com/operator-framework/operator-lib v0.11.1-0.20230306195046-28cadc6b6055
 	github.com/pkg/errors v0.9.1
@@ -23,7 +27,8 @@ require (
 	github.com/prometheus/client_golang v1.16.0
 	github.com/prometheus/client_model v0.4.0
 	github.com/samber/lo v1.38.1
-	github.com/spf13/pflag v1.0.5
+	github.com/spf13/pflag v1.0.6-0.20210604193023-d5e0c0615ace
+	github.com/vincent-petithory/dataurl v1.0.0
 	golang.org/x/sync v0.3.0
 	golang.org/x/tools v0.13.0
 	gomodules.xyz/jsonpatch/v2 v2.4.0
@@ -32,6 +37,7 @@ require (
 	k8s.io/apimachinery v0.28.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20230918164632-68afd615200d
+	k8s.io/kubernetes v1.26.3
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	kubevirt.io/api v1.0.0
 	kubevirt.io/containerized-data-importer-api v1.57.0
@@ -42,13 +48,23 @@ require (
 	sigs.k8s.io/controller-tools v0.13.0
 )
 
-// TODO: consume v0.12.0 as soon as available
-replace github.com/operator-framework/operator-lib => github.com/operator-framework/operator-lib v0.0.0-20230717184314-6efbe3a22f6f
+replace (
+	github.com/openshift/machine-config-operator => github.com/openshift/machine-config-operator v0.0.1-0.20230807154212-886c5c3fc7a9 // release-4.14
+	// TODO: consume v0.12.0 as soon as available
+	github.com/operator-framework/operator-lib => github.com/operator-framework/operator-lib v0.0.0-20230717184314-6efbe3a22f6f
+)
 
 require (
+	github.com/ajeddeloh/go-json v0.0.0-20200220154158-5ae607161559 // indirect
+	github.com/aws/aws-sdk-go v1.44.204 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/coreos/go-json v0.0.0-20230131223807-18775e0fb4fb // indirect
+	github.com/coreos/go-semver v0.3.1 // indirect
+	github.com/coreos/go-systemd v0.0.0-20190719114852-fd7a80b32e1f // indirect
+	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
+	github.com/coreos/vcontext v0.0.0-20230201181013-d72178a18687 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.7.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
@@ -66,6 +82,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/pprof v0.0.0-20230912144702-c363fe2c2ed8 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -78,8 +95,10 @@ require (
 	github.com/prometheus/procfs v0.11.1 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
+	github.com/spf13/cobra v1.7.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
+	go4.org v0.0.0-20200104003542-c7e774b10ea0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/net v0.15.0 // indirect
