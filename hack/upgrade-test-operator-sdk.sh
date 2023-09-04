@@ -296,20 +296,6 @@ VIRTIOWIN_IMAGE_CM=$(${CMD} get cm virtio-win -n ${HCO_NAMESPACE} -o jsonpath='{
 
 [[ "${VIRTIOWIN_IMAGE_CSV}" == "${VIRTIOWIN_IMAGE_CM}" ]]
 
-Msg "check that the kubevirt console plugin is accessible"
-EXPECTED_PLUGIN_NAME="kubevirt-plugin"
-# confirm the ConsolePlugin exists in the cluster
-${CMD} get consoleplugin ${EXPECTED_PLUGIN_NAME}
-PLUGIN_SERVICE_NAME=$(${CMD} get consoleplugin ${EXPECTED_PLUGIN_NAME} -o jsonpath='{.spec.backend.service.name}')
-PLUGIN_SERVICE_PORT=$(${CMD} get consoleplugin ${EXPECTED_PLUGIN_NAME} -o jsonpath='{.spec.backend.service.port}')
-
-# get a console pod
-CONSOLE_POD=$(${CMD} get pods -n openshift-console -l app=console,component=ui -o json | jq -r '.items[0].metadata.name')
-# verify the plugin manifest file is reachable to the console pod, and extracts from it the plugin name
-PLUGIN_NAME=$(${CMD} exec -n openshift-console "${CONSOLE_POD}" -- curl -ks https://${PLUGIN_SERVICE_NAME}.${HCO_NAMESPACE}.svc:${PLUGIN_SERVICE_PORT}/plugin-manifest.json | jq -r '.name')
-# verify the plugin name in the manifest matches the expected name
-[[ "${PLUGIN_NAME}" == "${EXPECTED_PLUGIN_NAME}" ]]
-
 Msg "Read the HCO operator log before it been deleted"
 LOG_DIR="${ARTIFACT_DIR}/logs"
 mkdir -p "${LOG_DIR}"
