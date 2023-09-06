@@ -161,11 +161,8 @@ reverted back to false.
 **Default**: `false`
 
 ### deployVmConsoleProxy Feature Gate
-Set the `deployVmConsoleProxy` feature gate to true to allow SSP operator to deploy its resources. SSP operator will 
-deploy a proxy that provides an access to the VNC console of a KubeVirt Virtual Machine (VM).
-
-**Note**: Once `deployVmConsoleProxy` is set to true, SSP operator will not delete deployed resources if `deployVmConsoleProxy` is 
-reverted back to false.
+Set the `deployVmConsoleProxy` feature gate to `true` to allow SSP operator to deploy its resources. SSP operator will 
+deploy a service that provides new API to generate a time limited token to access the VNC console of a KubeVirt Virtual Machine (VM).
 
 **Default**: `false`
 
