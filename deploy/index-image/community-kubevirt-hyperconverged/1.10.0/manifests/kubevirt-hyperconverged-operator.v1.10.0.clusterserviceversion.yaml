@@ -2848,40 +2848,37 @@ spec:
         - apiGroups:
           - rbac.authorization.k8s.io
           resources:
-          - rolebindings
-          - roles
-          verbs:
-          - '*'
-        - apiGroups:
-          - rbac.authorization.k8s.io
-          resources:
           - clusterrolebindings
           - clusterroles
           verbs:
-          - '*'
-        - apiGroups:
-          - ""
-          resources:
-          - pods
-          - services
-          verbs:
+          - create
           - get
           - list
           - watch
           - delete
+          - update
         - apiGroups:
           - apiextensions.k8s.io
           resources:
           - customresourcedefinitions
           - customresourcedefinitions/status
           verbs:
-          - '*'
+          - create
+          - get
+          - list
+          - watch
+          - delete
+          - update
         - apiGroups:
           - mtq.kubevirt.io
           resources:
-          - '*'
+          - mtqs
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - delete
+          - update
         - apiGroups:
           - scheduling.k8s.io
           resources:
@@ -3039,7 +3036,7 @@ spec:
                 - name: HPPO_VERSION
                   value: v0.16.0
                 - name: MTQ_VERSION
-                  value: v1.1.1
+                  value: v1.1.2
                 - name: KV_CONSOLE_PLUGIN_IMAGE
                   value: quay.io/kubevirt-ui/kubevirt-plugin@sha256:5a783ac8af2ad5d6c7dd731ad29dfb013321c06f919dce2242eef1b3d0a9f194
                 - name: KV_CONSOLE_PROXY_IMAGE
@@ -3730,17 +3727,17 @@ spec:
                 - name: DEPLOY_CLUSTER_RESOURCES
                   value: "true"
                 - name: OPERATOR_VERSION
-                  value: v1.1.1
+                  value: v1.1.2
                 - name: CONTROLLER_IMAGE
-                  value: quay.io/kubevirt/mtq-controller@sha256:d88a5410083b371249e6a2586f7d3211c8e558315c0b0bd6f530861bfb33b803
+                  value: quay.io/kubevirt/mtq-controller@sha256:d607bc79ce8c968d40413e3659e173ccaa93bc065d3231cdeef2467cf2d9b650
                 - name: MTQ_LOCK_SERVER_IMAGE
-                  value: quay.io/kubevirt/mtq-lock-server@sha256:fd0bde887e7675a826adfbee27a7af5103bd60d05f88ef6b335dfcececc3eac2
+                  value: quay.io/kubevirt/mtq-lock-server@sha256:5c7cc642c63a0f229fc541d339b306c73233ef7e1a789a9a2b36b139904a4c98
                 - name: VERBOSITY
                   value: "1"
                 - name: PULL_POLICY
                   value: IfNotPresent
                 - name: MONITORING_NAMESPACE
-                image: quay.io/kubevirt/mtq-operator@sha256:bab0889e64ef80386bb04892543bb296b8e48b0faf811cd6228e73991526519c
+                image: quay.io/kubevirt/mtq-operator@sha256:40a6d2acad8a800e9e6b3d2e802ba9892761450b0f8de2b614180bc0f65baf3b
                 imagePullPolicy: IfNotPresent
                 name: mtq-operator
                 ports:
@@ -4161,14 +4158,36 @@ spec:
           - secrets
           - services
           verbs:
-          - '*'
+          - create
+          - get
+          - list
+          - watch
+          - delete
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          - services
+          - endpoints
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
         - apiGroups:
           - apps
           resources:
           - deployments
           - deployments/finalizers
           verbs:
-          - '*'
+          - create
+          - get
+          - list
+          - watch
+          - delete
+          - update
         - apiGroups:
           - monitoring.coreos.com
           resources:
@@ -4187,7 +4206,25 @@ spec:
           resources:
           - leases
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - delete
+          - update
+          - create
+          - patch
+        - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - rolebindings
+          - roles
+          verbs:
+          - create
+          - get
+          - list
+          - watch
+          - delete
+          - update
         serviceAccountName: mtq-operator
     strategy: deployment
   installModes:
@@ -4270,11 +4307,11 @@ spec:
     name: livenessprobe
   - image: quay.io/kubevirt/macvtap-cni@sha256:434420511e09b2b5ede785a2c9062b6658ffbc26fbdd4629ce06110f9039c600
     name: macvtap-cni
-  - image: quay.io/kubevirt/mtq-controller@sha256:d88a5410083b371249e6a2586f7d3211c8e558315c0b0bd6f530861bfb33b803
+  - image: quay.io/kubevirt/mtq-controller@sha256:d607bc79ce8c968d40413e3659e173ccaa93bc065d3231cdeef2467cf2d9b650
     name: mtq-controller
-  - image: quay.io/kubevirt/mtq-lock-server@sha256:fd0bde887e7675a826adfbee27a7af5103bd60d05f88ef6b335dfcececc3eac2
+  - image: quay.io/kubevirt/mtq-lock-server@sha256:5c7cc642c63a0f229fc541d339b306c73233ef7e1a789a9a2b36b139904a4c98
     name: mtq-lock-server
-  - image: quay.io/kubevirt/mtq-operator@sha256:bab0889e64ef80386bb04892543bb296b8e48b0faf811cd6228e73991526519c
+  - image: quay.io/kubevirt/mtq-operator@sha256:40a6d2acad8a800e9e6b3d2e802ba9892761450b0f8de2b614180bc0f65baf3b
     name: mtq-operator
   - image: ghcr.io/k8snetworkplumbingwg/multus-cni@sha256:3fbcc32bd4e4d15bd93c96def784a229cd84cca27942bf4858b581f31c97ee02
     name: multus-cni
