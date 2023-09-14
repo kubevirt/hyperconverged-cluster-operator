@@ -143,6 +143,9 @@ functest: test-functional-in-container
 build-functest:
 	${DO} ./hack/build-tests.sh
 
+build-hcocli:
+	go build -o _out/hcocli cli.go
+
 test-functional:
 	JOB_TYPE="stdci" ./hack/run-tests.sh
 
