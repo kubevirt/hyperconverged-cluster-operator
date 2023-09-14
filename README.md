@@ -98,7 +98,7 @@ $ curl https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operato
 ## Developer Workflow (using [OLM](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/install/install.md#installing-olm))
 
 Build the HCO container using the Makefile recipes `make container-build` and
-`make container-push` with vars `IMAGE_REGISTRY`, `REGISTRY_NAMESPACE`, and `CONTAINER_TAG`
+`make container-push` with vars `IMAGE_REGISTRY`, `REGISTRY_NAMESPACE`, and `IMAGE_TAG`
 to direct it's location.
 
 To use the HCO's container, we'll use a registry image to serve metadata to OLM.
@@ -107,14 +107,14 @@ Build and push the HCO's registry image.
 # e.g. quay.io, docker.io
 export IMAGE_REGISTRY=<image_registry>
 export REGISTRY_NAMESPACE=<container_org>
-export CONTAINER_TAG=example
+export IMAGE_TAG=example
 
 # build the container images and push them to registry
 make container-build container-push
 
-export HCO_OPERATOR_IMAGE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-operator:$CONTAINER_TAG
-export HCO_WEBHOOK_IMAGE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-webhook:$CONTAINER_TAG
-export ARTIFACTS_SERVER_IMAGE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/virt-artifacts-server:$CONTAINER_TAG
+export HCO_OPERATOR_IMAGE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-operator:$IMAGE_TAG
+export HCO_WEBHOOK_IMAGE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-webhook:$IMAGE_TAG
+export ARTIFACTS_SERVER_IMAGE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/virt-artifacts-server:$IMAGE_TAG
 
 # Image to be used in CSV manifests
 HCO_OPERATOR_IMAGE=$HCO_OPERATOR_IMAGE CSV_VERSION=$CSV_VERSION make build-manifests
@@ -129,17 +129,16 @@ kubectl create ns kubevirt-hyperconverged
 
 For the next set of commands, we will use the
 [`operator-sdk`](https://github.com/operator-framework/operator-sdk/releases) CLI tool. Below commands will create a 
-bundle and an index image, push the index image, and finally use that index image to install the HyperConverged 
-cluster Operator on the OLM-enabled cluster.
+bundle index image, push this image, and finally use that bundle image to install the HyperConverged cluster
+Operator on the OLM-enabled cluster.
 
 ```shell
 operator-sdk generate bundle --input-dir deploy/index-image/ --output-dir _out/bundle
 operator-sdk bundle validate _out/bundle  # optional
-podman build -f deploy/index-image/bundle.Dockerfile -t $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$CONTAINER_TAG 
-deploy/index-image
-podman push $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$CONTAINER_TAG deploy/index-image
-operator-sdk bundle validate $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$CONTAINER_TAG
-operator-sdk run bundle $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$CONTAINER_TAG
+podman build -f deploy/index-image/bundle.Dockerfile -t $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$IMAGE_TAG deploy/index-image
+podman push $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$IMAGE_TAG deploy/index-image
+operator-sdk bundle validate $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$IMAGE_TAG
+operator-sdk run bundle $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$IMAGE_TAG
 ```
 
 Create an HCO CustomResource, which creates the KubeVirt CR, launching KubeVirt,
