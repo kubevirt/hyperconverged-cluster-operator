@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -62,13 +61,18 @@ var _ = Describe("Test MTQ", Label("MTQ"), Serial, Ordered, func() {
 			}).WithTimeout(5 * time.Minute).WithPolling(time.Second).ShouldNot(BeTrue())
 
 			By("check MTQ pods")
-			Eventually(func(g Gomega) []corev1.Pod {
+			Eventually(func(g Gomega) []string {
 				pods, err := cli.CoreV1().Pods(flags.KubeVirtInstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: "app.kubernetes.io/component=multi-tenant"})
 				g.Expect(err).ShouldNot(HaveOccurred())
-				return pods.Items
+				podNames := make([]string, len(pods.Items))
+				for i, pod := range pods.Items {
+					podNames[i] = pod.Name
+				}
+				GinkgoWriter.Println("MTQ Pods:", podNames)
+				return podNames
 			}).WithTimeout(5 * time.Minute).
 				WithPolling(time.Second).
-				Should(HaveLen(3))
+				Should(HaveLen(5))
 		})
 	})
 })
