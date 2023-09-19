@@ -797,17 +797,17 @@ spec:
         - name: DEPLOY_CLUSTER_RESOURCES
           value: "true"
         - name: OPERATOR_VERSION
-          value: v1.1.1
+          value: v1.1.6
         - name: CONTROLLER_IMAGE
-          value: quay.io/kubevirt/mtq-controller@sha256:d88a5410083b371249e6a2586f7d3211c8e558315c0b0bd6f530861bfb33b803
+          value: quay.io/kubevirt/mtq-controller@sha256:ada69753814449caf475d1b87a55283135384d88ce64b8f945134cfa97b7de8c
         - name: MTQ_LOCK_SERVER_IMAGE
-          value: quay.io/kubevirt/mtq-lock-server@sha256:fd0bde887e7675a826adfbee27a7af5103bd60d05f88ef6b335dfcececc3eac2
+          value: quay.io/kubevirt/mtq-lock-server@sha256:edb5cfc62c3696ab44726f8fd2e36d2bdcff099620f7f2eda048d1ae6969cceb
         - name: VERBOSITY
           value: "1"
         - name: PULL_POLICY
           value: IfNotPresent
         - name: MONITORING_NAMESPACE
-        image: quay.io/kubevirt/mtq-operator@sha256:bab0889e64ef80386bb04892543bb296b8e48b0faf811cd6228e73991526519c
+        image: quay.io/kubevirt/mtq-operator@sha256:5b7cf932f1883b10444747e32505a408565f493379bf098c4acfa98c476e3f40
         imagePullPolicy: IfNotPresent
         name: mtq-operator
         ports:
