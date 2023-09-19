@@ -15,10 +15,10 @@ require (
 	k8s.io/apimachinery v0.28.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
-	kubevirt.io/api v1.0.0
-	kubevirt.io/client-go v1.0.0
+	kubevirt.io/api v1.1.0-alpha.0
+	kubevirt.io/client-go v1.1.0-alpha.0
 	kubevirt.io/containerized-data-importer-api v1.57.0
-	kubevirt.io/kubevirt v1.0.0
+	kubevirt.io/kubevirt v1.1.0-alpha.0
 )
 
 replace (
@@ -54,7 +54,6 @@ require (
 	github.com/cilium/ebpf v0.9.1 // indirect
 	github.com/coreos/prometheus-operator v0.38.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/elazarl/goproxy v0.0.0-20190911111923-ecfe977594f1 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.7.0 // indirect
 	github.com/fatih/color v1.14.1 // indirect

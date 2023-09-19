@@ -64,7 +64,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
-	netutils "k8s.io/utils/net"
 
 	"kubevirt.io/kubevirt/tests/exec"
 	"kubevirt.io/kubevirt/tests/framework/checks"
@@ -103,29 +102,17 @@ import (
 )
 
 const (
-	BinBash                = "/bin/bash"
-	StartingVMInstance     = "Starting a VirtualMachineInstance"
-	WaitingVMInstanceStart = "Waiting until the VirtualMachineInstance will start"
-	EchoLastReturnValue    = "echo $?\n"
+	BinBash                     = "/bin/bash"
+	StartingVMInstance          = "Starting a VirtualMachineInstance"
+	WaitingVMInstanceStart      = "Waiting until the VirtualMachineInstance will start"
+	EchoLastReturnValue         = "echo $?\n"
+	CustomHostPath              = "custom-host-path"
+	DiskAlpineHostPath          = "disk-alpine-host-path"
+	DiskWindowsSysprep          = "disk-windows-sysprep"
+	DiskCustomHostPath          = "disk-custom-host-path"
+	defaultDiskSize             = "1Gi"
+	ContainerCompletionWaitTime = 60
 )
-
-const (
-	CustomHostPath = "custom-host-path"
-)
-
-const (
-	DiskAlpineHostPath = "disk-alpine-host-path"
-	DiskWindows        = "disk-windows"
-	DiskWindowsSysprep = "disk-windows-sysprep"
-	DiskCustomHostPath = "disk-custom-host-path"
-)
-
-const (
-	defaultDiskSize = "1Gi"
-)
-
-const MigrationWaitTime = 240
-const ContainerCompletionWaitTime = 60
 
 func TestCleanup() {
 	GinkgoWriter.Println("Global test cleanup started.")
@@ -271,24 +258,34 @@ func RunVMI(vmi *v1.VirtualMachineInstance, timeout int) *v1.VirtualMachineInsta
 }
 
 func RunVMIAndExpectLaunch(vmi *v1.VirtualMachineInstance, timeout int) *v1.VirtualMachineInstance {
-	obj := RunVMI(vmi, timeout)
+	vmi = RunVMI(vmi, timeout)
 	By(WaitingVMInstanceStart)
-	return libwait.WaitForSuccessfulVMIStartWithTimeout(obj, timeout)
+	return libwait.WaitForVMIPhase(vmi,
+		[]v1.VirtualMachineInstancePhase{v1.Running},
+		libwait.WithTimeout(timeout),
+	)
 }
 
 func RunVMIAndExpectLaunchWithDataVolume(vmi *v1.VirtualMachineInstance, dv *cdiv1.DataVolume, timeout int) *v1.VirtualMachineInstance {
-	obj := RunVMI(vmi, timeout)
+	vmi = RunVMI(vmi, timeout)
 	By("Waiting until the DataVolume is ready")
 	libstorage.EventuallyDV(dv, timeout, HaveSucceeded())
 	By(WaitingVMInstanceStart)
 	warningsIgnoreList := []string{"didn't find PVC", "unable to find datavolume"}
-	return libwait.WaitForSuccessfulVMIStartWithTimeoutIgnoreSelectedWarnings(obj, timeout, warningsIgnoreList)
+	return libwait.WaitForVMIPhase(vmi,
+		[]v1.VirtualMachineInstancePhase{v1.Running},
+		libwait.WithWarningsIgnoreList(warningsIgnoreList),
+		libwait.WithTimeout(timeout),
+	)
 }
 
 func RunVMIAndExpectLaunchIgnoreWarnings(vmi *v1.VirtualMachineInstance, timeout int) *v1.VirtualMachineInstance {
 	obj := RunVMI(vmi, timeout)
 	By(WaitingVMInstanceStart)
-	return libwait.WaitForSuccessfulVMIStartWithTimeoutIgnoreWarnings(obj, timeout)
+	return libwait.WaitForSuccessfulVMIStart(obj,
+		libwait.WithFailOnWarnings(false),
+		libwait.WithTimeout(timeout),
+	)
 }
 
 func RunVMIAndExpectScheduling(vmi *v1.VirtualMachineInstance, timeout int) *v1.VirtualMachineInstance {
@@ -297,9 +294,13 @@ func RunVMIAndExpectScheduling(vmi *v1.VirtualMachineInstance, timeout int) *v1.
 }
 
 func RunVMIAndExpectSchedulingWithWarningPolicy(vmi *v1.VirtualMachineInstance, timeout int, wp watcher.WarningsPolicy) *v1.VirtualMachineInstance {
-	obj := RunVMI(vmi, timeout)
+	vmi = RunVMI(vmi, timeout)
 	By("Waiting until the VirtualMachineInstance will be scheduled")
-	return libwait.WaitForVMIScheduling(obj, timeout, wp)
+	return libwait.WaitForVMIPhase(vmi,
+		[]v1.VirtualMachineInstancePhase{v1.Scheduling, v1.Scheduled, v1.Running},
+		libwait.WithWarningsPolicy(&wp),
+		libwait.WithTimeout(timeout),
+	)
 }
 
 func getRunningPodByVirtualMachineInstance(vmi *v1.VirtualMachineInstance, namespace string) (*k8sv1.Pod, error) {
@@ -360,49 +361,37 @@ func GetProcessName(pod *k8sv1.Pod, pid string) (output string, err error) {
 	return
 }
 
-func GetVcpuMask(pod *k8sv1.Pod, cpu string) (output string, err error) {
+func GetVcpuMask(pod *k8sv1.Pod, emulator, cpu string) (output string, err error) {
 	virtClient := kubevirt.Client()
 
-	pscmd := "ps -LC qemu-kvm -o lwp,comm| grep \"CPU " + cpu + "\"  | cut -f 1 -d \"C\""
-	output, err = exec.ExecuteCommandOnPod(
-		virtClient,
-		pod,
-		"compute",
-		[]string{BinBash, "-c", pscmd},
-	)
-	Expect(err).ToNot(HaveOccurred())
+	pscmd := `ps -LC ` + emulator + ` -o lwp,comm | grep "CPU ` + cpu + `"  | cut -f1 -dC`
+	args := []string{BinBash, "-c", pscmd}
+	Eventually(func() error {
+		output, err = exec.ExecuteCommandOnPod(virtClient, pod, "compute", args)
+		return err
+	}).Should(Succeed())
 	vcpupid := strings.TrimSpace(strings.Trim(output, "\n"))
-	tasksetcmd := "taskset -c -p " + vcpupid + " | cut -f 2 -d \":\""
-	args := []string{BinBash, "-c", tasksetcmd}
+	tasksetcmd := "taskset -c -p " + vcpupid + " | cut -f2 -d:"
+	args = []string{BinBash, "-c", tasksetcmd}
 	output, err = exec.ExecuteCommandOnPod(virtClient, pod, "compute", args)
 	Expect(err).ToNot(HaveOccurred())
 
-	return output, err
+	return strings.TrimSpace(output), err
 }
 
-func GetKvmPitMask(pod *k8sv1.Pod, nodeName string) (output string, err error) {
-	virtClient := kubevirt.Client()
-
-	output, err = exec.ExecuteCommandOnPod(
-		virtClient,
-		pod,
-		"compute",
-		[]string{"ps", "-C", "qemu-kvm", "-o", "pid", "--noheader"},
-	)
-	Expect(err).ToNot(HaveOccurred())
-	qemupid := strings.TrimSpace(strings.Trim(output, "\n"))
+func GetKvmPitMask(qemupid, nodeName string) (output string, err error) {
 	kvmpitcomm := "kvm-pit/" + qemupid
-	args := []string{"ps", "-C", kvmpitcomm, "-o", "pid", "--noheader"}
+	args := []string{"pgrep", "-f", kvmpitcomm}
 	output, err = ExecuteCommandInVirtHandlerPod(nodeName, args)
 	Expect(err).ToNot(HaveOccurred())
 
-	kvmpitpid := strings.TrimSpace(strings.Trim(output, "\n"))
-	tasksetcmd := "taskset -c -p " + kvmpitpid + " | cut -f 2 -d \":\""
+	kvmpitpid := strings.TrimSpace(output)
+	tasksetcmd := "taskset -c -p " + kvmpitpid + " | cut -f2 -d:"
 	args = []string{BinBash, "-c", tasksetcmd}
 	output, err = ExecuteCommandInVirtHandlerPod(nodeName, args)
 	Expect(err).ToNot(HaveOccurred())
 
-	return output, err
+	return strings.TrimSpace(output), err
 }
 
 func ListCgroupThreads(pod *k8sv1.Pod) (output string, err error) {
@@ -778,23 +767,14 @@ func AddEphemeralCdrom(vmi *v1.VirtualMachineInstance, name string, bus v1.DiskB
 	return vmi
 }
 
-func NewRandomFedoraVMI() *v1.VirtualMachineInstance {
+func NewRandomFedoraVMI(opts ...libvmi.Option) *v1.VirtualMachineInstance {
 	networkData := libnet.CreateDefaultCloudInitNetworkData()
 
-	return libvmi.NewFedora(
+	return libvmi.NewFedora(append([]libvmi.Option{
 		libvmi.WithInterface(libvmi.InterfaceDeviceWithMasqueradeBinding()),
 		libvmi.WithNetwork(v1.DefaultPodNetwork()),
-		libvmi.WithCloudInitNoCloudNetworkData(networkData),
-	)
-}
-
-func NewRandomFedoraVMIWithGuestAgent() *v1.VirtualMachineInstance {
-	networkData := libnet.CreateDefaultCloudInitNetworkData()
-
-	return libvmi.NewFedora(
-		libvmi.WithInterface(libvmi.InterfaceDeviceWithMasqueradeBinding()),
-		libvmi.WithNetwork(v1.DefaultPodNetwork()),
-		libvmi.WithCloudInitNoCloudNetworkData(networkData),
+		libvmi.WithCloudInitNoCloudNetworkData(networkData)},
+		opts...)...,
 	)
 }
 
@@ -809,12 +789,7 @@ func NewRandomFedoraVMIWithBlacklistGuestAgent(commands string) *v1.VirtualMachi
 	)
 }
 
-func NewRandomFedoraVMIWithDmidecode() *v1.VirtualMachineInstance {
-	vmi := NewRandomVMIWithEphemeralDiskHighMemory(cd.ContainerDiskFor(cd.ContainerDiskFedoraTestTooling))
-	return vmi
-}
-
-func NewRandomFedoraVMIWithVirtWhatCpuidHelper() *v1.VirtualMachineInstance {
+func NewRandomFedoraVMIWithEphemeralDiskHighMemory() *v1.VirtualMachineInstance {
 	vmi := NewRandomVMIWithEphemeralDiskHighMemory(cd.ContainerDiskFor(cd.ContainerDiskFedoraTestTooling))
 	return vmi
 }
@@ -1070,23 +1045,6 @@ func AddLabelDownwardAPIVolume(vmi *v1.VirtualMachineInstance, volumeName string
 	})
 }
 
-func AddDownwardMetricsVolume(vmi *v1.VirtualMachineInstance, volumeName string) {
-	vmi.Spec.Volumes = append(vmi.Spec.Volumes, v1.Volume{
-		Name: volumeName,
-		VolumeSource: v1.VolumeSource{
-			DownwardMetrics: &v1.DownwardMetricsVolumeSource{},
-		}})
-
-	vmi.Spec.Domain.Devices.Disks = append(vmi.Spec.Domain.Devices.Disks, v1.Disk{
-		Name: volumeName,
-		DiskDevice: v1.DiskDevice{
-			Disk: &v1.DiskTarget{
-				Bus: v1.DiskBusVirtio,
-			},
-		},
-	})
-}
-
 func AddServiceAccountDisk(vmi *v1.VirtualMachineInstance, serviceAccountName string) {
 	volumeName := serviceAccountName + "-disk"
 	vmi.Spec.Volumes = append(vmi.Spec.Volumes, v1.Volume{
@@ -1105,6 +1063,17 @@ func AddServiceAccountDisk(vmi *v1.VirtualMachineInstance, serviceAccountName st
 func AddExplicitPodNetworkInterface(vmi *v1.VirtualMachineInstance) {
 	vmi.Spec.Domain.Devices.Interfaces = []v1.Interface{*v1.DefaultMasqueradeNetworkInterface()}
 	vmi.Spec.Networks = []v1.Network{*v1.DefaultPodNetwork()}
+}
+
+func AddWatchdog(vmi *v1.VirtualMachineInstance, action v1.WatchdogAction) {
+	vmi.Spec.Domain.Devices.Watchdog = &v1.Watchdog{
+		Name: "watchdog",
+		WatchdogDevice: v1.WatchdogDevice{
+			I6300ESB: &v1.I6300ESBWatchdog{
+				Action: action,
+			},
+		},
+	}
 }
 
 func NewInt32(x int32) *int32 {
@@ -1335,7 +1304,7 @@ func GetRunningVirtualMachineInstanceDomainXML(virtClient kubecli.KubevirtClient
 		command,
 	)
 	if err != nil {
-		return "", fmt.Errorf("could not dump libvirt domxml (remotely on pod): %v: %s", err, stderr)
+		return "", fmt.Errorf("could not dump libvirt domxml (remotely on pod %s): %v: %s, %s", vmiPod.Name, err, stdout, stderr)
 	}
 	return stdout, err
 }
@@ -1758,6 +1727,14 @@ func GetRunningVMIDomainSpec(vmi *v1.VirtualMachineInstance) (*launcherApi.Domai
 	return &runningVMISpec, err
 }
 
+func GetRunningVMIEmulator(vmi *v1.VirtualMachineInstance) (string, error) {
+	domSpec, err := GetRunningVMIDomainSpec(vmi)
+	if err != nil {
+		return "", err
+	}
+	return domSpec.Devices.Emulator, nil
+}
+
 func ForwardPorts(pod *k8sv1.Pod, ports []string, stop chan struct{}, readyTimeout time.Duration) error {
 	errChan := make(chan error, 1)
 	readyChan := make(chan struct{})
@@ -2139,13 +2116,6 @@ func GetBundleFromConfigMap(configMapName string) ([]byte, []*x509.Certificate) 
 	return nil, nil
 }
 
-func FormatIPForURL(ip string) string {
-	if netutils.IsIPv6String(ip) {
-		return "[" + ip + "]"
-	}
-	return ip
-}
-
 func IsRunningOnKindInfra() bool {
 	provider := os.Getenv("KUBEVIRT_PROVIDER")
 	return strings.HasPrefix(provider, "kind")
@@ -2154,23 +2124,6 @@ func IsRunningOnKindInfra() bool {
 func RandTmpDir() string {
 	const tmpPath = "/var/provision/kubevirt.io/tests"
 	return filepath.Join(tmpPath, rand.String(10))
-}
-
-// VMILauncherIgnoreWarnings waiting for the VMI to be up but ignoring warnings like a disconnected guest-agent
-func VMILauncherIgnoreWarnings(virtClient kubecli.KubevirtClient) func(vmi *v1.VirtualMachineInstance) *v1.VirtualMachineInstance {
-	return func(vmi *v1.VirtualMachineInstance) *v1.VirtualMachineInstance {
-		By(StartingVMInstance)
-		obj, err := virtClient.RestClient().Post().Resource("virtualmachineinstances").Namespace(testsuite.GetTestNamespace(vmi)).Body(vmi).Do(context.Background()).Get()
-		Expect(err).ToNot(HaveOccurred())
-
-		By("Waiting the VirtualMachineInstance start")
-		vmi, ok := obj.(*v1.VirtualMachineInstance)
-		Expect(ok).To(BeTrue(), "Object is not of type *v1.VirtualMachineInstance")
-		// Warnings are okay. We'll receive a warning that the agent isn't connected
-		// during bootup, but that is transient
-		Expect(libwait.WaitForSuccessfulVMIStartIgnoreWarnings(vmi).Status.NodeName).ToNot(BeEmpty())
-		return vmi
-	}
 }
 
 func CheckCloudInitMetaData(vmi *v1.VirtualMachineInstance, testFile, testData string) {
@@ -2439,4 +2392,14 @@ func RenderTargetcliPod(name, disksPVC string) *k8sv1.Pod {
 			},
 		},
 	}
+}
+
+func CheckResultShellCommandOnVmi(vmi *v1.VirtualMachineInstance, cmd, output string, timeout int) {
+	res, err := console.SafeExpectBatchWithResponse(vmi, []expect.Batcher{
+		&expect.BSnd{S: fmt.Sprintf("%s\n", cmd)},
+		&expect.BExp{R: console.PromptExpression},
+	}, timeout)
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	ExpectWithOffset(1, res).ToNot(BeEmpty())
+	ExpectWithOffset(1, res[0].Output).To(ContainSubstring(output))
 }

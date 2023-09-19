@@ -33,7 +33,7 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20230918164632-68afd615200d
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
-	kubevirt.io/api v1.0.0
+	kubevirt.io/api v1.1.0-alpha.0
 	kubevirt.io/containerized-data-importer-api v1.57.0
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4
 	kubevirt.io/managed-tenant-quota v1.1.8

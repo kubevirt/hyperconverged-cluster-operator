@@ -358,7 +358,6 @@ func (VirtualMachineStatus) SwaggerDoc() map[string]string {
 		"memoryDumpRequest":      "MemoryDumpRequest tracks memory dump request phase and info of getting a memory\ndump to the given pvc\n+nullable\n+optional",
 		"observedGeneration":     "ObservedGeneration is the generation observed by the vmi when started.\n+optional",
 		"desiredGeneration":      "DesiredGeneration is the generation which is desired for the VMI.\nThis will be used in comparisons with ObservedGeneration to understand when\nthe VMI is out of sync. This will be changed at the same time as\nObservedGeneration to remove errors which could occur if Generation is\nupdated through an Update() before ObservedGeneration in Status.\n+optional",
-		"interfaceRequests":      "InterfaceRequests indicates a list of interfaces added to the VMI template and\nhot-plugged on an active running VMI.\n+listType=atomic",
 	}
 }
 
@@ -382,13 +381,6 @@ func (VirtualMachineStateChangeRequest) SwaggerDoc() map[string]string {
 		"action": "Indicates the type of action that is requested. e.g. Start or Stop",
 		"data":   "Provides additional data in order to perform the Action",
 		"uid":    "Indicates the UUID of an existing Virtual Machine Instance that this change request applies to -- if applicable",
-	}
-}
-
-func (VirtualMachineInterfaceRequest) SwaggerDoc() map[string]string {
-	return map[string]string{
-		"addInterfaceOptions":    "AddInterfaceOptions when set indicates a network interface should be added.\nThe details within this field specify how to add the interface",
-		"removeInterfaceOptions": "RemoveInterfaceOptions when set indicates a network interface should be removed.\nThe details within this field specify how to remove the interface",
 	}
 }
 
@@ -671,21 +663,6 @@ func (RemoveVolumeOptions) SwaggerDoc() map[string]string {
 	}
 }
 
-func (AddInterfaceOptions) SwaggerDoc() map[string]string {
-	return map[string]string{
-		"":                                "AddInterfaceOptions is provided when dynamically hot plugging a network interface",
-		"networkAttachmentDefinitionName": "NetworkAttachmentDefinitionName references a NetworkAttachmentDefinition CRD object. Format:\n<networkAttachmentDefinitionName>, <namespace>/<networkAttachmentDefinitionName>. If namespace is not\nspecified, VMI namespace is assumed.",
-		"name":                            "Name indicates the logical name of the interface.",
-	}
-}
-
-func (RemoveInterfaceOptions) SwaggerDoc() map[string]string {
-	return map[string]string{
-		"":     "RemoveInterfaceOptions is provided when dynamically hot unplugging a network interface",
-		"name": "Name indicates the logical name of the interface.",
-	}
-}
-
 func (TokenBucketRateLimiter) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"qps":   "QPS indicates the maximum QPS to the apiserver from this client.\nIf it's zero, the component default will be used",
@@ -714,6 +691,7 @@ func (ReloadableComponentConfiguration) SwaggerDoc() map[string]string {
 func (KubeVirtConfiguration) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"":                                   "KubeVirtConfiguration holds all kubevirt configurations",
+		"machineType":                        "Deprecated. Use architectureConfiguration instead.",
 		"evictionStrategy":                   "EvictionStrategy defines at the cluster level if the VirtualMachineInstance should be\nmigrated instead of shut-off in case of a node drain. If the VirtualMachineInstance specific\nfield is set it overrides the cluster level one.",
 		"additionalGuestMemoryOverheadRatio": "AdditionalGuestMemoryOverheadRatio can be used to increase the virtualization infrastructure\noverhead. This is useful, since the calculation of this overhead is not accurate and cannot\nbe entirely known in advance. The ratio that is being set determines by which factor to increase\nthe overhead calculated by Kubevirt. A higher ratio means that the VMs would be less compromised\nby node pressures, but would mean that fewer VMs could be scheduled to a node.\nIf not set, the default is 1.",
 		"supportContainerResources":          "+listType=map\n+listMapKey=type\nSupportContainerResources specifies the resource requirements for various types of supporting containers such as container disks/virtiofs/sidecars and hotplug attachment pods. If omitted a sensible default will be supplied.",
@@ -838,7 +816,7 @@ func (PciHostDevice) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"":                         "PciHostDevice represents a host PCI device allowed for passthrough",
 		"pciVendorSelector":        "The vendor_id:product_id tuple of the PCI device",
-		"resourceName":             "The name of the resource that is representing the device. Exposed by\na device plugin and requested by VMs. Typically of the form\nvendor.com/product_nameThe name of the resource that is representing\nthe device. Exposed by a device plugin and requested by VMs.\nTypically of the form vendor.com/product_name",
+		"resourceName":             "The name of the resource that is representing the device. Exposed by\na device plugin and requested by VMs. Typically of the form\nvendor.com/product_name",
 		"externalResourceProvider": "If true, KubeVirt will leave the allocation and monitoring to an\nexternal device plugin",
 	}
 }
@@ -877,6 +855,12 @@ func (KSMConfiguration) SwaggerDoc() map[string]string {
 func (NetworkConfiguration) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"": "NetworkConfiguration holds network options",
+	}
+}
+
+func (InterfaceBindingPlugin) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"sidecarImage": "SidecarImage references a container image that runs in the virt-launcher pod.\nThe sidecar handles (libvirt) domain configuration and optional services.\nversion: 1alphav1",
 	}
 }
 
@@ -920,8 +904,13 @@ func (PreferenceMatcher) SwaggerDoc() map[string]string {
 
 func (LiveUpdateFeatures) SwaggerDoc() map[string]string {
 	return map[string]string{
-		"cpu": "LiveUpdateCPU holds hotplug configuration for the CPU resource.\nEmpty struct indicates that default will be used for maxSockets.\nDefault is specified on cluster level.\nAbsence of the struct means opt-out from CPU hotplug functionality.",
+		"cpu":      "LiveUpdateCPU holds hotplug configuration for the CPU resource.\nEmpty struct indicates that default will be used for maxSockets.\nDefault is specified on cluster level.\nAbsence of the struct means opt-out from CPU hotplug functionality.",
+		"affinity": "Affinity allows live updating the virtual machines node affinity",
 	}
+}
+
+func (LiveUpdateAffinity) SwaggerDoc() map[string]string {
+	return map[string]string{}
 }
 
 func (LiveUpdateCPU) SwaggerDoc() map[string]string {
@@ -933,5 +922,41 @@ func (LiveUpdateCPU) SwaggerDoc() map[string]string {
 func (LiveUpdateConfiguration) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"maxCpuSockets": "MaxCpuSockets holds the maximum amount of sockets that can be hotplugged",
+	}
+}
+
+func (SEVPlatformInfo) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":          "SEVPlatformInfo contains information about the AMD SEV features for the node.\n\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
+		"pdh":       "Base64 encoded platform Diffie-Hellman key.",
+		"certChain": "Base64 encoded SEV certificate chain.",
+	}
+}
+
+func (SEVMeasurementInfo) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":            "SEVMeasurementInfo contains information about the guest launch measurement.\n\n+k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object",
+		"measurement": "Base64 encoded launch measurement of the SEV guest.",
+		"apiMajor":    "API major version of the SEV host.",
+		"apiMinor":    "API minor version of the SEV host.",
+		"buildID":     "Build ID of the SEV host.",
+		"policy":      "Policy of the SEV guest.",
+		"loaderSHA":   "SHA256 of the loader binary",
+	}
+}
+
+func (SEVSessionOptions) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":        "SEVSessionOptions is used to provide SEV session parameters.",
+		"session": "Base64 encoded session blob.",
+		"dhCert":  "Base64 encoded guest owner's Diffie-Hellman key.",
+	}
+}
+
+func (SEVSecretOptions) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":       "SEVSecretOptions is used to provide a secret for a running guest.",
+		"header": "Base64 encoded header needed to decrypt the secret.",
+		"secret": "Base64 encoded encrypted launch secret.",
 	}
 }

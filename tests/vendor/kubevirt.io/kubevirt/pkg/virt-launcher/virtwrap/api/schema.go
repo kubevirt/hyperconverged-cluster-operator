@@ -142,6 +142,11 @@ type InterfaceStatus struct {
 	InterfaceName string
 }
 
+type SEVNodeParameters struct {
+	PDH       string
+	CertChain string
+}
+
 type Timezone struct {
 	Zone   string
 	Offset int
@@ -473,7 +478,7 @@ type Devices struct {
 	Inputs      []Input            `xml:"input"`
 	Serials     []Serial           `xml:"serial"`
 	Consoles    []Console          `xml:"console"`
-	Watchdog    *Watchdog          `xml:"watchdog,omitempty"`
+	Watchdogs   []Watchdog         `xml:"watchdog,omitempty"`
 	Rng         *Rng               `xml:"rng,omitempty"`
 	Filesystems []FilesystemDevice `xml:"filesystem,omitempty"`
 	Redirs      []RedirectedDevice `xml:"redirdev,omitempty"`
@@ -652,15 +657,15 @@ type DiskTarget struct {
 }
 
 type DiskDriver struct {
-	Cache       string      `xml:"cache,attr,omitempty"`
-	ErrorPolicy string      `xml:"error_policy,attr,omitempty"`
-	IO          v1.DriverIO `xml:"io,attr,omitempty"`
-	Name        string      `xml:"name,attr"`
-	Type        string      `xml:"type,attr"`
-	IOThread    *uint       `xml:"iothread,attr,omitempty"`
-	Queues      *uint       `xml:"queues,attr,omitempty"`
-	Discard     string      `xml:"discard,attr,omitempty"`
-	IOMMU       string      `xml:"iommu,attr,omitempty"`
+	Cache       string             `xml:"cache,attr,omitempty"`
+	ErrorPolicy v1.DiskErrorPolicy `xml:"error_policy,attr,omitempty"`
+	IO          v1.DriverIO        `xml:"io,attr,omitempty"`
+	Name        string             `xml:"name,attr"`
+	Type        string             `xml:"type,attr"`
+	IOThread    *uint              `xml:"iothread,attr,omitempty"`
+	Queues      *uint              `xml:"queues,attr,omitempty"`
+	Discard     string             `xml:"discard,attr,omitempty"`
+	IOMMU       string             `xml:"iommu,attr,omitempty"`
 }
 
 type DiskSourceHost struct {
@@ -907,8 +912,8 @@ type Boot struct {
 }
 
 type BootMenu struct {
-	Enabled bool  `xml:"enabled,attr"`
-	Timeout *uint `xml:"timeout,attr,omitempty"`
+	Enable  string `xml:"enable,attr"`
+	Timeout *uint  `xml:"timeout,attr,omitempty"`
 }
 
 type Loader struct {
@@ -944,6 +949,8 @@ type LaunchSecurity struct {
 	Cbitpos         string `xml:"cbitpos,omitempty"`
 	ReducedPhysBits string `xml:"reducedPhysBits,omitempty"`
 	Policy          string `xml:"policy,omitempty"`
+	DHCert          string `xml:"dhCert,omitempty"`
+	Session         string `xml:"session,omitempty"`
 }
 
 //END LaunchSecurity --------------------

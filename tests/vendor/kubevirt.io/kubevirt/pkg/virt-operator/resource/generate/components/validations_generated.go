@@ -1064,6 +1064,7 @@ var CRDsValidation map[string]string = map[string]string{
                   type: integer
               type: object
             machineType:
+              description: Deprecated. Use architectureConfiguration instead.
               type: string
             mediatedDevicesConfiguration:
               description: MediatedDevicesConfiguration holds information about MDEV
@@ -1203,6 +1204,16 @@ var CRDsValidation map[string]string = map[string]string{
             network:
               description: NetworkConfiguration holds network options
               properties:
+                binding:
+                  additionalProperties:
+                    properties:
+                      sidecarImage:
+                        description: 'SidecarImage references a container image that
+                          runs in the virt-launcher pod. The sidecar handles (libvirt)
+                          domain configuration and optional services. version: 1alphav1'
+                        type: string
+                    type: object
+                  type: object
                 defaultNetworkInterface:
                   type: string
                 permitBridgeInterfaceOnPodNetwork:
@@ -1252,10 +1263,7 @@ var CRDsValidation map[string]string = map[string]string{
                       resourceName:
                         description: The name of the resource that is representing
                           the device. Exposed by a device plugin and requested by
-                          VMs. Typically of the form vendor.com/product_nameThe name
-                          of the resource that is representing the device. Exposed
-                          by a device plugin and requested by VMs. Typically of the
-                          form vendor.com/product_name
+                          VMs. Typically of the form vendor.com/product_name
                         type: string
                     required:
                     - pciVendorSelector
@@ -4251,6 +4259,10 @@ var CRDsValidation map[string]string = map[string]string{
           description: LiveUpdateFeatures references a configuration of hotpluggable
             resources
           properties:
+            affinity:
+              description: Affinity allows live updating the virtual machines node
+                affinity
+              type: object
             cpu:
               description: LiveUpdateCPU holds hotplug configuration for the CPU resource.
                 Empty struct indicates that default will be used for maxSockets. Default
@@ -5516,9 +5528,9 @@ var CRDsValidation map[string]string = map[string]string{
                             Defaults to true.
                           type: boolean
                         autoattachSerialConsole:
-                          description: Whether to attach the default serial console
-                            or not. Serial console access will not be available if
-                            set to false. Defaults to true.
+                          description: Whether to attach the default virtio-serial
+                            console or not. Serial console access will not be available
+                            if set to false. Defaults to true.
                           type: boolean
                         autoattachVSOCK:
                           description: Whether to attach the VSOCK CID to the VM or
@@ -5621,6 +5633,10 @@ var CRDsValidation map[string]string = map[string]string{
                                     description: ReadOnly. Defaults to false.
                                     type: boolean
                                 type: object
+                              errorPolicy:
+                                description: If specified, it can change the default
+                                  error policy (stop) for the disk
+                                type: string
                               io:
                                 description: 'IO specifies which QEMU disk IO mode
                                   should be used. Supported values are: native, default,
@@ -5662,6 +5678,10 @@ var CRDsValidation map[string]string = map[string]string{
                             - name
                             type: object
                           type: array
+                        downwardMetrics:
+                          description: DownwardMetrics creates a virtio serials for
+                            exposing the downward metrics to the vmi.
+                          type: object
                         filesystems:
                           description: Filesystems describes filesystem which is connected
                             to the vmi.
@@ -5775,6 +5795,19 @@ var CRDsValidation map[string]string = map[string]string{
                                   to the device. This value is required to be unique
                                   across all devices and be between 1 and (16*1024-1).
                                 type: integer
+                              binding:
+                                description: 'Binding specifies the binding plugin
+                                  that will be used to connect the interface to the
+                                  guest. It provides an alternative to InterfaceBindingMethod.
+                                  version: 1alphav1'
+                                properties:
+                                  name:
+                                    description: 'Name references to the binding name
+                                      as denined in the kubevirt CR. version: 1alphav1'
+                                    type: string
+                                required:
+                                - name
+                                type: object
                               bootOrder:
                                 description: BootOrder is an integer value > 0, used
                                   to determine ordering of boot devices. Lower values
@@ -6208,6 +6241,10 @@ var CRDsValidation map[string]string = map[string]string{
                             efi:
                               description: If set, EFI will be used instead of BIOS.
                               properties:
+                                persistent:
+                                  description: If set to true, Persistent will persist
+                                    the EFI NVRAM across reboots. Defaults to false
+                                  type: boolean
                                 secureBoot:
                                   description: If set, SecureBoot will be enabled
                                     and the OVMF roms will be swapped for SecureBoot-enabled
@@ -6273,6 +6310,14 @@ var CRDsValidation map[string]string = map[string]string{
                         sev:
                           description: AMD Secure Encrypted Virtualization (SEV).
                           properties:
+                            attestation:
+                              description: If specified, run the attestation process
+                                for a vmi.
+                              type: object
+                            dhCert:
+                              description: Base64 encoded guest owner's Diffie-Hellman
+                                key.
+                              type: string
                             policy:
                               description: 'Guest policy flags as defined in AMD SEV
                                 API specification. Note: due to security reasons it
@@ -6284,6 +6329,9 @@ var CRDsValidation map[string]string = map[string]string{
                                   description: SEV-ES is required. Defaults to false.
                                   type: boolean
                               type: object
+                            session:
+                              description: Base64 encoded session blob.
+                              type: string
                           type: object
                       type: object
                     machine:
@@ -7361,42 +7409,6 @@ var CRDsValidation map[string]string = map[string]string{
             updated through an Update() before ObservedGeneration in Status.
           format: int64
           type: integer
-        interfaceRequests:
-          description: InterfaceRequests indicates a list of interfaces added to the
-            VMI template and hot-plugged on an active running VMI.
-          items:
-            properties:
-              addInterfaceOptions:
-                description: AddInterfaceOptions when set indicates a network interface
-                  should be added. The details within this field specify how to add
-                  the interface
-                properties:
-                  name:
-                    description: Name indicates the logical name of the interface.
-                    type: string
-                  networkAttachmentDefinitionName:
-                    description: 'NetworkAttachmentDefinitionName references a NetworkAttachmentDefinition
-                      CRD object. Format: <networkAttachmentDefinitionName>, <namespace>/<networkAttachmentDefinitionName>.
-                      If namespace is not specified, VMI namespace is assumed.'
-                    type: string
-                required:
-                - name
-                - networkAttachmentDefinitionName
-                type: object
-              removeInterfaceOptions:
-                description: RemoveInterfaceOptions when set indicates a network interface
-                  should be removed. The details within this field specify how to
-                  remove the interface
-                properties:
-                  name:
-                    description: Name indicates the logical name of the interface.
-                    type: string
-                required:
-                - name
-                type: object
-            type: object
-          type: array
-          x-kubernetes-list-type: atomic
         memoryDumpRequest:
           description: MemoryDumpRequest tracks memory dump request phase and info
             of getting a memory dump to the given pvc
@@ -7578,6 +7590,10 @@ var CRDsValidation map[string]string = map[string]string{
                             description: ReadOnly. Defaults to false.
                             type: boolean
                         type: object
+                      errorPolicy:
+                        description: If specified, it can change the default error
+                          policy (stop) for the disk
+                        type: string
                       io:
                         description: 'IO specifies which QEMU disk IO mode should
                           be used. Supported values are: native, default, threads.'
@@ -7887,7 +7903,7 @@ var CRDsValidation map[string]string = map[string]string{
             guest:
               description: "Required number of vCPUs to expose to the guest. \n The
                 resulting CPU topology being derived from the optional PreferredCPUTopology
-                attribute of CPUPreferences that itself defaults to PreferCores."
+                attribute of CPUPreferences that itself defaults to PreferSockets."
               format: int32
               type: integer
             isolateEmulatorThread:
@@ -7992,6 +8008,12 @@ var CRDsValidation map[string]string = map[string]string{
             sev:
               description: AMD Secure Encrypted Virtualization (SEV).
               properties:
+                attestation:
+                  description: If specified, run the attestation process for a vmi.
+                  type: object
+                dhCert:
+                  description: Base64 encoded guest owner's Diffie-Hellman key.
+                  type: string
                 policy:
                   description: 'Guest policy flags as defined in AMD SEV API specification.
                     Note: due to security reasons it is not allowed to enable guest
@@ -8002,6 +8024,9 @@ var CRDsValidation map[string]string = map[string]string{
                       description: SEV-ES is required. Defaults to false.
                       type: boolean
                   type: object
+                session:
+                  description: Base64 encoded session blob.
+                  type: string
               type: object
           type: object
         memory:
@@ -8036,6 +8061,19 @@ var CRDsValidation map[string]string = map[string]string{
           required:
           - guest
           type: object
+        nodeSelector:
+          additionalProperties:
+            type: string
+          description: "NodeSelector is a selector which must be true for the vmi
+            to fit on a node. Selector which must match a node's labels for the vmi
+            to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+            \n NodeSelector is the name of the custom node selector for the instancetype."
+          type: object
+        schedulerName:
+          description: "If specified, the VMI will be dispatched by specified scheduler.
+            If not specified, the VMI will be dispatched by default scheduler. \n
+            SchedulerName is the name of the custom K8s scheduler for the instancetype."
+          type: string
       required:
       - cpu
       - memory
@@ -10003,9 +10041,9 @@ var CRDsValidation map[string]string = map[string]string{
                     to true.
                   type: boolean
                 autoattachSerialConsole:
-                  description: Whether to attach the default serial console or not.
-                    Serial console access will not be available if set to false. Defaults
-                    to true.
+                  description: Whether to attach the default virtio-serial console
+                    or not. Serial console access will not be available if set to
+                    false. Defaults to true.
                   type: boolean
                 autoattachVSOCK:
                   description: Whether to attach the VSOCK CID to the VM or not. VSOCK
@@ -10101,6 +10139,10 @@ var CRDsValidation map[string]string = map[string]string{
                             description: ReadOnly. Defaults to false.
                             type: boolean
                         type: object
+                      errorPolicy:
+                        description: If specified, it can change the default error
+                          policy (stop) for the disk
+                        type: string
                       io:
                         description: 'IO specifies which QEMU disk IO mode should
                           be used. Supported values are: native, default, threads.'
@@ -10139,6 +10181,10 @@ var CRDsValidation map[string]string = map[string]string{
                     - name
                     type: object
                   type: array
+                downwardMetrics:
+                  description: DownwardMetrics creates a virtio serials for exposing
+                    the downward metrics to the vmi.
+                  type: object
                 filesystems:
                   description: Filesystems describes filesystem which is connected
                     to the vmi.
@@ -10248,6 +10294,18 @@ var CRDsValidation map[string]string = map[string]string{
                           in PCI addresses assigned to the device. This value is required
                           to be unique across all devices and be between 1 and (16*1024-1).
                         type: integer
+                      binding:
+                        description: 'Binding specifies the binding plugin that will
+                          be used to connect the interface to the guest. It provides
+                          an alternative to InterfaceBindingMethod. version: 1alphav1'
+                        properties:
+                          name:
+                            description: 'Name references to the binding name as denined
+                              in the kubevirt CR. version: 1alphav1'
+                            type: string
+                        required:
+                        - name
+                        type: object
                       bootOrder:
                         description: BootOrder is an integer value > 0, used to determine
                           ordering of boot devices. Lower values take precedence.
@@ -10649,6 +10707,10 @@ var CRDsValidation map[string]string = map[string]string{
                     efi:
                       description: If set, EFI will be used instead of BIOS.
                       properties:
+                        persistent:
+                          description: If set to true, Persistent will persist the
+                            EFI NVRAM across reboots. Defaults to false
+                          type: boolean
                         secureBoot:
                           description: If set, SecureBoot will be enabled and the
                             OVMF roms will be swapped for SecureBoot-enabled ones.
@@ -10709,6 +10771,13 @@ var CRDsValidation map[string]string = map[string]string{
                 sev:
                   description: AMD Secure Encrypted Virtualization (SEV).
                   properties:
+                    attestation:
+                      description: If specified, run the attestation process for a
+                        vmi.
+                      type: object
+                    dhCert:
+                      description: Base64 encoded guest owner's Diffie-Hellman key.
+                      type: string
                     policy:
                       description: 'Guest policy flags as defined in AMD SEV API specification.
                         Note: due to security reasons it is not allowed to enable
@@ -10719,6 +10788,9 @@ var CRDsValidation map[string]string = map[string]string{
                           description: SEV-ES is required. Defaults to false.
                           type: boolean
                       type: object
+                    session:
+                      description: Base64 encoded session blob.
+                      type: string
                   type: object
               type: object
             machine:
@@ -12654,9 +12726,9 @@ var CRDsValidation map[string]string = map[string]string{
                     to true.
                   type: boolean
                 autoattachSerialConsole:
-                  description: Whether to attach the default serial console or not.
-                    Serial console access will not be available if set to false. Defaults
-                    to true.
+                  description: Whether to attach the default virtio-serial console
+                    or not. Serial console access will not be available if set to
+                    false. Defaults to true.
                   type: boolean
                 autoattachVSOCK:
                   description: Whether to attach the VSOCK CID to the VM or not. VSOCK
@@ -12752,6 +12824,10 @@ var CRDsValidation map[string]string = map[string]string{
                             description: ReadOnly. Defaults to false.
                             type: boolean
                         type: object
+                      errorPolicy:
+                        description: If specified, it can change the default error
+                          policy (stop) for the disk
+                        type: string
                       io:
                         description: 'IO specifies which QEMU disk IO mode should
                           be used. Supported values are: native, default, threads.'
@@ -12790,6 +12866,10 @@ var CRDsValidation map[string]string = map[string]string{
                     - name
                     type: object
                   type: array
+                downwardMetrics:
+                  description: DownwardMetrics creates a virtio serials for exposing
+                    the downward metrics to the vmi.
+                  type: object
                 filesystems:
                   description: Filesystems describes filesystem which is connected
                     to the vmi.
@@ -12899,6 +12979,18 @@ var CRDsValidation map[string]string = map[string]string{
                           in PCI addresses assigned to the device. This value is required
                           to be unique across all devices and be between 1 and (16*1024-1).
                         type: integer
+                      binding:
+                        description: 'Binding specifies the binding plugin that will
+                          be used to connect the interface to the guest. It provides
+                          an alternative to InterfaceBindingMethod. version: 1alphav1'
+                        properties:
+                          name:
+                            description: 'Name references to the binding name as denined
+                              in the kubevirt CR. version: 1alphav1'
+                            type: string
+                        required:
+                        - name
+                        type: object
                       bootOrder:
                         description: BootOrder is an integer value > 0, used to determine
                           ordering of boot devices. Lower values take precedence.
@@ -13300,6 +13392,10 @@ var CRDsValidation map[string]string = map[string]string{
                     efi:
                       description: If set, EFI will be used instead of BIOS.
                       properties:
+                        persistent:
+                          description: If set to true, Persistent will persist the
+                            EFI NVRAM across reboots. Defaults to false
+                          type: boolean
                         secureBoot:
                           description: If set, SecureBoot will be enabled and the
                             OVMF roms will be swapped for SecureBoot-enabled ones.
@@ -13360,6 +13456,13 @@ var CRDsValidation map[string]string = map[string]string{
                 sev:
                   description: AMD Secure Encrypted Virtualization (SEV).
                   properties:
+                    attestation:
+                      description: If specified, run the attestation process for a
+                        vmi.
+                      type: object
+                    dhCert:
+                      description: Base64 encoded guest owner's Diffie-Hellman key.
+                      type: string
                     policy:
                       description: 'Guest policy flags as defined in AMD SEV API specification.
                         Note: due to security reasons it is not allowed to enable
@@ -13370,6 +13473,9 @@ var CRDsValidation map[string]string = map[string]string{
                           description: SEV-ES is required. Defaults to false.
                           type: boolean
                       type: object
+                    session:
+                      description: Base64 encoded session blob.
+                      type: string
                   type: object
               type: object
             machine:
@@ -14767,9 +14873,9 @@ var CRDsValidation map[string]string = map[string]string{
                             Defaults to true.
                           type: boolean
                         autoattachSerialConsole:
-                          description: Whether to attach the default serial console
-                            or not. Serial console access will not be available if
-                            set to false. Defaults to true.
+                          description: Whether to attach the default virtio-serial
+                            console or not. Serial console access will not be available
+                            if set to false. Defaults to true.
                           type: boolean
                         autoattachVSOCK:
                           description: Whether to attach the VSOCK CID to the VM or
@@ -14872,6 +14978,10 @@ var CRDsValidation map[string]string = map[string]string{
                                     description: ReadOnly. Defaults to false.
                                     type: boolean
                                 type: object
+                              errorPolicy:
+                                description: If specified, it can change the default
+                                  error policy (stop) for the disk
+                                type: string
                               io:
                                 description: 'IO specifies which QEMU disk IO mode
                                   should be used. Supported values are: native, default,
@@ -14913,6 +15023,10 @@ var CRDsValidation map[string]string = map[string]string{
                             - name
                             type: object
                           type: array
+                        downwardMetrics:
+                          description: DownwardMetrics creates a virtio serials for
+                            exposing the downward metrics to the vmi.
+                          type: object
                         filesystems:
                           description: Filesystems describes filesystem which is connected
                             to the vmi.
@@ -15026,6 +15140,19 @@ var CRDsValidation map[string]string = map[string]string{
                                   to the device. This value is required to be unique
                                   across all devices and be between 1 and (16*1024-1).
                                 type: integer
+                              binding:
+                                description: 'Binding specifies the binding plugin
+                                  that will be used to connect the interface to the
+                                  guest. It provides an alternative to InterfaceBindingMethod.
+                                  version: 1alphav1'
+                                properties:
+                                  name:
+                                    description: 'Name references to the binding name
+                                      as denined in the kubevirt CR. version: 1alphav1'
+                                    type: string
+                                required:
+                                - name
+                                type: object
                               bootOrder:
                                 description: BootOrder is an integer value > 0, used
                                   to determine ordering of boot devices. Lower values
@@ -15459,6 +15586,10 @@ var CRDsValidation map[string]string = map[string]string{
                             efi:
                               description: If set, EFI will be used instead of BIOS.
                               properties:
+                                persistent:
+                                  description: If set to true, Persistent will persist
+                                    the EFI NVRAM across reboots. Defaults to false
+                                  type: boolean
                                 secureBoot:
                                   description: If set, SecureBoot will be enabled
                                     and the OVMF roms will be swapped for SecureBoot-enabled
@@ -15524,6 +15655,14 @@ var CRDsValidation map[string]string = map[string]string{
                         sev:
                           description: AMD Secure Encrypted Virtualization (SEV).
                           properties:
+                            attestation:
+                              description: If specified, run the attestation process
+                                for a vmi.
+                              type: object
+                            dhCert:
+                              description: Base64 encoded guest owner's Diffie-Hellman
+                                key.
+                              type: string
                             policy:
                               description: 'Guest policy flags as defined in AMD SEV
                                 API specification. Note: due to security reasons it
@@ -15535,6 +15674,9 @@ var CRDsValidation map[string]string = map[string]string{
                                   description: SEV-ES is required. Defaults to false.
                                   type: boolean
                               type: object
+                            session:
+                              description: Base64 encoded session blob.
+                              type: string
                           type: object
                       type: object
                     machine:
@@ -16649,7 +16791,7 @@ var CRDsValidation map[string]string = map[string]string{
             guest:
               description: "Required number of vCPUs to expose to the guest. \n The
                 resulting CPU topology being derived from the optional PreferredCPUTopology
-                attribute of CPUPreferences that itself defaults to PreferCores."
+                attribute of CPUPreferences that itself defaults to PreferSockets."
               format: int32
               type: integer
             isolateEmulatorThread:
@@ -16754,6 +16896,12 @@ var CRDsValidation map[string]string = map[string]string{
             sev:
               description: AMD Secure Encrypted Virtualization (SEV).
               properties:
+                attestation:
+                  description: If specified, run the attestation process for a vmi.
+                  type: object
+                dhCert:
+                  description: Base64 encoded guest owner's Diffie-Hellman key.
+                  type: string
                 policy:
                   description: 'Guest policy flags as defined in AMD SEV API specification.
                     Note: due to security reasons it is not allowed to enable guest
@@ -16764,6 +16912,9 @@ var CRDsValidation map[string]string = map[string]string{
                       description: SEV-ES is required. Defaults to false.
                       type: boolean
                   type: object
+                session:
+                  description: Base64 encoded session blob.
+                  type: string
               type: object
           type: object
         memory:
@@ -16798,6 +16949,19 @@ var CRDsValidation map[string]string = map[string]string{
           required:
           - guest
           type: object
+        nodeSelector:
+          additionalProperties:
+            type: string
+          description: "NodeSelector is a selector which must be true for the vmi
+            to fit on a node. Selector which must match a node's labels for the vmi
+            to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+            \n NodeSelector is the name of the custom node selector for the instancetype."
+          type: object
+        schedulerName:
+          description: "If specified, the VMI will be dispatched by specified scheduler.
+            If not specified, the VMI will be dispatched by default scheduler. \n
+            SchedulerName is the name of the custom K8s scheduler for the instancetype."
+          type: string
       required:
       - cpu
       - memory
@@ -17636,6 +17800,10 @@ var CRDsValidation map[string]string = map[string]string{
                   description: LiveUpdateFeatures references a configuration of hotpluggable
                     resources
                   properties:
+                    affinity:
+                      description: Affinity allows live updating the virtual machines
+                        node affinity
+                      type: object
                     cpu:
                       description: LiveUpdateCPU holds hotplug configuration for the
                         CPU resource. Empty struct indicates that default will be
@@ -19011,7 +19179,7 @@ var CRDsValidation map[string]string = map[string]string{
                                     Defaults to true.
                                   type: boolean
                                 autoattachSerialConsole:
-                                  description: Whether to attach the default serial
+                                  description: Whether to attach the default virtio-serial
                                     console or not. Serial console access will not
                                     be available if set to false. Defaults to true.
                                   type: boolean
@@ -19124,6 +19292,10 @@ var CRDsValidation map[string]string = map[string]string{
                                             description: ReadOnly. Defaults to false.
                                             type: boolean
                                         type: object
+                                      errorPolicy:
+                                        description: If specified, it can change the
+                                          default error policy (stop) for the disk
+                                        type: string
                                       io:
                                         description: 'IO specifies which QEMU disk
                                           IO mode should be used. Supported values
@@ -19168,6 +19340,10 @@ var CRDsValidation map[string]string = map[string]string{
                                     - name
                                     type: object
                                   type: array
+                                downwardMetrics:
+                                  description: DownwardMetrics creates a virtio serials
+                                    for exposing the downward metrics to the vmi.
+                                  type: object
                                 filesystems:
                                   description: Filesystems describes filesystem which
                                     is connected to the vmi.
@@ -19287,6 +19463,20 @@ var CRDsValidation map[string]string = map[string]string{
                                           value is required to be unique across all
                                           devices and be between 1 and (16*1024-1).
                                         type: integer
+                                      binding:
+                                        description: 'Binding specifies the binding
+                                          plugin that will be used to connect the
+                                          interface to the guest. It provides an alternative
+                                          to InterfaceBindingMethod. version: 1alphav1'
+                                        properties:
+                                          name:
+                                            description: 'Name references to the binding
+                                              name as denined in the kubevirt CR.
+                                              version: 1alphav1'
+                                            type: string
+                                        required:
+                                        - name
+                                        type: object
                                       bootOrder:
                                         description: BootOrder is an integer value
                                           > 0, used to determine ordering of boot
@@ -19747,6 +19937,11 @@ var CRDsValidation map[string]string = map[string]string{
                                       description: If set, EFI will be used instead
                                         of BIOS.
                                       properties:
+                                        persistent:
+                                          description: If set to true, Persistent
+                                            will persist the EFI NVRAM across reboots.
+                                            Defaults to false
+                                          type: boolean
                                         secureBoot:
                                           description: If set, SecureBoot will be
                                             enabled and the OVMF roms will be swapped
@@ -19815,6 +20010,14 @@ var CRDsValidation map[string]string = map[string]string{
                                   description: AMD Secure Encrypted Virtualization
                                     (SEV).
                                   properties:
+                                    attestation:
+                                      description: If specified, run the attestation
+                                        process for a vmi.
+                                      type: object
+                                    dhCert:
+                                      description: Base64 encoded guest owner's Diffie-Hellman
+                                        key.
+                                      type: string
                                     policy:
                                       description: 'Guest policy flags as defined
                                         in AMD SEV API specification. Note: due to
@@ -19827,6 +20030,9 @@ var CRDsValidation map[string]string = map[string]string{
                                             to false.
                                           type: boolean
                                       type: object
+                                    session:
+                                      description: Base64 encoded session blob.
+                                      type: string
                                   type: object
                               type: object
                             machine:
@@ -22610,6 +22816,10 @@ var CRDsValidation map[string]string = map[string]string{
                       description: LiveUpdateFeatures references a configuration of
                         hotpluggable resources
                       properties:
+                        affinity:
+                          description: Affinity allows live updating the virtual machines
+                            node affinity
+                          type: object
                         cpu:
                           description: LiveUpdateCPU holds hotplug configuration for
                             the CPU resource. Empty struct indicates that default
@@ -24062,7 +24272,7 @@ var CRDsValidation map[string]string = map[string]string{
                                         interface. Defaults to true.
                                       type: boolean
                                     autoattachSerialConsole:
-                                      description: Whether to attach the default serial
+                                      description: Whether to attach the default virtio-serial
                                         console or not. Serial console access will
                                         not be available if set to false. Defaults
                                         to true.
@@ -24180,6 +24390,11 @@ var CRDsValidation map[string]string = map[string]string{
                                                   false.
                                                 type: boolean
                                             type: object
+                                          errorPolicy:
+                                            description: If specified, it can change
+                                              the default error policy (stop) for
+                                              the disk
+                                            type: string
                                           io:
                                             description: 'IO specifies which QEMU
                                               disk IO mode should be used. Supported
@@ -24227,6 +24442,11 @@ var CRDsValidation map[string]string = map[string]string{
                                         - name
                                         type: object
                                       type: array
+                                    downwardMetrics:
+                                      description: DownwardMetrics creates a virtio
+                                        serials for exposing the downward metrics
+                                        to the vmi.
+                                      type: object
                                     filesystems:
                                       description: Filesystems describes filesystem
                                         which is connected to the vmi.
@@ -24351,6 +24571,21 @@ var CRDsValidation map[string]string = map[string]string{
                                               be unique across all devices and be
                                               between 1 and (16*1024-1).
                                             type: integer
+                                          binding:
+                                            description: 'Binding specifies the binding
+                                              plugin that will be used to connect
+                                              the interface to the guest. It provides
+                                              an alternative to InterfaceBindingMethod.
+                                              version: 1alphav1'
+                                            properties:
+                                              name:
+                                                description: 'Name references to the
+                                                  binding name as denined in the kubevirt
+                                                  CR. version: 1alphav1'
+                                                type: string
+                                            required:
+                                            - name
+                                            type: object
                                           bootOrder:
                                             description: BootOrder is an integer value
                                               > 0, used to determine ordering of boot
@@ -24826,6 +25061,11 @@ var CRDsValidation map[string]string = map[string]string{
                                           description: If set, EFI will be used instead
                                             of BIOS.
                                           properties:
+                                            persistent:
+                                              description: If set to true, Persistent
+                                                will persist the EFI NVRAM across
+                                                reboots. Defaults to false
+                                              type: boolean
                                             secureBoot:
                                               description: If set, SecureBoot will
                                                 be enabled and the OVMF roms will
@@ -24896,6 +25136,14 @@ var CRDsValidation map[string]string = map[string]string{
                                       description: AMD Secure Encrypted Virtualization
                                         (SEV).
                                       properties:
+                                        attestation:
+                                          description: If specified, run the attestation
+                                            process for a vmi.
+                                          type: object
+                                        dhCert:
+                                          description: Base64 encoded guest owner's
+                                            Diffie-Hellman key.
+                                          type: string
                                         policy:
                                           description: 'Guest policy flags as defined
                                             in AMD SEV API specification. Note: due
@@ -24909,6 +25157,9 @@ var CRDsValidation map[string]string = map[string]string{
                                                 to false.
                                               type: boolean
                                           type: object
+                                        session:
+                                          description: Base64 encoded session blob.
+                                          type: string
                                       type: object
                                   type: object
                                 machine:
@@ -26102,47 +26353,6 @@ var CRDsValidation map[string]string = map[string]string{
                         ObservedGeneration in Status.
                       format: int64
                       type: integer
-                    interfaceRequests:
-                      description: InterfaceRequests indicates a list of interfaces
-                        added to the VMI template and hot-plugged on an active running
-                        VMI.
-                      items:
-                        properties:
-                          addInterfaceOptions:
-                            description: AddInterfaceOptions when set indicates a
-                              network interface should be added. The details within
-                              this field specify how to add the interface
-                            properties:
-                              name:
-                                description: Name indicates the logical name of the
-                                  interface.
-                                type: string
-                              networkAttachmentDefinitionName:
-                                description: 'NetworkAttachmentDefinitionName references
-                                  a NetworkAttachmentDefinition CRD object. Format:
-                                  <networkAttachmentDefinitionName>, <namespace>/<networkAttachmentDefinitionName>.
-                                  If namespace is not specified, VMI namespace is
-                                  assumed.'
-                                type: string
-                            required:
-                            - name
-                            - networkAttachmentDefinitionName
-                            type: object
-                          removeInterfaceOptions:
-                            description: RemoveInterfaceOptions when set indicates
-                              a network interface should be removed. The details within
-                              this field specify how to remove the interface
-                            properties:
-                              name:
-                                description: Name indicates the logical name of the
-                                  interface.
-                                type: string
-                            required:
-                            - name
-                            type: object
-                        type: object
-                      type: array
-                      x-kubernetes-list-type: atomic
                     memoryDumpRequest:
                       description: MemoryDumpRequest tracks memory dump request phase
                         and info of getting a memory dump to the given pvc
@@ -26343,6 +26553,10 @@ var CRDsValidation map[string]string = map[string]string{
                                         description: ReadOnly. Defaults to false.
                                         type: boolean
                                     type: object
+                                  errorPolicy:
+                                    description: If specified, it can change the default
+                                      error policy (stop) for the disk
+                                    type: string
                                   io:
                                     description: 'IO specifies which QEMU disk IO
                                       mode should be used. Supported values are: native,

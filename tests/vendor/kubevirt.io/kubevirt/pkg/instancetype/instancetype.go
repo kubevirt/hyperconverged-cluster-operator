@@ -4,6 +4,7 @@ package instancetype
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -105,6 +106,13 @@ func CreateControllerRevision(vm *virtv1.VirtualMachine, object runtime.Object) 
 			Name:            revisionName,
 			Namespace:       vm.Namespace,
 			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(vm, virtv1.VirtualMachineGroupVersionKind)},
+			Labels: map[string]string{
+				apiinstancetype.ControllerRevisionObjectGenerationLabel: fmt.Sprintf("%d", metaObj.GetGeneration()),
+				apiinstancetype.ControllerRevisionObjectKindLabel:       obj.GetObjectKind().GroupVersionKind().Kind,
+				apiinstancetype.ControllerRevisionObjectNameLabel:       metaObj.GetName(),
+				apiinstancetype.ControllerRevisionObjectUIDLabel:        string(metaObj.GetUID()),
+				apiinstancetype.ControllerRevisionObjectVersionLabel:    obj.GetObjectKind().GroupVersionKind().Version,
+			},
 		},
 		Data: runtime.RawExtension{
 			Object: obj,
@@ -418,6 +426,8 @@ func (m *InstancetypeMethods) ApplyToVmi(field *k8sfield.Path, instancetypeSpec 
 	var conflicts Conflicts
 
 	if instancetypeSpec != nil {
+		conflicts = append(conflicts, applyNodeSelector(field, instancetypeSpec, vmiSpec)...)
+		conflicts = append(conflicts, applySchedulerName(field, instancetypeSpec, vmiSpec)...)
 		conflicts = append(conflicts, applyCPU(field, instancetypeSpec, preferenceSpec, vmiSpec)...)
 		conflicts = append(conflicts, applyMemory(field, instancetypeSpec, vmiSpec)...)
 		conflicts = append(conflicts, applyIOThreadPolicy(field, instancetypeSpec, vmiSpec)...)
@@ -932,6 +942,38 @@ func validateCPU(field *k8sfield.Path, instancetypeSpec *instancetypev1beta1.Vir
 	return conflicts
 }
 
+func applyNodeSelector(field *k8sfield.Path, instancetypeSpec *instancetypev1beta1.VirtualMachineInstancetypeSpec, vmiSpec *virtv1.VirtualMachineInstanceSpec) Conflicts {
+	if instancetypeSpec.NodeSelector == nil {
+		return nil
+	}
+
+	if vmiSpec.NodeSelector != nil {
+		return Conflicts{field.Child("nodeSelector")}
+	}
+
+	// TODO: This should be eventually moved to `maps` package (https://pkg.go.dev/maps@master).
+	vmiSpec.NodeSelector = make(map[string]string, len(instancetypeSpec.NodeSelector))
+	for k, v := range instancetypeSpec.NodeSelector {
+		vmiSpec.NodeSelector[k] = v
+	}
+
+	return nil
+}
+
+func applySchedulerName(field *k8sfield.Path, instancetypeSpec *instancetypev1beta1.VirtualMachineInstancetypeSpec, vmiSpec *virtv1.VirtualMachineInstanceSpec) Conflicts {
+	if instancetypeSpec.SchedulerName == "" {
+		return nil
+	}
+
+	if vmiSpec.SchedulerName != "" {
+		return Conflicts{field.Child("schedulerName")}
+	}
+
+	vmiSpec.SchedulerName = instancetypeSpec.SchedulerName
+
+	return nil
+}
+
 func AddInstancetypeNameAnnotations(vm *virtv1.VirtualMachine, target metav1.Object) {
 	if vm.Spec.Instancetype == nil {
 		return
@@ -1180,13 +1222,26 @@ func applyDiskPreferences(preferenceSpec *instancetypev1beta1.VirtualMachinePref
 	}
 }
 
+func isInterfaceBindingUnset(iface *virtv1.Interface) bool {
+	return reflect.ValueOf(iface.InterfaceBindingMethod).IsZero() && iface.Binding == nil
+}
+
+func isInterfaceOnPodNetwork(interfaceName string, vmiSpec *virtv1.VirtualMachineInstanceSpec) bool {
+	for _, network := range vmiSpec.Networks {
+		if network.Name == interfaceName {
+			return network.Pod != nil
+		}
+	}
+	return false
+}
+
 func applyInterfacePreferences(preferenceSpec *instancetypev1beta1.VirtualMachinePreferenceSpec, vmiSpec *virtv1.VirtualMachineInstanceSpec) {
 	for ifaceIndex := range vmiSpec.Domain.Devices.Interfaces {
 		vmiIface := &vmiSpec.Domain.Devices.Interfaces[ifaceIndex]
 		if preferenceSpec.Devices.PreferredInterfaceModel != "" && vmiIface.Model == "" {
 			vmiIface.Model = preferenceSpec.Devices.PreferredInterfaceModel
 		}
-		if preferenceSpec.Devices.PreferredInterfaceMasquerade != nil && vmiIface.Masquerade == nil {
+		if preferenceSpec.Devices.PreferredInterfaceMasquerade != nil && isInterfaceBindingUnset(vmiIface) && isInterfaceOnPodNetwork(vmiIface.Name, vmiSpec) {
 			vmiIface.Masquerade = preferenceSpec.Devices.PreferredInterfaceMasquerade.DeepCopy()
 		}
 	}
@@ -1320,7 +1375,7 @@ func applyFirmwarePreferences(preferenceSpec *instancetypev1beta1.VirtualMachine
 		vmiSpec.Domain.Firmware.Bootloader.BIOS = &virtv1.BIOS{}
 	}
 
-	if preferenceSpec.Firmware.PreferredUseBiosSerial != nil && vmiSpec.Domain.Firmware.Bootloader.BIOS != nil {
+	if preferenceSpec.Firmware.PreferredUseBiosSerial != nil && vmiSpec.Domain.Firmware.Bootloader.BIOS != nil && vmiSpec.Domain.Firmware.Bootloader.BIOS.UseSerial == nil {
 		vmiSpec.Domain.Firmware.Bootloader.BIOS.UseSerial = pointer.Bool(*preferenceSpec.Firmware.PreferredUseBiosSerial)
 	}
 
@@ -1328,7 +1383,7 @@ func applyFirmwarePreferences(preferenceSpec *instancetypev1beta1.VirtualMachine
 		vmiSpec.Domain.Firmware.Bootloader.EFI = &virtv1.EFI{}
 	}
 
-	if preferenceSpec.Firmware.PreferredUseSecureBoot != nil && vmiSpec.Domain.Firmware.Bootloader.EFI != nil {
+	if preferenceSpec.Firmware.PreferredUseSecureBoot != nil && vmiSpec.Domain.Firmware.Bootloader.EFI != nil && vmiSpec.Domain.Firmware.Bootloader.EFI.SecureBoot == nil {
 		vmiSpec.Domain.Firmware.Bootloader.EFI.SecureBoot = pointer.Bool(*preferenceSpec.Firmware.PreferredUseSecureBoot)
 	}
 }
