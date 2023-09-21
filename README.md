@@ -135,8 +135,8 @@ Operator on the OLM-enabled cluster.
 ```shell
 operator-sdk generate bundle --input-dir deploy/index-image/ --output-dir _out/bundle
 operator-sdk bundle validate _out/bundle  # optional
-podman build -f deploy/index-image/bundle.Dockerfile -t $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$IMAGE_TAG deploy/index-image
-podman push $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$IMAGE_TAG deploy/index-image
+podman build -f deploy/index-image/bundle.Dockerfile -t $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$IMAGE_TAG
+podman push $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$IMAGE_TAG
 operator-sdk bundle validate $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$IMAGE_TAG
 operator-sdk run bundle $IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-index:$IMAGE_TAG
 ```
