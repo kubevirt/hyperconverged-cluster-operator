@@ -19,7 +19,7 @@ require (
 	kubevirt.io/client-go v1.0.0
 	kubevirt.io/containerized-data-importer-api v1.57.0
 	kubevirt.io/kubevirt v1.0.0
-	kubevirt.io/managed-tenant-quota v1.1.7
+	kubevirt.io/managed-tenant-quota v1.1.8
 	kubevirt.io/qe-tools v0.1.8
 )
 
