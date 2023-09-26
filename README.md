@@ -129,7 +129,7 @@ kubectl create ns kubevirt-hyperconverged
 
 For the next set of commands, we will use the
 [`operator-sdk`](https://github.com/operator-framework/operator-sdk/releases) CLI tool. Below commands will create a 
-bundle index image, push this image, and finally use that bundle image to install the HyperConverged cluster
+bundle image, push this image, and finally use that bundle image to install the HyperConverged cluster
 Operator on the OLM-enabled cluster.
 
 ```shell
