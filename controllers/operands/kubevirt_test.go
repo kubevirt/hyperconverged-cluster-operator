@@ -196,7 +196,7 @@ Version: 1.2.3`)
 				WithHostPassthroughCPU: ptr.To(true),
 			}
 
-			expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
+			expectedResource, err := NewKubeVirt(hco, nil, commontestutils.Namespace)
 			Expect(err).ToNot(HaveOccurred())
 			cl := commontestutils.InitClient([]client.Object{})
 			handler := (*genericOperand)(newKubevirtHandler(cl, commontestutils.GetScheme()))
@@ -255,7 +255,7 @@ Version: 1.2.3`)
 		})
 
 		It("should find if present", func() {
-			expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
+			expectedResource, err := NewKubeVirt(hco, nil, commontestutils.Namespace)
 			Expect(err).ToNot(HaveOccurred())
 			cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
 			handler := (*genericOperand)(newKubevirtHandler(cl, commontestutils.GetScheme()))
@@ -304,7 +304,7 @@ Sku: 1.2.3
 Version: 1.2.3`)
 			os.Setenv(machineTypeEnvName, "machine-type")
 
-			existKv, err := NewKubeVirt(hco, commontestutils.Namespace)
+			existKv, err := NewKubeVirt(hco, nil, commontestutils.Namespace)
 			Expect(err).ToNot(HaveOccurred())
 			existKv.Spec.Configuration.DeveloperConfiguration = &kubevirtcorev1.DeveloperConfiguration{
 				FeatureGates: []string{"wrongFG1", "wrongFG2", "wrongFG3"},
@@ -405,7 +405,7 @@ Version: 1.2.3`)
 
 			_ = os.Setenv(smbiosEnvName, "WRONG YAML")
 
-			_, err := NewKubeVirt(hco, commontestutils.Namespace)
+			_, err := NewKubeVirt(hco, nil, commontestutils.Namespace)
 			Expect(err).To(HaveOccurred())
 		})
 
@@ -413,14 +413,14 @@ Version: 1.2.3`)
 			wrongFormat := "Wrong Format"
 			hco.Spec.LiveMigrationConfig.BandwidthPerMigration = &wrongFormat
 
-			_, err := NewKubeVirt(hco, commontestutils.Namespace)
+			_, err := NewKubeVirt(hco, nil, commontestutils.Namespace)
 			Expect(err).To(HaveOccurred())
 		})
 
 		It("should set default UninstallStrategy if missing", func() {
-			expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
+			expectedResource, err := NewKubeVirt(hco, nil, commontestutils.Namespace)
 			Expect(err).ToNot(HaveOccurred())
-			missingUSResource, err := NewKubeVirt(hco, commontestutils.Namespace)
+			missingUSResource, err := NewKubeVirt(hco, nil, commontestutils.Namespace)
 			Expect(err).ToNot(HaveOccurred())
 			missingUSResource.Spec.UninstallStrategy = ""
 
@@ -444,7 +444,7 @@ Version: 1.2.3`)
 		Context("Test UninstallStrategy", func() {
 
 			It("should set BlockUninstallIfWorkloadsExist if missing HCO CR", func() {
-				expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
+				expectedResource, err := NewKubeVirt(hco, nil, commontestutils.Namespace)
 				Expect(err).ToNot(HaveOccurred())
 				hco.Spec.UninstallStrategy = ""
 
@@ -465,7 +465,7 @@ Version: 1.2.3`)
 			})
 
 			It("should set BlockUninstallIfWorkloadsExist if set on HCO CR", func() {
-				expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
+				expectedResource, err := NewKubeVirt(hco, nil, commontestutils.Namespace)
 				Expect(err).ToNot(HaveOccurred())
 				uninstallStrategy := hcov1beta1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
 				hco.Spec.UninstallStrategy = uninstallStrategy
@@ -487,7 +487,7 @@ Version: 1.2.3`)
 			})
 
 			It("should set BlockUninstallIfRemoveWorkloads if set on HCO CR", func() {
-				expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
+				expectedResource, err := NewKubeVirt(hco, nil, commontestutils.Namespace)
 				Expect(err).ToNot(HaveOccurred())
 				uninstallStrategy := hcov1beta1.HyperConvergedUninstallStrategyRemoveWorkloads
 				hco.Spec.UninstallStrategy = uninstallStrategy
@@ -511,7 +511,7 @@ Version: 1.2.3`)
 		})
 
 		It("should propagate the live migration configuration from the HC", func() {
-			existKv, err := NewKubeVirt(hco)
+			existKv, err := NewKubeVirt(hco, nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			bandwidthPerMigration := "16Mi"
@@ -569,7 +569,7 @@ Version: 1.2.3`)
 
 		Context("test mediated device configuration", func() {
 			It("should propagate the mediated devices configuration from the HC with deprecated APIs", func() {
-				existKv, err := NewKubeVirt(hco)
+				existKv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
@@ -600,7 +600,7 @@ Version: 1.2.3`)
 			})
 
 			It("should propagate the mediated devices configuration from the HC - mediatedDeviceTypes", func() {
-				existKv, err := NewKubeVirt(hco)
+				existKv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
@@ -631,7 +631,7 @@ Version: 1.2.3`)
 			})
 
 			It("should propagate the mediated devices configuration from the HC with node selectors with deprecated APIs", func() {
-				existKv, err := NewKubeVirt(hco)
+				existKv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
@@ -686,7 +686,7 @@ Version: 1.2.3`)
 
 			})
 			It("should propagate the mediated devices configuration from the HC with node selectors - mediatedDeviceTypes", func() {
-				existKv, err := NewKubeVirt(hco)
+				existKv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
@@ -741,7 +741,7 @@ Version: 1.2.3`)
 
 			})
 			It("should update the permitted host devices configuration from the HC - mediatedDeviceTypes", func() {
-				existKv, err := NewKubeVirt(hco)
+				existKv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				existKv.Spec.Configuration.MediatedDevicesConfiguration = &kubevirtcorev1.MediatedDevicesConfiguration{
@@ -791,7 +791,7 @@ Version: 1.2.3`)
 			})
 
 			It("should update the permitted host devices configuration from the HC migrating to mediatedDeviceTypes", func() {
-				existKv, err := NewKubeVirt(hco)
+				existKv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				existKv.Spec.Configuration.MediatedDevicesConfiguration = &kubevirtcorev1.MediatedDevicesConfiguration{
@@ -843,7 +843,7 @@ Version: 1.2.3`)
 
 		Context("test permitted host devices", func() {
 			It("should propagate the permitted host devices configuration from the HC", func() {
-				existKv, err := NewKubeVirt(hco)
+				existKv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Spec.PermittedHostDevices = &hcov1beta1.PermittedHostDevices{
@@ -964,7 +964,7 @@ Version: 1.2.3`)
 			})
 
 			It("should update the permitted host devices configuration from the HC", func() {
-				existKv, err := NewKubeVirt(hco)
+				existKv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				existKv.Spec.Configuration.PermittedHostDevices = &kubevirtcorev1.PermittedHostDevices{
@@ -1187,7 +1187,7 @@ Version: 1.2.3`)
 		Context("test CPUModel", func() {
 
 			It("should propagate the CPUModel from the HC if set", func() {
-				existKv, err := NewKubeVirt(hco)
+				existKv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				testCPUModel := "testValue"
@@ -1215,7 +1215,7 @@ Version: 1.2.3`)
 			})
 
 			It("should not propagate the CPUModel from the HC if not set", func() {
-				existKv, err := NewKubeVirt(hco)
+				existKv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Spec.DefaultCPUModel = nil
@@ -1241,7 +1241,7 @@ Version: 1.2.3`)
 			})
 
 			It("should update the CPUModel from the HC", func() {
-				existKv, err := NewKubeVirt(hco)
+				existKv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				oldKVCPUmodel := "oldKVCPUmodel"
@@ -1311,7 +1311,7 @@ Version: 1.2.3`)
 			})
 
 			It("should add node placement if missing in KubeVirt", func() {
-				existingResource, err := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
@@ -1352,7 +1352,7 @@ Version: 1.2.3`)
 				hcoNodePlacement := commontestutils.NewHco()
 				hcoNodePlacement.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
 				hcoNodePlacement.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-				existingResource, err := NewKubeVirt(hcoNodePlacement)
+				existingResource, err := NewKubeVirt(hcoNodePlacement, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
@@ -1382,7 +1382,7 @@ Version: 1.2.3`)
 			It("should modify node placement according to HCO CR", func() {
 				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
 				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-				existingResource, err := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				// now, modify HCO's node placement
@@ -1429,7 +1429,7 @@ Version: 1.2.3`)
 			It("should overwrite node placement if directly set on KV CR", func() {
 				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
 				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-				existingResource, err := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				// mock a reconciliation triggered by a change in KV CR
@@ -1497,7 +1497,7 @@ Version: 1.2.3`)
 						WithHostPassthroughCPU: ptr.To(true),
 					}
 
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					By("KV CR should contain the HotplugVolumes feature gate", func() {
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
@@ -1511,7 +1511,7 @@ Version: 1.2.3`)
 						WithHostPassthroughCPU: ptr.To(false),
 					}
 
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					By("KV CR should contain the WithHostPassthroughCPU feature gate", func() {
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
@@ -1524,7 +1524,7 @@ Version: 1.2.3`)
 						NonRoot: ptr.To(true), //nolint SA1019
 					}
 
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					By("KV CR should not contain the Root feature gate", func() {
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
@@ -1537,7 +1537,7 @@ Version: 1.2.3`)
 						NonRoot: ptr.To(false), //nolint SA1019
 					}
 
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					By("KV CR should contain the Root feature gate", func() {
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
@@ -1550,7 +1550,7 @@ Version: 1.2.3`)
 						NonRoot: nil, //nolint SA1019
 					}
 
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					By("KV CR should not contain the Root feature gate", func() {
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
@@ -1563,7 +1563,7 @@ Version: 1.2.3`)
 						DisableMDevConfiguration: ptr.To(true),
 					}
 
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					By("KV CR should contain the DisableMDevConfiguration feature gate", func() {
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
@@ -1576,7 +1576,7 @@ Version: 1.2.3`)
 						DisableMDevConfiguration: nil,
 					}
 
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					By("KV CR should contain the DisableMDevConfiguration feature gate", func() {
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
@@ -1589,7 +1589,7 @@ Version: 1.2.3`)
 						DisableMDevConfiguration: ptr.To(false),
 					}
 
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					By("KV CR should contain the DisableMDevConfiguration feature gate", func() {
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
@@ -1602,7 +1602,7 @@ Version: 1.2.3`)
 						PersistentReservation: ptr.To(true),
 					}
 
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					By("KV CR should contain the PersistentReservation feature gate", func() {
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
@@ -1615,7 +1615,7 @@ Version: 1.2.3`)
 						PersistentReservation: nil,
 					}
 
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					By("KV CR should not contain the PersistentReservation feature gate", func() {
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
@@ -1628,7 +1628,7 @@ Version: 1.2.3`)
 						PersistentReservation: ptr.To(false),
 					}
 
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					By("KV CR should not contain the PersistentReservation feature gate", func() {
 						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
@@ -1640,7 +1640,7 @@ Version: 1.2.3`)
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{}
 
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 
 					Expect(existingResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
@@ -1666,7 +1666,7 @@ Version: 1.2.3`)
 				})
 
 				It("should add feature gates if they are set to true", func() {
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
@@ -1697,7 +1697,7 @@ Version: 1.2.3`)
 				})
 
 				It("should not add feature gates if they are set to false", func() {
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
@@ -1731,7 +1731,7 @@ Version: 1.2.3`)
 				})
 
 				It("should not add feature gates if they are not exist", func() {
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{}
@@ -1764,7 +1764,7 @@ Version: 1.2.3`)
 				It("should keep FG if already exist", func() {
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(true)
 					fgs := append(hardCodeKvFgs, kvWithHostPassthroughCPU)
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates = fgs
 
@@ -1801,7 +1801,7 @@ Version: 1.2.3`)
 
 				It("should remove FG if it disabled in HC CR", func() {
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					existingResource.Spec.Configuration.DeveloperConfiguration = &kubevirtcorev1.DeveloperConfiguration{
 						FeatureGates: []string{kvWithHostPassthroughCPU},
@@ -1840,7 +1840,7 @@ Version: 1.2.3`)
 
 				It("should remove FG if it missing from the HC CR", func() {
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					existingResource.Spec.Configuration.DeveloperConfiguration = &kubevirtcorev1.DeveloperConfiguration{
 						FeatureGates: []string{kvWithHostPassthroughCPU},
@@ -1877,7 +1877,7 @@ Version: 1.2.3`)
 
 				It("should remove FG if it the HC CR does not contain the featureGates field", func() {
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(true)
-					existingResource, err := NewKubeVirt(hco)
+					existingResource, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					existingResource.Spec.Configuration.DeveloperConfiguration = &kubevirtcorev1.DeveloperConfiguration{
 						FeatureGates: []string{kvWithHostPassthroughCPU},
@@ -1996,7 +1996,7 @@ Version: 1.2.3`)
 						CPUModels: []string{"aaa", "bbb", "ccc"},
 					}
 
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 
 					Expect(kv.Spec.Configuration.ObsoleteCPUModels).To(HaveLen(3 + len(hardcodedObsoleteCPUModels)))
@@ -2015,7 +2015,7 @@ Version: 1.2.3`)
 						MinCPUModel: "Penryn",
 					}
 
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 
 					Expect(kv.Spec.Configuration.ObsoleteCPUModels).ShouldNot(BeEmpty())
@@ -2026,7 +2026,7 @@ Version: 1.2.3`)
 				})
 
 				It("should not add min CPU Model and obsolete CPU Models if HC does not contain ObsoleteCPUs", func() {
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 
 					Expect(kv.Spec.Configuration.ObsoleteCPUModels).Should(HaveLen(len(hardcodedObsoleteCPUModels)))
@@ -2039,7 +2039,7 @@ Version: 1.2.3`)
 
 				It("should not add min CPU Model and add only the hard coded obsolete CPU Models if ObsoleteCPUs is empty", func() {
 					hco.Spec.ObsoleteCPUs = &hcov1beta1.HyperConvergedObsoleteCPUs{}
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 
 					Expect(kv.Spec.Configuration.ObsoleteCPUModels).Should(HaveLen(len(hardcodedObsoleteCPUModels)))
@@ -2053,7 +2053,7 @@ Version: 1.2.3`)
 
 			Context("test Obsolete CPU Models in KV handler", func() {
 				It("Should add obsolete CPU model if they are set in HC CR", func() {
-					existingKV, err := NewKubeVirt(hco)
+					existingKV, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 
 					hco.Spec.ObsoleteCPUs = &hcov1beta1.HyperConvergedObsoleteCPUs{
@@ -2091,7 +2091,7 @@ Version: 1.2.3`)
 				})
 
 				It("Should modify obsolete CPU model if they are not the same as in HC CR", func() {
-					existingKV, err := NewKubeVirt(hco)
+					existingKV, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					existingKV.Spec.Configuration.MinCPUModel = "Haswell"
 					existingKV.Spec.Configuration.ObsoleteCPUModels = map[string]bool{
@@ -2136,7 +2136,7 @@ Version: 1.2.3`)
 				})
 
 				It("Should remove obsolete CPU model if they are not set in HC CR", func() {
-					existingKV, err := NewKubeVirt(hco)
+					existingKV, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					existingKV.Spec.Configuration.MinCPUModel = "Penryn"
 					existingKV.Spec.Configuration.ObsoleteCPUModels = map[string]bool{
@@ -2176,7 +2176,7 @@ Version: 1.2.3`)
 
 		Context("Certificate rotation strategy", func() {
 			It("should add certificate rotation strategy if missing in KV", func() {
-				existingResource, err := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Spec.CertConfig = hcov1beta1.HyperConvergedCertConfig{
@@ -2255,7 +2255,7 @@ Version: 1.2.3`)
 						RenewBefore: &metav1.Duration{Duration: 30 * time.Minute},
 					},
 				}
-				existingResource, err := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				By("Modify HCO's cert configuration")
@@ -2307,7 +2307,7 @@ Version: 1.2.3`)
 						RenewBefore: &metav1.Duration{Duration: 30 * time.Minute},
 					},
 				}
-				existingResource, err := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				By("Mock a reconciliation triggered by a change in KV CR")
@@ -2367,7 +2367,7 @@ Version: 1.2.3`)
 			})
 
 			It("should add Workload Update Strategy if missing in KV", func() {
-				existingResource, err := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Spec.WorkloadUpdateStrategy = hcov1beta1.HyperConvergedWorkloadUpdateStrategy{
@@ -2433,7 +2433,7 @@ Version: 1.2.3`)
 
 			It("should modify Workload Update Strategy according to HCO CR", func() {
 
-				existingKv, err := NewKubeVirt(hco)
+				existingKv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				modifiedBatchEvictionSize := 5
@@ -2479,7 +2479,7 @@ Version: 1.2.3`)
 					BatchEvictionSize:     &hcoModifiedBatchEvictionSize,
 				}
 
-				existingKV, err := NewKubeVirt(hco)
+				existingKV, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				By("Mock a reconciliation triggered by a change in KV CR")
@@ -2545,7 +2545,7 @@ Version: 1.2.3`)
 						return &commontestutils.ClusterInfoSNOMock{}
 					}
 
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(Not(BeNil()))
 					Expect(kv.Spec.Infra.Replicas).To(Not(BeNil()))
@@ -2557,7 +2557,7 @@ Version: 1.2.3`)
 					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
 						return &commontestutils.ClusterInfoMock{}
 					}
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(Not(BeNil()))
 					Expect(kv.Spec.Infra.Replicas).To(BeNil())
@@ -2568,7 +2568,7 @@ Version: 1.2.3`)
 					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
 						return &commontestutils.ClusterInfoSRCPHAIMock{}
 					}
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(Not(BeNil()))
 					Expect(kv.Spec.Infra.Replicas).To(BeNil())
@@ -2588,7 +2588,7 @@ Version: 1.2.3`)
 						return &commontestutils.ClusterInfoSNOMock{}
 					}
 
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(Not(BeNil()))
 					Expect(kv.Spec.Infra.Replicas).To(Not(BeNil()))
@@ -2601,7 +2601,7 @@ Version: 1.2.3`)
 					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
 						return &commontestutils.ClusterInfoMock{}
 					}
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(BeNil())
 					Expect(kv.Spec.Workloads).To(Not(BeNil()))
@@ -2612,7 +2612,7 @@ Version: 1.2.3`)
 					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
 						return &commontestutils.ClusterInfoSRCPHAIMock{}
 					}
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(BeNil())
 					Expect(kv.Spec.Workloads).To(Not(BeNil()))
@@ -2628,7 +2628,7 @@ Version: 1.2.3`)
 						return &commontestutils.ClusterInfoSNOMock{}
 					}
 
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(Not(BeNil()))
 					Expect(kv.Spec.Infra.Replicas).To(Not(BeNil()))
@@ -2641,7 +2641,7 @@ Version: 1.2.3`)
 					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
 						return &commontestutils.ClusterInfoMock{}
 					}
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(BeNil())
 					Expect(kv.Spec.Workloads).To(BeNil())
@@ -2651,7 +2651,7 @@ Version: 1.2.3`)
 					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
 						return &commontestutils.ClusterInfoSRCPHAIMock{}
 					}
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(BeNil())
 					Expect(kv.Spec.Workloads).To(BeNil())
@@ -2671,7 +2671,7 @@ Version: 1.2.3`)
 						return &commontestutils.ClusterInfoSNOMock{}
 					}
 
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(Not(BeNil()))
 					Expect(kv.Spec.Infra.Replicas).To(Not(BeNil()))
@@ -2684,7 +2684,7 @@ Version: 1.2.3`)
 					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
 						return &commontestutils.ClusterInfoMock{}
 					}
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(Not(BeNil()))
 					Expect(kv.Spec.Infra.Replicas).To(BeNil())
@@ -2696,7 +2696,7 @@ Version: 1.2.3`)
 					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
 						return &commontestutils.ClusterInfoSRCPHAIMock{}
 					}
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(Not(BeNil()))
 					Expect(kv.Spec.Infra.Replicas).To(BeNil())
@@ -2710,7 +2710,7 @@ Version: 1.2.3`)
 
 		Context("Cluster level EvictionStrategy", func() {
 			It("should add eviction strategy if missing in KV", func() {
-				existingResource, err := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				liveMigrateEvictionStrategy := kubevirtcorev1.EvictionStrategyLiveMigrate
@@ -2741,7 +2741,7 @@ Version: 1.2.3`)
 
 				evictionStrategyNone := kubevirtcorev1.EvictionStrategyNone
 				hco.Spec.EvictionStrategy = &evictionStrategyNone
-				existingResource, err := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				By("Modify HCO's eviction strategy configuration")
@@ -2776,7 +2776,7 @@ Version: 1.2.3`)
 
 		Context("VM state storage class", func() {
 			It("should modify storage class according to HCO CR", func() {
-				existingResource, err := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				By("Modify HCO's VM state storage class configuration")
@@ -2806,7 +2806,7 @@ Version: 1.2.3`)
 
 		Context("Auto CPU limit", func() {
 			It("should set the namespace label selector according to HCO CR", func() {
-				existingResource, err := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Spec.ResourceRequirements = &hcov1beta1.OperandResourceRequirements{
@@ -2841,7 +2841,7 @@ Version: 1.2.3`)
 
 		Context("Virtual machine options", func() {
 			It("should set disableFreePageReporting by default", func() {
-				kv, err := NewKubeVirt(hco)
+				kv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(kv.Spec.Configuration).To(Not(BeNil()))
 				Expect(kv.Spec.Configuration.VirtualMachineOptions).To(Not(BeNil()))
@@ -2849,7 +2849,7 @@ Version: 1.2.3`)
 			})
 
 			DescribeTable("should modify disableFreePageReporting according to HCO CR", func(virtualMachineOptions *hcov1beta1.VirtualMachineOptions) {
-				existingResource, err := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				By("Modify HCO's virtual machine options configuration")
@@ -2885,7 +2885,7 @@ Version: 1.2.3`)
 			It("should add CPUAllocationRatio if missing in KV CR", func() {
 				expectedCPUAllocationRatio := 16
 
-				existingResource, err := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Spec.ResourceRequirements = &hcov1beta1.OperandResourceRequirements{
@@ -2919,7 +2919,7 @@ Version: 1.2.3`)
 					VmiCPUAllocationRatio: &initialCPUAllocationRatio,
 				}
 
-				existingResource, err := NewKubeVirt(hcoResourceRequirements)
+				existingResource, err := NewKubeVirt(hcoResourceRequirements, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(existingResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
@@ -2953,7 +2953,7 @@ Version: 1.2.3`)
 					VmiCPUAllocationRatio: &initialCPUAllocationRatio,
 				}
 
-				existingResource, err := NewKubeVirt(hcoResourceRequirements)
+				existingResource, err := NewKubeVirt(hcoResourceRequirements, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Spec.ResourceRequirements = &hcov1beta1.OperandResourceRequirements{
@@ -2985,7 +2985,7 @@ Version: 1.2.3`)
 		})
 
 		It("should handle conditions", func() {
-			expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
+			expectedResource, err := NewKubeVirt(hco, nil, commontestutils.Namespace)
 			Expect(err).ToNot(HaveOccurred())
 			expectedResource.Status.Conditions = []kubevirtcorev1.KubeVirtCondition{
 				{
@@ -3055,7 +3055,7 @@ Version: 1.2.3`)
 			})
 
 			It("Should be empty by default", func() {
-				kv, err := NewKubeVirt(hco)
+				kv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(hco.Spec.TuningPolicy).To(BeEmpty())
 				Expect(kv.Spec.Configuration.APIConfiguration).To(BeNil())
@@ -3069,7 +3069,7 @@ Version: 1.2.3`)
 				It("Should return error if annotation is not present", func() {
 					hco.Spec.TuningPolicy = hcov1beta1.HyperConvergedAnnotationTuningPolicy
 
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 
 					Expect(err).To(HaveOccurred())
 					Expect(err).Should(MatchError("tuning policy set but annotation not present or wrong"))
@@ -3084,7 +3084,7 @@ Version: 1.2.3`)
 					//burst is missing
 					hco.Annotations["hco.kubevirt.io/tuningPolicy"] = `{"qps": 100}`
 
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 
 					Expect(err).To(HaveOccurred())
 					Expect(err).Should(MatchError("burst parameter not found in annotation"))
@@ -3098,7 +3098,7 @@ Version: 1.2.3`)
 					// qps field is missing a "
 					hco.Annotations["hco.kubevirt.io/tuningPolicy"] = `{"qps: 100, "burst": 200}`
 
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 
 					Expect(err).To(HaveOccurred())
 					Expect(kv).To(BeNil())
@@ -3109,7 +3109,7 @@ Version: 1.2.3`)
 					hco.Annotations = make(map[string]string, 1)
 					hco.Annotations["hco.kubevirt.io/tuningPolicy"] = `{"qps": 100, "burst": 200}`
 
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 
 					Expect(kv).ToNot(BeNil())
 					Expect(err).ToNot(HaveOccurred())
@@ -3132,7 +3132,7 @@ Version: 1.2.3`)
 					hco.Annotations = make(map[string]string, 1)
 					hco.Annotations["hco.kubevirt.io/tuningPolicy"] = `{"qps": 100, "burst": 200}`
 
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 
 					Expect(err).To(HaveOccurred())
 					Expect(kv).To(BeNil())
@@ -3140,7 +3140,7 @@ Version: 1.2.3`)
 
 				It("Should create the fields and populate them using the highBurst profile values", func() {
 					hco.Spec.TuningPolicy = hcov1beta1.HyperConvergedHighBurstProfile
-					kv, err := NewKubeVirt(hco)
+					kv, err := NewKubeVirt(hco, nil)
 					const expectedQPS = float32(200)
 					const expectedBurst = 400
 
@@ -3195,7 +3195,7 @@ Version: 1.2.3`)
 					}
 				]`}
 
-				kv, err := NewKubeVirt(hco)
+				kv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(kv).ToNot(BeNil())
 				Expect(kv.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
@@ -3219,7 +3219,7 @@ Version: 1.2.3`)
 					}
 				]`}
 
-				_, err := NewKubeVirt(hco)
+				_, err := NewKubeVirt(hco, nil)
 				Expect(err).To(HaveOccurred())
 			})
 
@@ -3296,7 +3296,7 @@ Version: 1.2.3`)
 			})
 
 			It("Ensure func should update KV object with changes from the annotation", func() {
-				existsCdi, err := NewKubeVirt(hco)
+				existsCdi, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Annotations = map[string]string{common.JSONPatchKVAnnotationName: `[
@@ -3347,7 +3347,7 @@ Version: 1.2.3`)
 			})
 
 			It("Ensure func should fail to update KV object with wrong jsonPatch", func() {
-				existsKv, err := NewKubeVirt(hco)
+				existsKv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Annotations = map[string]string{common.JSONPatchKVAnnotationName: `[
@@ -3466,7 +3466,7 @@ Version: 1.2.3`)
 			It("Should be defined for KubevirtCR if defined in HCO CR", func() {
 				runtimeClass := "myCustomRuntimeClass"
 				hco.Spec.DefaultRuntimeClass = &runtimeClass
-				kv, err := NewKubeVirt(hco)
+				kv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(kv.Spec.Configuration.DefaultRuntimeClass).To(Equal(runtimeClass))
@@ -3474,7 +3474,7 @@ Version: 1.2.3`)
 
 			DescribeTable("Should be empty on KubevirtCR if not defined in HCO CR", func(runtimeClass *string) {
 				hco.Spec.DefaultRuntimeClass = runtimeClass
-				kv, err := NewKubeVirt(hco)
+				kv, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(kv.Spec.Configuration.DefaultRuntimeClass).To(BeEmpty())
@@ -3727,7 +3727,7 @@ Version: 1.2.3`)
 
 		DescribeTable("should modify TLSSecurityProfile on Kubevirt CR according to ApiServer or HCO CR",
 			func(hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile, expectedKubevirtTLSVersion kubevirtcorev1.TLSProtocolVersion, expectedKubevirtCiphers []string) {
-				existingResource, err := NewKubeVirt(hco)
+				existingResource, err := NewKubeVirt(hco, nil)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(existingResource.Spec.Configuration.TLSConfiguration.MinTLSVersion).To(Equal(kubevirtcorev1.VersionTLS12))
 				Expect(existingResource.Spec.Configuration.TLSConfiguration.Ciphers).To(Equal(kvIntermediateCiphers))
@@ -3789,7 +3789,7 @@ Version: 1.2.3`)
 
 		It("should overwrite TLSSecurityProfile if directly set on Kubevirt CR", func() {
 			hco.Spec.TLSSecurityProfile = intermediateTLSSecurityProfile
-			existingResource, err := NewKubeVirt(hco)
+			existingResource, err := NewKubeVirt(hco, nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			// mock a reconciliation triggered by a change in Kubevirt CR

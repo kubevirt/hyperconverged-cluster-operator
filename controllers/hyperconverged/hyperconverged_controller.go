@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 
 	"github.com/blang/semver/v4"
 	jsonpatch "github.com/evanphx/json-patch"
@@ -15,6 +16,7 @@ import (
 	consolev1 "github.com/openshift/api/console/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	routev1 "github.com/openshift/api/route/v1"
+	mcov1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 	operatorhandler "github.com/operator-framework/operator-lib/handler"
 	"github.com/pkg/errors"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -203,7 +205,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) er
 			&imagev1.ImageStream{},
 			&corev1.Namespace{},
 			&appsv1.Deployment{},
+			&mcov1.MachineConfig{},
 		}...)
+	}
+
+	primaryPlaceholder, err := getHyperConvergedNamespacedName()
+	if err != nil {
+		return err
 	}
 
 	// Watch secondary resources
@@ -216,6 +224,16 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) er
 				// by changes on the HyperConverged object from request triggered by changes
 				// on a secondary CR controlled by HCO
 				log.Info(msg)
+
+				// this can be better done with a predicate
+				_, ok := a.(*mcov1.MachineConfig)
+				if ok && strings.Contains(a.GetName(), "-worker-generated-") {
+					//this will cause that all operands will reconcile
+					//FIXME: we only need kubevirt to reconcile
+					return []reconcile.Request{
+						{NamespacedName: primaryPlaceholder},
+					}
+				}
 				return []reconcile.Request{
 					{NamespacedName: secCRPlaceholder},
 				}

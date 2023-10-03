@@ -12,7 +12,7 @@ import (
 var _ = Describe("HyperConverged Ensure Result", func() {
 
 	Context("HyperConverged Ensure Result", func() {
-		kv, err := NewKubeVirt(commontestutils.NewHco())
+		kv, err := NewKubeVirt(commontestutils.NewHco(), nil)
 		Expect(err).ToNot(HaveOccurred())
 
 		It("should create new EnsureResult with default values", func() {

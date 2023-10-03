@@ -220,7 +220,7 @@ func getBasicDeployment() *BasicExpected {
 	res.mService = alerts.NewMetricsService(namespace, deploymentRef)
 	res.serviceMonitor = alerts.NewServiceMonitor(namespace, deploymentRef)
 
-	expectedKV, err := operands.NewKubeVirt(hco, namespace)
+	expectedKV, err := operands.NewKubeVirt(hco, nil, namespace)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 
 	expectedKV.Status.Conditions = []kubevirtcorev1.KubeVirtCondition{

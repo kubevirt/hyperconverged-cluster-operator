@@ -2616,6 +2616,7 @@ spec:
                 enum:
                 - annotation
                 - highBurst
+                - kubelet
                 type: string
               uninstallStrategy:
                 default: BlockUninstallIfWorkloadsExist

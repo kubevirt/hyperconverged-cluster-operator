@@ -134,7 +134,7 @@ func (wh *WebhookHandler) ValidateCreate(_ context.Context, dryrun bool, hc *v1b
 		return err
 	}
 
-	if _, err := operands.NewKubeVirt(hc); err != nil {
+	if _, err := operands.NewKubeVirt(hc, wh.cli); err != nil {
 		return err
 	}
 
@@ -162,7 +162,7 @@ func (wh *WebhookHandler) getOperands(requested *v1beta1.HyperConverged) (*kubev
 		return nil, nil, nil, err
 	}
 
-	kv, err := operands.NewKubeVirt(requested)
+	kv, err := operands.NewKubeVirt(requested, wh.cli)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -261,7 +261,7 @@ func (wh *WebhookHandler) updateOperatorCr(ctx context.Context, hc *v1beta1.Hype
 
 	switch existing := exists.(type) {
 	case *kubevirtcorev1.KubeVirt:
-		required, err := operands.NewKubeVirt(hc)
+		required, err := operands.NewKubeVirt(hc, wh.cli)
 		if err != nil {
 			return err
 		}

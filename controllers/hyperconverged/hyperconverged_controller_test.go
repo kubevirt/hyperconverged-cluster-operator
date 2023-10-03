@@ -717,7 +717,7 @@ var _ = Describe("HyperconvergedController", func() {
 				hco := commontestutils.NewHco()
 				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
 				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-				existingResource, err := operands.NewKubeVirt(hco, namespace)
+				existingResource, err := operands.NewKubeVirt(hco, nil, namespace)
 				Expect(err).ToNot(HaveOccurred())
 				existingResource.Kind = kubevirtcorev1.KubeVirtGroupVersionKind.Kind // necessary for metrics
 
@@ -777,7 +777,7 @@ var _ = Describe("HyperconvergedController", func() {
 				hco := commontestutils.NewHco()
 				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
 				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-				existingResource, err := operands.NewKubeVirt(hco, namespace)
+				existingResource, err := operands.NewKubeVirt(hco, nil, namespace)
 				Expect(err).ToNot(HaveOccurred())
 				existingResource.Kind = kubevirtcorev1.KubeVirtGroupVersionKind.Kind // necessary for metrics
 
@@ -2223,7 +2223,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				BeforeEach(func() {
 					expected.hco.Spec = hcov1beta1.HyperConvergedSpec{}
-					expected.kv, _ = operands.NewKubeVirt(expected.hco, namespace)
+					expected.kv, _ = operands.NewKubeVirt(expected.hco, nil, namespace)
 				})
 
 				It("Should do nothing if resources do not exist", func() {

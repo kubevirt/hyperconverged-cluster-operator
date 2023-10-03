@@ -1,6 +1,8 @@
 package operands
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,6 +10,10 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	v1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
+
+	kubelet "k8s.io/kubernetes/pkg/kubelet/apis/config"
 
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/library-go/pkg/crypto"
@@ -198,12 +204,13 @@ func newKubevirtHandler(Client client.Client, Scheme *runtime.Scheme) *kubevirtH
 		Scheme:                 Scheme,
 		crType:                 "KubeVirt",
 		setControllerReference: true,
-		hooks:                  &kubevirtHooks{},
+		hooks:                  &kubevirtHooks{client: Client},
 	}
 }
 
 type kubevirtHooks struct {
-	cache *kubevirtcorev1.KubeVirt
+	cache  *kubevirtcorev1.KubeVirt
+	client client.Client
 }
 
 type rateLimits struct {
@@ -213,7 +220,7 @@ type rateLimits struct {
 
 func (h *kubevirtHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
 	if h.cache == nil {
-		kv, err := NewKubeVirt(hc)
+		kv, err := NewKubeVirt(hc, h.client)
 		if err != nil {
 			return nil, err
 		}
@@ -260,8 +267,8 @@ func (*kubevirtHooks) updateCr(req *common.HcoRequest, Client client.Client, exi
 
 func (*kubevirtHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
-func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtcorev1.KubeVirt, error) {
-	config, err := getKVConfig(hc)
+func NewKubeVirt(hc *hcov1beta1.HyperConverged, client client.Client, opts ...string) (*kubevirtcorev1.KubeVirt, error) {
+	config, err := getKVConfig(hc, client)
 	if err != nil {
 		return nil, err
 	}
@@ -328,6 +335,68 @@ func getHcoAnnotationTuning(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.Relo
 	return nil, fmt.Errorf("tuning policy set but annotation not present or wrong")
 }
 
+func getHcoKubeletProfileTuningValues(hc *hcov1beta1.HyperConverged, cli client.Client) (*kubevirtcorev1.ReloadableComponentConfiguration, error) {
+	if _, ok := hc.Annotations[common.TuningPolicyAnnotationName]; ok {
+		return nil, fmt.Errorf("kubelet profile is enabled and the annotation " + common.TuningPolicyAnnotationName + " is present")
+	}
+
+	var mco v1.MachineConfigList
+	var workerMco *v1.MachineConfig
+
+	err := cli.List(context.TODO(), &mco)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, config := range mco.Items {
+
+		if strings.Contains(config.Name, "-worker-generated-kubelet") {
+			workerMco = config.DeepCopy()
+		}
+	}
+
+	if workerMco == nil {
+		return nil, fmt.Errorf("failed to locate the worker kubelet generated file")
+	}
+
+	// The original content read is an ignition file in raw format, so let's convert the content first to an ignition file
+	ignFiles, err := hcoutil.ParseAndConvertConfig(workerMco.Spec.Config.Raw)
+	if err != nil {
+		return nil, fmt.Errorf("unable to convert ignition to file %w", err)
+	}
+
+	// In most cases, there is just one entry. However, it could contain multiple
+	file, err := hcoutil.FindKubeletConfig(ignFiles.Storage.Files)
+	if err != nil {
+		return nil, err
+	}
+
+	// The contents of the ignition file could be compressed. Let's make sure
+	contents, err := hcoutil.DecodeIgnitionFileContents(file.Contents.Source, file.Contents.Compression)
+	if err != nil {
+		return nil, fmt.Errorf("unable to decode contents of kubelet configuration %w", err)
+	}
+
+	kubeletcfg := &kubelet.KubeletConfiguration{}
+
+	d := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(contents), len(contents))
+	err = d.Decode(kubeletcfg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal kubeletConfiguration %w", err)
+	}
+
+	return &kubevirtcorev1.ReloadableComponentConfiguration{
+		RestClient: &kubevirtcorev1.RESTClientConfiguration{
+			RateLimiter: &kubevirtcorev1.RateLimiter{
+				TokenBucketRateLimiter: &kubevirtcorev1.TokenBucketRateLimiter{
+					QPS:   float32(kubeletcfg.KubeAPIQPS),
+					Burst: int(kubeletcfg.KubeAPIBurst),
+				},
+			},
+		},
+	}, nil
+}
+
 func getHcoHighBurstProfileTuningValues(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.ReloadableComponentConfiguration, error) {
 	if _, ok := hc.Annotations[common.TuningPolicyAnnotationName]; ok {
 		return nil, fmt.Errorf("highBurst profile is enabled and the annotation " + common.TuningPolicyAnnotationName + " is present")
@@ -344,11 +413,13 @@ func getHcoHighBurstProfileTuningValues(hc *hcov1beta1.HyperConverged) (*kubevir
 	}, nil
 }
 
-func hcoTuning2Kv(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.ReloadableComponentConfiguration, error) {
+func hcoTuning2Kv(hc *hcov1beta1.HyperConverged, client client.Client) (*kubevirtcorev1.ReloadableComponentConfiguration, error) {
 	if hc.Spec.TuningPolicy == hcov1beta1.HyperConvergedAnnotationTuningPolicy {
 		return getHcoAnnotationTuning(hc)
 	} else if hc.Spec.TuningPolicy == hcov1beta1.HyperConvergedHighBurstProfile {
 		return getHcoHighBurstProfileTuningValues(hc)
+	} else if hc.Spec.TuningPolicy == hcov1beta1.HyperConvergedKubeletProfile {
+		return getHcoKubeletProfileTuningValues(hc, client)
 	}
 	return nil, nil
 }
@@ -377,7 +448,7 @@ func hcWorkloadUpdateStrategyToKv(hcObject *hcov1beta1.HyperConvergedWorkloadUpd
 	return kvObject
 }
 
-func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfiguration, error) {
+func getKVConfig(hc *hcov1beta1.HyperConverged, client client.Client) (*kubevirtcorev1.KubeVirtConfiguration, error) {
 	devConfig, err := getKVDevConfig(hc)
 	if err != nil {
 		return nil, err
@@ -390,7 +461,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 
 	obsoleteCPUs, minCPUModel := getObsoleteCPUConfig(hc.Spec.ObsoleteCPUs)
 
-	rateLimiter, err := hcoTuning2Kv(hc)
+	rateLimiter, err := hcoTuning2Kv(hc, client)
 	if err != nil {
 		return nil, err
 	}

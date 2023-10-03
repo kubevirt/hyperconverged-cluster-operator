@@ -22,6 +22,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
+	mcov1 "github.com/openshift/machine-config-operator/pkg/apis/machineconfiguration.openshift.io/v1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
@@ -59,6 +60,7 @@ var (
 		kubevirtcorev1.AddToScheme,
 		openshiftconfigv1.Install,
 		csvv1alpha1.AddToScheme,
+		mcov1.AddToScheme,
 	}
 )
 

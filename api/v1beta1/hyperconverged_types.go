@@ -32,6 +32,7 @@ type HyperConvergedTuningPolicy string
 const (
 	HyperConvergedAnnotationTuningPolicy HyperConvergedTuningPolicy = "annotation"
 	HyperConvergedHighBurstProfile       HyperConvergedTuningPolicy = "highBurst"
+	HyperConvergedKubeletProfile         HyperConvergedTuningPolicy = "kubelet"
 )
 
 // HyperConvergedSpec defines the desired state of HyperConverged
@@ -48,7 +49,7 @@ type HyperConvergedSpec struct {
 	// If TuningPolicy is not present the default kubevirt values are used.
 	// It can be set to `annotation` for fine-tuning the kubevirt queryPerSeconds (qps) and burst values.
 	// Qps and burst values are taken from the annotation hco.kubevirt.io/tuningPolicy
-	// +kubebuilder:validation:Enum=annotation;highBurst
+	// +kubebuilder:validation:Enum=annotation;highBurst;kubelet
 	// +optional
 	TuningPolicy HyperConvergedTuningPolicy `json:"tuningPolicy,omitempty"`
 

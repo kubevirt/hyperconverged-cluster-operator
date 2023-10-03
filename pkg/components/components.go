@@ -551,6 +551,11 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			Resources: stringListToSlice("consoles"),
 			Verbs:     stringListToSlice("get", "list", "watch", "update"),
 		},
+		{
+			APIGroups: stringListToSlice("machineconfiguration.openshift.io"),
+			Resources: stringListToSlice("machineconfigs"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
 	}
 }
 
