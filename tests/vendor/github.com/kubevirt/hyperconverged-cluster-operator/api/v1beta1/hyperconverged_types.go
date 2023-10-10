@@ -420,6 +420,19 @@ type HyperConvergedFeatureGates struct {
 	// +kubebuilder:default=false
 	// +default=false
 	EnableManagedTenantQuota *bool `json:"enableManagedTenantQuota,omitempty"`
+
+	// TODO update description to also include cpu limits as well, after 4.14
+
+	// Enable KubeVirt to set automatic limits when they are needed.
+	// If ResourceQuota with set memory limits is associated with a namespace, each pod in that namespace must have memory limits set.
+	// By default, KubeVirt does not set such limits to the virt-launcher pod.
+	// When this feature gate is enabled, KubeVirt will set limits to the virt-launcher pod if they are not set manually
+	// and if a resource quota with memory limits is associated with the creation namespace.
+	// Note: this feature is in Developer Preview.
+	// +optional
+	// +kubebuilder:default=false
+	// +default=false
+	AutoResourceLimits *bool `json:"autoResourceLimits,omitempty"`
 }
 
 // PermittedHostDevices holds information about devices allowed for passthrough
