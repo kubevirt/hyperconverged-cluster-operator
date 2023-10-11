@@ -193,3 +193,4 @@ export REGISTRY_NAMESPACE=<your org under IMAGE_REGISTRY, i.e your_name if you u
 make cluster-sync
 ```
 `oc` binary should exist, and the cluster should be reachable via `oc` commands.
+just testing
