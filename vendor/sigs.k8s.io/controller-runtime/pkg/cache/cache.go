@@ -194,21 +194,30 @@ func New(config *rest.Config, opts Options) (Cache, error) {
 // returned from cache get/list before mutating it.
 func BuilderWithOptions(options Options) NewCacheFunc {
 	return func(config *rest.Config, inherited Options) (Cache, error) {
-		var err error
-		inherited, err = defaultOpts(config, inherited)
-		if err != nil {
-			return nil, err
-		}
-		options, err = defaultOpts(config, options)
-		if err != nil {
-			return nil, err
-		}
-		combined, err := options.inheritFrom(inherited)
+		combined, err := options.combinedOpts(config, inherited)
 		if err != nil {
 			return nil, err
 		}
 		return New(config, *combined)
 	}
+}
+
+func (options Options) combinedOpts(config *rest.Config, inherited Options) (*Options, error) {
+	var err error
+	inherited, err = defaultOpts(config, inherited)
+	if err != nil {
+		return nil, err
+	}
+	options = defaultToInheritedOpts(options, inherited)
+	options, err = defaultOpts(config, options)
+	if err != nil {
+		return nil, err
+	}
+	combined, err := options.inheritFrom(inherited)
+	if err != nil {
+		return nil, err
+	}
+	return combined, nil
 }
 
 func (options Options) inheritFrom(inherited Options) (*Options, error) {
@@ -424,6 +433,21 @@ func defaultOpts(config *rest.Config, opts Options) (Options, error) {
 	return opts, nil
 }
 
+func defaultToInheritedOpts(opts, inherited Options) Options {
+	if opts.Scheme == nil {
+		opts.Scheme = inherited.Scheme
+	}
+
+	if opts.Mapper == nil {
+		opts.Mapper = inherited.Mapper
+	}
+
+	if opts.Resync == nil {
+		opts.Resync = inherited.Resync
+	}
+	return opts
+}
+
 func convertToByGVK[T any](byObject map[client.Object]T, def T, scheme *runtime.Scheme) (map[schema.GroupVersionKind]T, error) {
 	byGVK := map[schema.GroupVersionKind]T{}
 	for object, value := range byObject {
@@ -452,6 +476,7 @@ func convertToByObject[T any](byGVK map[schema.GroupVersionKind]T, scheme *runti
 		if !ok {
 			return nil, def, fmt.Errorf("object %T for GVK %q does not implement client.Object", obj, gvk)
 		}
+		cObj.GetObjectKind().SetGroupVersionKind(gvk)
 		if byObject == nil {
 			byObject = map[client.Object]T{}
 		}
