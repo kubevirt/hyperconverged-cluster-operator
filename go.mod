@@ -27,9 +27,9 @@ require (
 	golang.org/x/sync v0.3.0
 	golang.org/x/tools v0.11.0
 	gomodules.xyz/jsonpatch/v2 v2.3.0
-	k8s.io/api v0.27.3
-	k8s.io/apiextensions-apiserver v0.27.3
-	k8s.io/apimachinery v0.27.3
+	k8s.io/api v0.27.6
+	k8s.io/apiextensions-apiserver v0.27.6
+	k8s.io/apimachinery v0.27.6
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20230515203736-54b630e78af5
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106
@@ -38,8 +38,8 @@ require (
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4
 	kubevirt.io/managed-tenant-quota v1.1.8
 	kubevirt.io/ssp-operator/api v0.18.3
-	sigs.k8s.io/controller-runtime v0.15.0
-	sigs.k8s.io/controller-tools v0.12.0
+	sigs.k8s.io/controller-runtime v0.15.3
+	sigs.k8s.io/controller-tools v0.12.1
 )
 
 // TODO: consume v0.12.0 as soon as available
@@ -83,19 +83,19 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/net v0.12.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
-	golang.org/x/sys v0.10.0 // indirect
-	golang.org/x/term v0.10.0 // indirect
-	golang.org/x/text v0.11.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/term v0.13.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiserver v0.27.3 // indirect
-	k8s.io/component-base v0.27.3 // indirect
+	k8s.io/apiserver v0.27.6 // indirect
+	k8s.io/component-base v0.27.6 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
@@ -146,32 +146,32 @@ exclude k8s.io/metrics v0.0.0
 
 exclude k8s.io/sample-apiserver v0.0.0
 
-// Pinned to v0.27.3
+// Pinned to v0.27.6
 replace (
-	k8s.io/api => k8s.io/api v0.27.3
-	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.27.3
-	k8s.io/apimachinery => k8s.io/apimachinery v0.27.3
-	k8s.io/apiserver => k8s.io/apiserver v0.27.3
-	k8s.io/cli-runtime => k8s.io/cli-runtime v0.27.3
-	k8s.io/client-go => k8s.io/client-go v0.27.3
-	k8s.io/cloud-provider => k8s.io/cloud-provider v0.27.3
-	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.27.3
-	k8s.io/code-generator => k8s.io/code-generator v0.27.3
-	k8s.io/component-base => k8s.io/component-base v0.27.3
-	k8s.io/cri-api => k8s.io/cri-api v0.27.3
-	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.27.3
-	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.27.3
-	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.27.3
-	k8s.io/kube-proxy => k8s.io/kube-proxy v0.27.3
-	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.27.3
-	k8s.io/kubectl => k8s.io/kubectl v0.27.3
-	k8s.io/kubelet => k8s.io/kubelet v0.27.3
-	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.27.3
-	k8s.io/metrics => k8s.io/metrics v0.27.3
-	k8s.io/node-api => k8s.io/node-api v0.27.3
-	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.27.3
-	k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.27.3
-	k8s.io/sample-controller => k8s.io/sample-controller v0.27.3
+	k8s.io/api => k8s.io/api v0.27.6
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.27.6
+	k8s.io/apimachinery => k8s.io/apimachinery v0.28.0-alpha.0.0.20231013002001-194b6f8ddf62 // for CVE-2023-44487, while waiting for v0.27.7
+	k8s.io/apiserver => k8s.io/apiserver v0.0.0-20231013035634-f41beb3c1c70 // for CVE-2023-44487, while waiting for v0.27.7
+	k8s.io/cli-runtime => k8s.io/cli-runtime v0.27.6
+	k8s.io/client-go => k8s.io/client-go v0.27.6
+	k8s.io/cloud-provider => k8s.io/cloud-provider v0.27.6
+	k8s.io/cluster-bootstrap => k8s.io/cluster-bootstrap v0.27.6
+	k8s.io/code-generator => k8s.io/code-generator v0.27.6
+	k8s.io/component-base => k8s.io/component-base v0.27.6
+	k8s.io/cri-api => k8s.io/cri-api v0.27.6
+	k8s.io/csi-translation-lib => k8s.io/csi-translation-lib v0.27.6
+	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.27.6
+	k8s.io/kube-controller-manager => k8s.io/kube-controller-manager v0.27.6
+	k8s.io/kube-proxy => k8s.io/kube-proxy v0.27.6
+	k8s.io/kube-scheduler => k8s.io/kube-scheduler v0.27.6
+	k8s.io/kubectl => k8s.io/kubectl v0.27.6
+	k8s.io/kubelet => k8s.io/kubelet v0.27.6
+	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.27.6
+	k8s.io/metrics => k8s.io/metrics v0.27.6
+	k8s.io/node-api => k8s.io/node-api v0.27.6
+	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.27.6
+	k8s.io/sample-cli-plugin => k8s.io/sample-cli-plugin v0.27.6
+	k8s.io/sample-controller => k8s.io/sample-controller v0.27.6
 )
 
 replace (
@@ -199,3 +199,8 @@ replace (
 
 // FIX: Unhandled exception in gopkg.in/yaml.v3
 replace gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.1
+
+// FIX: CVE-2023-44487
+replace golang.org/x/net => golang.org/x/net v0.17.0
+
+replace sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.15.3-0.20231013142619-9e09bc26e552 // while waiting for tagged v0.15.3
