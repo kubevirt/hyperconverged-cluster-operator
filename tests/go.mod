@@ -15,11 +15,11 @@ require (
 	k8s.io/apimachinery v0.27.3
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106
-	kubevirt.io/api v1.0.0
-	kubevirt.io/client-go v1.0.0
+	kubevirt.io/api v1.0.1
+	kubevirt.io/client-go v1.0.1
 	kubevirt.io/containerized-data-importer-api v1.57.0
-	kubevirt.io/kubevirt v1.0.0
-	kubevirt.io/managed-tenant-quota v1.1.8
+	kubevirt.io/kubevirt v1.0.1
+	kubevirt.io/managed-tenant-quota v1.1.9
 	kubevirt.io/qe-tools v0.1.8
 )
 
