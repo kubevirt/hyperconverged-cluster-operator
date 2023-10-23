@@ -129,6 +129,18 @@ rules:
   - routes/custom-host
   verbs:
   - create
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - delete
+  - update
+  - create
+  - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -1097,18 +1109,6 @@ rules:
   - delete
   - patch
 - apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
-  verbs:
-  - get
-  - list
-  - watch
-  - delete
-  - update
-  - create
-  - patch
-- apiGroups:
   - ""
   resources:
   - configmaps
@@ -1369,6 +1369,14 @@ rules:
   - list
   - watch
 - apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - instancetype.kubevirt.io
   resources:
   - virtualmachineinstancetypes
@@ -1430,18 +1438,6 @@ rules:
   - configmaps
   - endpoints
   - services
-  verbs:
-  - get
-  - list
-  - watch
-  - delete
-  - update
-  - create
-  - patch
-- apiGroups:
-  - coordination.k8s.io
-  resources:
-  - leases
   verbs:
   - get
   - list
@@ -1688,6 +1684,18 @@ rules:
   - list
   - get
   - watch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - delete
+  - update
+  - create
+  - patch
 - apiGroups:
   - kubevirt.io
   resources:
@@ -2152,6 +2160,15 @@ rules:
   - migrations.kubevirt.io
   resources:
   - migrationpolicies
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - instancetype.kubevirt.io
+  resources:
+  - virtualmachineclusterinstancetypes
+  - virtualmachineclusterpreferences
   verbs:
   - get
   - list
