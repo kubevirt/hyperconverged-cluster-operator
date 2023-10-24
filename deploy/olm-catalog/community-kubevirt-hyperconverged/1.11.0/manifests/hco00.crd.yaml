@@ -55,8 +55,12 @@ spec:
                 autoResourceLimits: false
                 deployKubeSecondaryDNS: false
                 deployTektonTaskResources: false
+                deployVmConsoleProxy: false
+                disableMDevConfiguration: false
                 enableCommonBootImageImport: true
+                enableManagedTenantQuota: false
                 nonRoot: true
+                persistentReservation: false
                 withHostPassthroughCPU: false
               liveMigrationConfig:
                 allowAutoConverge: false
@@ -1071,8 +1075,12 @@ spec:
                   autoResourceLimits: false
                   deployKubeSecondaryDNS: false
                   deployTektonTaskResources: false
+                  deployVmConsoleProxy: false
+                  disableMDevConfiguration: false
                   enableCommonBootImageImport: true
+                  enableManagedTenantQuota: false
                   nonRoot: true
+                  persistentReservation: false
                   withHostPassthroughCPU: false
                 description: featureGates is a map of feature gate flags. Setting
                   a flag to `true` will enable the feature. Setting `false` or removing
