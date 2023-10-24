@@ -16,7 +16,7 @@ if [ "${JOB_TYPE}" == "stdci" ]; then
     KUBECTL_BINARY="cluster/kubectl.sh"
 fi
 
-if [[ ${JOB_TYPE} = "prow" ]]; then
+if [[ "${JOB_TYPE}" == "prow" || "${JOB_TYPE}" == "presubmit" ]]; then
     KUBECTL_BINARY="oc"
     computed_test_image=${FUNCTEST_IMAGE}
 else
