@@ -25,10 +25,10 @@ require (
 
 // -----
 // to be able to bump k8s/* deps to 0.26.3, see: https://github.com/kubevirt/kubevirt/pull/9623
-// remove when we will move to kubevirt.io/kubevirt v1.0.0
-replace kubevirt.io/kubevirt => kubevirt.io/kubevirt v1.0.0
+// remove when we will move to kubevirt.io/kubevirt v1.0.1
+replace kubevirt.io/kubevirt => kubevirt.io/kubevirt v1.0.1
 
-replace kubevirt.io/client-go => kubevirt.io/client-go v1.0.0
+replace kubevirt.io/client-go => kubevirt.io/client-go v1.0.1
 
 // -----
 
