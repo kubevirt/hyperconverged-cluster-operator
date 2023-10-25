@@ -10,6 +10,7 @@ spec:
         kubevirt.io/size: small
         kubevirt.io/domain: testvm
     spec:
+      architecture: amd64
       domain:
         devices:
           disks:
@@ -22,9 +23,11 @@ spec:
           interfaces:
           - name: default
             masquerade: {}
+        machine:
+          type: q35
         resources:
           requests:
-            memory: 64M
+            memory: 96Mi
       networks:
       - name: default
         pod: {}

@@ -129,6 +129,7 @@ sudo chown -R \${NEW_USER}: /home/\${NEW_USER}/.ssh
 sudo chmod 600 /home/\${NEW_USER}/.ssh/authorized_keys
 END
 ${CMD} create secret -n ${VMS_NAMESPACE} generic testvm-secret --from-file=userdata=./hack/cloud-init.sh
+sed -i "s|quay.io/kubevirt/cirros-container-disk-demo.*$|quay.io/kubevirt/cirros-container-disk-demo:${KV_VERSION}|g" ./hack/vm.yaml
 ${CMD} apply -n ${VMS_NAMESPACE} -f ./hack/vm.yaml
 ${CMD} get vm -n ${VMS_NAMESPACE} -o yaml testvm
 ~/virtctl start testvm -n ${VMS_NAMESPACE}
