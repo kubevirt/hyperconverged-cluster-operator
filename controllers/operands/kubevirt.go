@@ -157,11 +157,12 @@ var (
 
 // KubeVirt feature gates that are exposed in HCO API
 const (
-	kvWithHostPassthroughCPU = "WithHostPassthroughCPU"
-	kvRoot                   = "Root"
-	kvDisableMDevConfig      = "DisableMDEVConfiguration"
-	kvPersistentReservation  = "PersistentReservation"
-	kvAutoResourceLimits     = "AutoResourceLimitsGate"
+	kvWithHostPassthroughCPU        = "WithHostPassthroughCPU"
+	kvRoot                          = "Root"
+	kvDisableMDevConfig             = "DisableMDEVConfiguration"
+	kvPersistentReservation         = "PersistentReservation"
+	kvAutoResourceLimits            = "AutoResourceLimitsGate"
+	kvCommonInstanceTypesDeployment = "CommonInstancetypesDeploymentGate"
 )
 
 // CPU Plugin default values
@@ -716,7 +717,7 @@ func hcoConfig2KvConfig(hcoConfig hcov1beta1.HyperConvergedConfig, infrastructur
 }
 
 func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates) []string {
-	fgs := make([]string, 0, 2)
+	var fgs []string
 
 	if featureGates.WithHostPassthroughCPU != nil && *featureGates.WithHostPassthroughCPU {
 		fgs = append(fgs, kvWithHostPassthroughCPU)
@@ -733,6 +734,9 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates) [
 	}
 	if featureGates.AutoResourceLimits != nil && *featureGates.AutoResourceLimits {
 		fgs = append(fgs, kvAutoResourceLimits)
+	}
+	if featureGates.DeployCommonInstanceTypesByVirtOperator != nil && *featureGates.DeployCommonInstanceTypesByVirtOperator {
+		fgs = append(fgs, kvCommonInstanceTypesDeployment)
 	}
 
 	return fgs

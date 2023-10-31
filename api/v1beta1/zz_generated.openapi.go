@@ -275,6 +275,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 							Format:      "",
 						},
 					},
+					"deployCommonInstanceTypesByVirtOperator": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Enable deploying common instance types using virt-operator. If this is not set, then common instance types are deployed by SSP operator. This feature gate is used to allow gradual update, because common instance types in SSP operator will be deprecated and removed in the future.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

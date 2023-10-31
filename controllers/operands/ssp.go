@@ -167,6 +167,13 @@ func NewSSP(hc *hcov1beta1.HyperConverged, opts ...string) (*sspv1beta2.SSP, []h
 		spec.FeatureGates.DeployVmConsoleProxy = *hc.Spec.FeatureGates.DeployVMConsoleProxy
 	}
 
+	if hc.Spec.FeatureGates.DeployCommonInstanceTypesByVirtOperator != nil {
+		// The feature gate is inverted. If common instance types are deployed by virt-operator,
+		// they should not be deployed by ssp-operator.
+		value := !(*hc.Spec.FeatureGates.DeployCommonInstanceTypesByVirtOperator)
+		spec.FeatureGates.DeployCommonInstancetypes = &value
+	}
+
 	// Default value is the operator namespace
 	pipelinesNamespace := getNamespace(hc.Namespace, opts)
 	if hc.Spec.TektonPipelinesNamespace != nil {

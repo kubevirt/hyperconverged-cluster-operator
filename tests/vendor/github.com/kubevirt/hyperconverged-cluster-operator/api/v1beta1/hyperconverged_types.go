@@ -433,6 +433,15 @@ type HyperConvergedFeatureGates struct {
 	// +kubebuilder:default=false
 	// +default=false
 	AutoResourceLimits *bool `json:"autoResourceLimits,omitempty"`
+
+	// Enable deploying common instance types using virt-operator. If this is not set, then common instance types
+	// are deployed by SSP operator. This feature gate is used to allow gradual update, because common instance
+	// types in SSP operator will be deprecated and removed in the future.
+	//
+	// +optional
+	// +kubebuilder:default=false
+	// +default=false
+	DeployCommonInstanceTypesByVirtOperator *bool `json:"deployCommonInstanceTypesByVirtOperator,omitempty"`
 }
 
 // PermittedHostDevices holds information about devices allowed for passthrough

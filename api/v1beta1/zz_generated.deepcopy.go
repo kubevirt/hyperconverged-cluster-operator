@@ -260,6 +260,11 @@ func (in *HyperConvergedFeatureGates) DeepCopyInto(out *HyperConvergedFeatureGat
 		*out = new(bool)
 		**out = **in
 	}
+	if in.DeployCommonInstanceTypesByVirtOperator != nil {
+		in, out := &in.DeployCommonInstanceTypesByVirtOperator, &out.DeployCommonInstanceTypesByVirtOperator
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

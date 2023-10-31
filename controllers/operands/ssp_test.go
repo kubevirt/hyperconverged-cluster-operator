@@ -137,6 +137,27 @@ var _ = Describe("SSP Operands", func() {
 			Expect(expectedResource.Spec.FeatureGates.DeployVmConsoleProxy).To(BeTrue())
 		})
 
+		It("should create with deployCommonInstancetypes feature gate", func() {
+			By("HCO feature gate is true")
+			hco := commontestutils.NewHco()
+			hco.Spec.FeatureGates.DeployCommonInstanceTypesByVirtOperator = ptr.To(true)
+
+			expectedResource, _, err := NewSSP(hco)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(expectedResource.Spec.FeatureGates.DeployCommonInstancetypes).ToNot(BeNil())
+			Expect(*expectedResource.Spec.FeatureGates.DeployCommonInstancetypes).To(BeFalse())
+
+			By("HCO feature gate is false")
+			hco.Spec.FeatureGates.DeployCommonInstanceTypesByVirtOperator = ptr.To(false)
+
+			expectedResource, _, err = NewSSP(hco)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(expectedResource.Spec.FeatureGates.DeployCommonInstancetypes).ToNot(BeNil())
+			Expect(*expectedResource.Spec.FeatureGates.DeployCommonInstancetypes).To(BeTrue())
+		})
+
 		Context("Node placement", func() {
 
 			It("should add node placement if missing", func() {

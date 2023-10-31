@@ -1675,6 +1675,39 @@ Version: 1.2.3`)
 					})
 				})
 
+				It("should add the CommonInstancetypesDeploymentGate feature gate if DeployCommonInstanceTypesByVirtOperator is true in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						DeployCommonInstanceTypesByVirtOperator: ptr.To(true),
+					}
+
+					kubevirtCr, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(kubevirtCr.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvCommonInstanceTypesDeployment))
+				})
+
+				It("should not add the CommonInstancetypesDeploymentGate feature gate if DeployCommonInstanceTypesByVirtOperator is not set in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						DeployCommonInstanceTypesByVirtOperator: nil,
+					}
+
+					kubevirtCr, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(kubevirtCr.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvCommonInstanceTypesDeployment))
+				})
+
+				It("should not add the CommonInstancetypesDeploymentGate feature gate if DeployCommonInstanceTypesByVirtOperator is false in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						DeployCommonInstanceTypesByVirtOperator: ptr.To(false),
+					}
+
+					kubevirtCr, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(kubevirtCr.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvCommonInstanceTypesDeployment))
+				})
+
 				It("should not add the feature gates if FeatureGates field is empty", func() {
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{}

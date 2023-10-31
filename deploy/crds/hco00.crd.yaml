@@ -1098,6 +1098,14 @@ spec:
                       with the creation namespace. Note: this feature is in Developer
                       Preview.'
                     type: boolean
+                  deployCommonInstanceTypesByVirtOperator:
+                    default: false
+                    description: Enable deploying common instance types using virt-operator.
+                      If this is not set, then common instance types are deployed
+                      by SSP operator. This feature gate is used to allow gradual
+                      update, because common instance types in SSP operator will be
+                      deprecated and removed in the future.
+                    type: boolean
                   deployKubeSecondaryDNS:
                     default: false
                     description: Deploy KubeSecondaryDNS by CNAO
