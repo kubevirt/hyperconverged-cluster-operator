@@ -406,6 +406,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 		DeveloperConfiguration: devConfig,
 		NetworkConfiguration: &kubevirtcorev1.NetworkConfiguration{
 			NetworkInterface: string(kubevirtcorev1.MasqueradeInterface),
+			Binding:          hc.Spec.NetworkBinding,
 		},
 		MigrationConfiguration:       kvLiveMigration,
 		PermittedHostDevices:         toKvPermittedHostDevices(hc.Spec.PermittedHostDevices),
