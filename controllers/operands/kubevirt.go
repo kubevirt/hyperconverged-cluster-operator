@@ -107,6 +107,9 @@ const (
 
 	// Enable VM state persistence
 	kvVMPersistentState = "VMPersistentState"
+
+	// Enable using a plugin to bind the pod and the VM network
+	kvHNetworkBindingPluginsGate = "NetworkBindingPlugins"
 )
 
 const (
@@ -132,6 +135,7 @@ var (
 		kvKubevirtSeccompProfile,
 		kvHotplugNicsGate,
 		kvVMPersistentState,
+		kvHNetworkBindingPluginsGate,
 	}
 
 	// holds a list of mandatory KubeVirt feature gates. Some of them are the hard coded feature gates and some of
