@@ -697,7 +697,7 @@ spec:
         - name: OPERATOR_IMAGE
           value: quay.io/kubevirt/hostpath-provisioner-operator@sha256:16ecabb1d733aa17084cd16d88963c5255d04f389e0f4d41941d67e8be973594
         - name: PROVISIONER_IMAGE
-          value: quay.io/kubevirt/hostpath-provisioner@sha256:ea5b4ddffa24d4c539698f6a38bb32c55595919ab8a17f9b10f709b9c210845f
+          value: quay.io/kubevirt/hostpath-provisioner@sha256:eae30f37b3e837478a4500144b7bc8eb4f5ddf15f49fa7354bc9d5e240ea8aea
         - name: CSI_PROVISIONER_IMAGE
           value: quay.io/kubevirt/hostpath-csi-driver@sha256:0ca8b50b0adb20afd4e20da9974200f3290b6d51aa7c1129de6e1b953bf26594
         - name: NODE_DRIVER_REG_IMAGE
