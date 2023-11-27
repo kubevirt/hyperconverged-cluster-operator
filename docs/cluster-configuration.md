@@ -944,9 +944,9 @@ Please correctly consider the implications of this option before setting it.
 `BlockUninstallIfWorkloadsExist` is the default behaviour.
 
 
-## Cluster level EvictionStrategy
+## Cluster-level eviction strategy
 
-`EvictionStrategy` defines at the cluster level if the VirtualMachineInstance should be
+`evictionStrategy` defines at the cluster level if the VirtualMachineInstance should be
 migrated instead of shut-off in case of a node drain. If the VirtualMachineInstance specific
 field is set it overrides the cluster level one.
 Possible values:
@@ -958,6 +958,14 @@ Possible values:
 
 `LiveMigrate` is the default behaviour with multiple worker nodes, `None` on single worker clusters.
 
+For example:
+```yaml
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  evictionStrategy: LiveMigrateIfPossible
+```
 
 ## VM state storage class
 
