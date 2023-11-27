@@ -946,13 +946,13 @@ Please correctly consider the implications of this option before setting it.
 
 ## Cluster-level eviction strategy
 
-`evictionStrategy` defines at the cluster level if the VirtualMachineInstance should be
+`evictionStrategy` defines at the cluster level if VirtualMachineInstances should be
 migrated instead of shut-off in case of a node drain. If the VirtualMachineInstance specific
-field is set it overrides the cluster level one.
+field is set it overrides the cluster-level one.
 Possible values:
 
 - `None` no eviction strategy at cluster level.
-- `LiveMigrate` migrate the VM on eviction; a not live migratable VM with no specific strategy will block the drain of the node util manually evicted.
+- `LiveMigrate` migrate the VM on eviction; a non-live-migratable VM with no specific strategy will block the drain of the node until manually evicted.
 - `LiveMigrateIfPossible` migrate the VM on eviction if live migration is possible, otherwise directly evict.
 - `External` block the drain, track the eviction and notify an external controller.
 
