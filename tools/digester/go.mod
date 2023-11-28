@@ -61,6 +61,6 @@ replace gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.1
 replace golang.org/x/net => golang.org/x/net v0.17.0
 
 replace (
-	github.com/opencontainers/runc => github.com/opencontainers/runc v1.1.7
+	github.com/opencontainers/runc => github.com/opencontainers/runc v1.1.10
 	github.com/ulikunitz/xz => github.com/ulikunitz/xz v0.5.11
 )
