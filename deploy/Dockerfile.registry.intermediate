@@ -1,1 +1,1 @@
-FROM quay.io/openshift/origin-operator-registry:latest
+FROM quay.io/openshift/origin-operator-registry:latest@sha256:694b47f0278f9696db82295aca8b4f1f43fbbec33d8c97ee4e0004a895abd7a8

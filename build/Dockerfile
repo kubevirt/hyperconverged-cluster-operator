@@ -1,10 +1,10 @@
-FROM docker.io/golang:1.20.10 AS builder
+FROM docker.io/golang:1.21.4@sha256:9baee0edab4139ae9b108fffabb8e2e98a67f0b259fd25283c2a084bd74fea0d AS builder
 
 WORKDIR /go/src/github.com/kubevirt/hyperconverged-cluster-operator/
 COPY . .
 RUN make build-operator build-csv-merger
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal
+FROM registry.access.redhat.com/ubi9/ubi-minimal@sha256:c77792b8084ce5946c68f39024fa460ef7769c0eef3fce995e70299e21a7e166
 ENV OPERATOR=/usr/local/bin/hyperconverged-cluster-operator \
     CSV_MERGER=/usr/local/bin/csv-merger \
     USER_UID=1001 \

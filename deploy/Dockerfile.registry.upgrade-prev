@@ -1,4 +1,4 @@
-FROM quay.io/fedora/fedora:37-x86_64 AS builder
+FROM quay.io/fedora/fedora:40-x86_64@sha256:e253230648a9fae54a563a90f8e914902a6f170ea5fc9a4a1f4277ae67013a9d AS builder
 ARG UPGRADE_VERSION=100.0.0
 
 ENV GOPATH=/go
@@ -11,7 +11,7 @@ RUN export UPGRADE_VERSION=${UPGRADE_VERSION} && \
     export PREV=true && \
     ./hack/upgrade-create-new-version.sh
 
-FROM quay.io/openshift/origin-operator-registry:latest
+FROM quay.io/openshift/origin-operator-registry:latest@sha256:694b47f0278f9696db82295aca8b4f1f43fbbec33d8c97ee4e0004a895abd7a8
 ARG KUBEVIRT_PROVIDER
 ARG UPGRADE_VERSION=100.0.0
 COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/deploy/olm-catalog /registry

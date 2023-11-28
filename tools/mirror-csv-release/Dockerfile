@@ -1,7 +1,7 @@
 ARG PARENT_IMAGE
 FROM $PARENT_IMAGE AS base
 
-FROM registry.fedoraproject.org/fedora-minimal:31 AS builder
+FROM registry.fedoraproject.org/fedora-minimal:40@sha256:7e48a08b1e1e6789659783f31d7e0a459979301fee48c79dd88a3da897ff8bc2 AS builder
 
 ARG SOURCE
 ARG DESTINATION

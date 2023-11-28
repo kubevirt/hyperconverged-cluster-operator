@@ -5,7 +5,7 @@ WORKDIR /go/src/github.com/kubevirt/hyperconverged-cluster-operator/
 COPY . .
 RUN make build-functest
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal
+FROM registry.access.redhat.com/ubi9/ubi-minimal@sha256:c77792b8084ce5946c68f39024fa460ef7769c0eef3fce995e70299e21a7e166
 
 ENV USER_UID=1001 \
     TEST_OUT_PATH=/test

@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/nginx-120
+FROM registry.access.redhat.com/ubi9/nginx-120@sha256:88a4f2d184f52c4d3956be06b12d578d0bf681ec9d0a8b80e558a98c1860fa12
 
 WORKDIR /opt/app-root/src
 
