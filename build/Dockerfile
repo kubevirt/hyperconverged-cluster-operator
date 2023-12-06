@@ -1,4 +1,4 @@
-FROM docker.io/golang:1.20.10 AS builder
+FROM docker.io/golang:1.20.10@sha256:8a3e8d1d3a513c0155451c522d381e901837610296f5a077b19f3d350b3a1585 AS builder
 
 WORKDIR /go/src/github.com/kubevirt/hyperconverged-cluster-operator/
 COPY . .
