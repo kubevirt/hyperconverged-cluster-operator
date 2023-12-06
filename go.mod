@@ -8,25 +8,25 @@ require (
 	github.com/evanphx/json-patch/v5 v5.7.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-logr/logr v1.3.0
-	github.com/google/uuid v1.3.1
+	github.com/google/uuid v1.4.0
 	github.com/kubevirt/cluster-network-addons-operator v0.90.1
 	github.com/kubevirt/monitoring/pkg/metrics/parser v0.0.0-20231024120544-6a3ba1a680b4
 	github.com/machadovilaca/operator-observability v0.0.8
 	github.com/onsi/ginkgo/v2 v2.13.0
-	github.com/onsi/gomega v1.29.0
+	github.com/onsi/gomega v1.30.0
 	github.com/openshift/api v3.9.1-0.20190517100836-d5b34b957e91+incompatible
 	github.com/openshift/custom-resource-status v1.1.2
 	github.com/openshift/library-go v0.0.0-20231003133513-3a0c1fc00519
-	github.com/operator-framework/api v0.17.7
+	github.com/operator-framework/api v0.20.0
 	github.com/operator-framework/operator-lib v0.11.1-0.20230306195046-28cadc6b6055
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.68.0
+	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.70.0
 	github.com/prometheus/client_model v0.5.0
-	github.com/samber/lo v1.38.1
+	github.com/samber/lo v1.39.0
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/sync v0.3.0
-	golang.org/x/tools v0.13.0
-	gomodules.xyz/jsonpatch/v2 v2.4.0
+	golang.org/x/sync v0.5.0
+	golang.org/x/tools v0.16.0
+	gomodules.xyz/jsonpatch/v2/v3 v3.0.1
 	k8s.io/api v0.28.3
 	k8s.io/apiextensions-apiserver v0.28.3
 	k8s.io/apimachinery v0.28.3
@@ -43,7 +43,7 @@ require (
 )
 
 // TODO: consume v0.12.0 as soon as available
-replace github.com/operator-framework/operator-lib => github.com/operator-framework/operator-lib v0.0.0-20230717184314-6efbe3a22f6f
+replace github.com/operator-framework/operator-lib => github.com/operator-framework/operator-lib v0.11.0
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -175,12 +175,12 @@ replace (
 )
 
 replace (
-	github.com/appscode/jsonpatch => github.com/appscode/jsonpatch v1.0.1
-	github.com/go-kit/kit => github.com/go-kit/kit v0.12.0
+	github.com/appscode/jsonpatch/v3 => github.com/appscode/jsonpatch v3.0.1
+	github.com/go-kit/kit => github.com/go-kit/kit v0.13.0
 	github.com/openshift/machine-api-operator => github.com/openshift/machine-api-operator v0.2.1-0.20230329185430-d3973b45c2b6
 )
 
-replace sigs.k8s.io/structured-merge-diff => sigs.k8s.io/structured-merge-diff v1.0.2
+replace sigs.k8s.io/structured-merge-diff/v4 => sigs.k8s.io/structured-merge-diff v4.4.1
 
 replace github.com/docker/docker => github.com/moby/moby v1.4.2-0.20200203170920-46ec8731fbce // Required by Helm
 
@@ -201,4 +201,4 @@ replace (
 replace gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.1
 
 // FIX: CVE-2023-44487
-replace golang.org/x/net => golang.org/x/net v0.17.0
+replace golang.org/x/net => golang.org/x/net v0.19.0
