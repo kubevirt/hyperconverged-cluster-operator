@@ -64,6 +64,10 @@
       ],
       "pinDigests": false,
       "groupName": null
+    },
+    {
+      "matchManagers": ["gomod"],
+      "enabled": false
     }
   ]
 }
