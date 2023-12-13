@@ -32,7 +32,7 @@ HCO_WH_DEPLOYMENT_NAME=hco-webhook
 HCO_NAMESPACE="kubevirt-hyperconverged"
 HCO_KIND="hyperconvergeds"
 HCO_RESOURCE_NAME="kubevirt-hyperconverged"
-MID_VERSION=1.10.0
+MID_VERSION=1.11.0
 TARGET_VERSION=100.0.0
 VMS_NAMESPACE=vmsns
 
@@ -90,6 +90,17 @@ curl -L -o ~/virtctl https://github.com/kubevirt/kubevirt/releases/download/${KV
 chmod +x ~/virtctl
 ###################
 
+ssh-keygen -t ecdsa -f ./hack/test_ssh -q -N ""
+cat << END > ./hack/cloud-init.sh
+#!/bin/sh
+export NEW_USER="cirros"
+export SSH_PUB_KEY="$(cat ./hack/test_ssh.pub)"
+sudo mkdir /home/\${NEW_USER}/.ssh
+sudo echo "\${SSH_PUB_KEY}" > /home/\${NEW_USER}/.ssh/authorized_keys
+sudo chown -R \${NEW_USER}: /home/\${NEW_USER}/.ssh
+sudo chmod 600 /home/\${NEW_USER}/.ssh/authorized_keys
+END
+
 function upgrade() {
   I_VERSION=$1
   T_VERSION=$2
@@ -103,18 +114,8 @@ function upgrade() {
 
   ### Create a VM ###
   Msg "Create a simple VM on the previous version cluster, before the upgrade"
-  ${CMD} create namespace ${VMS_NAMESPACE}
-  ssh-keygen -t ecdsa -f ./hack/test_ssh -q -N ""
-  cat << END > ./hack/cloud-init.sh
-#!/bin/sh
-export NEW_USER="cirros"
-export SSH_PUB_KEY="$(cat ./hack/test_ssh.pub)"
-sudo mkdir /home/\${NEW_USER}/.ssh
-sudo echo "\${SSH_PUB_KEY}" > /home/\${NEW_USER}/.ssh/authorized_keys
-sudo chown -R \${NEW_USER}: /home/\${NEW_USER}/.ssh
-sudo chmod 600 /home/\${NEW_USER}/.ssh/authorized_keys
-END
-  ${CMD} create secret -n ${VMS_NAMESPACE} generic testvm-secret --from-file=userdata=./hack/cloud-init.sh
+  ${CMD} get namespace | grep "^${VMS_NAMESPACE}" || ${CMD} create namespace ${VMS_NAMESPACE}
+  ${CMD} get secret -n ${VMS_NAMESPACE} | grep "^testvm-secret" || ${CMD} create secret -n ${VMS_NAMESPACE} generic testvm-secret --from-file=userdata=./hack/cloud-init.sh
   ${CMD} apply -n ${VMS_NAMESPACE} -f ./hack/vm.yaml
   ${CMD} get vm -n ${VMS_NAMESPACE} -o yaml testvm
   ~/virtctl start testvm -n ${VMS_NAMESPACE}
@@ -212,6 +213,7 @@ END
 }
 
 upgrade $INITIAL_VERSION $MID_VERSION $OO_MID_BUNDLE
+${CMD} delete -n ${VMS_NAMESPACE} -f ./hack/vm.yaml
 upgrade $MID_VERSION $TARGET_VERSION $OO_LAST_BUNDLE
 
 Msg "Ensure that old SSP operator resources are removed from the cluster"
