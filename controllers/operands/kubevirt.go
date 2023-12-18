@@ -246,20 +246,23 @@ func (*kubevirtHooks) updateCr(req *common.HcoRequest, Client client.Client, exi
 	if !ok1 || !ok2 {
 		return false, false, errors.New("can't convert to KubeVirt")
 	}
-	if !reflect.DeepEqual(found.Spec, virt.Spec) ||
-		!reflect.DeepEqual(found.Labels, virt.Labels) {
+	if outOfBoundCandidate := !reflect.DeepEqual(found.Spec, virt.Spec) ||
+		!reflect.DeepEqual(found.Labels, virt.Labels); outOfBoundCandidate || !reflect.DeepEqual(found.Annotations, virt.Annotations) {
 		if req.HCOTriggered {
 			req.Logger.Info("Updating existing KubeVirt's Spec to new opinionated values")
 		} else {
 			req.Logger.Info("Reconciling an externally updated KubeVirt's Spec to its opinionated values")
 		}
 		hcoutil.DeepCopyLabels(&virt.ObjectMeta, &found.ObjectMeta)
+		hcoutil.MergeAnnotations(&virt.ObjectMeta, &found.ObjectMeta)
 		virt.Spec.DeepCopyInto(&found.Spec)
 		err := Client.Update(req.Ctx, found)
 		if err != nil {
 			return false, false, err
 		}
-		return true, !req.HCOTriggered, nil
+
+		outOfBoundChange := outOfBoundCandidate && !req.HCOTriggered
+		return true, outOfBoundChange, nil
 	}
 	return false, false, nil
 }
