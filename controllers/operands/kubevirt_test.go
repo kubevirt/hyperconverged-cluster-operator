@@ -514,6 +514,43 @@ Version: 1.2.3`)
 			})
 
 		})
+		It("should propogate VM live update features configuration from the HC", func() {
+			const expectedHotPlugRatio uint32 = 3
+			const expectedMaxSockets uint32 = 8
+			expectedMaxGuest := resource.MustParse("16")
+
+			existKv, err := NewKubeVirt(hco)
+			Expect(err).ToNot(HaveOccurred())
+
+			hco.Spec.VMLiveUpdateConfiguration = &kubevirtcorev1.LiveUpdateConfiguration{
+				MaxHotplugRatio: expectedHotPlugRatio,
+				MaxCpuSockets:   ptr.To(expectedMaxSockets),
+				MaxGuest:        &expectedMaxGuest,
+			}
+
+			cl := commontestutils.InitClient([]client.Object{hco, existKv})
+			handler := (*genericOperand)(newKubevirtHandler(cl, commontestutils.GetScheme()))
+			res := handler.ensure(req)
+
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeTrue())
+			Expect(res.Err).ToNot(HaveOccurred())
+
+			foundResource := &kubevirtcorev1.KubeVirt{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: existKv.Name, Namespace: existKv.Namespace},
+					foundResource),
+			).ToNot(HaveOccurred())
+
+			Expect(foundResource.Spec.Configuration.LiveUpdateConfiguration).ToNot(BeNil())
+			Expect(foundResource.Spec.Configuration.LiveUpdateConfiguration.MaxHotplugRatio).To(Equal(expectedHotPlugRatio))
+			Expect(foundResource.Spec.Configuration.LiveUpdateConfiguration.MaxCpuSockets).ToNot(BeNil())
+			Expect(*foundResource.Spec.Configuration.LiveUpdateConfiguration.MaxCpuSockets).To(Equal(expectedMaxSockets))
+			Expect(foundResource.Spec.Configuration.LiveUpdateConfiguration.MaxGuest).ToNot(BeNil())
+			Expect(foundResource.Spec.Configuration.LiveUpdateConfiguration.MaxGuest.Value()).To(Equal(expectedMaxGuest.Value()))
+
+		})
 
 		It("should propagate the live migration configuration from the HC", func() {
 			existKv, err := NewKubeVirt(hco)

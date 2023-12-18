@@ -455,6 +455,11 @@ func (in *HyperConvergedSpec) DeepCopyInto(out *HyperConvergedSpec) {
 			(*out)[key] = val
 		}
 	}
+	if in.VMLiveUpdateConfiguration != nil {
+		in, out := &in.VMLiveUpdateConfiguration, &out.VMLiveUpdateConfiguration
+		*out = new(corev1.LiveUpdateConfiguration)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 

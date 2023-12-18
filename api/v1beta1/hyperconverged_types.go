@@ -227,6 +227,10 @@ type HyperConvergedSpec struct {
 	// Those bindings can be used when defining virtual machine interfaces.
 	// +optional
 	NetworkBinding map[string]v1.InterfaceBindingPlugin `json:"networkBinding,omitempty"`
+
+	// Configuration of the VM live update features
+	// +optional
+	VMLiveUpdateConfiguration *v1.LiveUpdateConfiguration `json:"vmLiveUpdateConfiguration,omitempty"`
 }
 
 // CertRotateConfigCA contains the tunables for TLS certificates.
