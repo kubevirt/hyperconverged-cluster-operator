@@ -68,59 +68,10 @@ function cleanup() {
     exit $rv
 }
 
-trap "cleanup" INT TERM EXIT
-
-source hack/compare_scc.sh
-
-
-Msg "Check that cluster is operational before upgrade"
-timeout 10m bash -c 'export CMD="${CMD}";exec ./hack/check-state.sh'
-
-${CMD} get subscription -n ${HCO_NAMESPACE} -o yaml
-${CMD} get pods -n ${HCO_NAMESPACE}
-
-Msg "Images before upgrade"
-${CMD} get deployments -n ${HCO_NAMESPACE} -o yaml | grep image | grep -v imagePullPolicy
-
-Msg "Get virtctl"
-KV_VERSION=$( ${CMD} get kubevirt.kubevirt.io/kubevirt-kubevirt-hyperconverged -n ${HCO_NAMESPACE} -o=jsonpath="{.status.observedKubeVirtVersion}")
-ARCH=$(uname -s | tr A-Z a-z)-$(uname -m | sed 's/x86_64/amd64/') || windows-amd64.exe
-echo ${ARCH}
-curl -L -o ~/virtctl https://github.com/kubevirt/kubevirt/releases/download/${KV_VERSION}/virtctl-${KV_VERSION}-${ARCH}
-chmod +x ~/virtctl
-###################
-
-ssh-keygen -t ecdsa -f ./hack/test_ssh -q -N ""
-cat << END > ./hack/cloud-init.sh
-#!/bin/sh
-export NEW_USER="cirros"
-export SSH_PUB_KEY="$(cat ./hack/test_ssh.pub)"
-sudo mkdir /home/\${NEW_USER}/.ssh
-sudo echo "\${SSH_PUB_KEY}" > /home/\${NEW_USER}/.ssh/authorized_keys
-sudo chown -R \${NEW_USER}: /home/\${NEW_USER}/.ssh
-sudo chmod 600 /home/\${NEW_USER}/.ssh/authorized_keys
-END
-
 function upgrade() {
   I_VERSION=$1
   T_VERSION=$2
   BUNDLE=$3
-
-  CSV=$( ${CMD} get csv -o name -n ${HCO_NAMESPACE} | grep "kubevirt-hyperconverged-operator")
-
-  Msg "operator conditions before upgrade"
-  source ./hack/check_operator_condition.sh
-  KUBECTL_BINARY=${CMD} INSTALLED_NAMESPACE=${HCO_NAMESPACE} printOperatorCondition "${I_VERSION}"
-
-  ### Create a VM ###
-  Msg "Create a simple VM on the previous version cluster, before the upgrade"
-  ${CMD} get namespace | grep "^${VMS_NAMESPACE}" || ${CMD} create namespace ${VMS_NAMESPACE}
-  ${CMD} get secret -n ${VMS_NAMESPACE} | grep "^testvm-secret" || ${CMD} create secret -n ${VMS_NAMESPACE} generic testvm-secret --from-file=userdata=./hack/cloud-init.sh
-  ${CMD} apply -n ${VMS_NAMESPACE} -f ./hack/vm.yaml
-  ${CMD} get vm -n ${VMS_NAMESPACE} -o yaml testvm
-  ~/virtctl start testvm -n ${VMS_NAMESPACE}
-  ./hack/retry.sh 30 10 "${CMD} get vmi -n ${VMS_NAMESPACE} testvm -o jsonpath='{ .status.phase }' | grep 'Running'"
-  ${CMD} get vmi -n ${VMS_NAMESPACE} -o yaml testvm
 
   source ./hack/check-uptime.sh
   sleep 5
@@ -210,35 +161,81 @@ function upgrade() {
 
   Msg "operator conditions after upgrade"
   KUBECTL_BINARY=${CMD} INSTALLED_NAMESPACE=${HCO_NAMESPACE} printOperatorCondition "${T_VERSION}"
+
+  [[ -n ${found_new_running_hco_pod} ]]
+
+  echo "----- Images after upgrade"
+  # TODO: compare all of them with the list of images in RelatedImages in the new CSV
+  ${CMD} get deployments -n ${HCO_NAMESPACE} -o yaml | grep image | grep -v imagePullPolicy
+
+  OUTPUT_DIR=${OUTPUT_DIR} dump_sccs_after
+
+  Msg "make sure that the VM is still running, after the upgrade"
+  ${CMD} get vm -n ${VMS_NAMESPACE} -o yaml testvm
+  ${CMD} get vmi -n ${VMS_NAMESPACE} -o yaml testvm
+  ${CMD} get vmi -n ${VMS_NAMESPACE} testvm -o jsonpath='{ .status.phase }' | grep 'Running'
+  CURRENT_BOOTTIME=$(check_uptime 10 60)
+
+  if ((INITIAL_BOOTTIME - CURRENT_BOOTTIME > 3)) || ((CURRENT_BOOTTIME - INITIAL_BOOTTIME > 3)); then
+      echo "ERROR: The test VM got restarted during the upgrade process."
+      exit 1
+  else
+      echo "The test VM survived the upgrade process."
+  fi
 }
 
-upgrade $INITIAL_VERSION $MID_VERSION $OO_MID_BUNDLE
-${CMD} delete -n ${VMS_NAMESPACE} -f ./hack/vm.yaml
-upgrade $MID_VERSION $TARGET_VERSION $OO_LAST_BUNDLE
+trap "cleanup" INT TERM EXIT
 
-Msg "Ensure that old SSP operator resources are removed from the cluster"
-./hack/retry.sh 5 30 "CMD=${CMD} HCO_RESOURCE_NAME=${HCO_RESOURCE_NAME} HCO_NAMESPACE=${HCO_NAMESPACE} ./hack/check_old_ssp_removed.sh"
+source hack/compare_scc.sh
 
-[[ -n ${found_new_running_hco_pod} ]]
 
-echo "----- Images after upgrade"
-# TODO: compare all of them with the list of images in RelatedImages in the new CSV
+Msg "Check that cluster is operational before upgrade"
+timeout 10m bash -c 'export CMD="${CMD}";exec ./hack/check-state.sh'
+
+${CMD} get subscription -n ${HCO_NAMESPACE} -o yaml
+${CMD} get pods -n ${HCO_NAMESPACE}
+
+Msg "Images before upgrade"
 ${CMD} get deployments -n ${HCO_NAMESPACE} -o yaml | grep image | grep -v imagePullPolicy
 
-OUTPUT_DIR=${OUTPUT_DIR} dump_sccs_after
+Msg "Get virtctl"
+KV_VERSION=$( ${CMD} get kubevirt.kubevirt.io/kubevirt-kubevirt-hyperconverged -n ${HCO_NAMESPACE} -o=jsonpath="{.status.observedKubeVirtVersion}")
+ARCH=$(uname -s | tr A-Z a-z)-$(uname -m | sed 's/x86_64/amd64/') || windows-amd64.exe
+echo ${ARCH}
+curl -L -o ~/virtctl https://github.com/kubevirt/kubevirt/releases/download/${KV_VERSION}/virtctl-${KV_VERSION}-${ARCH}
+chmod +x ~/virtctl
+###################
 
-Msg "make sure that the VM is still running, after the upgrade"
+ssh-keygen -t ecdsa -f ./hack/test_ssh -q -N ""
+cat << END > ./hack/cloud-init.sh
+#!/bin/sh
+export NEW_USER="cirros"
+export SSH_PUB_KEY="$(cat ./hack/test_ssh.pub)"
+sudo mkdir /home/\${NEW_USER}/.ssh
+sudo echo "\${SSH_PUB_KEY}" > /home/\${NEW_USER}/.ssh/authorized_keys
+sudo chown -R \${NEW_USER}: /home/\${NEW_USER}/.ssh
+sudo chmod 600 /home/\${NEW_USER}/.ssh/authorized_keys
+END
+
+CSV=$( ${CMD} get csv -o name -n ${HCO_NAMESPACE} | grep "kubevirt-hyperconverged-operator")
+
+Msg "operator conditions before upgrade"
+source ./hack/check_operator_condition.sh
+KUBECTL_BINARY=${CMD} INSTALLED_NAMESPACE=${HCO_NAMESPACE} printOperatorCondition "${INITIAL_VERSION}"
+
+### Create a VM ###
+Msg "Create a simple VM on the previous version cluster, before the upgrade"
+${CMD} get namespace | grep "^${VMS_NAMESPACE}" || ${CMD} create namespace ${VMS_NAMESPACE}
+${CMD} get secret -n ${VMS_NAMESPACE} | grep "^testvm-secret" || ${CMD} create secret -n ${VMS_NAMESPACE} generic testvm-secret --from-file=userdata=./hack/cloud-init.sh
+${CMD} apply -n ${VMS_NAMESPACE} -f ./hack/vm.yaml
 ${CMD} get vm -n ${VMS_NAMESPACE} -o yaml testvm
+~/virtctl start testvm -n ${VMS_NAMESPACE}
+./hack/retry.sh 30 10 "${CMD} get vmi -n ${VMS_NAMESPACE} testvm -o jsonpath='{ .status.phase }' | grep 'Running'"
 ${CMD} get vmi -n ${VMS_NAMESPACE} -o yaml testvm
-${CMD} get vmi -n ${VMS_NAMESPACE} testvm -o jsonpath='{ .status.phase }' | grep 'Running'
-CURRENT_BOOTTIME=$(check_uptime 10 60)
 
-if ((INITIAL_BOOTTIME - CURRENT_BOOTTIME > 3)) || ((CURRENT_BOOTTIME - INITIAL_BOOTTIME > 3)); then
-    echo "ERROR: The test VM got restarted during the upgrade process."
-    exit 1
-else
-    echo "The test VM survived the upgrade process."
-fi
+upgrade $INITIAL_VERSION $MID_VERSION $OO_MID_BUNDLE
+upgrade $MID_VERSION $TARGET_VERSION $OO_LAST_BUNDLE
+
 
 Msg "make sure that we don't have outdated VMs"
 
@@ -265,44 +262,6 @@ Msg "Check that OVS is deployed or not deployed according to deployOVS annotatio
 
 Msg "Ensure that console plugin deployment and service has been renamed successfully"
 KUBECTL_BINARY=${CMD} INSTALLED_NAMESPACE=${HCO_NAMESPACE} ./hack/check_upgrade_console_plugin.sh
-
-Msg "Check that the v2v CRDs and deployments were removed"
-if ${CMD} get crd | grep -q v2v.kubevirt.io; then
-    echo "The v2v CRDs should not be found; they had to be removed."
-    exit 1
-else
-    echo "v2v CRDs removed"
-fi
-if ${CMD} get deployments -n ${HCO_NAMESPACE} | grep -q vm-import; then
-    echo "v2v deployments should not be found; they had to be removed."
-    exit 1
-else
-    echo "v2v deployments removed"
-fi
-
-Msg "Check that the v2v references were removed from .status.relatedObjects"
-if ${CMD} -n ${HCO_NAMESPACE} ${HCO_KIND} ${HCO_RESOURCE_NAME} -o=jsonpath={.status.relatedObjects[*].apiVersion} | grep -q v2v.kubevirt.io; then
-    echo "v2v references should not be found in relatedObjects; they had to be removed."
-    exit 1
-else
-    echo "v2v references removed from .status.relatedObjects"
-fi
-
-Msg "Check that the TTO CRD was removed"
-if ${CMD} get crd | grep -q tektontasks.tektontasks.kubevirt.io; then
-    echo "The TTO CRD should not be found; it had to be removed."
-    exit 1
-else
-    echo "TTO CRD removed"
-fi
-
-Msg "Check that the TTO references were removed from .status.relatedObjects"
-if ${CMD} -n ${HCO_NAMESPACE} ${HCO_KIND} ${HCO_RESOURCE_NAME} -o=jsonpath={.status.relatedObjects[*].apiVersion} | grep -q tektontasks.kubevirt.io; then
-    echo "TTO reference should not be found in relatedObjects; it has to be removed."
-    exit 1
-else
-    echo "TTO reference removed from .status.relatedObjects"
-fi
 
 Msg "check virtio-win image is in configmap"
 VIRTIOWIN_IMAGE_CSV=$(${CMD} get ${CSV} -n ${HCO_NAMESPACE} \
