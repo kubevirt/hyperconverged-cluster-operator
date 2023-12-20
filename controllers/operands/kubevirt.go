@@ -255,6 +255,7 @@ func (*kubevirtHooks) updateCr(req *common.HcoRequest, Client client.Client, exi
 		}
 		hcoutil.DeepCopyLabels(&virt.ObjectMeta, &found.ObjectMeta)
 		hcoutil.MergeAnnotations(&virt.ObjectMeta, &found.ObjectMeta)
+		updateConfigAnnotations(req.Instance, found)
 		virt.Spec.DeepCopyInto(&found.Spec)
 		err := Client.Update(req.Ctx, found)
 		if err != nil {
@@ -298,6 +299,7 @@ func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtcorev1
 	}
 
 	kv := NewKubeVirtWithNameOnly(hc, opts...)
+	updateConfigAnnotations(hc, kv)
 	kv.Spec = spec
 
 	if err := applyPatchToSpec(hc, common.JSONPatchKVAnnotationName, kv); err != nil {
@@ -305,6 +307,18 @@ func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtcorev1
 	}
 
 	return kv, nil
+}
+
+func updateConfigAnnotations(hc *hcov1beta1.HyperConverged, kv *kubevirtcorev1.KubeVirt) {
+	if kv.Annotations == nil {
+		kv.Annotations = make(map[string]string)
+	}
+
+	if hc.Spec.FeatureGates.AlignCPUs != nil && *hc.Spec.FeatureGates.AlignCPUs {
+		kv.Annotations["alpha.kubevirt.io/EmulatorThreadCompleteToEvenParity"] = ""
+	} else {
+		delete(kv.Annotations, "alpha.kubevirt.io/EmulatorThreadCompleteToEvenParity")
+	}
 }
 
 func getHcoAnnotationTuning(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.ReloadableComponentConfiguration, error) {
