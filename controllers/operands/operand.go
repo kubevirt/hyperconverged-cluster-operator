@@ -2,10 +2,8 @@ package operands
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
-	"strings"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
@@ -400,17 +398,6 @@ func applyAnnotationPatch(obj runtime.Object, annotation string) error {
 	patches, err := jsonpatch.DecodePatch([]byte(annotation))
 	if err != nil {
 		return err
-	}
-
-	for _, patch := range patches {
-		path, err := patch.Path()
-		if err != nil {
-			return err
-		}
-
-		if !strings.HasPrefix(path, "/spec/") {
-			return errors.New("can only modify spec fields")
-		}
 	}
 
 	specBytes, err := json.Marshal(obj)
