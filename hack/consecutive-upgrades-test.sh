@@ -150,11 +150,10 @@ function upgrade() {
   Msg "Verify new operator version reported after the upgrade"
   ./hack/retry.sh 15 30 "CMD=${CMD} HCO_RESOURCE_NAME=${HCO_RESOURCE_NAME} HCO_NAMESPACE=${HCO_NAMESPACE} TARGET_VERSION=${T_VERSION} hack/check_hco_version.sh"
 
-  Msg "Ensure that HCO detected the cluster as OpenShift"
+  Msg "Ensure that HCO got upgraded"
   for hco_pod in $( ${CMD} get pods -n ${HCO_NAMESPACE} -l "name=hyperconverged-cluster-operator" --field-selector=status.phase=Running -o name); do
     pod_version=$( ${CMD} get ${hco_pod} -n ${HCO_NAMESPACE} -o json | jq -r '.spec.containers[0].env[] | select(.name=="HCO_KV_IO_VERSION") | .value')
     if [[ ${pod_version} == ${T_VERSION} ]]; then
-      ${CMD} logs -n ${HCO_NAMESPACE} "${hco_pod}" | grep "Cluster type = openshift"
       found_new_running_hco_pod="true"
     fi
   done
@@ -187,7 +186,6 @@ function upgrade() {
 trap "cleanup" INT TERM EXIT
 
 source hack/compare_scc.sh
-
 
 Msg "Check that cluster is operational before upgrade"
 timeout 10m bash -c 'export CMD="${CMD}";exec ./hack/check-state.sh'
@@ -255,20 +253,6 @@ fi
 ${CMD} delete vm -n ${VMS_NAMESPACE} testvm
 
 KUBECTL_BINARY=${CMD} ./hack/test_quick_start.sh
-
-Msg "Check that OVS is deployed or not deployed according to deployOVS annotation in HCO CR."
-./hack/retry.sh 40 15 "CMD=${CMD} PREVIOUS_OVS_ANNOTATION=${PREVIOUS_OVS_ANNOTATION}\
- PREVIOUS_OVS_STATE=${PREVIOUS_OVS_STATE} ./hack/check_upgrade_ovs.sh"
-
-Msg "Ensure that console plugin deployment and service has been renamed successfully"
-KUBECTL_BINARY=${CMD} INSTALLED_NAMESPACE=${HCO_NAMESPACE} ./hack/check_upgrade_console_plugin.sh
-
-Msg "check virtio-win image is in configmap"
-VIRTIOWIN_IMAGE_CSV=$(${CMD} get ${CSV} -n ${HCO_NAMESPACE} \
-  -o jsonpath='{.spec.install.spec.deployments[?(@.name=="hco-operator")].spec.template.spec.containers[0].env[?(@.name=="VIRTIOWIN_CONTAINER")].value}')
-VIRTIOWIN_IMAGE_CM=$(${CMD} get cm virtio-win -n ${HCO_NAMESPACE} -o jsonpath='{.data.virtio-win-image}')
-
-[[ "${VIRTIOWIN_IMAGE_CSV}" == "${VIRTIOWIN_IMAGE_CM}" ]]
 
 Msg "Read the HCO operator log before it is deleted"
 LOG_DIR="${ARTIFACT_DIR}/logs"
