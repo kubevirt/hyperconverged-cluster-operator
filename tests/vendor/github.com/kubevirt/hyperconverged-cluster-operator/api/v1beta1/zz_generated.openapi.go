@@ -275,6 +275,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 							Format:      "",
 						},
 					},
+					"AlignCPUs": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Enable KubeVirt emulator thread to assign two extra CPUs if needed to complete even parity. If IsolateEmulatorThread is set on the VMI, kubevirt assigns extra CPUs to the emulator thread. By default, KubeVirt only assigns one emulator thread CPU to the virt-launcher pod. When this feature gate is enabled, and the VMI enables IsolateEmulatorThread, KubeVirt will complete to assign even parity of CPUs. Note: this feature is in Developer Preview.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
