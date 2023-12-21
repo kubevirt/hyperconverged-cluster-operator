@@ -221,6 +221,17 @@ and if a resource quota with memory limits is associated with the creation names
 
 **Default**: `false`
 
+### alignCPUs Feature Gate
+Set the `alignCPUs` feature gate to true in order to enable KubeVirt emulator thread to assign two extra CPUs if needed 
+to complete even parity.
+If IsolateEmulatorThread is set on the VMI, kubevirt assigns extra CPUs to the emulator thread.
+By default, KubeVirt only assigns one emulator thread CPU to the virt-launcher pod.
+When this feature gate is enabled, and the VMI enables IsolateEmulatorThread, KubeVirt will complete to assign even parity of CPUs.
+
+**Note**: this feature is in Developer Preview.
+
+**Default**: `false`
+
 ### Feature Gates Example
 
 ```yaml
