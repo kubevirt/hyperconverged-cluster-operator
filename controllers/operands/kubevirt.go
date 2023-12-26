@@ -166,6 +166,7 @@ const (
 	kvDisableMDevConfig      = "DisableMDEVConfiguration"
 	kvPersistentReservation  = "PersistentReservation"
 	kvAutoResourceLimits     = "AutoResourceLimitsGate"
+	kvAlignCPUs              = "AlignCPUs"
 )
 
 // CPU Plugin default values
@@ -743,6 +744,10 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates) [
 	}
 	if featureGates.AutoResourceLimits != nil && *featureGates.AutoResourceLimits {
 		fgs = append(fgs, kvAutoResourceLimits)
+	}
+
+	if featureGates.AlignCPUs != nil && *featureGates.AlignCPUs {
+		fgs = append(fgs, kvAlignCPUs)
 	}
 
 	return fgs

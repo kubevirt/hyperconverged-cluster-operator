@@ -1680,6 +1680,45 @@ Version: 1.2.3`)
 					})
 				})
 
+				It("should add the AlignCPUs feature gate if AlignCPUs is true in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						AlignCPUs: ptr.To(true),
+					}
+
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					By("KV CR should contain the AutoResourceLimitsGate feature gate", func() {
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvAlignCPUs))
+					})
+				})
+
+				It("should not add the AlignCPUs feature gate if AlignCPUs is false in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						AlignCPUs: ptr.To(false),
+					}
+
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					By("KV CR should not contain the AlignCPUs feature gate", func() {
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvAlignCPUs))
+					})
+				})
+
+				It("should not add the AlignCPUs feature gate if AlignCPUs is not set in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						AlignCPUs: nil,
+					}
+
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					By("KV CR should not contain the AlignCPUs feature gate", func() {
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvAlignCPUs))
+					})
+				})
+
 				It("should not add the feature gates if FeatureGates field is empty", func() {
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{}
