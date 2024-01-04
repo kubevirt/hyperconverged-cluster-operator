@@ -1,10 +1,10 @@
-FROM docker.io/golang:1.20.10 AS builder
+FROM docker.io/golang:1.21.5@sha256:672a2286da3ee7a854c3e0a56e0838918d0dbb1c18652992930293312de898a6 AS builder
 
 WORKDIR /go/src/github.com/kubevirt/hyperconverged-cluster-operator/
 COPY . .
 RUN make build-functest
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal
+FROM registry.access.redhat.com/ubi9/ubi-minimal@sha256:a340f4b9fb261a75c84666a3dccb88e193a116da3cebabaf9bcdc33609b61172
 
 ENV USER_UID=1001 \
     TEST_OUT_PATH=/test

@@ -1,4 +1,4 @@
-FROM quay.io/fedora/fedora:37-x86_64 AS builder
+FROM quay.io/fedora/fedora:40-x86_64@sha256:28318fd0642cb56b13d186115ef024a2e2df9319cffca372c9dde43a6f95798b AS builder
 ARG UPGRADE_VERSION=100.0.0
 
 ENV GOPATH=/go
@@ -10,7 +10,7 @@ RUN dnf install -y dep golang make findutils tar && dnf clean all -y
 RUN export UPGRADE_VERSION=${UPGRADE_VERSION} && \
     ./hack/upgrade-create-new-version.sh
 
-FROM quay.io/openshift/origin-operator-registry:latest
+FROM quay.io/openshift/origin-operator-registry:latest@sha256:dde6c523e74da6b8cdb481adc648cce95d205df15e56bef43e7c0aca9d0588a5
 ARG KUBEVIRT_PROVIDER
 ARG UPGRADE_VERSION=100.0.0
 COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/deploy/olm-catalog /registry
