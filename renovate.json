@@ -88,28 +88,6 @@
         "hack/config"
       ],
       "matchStrings": [
-        "KUBEVIRT_CONSOLE_PLUGIN_VERSION=\"(?<currentValue>.*)\""
-      ],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "kubevirt-ui/kubevirt-plugin"
-    },
-    {
-      "customType": "regex",
-      "fileMatch": [
-        "hack/config"
-      ],
-      "matchStrings": [
-        "KUBEVIRT_CONSOLE_PROXY_VERSION=\"(?<currentValue>.*)\""
-      ],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "kubevirt-ui/kubevirt-apiserver-proxy"
-    },
-    {
-      "customType": "regex",
-      "fileMatch": [
-        "hack/config"
-      ],
-      "matchStrings": [
         "NODE_DRIVER_REG_VERSION=\"(?<currentValue>.*)\""
       ],
       "datasourceTemplate": "github-releases",
@@ -140,28 +118,6 @@
     {
       "customType": "regex",
       "fileMatch": [
-        "deploy/images.tmp.env"
-      ],
-      "matchStrings": [
-        "registry.k8s.io/sig-storage/csi-snapshotter@(?<currentDigest>.*)(\"?) # (?<currentValue>.*)"
-      ],
-      "datasourceTemplate": "docker",
-      "depNameTemplate": "registry.k8s.io/sig-storage/csi-snapshotter"
-    },
-    {
-      "customType": "regex",
-      "fileMatch": [
-        "deploy/images.tmp.env"
-      ],
-      "matchStrings": [
-        "registry.k8s.io/sig-storage/csi-node-driver-registrar@(?<currentDigest>.*)(\"?) # (?<currentValue>.*)"
-      ],
-      "datasourceTemplate": "docker",
-      "depNameTemplate": "registry.k8s.io/sig-storage/csi-node-driver-registrar"
-    },
-    {
-      "customType": "regex",
-      "fileMatch": [
         "hack/config"
       ],
       "matchStrings": [
@@ -169,27 +125,140 @@
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "kubernetes-csi/external-provisioner"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": [
+        "hack/config"
+      ],
+      "matchStrings": [
+        "KUBEVIRT_CONSOLE_PLUGIN_VERSION=\"(?<currentValue>.*)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "kubevirt-ui/kubevirt-plugin"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": [
+        "hack/config"
+      ],
+      "matchStrings": [
+        "KUBEVIRT_CONSOLE_PROXY_VERSION=\"(?<currentValue>.*)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "kubevirt-ui/kubevirt-apiserver-proxy"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": [
+        "deploy/images.tmp.env"
+      ],
+      "matchStrings": [
+        "(?<depName>.*?)@(?<currentDigest>.*)(\"?) # (?<currentValue>.*)"
+      ],
+      "datasourceTemplate": "docker"
     }
   ],
   "packageRules": [
     {
-      "description": "Components",
+      "description": "kubevirt",
       "matchPackageNames": [
         "kubevirt/kubevirt",
-        "kubevirt/containerized-data-importer",
-        "kubevirt/cluster-network-addons-operator",
-        "kubevirt/ssp-operator",
-        "kubevirt/hostpath-provisioner-operator",
-        "kubevirt/hostpath-provisioner",
-        "kubevirt/managed-tenant-quota",
-        "kubevirt-ui/kubevirt-plugin",
-        "kubevirt-ui/kubevirt-apiserver-proxy",
-        "kubernetes-csi/livenessprobe",
-        "kubernetes-csi/external-provisioner"
+        "quay.io/kubevirt/virt-operator",
+        "quay.io/kubevirt/virt-api",
+        "quay.io/kubevirt/virt-controller",
+        "quay.io/kubevirt/virt-launcher",
+        "quay.io/kubevirt/virt-handler",
+        "quay.io/kubevirt/virtio-container-disk",
+        "quay.io/kubevirt/libguestfs-tools",
+        "quay.io/kubevirt/virt-exportproxy",
+        "quay.io/kubevirt/virt-exportserver"
       ],
       "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(-(?<prerelease>.*))?$",
-      "dependencyDashboardApproval": true,
-      "groupName": null
+      "groupName": "kubevirt"
+    },
+    {
+      "description": "cluster-network-addons-operator",
+      "matchPackageNames": [
+        "kubevirt/cluster-network-addons-operator",
+        "quay.io/kubevirt/cluster-network-addons-operator"
+      ],
+      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(-(?<prerelease>.*))?$",
+      "groupName": "cluster-network-addons-operator"
+    },
+    {
+      "description": "ssp-operator",
+      "matchPackageNames": [
+        "kubevirt/ssp-operator",
+        "quay.io/kubevirt/ssp-operator"
+      ],
+      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(-(?<prerelease>.*))?$",
+      "groupName": "ssp-operator"
+    },
+    {
+      "description": "cdi-operator",
+      "matchPackageNames": [
+        "kubevirt/containerized-data-importer",
+        "quay.io/kubevirt/cdi-operator",
+        "quay.io/kubevirt/cdi-controller",
+        "quay.io/kubevirt/cdi-apiserver",
+        "quay.io/kubevirt/cdi-cloner",
+        "quay.io/kubevirt/cdi-importer",
+        "quay.io/kubevirt/cdi-uploadproxy",
+        "quay.io/kubevirt/cdi-uploadserver"
+      ],
+      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(-(?<prerelease>.*))?$",
+      "groupName": "cdi-operator"
+    },
+    {
+      "description": "hppo-operator",
+      "matchPackageNames": [
+        "kubevirt/hostpath-provisioner-operator",
+        "quay.io/kubevirt/hostpath-provisioner-operator",
+        "quay.io/kubevirt/hostpath-provisioner",
+        "quay.io/kubevirt/hostpath-csi-driver"
+      ],
+      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(-(?<prerelease>.*))?$",
+      "groupName": "hppo-operator"
+    },
+    {
+      "description": "hpp-operator",
+      "matchPackageNames": [
+        "kubevirt/hostpath-provisioner",
+        "quay.io/kubevirt/hostpath-provisioner",
+        "quay.io/kubevirt/hostpath-csi-driver"
+      ],
+      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(-(?<prerelease>.*))?$",
+      "groupName": "hpp-operator"
+    },
+    {
+      "description": "mtq-operator",
+      "matchPackageNames": [
+        "kubevirt/managed-tenant-quota",
+        "quay.io/kubevirt/mtq-operator",
+        "quay.io/kubevirt/mtq-controller",
+        "quay.io/kubevirt/mtq-lock-server"
+      ],
+      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(-(?<prerelease>.*))?$",
+      "groupName": "mtq-operator"
+    },
+    {
+      "description": "csi node driver",
+      "matchPackageNames": [
+        "kubernetes-csi/node-driver-registrar",
+        "registry.k8s.io/sig-storage/csi-node-driver-registrar"
+      ],
+      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(-(?<prerelease>.*))?$",
+      "groupName": "csi-node-driver"
+    },
+    {
+      "description": "livenessprobe",
+      "matchPackageNames": [
+        "kubernetes-csi/livenessprobe",
+        "registry.k8s.io/sig-storage/livenessprobe"
+      ],
+      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(-(?<prerelease>.*))?$",
+      "groupName": "livenessprobe"
     },
     {
       "description": "csi snapshot",
@@ -201,13 +270,22 @@
       "groupName": "csi-snapshot"
     },
     {
-      "description": "csi node driver",
+      "description": "kubevirt-plugin",
       "matchPackageNames": [
-        "kubernetes-csi/node-driver-registrar",
-        "registry.k8s.io/sig-storage/csi-node-driver-registrar"
+        "kubevirt-ui/kubevirt-plugin",
+        "quay.io/kubevirt-ui/kubevirt-plugin"
       ],
       "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(-(?<prerelease>.*))?$",
-      "groupName": "csi-node-driver"
+      "groupName": "kubevirt-plugin"
+    },
+    {
+      "description": "kubevirt-apiserver-proxy",
+      "matchPackageNames": [
+        "kubevirt-ui/kubevirt-apiserver-proxy",
+        "quay.io/kubevirt-ui/kubevirt-apiserver-proxy"
+      ],
+      "versioning": "regex:^v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(-(?<prerelease>.*))?$",
+      "groupName": "kubevirt-apiserver-proxy"
     },
     {
       "description": "Group GitHub Actions updates",
