@@ -198,7 +198,7 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		NewMTQWithNameOnly(req.Instance),
 	}
 
-	resources = append(resources, h.objects...)
+	resources = append(resources, h.objects...) // list of all the resources
 
 	eg, egCtx := errgroup.WithContext(tCtx)
 
