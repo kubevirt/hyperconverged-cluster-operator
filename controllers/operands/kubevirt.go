@@ -248,8 +248,7 @@ func (*kubevirtHooks) updateCr(req *common.HcoRequest, Client client.Client, exi
 		return false, false, errors.New("can't convert to KubeVirt")
 	}
 
-	if !reflect.DeepEqual(found.Spec, virt.Spec) ||
-		!reflect.DeepEqual(found.Labels, virt.Labels) ||
+	if !reflect.DeepEqual(found.Spec, virt.Spec) || !reflect.DeepEqual(found.Labels, virt.Labels) ||
 		!isAnnotationStateMeetingRequirements(virt.Annotations, found.Annotations) {
 		if req.HCOTriggered {
 			req.Logger.Info("Updating existing KubeVirt's Spec to new opinionated values")
