@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.10.0-unstable
-    createdAt: "2023-11-27 05:13:19"
+    createdAt: "2024-01-10 05:13:01"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     operatorframework.io/initialization-resource: '{"apiVersion":"hco.kubevirt.io/v1beta1","kind":"HyperConverged","metadata":{"annotations":{"deployOVS":"false"},"name":"kubevirt-hyperconverged","namespace":"kubevirt-hyperconverged"},"spec":{}}'
@@ -3069,7 +3069,7 @@ spec:
                 - name: KV_CONSOLE_PLUGIN_IMAGE
                   value: quay.io/kubevirt-ui/kubevirt-plugin@sha256:e79027973b09aac75860f267c7d7f830599978c38a081001f404b9a1c3d2990f
                 - name: KV_CONSOLE_PROXY_IMAGE
-                  value: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:75f489a2cbc5bca0c2b7d9615e0cb5b93038c9423f939cff7b395268ae0bfcc9
+                  value: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:38293a1050bce9c7cb786cbe8719be1edb91a922a6c583eedb61e56729ed4c72
                 image: quay.io/kubevirt/hyperconverged-cluster-operator:1.10.0-unstable
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
@@ -4338,7 +4338,7 @@ spec:
     name: kubemacpool
   - image: ghcr.io/kubevirt/kubesecondarydns@sha256:e87e829380a1e576384145f78ccaa885ba1d5690d5de7d0b73d40cfb804ea24d
     name: kubesecondarydns
-  - image: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:75f489a2cbc5bca0c2b7d9615e0cb5b93038c9423f939cff7b395268ae0bfcc9
+  - image: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:38293a1050bce9c7cb786cbe8719be1edb91a922a6c583eedb61e56729ed4c72
     name: kubevirt-apiserver-proxy
   - image: quay.io/kubevirt-ui/kubevirt-plugin@sha256:e79027973b09aac75860f267c7d7f830599978c38a081001f404b9a1c3d2990f
     name: kubevirt-plugin
