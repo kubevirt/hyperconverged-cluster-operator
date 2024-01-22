@@ -124,7 +124,8 @@ var (
 		"Comma separated list of CSVs that can be skipped (read replaced) by this version")
 	olmSkipRange = flag.String("olm-skip-range", "",
 		"Semver range expression for CSVs that can be skipped (read replaced) by this version")
-	mgImage = flag.String("mg-image", "quay.io/kubevirt/must-gather", "Operator suggested must-gather image")
+	mgImage        = flag.String("mg-image", "quay.io/kubevirt/must-gather", "Operator suggested must-gather image")
+	testImagesNVRs = flag.String("test-images-nvrs", "", "Test Images NVRs")
 
 	envVars EnvVarFlags
 )
@@ -332,6 +333,8 @@ func getHcoCsv() {
 	applyOverrides(csvBase)
 
 	csvBase.Spec.RelatedImages = sortRelatedImages(csvBase.Spec.RelatedImages)
+
+	csvBase.ObjectMeta.Annotations["test-images-nvrs"] = *testImagesNVRs
 
 	panicOnError(util.MarshallObject(csvBase, os.Stdout))
 }
