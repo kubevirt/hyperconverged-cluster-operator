@@ -9,3 +9,4 @@ Candidate:
     - Image: quay.io/kubevirt/hyperconverged-cluster-bundle:1.8.0
     - Image: quay.io/kubevirt/hyperconverged-cluster-bundle:1.9.0
     - Image: quay.io/kubevirt/hyperconverged-cluster-bundle:1.10.2
+    - Image: quay.io/kubevirt/hyperconverged-cluster-bundle:1.10.3
