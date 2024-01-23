@@ -116,7 +116,7 @@ jobs:
           echo "    - Image: quay.io/kubevirt/hyperconverged-cluster-bundle:${CSV_VERSION}" >> deploy/olm-catalog/community-kubevirt-hyperconverged/index-template-unstable.yaml
           git add ./deploy/
 
-      - uses: peter-evans/create-pull-request@v3
+      - uses: peter-evans/create-pull-request@v5
         if: ${{ env.CHANGED }}
         with:
           token: ${{ secrets.HCO_BOT_TOKEN }}
