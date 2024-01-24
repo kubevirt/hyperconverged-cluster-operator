@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.11.0-unstable
-    createdAt: "2024-01-23 10:37:35"
+    createdAt: "2024-01-24 16:29:36"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -4426,7 +4426,7 @@ spec:
     name: virt-operator
   - image: quay.io/kubevirt/virtio-container-disk@sha256:f8e71a3a930ce95d646d80862d5ff6f9d3ed7ef2541dd2e2acec0bce26274734
     name: virtio-container-disk
-  replaces: kubevirt-hyperconverged-operator.v1.10.0
+  replaces: kubevirt-hyperconverged-operator.v1.10.3
   selector:
     matchLabels:
       alm-owner-kubevirt: kubevirt-hyperconverged
