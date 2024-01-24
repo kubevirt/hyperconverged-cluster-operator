@@ -23,12 +23,8 @@ import (
 	kvirtv1 "kubevirt.io/api/core/v1"
 
 	cd "kubevirt.io/kubevirt/tests/containerdisk"
-)
-
-// Default VMI values
-const (
-	DefaultTestGracePeriod int64 = 0
-	DefaultVmiName               = "testvmi"
+	"kubevirt.io/kubevirt/tests/framework/checks"
+	"kubevirt.io/kubevirt/tests/testsuite"
 )
 
 // NewFedora instantiates a new Fedora based VMI configuration,
@@ -36,13 +32,12 @@ const (
 // This image has tooling for the guest agent, stress, SR-IOV and more.
 func NewFedora(opts ...Option) *kvirtv1.VirtualMachineInstance {
 	fedoraOptions := []Option{
-		WithTerminationGracePeriod(DefaultTestGracePeriod),
 		WithResourceMemory("512M"),
 		WithRng(),
 		WithContainerImage(cd.ContainerDiskFor(cd.ContainerDiskFedoraTestTooling)),
 	}
 	opts = append(fedoraOptions, opts...)
-	return New(RandName(DefaultVmiName), opts...)
+	return New(opts...)
 }
 
 // NewCirros instantiates a new CirrOS based VMI configuration
@@ -53,21 +48,38 @@ func NewCirros(opts ...Option) *kvirtv1.VirtualMachineInstance {
 	cirrosOpts := []Option{
 		WithContainerImage(cd.ContainerDiskFor(cd.ContainerDiskCirros)),
 		withNonEmptyUserData,
-		WithResourceMemory("128Mi"),
-		WithTerminationGracePeriod(DefaultTestGracePeriod),
+		WithResourceMemory(cirrosMemory()),
 	}
 	cirrosOpts = append(cirrosOpts, opts...)
-	return New(RandName(DefaultVmiName), cirrosOpts...)
+	return New(cirrosOpts...)
 }
 
 // NewAlpine instantiates a new Alpine based VMI configuration
 func NewAlpine(opts ...Option) *kvirtv1.VirtualMachineInstance {
+	alpineMemory := cirrosMemory
 	alpineOpts := []Option{
 		WithContainerImage(cd.ContainerDiskFor(cd.ContainerDiskAlpine)),
-		WithResourceMemory("128Mi"),
+		WithResourceMemory(alpineMemory()),
 		WithRng(),
-		WithTerminationGracePeriod(DefaultTestGracePeriod),
 	}
 	alpineOpts = append(alpineOpts, opts...)
-	return New(RandName(DefaultVmiName), alpineOpts...)
+	return New(alpineOpts...)
+}
+
+func NewAlpineWithTestTooling(opts ...Option) *kvirtv1.VirtualMachineInstance {
+	alpineMemory := cirrosMemory
+	alpineOpts := []Option{
+		WithContainerImage(cd.ContainerDiskFor(cd.ContainerDiskAlpineTestTooling)),
+		WithResourceMemory(alpineMemory()),
+		WithRng(),
+	}
+	alpineOpts = append(alpineOpts, opts...)
+	return New(alpineOpts...)
+}
+
+func cirrosMemory() string {
+	if checks.IsARM64(testsuite.Arch) {
+		return "256Mi"
+	}
+	return "128Mi"
 }
