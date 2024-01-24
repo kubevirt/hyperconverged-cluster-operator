@@ -37,12 +37,14 @@ const (
 	GPUGate                    = "GPU"
 	HostDevicesGate            = "HostDevices"
 	SnapshotGate               = "Snapshot"
+	VMExportGate               = "VMExport"
 	HotplugVolumesGate         = "HotplugVolumes"
 	HostDiskGate               = "HostDisk"
 	VirtIOFSGate               = "ExperimentalVirtiofsSupport"
 	MacvtapGate                = "Macvtap"
 	DownwardMetricsFeatureGate = "DownwardMetrics"
-	NonRoot                    = "NonRootExperimental"
+	NonRootDeprecated          = "NonRootExperimental"
+	NonRoot                    = "NonRoot"
 	ClusterProfiler            = "ClusterProfiler"
 	WorkloadEncryptionSEV      = "WorkloadEncryptionSEV"
 )
@@ -105,6 +107,10 @@ func (config *ClusterConfig) SnapshotEnabled() bool {
 	return config.isFeatureGateEnabled(SnapshotGate)
 }
 
+func (config *ClusterConfig) VMExportEnabled() bool {
+	return config.isFeatureGateEnabled(VMExportGate)
+}
+
 func (config *ClusterConfig) HotplugVolumesEnabled() bool {
 	return config.isFeatureGateEnabled(HotplugVolumesGate)
 }
@@ -126,7 +132,7 @@ func (config *ClusterConfig) HostDevicesPassthroughEnabled() bool {
 }
 
 func (config *ClusterConfig) NonRootEnabled() bool {
-	return config.isFeatureGateEnabled(NonRoot)
+	return config.isFeatureGateEnabled(NonRoot) || config.isFeatureGateEnabled(NonRootDeprecated)
 }
 
 func (config *ClusterConfig) ClusterProfilerEnabled() bool {

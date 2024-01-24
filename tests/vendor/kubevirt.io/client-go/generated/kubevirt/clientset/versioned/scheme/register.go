@@ -25,6 +25,8 @@ import (
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 
+	clonev1alpha1 "kubevirt.io/api/clone/v1alpha1"
+	exportv1alpha1 "kubevirt.io/api/export/v1alpha1"
 	flavorv1alpha1 "kubevirt.io/api/flavor/v1alpha1"
 	migrationsv1alpha1 "kubevirt.io/api/migrations/v1alpha1"
 	poolv1alpha1 "kubevirt.io/api/pool/v1alpha1"
@@ -35,6 +37,8 @@ var Scheme = runtime.NewScheme()
 var Codecs = serializer.NewCodecFactory(Scheme)
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 var localSchemeBuilder = runtime.SchemeBuilder{
+	clonev1alpha1.AddToScheme,
+	exportv1alpha1.AddToScheme,
 	flavorv1alpha1.AddToScheme,
 	migrationsv1alpha1.AddToScheme,
 	poolv1alpha1.AddToScheme,
