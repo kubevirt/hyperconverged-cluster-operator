@@ -117,6 +117,7 @@ jobs:
           sed -i -E "s|(quay.io/kubevirt/hyperconverged-cluster-bundle:).*|\1${CSV_VERSION}|g" deploy/olm-catalog/community-kubevirt-hyperconverged/index-template-release.yaml
           sed -i -E "s|(quay.io/kubevirt/hyperconverged-cluster-bundle:).*|\1${CSV_VERSION}|g" deploy/olm-catalog/community-kubevirt-hyperconverged/index-template-unstable.yaml
           git add ./deploy/
+          echo "CHANGED=true" >> $GITHUB_ENV
 
       - uses: peter-evans/create-pull-request@v3
         if: ${{ env.CHANGED }}
