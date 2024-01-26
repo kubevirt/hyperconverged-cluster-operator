@@ -327,15 +327,16 @@ func getHcoCsv() {
 	if *mgImage != "" {
 		csvBase.Annotations[mgImageAnnotation] = *mgImage
 	}
+	if *testImagesNVRs != "" {
+		csvBase.ObjectMeta.Annotations["test-images-nvrs"] = *testImagesNVRs
+	}
 
 	setSupported(csvBase)
 
 	applyOverrides(csvBase)
 
 	csvBase.Spec.RelatedImages = sortRelatedImages(csvBase.Spec.RelatedImages)
-
-	csvBase.ObjectMeta.Annotations["test-images-nvrs"] = *testImagesNVRs
-
+	
 	panicOnError(util.MarshallObject(csvBase, os.Stdout))
 }
 
