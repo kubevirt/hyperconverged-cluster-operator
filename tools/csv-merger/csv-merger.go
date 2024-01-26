@@ -336,7 +336,6 @@ func getHcoCsv() {
 	applyOverrides(csvBase)
 
 	csvBase.Spec.RelatedImages = sortRelatedImages(csvBase.Spec.RelatedImages)
-	
 	panicOnError(util.MarshallObject(csvBase, os.Stdout))
 }
 
