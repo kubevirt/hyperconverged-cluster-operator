@@ -23,7 +23,7 @@ import (
 
 type Operand interface {
 	ensure(req *common.HcoRequest) *EnsureResult
-	reset()
+	reseter
 }
 
 // Handles a specific resource (a CR, a configMap and so on), to be run during reconciliation
