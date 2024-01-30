@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright 2023 Red Hat, Inc.
+ * Copyright 2024 Red Hat, Inc.
  *
  */
 
@@ -152,7 +152,7 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		in.Spec.UninstallStrategy = "BlockUninstallIfWorkloadsExist"
 	}
 	if in.Spec.VirtualMachineOptions == nil {
-		if err := json.Unmarshal([]byte(`{"disableFreePageReporting": false, "disableSerialConsoleLog": false}`), &in.Spec.VirtualMachineOptions); err != nil {
+		if err := json.Unmarshal([]byte(`{"disableFreePageReporting": false, "disableSerialConsoleLog": true}`), &in.Spec.VirtualMachineOptions); err != nil {
 			panic(err)
 		}
 	}
@@ -162,7 +162,7 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 			in.Spec.VirtualMachineOptions.DisableFreePageReporting = &ptrVar1
 		}
 		if in.Spec.VirtualMachineOptions.DisableSerialConsoleLog == nil {
-			var ptrVar1 bool = false
+			var ptrVar1 bool = true
 			in.Spec.VirtualMachineOptions.DisableSerialConsoleLog = &ptrVar1
 		}
 	}
