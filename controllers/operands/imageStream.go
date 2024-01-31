@@ -298,6 +298,9 @@ func processImageStreamFile(path string, info os.FileInfo, logger log.Logger, hc
 		}
 
 		is.Labels = getLabels(hc, util.AppComponentCompute)
+		is.Kind = "ImageStream"
+		is.APIVersion = imagev1.GroupVersion.String()
+
 		imageStreamNames = append(imageStreamNames, is.Name)
 		return newImageStreamHandler(Client, Scheme, is, origNS), nil
 	}

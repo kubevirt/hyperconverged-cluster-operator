@@ -706,6 +706,10 @@ func getKVSeccompConfig() *kubevirtcorev1.SeccompConfiguration {
 
 func NewKubeVirtWithNameOnly(hc *hcov1beta1.HyperConverged, opts ...string) *kubevirtcorev1.KubeVirt {
 	return &kubevirtcorev1.KubeVirt{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "KubeVirt",
+			APIVersion: kubevirtcorev1.GroupVersion.String(),
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kubevirt-" + hc.Name,
 			Labels:    getLabels(hc, hcoutil.AppComponentCompute),

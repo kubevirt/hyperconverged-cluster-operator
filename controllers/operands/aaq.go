@@ -10,6 +10,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	aaqapi "kubevirt.io/applications-aware-quota/staging/src/kubevirt.io/applications-aware-quota-api/pkg/apis/core"
 	aaqv1alpha1 "kubevirt.io/applications-aware-quota/staging/src/kubevirt.io/applications-aware-quota-api/pkg/apis/core/v1alpha1"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
@@ -133,6 +134,10 @@ func NewAAQ(hc *hcov1beta1.HyperConverged) *aaqv1alpha1.AAQ {
 
 func NewAAQWithNameOnly(hc *hcov1beta1.HyperConverged) *aaqv1alpha1.AAQ {
 	return &aaqv1alpha1.AAQ{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "AAQ",
+			APIVersion: aaqapi.GroupName + "/" + aaqapi.LatestVersion,
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "aaq-" + hc.Name,
 			Labels: getLabels(hc, hcoutil.AppComponentQuotaMngt),

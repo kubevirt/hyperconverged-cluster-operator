@@ -106,6 +106,10 @@ func getKvUIDeployment(hc *hcov1beta1.HyperConverged, deploymentName string, ima
 	labels := getLabels(hc, componentName)
 
 	deployment := &appsv1.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Deployment",
+			APIVersion: appsv1.SchemeGroupVersion.String(),
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      deploymentName,
 			Labels:    labels,
@@ -274,6 +278,10 @@ http {
 
 func NewKVUINginxCM(hc *hcov1beta1.HyperConverged) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: corev1.SchemeGroupVersion.String(),
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nginxConfigMapName,
 			Labels:    getLabels(hc, hcoutil.AppComponentUIPlugin),
@@ -287,6 +295,10 @@ func NewKVUINginxCM(hc *hcov1beta1.HyperConverged) *corev1.ConfigMap {
 
 func NewKVConsolePlugin(hc *hcov1beta1.HyperConverged) *consolev1.ConsolePlugin {
 	return &consolev1.ConsolePlugin{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConsolePlugin",
+			APIVersion: consolev1.GroupVersion.String(),
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kvUIPluginName,
 			Labels: getLabels(hc, hcoutil.AppComponentUIPlugin),
@@ -322,7 +334,7 @@ func newConsolePluginHandler(Client client.Client, Scheme *runtime.Scheme, requi
 	h := &genericOperand{
 		Client: Client,
 		Scheme: Scheme,
-		crType: "ConsolePlugin",
+		crType: "\t\t\t\t\tKind:       \"ImageStream\",\n\t\t\t\t\tAPIVersion: imagev1.GroupVersion.String(),\n",
 		hooks:  &consolePluginHooks{required: required},
 	}
 

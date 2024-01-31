@@ -79,6 +79,10 @@ var _ = Describe("imageStream tests", func() {
 			}
 
 			exists := &imagev1.ImageStream{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "ImageStream",
+					APIVersion: imagev1.GroupVersion.String(),
+				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-image-stream",
 					Namespace: "test-image-stream-ns",

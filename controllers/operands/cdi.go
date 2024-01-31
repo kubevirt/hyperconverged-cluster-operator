@@ -159,6 +159,10 @@ func NewCDI(hc *hcov1beta1.HyperConverged, opts ...string) (*cdiv1beta1.CDI, err
 
 func NewCDIWithNameOnly(hc *hcov1beta1.HyperConverged, opts ...string) *cdiv1beta1.CDI {
 	return &cdiv1beta1.CDI{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: cdiv1beta1.SchemeGroupVersion.String(),
+			Kind:       "CDI",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        "cdi-" + hc.Name,
 			Labels:      getLabels(hc, hcoutil.AppComponentStorage),

@@ -1312,18 +1312,30 @@ func initOldMetricsObjects(req *common.HcoRequest) {
 	if oldMetricsObjects == nil {
 		oldMetricsObjects = map[string]client.Object{
 			"operatorService": &corev1.Service{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Service",
+					APIVersion: corev1.SchemeGroupVersion.String(),
+				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      operatorMetrics,
 					Namespace: req.Namespace,
 				},
 			},
 			"webhookService": &corev1.Service{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Service",
+					APIVersion: corev1.SchemeGroupVersion.String(),
+				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      webhookMetrics,
 					Namespace: req.Namespace,
 				},
 			},
 			"operatorEndpoint": &corev1.Endpoints{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Endpoints",
+					APIVersion: corev1.SchemeGroupVersion.String(),
+				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      operatorMetrics,
 					Namespace: req.Namespace,
@@ -1365,10 +1377,12 @@ func (r *ReconcileHyperConverged) deleteObj(req *common.HcoRequest, obj client.O
 		return removed, err
 	}
 
-	r.eventEmitter.EmitEvent(
-		req.Instance, corev1.EventTypeNormal, "Killing",
-		fmt.Sprintf("Removed %s %s", obj.GetName(), obj.GetObjectKind().GroupVersionKind().Kind),
-	)
+	if removed {
+		r.eventEmitter.EmitEvent(
+			req.Instance, corev1.EventTypeNormal, "Killing",
+			fmt.Sprintf("Removed %s %s", obj.GetName(), obj.GetObjectKind().GroupVersionKind().Kind),
+		)
+	}
 
 	return removed, nil
 }

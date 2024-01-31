@@ -54,6 +54,10 @@ var _ = Describe("Test general utilities", func() {
 		const appName = "appName"
 
 		pod := &corev1.Pod{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Pod",
+				APIVersion: corev1.SchemeGroupVersion.String(),
+			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "testPod",
 				Namespace: "test-namespace",

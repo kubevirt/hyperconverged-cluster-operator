@@ -203,6 +203,10 @@ func NewSSP(hc *hcov1beta1.HyperConverged, opts ...string) (*sspv1beta2.SSP, []h
 
 func NewSSPWithNameOnly(hc *hcov1beta1.HyperConverged, opts ...string) *sspv1beta2.SSP {
 	return &sspv1beta2.SSP{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "SSP",
+			APIVersion: sspv1beta2.GroupVersion.String(),
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ssp-" + hc.Name,
 			Labels:    getLabels(hc, hcoutil.AppComponentSchedule),

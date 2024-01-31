@@ -2168,6 +2168,10 @@ var _ = Describe("HyperconvergedController", func() {
 					UpdateVersion(&expected.hco.Status, hcoVersionName, oldVersion)
 
 					oldQs := &consolev1.ConsoleQuickStart{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "ConsoleQuickStart",
+							APIVersion: consolev1.GroupVersion.String(),
+						},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: oldQSName,
 							Labels: map[string]string{
@@ -2193,6 +2197,10 @@ var _ = Describe("HyperconvergedController", func() {
 					checkAvailability(foundResource, metav1.ConditionTrue)
 
 					foundOldQs := &consolev1.ConsoleQuickStart{
+						TypeMeta: metav1.TypeMeta{
+							Kind:       "ConsoleQuickStart",
+							APIVersion: consolev1.GroupVersion.String(),
+						},
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "old-quickstart-guide",
 						},
@@ -2249,12 +2257,20 @@ var _ = Describe("HyperconvergedController", func() {
 				It("Should remove services", func() {
 					resources := []client.Object{
 						&corev1.Service{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       "Service",
+								APIVersion: corev1.SchemeGroupVersion.String(),
+							},
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      operatorMetrics,
 								Namespace: namespace,
 							},
 						},
 						&corev1.Service{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       "Service",
+								APIVersion: corev1.SchemeGroupVersion.String(),
+							},
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      webhookMetrics,
 								Namespace: namespace,
@@ -2285,6 +2301,10 @@ var _ = Describe("HyperconvergedController", func() {
 				It("Should remove endpoints", func() {
 					resources := []client.Object{
 						&corev1.Endpoints{
+							TypeMeta: metav1.TypeMeta{
+								Kind:       "Endpoints",
+								APIVersion: corev1.SchemeGroupVersion.String(),
+							},
 							ObjectMeta: metav1.ObjectMeta{
 								Name:      operatorMetrics,
 								Namespace: namespace,

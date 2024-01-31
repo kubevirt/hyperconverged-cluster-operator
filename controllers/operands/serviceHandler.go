@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -33,6 +34,12 @@ type serviceHooks struct {
 }
 
 func (h serviceHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+	svc := h.newCrFunc(hc)
+	svc.TypeMeta = metav1.TypeMeta{
+		Kind:       "Service",
+		APIVersion: corev1.SchemeGroupVersion.String(),
+	}
+
 	return h.newCrFunc(hc), nil
 }
 

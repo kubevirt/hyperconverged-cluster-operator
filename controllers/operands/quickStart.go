@@ -168,6 +168,8 @@ func processQuickstartFile(path string, info os.FileInfo, logger log.Logger, hc 
 		} else {
 			qs.Labels = getLabels(hc, util.AppComponentCompute)
 			quickstartNames = append(quickstartNames, qs.Name)
+			qs.Kind = "ConsoleQuickStart"
+			qs.APIVersion = consolev1.GroupVersion.String()
 			return newQuickStartHandler(Client, Scheme, qs), nil
 		}
 	}

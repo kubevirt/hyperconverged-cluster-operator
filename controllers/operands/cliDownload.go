@@ -80,6 +80,10 @@ func NewConsoleCLIDownload(hc *hcov1beta1.HyperConverged) *consolev1.ConsoleCLID
 	baseURL := "https://" + cliDownloadsServiceName + "-" + hc.Namespace + "." + hcoutil.GetClusterInfo().GetDomain()
 
 	return &consolev1.ConsoleCLIDownload{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: consolev1.GroupVersion.String(),
+			Kind:       "ConsoleCLIDownload",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "virtctl-clidownloads-" + hc.Name,
 			Labels: getLabels(hc, hcoutil.AppComponentCompute),

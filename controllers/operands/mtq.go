@@ -122,6 +122,10 @@ func NewMTQ(hc *hcov1beta1.HyperConverged) *mtqv1alpha1.MTQ {
 
 func NewMTQWithNameOnly(hc *hcov1beta1.HyperConverged) *mtqv1alpha1.MTQ {
 	return &mtqv1alpha1.MTQ{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "MTQ",
+			APIVersion: mtqv1alpha1.SchemeGroupVersion.String(),
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "mtq-" + hc.Name,
 			Labels: getLabels(hc, hcoutil.AppComponentMultiTenant),
