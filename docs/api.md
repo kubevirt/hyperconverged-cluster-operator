@@ -41,7 +41,7 @@ ApplicationAwareConfigurations holds the AAQ configurations
 | ----- | ----------- | ------ | -------- |-------- |
 | vmiCalcConfigName | VmiCalcConfigName determine how resource allocation will be done with ApplicationsResourceQuota. allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources or IgnoreVmiCalculator | *aaqv1alpha1.VmiCalcConfigName | DedicatedVirtualResources | false |
 | namespaceSelector | NamespaceSelector determines in which namespaces scheduling gate will be added to pods.. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.17/#labelselector-v1-meta) |  | false |
-| enableClusterAppsResourceQuota | EnableClusterAppsResourceQuota if set to true, allows creation and management of ClusterAppsResourceQuota | bool | false | false |
+| allowApplicationAwareClusterResourceQuota | AllowApplicationAwareClusterResourceQuota if set to true, allows creation and management of ClusterAppsResourceQuota | bool | false | false |
 
 [Back to TOC](#table-of-contents)
 

@@ -6,7 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1 "kubevirt.io/api/core/v1"
-	aaqv1alpha1 "kubevirt.io/applications-aware-quota/staging/src/kubevirt.io/applications-aware-quota-api/pkg/apis/core/v1alpha1"
+	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 )
@@ -229,6 +229,7 @@ type HyperConvergedSpec struct {
 	NetworkBinding map[string]v1.InterfaceBindingPlugin `json:"networkBinding,omitempty"`
 
 	// ApplicationAwareConfig set the AAQ configurations
+	// +optional
 	ApplicationAwareConfig *ApplicationAwareConfigurations `json:"applicationAwareConfig,omitempty"`
 }
 
@@ -733,9 +734,9 @@ type ApplicationAwareConfigurations struct {
 	// NamespaceSelector determines in which namespaces scheduling gate will be added to pods..
 	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
 
-	// EnableClusterAppsResourceQuota if set to true, allows creation and management of ClusterAppsResourceQuota
+	// AllowApplicationAwareClusterResourceQuota if set to true, allows creation and management of ClusterAppsResourceQuota
 	// +kubebuilder:default=false
-	EnableClusterAppsResourceQuota bool `json:"enableClusterAppsResourceQuota,omitempty"`
+	AllowApplicationAwareClusterResourceQuota bool `json:"allowApplicationAwareClusterResourceQuota,omitempty"`
 }
 
 const (

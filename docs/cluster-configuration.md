@@ -1117,7 +1117,7 @@ With the `Custom` profile, the cipher list should be expressed according to Open
 
 On plain k8s, where APIServer CR is not available, the default value will be `Intermediate`.
 
-## Configure Applications Aware Quota (AAQ)
+## Configure Application Aware Quota (AAQ)
 To enable the AAQ feature, add the `applicationAwareConfig` field to the HyperConverged spec, with an empty object 
 or with custom settings (see below).
 
@@ -1129,7 +1129,7 @@ spec:
 
 To configure AAQ, set the fields of the `applicationAwareConfig` object in the HyperConverged resource's spec. The 
 `applicationAwareConfig` object contains several fields:
-* `vmiCalcConfigName` - determine how resource allocation will be done with ApplicationsResourceQuota.
+* `vmiCalcConfigName` - determine how resource allocation will be done with ApplicationResourceQuota.
   Supported values are:
   * `VmiPodUsage` - calculates pod usage for VM-associated pods while concealing migration-specific resources. 
   * `VirtualResources` - allocates resources for VM-associated pods, using the VM's RAM size for memory and CPU threads 
@@ -1141,7 +1141,7 @@ To configure AAQ, set the fields of the `applicationAwareConfig` object in the H
      resource allocation.
 * `namespaceSelector` - determines in which namespaces scheduling gate will be added to pods. This field is a standard 
                         kubernetes selector.
-* `enableClusterAppsResourceQuota` (default = false) - set to true, to allows creation and management of ClusterAppsResourceQuota
+* `allowApplicationAwareClusterResourceQuota` (default = false) - set to true, to allows creation and management of ClusterAppsResourceQuota
   
   **note**: this setting cause some performance cost. Only set to true if there is a good reason.
 
@@ -1153,7 +1153,7 @@ spec:
     namespaceSelector:
       matchLabels:
         some-label: "some value"
-    enableClusterAppsResourceQuota: true
+    allowApplicationAwareClusterResourceQuota: true
 ```
 
 ## Configurations via Annotations

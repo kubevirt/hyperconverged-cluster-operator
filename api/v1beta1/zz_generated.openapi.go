@@ -75,9 +75,9 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_ApplicationAwar
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"),
 						},
 					},
-					"enableClusterAppsResourceQuota": {
+					"allowApplicationAwareClusterResourceQuota": {
 						SchemaProps: spec.SchemaProps{
-							Description: "EnableClusterAppsResourceQuota if set to true, allows creation and management of ClusterAppsResourceQuota",
+							Description: "AllowApplicationAwareClusterResourceQuota if set to true, allows creation and management of ClusterAppsResourceQuota",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
