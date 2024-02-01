@@ -85,10 +85,10 @@ spec:
               applicationAwareConfig:
                 description: ApplicationAwareConfig set the AAQ configurations
                 properties:
-                  enableClusterAppsResourceQuota:
+                  allowApplicationAwareClusterResourceQuota:
                     default: false
-                    description: EnableClusterAppsResourceQuota if set to true, allows
-                      creation and management of ClusterAppsResourceQuota
+                    description: AllowApplicationAwareClusterResourceQuota if set
+                      to true, allows creation and management of ClusterAppsResourceQuota
                     type: boolean
                   namespaceSelector:
                     description: NamespaceSelector determines in which namespaces
