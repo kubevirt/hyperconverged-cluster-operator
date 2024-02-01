@@ -16,7 +16,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 
-	aaqv1alpha1 "kubevirt.io/applications-aware-quota/staging/src/kubevirt.io/applications-aware-quota-api/pkg/apis/core/v1alpha1"
+	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
 	"kubevirt.io/controller-lifecycle-operator-sdk/api"
 )
 
@@ -94,7 +94,7 @@ var _ = Describe("AAQ tests", func() {
 
 			Expect(aaq.Spec.NamespaceSelector).To(BeNil())
 			Expect(aaq.Spec.Configuration.VmiCalculatorConfiguration.ConfigName).To(Equal(aaqv1alpha1.DedicatedVirtualResources))
-			Expect(aaq.Spec.Configuration.EnableClusterAppsResourceQuota).To(BeFalse())
+			Expect(aaq.Spec.Configuration.AllowApplicationAwareClusterResourceQuota).To(BeFalse())
 		})
 
 		It("should have namespaceSelector", func() {
@@ -122,11 +122,11 @@ var _ = Describe("AAQ tests", func() {
 
 		It("should have ConfigName", func() {
 			hco.Spec.ApplicationAwareConfig = &v1beta1.ApplicationAwareConfigurations{
-				EnableClusterAppsResourceQuota: true,
+				AllowApplicationAwareClusterResourceQuota: true,
 			}
 
 			aaq := NewAAQ(hco)
-			Expect(aaq.Spec.Configuration.EnableClusterAppsResourceQuota).To(BeTrue())
+			Expect(aaq.Spec.Configuration.AllowApplicationAwareClusterResourceQuota).To(BeTrue())
 		})
 
 		It("should get node placement configurations from the HyperConverged CR", func() {
@@ -204,7 +204,7 @@ var _ = Describe("AAQ tests", func() {
 		})
 
 		It("should create AAQ if the applicationAwareConfig field exists", func() {
-			hco.Spec.ApplicationAwareConfig = &v1beta1.ApplicationAwareConfigurations{}
+			hco.Spec.FeatureGates.EnableApplicationAwareQuota = ptr.To(true)
 			cl = commontestutils.InitClient([]client.Object{hco})
 
 			handler := newAAQHandler(cl, commontestutils.GetScheme())
@@ -232,6 +232,7 @@ var _ = Describe("AAQ tests", func() {
 
 		It("should update AAQ fields, if not matched to the requirements", func() {
 			hco.Spec.ApplicationAwareConfig = &v1beta1.ApplicationAwareConfigurations{}
+			hco.Spec.FeatureGates.EnableApplicationAwareQuota = ptr.To(true)
 			aaq := NewAAQWithNameOnly(hco)
 			aaq.Spec.Infra = testNodePlacement
 			aaq.Spec.PriorityClass = ptr.To[aaqv1alpha1.AAQPriorityClass]("wrongPC")
@@ -281,7 +282,7 @@ var _ = Describe("AAQ tests", func() {
 
 	Context("check cache", func() {
 		It("should create new cache if it empty", func() {
-			hco.Spec.ApplicationAwareConfig = &v1beta1.ApplicationAwareConfigurations{}
+			hco.Spec.FeatureGates.EnableApplicationAwareQuota = ptr.To(true)
 			handler := newAAQHandler(cl, commontestutils.GetScheme())
 			op, ok := handler.(*conditionalHandler)
 			Expect(ok).Should(BeTrue())
