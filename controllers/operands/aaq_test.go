@@ -184,7 +184,7 @@ var _ = Describe("AAQ tests", func() {
 			Expect(foundAAQs.Items).Should(BeEmpty())
 		})
 
-		It("should delete AAQ if the FG is not set", func() {
+		It("should delete AAQ if the enableApplicationAwareQuota FG is not set", func() {
 			aaq := NewAAQ(hco)
 			cl = commontestutils.InitClient([]client.Object{hco, aaq})
 
@@ -203,7 +203,7 @@ var _ = Describe("AAQ tests", func() {
 			Expect(foundAAQs.Items).Should(BeEmpty())
 		})
 
-		It("should create AAQ if the applicationAwareConfig field exists", func() {
+		It("should create AAQ if the enableApplicationAwareQuota FG is true", func() {
 			hco.Spec.FeatureGates.EnableApplicationAwareQuota = ptr.To(true)
 			cl = commontestutils.InitClient([]client.Object{hco})
 

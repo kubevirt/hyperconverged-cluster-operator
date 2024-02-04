@@ -321,7 +321,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"enableApplicationAwareQuota": {
 						SchemaProps: spec.SchemaProps{
-							Description: "EnableApplicationAwareQuota if true, enable the Application Aware Quota feature",
+							Description: "EnableApplicationAwareQuota if true, enables the Application Aware Quota feature",
 							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
