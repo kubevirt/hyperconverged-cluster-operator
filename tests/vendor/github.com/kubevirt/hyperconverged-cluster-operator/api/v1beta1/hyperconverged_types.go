@@ -463,7 +463,7 @@ type HyperConvergedFeatureGates struct {
 	// +default=false
 	AlignCPUs *bool `json:"alignCPUs,omitempty"`
 
-	// EnableApplicationAwareQuota if true, enable the Application Aware Quota feature
+	// EnableApplicationAwareQuota if true, enables the Application Aware Quota feature
 	// +optional
 	// +kubebuilder:default=false
 	// +default=false

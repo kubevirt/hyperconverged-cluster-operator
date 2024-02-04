@@ -1196,8 +1196,8 @@ spec:
                     type: boolean
                   enableApplicationAwareQuota:
                     default: false
-                    description: EnableApplicationAwareQuota if true, enable the Application
-                      Aware Quota feature
+                    description: EnableApplicationAwareQuota if true, enables the
+                      Application Aware Quota feature
                     type: boolean
                   enableCommonBootImageImport:
                     default: true
