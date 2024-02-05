@@ -3803,6 +3803,18 @@ Version: 1.2.3`)
 				Entry("explicitly disabled, FG present, annotation is missing in KubeVirt", ptr.To(false), true, false),
 			)
 		})
+
+		Context("Higher workload density", func() {
+			It("should convert ratio to corresponding percentage when overcommit ratio is set", func() {
+				const expectedPercentage int = 125
+
+				hco.Spec.HigherWorkloadDensity = &hcov1beta1.HigherWorkloadDensityConfiguration{
+					MemoryOvercommitPercentage: expectedPercentage,
+				}
+				devConfig := getKVDevConfig(hco)
+				Expect(devConfig.MemoryOvercommit).To(Equal(expectedPercentage))
+			})
+		})
 	})
 
 	Context("Test hcLiveMigrationToKv", func() {
@@ -4140,4 +4152,5 @@ Version: 1.2.3`)
 		})
 
 	})
+
 })
