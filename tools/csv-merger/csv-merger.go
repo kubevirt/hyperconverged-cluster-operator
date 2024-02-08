@@ -589,7 +589,7 @@ func appendOnce(slice []string, item string) []string {
 
 func appendRelatedImageIfMissing(slice []csvv1alpha1.RelatedImage, ri csvv1alpha1.RelatedImage) []csvv1alpha1.RelatedImage {
 	for _, ele := range slice {
-		if ele.Name == ri.Name {
+		if ele.Image == ri.Image {
 			return slice
 		}
 	}
