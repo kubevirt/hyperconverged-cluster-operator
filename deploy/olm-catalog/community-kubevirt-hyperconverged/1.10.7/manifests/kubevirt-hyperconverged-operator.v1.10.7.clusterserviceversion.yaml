@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.10.7-unstable
-    createdAt: "2024-02-08 15:51:32"
+    createdAt: "2024-02-09 11:52:37"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -4378,6 +4378,8 @@ spec:
     name: ssp-operator
   - image: quay.io/kubevirt/virt-api@sha256:707003b221496b4432da2f507d1e36e528b45888b5d321e06d460f0678da44ae
     name: virt-api
+  - image: quay.io/kubevirt/virt-artifacts-server:1.10.7-unstable
+    name: virt-artifacts-server
   - image: quay.io/kubevirt/virt-controller@sha256:0789fafed2913b35a771e3db882748502b3250be04ece86d97f30201779b4e54
     name: virt-controller
   - image: quay.io/kubevirt/virt-exportproxy@sha256:f14444b0200a85efb4b3c176caefe70aabba7d295e33d2af14027a59ce297e24
