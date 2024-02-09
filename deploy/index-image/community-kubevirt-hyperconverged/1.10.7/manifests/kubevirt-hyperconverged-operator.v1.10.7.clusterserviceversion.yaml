@@ -4378,6 +4378,8 @@ spec:
     name: ssp-operator
   - image: quay.io/kubevirt/virt-api@sha256:707003b221496b4432da2f507d1e36e528b45888b5d321e06d460f0678da44ae
     name: virt-api
+  - image: +ARTIFACTS_SERVER_IMAGE_TO_REPLACE+
+    name: virt-artifacts-server
   - image: quay.io/kubevirt/virt-controller@sha256:0789fafed2913b35a771e3db882748502b3250be04ece86d97f30201779b4e54
     name: virt-controller
   - image: quay.io/kubevirt/virt-exportproxy@sha256:f14444b0200a85efb4b3c176caefe70aabba7d295e33d2af14027a59ce297e24
