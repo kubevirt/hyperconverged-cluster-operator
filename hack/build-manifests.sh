@@ -147,6 +147,7 @@ function create_ssp_csv() {
     --csv-version=${CSV_VERSION} \
     --operator-image=${SSP_OPERATOR_IMAGE} \
     --operator-version=${SSP_VERSION} \
+    --validator-image=${SSP_VALIDATOR_IMAGE} \
   "
 
   gen_csv ${SSP_CSV_GENERATOR} ${operatorName} "${SSP_OPERATOR_IMAGE}" ${dumpCRDsArg} ${operatorArgs}

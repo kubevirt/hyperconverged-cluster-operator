@@ -12,6 +12,16 @@ metadata:
     createdAt: "2020-10-23 08:58:25"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
+    features.operators.openshift.io/cnf: "false"
+    features.operators.openshift.io/cni: "true"
+    features.operators.openshift.io/csi: "true"
+    features.operators.openshift.io/disconnected: "true"
+    features.operators.openshift.io/fips-compliant: "false"
+    features.operators.openshift.io/proxy-aware: "true"
+    features.operators.openshift.io/tls-profiles: "true"
+    features.operators.openshift.io/token-auth-aws: "false"
+    features.operators.openshift.io/token-auth-azure: "false"
+    features.operators.openshift.io/token-auth-gcp: "false"
     operatorframework.io/initialization-resource: '{"apiVersion":"hco.kubevirt.io/v1beta1","kind":"HyperConverged","metadata":{"annotations":{"deployOVS":"false"},"name":"kubevirt-hyperconverged","namespace":"kubevirt-hyperconverged"},"spec":{}}'
     operatorframework.io/suggested-namespace: kubevirt-hyperconverged
     operators.openshift.io/infrastructure-features: '["disconnected","proxy-aware"]'
@@ -3491,7 +3501,7 @@ spec:
                 - /manager
                 env:
                 - name: VALIDATOR_IMAGE
-                  value: quay.io/kubevirt/kubevirt-template-validator:v0.18.3
+                  value: quay.io/kubevirt/kubevirt-template-validator@sha256:a148b6e812b70f326b48d0439b1e44a967a6e1f8cf2f98b1a08e9294a93674eb
                 - name: VIRTIO_IMG
                 - name: OPERATOR_VERSION
                   value: v0.18.3
@@ -4342,6 +4352,8 @@ spec:
     name: kubevirt-apiserver-proxy
   - image: quay.io/kubevirt-ui/kubevirt-plugin@sha256:e79027973b09aac75860f267c7d7f830599978c38a081001f404b9a1c3d2990f
     name: kubevirt-plugin
+  - image: quay.io/kubevirt/kubevirt-template-validator@sha256:a148b6e812b70f326b48d0439b1e44a967a6e1f8cf2f98b1a08e9294a93674eb
+    name: kubevirt-template-validator
   - image: quay.io/kubevirt/libguestfs-tools@sha256:b7e248be783691daad1326cf41641d5042be80c5c057ebc5315ca7a1619b0581
     name: libguestfs-tools
   - image: registry.k8s.io/sig-storage/livenessprobe@sha256:4dc0b87ccd69f9865b89234d8555d3a614ab0a16ed94a3016ffd27f8106132ce

@@ -24,8 +24,6 @@ const (
 	AppLabel                         = "app"
 	UndefinedNamespace               = ""
 	OpenshiftNamespace               = "openshift"
-	OperatorTestNamespace            = "test-operators"
-	OperatorHubNamespace             = "operators"
 	APIVersionAlpha                  = "v1alpha1"
 	APIVersionBeta                   = "v1beta1"
 	CurrentAPIVersion                = APIVersionBeta
