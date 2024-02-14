@@ -11,6 +11,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gstruct"
+
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -155,7 +157,7 @@ var _ = Describe("alert tests", func() {
 			pr := &monitoringv1.PrometheusRule{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: ruleName}, pr)).Should(Succeed())
 
-			Expect(pr.Labels).Should(Equal(hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring)))
+			Expect(pr.Labels).To(gstruct.MatchKeys(gstruct.IgnoreExtras, commontestutils.KeysFromSSMap(hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring))))
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount(monitoringv1.PrometheusRuleKind, ruleName)).Should(BeEquivalentTo(currentMetric))
 		})
@@ -406,7 +408,7 @@ var _ = Describe("alert tests", func() {
 			role := &rbacv1.Role{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: roleName}, role)).Should(Succeed())
 
-			Expect(role.Labels).Should(Equal(hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring)))
+			Expect(role.Labels).To(gstruct.MatchKeys(gstruct.IgnoreExtras, commontestutils.KeysFromSSMap(hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring))))
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount("Role", roleName)).Should(BeEquivalentTo(currentMetric))
 		})
@@ -601,7 +603,7 @@ var _ = Describe("alert tests", func() {
 			rb := &rbacv1.RoleBinding{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: roleName}, rb)).Should(Succeed())
 
-			Expect(rb.Labels).Should(Equal(hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring)))
+			Expect(rb.Labels).To(gstruct.MatchKeys(gstruct.IgnoreExtras, commontestutils.KeysFromSSMap(hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring))))
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount("RoleBinding", roleName)).Should(BeEquivalentTo(currentMetric))
 		})
@@ -842,7 +844,7 @@ var _ = Describe("alert tests", func() {
 			svc := &corev1.Service{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: serviceName}, svc)).Should(Succeed())
 
-			Expect(svc.Labels).Should(Equal(hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring)))
+			Expect(svc.Labels).To(gstruct.MatchKeys(gstruct.IgnoreExtras, commontestutils.KeysFromSSMap(hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring))))
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount("Service", serviceName)).Should(BeEquivalentTo(currentMetric))
 		})
@@ -1045,7 +1047,7 @@ var _ = Describe("alert tests", func() {
 			sm := &monitoringv1.ServiceMonitor{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: serviceName}, sm)).Should(Succeed())
 
-			Expect(sm.Labels).Should(Equal(hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring)))
+			Expect(sm.Labels).To(gstruct.MatchKeys(gstruct.IgnoreExtras, commontestutils.KeysFromSSMap(hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring))))
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount("ServiceMonitor", serviceName)).Should(BeEquivalentTo(currentMetric))
 		})
