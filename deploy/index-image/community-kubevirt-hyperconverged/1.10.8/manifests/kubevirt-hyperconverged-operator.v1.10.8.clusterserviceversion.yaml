@@ -3077,7 +3077,7 @@ spec:
                 - name: MTQ_VERSION
                   value: v1.1.11
                 - name: KV_CONSOLE_PLUGIN_IMAGE
-                  value: quay.io/kubevirt-ui/kubevirt-plugin@sha256:e79027973b09aac75860f267c7d7f830599978c38a081001f404b9a1c3d2990f
+                  value: quay.io/kubevirt-ui/kubevirt-plugin@sha256:34b77ead85e040f85b80a14b5d83325a0353f2a135d5103cf8b01221f6b39d83
                 - name: KV_CONSOLE_PROXY_IMAGE
                   value: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:38293a1050bce9c7cb786cbe8719be1edb91a922a6c583eedb61e56729ed4c72
                 image: +IMAGE_TO_REPLACE+
@@ -4350,7 +4350,7 @@ spec:
     name: kubesecondarydns
   - image: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:38293a1050bce9c7cb786cbe8719be1edb91a922a6c583eedb61e56729ed4c72
     name: kubevirt-apiserver-proxy
-  - image: quay.io/kubevirt-ui/kubevirt-plugin@sha256:e79027973b09aac75860f267c7d7f830599978c38a081001f404b9a1c3d2990f
+  - image: quay.io/kubevirt-ui/kubevirt-plugin@sha256:34b77ead85e040f85b80a14b5d83325a0353f2a135d5103cf8b01221f6b39d83
     name: kubevirt-plugin
   - image: quay.io/kubevirt/kubevirt-template-validator@sha256:a148b6e812b70f326b48d0439b1e44a967a6e1f8cf2f98b1a08e9294a93674eb
     name: kubevirt-template-validator
