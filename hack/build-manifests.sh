@@ -98,6 +98,9 @@ function create_virt_csv() {
   local operatorName="kubevirt"
   local dumpCRDsArg="--dumpCRDs"
   local operatorArgs
+  # TODO: add another parameter for --sidecar-shim-image
+  # once https://github.com/kubevirt/kubevirt/pull/11272
+  # get merged
   operatorArgs=" \
     --namespace=${OPERATOR_NAMESPACE} \
     --csvVersion=${CSV_VERSION} \
@@ -110,6 +113,7 @@ function create_virt_csv() {
     --virt-export-proxy-image="${KUBEVIRT_EXPORTPROXY_IMAGE}" \
     --virt-export-server-image="${KUBEVIRT_EXPORSERVER_IMAGE}" \
     --gs-image="${KUBEVIRT_LIBGUESTFS_TOOLS_IMAGE}" \
+    --pr-helper-image="${KUBEVIRT_PR_HELPER}" \
     --virt-operator-image="${KUBEVIRT_OPERATOR_IMAGE}"
   "
 

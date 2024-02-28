@@ -422,6 +422,8 @@ spec:
           value: quay.io/kubevirt/virt-exportserver@sha256:5f4c2749dbe33a4b5e126d0393be07060b07171d229cc9b8fcdf9b18ce2af4f3
         - name: GS_IMAGE
           value: quay.io/kubevirt/libguestfs-tools@sha256:23a9883bd694a94ef386c0c42bd780ed83fd193fdedfe00e500bb25a9b0d2f12
+        - name: PR_HELPER_IMAGE
+          value: quay.io/kubevirt/pr-helper@sha256:f3a0fe72820cd390aec1f3dadceb16c10303a671ecc9dff90e7796dab24e9e33
         - name: KUBEVIRT_VERSION
           value: v1.2.0-rc.0
         image: quay.io/kubevirt/virt-operator@sha256:9dbd5134aedcad2fe7ade95f869fb293df5182cadf62fdae9c1fe25b098bcc8a

@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.12.0-unstable
-    createdAt: "2024-02-15 05:13:56"
+    createdAt: "2024-02-28 16:18:36"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -3599,6 +3599,8 @@ spec:
                   value: quay.io/kubevirt/virt-exportserver@sha256:5f4c2749dbe33a4b5e126d0393be07060b07171d229cc9b8fcdf9b18ce2af4f3
                 - name: GS_IMAGE
                   value: quay.io/kubevirt/libguestfs-tools@sha256:23a9883bd694a94ef386c0c42bd780ed83fd193fdedfe00e500bb25a9b0d2f12
+                - name: PR_HELPER_IMAGE
+                  value: quay.io/kubevirt/pr-helper@sha256:f3a0fe72820cd390aec1f3dadceb16c10303a671ecc9dff90e7796dab24e9e33
                 - name: KUBEVIRT_VERSION
                   value: v1.2.0-rc.0
                 image: quay.io/kubevirt/virt-operator@sha256:9dbd5134aedcad2fe7ade95f869fb293df5182cadf62fdae9c1fe25b098bcc8a
@@ -4826,6 +4828,10 @@ spec:
     name: origin-kube-rbac-proxy
   - image: quay.io/kubevirt/ovs-cni-plugin@sha256:e16ac74343da21abb8fb668ce71e728053d00503a992dae2164b9e94a280113e
     name: ovs-cni-plugin
+  - image: quay.io/kubevirt/pr-helper@sha256:f3a0fe72820cd390aec1f3dadceb16c10303a671ecc9dff90e7796dab24e9e33
+    name: pr-helper
+  - image: quay.io/kubevirt/sidecar-shim@sha256:cc3bff064f71bfd873d6bd8ba6e9b1173062e769e2f32cd2918902dd27f9521c
+    name: sidecar-shim
   - image: quay.io/kubevirt/ssp-operator@sha256:d57ef05fea09c4690dbe728ebe6a39d9df1a3574dfa7d18346bf3fe66afed702
     name: ssp-operator
   - image: quay.io/kubevirt/virt-api@sha256:e84b611532dbfbcf30ce47b9f5065a1d46a81defbe5c1f664216ce2217c5ef8e
