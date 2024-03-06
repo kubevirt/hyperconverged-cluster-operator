@@ -1,5 +1,5 @@
 # Same as deploy/Dockerfile except it turns on KVM_EMULATION for CI
-FROM quay.io/openshift/origin-operator-registry:latest
+FROM quay.io/openshift/origin-operator-registry:latest@sha256:ed6ee42175195d18afc4a371d480d4ede04ea348ce9cdb52933a24330fef510e
 
 COPY deploy/olm-catalog /registry
 

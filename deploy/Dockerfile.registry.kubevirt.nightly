@@ -1,4 +1,4 @@
-FROM quay.io/openshift/origin-operator-registry:latest
+FROM quay.io/openshift/origin-operator-registry:latest@sha256:ed6ee42175195d18afc4a371d480d4ede04ea348ce9cdb52933a24330fef510e
 ARG KUBEVIRT_PROVIDER
 ARG HCO_VERSION
 COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/deploy/olm-catalog /registry
