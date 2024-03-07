@@ -70,6 +70,8 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 
 	if ci.IsOpenshift() && ci.IsWaspImageProvided() {
 		operands = append(operands, newWaspHandler(client, scheme))
+		operands = append(operands, newWaspClusterRoleHandler(client, scheme))
+		operands = append(operands, newWaspClusterRoleBindingHandler(client, scheme))
 	}
 
 	if ci.IsOpenshift() && ci.IsConsolePluginImageProvided() {
