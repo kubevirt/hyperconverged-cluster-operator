@@ -1,4 +1,4 @@
-# https://github.com/jetstack/cert-manager/releases/download/v1.13.4/cert-manager.yaml
+# https://github.com/jetstack/cert-manager/releases/download/v1.14.4/cert-manager.yaml
 # Copyright 2022 The cert-manager Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +28,7 @@ metadata:
     app.kubernetes.io/name: 'cert-manager'
     app.kubernetes.io/instance: 'cert-manager'
     # Generated labels
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 spec:
   group: cert-manager.io
   names:
@@ -226,7 +226,7 @@ metadata:
     app.kubernetes.io/name: 'cert-manager'
     app.kubernetes.io/instance: 'cert-manager'
     # Generated labels
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 spec:
   group: cert-manager.io
   names:
@@ -388,9 +388,83 @@ spec:
                             name:
                               description: 'Name of the resource being referred to. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
                               type: string
+                        profile:
+                          description: "Profile specifies the key and certificate encryption algorithms and the HMAC algorithm used to create the PKCS12 keystore. Default value is `LegacyRC2` for backward compatibility. \n If provided, allowed values are: `LegacyRC2`: Deprecated. Not supported by default in OpenSSL 3 or Java 20. `LegacyDES`: Less secure algorithm. Use this option for maximal compatibility. `Modern2023`: Secure algorithm. Use this option in case you have to always use secure algorithms (eg. because of company policy). Please note that the security of the algorithm is not that important in reality, because the unencrypted certificate and private key are also stored in the Secret."
+                          type: string
+                          enum:
+                            - LegacyRC2
+                            - LegacyDES
+                            - Modern2023
                 literalSubject:
                   description: "Requested X.509 certificate subject, represented using the LDAP \"String Representation of a Distinguished Name\" [1]. Important: the LDAP string format also specifies the order of the attributes in the subject, this is important when issuing certs for LDAP authentication. Example: `CN=foo,DC=corp,DC=example,DC=com` More info [1]: https://datatracker.ietf.org/doc/html/rfc4514 More info: https://github.com/cert-manager/cert-manager/issues/3203 More info: https://github.com/cert-manager/cert-manager/issues/4424 \n Cannot be set if the `subject` or `commonName` field is set. This is an Alpha Feature and is only enabled with the `--feature-gates=LiteralCertificateSubject=true` option set on both the controller and webhook components."
                   type: string
+                nameConstraints:
+                  description: "x.509 certificate NameConstraint extension which MUST NOT be used in a non-CA certificate. More Info: https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.10 \n This is an Alpha Feature and is only enabled with the `--feature-gates=NameConstraints=true` option set on both the controller and webhook components."
+                  type: object
+                  properties:
+                    critical:
+                      description: if true then the name constraints are marked critical.
+                      type: boolean
+                    excluded:
+                      description: Excluded contains the constraints which must be disallowed. Any name matching a restriction in the excluded field is invalid regardless of information appearing in the permitted
+                      type: object
+                      properties:
+                        dnsDomains:
+                          description: DNSDomains is a list of DNS domains that are permitted or excluded.
+                          type: array
+                          items:
+                            type: string
+                        emailAddresses:
+                          description: EmailAddresses is a list of Email Addresses that are permitted or excluded.
+                          type: array
+                          items:
+                            type: string
+                        ipRanges:
+                          description: IPRanges is a list of IP Ranges that are permitted or excluded. This should be a valid CIDR notation.
+                          type: array
+                          items:
+                            type: string
+                        uriDomains:
+                          description: URIDomains is a list of URI domains that are permitted or excluded.
+                          type: array
+                          items:
+                            type: string
+                    permitted:
+                      description: Permitted contains the constraints in which the names must be located.
+                      type: object
+                      properties:
+                        dnsDomains:
+                          description: DNSDomains is a list of DNS domains that are permitted or excluded.
+                          type: array
+                          items:
+                            type: string
+                        emailAddresses:
+                          description: EmailAddresses is a list of Email Addresses that are permitted or excluded.
+                          type: array
+                          items:
+                            type: string
+                        ipRanges:
+                          description: IPRanges is a list of IP Ranges that are permitted or excluded. This should be a valid CIDR notation.
+                          type: array
+                          items:
+                            type: string
+                        uriDomains:
+                          description: URIDomains is a list of URI domains that are permitted or excluded.
+                          type: array
+                          items:
+                            type: string
+                otherNames:
+                  description: '`otherNames` is an escape hatch for SAN that allows any type. We currently restrict the support to string like otherNames, cf RFC 5280 p 37 Any UTF8 String valued otherName can be passed with by setting the keys oid: x.x.x.x and UTF8Value: somevalue for `otherName`. Most commonly this would be UPN set with oid: 1.3.6.1.4.1.311.20.2.3 You should ensure that any OID passed is valid for the UTF8String type as we do not explicitly validate this.'
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      oid:
+                        description: OID is the object identifier for the otherName SAN. The object identifier must be expressed as a dotted string, for example, "1.2.840.113556.1.4.221".
+                        type: string
+                      utf8Value:
+                        description: utf8Value is the string value of the otherName SAN. The utf8Value accepts any valid UTF8 string to set as value for the otherName SAN.
+                        type: string
                 privateKey:
                   description: Private key options. These include the key algorithm and size, the used encoding and the rotation policy.
                   type: object
@@ -597,7 +671,7 @@ metadata:
     app.kubernetes.io/name: 'cert-manager'
     app.kubernetes.io/instance: 'cert-manager'
     # Generated labels
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 spec:
   group: acme.cert-manager.io
   names:
@@ -762,10 +836,10 @@ spec:
                             - subscriptionID
                           properties:
                             clientID:
-                              description: if both this and ClientSecret are left unset MSI will be used
+                              description: 'Auth: Azure Service Principal: The ClientID of the Azure Service Principal used to authenticate with Azure DNS. If set, ClientSecret and TenantID must also be set.'
                               type: string
                             clientSecretSecretRef:
-                              description: if both this and ClientID are left unset MSI will be used
+                              description: 'Auth: Azure Service Principal: A reference to a Secret containing the password associated with the Service Principal. If set, ClientID and TenantID must also be set.'
                               type: object
                               required:
                                 - name
@@ -788,14 +862,14 @@ spec:
                               description: name of the DNS zone that should be used
                               type: string
                             managedIdentity:
-                              description: managed identity configuration, can not be used at the same time as clientID, clientSecretSecretRef or tenantID
+                              description: 'Auth: Azure Workload Identity or Azure Managed Service Identity: Settings to enable Azure Workload Identity or Azure Managed Service Identity If set, ClientID, ClientSecret and TenantID must not be set.'
                               type: object
                               properties:
                                 clientID:
                                   description: client ID of the managed identity, can not be used at the same time as resourceID
                                   type: string
                                 resourceID:
-                                  description: resource ID of the managed identity, can not be used at the same time as clientID
+                                  description: resource ID of the managed identity, can not be used at the same time as clientID Cannot be used for Azure Managed Service Identity
                                   type: string
                             resourceGroupName:
                               description: resource group the DNS zone is located in
@@ -804,7 +878,7 @@ spec:
                               description: ID of the Azure subscription
                               type: string
                             tenantID:
-                              description: when specifying ClientID and ClientSecret then this field is also needed
+                              description: 'Auth: Azure Service Principal: The TenantID of the Azure Service Principal used to authenticate with Azure DNS. If set, ClientID and ClientSecret must also be set.'
                               type: string
                         cloudDNS:
                           description: Use the Google Cloud DNS API to manage DNS01 challenge records.
@@ -1010,13 +1084,13 @@ spec:
                                     maxLength: 253
                                     minLength: 1
                                   namespace:
-                                    description: "Namespace is the namespace of the referent. When unspecified, this refers to the local namespace of the Route. \n Note that there are specific rules for ParentRefs which cross namespace boundaries. Cross-namespace references are only valid if they are explicitly allowed by something in the namespace they are referring to. For example: Gateway has the AllowedRoutes field, and ReferenceGrant provides a generic way to enable any other kind of cross-namespace reference. \n ParentRefs from a Route to a Service in the same namespace are \"producer\" routes, which apply default routing rules to inbound connections from any namespace to the Service. \n ParentRefs from a Route to a Service in a different namespace are \"consumer\" routes, and these routing rules are only applied to outbound connections originating from the same namespace as the Route, for which the intended destination of the connections are a Service targeted as a ParentRef of the Route. \n Support: Core"
+                                    description: "Namespace is the namespace of the referent. When unspecified, this refers to the local namespace of the Route. \n Note that there are specific rules for ParentRefs which cross namespace boundaries. Cross-namespace references are only valid if they are explicitly allowed by something in the namespace they are referring to. For example: Gateway has the AllowedRoutes field, and ReferenceGrant provides a generic way to enable any other kind of cross-namespace reference. \n <gateway:experimental:description> ParentRefs from a Route to a Service in the same namespace are \"producer\" routes, which apply default routing rules to inbound connections from any namespace to the Service. \n ParentRefs from a Route to a Service in a different namespace are \"consumer\" routes, and these routing rules are only applied to outbound connections originating from the same namespace as the Route, for which the intended destination of the connections are a Service targeted as a ParentRef of the Route. </gateway:experimental:description> \n Support: Core"
                                     type: string
                                     maxLength: 63
                                     minLength: 1
                                     pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                                   port:
-                                    description: "Port is the network port this Route targets. It can be interpreted differently based on the type of parent resource. \n When the parent resource is a Gateway, this targets all listeners listening on the specified port that also support this kind of Route(and select this Route). It's not recommended to set `Port` unless the networking behaviors specified in a Route must apply to a specific port as opposed to a listener(s) whose port(s) may be changed. When both Port and SectionName are specified, the name and port of the selected listener must match both specified values. \n When the parent resource is a Service, this targets a specific port in the Service spec. When both Port (experimental) and SectionName are specified, the name and port of the selected port must match both specified values. \n Implementations MAY choose to support other parent resources. Implementations supporting other types of parent resources MUST clearly document how/if Port is interpreted. \n For the purpose of status, an attachment is considered successful as long as the parent resource accepts it partially. For example, Gateway listeners can restrict which Routes can attach to them by Route kind, namespace, or hostname. If 1 of 2 Gateway listeners accept attachment from the referencing Route, the Route MUST be considered successfully attached. If no Gateway listeners accept attachment from this Route, the Route MUST be considered detached from the Gateway. \n Support: Extended \n <gateway:experimental>"
+                                    description: "Port is the network port this Route targets. It can be interpreted differently based on the type of parent resource. \n When the parent resource is a Gateway, this targets all listeners listening on the specified port that also support this kind of Route(and select this Route). It's not recommended to set `Port` unless the networking behaviors specified in a Route must apply to a specific port as opposed to a listener(s) whose port(s) may be changed. When both Port and SectionName are specified, the name and port of the selected listener must match both specified values. \n <gateway:experimental:description> When the parent resource is a Service, this targets a specific port in the Service spec. When both Port (experimental) and SectionName are specified, the name and port of the selected port must match both specified values. </gateway:experimental:description> \n Implementations MAY choose to support other parent resources. Implementations supporting other types of parent resources MUST clearly document how/if Port is interpreted. \n For the purpose of status, an attachment is considered successful as long as the parent resource accepts it partially. For example, Gateway listeners can restrict which Routes can attach to them by Route kind, namespace, or hostname. If 1 of 2 Gateway listeners accept attachment from the referencing Route, the Route MUST be considered successfully attached. If no Gateway listeners accept attachment from this Route, the Route MUST be considered detached from the Gateway. \n Support: Extended \n <gateway:experimental>"
                                     type: integer
                                     format: int32
                                     maximum: 65535
@@ -1230,7 +1304,7 @@ spec:
                                                       - topologyKey
                                                     properties:
                                                       labelSelector:
-                                                        description: A label query over a set of resources, in this case pods.
+                                                        description: A label query over a set of resources, in this case pods. If it's null, this PodAffinityTerm matches with no Pods.
                                                         type: object
                                                         properties:
                                                           matchExpressions:
@@ -1260,6 +1334,18 @@ spec:
                                                             additionalProperties:
                                                               type: string
                                                         x-kubernetes-map-type: atomic
+                                                      matchLabelKeys:
+                                                        description: MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. Also, MatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                        type: array
+                                                        items:
+                                                          type: string
+                                                        x-kubernetes-list-type: atomic
+                                                      mismatchLabelKeys:
+                                                        description: MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MismatchLabelKeys and LabelSelector. Also, MismatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                        type: array
+                                                        items:
+                                                          type: string
+                                                        x-kubernetes-list-type: atomic
                                                       namespaceSelector:
                                                         description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                                         type: object
@@ -1313,7 +1399,7 @@ spec:
                                                   - topologyKey
                                                 properties:
                                                   labelSelector:
-                                                    description: A label query over a set of resources, in this case pods.
+                                                    description: A label query over a set of resources, in this case pods. If it's null, this PodAffinityTerm matches with no Pods.
                                                     type: object
                                                     properties:
                                                       matchExpressions:
@@ -1343,6 +1429,18 @@ spec:
                                                         additionalProperties:
                                                           type: string
                                                     x-kubernetes-map-type: atomic
+                                                  matchLabelKeys:
+                                                    description: MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. Also, MatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                    type: array
+                                                    items:
+                                                      type: string
+                                                    x-kubernetes-list-type: atomic
+                                                  mismatchLabelKeys:
+                                                    description: MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MismatchLabelKeys and LabelSelector. Also, MismatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                    type: array
+                                                    items:
+                                                      type: string
+                                                    x-kubernetes-list-type: atomic
                                                   namespaceSelector:
                                                     description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                                     type: object
@@ -1403,7 +1501,7 @@ spec:
                                                       - topologyKey
                                                     properties:
                                                       labelSelector:
-                                                        description: A label query over a set of resources, in this case pods.
+                                                        description: A label query over a set of resources, in this case pods. If it's null, this PodAffinityTerm matches with no Pods.
                                                         type: object
                                                         properties:
                                                           matchExpressions:
@@ -1433,6 +1531,18 @@ spec:
                                                             additionalProperties:
                                                               type: string
                                                         x-kubernetes-map-type: atomic
+                                                      matchLabelKeys:
+                                                        description: MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. Also, MatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                        type: array
+                                                        items:
+                                                          type: string
+                                                        x-kubernetes-list-type: atomic
+                                                      mismatchLabelKeys:
+                                                        description: MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MismatchLabelKeys and LabelSelector. Also, MismatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                        type: array
+                                                        items:
+                                                          type: string
+                                                        x-kubernetes-list-type: atomic
                                                       namespaceSelector:
                                                         description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                                         type: object
@@ -1486,7 +1596,7 @@ spec:
                                                   - topologyKey
                                                 properties:
                                                   labelSelector:
-                                                    description: A label query over a set of resources, in this case pods.
+                                                    description: A label query over a set of resources, in this case pods. If it's null, this PodAffinityTerm matches with no Pods.
                                                     type: object
                                                     properties:
                                                       matchExpressions:
@@ -1516,6 +1626,18 @@ spec:
                                                         additionalProperties:
                                                           type: string
                                                     x-kubernetes-map-type: atomic
+                                                  matchLabelKeys:
+                                                    description: MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. Also, MatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                    type: array
+                                                    items:
+                                                      type: string
+                                                    x-kubernetes-list-type: atomic
+                                                  mismatchLabelKeys:
+                                                    description: MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MismatchLabelKeys and LabelSelector. Also, MismatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                    type: array
+                                                    items:
+                                                      type: string
+                                                    x-kubernetes-list-type: atomic
                                                   namespaceSelector:
                                                     description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                                     type: object
@@ -1675,7 +1797,7 @@ metadata:
     app.kubernetes.io/name: 'cert-manager'
     app.kubernetes.io/instance: "cert-manager"
     # Generated labels
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 spec:
   group: cert-manager.io
   names:
@@ -1879,10 +2001,10 @@ spec:
                                   - subscriptionID
                                 properties:
                                   clientID:
-                                    description: if both this and ClientSecret are left unset MSI will be used
+                                    description: 'Auth: Azure Service Principal: The ClientID of the Azure Service Principal used to authenticate with Azure DNS. If set, ClientSecret and TenantID must also be set.'
                                     type: string
                                   clientSecretSecretRef:
-                                    description: if both this and ClientID are left unset MSI will be used
+                                    description: 'Auth: Azure Service Principal: A reference to a Secret containing the password associated with the Service Principal. If set, ClientID and TenantID must also be set.'
                                     type: object
                                     required:
                                       - name
@@ -1905,14 +2027,14 @@ spec:
                                     description: name of the DNS zone that should be used
                                     type: string
                                   managedIdentity:
-                                    description: managed identity configuration, can not be used at the same time as clientID, clientSecretSecretRef or tenantID
+                                    description: 'Auth: Azure Workload Identity or Azure Managed Service Identity: Settings to enable Azure Workload Identity or Azure Managed Service Identity If set, ClientID, ClientSecret and TenantID must not be set.'
                                     type: object
                                     properties:
                                       clientID:
                                         description: client ID of the managed identity, can not be used at the same time as resourceID
                                         type: string
                                       resourceID:
-                                        description: resource ID of the managed identity, can not be used at the same time as clientID
+                                        description: resource ID of the managed identity, can not be used at the same time as clientID Cannot be used for Azure Managed Service Identity
                                         type: string
                                   resourceGroupName:
                                     description: resource group the DNS zone is located in
@@ -1921,7 +2043,7 @@ spec:
                                     description: ID of the Azure subscription
                                     type: string
                                   tenantID:
-                                    description: when specifying ClientID and ClientSecret then this field is also needed
+                                    description: 'Auth: Azure Service Principal: The TenantID of the Azure Service Principal used to authenticate with Azure DNS. If set, ClientID and ClientSecret must also be set.'
                                     type: string
                               cloudDNS:
                                 description: Use the Google Cloud DNS API to manage DNS01 challenge records.
@@ -2127,13 +2249,13 @@ spec:
                                           maxLength: 253
                                           minLength: 1
                                         namespace:
-                                          description: "Namespace is the namespace of the referent. When unspecified, this refers to the local namespace of the Route. \n Note that there are specific rules for ParentRefs which cross namespace boundaries. Cross-namespace references are only valid if they are explicitly allowed by something in the namespace they are referring to. For example: Gateway has the AllowedRoutes field, and ReferenceGrant provides a generic way to enable any other kind of cross-namespace reference. \n ParentRefs from a Route to a Service in the same namespace are \"producer\" routes, which apply default routing rules to inbound connections from any namespace to the Service. \n ParentRefs from a Route to a Service in a different namespace are \"consumer\" routes, and these routing rules are only applied to outbound connections originating from the same namespace as the Route, for which the intended destination of the connections are a Service targeted as a ParentRef of the Route. \n Support: Core"
+                                          description: "Namespace is the namespace of the referent. When unspecified, this refers to the local namespace of the Route. \n Note that there are specific rules for ParentRefs which cross namespace boundaries. Cross-namespace references are only valid if they are explicitly allowed by something in the namespace they are referring to. For example: Gateway has the AllowedRoutes field, and ReferenceGrant provides a generic way to enable any other kind of cross-namespace reference. \n <gateway:experimental:description> ParentRefs from a Route to a Service in the same namespace are \"producer\" routes, which apply default routing rules to inbound connections from any namespace to the Service. \n ParentRefs from a Route to a Service in a different namespace are \"consumer\" routes, and these routing rules are only applied to outbound connections originating from the same namespace as the Route, for which the intended destination of the connections are a Service targeted as a ParentRef of the Route. </gateway:experimental:description> \n Support: Core"
                                           type: string
                                           maxLength: 63
                                           minLength: 1
                                           pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                                         port:
-                                          description: "Port is the network port this Route targets. It can be interpreted differently based on the type of parent resource. \n When the parent resource is a Gateway, this targets all listeners listening on the specified port that also support this kind of Route(and select this Route). It's not recommended to set `Port` unless the networking behaviors specified in a Route must apply to a specific port as opposed to a listener(s) whose port(s) may be changed. When both Port and SectionName are specified, the name and port of the selected listener must match both specified values. \n When the parent resource is a Service, this targets a specific port in the Service spec. When both Port (experimental) and SectionName are specified, the name and port of the selected port must match both specified values. \n Implementations MAY choose to support other parent resources. Implementations supporting other types of parent resources MUST clearly document how/if Port is interpreted. \n For the purpose of status, an attachment is considered successful as long as the parent resource accepts it partially. For example, Gateway listeners can restrict which Routes can attach to them by Route kind, namespace, or hostname. If 1 of 2 Gateway listeners accept attachment from the referencing Route, the Route MUST be considered successfully attached. If no Gateway listeners accept attachment from this Route, the Route MUST be considered detached from the Gateway. \n Support: Extended \n <gateway:experimental>"
+                                          description: "Port is the network port this Route targets. It can be interpreted differently based on the type of parent resource. \n When the parent resource is a Gateway, this targets all listeners listening on the specified port that also support this kind of Route(and select this Route). It's not recommended to set `Port` unless the networking behaviors specified in a Route must apply to a specific port as opposed to a listener(s) whose port(s) may be changed. When both Port and SectionName are specified, the name and port of the selected listener must match both specified values. \n <gateway:experimental:description> When the parent resource is a Service, this targets a specific port in the Service spec. When both Port (experimental) and SectionName are specified, the name and port of the selected port must match both specified values. </gateway:experimental:description> \n Implementations MAY choose to support other parent resources. Implementations supporting other types of parent resources MUST clearly document how/if Port is interpreted. \n For the purpose of status, an attachment is considered successful as long as the parent resource accepts it partially. For example, Gateway listeners can restrict which Routes can attach to them by Route kind, namespace, or hostname. If 1 of 2 Gateway listeners accept attachment from the referencing Route, the Route MUST be considered successfully attached. If no Gateway listeners accept attachment from this Route, the Route MUST be considered detached from the Gateway. \n Support: Extended \n <gateway:experimental>"
                                           type: integer
                                           format: int32
                                           maximum: 65535
@@ -2347,7 +2469,7 @@ spec:
                                                             - topologyKey
                                                           properties:
                                                             labelSelector:
-                                                              description: A label query over a set of resources, in this case pods.
+                                                              description: A label query over a set of resources, in this case pods. If it's null, this PodAffinityTerm matches with no Pods.
                                                               type: object
                                                               properties:
                                                                 matchExpressions:
@@ -2377,6 +2499,18 @@ spec:
                                                                   additionalProperties:
                                                                     type: string
                                                               x-kubernetes-map-type: atomic
+                                                            matchLabelKeys:
+                                                              description: MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. Also, MatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                              type: array
+                                                              items:
+                                                                type: string
+                                                              x-kubernetes-list-type: atomic
+                                                            mismatchLabelKeys:
+                                                              description: MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MismatchLabelKeys and LabelSelector. Also, MismatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                              type: array
+                                                              items:
+                                                                type: string
+                                                              x-kubernetes-list-type: atomic
                                                             namespaceSelector:
                                                               description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                                               type: object
@@ -2430,7 +2564,7 @@ spec:
                                                         - topologyKey
                                                       properties:
                                                         labelSelector:
-                                                          description: A label query over a set of resources, in this case pods.
+                                                          description: A label query over a set of resources, in this case pods. If it's null, this PodAffinityTerm matches with no Pods.
                                                           type: object
                                                           properties:
                                                             matchExpressions:
@@ -2460,6 +2594,18 @@ spec:
                                                               additionalProperties:
                                                                 type: string
                                                           x-kubernetes-map-type: atomic
+                                                        matchLabelKeys:
+                                                          description: MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. Also, MatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                          type: array
+                                                          items:
+                                                            type: string
+                                                          x-kubernetes-list-type: atomic
+                                                        mismatchLabelKeys:
+                                                          description: MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MismatchLabelKeys and LabelSelector. Also, MismatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                          type: array
+                                                          items:
+                                                            type: string
+                                                          x-kubernetes-list-type: atomic
                                                         namespaceSelector:
                                                           description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                                           type: object
@@ -2520,7 +2666,7 @@ spec:
                                                             - topologyKey
                                                           properties:
                                                             labelSelector:
-                                                              description: A label query over a set of resources, in this case pods.
+                                                              description: A label query over a set of resources, in this case pods. If it's null, this PodAffinityTerm matches with no Pods.
                                                               type: object
                                                               properties:
                                                                 matchExpressions:
@@ -2550,6 +2696,18 @@ spec:
                                                                   additionalProperties:
                                                                     type: string
                                                               x-kubernetes-map-type: atomic
+                                                            matchLabelKeys:
+                                                              description: MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. Also, MatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                              type: array
+                                                              items:
+                                                                type: string
+                                                              x-kubernetes-list-type: atomic
+                                                            mismatchLabelKeys:
+                                                              description: MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MismatchLabelKeys and LabelSelector. Also, MismatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                              type: array
+                                                              items:
+                                                                type: string
+                                                              x-kubernetes-list-type: atomic
                                                             namespaceSelector:
                                                               description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                                               type: object
@@ -2603,7 +2761,7 @@ spec:
                                                         - topologyKey
                                                       properties:
                                                         labelSelector:
-                                                          description: A label query over a set of resources, in this case pods.
+                                                          description: A label query over a set of resources, in this case pods. If it's null, this PodAffinityTerm matches with no Pods.
                                                           type: object
                                                           properties:
                                                             matchExpressions:
@@ -2633,6 +2791,18 @@ spec:
                                                               additionalProperties:
                                                                 type: string
                                                           x-kubernetes-map-type: atomic
+                                                        matchLabelKeys:
+                                                          description: MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. Also, MatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                          type: array
+                                                          items:
+                                                            type: string
+                                                          x-kubernetes-list-type: atomic
+                                                        mismatchLabelKeys:
+                                                          description: MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MismatchLabelKeys and LabelSelector. Also, MismatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                          type: array
+                                                          items:
+                                                            type: string
+                                                          x-kubernetes-list-type: atomic
                                                         namespaceSelector:
                                                           description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                                           type: object
@@ -2747,6 +2917,11 @@ spec:
                   properties:
                     crlDistributionPoints:
                       description: The CRL distribution points is an X.509 v3 certificate extension which identifies the location of the CRL from which the revocation of this certificate can be checked. If not set, certificates will be issued without distribution points set.
+                      type: array
+                      items:
+                        type: string
+                    issuingCertificateURLs:
+                      description: IssuingCertificateURLs is a list of URLs which this issuer should embed into certificates it creates. See https://www.rfc-editor.org/rfc/rfc5280#section-4.2.2.1 for more details. As an example, such a URL might be "http://ca.domain.com/ca.crt".
                       type: array
                       items:
                         type: string
@@ -2995,7 +3170,7 @@ metadata:
     app.kubernetes.io/name: 'cert-manager'
     app.kubernetes.io/instance: "cert-manager"
     # Generated labels
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 spec:
   group: cert-manager.io
   names:
@@ -3199,10 +3374,10 @@ spec:
                                   - subscriptionID
                                 properties:
                                   clientID:
-                                    description: if both this and ClientSecret are left unset MSI will be used
+                                    description: 'Auth: Azure Service Principal: The ClientID of the Azure Service Principal used to authenticate with Azure DNS. If set, ClientSecret and TenantID must also be set.'
                                     type: string
                                   clientSecretSecretRef:
-                                    description: if both this and ClientID are left unset MSI will be used
+                                    description: 'Auth: Azure Service Principal: A reference to a Secret containing the password associated with the Service Principal. If set, ClientID and TenantID must also be set.'
                                     type: object
                                     required:
                                       - name
@@ -3225,14 +3400,14 @@ spec:
                                     description: name of the DNS zone that should be used
                                     type: string
                                   managedIdentity:
-                                    description: managed identity configuration, can not be used at the same time as clientID, clientSecretSecretRef or tenantID
+                                    description: 'Auth: Azure Workload Identity or Azure Managed Service Identity: Settings to enable Azure Workload Identity or Azure Managed Service Identity If set, ClientID, ClientSecret and TenantID must not be set.'
                                     type: object
                                     properties:
                                       clientID:
                                         description: client ID of the managed identity, can not be used at the same time as resourceID
                                         type: string
                                       resourceID:
-                                        description: resource ID of the managed identity, can not be used at the same time as clientID
+                                        description: resource ID of the managed identity, can not be used at the same time as clientID Cannot be used for Azure Managed Service Identity
                                         type: string
                                   resourceGroupName:
                                     description: resource group the DNS zone is located in
@@ -3241,7 +3416,7 @@ spec:
                                     description: ID of the Azure subscription
                                     type: string
                                   tenantID:
-                                    description: when specifying ClientID and ClientSecret then this field is also needed
+                                    description: 'Auth: Azure Service Principal: The TenantID of the Azure Service Principal used to authenticate with Azure DNS. If set, ClientID and ClientSecret must also be set.'
                                     type: string
                               cloudDNS:
                                 description: Use the Google Cloud DNS API to manage DNS01 challenge records.
@@ -3447,13 +3622,13 @@ spec:
                                           maxLength: 253
                                           minLength: 1
                                         namespace:
-                                          description: "Namespace is the namespace of the referent. When unspecified, this refers to the local namespace of the Route. \n Note that there are specific rules for ParentRefs which cross namespace boundaries. Cross-namespace references are only valid if they are explicitly allowed by something in the namespace they are referring to. For example: Gateway has the AllowedRoutes field, and ReferenceGrant provides a generic way to enable any other kind of cross-namespace reference. \n ParentRefs from a Route to a Service in the same namespace are \"producer\" routes, which apply default routing rules to inbound connections from any namespace to the Service. \n ParentRefs from a Route to a Service in a different namespace are \"consumer\" routes, and these routing rules are only applied to outbound connections originating from the same namespace as the Route, for which the intended destination of the connections are a Service targeted as a ParentRef of the Route. \n Support: Core"
+                                          description: "Namespace is the namespace of the referent. When unspecified, this refers to the local namespace of the Route. \n Note that there are specific rules for ParentRefs which cross namespace boundaries. Cross-namespace references are only valid if they are explicitly allowed by something in the namespace they are referring to. For example: Gateway has the AllowedRoutes field, and ReferenceGrant provides a generic way to enable any other kind of cross-namespace reference. \n <gateway:experimental:description> ParentRefs from a Route to a Service in the same namespace are \"producer\" routes, which apply default routing rules to inbound connections from any namespace to the Service. \n ParentRefs from a Route to a Service in a different namespace are \"consumer\" routes, and these routing rules are only applied to outbound connections originating from the same namespace as the Route, for which the intended destination of the connections are a Service targeted as a ParentRef of the Route. </gateway:experimental:description> \n Support: Core"
                                           type: string
                                           maxLength: 63
                                           minLength: 1
                                           pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
                                         port:
-                                          description: "Port is the network port this Route targets. It can be interpreted differently based on the type of parent resource. \n When the parent resource is a Gateway, this targets all listeners listening on the specified port that also support this kind of Route(and select this Route). It's not recommended to set `Port` unless the networking behaviors specified in a Route must apply to a specific port as opposed to a listener(s) whose port(s) may be changed. When both Port and SectionName are specified, the name and port of the selected listener must match both specified values. \n When the parent resource is a Service, this targets a specific port in the Service spec. When both Port (experimental) and SectionName are specified, the name and port of the selected port must match both specified values. \n Implementations MAY choose to support other parent resources. Implementations supporting other types of parent resources MUST clearly document how/if Port is interpreted. \n For the purpose of status, an attachment is considered successful as long as the parent resource accepts it partially. For example, Gateway listeners can restrict which Routes can attach to them by Route kind, namespace, or hostname. If 1 of 2 Gateway listeners accept attachment from the referencing Route, the Route MUST be considered successfully attached. If no Gateway listeners accept attachment from this Route, the Route MUST be considered detached from the Gateway. \n Support: Extended \n <gateway:experimental>"
+                                          description: "Port is the network port this Route targets. It can be interpreted differently based on the type of parent resource. \n When the parent resource is a Gateway, this targets all listeners listening on the specified port that also support this kind of Route(and select this Route). It's not recommended to set `Port` unless the networking behaviors specified in a Route must apply to a specific port as opposed to a listener(s) whose port(s) may be changed. When both Port and SectionName are specified, the name and port of the selected listener must match both specified values. \n <gateway:experimental:description> When the parent resource is a Service, this targets a specific port in the Service spec. When both Port (experimental) and SectionName are specified, the name and port of the selected port must match both specified values. </gateway:experimental:description> \n Implementations MAY choose to support other parent resources. Implementations supporting other types of parent resources MUST clearly document how/if Port is interpreted. \n For the purpose of status, an attachment is considered successful as long as the parent resource accepts it partially. For example, Gateway listeners can restrict which Routes can attach to them by Route kind, namespace, or hostname. If 1 of 2 Gateway listeners accept attachment from the referencing Route, the Route MUST be considered successfully attached. If no Gateway listeners accept attachment from this Route, the Route MUST be considered detached from the Gateway. \n Support: Extended \n <gateway:experimental>"
                                           type: integer
                                           format: int32
                                           maximum: 65535
@@ -3667,7 +3842,7 @@ spec:
                                                             - topologyKey
                                                           properties:
                                                             labelSelector:
-                                                              description: A label query over a set of resources, in this case pods.
+                                                              description: A label query over a set of resources, in this case pods. If it's null, this PodAffinityTerm matches with no Pods.
                                                               type: object
                                                               properties:
                                                                 matchExpressions:
@@ -3697,6 +3872,18 @@ spec:
                                                                   additionalProperties:
                                                                     type: string
                                                               x-kubernetes-map-type: atomic
+                                                            matchLabelKeys:
+                                                              description: MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. Also, MatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                              type: array
+                                                              items:
+                                                                type: string
+                                                              x-kubernetes-list-type: atomic
+                                                            mismatchLabelKeys:
+                                                              description: MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MismatchLabelKeys and LabelSelector. Also, MismatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                              type: array
+                                                              items:
+                                                                type: string
+                                                              x-kubernetes-list-type: atomic
                                                             namespaceSelector:
                                                               description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                                               type: object
@@ -3750,7 +3937,7 @@ spec:
                                                         - topologyKey
                                                       properties:
                                                         labelSelector:
-                                                          description: A label query over a set of resources, in this case pods.
+                                                          description: A label query over a set of resources, in this case pods. If it's null, this PodAffinityTerm matches with no Pods.
                                                           type: object
                                                           properties:
                                                             matchExpressions:
@@ -3780,6 +3967,18 @@ spec:
                                                               additionalProperties:
                                                                 type: string
                                                           x-kubernetes-map-type: atomic
+                                                        matchLabelKeys:
+                                                          description: MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. Also, MatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                          type: array
+                                                          items:
+                                                            type: string
+                                                          x-kubernetes-list-type: atomic
+                                                        mismatchLabelKeys:
+                                                          description: MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MismatchLabelKeys and LabelSelector. Also, MismatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                          type: array
+                                                          items:
+                                                            type: string
+                                                          x-kubernetes-list-type: atomic
                                                         namespaceSelector:
                                                           description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                                           type: object
@@ -3840,7 +4039,7 @@ spec:
                                                             - topologyKey
                                                           properties:
                                                             labelSelector:
-                                                              description: A label query over a set of resources, in this case pods.
+                                                              description: A label query over a set of resources, in this case pods. If it's null, this PodAffinityTerm matches with no Pods.
                                                               type: object
                                                               properties:
                                                                 matchExpressions:
@@ -3870,6 +4069,18 @@ spec:
                                                                   additionalProperties:
                                                                     type: string
                                                               x-kubernetes-map-type: atomic
+                                                            matchLabelKeys:
+                                                              description: MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. Also, MatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                              type: array
+                                                              items:
+                                                                type: string
+                                                              x-kubernetes-list-type: atomic
+                                                            mismatchLabelKeys:
+                                                              description: MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MismatchLabelKeys and LabelSelector. Also, MismatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                              type: array
+                                                              items:
+                                                                type: string
+                                                              x-kubernetes-list-type: atomic
                                                             namespaceSelector:
                                                               description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                                               type: object
@@ -3923,7 +4134,7 @@ spec:
                                                         - topologyKey
                                                       properties:
                                                         labelSelector:
-                                                          description: A label query over a set of resources, in this case pods.
+                                                          description: A label query over a set of resources, in this case pods. If it's null, this PodAffinityTerm matches with no Pods.
                                                           type: object
                                                           properties:
                                                             matchExpressions:
@@ -3953,6 +4164,18 @@ spec:
                                                               additionalProperties:
                                                                 type: string
                                                           x-kubernetes-map-type: atomic
+                                                        matchLabelKeys:
+                                                          description: MatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key in (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. Also, MatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                          type: array
+                                                          items:
+                                                            type: string
+                                                          x-kubernetes-list-type: atomic
+                                                        mismatchLabelKeys:
+                                                          description: MismatchLabelKeys is a set of pod label keys to select which pods will be taken into consideration. The keys are used to lookup values from the incoming pod labels, those key-value labels are merged with `LabelSelector` as `key notin (value)` to select the group of existing pods which pods will be taken into consideration for the incoming pod's pod (anti) affinity. Keys that don't exist in the incoming pod labels will be ignored. The default value is empty. The same key is forbidden to exist in both MismatchLabelKeys and LabelSelector. Also, MismatchLabelKeys cannot be set when LabelSelector isn't set. This is an alpha field and requires enabling MatchLabelKeysInPodAffinity feature gate.
+                                                          type: array
+                                                          items:
+                                                            type: string
+                                                          x-kubernetes-list-type: atomic
                                                         namespaceSelector:
                                                           description: A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means "this pod's namespace". An empty selector ({}) matches all namespaces.
                                                           type: object
@@ -4067,6 +4290,11 @@ spec:
                   properties:
                     crlDistributionPoints:
                       description: The CRL distribution points is an X.509 v3 certificate extension which identifies the location of the CRL from which the revocation of this certificate can be checked. If not set, certificates will be issued without distribution points set.
+                      type: array
+                      items:
+                        type: string
+                    issuingCertificateURLs:
+                      description: IssuingCertificateURLs is a list of URLs which this issuer should embed into certificates it creates. See https://www.rfc-editor.org/rfc/rfc5280#section-4.2.2.1 for more details. As an example, such a URL might be "http://ca.domain.com/ca.crt".
                       type: array
                       items:
                         type: string
@@ -4315,7 +4543,7 @@ metadata:
     app.kubernetes.io/name: 'cert-manager'
     app.kubernetes.io/instance: 'cert-manager'
     # Generated labels
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 spec:
   group: acme.cert-manager.io
   names:
@@ -4499,7 +4727,7 @@ metadata:
     app.kubernetes.io/name: cainjector
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "cainjector"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 ---
 # Source: cert-manager/templates/serviceaccount.yaml
 apiVersion: v1
@@ -4513,7 +4741,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 ---
 # Source: cert-manager/templates/webhook-serviceaccount.yaml
 apiVersion: v1
@@ -4527,35 +4755,7 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "webhook"
-    app.kubernetes.io/version: "v1.13.4"
----
-# Source: cert-manager/templates/controller-config.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cert-manager
-  namespace: cert-manager
-  labels:
-    app: cert-manager
-    app.kubernetes.io/name: cert-manager
-    app.kubernetes.io/instance: cert-manager
-    app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
-data:
----
-# Source: cert-manager/templates/webhook-config.yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cert-manager-webhook
-  namespace: cert-manager
-  labels:
-    app: webhook
-    app.kubernetes.io/name: webhook
-    app.kubernetes.io/instance: cert-manager
-    app.kubernetes.io/component: "webhook"
-    app.kubernetes.io/version: "v1.13.4"
-data:
+    app.kubernetes.io/version: "v1.14.4"
 ---
 # Source: cert-manager/templates/cainjector-rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -4567,7 +4767,7 @@ metadata:
     app.kubernetes.io/name: cainjector
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "cainjector"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["certificates"]
@@ -4599,7 +4799,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["issuers", "issuers/status"]
@@ -4625,7 +4825,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["clusterissuers", "clusterissuers/status"]
@@ -4651,7 +4851,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["certificates", "certificates/status", "certificaterequests", "certificaterequests/status"]
@@ -4686,7 +4886,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 rules:
   - apiGroups: ["acme.cert-manager.io"]
     resources: ["orders", "orders/status"]
@@ -4724,7 +4924,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 rules:
   # Use to update challenge resource status
   - apiGroups: ["acme.cert-manager.io"]
@@ -4784,7 +4984,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["certificates", "certificaterequests"]
@@ -4821,7 +5021,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
     rbac.authorization.k8s.io/aggregate-to-cluster-reader: "true"
 rules:
   - apiGroups: ["cert-manager.io"]
@@ -4838,7 +5038,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
     rbac.authorization.k8s.io/aggregate-to-view: "true"
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
@@ -4861,7 +5061,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
     rbac.authorization.k8s.io/aggregate-to-edit: "true"
     rbac.authorization.k8s.io/aggregate-to-admin: "true"
 rules:
@@ -4886,7 +5086,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "cert-manager"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 rules:
   - apiGroups: ["cert-manager.io"]
     resources: ["signers"]
@@ -4906,7 +5106,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "cert-manager"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 rules:
   - apiGroups: ["certificates.k8s.io"]
     resources: ["certificatesigningrequests"]
@@ -4932,7 +5132,7 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "webhook"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 rules:
 - apiGroups: ["authorization.k8s.io"]
   resources: ["subjectaccessreviews"]
@@ -4948,7 +5148,7 @@ metadata:
     app.kubernetes.io/name: cainjector
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "cainjector"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -4968,7 +5168,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -4988,7 +5188,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -5008,7 +5208,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -5028,7 +5228,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -5048,7 +5248,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -5068,7 +5268,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -5088,7 +5288,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "cert-manager"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -5108,7 +5308,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "cert-manager"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -5128,7 +5328,7 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "webhook"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -5151,7 +5351,7 @@ metadata:
     app.kubernetes.io/name: cainjector
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "cainjector"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 rules:
   # Used for leader election by the controller
   # cert-manager-cainjector-leader-election is used by the CertificateBased injector controller
@@ -5177,7 +5377,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 rules:
   - apiGroups: ["coordination.k8s.io"]
     resources: ["leases"]
@@ -5198,7 +5398,7 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "webhook"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 rules:
 - apiGroups: [""]
   resources: ["secrets"]
@@ -5223,7 +5423,7 @@ metadata:
     app.kubernetes.io/name: cainjector
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "cainjector"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -5246,7 +5446,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -5268,7 +5468,7 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "webhook"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -5290,7 +5490,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 spec:
   type: ClusterIP
   ports:
@@ -5314,7 +5514,7 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "webhook"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 spec:
   type: ClusterIP
   ports:
@@ -5338,7 +5538,7 @@ metadata:
     app.kubernetes.io/name: cainjector
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "cainjector"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 spec:
   replicas: 1
   selector:
@@ -5353,7 +5553,7 @@ spec:
         app.kubernetes.io/name: cainjector
         app.kubernetes.io/instance: cert-manager
         app.kubernetes.io/component: "cainjector"
-        app.kubernetes.io/version: "v1.13.4"
+        app.kubernetes.io/version: "v1.14.4"
     spec:
       serviceAccountName: cert-manager-cainjector
       enableServiceLinks: false
@@ -5363,7 +5563,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: cert-manager-cainjector
-          image: "quay.io/jetstack/cert-manager-cainjector:v1.13.4"
+          image: "quay.io/jetstack/cert-manager-cainjector:v1.14.4"
           imagePullPolicy: IfNotPresent
           args:
           - --v=2
@@ -5378,6 +5578,7 @@ spec:
             capabilities:
               drop:
               - ALL
+            readOnlyRootFilesystem: true
       nodeSelector:
         kubernetes.io/os: linux
 ---
@@ -5392,7 +5593,7 @@ metadata:
     app.kubernetes.io/name: cert-manager
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "controller"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 spec:
   replicas: 1
   selector:
@@ -5407,7 +5608,7 @@ spec:
         app.kubernetes.io/name: cert-manager
         app.kubernetes.io/instance: cert-manager
         app.kubernetes.io/component: "controller"
-        app.kubernetes.io/version: "v1.13.4"
+        app.kubernetes.io/version: "v1.14.4"
       annotations:
         prometheus.io/path: "/metrics"
         prometheus.io/scrape: 'true'
@@ -5421,13 +5622,13 @@ spec:
           type: RuntimeDefault
       containers:
         - name: cert-manager-controller
-          image: "quay.io/jetstack/cert-manager-controller:v1.13.4"
+          image: "quay.io/jetstack/cert-manager-controller:v1.14.4"
           imagePullPolicy: IfNotPresent
           args:
           - --v=2
           - --cluster-resource-namespace=$(POD_NAMESPACE)
           - --leader-election-namespace=kube-system
-          - --acme-http01-solver-image=quay.io/jetstack/cert-manager-acmesolver:v1.13.4
+          - --acme-http01-solver-image=quay.io/jetstack/cert-manager-acmesolver:v1.14.4
           - --max-concurrent-challenges=60
           ports:
           - containerPort: 9402
@@ -5441,11 +5642,25 @@ spec:
             capabilities:
               drop:
               - ALL
+            readOnlyRootFilesystem: true
           env:
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+          # LivenessProbe settings are based on those used for the Kubernetes
+          # controller-manager. See:
+          # https://github.com/kubernetes/kubernetes/blob/806b30170c61a38fedd54cc9ede4cd6275a1ad3b/cmd/kubeadm/app/util/staticpod/utils.go#L241-L245
+          livenessProbe:
+            httpGet:
+              port: http-healthz
+              path: /livez
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 15
+            successThreshold: 1
+            failureThreshold: 8
       nodeSelector:
         kubernetes.io/os: linux
 ---
@@ -5460,7 +5675,7 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "webhook"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
 spec:
   replicas: 1
   selector:
@@ -5475,7 +5690,7 @@ spec:
         app.kubernetes.io/name: webhook
         app.kubernetes.io/instance: cert-manager
         app.kubernetes.io/component: "webhook"
-        app.kubernetes.io/version: "v1.13.4"
+        app.kubernetes.io/version: "v1.14.4"
     spec:
       serviceAccountName: cert-manager-webhook
       enableServiceLinks: false
@@ -5485,7 +5700,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: cert-manager-webhook
-          image: "quay.io/jetstack/cert-manager-webhook:v1.13.4"
+          image: "quay.io/jetstack/cert-manager-webhook:v1.14.4"
           imagePullPolicy: IfNotPresent
           args:
           - --v=2
@@ -5528,6 +5743,7 @@ spec:
             capabilities:
               drop:
               - ALL
+            readOnlyRootFilesystem: true
           env:
           - name: POD_NAMESPACE
             valueFrom:
@@ -5546,7 +5762,7 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "webhook"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
   annotations:
     cert-manager.io/inject-ca-from-secret: "cert-manager/cert-manager-webhook-ca"
 webhooks:
@@ -5554,20 +5770,18 @@ webhooks:
     rules:
       - apiGroups:
           - "cert-manager.io"
-          - "acme.cert-manager.io"
         apiVersions:
           - "v1"
         operations:
           - CREATE
-          - UPDATE
         resources:
-          - "*/*"
+          - "certificaterequests"
     admissionReviewVersions: ["v1"]
     # This webhook only accepts v1 cert-manager resources.
     # Equivalent matchPolicy ensures that non-v1 resource requests are sent to
     # this webhook (after the resources have been converted to v1).
     matchPolicy: Equivalent
-    timeoutSeconds: 10
+    timeoutSeconds: 30
     failurePolicy: Fail
     # Only include 'sideEffects' field in Kubernetes 1.12+
     sideEffects: None
@@ -5587,15 +5801,15 @@ metadata:
     app.kubernetes.io/name: webhook
     app.kubernetes.io/instance: cert-manager
     app.kubernetes.io/component: "webhook"
-    app.kubernetes.io/version: "v1.13.4"
+    app.kubernetes.io/version: "v1.14.4"
   annotations:
     cert-manager.io/inject-ca-from-secret: "cert-manager/cert-manager-webhook-ca"
 webhooks:
   - name: webhook.cert-manager.io
     namespaceSelector:
       matchExpressions:
-      - key: "cert-manager.io/disable-validation"
-        operator: "NotIn"
+      - key: cert-manager.io/disable-validation
+        operator: NotIn
         values:
         - "true"
     rules:
@@ -5614,7 +5828,7 @@ webhooks:
     # Equivalent matchPolicy ensures that non-v1 resource requests are sent to
     # this webhook (after the resources have been converted to v1).
     matchPolicy: Equivalent
-    timeoutSeconds: 10
+    timeoutSeconds: 30
     failurePolicy: Fail
     sideEffects: None
     clientConfig:
