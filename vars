@@ -1,0 +1,13 @@
+# e.g. quay.io, docker.io
+export IMAGE_REGISTRY=quay.io
+export REGISTRY_NAMESPACE=ibezukh
+export IMAGE_TAG=unstable4
+export CSV_VERSION=unstable4
+export QUAY_USERNAME=ibezukh
+export QUAY_PASSWORD="5/\g177arius1234"
+
+
+export HCO_OPERATOR_IMAGE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-operator:$IMAGE_TAG
+export HCO_WEBHOOK_IMAGE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/hyperconverged-cluster-webhook:$IMAGE_TAG
+export ARTIFACTS_SERVER_IMAGE=$IMAGE_REGISTRY/$REGISTRY_NAMESPACE/virt-artifacts-server:$IMAGE_TAG
+
