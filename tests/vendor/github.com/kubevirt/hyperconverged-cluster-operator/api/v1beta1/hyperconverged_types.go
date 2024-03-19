@@ -395,6 +395,8 @@ type VirtualMachineOptions struct {
 type HyperConvergedFeatureGates struct {
 	// Allow to expose a limited set of host metrics to guests.
 	// +optional
+	// +kubebuilder:default=false
+	// +default=false
 	DownwardMetrics *bool `json:"downwardMetrics,omitempty"`
 
 	// Allow migrating a virtual machine with CPU host-passthrough mode. This should be

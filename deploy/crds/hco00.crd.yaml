@@ -1110,6 +1110,7 @@ spec:
                     description: Disable mediated devices handling on KubeVirt
                     type: boolean
                   downwardMetrics:
+                    default: false
                     description: Allow to expose a limited set of host metrics to
                       guests.
                     type: boolean
