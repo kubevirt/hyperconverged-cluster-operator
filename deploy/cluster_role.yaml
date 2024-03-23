@@ -870,6 +870,7 @@ rules:
   resources:
   - deployments
   - replicasets
+  - daemonsets
   verbs:
   - get
   - list
@@ -882,6 +883,8 @@ rules:
   resources:
   - roles
   - rolebindings
+  - clusterroles
+  - clusterrolebindings
   verbs:
   - get
   - list
