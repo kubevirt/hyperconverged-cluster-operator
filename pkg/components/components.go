@@ -509,10 +509,11 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		},
 		{
 			APIGroups: stringListToSlice("apps"),
-			Resources: stringListToSlice("deployments", "replicasets"),
+			Resources: stringListToSlice("deployments", "replicasets", "daemonsets"),
 			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
-		roleWithAllPermissions("rbac.authorization.k8s.io", stringListToSlice("roles", "rolebindings")),
+		roleWithAllPermissions("rbac.authorization.k8s.io",
+			stringListToSlice("roles", "rolebindings", "clusterroles", "clusterrolebindings")),
 		{
 			APIGroups: stringListToSlice("apiextensions.k8s.io"),
 			Resources: stringListToSlice("customresourcedefinitions"),
