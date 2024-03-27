@@ -110,6 +110,9 @@ const (
 
 	// Enable using a plugin to bind the pod and the VM network
 	kvHNetworkBindingPluginsGate = "NetworkBindingPlugins"
+
+	// Enable VM live update, to allow live propagation of VM changes to their VMI
+	kvVMLiveUpdateFeatures = "VMLiveUpdateFeatures"
 )
 
 const (
@@ -135,6 +138,7 @@ var (
 		kvHotplugNicsGate,
 		kvVMPersistentState,
 		kvHNetworkBindingPluginsGate,
+		kvVMLiveUpdateFeatures,
 	}
 
 	// holds a list of mandatory KubeVirt feature gates. Some of them are the hard coded feature gates and some of
@@ -423,6 +427,8 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 
 	seccompConfig := getKVSeccompConfig()
 
+	rolloutStrategy := kubevirtcorev1.VMRolloutStrategyLiveUpdate
+
 	config := &kubevirtcorev1.KubeVirtConfiguration{
 		DeveloperConfiguration: devConfig,
 		NetworkConfiguration: &kubevirtcorev1.NetworkConfiguration{
@@ -442,6 +448,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 		SeccompConfiguration:         seccompConfig,
 		EvictionStrategy:             hc.Spec.EvictionStrategy,
 		KSMConfiguration:             hc.Spec.KSMConfiguration,
+		VMRolloutStrategy:            &rolloutStrategy,
 	}
 
 	if smbiosConfig, ok := os.LookupEnv(smbiosEnvName); ok {
