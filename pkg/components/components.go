@@ -68,6 +68,7 @@ type DeploymentOperatorParams struct {
 	CliDownloadsImage   string
 	KVUIPluginImage     string
 	KVUIProxyImage      string
+	WaspImage           string
 	ImagePullPolicy     string
 	ConversionContainer string
 	VmwareContainer     string
@@ -265,6 +266,10 @@ func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.Deployme
 							{
 								Name:  util.KVUIProxyImageEnvV,
 								Value: params.KVUIProxyImage,
+							},
+							{
+								Name:  util.WaspImageEnvV,
+								Value: params.WaspImage,
 							},
 						}, params.Env...),
 						Resources: v1.ResourceRequirements{
@@ -504,10 +509,11 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		},
 		{
 			APIGroups: stringListToSlice("apps"),
-			Resources: stringListToSlice("deployments", "replicasets"),
+			Resources: stringListToSlice("deployments", "replicasets", "daemonsets"),
 			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
-		roleWithAllPermissions("rbac.authorization.k8s.io", stringListToSlice("roles", "rolebindings")),
+		roleWithAllPermissions("rbac.authorization.k8s.io",
+			stringListToSlice("roles", "rolebindings", "clusterroles", "clusterrolebindings")),
 		{
 			APIGroups: stringListToSlice("apiextensions.k8s.io"),
 			Resources: stringListToSlice("customresourcedefinitions"),
