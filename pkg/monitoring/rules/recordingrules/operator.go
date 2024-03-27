@@ -23,4 +23,12 @@ var operatorRecordingRules = []operatorrules.RecordingRule{
 		MetricType: operatormetrics.GaugeType,
 		Expr:       intstr.FromString(`sum(kube_pod_container_resource_requests{resource="cpu"} and on (pod) kube_pod_status_phase{phase="Running"} * on (pod) group_left kube_pod_labels{ label_kubevirt_io="virt-launcher"} > 0)`),
 	},
+	{
+		MetricsOpts: operatormetrics.MetricOpts{
+			Name: "cnv_abnormal",
+			Help: "Monitors resources for potential problems",
+		},
+		MetricType: operatormetrics.GaugeType,
+		Expr:       intstr.FromString("kubevirt_memory_working_set_to_requested_diff_bytes or kubevirt_memory_rss_to_requested_diff_bytes"),
+	},
 }
