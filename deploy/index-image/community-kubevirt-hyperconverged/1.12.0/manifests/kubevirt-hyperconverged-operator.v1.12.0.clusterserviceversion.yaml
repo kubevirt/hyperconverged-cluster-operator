@@ -361,6 +361,7 @@ spec:
           resources:
           - deployments
           - replicasets
+          - daemonsets
           verbs:
           - get
           - list
@@ -540,6 +541,24 @@ spec:
           - watch
           - update
         serviceAccountName: hyperconverged-cluster-operator
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - pods
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - security.openshift.io
+          resourceNames:
+          - privileged
+          resources:
+          - securitycontextconstraints
+          verbs:
+          - use
+        serviceAccountName: wasp-agent
       - rules:
         - apiGroups:
           - operator.openshift.io

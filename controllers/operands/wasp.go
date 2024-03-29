@@ -25,9 +25,6 @@ import (
 )
 
 const (
-	// For simplicity matters, re-use the virt-handler SA. That will spare
-	// the HCO controller from deploying custom privileged SA with SCC.
-	waspServiceAccount = "kubevirt-handler"
 	// Set dry run mode for e2e testing purposes
 	waspDryRunAnnotation = "wasp.hyperconverged.io/dry-run"
 )
@@ -137,7 +134,7 @@ func NewWasp(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet {
 			},
 			Spec: corev1.PodSpec{
 				RestartPolicy:                 corev1.RestartPolicyAlways,
-				ServiceAccountName:            waspServiceAccount,
+				ServiceAccountName:            string(hcoutil.AppComponentWasp),
 				HostPID:                       true,
 				HostUsers:                     ptr.To(true),
 				TerminationGracePeriodSeconds: ptr.To(int64(30)),

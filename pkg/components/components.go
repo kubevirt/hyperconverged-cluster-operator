@@ -54,6 +54,7 @@ const (
 	cliDownloadsName = "hyperconverged-cluster-cli-download"
 
 	kubevirtProjectName = "KubeVirt project"
+	rbacVersionV1       = "rbac.authorization.k8s.io/v1"
 )
 
 var deploymentType = metav1.TypeMeta{
@@ -439,7 +440,7 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion 
 func GetClusterRole() rbacv1.ClusterRole {
 	return rbacv1.ClusterRole{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "rbac.authorization.k8s.io/v1",
+			APIVersion: rbacVersionV1,
 			Kind:       "ClusterRole",
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -504,7 +505,7 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		},
 		{
 			APIGroups: stringListToSlice("apps"),
-			Resources: stringListToSlice("deployments", "replicasets"),
+			Resources: stringListToSlice("deployments", "replicasets", "daemonsets"),
 			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
 		roleWithAllPermissions("rbac.authorization.k8s.io", stringListToSlice("roles", "rolebindings")),
@@ -594,7 +595,7 @@ func GetServiceAccount(namespace string) v1.ServiceAccount {
 func GetClusterRoleBinding(namespace string) rbacv1.ClusterRoleBinding {
 	return rbacv1.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "rbac.authorization.k8s.io/v1",
+			APIVersion: rbacVersionV1,
 			Kind:       "ClusterRoleBinding",
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -612,6 +613,71 @@ func GetClusterRoleBinding(namespace string) rbacv1.ClusterRoleBinding {
 			{
 				Kind:      "ServiceAccount",
 				Name:      hcoName,
+				Namespace: namespace,
+			},
+		},
+	}
+}
+
+func GetWaspClusterRole() rbacv1.ClusterRole {
+	return rbacv1.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: rbacVersionV1,
+			Kind:       "ClusterRole",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: string(hcoutil.AppComponentWasp),
+			Labels: map[string]string{
+				"name": string(hcoutil.AppComponentWasp),
+			},
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{""},
+				Resources: []string{"pods"},
+				Verbs:     []string{"get", "list", "watch"},
+			},
+		},
+	}
+}
+
+func GetWaspServiceAccount(namespace string) v1.ServiceAccount {
+	return v1.ServiceAccount{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ServiceAccount",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      string(hcoutil.AppComponentWasp),
+			Namespace: namespace,
+			Labels: map[string]string{
+				"name": string(hcoutil.AppComponentWasp),
+			},
+		},
+	}
+}
+
+func GetWaspClusterRoleBinding(namespace string) rbacv1.ClusterRoleBinding {
+	return rbacv1.ClusterRoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: rbacVersionV1,
+			Kind:       "ClusterRoleBinding",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: string(hcoutil.AppComponentWasp),
+			Labels: map[string]string{
+				"name": string(hcoutil.AppComponentWasp),
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     string(hcoutil.AppComponentWasp),
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      string(hcoutil.AppComponentWasp),
 				Namespace: namespace,
 			},
 		},
@@ -724,6 +790,22 @@ func GetInstallStrategyBase(params *DeploymentOperatorParams) *csvv1alpha1.Strat
 			{
 				ServiceAccountName: hcoName,
 				Rules:              GetClusterPermissions(),
+			},
+			{
+				ServiceAccountName: string(util.AppComponentWasp),
+				Rules: []rbacv1.PolicyRule{
+					{
+						APIGroups: []string{""},
+						Resources: []string{"pods"},
+						Verbs:     []string{"get", "list", "watch"},
+					},
+					{
+						APIGroups:     []string{"security.openshift.io"},
+						Resources:     []string{"securitycontextconstraints"},
+						ResourceNames: []string{"privileged"},
+						Verbs:         []string{"use"},
+					},
+				},
 			},
 		},
 	}
