@@ -137,7 +137,7 @@ func NewCDI(hc *hcov1beta1.HyperConverged, opts ...string) (*cdiv1beta1.CDI, err
 	}
 
 	if hc.Spec.Infra.NodePlacement != nil {
-		hc.Spec.Infra.NodePlacement.DeepCopyInto(&spec.Infra)
+		hc.Spec.Infra.NodePlacement.DeepCopyInto(&spec.Infra.NodePlacement)
 	}
 
 	if hc.Spec.Workloads.NodePlacement != nil {
