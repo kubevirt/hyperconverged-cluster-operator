@@ -234,6 +234,9 @@ Version: 1.2.3`)
 
 			Expect(foundResource.Spec.Configuration.MachineType).To(Equal("machine-type"))
 			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Amd64.MachineType).To(Equal("machine-type"))
+			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Amd64.OVMFPath).To(Equal(DefaultAMD64OVMFPath))
+			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Arm64.MachineType).To(Equal("machine-type"))
+			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Arm64.OVMFPath).To(Equal(DefaultARM64OVMFPath))
 
 			Expect(foundResource.Spec.Configuration.SMBIOSConfig).ToNot(BeNil())
 			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Family).To(Equal("smbios family"))
@@ -436,6 +439,9 @@ Version: 1.2.3`)
 
 			Expect(foundResource.Spec.Configuration.MachineType).To(Equal("machine-type"))
 			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Amd64.MachineType).To(Equal("machine-type"))
+			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Amd64.OVMFPath).To(Equal(DefaultAMD64OVMFPath))
+			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Arm64.MachineType).To(Equal("machine-type"))
+			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Arm64.OVMFPath).To(Equal(DefaultARM64OVMFPath))
 
 			Expect(foundResource.Spec.Configuration.SMBIOSConfig).ToNot(BeNil())
 			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Family).To(Equal("smbios family"))
