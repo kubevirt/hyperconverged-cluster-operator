@@ -131,7 +131,7 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 	})
 
 	Context("validate node placement in workloads nodes", func() {
-		It("[test_id:5677] all expected 'workloads' pod must be on infra node", func() {
+		It("[test_id:5677] all expected 'workloads' pod must be on infra node", Label("test_id:5677"), func() {
 			expectedWorkloadsPods := map[string]bool{
 				"bridge-marker": false,
 				"cni-plugins":   false,
@@ -164,7 +164,7 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 	})
 
 	Context("validate node placement on infra nodes", func() {
-		It("[test_id:5678] all expected 'infra' pod must be on infra node", func() {
+		It("[test_id:5678] all expected 'infra' pod must be on infra node", Label("test_id:5678"), func() {
 			expectedInfraPods := map[string]bool{
 				"cdi-apiserver":   false,
 				"cdi-controller":  false,
