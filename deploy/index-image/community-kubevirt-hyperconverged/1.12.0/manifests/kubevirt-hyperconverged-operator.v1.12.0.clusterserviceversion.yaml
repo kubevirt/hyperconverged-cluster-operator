@@ -2680,7 +2680,11 @@ spec:
           resources:
           - persistentvolumes
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - create
+          - delete
         - apiGroups:
           - ""
           resources:
@@ -3341,7 +3345,7 @@ spec:
                 - name: SSP_VERSION
                   value: v0.19.0
                 - name: HPPO_VERSION
-                  value: v0.18.0
+                  value: v0.19.0
                 - name: MTQ_VERSION
                   value: v1.2.0
                 - name: AAQ_VERSION
@@ -3951,7 +3955,7 @@ spec:
                 - name: OPERATOR_NAME
                   value: hostpath-provisioner-operator
                 - name: OPERATOR_IMAGE
-                  value: quay.io/kubevirt/hostpath-provisioner-operator@sha256:dd2948ca8e62d17eafba40bdcaad8367a97f092fd3b8d9849b2d62aec3152a72
+                  value: quay.io/kubevirt/hostpath-provisioner-operator@sha256:246b3819cfa3833f9a8cb01e8cb859aa61a1924a85ea4a112e43e8414f32c429
                 - name: PROVISIONER_IMAGE
                   value: quay.io/kubevirt/hostpath-provisioner@sha256:adb1d33e95e8991dc47107926172469b5ecbeace509391ce021ca42d305a41d3
                 - name: CSI_PROVISIONER_IMAGE
@@ -3969,7 +3973,7 @@ spec:
                 - name: MONITORING_NAMESPACE
                 - name: PRIORITY_CLASS
                   value: kubevirt-cluster-critical
-                image: quay.io/kubevirt/hostpath-provisioner-operator@sha256:dd2948ca8e62d17eafba40bdcaad8367a97f092fd3b8d9849b2d62aec3152a72
+                image: quay.io/kubevirt/hostpath-provisioner-operator@sha256:246b3819cfa3833f9a8cb01e8cb859aa61a1924a85ea4a112e43e8414f32c429
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   failureThreshold: 1
@@ -4593,13 +4597,20 @@ spec:
           resources:
           - leases
           verbs:
-          - '*'
+          - get
+          - update
+          - create
         - apiGroups:
           - storage.k8s.io
           resources:
           - csistoragecapacities
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - delete
+          - update
+          - create
         - apiGroups:
           - monitoring.coreos.com
           resources:
@@ -4888,7 +4899,7 @@ spec:
     name: hostpath-csi-driver
   - image: quay.io/kubevirt/hostpath-provisioner@sha256:adb1d33e95e8991dc47107926172469b5ecbeace509391ce021ca42d305a41d3
     name: hostpath-provisioner
-  - image: quay.io/kubevirt/hostpath-provisioner-operator@sha256:dd2948ca8e62d17eafba40bdcaad8367a97f092fd3b8d9849b2d62aec3152a72
+  - image: quay.io/kubevirt/hostpath-provisioner-operator@sha256:246b3819cfa3833f9a8cb01e8cb859aa61a1924a85ea4a112e43e8414f32c429
     name: hostpath-provisioner-operator
   - image: +IMAGE_TO_REPLACE+
     name: hyperconverged-cluster-operator
