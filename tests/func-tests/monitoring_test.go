@@ -37,7 +37,7 @@ const (
 	criticalImpact
 )
 
-var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring", Serial, Ordered, Label(openshiftLabel), func() {
+var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring", Serial, Ordered, Label(tests.OpenshiftLabel), func() {
 	flag.Parse()
 
 	var err error
@@ -53,7 +53,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		virtCli, err = kubecli.GetKubevirtClient()
 		Expect(err).ToNot(HaveOccurred())
 
-		tests.SkipIfNotOpenShift(virtCli, "Prometheus")
+		tests.FailIfNotOpenShift(virtCli, "Prometheus")
 		promClient = initializePromClient(getPrometheusURL(virtCli), getAuthorizationTokenForPrometheus(virtCli))
 		prometheusRule = getPrometheusRule(virtCli)
 
