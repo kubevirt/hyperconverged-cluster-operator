@@ -67,7 +67,7 @@ spec:
         - name: MTQ_VERSION
           value: v1.2.0
         - name: AAQ_VERSION
-          value: v1.1.5
+          value: v1.1.11
         - name: KV_CONSOLE_PLUGIN_IMAGE
         - name: KV_CONSOLE_PROXY_IMAGE
         - name: WASP_AGENT_IMAGE
@@ -888,17 +888,17 @@ spec:
         - name: DEPLOY_CLUSTER_RESOURCES
           value: "true"
         - name: OPERATOR_VERSION
-          value: v1.1.5
+          value: v1.1.11
         - name: CONTROLLER_IMAGE
-          value: quay.io/kubevirt/aaq-controller@sha256:cb2fa52ae3f6a1a99b2de77b58c5db54c43ba8ee86c6540b4844c901180ce611
+          value: quay.io/kubevirt/aaq-controller@sha256:ecdd5bb2492f0089f653e8e95527a9ed5d0665a3a471b8286ca7400e2c8c92da
         - name: AAQ_SERVER_IMAGE
-          value: quay.io/kubevirt/aaq-server@sha256:0c6b01c48030e03e99b3ff2b319658c2bf2b2001f4e3e030ba70d1143b25717a
+          value: quay.io/kubevirt/aaq-server@sha256:561a819ab6811230e09297e3b86a5c10190f3ccbb85e67025965f58389d41e28
         - name: VERBOSITY
           value: "1"
         - name: PULL_POLICY
           value: IfNotPresent
         - name: MONITORING_NAMESPACE
-        image: quay.io/kubevirt/aaq-operator@sha256:590d24742401eeff3fb6a9c8ed977c63442f8f0a0505509fae69aa1bf8aa84ae
+        image: quay.io/kubevirt/aaq-operator@sha256:c23c64af82ad0a047fc0367212982bb01e0173c1cbb6533fac2f4443b9ea86d3
         imagePullPolicy: IfNotPresent
         name: aaq-operator
         ports:
