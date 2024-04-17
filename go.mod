@@ -8,7 +8,7 @@ require (
 	github.com/evanphx/json-patch/v5 v5.7.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-logr/logr v1.3.0
-	github.com/google/uuid v1.3.1
+	github.com/google/uuid v1.6.0
 	github.com/kubevirt/cluster-network-addons-operator v0.91.0
 	github.com/kubevirt/monitoring/pkg/metrics/parser v0.0.0-20231024120544-6a3ba1a680b4
 	github.com/machadovilaca/operator-observability v0.0.8
@@ -33,8 +33,8 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20230928205116-a78145627833
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
-	kubevirt.io/api v1.1.1
-	kubevirt.io/application-aware-quota v1.1.5
+	kubevirt.io/api v1.2.0
+	kubevirt.io/application-aware-quota v1.1.11
 	kubevirt.io/containerized-data-importer-api v1.58.3
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4
 	kubevirt.io/managed-tenant-quota v1.2.0
@@ -74,7 +74,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/pborman/uuid v1.2.1 // indirect
 	github.com/prometheus/client_golang v1.17.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
@@ -84,13 +83,13 @@ require (
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/net v0.21.0 // indirect
-	golang.org/x/oauth2 v0.12.0 // indirect
+	golang.org/x/oauth2 v0.16.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/protobuf v1.31.0 // indirect
+	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
