@@ -36,7 +36,7 @@ require (
 	kubevirt.io/api v1.0.1
 	kubevirt.io/containerized-data-importer-api v1.57.0
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4
-	kubevirt.io/managed-tenant-quota v1.1.11
+	kubevirt.io/managed-tenant-quota v1.1.12
 	kubevirt.io/ssp-operator/api v0.18.3
 	sigs.k8s.io/controller-runtime v0.15.3
 	sigs.k8s.io/controller-tools v0.12.1
@@ -83,7 +83,7 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/net v0.21.0 // indirect
+	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/oauth2 v0.8.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
