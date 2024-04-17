@@ -24,6 +24,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	"kubevirt.io/api/clone"
+
 	"kubevirt.io/api/flavor"
 
 	virtv1 "kubevirt.io/api/core/v1"
@@ -85,10 +87,10 @@ func newControllerClusterRole() *rbacv1.ClusterRole {
 					"",
 				},
 				Resources: []string{
-					"pods", "configmaps", "endpoints",
+					"pods", "configmaps", "endpoints", "services",
 				},
 				Verbs: []string{
-					"get", "list", "watch", "delete", "update", "create",
+					"get", "list", "watch", "delete", "update", "create", "patch",
 				},
 			},
 			{
@@ -100,6 +102,17 @@ func newControllerClusterRole() *rbacv1.ClusterRole {
 				},
 				Verbs: []string{
 					"update", "create", "patch",
+				},
+			},
+			{
+				APIGroups: []string{
+					"",
+				},
+				Resources: []string{
+					"secrets",
+				},
+				Verbs: []string{
+					"create",
 				},
 			},
 			{
@@ -169,6 +182,7 @@ func newControllerClusterRole() *rbacv1.ClusterRole {
 					"list",
 					"create",
 					"delete",
+					"get",
 				},
 			},
 			{
@@ -185,6 +199,17 @@ func newControllerClusterRole() *rbacv1.ClusterRole {
 			{
 				APIGroups: []string{
 					"snapshot.kubevirt.io",
+				},
+				Resources: []string{
+					"*",
+				},
+				Verbs: []string{
+					"*",
+				},
+			},
+			{
+				APIGroups: []string{
+					"export.kubevirt.io",
 				},
 				Resources: []string{
 					"*",
@@ -333,9 +358,11 @@ func newControllerClusterRole() *rbacv1.ClusterRole {
 				Resources: []string{
 					flavor.PluralResourceName,
 					flavor.ClusterPluralResourceName,
+					flavor.PluralPreferenceResourceName,
+					flavor.ClusterPluralPreferenceResourceName,
 				},
 				Verbs: []string{
-					"list", "watch",
+					"get", "list", "watch",
 				},
 			},
 			{
@@ -347,6 +374,28 @@ func newControllerClusterRole() *rbacv1.ClusterRole {
 				},
 				Verbs: []string{
 					"get", "list", "watch",
+				},
+			},
+			{
+				APIGroups: []string{
+					clone.GroupName,
+				},
+				Resources: []string{
+					clone.ResourceVMClonePlural,
+				},
+				Verbs: []string{
+					"get", "list", "watch", "update", "patch", "delete",
+				},
+			},
+			{
+				APIGroups: []string{
+					clone.GroupName,
+				},
+				Resources: []string{
+					clone.ResourceVMClonePlural + "/status",
+				},
+				Verbs: []string{
+					"get", "list", "watch", "update", "patch", "delete",
 				},
 			},
 			{
