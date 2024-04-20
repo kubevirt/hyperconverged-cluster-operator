@@ -984,7 +984,7 @@ kubevirt.io/kubevirt/tests/libstorage
 kubevirt.io/kubevirt/tests/libvmi
 kubevirt.io/kubevirt/tests/testsuite
 kubevirt.io/kubevirt/tests/util
-# kubevirt.io/managed-tenant-quota v1.2.0
+# kubevirt.io/managed-tenant-quota v1.2.1
 ## explicit; go 1.19
 kubevirt.io/managed-tenant-quota/staging/src/kubevirt.io/managed-tenant-quota-api/pkg/apis/core
 kubevirt.io/managed-tenant-quota/staging/src/kubevirt.io/managed-tenant-quota-api/pkg/apis/core/v1alpha1
