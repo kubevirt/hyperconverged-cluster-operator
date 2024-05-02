@@ -115,15 +115,15 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
-    name: hyperconverged-cluster-operator
-  name: hyperconverged-cluster-operator
+    name: hyperconverged-cluster-operator-test
+  name: hyperconverged-cluster-operator-test
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: hyperconverged-cluster-operator
+  name: hyperconverged-cluster-operator-test
 subjects:
 - kind: ServiceAccount
-  name: hyperconverged-cluster-operator
+  name: hyperconverged-cluster-operator-test
   namespace: kubevirt-hyperconverged
 ---
 apiVersion: rbac.authorization.k8s.io/v1

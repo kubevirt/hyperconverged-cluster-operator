@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.12.0-unstable
-    createdAt: "2024-04-26 05:04:44"
+    createdAt: "2024-05-02 18:16:14"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -539,7 +539,7 @@ spec:
           - list
           - watch
           - update
-        serviceAccountName: hyperconverged-cluster-operator
+        serviceAccountName: hyperconverged-cluster-operator-test
       - rules:
         - apiGroups:
           - operator.openshift.io
@@ -3261,13 +3261,13 @@ spec:
           app.kubernetes.io/managed-by: olm
           app.kubernetes.io/part-of: hyperconverged-cluster
           app.kubernetes.io/version: 1.12.0
-          name: hyperconverged-cluster-operator
+          name: hyperconverged-cluster-operator-test
         name: hco-operator
         spec:
           replicas: 1
           selector:
             matchLabels:
-              name: hyperconverged-cluster-operator
+              name: hyperconverged-cluster-operator-test
           strategy:
             type: RollingUpdate
           template:
@@ -3277,11 +3277,11 @@ spec:
                 app.kubernetes.io/managed-by: olm
                 app.kubernetes.io/part-of: hyperconverged-cluster
                 app.kubernetes.io/version: 1.12.0
-                name: hyperconverged-cluster-operator
+                name: hyperconverged-cluster-operator-test
             spec:
               containers:
               - command:
-                - hyperconverged-cluster-operator
+                - hyperconverged-cluster-operator-test
                 env:
                 - name: WEBHOOK_MODE
                   value: "false"
@@ -3291,7 +3291,7 @@ spec:
                 - name: OPERATOR_IMAGE
                   value: quay.io/kubevirt/hyperconverged-cluster-operator:1.12.0-unstable
                 - name: OPERATOR_NAME
-                  value: hyperconverged-cluster-operator
+                  value: hyperconverged-cluster-operator-test
                 - name: OPERATOR_NAMESPACE
                   value: kubevirt-hyperconverged
                 - name: POD_NAME
@@ -3338,7 +3338,7 @@ spec:
                     scheme: HTTP
                   initialDelaySeconds: 30
                   periodSeconds: 5
-                name: hyperconverged-cluster-operator
+                name: hyperconverged-cluster-operator-test
                 readinessProbe:
                   failureThreshold: 1
                   httpGet:
@@ -3361,7 +3361,7 @@ spec:
                 runAsNonRoot: true
                 seccompProfile:
                   type: RuntimeDefault
-              serviceAccountName: hyperconverged-cluster-operator
+              serviceAccountName: hyperconverged-cluster-operator-test
       - label:
           app.kubernetes.io/component: deployment
           app.kubernetes.io/managed-by: olm
@@ -3436,7 +3436,7 @@ spec:
                 runAsNonRoot: true
                 seccompProfile:
                   type: RuntimeDefault
-              serviceAccountName: hyperconverged-cluster-operator
+              serviceAccountName: hyperconverged-cluster-operator-test
       - label:
           app.kubernetes.io/component: deployment
           app.kubernetes.io/managed-by: olm

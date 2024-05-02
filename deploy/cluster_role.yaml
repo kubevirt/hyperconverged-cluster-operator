@@ -711,8 +711,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
-    name: hyperconverged-cluster-operator
-  name: hyperconverged-cluster-operator
+    name: hyperconverged-cluster-operator-test
+  name: hyperconverged-cluster-operator-test
 rules:
 - apiGroups:
   - hco.kubevirt.io

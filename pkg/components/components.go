@@ -45,7 +45,7 @@ const DisableOperandDeletionAnnotation = "console.openshift.io/disable-operand-d
 const (
 	crName              = util.HyperConvergedName
 	packageName         = util.HyperConvergedName
-	hcoName             = "hyperconverged-cluster-operator"
+	hcoName             = "hyperconverged-cluster-operator-test"
 	hcoNameWebhook      = "hyperconverged-cluster-webhook"
 	hcoDeploymentName   = "hco-operator"
 	hcoWhDeploymentName = "hco-webhook"

@@ -6,13 +6,13 @@ metadata:
     app.kubernetes.io/component: deployment
     app.kubernetes.io/part-of: hyperconverged-cluster
     app.kubernetes.io/version: 1.12.0
-    name: hyperconverged-cluster-operator
-  name: hyperconverged-cluster-operator
+    name: hyperconverged-cluster-operator-test
+  name: hyperconverged-cluster-operator-test
 spec:
   replicas: 1
   selector:
     matchLabels:
-      name: hyperconverged-cluster-operator
+      name: hyperconverged-cluster-operator-test
   strategy:
     type: RollingUpdate
   template:
@@ -21,11 +21,11 @@ spec:
         app.kubernetes.io/component: deployment
         app.kubernetes.io/part-of: hyperconverged-cluster
         app.kubernetes.io/version: 1.12.0
-        name: hyperconverged-cluster-operator
+        name: hyperconverged-cluster-operator-test
     spec:
       containers:
       - command:
-        - hyperconverged-cluster-operator
+        - hyperconverged-cluster-operator-test
         env:
         - name: WEBHOOK_MODE
           value: "false"
@@ -35,7 +35,7 @@ spec:
         - name: OPERATOR_IMAGE
           value: quay.io/kubevirt/hyperconverged-cluster-operator:1.12.0-unstable
         - name: OPERATOR_NAME
-          value: hyperconverged-cluster-operator
+          value: hyperconverged-cluster-operator-test
         - name: OPERATOR_NAMESPACE
           value: kubevirt-hyperconverged
         - name: POD_NAME
@@ -80,7 +80,7 @@ spec:
             scheme: HTTP
           initialDelaySeconds: 30
           periodSeconds: 5
-        name: hyperconverged-cluster-operator
+        name: hyperconverged-cluster-operator-test
         readinessProbe:
           failureThreshold: 1
           httpGet:
@@ -103,7 +103,7 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
-      serviceAccountName: hyperconverged-cluster-operator
+      serviceAccountName: hyperconverged-cluster-operator-test
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -183,7 +183,7 @@ spec:
         runAsNonRoot: true
         seccompProfile:
           type: RuntimeDefault
-      serviceAccountName: hyperconverged-cluster-operator
+      serviceAccountName: hyperconverged-cluster-operator-test
       volumes:
       - name: apiservice-cert
         secret:
