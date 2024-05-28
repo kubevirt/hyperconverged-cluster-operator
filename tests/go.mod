@@ -15,10 +15,10 @@ require (
 	k8s.io/apimachinery v0.29.3
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/utils v0.0.0-20240310230437-4693a0247e57
-	kubevirt.io/api v1.2.0
-	kubevirt.io/client-go v1.2.0
+	kubevirt.io/api v1.2.1
+	kubevirt.io/client-go v1.2.1
 	kubevirt.io/containerized-data-importer-api v1.59.0
-	kubevirt.io/kubevirt v1.2.0
+	kubevirt.io/kubevirt v1.2.1
 )
 
 replace (
@@ -85,7 +85,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.3.0 // indirect
 	github.com/kubernetes-csi/external-snapshotter/client/v4 v4.2.0 // indirect
-	github.com/machadovilaca/operator-observability v0.0.19 // indirect
+	github.com/machadovilaca/operator-observability v0.0.20 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
