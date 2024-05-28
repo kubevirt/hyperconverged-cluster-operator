@@ -341,6 +341,10 @@ var CRDsValidation map[string]string = map[string]string{
                   description: BackingFile is the path to the virtual hard disk to
                     migrate from vCenter/ESXi
                   type: string
+                initImageURL:
+                  description: InitImageURL is an optional URL to an image containing
+                    an extracted VDDK library, overrides v2v-vmware config map
+                  type: string
                 secretRef:
                   description: SecretRef provides a reference to a secret containing
                     the username and password needed to access the vCenter or ESXi
@@ -644,6 +648,14 @@ var CRDsValidation map[string]string = map[string]string{
               description: DeveloperConfiguration holds developer options
               properties:
                 cpuAllocationRatio:
+                  description: 'For each requested virtual CPU, CPUAllocationRatio
+                    defines how much physical CPU to request per VMI from the hosting
+                    node. The value is in fraction of a CPU thread (or core on non-hyperthreaded
+                    nodes). For example, a value of 1 means 1 physical CPU thread
+                    per VMI CPU thread. A value of 100 would be 1% of a physical thread
+                    allocated for each requested VMI thread. This option has no effect
+                    on VMIs that request dedicated CPUs. More information at: https://kubevirt.io/user-guide/operations/node_overcommit/#node-cpu-allocation-ratio
+                    Defaults to 10'
                   type: integer
                 diskVerification:
                   description: DiskVerification holds container disks verification
@@ -659,6 +671,8 @@ var CRDsValidation map[string]string = map[string]string{
                   - memoryLimit
                   type: object
                 featureGates:
+                  description: FeatureGates is the list of experimental features to
+                    enable. Defaults to none
                   items:
                     type: string
                   type: array
@@ -683,6 +697,12 @@ var CRDsValidation map[string]string = map[string]string{
                       type: integer
                   type: object
                 memoryOvercommit:
+                  description: MemoryOvercommit is the percentage of memory we want
+                    to give VMIs compared to the amount given to its parent pod (virt-launcher).
+                    For example, a value of 102 means the VMI will "see" 2% more memory
+                    than its parent pod. Values under 100 are effectively "undercommits".
+                    Overcommits can lead to memory exhaustion, which in turn can lead
+                    to crashes. Use carefully. Defaults to 100
                   type: integer
                 minimumClusterTSCFrequency:
                   description: Allow overriding the automatically determined minimum
@@ -690,18 +710,25 @@ var CRDsValidation map[string]string = map[string]string{
                   format: int64
                   type: integer
                 minimumReservePVCBytes:
+                  description: MinimumReservePVCBytes is the amount of space, in bytes,
+                    to leave unused on disks. Defaults to 131072 (128KiB)
                   format: int64
                   type: integer
                 nodeSelectors:
                   additionalProperties:
                     type: string
+                  description: NodeSelectors allows restricting VMI creation to nodes
+                    that match a set of labels. Defaults to none
                   type: object
                 pvcTolerateLessSpaceUpToPercent:
+                  description: LessPVCSpaceToleration determines how much smaller,
+                    in percentage, disk PVCs are allowed to be compared to the requested
+                    size (to account for various overheads). Defaults to 10
                   type: integer
                 useEmulation:
                   description: UseEmulation can be set to true to allow fallback to
                     software emulation in case hardware-assisted emulation is not
-                    available.
+                    available. Defaults to false
                   type: boolean
               type: object
             emulatedMachines:
@@ -790,37 +817,78 @@ var CRDsValidation map[string]string = map[string]string{
               format: int32
               type: integer
             migrations:
-              description: MigrationConfiguration holds migration options
+              description: MigrationConfiguration holds migration options. Can be
+                overridden for specific groups of VMs though migration policies. Visit
+                https://kubevirt.io/user-guide/operations/migration_policies/ for
+                more information.
               properties:
                 allowAutoConverge:
+                  description: AllowAutoConverge allows the platform to compromise
+                    performance/availability of VMIs to guarantee successful VMI live
+                    migrations. Defaults to false
                   type: boolean
                 allowPostCopy:
+                  description: AllowPostCopy enables post-copy live migrations. Such
+                    migrations allow even the busiest VMIs to successfully live-migrate.
+                    However, events like a network failure can cause a VMI crash.
+                    If set to true, migrations will still start in pre-copy, but switch
+                    to post-copy when CompletionTimeoutPerGiB triggers. Defaults to
+                    false
                   type: boolean
                 bandwidthPerMigration:
                   anyOf:
                   - type: integer
                   - type: string
+                  description: BandwidthPerMigration limits the amount of network
+                    bandwith live migrations are allowed to use. The value is in quantity
+                    per second. Defaults to 0 (no limit)
                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                   x-kubernetes-int-or-string: true
                 completionTimeoutPerGiB:
+                  description: CompletionTimeoutPerGiB is the maximum number of seconds
+                    per GiB a migration is allowed to take. If a live-migration takes
+                    longer to migrate than this value multiplied by the size of the
+                    VMI, the migration will be cancelled, unless AllowPostCopy is
+                    true. Defaults to 800
                   format: int64
                   type: integer
                 disableTLS:
+                  description: When set to true, DisableTLS will disable the additional
+                    layer of live migration encryption provided by KubeVirt. This
+                    is usually a bad idea. Defaults to false
                   type: boolean
                 network:
+                  description: Network is the name of the CNI network to use for live
+                    migrations. By default, migrations go through the pod network.
                   type: string
                 nodeDrainTaintKey:
+                  description: 'NodeDrainTaintKey defines the taint key that indicates
+                    a node should be drained. Note: this option relies on the deprecated
+                    node taint feature. Default: kubevirt.io/drain'
                   type: string
                 parallelMigrationsPerCluster:
+                  description: ParallelMigrationsPerCluster is the total number of
+                    concurrent live migrations allowed cluster-wide. Defaults to 5
                   format: int32
                   type: integer
                 parallelOutboundMigrationsPerNode:
+                  description: ParallelOutboundMigrationsPerNode is the maximum number
+                    of concurrent outgoing live migrations allowed per node. Defaults
+                    to 2
                   format: int32
                   type: integer
                 progressTimeout:
+                  description: ProgressTimeout is the maximum number of seconds a
+                    live migration is allowed to make no progress. Hitting this timeout
+                    means a migration transferred 0 data for that many seconds. The
+                    migration is then considered stuck and therefore cancelled. Defaults
+                    to 150
                   format: int64
                   type: integer
                 unsafeMigrationOverride:
+                  description: UnsafeMigrationOverride allows live migrations to occur
+                    even if the compatibility check indicates the migration will be
+                    unsafe to the guest. Defaults to false
                   type: boolean
               type: object
             minCPUModel:
@@ -909,6 +977,28 @@ var CRDsValidation map[string]string = map[string]string{
               items:
                 type: string
               type: array
+            tlsConfiguration:
+              description: TLSConfiguration holds TLS options
+              properties:
+                ciphers:
+                  items:
+                    type: string
+                  type: array
+                  x-kubernetes-list-type: set
+                minTLSVersion:
+                  description: "MinTLSVersion is a way to specify the minimum protocol
+                    version that is acceptable for TLS connections. Protocol versions
+                    are based on the following most common TLS configurations: \n
+                    \  https://ssl-config.mozilla.org/ \n Note that SSLv3.0 is not
+                    a supported protocol version due to well known vulnerabilities
+                    such as POODLE: https://en.wikipedia.org/wiki/POODLE"
+                  enum:
+                  - VersionTLS10
+                  - VersionTLS11
+                  - VersionTLS12
+                  - VersionTLS13
+                  type: string
+              type: object
             virtualMachineInstancesPerNode:
               type: integer
             webhookConfiguration:
@@ -1925,6 +2015,11 @@ var CRDsValidation map[string]string = map[string]string{
           description: Designate the apps.kubevirt.io/version label for KubeVirt components.
             Useful if KubeVirt is included as part of a product. If ProductVersion
             is not specified, KubeVirt's version will be used.
+          type: string
+        serviceMonitorNamespace:
+          description: The namespace the service monitor will be deployed  When ServiceMonitorNamespace
+            is set, then we'll install the service monitor object in that namespace
+            otherwise we will use the monitoring namespace.
           type: string
         uninstallStrategy:
           description: Specifies if kubevirt can be deleted if workloads are still
@@ -2995,96 +3090,12 @@ var CRDsValidation map[string]string = map[string]string{
         selectors:
           properties:
             namespaceSelector:
-              description: A label selector is a label query over a set of resources.
-                The result of matchLabels and matchExpressions are ANDed. An empty
-                label selector matches all objects. A null label selector matches
-                no objects.
-              properties:
-                matchExpressions:
-                  description: matchExpressions is a list of label selector requirements.
-                    The requirements are ANDed.
-                  items:
-                    description: A label selector requirement is a selector that contains
-                      values, a key, and an operator that relates the key and values.
-                    properties:
-                      key:
-                        description: key is the label key that the selector applies
-                          to.
-                        type: string
-                      operator:
-                        description: operator represents a key's relationship to a
-                          set of values. Valid operators are In, NotIn, Exists and
-                          DoesNotExist.
-                        type: string
-                      values:
-                        description: values is an array of string values. If the operator
-                          is In or NotIn, the values array must be non-empty. If the
-                          operator is Exists or DoesNotExist, the values array must
-                          be empty. This array is replaced during a strategic merge
-                          patch.
-                        items:
-                          type: string
-                        type: array
-                    required:
-                    - key
-                    - operator
-                    type: object
-                  type: array
-                matchLabels:
-                  additionalProperties:
-                    type: string
-                  description: matchLabels is a map of {key,value} pairs. A single
-                    {key,value} in the matchLabels map is equivalent to an element
-                    of matchExpressions, whose key field is "key", the operator is
-                    "In", and the values array contains only "value". The requirements
-                    are ANDed.
-                  type: object
+              additionalProperties:
+                type: string
               type: object
             virtualMachineInstanceSelector:
-              description: A label selector is a label query over a set of resources.
-                The result of matchLabels and matchExpressions are ANDed. An empty
-                label selector matches all objects. A null label selector matches
-                no objects.
-              properties:
-                matchExpressions:
-                  description: matchExpressions is a list of label selector requirements.
-                    The requirements are ANDed.
-                  items:
-                    description: A label selector requirement is a selector that contains
-                      values, a key, and an operator that relates the key and values.
-                    properties:
-                      key:
-                        description: key is the label key that the selector applies
-                          to.
-                        type: string
-                      operator:
-                        description: operator represents a key's relationship to a
-                          set of values. Valid operators are In, NotIn, Exists and
-                          DoesNotExist.
-                        type: string
-                      values:
-                        description: values is an array of string values. If the operator
-                          is In or NotIn, the values array must be non-empty. If the
-                          operator is Exists or DoesNotExist, the values array must
-                          be empty. This array is replaced during a strategic merge
-                          patch.
-                        items:
-                          type: string
-                        type: array
-                    required:
-                    - key
-                    - operator
-                    type: object
-                  type: array
-                matchLabels:
-                  additionalProperties:
-                    type: string
-                  description: matchLabels is a map of {key,value} pairs. A single
-                    {key,value} in the matchLabels map is equivalent to an element
-                    of matchExpressions, whose key field is "key", the operator is
-                    "In", and the values array contains only "value". The requirements
-                    are ANDed.
-                  type: object
+              additionalProperties:
+                type: string
               type: object
           type: object
       required:
@@ -3479,6 +3490,11 @@ var CRDsValidation map[string]string = map[string]string{
                             description: BackingFile is the path to the virtual hard
                               disk to migrate from vCenter/ESXi
                             type: string
+                          initImageURL:
+                            description: InitImageURL is an optional URL to an image
+                              containing an extracted VDDK library, overrides v2v-vmware
+                              config map
+                            type: string
                           secretRef:
                             description: SecretRef provides a reference to a secret
                               containing the username and password needed to access
@@ -3650,21 +3666,44 @@ var CRDsValidation map[string]string = map[string]string{
             - spec
             type: object
           type: array
-        flavor:
-          description: FlavorMatcher references a flavor that is used to fill fields
-            in Template
+        instancetype:
+          description: InstancetypeMatcher references a instancetype that is used
+            to fill fields in Template
           properties:
             kind:
-              description: 'Kind specifies which flavor resource is referenced. Allowed
-                values are: "VirtualMachineFlavor" and "VirtualMachineClusterFlavor".
-                If not specified, "VirtualMachineClusterFlavor" is used by default.'
+              description: 'Kind specifies which instancetype resource is referenced.
+                Allowed values are: "VirtualMachineInstancetype" and "VirtualMachineClusterInstancetype".
+                If not specified, "VirtualMachineClusterInstancetype" is used by default.'
               type: string
             name:
-              description: Name is the name of the VirtualMachineFlavor or VirtualMachineClusterFlavor
+              description: Name is the name of the VirtualMachineInstancetype or VirtualMachineClusterInstancetype
               type: string
-            profile:
-              description: Profile is the name of a custom profile in the flavor.
-                If left empty, the default profile is used.
+            revisionName:
+              description: RevisionName specifies a ControllerRevision containing
+                a specific copy of the VirtualMachineInstancetype or VirtualMachineClusterInstancetype
+                to be used. This is initially captured the first time the instancetype
+                is applied to the VirtualMachineInstance.
+              type: string
+          required:
+          - name
+          type: object
+        preference:
+          description: PreferenceMatcher references a set of preference that is used
+            to fill fields in Template
+          properties:
+            kind:
+              description: 'Kind specifies which preference resource is referenced.
+                Allowed values are: "VirtualMachinePreference" and "VirtualMachineClusterPreference".
+                If not specified, "VirtualMachineClusterPreference" is used by default.'
+              type: string
+            name:
+              description: Name is the name of the VirtualMachinePreference or VirtualMachineClusterPreference
+              type: string
+            revisionName:
+              description: RevisionName specifies a ControllerRevision containing
+                a specific copy of the VirtualMachinePreference or VirtualMachineClusterPreference
+                to be used. This is initially captured the first time the instancetype
+                is applied to the VirtualMachineInstance.
               type: string
           required:
           - name
@@ -4880,6 +4919,10 @@ var CRDsValidation map[string]string = map[string]string{
                             or not. VNC will not be available if set to false. Defaults
                             to true.
                           type: boolean
+                        autoattachInputDevice:
+                          description: Whether to attach an Input Device. Defaults
+                            to false.
+                          type: boolean
                         autoattachMemBalloon:
                           description: Whether to attach the Memory balloon device
                             with default period. Period can be adjusted in virt-config.
@@ -4979,7 +5022,7 @@ var CRDsValidation map[string]string = map[string]string{
                                   bus:
                                     description: 'Bus indicates the type of disk device
                                       to emulate. supported values: virtio, sata,
-                                      scsi.'
+                                      scsi, usb.'
                                     type: string
                                   pciAddress:
                                     description: 'If specified, the virtual disk will
@@ -5206,6 +5249,9 @@ var CRDsValidation map[string]string = map[string]string{
                                   as a reference to the associated networks. Must
                                   match the Name of a Network.
                                 type: string
+                              passt:
+                                description: InterfacePasst connects to a given network.
+                                type: object
                               pciAddress:
                                 description: 'If specified, the virtual network interface
                                   will be placed on the guests pci address with the
@@ -5280,6 +5326,9 @@ var CRDsValidation map[string]string = map[string]string{
                               type: string
                           required:
                           - name
+                          type: object
+                        tpm:
+                          description: Whether to emulate a TPM device.
                           type: object
                         useVirtioTransitional:
                           description: Fall back to legacy virtio 0.9 support if virtio
@@ -6056,6 +6105,113 @@ var CRDsValidation map[string]string = map[string]string{
                         type: string
                     type: object
                   type: array
+                topologySpreadConstraints:
+                  description: TopologySpreadConstraints describes how a group of
+                    VMIs will be spread across a given topology domains. K8s scheduler
+                    will schedule VMI pods in a way which abides by the constraints.
+                  items:
+                    description: TopologySpreadConstraint specifies how to spread
+                      matching pods among the given topology.
+                    properties:
+                      labelSelector:
+                        description: LabelSelector is used to find matching pods.
+                          Pods that match this label selector are counted to determine
+                          the number of pods in their corresponding topology domain.
+                        properties:
+                          matchExpressions:
+                            description: matchExpressions is a list of label selector
+                              requirements. The requirements are ANDed.
+                            items:
+                              description: A label selector requirement is a selector
+                                that contains values, a key, and an operator that
+                                relates the key and values.
+                              properties:
+                                key:
+                                  description: key is the label key that the selector
+                                    applies to.
+                                  type: string
+                                operator:
+                                  description: operator represents a key's relationship
+                                    to a set of values. Valid operators are In, NotIn,
+                                    Exists and DoesNotExist.
+                                  type: string
+                                values:
+                                  description: values is an array of string values.
+                                    If the operator is In or NotIn, the values array
+                                    must be non-empty. If the operator is Exists or
+                                    DoesNotExist, the values array must be empty.
+                                    This array is replaced during a strategic merge
+                                    patch.
+                                  items:
+                                    type: string
+                                  type: array
+                              required:
+                              - key
+                              - operator
+                              type: object
+                            type: array
+                          matchLabels:
+                            additionalProperties:
+                              type: string
+                            description: matchLabels is a map of {key,value} pairs.
+                              A single {key,value} in the matchLabels map is equivalent
+                              to an element of matchExpressions, whose key field is
+                              "key", the operator is "In", and the values array contains
+                              only "value". The requirements are ANDed.
+                            type: object
+                        type: object
+                      maxSkew:
+                        description: 'MaxSkew describes the degree to which pods may
+                          be unevenly distributed. When ''whenUnsatisfiable=DoNotSchedule'',
+                          it is the maximum permitted difference between the number
+                          of matching pods in the target topology and the global minimum.
+                          For example, in a 3-zone cluster, MaxSkew is set to 1, and
+                          pods with the same labelSelector spread as 1/1/0: | zone1
+                          | zone2 | zone3 | |   P   |   P   |       | - if MaxSkew
+                          is 1, incoming pod can only be scheduled to zone3 to become
+                          1/1/1; scheduling it onto zone1(zone2) would make the ActualSkew(2-0)
+                          on zone1(zone2) violate MaxSkew(1). - if MaxSkew is 2, incoming
+                          pod can be scheduled onto any zone. When ''whenUnsatisfiable=ScheduleAnyway'',
+                          it is used to give higher precedence to topologies that
+                          satisfy it. It''s a required field. Default value is 1 and
+                          0 is not allowed.'
+                        format: int32
+                        type: integer
+                      topologyKey:
+                        description: TopologyKey is the key of node labels. Nodes
+                          that have a label with this key and identical values are
+                          considered to be in the same topology. We consider each
+                          <key, value> as a "bucket", and try to put balanced number
+                          of pods into each bucket. It's a required field.
+                        type: string
+                      whenUnsatisfiable:
+                        description: 'WhenUnsatisfiable indicates how to deal with
+                          a pod if it doesn''t satisfy the spread constraint. - DoNotSchedule
+                          (default) tells the scheduler not to schedule it. - ScheduleAnyway
+                          tells the scheduler to schedule the pod in any location,   but
+                          giving higher precedence to topologies that would help reduce
+                          the   skew. A constraint is considered "Unsatisfiable" for
+                          an incoming pod if and only if every possible node assignment
+                          for that pod would violate "MaxSkew" on some topology. For
+                          example, in a 3-zone cluster, MaxSkew is set to 1, and pods
+                          with the same labelSelector spread as 3/1/1: | zone1 | zone2
+                          | zone3 | | P P P |   P   |   P   | If WhenUnsatisfiable
+                          is set to DoNotSchedule, incoming pod can only be scheduled
+                          to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1)
+                          on zone2(zone3) satisfies MaxSkew(1). In other words, the
+                          cluster can still be imbalanced, but scheduler won''t make
+                          it *more* imbalanced. It''s a required field.'
+                        type: string
+                    required:
+                    - maxSkew
+                    - topologyKey
+                    - whenUnsatisfiable
+                    type: object
+                  type: array
+                  x-kubernetes-list-map-keys:
+                  - topologyKey
+                  - whenUnsatisfiable
+                  x-kubernetes-list-type: map
                 volumes:
                   description: List of volumes that can be mounted by disks belonging
                     to the vmi.
@@ -6359,6 +6515,26 @@ var CRDsValidation map[string]string = map[string]string{
                         - path
                         - type
                         type: object
+                      memoryDump:
+                        description: MemoryDump is attached to the virt launcher and
+                          is populated with a memory dump of the vmi
+                        properties:
+                          claimName:
+                            description: 'ClaimName is the name of a PersistentVolumeClaim
+                              in the same namespace as the pod using this volume.
+                              More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims'
+                            type: string
+                          hotpluggable:
+                            description: Hotpluggable indicates whether the volume
+                              can be hotplugged and hotunplugged.
+                            type: boolean
+                          readOnly:
+                            description: Will force the ReadOnly setting in VolumeMounts.
+                              Default false.
+                            type: boolean
+                        required:
+                        - claimName
+                        type: object
                       name:
                         description: 'Volume''s name. Must be a DNS_LABEL and unique
                           within the vmi. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
@@ -6484,6 +6660,41 @@ var CRDsValidation map[string]string = map[string]string{
           description: Created indicates if the virtual machine is created in the
             cluster
           type: boolean
+        memoryDumpRequest:
+          description: MemoryDumpRequest tracks memory dump request phase and info
+            of getting a memory dump to the given pvc
+          nullable: true
+          properties:
+            claimName:
+              description: ClaimName is the name of the pvc that will contain the
+                memory dump
+              type: string
+            endTimestamp:
+              description: EndTimestamp represents the time the memory dump was completed
+              format: date-time
+              type: string
+            fileName:
+              description: FileName represents the name of the output file
+              type: string
+            message:
+              description: Message is a detailed message about failure of the memory
+                dump
+              type: string
+            phase:
+              description: Phase represents the memory dump phase
+              type: string
+            remove:
+              description: Remove represents request of dissociating the memory dump
+                pvc
+              type: boolean
+            startTimestamp:
+              description: StartTimestamp represents the time the memory dump started
+              format: date-time
+              type: string
+          required:
+          - claimName
+          - phase
+          type: object
         printableStatus:
           description: PrintableStatus is a human readable, high-level representation
             of the status of the virtual machine
@@ -6614,7 +6825,7 @@ var CRDsValidation map[string]string = map[string]string{
                         properties:
                           bus:
                             description: 'Bus indicates the type of disk device to
-                              emulate. supported values: virtio, sata, scsi.'
+                              emulate. supported values: virtio, sata, scsi, usb.'
                             type: string
                           pciAddress:
                             description: 'If specified, the virtual disk will be placed
@@ -6769,8 +6980,138 @@ var CRDsValidation map[string]string = map[string]string{
   - spec
   type: object
 `,
-	"virtualmachineclusterflavor": `openAPIV3Schema:
-  description: VirtualMachineClusterFlavor is a cluster scoped version of VirtualMachineFlavor
+	"virtualmachineclone": `openAPIV3Schema:
+  description: VirtualMachineClone is a CRD that clones one VM into another.
+  properties:
+    apiVersion:
+      description: 'APIVersion defines the versioned schema of this representation
+        of an object. Servers should convert recognized schemas to the latest internal
+        value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+      type: string
+    kind:
+      description: 'Kind is a string value representing the REST resource this object
+        represents. Servers may infer this from the endpoint the client submits requests
+        to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+      type: string
+    metadata:
+      type: object
+    spec:
+      properties:
+        annotationFilters:
+          items:
+            type: string
+          type: array
+          x-kubernetes-list-type: atomic
+        labelFilters:
+          items:
+            type: string
+          type: array
+          x-kubernetes-list-type: atomic
+        newMacAddresses:
+          additionalProperties:
+            type: string
+          description: NewMacAddresses manually sets that target interfaces' mac addresses.
+            The key is the interface name and the value is the new mac address. If
+            this field is not specified, a new MAC address will be generated automatically,
+            as for any interface that is not included in this map.
+          type: object
+        newSMBiosSerial:
+          description: NewSMBiosSerial manually sets that target's SMbios serial.
+            If this field is not specified, a new serial will be generated automatically.
+          type: string
+        source:
+          description: TypedLocalObjectReference contains enough information to let
+            you locate the typed referenced object inside the same namespace.
+          properties:
+            apiGroup:
+              description: APIGroup is the group for the resource being referenced.
+                If APIGroup is not specified, the specified Kind must be in the core
+                API group. For any other third-party types, APIGroup is required.
+              type: string
+            kind:
+              description: Kind is the type of resource being referenced
+              type: string
+            name:
+              description: Name is the name of resource being referenced
+              type: string
+          required:
+          - kind
+          - name
+          type: object
+        target:
+          description: If the target is not provided, a random name would be generated
+            for the target. The target's name can be viewed by inspecting status "TargetName"
+            field below.
+          properties:
+            apiGroup:
+              description: APIGroup is the group for the resource being referenced.
+                If APIGroup is not specified, the specified Kind must be in the core
+                API group. For any other third-party types, APIGroup is required.
+              type: string
+            kind:
+              description: Kind is the type of resource being referenced
+              type: string
+            name:
+              description: Name is the name of resource being referenced
+              type: string
+          required:
+          - kind
+          - name
+          type: object
+      required:
+      - source
+      type: object
+    status:
+      properties:
+        conditions:
+          items:
+            description: Condition defines conditions
+            properties:
+              lastProbeTime:
+                format: date-time
+                nullable: true
+                type: string
+              lastTransitionTime:
+                format: date-time
+                nullable: true
+                type: string
+              message:
+                type: string
+              reason:
+                type: string
+              status:
+                type: string
+              type:
+                description: ConditionType is the const type for Conditions
+                type: string
+            required:
+            - status
+            - type
+            type: object
+          type: array
+          x-kubernetes-list-type: atomic
+        creationTime:
+          format: date-time
+          nullable: true
+          type: string
+        phase:
+          type: string
+        restoreName:
+          nullable: true
+          type: string
+        snapshotName:
+          nullable: true
+          type: string
+        targetName:
+          nullable: true
+          type: string
+      type: object
+  required:
+  - spec
+  type: object
+`,
+	"virtualmachineclusterinstancetype": `openAPIV3Schema:
+  description: VirtualMachineClusterInstancetype is a cluster scoped version of VirtualMachineInstancetype
     resource.
   properties:
     apiVersion:
@@ -6785,112 +7126,160 @@ var CRDsValidation map[string]string = map[string]string{
       type: string
     metadata:
       type: object
-    profiles:
-      items:
-        description: VirtualMachineFlavorProfile contains definitions that will be
-          applied to VirtualMachine.
-        properties:
-          cpu:
-            description: CPU allows specifying the CPU topology.
-            properties:
-              cores:
-                description: Cores specifies the number of cores inside the vmi. Must
-                  be a value greater or equal 1.
-                format: int32
-                type: integer
-              dedicatedCpuPlacement:
-                description: DedicatedCPUPlacement requests the scheduler to place
-                  the VirtualMachineInstance on a node with enough dedicated pCPUs
-                  and pin the vCPUs to it.
-                type: boolean
-              features:
-                description: Features specifies the CPU features list inside the VMI.
-                items:
-                  description: CPUFeature allows specifying a CPU feature.
-                  properties:
-                    name:
-                      description: Name of the CPU feature
-                      type: string
-                    policy:
-                      description: 'Policy is the CPU feature attribute which can
-                        have the following attributes: force    - The virtual CPU
-                        will claim the feature is supported regardless of it being
-                        supported by host CPU. require  - Guest creation will fail
-                        unless the feature is supported by the host CPU or the hypervisor
-                        is able to emulate it. optional - The feature will be supported
-                        by virtual CPU if and only if it is supported by host CPU.
-                        disable  - The feature will not be supported by virtual CPU.
-                        forbid   - Guest creation will fail if the feature is supported
-                        by host CPU. Defaults to require'
-                      type: string
-                  required:
-                  - name
+    spec:
+      description: Required spec describing the instancetype
+      properties:
+        cpu:
+          description: Required CPU related attributes of the instancetype.
+          properties:
+            dedicatedCPUPlacement:
+              description: DedicatedCPUPlacement requests the scheduler to place the
+                VirtualMachineInstance on a node with enough dedicated pCPUs and pin
+                the vCPUs to it.
+              type: boolean
+            guest:
+              description: "Required number of vCPUs to expose to the guest. \n The
+                resulting CPU topology being derived from the optional PreferredCPUTopology
+                attribute of CPUPreferences that itself defaults to PreferCores."
+              format: int32
+              type: integer
+            isolateEmulatorThread:
+              description: IsolateEmulatorThread requests one more dedicated pCPU
+                to be allocated for the VMI to place the emulator thread on it.
+              type: boolean
+            model:
+              description: Model specifies the CPU model inside the VMI. List of available
+                models https://github.com/libvirt/libvirt/tree/master/src/cpu_map.
+                It is possible to specify special cases like "host-passthrough" to
+                get the same CPU as the node and "host-model" to get CPU closest to
+                the node one. Defaults to host-model.
+              type: string
+            numa:
+              description: NUMA allows specifying settings for the guest NUMA topology
+              properties:
+                guestMappingPassthrough:
+                  description: GuestMappingPassthrough will create an efficient guest
+                    topology based on host CPUs exclusively assigned to a pod. The
+                    created topology ensures that memory and CPUs on the virtual numa
+                    nodes never cross boundaries of host numa nodes.
                   type: object
-                type: array
-              isolateEmulatorThread:
-                description: IsolateEmulatorThread requests one more dedicated pCPU
-                  to be allocated for the VMI to place the emulator thread on it.
-                type: boolean
-              model:
-                description: Model specifies the CPU model inside the VMI. List of
-                  available models https://github.com/libvirt/libvirt/tree/master/src/cpu_map.
-                  It is possible to specify special cases like "host-passthrough"
-                  to get the same CPU as the node and "host-model" to get CPU closest
-                  to the node one. Defaults to host-model.
+              type: object
+            realtime:
+              description: Realtime instructs the virt-launcher to tune the VMI for
+                lower latency, optional for real time workloads
+              properties:
+                mask:
+                  description: 'Mask defines the vcpu mask expression that defines
+                    which vcpus are used for realtime. Format matches libvirt''s expressions.
+                    Example: "0-3,^1","0,2,3","2-3"'
+                  type: string
+              type: object
+          required:
+          - guest
+          type: object
+        gpus:
+          description: Optionally defines any GPU devices associated with the instancetype.
+          items:
+            properties:
+              deviceName:
                 type: string
-              numa:
-                description: NUMA allows specifying settings for the guest NUMA topology
+              name:
+                description: Name of the GPU device as exposed by a device plugin
+                type: string
+              tag:
+                description: If specified, the virtual network interface address and
+                  its tag will be provided to the guest via config drive
+                type: string
+              virtualGPUOptions:
                 properties:
-                  guestMappingPassthrough:
-                    description: GuestMappingPassthrough will create an efficient
-                      guest topology based on host CPUs exclusively assigned to a
-                      pod. The created topology ensures that memory and CPUs on the
-                      virtual numa nodes never cross boundaries of host numa nodes.
+                  display:
+                    properties:
+                      enabled:
+                        description: Enabled determines if a display addapter backed
+                          by a vGPU should be enabled or disabled on the guest. Defaults
+                          to true.
+                        type: boolean
+                      ramFB:
+                        description: Enables a boot framebuffer, until the guest OS
+                          loads a real GPU driver Defaults to true.
+                        properties:
+                          enabled:
+                            description: Enabled determines if the feature should
+                              be enabled or disabled on the guest. Defaults to true.
+                            type: boolean
+                        type: object
                     type: object
                 type: object
-              realtime:
-                description: Realtime instructs the virt-launcher to tune the VMI
-                  for lower latency, optional for real time workloads
-                properties:
-                  mask:
-                    description: 'Mask defines the vcpu mask expression that defines
-                      which vcpus are used for realtime. Format matches libvirt''s
-                      expressions. Example: "0-3,^1","0,2,3","2-3"'
-                    type: string
-                type: object
-              sockets:
-                description: Sockets specifies the number of sockets inside the vmi.
-                  Must be a value greater or equal 1.
-                format: int32
-                type: integer
-              threads:
-                description: Threads specifies the number of threads inside the vmi.
-                  Must be a value greater or equal 1.
-                format: int32
-                type: integer
+            required:
+            - deviceName
+            - name
             type: object
-          default:
-            description: Default specifies if this VirtualMachineFlavorProfile is
-              the default for the VirtualMachineFlavor. Zero or one profile can be
-              set to default.
-            type: boolean
-          name:
-            description: Name specifies the name of this custom profile.
-            type: string
-        required:
-        - name
-        type: object
-      type: array
-      x-kubernetes-list-map-keys:
-      - name
-      x-kubernetes-list-type: map
+          type: array
+          x-kubernetes-list-type: atomic
+        hostDevices:
+          description: Optionally defines any HostDevices associated with the instancetype.
+          items:
+            properties:
+              deviceName:
+                description: DeviceName is the resource name of the host device exposed
+                  by a device plugin
+                type: string
+              name:
+                type: string
+              tag:
+                description: If specified, the virtual network interface address and
+                  its tag will be provided to the guest via config drive
+                type: string
+            required:
+            - deviceName
+            - name
+            type: object
+          type: array
+          x-kubernetes-list-type: atomic
+        ioThreadsPolicy:
+          description: Optionally defines the IOThreadsPolicy to be used by the instancetype.
+          type: string
+        launchSecurity:
+          description: Optionally defines the LaunchSecurity to be used by the instancetype.
+          properties:
+            sev:
+              description: AMD Secure Encrypted Virtualization (SEV).
+              type: object
+          type: object
+        memory:
+          description: Required Memory related attributes of the instancetype.
+          properties:
+            guest:
+              anyOf:
+              - type: integer
+              - type: string
+              description: Required amount of memory which is visible inside the guest
+                OS.
+              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+              x-kubernetes-int-or-string: true
+            hugepages:
+              description: Optionally enables the use of hugepages for the VirtualMachineInstance
+                instead of regular memory.
+              properties:
+                pageSize:
+                  description: PageSize specifies the hugepage size, for x86_64 architecture
+                    valid values are 1Gi and 2Mi.
+                  type: string
+              type: object
+          required:
+          - guest
+          type: object
+      required:
+      - cpu
+      - memory
+      type: object
   required:
-  - profiles
+  - spec
   type: object
 `,
-	"virtualmachineflavor": `openAPIV3Schema:
-  description: VirtualMachineFlavor resource contains common VirtualMachine configuration
-    that can be used by multiple VirtualMachine resources.
+	"virtualmachineclusterpreference": `openAPIV3Schema:
+  description: VirtualMachineClusterPreference is a cluster scoped version of the
+    VirtualMachinePreference resource.
   properties:
     apiVersion:
       description: 'APIVersion defines the versioned schema of this representation
@@ -6904,107 +7293,666 @@ var CRDsValidation map[string]string = map[string]string{
       type: string
     metadata:
       type: object
-    profiles:
-      items:
-        description: VirtualMachineFlavorProfile contains definitions that will be
-          applied to VirtualMachine.
-        properties:
-          cpu:
-            description: CPU allows specifying the CPU topology.
-            properties:
-              cores:
-                description: Cores specifies the number of cores inside the vmi. Must
-                  be a value greater or equal 1.
-                format: int32
-                type: integer
-              dedicatedCpuPlacement:
-                description: DedicatedCPUPlacement requests the scheduler to place
-                  the VirtualMachineInstance on a node with enough dedicated pCPUs
-                  and pin the vCPUs to it.
-                type: boolean
-              features:
-                description: Features specifies the CPU features list inside the VMI.
-                items:
-                  description: CPUFeature allows specifying a CPU feature.
+    spec:
+      description: Required spec describing the preferences
+      properties:
+        clock:
+          description: Clock optionally defines preferences associated with the Clock
+            attribute of a VirtualMachineInstance DomainSpec
+          properties:
+            preferredClockOffset:
+              description: ClockOffset allows specifying the UTC offset or the timezone
+                of the guest clock.
+              properties:
+                timezone:
+                  description: Timezone sets the guest clock to the specified timezone.
+                    Zone name follows the TZ environment variable format (e.g. 'America/New_York').
+                  type: string
+                utc:
+                  description: UTC sets the guest clock to UTC on each boot. If an
+                    offset is specified, guest changes to the clock will be kept during
+                    reboots and are not reset.
                   properties:
-                    name:
-                      description: Name of the CPU feature
-                      type: string
-                    policy:
-                      description: 'Policy is the CPU feature attribute which can
-                        have the following attributes: force    - The virtual CPU
-                        will claim the feature is supported regardless of it being
-                        supported by host CPU. require  - Guest creation will fail
-                        unless the feature is supported by the host CPU or the hypervisor
-                        is able to emulate it. optional - The feature will be supported
-                        by virtual CPU if and only if it is supported by host CPU.
-                        disable  - The feature will not be supported by virtual CPU.
-                        forbid   - Guest creation will fail if the feature is supported
-                        by host CPU. Defaults to require'
-                      type: string
-                  required:
-                  - name
+                    offsetSeconds:
+                      description: OffsetSeconds specifies an offset in seconds, relative
+                        to UTC. If set, guest changes to the clock will be kept during
+                        reboots and not reset.
+                      type: integer
                   type: object
-                type: array
-              isolateEmulatorThread:
-                description: IsolateEmulatorThread requests one more dedicated pCPU
-                  to be allocated for the VMI to place the emulator thread on it.
-                type: boolean
-              model:
-                description: Model specifies the CPU model inside the VMI. List of
-                  available models https://github.com/libvirt/libvirt/tree/master/src/cpu_map.
-                  It is possible to specify special cases like "host-passthrough"
-                  to get the same CPU as the node and "host-model" to get CPU closest
-                  to the node one. Defaults to host-model.
-                type: string
-              numa:
-                description: NUMA allows specifying settings for the guest NUMA topology
-                properties:
-                  guestMappingPassthrough:
-                    description: GuestMappingPassthrough will create an efficient
-                      guest topology based on host CPUs exclusively assigned to a
-                      pod. The created topology ensures that memory and CPUs on the
-                      virtual numa nodes never cross boundaries of host numa nodes.
-                    type: object
-                type: object
-              realtime:
-                description: Realtime instructs the virt-launcher to tune the VMI
-                  for lower latency, optional for real time workloads
-                properties:
-                  mask:
-                    description: 'Mask defines the vcpu mask expression that defines
-                      which vcpus are used for realtime. Format matches libvirt''s
-                      expressions. Example: "0-3,^1","0,2,3","2-3"'
-                    type: string
-                type: object
-              sockets:
-                description: Sockets specifies the number of sockets inside the vmi.
-                  Must be a value greater or equal 1.
-                format: int32
-                type: integer
-              threads:
-                description: Threads specifies the number of threads inside the vmi.
-                  Must be a value greater or equal 1.
-                format: int32
-                type: integer
-            type: object
-          default:
-            description: Default specifies if this VirtualMachineFlavorProfile is
-              the default for the VirtualMachineFlavor. Zero or one profile can be
-              set to default.
-            type: boolean
-          name:
-            description: Name specifies the name of this custom profile.
-            type: string
-        required:
-        - name
-        type: object
-      type: array
-      x-kubernetes-list-map-keys:
-      - name
-      x-kubernetes-list-type: map
+              type: object
+            preferredTimer:
+              description: Timer specifies whih timers are attached to the vmi.
+              properties:
+                hpet:
+                  description: HPET (High Precision Event Timer) - multiple timers
+                    with periodic interrupts.
+                  properties:
+                    present:
+                      description: Enabled set to false makes sure that the machine
+                        type or a preset can't add the timer. Defaults to true.
+                      type: boolean
+                    tickPolicy:
+                      description: TickPolicy determines what happens when QEMU misses
+                        a deadline for injecting a tick to the guest. One of "delay",
+                        "catchup", "merge", "discard".
+                      type: string
+                  type: object
+                hyperv:
+                  description: Hyperv (Hypervclock) - lets guests read the host’s
+                    wall clock time (paravirtualized). For windows guests.
+                  properties:
+                    present:
+                      description: Enabled set to false makes sure that the machine
+                        type or a preset can't add the timer. Defaults to true.
+                      type: boolean
+                  type: object
+                kvm:
+                  description: "KVM \t(KVM clock) - lets guests read the host’s wall
+                    clock time (paravirtualized). For linux guests."
+                  properties:
+                    present:
+                      description: Enabled set to false makes sure that the machine
+                        type or a preset can't add the timer. Defaults to true.
+                      type: boolean
+                  type: object
+                pit:
+                  description: PIT (Programmable Interval Timer) - a timer with periodic
+                    interrupts.
+                  properties:
+                    present:
+                      description: Enabled set to false makes sure that the machine
+                        type or a preset can't add the timer. Defaults to true.
+                      type: boolean
+                    tickPolicy:
+                      description: TickPolicy determines what happens when QEMU misses
+                        a deadline for injecting a tick to the guest. One of "delay",
+                        "catchup", "discard".
+                      type: string
+                  type: object
+                rtc:
+                  description: RTC (Real Time Clock) - a continuously running timer
+                    with periodic interrupts.
+                  properties:
+                    present:
+                      description: Enabled set to false makes sure that the machine
+                        type or a preset can't add the timer. Defaults to true.
+                      type: boolean
+                    tickPolicy:
+                      description: TickPolicy determines what happens when QEMU misses
+                        a deadline for injecting a tick to the guest. One of "delay",
+                        "catchup".
+                      type: string
+                    track:
+                      description: Track the guest or the wall clock.
+                      type: string
+                  type: object
+              type: object
+          type: object
+        cpu:
+          description: CPU optionally defines preferences associated with the CPU
+            attribute of a VirtualMachineInstance DomainSpec
+          properties:
+            preferredCPUTopology:
+              description: PreferredCPUTopology optionally defines the preferred guest
+                visible CPU topology, defaults to PreferSockets.
+              type: string
+          type: object
+        devices:
+          description: Devices optionally defines preferences associated with the
+            Devices attribute of a VirtualMachineInstance DomainSpec
+          properties:
+            preferredAutoattachGraphicsDevice:
+              description: PreferredAutoattachGraphicsDevice optionally defines the
+                preferred value of AutoattachGraphicsDevice
+              type: boolean
+            preferredAutoattachInputDevice:
+              description: PreferredAutoattachInputDevice optionally defines the preferred
+                value of AutoattachInputDevice
+              type: boolean
+            preferredAutoattachMemBalloon:
+              description: PreferredAutoattachMemBalloon optionally defines the preferred
+                value of AutoattachMemBalloon
+              type: boolean
+            preferredAutoattachPodInterface:
+              description: PreferredAutoattachPodInterface optionally defines the
+                preferred value of AutoattachPodInterface
+              type: boolean
+            preferredAutoattachSerialConsole:
+              description: PreferredAutoattachSerialConsole optionally defines the
+                preferred value of AutoattachSerialConsole
+              type: boolean
+            preferredBlockMultiQueue:
+              description: PreferredBlockMultiQueue optionally enables the vhost multiqueue
+                feature for virtio disks.
+              type: boolean
+            preferredCdromBus:
+              description: PreferredCdromBus optionally defines the preferred bus
+                for Cdrom Disk devices.
+              type: string
+            preferredDisableHotplug:
+              description: PreferredDisableHotplug optionally defines the preferred
+                value of DisableHotplug
+              type: boolean
+            preferredDiskBlockSize:
+              description: PreferredBlockSize optionally defines the block size of
+                Disk devices.
+              properties:
+                custom:
+                  description: CustomBlockSize represents the desired logical and
+                    physical block size for a VM disk.
+                  properties:
+                    logical:
+                      type: integer
+                    physical:
+                      type: integer
+                  required:
+                  - logical
+                  - physical
+                  type: object
+                matchVolume:
+                  description: Represents if a feature is enabled or disabled.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+              type: object
+            preferredDiskBus:
+              description: PreferredDiskBus optionally defines the preferred bus for
+                Disk Disk devices.
+              type: string
+            preferredDiskCache:
+              description: PreferredCache optionally defines the DriverCache to be
+                used by Disk devices.
+              type: string
+            preferredDiskDedicatedIoThread:
+              description: PreferredDedicatedIoThread optionally enables dedicated
+                IO threads for Disk devices.
+              type: boolean
+            preferredDiskIO:
+              description: PreferredIo optionally defines the QEMU disk IO mode to
+                be used by Disk devices.
+              type: string
+            preferredInputBus:
+              description: PreferredInputBus optionally defines the preferred bus
+                for Input devices.
+              type: string
+            preferredInputType:
+              description: PreferredInputType optionally defines the preferred type
+                for Input devices.
+              type: string
+            preferredInterfaceModel:
+              description: PreferredInterfaceModel optionally defines the preferred
+                model to be used by Interface devices.
+              type: string
+            preferredLunBus:
+              description: PreferredLunBus optionally defines the preferred bus for
+                Lun Disk devices.
+              type: string
+            preferredNetworkInterfaceMultiQueue:
+              description: PreferredNetworkInterfaceMultiQueue optionally enables
+                the vhost multiqueue feature for virtio interfaces.
+              type: boolean
+            preferredRng:
+              description: PreferredRng optionally defines the preferred rng device
+                to be used.
+              type: object
+            preferredSoundModel:
+              description: PreferredSoundModel optionally defines the preferred model
+                for Sound devices.
+              type: string
+            preferredTPM:
+              description: PreferredTPM optionally defines the preferred TPM device
+                to be used.
+              type: object
+            preferredUseVirtioTransitional:
+              description: PreferredUseVirtioTransitional optionally defines the preferred
+                value of UseVirtioTransitional
+              type: boolean
+            preferredVirtualGPUOptions:
+              description: PreferredVirtualGPUOptions optionally defines the preferred
+                value of VirtualGPUOptions
+              properties:
+                display:
+                  properties:
+                    enabled:
+                      description: Enabled determines if a display addapter backed
+                        by a vGPU should be enabled or disabled on the guest. Defaults
+                        to true.
+                      type: boolean
+                    ramFB:
+                      description: Enables a boot framebuffer, until the guest OS
+                        loads a real GPU driver Defaults to true.
+                      properties:
+                        enabled:
+                          description: Enabled determines if the feature should be
+                            enabled or disabled on the guest. Defaults to true.
+                          type: boolean
+                      type: object
+                  type: object
+              type: object
+          type: object
+        features:
+          description: Features optionally defines preferences associated with the
+            Features attribute of a VirtualMachineInstance DomainSpec
+          properties:
+            preferredAcpi:
+              description: PreferredAcpi optionally enables the ACPI feature
+              properties:
+                enabled:
+                  description: Enabled determines if the feature should be enabled
+                    or disabled on the guest. Defaults to true.
+                  type: boolean
+              type: object
+            preferredApic:
+              description: PreferredApic optionally enables and configures the APIC
+                feature
+              properties:
+                enabled:
+                  description: Enabled determines if the feature should be enabled
+                    or disabled on the guest. Defaults to true.
+                  type: boolean
+                endOfInterrupt:
+                  description: EndOfInterrupt enables the end of interrupt notification
+                    in the guest. Defaults to false.
+                  type: boolean
+              type: object
+            preferredHyperv:
+              description: PreferredHyperv optionally enables and configures HyperV
+                features
+              properties:
+                evmcs:
+                  description: EVMCS Speeds up L2 vmexits, but disables other virtualization
+                    features. Requires vapic. Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                frequencies:
+                  description: Frequencies improves the TSC clock source handling
+                    for Hyper-V on KVM. Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                ipi:
+                  description: IPI improves performances in overcommited environments.
+                    Requires vpindex. Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                reenlightenment:
+                  description: Reenlightenment enables the notifications on TSC frequency
+                    changes. Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                relaxed:
+                  description: Relaxed instructs the guest OS to disable watchdog
+                    timeouts. Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                reset:
+                  description: Reset enables Hyperv reboot/reset for the vmi. Requires
+                    synic. Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                runtime:
+                  description: Runtime improves the time accounting to improve scheduling
+                    in the guest. Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                spinlocks:
+                  description: Spinlocks allows to configure the spinlock retry attempts.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                    spinlocks:
+                      description: Retries indicates the number of retries. Must be
+                        a value greater or equal 4096. Defaults to 4096.
+                      format: int32
+                      type: integer
+                  type: object
+                synic:
+                  description: SyNIC enables the Synthetic Interrupt Controller. Defaults
+                    to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                synictimer:
+                  description: SyNICTimer enables Synthetic Interrupt Controller Timers,
+                    reducing CPU load. Defaults to the machine type setting.
+                  properties:
+                    direct:
+                      description: Represents if a feature is enabled or disabled.
+                      properties:
+                        enabled:
+                          description: Enabled determines if the feature should be
+                            enabled or disabled on the guest. Defaults to true.
+                          type: boolean
+                      type: object
+                    enabled:
+                      type: boolean
+                  type: object
+                tlbflush:
+                  description: TLBFlush improves performances in overcommited environments.
+                    Requires vpindex. Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                vapic:
+                  description: VAPIC improves the paravirtualized handling of interrupts.
+                    Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                vendorid:
+                  description: VendorID allows setting the hypervisor vendor id. Defaults
+                    to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                    vendorid:
+                      description: VendorID sets the hypervisor vendor id, visible
+                        to the vmi. String up to twelve characters.
+                      type: string
+                  type: object
+                vpindex:
+                  description: VPIndex enables the Virtual Processor Index to help
+                    windows identifying virtual processors. Defaults to the machine
+                    type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+              type: object
+            preferredKvm:
+              description: PreferredKvm optionally enables and configures KVM features
+              properties:
+                hidden:
+                  description: Hide the KVM hypervisor from standard MSR based discovery.
+                    Defaults to false
+                  type: boolean
+              type: object
+            preferredPvspinlock:
+              description: PreferredPvspinlock optionally enables the Pvspinlock feature
+              properties:
+                enabled:
+                  description: Enabled determines if the feature should be enabled
+                    or disabled on the guest. Defaults to true.
+                  type: boolean
+              type: object
+            preferredSmm:
+              description: PreferredSmm optionally enables the SMM feature
+              properties:
+                enabled:
+                  description: Enabled determines if the feature should be enabled
+                    or disabled on the guest. Defaults to true.
+                  type: boolean
+              type: object
+          type: object
+        firmware:
+          description: Firmware optionally defines preferences associated with the
+            Firmware attribute of a VirtualMachineInstance DomainSpec
+          properties:
+            preferredUseBios:
+              description: PreferredUseBios optionally enables BIOS
+              type: boolean
+            preferredUseBiosSerial:
+              description: "PreferredUseBiosSerial optionally transmitts BIOS output
+                over the serial. \n Requires PreferredUseBios to be enabled."
+              type: boolean
+            preferredUseEfi:
+              description: PreferredUseEfi optionally enables EFI
+              type: boolean
+            preferredUseSecureBoot:
+              description: "PreferredUseSecureBoot optionally enables SecureBoot and
+                the OVMF roms will be swapped for SecureBoot-enabled ones. \n Requires
+                PreferredUseEfi and PreferredSmm to be enabled."
+              type: boolean
+          type: object
+        machine:
+          description: Machine optionally defines preferences associated with the
+            Machine attribute of a VirtualMachineInstance DomainSpec
+          properties:
+            preferredMachineType:
+              description: PreferredMachineType optionally defines the preferred machine
+                type to use.
+              type: string
+          type: object
+      type: object
   required:
-  - profiles
+  - spec
+  type: object
+`,
+	"virtualmachineexport": `openAPIV3Schema:
+  description: VirtualMachineExport defines the operation of exporting a VM source
+  properties:
+    apiVersion:
+      description: 'APIVersion defines the versioned schema of this representation
+        of an object. Servers should convert recognized schemas to the latest internal
+        value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+      type: string
+    kind:
+      description: 'Kind is a string value representing the REST resource this object
+        represents. Servers may infer this from the endpoint the client submits requests
+        to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+      type: string
+    metadata:
+      type: object
+    spec:
+      description: VirtualMachineExportSpec is the spec for a VirtualMachineExport
+        resource
+      properties:
+        source:
+          description: TypedLocalObjectReference contains enough information to let
+            you locate the typed referenced object inside the same namespace.
+          properties:
+            apiGroup:
+              description: APIGroup is the group for the resource being referenced.
+                If APIGroup is not specified, the specified Kind must be in the core
+                API group. For any other third-party types, APIGroup is required.
+              type: string
+            kind:
+              description: Kind is the type of resource being referenced
+              type: string
+            name:
+              description: Name is the name of resource being referenced
+              type: string
+          required:
+          - kind
+          - name
+          type: object
+        tokenSecretRef:
+          description: TokenSecretRef is the name of the custom-defined secret that
+            contains the token used by the export server pod
+          type: string
+      required:
+      - source
+      type: object
+    status:
+      description: VirtualMachineExportStatus is the status for a VirtualMachineExport
+        resource
+      properties:
+        conditions:
+          items:
+            description: Condition defines conditions
+            properties:
+              lastProbeTime:
+                format: date-time
+                nullable: true
+                type: string
+              lastTransitionTime:
+                format: date-time
+                nullable: true
+                type: string
+              message:
+                type: string
+              reason:
+                type: string
+              status:
+                type: string
+              type:
+                description: ConditionType is the const type for Conditions
+                type: string
+            required:
+            - status
+            - type
+            type: object
+          type: array
+          x-kubernetes-list-type: atomic
+        links:
+          description: VirtualMachineExportLinks contains the links that point the
+            exported VM resources
+          properties:
+            external:
+              description: VirtualMachineExportLink contains a list of volumes available
+                for export, as well as the URLs to obtain these volumes
+              properties:
+                cert:
+                  description: Cert is the public CA certificate base64 encoded
+                  type: string
+                volumes:
+                  description: Volumes is a list of available volumes to export
+                  items:
+                    description: VirtualMachineExportVolume contains the name and
+                      available formats for the exported volume
+                    properties:
+                      formats:
+                        items:
+                          description: VirtualMachineExportVolumeFormat contains the
+                            format type and URL to get the volume in that format
+                          properties:
+                            format:
+                              description: Format is the format of the image at the
+                                specified URL
+                              type: string
+                            url:
+                              description: Url is the url that contains the volume
+                                in the format specified
+                              type: string
+                          required:
+                          - format
+                          - url
+                          type: object
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - format
+                        x-kubernetes-list-type: map
+                      name:
+                        description: Name is the name of the exported volume
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  type: array
+                  x-kubernetes-list-map-keys:
+                  - name
+                  x-kubernetes-list-type: map
+              required:
+              - cert
+              type: object
+            internal:
+              description: VirtualMachineExportLink contains a list of volumes available
+                for export, as well as the URLs to obtain these volumes
+              properties:
+                cert:
+                  description: Cert is the public CA certificate base64 encoded
+                  type: string
+                volumes:
+                  description: Volumes is a list of available volumes to export
+                  items:
+                    description: VirtualMachineExportVolume contains the name and
+                      available formats for the exported volume
+                    properties:
+                      formats:
+                        items:
+                          description: VirtualMachineExportVolumeFormat contains the
+                            format type and URL to get the volume in that format
+                          properties:
+                            format:
+                              description: Format is the format of the image at the
+                                specified URL
+                              type: string
+                            url:
+                              description: Url is the url that contains the volume
+                                in the format specified
+                              type: string
+                          required:
+                          - format
+                          - url
+                          type: object
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - format
+                        x-kubernetes-list-type: map
+                      name:
+                        description: Name is the name of the exported volume
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  type: array
+                  x-kubernetes-list-map-keys:
+                  - name
+                  x-kubernetes-list-type: map
+              required:
+              - cert
+              type: object
+          type: object
+        phase:
+          description: VirtualMachineExportPhase is the current phase of the VirtualMachineExport
+          type: string
+        serviceName:
+          description: ServiceName is the name of the service created associated with
+            the Virtual Machine export. It will be used to create the internal URLs
+            for downloading the images
+          type: string
+        tokenSecretRef:
+          description: TokenSecretRef is the name of the secret that contains the
+            token used by the export server pod
+          type: string
+      type: object
+  required:
+  - spec
   type: object
 `,
 	"virtualmachineinstance": `openAPIV3Schema:
@@ -8135,6 +9083,9 @@ var CRDsValidation map[string]string = map[string]string{
                   description: Whether to attach the default graphics device or not.
                     VNC will not be available if set to false. Defaults to true.
                   type: boolean
+                autoattachInputDevice:
+                  description: Whether to attach an Input Device. Defaults to false.
+                  type: boolean
                 autoattachMemBalloon:
                   description: Whether to attach the Memory balloon device with default
                     period. Period can be adjusted in virt-config. Defaults to true.
@@ -8227,7 +9178,7 @@ var CRDsValidation map[string]string = map[string]string{
                         properties:
                           bus:
                             description: 'Bus indicates the type of disk device to
-                              emulate. supported values: virtio, sata, scsi.'
+                              emulate. supported values: virtio, sata, scsi, usb.'
                             type: string
                           pciAddress:
                             description: 'If specified, the virtual disk will be placed
@@ -8446,6 +9397,9 @@ var CRDsValidation map[string]string = map[string]string{
                         description: Logical name of the interface as well as a reference
                           to the associated networks. Must match the Name of a Network.
                         type: string
+                      passt:
+                        description: InterfacePasst connects to a given network.
+                        type: object
                       pciAddress:
                         description: 'If specified, the virtual network interface
                           will be placed on the guests pci address with the specified
@@ -8517,6 +9471,9 @@ var CRDsValidation map[string]string = map[string]string{
                       type: string
                   required:
                   - name
+                  type: object
+                tpm:
+                  description: Whether to emulate a TPM device.
                   type: object
                 useVirtioTransitional:
                   description: Fall back to legacy virtio 0.9 support if virtio bus
@@ -9240,6 +10197,109 @@ var CRDsValidation map[string]string = map[string]string{
                 type: string
             type: object
           type: array
+        topologySpreadConstraints:
+          description: TopologySpreadConstraints describes how a group of VMIs will
+            be spread across a given topology domains. K8s scheduler will schedule
+            VMI pods in a way which abides by the constraints.
+          items:
+            description: TopologySpreadConstraint specifies how to spread matching
+              pods among the given topology.
+            properties:
+              labelSelector:
+                description: LabelSelector is used to find matching pods. Pods that
+                  match this label selector are counted to determine the number of
+                  pods in their corresponding topology domain.
+                properties:
+                  matchExpressions:
+                    description: matchExpressions is a list of label selector requirements.
+                      The requirements are ANDed.
+                    items:
+                      description: A label selector requirement is a selector that
+                        contains values, a key, and an operator that relates the key
+                        and values.
+                      properties:
+                        key:
+                          description: key is the label key that the selector applies
+                            to.
+                          type: string
+                        operator:
+                          description: operator represents a key's relationship to
+                            a set of values. Valid operators are In, NotIn, Exists
+                            and DoesNotExist.
+                          type: string
+                        values:
+                          description: values is an array of string values. If the
+                            operator is In or NotIn, the values array must be non-empty.
+                            If the operator is Exists or DoesNotExist, the values
+                            array must be empty. This array is replaced during a strategic
+                            merge patch.
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - key
+                      - operator
+                      type: object
+                    type: array
+                  matchLabels:
+                    additionalProperties:
+                      type: string
+                    description: matchLabels is a map of {key,value} pairs. A single
+                      {key,value} in the matchLabels map is equivalent to an element
+                      of matchExpressions, whose key field is "key", the operator
+                      is "In", and the values array contains only "value". The requirements
+                      are ANDed.
+                    type: object
+                type: object
+              maxSkew:
+                description: 'MaxSkew describes the degree to which pods may be unevenly
+                  distributed. When ''whenUnsatisfiable=DoNotSchedule'', it is the
+                  maximum permitted difference between the number of matching pods
+                  in the target topology and the global minimum. For example, in a
+                  3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector
+                  spread as 1/1/0: | zone1 | zone2 | zone3 | |   P   |   P   |       |
+                  - if MaxSkew is 1, incoming pod can only be scheduled to zone3 to
+                  become 1/1/1; scheduling it onto zone1(zone2) would make the ActualSkew(2-0)
+                  on zone1(zone2) violate MaxSkew(1). - if MaxSkew is 2, incoming
+                  pod can be scheduled onto any zone. When ''whenUnsatisfiable=ScheduleAnyway'',
+                  it is used to give higher precedence to topologies that satisfy
+                  it. It''s a required field. Default value is 1 and 0 is not allowed.'
+                format: int32
+                type: integer
+              topologyKey:
+                description: TopologyKey is the key of node labels. Nodes that have
+                  a label with this key and identical values are considered to be
+                  in the same topology. We consider each <key, value> as a "bucket",
+                  and try to put balanced number of pods into each bucket. It's a
+                  required field.
+                type: string
+              whenUnsatisfiable:
+                description: 'WhenUnsatisfiable indicates how to deal with a pod if
+                  it doesn''t satisfy the spread constraint. - DoNotSchedule (default)
+                  tells the scheduler not to schedule it. - ScheduleAnyway tells the
+                  scheduler to schedule the pod in any location,   but giving higher
+                  precedence to topologies that would help reduce the   skew. A constraint
+                  is considered "Unsatisfiable" for an incoming pod if and only if
+                  every possible node assignment for that pod would violate "MaxSkew"
+                  on some topology. For example, in a 3-zone cluster, MaxSkew is set
+                  to 1, and pods with the same labelSelector spread as 3/1/1: | zone1
+                  | zone2 | zone3 | | P P P |   P   |   P   | If WhenUnsatisfiable
+                  is set to DoNotSchedule, incoming pod can only be scheduled to zone2(zone3)
+                  to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies
+                  MaxSkew(1). In other words, the cluster can still be imbalanced,
+                  but scheduler won''t make it *more* imbalanced. It''s a required
+                  field.'
+                type: string
+            required:
+            - maxSkew
+            - topologyKey
+            - whenUnsatisfiable
+            type: object
+          type: array
+          x-kubernetes-list-map-keys:
+          - topologyKey
+          - whenUnsatisfiable
+          x-kubernetes-list-type: map
         volumes:
           description: List of volumes that can be mounted by disks belonging to the
             vmi.
@@ -9527,6 +10587,26 @@ var CRDsValidation map[string]string = map[string]string{
                 - path
                 - type
                 type: object
+              memoryDump:
+                description: MemoryDump is attached to the virt launcher and is populated
+                  with a memory dump of the vmi
+                properties:
+                  claimName:
+                    description: 'ClaimName is the name of a PersistentVolumeClaim
+                      in the same namespace as the pod using this volume. More info:
+                      https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims'
+                    type: string
+                  hotpluggable:
+                    description: Hotpluggable indicates whether the volume can be
+                      hotplugged and hotunplugged.
+                    type: boolean
+                  readOnly:
+                    description: Will force the ReadOnly setting in VolumeMounts.
+                      Default false.
+                    type: boolean
+                required:
+                - claimName
+                type: object
               name:
                 description: 'Volume''s name. Must be a DNS_LABEL and unique within
                   the vmi. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
@@ -9712,6 +10792,10 @@ var CRDsValidation map[string]string = map[string]string{
                 description: Name of the interface, corresponds to name of the network
                   assigned to the interface
                 type: string
+              queueCount:
+                description: Specifies how many queues are allocated by MultiQueue
+                format: int32
+                type: integer
             type: object
           type: array
         launcherContainerImageVersion:
@@ -9746,34 +10830,72 @@ var CRDsValidation map[string]string = map[string]string{
               description: Migration configurations to apply
               properties:
                 allowAutoConverge:
+                  description: AllowAutoConverge allows the platform to compromise
+                    performance/availability of VMIs to guarantee successful VMI live
+                    migrations. Defaults to false
                   type: boolean
                 allowPostCopy:
+                  description: AllowPostCopy enables post-copy live migrations. Such
+                    migrations allow even the busiest VMIs to successfully live-migrate.
+                    However, events like a network failure can cause a VMI crash.
+                    If set to true, migrations will still start in pre-copy, but switch
+                    to post-copy when CompletionTimeoutPerGiB triggers. Defaults to
+                    false
                   type: boolean
                 bandwidthPerMigration:
                   anyOf:
                   - type: integer
                   - type: string
+                  description: BandwidthPerMigration limits the amount of network
+                    bandwith live migrations are allowed to use. The value is in quantity
+                    per second. Defaults to 0 (no limit)
                   pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                   x-kubernetes-int-or-string: true
                 completionTimeoutPerGiB:
+                  description: CompletionTimeoutPerGiB is the maximum number of seconds
+                    per GiB a migration is allowed to take. If a live-migration takes
+                    longer to migrate than this value multiplied by the size of the
+                    VMI, the migration will be cancelled, unless AllowPostCopy is
+                    true. Defaults to 800
                   format: int64
                   type: integer
                 disableTLS:
+                  description: When set to true, DisableTLS will disable the additional
+                    layer of live migration encryption provided by KubeVirt. This
+                    is usually a bad idea. Defaults to false
                   type: boolean
                 network:
+                  description: Network is the name of the CNI network to use for live
+                    migrations. By default, migrations go through the pod network.
                   type: string
                 nodeDrainTaintKey:
+                  description: 'NodeDrainTaintKey defines the taint key that indicates
+                    a node should be drained. Note: this option relies on the deprecated
+                    node taint feature. Default: kubevirt.io/drain'
                   type: string
                 parallelMigrationsPerCluster:
+                  description: ParallelMigrationsPerCluster is the total number of
+                    concurrent live migrations allowed cluster-wide. Defaults to 5
                   format: int32
                   type: integer
                 parallelOutboundMigrationsPerNode:
+                  description: ParallelOutboundMigrationsPerNode is the maximum number
+                    of concurrent outgoing live migrations allowed per node. Defaults
+                    to 2
                   format: int32
                   type: integer
                 progressTimeout:
+                  description: ProgressTimeout is the maximum number of seconds a
+                    live migration is allowed to make no progress. Hitting this timeout
+                    means a migration transferred 0 data for that many seconds. The
+                    migration is then considered stuck and therefore cancelled. Defaults
+                    to 150
                   format: int64
                   type: integer
                 unsafeMigrationOverride:
+                  description: UnsafeMigrationOverride allows live migrations to occur
+                    even if the compatibility check indicates the migration will be
+                    unsafe to the guest. Defaults to false
                   type: boolean
               type: object
             migrationPolicyName:
@@ -9902,6 +11024,26 @@ var CRDsValidation map[string]string = map[string]string{
                   attachPodUID:
                     description: AttachPodUID is the UID of the pod used to attach
                       the volume to the node.
+                    type: string
+                type: object
+              memoryDumpVolume:
+                description: If the volume is memorydump volume, this will contain
+                  the memorydump info.
+                properties:
+                  claimName:
+                    description: ClaimName is the name of the pvc the memory was dumped
+                      to
+                    type: string
+                  endTimestamp:
+                    description: EndTimestamp is the time when the memory dump completed
+                    format: date-time
+                    type: string
+                  startTimestamp:
+                    description: StartTimestamp is the time when the memory dump started
+                    format: date-time
+                    type: string
+                  targetFileName:
+                    description: TargetFileName is the name of the memory dump output
                     type: string
                 type: object
               message:
@@ -10038,14 +11180,36 @@ var CRDsValidation map[string]string = map[string]string{
           description: VirtualMachineInstanceMigrationPhase is a label for the condition
             of a VirtualMachineInstanceMigration at the current time.
           type: string
+        phaseTransitionTimestamps:
+          description: PhaseTransitionTimestamp is the timestamp of when the last
+            phase change occurred
+          items:
+            description: VirtualMachineInstanceMigrationPhaseTransitionTimestamp gives
+              a timestamp in relation to when a phase is set on a vmi
+            properties:
+              phase:
+                description: Phase is the status of the VirtualMachineInstanceMigrationPhase
+                  in kubernetes world. It is not the VirtualMachineInstanceMigrationPhase
+                  status, but partially correlates to it.
+                type: string
+              phaseTransitionTimestamp:
+                description: PhaseTransitionTimestamp is the timestamp of when the
+                  phase change occurred
+                format: date-time
+                type: string
+            type: object
+          type: array
+          x-kubernetes-list-type: atomic
       type: object
   required:
   - spec
   type: object
 `,
 	"virtualmachineinstancepreset": `openAPIV3Schema:
-  description: 'VirtualMachineInstancePreset defines a VMI spec.domain to be applied
-    to all VMIs that match the provided label selector More info: https://kubevirt.io/user-guide/virtual_machines/presets/#overrides'
+  description: "Deprecated for removal in v2, please use VirtualMachineInstanceType
+    and VirtualMachinePreference instead. \n VirtualMachineInstancePreset defines
+    a VMI spec.domain to be applied to all VMIs that match the provided label selector
+    More info: https://kubevirt.io/user-guide/virtual_machines/presets/#overrides"
   properties:
     apiVersion:
       description: 'APIVersion defines the versioned schema of this representation
@@ -10256,6 +11420,9 @@ var CRDsValidation map[string]string = map[string]string{
                   description: Whether to attach the default graphics device or not.
                     VNC will not be available if set to false. Defaults to true.
                   type: boolean
+                autoattachInputDevice:
+                  description: Whether to attach an Input Device. Defaults to false.
+                  type: boolean
                 autoattachMemBalloon:
                   description: Whether to attach the Memory balloon device with default
                     period. Period can be adjusted in virt-config. Defaults to true.
@@ -10348,7 +11515,7 @@ var CRDsValidation map[string]string = map[string]string{
                         properties:
                           bus:
                             description: 'Bus indicates the type of disk device to
-                              emulate. supported values: virtio, sata, scsi.'
+                              emulate. supported values: virtio, sata, scsi, usb.'
                             type: string
                           pciAddress:
                             description: 'If specified, the virtual disk will be placed
@@ -10567,6 +11734,9 @@ var CRDsValidation map[string]string = map[string]string{
                         description: Logical name of the interface as well as a reference
                           to the associated networks. Must match the Name of a Network.
                         type: string
+                      passt:
+                        description: InterfacePasst connects to a given network.
+                        type: object
                       pciAddress:
                         description: 'If specified, the virtual network interface
                           will be placed on the guests pci address with the specified
@@ -10638,6 +11808,9 @@ var CRDsValidation map[string]string = map[string]string{
                       type: string
                   required:
                   - name
+                  type: object
+                tpm:
+                  description: Whether to emulate a TPM device.
                   type: object
                 useVirtioTransitional:
                   description: Fall back to legacy virtio 0.9 support if virtio bus
@@ -12321,6 +13494,10 @@ var CRDsValidation map[string]string = map[string]string{
                             or not. VNC will not be available if set to false. Defaults
                             to true.
                           type: boolean
+                        autoattachInputDevice:
+                          description: Whether to attach an Input Device. Defaults
+                            to false.
+                          type: boolean
                         autoattachMemBalloon:
                           description: Whether to attach the Memory balloon device
                             with default period. Period can be adjusted in virt-config.
@@ -12420,7 +13597,7 @@ var CRDsValidation map[string]string = map[string]string{
                                   bus:
                                     description: 'Bus indicates the type of disk device
                                       to emulate. supported values: virtio, sata,
-                                      scsi.'
+                                      scsi, usb.'
                                     type: string
                                   pciAddress:
                                     description: 'If specified, the virtual disk will
@@ -12647,6 +13824,9 @@ var CRDsValidation map[string]string = map[string]string{
                                   as a reference to the associated networks. Must
                                   match the Name of a Network.
                                 type: string
+                              passt:
+                                description: InterfacePasst connects to a given network.
+                                type: object
                               pciAddress:
                                 description: 'If specified, the virtual network interface
                                   will be placed on the guests pci address with the
@@ -12721,6 +13901,9 @@ var CRDsValidation map[string]string = map[string]string{
                               type: string
                           required:
                           - name
+                          type: object
+                        tpm:
+                          description: Whether to emulate a TPM device.
                           type: object
                         useVirtioTransitional:
                           description: Fall back to legacy virtio 0.9 support if virtio
@@ -13497,6 +14680,113 @@ var CRDsValidation map[string]string = map[string]string{
                         type: string
                     type: object
                   type: array
+                topologySpreadConstraints:
+                  description: TopologySpreadConstraints describes how a group of
+                    VMIs will be spread across a given topology domains. K8s scheduler
+                    will schedule VMI pods in a way which abides by the constraints.
+                  items:
+                    description: TopologySpreadConstraint specifies how to spread
+                      matching pods among the given topology.
+                    properties:
+                      labelSelector:
+                        description: LabelSelector is used to find matching pods.
+                          Pods that match this label selector are counted to determine
+                          the number of pods in their corresponding topology domain.
+                        properties:
+                          matchExpressions:
+                            description: matchExpressions is a list of label selector
+                              requirements. The requirements are ANDed.
+                            items:
+                              description: A label selector requirement is a selector
+                                that contains values, a key, and an operator that
+                                relates the key and values.
+                              properties:
+                                key:
+                                  description: key is the label key that the selector
+                                    applies to.
+                                  type: string
+                                operator:
+                                  description: operator represents a key's relationship
+                                    to a set of values. Valid operators are In, NotIn,
+                                    Exists and DoesNotExist.
+                                  type: string
+                                values:
+                                  description: values is an array of string values.
+                                    If the operator is In or NotIn, the values array
+                                    must be non-empty. If the operator is Exists or
+                                    DoesNotExist, the values array must be empty.
+                                    This array is replaced during a strategic merge
+                                    patch.
+                                  items:
+                                    type: string
+                                  type: array
+                              required:
+                              - key
+                              - operator
+                              type: object
+                            type: array
+                          matchLabels:
+                            additionalProperties:
+                              type: string
+                            description: matchLabels is a map of {key,value} pairs.
+                              A single {key,value} in the matchLabels map is equivalent
+                              to an element of matchExpressions, whose key field is
+                              "key", the operator is "In", and the values array contains
+                              only "value". The requirements are ANDed.
+                            type: object
+                        type: object
+                      maxSkew:
+                        description: 'MaxSkew describes the degree to which pods may
+                          be unevenly distributed. When ''whenUnsatisfiable=DoNotSchedule'',
+                          it is the maximum permitted difference between the number
+                          of matching pods in the target topology and the global minimum.
+                          For example, in a 3-zone cluster, MaxSkew is set to 1, and
+                          pods with the same labelSelector spread as 1/1/0: | zone1
+                          | zone2 | zone3 | |   P   |   P   |       | - if MaxSkew
+                          is 1, incoming pod can only be scheduled to zone3 to become
+                          1/1/1; scheduling it onto zone1(zone2) would make the ActualSkew(2-0)
+                          on zone1(zone2) violate MaxSkew(1). - if MaxSkew is 2, incoming
+                          pod can be scheduled onto any zone. When ''whenUnsatisfiable=ScheduleAnyway'',
+                          it is used to give higher precedence to topologies that
+                          satisfy it. It''s a required field. Default value is 1 and
+                          0 is not allowed.'
+                        format: int32
+                        type: integer
+                      topologyKey:
+                        description: TopologyKey is the key of node labels. Nodes
+                          that have a label with this key and identical values are
+                          considered to be in the same topology. We consider each
+                          <key, value> as a "bucket", and try to put balanced number
+                          of pods into each bucket. It's a required field.
+                        type: string
+                      whenUnsatisfiable:
+                        description: 'WhenUnsatisfiable indicates how to deal with
+                          a pod if it doesn''t satisfy the spread constraint. - DoNotSchedule
+                          (default) tells the scheduler not to schedule it. - ScheduleAnyway
+                          tells the scheduler to schedule the pod in any location,   but
+                          giving higher precedence to topologies that would help reduce
+                          the   skew. A constraint is considered "Unsatisfiable" for
+                          an incoming pod if and only if every possible node assignment
+                          for that pod would violate "MaxSkew" on some topology. For
+                          example, in a 3-zone cluster, MaxSkew is set to 1, and pods
+                          with the same labelSelector spread as 3/1/1: | zone1 | zone2
+                          | zone3 | | P P P |   P   |   P   | If WhenUnsatisfiable
+                          is set to DoNotSchedule, incoming pod can only be scheduled
+                          to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1)
+                          on zone2(zone3) satisfies MaxSkew(1). In other words, the
+                          cluster can still be imbalanced, but scheduler won''t make
+                          it *more* imbalanced. It''s a required field.'
+                        type: string
+                    required:
+                    - maxSkew
+                    - topologyKey
+                    - whenUnsatisfiable
+                    type: object
+                  type: array
+                  x-kubernetes-list-map-keys:
+                  - topologyKey
+                  - whenUnsatisfiable
+                  x-kubernetes-list-type: map
                 volumes:
                   description: List of volumes that can be mounted by disks belonging
                     to the vmi.
@@ -13800,6 +15090,26 @@ var CRDsValidation map[string]string = map[string]string{
                         - path
                         - type
                         type: object
+                      memoryDump:
+                        description: MemoryDump is attached to the virt launcher and
+                          is populated with a memory dump of the vmi
+                        properties:
+                          claimName:
+                            description: 'ClaimName is the name of a PersistentVolumeClaim
+                              in the same namespace as the pod using this volume.
+                              More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims'
+                            type: string
+                          hotpluggable:
+                            description: Hotpluggable indicates whether the volume
+                              can be hotplugged and hotunplugged.
+                            type: boolean
+                          readOnly:
+                            description: Will force the ReadOnly setting in VolumeMounts.
+                              Default false.
+                            type: boolean
+                        required:
+                        - claimName
+                        type: object
                       name:
                         description: 'Volume''s name. Must be a DNS_LABEL and unique
                           within the vmi. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
@@ -13934,6 +15244,174 @@ var CRDsValidation map[string]string = map[string]string{
             (their labels match the selector).
           format: int32
           type: integer
+      type: object
+  required:
+  - spec
+  type: object
+`,
+	"virtualmachineinstancetype": `openAPIV3Schema:
+  description: VirtualMachineInstancetype resource contains quantitative and resource
+    related VirtualMachine configuration that can be used by multiple VirtualMachine
+    resources.
+  properties:
+    apiVersion:
+      description: 'APIVersion defines the versioned schema of this representation
+        of an object. Servers should convert recognized schemas to the latest internal
+        value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+      type: string
+    kind:
+      description: 'Kind is a string value representing the REST resource this object
+        represents. Servers may infer this from the endpoint the client submits requests
+        to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+      type: string
+    metadata:
+      type: object
+    spec:
+      description: Required spec describing the instancetype
+      properties:
+        cpu:
+          description: Required CPU related attributes of the instancetype.
+          properties:
+            dedicatedCPUPlacement:
+              description: DedicatedCPUPlacement requests the scheduler to place the
+                VirtualMachineInstance on a node with enough dedicated pCPUs and pin
+                the vCPUs to it.
+              type: boolean
+            guest:
+              description: "Required number of vCPUs to expose to the guest. \n The
+                resulting CPU topology being derived from the optional PreferredCPUTopology
+                attribute of CPUPreferences that itself defaults to PreferCores."
+              format: int32
+              type: integer
+            isolateEmulatorThread:
+              description: IsolateEmulatorThread requests one more dedicated pCPU
+                to be allocated for the VMI to place the emulator thread on it.
+              type: boolean
+            model:
+              description: Model specifies the CPU model inside the VMI. List of available
+                models https://github.com/libvirt/libvirt/tree/master/src/cpu_map.
+                It is possible to specify special cases like "host-passthrough" to
+                get the same CPU as the node and "host-model" to get CPU closest to
+                the node one. Defaults to host-model.
+              type: string
+            numa:
+              description: NUMA allows specifying settings for the guest NUMA topology
+              properties:
+                guestMappingPassthrough:
+                  description: GuestMappingPassthrough will create an efficient guest
+                    topology based on host CPUs exclusively assigned to a pod. The
+                    created topology ensures that memory and CPUs on the virtual numa
+                    nodes never cross boundaries of host numa nodes.
+                  type: object
+              type: object
+            realtime:
+              description: Realtime instructs the virt-launcher to tune the VMI for
+                lower latency, optional for real time workloads
+              properties:
+                mask:
+                  description: 'Mask defines the vcpu mask expression that defines
+                    which vcpus are used for realtime. Format matches libvirt''s expressions.
+                    Example: "0-3,^1","0,2,3","2-3"'
+                  type: string
+              type: object
+          required:
+          - guest
+          type: object
+        gpus:
+          description: Optionally defines any GPU devices associated with the instancetype.
+          items:
+            properties:
+              deviceName:
+                type: string
+              name:
+                description: Name of the GPU device as exposed by a device plugin
+                type: string
+              tag:
+                description: If specified, the virtual network interface address and
+                  its tag will be provided to the guest via config drive
+                type: string
+              virtualGPUOptions:
+                properties:
+                  display:
+                    properties:
+                      enabled:
+                        description: Enabled determines if a display addapter backed
+                          by a vGPU should be enabled or disabled on the guest. Defaults
+                          to true.
+                        type: boolean
+                      ramFB:
+                        description: Enables a boot framebuffer, until the guest OS
+                          loads a real GPU driver Defaults to true.
+                        properties:
+                          enabled:
+                            description: Enabled determines if the feature should
+                              be enabled or disabled on the guest. Defaults to true.
+                            type: boolean
+                        type: object
+                    type: object
+                type: object
+            required:
+            - deviceName
+            - name
+            type: object
+          type: array
+          x-kubernetes-list-type: atomic
+        hostDevices:
+          description: Optionally defines any HostDevices associated with the instancetype.
+          items:
+            properties:
+              deviceName:
+                description: DeviceName is the resource name of the host device exposed
+                  by a device plugin
+                type: string
+              name:
+                type: string
+              tag:
+                description: If specified, the virtual network interface address and
+                  its tag will be provided to the guest via config drive
+                type: string
+            required:
+            - deviceName
+            - name
+            type: object
+          type: array
+          x-kubernetes-list-type: atomic
+        ioThreadsPolicy:
+          description: Optionally defines the IOThreadsPolicy to be used by the instancetype.
+          type: string
+        launchSecurity:
+          description: Optionally defines the LaunchSecurity to be used by the instancetype.
+          properties:
+            sev:
+              description: AMD Secure Encrypted Virtualization (SEV).
+              type: object
+          type: object
+        memory:
+          description: Required Memory related attributes of the instancetype.
+          properties:
+            guest:
+              anyOf:
+              - type: integer
+              - type: string
+              description: Required amount of memory which is visible inside the guest
+                OS.
+              pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+              x-kubernetes-int-or-string: true
+            hugepages:
+              description: Optionally enables the use of hugepages for the VirtualMachineInstance
+                instead of regular memory.
+              properties:
+                pageSize:
+                  description: PageSize specifies the hugepage size, for x86_64 architecture
+                    valid values are 1Gi and 2Mi.
+                  type: string
+              type: object
+          required:
+          - guest
+          type: object
+      required:
+      - cpu
+      - memory
       type: object
   required:
   - spec
@@ -14399,6 +15877,11 @@ var CRDsValidation map[string]string = map[string]string{
                                     description: BackingFile is the path to the virtual
                                       hard disk to migrate from vCenter/ESXi
                                     type: string
+                                  initImageURL:
+                                    description: InitImageURL is an optional URL to
+                                      an image containing an extracted VDDK library,
+                                      overrides v2v-vmware config map
+                                    type: string
                                   secretRef:
                                     description: SecretRef provides a reference to
                                       a secret containing the username and password
@@ -14578,23 +16061,48 @@ var CRDsValidation map[string]string = map[string]string{
                     - spec
                     type: object
                   type: array
-                flavor:
-                  description: FlavorMatcher references a flavor that is used to fill
-                    fields in Template
+                instancetype:
+                  description: InstancetypeMatcher references a instancetype that
+                    is used to fill fields in Template
                   properties:
                     kind:
-                      description: 'Kind specifies which flavor resource is referenced.
-                        Allowed values are: "VirtualMachineFlavor" and "VirtualMachineClusterFlavor".
-                        If not specified, "VirtualMachineClusterFlavor" is used by
-                        default.'
+                      description: 'Kind specifies which instancetype resource is
+                        referenced. Allowed values are: "VirtualMachineInstancetype"
+                        and "VirtualMachineClusterInstancetype". If not specified,
+                        "VirtualMachineClusterInstancetype" is used by default.'
                       type: string
                     name:
-                      description: Name is the name of the VirtualMachineFlavor or
-                        VirtualMachineClusterFlavor
+                      description: Name is the name of the VirtualMachineInstancetype
+                        or VirtualMachineClusterInstancetype
                       type: string
-                    profile:
-                      description: Profile is the name of a custom profile in the
-                        flavor. If left empty, the default profile is used.
+                    revisionName:
+                      description: RevisionName specifies a ControllerRevision containing
+                        a specific copy of the VirtualMachineInstancetype or VirtualMachineClusterInstancetype
+                        to be used. This is initially captured the first time the
+                        instancetype is applied to the VirtualMachineInstance.
+                      type: string
+                  required:
+                  - name
+                  type: object
+                preference:
+                  description: PreferenceMatcher references a set of preference that
+                    is used to fill fields in Template
+                  properties:
+                    kind:
+                      description: 'Kind specifies which preference resource is referenced.
+                        Allowed values are: "VirtualMachinePreference" and "VirtualMachineClusterPreference".
+                        If not specified, "VirtualMachineClusterPreference" is used
+                        by default.'
+                      type: string
+                    name:
+                      description: Name is the name of the VirtualMachinePreference
+                        or VirtualMachineClusterPreference
+                      type: string
+                    revisionName:
+                      description: RevisionName specifies a ControllerRevision containing
+                        a specific copy of the VirtualMachinePreference or VirtualMachineClusterPreference
+                        to be used. This is initially captured the first time the
+                        instancetype is applied to the VirtualMachineInstance.
                       type: string
                   required:
                   - name
@@ -15920,6 +17428,10 @@ var CRDsValidation map[string]string = map[string]string{
                                     device or not. VNC will not be available if set
                                     to false. Defaults to true.
                                   type: boolean
+                                autoattachInputDevice:
+                                  description: Whether to attach an Input Device.
+                                    Defaults to false.
+                                  type: boolean
                                 autoattachMemBalloon:
                                   description: Whether to attach the Memory balloon
                                     device with default period. Period can be adjusted
@@ -16026,7 +17538,7 @@ var CRDsValidation map[string]string = map[string]string{
                                           bus:
                                             description: 'Bus indicates the type of
                                               disk device to emulate. supported values:
-                                              virtio, sata, scsi.'
+                                              virtio, sata, scsi, usb.'
                                             type: string
                                           pciAddress:
                                             description: 'If specified, the virtual
@@ -16268,6 +17780,10 @@ var CRDsValidation map[string]string = map[string]string{
                                           as well as a reference to the associated
                                           networks. Must match the Name of a Network.
                                         type: string
+                                      passt:
+                                        description: InterfacePasst connects to a
+                                          given network.
+                                        type: object
                                       pciAddress:
                                         description: 'If specified, the virtual network
                                           interface will be placed on the guests pci
@@ -16350,6 +17866,9 @@ var CRDsValidation map[string]string = map[string]string{
                                       type: string
                                   required:
                                   - name
+                                  type: object
+                                tpm:
+                                  description: Whether to emulate a TPM device.
                                   type: object
                                 useVirtioTransitional:
                                   description: Fall back to legacy virtio 0.9 support
@@ -17163,6 +18682,122 @@ var CRDsValidation map[string]string = map[string]string{
                                 type: string
                             type: object
                           type: array
+                        topologySpreadConstraints:
+                          description: TopologySpreadConstraints describes how a group
+                            of VMIs will be spread across a given topology domains.
+                            K8s scheduler will schedule VMI pods in a way which abides
+                            by the constraints.
+                          items:
+                            description: TopologySpreadConstraint specifies how to
+                              spread matching pods among the given topology.
+                            properties:
+                              labelSelector:
+                                description: LabelSelector is used to find matching
+                                  pods. Pods that match this label selector are counted
+                                  to determine the number of pods in their corresponding
+                                  topology domain.
+                                properties:
+                                  matchExpressions:
+                                    description: matchExpressions is a list of label
+                                      selector requirements. The requirements are
+                                      ANDed.
+                                    items:
+                                      description: A label selector requirement is
+                                        a selector that contains values, a key, and
+                                        an operator that relates the key and values.
+                                      properties:
+                                        key:
+                                          description: key is the label key that the
+                                            selector applies to.
+                                          type: string
+                                        operator:
+                                          description: operator represents a key's
+                                            relationship to a set of values. Valid
+                                            operators are In, NotIn, Exists and DoesNotExist.
+                                          type: string
+                                        values:
+                                          description: values is an array of string
+                                            values. If the operator is In or NotIn,
+                                            the values array must be non-empty. If
+                                            the operator is Exists or DoesNotExist,
+                                            the values array must be empty. This array
+                                            is replaced during a strategic merge patch.
+                                          items:
+                                            type: string
+                                          type: array
+                                      required:
+                                      - key
+                                      - operator
+                                      type: object
+                                    type: array
+                                  matchLabels:
+                                    additionalProperties:
+                                      type: string
+                                    description: matchLabels is a map of {key,value}
+                                      pairs. A single {key,value} in the matchLabels
+                                      map is equivalent to an element of matchExpressions,
+                                      whose key field is "key", the operator is "In",
+                                      and the values array contains only "value".
+                                      The requirements are ANDed.
+                                    type: object
+                                type: object
+                              maxSkew:
+                                description: 'MaxSkew describes the degree to which
+                                  pods may be unevenly distributed. When ''whenUnsatisfiable=DoNotSchedule'',
+                                  it is the maximum permitted difference between the
+                                  number of matching pods in the target topology and
+                                  the global minimum. For example, in a 3-zone cluster,
+                                  MaxSkew is set to 1, and pods with the same labelSelector
+                                  spread as 1/1/0: | zone1 | zone2 | zone3 | |   P   |   P   |       |
+                                  - if MaxSkew is 1, incoming pod can only be scheduled
+                                  to zone3 to become 1/1/1; scheduling it onto zone1(zone2)
+                                  would make the ActualSkew(2-0) on zone1(zone2) violate
+                                  MaxSkew(1). - if MaxSkew is 2, incoming pod can
+                                  be scheduled onto any zone. When ''whenUnsatisfiable=ScheduleAnyway'',
+                                  it is used to give higher precedence to topologies
+                                  that satisfy it. It''s a required field. Default
+                                  value is 1 and 0 is not allowed.'
+                                format: int32
+                                type: integer
+                              topologyKey:
+                                description: TopologyKey is the key of node labels.
+                                  Nodes that have a label with this key and identical
+                                  values are considered to be in the same topology.
+                                  We consider each <key, value> as a "bucket", and
+                                  try to put balanced number of pods into each bucket.
+                                  It's a required field.
+                                type: string
+                              whenUnsatisfiable:
+                                description: 'WhenUnsatisfiable indicates how to deal
+                                  with a pod if it doesn''t satisfy the spread constraint.
+                                  - DoNotSchedule (default) tells the scheduler not
+                                  to schedule it. - ScheduleAnyway tells the scheduler
+                                  to schedule the pod in any location,   but giving
+                                  higher precedence to topologies that would help
+                                  reduce the   skew. A constraint is considered "Unsatisfiable"
+                                  for an incoming pod if and only if every possible
+                                  node assignment for that pod would violate "MaxSkew"
+                                  on some topology. For example, in a 3-zone cluster,
+                                  MaxSkew is set to 1, and pods with the same labelSelector
+                                  spread as 3/1/1: | zone1 | zone2 | zone3 | | P P
+                                  P |   P   |   P   | If WhenUnsatisfiable is set
+                                  to DoNotSchedule, incoming pod can only be scheduled
+                                  to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1)
+                                  on zone2(zone3) satisfies MaxSkew(1). In other words,
+                                  the cluster can still be imbalanced, but scheduler
+                                  won''t make it *more* imbalanced. It''s a required
+                                  field.'
+                                type: string
+                            required:
+                            - maxSkew
+                            - topologyKey
+                            - whenUnsatisfiable
+                            type: object
+                          type: array
+                          x-kubernetes-list-map-keys:
+                          - topologyKey
+                          - whenUnsatisfiable
+                          x-kubernetes-list-type: map
                         volumes:
                           description: List of volumes that can be mounted by disks
                             belonging to the vmi.
@@ -17489,6 +19124,26 @@ var CRDsValidation map[string]string = map[string]string{
                                 - path
                                 - type
                                 type: object
+                              memoryDump:
+                                description: MemoryDump is attached to the virt launcher
+                                  and is populated with a memory dump of the vmi
+                                properties:
+                                  claimName:
+                                    description: 'ClaimName is the name of a PersistentVolumeClaim
+                                      in the same namespace as the pod using this
+                                      volume. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims'
+                                    type: string
+                                  hotpluggable:
+                                    description: Hotpluggable indicates whether the
+                                      volume can be hotplugged and hotunplugged.
+                                    type: boolean
+                                  readOnly:
+                                    description: Will force the ReadOnly setting in
+                                      VolumeMounts. Default false.
+                                    type: boolean
+                                required:
+                                - claimName
+                                type: object
                               name:
                                 description: 'Volume''s name. Must be a DNS_LABEL
                                   and unique within the vmi. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
@@ -17629,6 +19284,492 @@ var CRDsValidation map[string]string = map[string]string{
   - spec
   type: object
 `,
+	"virtualmachinepreference": `openAPIV3Schema:
+  description: VirtualMachinePreference resource contains optional preferences related
+    to the VirtualMachine.
+  properties:
+    apiVersion:
+      description: 'APIVersion defines the versioned schema of this representation
+        of an object. Servers should convert recognized schemas to the latest internal
+        value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+      type: string
+    kind:
+      description: 'Kind is a string value representing the REST resource this object
+        represents. Servers may infer this from the endpoint the client submits requests
+        to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+      type: string
+    metadata:
+      type: object
+    spec:
+      description: Required spec describing the preferences
+      properties:
+        clock:
+          description: Clock optionally defines preferences associated with the Clock
+            attribute of a VirtualMachineInstance DomainSpec
+          properties:
+            preferredClockOffset:
+              description: ClockOffset allows specifying the UTC offset or the timezone
+                of the guest clock.
+              properties:
+                timezone:
+                  description: Timezone sets the guest clock to the specified timezone.
+                    Zone name follows the TZ environment variable format (e.g. 'America/New_York').
+                  type: string
+                utc:
+                  description: UTC sets the guest clock to UTC on each boot. If an
+                    offset is specified, guest changes to the clock will be kept during
+                    reboots and are not reset.
+                  properties:
+                    offsetSeconds:
+                      description: OffsetSeconds specifies an offset in seconds, relative
+                        to UTC. If set, guest changes to the clock will be kept during
+                        reboots and not reset.
+                      type: integer
+                  type: object
+              type: object
+            preferredTimer:
+              description: Timer specifies whih timers are attached to the vmi.
+              properties:
+                hpet:
+                  description: HPET (High Precision Event Timer) - multiple timers
+                    with periodic interrupts.
+                  properties:
+                    present:
+                      description: Enabled set to false makes sure that the machine
+                        type or a preset can't add the timer. Defaults to true.
+                      type: boolean
+                    tickPolicy:
+                      description: TickPolicy determines what happens when QEMU misses
+                        a deadline for injecting a tick to the guest. One of "delay",
+                        "catchup", "merge", "discard".
+                      type: string
+                  type: object
+                hyperv:
+                  description: Hyperv (Hypervclock) - lets guests read the host’s
+                    wall clock time (paravirtualized). For windows guests.
+                  properties:
+                    present:
+                      description: Enabled set to false makes sure that the machine
+                        type or a preset can't add the timer. Defaults to true.
+                      type: boolean
+                  type: object
+                kvm:
+                  description: "KVM \t(KVM clock) - lets guests read the host’s wall
+                    clock time (paravirtualized). For linux guests."
+                  properties:
+                    present:
+                      description: Enabled set to false makes sure that the machine
+                        type or a preset can't add the timer. Defaults to true.
+                      type: boolean
+                  type: object
+                pit:
+                  description: PIT (Programmable Interval Timer) - a timer with periodic
+                    interrupts.
+                  properties:
+                    present:
+                      description: Enabled set to false makes sure that the machine
+                        type or a preset can't add the timer. Defaults to true.
+                      type: boolean
+                    tickPolicy:
+                      description: TickPolicy determines what happens when QEMU misses
+                        a deadline for injecting a tick to the guest. One of "delay",
+                        "catchup", "discard".
+                      type: string
+                  type: object
+                rtc:
+                  description: RTC (Real Time Clock) - a continuously running timer
+                    with periodic interrupts.
+                  properties:
+                    present:
+                      description: Enabled set to false makes sure that the machine
+                        type or a preset can't add the timer. Defaults to true.
+                      type: boolean
+                    tickPolicy:
+                      description: TickPolicy determines what happens when QEMU misses
+                        a deadline for injecting a tick to the guest. One of "delay",
+                        "catchup".
+                      type: string
+                    track:
+                      description: Track the guest or the wall clock.
+                      type: string
+                  type: object
+              type: object
+          type: object
+        cpu:
+          description: CPU optionally defines preferences associated with the CPU
+            attribute of a VirtualMachineInstance DomainSpec
+          properties:
+            preferredCPUTopology:
+              description: PreferredCPUTopology optionally defines the preferred guest
+                visible CPU topology, defaults to PreferSockets.
+              type: string
+          type: object
+        devices:
+          description: Devices optionally defines preferences associated with the
+            Devices attribute of a VirtualMachineInstance DomainSpec
+          properties:
+            preferredAutoattachGraphicsDevice:
+              description: PreferredAutoattachGraphicsDevice optionally defines the
+                preferred value of AutoattachGraphicsDevice
+              type: boolean
+            preferredAutoattachInputDevice:
+              description: PreferredAutoattachInputDevice optionally defines the preferred
+                value of AutoattachInputDevice
+              type: boolean
+            preferredAutoattachMemBalloon:
+              description: PreferredAutoattachMemBalloon optionally defines the preferred
+                value of AutoattachMemBalloon
+              type: boolean
+            preferredAutoattachPodInterface:
+              description: PreferredAutoattachPodInterface optionally defines the
+                preferred value of AutoattachPodInterface
+              type: boolean
+            preferredAutoattachSerialConsole:
+              description: PreferredAutoattachSerialConsole optionally defines the
+                preferred value of AutoattachSerialConsole
+              type: boolean
+            preferredBlockMultiQueue:
+              description: PreferredBlockMultiQueue optionally enables the vhost multiqueue
+                feature for virtio disks.
+              type: boolean
+            preferredCdromBus:
+              description: PreferredCdromBus optionally defines the preferred bus
+                for Cdrom Disk devices.
+              type: string
+            preferredDisableHotplug:
+              description: PreferredDisableHotplug optionally defines the preferred
+                value of DisableHotplug
+              type: boolean
+            preferredDiskBlockSize:
+              description: PreferredBlockSize optionally defines the block size of
+                Disk devices.
+              properties:
+                custom:
+                  description: CustomBlockSize represents the desired logical and
+                    physical block size for a VM disk.
+                  properties:
+                    logical:
+                      type: integer
+                    physical:
+                      type: integer
+                  required:
+                  - logical
+                  - physical
+                  type: object
+                matchVolume:
+                  description: Represents if a feature is enabled or disabled.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+              type: object
+            preferredDiskBus:
+              description: PreferredDiskBus optionally defines the preferred bus for
+                Disk Disk devices.
+              type: string
+            preferredDiskCache:
+              description: PreferredCache optionally defines the DriverCache to be
+                used by Disk devices.
+              type: string
+            preferredDiskDedicatedIoThread:
+              description: PreferredDedicatedIoThread optionally enables dedicated
+                IO threads for Disk devices.
+              type: boolean
+            preferredDiskIO:
+              description: PreferredIo optionally defines the QEMU disk IO mode to
+                be used by Disk devices.
+              type: string
+            preferredInputBus:
+              description: PreferredInputBus optionally defines the preferred bus
+                for Input devices.
+              type: string
+            preferredInputType:
+              description: PreferredInputType optionally defines the preferred type
+                for Input devices.
+              type: string
+            preferredInterfaceModel:
+              description: PreferredInterfaceModel optionally defines the preferred
+                model to be used by Interface devices.
+              type: string
+            preferredLunBus:
+              description: PreferredLunBus optionally defines the preferred bus for
+                Lun Disk devices.
+              type: string
+            preferredNetworkInterfaceMultiQueue:
+              description: PreferredNetworkInterfaceMultiQueue optionally enables
+                the vhost multiqueue feature for virtio interfaces.
+              type: boolean
+            preferredRng:
+              description: PreferredRng optionally defines the preferred rng device
+                to be used.
+              type: object
+            preferredSoundModel:
+              description: PreferredSoundModel optionally defines the preferred model
+                for Sound devices.
+              type: string
+            preferredTPM:
+              description: PreferredTPM optionally defines the preferred TPM device
+                to be used.
+              type: object
+            preferredUseVirtioTransitional:
+              description: PreferredUseVirtioTransitional optionally defines the preferred
+                value of UseVirtioTransitional
+              type: boolean
+            preferredVirtualGPUOptions:
+              description: PreferredVirtualGPUOptions optionally defines the preferred
+                value of VirtualGPUOptions
+              properties:
+                display:
+                  properties:
+                    enabled:
+                      description: Enabled determines if a display addapter backed
+                        by a vGPU should be enabled or disabled on the guest. Defaults
+                        to true.
+                      type: boolean
+                    ramFB:
+                      description: Enables a boot framebuffer, until the guest OS
+                        loads a real GPU driver Defaults to true.
+                      properties:
+                        enabled:
+                          description: Enabled determines if the feature should be
+                            enabled or disabled on the guest. Defaults to true.
+                          type: boolean
+                      type: object
+                  type: object
+              type: object
+          type: object
+        features:
+          description: Features optionally defines preferences associated with the
+            Features attribute of a VirtualMachineInstance DomainSpec
+          properties:
+            preferredAcpi:
+              description: PreferredAcpi optionally enables the ACPI feature
+              properties:
+                enabled:
+                  description: Enabled determines if the feature should be enabled
+                    or disabled on the guest. Defaults to true.
+                  type: boolean
+              type: object
+            preferredApic:
+              description: PreferredApic optionally enables and configures the APIC
+                feature
+              properties:
+                enabled:
+                  description: Enabled determines if the feature should be enabled
+                    or disabled on the guest. Defaults to true.
+                  type: boolean
+                endOfInterrupt:
+                  description: EndOfInterrupt enables the end of interrupt notification
+                    in the guest. Defaults to false.
+                  type: boolean
+              type: object
+            preferredHyperv:
+              description: PreferredHyperv optionally enables and configures HyperV
+                features
+              properties:
+                evmcs:
+                  description: EVMCS Speeds up L2 vmexits, but disables other virtualization
+                    features. Requires vapic. Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                frequencies:
+                  description: Frequencies improves the TSC clock source handling
+                    for Hyper-V on KVM. Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                ipi:
+                  description: IPI improves performances in overcommited environments.
+                    Requires vpindex. Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                reenlightenment:
+                  description: Reenlightenment enables the notifications on TSC frequency
+                    changes. Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                relaxed:
+                  description: Relaxed instructs the guest OS to disable watchdog
+                    timeouts. Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                reset:
+                  description: Reset enables Hyperv reboot/reset for the vmi. Requires
+                    synic. Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                runtime:
+                  description: Runtime improves the time accounting to improve scheduling
+                    in the guest. Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                spinlocks:
+                  description: Spinlocks allows to configure the spinlock retry attempts.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                    spinlocks:
+                      description: Retries indicates the number of retries. Must be
+                        a value greater or equal 4096. Defaults to 4096.
+                      format: int32
+                      type: integer
+                  type: object
+                synic:
+                  description: SyNIC enables the Synthetic Interrupt Controller. Defaults
+                    to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                synictimer:
+                  description: SyNICTimer enables Synthetic Interrupt Controller Timers,
+                    reducing CPU load. Defaults to the machine type setting.
+                  properties:
+                    direct:
+                      description: Represents if a feature is enabled or disabled.
+                      properties:
+                        enabled:
+                          description: Enabled determines if the feature should be
+                            enabled or disabled on the guest. Defaults to true.
+                          type: boolean
+                      type: object
+                    enabled:
+                      type: boolean
+                  type: object
+                tlbflush:
+                  description: TLBFlush improves performances in overcommited environments.
+                    Requires vpindex. Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                vapic:
+                  description: VAPIC improves the paravirtualized handling of interrupts.
+                    Defaults to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+                vendorid:
+                  description: VendorID allows setting the hypervisor vendor id. Defaults
+                    to the machine type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                    vendorid:
+                      description: VendorID sets the hypervisor vendor id, visible
+                        to the vmi. String up to twelve characters.
+                      type: string
+                  type: object
+                vpindex:
+                  description: VPIndex enables the Virtual Processor Index to help
+                    windows identifying virtual processors. Defaults to the machine
+                    type setting.
+                  properties:
+                    enabled:
+                      description: Enabled determines if the feature should be enabled
+                        or disabled on the guest. Defaults to true.
+                      type: boolean
+                  type: object
+              type: object
+            preferredKvm:
+              description: PreferredKvm optionally enables and configures KVM features
+              properties:
+                hidden:
+                  description: Hide the KVM hypervisor from standard MSR based discovery.
+                    Defaults to false
+                  type: boolean
+              type: object
+            preferredPvspinlock:
+              description: PreferredPvspinlock optionally enables the Pvspinlock feature
+              properties:
+                enabled:
+                  description: Enabled determines if the feature should be enabled
+                    or disabled on the guest. Defaults to true.
+                  type: boolean
+              type: object
+            preferredSmm:
+              description: PreferredSmm optionally enables the SMM feature
+              properties:
+                enabled:
+                  description: Enabled determines if the feature should be enabled
+                    or disabled on the guest. Defaults to true.
+                  type: boolean
+              type: object
+          type: object
+        firmware:
+          description: Firmware optionally defines preferences associated with the
+            Firmware attribute of a VirtualMachineInstance DomainSpec
+          properties:
+            preferredUseBios:
+              description: PreferredUseBios optionally enables BIOS
+              type: boolean
+            preferredUseBiosSerial:
+              description: "PreferredUseBiosSerial optionally transmitts BIOS output
+                over the serial. \n Requires PreferredUseBios to be enabled."
+              type: boolean
+            preferredUseEfi:
+              description: PreferredUseEfi optionally enables EFI
+              type: boolean
+            preferredUseSecureBoot:
+              description: "PreferredUseSecureBoot optionally enables SecureBoot and
+                the OVMF roms will be swapped for SecureBoot-enabled ones. \n Requires
+                PreferredUseEfi and PreferredSmm to be enabled."
+              type: boolean
+          type: object
+        machine:
+          description: Machine optionally defines preferences associated with the
+            Machine attribute of a VirtualMachineInstance DomainSpec
+          properties:
+            preferredMachineType:
+              description: PreferredMachineType optionally defines the preferred machine
+                type to use.
+              type: string
+          type: object
+      type: object
+  required:
+  - spec
+  type: object
+`,
 	"virtualmachinerestore": `openAPIV3Schema:
   description: VirtualMachineRestore defines the operation of restoring a VM
   properties:
@@ -17647,6 +19788,16 @@ var CRDsValidation map[string]string = map[string]string{
     spec:
       description: VirtualMachineRestoreSpec is the spec for a VirtualMachineRestoreresource
       properties:
+        patches:
+          description: "If the target for the restore does not exist, it will be created.
+            Patches holds JSON patches that would be applied to the target manifest
+            before it's created. Patches should fit the target's Kind. \n Example
+            for a patch: {\"op\": \"replace\", \"path\": \"/metadata/name\", \"value\":
+            \"new-vm-name\"}"
+          items:
+            type: string
+          type: array
+          x-kubernetes-list-type: atomic
         target:
           description: initially only VirtualMachine type supported
           properties:
@@ -17873,28 +20024,13 @@ var CRDsValidation map[string]string = map[string]string{
             snapshotted
           properties:
             virtualMachine:
-              description: VirtualMachine handles the VirtualMachines that are not
-                running or are in a stopped state The VirtualMachine contains the
-                template to create the VirtualMachineInstance. It also mirrors the
-                running state of the created VirtualMachineInstance in its status.
               properties:
-                apiVersion:
-                  description: 'APIVersion defines the versioned schema of this representation
-                    of an object. Servers should convert recognized schemas to the
-                    latest internal value, and may reject unrecognized values. More
-                    info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-                  type: string
-                kind:
-                  description: 'Kind is a string value representing the REST resource
-                    this object represents. Servers may infer this from the endpoint
-                    the client submits requests to. Cannot be updated. In CamelCase.
-                    More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-                  type: string
                 metadata:
+                  nullable: true
                   type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 spec:
-                  description: Spec contains the specification of VirtualMachineInstance
-                    created
+                  description: VirtualMachineSpec contains the VirtualMachine specification.
                   properties:
                     dataVolumeTemplates:
                       description: dataVolumeTemplates is a list of dataVolumes that
@@ -18298,6 +20434,11 @@ var CRDsValidation map[string]string = map[string]string{
                                         description: BackingFile is the path to the
                                           virtual hard disk to migrate from vCenter/ESXi
                                         type: string
+                                      initImageURL:
+                                        description: InitImageURL is an optional URL
+                                          to an image containing an extracted VDDK
+                                          library, overrides v2v-vmware config map
+                                        type: string
                                       secretRef:
                                         description: SecretRef provides a reference
                                           to a secret containing the username and
@@ -18486,23 +20627,50 @@ var CRDsValidation map[string]string = map[string]string{
                         - spec
                         type: object
                       type: array
-                    flavor:
-                      description: FlavorMatcher references a flavor that is used
-                        to fill fields in Template
+                    instancetype:
+                      description: InstancetypeMatcher references a instancetype that
+                        is used to fill fields in Template
                       properties:
                         kind:
-                          description: 'Kind specifies which flavor resource is referenced.
-                            Allowed values are: "VirtualMachineFlavor" and "VirtualMachineClusterFlavor".
-                            If not specified, "VirtualMachineClusterFlavor" is used
-                            by default.'
+                          description: 'Kind specifies which instancetype resource
+                            is referenced. Allowed values are: "VirtualMachineInstancetype"
+                            and "VirtualMachineClusterInstancetype". If not specified,
+                            "VirtualMachineClusterInstancetype" is used by default.'
                           type: string
                         name:
-                          description: Name is the name of the VirtualMachineFlavor
-                            or VirtualMachineClusterFlavor
+                          description: Name is the name of the VirtualMachineInstancetype
+                            or VirtualMachineClusterInstancetype
                           type: string
-                        profile:
-                          description: Profile is the name of a custom profile in
-                            the flavor. If left empty, the default profile is used.
+                        revisionName:
+                          description: RevisionName specifies a ControllerRevision
+                            containing a specific copy of the VirtualMachineInstancetype
+                            or VirtualMachineClusterInstancetype to be used. This
+                            is initially captured the first time the instancetype
+                            is applied to the VirtualMachineInstance.
+                          type: string
+                      required:
+                      - name
+                      type: object
+                    preference:
+                      description: PreferenceMatcher references a set of preference
+                        that is used to fill fields in Template
+                      properties:
+                        kind:
+                          description: 'Kind specifies which preference resource is
+                            referenced. Allowed values are: "VirtualMachinePreference"
+                            and "VirtualMachineClusterPreference". If not specified,
+                            "VirtualMachineClusterPreference" is used by default.'
+                          type: string
+                        name:
+                          description: Name is the name of the VirtualMachinePreference
+                            or VirtualMachineClusterPreference
+                          type: string
+                        revisionName:
+                          description: RevisionName specifies a ControllerRevision
+                            containing a specific copy of the VirtualMachinePreference
+                            or VirtualMachineClusterPreference to be used. This is
+                            initially captured the first time the instancetype is
+                            applied to the VirtualMachineInstance.
                           type: string
                       required:
                       - name
@@ -19902,6 +22070,10 @@ var CRDsValidation map[string]string = map[string]string{
                                         device or not. VNC will not be available if
                                         set to false. Defaults to true.
                                       type: boolean
+                                    autoattachInputDevice:
+                                      description: Whether to attach an Input Device.
+                                        Defaults to false.
+                                      type: boolean
                                     autoattachMemBalloon:
                                       description: Whether to attach the Memory balloon
                                         device with default period. Period can be
@@ -20012,7 +22184,7 @@ var CRDsValidation map[string]string = map[string]string{
                                               bus:
                                                 description: 'Bus indicates the type
                                                   of disk device to emulate. supported
-                                                  values: virtio, sata, scsi.'
+                                                  values: virtio, sata, scsi, usb.'
                                                 type: string
                                               pciAddress:
                                                 description: 'If specified, the virtual
@@ -20263,6 +22435,10 @@ var CRDsValidation map[string]string = map[string]string{
                                               as well as a reference to the associated
                                               networks. Must match the Name of a Network.
                                             type: string
+                                          passt:
+                                            description: InterfacePasst connects to
+                                              a given network.
+                                            type: object
                                           pciAddress:
                                             description: 'If specified, the virtual
                                               network interface will be placed on
@@ -20349,6 +22525,9 @@ var CRDsValidation map[string]string = map[string]string{
                                           type: string
                                       required:
                                       - name
+                                      type: object
+                                    tpm:
+                                      description: Whether to emulate a TPM device.
                                       type: object
                                     useVirtioTransitional:
                                       description: Fall back to legacy virtio 0.9
@@ -21186,6 +23365,129 @@ var CRDsValidation map[string]string = map[string]string{
                                     type: string
                                 type: object
                               type: array
+                            topologySpreadConstraints:
+                              description: TopologySpreadConstraints describes how
+                                a group of VMIs will be spread across a given topology
+                                domains. K8s scheduler will schedule VMI pods in a
+                                way which abides by the constraints.
+                              items:
+                                description: TopologySpreadConstraint specifies how
+                                  to spread matching pods among the given topology.
+                                properties:
+                                  labelSelector:
+                                    description: LabelSelector is used to find matching
+                                      pods. Pods that match this label selector are
+                                      counted to determine the number of pods in their
+                                      corresponding topology domain.
+                                    properties:
+                                      matchExpressions:
+                                        description: matchExpressions is a list of
+                                          label selector requirements. The requirements
+                                          are ANDed.
+                                        items:
+                                          description: A label selector requirement
+                                            is a selector that contains values, a
+                                            key, and an operator that relates the
+                                            key and values.
+                                          properties:
+                                            key:
+                                              description: key is the label key that
+                                                the selector applies to.
+                                              type: string
+                                            operator:
+                                              description: operator represents a key's
+                                                relationship to a set of values. Valid
+                                                operators are In, NotIn, Exists and
+                                                DoesNotExist.
+                                              type: string
+                                            values:
+                                              description: values is an array of string
+                                                values. If the operator is In or NotIn,
+                                                the values array must be non-empty.
+                                                If the operator is Exists or DoesNotExist,
+                                                the values array must be empty. This
+                                                array is replaced during a strategic
+                                                merge patch.
+                                              items:
+                                                type: string
+                                              type: array
+                                          required:
+                                          - key
+                                          - operator
+                                          type: object
+                                        type: array
+                                      matchLabels:
+                                        additionalProperties:
+                                          type: string
+                                        description: matchLabels is a map of {key,value}
+                                          pairs. A single {key,value} in the matchLabels
+                                          map is equivalent to an element of matchExpressions,
+                                          whose key field is "key", the operator is
+                                          "In", and the values array contains only
+                                          "value". The requirements are ANDed.
+                                        type: object
+                                    type: object
+                                  maxSkew:
+                                    description: 'MaxSkew describes the degree to
+                                      which pods may be unevenly distributed. When
+                                      ''whenUnsatisfiable=DoNotSchedule'', it is the
+                                      maximum permitted difference between the number
+                                      of matching pods in the target topology and
+                                      the global minimum. For example, in a 3-zone
+                                      cluster, MaxSkew is set to 1, and pods with
+                                      the same labelSelector spread as 1/1/0: | zone1
+                                      | zone2 | zone3 | |   P   |   P   |       |
+                                      - if MaxSkew is 1, incoming pod can only be
+                                      scheduled to zone3 to become 1/1/1; scheduling
+                                      it onto zone1(zone2) would make the ActualSkew(2-0)
+                                      on zone1(zone2) violate MaxSkew(1). - if MaxSkew
+                                      is 2, incoming pod can be scheduled onto any
+                                      zone. When ''whenUnsatisfiable=ScheduleAnyway'',
+                                      it is used to give higher precedence to topologies
+                                      that satisfy it. It''s a required field. Default
+                                      value is 1 and 0 is not allowed.'
+                                    format: int32
+                                    type: integer
+                                  topologyKey:
+                                    description: TopologyKey is the key of node labels.
+                                      Nodes that have a label with this key and identical
+                                      values are considered to be in the same topology.
+                                      We consider each <key, value> as a "bucket",
+                                      and try to put balanced number of pods into
+                                      each bucket. It's a required field.
+                                    type: string
+                                  whenUnsatisfiable:
+                                    description: 'WhenUnsatisfiable indicates how
+                                      to deal with a pod if it doesn''t satisfy the
+                                      spread constraint. - DoNotSchedule (default)
+                                      tells the scheduler not to schedule it. - ScheduleAnyway
+                                      tells the scheduler to schedule the pod in any
+                                      location,   but giving higher precedence to
+                                      topologies that would help reduce the   skew.
+                                      A constraint is considered "Unsatisfiable" for
+                                      an incoming pod if and only if every possible
+                                      node assignment for that pod would violate "MaxSkew"
+                                      on some topology. For example, in a 3-zone cluster,
+                                      MaxSkew is set to 1, and pods with the same
+                                      labelSelector spread as 3/1/1: | zone1 | zone2
+                                      | zone3 | | P P P |   P   |   P   | If WhenUnsatisfiable
+                                      is set to DoNotSchedule, incoming pod can only
+                                      be scheduled to zone2(zone3) to become 3/2/1(3/1/2)
+                                      as ActualSkew(2-1) on zone2(zone3) satisfies
+                                      MaxSkew(1). In other words, the cluster can
+                                      still be imbalanced, but scheduler won''t make
+                                      it *more* imbalanced. It''s a required field.'
+                                    type: string
+                                required:
+                                - maxSkew
+                                - topologyKey
+                                - whenUnsatisfiable
+                                type: object
+                              type: array
+                              x-kubernetes-list-map-keys:
+                              - topologyKey
+                              - whenUnsatisfiable
+                              x-kubernetes-list-type: map
                             volumes:
                               description: List of volumes that can be mounted by
                                 disks belonging to the vmi.
@@ -21525,6 +23827,27 @@ var CRDsValidation map[string]string = map[string]string{
                                     - path
                                     - type
                                     type: object
+                                  memoryDump:
+                                    description: MemoryDump is attached to the virt
+                                      launcher and is populated with a memory dump
+                                      of the vmi
+                                    properties:
+                                      claimName:
+                                        description: 'ClaimName is the name of a PersistentVolumeClaim
+                                          in the same namespace as the pod using this
+                                          volume. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#persistentvolumeclaims'
+                                        type: string
+                                      hotpluggable:
+                                        description: Hotpluggable indicates whether
+                                          the volume can be hotplugged and hotunplugged.
+                                        type: boolean
+                                      readOnly:
+                                        description: Will force the ReadOnly setting
+                                          in VolumeMounts. Default false.
+                                        type: boolean
+                                    required:
+                                    - claimName
+                                    type: object
                                   name:
                                     description: 'Volume''s name. Must be a DNS_LABEL
                                       and unique within the vmi. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
@@ -21661,6 +23984,44 @@ var CRDsValidation map[string]string = map[string]string{
                       description: Created indicates if the virtual machine is created
                         in the cluster
                       type: boolean
+                    memoryDumpRequest:
+                      description: MemoryDumpRequest tracks memory dump request phase
+                        and info of getting a memory dump to the given pvc
+                      nullable: true
+                      properties:
+                        claimName:
+                          description: ClaimName is the name of the pvc that will
+                            contain the memory dump
+                          type: string
+                        endTimestamp:
+                          description: EndTimestamp represents the time the memory
+                            dump was completed
+                          format: date-time
+                          type: string
+                        fileName:
+                          description: FileName represents the name of the output
+                            file
+                          type: string
+                        message:
+                          description: Message is a detailed message about failure
+                            of the memory dump
+                          type: string
+                        phase:
+                          description: Phase represents the memory dump phase
+                          type: string
+                        remove:
+                          description: Remove represents request of dissociating the
+                            memory dump pvc
+                          type: boolean
+                        startTimestamp:
+                          description: StartTimestamp represents the time the memory
+                            dump started
+                          format: date-time
+                          type: string
+                      required:
+                      - claimName
+                      - phase
+                      type: object
                     printableStatus:
                       description: PrintableStatus is a human readable, high-level
                         representation of the status of the virtual machine
@@ -21806,7 +24167,7 @@ var CRDsValidation map[string]string = map[string]string{
                                       bus:
                                         description: 'Bus indicates the type of disk
                                           device to emulate. supported values: virtio,
-                                          sata, scsi.'
+                                          sata, scsi, usb.'
                                         type: string
                                       pciAddress:
                                         description: 'If specified, the virtual disk
@@ -21964,8 +24325,6 @@ var CRDsValidation map[string]string = map[string]string{
                         type: object
                       type: array
                   type: object
-              required:
-              - spec
               type: object
           type: object
         virtualMachineSnapshotName:

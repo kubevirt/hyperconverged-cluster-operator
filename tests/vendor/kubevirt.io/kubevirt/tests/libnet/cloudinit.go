@@ -70,9 +70,6 @@ func WithEthernet(name string, options ...NetworkDataInterfaceOption) NetworkDat
 
 func WithAddresses(addresses ...string) NetworkDataInterfaceOption {
 	return func(networkDataInterface *CloudInitInterface) error {
-		if networkDataInterface.Addresses == nil {
-			networkDataInterface.Addresses = []string{}
-		}
 		networkDataInterface.Addresses = append(networkDataInterface.Addresses, addresses...)
 		return nil
 	}
@@ -156,8 +153,8 @@ type CloudInitInterface struct {
 }
 
 type CloudInitNameservers struct {
-	Search    []string `json:"search,omitempty,flow"`
-	Addresses []string `json:"addresses,omitempty,flow"`
+	Search    []string `json:"search,omitempty"`
+	Addresses []string `json:"addresses,omitempty"`
 }
 
 type CloudInitMatch struct {

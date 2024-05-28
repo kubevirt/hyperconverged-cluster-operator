@@ -22,16 +22,17 @@ package libvmi
 import (
 	"encoding/base64"
 
-	kvirtv1 "kubevirt.io/api/core/v1"
+	v1 "kubevirt.io/api/core/v1"
 )
+
+const cloudInitDiskName = "disk1"
 
 // WithCloudInitNoCloudUserData adds cloud-init no-cloud user data.
 func WithCloudInitNoCloudUserData(data string, b64Encoding bool) Option {
-	return func(vmi *kvirtv1.VirtualMachineInstance) {
-		diskName, bus := "disk1", "virtio"
-		addDiskVolumeWithCloudInitNoCloud(vmi, diskName, bus)
+	return func(vmi *v1.VirtualMachineInstance) {
+		addDiskVolumeWithCloudInitNoCloud(vmi, cloudInitDiskName, v1.DiskBusVirtio)
 
-		volume := getVolume(vmi, diskName)
+		volume := getVolume(vmi, cloudInitDiskName)
 		if b64Encoding {
 			encodedData := base64.StdEncoding.EncodeToString([]byte(data))
 			volume.CloudInitNoCloud.UserData = ""
@@ -44,28 +45,46 @@ func WithCloudInitNoCloudUserData(data string, b64Encoding bool) Option {
 }
 
 // WithCloudInitNoCloudNetworkData adds cloud-init no-cloud network data.
-func WithCloudInitNoCloudNetworkData(data string, b64Encoding bool) Option {
-	return func(vmi *kvirtv1.VirtualMachineInstance) {
-		diskName, bus := "disk1", "virtio"
-		addDiskVolumeWithCloudInitNoCloud(vmi, diskName, bus)
+func WithCloudInitNoCloudNetworkData(data string) Option {
+	return func(vmi *v1.VirtualMachineInstance) {
+		addDiskVolumeWithCloudInitNoCloud(vmi, cloudInitDiskName, v1.DiskBusVirtio)
 
-		volume := getVolume(vmi, diskName)
+		volume := getVolume(vmi, cloudInitDiskName)
+		volume.CloudInitNoCloud.NetworkData = data
+	}
+}
+
+// WithCloudInitConfigDriveData adds cloud-init config-drive user data.
+func WithCloudInitConfigDriveData(data string, b64Encoding bool) Option {
+	return func(vmi *v1.VirtualMachineInstance) {
+		addDiskVolumeWithCloudInitConfigDrive(vmi, cloudInitDiskName, v1.DiskBusVirtio)
+
+		volume := getVolume(vmi, cloudInitDiskName)
 		if b64Encoding {
 			encodedData := base64.StdEncoding.EncodeToString([]byte(data))
-			volume.CloudInitNoCloud.NetworkDataBase64 = encodedData
+			volume.CloudInitConfigDrive.UserData = ""
+			volume.CloudInitConfigDrive.UserDataBase64 = encodedData
 		} else {
-			volume.CloudInitNoCloud.NetworkData = data
+			volume.CloudInitConfigDrive.UserData = data
+			volume.CloudInitConfigDrive.UserDataBase64 = ""
 		}
 	}
 }
 
-func addDiskVolumeWithCloudInitNoCloud(vmi *kvirtv1.VirtualMachineInstance, diskName, bus string) {
+func addDiskVolumeWithCloudInitConfigDrive(vmi *v1.VirtualMachineInstance, diskName string, bus v1.DiskBus) {
 	addDisk(vmi, newDisk(diskName, bus))
 	v := newVolume(diskName)
-	setCloudInitNoCloud(&v, &kvirtv1.CloudInitNoCloudSource{})
+	v.VolumeSource = v1.VolumeSource{CloudInitConfigDrive: &v1.CloudInitConfigDriveSource{}}
 	addVolume(vmi, v)
 }
 
-func setCloudInitNoCloud(volume *kvirtv1.Volume, source *kvirtv1.CloudInitNoCloudSource) {
-	volume.VolumeSource = kvirtv1.VolumeSource{CloudInitNoCloud: source}
+func addDiskVolumeWithCloudInitNoCloud(vmi *v1.VirtualMachineInstance, diskName string, bus v1.DiskBus) {
+	addDisk(vmi, newDisk(diskName, bus))
+	v := newVolume(diskName)
+	setCloudInitNoCloud(&v, &v1.CloudInitNoCloudSource{})
+	addVolume(vmi, v)
+}
+
+func setCloudInitNoCloud(volume *v1.Volume, source *v1.CloudInitNoCloudSource) {
+	volume.VolumeSource = v1.VolumeSource{CloudInitNoCloud: source}
 }

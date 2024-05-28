@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/utils/pointer"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -32,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	virtv1 "kubevirt.io/api/core/v1"
+
 	"kubevirt.io/kubevirt/pkg/virt-operator/resource/generate/rbac"
 	operatorutil "kubevirt.io/kubevirt/pkg/virt-operator/util"
 )
@@ -39,9 +41,10 @@ import (
 const (
 	nodeLabellerVolumePath = "/var/lib/kubevirt-node-labeller"
 
-	VirtAPIName        = "virt-api"
-	VirtControllerName = "virt-controller"
-	VirtOperatorName   = "virt-operator"
+	VirtAPIName         = "virt-api"
+	VirtControllerName  = "virt-controller"
+	VirtOperatorName    = "virt-operator"
+	VirtExportProxyName = "virt-exportproxy"
 
 	kubevirtLabelKey              = "kubevirt.io"
 	kubernetesHostnameTopologyKey = "kubernetes.io/hostname"
@@ -99,6 +102,38 @@ func NewApiServerService(namespace string) *corev1.Service {
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
 				virtv1.AppLabel: VirtAPIName,
+			},
+			Ports: []corev1.ServicePort{
+				{
+					Port: 443,
+					TargetPort: intstr.IntOrString{
+						Type:   intstr.Int,
+						IntVal: 8443,
+					},
+					Protocol: corev1.ProtocolTCP,
+				},
+			},
+			Type: corev1.ServiceTypeClusterIP,
+		},
+	}
+}
+
+func NewExportProxyService(namespace string) *corev1.Service {
+	return &corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Service",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      VirtExportProxyName,
+			Labels: map[string]string{
+				virtv1.AppLabel: VirtExportProxyName,
+			},
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{
+				virtv1.AppLabel: VirtExportProxyName,
 			},
 			Ports: []corev1.ServicePort{
 				{
@@ -285,12 +320,15 @@ func NewApiServerDeployment(namespace string, repository string, imagePrefix str
 	pod := &deployment.Spec.Template.Spec
 	pod.ServiceAccountName = rbac.ApiServiceAccountName
 	pod.SecurityContext = &corev1.PodSecurityContext{
-		RunAsNonRoot: boolPtr(true),
+		RunAsNonRoot:   boolPtr(true),
+		SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
 	}
 
 	container := &deployment.Spec.Template.Spec.Containers[0]
 	container.Command = []string{
 		VirtAPIName,
+	}
+	container.Args = []string{
 		portName,
 		"8443",
 		"--console-server-port",
@@ -329,14 +367,21 @@ func NewApiServerDeployment(namespace string, repository string, imagePrefix str
 	container.Resources = corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
 			corev1.ResourceCPU:    resource.MustParse("5m"),
-			corev1.ResourceMemory: resource.MustParse("150Mi"),
+			corev1.ResourceMemory: resource.MustParse("250Mi"),
 		},
 	}
 
+	container.SecurityContext = &corev1.SecurityContext{
+		AllowPrivilegeEscalation: pointer.Bool(false),
+		Capabilities: &corev1.Capabilities{
+			Drop: []corev1.Capability{"ALL"},
+		},
+		SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
+	}
 	return deployment, nil
 }
 
-func NewControllerDeployment(namespace string, repository string, imagePrefix string, controllerVersion string, launcherVersion string, productName string, productVersion string, productComponent string, pullPolicy corev1.PullPolicy, verbosity string, extraEnv map[string]string) (*appsv1.Deployment, error) {
+func NewControllerDeployment(namespace string, repository string, imagePrefix string, controllerVersion string, launcherVersion string, exportServerVersion string, productName string, productVersion string, productComponent string, pullPolicy corev1.PullPolicy, verbosity string, extraEnv map[string]string) (*appsv1.Deployment, error) {
 	podAntiAffinity := newPodAntiAffinity(kubevirtLabelKey, kubernetesHostnameTopologyKey, metav1.LabelSelectorOpIn, []string{VirtControllerName})
 	deploymentName := VirtControllerName
 	imageName := fmt.Sprintf("%s%s", imagePrefix, deploymentName)
@@ -349,16 +394,22 @@ func NewControllerDeployment(namespace string, repository string, imagePrefix st
 	pod := &deployment.Spec.Template.Spec
 	pod.ServiceAccountName = rbac.ControllerServiceAccountName
 	pod.SecurityContext = &corev1.PodSecurityContext{
-		RunAsNonRoot: boolPtr(true),
+		RunAsNonRoot:   boolPtr(true),
+		SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
 	}
 
 	launcherVersion = AddVersionSeparatorPrefix(launcherVersion)
+	exportServerVersion = AddVersionSeparatorPrefix(exportServerVersion)
 
 	container := &deployment.Spec.Template.Spec.Containers[0]
 	container.Command = []string{
 		VirtControllerName,
+	}
+	container.Args = []string{
 		"--launcher-image",
 		fmt.Sprintf("%s/%s%s%s", repository, imagePrefix, "virt-launcher", launcherVersion),
+		"--exporter-image",
+		fmt.Sprintf("%s/%s%s%s", repository, imagePrefix, "virt-exportserver", exportServerVersion),
 		portName,
 		"8443",
 		"-v",
@@ -402,15 +453,23 @@ func NewControllerDeployment(namespace string, repository string, imagePrefix st
 	}
 
 	attachCertificateSecret(pod, VirtControllerCertSecretName, "/etc/virt-controller/certificates")
+	attachCertificateSecret(pod, KubeVirtExportCASecretName, "/etc/virt-controller/exportca")
 	attachProfileVolume(pod)
 
 	container.Resources = corev1.ResourceRequirements{
 		Requests: corev1.ResourceList{
 			corev1.ResourceCPU:    resource.MustParse("10m"),
-			corev1.ResourceMemory: resource.MustParse("150Mi"),
+			corev1.ResourceMemory: resource.MustParse("250Mi"),
 		},
 	}
 
+	container.SecurityContext = &corev1.SecurityContext{
+		AllowPrivilegeEscalation: pointer.Bool(false),
+		Capabilities: &corev1.Capabilities{
+			Drop: []corev1.Capability{"ALL"},
+		},
+		SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
+	}
 	return deployment, nil
 }
 
@@ -418,8 +477,9 @@ func NewControllerDeployment(namespace string, repository string, imagePrefix st
 func NewOperatorDeployment(namespace string, repository string, imagePrefix string, version string,
 	pullPolicy corev1.PullPolicy, verbosity string,
 	kubeVirtVersionEnv string, virtApiShaEnv string, virtControllerShaEnv string,
-	virtHandlerShaEnv string, virtLauncherShaEnv string, gsShaEnv string) (*appsv1.Deployment, error) {
+	virtHandlerShaEnv string, virtLauncherShaEnv string, virtExportProxyShaEnv string, virtExportServerShaEnv string, gsShaEnv string) (*appsv1.Deployment, error) {
 
+	const kubernetesOSLinux = "linux"
 	podAntiAffinity := newPodAntiAffinity(kubevirtLabelKey, kubernetesHostnameTopologyKey, metav1.LabelSelectorOpIn, []string{VirtOperatorName})
 	version = AddVersionSeparatorPrefix(version)
 	image := fmt.Sprintf("%s/%s%s%s", repository, imagePrefix, VirtOperatorName, version)
@@ -460,6 +520,9 @@ func NewOperatorDeployment(namespace string, repository string, imagePrefix stri
 					Tolerations:        criticalAddonsToleration(),
 					Affinity:           podAntiAffinity,
 					ServiceAccountName: "kubevirt-operator",
+					NodeSelector: map[string]string{
+						corev1.LabelOSStable: kubernetesOSLinux,
+					},
 					Containers: []corev1.Container{
 						{
 							Name:            VirtOperatorName,
@@ -467,6 +530,8 @@ func NewOperatorDeployment(namespace string, repository string, imagePrefix stri
 							ImagePullPolicy: pullPolicy,
 							Command: []string{
 								VirtOperatorName,
+							},
+							Args: []string{
 								portName,
 								"8443",
 								"-v",
@@ -515,13 +580,21 @@ func NewOperatorDeployment(namespace string, repository string, imagePrefix stri
 							Resources: corev1.ResourceRequirements{
 								Requests: corev1.ResourceList{
 									corev1.ResourceCPU:    resource.MustParse("10m"),
-									corev1.ResourceMemory: resource.MustParse("150Mi"),
+									corev1.ResourceMemory: resource.MustParse("250Mi"),
 								},
+							},
+							SecurityContext: &corev1.SecurityContext{
+								AllowPrivilegeEscalation: pointer.Bool(false),
+								Capabilities: &corev1.Capabilities{
+									Drop: []corev1.Capability{"ALL"},
+								},
+								SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
 							},
 						},
 					},
 					SecurityContext: &corev1.PodSecurityContext{
-						RunAsNonRoot: boolPtr(true),
+						RunAsNonRoot:   boolPtr(true),
+						SeccompProfile: &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
 					},
 				},
 			},
@@ -550,6 +623,14 @@ func NewOperatorDeployment(namespace string, repository string, imagePrefix stri
 				Name:  operatorutil.VirtLauncherShasumEnvName,
 				Value: virtLauncherShaEnv,
 			},
+			{
+				Name:  operatorutil.VirtExportProxyShasumEnvName,
+				Value: virtExportProxyShaEnv,
+			},
+			{
+				Name:  operatorutil.VirtExportServerShasumEnvName,
+				Value: virtExportServerShaEnv,
+			},
 		}
 		if gsShaEnv != "" {
 			shaSums = append(shaSums, corev1.EnvVar{
@@ -564,6 +645,74 @@ func NewOperatorDeployment(namespace string, repository string, imagePrefix stri
 
 	attachCertificateSecret(&deployment.Spec.Template.Spec, VirtOperatorCertSecretName, "/etc/virt-operator/certificates")
 	attachProfileVolume(&deployment.Spec.Template.Spec)
+
+	return deployment, nil
+}
+
+func NewExportProxyDeployment(namespace string, repository string, imagePrefix string, version string, productName string, productVersion string, productComponent string, pullPolicy corev1.PullPolicy, verbosity string, extraEnv map[string]string) (*appsv1.Deployment, error) {
+	podAntiAffinity := newPodAntiAffinity(kubevirtLabelKey, kubernetesHostnameTopologyKey, metav1.LabelSelectorOpIn, []string{VirtAPIName})
+	deploymentName := VirtExportProxyName
+	imageName := fmt.Sprintf("%s%s", imagePrefix, deploymentName)
+	env := operatorutil.NewEnvVarMap(extraEnv)
+	deployment, err := newBaseDeployment(deploymentName, imageName, namespace, repository, version, productName, productVersion, productComponent, pullPolicy, podAntiAffinity, env)
+	if err != nil {
+		return nil, err
+	}
+
+	attachCertificateSecret(&deployment.Spec.Template.Spec, VirtExportProxyCertSecretName, "/etc/virt-exportproxy/certificates")
+	attachProfileVolume(&deployment.Spec.Template.Spec)
+
+	pod := &deployment.Spec.Template.Spec
+	pod.ServiceAccountName = rbac.ExportProxyServiceAccountName
+	pod.SecurityContext = &corev1.PodSecurityContext{
+		RunAsNonRoot: boolPtr(true),
+	}
+
+	const shortName = "exportproxy"
+	container := &deployment.Spec.Template.Spec.Containers[0]
+	// virt-exportproxy too long
+	container.Name = shortName
+	container.Command = []string{
+		VirtExportProxyName,
+		portName,
+		"8443",
+		"-v",
+		verbosity,
+	}
+	container.Ports = []corev1.ContainerPort{
+		{
+			Name:          shortName,
+			Protocol:      corev1.ProtocolTCP,
+			ContainerPort: 8443,
+		},
+		{
+			Name:          "metrics",
+			Protocol:      corev1.ProtocolTCP,
+			ContainerPort: 8443,
+		},
+	}
+
+	container.ReadinessProbe = &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Scheme: corev1.URISchemeHTTPS,
+				Port: intstr.IntOrString{
+					Type:   intstr.Int,
+					IntVal: 8443,
+				},
+				Path: "/healthz",
+			},
+		},
+		InitialDelaySeconds: 15,
+		PeriodSeconds:       10,
+	}
+
+	container.Resources = corev1.ResourceRequirements{
+		Requests: corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse("5m"),
+			corev1.ResourceMemory: resource.MustParse("150Mi"),
+		},
+	}
 
 	return deployment, nil
 }

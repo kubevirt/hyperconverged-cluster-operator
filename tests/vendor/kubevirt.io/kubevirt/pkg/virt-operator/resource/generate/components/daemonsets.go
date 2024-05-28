@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	virtv1 "kubevirt.io/api/core/v1"
+
 	virtconfig "kubevirt.io/kubevirt/pkg/virt-config"
 	"kubevirt.io/kubevirt/pkg/virt-operator/resource/generate/rbac"
 	operatorutil "kubevirt.io/kubevirt/pkg/virt-operator/util"
@@ -116,6 +117,8 @@ func NewHandlerDaemonSet(namespace string, repository string, imagePrefix string
 	container := &pod.Containers[0]
 	container.Command = []string{
 		VirtHandlerName,
+	}
+	container.Args = []string{
 		"--port",
 		"8443",
 		"--hostname-override",

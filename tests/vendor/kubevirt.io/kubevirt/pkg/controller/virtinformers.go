@@ -26,15 +26,18 @@ import (
 	"sync"
 	"time"
 
-	"kubevirt.io/api/flavor"
+	"kubevirt.io/api/clone"
+	clonev1alpha1 "kubevirt.io/api/clone/v1alpha1"
 
 	promv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	vsv1beta1 "github.com/kubernetes-csi/external-snapshotter/v2/pkg/apis/volumesnapshot/v1beta1"
+	vsv1 "github.com/kubernetes-csi/external-snapshotter/client/v4/apis/volumesnapshot/v1"
+	routev1 "github.com/openshift/api/route/v1"
 	secv1 "github.com/openshift/api/security/v1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	k8sv1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	storagev1 "k8s.io/api/storage/v1"
@@ -50,16 +53,16 @@ import (
 	aggregatorclient "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
 
 	"kubevirt.io/api/core"
-	"kubevirt.io/api/migrations"
-
 	kubev1 "kubevirt.io/api/core/v1"
-	flavorv1 "kubevirt.io/api/flavor/v1alpha1"
+	exportv1 "kubevirt.io/api/export/v1alpha1"
+	"kubevirt.io/api/migrations"
 	migrationsv1 "kubevirt.io/api/migrations/v1alpha1"
 	poolv1 "kubevirt.io/api/pool/v1alpha1"
 	snapshotv1 "kubevirt.io/api/snapshot/v1alpha1"
 	"kubevirt.io/client-go/kubecli"
 	"kubevirt.io/client-go/log"
 	cdiv1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
+
 	"kubevirt.io/kubevirt/pkg/testutils"
 )
 
@@ -69,7 +72,8 @@ const (
 		The new assignment is to avoid error on update
 		(operator can't recognize components with the old managed-by label's value)
 	*/
-	OperatorLabel = kubev1.ManagedByLabel + " in (" + kubev1.ManagedByLabelOperatorValue + "," + kubev1.ManagedByLabelOperatorOldValue + " )"
+	OperatorLabel    = kubev1.ManagedByLabel + " in (" + kubev1.ManagedByLabelOperatorValue + "," + kubev1.ManagedByLabelOperatorOldValue + " )"
+	NotOperatorLabel = kubev1.ManagedByLabel + " notin (" + kubev1.ManagedByLabelOperatorValue + "," + kubev1.ManagedByLabelOperatorOldValue + " )"
 )
 
 var unexpectedObjectError = errors.New("unexpected object")
@@ -115,6 +119,9 @@ type KubeInformerFactory interface {
 	// Watches VirtualMachineInstanceMigration objects
 	VirtualMachineInstanceMigration() cache.SharedIndexInformer
 
+	// Watches VirtualMachineExport objects
+	VirtualMachineExport() cache.SharedIndexInformer
+
 	// Watches VirtualMachineSnapshot objects
 	VirtualMachineSnapshot() cache.SharedIndexInformer
 
@@ -124,20 +131,26 @@ type KubeInformerFactory interface {
 	// Watches VirtualMachineRestore objects
 	VirtualMachineRestore() cache.SharedIndexInformer
 
-	// Watches VirtualMachineFlavor objects
-	VirtualMachineFlavor() cache.SharedIndexInformer
-
-	// Watches VirtualMachineClusterFlavor objects
-	VirtualMachineClusterFlavor() cache.SharedIndexInformer
-
 	// Watches MigrationPolicy objects
 	MigrationPolicy() cache.SharedIndexInformer
+
+	// Watches VirtualMachineClone objects
+	VirtualMachineClone() cache.SharedIndexInformer
 
 	// Watches for k8s extensions api configmap
 	ApiAuthConfigMap() cache.SharedIndexInformer
 
 	// Watches for the kubevirt CA config map
 	KubeVirtCAConfigMap() cache.SharedIndexInformer
+
+	// Watches for the kubevirt export CA config map
+	KubeVirtExportCAConfigMap() cache.SharedIndexInformer
+
+	// Watches for the export route config map
+	ExportRouteConfigMap() cache.SharedIndexInformer
+
+	// Watches for the kubevirt export service
+	ExportService() cache.SharedIndexInformer
 
 	// ConfigMaps which are managed by the operator
 	OperatorConfigMap() cache.SharedIndexInformer
@@ -214,6 +227,15 @@ type KubeInformerFactory interface {
 	// Fake SecurityContextConstraints informer used when not on openshift
 	DummyOperatorSCC() cache.SharedIndexInformer
 
+	// Routes
+	OperatorRoute() cache.SharedIndexInformer
+
+	// Fake Routes informer used when not on openshift
+	DummyOperatorRoute() cache.SharedIndexInformer
+
+	// Ingress
+	Ingress() cache.SharedIndexInformer
+
 	// ConfigMaps for operator install strategies
 	OperatorInstallStrategyConfigMaps() cache.SharedIndexInformer
 
@@ -240,6 +262,9 @@ type KubeInformerFactory interface {
 
 	// Managed secrets which hold data like certificates
 	Secrets() cache.SharedIndexInformer
+
+	// Unmanaged secrets for things like Ingress TLS
+	UnmanagedSecrets() cache.SharedIndexInformer
 
 	// Fake ServiceMonitor informer used when Prometheus is not installed
 	DummyOperatorServiceMonitor() cache.SharedIndexInformer
@@ -518,6 +543,60 @@ func (f *kubeInformerFactory) VirtualMachine() cache.SharedIndexInformer {
 	})
 }
 
+func GetVirtualMachineExportInformerIndexers() cache.Indexers {
+	return cache.Indexers{
+		"pvc": func(obj interface{}) ([]string, error) {
+			export, ok := obj.(*exportv1.VirtualMachineExport)
+			if !ok {
+				return nil, unexpectedObjectError
+			}
+
+			if (export.Spec.Source.APIGroup == nil ||
+				*export.Spec.Source.APIGroup == "" || *export.Spec.Source.APIGroup == "v1") &&
+				export.Spec.Source.Kind == "PersistentVolumeClaim" {
+				return []string{fmt.Sprintf("%s/%s", export.Namespace, export.Spec.Source.Name)}, nil
+			}
+
+			return nil, nil
+		},
+		"vmsnapshot": func(obj interface{}) ([]string, error) {
+			export, ok := obj.(*exportv1.VirtualMachineExport)
+			if !ok {
+				return nil, unexpectedObjectError
+			}
+
+			if export.Spec.Source.APIGroup != nil &&
+				*export.Spec.Source.APIGroup == snapshotv1.SchemeGroupVersion.Group &&
+				export.Spec.Source.Kind == "VirtualMachineSnapshot" {
+				return []string{fmt.Sprintf("%s/%s", export.Namespace, export.Spec.Source.Name)}, nil
+			}
+
+			return nil, nil
+		},
+		"vm": func(obj interface{}) ([]string, error) {
+			export, ok := obj.(*exportv1.VirtualMachineExport)
+			if !ok {
+				return nil, unexpectedObjectError
+			}
+
+			if export.Spec.Source.APIGroup != nil &&
+				*export.Spec.Source.APIGroup == core.GroupName &&
+				export.Spec.Source.Kind == "VirtualMachine" {
+				return []string{fmt.Sprintf("%s/%s", export.Namespace, export.Spec.Source.Name)}, nil
+			}
+
+			return nil, nil
+		},
+	}
+}
+
+func (f *kubeInformerFactory) VirtualMachineExport() cache.SharedIndexInformer {
+	return f.getInformer("vmExportInformer", func() cache.SharedIndexInformer {
+		lw := cache.NewListWatchFromClient(f.clientSet.GeneratedKubeVirtClient().ExportV1alpha1().RESTClient(), "virtualmachineexports", k8sv1.NamespaceAll, fields.Everything())
+		return cache.NewSharedIndexInformer(lw, &exportv1.VirtualMachineExport{}, f.defaultResync, GetVirtualMachineExportInformerIndexers())
+	})
+}
+
 func GetVirtualMachineSnapshotInformerIndexers() cache.Indexers {
 	return cache.Indexers{
 		"vm": func(obj interface{}) ([]string, error) {
@@ -597,24 +676,17 @@ func (f *kubeInformerFactory) VirtualMachineRestore() cache.SharedIndexInformer 
 	})
 }
 
-func (f *kubeInformerFactory) VirtualMachineFlavor() cache.SharedIndexInformer {
-	return f.getInformer("vmFlavorInformer", func() cache.SharedIndexInformer {
-		lw := cache.NewListWatchFromClient(f.clientSet.GeneratedKubeVirtClient().FlavorV1alpha1().RESTClient(), flavor.PluralResourceName, k8sv1.NamespaceAll, fields.Everything())
-		return cache.NewSharedIndexInformer(lw, &flavorv1.VirtualMachineFlavor{}, f.defaultResync, cache.Indexers{})
-	})
-}
-
-func (f *kubeInformerFactory) VirtualMachineClusterFlavor() cache.SharedIndexInformer {
-	return f.getInformer("vmClusterFlavorInformer", func() cache.SharedIndexInformer {
-		lw := cache.NewListWatchFromClient(f.clientSet.GeneratedKubeVirtClient().FlavorV1alpha1().RESTClient(), flavor.ClusterPluralResourceName, k8sv1.NamespaceAll, fields.Everything())
-		return cache.NewSharedIndexInformer(lw, &flavorv1.VirtualMachineClusterFlavor{}, f.defaultResync, cache.Indexers{})
-	})
-}
-
 func (f *kubeInformerFactory) MigrationPolicy() cache.SharedIndexInformer {
 	return f.getInformer("migrationPolicyInformer", func() cache.SharedIndexInformer {
 		lw := cache.NewListWatchFromClient(f.clientSet.GeneratedKubeVirtClient().MigrationsV1alpha1().RESTClient(), migrations.ResourceMigrationPolicies, k8sv1.NamespaceAll, fields.Everything())
 		return cache.NewSharedIndexInformer(lw, &migrationsv1.MigrationPolicy{}, f.defaultResync, cache.Indexers{})
+	})
+}
+
+func (f *kubeInformerFactory) VirtualMachineClone() cache.SharedIndexInformer {
+	return f.getInformer("virtualMachineCloneInformer", func() cache.SharedIndexInformer {
+		lw := cache.NewListWatchFromClient(f.clientSet.GeneratedKubeVirtClient().CloneV1alpha1().RESTClient(), clone.ResourceVMClonePlural, k8sv1.NamespaceAll, fields.Everything())
+		return cache.NewSharedIndexInformer(lw, &clonev1alpha1.VirtualMachineClone{}, f.defaultResync, cache.Indexers{})
 	})
 }
 
@@ -693,6 +765,37 @@ func (f *kubeInformerFactory) KubeVirtCAConfigMap() cache.SharedIndexInformer {
 		fieldSelector := fields.OneTermEqualSelector("metadata.name", "kubevirt-ca")
 		lw := cache.NewListWatchFromClient(restClient, "configmaps", f.kubevirtNamespace, fieldSelector)
 		return cache.NewSharedIndexInformer(lw, &k8sv1.ConfigMap{}, f.defaultResync, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+	})
+}
+
+func (f *kubeInformerFactory) KubeVirtExportCAConfigMap() cache.SharedIndexInformer {
+	return f.getInformer("extensionsKubeVirtExportCAConfigMapInformer", func() cache.SharedIndexInformer {
+		restClient := f.clientSet.CoreV1().RESTClient()
+		fieldSelector := fields.OneTermEqualSelector("metadata.name", "kubevirt-export-ca")
+		lw := cache.NewListWatchFromClient(restClient, "configmaps", f.kubevirtNamespace, fieldSelector)
+		return cache.NewSharedIndexInformer(lw, &k8sv1.ConfigMap{}, f.defaultResync, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+	})
+}
+
+func (f *kubeInformerFactory) ExportRouteConfigMap() cache.SharedIndexInformer {
+	return f.getInformer("extensionsExportRouteConfigMapInformer", func() cache.SharedIndexInformer {
+		restClient := f.clientSet.CoreV1().RESTClient()
+		fieldSelector := fields.OneTermEqualSelector("metadata.name", "kube-root-ca.crt")
+		lw := cache.NewListWatchFromClient(restClient, "configmaps", f.kubevirtNamespace, fieldSelector)
+		return cache.NewSharedIndexInformer(lw, &k8sv1.ConfigMap{}, f.defaultResync, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+	})
+}
+
+func (f *kubeInformerFactory) ExportService() cache.SharedIndexInformer {
+	return f.getInformer("exportService", func() cache.SharedIndexInformer {
+		// Watch all service with the kubevirt app label
+		labelSelector, err := labels.Parse(fmt.Sprintf("%s=%s", kubev1.AppLabel, exportv1.App))
+		if err != nil {
+			panic(err)
+		}
+
+		lw := NewListWatchFromClient(f.clientSet.CoreV1().RESTClient(), "services", k8sv1.NamespaceAll, fields.Everything(), labelSelector)
+		return cache.NewSharedIndexInformer(lw, &k8sv1.Service{}, f.defaultResync, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
 	})
 }
 
@@ -905,6 +1008,33 @@ func (f *kubeInformerFactory) DummyOperatorSCC() cache.SharedIndexInformer {
 	})
 }
 
+func (f *kubeInformerFactory) Ingress() cache.SharedIndexInformer {
+	return f.getInformer("Ingress", func() cache.SharedIndexInformer {
+		restClient := f.clientSet.NetworkingV1().RESTClient()
+		lw := cache.NewListWatchFromClient(restClient, "ingresses", f.kubevirtNamespace, fields.Everything())
+		return cache.NewSharedIndexInformer(lw, &networkingv1.Ingress{}, f.defaultResync, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+	})
+}
+
+func (f *kubeInformerFactory) OperatorRoute() cache.SharedIndexInformer {
+	return f.getInformer("OperatorRoute", func() cache.SharedIndexInformer {
+		labelSelector, err := labels.Parse(OperatorLabel)
+		if err != nil {
+			panic(err)
+		}
+		restClient := f.clientSet.RouteClient().RESTClient()
+		lw := NewListWatchFromClient(restClient, "routes", f.kubevirtNamespace, fields.Everything(), labelSelector)
+		return cache.NewSharedIndexInformer(lw, &routev1.Route{}, f.defaultResync, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+	})
+}
+
+func (f *kubeInformerFactory) DummyOperatorRoute() cache.SharedIndexInformer {
+	return f.getInformer("FakeOperatorRoute", func() cache.SharedIndexInformer {
+		informer, _ := testutils.NewFakeInformerFor(&routev1.Route{})
+		return informer
+	})
+}
+
 func (f *kubeInformerFactory) OperatorInstallStrategyConfigMaps() cache.SharedIndexInformer {
 	return f.getInformer("installStrategyConfigMapInformer", func() cache.SharedIndexInformer {
 		labelSelector, err := labels.Parse(kubev1.InstallStrategyLabel)
@@ -969,6 +1099,19 @@ func (f *kubeInformerFactory) OperatorMutatingWebhook() cache.SharedIndexInforme
 func (f *kubeInformerFactory) Secrets() cache.SharedIndexInformer {
 	return f.getInformer("secretsInformer", func() cache.SharedIndexInformer {
 		labelSelector, err := labels.Parse(OperatorLabel)
+		if err != nil {
+			panic(err)
+		}
+
+		restClient := f.clientSet.CoreV1().RESTClient()
+		lw := NewListWatchFromClient(restClient, "secrets", f.kubevirtNamespace, fields.Everything(), labelSelector)
+		return cache.NewSharedIndexInformer(lw, &k8sv1.Secret{}, f.defaultResync, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc})
+	})
+}
+
+func (f *kubeInformerFactory) UnmanagedSecrets() cache.SharedIndexInformer {
+	return f.getInformer("secretsInformer", func() cache.SharedIndexInformer {
+		labelSelector, err := labels.Parse(NotOperatorLabel)
 		if err != nil {
 			panic(err)
 		}
@@ -1078,14 +1221,14 @@ func (f *kubeInformerFactory) Pod() cache.SharedIndexInformer {
 
 // VolumeSnapshotInformer returns an informer for VolumeSnapshots
 func VolumeSnapshotInformer(clientSet kubecli.KubevirtClient, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	restClient := clientSet.KubernetesSnapshotClient().SnapshotV1beta1().RESTClient()
+	restClient := clientSet.KubernetesSnapshotClient().SnapshotV1().RESTClient()
 	lw := cache.NewListWatchFromClient(restClient, "volumesnapshots", k8sv1.NamespaceAll, fields.Everything())
-	return cache.NewSharedIndexInformer(lw, &vsv1beta1.VolumeSnapshot{}, resyncPeriod, cache.Indexers{})
+	return cache.NewSharedIndexInformer(lw, &vsv1.VolumeSnapshot{}, resyncPeriod, cache.Indexers{})
 }
 
 // VolumeSnapshotClassInformer returns an informer for VolumeSnapshotClasses
 func VolumeSnapshotClassInformer(clientSet kubecli.KubevirtClient, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	restClient := clientSet.KubernetesSnapshotClient().SnapshotV1beta1().RESTClient()
+	restClient := clientSet.KubernetesSnapshotClient().SnapshotV1().RESTClient()
 	lw := cache.NewListWatchFromClient(restClient, "volumesnapshotclasses", k8sv1.NamespaceAll, fields.Everything())
-	return cache.NewSharedIndexInformer(lw, &vsv1beta1.VolumeSnapshotClass{}, resyncPeriod, cache.Indexers{})
+	return cache.NewSharedIndexInformer(lw, &vsv1.VolumeSnapshotClass{}, resyncPeriod, cache.Indexers{})
 }

@@ -24,7 +24,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"kubevirt.io/api/flavor"
+	"kubevirt.io/api/clone"
+
+	"kubevirt.io/api/instancetype"
 
 	virtv1 "kubevirt.io/api/core/v1"
 	"kubevirt.io/api/migrations"
@@ -37,6 +39,8 @@ func GetAllController(namespace string) []runtime.Object {
 		newControllerServiceAccount(namespace),
 		newControllerClusterRole(),
 		newControllerClusterRoleBinding(namespace),
+		newControllerRole(namespace),
+		newControllerRoleBinding(namespace),
 	}
 }
 
@@ -51,6 +55,91 @@ func newControllerServiceAccount(namespace string) *corev1.ServiceAccount {
 			Name:      ControllerServiceAccountName,
 			Labels: map[string]string{
 				virtv1.AppLabel: "",
+			},
+		},
+	}
+}
+
+func newControllerRole(namespace string) *rbacv1.Role {
+	return &rbacv1.Role{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: VersionNamev1,
+			Kind:       "Role",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      ControllerServiceAccountName,
+			Namespace: namespace,
+			Labels: map[string]string{
+				virtv1.AppLabel: "",
+			},
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{
+					GroupNameRoute,
+				},
+				Resources: []string{
+					"routes",
+				},
+				Verbs: []string{
+					"list",
+					"get",
+					"watch",
+				},
+			},
+			{
+				APIGroups: []string{
+					"",
+				},
+				Resources: []string{
+					"secrets",
+				},
+				Verbs: []string{
+					"list",
+					"get",
+					"watch",
+				},
+			},
+			{
+				APIGroups: []string{
+					"networking.k8s.io",
+				},
+				Resources: []string{
+					"ingresses",
+				},
+				Verbs: []string{
+					"list",
+					"get",
+					"watch",
+				},
+			},
+		},
+	}
+}
+
+func newControllerRoleBinding(namespace string) *rbacv1.RoleBinding {
+	return &rbacv1.RoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: VersionNamev1,
+			Kind:       "RoleBinding",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      ControllerServiceAccountName,
+			Namespace: namespace,
+			Labels: map[string]string{
+				virtv1.AppLabel: "",
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: VersionName,
+			Kind:     "Role",
+			Name:     ControllerServiceAccountName,
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Namespace: namespace,
+				Name:      ControllerServiceAccountName,
 			},
 		},
 	}
@@ -71,6 +160,20 @@ func newControllerClusterRole() *rbacv1.ClusterRole {
 		Rules: []rbacv1.PolicyRule{
 			{
 				APIGroups: []string{
+					"",
+				},
+				Resources: []string{
+					"namespaces",
+				},
+				Verbs: []string{
+					"get",
+					"list",
+					"watch",
+					"patch",
+				},
+			},
+			{
+				APIGroups: []string{
 					"policy",
 				},
 				Resources: []string{
@@ -85,10 +188,10 @@ func newControllerClusterRole() *rbacv1.ClusterRole {
 					"",
 				},
 				Resources: []string{
-					"pods", "configmaps", "endpoints",
+					"pods", "configmaps", "endpoints", "services",
 				},
 				Verbs: []string{
-					"get", "list", "watch", "delete", "update", "create",
+					"get", "list", "watch", "delete", "update", "create", "patch",
 				},
 			},
 			{
@@ -100,6 +203,17 @@ func newControllerClusterRole() *rbacv1.ClusterRole {
 				},
 				Verbs: []string{
 					"update", "create", "patch",
+				},
+			},
+			{
+				APIGroups: []string{
+					"",
+				},
+				Resources: []string{
+					"secrets",
+				},
+				Verbs: []string{
+					"create",
 				},
 			},
 			{
@@ -169,6 +283,7 @@ func newControllerClusterRole() *rbacv1.ClusterRole {
 					"list",
 					"create",
 					"delete",
+					"get",
 				},
 			},
 			{
@@ -185,6 +300,17 @@ func newControllerClusterRole() *rbacv1.ClusterRole {
 			{
 				APIGroups: []string{
 					"snapshot.kubevirt.io",
+				},
+				Resources: []string{
+					"*",
+				},
+				Verbs: []string{
+					"*",
+				},
+			},
+			{
+				APIGroups: []string{
+					"export.kubevirt.io",
 				},
 				Resources: []string{
 					"*",
@@ -328,14 +454,16 @@ func newControllerClusterRole() *rbacv1.ClusterRole {
 			},
 			{
 				APIGroups: []string{
-					"flavor.kubevirt.io",
+					"instancetype.kubevirt.io",
 				},
 				Resources: []string{
-					flavor.PluralResourceName,
-					flavor.ClusterPluralResourceName,
+					instancetype.PluralResourceName,
+					instancetype.ClusterPluralResourceName,
+					instancetype.PluralPreferenceResourceName,
+					instancetype.ClusterPluralPreferenceResourceName,
 				},
 				Verbs: []string{
-					"list", "watch",
+					"get", "list", "watch",
 				},
 			},
 			{
@@ -347,6 +475,19 @@ func newControllerClusterRole() *rbacv1.ClusterRole {
 				},
 				Verbs: []string{
 					"get", "list", "watch",
+				},
+			},
+			{
+				APIGroups: []string{
+					clone.GroupName,
+				},
+				Resources: []string{
+					clone.ResourceVMClonePlural,
+					clone.ResourceVMClonePlural + "/status",
+					clone.ResourceVMClonePlural + "/finalizers",
+				},
+				Verbs: []string{
+					"get", "list", "watch", "update", "patch", "delete",
 				},
 			},
 			{

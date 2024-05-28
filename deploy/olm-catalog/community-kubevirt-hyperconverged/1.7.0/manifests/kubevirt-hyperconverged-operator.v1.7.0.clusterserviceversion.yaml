@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.7.0-unstable
-    createdAt: "2023-11-08 05:13:05"
+    createdAt: "2024-05-28 12:22:09"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     operatorframework.io/initialization-resource: '{"apiVersion":"hco.kubevirt.io/v1beta1","kind":"HyperConverged","metadata":{"annotations":{"deployOVS":"false"},"name":"kubevirt-hyperconverged","namespace":"kubevirt-hyperconverged"},"spec":{}}'
@@ -699,19 +699,6 @@ spec:
           - update
           - patch
         - apiGroups:
-          - subresources.kubevirt.io
-          resources:
-          - virtualmachineinstances/pause
-          - virtualmachineinstances/unpause
-          - virtualmachineinstances/addvolume
-          - virtualmachineinstances/removevolume
-          - virtualmachineinstances/freeze
-          - virtualmachineinstances/unfreeze
-          - virtualmachineinstances/softreboot
-          verbs:
-          - update
-          - get
-        - apiGroups:
           - ""
           resources:
           - namespaces
@@ -720,6 +707,22 @@ spec:
           - list
           - watch
           - patch
+        - apiGroups:
+          - flavor.kubevirt.io
+          resources:
+          - virtualmachineflavors
+          - virtualmachineclusterflavors
+          - virtualmachinepreferences
+          - virtualmachineclusterpreferences
+          verbs:
+          - get
+          - delete
+          - create
+          - update
+          - patch
+          - list
+          - watch
+          - deletecollection
         - apiGroups:
           - ""
           resources:
@@ -740,6 +743,12 @@ spec:
           - watch
           - patch
           - update
+        - apiGroups:
+          - ""
+          resources:
+          - persistentvolumeclaims
+          verbs:
+          - get
         - apiGroups:
           - kubevirt.io
           resources:
@@ -812,11 +821,14 @@ spec:
           - list
           - watch
         - apiGroups:
-          - flavor.kubevirt.io
+          - instancetype.kubevirt.io
           resources:
-          - virtualmachineflavors
-          - virtualmachineclusterflavors
+          - virtualmachineinstancetypes
+          - virtualmachineclusterinstancetypes
+          - virtualmachinepreferences
+          - virtualmachineclusterpreferences
           verbs:
+          - get
           - list
           - watch
         - apiGroups:
@@ -828,6 +840,14 @@ spec:
           - list
           - watch
         - apiGroups:
+          - apps
+          resources:
+          - controllerrevisions
+          verbs:
+          - create
+          - list
+          - get
+        - apiGroups:
           - ""
           resources:
           - configmaps
@@ -835,6 +855,15 @@ spec:
           - get
           - list
           - watch
+        - apiGroups:
+          - ""
+          resources:
+          - namespaces
+          verbs:
+          - get
+          - list
+          - watch
+          - patch
         - apiGroups:
           - policy
           resources:
@@ -852,6 +881,7 @@ spec:
           - pods
           - configmaps
           - endpoints
+          - services
           verbs:
           - get
           - list
@@ -859,6 +889,7 @@ spec:
           - delete
           - update
           - create
+          - patch
         - apiGroups:
           - ""
           resources:
@@ -867,6 +898,12 @@ spec:
           - update
           - create
           - patch
+        - apiGroups:
+          - ""
+          resources:
+          - secrets
+          verbs:
+          - create
         - apiGroups:
           - ""
           resources:
@@ -910,6 +947,7 @@ spec:
           - list
           - create
           - delete
+          - get
         - apiGroups:
           - ""
           resources:
@@ -924,6 +962,12 @@ spec:
           - patch
         - apiGroups:
           - snapshot.kubevirt.io
+          resources:
+          - '*'
+          verbs:
+          - '*'
+        - apiGroups:
+          - export.kubevirt.io
           resources:
           - '*'
           verbs:
@@ -1013,11 +1057,14 @@ spec:
           - list
           - watch
         - apiGroups:
-          - flavor.kubevirt.io
+          - instancetype.kubevirt.io
           resources:
-          - virtualmachineflavors
-          - virtualmachineclusterflavors
+          - virtualmachineinstancetypes
+          - virtualmachineclusterinstancetypes
+          - virtualmachinepreferences
+          - virtualmachineclusterpreferences
           verbs:
+          - get
           - list
           - watch
         - apiGroups:
@@ -1029,11 +1076,48 @@ spec:
           - list
           - watch
         - apiGroups:
+          - clone.kubevirt.io
+          resources:
+          - virtualmachineclones
+          - virtualmachineclones/status
+          - virtualmachineclones/finalizers
+          verbs:
+          - get
+          - list
+          - watch
+          - update
+          - patch
+          - delete
+        - apiGroups:
           - ""
           resources:
           - namespaces
           verbs:
           - get
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          verbs:
+          - list
+          - get
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - secrets
+          verbs:
+          - list
+          - get
+          - watch
+        - apiGroups:
+          - networking.k8s.io
+          resources:
+          - ingresses
+          verbs:
+          - list
+          - get
+          - watch
         - apiGroups:
           - kubevirt.io
           resources:
@@ -1099,6 +1183,31 @@ spec:
           - list
           - watch
         - apiGroups:
+          - export.kubevirt.io
+          resources:
+          - virtualmachineexports
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - kubevirt.io
+          resources:
+          - kubevirts
+          verbs:
+          - list
+          - watch
+        - apiGroups:
+          - ""
+          resourceNames:
+          - kubevirt-export-ca
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
           - subresources.kubevirt.io
           resources:
           - version
@@ -1111,6 +1220,7 @@ spec:
           resources:
           - virtualmachineinstances/console
           - virtualmachineinstances/vnc
+          - virtualmachineinstances/vnc/screenshot
           - virtualmachineinstances/guestosinfo
           - virtualmachineinstances/filesystemlist
           - virtualmachineinstances/userlist
@@ -1126,6 +1236,7 @@ spec:
           - virtualmachineinstances/freeze
           - virtualmachineinstances/unfreeze
           - virtualmachineinstances/softreboot
+          - virtualmachineinstances/portforward
           verbs:
           - update
         - apiGroups:
@@ -1137,6 +1248,7 @@ spec:
           - virtualmachines/addvolume
           - virtualmachines/removevolume
           - virtualmachines/migrate
+          - virtualmachines/memorydump
           verbs:
           - update
         - apiGroups:
@@ -1172,10 +1284,12 @@ spec:
           - watch
           - deletecollection
         - apiGroups:
-          - flavor.kubevirt.io
+          - instancetype.kubevirt.io
           resources:
-          - virtualmachineflavors
-          - virtualmachineclusterflavors
+          - virtualmachineinstancetypes
+          - virtualmachineclusterinstancetypes
+          - virtualmachinepreferences
+          - virtualmachineclusterpreferences
           verbs:
           - get
           - delete
@@ -1211,6 +1325,7 @@ spec:
           resources:
           - virtualmachineinstances/console
           - virtualmachineinstances/vnc
+          - virtualmachineinstances/vnc/screenshot
           - virtualmachineinstances/guestosinfo
           - virtualmachineinstances/filesystemlist
           - virtualmachineinstances/userlist
@@ -1226,6 +1341,7 @@ spec:
           - virtualmachineinstances/freeze
           - virtualmachineinstances/unfreeze
           - virtualmachineinstances/softreboot
+          - virtualmachineinstances/portforward
           verbs:
           - update
         - apiGroups:
@@ -1237,6 +1353,7 @@ spec:
           - virtualmachines/addvolume
           - virtualmachines/removevolume
           - virtualmachines/migrate
+          - virtualmachines/memorydump
           verbs:
           - update
         - apiGroups:
@@ -1270,10 +1387,12 @@ spec:
           - list
           - watch
         - apiGroups:
-          - flavor.kubevirt.io
+          - instancetype.kubevirt.io
           resources:
-          - virtualmachineflavors
-          - virtualmachineclusterflavors
+          - virtualmachineinstancetypes
+          - virtualmachineclusterinstancetypes
+          - virtualmachinepreferences
+          - virtualmachineclusterpreferences
           verbs:
           - get
           - delete
@@ -1340,10 +1459,12 @@ spec:
           - list
           - watch
         - apiGroups:
-          - flavor.kubevirt.io
+          - instancetype.kubevirt.io
           resources:
-          - virtualmachineflavors
-          - virtualmachineclusterflavors
+          - virtualmachineinstancetypes
+          - virtualmachineclusterinstancetypes
+          - virtualmachinepreferences
+          - virtualmachineclusterpreferences
           verbs:
           - get
           - list
@@ -2400,7 +2521,7 @@ spec:
                 - name: HCO_KV_IO_VERSION
                   value: 1.7.0
                 - name: KUBEVIRT_VERSION
-                  value: v0.53.2
+                  value: v0.58.0
                 - name: CDI_VERSION
                   value: v1.49.0
                 - name: NETWORK_ADDONS_VERSION
@@ -2721,24 +2842,26 @@ spec:
                 - virt-operator
                 env:
                 - name: OPERATOR_IMAGE
-                  value: quay.io/kubevirt/virt-operator@sha256:973ba143088731c06befd8652ef742b99ec6948e2e696a3b76031846098b4aac
+                  value: quay.io/kubevirt/virt-operator@sha256:6058fec404282087f415456820fd067bbb06a63955e3110be270b940bf379a09
                 - name: WATCH_NAMESPACE
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: KUBEVIRT_VERSION
-                  value: v0.53.2
+                  value: v0.58.0
                 - name: VIRT_API_SHASUM
-                  value: sha256:10b0aae00fb79ccc385c01389cb77761372e250daa4e2dc84736371f041e37bf
+                  value: sha256:6ebe0108f752f17338b80d3d526cf607d264780ea4424833b7b5d204d06245d2
                 - name: VIRT_CONTROLLER_SHASUM
-                  value: sha256:6a87b36cd35a353afd27de61e2aa73e093db60b707c31f3d5f4a3bd134561499
+                  value: sha256:b26b1e0b70c9378ed1e3de0bec028149c9e28fa36de0922bd6baa618b75d7cac
                 - name: VIRT_HANDLER_SHASUM
-                  value: sha256:4d0aabaf676c142cc74a17889f8bb5011bbbf539b53e03a81c1a1fc14123aa3a
+                  value: sha256:9ffe3df609ca3403dae4f567698b6eabd101a12d281d0a1dab23c71cdf5eb506
                 - name: VIRT_LAUNCHER_SHASUM
-                  value: sha256:7291ad6e7955dc1f26a0ab0afcdf89aca004fe6f8fc2d48b6e058b3c6dfc7314
+                  value: sha256:f62c7cd142056282afd0d7233e9a87ce6ea35e3c475615fae9326d1697abdefd
+                - name: VIRT_EXPORTPROXY_SHASUM
+                - name: VIRT_EXPORTSERVER_SHASUM
                 - name: GS_SHASUM
-                  value: sha256:0fbc7ca34306be70e9e7fbf5a37c52b7fd7cd77b3d236edad65b4955dae6a762
-                image: quay.io/kubevirt/virt-operator@sha256:973ba143088731c06befd8652ef742b99ec6948e2e696a3b76031846098b4aac
+                  value: sha256:f36d2c6518bdf9ca7e03b8690fc9bf11f4a5a841c94725b48feca1bc2d533292
+                image: quay.io/kubevirt/virt-operator@sha256:6058fec404282087f415456820fd067bbb06a63955e3110be270b940bf379a09
                 imagePullPolicy: IfNotPresent
                 name: virt-operator
                 ports:
@@ -2758,16 +2881,27 @@ spec:
                 resources:
                   requests:
                     cpu: 10m
-                    memory: 150Mi
+                    memory: 250Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+                  seccompProfile:
+                    type: RuntimeDefault
                 volumeMounts:
                 - mountPath: /etc/virt-operator/certificates
                   name: kubevirt-operator-certs
                   readOnly: true
                 - mountPath: /profile-data
                   name: profile-data
+              nodeSelector:
+                kubernetes.io/os: linux
               priorityClassName: kubevirt-cluster-critical
               securityContext:
                 runAsNonRoot: true
+                seccompProfile:
+                  type: RuntimeDefault
               serviceAccountName: kubevirt-operator
               tolerations:
               - key: CriticalAddonsOnly
@@ -3146,6 +3280,23 @@ spec:
           - watch
           - patch
           - delete
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          verbs:
+          - create
+          - get
+          - list
+          - watch
+          - patch
+          - delete
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes/custom-host
+          verbs:
+          - create
         serviceAccountName: kubevirt-operator
       - rules:
         - apiGroups:
@@ -3510,7 +3661,7 @@ spec:
     name: kubemacpool
   - image: quay.io/kubevirt-ui/kubevirt-plugin@sha256:341713582ed3d5ea2aff4325e28d86a5633025b35ff252846910c955f1917aca
     name: kubevirt-plugin
-  - image: quay.io/kubevirt/libguestfs-tools@sha256:0fbc7ca34306be70e9e7fbf5a37c52b7fd7cd77b3d236edad65b4955dae6a762
+  - image: quay.io/kubevirt/libguestfs-tools@sha256:f36d2c6518bdf9ca7e03b8690fc9bf11f4a5a841c94725b48feca1bc2d533292
     name: libguestfs-tools
   - image: k8s.gcr.io/sig-storage/livenessprobe@sha256:1b7c978a792a8fa4e96244e8059bd71bb49b07e2e5a897fb0c867bdc6db20d5d
     name: livenessprobe
@@ -3528,15 +3679,15 @@ spec:
     name: ssp-operator
   - image: quay.io/kubevirt/tekton-tasks-operator@sha256:aa8ed6cd59dc235c02f8170e4b272e67801e87fe35767d2c6b31891e534a2295
     name: tekton-tasks-operator
-  - image: quay.io/kubevirt/virt-api@sha256:10b0aae00fb79ccc385c01389cb77761372e250daa4e2dc84736371f041e37bf
+  - image: quay.io/kubevirt/virt-api@sha256:6ebe0108f752f17338b80d3d526cf607d264780ea4424833b7b5d204d06245d2
     name: virt-api
-  - image: quay.io/kubevirt/virt-controller@sha256:6a87b36cd35a353afd27de61e2aa73e093db60b707c31f3d5f4a3bd134561499
+  - image: quay.io/kubevirt/virt-controller@sha256:b26b1e0b70c9378ed1e3de0bec028149c9e28fa36de0922bd6baa618b75d7cac
     name: virt-controller
-  - image: quay.io/kubevirt/virt-handler@sha256:4d0aabaf676c142cc74a17889f8bb5011bbbf539b53e03a81c1a1fc14123aa3a
+  - image: quay.io/kubevirt/virt-handler@sha256:9ffe3df609ca3403dae4f567698b6eabd101a12d281d0a1dab23c71cdf5eb506
     name: virt-handler
-  - image: quay.io/kubevirt/virt-launcher@sha256:7291ad6e7955dc1f26a0ab0afcdf89aca004fe6f8fc2d48b6e058b3c6dfc7314
+  - image: quay.io/kubevirt/virt-launcher@sha256:f62c7cd142056282afd0d7233e9a87ce6ea35e3c475615fae9326d1697abdefd
     name: virt-launcher
-  - image: quay.io/kubevirt/virt-operator@sha256:973ba143088731c06befd8652ef742b99ec6948e2e696a3b76031846098b4aac
+  - image: quay.io/kubevirt/virt-operator@sha256:6058fec404282087f415456820fd067bbb06a63955e3110be270b940bf379a09
     name: virt-operator
   - image: quay.io/kubevirt/virtio-container-disk@sha256:3e88b9bde8792ba21d6cdaad70c79d5e9b339ef676402e932c6fcc2bda100d04
     name: virtio-container-disk

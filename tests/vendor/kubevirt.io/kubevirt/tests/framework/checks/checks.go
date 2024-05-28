@@ -2,6 +2,9 @@ package checks
 
 import (
 	"fmt"
+	"time"
+
+	"kubevirt.io/kubevirt/tests/libnode"
 
 	"github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
@@ -9,6 +12,7 @@ import (
 	"kubevirt.io/kubevirt/pkg/util/cluster"
 
 	"kubevirt.io/client-go/kubecli"
+
 	"kubevirt.io/kubevirt/tests/util"
 
 	v12 "kubevirt.io/api/core/v1"
@@ -78,6 +82,19 @@ func IsARM64(arch string) bool {
 
 func HasLiveMigration() bool {
 	return HasFeature("LiveMigration")
+}
+
+func HasAtLeastTwoNodes() bool {
+	var nodes *v1.NodeList
+	virtClient, err := kubecli.GetKubevirtClient()
+	util.PanicOnError(err)
+
+	gomega.Eventually(func() []v1.Node {
+		nodes = libnode.GetAllSchedulableNodes(virtClient)
+		return nodes.Items
+	}, 60*time.Second, time.Second).ShouldNot(gomega.BeEmpty(), "There should be some compute node")
+
+	return len(nodes.Items) >= 2
 }
 
 func IsOpenShift() bool {
