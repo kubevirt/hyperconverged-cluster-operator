@@ -23,7 +23,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"kubevirt.io/api/flavor"
+	"kubevirt.io/api/instancetype"
 
 	virtv1 "kubevirt.io/api/core/v1"
 
@@ -33,7 +33,7 @@ import (
 const (
 	GroupNameSubresources  = "subresources.kubevirt.io"
 	GroupNameSnapshot      = "snapshot.kubevirt.io"
-	GroupNameFlavor        = "flavor.kubevirt.io"
+	GroupNameInstancetype  = "instancetype.kubevirt.io"
 	GroupNamePool          = "pool.kubevirt.io"
 	NameDefault            = "kubevirt.io:default"
 	VMInstancesGuestOSInfo = "virtualmachineinstances/guestosinfo"
@@ -74,6 +74,7 @@ func newDefaultClusterRole() *rbacv1.ClusterRole {
 				},
 				Resources: []string{
 					"version",
+					"guestfs",
 				},
 				Verbs: []string{
 					"get", "list",
@@ -139,6 +140,7 @@ func newAdminClusterRole() *rbacv1.ClusterRole {
 				Resources: []string{
 					"virtualmachineinstances/console",
 					"virtualmachineinstances/vnc",
+					"virtualmachineinstances/vnc/screenshot",
 					VMInstancesGuestOSInfo,
 					VMInstancesFileSysList,
 					VMInstancesUserList,
@@ -159,6 +161,7 @@ func newAdminClusterRole() *rbacv1.ClusterRole {
 					"virtualmachineinstances/freeze",
 					"virtualmachineinstances/unfreeze",
 					"virtualmachineinstances/softreboot",
+					"virtualmachineinstances/portforward",
 				},
 				Verbs: []string{
 					"update",
@@ -172,6 +175,10 @@ func newAdminClusterRole() *rbacv1.ClusterRole {
 					"virtualmachines/start",
 					"virtualmachines/stop",
 					"virtualmachines/restart",
+					"virtualmachines/addvolume",
+					"virtualmachines/removevolume",
+					"virtualmachines/migrate",
+					"virtualmachines/memorydump",
 				},
 				Verbs: []string{
 					"update",
@@ -207,11 +214,13 @@ func newAdminClusterRole() *rbacv1.ClusterRole {
 			},
 			{
 				APIGroups: []string{
-					GroupNameFlavor,
+					GroupNameInstancetype,
 				},
 				Resources: []string{
-					flavor.PluralResourceName,
-					flavor.ClusterPluralResourceName,
+					instancetype.PluralResourceName,
+					instancetype.ClusterPluralResourceName,
+					instancetype.PluralPreferenceResourceName,
+					instancetype.ClusterPluralPreferenceResourceName,
 				},
 				Verbs: []string{
 					"get", "delete", "create", "update", "patch", "list", "watch", "deletecollection",
@@ -264,6 +273,7 @@ func newEditClusterRole() *rbacv1.ClusterRole {
 				Resources: []string{
 					"virtualmachineinstances/console",
 					"virtualmachineinstances/vnc",
+					"virtualmachineinstances/vnc/screenshot",
 					VMInstancesGuestOSInfo,
 					VMInstancesFileSysList,
 					VMInstancesUserList,
@@ -284,6 +294,7 @@ func newEditClusterRole() *rbacv1.ClusterRole {
 					"virtualmachineinstances/freeze",
 					"virtualmachineinstances/unfreeze",
 					"virtualmachineinstances/softreboot",
+					"virtualmachineinstances/portforward",
 				},
 				Verbs: []string{
 					"update",
@@ -297,6 +308,10 @@ func newEditClusterRole() *rbacv1.ClusterRole {
 					"virtualmachines/start",
 					"virtualmachines/stop",
 					"virtualmachines/restart",
+					"virtualmachines/addvolume",
+					"virtualmachines/removevolume",
+					"virtualmachines/migrate",
+					"virtualmachines/memorydump",
 				},
 				Verbs: []string{
 					"update",
@@ -332,11 +347,13 @@ func newEditClusterRole() *rbacv1.ClusterRole {
 			},
 			{
 				APIGroups: []string{
-					GroupNameFlavor,
+					GroupNameInstancetype,
 				},
 				Resources: []string{
-					flavor.PluralResourceName,
-					flavor.ClusterPluralResourceName,
+					instancetype.PluralResourceName,
+					instancetype.ClusterPluralResourceName,
+					instancetype.PluralPreferenceResourceName,
+					instancetype.ClusterPluralPreferenceResourceName,
 				},
 				Verbs: []string{
 					"get", "delete", "create", "update", "patch", "list", "watch",
@@ -436,11 +453,13 @@ func newViewClusterRole() *rbacv1.ClusterRole {
 			},
 			{
 				APIGroups: []string{
-					GroupNameFlavor,
+					GroupNameInstancetype,
 				},
 				Resources: []string{
-					flavor.PluralResourceName,
-					flavor.ClusterPluralResourceName,
+					instancetype.PluralResourceName,
+					instancetype.ClusterPluralResourceName,
+					instancetype.PluralPreferenceResourceName,
+					instancetype.ClusterPluralPreferenceResourceName,
 				},
 				Verbs: []string{
 					"get", "list", "watch",

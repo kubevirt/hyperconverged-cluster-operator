@@ -5,11 +5,26 @@ import (
 	"strconv"
 	"strings"
 
+	"kubevirt.io/kubevirt/pkg/util"
+
 	v1 "k8s.io/api/core/v1"
 
 	k6tv1 "kubevirt.io/api/core/v1"
 	"kubevirt.io/client-go/log"
 )
+
+type TscFrequencyRequirementType int
+
+const (
+	RequiredForBoot TscFrequencyRequirementType = iota
+	RequiredForMigration
+	NotRequired
+)
+
+type TscFrequencyRequirement struct {
+	Type   TscFrequencyRequirementType
+	Reason string
+}
 
 func LowestTSCFrequency(nodes []*v1.Node) int64 {
 	var lowest int64
@@ -107,7 +122,30 @@ func ToTSCSchedulableLabel(frequency int64) string {
 	return fmt.Sprintf("%s-%d", TSCFrequencySchedulingLabel, frequency)
 }
 
-func VMIHasInvTSCFeature(vmi *k6tv1.VirtualMachineInstance) bool {
+func AreTSCFrequencyTopologyHintsDefined(vmi *k6tv1.VirtualMachineInstance) bool {
+	return vmi != nil && vmi.Status.TopologyHints != nil && vmi.Status.TopologyHints.TSCFrequency != nil
+}
+
+func IsManualTSCFrequencyRequired(vmi *k6tv1.VirtualMachineInstance) bool {
+	return GetTscFrequencyRequirement(vmi).Type != NotRequired
+}
+
+func GetTscFrequencyRequirement(vmi *k6tv1.VirtualMachineInstance) TscFrequencyRequirement {
+	newRequirement := func(reqType TscFrequencyRequirementType, reason string) TscFrequencyRequirement {
+		return TscFrequencyRequirement{Type: reqType, Reason: reason}
+	}
+
+	if vmiHasInvTSCFeature(vmi) {
+		return newRequirement(RequiredForBoot, "VMI with invtsc CPU feature must have tsc frequency defined in order to boot")
+	}
+	if util.IsVmiUsingHyperVReenlightenment(vmi) {
+		return newRequirement(RequiredForMigration, "HyperV Reenlightenment VMIs cannot migrate when TSC Frequency is not exposed on the cluster: guest timers might be inconsistent")
+	}
+
+	return newRequirement(NotRequired, "")
+}
+
+func vmiHasInvTSCFeature(vmi *k6tv1.VirtualMachineInstance) bool {
 	if cpu := vmi.Spec.Domain.CPU; cpu != nil {
 		for _, f := range cpu.Features {
 			if f.Name != "invtsc" {

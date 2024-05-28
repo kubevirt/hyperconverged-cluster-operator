@@ -8,7 +8,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/tools/cache"
 
+	k8score "k8s.io/api/core/v1"
+
 	KVv1 "kubevirt.io/api/core/v1"
+
 	virtconfig "kubevirt.io/kubevirt/pkg/virt-config"
 )
 
@@ -53,7 +56,18 @@ func NewFakeContainerDiskSource() *KVv1.ContainerDiskSource {
 	return &KVv1.ContainerDiskSource{
 		Image:           "fake-image",
 		ImagePullSecret: "fake-pull-secret",
-		Path:            "fake-path",
+		Path:            "/fake-path",
+	}
+}
+
+func NewFakeMemoryDumpSource(name string) *KVv1.MemoryDumpVolumeSource {
+	return &KVv1.MemoryDumpVolumeSource{
+		PersistentVolumeClaimVolumeSource: KVv1.PersistentVolumeClaimVolumeSource{
+			PersistentVolumeClaimVolumeSource: k8score.PersistentVolumeClaimVolumeSource{
+				ClaimName: name,
+			},
+			Hotpluggable: true,
+		},
 	}
 }
 

@@ -1,9 +1,14 @@
 package util
 
 import (
+	"crypto/rand"
+	"errors"
 	"fmt"
+	"math/big"
 	"os"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	v1 "kubevirt.io/api/core/v1"
 	"kubevirt.io/client-go/log"
@@ -21,9 +26,13 @@ const (
 	CPUManagerPath                            = HostRootMount + "var/lib/kubelet/cpu_manager_state"
 )
 
+// Alphanums is the list of alphanumeric characters used to create a securely generated random string
+const Alphanums = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
 const NonRootUID = 107
 const NonRootUserString = "qemu"
 const RootUser = 0
+const memoryDumpOverhead = 100 * 1024 * 1024
 
 func IsNonRootVMI(vmi *v1.VirtualMachineInstance) bool {
 	_, ok := vmi.Annotations[v1.DeprecatedNonRootVMIAnnotation]
@@ -83,6 +92,17 @@ func IsSEVVMI(vmi *v1.VirtualMachineInstance) bool {
 	return vmi.Spec.Domain.LaunchSecurity != nil && vmi.Spec.Domain.LaunchSecurity.SEV != nil
 }
 
+func IsVmiUsingHyperVReenlightenment(vmi *v1.VirtualMachineInstance) bool {
+	if vmi == nil {
+		return false
+	}
+
+	domainFeatures := vmi.Spec.Domain.Features
+
+	return domainFeatures != nil && domainFeatures.Hyperv != nil && domainFeatures.Hyperv.Reenlightenment != nil &&
+		domainFeatures.Hyperv.Reenlightenment.Enabled != nil && *domainFeatures.Hyperv.Reenlightenment.Enabled
+}
+
 // WantVirtioNetDevice checks whether a VMI references at least one "virtio" network interface.
 // Note that the reference can be explicit or implicit (unspecified nic models defaults to "virtio").
 func WantVirtioNetDevice(vmi *v1.VirtualMachineInstance) bool {
@@ -117,7 +137,7 @@ func UseSoftwareEmulationForDevice(devicePath string, allowEmulation bool) (bool
 	if err == nil {
 		return false, nil
 	}
-	if os.IsNotExist(err) {
+	if errors.Is(err, os.ErrNotExist) {
 		return true, nil
 	}
 	return false, err
@@ -174,14 +194,53 @@ func AlignImageSizeTo1MiB(size int64, logger *log.FilteredLogger) int64 {
 	}
 
 }
-func CanBeNonRoot(vmi *v1.VirtualMachineInstance) error {
-	// VirtioFS doesn't work with session mode
-	if IsVMIVirtiofsEnabled(vmi) {
-		return fmt.Errorf("VirtioFS doesn't work with session mode(used by nonroot)")
-	}
-	return nil
-}
 
 func MarkAsNonroot(vmi *v1.VirtualMachineInstance) {
 	vmi.Status.RuntimeUser = 107
+}
+
+func SetDefaultVolumeDisk(obj *v1.VirtualMachineInstance) {
+
+	diskAndFilesystemNames := make(map[string]struct{})
+
+	for _, disk := range obj.Spec.Domain.Devices.Disks {
+		diskAndFilesystemNames[disk.Name] = struct{}{}
+	}
+
+	for _, fs := range obj.Spec.Domain.Devices.Filesystems {
+		diskAndFilesystemNames[fs.Name] = struct{}{}
+	}
+
+	for _, volume := range obj.Spec.Volumes {
+		if _, foundDisk := diskAndFilesystemNames[volume.Name]; !foundDisk {
+			obj.Spec.Domain.Devices.Disks = append(
+				obj.Spec.Domain.Devices.Disks,
+				v1.Disk{
+					Name: volume.Name,
+				},
+			)
+		}
+	}
+}
+
+func CalcExpectedMemoryDumpSize(vmi *v1.VirtualMachineInstance) *resource.Quantity {
+	domain := vmi.Spec.Domain
+	vmiMemoryReq := domain.Resources.Requests.Memory()
+	expectedPvcSize := resource.NewQuantity(int64(memoryDumpOverhead), vmiMemoryReq.Format)
+	expectedPvcSize.Add(*vmiMemoryReq)
+	return expectedPvcSize
+}
+
+// GenerateRandomString creates a securely generated random string using crypto/rand
+func GenerateSecureRandomString(n int) (string, error) {
+	ret := make([]byte, n)
+	for i := range ret {
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(Alphanums))))
+		if err != nil {
+			return "", err
+		}
+		ret[i] = Alphanums[num.Int64()]
+	}
+
+	return string(ret), nil
 }

@@ -24,6 +24,10 @@ package virtconfig
 */
 
 import (
+	"fmt"
+
+	"kubevirt.io/client-go/log"
+
 	k8sv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -64,7 +68,7 @@ const (
 	DefaultAARCH64OVMFPath                          = "/usr/share/AAVMF"
 	DefaultMemBalloonStatsPeriod             uint32 = 10
 	DefaultCPUAllocationRatio                       = 10
-	DefaultDiskVerificationMemoryLimitMBytes        = 1500
+	DefaultDiskVerificationMemoryLimitMBytes        = 1700
 	DefaultVirtAPILogVerbosity                      = 2
 	DefaultVirtControllerLogVerbosity               = 2
 	DefaultVirtHandlerLogVerbosity                  = 2
@@ -74,8 +78,8 @@ const (
 	// Default REST configuration settings
 	DefaultVirtHandlerQPS         float32 = 5
 	DefaultVirtHandlerBurst               = 10
-	DefaultVirtControllerQPS      float32 = 20
-	DefaultVirtControllerBurst            = 30
+	DefaultVirtControllerQPS      float32 = 200
+	DefaultVirtControllerBurst            = 400
 	DefaultVirtAPIQPS             float32 = 5
 	DefaultVirtAPIBurst                   = 10
 	DefaultVirtWebhookClientQPS           = 200
@@ -165,6 +169,36 @@ func (c *ClusterConfig) GetDefaultNetworkInterface() string {
 	return c.GetConfig().NetworkConfiguration.NetworkInterface
 }
 
+func (c *ClusterConfig) SetVMIDefaultNetworkInterface(vmi *v1.VirtualMachineInstance) error {
+	autoAttach := vmi.Spec.Domain.Devices.AutoattachPodInterface
+	if autoAttach != nil && *autoAttach == false {
+		return nil
+	}
+
+	// Override only when nothing is specified
+	if len(vmi.Spec.Networks) == 0 && len(vmi.Spec.Domain.Devices.Interfaces) == 0 {
+		iface := v1.NetworkInterfaceType(c.GetDefaultNetworkInterface())
+		switch iface {
+		case v1.BridgeInterface:
+			if !c.IsBridgeInterfaceOnPodNetworkEnabled() {
+				return fmt.Errorf("Bridge interface is not enabled in kubevirt-config")
+			}
+			vmi.Spec.Domain.Devices.Interfaces = []v1.Interface{*v1.DefaultBridgeNetworkInterface()}
+		case v1.MasqueradeInterface:
+			vmi.Spec.Domain.Devices.Interfaces = []v1.Interface{*v1.DefaultMasqueradeNetworkInterface()}
+		case v1.SlirpInterface:
+			if !c.IsSlirpInterfaceEnabled() {
+				return fmt.Errorf("Slirp interface is not enabled in kubevirt-config")
+			}
+			defaultIface := v1.DefaultSlirpNetworkInterface()
+			vmi.Spec.Domain.Devices.Interfaces = []v1.Interface{*defaultIface}
+		}
+
+		vmi.Spec.Networks = []v1.Network{*v1.DefaultPodNetwork()}
+	}
+	return nil
+}
+
 func (c *ClusterConfig) IsSlirpInterfaceEnabled() bool {
 	return *c.GetConfig().NetworkConfiguration.PermitSlirpInterface
 }
@@ -245,33 +279,61 @@ func (c *ClusterConfig) GetDesiredMDEVTypes(node *k8sv1.Node) []string {
 	return mdevTypesConf.MediatedDevicesTypes
 }
 
-func (c *ClusterConfig) GetVirtHandlerVerbosity(nodeName string) uint {
+type virtComponent int
+
+const (
+	virtHandler virtComponent = iota
+	virtApi
+	virtController
+	virtOperator
+	virtLauncher
+)
+
+// Gets the component verbosity. nodeName can be empty, then it's ignored.
+func (c *ClusterConfig) getComponentVerbosity(component virtComponent, nodeName string) uint {
 	logConf := c.GetConfig().DeveloperConfiguration.LogVerbosity
-	if level := logConf.NodeVerbosity[nodeName]; level != 0 {
-		return level
+
+	if nodeName != "" {
+		if level := logConf.NodeVerbosity[nodeName]; level != 0 {
+			return level
+		}
 	}
-	return logConf.VirtHandler
+
+	switch component {
+	case virtHandler:
+		return logConf.VirtHandler
+	case virtApi:
+		return logConf.VirtAPI
+	case virtController:
+		return logConf.VirtController
+	case virtOperator:
+		return logConf.VirtOperator
+	case virtLauncher:
+		return logConf.VirtLauncher
+	default:
+		log.Log.Errorf("getComponentVerbosity called with an unknown virtComponent: %v", component)
+		return 0
+	}
+}
+
+func (c *ClusterConfig) GetVirtHandlerVerbosity(nodeName string) uint {
+	return c.getComponentVerbosity(virtHandler, nodeName)
 }
 
 func (c *ClusterConfig) GetVirtAPIVerbosity(nodeName string) uint {
-	logConf := c.GetConfig().DeveloperConfiguration.LogVerbosity
-	if level := logConf.NodeVerbosity[nodeName]; level != 0 {
-		return level
-	}
-	return logConf.VirtAPI
+	return c.getComponentVerbosity(virtApi, nodeName)
 }
 
 func (c *ClusterConfig) GetVirtControllerVerbosity(nodeName string) uint {
-	logConf := c.GetConfig().DeveloperConfiguration.LogVerbosity
-	if level := logConf.NodeVerbosity[nodeName]; level != 0 {
-		return level
-	}
-	return logConf.VirtController
+	return c.getComponentVerbosity(virtController, nodeName)
+}
+
+func (c *ClusterConfig) GetVirtOperatorVerbosity(nodeName string) uint {
+	return c.getComponentVerbosity(virtOperator, nodeName)
 }
 
 func (c *ClusterConfig) GetVirtLauncherVerbosity() uint {
-	logConf := c.GetConfig().DeveloperConfiguration.LogVerbosity
-	return logConf.VirtLauncher
+	return c.getComponentVerbosity(virtLauncher, "")
 }
 
 //GetMinCPUModel return minimal cpu which is used in node-labeller
