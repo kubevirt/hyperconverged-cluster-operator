@@ -122,6 +122,7 @@ var (
 		"Comma separated list of CSVs that can be skipped (read replaced) by this version")
 	olmSkipRange = flag.String("olm-skip-range", "",
 		"Semver range expression for CSVs that can be skipped (read replaced) by this version")
+	testImagesNVRs = flag.String("test-images-nvrs", "", "Test Images NVRs")
 
 	envVars EnvVarFlags
 )
@@ -330,12 +331,15 @@ func getHcoCsv() {
 		csvBase.Spec.DisplayName = *specDisplayName
 	}
 
+	if *testImagesNVRs != "" {
+		csvBase.ObjectMeta.Annotations["test-images-nvrs"] = *testImagesNVRs
+	}
+
 	setSupported(csvBase)
 
 	applyOverrides(csvBase)
 
 	csvBase.Spec.RelatedImages = sortRelatedImages(csvBase.Spec.RelatedImages)
-
 	panicOnError(util.MarshallObject(csvBase, os.Stdout))
 }
 
