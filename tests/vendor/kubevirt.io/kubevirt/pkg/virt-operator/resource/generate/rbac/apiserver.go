@@ -24,7 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"kubevirt.io/api/flavor"
+	"kubevirt.io/api/instancetype"
 
 	virtv1 "kubevirt.io/api/core/v1"
 	"kubevirt.io/api/migrations"
@@ -99,6 +99,17 @@ func newApiServerClusterRole() *rbacv1.ClusterRole {
 				},
 				Verbs: []string{
 					"get", "list", "watch", "patch", "update",
+				},
+			},
+			{
+				APIGroups: []string{
+					"",
+				},
+				Resources: []string{
+					"persistentvolumeclaims",
+				},
+				Verbs: []string{
+					"get",
 				},
 			},
 			{
@@ -207,14 +218,16 @@ func newApiServerClusterRole() *rbacv1.ClusterRole {
 			},
 			{
 				APIGroups: []string{
-					"flavor.kubevirt.io",
+					"instancetype.kubevirt.io",
 				},
 				Resources: []string{
-					flavor.PluralResourceName,
-					flavor.ClusterPluralResourceName,
+					instancetype.PluralResourceName,
+					instancetype.ClusterPluralResourceName,
+					instancetype.PluralPreferenceResourceName,
+					instancetype.ClusterPluralPreferenceResourceName,
 				},
 				Verbs: []string{
-					"list", "watch",
+					"get", "list", "watch",
 				},
 			},
 			{
@@ -226,6 +239,19 @@ func newApiServerClusterRole() *rbacv1.ClusterRole {
 				},
 				Verbs: []string{
 					"get", "list", "watch",
+				},
+			},
+			{
+				APIGroups: []string{
+					"apps",
+				},
+				Resources: []string{
+					"controllerrevisions",
+				},
+				Verbs: []string{
+					"create",
+					"list",
+					"get",
 				},
 			},
 		},

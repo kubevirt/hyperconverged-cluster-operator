@@ -21,6 +21,7 @@ package kubecli
 
 import (
 	"context"
+	"path"
 
 	"encoding/json"
 	"fmt"
@@ -31,27 +32,35 @@ import (
 )
 
 type GuestfsInfo struct {
-	Registry string `json:"registry"`
-	Tag      string `json:"tag"`
-	Digest   string `json:"digest"`
+	Registry    string `json:"registry"`
+	Tag         string `json:"tag"`
+	Digest      string `json:"digest"`
+	ImagePrefix string `json:"imagePrefix"`
 }
 
 func (k *kubevirt) GuestfsVersion() *GuestfsVersion {
 	return &GuestfsVersion{
 		restClient: k.restClient,
+		config:     k.config,
 		resource:   "guestfs",
 	}
 }
 
 type GuestfsVersion struct {
 	restClient *rest.RESTClient
+	config     *rest.Config
 	resource   string
 }
 
 func (v *GuestfsVersion) Get() (*GuestfsInfo, error) {
 	var group metav1.APIGroup
 	// First, find out which version to query
-	uri := ApiGroupName
+	u, err := url.Parse(v.config.Host)
+	if err != nil {
+		return nil, err
+	}
+	uri := path.Join(u.Path, ApiGroupName)
+
 	result := v.restClient.Get().RequestURI(uri).Do(context.Background())
 	if data, err := result.Raw(); err != nil {
 		connErr, isConnectionErr := err.(*url.Error)
@@ -66,7 +75,8 @@ func (v *GuestfsVersion) Get() (*GuestfsInfo, error) {
 	}
 
 	// Now, query the preferred version
-	uri = fmt.Sprintf("/apis/%s/guestfs", group.PreferredVersion.GroupVersion)
+	uri = fmt.Sprintf("%s/apis/%s/guestfs", u.Path, group.PreferredVersion.GroupVersion)
+
 	var info GuestfsInfo
 
 	result = v.restClient.Get().RequestURI(uri).Do(context.Background())
