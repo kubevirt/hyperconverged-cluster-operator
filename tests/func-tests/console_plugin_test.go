@@ -48,7 +48,7 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel), func() 
 		cli, err = kubecli.GetKubevirtClient()
 		Expect(err).ToNot(HaveOccurred())
 
-		tests.FailIfNotOpenShift(cli, "kubevirt console plugin")
+		tests.FailIfNotOpenShift_old(cli, "kubevirt console plugin")
 		ctx = context.Background()
 
 		hco := tests.GetHCO(ctx, cli)

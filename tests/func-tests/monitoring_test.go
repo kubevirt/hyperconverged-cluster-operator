@@ -53,7 +53,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		virtCli, err = kubecli.GetKubevirtClient()
 		Expect(err).ToNot(HaveOccurred())
 
-		tests.FailIfNotOpenShift(virtCli, "Prometheus")
+		tests.FailIfNotOpenShift_old(virtCli, "Prometheus")
 		promClient = initializePromClient(getPrometheusURL(virtCli), getAuthorizationTokenForPrometheus(virtCli))
 		prometheusRule = getPrometheusRule(virtCli)
 

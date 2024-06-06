@@ -95,7 +95,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		cli, err = kubecli.GetKubevirtClient()
 		Expect(err).ToNot(HaveOccurred())
 
-		tests.FailIfNotOpenShift(cli, "golden image test")
+		tests.FailIfNotOpenShift_old(cli, "golden image test")
 
 		ctx = context.Background()
 	})
