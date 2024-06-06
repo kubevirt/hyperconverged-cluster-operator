@@ -15,10 +15,10 @@ require (
 	k8s.io/apimachinery v0.29.3
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/utils v0.0.0-20240310230437-4693a0247e57
-	kubevirt.io/api v1.2.1
-	kubevirt.io/client-go v1.2.1
+	kubevirt.io/api v1.2.2
+	kubevirt.io/client-go v1.2.2
 	kubevirt.io/containerized-data-importer-api v1.59.0
-	kubevirt.io/kubevirt v1.2.1
+	kubevirt.io/kubevirt v1.2.2
 )
 
 replace (
