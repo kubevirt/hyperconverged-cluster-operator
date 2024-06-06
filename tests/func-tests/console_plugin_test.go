@@ -4,20 +4,24 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
+	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	consolev1 "github.com/openshift/api/console/v1"
-	v1 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
-	"kubevirt.io/client-go/kubecli"
 	"kubevirt.io/kubevirt/tests/flags"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -26,62 +30,71 @@ import (
 )
 
 const (
-	openshiftConsoleNamespace = "openshift-console"
+	openshiftConsoleNamespace         = "openshift-console"
+	expectedKubevirtConsolePluginName = "kubevirt-plugin"
 )
 
-var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel), func() {
+var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "consolePlugin"), func() {
+
 	var (
-		cli                               kubecli.KubevirtClient
-		ctx                               context.Context
-		expectedKubevirtConsolePluginName = "kubevirt-plugin"
-		consoleGVR                        = schema.GroupVersionResource{
-			Group:    "console.openshift.io",
-			Version:  "v1",
-			Resource: "consoleplugins",
-		}
+		cli          client.Client
+		k8sClientSet *kubernetes.Clientset
+		ctx          context.Context
 	)
 
 	tests.FlagParse()
 
 	BeforeEach(func() {
-		var err error
-		cli, err = kubecli.GetKubevirtClient()
+		cfg, err := config.GetConfig()
 		Expect(err).ToNot(HaveOccurred())
 
-		tests.FailIfNotOpenShift_old(cli, "kubevirt console plugin")
-		ctx = context.Background()
+		s := scheme.Scheme
+		Expect(consolev1.AddToScheme(s)).To(Succeed())
 
-		hco := tests.GetHCO_old(ctx, cli)
+		cli, err = client.New(cfg, client.Options{Scheme: s})
+		Expect(err).ToNot(HaveOccurred())
+
+		ctx = context.Background()
+		tests.FailIfNotOpenShift(ctx, cli, "kubevirt console plugin")
+
+		hco := tests.GetHCO(ctx, cli)
 		originalInfra := hco.Spec.Infra
+
+		k8sClientSet, err = kubernetes.NewForConfig(cfg)
+		Expect(err).ToNot(HaveOccurred())
+
 		DeferCleanup(func() {
 			hco.Spec.Infra = originalInfra
-			tests.UpdateHCORetry_old(ctx, cli, hco)
+			tests.UpdateHCORetry(ctx, cli, hco)
 		})
+
 	})
 
 	It("console should reach kubevirt-plugin manifests", func() {
-		unstructured, err := cli.DynamicClient().Resource(consoleGVR).Get(ctx, expectedKubevirtConsolePluginName, metav1.GetOptions{})
-		Expect(err).ToNot(HaveOccurred())
+		kubevirtPlugin := &consolev1.ConsolePlugin{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: expectedKubevirtConsolePluginName,
+			},
+		}
 
-		kubevirtPlugin := &consolev1.ConsolePlugin{}
-		Expect(runtime.DefaultUnstructuredConverter.FromUnstructured(unstructured.Object, kubevirtPlugin)).To(Succeed())
+		Expect(cli.Get(ctx, client.ObjectKeyFromObject(kubevirtPlugin), kubevirtPlugin)).To(Succeed())
 
 		pluginServiceName := kubevirtPlugin.Spec.Backend.Service.Name
 		pluginServicePort := kubevirtPlugin.Spec.Backend.Service.Port
 
-		consolePodsLabelSelector := "app=console,component=ui"
+		consolePods := &corev1.PodList{}
+		Expect(cli.List(ctx, consolePods, client.MatchingLabels{
+			"app":       "console",
+			"component": "ui",
+		}, client.InNamespace(openshiftConsoleNamespace))).To(Succeed())
 
-		consolePods, err := cli.CoreV1().Pods(openshiftConsoleNamespace).List(ctx, metav1.ListOptions{
-			LabelSelector: consolePodsLabelSelector,
-		})
-		Expect(err).ToNot(HaveOccurred())
 		Expect(consolePods.Items).ToNot(BeEmpty())
 
 		testConsolePod := consolePods.Items[0]
 		command := fmt.Sprintf(`curl -ks https://%s.%s.svc:%d/plugin-manifest.json`,
 			pluginServiceName, flags.KubeVirtInstallNamespace, pluginServicePort)
 
-		stdout, stderr, err := executeCommandOnPod(ctx, cli, &testConsolePod, command)
+		stdout, stderr, err := executeCommandOnPod(ctx, k8sClientSet, &testConsolePod, command)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).ToNot(BeEmpty())
 		Expect(stderr).To(BeEmpty())
@@ -105,23 +118,35 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel), func() 
 		addNodeSelectorPatch := []byte(fmt.Sprintf(`[{"op": "add", "path": "/spec/infra", "value": {"nodePlacement": {"nodeSelector": %s}}}]`, expectedNodeSelectorStr))
 
 		Eventually(func() error {
-			err = tests.PatchHCO_old(ctx, cli, addNodeSelectorPatch)
+			err = tests.PatchHCO(ctx, cli, addNodeSelectorPatch)
 			return err
 		}).WithTimeout(1 * time.Minute).
 			WithPolling(1 * time.Millisecond).
 			Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			consoleUIDeployment, err := cli.AppsV1().Deployments(flags.KubeVirtInstallNamespace).Get(ctx, string(hcoutil.AppComponentUIPlugin), metav1.GetOptions{})
-			g.Expect(err).ToNot(HaveOccurred())
+			consoleUIDeployment := &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      string(hcoutil.AppComponentUIPlugin),
+					Namespace: flags.KubeVirtInstallNamespace,
+				},
+			}
+
+			g.Expect(cli.Get(ctx, client.ObjectKeyFromObject(consoleUIDeployment), consoleUIDeployment)).To(Succeed())
+
 			g.Expect(consoleUIDeployment.Spec.Template.Spec.NodeSelector).To(Equal(expectedNodeSelector))
 		}).WithTimeout(1 * time.Minute).
 			WithPolling(100 * time.Millisecond).
 			Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			proxyUIDeployment, err := cli.AppsV1().Deployments(flags.KubeVirtInstallNamespace).Get(ctx, string(hcoutil.AppComponentUIProxy), metav1.GetOptions{})
-			g.Expect(err).ToNot(HaveOccurred())
+			proxyUIDeployment := &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      string(hcoutil.AppComponentUIProxy),
+					Namespace: flags.KubeVirtInstallNamespace,
+				},
+			}
+			g.Expect(cli.Get(ctx, client.ObjectKeyFromObject(proxyUIDeployment), proxyUIDeployment)).To(Succeed())
 			g.Expect(proxyUIDeployment.Spec.Template.Spec.NodeSelector).To(Equal(expectedNodeSelector))
 		}).WithTimeout(1 * time.Minute).
 			WithPolling(100 * time.Millisecond).
@@ -130,23 +155,34 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel), func() 
 		// clear node placement from HyperConverged CR and verify the nodeSelector has been cleared as well from the UI Deployments
 		removeNodeSelectorPatch := []byte(`[{"op": "replace", "path": "/spec/infra", "value": {}}]`)
 		Eventually(func() error {
-			err = tests.PatchHCO_old(ctx, cli, removeNodeSelectorPatch)
+			err = tests.PatchHCO(ctx, cli, removeNodeSelectorPatch)
 			return err
 		}).WithTimeout(1 * time.Minute).
 			WithPolling(1 * time.Millisecond).
 			Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			consoleUIDeployment, err := cli.AppsV1().Deployments(flags.KubeVirtInstallNamespace).Get(ctx, string(hcoutil.AppComponentUIPlugin), metav1.GetOptions{})
-			g.Expect(err).ToNot(HaveOccurred())
+			consoleUIDeployment := &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      string(hcoutil.AppComponentUIPlugin),
+					Namespace: flags.KubeVirtInstallNamespace,
+				},
+			}
+
+			g.Expect(cli.Get(ctx, client.ObjectKeyFromObject(consoleUIDeployment), consoleUIDeployment)).To(Succeed())
 			g.Expect(consoleUIDeployment.Spec.Template.Spec.NodeSelector).To(BeEmpty())
 		}).WithTimeout(1 * time.Minute).
 			WithPolling(100 * time.Millisecond).
 			Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			proxyUIDeployment, err := cli.AppsV1().Deployments(flags.KubeVirtInstallNamespace).Get(ctx, string(hcoutil.AppComponentUIProxy), metav1.GetOptions{})
-			g.Expect(err).ToNot(HaveOccurred())
+			proxyUIDeployment := &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      string(hcoutil.AppComponentUIProxy),
+					Namespace: flags.KubeVirtInstallNamespace,
+				},
+			}
+			g.Expect(cli.Get(ctx, client.ObjectKeyFromObject(proxyUIDeployment), proxyUIDeployment)).To(Succeed())
 			g.Expect(proxyUIDeployment.Spec.Template.Spec.NodeSelector).To(BeEmpty())
 		}).WithTimeout(1 * time.Minute).
 			WithPolling(100 * time.Millisecond).
@@ -154,26 +190,48 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel), func() 
 	})
 })
 
-func executeCommandOnPod(ctx context.Context, cli kubecli.KubevirtClient, pod *v1.Pod, command string) (string, string, error) {
+func executeCommandOnPod(ctx context.Context, k8scli *kubernetes.Clientset, pod *corev1.Pod, command string) (string, string, error) {
 	buf := &bytes.Buffer{}
 	errBuf := &bytes.Buffer{}
-	request := cli.CoreV1().RESTClient().
+	request := k8scli.CoreV1().RESTClient().
 		Post().
 		Namespace(pod.Namespace).
 		Resource("pods").
 		Name(pod.Name).
 		SubResource("exec").
-		VersionedParams(&v1.PodExecOptions{
+		VersionedParams(&corev1.PodExecOptions{
 			Command: []string{"/bin/sh", "-c", command},
 			Stdin:   false,
 			Stdout:  true,
 			Stderr:  true,
 			TTY:     true,
 		}, scheme.ParameterCodec)
-	exec, err := remotecommand.NewSPDYExecutor(cli.Config(), "POST", request.URL())
+
+	f := flag.Lookup("kubeconfig")
+	if f == nil {
+		return "", "", fmt.Errorf("couldn't find flag 'kubeconfig'")
+	}
+
+	configFile := f.Value.String()
+	if configFile == "" {
+		return "", "", fmt.Errorf("couldn't find flag 'kubeconfig'")
+	}
+
+	configBytes, err := os.ReadFile(configFile)
+	if err != nil {
+		return "", "", fmt.Errorf("couldn't read the kubeconfig file %s: %v", configFile, err)
+	}
+
+	cfg, err := clientcmd.RESTConfigFromKubeConfig(configBytes)
+	if err != nil {
+		return "", "", fmt.Errorf("couldn't parse kubeconfig file %s: %v", configFile, err)
+	}
+
+	exec, err := remotecommand.NewSPDYExecutor(cfg, "POST", request.URL())
 	if err != nil {
 		return "", "", fmt.Errorf("%w: failed to create pod executor for %v/%v", err, pod.Namespace, pod.Name)
 	}
+
 	err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdout: buf,
 		Stderr: errBuf,
