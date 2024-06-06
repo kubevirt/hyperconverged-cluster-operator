@@ -59,7 +59,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO(ctx, cli)
+				hc := tests.GetHCO_old(ctx, cli)
 				g.Expect(reflect.DeepEqual(hc.Spec.CertConfig, defaultCertConfig)).To(BeTrue(), "certConfig should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		},
@@ -98,7 +98,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO(ctx, cli)
+				hc := tests.GetHCO_old(ctx, cli)
 				g.Expect(reflect.DeepEqual(hc.Spec.FeatureGates, defaultFeatureGates)).To(BeTrue(), "featureGates should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		},
@@ -136,7 +136,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO(ctx, cli)
+				hc := tests.GetHCO_old(ctx, cli)
 				g.Expect(reflect.DeepEqual(hc.Spec.LiveMigrationConfig, defaultLiveMigrationConfig)).To(BeTrue(), "liveMigrationConfig should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		},
@@ -163,7 +163,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			}).WithTimeout(20 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO(ctx, cli)
+				hc := tests.GetHCO_old(ctx, cli)
 				g.Expect(reflect.DeepEqual(hc.Spec.ResourceRequirements, &defaultResourceRequirements)).To(BeTrue(), "resourceRequirements should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		},
@@ -187,7 +187,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			}).WithTimeout(20 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO(ctx, cli)
+				hc := tests.GetHCO_old(ctx, cli)
 				g.Expect(reflect.DeepEqual(hc.Spec.WorkloadUpdateStrategy, defaultWorkloadUpdateStrategy)).To(BeTrue(), "workloadUpdateStrategy should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		},
@@ -209,7 +209,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO(ctx, cli)
+				hc := tests.GetHCO_old(ctx, cli)
 				g.Expect(hc.Spec.UninstallStrategy).To(Equal(v1beta1.HyperConvergedUninstallStrategy(defaultUninstallStrategy)), "uninstallStrategy should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		},
@@ -231,7 +231,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO(ctx, cli)
+				hc := tests.GetHCO_old(ctx, cli)
 				g.Expect(reflect.DeepEqual(hc.Spec.VirtualMachineOptions, defaultVirtualMachineOptions)).To(BeTrue(), "virtualMachineOptions should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		},
@@ -254,7 +254,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO(ctx, cli)
+				hc := tests.GetHCO_old(ctx, cli)
 				g.Expect(reflect.DeepEqual(hc.Spec.HigherWorkloadDensity, defaultHigherWorkloadDensity)).To(BeTrue(), "HigherWorkloadDensity should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		},

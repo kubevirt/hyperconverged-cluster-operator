@@ -64,7 +64,7 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 
 		// modify the HCO CR to use the labels we just applied to the nodes
-		originalHco := tests.GetHCO(ctx, cli)
+		originalHco := tests.GetHCO_old(ctx, cli)
 		originalHco.DeepCopyInto(hco)
 		originalInfraSpec = originalHco.Spec.Infra
 		originalWorkloadSpec = originalHco.Spec.Workloads
@@ -84,7 +84,7 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 		hco.Spec.Infra = infraVal
 		hco.Spec.Workloads = workloadsVal
 
-		tests.UpdateHCORetry(ctx, cli, hco)
+		tests.UpdateHCORetry_old(ctx, cli, hco)
 
 		workloadsNodes := listNodesByLabels(cli, "node.kubernetes.io/hco-test-node-type==workloads")
 		Expect(workloadsNodes.Items).To(HaveLen(1))
@@ -98,13 +98,13 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 
 	AfterAll(func() {
 		// undo the modification to HCO CR done in BeforeAll stage
-		modifiedHco := tests.GetHCO(ctx, cli)
+		modifiedHco := tests.GetHCO_old(ctx, cli)
 
 		modifiedHco.DeepCopyInto(hco)
 		hco.Spec.Infra = originalInfraSpec
 		hco.Spec.Workloads = originalWorkloadSpec
 
-		tests.UpdateHCORetry(ctx, cli, hco)
+		tests.UpdateHCORetry_old(ctx, cli, hco)
 
 		// unlabel the nodes
 		nodes := listNodesByLabels(cli, hcoLabel)

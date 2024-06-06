@@ -12,8 +12,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 	"kubevirt.io/client-go/kubecli"
+
+	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
 var _ = Describe("Check CR validation", Label("validation"), Serial, func() {
@@ -44,9 +45,9 @@ var _ = Describe("Check CR validation", Label("validation"), Serial, func() {
 			}
 			Eventually(func() error {
 				var err error
-				hc := tests.GetHCO(ctx, cli)
+				hc := tests.GetHCO_old(ctx, cli)
 				hc.Spec.ResourceRequirements = requirements
-				_, err = tests.UpdateHCO(ctx, cli, hc)
+				_, err = tests.UpdateHCO_old(ctx, cli, hc)
 				return err
 			}).WithTimeout(10 * time.Second).WithPolling(500 * time.Millisecond).Should(outcome)
 		},

@@ -185,8 +185,8 @@ func IsOpenShift(ctx context.Context, cli client.Client) (bool, error) {
 	return isOpenShiftCache.IsOpenShift(ctx, cli)
 }
 
-// GetHCO reads the HCO CR from the APIServer with a DynamicClient
-func GetHCO(ctx context.Context, client kubecli.KubevirtClient) *v1beta1.HyperConverged {
+// GetHCO_old reads the HCO CR from the APIServer with a DynamicClient
+func GetHCO_old(ctx context.Context, client kubecli.KubevirtClient) *v1beta1.HyperConverged {
 	hco := &v1beta1.HyperConverged{}
 
 	hcoGVR := schema.GroupVersionResource{Group: v1beta1.SchemeGroupVersion.Group, Version: v1beta1.SchemeGroupVersion.Version, Resource: resource}
@@ -199,38 +199,77 @@ func GetHCO(ctx context.Context, client kubecli.KubevirtClient) *v1beta1.HyperCo
 	return hco
 }
 
-// UpdateHCORetry updates the HCO CR in a safe way internally calling UpdateHCO
-// UpdateHCORetry internally uses an async Eventually block refreshing the in-memory
+// GetHCO reads the HCO CR from the APIServer with a DynamicClient
+func GetHCO(ctx context.Context, cli client.Client) *v1beta1.HyperConverged {
+	Expect(v1beta1.AddToScheme(cli.Scheme())).To(Succeed())
+	hco := &v1beta1.HyperConverged{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      hcoutil.HyperConvergedName,
+			Namespace: flags.KubeVirtInstallNamespace,
+		},
+	}
+
+	Expect(cli.Get(ctx, client.ObjectKeyFromObject(hco), hco)).To(Succeed())
+
+	return hco
+}
+
+// UpdateHCORetry_old updates the HCO CR in a safe way internally calling UpdateHCO_old
+// UpdateHCORetry_old internally uses an async Eventually block refreshing the in-memory
 // object if needed and setting there Spec, Annotations, Finalizers and Labels from the
 // input object.
-// UpdateHCORetry should be preferred over UpdateHCO to reduce test flakiness due to
+// UpdateHCORetry_old should be preferred over UpdateHCO_old to reduce test flakiness due to
 // inevitable concurrency conflicts
-func UpdateHCORetry(ctx context.Context, client kubecli.KubevirtClient, input *v1beta1.HyperConverged) *v1beta1.HyperConverged {
+func UpdateHCORetry_old(ctx context.Context, client kubecli.KubevirtClient, input *v1beta1.HyperConverged) *v1beta1.HyperConverged {
 	var output *v1beta1.HyperConverged
 	var err error
 
 	Eventually(func() error {
-		hco := GetHCO(ctx, client)
+		hco := GetHCO_old(ctx, client)
 		input.Spec.DeepCopyInto(&hco.Spec)
 		hco.ObjectMeta.Annotations = input.ObjectMeta.Annotations
 		hco.ObjectMeta.Finalizers = input.ObjectMeta.Finalizers
 		hco.ObjectMeta.Labels = input.ObjectMeta.Labels
 
-		output, err = UpdateHCO(ctx, client, hco)
+		output, err = UpdateHCO_old(ctx, client, hco)
 		return err
 	}, 10*time.Second, time.Second).Should(Succeed())
 
 	return output
 }
 
-// UpdateHCO updates the HCO CR using a DynamicClient, it can return errors on failures
-func UpdateHCO(ctx context.Context, client kubecli.KubevirtClient, input *v1beta1.HyperConverged) (*v1beta1.HyperConverged, error) {
+// UpdateHCORetry updates the HCO CR in a safe way internally calling UpdateHCO_old
+// UpdateHCORetry internally uses an async Eventually block refreshing the in-memory
+// object if needed and setting there Spec, Annotations, Finalizers and Labels from the
+// input object.
+// UpdateHCORetry_old should be preferred over UpdateHCO_old to reduce test flakiness due to
+// inevitable concurrency conflicts
+func UpdateHCORetry(ctx context.Context, cli client.Client, input *v1beta1.HyperConverged) *v1beta1.HyperConverged {
+	var output *v1beta1.HyperConverged
+	var err error
+
+	Eventually(func() error {
+		hco := GetHCO(ctx, cli)
+		input.Spec.DeepCopyInto(&hco.Spec)
+		hco.ObjectMeta.Annotations = input.ObjectMeta.Annotations
+		hco.ObjectMeta.Finalizers = input.ObjectMeta.Finalizers
+		hco.ObjectMeta.Labels = input.ObjectMeta.Labels
+
+		output, err = UpdateHCO(ctx, cli, hco)
+		return err
+	}, 10*time.Second, time.Second).Should(Succeed())
+
+	return output
+}
+
+// UpdateHCO_old updates the HCO CR using a DynamicClient, it can return errors on failures
+func UpdateHCO_old(ctx context.Context, client kubecli.KubevirtClient, input *v1beta1.HyperConverged) (*v1beta1.HyperConverged, error) {
 	hcoGVR := schema.GroupVersionResource{Group: input.GroupVersionKind().Group, Version: input.GroupVersionKind().Version, Resource: resource}
 	hcoNamespace := input.Namespace
 
 	unstructuredHco := &unstructured.Unstructured{}
 
-	hco := GetHCO(ctx, client)
+	hco := GetHCO_old(ctx, client)
 	input.Spec.DeepCopyInto(&hco.Spec)
 	hco.ObjectMeta.Annotations = input.ObjectMeta.Annotations
 	hco.ObjectMeta.Finalizers = input.ObjectMeta.Finalizers
@@ -254,6 +293,29 @@ func UpdateHCO(ctx context.Context, client kubecli.KubevirtClient, input *v1beta
 		return nil, err
 	}
 	return output, nil
+}
+
+// UpdateHCO updates the HCO CR using a DynamicClient, it can return errors on failures
+func UpdateHCO(ctx context.Context, cli client.Client, input *v1beta1.HyperConverged) (*v1beta1.HyperConverged, error) {
+	err := v1beta1.AddToScheme(cli.Scheme())
+	if err != nil {
+		return nil, err
+	}
+
+	hco := GetHCO(ctx, cli)
+	input.Spec.DeepCopyInto(&hco.Spec)
+	hco.ObjectMeta.Annotations = input.ObjectMeta.Annotations
+	hco.ObjectMeta.Finalizers = input.ObjectMeta.Finalizers
+	hco.ObjectMeta.Labels = input.ObjectMeta.Labels
+	hco.Status = v1beta1.HyperConvergedStatus{} // to silence warning about unknown fields.
+
+	err = cli.Update(ctx, hco)
+	if err != nil {
+		return nil, err
+	}
+
+	hco = GetHCO(ctx, cli)
+	return hco, nil
 }
 
 // PatchHCO_old updates the HCO CR using a DynamicClient, it can return errors on failures

@@ -26,7 +26,7 @@ var _ = Describe("check update priorityClass", Ordered, Serial, func() {
 	tests.FlagParse()
 
 	getPriorityClassHCORef := func() types.UID {
-		hc := tests.GetHCO(ctx, cli)
+		hc := tests.GetHCO_old(ctx, cli)
 
 		for _, obj := range hc.Status.RelatedObjects {
 			if obj.Kind == "PriorityClass" && obj.Name == priorityClassName {

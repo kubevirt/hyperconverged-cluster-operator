@@ -5,31 +5,38 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	k8smetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	v1 "kubevirt.io/api/core/v1"
-	"kubevirt.io/client-go/kubecli"
 
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
-var _ = Describe("Cluster level evictionStrategy default value", Serial, Ordered, func() {
+var _ = Describe("Cluster level evictionStrategy default value", Serial, Ordered, Label("evictionStrategy"), func() {
 	tests.FlagParse()
-	var cli kubecli.KubevirtClient
-	ctx := context.TODO()
-
 	var (
+		cli client.Client
+		ctx context.Context
+
 		initialEvictionStrategy *v1.EvictionStrategy
 		singleWorkerCluster     bool
 	)
 
 	BeforeEach(func() {
-		var err error
-		cli, err = kubecli.GetKubevirtClient()
-		Expect(cli).ToNot(BeNil())
+		cfg, err := config.GetConfig()
 		Expect(err).ToNot(HaveOccurred())
 
-		singleWorkerCluster, err = isSingleWorkerCluster(cli)
+		s := scheme.Scheme
+
+		cli, err = client.New(cfg, client.Options{Scheme: s})
+		Expect(err).ToNot(HaveOccurred())
+
+		ctx = context.Background()
+
+		singleWorkerCluster, err = isSingleWorkerCluster(ctx, cli)
 		Expect(err).ToNot(HaveOccurred())
 
 		tests.BeforeEach()
@@ -40,7 +47,7 @@ var _ = Describe("Cluster level evictionStrategy default value", Serial, Ordered
 	AfterEach(func() {
 		hc := tests.GetHCO(ctx, cli)
 		hc.Spec.EvictionStrategy = initialEvictionStrategy
-		_ = tests.UpdateHCORetry(ctx, cli, hc)
+		tests.UpdateHCORetry(ctx, cli, hc)
 	})
 
 	It("Should set spec.evictionStrategy = None by default on single worker clusters", Label(tests.SingleNodeLabel), func() {
@@ -66,8 +73,14 @@ var _ = Describe("Cluster level evictionStrategy default value", Serial, Ordered
 
 })
 
-func isSingleWorkerCluster(cli kubecli.KubevirtClient) (bool, error) {
-	workerNodes, err := cli.CoreV1().Nodes().List(context.TODO(), k8smetav1.ListOptions{LabelSelector: "node-role.kubernetes.io/worker"})
+func isSingleWorkerCluster(ctx context.Context, cli client.Client) (bool, error) {
+	if err := corev1.AddToScheme(cli.Scheme()); err != nil {
+		return false, err
+	}
+
+	workerNodes := &corev1.NodeList{}
+	err := cli.List(ctx, workerNodes, client.MatchingLabels{"node-role.kubernetes.io/worker": ""})
+
 	if err != nil {
 		return false, err
 	}

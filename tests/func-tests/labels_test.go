@@ -37,7 +37,7 @@ var _ = Describe("Check that all the sub-resources have the required labels", La
 	})
 
 	It("should have all the required labels in all the controlled resources", func() {
-		hc := tests.GetHCO(ctx, cli)
+		hc := tests.GetHCO_old(ctx, cli)
 		plural := pluralize.NewClient()
 		const kv_name = "kubevirt-kubevirt-hyperconverged"
 

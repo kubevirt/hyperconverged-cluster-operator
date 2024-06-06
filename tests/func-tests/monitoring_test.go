@@ -130,12 +130,12 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 
 	It("UnsupportedHCOModification alert should fired when there is an jsonpatch annotation to modify an operand CRs", func() {
 		By("Updating HCO object with a new label")
-		hco := tests.GetHCO(ctx, virtCli)
+		hco := tests.GetHCO_old(ctx, virtCli)
 
 		hco.Annotations = map[string]string{
 			"kubevirt.kubevirt.io/jsonpatch": `[{"op": "add", "path": "/spec/configuration/migrations", "value": {"allowPostCopy": true}}]`,
 		}
-		tests.UpdateHCORetry(ctx, virtCli, hco)
+		tests.UpdateHCORetry_old(ctx, virtCli, hco)
 
 		Eventually(func() *promApiv1.Alert {
 			alerts, err := promClient.Alerts(context.TODO())

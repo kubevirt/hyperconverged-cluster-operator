@@ -51,11 +51,11 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel), func() 
 		tests.FailIfNotOpenShift_old(cli, "kubevirt console plugin")
 		ctx = context.Background()
 
-		hco := tests.GetHCO(ctx, cli)
+		hco := tests.GetHCO_old(ctx, cli)
 		originalInfra := hco.Spec.Infra
 		DeferCleanup(func() {
 			hco.Spec.Infra = originalInfra
-			tests.UpdateHCORetry(ctx, cli, hco)
+			tests.UpdateHCORetry_old(ctx, cli, hco)
 		})
 	})
 
