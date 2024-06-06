@@ -13,7 +13,7 @@ import (
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	"kubevirt.io/client-go/kubecli"
-	kvlibvmi "kubevirt.io/kubevirt/tests/libvmi"
+	kvlibvmi "kubevirt.io/kubevirt/pkg/libvmi"
 	kvtutil "kubevirt.io/kubevirt/tests/util"
 
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
