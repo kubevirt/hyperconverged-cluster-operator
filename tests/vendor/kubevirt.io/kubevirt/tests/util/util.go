@@ -1,15 +1,14 @@
 package util
 
 import (
-	"context"
 	"time"
 
 	"github.com/onsi/gomega"
-	v1 "k8s.io/api/core/v1"
 	k8smetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	k6sv1 "kubevirt.io/api/core/v1"
 	"kubevirt.io/client-go/kubecli"
+
 	"kubevirt.io/kubevirt/tests/flags"
 )
 
@@ -22,15 +21,9 @@ func PanicOnError(err error) {
 	}
 }
 
-func GetAllSchedulableNodes(virtClient kubecli.KubevirtClient) *v1.NodeList {
-	nodes, err := virtClient.CoreV1().Nodes().List(context.Background(), k8smetav1.ListOptions{LabelSelector: k6sv1.NodeSchedulable + "=" + "true"})
-	gomega.Expect(err).ToNot(gomega.HaveOccurred(), "Should list compute nodes")
-	return nodes
-}
-
 func GetCurrentKv(virtClient kubecli.KubevirtClient) *k6sv1.KubeVirt {
 	kvs := GetKvList(virtClient)
-	gomega.Expect(len(kvs)).To(gomega.Equal(1))
+	gomega.Expect(kvs).To(gomega.HaveLen(1))
 	return &kvs[0]
 }
 

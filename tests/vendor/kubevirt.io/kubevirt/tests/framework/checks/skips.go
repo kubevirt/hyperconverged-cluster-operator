@@ -15,7 +15,10 @@ import (
 	"github.com/onsi/ginkgo/v2"
 
 	"kubevirt.io/client-go/kubecli"
+
 	virtconfig "kubevirt.io/kubevirt/pkg/virt-config"
+
+	"kubevirt.io/kubevirt/tests/libnode"
 	"kubevirt.io/kubevirt/tests/util"
 )
 
@@ -28,7 +31,7 @@ func SkipTestIfNoCPUManager() {
 
 	virtClient, err := kubecli.GetKubevirtClient()
 	util.PanicOnError(err)
-	nodes := util.GetAllSchedulableNodes(virtClient)
+	nodes := libnode.GetAllSchedulableNodes(virtClient)
 
 	for _, node := range nodes.Items {
 		if IsCPUManagerPresent(&node) {
@@ -51,7 +54,7 @@ func SkipTestIfNotEnoughNodesWithCPUManager(nodeCount int) {
 
 	virtClient, err := kubecli.GetKubevirtClient()
 	util.PanicOnError(err)
-	nodes := util.GetAllSchedulableNodes(virtClient)
+	nodes := libnode.GetAllSchedulableNodes(virtClient)
 
 	found := 0
 	for _, node := range nodes.Items {
@@ -73,7 +76,7 @@ func SkipTestIfNotEnoughNodesWithCPUManager(nodeCount int) {
 func SkipTestIfNotEnoughNodesWith2MiHugepages(nodeCount int) {
 	virtClient, err := kubecli.GetKubevirtClient()
 	util.PanicOnError(err)
-	nodes := util.GetAllSchedulableNodes(virtClient)
+	nodes := libnode.GetAllSchedulableNodes(virtClient)
 
 	found := 0
 	for _, node := range nodes.Items {
@@ -101,7 +104,7 @@ func SkipTestIfNotRealtimeCapable() {
 
 	virtClient, err := kubecli.GetKubevirtClient()
 	util.PanicOnError(err)
-	nodes := util.GetAllSchedulableNodes(virtClient)
+	nodes := libnode.GetAllSchedulableNodes(virtClient)
 
 	for _, node := range nodes.Items {
 		if IsRealtimeCapable(&node) && IsCPUManagerPresent(&node) && Has2MiHugepages(&node) {
@@ -115,7 +118,7 @@ func SkipTestIfNotRealtimeCapable() {
 func SkipTestIfNotSEVCapable() {
 	virtClient, err := kubecli.GetKubevirtClient()
 	util.PanicOnError(err)
-	nodes := util.GetAllSchedulableNodes(virtClient)
+	nodes := libnode.GetAllSchedulableNodes(virtClient)
 
 	for _, node := range nodes.Items {
 		if IsSEVCapable(&node) {
@@ -216,17 +219,7 @@ func SkipIfOpenShift4(message string) {
 }
 
 func SkipIfMigrationIsNotPossible() {
-	if !HasLiveMigration() {
-		ginkgo.Skip("LiveMigration feature gate is not enabled in kubevirt-config")
-	}
-
-	virtClient, err := kubecli.GetKubevirtClient()
-	util.PanicOnError(err)
-
-	nodes := util.GetAllSchedulableNodes(virtClient)
-	gomega.Expect(nodes.Items).ToNot(gomega.BeEmpty(), "There should be some compute node")
-
-	if len(nodes.Items) < 2 {
+	if !HasAtLeastTwoNodes() {
 		ginkgo.Skip("Migration tests require at least 2 nodes")
 	}
 }
