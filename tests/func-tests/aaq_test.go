@@ -8,17 +8,21 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 
 	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
-	"kubevirt.io/client-go/kubecli"
 	"kubevirt.io/kubevirt/tests/flags"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
@@ -29,42 +33,51 @@ const (
 var _ = Describe("Test AAQ", Label("AAQ"), Serial, Ordered, func() {
 	tests.FlagParse()
 	var (
-		cli kubecli.KubevirtClient
-		ctx context.Context
+		k8scli client.Client
+		ctx    context.Context
 	)
 
 	BeforeEach(func() {
 		var err error
 
-		cli, err = kubecli.GetKubevirtClient()
-		Expect(cli).ToNot(BeNil())
+		cfg, err := config.GetConfig()
+		Expect(err).ToNot(HaveOccurred())
+
+		s := scheme.Scheme
+		Expect(aaqv1alpha1.AddToScheme(s)).To(Succeed())
+		Expect(v1beta1.AddToScheme(s)).To(Succeed())
+
+		k8scli, err = client.New(cfg, client.Options{Scheme: s})
 		Expect(err).ToNot(HaveOccurred())
 
 		ctx = context.Background()
 
-		disableAAQFeatureGate(ctx, cli)
+		disableAAQFeatureGate(ctx, k8scli)
 	})
 
 	AfterAll(func() {
-		disableAAQFeatureGate(ctx, cli)
+		disableAAQFeatureGate(ctx, k8scli)
 	})
 
 	When("set the applicationAwareConfig exists", func() {
 		It("should create the AAQ CR and all the pods", func() {
 
-			enableAAQFeatureGate(ctx, cli)
+			enableAAQFeatureGate(ctx, k8scli)
 
 			By("check the AAQ CR")
 			Eventually(func(g Gomega) bool {
-				aaq := getAAQ(ctx, cli, g)
+				aaq, err := getAAQ(ctx, k8scli)
+				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(aaq.Status.Conditions).ToNot(BeEmpty())
 				return conditionsv1.IsStatusConditionTrue(aaq.Status.Conditions, conditionsv1.ConditionAvailable)
 			}).WithTimeout(5 * time.Minute).WithPolling(time.Second).ShouldNot(BeTrue())
 
 			By("check AAQ pods")
 			Eventually(func(g Gomega) {
-				deps, err := cli.AppsV1().Deployments(flags.KubeVirtInstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: "app.kubernetes.io/managed-by=aaq-operator"})
-				g.Expect(err).ToNot(HaveOccurred())
+				deps := &appsv1.DeploymentList{}
+				Expect(
+					k8scli.List(ctx, deps, client.MatchingLabels{"app.kubernetes.io/managed-by": "aaq-operator"}),
+				).To(Succeed())
 				g.Expect(deps.Items).To(HaveLen(2))
 
 				expectedPods := int32(0)
@@ -73,8 +86,10 @@ var _ = Describe("Test AAQ", Label("AAQ"), Serial, Ordered, func() {
 					expectedPods += dep.Status.Replicas
 				}
 
-				pods, err := cli.CoreV1().Pods(flags.KubeVirtInstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: "app.kubernetes.io/managed-by=aaq-operator"})
-				g.Expect(err).ToNot(HaveOccurred())
+				pods := &corev1.PodList{}
+				Expect(k8scli.List(
+					ctx, pods, client.MatchingLabels{"app.kubernetes.io/managed-by": "aaq-operator"}),
+				).To(Succeed())
 				g.Expect(pods.Items).To(HaveLen(int(expectedPods)))
 			}).WithTimeout(5 * time.Minute).
 				WithPolling(time.Second).
@@ -83,35 +98,30 @@ var _ = Describe("Test AAQ", Label("AAQ"), Serial, Ordered, func() {
 	})
 })
 
-func getAAQ(ctx context.Context, cli kubecli.KubevirtClient, g Gomega) *aaqv1alpha1.AAQ {
-	aaq := &aaqv1alpha1.AAQ{}
+func getAAQ(ctx context.Context, cli client.Client) (*aaqv1alpha1.AAQ, error) {
+	aaq := &aaqv1alpha1.AAQ{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "aaq-" + hcoutil.HyperConvergedName,
+			Namespace: flags.KubeVirtInstallNamespace,
+		},
+	}
 
-	unstAAQ, err := getAAQResource(ctx, cli)
-	g.ExpectWithOffset(1, err).ToNot(HaveOccurred())
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(unstAAQ.Object, aaq)
-	g.ExpectWithOffset(1, err).ToNot(HaveOccurred())
-
-	return aaq
+	err := cli.Get(ctx, client.ObjectKeyFromObject(aaq), aaq)
+	return aaq, err
 }
 
-func getAAQResource(ctx context.Context, client kubecli.KubevirtClient) (*unstructured.Unstructured, error) {
-	aaqGVR := schema.GroupVersionResource{Group: aaqv1alpha1.SchemeGroupVersion.Group, Version: aaqv1alpha1.SchemeGroupVersion.Version, Resource: "aaqs"}
-
-	return client.DynamicClient().Resource(aaqGVR).Get(ctx, "aaq-"+hcoutil.HyperConvergedName, metav1.GetOptions{})
-}
-
-func enableAAQFeatureGate(ctx context.Context, cli kubecli.KubevirtClient) {
+func enableAAQFeatureGate(ctx context.Context, cli client.Client) {
 	By("enable the AAQ FG")
 	setAAQFeatureGate(ctx, cli, true)
 }
 
-func disableAAQFeatureGate(ctx context.Context, cli kubecli.KubevirtClient) {
+func disableAAQFeatureGate(ctx context.Context, cli client.Client) {
 	By("disable the AAQ FG")
 	setAAQFeatureGate(ctx, cli, false)
 
 	By("make sure the AAQ CR was removed")
 	Eventually(func() error {
-		_, err := getAAQResource(ctx, cli)
+		_, err := getAAQ(ctx, cli)
 		return err
 	}).WithTimeout(5 * time.Minute).
 		WithPolling(100 * time.Millisecond).
@@ -119,10 +129,11 @@ func disableAAQFeatureGate(ctx context.Context, cli kubecli.KubevirtClient) {
 		Should(MatchError(errors.IsNotFound, "not found error"))
 }
 
-func setAAQFeatureGate(ctx context.Context, cli kubecli.KubevirtClient, fgState bool) {
-	patch := []byte(fmt.Sprintf(setAAQFGPatchTemplate, fgState))
+func setAAQFeatureGate(ctx context.Context, cli client.Client, fgState bool) {
+	patchBytes := []byte(fmt.Sprintf(setAAQFGPatchTemplate, fgState))
+
 	Eventually(tests.PatchHCO).
-		WithArguments(ctx, cli, patch).
+		WithArguments(ctx, cli, patchBytes).
 		WithTimeout(10 * time.Second).
 		WithPolling(100 * time.Millisecond).
 		WithOffset(2).

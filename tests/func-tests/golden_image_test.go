@@ -237,7 +237,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 	Context("disable the feature", func() {
 		It("Should set the FG to false", func() {
 			patch := []byte(`[{ "op": "replace", "path": "/spec/featureGates/enableCommonBootImageImport", "value": false }]`)
-			Eventually(tests.PatchHCO).WithArguments(ctx, cli, patch).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
+			Eventually(tests.PatchHCO_old).WithArguments(ctx, cli, patch).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		})
 
 		var isEntries []TableEntry
@@ -285,7 +285,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 	Context("enable the feature again", func() {
 		It("Should set the FG to false", func() {
 			patch := []byte(`[{ "op": "replace", "path": "/spec/featureGates/enableCommonBootImageImport", "value": true }]`)
-			Eventually(tests.PatchHCO).WithArguments(ctx, cli, patch).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
+			Eventually(tests.PatchHCO_old).WithArguments(ctx, cli, patch).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		})
 
 		var isEntries []TableEntry

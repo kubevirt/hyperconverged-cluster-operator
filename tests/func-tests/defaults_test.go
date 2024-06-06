@@ -14,6 +14,7 @@ import (
 	"kubevirt.io/client-go/kubecli"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
@@ -54,7 +55,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		DescribeTable("Check that certConfig defaults are behaving as expected", func(path string) {
 			patch := []byte(fmt.Sprintf(removePathPatchTmplt, path))
 			Eventually(func() error {
-				return tests.PatchHCO(ctx, cli, patch)
+				return tests.PatchHCO_old(ctx, cli, patch)
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
@@ -93,7 +94,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		DescribeTable("Check that featureGates defaults are behaving as expected", func(path string) {
 			patch := []byte(fmt.Sprintf(removePathPatchTmplt, path))
 			Eventually(func() error {
-				return tests.PatchHCO(ctx, cli, patch)
+				return tests.PatchHCO_old(ctx, cli, patch)
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
@@ -131,7 +132,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		DescribeTable("Check that liveMigrationConfig defaults are behaving as expected", func(path string) {
 			patch := []byte(fmt.Sprintf(removePathPatchTmplt, path))
 			Eventually(func() error {
-				return tests.PatchHCO(ctx, cli, patch)
+				return tests.PatchHCO_old(ctx, cli, patch)
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
@@ -158,7 +159,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		DescribeTable("Check that resourceRequirements defaults are behaving as expected", func(path string) {
 			patch := []byte(fmt.Sprintf(removePathPatchTmplt, path))
 			Eventually(func() error {
-				return tests.PatchHCO(ctx, cli, patch)
+				return tests.PatchHCO_old(ctx, cli, patch)
 			}).WithTimeout(20 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
@@ -182,7 +183,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		DescribeTable("Check that workloadUpdateStrategy defaults are behaving as expected", func(path string) {
 			patch := []byte(fmt.Sprintf(removePathPatchTmplt, path))
 			Eventually(func() error {
-				return tests.PatchHCO(ctx, cli, patch)
+				return tests.PatchHCO_old(ctx, cli, patch)
 			}).WithTimeout(20 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
@@ -204,7 +205,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		DescribeTable("Check that uninstallStrategy default is behaving as expected", func(path string) {
 			patch := []byte(fmt.Sprintf(removePathPatchTmplt, path))
 			Eventually(func() error {
-				return tests.PatchHCO(ctx, cli, patch)
+				return tests.PatchHCO_old(ctx, cli, patch)
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
@@ -226,7 +227,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		DescribeTable("Check that featureGates defaults are behaving as expected", func(path string) {
 			patch := []byte(fmt.Sprintf(removePathPatchTmplt, path))
 			Eventually(func() error {
-				return tests.PatchHCO(ctx, cli, patch)
+				return tests.PatchHCO_old(ctx, cli, patch)
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
@@ -249,7 +250,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		DescribeTable("Check that HigherWorkloadDensity defaults are behaving as expected", func(path string) {
 			patch := []byte(fmt.Sprintf(removePathPatchTmplt, path))
 			Eventually(func() error {
-				return tests.PatchHCO(ctx, cli, patch)
+				return tests.PatchHCO_old(ctx, cli, patch)
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {

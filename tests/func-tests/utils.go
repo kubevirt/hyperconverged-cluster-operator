@@ -19,6 +19,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/utils/net"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"kubevirt.io/client-go/kubecli"
 	"kubevirt.io/kubevirt/tests/flags"
@@ -246,16 +247,29 @@ func UpdateHCO(ctx context.Context, client kubecli.KubevirtClient, input *v1beta
 	return output, nil
 }
 
-// PatchHCO updates the HCO CR using a DynamicClient, it can return errors on failures
-func PatchHCO(ctx context.Context, cl kubecli.KubevirtClient, patch []byte) error {
+// PatchHCO_old updates the HCO CR using a DynamicClient, it can return errors on failures
+func PatchHCO_old(ctx context.Context, cl kubecli.KubevirtClient, patch []byte) error {
 	hcoGVR := schema.GroupVersionResource{Group: v1beta1.SchemeGroupVersion.Group, Version: v1beta1.SchemeGroupVersion.Version, Resource: resource}
 
 	_, err := cl.DynamicClient().Resource(hcoGVR).Namespace(flags.KubeVirtInstallNamespace).Patch(ctx, hcoutil.HyperConvergedName, types.JSONPatchType, patch, metav1.PatchOptions{})
 	return err
 }
 
+// PatchHCO updates the HCO CR using a DynamicClient, it can return errors on failures
+func PatchHCO(ctx context.Context, cli client.Client, patchBytes []byte) error {
+	patch := client.RawPatch(types.JSONPatchType, patchBytes)
+	hco := &v1beta1.HyperConverged{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      hcoutil.HyperConvergedName,
+			Namespace: flags.KubeVirtInstallNamespace,
+		},
+	}
+
+	return cli.Patch(ctx, hco, patch)
+}
+
 func RestoreDefaults(ctx context.Context, cli kubecli.KubevirtClient) {
-	Eventually(PatchHCO).
+	Eventually(PatchHCO_old).
 		WithArguments(ctx, cli, []byte(`[{"op": "replace", "path": "/spec", "value": {}}]`)).
 		WithOffset(1).
 		WithTimeout(time.Second * 5).

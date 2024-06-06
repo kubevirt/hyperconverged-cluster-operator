@@ -105,7 +105,7 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel), func() 
 		addNodeSelectorPatch := []byte(fmt.Sprintf(`[{"op": "add", "path": "/spec/infra", "value": {"nodePlacement": {"nodeSelector": %s}}}]`, expectedNodeSelectorStr))
 
 		Eventually(func() error {
-			err = tests.PatchHCO(ctx, cli, addNodeSelectorPatch)
+			err = tests.PatchHCO_old(ctx, cli, addNodeSelectorPatch)
 			return err
 		}).WithTimeout(1 * time.Minute).
 			WithPolling(1 * time.Millisecond).
@@ -130,7 +130,7 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel), func() 
 		// clear node placement from HyperConverged CR and verify the nodeSelector has been cleared as well from the UI Deployments
 		removeNodeSelectorPatch := []byte(`[{"op": "replace", "path": "/spec/infra", "value": {}}]`)
 		Eventually(func() error {
-			err = tests.PatchHCO(ctx, cli, removeNodeSelectorPatch)
+			err = tests.PatchHCO_old(ctx, cli, removeNodeSelectorPatch)
 			return err
 		}).WithTimeout(1 * time.Minute).
 			WithPolling(1 * time.Millisecond).
