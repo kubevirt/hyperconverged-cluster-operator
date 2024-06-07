@@ -5,7 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"os"
 	"sync"
 	"time"
 
@@ -14,16 +13,11 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/discovery"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"kubevirt.io/client-go/kubecli"
 	"kubevirt.io/kubevirt/tests/flags"
 	kvtutil "kubevirt.io/kubevirt/tests/util"
 
@@ -32,8 +26,6 @@ import (
 )
 
 var KubeVirtStorageClassLocal string
-
-const resource = "hyperconvergeds"
 
 // labels
 const (
@@ -46,33 +38,17 @@ func init() {
 	flag.StringVar(&KubeVirtStorageClassLocal, "storage-class-local", "local", "Storage provider to use for tests which want local storage")
 }
 
-// GetJobTypeEnvVar returns "JOB_TYPE" environment variable
-func GetJobTypeEnvVar() string {
-	return (os.Getenv("JOB_TYPE"))
-}
-
 func FlagParse() {
 	flag.Parse()
 }
 
 func BeforeEach() {
-	virtClient, err := kubecli.GetKubevirtClient()
-	Expect(err).ToNot(HaveOccurred())
+	cli := GetK8sClientSet().RESTClient()
+	ctx := context.Background()
 
-	deleteAllResources(virtClient.RestClient(), "virtualmachines")
-	deleteAllResources(virtClient.RestClient(), "virtualmachineinstances")
-	deleteAllResources(virtClient.CoreV1().RESTClient(), "persistentvolumeclaims")
-}
-
-func FailIfNotOpenShift_old(cli kubecli.KubevirtClient, testName string) {
-	isOpenShift := false
-	Eventually(func() error {
-		var err error
-		isOpenShift, err = IsOpenShift_old(cli)
-		return err
-	}).WithTimeout(10*time.Second).WithPolling(time.Second).Should(Succeed(), "failed to check if running on an openshift cluster")
-
-	ExpectWithOffset(1, isOpenShift).To(BeTrue(), `the %q test must run on openshift cluster. Use the "!%s" label filter in order to skip this test`, testName, OpenshiftLabel)
+	deleteAllResources(ctx, cli, "virtualmachines")
+	deleteAllResources(ctx, cli, "virtualmachineinstances")
+	deleteAllResources(ctx, cli, "persistentvolumeclaims")
 }
 
 func FailIfNotOpenShift(ctx context.Context, cli client.Client, testName string) {
@@ -90,54 +66,10 @@ func FailIfSingleNode(singleWorkerCluster bool) {
 	ExpectWithOffset(1, singleWorkerCluster).To(BeFalse(), `this test requires a single worker cluster; use the "!%s" label filter to skip this test`, SingleNodeLabel)
 }
 
-func FailIfHighAvailableCluster(singleWorkerCluster bool) {
-	ExpectWithOffset(1, singleWorkerCluster).To(BeTrue(), `this test requires a highly available cluster; use the "!%s" label filter to skip this test`, HighlyAvailableClusterLabel)
-}
-
 type cacheIsOpenShift struct {
 	isOpenShift bool
 	hasSet      bool
 	lock        sync.Mutex
-}
-
-func (c *cacheIsOpenShift) IsOpenShift_old(cli kubecli.KubevirtClient) (bool, error) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	if c.hasSet {
-		return c.isOpenShift, nil
-	}
-
-	s := scheme.Scheme
-	_ = openshiftconfigv1.Install(s)
-	s.AddKnownTypes(openshiftconfigv1.GroupVersion)
-
-	clusterVersion := &openshiftconfigv1.ClusterVersion{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "version",
-		},
-	}
-
-	err := cli.RestClient().Get().
-		Resource("clusterversions").
-		Name("version").
-		AbsPath("/apis", openshiftconfigv1.GroupVersion.Group, openshiftconfigv1.GroupVersion.Version).
-		Timeout(10 * time.Second).
-		Do(context.TODO()).Into(clusterVersion)
-
-	if err == nil {
-		c.isOpenShift = true
-		c.hasSet = true
-		return c.isOpenShift, nil
-	}
-
-	if meta.IsNoMatchError(err) || apierrors.IsNotFound(err) {
-		c.isOpenShift = false
-		c.hasSet = true
-		return c.isOpenShift, nil
-	}
-
-	return false, err
 }
 
 func (c *cacheIsOpenShift) IsOpenShift(ctx context.Context, cli client.Client) (bool, error) {
@@ -177,26 +109,8 @@ func (c *cacheIsOpenShift) IsOpenShift(ctx context.Context, cli client.Client) (
 
 var isOpenShiftCache cacheIsOpenShift
 
-func IsOpenShift_old(cli kubecli.KubevirtClient) (bool, error) {
-	return isOpenShiftCache.IsOpenShift_old(cli)
-}
-
 func IsOpenShift(ctx context.Context, cli client.Client) (bool, error) {
 	return isOpenShiftCache.IsOpenShift(ctx, cli)
-}
-
-// GetHCO_old reads the HCO CR from the APIServer with a DynamicClient
-func GetHCO_old(ctx context.Context, client kubecli.KubevirtClient) *v1beta1.HyperConverged {
-	hco := &v1beta1.HyperConverged{}
-
-	hcoGVR := schema.GroupVersionResource{Group: v1beta1.SchemeGroupVersion.Group, Version: v1beta1.SchemeGroupVersion.Version, Resource: resource}
-
-	unstHco, err := client.DynamicClient().Resource(hcoGVR).Namespace(flags.KubeVirtInstallNamespace).Get(ctx, hcoutil.HyperConvergedName, metav1.GetOptions{})
-	Expect(err).ToNot(HaveOccurred())
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(unstHco.Object, hco)
-	Expect(err).ToNot(HaveOccurred())
-
-	return hco
 }
 
 // GetHCO reads the HCO CR from the APIServer with a DynamicClient
@@ -214,35 +128,11 @@ func GetHCO(ctx context.Context, cli client.Client) *v1beta1.HyperConverged {
 	return hco
 }
 
-// UpdateHCORetry_old updates the HCO CR in a safe way internally calling UpdateHCO_old
-// UpdateHCORetry_old internally uses an async Eventually block refreshing the in-memory
-// object if needed and setting there Spec, Annotations, Finalizers and Labels from the
-// input object.
-// UpdateHCORetry_old should be preferred over UpdateHCO_old to reduce test flakiness due to
-// inevitable concurrency conflicts
-func UpdateHCORetry_old(ctx context.Context, client kubecli.KubevirtClient, input *v1beta1.HyperConverged) *v1beta1.HyperConverged {
-	var output *v1beta1.HyperConverged
-	var err error
-
-	Eventually(func() error {
-		hco := GetHCO_old(ctx, client)
-		input.Spec.DeepCopyInto(&hco.Spec)
-		hco.ObjectMeta.Annotations = input.ObjectMeta.Annotations
-		hco.ObjectMeta.Finalizers = input.ObjectMeta.Finalizers
-		hco.ObjectMeta.Labels = input.ObjectMeta.Labels
-
-		output, err = UpdateHCO_old(ctx, client, hco)
-		return err
-	}, 10*time.Second, time.Second).Should(Succeed())
-
-	return output
-}
-
 // UpdateHCORetry updates the HCO CR in a safe way internally calling UpdateHCO_old
 // UpdateHCORetry internally uses an async Eventually block refreshing the in-memory
 // object if needed and setting there Spec, Annotations, Finalizers and Labels from the
 // input object.
-// UpdateHCORetry_old should be preferred over UpdateHCO_old to reduce test flakiness due to
+// UpdateHCORetry should be preferred over UpdateHCO_old to reduce test flakiness due to
 // inevitable concurrency conflicts
 func UpdateHCORetry(ctx context.Context, cli client.Client, input *v1beta1.HyperConverged) *v1beta1.HyperConverged {
 	var output *v1beta1.HyperConverged
@@ -260,39 +150,6 @@ func UpdateHCORetry(ctx context.Context, cli client.Client, input *v1beta1.Hyper
 	}, 10*time.Second, time.Second).Should(Succeed())
 
 	return output
-}
-
-// UpdateHCO_old updates the HCO CR using a DynamicClient, it can return errors on failures
-func UpdateHCO_old(ctx context.Context, client kubecli.KubevirtClient, input *v1beta1.HyperConverged) (*v1beta1.HyperConverged, error) {
-	hcoGVR := schema.GroupVersionResource{Group: input.GroupVersionKind().Group, Version: input.GroupVersionKind().Version, Resource: resource}
-	hcoNamespace := input.Namespace
-
-	unstructuredHco := &unstructured.Unstructured{}
-
-	hco := GetHCO_old(ctx, client)
-	input.Spec.DeepCopyInto(&hco.Spec)
-	hco.ObjectMeta.Annotations = input.ObjectMeta.Annotations
-	hco.ObjectMeta.Finalizers = input.ObjectMeta.Finalizers
-	hco.ObjectMeta.Labels = input.ObjectMeta.Labels
-	hco.Status = v1beta1.HyperConvergedStatus{} // to silence warning about unknown fields.
-
-	object, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&hco)
-	if err != nil {
-		return nil, err
-	}
-	unstructuredHco = &unstructured.Unstructured{Object: object}
-
-	unstructuredHco, err = client.DynamicClient().Resource(hcoGVR).Namespace(hcoNamespace).Update(ctx, unstructuredHco, metav1.UpdateOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	output := &v1beta1.HyperConverged{}
-	err = runtime.DefaultUnstructuredConverter.FromUnstructured(unstructuredHco.Object, output)
-	if err != nil {
-		return nil, err
-	}
-	return output, nil
 }
 
 // UpdateHCO updates the HCO CR using a DynamicClient, it can return errors on failures
@@ -318,14 +175,6 @@ func UpdateHCO(ctx context.Context, cli client.Client, input *v1beta1.HyperConve
 	return hco, nil
 }
 
-// PatchHCO_old updates the HCO CR using a DynamicClient, it can return errors on failures
-func PatchHCO_old(ctx context.Context, cl kubecli.KubevirtClient, patch []byte) error {
-	hcoGVR := schema.GroupVersionResource{Group: v1beta1.SchemeGroupVersion.Group, Version: v1beta1.SchemeGroupVersion.Version, Resource: resource}
-
-	_, err := cl.DynamicClient().Resource(hcoGVR).Namespace(flags.KubeVirtInstallNamespace).Patch(ctx, hcoutil.HyperConvergedName, types.JSONPatchType, patch, metav1.PatchOptions{})
-	return err
-}
-
 // PatchHCO updates the HCO CR using a DynamicClient, it can return errors on failures
 func PatchHCO(ctx context.Context, cli client.Client, patchBytes []byte) error {
 	patch := client.RawPatch(types.JSONPatchType, patchBytes)
@@ -339,8 +188,8 @@ func PatchHCO(ctx context.Context, cli client.Client, patchBytes []byte) error {
 	return cli.Patch(ctx, hco, patch)
 }
 
-func RestoreDefaults(ctx context.Context, cli kubecli.KubevirtClient) {
-	Eventually(PatchHCO_old).
+func RestoreDefaults(ctx context.Context, cli client.Client) {
+	Eventually(PatchHCO).
 		WithArguments(ctx, cli, []byte(`[{"op": "replace", "path": "/spec", "value": {}}]`)).
 		WithOffset(1).
 		WithTimeout(time.Second * 5).
@@ -348,9 +197,9 @@ func RestoreDefaults(ctx context.Context, cli kubecli.KubevirtClient) {
 		Should(Succeed())
 }
 
-func deleteAllResources(restClient rest.Interface, resourceName string) {
+func deleteAllResources(ctx context.Context, restClient rest.Interface, resourceName string) {
 	Eventually(func() bool {
-		err := restClient.Delete().Namespace(kvtutil.NamespaceTestDefault).Resource(resourceName).Do(context.TODO()).Error()
+		err := restClient.Delete().Namespace(kvtutil.NamespaceTestDefault).Resource(resourceName).Do(ctx).Error()
 		return err == nil || apierrors.IsNotFound(err)
 	}).WithTimeout(time.Minute).
 		WithPolling(time.Second).

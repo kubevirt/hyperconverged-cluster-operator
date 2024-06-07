@@ -6,8 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	v1 "kubevirt.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	v1 "kubevirt.io/api/core/v1"
 
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
@@ -23,7 +24,7 @@ var _ = Describe("Cluster level evictionStrategy default value", Serial, Ordered
 	)
 
 	BeforeEach(func() {
-		cli = tests.GetK8sClient()
+		cli = tests.GetControllerRuntimeClient()
 
 		ctx = context.Background()
 

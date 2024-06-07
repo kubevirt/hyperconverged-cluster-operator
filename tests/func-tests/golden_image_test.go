@@ -14,13 +14,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"kubevirt.io/client-go/kubecli"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	"kubevirt.io/kubevirt/tests/flags"
 	"kubevirt.io/ssp-operator/api/v1beta2"
@@ -36,24 +33,6 @@ const (
 )
 
 var (
-	dicGVR = schema.GroupVersionResource{
-		Group:    "cdi.kubevirt.io",
-		Version:  "v1beta1",
-		Resource: "dataimportcrons",
-	}
-
-	isGVR = schema.GroupVersionResource{
-		Group:    "image.openshift.io",
-		Version:  "v1",
-		Resource: "imagestreams",
-	}
-
-	sspGVR = schema.GroupVersionResource{
-		Group:    "ssp.kubevirt.io",
-		Version:  "v1beta2",
-		Resource: "ssps",
-	}
-
 	expectedImages       = []string{"centos-7-image-cron", "centos-stream8-image-cron", "centos-stream9-image-cron", "centos8-image-cron-is", "fedora-image-cron"}
 	imageNamespace       = defaultImageNamespace
 	expectedImageStreams = []tests.ImageStreamConfig{
@@ -67,7 +46,7 @@ var (
 
 var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered, Label(tests.OpenshiftLabel), func() {
 	var (
-		cli kubecli.KubevirtClient
+		cli client.Client
 		ctx context.Context
 	)
 
@@ -91,13 +70,10 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 	}
 
 	BeforeEach(func() {
-		var err error
-		cli, err = kubecli.GetKubevirtClient()
-		Expect(err).ToNot(HaveOccurred())
-
-		tests.FailIfNotOpenShift_old(cli, "golden image test")
-
+		cli = tests.GetControllerRuntimeClient()
 		ctx = context.Background()
+
+		tests.FailIfNotOpenShift(ctx, cli, "golden image test")
 	})
 
 	Context("test image-streams", func() {
@@ -107,11 +83,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		}
 
 		DescribeTable("check that imagestream created", func(expectedIS tests.ImageStreamConfig) {
-			unstructured, err := cli.DynamicClient().Resource(isGVR).Namespace(imageNamespace).Get(ctx, expectedIS.Name, metav1.GetOptions{})
-			Expect(err).ToNot(HaveOccurred())
-
-			is := &v1.ImageStream{}
-			Expect(runtime.DefaultUnstructuredConverter.FromUnstructured(unstructured.Object, is)).To(Succeed())
+			is := getImageStream(ctx, cli, expectedIS.Name, imageNamespace)
 
 			Expect(is.Spec.Tags[0].From).ToNot(BeNil())
 			Expect(is.Spec.Tags[0].From.Kind).To(Equal("DockerImage"))
@@ -121,26 +93,20 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		)
 
 		DescribeTable("check imagestream reconciliation", func(expectedIS tests.ImageStreamConfig) {
-			is := &v1.ImageStream{}
-			unstructured, err := cli.DynamicClient().Resource(isGVR).Namespace(imageNamespace).Get(ctx, expectedIS.Name, metav1.GetOptions{})
-			Expect(err).ToNot(HaveOccurred())
-			err = runtime.DefaultUnstructuredConverter.FromUnstructured(unstructured.Object, is)
-			Expect(err).ToNot(HaveOccurred())
+			is := getImageStream(ctx, cli, expectedIS.Name, imageNamespace)
+
 			expectedValue := is.GetLabels()["app.kubernetes.io/part-of"]
 			Expect(expectedValue).ToNot(Equal("wrongValue"))
 
 			patchOp := []byte(`[{"op": "replace", "path": "/metadata/labels/app.kubernetes.io~1part-of", "value": "wrong-value"}]`)
+			patch := client.RawPatch(types.JSONPatchType, patchOp)
+
 			Eventually(func() error {
-				_, err := cli.DynamicClient().Resource(isGVR).Namespace(imageNamespace).Patch(ctx, expectedIS.Name, types.JSONPatchType, patchOp, metav1.PatchOptions{})
-				return err
+				return cli.Patch(ctx, is, patch)
 			}).WithTimeout(time.Second * 5).WithPolling(time.Millisecond * 100).Should(Succeed())
 
-			is = &v1.ImageStream{}
 			Eventually(func(g Gomega) string {
-				unstructured, err := cli.DynamicClient().Resource(isGVR).Namespace(imageNamespace).Get(ctx, expectedIS.Name, metav1.GetOptions{})
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(runtime.DefaultUnstructuredConverter.FromUnstructured(unstructured.Object, is)).To(Succeed())
-
+				is = getImageStream(ctx, cli, expectedIS.Name, imageNamespace)
 				return is.GetLabels()["app.kubernetes.io/part-of"]
 			}).WithTimeout(time.Second * 15).WithPolling(time.Millisecond * 100).Should(Equal(expectedValue))
 		},
@@ -149,19 +115,14 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 	})
 
 	It("make sure the feature gate is set", func() {
-		hco := tests.GetHCO_old(ctx, cli)
+		hco := tests.GetHCO(ctx, cli)
 		Expect(hco.Spec.FeatureGates.EnableCommonBootImageImport).To(HaveValue(BeTrue()))
 	})
 
 	Context("check default golden images", func() {
 		It("should propagate the DICT to SSP", func() {
 			Eventually(func(g Gomega) []string {
-				unstructured, err := cli.DynamicClient().Resource(sspGVR).Namespace(flags.KubeVirtInstallNamespace).Get(ctx, "ssp-kubevirt-hyperconverged", metav1.GetOptions{})
-				g.Expect(err).ToNot(HaveOccurred())
-
-				ssp := &v1beta2.SSP{}
-				g.Expect(runtime.DefaultUnstructuredConverter.FromUnstructured(unstructured.Object, ssp)).To(Succeed())
-
+				ssp := getSSP(ctx, cli)
 				g.Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(len(expectedImages)))
 
 				imageNames := make([]string, len(expectedImages))
@@ -175,7 +136,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 		It("should have all the images in the HyperConverged status", func() {
 			Eventually(func(g Gomega) []string {
-				hco := tests.GetHCO_old(ctx, cli)
+				hco := tests.GetHCO(ctx, cli)
 
 				g.Expect(hco.Status.DataImportCronTemplates).To(HaveLen(len(expectedImages)))
 
@@ -191,19 +152,13 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 		It("should have all the DataImportCron resources", func() {
 			Eventually(func(g Gomega) []string {
-				unstructured, err := cli.DynamicClient().Resource(dicGVR).Namespace(imageNamespace).List(ctx, metav1.ListOptions{})
-				g.Expect(err).ToNot(HaveOccurred())
+				dicList := &cdiv1beta1.DataImportCronList{}
+				Expect(cli.List(ctx, dicList, client.InNamespace(imageNamespace))).To(Succeed())
 
-				items := make([]cdiv1beta1.DataImportCron, len(unstructured.Items))
-				for i, item := range unstructured.Items {
-					dic := cdiv1beta1.DataImportCron{}
-					g.Expect(runtime.DefaultUnstructuredConverter.FromUnstructured(item.Object, &dic)).To(Succeed())
-					items[i] = dic
-				}
-				g.Expect(items).To(HaveLen(len(expectedImages)))
+				g.Expect(dicList.Items).To(HaveLen(len(expectedImages)))
 
 				imageNames := make([]string, len(expectedImages))
-				for i, image := range items {
+				for i, image := range dicList.Items {
 					imageNames[i] = image.Name
 				}
 
@@ -222,10 +177,14 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		}
 
 		DescribeTable("check the images that use image streams", func(imageName, streamName string) {
-			dic := &cdiv1beta1.DataImportCron{}
-			unstructured, err := cli.DynamicClient().Resource(dicGVR).Namespace(imageNamespace).Get(ctx, imageName, metav1.GetOptions{})
-			Expect(err).ToNot(HaveOccurred())
-			Expect(runtime.DefaultUnstructuredConverter.FromUnstructured(unstructured.Object, dic)).To(Succeed())
+			dic := &cdiv1beta1.DataImportCron{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      imageName,
+					Namespace: imageNamespace,
+				},
+			}
+
+			Expect(cli.Get(ctx, client.ObjectKeyFromObject(dic), dic)).To(Succeed())
 
 			Expect(dic.Spec.Template.Spec.Source).ToNot(BeNil())
 			Expect(dic.Spec.Template.Spec.Source.Registry).ToNot(BeNil())
@@ -237,7 +196,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 	Context("disable the feature", func() {
 		It("Should set the FG to false", func() {
 			patch := []byte(`[{ "op": "replace", "path": "/spec/featureGates/enableCommonBootImageImport", "value": false }]`)
-			Eventually(tests.PatchHCO_old).WithArguments(ctx, cli, patch).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
+			Eventually(tests.PatchHCO).WithArguments(ctx, cli, patch).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		})
 
 		var isEntries []TableEntry
@@ -248,36 +207,38 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		if len(isEntries) > 0 {
 			DescribeTable("imageStream should be removed", func(expectedIS tests.ImageStreamConfig) {
 				Eventually(func() error {
-					_, err := cli.DynamicClient().Resource(isGVR).Namespace(imageNamespace).Get(ctx, expectedIS.Name, metav1.GetOptions{})
-					return err
+					is := &v1.ImageStream{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      expectedIS.Name,
+							Namespace: imageNamespace,
+						},
+					}
+
+					return cli.Get(ctx, client.ObjectKeyFromObject(is), is)
 				}).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).Should(MatchError(errors.IsNotFound, "not found error"))
 			}, isEntries)
 		}
 
 		It("should empty the DICT in SSP", func() {
 			Eventually(func(g Gomega) []v1beta2.DataImportCronTemplate {
-				unstructured, err := cli.DynamicClient().Resource(sspGVR).Namespace(flags.KubeVirtInstallNamespace).Get(ctx, "ssp-kubevirt-hyperconverged", metav1.GetOptions{})
-				g.Expect(err).ToNot(HaveOccurred())
-				ssp := &v1beta2.SSP{}
-				g.Expect(runtime.DefaultUnstructuredConverter.FromUnstructured(unstructured.Object, ssp)).To(Succeed())
+				ssp := getSSP(ctx, cli)
 				return ssp.Spec.CommonTemplates.DataImportCronTemplates
 			}).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).Should(BeEmpty())
 		})
 
 		It("should have no images in the HyperConverged status", func() {
 			Eventually(func() []hcov1beta1.DataImportCronTemplateStatus {
-				hco := tests.GetHCO_old(ctx, cli)
+				hco := tests.GetHCO(ctx, cli)
 				return hco.Status.DataImportCronTemplates
 			}).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).Should(BeEmpty())
 		})
 
 		It("should have no images", func() {
+			Eventually(func(g Gomega) []v1.ImageStream {
+				isList := &v1.ImageStreamList{}
+				Expect(cli.List(ctx, isList, client.InNamespace(imageNamespace))).To(Succeed())
 
-			Eventually(func(g Gomega) []unstructured.Unstructured {
-				list, err := cli.DynamicClient().Resource(dicGVR).Namespace(imageNamespace).List(ctx, metav1.ListOptions{})
-				g.Expect(err).ToNot(HaveOccurred())
-
-				return list.Items
+				return isList.Items
 			}).WithTimeout(5 * time.Minute).WithPolling(time.Second).Should(BeEmpty())
 		})
 	})
@@ -285,7 +246,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 	Context("enable the feature again", func() {
 		It("Should set the FG to false", func() {
 			patch := []byte(`[{ "op": "replace", "path": "/spec/featureGates/enableCommonBootImageImport", "value": true }]`)
-			Eventually(tests.PatchHCO_old).WithArguments(ctx, cli, patch).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
+			Eventually(tests.PatchHCO).WithArguments(ctx, cli, patch).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		})
 
 		var isEntries []TableEntry
@@ -296,35 +257,37 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		if len(isEntries) > 0 {
 			DescribeTable("imageStream should be recovered", func(expectedIS tests.ImageStreamConfig) {
 				Eventually(func(g Gomega) error {
-					_, err := cli.DynamicClient().Resource(isGVR).Namespace(imageNamespace).Get(ctx, expectedIS.Name, metav1.GetOptions{})
-					return err
+					is := v1.ImageStream{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      expectedIS.Name,
+							Namespace: imageNamespace,
+						},
+					}
+					return cli.Get(ctx, client.ObjectKeyFromObject(&is), &is)
 				}).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).ShouldNot(HaveOccurred())
 			}, isEntries)
 		}
 
 		It("should propagate the DICT in SSP", func() {
 			Eventually(func(g Gomega) []v1beta2.DataImportCronTemplate {
-				unstructured, err := cli.DynamicClient().Resource(sspGVR).Namespace(flags.KubeVirtInstallNamespace).Get(ctx, "ssp-kubevirt-hyperconverged", metav1.GetOptions{})
-				g.Expect(err).ToNot(HaveOccurred())
-				ssp := &v1beta2.SSP{}
-				g.Expect(runtime.DefaultUnstructuredConverter.FromUnstructured(unstructured.Object, ssp)).To(Succeed())
+				ssp := getSSP(ctx, cli)
 				return ssp.Spec.CommonTemplates.DataImportCronTemplates
 			}).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).Should(HaveLen(len(expectedImages)))
 		})
 
 		It("should have all the images in the HyperConverged status", func() {
 			Eventually(func() []hcov1beta1.DataImportCronTemplateStatus {
-				hco := tests.GetHCO_old(ctx, cli)
+				hco := tests.GetHCO(ctx, cli)
 				return hco.Status.DataImportCronTemplates
 			}).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).Should(HaveLen(len(expectedImages)))
 		})
 
 		It("should restore all the DataImportCron resources", func() {
-			Eventually(func(g Gomega) []unstructured.Unstructured {
-				list, err := cli.DynamicClient().Resource(dicGVR).Namespace(imageNamespace).List(ctx, metav1.ListOptions{})
-				g.Expect(err).ToNot(HaveOccurred())
+			Eventually(func(g Gomega) []cdiv1beta1.DataImportCron {
+				dicList := &cdiv1beta1.DataImportCronList{}
+				Expect(cli.List(ctx, dicList, client.InNamespace(imageNamespace))).To(Succeed())
 
-				return list.Items
+				return dicList.Items
 			}).WithTimeout(5 * time.Minute).WithPolling(5 * time.Second).Should(HaveLen(len(expectedImages)))
 		})
 	})
@@ -333,7 +296,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 		AfterEach(func() {
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO_old(ctx, cli)
+				hc := tests.GetHCO(ctx, cli)
 
 				// make sure there no user-defined DICT
 				if len(hc.Spec.DataImportCronTemplates) > 0 {
@@ -341,7 +304,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					hc.Kind = "HyperConverged"
 					hc.Spec.DataImportCronTemplates = nil
 
-					tests.UpdateHCORetry_old(ctx, cli, hc)
+					tests.UpdateHCORetry(ctx, cli, hc)
 				}
 
 			}).WithPolling(time.Second * 3).WithTimeout(time.Second * 60).Should(Succeed())
@@ -349,14 +312,14 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 		It("should add missing annotation in the DICT", func() {
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO_old(ctx, cli)
+				hc := tests.GetHCO(ctx, cli)
 
 				hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{
 					getDICT(),
 				}
 
-				tests.UpdateHCORetry_old(ctx, cli, hc)
-				newHC := tests.GetHCO_old(ctx, cli)
+				tests.UpdateHCORetry(ctx, cli, hc)
+				newHC := tests.GetHCO(ctx, cli)
 
 				g.Expect(newHC.Spec.DataImportCronTemplates).To(HaveLen(1))
 				g.Expect(newHC.Spec.DataImportCronTemplates[0].Annotations).To(HaveKeyWithValue(cdiImmediateBindAnnotation, "true"), "should add the missing annotation")
@@ -365,7 +328,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 		It("should not change existing annotation in the DICT", func() {
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO_old(ctx, cli)
+				hc := tests.GetHCO(ctx, cli)
 
 				hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{
 					getDICT(),
@@ -375,8 +338,8 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					cdiImmediateBindAnnotation: "false",
 				}
 
-				tests.UpdateHCORetry_old(ctx, cli, hc)
-				newHC := tests.GetHCO_old(ctx, cli)
+				tests.UpdateHCORetry(ctx, cli, hc)
+				newHC := tests.GetHCO(ctx, cli)
 
 				g.Expect(newHC.Spec.DataImportCronTemplates).To(HaveLen(1))
 				g.Expect(newHC.Spec.DataImportCronTemplates[0].Annotations).To(HaveKeyWithValue(cdiImmediateBindAnnotation, "false"), "should not change existing annotation")
@@ -413,4 +376,29 @@ func getDICT() hcov1beta1.DataImportCronTemplate {
 			},
 		},
 	}
+}
+
+func getSSP(ctx context.Context, cli client.Client) *v1beta2.SSP {
+	ssp := &v1beta2.SSP{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ssp-kubevirt-hyperconverged",
+			Namespace: flags.KubeVirtInstallNamespace,
+		},
+	}
+
+	Expect(cli.Get(ctx, client.ObjectKeyFromObject(ssp), ssp)).To(Succeed())
+	return ssp
+}
+
+func getImageStream(ctx context.Context, cli client.Client, name, namespace string) *v1.ImageStream {
+	is := &v1.ImageStream{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+	}
+
+	Expect(cli.Get(ctx, client.ObjectKeyFromObject(is), is)).To(Succeed())
+
+	return is
 }

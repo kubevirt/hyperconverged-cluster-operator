@@ -10,8 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
-
-	"kubevirt.io/client-go/kubecli"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 
@@ -24,16 +23,12 @@ const (
 
 var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 	var (
-		cli kubecli.KubevirtClient
+		cli client.Client
 		ctx context.Context
 	)
 
 	BeforeEach(func() {
-		var err error
-
-		cli, err = kubecli.GetKubevirtClient()
-		Expect(cli).ToNot(BeNil())
-		Expect(err).ToNot(HaveOccurred())
+		cli = tests.GetControllerRuntimeClient()
 
 		ctx = context.Background()
 
@@ -55,11 +50,11 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		DescribeTable("Check that certConfig defaults are behaving as expected", func(path string) {
 			patch := []byte(fmt.Sprintf(removePathPatchTmplt, path))
 			Eventually(func() error {
-				return tests.PatchHCO_old(ctx, cli, patch)
+				return tests.PatchHCO(ctx, cli, patch)
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO_old(ctx, cli)
+				hc := tests.GetHCO(ctx, cli)
 				g.Expect(reflect.DeepEqual(hc.Spec.CertConfig, defaultCertConfig)).To(BeTrue(), "certConfig should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		},
@@ -94,11 +89,11 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		DescribeTable("Check that featureGates defaults are behaving as expected", func(path string) {
 			patch := []byte(fmt.Sprintf(removePathPatchTmplt, path))
 			Eventually(func() error {
-				return tests.PatchHCO_old(ctx, cli, patch)
+				return tests.PatchHCO(ctx, cli, patch)
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO_old(ctx, cli)
+				hc := tests.GetHCO(ctx, cli)
 				g.Expect(reflect.DeepEqual(hc.Spec.FeatureGates, defaultFeatureGates)).To(BeTrue(), "featureGates should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		},
@@ -132,11 +127,11 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		DescribeTable("Check that liveMigrationConfig defaults are behaving as expected", func(path string) {
 			patch := []byte(fmt.Sprintf(removePathPatchTmplt, path))
 			Eventually(func() error {
-				return tests.PatchHCO_old(ctx, cli, patch)
+				return tests.PatchHCO(ctx, cli, patch)
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO_old(ctx, cli)
+				hc := tests.GetHCO(ctx, cli)
 				g.Expect(reflect.DeepEqual(hc.Spec.LiveMigrationConfig, defaultLiveMigrationConfig)).To(BeTrue(), "liveMigrationConfig should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		},
@@ -159,11 +154,11 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		DescribeTable("Check that resourceRequirements defaults are behaving as expected", func(path string) {
 			patch := []byte(fmt.Sprintf(removePathPatchTmplt, path))
 			Eventually(func() error {
-				return tests.PatchHCO_old(ctx, cli, patch)
+				return tests.PatchHCO(ctx, cli, patch)
 			}).WithTimeout(20 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO_old(ctx, cli)
+				hc := tests.GetHCO(ctx, cli)
 				g.Expect(reflect.DeepEqual(hc.Spec.ResourceRequirements, &defaultResourceRequirements)).To(BeTrue(), "resourceRequirements should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		},
@@ -183,11 +178,11 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		DescribeTable("Check that workloadUpdateStrategy defaults are behaving as expected", func(path string) {
 			patch := []byte(fmt.Sprintf(removePathPatchTmplt, path))
 			Eventually(func() error {
-				return tests.PatchHCO_old(ctx, cli, patch)
+				return tests.PatchHCO(ctx, cli, patch)
 			}).WithTimeout(20 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO_old(ctx, cli)
+				hc := tests.GetHCO(ctx, cli)
 				g.Expect(reflect.DeepEqual(hc.Spec.WorkloadUpdateStrategy, defaultWorkloadUpdateStrategy)).To(BeTrue(), "workloadUpdateStrategy should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		},
@@ -205,11 +200,11 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		DescribeTable("Check that uninstallStrategy default is behaving as expected", func(path string) {
 			patch := []byte(fmt.Sprintf(removePathPatchTmplt, path))
 			Eventually(func() error {
-				return tests.PatchHCO_old(ctx, cli, patch)
+				return tests.PatchHCO(ctx, cli, patch)
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO_old(ctx, cli)
+				hc := tests.GetHCO(ctx, cli)
 				g.Expect(hc.Spec.UninstallStrategy).To(Equal(v1beta1.HyperConvergedUninstallStrategy(defaultUninstallStrategy)), "uninstallStrategy should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		},
@@ -227,11 +222,11 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		DescribeTable("Check that featureGates defaults are behaving as expected", func(path string) {
 			patch := []byte(fmt.Sprintf(removePathPatchTmplt, path))
 			Eventually(func() error {
-				return tests.PatchHCO_old(ctx, cli, patch)
+				return tests.PatchHCO(ctx, cli, patch)
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO_old(ctx, cli)
+				hc := tests.GetHCO(ctx, cli)
 				g.Expect(reflect.DeepEqual(hc.Spec.VirtualMachineOptions, defaultVirtualMachineOptions)).To(BeTrue(), "virtualMachineOptions should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		},
@@ -250,11 +245,11 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		DescribeTable("Check that HigherWorkloadDensity defaults are behaving as expected", func(path string) {
 			patch := []byte(fmt.Sprintf(removePathPatchTmplt, path))
 			Eventually(func() error {
-				return tests.PatchHCO_old(ctx, cli, patch)
+				return tests.PatchHCO(ctx, cli, patch)
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				hc := tests.GetHCO_old(ctx, cli)
+				hc := tests.GetHCO(ctx, cli)
 				g.Expect(reflect.DeepEqual(hc.Spec.HigherWorkloadDensity, defaultHigherWorkloadDensity)).To(BeTrue(), "HigherWorkloadDensity should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 		},

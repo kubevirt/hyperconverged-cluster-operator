@@ -15,8 +15,7 @@ require (
 	k8s.io/apimachinery v0.30.0
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0
-	kubevirt.io/api v1.2.2
-	kubevirt.io/client-go v1.2.1
+	kubevirt.io/api v1.2.1
 	kubevirt.io/containerized-data-importer-api v1.59.0
 	kubevirt.io/kubevirt v1.2.1
 )
@@ -121,6 +120,7 @@ require (
 	k8s.io/kube-aggregator v0.27.4 // indirect
 	k8s.io/kube-openapi v0.0.0-20240430033511-f0e62f92d13f // indirect
 	k8s.io/kubectl v0.29.3 // indirect
+	kubevirt.io/client-go v1.2.2 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect

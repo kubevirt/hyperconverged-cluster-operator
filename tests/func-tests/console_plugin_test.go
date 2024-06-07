@@ -16,8 +16,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/remotecommand"
-	"kubevirt.io/kubevirt/tests/flags"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"kubevirt.io/kubevirt/tests/flags"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 
@@ -40,7 +41,7 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 	tests.FlagParse()
 
 	BeforeEach(func() {
-		cli = tests.GetK8sClient()
+		cli = tests.GetControllerRuntimeClient()
 
 		ctx = context.Background()
 		tests.FailIfNotOpenShift(ctx, cli, "kubevirt console plugin")

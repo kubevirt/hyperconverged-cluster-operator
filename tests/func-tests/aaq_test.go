@@ -12,9 +12,10 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
 	"kubevirt.io/kubevirt/tests/flags"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 
@@ -33,7 +34,7 @@ var _ = Describe("Test AAQ", Label("AAQ"), Serial, Ordered, func() {
 	)
 
 	BeforeEach(func() {
-		k8scli = tests.GetK8sClient()
+		k8scli = tests.GetControllerRuntimeClient()
 
 		ctx = context.Background()
 

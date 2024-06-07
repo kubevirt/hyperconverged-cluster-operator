@@ -7,8 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"kubevirt.io/client-go/kubecli"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kvv1 "kubevirt.io/api/core/v1"
 	"kubevirt.io/kubevirt/tests/flags"
@@ -22,30 +21,26 @@ import (
 var _ = Describe("Check that the TuningPolicy annotation is configuring the KV object as expected", Serial, func() {
 	tests.FlagParse()
 	var (
-		cli kubecli.KubevirtClient
+		cli client.Client
 		ctx context.Context
 	)
 
 	BeforeEach(func() {
-		var err error
-		cli, err = kubecli.GetKubevirtClient()
-		Expect(cli).ToNot(BeNil())
-		Expect(err).ToNot(HaveOccurred())
-
+		cli = tests.GetControllerRuntimeClient()
 		ctx = context.Background()
 	})
 
 	AfterEach(func() {
-		hc := tests.GetHCO_old(ctx, cli)
+		hc := tests.GetHCO(ctx, cli)
 
 		delete(hc.Annotations, common.TuningPolicyAnnotationName)
 		hc.Spec.TuningPolicy = ""
 
-		tests.UpdateHCORetry_old(ctx, cli, hc)
+		tests.UpdateHCORetry(ctx, cli, hc)
 	})
 
 	It("should update KV with the tuningPolicy annotation", func() {
-		hc := tests.GetHCO_old(ctx, cli)
+		hc := tests.GetHCO(ctx, cli)
 
 		if hc.Annotations == nil {
 			hc.Annotations = make(map[string]string)
@@ -53,40 +48,49 @@ var _ = Describe("Check that the TuningPolicy annotation is configuring the KV o
 		hc.Annotations[common.TuningPolicyAnnotationName] = `{"qps":100,"burst":200}`
 		hc.Spec.TuningPolicy = v1beta1.HyperConvergedAnnotationTuningPolicy
 
-		tests.UpdateHCORetry_old(ctx, cli, hc)
+		tests.UpdateHCORetry(ctx, cli, hc)
 
 		expected := kvv1.TokenBucketRateLimiter{
 			Burst: 200,
 			QPS:   100,
 		}
 
-		checkTuningPolicy(cli, expected)
+		checkTuningPolicy(ctx, cli, expected)
 	})
 
 	It("should update KV with the highBurst tuningPolicy", func() {
-		hc := tests.GetHCO_old(ctx, cli)
+		hc := tests.GetHCO(ctx, cli)
 
 		delete(hc.Annotations, common.TuningPolicyAnnotationName)
 		hc.Spec.TuningPolicy = v1beta1.HyperConvergedHighBurstProfile
 
-		tests.UpdateHCORetry_old(ctx, cli, hc)
+		tests.UpdateHCORetry(ctx, cli, hc)
 
 		expected := kvv1.TokenBucketRateLimiter{
 			Burst: 400,
 			QPS:   200,
 		}
 
-		checkTuningPolicy(cli, expected)
+		checkTuningPolicy(ctx, cli, expected)
 	})
 })
 
-func checkTuningPolicy(cli kubecli.KubevirtClient, expected kvv1.TokenBucketRateLimiter) {
+func checkTuningPolicy(ctx context.Context, cli client.Client, expected kvv1.TokenBucketRateLimiter) {
 	Eventually(func(g Gomega) {
-		kv, err := cli.KubeVirt(flags.KubeVirtInstallNamespace).Get(context.Background(), "kubevirt-kubevirt-hyperconverged", metav1.GetOptions{})
-		g.Expect(err).ToNot(HaveOccurred())
-		g.Expect(kv).ToNot(BeNil())
-		g.Expect(kv.Spec.Configuration).ToNot(BeNil())
+		kv := &kvv1.KubeVirt{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "KubeVirt",
+				APIVersion: "kubevirt.io/v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "kubevirt-kubevirt-hyperconverged",
+				Namespace: flags.KubeVirtInstallNamespace,
+			},
+		}
 
+		Expect(cli.Get(ctx, client.ObjectKeyFromObject(kv), kv)).To(Succeed())
+
+		g.Expect(kv.Spec.Configuration).ToNot(BeNil())
 		checkReloadableComponentConfiguration(g, kv.Spec.Configuration.APIConfiguration, expected)
 		checkReloadableComponentConfiguration(g, kv.Spec.Configuration.ControllerConfiguration, expected)
 		checkReloadableComponentConfiguration(g, kv.Spec.Configuration.HandlerConfiguration, expected)

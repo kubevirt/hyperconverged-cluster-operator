@@ -4,31 +4,26 @@ import (
 	"context"
 	"time"
 
-	"k8s.io/utils/ptr"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	gomegatypes "github.com/onsi/gomega/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	"kubevirt.io/client-go/kubecli"
 
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
 var _ = Describe("Check CR validation", Label("validation"), Serial, func() {
 	var (
-		cli kubecli.KubevirtClient
+		cli client.Client
 		ctx context.Context
 	)
 
 	BeforeEach(func() {
-		var err error
-
-		cli, err = kubecli.GetKubevirtClient()
-		Expect(cli).ToNot(BeNil())
-		Expect(err).ToNot(HaveOccurred())
+		cli = tests.GetControllerRuntimeClient()
 
 		ctx = context.Background()
 
@@ -45,9 +40,9 @@ var _ = Describe("Check CR validation", Label("validation"), Serial, func() {
 			}
 			Eventually(func() error {
 				var err error
-				hc := tests.GetHCO_old(ctx, cli)
+				hc := tests.GetHCO(ctx, cli)
 				hc.Spec.ResourceRequirements = requirements
-				_, err = tests.UpdateHCO_old(ctx, cli, hc)
+				_, err = tests.UpdateHCO(ctx, cli, hc)
 				return err
 			}).WithTimeout(10 * time.Second).WithPolling(500 * time.Millisecond).Should(outcome)
 		},
