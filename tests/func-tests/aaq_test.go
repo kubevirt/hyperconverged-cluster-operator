@@ -12,14 +12,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
-
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-
 	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
 	"kubevirt.io/kubevirt/tests/flags"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 
@@ -38,15 +33,7 @@ var _ = Describe("Test AAQ", Label("AAQ"), Serial, Ordered, func() {
 	)
 
 	BeforeEach(func() {
-		cfg, err := config.GetConfig()
-		Expect(err).ToNot(HaveOccurred())
-
-		s := scheme.Scheme
-		Expect(aaqv1alpha1.AddToScheme(s)).To(Succeed())
-		Expect(v1beta1.AddToScheme(s)).To(Succeed())
-
-		k8scli, err = client.New(cfg, client.Options{Scheme: s})
-		Expect(err).ToNot(HaveOccurred())
+		k8scli = tests.GetK8sClient()
 
 		ctx = context.Background()
 

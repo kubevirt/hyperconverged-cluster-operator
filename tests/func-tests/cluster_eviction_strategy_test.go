@@ -6,11 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
-
 	v1 "kubevirt.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
@@ -26,16 +23,11 @@ var _ = Describe("Cluster level evictionStrategy default value", Serial, Ordered
 	)
 
 	BeforeEach(func() {
-		cfg, err := config.GetConfig()
-		Expect(err).ToNot(HaveOccurred())
-
-		s := scheme.Scheme
-
-		cli, err = client.New(cfg, client.Options{Scheme: s})
-		Expect(err).ToNot(HaveOccurred())
+		cli = tests.GetK8sClient()
 
 		ctx = context.Background()
 
+		var err error
 		singleWorkerCluster, err = isSingleWorkerCluster(ctx, cli)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -74,10 +66,6 @@ var _ = Describe("Cluster level evictionStrategy default value", Serial, Ordered
 })
 
 func isSingleWorkerCluster(ctx context.Context, cli client.Client) (bool, error) {
-	if err := corev1.AddToScheme(cli.Scheme()); err != nil {
-		return false, err
-	}
-
 	workerNodes := &corev1.NodeList{}
 	err := cli.List(ctx, workerNodes, client.MatchingLabels{"node-role.kubernetes.io/worker": ""})
 

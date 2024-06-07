@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
-	"os"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -17,12 +15,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/remotecommand"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
-
 	"kubevirt.io/kubevirt/tests/flags"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 
@@ -45,14 +40,7 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 	tests.FlagParse()
 
 	BeforeEach(func() {
-		cfg, err := config.GetConfig()
-		Expect(err).ToNot(HaveOccurred())
-
-		s := scheme.Scheme
-		Expect(consolev1.AddToScheme(s)).To(Succeed())
-
-		cli, err = client.New(cfg, client.Options{Scheme: s})
-		Expect(err).ToNot(HaveOccurred())
+		cli = tests.GetK8sClient()
 
 		ctx = context.Background()
 		tests.FailIfNotOpenShift(ctx, cli, "kubevirt console plugin")
@@ -60,8 +48,7 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 		hco := tests.GetHCO(ctx, cli)
 		originalInfra := hco.Spec.Infra
 
-		k8sClientSet, err = kubernetes.NewForConfig(cfg)
-		Expect(err).ToNot(HaveOccurred())
+		k8sClientSet = tests.GetK8sClientSet()
 
 		DeferCleanup(func() {
 			hco.Spec.Infra = originalInfra
@@ -207,27 +194,7 @@ func executeCommandOnPod(ctx context.Context, k8scli *kubernetes.Clientset, pod 
 			TTY:     true,
 		}, scheme.ParameterCodec)
 
-	f := flag.Lookup("kubeconfig")
-	if f == nil {
-		return "", "", fmt.Errorf("couldn't find flag 'kubeconfig'")
-	}
-
-	configFile := f.Value.String()
-	if configFile == "" {
-		return "", "", fmt.Errorf("couldn't find flag 'kubeconfig'")
-	}
-
-	configBytes, err := os.ReadFile(configFile)
-	if err != nil {
-		return "", "", fmt.Errorf("couldn't read the kubeconfig file %s: %v", configFile, err)
-	}
-
-	cfg, err := clientcmd.RESTConfigFromKubeConfig(configBytes)
-	if err != nil {
-		return "", "", fmt.Errorf("couldn't parse kubeconfig file %s: %v", configFile, err)
-	}
-
-	exec, err := remotecommand.NewSPDYExecutor(cfg, "POST", request.URL())
+	exec, err := remotecommand.NewSPDYExecutor(tests.GetClientConfig(), "POST", request.URL())
 	if err != nil {
 		return "", "", fmt.Errorf("%w: failed to create pod executor for %v/%v", err, pod.Namespace, pod.Name)
 	}
