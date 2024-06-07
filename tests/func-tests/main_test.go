@@ -2,6 +2,7 @@ package tests_test
 
 import (
 	"context"
+	"flag"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -9,6 +10,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"kubevirt.io/client-go/kubecli"
 	kvtutil "kubevirt.io/kubevirt/tests/util"
@@ -22,6 +25,8 @@ func TestTests(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	config.RegisterFlags(flag.CommandLine)
+	logf.SetLogger(GinkgoLogr)
 
 	virtCli, err := kubecli.GetKubevirtClient()
 	Expect(err).ToNot(HaveOccurred())

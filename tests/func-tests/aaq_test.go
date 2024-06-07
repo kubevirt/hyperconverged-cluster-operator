@@ -38,8 +38,6 @@ var _ = Describe("Test AAQ", Label("AAQ"), Serial, Ordered, func() {
 	)
 
 	BeforeEach(func() {
-		var err error
-
 		cfg, err := config.GetConfig()
 		Expect(err).ToNot(HaveOccurred())
 
