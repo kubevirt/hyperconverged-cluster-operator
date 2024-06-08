@@ -116,6 +116,9 @@ const (
 
 	// Deploy common-instancetypes using virt-operator
 	kvDeployCommonInstancetypes = "CommonInstancetypesDeploymentGate"
+
+	// Enable VM live update, to allow live propagation of VM changes to their VMI
+	kvVMLiveUpdateFeatures = "VMLiveUpdateFeatures"
 )
 
 const (
@@ -142,6 +145,7 @@ var (
 		kvVMPersistentState,
 		kvHNetworkBindingPluginsGate,
 		kvDeployCommonInstancetypes,
+		kvVMLiveUpdateFeatures,
 	}
 
 	// holds a list of mandatory KubeVirt feature gates. Some of them are the hard coded feature gates and some of
@@ -451,6 +455,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 		SeccompConfiguration:         seccompConfig,
 		EvictionStrategy:             hc.Spec.EvictionStrategy,
 		KSMConfiguration:             hc.Spec.KSMConfiguration,
+		VMRolloutStrategy:            ptr.To(kubevirtcorev1.VMRolloutStrategyLiveUpdate),
 	}
 
 	if smbiosConfig, ok := os.LookupEnv(smbiosEnvName); ok {
