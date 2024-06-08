@@ -51,7 +51,7 @@ var _ = Describe("[rfe_id:5882][crit:high][vendor:cnv-qe@redhat.com][level:syste
 
 			Expect(cli.Get(ctx, client.ObjectKeyFromObject(cqs), cqs)).To(Succeed())
 
-			Expect(cqs.Spec.DisplayName).Should(Equal(qs.DisplayName))
+			Expect(cqs.Spec.DisplayName).To(Equal(qs.DisplayName))
 		}
 	})
 

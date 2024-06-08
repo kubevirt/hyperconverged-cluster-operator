@@ -19,7 +19,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
-	"kubevirt.io/kubevirt/tests/flags"
 	"kubevirt.io/ssp-operator/api/v1beta2"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
@@ -382,7 +381,7 @@ func getSSP(ctx context.Context, cli client.Client) *v1beta2.SSP {
 	ssp := &v1beta2.SSP{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ssp-kubevirt-hyperconverged",
-			Namespace: flags.KubeVirtInstallNamespace,
+			Namespace: tests.InstallNamespace,
 		},
 	}
 

@@ -10,7 +10,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kvv1 "kubevirt.io/api/core/v1"
-	"kubevirt.io/kubevirt/tests/flags"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
@@ -84,7 +83,7 @@ func checkTuningPolicy(ctx context.Context, cli client.Client, expected kvv1.Tok
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "kubevirt-kubevirt-hyperconverged",
-				Namespace: flags.KubeVirtInstallNamespace,
+				Namespace: tests.InstallNamespace,
 			},
 		}
 

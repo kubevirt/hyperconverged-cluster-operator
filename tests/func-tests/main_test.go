@@ -10,8 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	kvtutil "kubevirt.io/kubevirt/tests/util"
-
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
@@ -25,14 +23,16 @@ var _ = BeforeSuite(func() {
 
 	ns := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: kvtutil.NamespaceTestDefault,
+			Name: tests.TestNamespace,
 		},
 	}
 
 	opt := metav1.CreateOptions{}
 	_, err := cli.CoreV1().Namespaces().Create(context.Background(), ns, opt)
-	if !errors.IsAlreadyExists(err) {
-		kvtutil.PanicOnError(err)
+	if err != nil {
+		if !errors.IsAlreadyExists(err) {
+			panic(err)
+		}
 	}
 
 	tests.BeforeEach()
@@ -40,5 +40,8 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	cli := tests.GetK8sClientSet()
-	kvtutil.PanicOnError(cli.CoreV1().Namespaces().Delete(context.Background(), kvtutil.NamespaceTestDefault, metav1.DeleteOptions{}))
+	err := cli.CoreV1().Namespaces().Delete(context.Background(), tests.TestNamespace, metav1.DeleteOptions{})
+	if err != nil {
+		panic(err)
+	}
 })

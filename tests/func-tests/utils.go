@@ -18,24 +18,29 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"kubevirt.io/kubevirt/tests/flags"
-	kvtutil "kubevirt.io/kubevirt/tests/util"
-
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-var KubeVirtStorageClassLocal string
+var (
+	KubeVirtStorageClassLocal string
+	InstallNamespace          string
+	cdiNS                     string
+)
 
 // labels
 const (
 	SingleNodeLabel             = "SINGLE_NODE_ONLY"
 	HighlyAvailableClusterLabel = "HIGHLY_AVAILABLE_CLUSTER"
 	OpenshiftLabel              = "OpenShift"
+
+	TestNamespace = "hco-test-default"
 )
 
 func init() {
 	flag.StringVar(&KubeVirtStorageClassLocal, "storage-class-local", "local", "Storage provider to use for tests which want local storage")
+	flag.StringVar(&InstallNamespace, "installed-namespace", "", "Set the namespace KubeVirt is installed in")
+	flag.StringVar(&cdiNS, "cdi-namespace", "", "ignored")
 }
 
 func FlagParse() {
@@ -119,7 +124,7 @@ func GetHCO(ctx context.Context, cli client.Client) *v1beta1.HyperConverged {
 	hco := &v1beta1.HyperConverged{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      hcoutil.HyperConvergedName,
-			Namespace: flags.KubeVirtInstallNamespace,
+			Namespace: InstallNamespace,
 		},
 	}
 
@@ -181,7 +186,7 @@ func PatchHCO(ctx context.Context, cli client.Client, patchBytes []byte) error {
 	hco := &v1beta1.HyperConverged{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      hcoutil.HyperConvergedName,
-			Namespace: flags.KubeVirtInstallNamespace,
+			Namespace: InstallNamespace,
 		},
 	}
 
@@ -199,7 +204,7 @@ func RestoreDefaults(ctx context.Context, cli client.Client) {
 
 func deleteAllResources(ctx context.Context, restClient rest.Interface, resourceName string) {
 	Eventually(func() bool {
-		err := restClient.Delete().Namespace(kvtutil.NamespaceTestDefault).Resource(resourceName).Do(ctx).Error()
+		err := restClient.Delete().Namespace(TestNamespace).Resource(resourceName).Do(ctx).Error()
 		return err == nil || apierrors.IsNotFound(err)
 	}).WithTimeout(time.Minute).
 		WithPolling(time.Second).

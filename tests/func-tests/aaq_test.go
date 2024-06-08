@@ -15,7 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
-	"kubevirt.io/kubevirt/tests/flags"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 
@@ -88,7 +87,7 @@ func getAAQ(ctx context.Context, cli client.Client) (*aaqv1alpha1.AAQ, error) {
 	aaq := &aaqv1alpha1.AAQ{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "aaq-" + hcoutil.HyperConvergedName,
-			Namespace: flags.KubeVirtInstallNamespace,
+			Namespace: tests.InstallNamespace,
 		},
 	}
 

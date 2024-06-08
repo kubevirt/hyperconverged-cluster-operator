@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
-	"kubevirt.io/kubevirt/tests/flags"
 
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
@@ -126,7 +125,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "kubevirt-kubevirt-hyperconverged",
-					Namespace: flags.KubeVirtInstallNamespace,
+					Namespace: tests.InstallNamespace,
 				},
 			}
 
@@ -222,7 +221,7 @@ func getPrometheusRule(cli rest.Interface) monitoringv1.PrometheusRule {
 	ExpectWithOffset(1, cli.Get().
 		Resource("prometheusrules").
 		Name("kubevirt-hyperconverged-prometheus-rule").
-		Namespace(flags.KubeVirtInstallNamespace).
+		Namespace(tests.InstallNamespace).
 		AbsPath("/apis", monitoringv1.SchemeGroupVersion.Group, monitoringv1.SchemeGroupVersion.Version).
 		Timeout(10*time.Second).
 		Do(context.TODO()).Into(&prometheusRule)).Should(Succeed())
@@ -255,7 +254,7 @@ func getAuthorizationTokenForPrometheus(ctx context.Context, cli *kubernetes.Cli
 	var token string
 	Eventually(func() bool {
 		treq, err := cli.CoreV1().ServiceAccounts("openshift-monitoring").CreateToken(
-			context.TODO(),
+			ctx,
 			"prometheus-k8s",
 			&authenticationv1.TokenRequest{
 				Spec: authenticationv1.TokenRequestSpec{

@@ -18,8 +18,6 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"kubevirt.io/kubevirt/tests/flags"
-
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
@@ -80,7 +78,7 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 
 		testConsolePod := consolePods.Items[0]
 		command := fmt.Sprintf(`curl -ks https://%s.%s.svc:%d/plugin-manifest.json`,
-			pluginServiceName, flags.KubeVirtInstallNamespace, pluginServicePort)
+			pluginServiceName, tests.InstallNamespace, pluginServicePort)
 
 		stdout, stderr, err := executeCommandOnPod(ctx, k8sClientSet, &testConsolePod, command)
 		Expect(err).ToNot(HaveOccurred())
@@ -116,7 +114,7 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 			consoleUIDeployment := &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      string(hcoutil.AppComponentUIPlugin),
-					Namespace: flags.KubeVirtInstallNamespace,
+					Namespace: tests.InstallNamespace,
 				},
 			}
 
@@ -131,7 +129,7 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 			proxyUIDeployment := &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      string(hcoutil.AppComponentUIProxy),
-					Namespace: flags.KubeVirtInstallNamespace,
+					Namespace: tests.InstallNamespace,
 				},
 			}
 			g.Expect(cli.Get(ctx, client.ObjectKeyFromObject(proxyUIDeployment), proxyUIDeployment)).To(Succeed())
@@ -153,7 +151,7 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 			consoleUIDeployment := &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      string(hcoutil.AppComponentUIPlugin),
-					Namespace: flags.KubeVirtInstallNamespace,
+					Namespace: tests.InstallNamespace,
 				},
 			}
 
@@ -167,7 +165,7 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 			proxyUIDeployment := &appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      string(hcoutil.AppComponentUIProxy),
-					Namespace: flags.KubeVirtInstallNamespace,
+					Namespace: tests.InstallNamespace,
 				},
 			}
 			g.Expect(cli.Get(ctx, client.ObjectKeyFromObject(proxyUIDeployment), proxyUIDeployment)).To(Succeed())

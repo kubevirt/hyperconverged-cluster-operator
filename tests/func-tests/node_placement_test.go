@@ -15,10 +15,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
-	"kubevirt.io/kubevirt/tests/flags"
 
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
@@ -219,7 +218,7 @@ func updatePodAssignments(pods []v1.Pod, podMap map[string]bool, nodeType string
 }
 
 func listPodsInNode(ctx context.Context, g Gomega, cli *kubernetes.Clientset, nodeName string) []v1.Pod {
-	pods, err := cli.CoreV1().Pods(flags.KubeVirtInstallNamespace).List(ctx, k8smetav1.ListOptions{
+	pods, err := cli.CoreV1().Pods(tests.InstallNamespace).List(ctx, k8smetav1.ListOptions{
 		FieldSelector: fmt.Sprintf("spec.nodeName=%s,status.phase=Running", nodeName),
 	})
 	g.ExpectWithOffset(1, err).ToNot(HaveOccurred())

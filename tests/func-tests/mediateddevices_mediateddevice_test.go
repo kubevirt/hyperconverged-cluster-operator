@@ -13,7 +13,6 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
-	"kubevirt.io/kubevirt/tests/flags"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 
@@ -70,7 +69,7 @@ var _ = Describe("MediatedDevicesTypes -> MediatedDeviceTypes", Label("MediatedD
 						},
 						ObjectMeta: metav1.ObjectMeta{
 							Name:      "kubevirt-kubevirt-hyperconverged",
-							Namespace: flags.KubeVirtInstallNamespace,
+							Namespace: tests.InstallNamespace,
 						},
 					}
 

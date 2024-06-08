@@ -9,12 +9,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	k8smetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
-	kvlibvmi "kubevirt.io/kubevirt/tests/libvmi"
-	kvtutil "kubevirt.io/kubevirt/tests/util"
 
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
@@ -47,12 +47,18 @@ var _ = Describe("[rfe_id:273][crit:critical][vendor:cnv-qe@redhat.com][level:sy
 
 func verifyVMICreation(ctx context.Context, cli client.Client) string {
 	By("Creating VMI...")
-	vmi := kvlibvmi.New(
-		kvlibvmi.WithNamespace(kvtutil.NamespaceTestDefault),
-		kvlibvmi.WithResourceMemory("128Mi"),
-		kvlibvmi.WithInterface(kvlibvmi.InterfaceDeviceWithMasqueradeBinding()),
-		kvlibvmi.WithNetwork(kubevirtcorev1.DefaultPodNetwork()),
-	)
+	vmi := createVMIObject("testvmi")
+	vmi.Spec.Domain.Resources.Requests = corev1.ResourceList{corev1.ResourceMemory: resource.MustParse("128Mi")}
+	vmi.Spec.Domain.Devices.Interfaces = []kubevirtcorev1.Interface{
+		{
+			Name: kubevirtcorev1.DefaultPodNetwork().Name,
+			InterfaceBindingMethod: kubevirtcorev1.InterfaceBindingMethod{
+				Masquerade: &kubevirtcorev1.InterfaceMasquerade{},
+			},
+		},
+	}
+	vmi.Spec.Networks = []kubevirtcorev1.Network{*kubevirtcorev1.DefaultPodNetwork()}
+
 	EventuallyWithOffset(1, func() error {
 		return cli.Create(ctx, vmi)
 	}).WithTimeout(timeout).WithPolling(pollingInterval).Should(Succeed(), "failed to create a vmi")
@@ -104,7 +110,7 @@ func createVMIObject(vmiName string) *kubevirtcorev1.VirtualMachineInstance {
 		},
 		ObjectMeta: k8smetav1.ObjectMeta{
 			Name:      vmiName,
-			Namespace: kvtutil.NamespaceTestDefault,
+			Namespace: tests.TestNamespace,
 		},
 	}
 }
