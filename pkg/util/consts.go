@@ -21,6 +21,7 @@ const (
 	HcoMutatingWebhookNS             = "mutate-ns-hco.kubevirt.io"
 	PrometheusRuleCRDName            = "prometheusrules.monitoring.coreos.com"
 	ServiceMonitorCRDName            = "servicemonitors.monitoring.coreos.com"
+	OpenShiftConsolePluginCRDName    = "consoleplugins.console.openshift.io"
 	HcoMutatingWebhookHyperConverged = "mutate-hyperconverged-hco.kubevirt.io"
 	AppLabel                         = "app"
 	UndefinedNamespace               = ""

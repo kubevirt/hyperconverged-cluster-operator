@@ -28,7 +28,7 @@ var (
 	logger = logf.Log.WithName("webhook-setup")
 )
 
-func SetupWebhookWithManager(ctx context.Context, mgr ctrl.Manager, isOpenshift bool, hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile) error {
+func SetupWebhookWithManager(ctx context.Context, mgr ctrl.Manager, isOpenshiftConsole bool, hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile) error {
 	operatorNsEnv, nserr := hcoutil.GetOperatorNamespaceFromEnv()
 	if nserr != nil {
 		logger.Error(nserr, "failed to get operator namespace from the environment")
@@ -37,7 +37,7 @@ func SetupWebhookWithManager(ctx context.Context, mgr ctrl.Manager, isOpenshift 
 
 	decoder := admission.NewDecoder(mgr.GetScheme())
 
-	whHandler := validator.NewWebhookHandler(logger, mgr.GetClient(), decoder, operatorNsEnv, isOpenshift, hcoTLSSecurityProfile)
+	whHandler := validator.NewWebhookHandler(logger, mgr.GetClient(), decoder, operatorNsEnv, isOpenshiftConsole, hcoTLSSecurityProfile)
 	nsMutator := mutator.NewNsMutator(mgr.GetClient(), decoder, operatorNsEnv)
 	hyperConvergedMutator := mutator.NewHyperConvergedMutator(mgr.GetClient(), decoder)
 

@@ -120,7 +120,7 @@ func main() {
 	needLeaderElection := !ci.IsRunningLocally()
 
 	// Create a new Cmd to provide shared dependencies and start components
-	mgr, err := manager.New(cfg, getManagerOptions(operatorNamespace, needLeaderElection, ci.IsMonitoringAvailable(), ci.IsOpenshift(), scheme))
+	mgr, err := manager.New(cfg, getManagerOptions(operatorNamespace, needLeaderElection, ci.IsMonitoringAvailable(), ci.IsNativeOpenshift(), ci.HasOpenshiftConsole(), scheme))
 	cmdHelper.ExitOnError(err, "can't initiate manager")
 
 	// register pprof instrumentation if HCO_PPROF_ADDR is set
@@ -192,7 +192,7 @@ func main() {
 
 // Restricts the cache's ListWatch to specific fields/labels per GVK at the specified object to control the memory impact
 // this is used to completely overwrite the NewCache function so all the interesting objects should be explicitly listed here
-func getCacheOption(operatorNamespace string, isMonitoringAvailable, isOpenshift bool) cache.Options {
+func getCacheOption(operatorNamespace string, isMonitoringAvailable, isNativeOpenshift bool, hasOpenshiftConsole bool) cache.Options {
 	namespaceSelector := fields.Set{"metadata.namespace": operatorNamespace}.AsSelector()
 	labelSelector := labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}.AsSelector()
 	labelSelectorForNamespace := labels.Set{hcoutil.KubernetesMetadataName: operatorNamespace}.AsSelector()
@@ -247,14 +247,7 @@ func getCacheOption(operatorNamespace string, isMonitoringAvailable, isOpenshift
 		},
 	}
 
-	cacheOptionsByOjectForOpenshift := map[client.Object]cache.ByObject{
-		&openshiftroutev1.Route{}: {
-			Field: namespaceSelector,
-		},
-		&imagev1.ImageStream{}: {
-			Label: labelSelector,
-		},
-		&openshiftconfigv1.APIServer{}: {},
+	cacheOptionsByOjectForOpenshiftConsole := map[client.Object]cache.ByObject{
 		&consolev1.ConsoleCLIDownload{}: {
 			Label: labelSelector,
 		},
@@ -266,18 +259,31 @@ func getCacheOption(operatorNamespace string, isMonitoringAvailable, isOpenshift
 		},
 	}
 
+	cacheOptionsByOjectForNativeOpenshift := map[client.Object]cache.ByObject{
+		&openshiftroutev1.Route{}: {
+			Field: namespaceSelector,
+		},
+		&imagev1.ImageStream{}: {
+			Label: labelSelector,
+		},
+		&openshiftconfigv1.APIServer{}: {},
+	}
+
 	if isMonitoringAvailable {
 		maps.Copy(cacheOptions.ByObject, cacheOptionsByOjectForMonitoring)
 	}
-	if isOpenshift {
-		maps.Copy(cacheOptions.ByObject, cacheOptionsByOjectForOpenshift)
+	if isNativeOpenshift {
+		maps.Copy(cacheOptions.ByObject, cacheOptionsByOjectForNativeOpenshift)
+	}
+	if hasOpenshiftConsole {
+		maps.Copy(cacheOptions.ByObject, cacheOptionsByOjectForOpenshiftConsole)
 	}
 
 	return cacheOptions
 
 }
 
-func getManagerOptions(operatorNamespace string, needLeaderElection, isMonitoringAvailable, isOpenshift bool, scheme *apiruntime.Scheme) manager.Options {
+func getManagerOptions(operatorNamespace string, needLeaderElection, isMonitoringAvailable, isNativeOpenshift bool, hasOpenshiftConsole bool, scheme *apiruntime.Scheme) manager.Options {
 	return manager.Options{
 		Metrics: server.Options{
 			BindAddress: fmt.Sprintf("%s:%d", hcoutil.MetricsHost, hcoutil.MetricsPort),
@@ -292,7 +298,7 @@ func getManagerOptions(operatorNamespace string, needLeaderElection, isMonitorin
 		// "configmapsleases". Therefore, having only "leases" should be safe now.
 		LeaderElectionResourceLock: resourcelock.LeasesResourceLock,
 		LeaderElectionID:           "hyperconverged-cluster-operator-lock",
-		Cache:                      getCacheOption(operatorNamespace, isMonitoringAvailable, isOpenshift),
+		Cache:                      getCacheOption(operatorNamespace, isMonitoringAvailable, isNativeOpenshift, hasOpenshiftConsole),
 		Scheme:                     scheme,
 	}
 }

@@ -195,17 +195,22 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) er
 			&monitoringv1.PrometheusRule{},
 		}...)
 	}
-	if ci.IsOpenshift() {
+	if ci.HasOpenshiftConsole() {
+		// TODO: Ensure we need all of these
 		secondaryResources = append(secondaryResources, []client.Object{
 			&sspv1beta2.SSP{},
 			&corev1.Service{},
-			&routev1.Route{},
 			&consolev1.ConsoleCLIDownload{},
 			&consolev1.ConsoleQuickStart{},
 			&consolev1.ConsolePlugin{},
-			&imagev1.ImageStream{},
 			&corev1.Namespace{},
 			&appsv1.Deployment{},
+		}...)
+	}
+	if ci.IsNativeOpenshift() {
+		secondaryResources = append(secondaryResources, []client.Object{
+			&routev1.Route{},
+			&imagev1.ImageStream{},
 		}...)
 	}
 
@@ -234,7 +239,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) er
 		return err
 	}
 
-	if ci.IsOpenshift() {
+	if ci.IsNativeOpenshift() {
 		// Watch openshiftconfigv1.APIServer separately
 		msg := "Reconciling for openshiftconfigv1.APIServer"
 

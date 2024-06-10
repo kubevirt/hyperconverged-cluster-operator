@@ -35,22 +35,22 @@ const (
 )
 
 type WebhookHandler struct {
-	logger      logr.Logger
-	cli         client.Client
-	namespace   string
-	isOpenshift bool
-	decoder     admission.Decoder
+	logger             logr.Logger
+	cli                client.Client
+	namespace          string
+	isOpenshiftConsole bool
+	decoder            admission.Decoder
 }
 
 var hcoTLSConfigCache *openshiftconfigv1.TLSSecurityProfile
 
-func NewWebhookHandler(logger logr.Logger, cli client.Client, decoder admission.Decoder, namespace string, isOpenshift bool, hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile) *WebhookHandler {
+func NewWebhookHandler(logger logr.Logger, cli client.Client, decoder admission.Decoder, namespace string, isOpenshiftConsole bool, hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile) *WebhookHandler {
 	hcoTLSConfigCache = hcoTLSSecurityProfile
 	return &WebhookHandler{
 		logger:      logger,
 		cli:         cli,
 		namespace:   namespace,
-		isOpenshift: isOpenshift,
+		isOpenshiftConsole: isOpenshiftConsole,
 		decoder:     decoder,
 	}
 }
@@ -216,7 +216,7 @@ func (wh *WebhookHandler) ValidateUpdate(ctx context.Context, dryrun bool, reque
 		cna,
 	}
 
-	if wh.isOpenshift {
+	if wh.isOpenshiftConsole {
 		ssp, _, err := operands.NewSSP(requested)
 		if err != nil {
 			return err
