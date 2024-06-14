@@ -282,7 +282,10 @@ type ClusterInfoMock struct{}
 func (ClusterInfoMock) Init(_ context.Context, _ client.Client, _ logr.Logger) error {
 	return nil
 }
-func (ClusterInfoMock) IsOpenshift() bool {
+func (ClusterInfoMock) IsNativeOpenshift() bool {
+	return true
+}
+func (ClusterInfoMock) HasOpenshiftConsole() bool {
 	return true
 }
 func (ClusterInfoMock) IsRunningLocally() bool {
@@ -339,7 +342,10 @@ type ClusterInfoSNOMock struct{}
 func (ClusterInfoSNOMock) Init(_ context.Context, _ client.Client, _ logr.Logger) error {
 	return nil
 }
-func (ClusterInfoSNOMock) IsOpenshift() bool {
+func (ClusterInfoSNOMock) IsNativeOpenshift() bool {
+	return true
+}
+func (ClusterInfoSNOMock) HasOpenshiftConsole() bool {
 	return true
 }
 func (ClusterInfoSNOMock) IsRunningLocally() bool {
@@ -396,7 +402,10 @@ type ClusterInfoSRCPHAIMock struct{}
 func (ClusterInfoSRCPHAIMock) Init(_ context.Context, _ client.Client, _ logr.Logger) error {
 	return nil
 }
-func (ClusterInfoSRCPHAIMock) IsOpenshift() bool {
+func (ClusterInfoSRCPHAIMock) IsNativeOpenshift() bool {
+	return true
+}
+func (ClusterInfoSRCPHAIMock) HasOpenshiftConsole() bool {
 	return true
 }
 func (ClusterInfoSRCPHAIMock) IsRunningLocally() bool {

@@ -191,7 +191,7 @@ func newRoleBinding(owner metav1.OwnerReference, namespace string, ci hcoutil.Cl
 }
 
 func getMonitoringNamespace(ci hcoutil.ClusterInfo) string {
-	if ci.IsOpenshift() {
+	if ci.IsNativeOpenshift() {
 		return openshiftMonitoringNamespace
 	}
 

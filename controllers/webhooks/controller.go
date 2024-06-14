@@ -42,7 +42,7 @@ func (r *ReconcileAPIServer) Reconcile(ctx context.Context, _ reconcile.Request)
 
 // RegisterReconciler creates a new HyperConverged Reconciler and registers it into manager.
 func RegisterReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo) error {
-	if ci.IsOpenshift() {
+	if ci.IsNativeOpenshift() {
 		return add(mgr, newReconciler(mgr, ci))
 	}
 	return nil

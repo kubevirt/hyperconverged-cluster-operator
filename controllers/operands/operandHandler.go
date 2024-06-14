@@ -59,16 +59,19 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		newAAQHandler(client, scheme),
 	}
 
-	if ci.IsOpenshift() {
+	if ci.HasOpenshiftConsole() {
 		operands = append(operands, []Operand{
 			(*genericOperand)(newSspHandler(client, scheme)),
 			(*genericOperand)(newCliDownloadHandler(client, scheme)),
-			(*genericOperand)(newCliDownloadsRouteHandler(client, scheme)),
 			(*genericOperand)(newServiceHandler(client, scheme, NewCliDownloadsService)),
 		}...)
 	}
 
-	if ci.IsOpenshift() && ci.IsConsolePluginImageProvided() {
+	if ci.IsNativeOpenshift() {
+		operands = append(operands, (*genericOperand)(newCliDownloadsRouteHandler(client, scheme)))
+	}
+
+	if ci.HasOpenshiftConsole() && ci.IsConsolePluginImageProvided() {
 		operands = append(operands, newConsoleHandler(client))
 		operands = append(operands, (*genericOperand)(newServiceHandler(client, scheme, NewKvUIPluginSvc)))
 		operands = append(operands, (*genericOperand)(newServiceHandler(client, scheme, NewKvUIProxySvc)))
@@ -90,16 +93,19 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 // Initial operations that need to read/write from the cluster can only be done when the client is already working.
 func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.ClusterInfo, hc *hcov1beta1.HyperConverged) {
 	h.objects = make([]client.Object, 0)
-	if ci.IsOpenshift() {
+	if ci.HasOpenshiftConsole() {
 		h.addOperands(scheme, hc, getQuickStartHandlers)
 		h.addOperands(scheme, hc, getDashboardHandlers)
-		h.addOperands(scheme, hc, getImageStreamHandlers)
 		h.addOperands(scheme, hc, newVirtioWinCmHandler)
 		h.addOperands(scheme, hc, newVirtioWinCmReaderRoleHandler)
 		h.addOperands(scheme, hc, newVirtioWinCmReaderRoleBindingHandler)
 	}
+	
+	if ci.IsNativeOpenshift() {
+		h.addOperands(scheme, hc, getImageStreamHandlers)
+	}
 
-	if ci.IsOpenshift() && ci.IsConsolePluginImageProvided() {
+	if ci.HasOpenshiftConsole() && ci.IsConsolePluginImageProvided() {
 		h.addOperands(scheme, hc, newKvUIPluginDeploymentHandler)
 		h.addOperands(scheme, hc, newKvUIProxyDeploymentHandler)
 		h.addOperands(scheme, hc, newKvUINginxCMHandler)

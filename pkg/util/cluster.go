@@ -25,7 +25,8 @@ import (
 
 type ClusterInfo interface {
 	Init(ctx context.Context, cl client.Client, logger logr.Logger) error
-	IsOpenshift() bool
+	IsNativeOpenshift() bool
+	HasOpenshiftConsole() bool
 	IsRunningLocally() bool
 	GetDomain() string
 	GetBaseDomain() string
@@ -43,7 +44,8 @@ type ClusterInfo interface {
 }
 
 type ClusterInfoImp struct {
-	runningInOpenshift            bool
+	runningInNativeOpenshift      bool
+	runningWithOpenshiftConsole   bool
 	managedByOLM                  bool
 	runningLocally                bool
 	controlPlaneHighlyAvailable   bool
@@ -78,7 +80,7 @@ func (c *ClusterInfoImp) Init(ctx context.Context, cl client.Client, logger logr
 	// We assume that this Operator is managed by OLM when this variable is present.
 	_, c.managedByOLM = os.LookupEnv(OperatorConditionNameEnvVar)
 
-	if c.runningInOpenshift {
+	if c.runningInNativeOpenshift {
 		err = c.initOpenshift(ctx, cl)
 	} else {
 		err = c.initKubernetes(cl)
@@ -86,7 +88,7 @@ func (c *ClusterInfoImp) Init(ctx context.Context, cl client.Client, logger logr
 	if err != nil {
 		return err
 	}
-	if c.runningInOpenshift && c.singlestackipv6 {
+	if c.runningInNativeOpenshift && c.singlestackipv6 {
 		metrics.SetHCOMetricSingleStackIPv6True()
 	}
 
@@ -179,8 +181,12 @@ func (c *ClusterInfoImp) IsManagedByOLM() bool {
 	return c.managedByOLM
 }
 
-func (c *ClusterInfoImp) IsOpenshift() bool {
-	return c.runningInOpenshift
+func (c *ClusterInfoImp) IsNativeOpenshift() bool {
+	return c.runningInNativeOpenshift
+}
+
+func (c *ClusterInfoImp) HasOpenshiftConsole() bool {
+	return c.runningInNativeOpenshift || c.runningWithOpenshiftConsole
 }
 
 func (c *ClusterInfoImp) IsConsolePluginImageProvided() bool {
@@ -268,8 +274,9 @@ func isCRDExists(ctx context.Context, cl client.Client, crdName string) bool {
 
 func init() {
 	clusterInfo = &ClusterInfoImp{
-		runningLocally:     IsRunModeLocal(),
-		runningInOpenshift: false,
+		runningLocally:              IsRunModeLocal(),
+		runningInNativeOpenshift:    false,
+		runningWithOpenshiftConsole: false,
 	}
 }
 
@@ -284,14 +291,16 @@ func (c *ClusterInfoImp) queryCluster(ctx context.Context, cl client.Client) err
 		var gdferr *discovery.ErrGroupDiscoveryFailed
 		if meta.IsNoMatchError(err) || apierrors.IsNotFound(err) || errors.As(err, &gdferr) {
 			// Not on OpenShift
-			c.runningInOpenshift = false
+			c.runningInNativeOpenshift = false
 			c.logger.Info("Cluster type = kubernetes")
+			c.runningWithOpenshiftConsole = isCRDExists(ctx, cl, OpenShiftConsolePluginCRDName)
 		} else {
 			c.logger.Error(err, "Failed to get ClusterVersion")
 			return err
 		}
 	} else {
-		c.runningInOpenshift = true
+		c.runningInNativeOpenshift = true
+		c.runningWithOpenshiftConsole = true
 		c.logger.Info("Cluster type = openshift", "version", clusterVersion.Status.Desired.Version)
 		c.domain, err = getClusterDomain(ctx, cl)
 		if err != nil {
@@ -318,7 +327,7 @@ func (c *ClusterInfoImp) GetTLSSecurityProfile(hcoTLSSecurityProfile *openshiftc
 }
 
 func (c *ClusterInfoImp) RefreshAPIServerCR(ctx context.Context, cl client.Client) error {
-	if c.IsOpenshift() {
+	if c.IsNativeOpenshift() {
 		instance := &openshiftconfigv1.APIServer{}
 
 		key := client.ObjectKey{Namespace: UndefinedNamespace, Name: APIServerCRName}
