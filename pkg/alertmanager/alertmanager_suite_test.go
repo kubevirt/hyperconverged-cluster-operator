@@ -1,4 +1,4 @@
-package observability_test
+package alertmanager_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestObservability(t *testing.T) {
+func TestAlertmanager(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Observability Controller Suite")
+	RunSpecs(t, "Alertmanager Suite")
 }

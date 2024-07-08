@@ -58,6 +58,8 @@ import (
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
+const openshiftMonitoringNamespace = "openshift-monitoring"
+
 // Change below variables to serve metrics on different host or port.
 var (
 	logger               = logf.Log.WithName("hyperconverged-operator-cmd")
@@ -172,12 +174,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&observability.Reconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		logger.Error(err, "unable to create controller", "controller", "Observability")
-		os.Exit(1)
+	if ci.IsOpenshift() {
+		if err = observability.SetupWithManager(mgr); err != nil {
+			logger.Error(err, "unable to create controller", "controller", "Observability")
+			os.Exit(1)
+		}
 	}
 
 	err = createPriorityClass(ctx, mgr)
@@ -258,7 +259,10 @@ func getCacheOption(operatorNamespace string, isMonitoringAvailable, isOpenshift
 
 	cacheOptionsByObjectForOpenshift := map[client.Object]cache.ByObject{
 		&openshiftroutev1.Route{}: {
-			Field: namespaceSelector,
+			Namespaces: map[string]cache.Config{
+				operatorNamespace:            {},
+				openshiftMonitoringNamespace: {},
+			},
 		},
 		&imagev1.ImageStream{}: {
 			Label: labelSelector,
