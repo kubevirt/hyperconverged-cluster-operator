@@ -71,7 +71,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_ApplicationAwar
 					},
 					"namespaceSelector": {
 						SchemaProps: spec.SchemaProps{
-							Description: "NamespaceSelector determines in which namespaces scheduling gate will be added to pods..",
+							Description: "NamespaceSelector determines in which namespaces scheduling gate will be added to pods.",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"),
 						},
 					},

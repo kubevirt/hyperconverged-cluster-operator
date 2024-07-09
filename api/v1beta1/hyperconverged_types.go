@@ -800,14 +800,12 @@ type ApplicationAwareConfigurations struct {
 	// VmiCalcConfigName determine how resource allocation will be done with ApplicationsResourceQuota.
 	// allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources or IgnoreVmiCalculator
 	// +kubebuilder:validation:Enum=VmiPodUsage;VirtualResources;DedicatedVirtualResources;IgnoreVmiCalculator
-	// +kubebuilder:default=DedicatedVirtualResources
 	VmiCalcConfigName *aaqv1alpha1.VmiCalcConfigName `json:"vmiCalcConfigName,omitempty"`
 
-	// NamespaceSelector determines in which namespaces scheduling gate will be added to pods..
+	// NamespaceSelector determines in which namespaces scheduling gate will be added to pods.
 	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
 
 	// AllowApplicationAwareClusterResourceQuota if set to true, allows creation and management of ClusterAppsResourceQuota
-	// +kubebuilder:default=false
 	AllowApplicationAwareClusterResourceQuota bool `json:"allowApplicationAwareClusterResourceQuota,omitempty"`
 }
 
