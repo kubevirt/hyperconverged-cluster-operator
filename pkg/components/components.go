@@ -261,10 +261,6 @@ func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.Deployme
 								Value: params.HppoVersion,
 							},
 							{
-								Name:  util.MtqVersionEnvV,
-								Value: params.MtqVersion,
-							},
-							{
 								Name:  util.AaqVersionEnvV,
 								Value: params.AaqVersion,
 							},
