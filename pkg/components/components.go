@@ -32,7 +32,6 @@ import (
 	kvapi "kubevirt.io/api/core"
 	aaqapi "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core"
 	cdiapi "kubevirt.io/containerized-data-importer-api/pkg/apis/core"
-	mtqapi "kubevirt.io/managed-tenant-quota/staging/src/kubevirt.io/managed-tenant-quota-api/pkg/apis/core"
 	sspapi "kubevirt.io/ssp-operator/api/v1beta2"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
@@ -484,7 +483,6 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		roleWithAllPermissions(cdiapi.GroupName, stringListToSlice("cdis", "cdis/finalizers")),
 		roleWithAllPermissions(sspapi.GroupVersion.Group, stringListToSlice("ssps", "ssps/finalizers")),
 		roleWithAllPermissions(cnaoapi.GroupVersion.Group, stringListToSlice("networkaddonsconfigs", "networkaddonsconfigs/finalizers")),
-		roleWithAllPermissions(mtqapi.GroupName, stringListToSlice("mtqs", "mtqs/finalizers")),
 		roleWithAllPermissions(aaqapi.GroupName, stringListToSlice("aaqs", "aaqs/finalizers")),
 		roleWithAllPermissions("", stringListToSlice("configmaps")),
 		{
