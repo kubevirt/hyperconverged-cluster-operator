@@ -76,6 +76,7 @@ var (
 	hppoVersion       = flag.String("hppo-version", "", "HPP operator version")
 	mtqVersion        = flag.String("mtq-version", "", "MTQ operator version")
 	aaqVersion        = flag.String("aaq-version", "", "AAQ operator version")
+	primaryUDNImage   = flag.String("primary-udn-binding-image-name", "", "Primary UDN binding image")
 	apiSources        = flag.String("api-sources", cwd+"/...", "Project sources")
 )
 
@@ -434,6 +435,7 @@ func getOperatorParameters() *components.DeploymentOperatorParams {
 		HppoVersion:        *hppoVersion,
 		MtqVersion:         *mtqVersion,
 		AaqVersion:         *aaqVersion,
+		PrimaryUDNImage:    *primaryUDNImage,
 		Env:                []corev1.EnvVar{},
 	}
 	return params
