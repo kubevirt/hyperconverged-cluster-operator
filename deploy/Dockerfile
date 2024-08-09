@@ -5,6 +5,7 @@ WORKDIR /registry
 COPY deploy/olm-catalog .
 
 USER root
+RUN rm -f community-kubevirt-hyperconverged/icon.svg.b64
 
 # Initialize the database
 RUN ["initializer", "--manifests", "/registry/community-kubevirt-hyperconverged", "--output", "bundles.db"]
