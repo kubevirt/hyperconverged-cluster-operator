@@ -12,6 +12,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	k8smetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
@@ -70,6 +71,23 @@ func verifyVMIRunning(ctx context.Context, cli client.Client, vmiName string) *k
 		vmi = createVMIObject(vmiName)
 
 		g.Expect(cli.Get(ctx, client.ObjectKeyFromObject(vmi), vmi)).To(Succeed())
+
+		//debug:
+		if vmi.Status.Phase == kubevirtcorev1.Failed {
+			pods := &corev1.PodList{}
+			g.Expect(cli.List(ctx, pods, &client.ListOptions{
+				LabelSelector: labels.Set{
+					"vm.kubevirt.io/name": vmi.Name,
+					"kubevirt.io":         "virt-launcher",
+				}.AsSelector(),
+			})).To(Succeed())
+
+			g.Expect(pods.Items).To(HaveLen(1))
+			GinkgoWriter.Println("virt-launcher pod:")
+			GinkgoWriter.Println(vmi2JSON(&pods.Items[0]))
+		}
+		//
+
 		Expect(vmi.Status.Phase).ToNot(Equal(kubevirtcorev1.Failed), "vmi scheduling failed: %s\n", vmi2JSON(vmi))
 
 		return vmi.Status.Phase
@@ -87,7 +105,7 @@ func verifyVMIDeletion(ctx context.Context, cli client.Client, vmiName string) {
 	}).WithTimeout(timeout).WithPolling(pollingInterval).WithContext(ctx).Should(Succeed(), "failed to delete a vmi")
 }
 
-func vmi2JSON(vmi *kubevirtcorev1.VirtualMachineInstance) string {
+func vmi2JSON(vmi client.Object) string {
 	buff := &bytes.Buffer{}
 	enc := json.NewEncoder(buff)
 	enc.SetIndent("", "  ")
