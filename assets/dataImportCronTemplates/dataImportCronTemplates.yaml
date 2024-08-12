@@ -1,26 +1,6 @@
 - metadata:
     annotations:
       cdi.kubevirt.io/storage.bind.immediate.requested: "true"
-    name: centos-stream8-image-cron
-    labels:
-      instancetype.kubevirt.io/default-preference: centos.stream8
-      instancetype.kubevirt.io/default-instancetype: u1.medium
-  spec:
-    schedule: "0 */12 * * *"
-    template:
-      spec:
-        source:
-          registry:
-            url: docker://quay.io/containerdisks/centos-stream:8
-        storage:
-          resources:
-            requests:
-              storage: 10Gi
-    garbageCollect: Outdated
-    managedDataSource: centos-stream8
-- metadata:
-    annotations:
-      cdi.kubevirt.io/storage.bind.immediate.requested: "true"
     name: centos-stream9-image-cron
     labels:
       instancetype.kubevirt.io/default-preference: centos.stream9
@@ -58,23 +38,3 @@
               storage: 5Gi
     garbageCollect: Outdated
     managedDataSource: fedora
-- metadata:
-    annotations:
-      cdi.kubevirt.io/storage.bind.immediate.requested: "true"
-    name: centos-7-image-cron
-    labels:
-      instancetype.kubevirt.io/default-preference: centos.7
-      instancetype.kubevirt.io/default-instancetype: u1.medium
-  spec:
-    schedule: "0 */12 * * *"
-    template:
-      spec:
-        source:
-          registry:
-            url: docker://quay.io/containerdisks/centos:7-2009
-        storage:
-          resources:
-            requests:
-              storage: 10Gi
-    garbageCollect: Outdated
-    managedDataSource: centos7
