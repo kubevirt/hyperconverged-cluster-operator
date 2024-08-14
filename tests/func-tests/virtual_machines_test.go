@@ -84,7 +84,18 @@ func verifyVMIRunning(ctx context.Context, cli client.Client, vmiName string) *k
 
 			g.Expect(pods.Items).To(HaveLen(1))
 			GinkgoWriter.Println("virt-launcher pod:")
-			GinkgoWriter.Println(vmi2JSON(&pods.Items[0]))
+			GinkgoWriter.Println(vmi2JSON(pods.Items[0]))
+
+			cliSet := tests.GetK8sClientSet()
+			nodes, err := cliSet.CoreV1().Nodes().List(ctx, k8smetav1.ListOptions{})
+			g.Expect(err).NotTo(HaveOccurred())
+			for _, n := range nodes.Items {
+				if pods.Items[0].Spec.NodeName == n.Name {
+					GinkgoWriter.Printf("Node %s:\n", n.Name)
+					GinkgoWriter.Println(vmi2JSON(&n))
+					break
+				}
+			}
 		}
 		//
 
@@ -105,7 +116,7 @@ func verifyVMIDeletion(ctx context.Context, cli client.Client, vmiName string) {
 	}).WithTimeout(timeout).WithPolling(pollingInterval).WithContext(ctx).Should(Succeed(), "failed to delete a vmi")
 }
 
-func vmi2JSON(vmi client.Object) string {
+func vmi2JSON(vmi any) string {
 	buff := &bytes.Buffer{}
 	enc := json.NewEncoder(buff)
 	enc.SetIndent("", "  ")
