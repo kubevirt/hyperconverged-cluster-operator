@@ -152,6 +152,50 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel), func() 
 			WithPolling(100 * time.Millisecond).
 			Should(Succeed())
 	})
+
+	It("console-plugin and apiserver-proxy Deployments should have 2 replicas in Highly Available clusters", Label(tests.HighlyAvailableClusterLabel), func(ctx context.Context) {
+		Eventually(func(g Gomega, ctx context.Context) {
+			consoleUIDeployment, err := cli.AppsV1().Deployments(flags.KubeVirtInstallNamespace).Get(ctx, string(hcoutil.AppComponentUIPlugin), metav1.GetOptions{})
+			g.Expect(err).ToNot(HaveOccurred())
+
+			g.Expect(consoleUIDeployment.Spec.Replicas).To(HaveValue(Equal(int32(2))))
+		}).WithTimeout(1 * time.Minute).
+			WithPolling(100 * time.Millisecond).
+			WithContext(ctx).
+			Should(Succeed())
+
+		Eventually(func(g Gomega, ctx context.Context) {
+			proxyUIDeployment, err := cli.AppsV1().Deployments(flags.KubeVirtInstallNamespace).Get(ctx, string(hcoutil.AppComponentUIProxy), metav1.GetOptions{})
+			g.Expect(err).ToNot(HaveOccurred())
+
+			g.Expect(proxyUIDeployment.Spec.Replicas).To(HaveValue(Equal(int32(2))))
+		}).WithTimeout(1 * time.Minute).
+			WithPolling(100 * time.Millisecond).
+			WithContext(ctx).
+			Should(Succeed())
+	})
+
+	It("console-plugin and apiserver-proxy Deployments should have 1 replica in single node clusters", Label(tests.SingleNodeLabel), func(ctx context.Context) {
+		Eventually(func(g Gomega, ctx context.Context) {
+			consoleUIDeployment, err := cli.AppsV1().Deployments(flags.KubeVirtInstallNamespace).Get(ctx, string(hcoutil.AppComponentUIPlugin), metav1.GetOptions{})
+			g.Expect(err).ToNot(HaveOccurred())
+
+			g.Expect(consoleUIDeployment.Spec.Replicas).To(HaveValue(Equal(int32(1))))
+		}).WithTimeout(1 * time.Minute).
+			WithPolling(100 * time.Millisecond).
+			WithContext(ctx).
+			Should(Succeed())
+
+		Eventually(func(g Gomega, ctx context.Context) {
+			proxyUIDeployment, err := cli.AppsV1().Deployments(flags.KubeVirtInstallNamespace).Get(ctx, string(hcoutil.AppComponentUIProxy), metav1.GetOptions{})
+			g.Expect(err).ToNot(HaveOccurred())
+
+			g.Expect(proxyUIDeployment.Spec.Replicas).To(HaveValue(Equal(int32(1))))
+		}).WithTimeout(1 * time.Minute).
+			WithPolling(100 * time.Millisecond).
+			WithContext(ctx).
+			Should(Succeed())
+	})
 })
 
 func executeCommandOnPod(ctx context.Context, cli kubecli.KubevirtClient, pod *v1.Pod, command string) (string, string, error) {
