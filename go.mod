@@ -1,6 +1,8 @@
 module github.com/kubevirt/hyperconverged-cluster-operator
 
-go 1.22.0
+go 1.22.3
+
+toolchain go1.22.6
 
 require (
 	dario.cat/mergo v1.0.0
@@ -31,16 +33,16 @@ require (
 	golang.org/x/tools v0.23.0
 	gomodules.xyz/jsonpatch/v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.30.1
+	k8s.io/api v0.30.2
 	k8s.io/apiextensions-apiserver v0.30.1
-	k8s.io/apimachinery v0.30.1
+	k8s.io/apimachinery v0.30.2
 	k8s.io/apiserver v0.30.1
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20240521193020-835d969ad83a
 	k8s.io/utils v0.0.0-20240502163921-fe8a2dddb1d0
 	kubevirt.io/api v1.3.0
 	kubevirt.io/application-aware-quota v1.2.3
-	kubevirt.io/containerized-data-importer-api v1.59.0
+	kubevirt.io/containerized-data-importer-api v1.60.1
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4
 	kubevirt.io/ssp-operator/api v0.20.0
 	sigs.k8s.io/controller-runtime v0.18.4
