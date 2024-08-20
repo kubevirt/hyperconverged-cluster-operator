@@ -54,13 +54,13 @@ var (
 		Resource: "ssps",
 	}
 
-	expectedImages       = []string{"centos-stream9-image-cron", "centos8-image-cron-is", "fedora-image-cron"}
+	expectedImages       = []string{"centos-stream9-image-cron", "centos-stream9-image-cron-is", "fedora-image-cron"}
 	imageNamespace       = defaultImageNamespace
 	expectedImageStreams = []tests.ImageStreamConfig{
 		{
-			Name:         "centos8",
-			RegistryName: "quay.io/kubevirt/centos8-container-disk-images",
-			UsageImages:  []string{"centos8-image-cron-is"},
+			Name:         "centos-stream9",
+			RegistryName: "quay.io/containerdisks/centos-stream:9",
+			UsageImages:  []string{"centos-stream9-image-cron-is"},
 		},
 	}
 )
