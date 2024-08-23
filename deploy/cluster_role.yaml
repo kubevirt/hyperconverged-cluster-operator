@@ -3100,6 +3100,7 @@ rules:
   - config.openshift.io
   resources:
   - proxies
+  - infrastructures
   verbs:
   - get
   - list
@@ -3171,6 +3172,15 @@ rules:
   - virtualmachines/finalizers
   verbs:
   - update
+- apiGroups:
+  - forklift.cdi.kubevirt.io
+  resources:
+  - ovirtvolumepopulators
+  - openstackvolumepopulators
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - ""
   resources:
