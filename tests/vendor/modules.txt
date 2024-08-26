@@ -914,7 +914,7 @@ kubevirt.io/client-go/precond
 kubevirt.io/client-go/subresources
 kubevirt.io/client-go/util
 kubevirt.io/client-go/version
-# kubevirt.io/containerized-data-importer-api v1.59.0 => kubevirt.io/containerized-data-importer-api v1.59.0
+# kubevirt.io/containerized-data-importer-api v1.59.1 => kubevirt.io/containerized-data-importer-api v1.59.0
 ## explicit; go 1.21
 kubevirt.io/containerized-data-importer-api/pkg/apis/core
 kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1
