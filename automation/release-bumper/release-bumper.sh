@@ -79,7 +79,6 @@ function get_current_versions {
     ["KUBEVIRT_CONSOLE_PLUGIN"]=""
     ["KUBEVIRT_CONSOLE_PROXY"]=""
     ["NODE_DRIVER_REG"]=""
-    ["LIVENESS_PROBE"]=""
     ["CSI_SNAPSHOT"]=""
     ["CSI_SIG_STORAGE"]=""
   )
@@ -101,7 +100,6 @@ function get_updated_versions {
     ["KUBEVIRT_CONSOLE_PLUGIN"]="kubevirt-ui/kubevirt-plugin"
     ["KUBEVIRT_CONSOLE_PROXY"]="kubevirt-ui/kubevirt-apiserver-proxy"
     ["NODE_DRIVER_REG"]="kubernetes-csi/node-driver-registrar"
-    ["LIVENESS_PROBE"]="kubernetes-csi/livenessprobe"
     ["CSI_SNAPSHOT"]="kubernetes-csi/external-snapshotter"
     ["CSI_SIG_STORAGE"]="kubernetes-csi/external-provisioner"
   )
