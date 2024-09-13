@@ -1754,9 +1754,16 @@ rules:
 - apiGroups:
   - export.kubevirt.io
   resources:
-  - '*'
+  - virtualmachineexports
+  - virtualmachineexports/status
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+  - patch
 - apiGroups:
   - pool.kubevirt.io
   resources:
@@ -1986,6 +1993,7 @@ rules:
   - virtualmachineinstances/userlist
   - virtualmachineinstances/sev/fetchcertchain
   - virtualmachineinstances/sev/querylaunchmeasurement
+  - virtualmachineinstances/usbredir
   verbs:
   - get
 - apiGroups:
@@ -2134,6 +2142,7 @@ rules:
   - virtualmachineinstances/userlist
   - virtualmachineinstances/sev/fetchcertchain
   - virtualmachineinstances/sev/querylaunchmeasurement
+  - virtualmachineinstances/usbredir
   verbs:
   - get
 - apiGroups:

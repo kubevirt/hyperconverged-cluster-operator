@@ -340,8 +340,12 @@ type PersistentVolumeClaimInfo struct {
 
 	// Percentage of filesystem's size to be reserved when resizing the PVC
 	// +optional
-	FilesystemOverhead *cdiv1.Percent `json:"filesystemOverhead,omitempty"`
+	FilesystemOverhead *Percent `json:"filesystemOverhead,omitempty"`
 }
+
+// Percent is a string that can only be a value between [0,1)
+// +kubebuilder:validation:Pattern=`^(0(?:\.\d{1,3})?|1)$`
+type Percent string
 
 // VolumeStatus represents information about the status of volumes attached to the VirtualMachineInstance.
 type VolumeStatus struct {
@@ -568,6 +572,9 @@ const (
 
 	// Summarizes that all the DataVolumes attached to the VMI are Ready or not
 	VirtualMachineInstanceDataVolumesReady VirtualMachineInstanceConditionType = "DataVolumesReady"
+
+	// Indicates whether the VMI is live migratable
+	VirtualMachineInstanceIsStorageLiveMigratable VirtualMachineInstanceConditionType = "StorageLiveMigratable"
 )
 
 // These are valid reasons for VMI conditions.
@@ -596,6 +603,9 @@ const (
 	VirtualMachineInstanceReasonNotAllDVsReady = "NotAllDVsReady"
 	// Reason means that all of the VMI's DVs are bound and not running
 	VirtualMachineInstanceReasonAllDVsReady = "AllDVsReady"
+
+	// Indicates a generic reason that the VMI isn't migratable and more details are spiecified in the condition message.
+	VirtualMachineInstanceReasonNotMigratable = "NotMigratable"
 )
 
 const (
@@ -2992,13 +3002,6 @@ func (p PreferenceMatcher) GetRevisionName() string {
 	return p.RevisionName
 }
 
-type LiveUpdateAffinity struct{}
-
-type LiveUpdateCPU struct {
-	// The maximum amount of sockets that can be hot-plugged to the Virtual Machine
-	MaxSockets *uint32 `json:"maxSockets,omitempty" optional:"true"`
-}
-
 type LiveUpdateConfiguration struct {
 	// MaxHotplugRatio is the ratio used to define the max amount
 	// of a hotplug resource that can be made available to a VM
@@ -3011,12 +3014,6 @@ type LiveUpdateConfiguration struct {
 	MaxCpuSockets *uint32 `json:"maxCpuSockets,omitempty"`
 	// MaxGuest defines the maximum amount memory that can be allocated
 	// to the guest using hotplug.
-	MaxGuest *resource.Quantity `json:"maxGuest,omitempty"`
-}
-
-type LiveUpdateMemory struct {
-	// MaxGuest defines the maximum amount memory that can be allocated for the VM.
-	// +optional
 	MaxGuest *resource.Quantity `json:"maxGuest,omitempty"`
 }
 
