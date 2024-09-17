@@ -115,6 +115,12 @@ const (
 
 	// Enable VM live update, to allow live propagation of VM changes to their VMI
 	kvVMLiveUpdateFeatures = "VMLiveUpdateFeatures"
+
+	// kvVolumesUpdateStrategy enables to specify the strategy on the volume updates.
+	kvVolumesUpdateStrategy = "VolumesUpdateStrategy"
+
+	// kvVolumeMigration enables to migrate the storage. It depends on the kvVolumesUpdateStrategy feature.
+	kvVolumeMigration = "VolumeMigration"
 )
 
 const (
@@ -139,6 +145,8 @@ var (
 		kvHNetworkBindingPluginsGate,
 		kvDeployCommonInstancetypes,
 		kvVMLiveUpdateFeatures,
+		kvVolumesUpdateStrategy,
+		kvVolumeMigration,
 	}
 
 	// holds a list of mandatory KubeVirt feature gates. Some of them are the hard coded feature gates and some of
