@@ -33,7 +33,7 @@ sanity: generate generate-doc validate-no-offensive-lang goimport lint-metrics
 	git difftool -y --trust-exit-code --extcmd=./hack/diff-csv.sh
 
 goimport:
-	go install golang.org/x/tools/cmd/goimports@latest
+	go install golang.org/x/tools/cmd/goimports@v0.24.0
 	goimports -w -local="kubevirt.io,github.com/kubevirt,github.com/kubevirt/hyperconverged-cluster-operator"  $(shell find . -type f -name '*.go' ! -path "*/vendor/*" ! -path "./_kubevirtci/*" ! -path "*zz_generated*" )
 
 
