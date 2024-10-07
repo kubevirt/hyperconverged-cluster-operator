@@ -20,13 +20,16 @@ import (
 	promConfig "github.com/prometheus/common/config"
 	promModel "github.com/prometheus/common/model"
 	authenticationv1 "k8s.io/api/authentication/v1"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
@@ -169,6 +172,44 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			Expect(err).ToNot(HaveOccurred())
 			alert := getAlertByName(alerts, "UnsupportedHCOModification")
 			return alert
+		}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
+	})
+
+	It("should fire the DeprecatedMachineType alert when a VM is using a deprecated machine type", func(ctx context.Context) {
+		const deprecatedMachineType = "pc-q35-rhel7.6.0"
+
+		By("Creating a VM with a deprecated machine type")
+		vm := &kubevirtcorev1.VirtualMachine{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "deprecated-vm",
+				Namespace: tests.TestNamespace,
+			},
+			Spec: kubevirtcorev1.VirtualMachineSpec{
+				RunStrategy: ptr.To(kubevirtcorev1.RunStrategyAlways),
+				Template: &kubevirtcorev1.VirtualMachineInstanceTemplateSpec{
+					Spec: kubevirtcorev1.VirtualMachineInstanceSpec{
+						Domain: kubevirtcorev1.DomainSpec{
+							Machine: &kubevirtcorev1.Machine{Type: deprecatedMachineType},
+							Resources: kubevirtcorev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceMemory: resource.MustParse("128Mi"),
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		Expect(cli.Create(ctx, vm)).To(Succeed())
+		DeferCleanup(func(ctx context.Context) {
+			Expect(cli.Delete(ctx, vm)).To(Succeed())
+		})
+
+		By("Ensuring the DeprecatedMachineType alert is firing")
+		Eventually(func(ctx context.Context) *promApiv1.Alert {
+			alerts, err := promClient.Alerts(ctx)
+			Expect(err).ToNot(HaveOccurred())
+			return getAlertByName(alerts, "DeprecatedMachineType")
 		}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
 	})
 
