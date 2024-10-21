@@ -23,6 +23,7 @@ const (
 func Register() error {
 	alerts := [][]promv1.Rule{
 		operatorAlerts(),
+		healthAlerts(),
 	}
 
 	runbookURLTemplate := getRunbookURLTemplate()
