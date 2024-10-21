@@ -3890,7 +3890,7 @@ func verifyHyperConvergedCRExistsMetricFalse() {
 func verifySystemHealthStatusHealthy(hco *hcov1beta1.HyperConverged) {
 	ExpectWithOffset(1, hco.Status.SystemHealthStatus).To(Equal(systemHealthStatusHealthy))
 
-	systemHealthStatusMetric, err := metrics.GetHCOMetricSystemHealthStatus()
+	systemHealthStatusMetric, err := metrics.GetHCOMetricSystemHealthStatus("healthy")
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	ExpectWithOffset(1, systemHealthStatusMetric).To(Equal(metrics.SystemHealthStatusHealthy))
 }
@@ -3898,7 +3898,7 @@ func verifySystemHealthStatusHealthy(hco *hcov1beta1.HyperConverged) {
 func verifySystemHealthStatusError(hco *hcov1beta1.HyperConverged) {
 	ExpectWithOffset(1, hco.Status.SystemHealthStatus).To(Equal(systemHealthStatusError))
 
-	systemHealthStatusMetric, err := metrics.GetHCOMetricSystemHealthStatus()
+	systemHealthStatusMetric, err := metrics.GetHCOMetricSystemHealthStatus(reconcileInit)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	ExpectWithOffset(1, systemHealthStatusMetric).To(Equal(metrics.SystemHealthStatusError))
 }
