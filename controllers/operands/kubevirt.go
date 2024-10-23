@@ -109,6 +109,9 @@ const (
 
 	// Enable VM live update, to allow live propagation of VM changes to their VMI
 	kvVMLiveUpdateFeatures = "VMLiveUpdateFeatures"
+
+	// Enable the InstancetypeReferencePolicy feature
+	kvInstancetypeReferencePolicy = "InstancetypeReferencePolicy"
 )
 
 const (
@@ -131,6 +134,7 @@ var (
 		kvHNetworkBindingPluginsGate,
 		kvDeployCommonInstancetypes,
 		kvVMLiveUpdateFeatures,
+		kvInstancetypeReferencePolicy,
 	}
 
 	// holds a list of mandatory KubeVirt feature gates. Some of them are the hard coded feature gates and some of
@@ -192,6 +196,9 @@ var (
 var (
 	kvDiskVerificationMemoryLimit = resource.MustParse("2G")
 )
+
+// KubeVirt InstancetypeReferencePolicy default
+const kvInstancetypeReferencePolicyDefault = "expandAll"
 
 // ************  KubeVirt Handler  **************
 type kubevirtHandler genericOperand
@@ -443,6 +450,9 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 		EvictionStrategy:             hc.Spec.EvictionStrategy,
 		KSMConfiguration:             hc.Spec.KSMConfiguration,
 		VMRolloutStrategy:            ptr.To(kubevirtcorev1.VMRolloutStrategyLiveUpdate),
+		Instancetype: &kubevirtcorev1.InstancetypeConfiguration{
+			ReferencePolicy: kvInstancetypeReferencePolicyDefault,
+		},
 	}
 
 	if smbiosConfig, ok := os.LookupEnv(smbiosEnvName); ok {
