@@ -47,7 +47,8 @@ const (
 )
 
 const (
-	primaryUDNNetworkBindingName = "passt"
+	primaryUDNNetworkBindingName    = "passt"
+	managedTapUDNNetworkBindingName = "managedTap"
 	// Needs to align with the NAD that will be deployed by CNAO
 	primaryUDNNetworkBindingNADName      = "primary-udn-kubevirt-binding"
 	primaryUDNNetworkBindingNADNamespace = "default"
@@ -530,6 +531,7 @@ func getNetworkBindings(
 
 		sidecarImage, _ := os.LookupEnv(hcoutil.PrimaryUDNImageEnvV)
 		networkBindings[primaryUDNNetworkBindingName] = primaryUserDefinedNetworkBinding(sidecarImage)
+		networkBindings[managedTapUDNNetworkBindingName] = managedTapUserDefinedNetworkBinding()
 	}
 	return networkBindings
 
@@ -771,6 +773,13 @@ func primaryUserDefinedNetworkBinding(sidecarImage string) kubevirtcorev1.Interf
 				corev1.ResourceMemory: resource.MustParse(bindingComputeMemoryOverhead),
 			},
 		},
+	}
+}
+
+func managedTapUserDefinedNetworkBinding() kubevirtcorev1.InterfaceBindingPlugin {
+	return kubevirtcorev1.InterfaceBindingPlugin{
+		DomainAttachmentType: managedTapUDNNetworkBindingName,
+		Migration:            &kubevirtcorev1.InterfaceBindingMigration{},
 	}
 }
 
