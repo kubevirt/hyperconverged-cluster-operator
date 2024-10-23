@@ -163,9 +163,6 @@ func NewSSP(hc *hcov1beta1.HyperConverged, opts ...string) (*sspv1beta2.SSP, []h
 		}
 	}
 
-	// Disable common-instancetypes deployment by SSP from 4.16, now handled by virt-operator
-	spec.FeatureGates.DeployCommonInstancetypes = ptr.To(false)
-
 	if hc.Spec.Infra.NodePlacement != nil {
 		spec.TemplateValidator.Placement = hc.Spec.Infra.NodePlacement.DeepCopy()
 	}
