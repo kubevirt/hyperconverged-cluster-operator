@@ -101,9 +101,6 @@ const (
 	// Enable the installation of the KubeVirt seccomp profile
 	kvKubevirtSeccompProfile = "KubevirtSeccompProfile"
 
-	// Allow attaching a NIC to a running VMI
-	kvHotplugNicsGate = "HotplugNICs"
-
 	// Enable VM state persistence
 	kvVMPersistentState = "VMPersistentState"
 
@@ -134,7 +131,6 @@ var (
 		kvVMExportGate,
 		kvDisableCustomSELinuxPolicyGate,
 		kvKubevirtSeccompProfile,
-		kvHotplugNicsGate,
 		kvVMPersistentState,
 		kvHNetworkBindingPluginsGate,
 		kvDeployCommonInstancetypes,

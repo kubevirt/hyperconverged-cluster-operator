@@ -208,7 +208,6 @@ var _ = Describe("HyperconvergedController", func() {
 					"VMExport",
 					"DisableCustomSELinuxPolicy",
 					"KubevirtSeccompProfile",
-					"HotplugNICs",
 					"VMPersistentState",
 					"NetworkBindingPlugins",
 					"CommonInstancetypesDeploymentGate",
