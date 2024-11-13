@@ -117,7 +117,6 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		defaultLiveMigrationConfig := v1beta1.LiveMigrationConfigurations{
 			AllowAutoConverge:                 ptr.To(false),
 			AllowPostCopy:                     ptr.To(false),
-			CompletionTimeoutPerGiB:           ptr.To(int64(800)),
 			ParallelMigrationsPerCluster:      ptr.To(uint32(5)),
 			ParallelOutboundMigrationsPerNode: ptr.To(uint32(2)),
 			ProgressTimeout:                   ptr.To(int64(150)),
@@ -136,7 +135,6 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		},
 			Entry("when removing /spec/liveMigrationConfig/allowAutoConverge", "/spec/liveMigrationConfig/allowAutoConverge"),
 			Entry("when removing /spec/liveMigrationConfig/allowPostCopy", "/spec/liveMigrationConfig/allowPostCopy"),
-			Entry("when removing /spec/liveMigrationConfig/completionTimeoutPerGiB", "/spec/liveMigrationConfig/completionTimeoutPerGiB"),
 			Entry("when removing /spec/liveMigrationConfig/parallelMigrationsPerCluster", "/spec/liveMigrationConfig/parallelMigrationsPerCluster"),
 			Entry("when removing /spec/liveMigrationConfig/parallelOutboundMigrationsPerNode", "/spec/liveMigrationConfig/parallelOutboundMigrationsPerNode"),
 			Entry("when removing /spec/liveMigrationConfig/progressTimeout", "/spec/liveMigrationConfig/progressTimeout"),
