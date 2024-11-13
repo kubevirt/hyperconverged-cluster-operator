@@ -74,7 +74,6 @@ spec:
               liveMigrationConfig:
                 allowAutoConverge: false
                 allowPostCopy: false
-                completionTimeoutPerGiB: 800
                 parallelMigrationsPerCluster: 5
                 parallelOutboundMigrationsPerNode: 2
                 progressTimeout: 150
@@ -2252,7 +2251,6 @@ spec:
                 default:
                   allowAutoConverge: false
                   allowPostCopy: false
-                  completionTimeoutPerGiB: 800
                   parallelMigrationsPerCluster: 5
                   parallelOutboundMigrationsPerNode: 2
                   progressTimeout: 150
@@ -2284,7 +2282,6 @@ spec:
                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     type: string
                   completionTimeoutPerGiB:
-                    default: 800
                     description: |-
                       If a migrating VM is big and busy, while the connection to the destination node
                       is slow, migration may never converge. The completion timeout is calculated
