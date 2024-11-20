@@ -1,13 +1,19 @@
 package hyperconverged
 
 import (
+	"bufio"
 	"cmp"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"reflect"
+	"regexp"
 	"slices"
+	"sync"
+	"time"
 
 	"github.com/blang/semver/v4"
 	jsonpatch "github.com/evanphx/json-patch/v5"
@@ -100,6 +106,8 @@ var JSONPatchAnnotationNames = []string{
 	common.JSONPatchCNAOAnnotationName,
 	common.JSONPatchSSPAnnotationName,
 }
+
+var rhel8Regex = regexp.MustCompile(`.*rhel8.*`)
 
 // RegisterReconciler creates a new HyperConverged Reconciler and registers it into manager.
 func RegisterReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond hcoutil.Condition) error {
@@ -336,6 +344,11 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 		return result, err
 	}
 
+	err = r.evaluateUpgradeEligibility(hcoRequest)
+	if err != nil {
+		hcoRequest.Logger.Error(err, "Failed to evaluate upgrade eligibility", "err", err)
+		return reconcile.Result{}, err
+	}
 	if err = r.setOperatorUpgradeableStatus(hcoRequest); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -1328,6 +1341,101 @@ func (r *ReconcileHyperConverged) deleteObj(req *common.HcoRequest, obj client.O
 	}
 
 	return removed, nil
+}
+
+func (r *ReconcileHyperConverged) evaluateUpgradeEligibility(req *common.HcoRequest) error {
+	podList := &corev1.PodList{}
+	listOpts := []client.ListOption{
+		client.InNamespace(req.Namespace),
+		client.MatchingLabels{"kubevirt.io": "virt-controller"},
+	}
+
+	if err := r.client.List(req.Ctx, podList, listOpts...); err != nil {
+		req.Logger.Info("Failed to list virt-controller pods", "namespace", req.Namespace, "error", err)
+		return fmt.Errorf("failed to list virt-controller pods: %w", err)
+	}
+
+	if len(podList.Items) == 0 {
+		req.Logger.Info("No virt-controller pods found", "namespace", req.Namespace)
+		return nil
+	}
+
+	httpClient := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	errorOccurred := false
+
+	for _, pod := range podList.Items {
+		if pod.Status.PodIP == "" {
+			continue
+		}
+
+		wg.Add(1)
+		go func(p corev1.Pod) {
+			defer wg.Done()
+			if err := r.checkPodMetrics(req, httpClient, p); err != nil {
+				req.Logger.Info("Error processing pod metrics", "pod", p.Name, "error", err)
+
+				mu.Lock()
+				errorOccurred = true
+				mu.Unlock()
+			}
+		}(pod)
+	}
+
+	wg.Wait()
+
+	if errorOccurred {
+		return fmt.Errorf("one or more errors occurred while checking pod metrics")
+	}
+
+	return nil
+}
+
+func (r *ReconcileHyperConverged) checkPodMetrics(req *common.HcoRequest, httpClient *http.Client, pod corev1.Pod) error {
+	ctx, cancel := context.WithTimeout(req.Ctx, 3*time.Second)
+	defer cancel()
+
+	metricsURL := fmt.Sprintf("https://%s:%d/metrics", pod.Status.PodIP, 8443)
+	reqWithCtx, err := http.NewRequestWithContext(ctx, http.MethodGet, metricsURL, nil)
+	if err != nil {
+		req.Logger.Info("Failed to create HTTP request", "pod", pod.Name, "error", err)
+		return fmt.Errorf("failed to create HTTP request: %w", err)
+	}
+
+	resp, err := httpClient.Do(reqWithCtx)
+	if err != nil {
+		req.Logger.Info("Failed to query metrics from pod", "pod", pod.Name, "error", err)
+		return fmt.Errorf("failed to query metrics: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		req.Logger.Info("Metrics endpoint returned error", "pod", pod.Name, "status", resp.StatusCode)
+		return fmt.Errorf("metrics endpoint returned status %d", resp.StatusCode)
+	}
+
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if rhel8Regex.MatchString(line) {
+			req.Logger.Info("Detected outdated machine type in metrics", "pod", pod.Name, "matched", rhel8Regex.FindString(line))
+			req.Upgradeable = false
+			return nil
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		req.Logger.Info("Failed to scan metrics response from pod", "pod", pod.Name, "error", err)
+		return fmt.Errorf("failed to scan metrics response: %w", err)
+	}
+
+	return nil
 }
 
 func removeOldQuickStartGuides(req *common.HcoRequest, cl client.Client, requiredQSList []string) {
