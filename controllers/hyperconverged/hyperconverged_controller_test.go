@@ -135,9 +135,7 @@ var _ = Describe("HyperconvergedController", func() {
 			It("should create all managed resources", func() {
 
 				hco := commontestutils.NewHco()
-				hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-					DownwardMetrics: ptr.To(true),
-				}
+				hco.Spec.KubeVirtFeatureGates = hcov1beta1.KubeVirtFeatureGates{"DownwardMetrics"}
 
 				ci := hcoutil.GetClusterInfo()
 				cl := commontestutils.InitClient([]client.Object{hcoNamespace, hco, ci.GetCSV()})

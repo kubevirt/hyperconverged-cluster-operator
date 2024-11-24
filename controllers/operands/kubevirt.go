@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -152,11 +153,7 @@ var (
 
 // KubeVirt feature gates that are exposed in HCO API
 const (
-	kvDownwardMetrics       = "DownwardMetrics"
-	kvDisableMDevConfig     = "DisableMDEVConfiguration"
-	kvPersistentReservation = "PersistentReservation"
-	kvAutoResourceLimits    = "AutoResourceLimitsGate"
-	kvAlignCPUs             = "AlignCPUs"
+	kvAlignCPUs = "AlignCPUs"
 )
 
 // CPU Plugin default values
@@ -312,7 +309,7 @@ func setAnnotationsToReqState(hc *hcov1beta1.HyperConverged, kv *kubevirtcorev1.
 		kv.Annotations = map[string]string{}
 	}
 
-	if hc.Spec.FeatureGates.AlignCPUs != nil && *hc.Spec.FeatureGates.AlignCPUs {
+	if slices.Contains(hc.Spec.KubeVirtFeatureGates, kvAlignCPUs) {
 		kv.Annotations[kubevirtcorev1.EmulatorThreadCompleteToEvenParity] = ""
 	} else {
 		delete(kv.Annotations, kubevirtcorev1.EmulatorThreadCompleteToEvenParity)
@@ -731,10 +728,11 @@ func getKVDevConfig(hc *hcov1beta1.HyperConverged) *kubevirtcorev1.DeveloperConf
 		devConf.MemoryOvercommit = hc.Spec.HigherWorkloadDensity.MemoryOvercommitPercentage
 	}
 
-	fgs := getKvFeatureGateList(&hc.Spec.FeatureGates)
+	fgs := getKvFeatureGateList(hc.Spec.KubeVirtFeatureGates)
 	if len(fgs) > 0 {
 		devConf.FeatureGates = fgs
 	}
+
 	if useKVMEmulation {
 		devConf.UseEmulation = useKVMEmulation
 	}
@@ -814,28 +812,6 @@ func hcoConfig2KvConfig(hcoConfig hcov1beta1.HyperConvergedConfig, infrastructur
 		}
 	}
 	return kvConfig
-}
-
-func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates) []string {
-	fgs := make([]string, 0, 2)
-
-	if featureGates.DownwardMetrics != nil && *featureGates.DownwardMetrics {
-		fgs = append(fgs, kvDownwardMetrics)
-	}
-	if featureGates.DisableMDevConfiguration != nil && *featureGates.DisableMDevConfiguration {
-		fgs = append(fgs, kvDisableMDevConfig)
-	}
-	if featureGates.PersistentReservation != nil && *featureGates.PersistentReservation {
-		fgs = append(fgs, kvPersistentReservation)
-	}
-	if featureGates.AutoResourceLimits != nil && *featureGates.AutoResourceLimits {
-		fgs = append(fgs, kvAutoResourceLimits)
-	}
-	if featureGates.AlignCPUs != nil && *featureGates.AlignCPUs {
-		fgs = append(fgs, kvAlignCPUs)
-	}
-
-	return fgs
 }
 
 // ***********  KubeVirt Priority Class  ************
@@ -963,11 +939,14 @@ func getMandatoryKvFeatureGates(isKVMEmulation bool) []string {
 }
 
 // get list of feature gates or KV FG list
-func getKvFeatureGateList(fgs *hcov1beta1.HyperConvergedFeatureGates) []string {
-	checks := getFeatureGateChecks(fgs)
-	res := make([]string, 0, len(checks)+len(mandatoryKvFeatureGates))
+func getKvFeatureGateList(fgs hcov1beta1.KubeVirtFeatureGates) []string {
+	res := make([]string, 0, len(fgs)+len(mandatoryKvFeatureGates))
 	res = append(res, mandatoryKvFeatureGates...)
-	res = append(res, checks...)
+	for _, fg := range fgs {
+		if !slices.Contains(mandatoryKvFeatureGates, fg) {
+			res = append(res, fg)
+		}
+	}
 
 	return res
 }
