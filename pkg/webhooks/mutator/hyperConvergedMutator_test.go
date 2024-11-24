@@ -459,6 +459,127 @@ var _ = Describe("test HyperConverged mutator", func() {
 			),
 		)
 
+		Context("check kubevirt feature gates", func() {
+			It("should add feature gates from the old format to the new list, if not already there", func() {
+				cr.Spec.FeatureGates.DownwardMetrics = ptr.To(true)
+				cr.Spec.FeatureGates.PersistentReservation = ptr.To(true)
+				cr.Spec.FeatureGates.AutoResourceLimits = ptr.To(true)
+				cr.Spec.FeatureGates.AlignCPUs = ptr.To(true)
+				cr.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
+
+				req := admission.Request{AdmissionRequest: newCreateRequest(cr, hcoV1beta1Codec)}
+				res := mutator.Handle(context.TODO(), req)
+
+				Expect(res.Allowed).To(BeTrue())
+				Expect(res.Patches).To(HaveLen(1))
+			})
+
+			It("should not add feature gates from the old format to the new list, if already there", func() {
+				cr.Spec.FeatureGates.DownwardMetrics = ptr.To(true)
+				cr.Spec.FeatureGates.PersistentReservation = ptr.To(true)
+				cr.Spec.FeatureGates.AutoResourceLimits = ptr.To(true)
+				cr.Spec.FeatureGates.AlignCPUs = ptr.To(true)
+				cr.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
+
+				cr.Spec.KubeVirtFeatureGates = []string{kvDownwardMetrics, kvPersistentReservation, kvAutoResourceLimits, kvAlignCPUs, kvDisableMDevConfiguration}
+
+				req := admission.Request{AdmissionRequest: newCreateRequest(cr, hcoV1beta1Codec)}
+				res := mutator.Handle(context.TODO(), req)
+
+				Expect(res.Allowed).To(BeTrue())
+				Expect(res.Patches).To(BeEmpty())
+			})
+
+			It("should not remove existing feature gates", func() {
+				cr.Spec.FeatureGates.DownwardMetrics = ptr.To(true)
+				cr.Spec.FeatureGates.PersistentReservation = ptr.To(true)
+				cr.Spec.FeatureGates.AutoResourceLimits = ptr.To(true)
+				cr.Spec.FeatureGates.AlignCPUs = ptr.To(true)
+				cr.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
+
+				cr.Spec.KubeVirtFeatureGates = []string{"fg1", "fg2", "fg3"}
+
+				req := admission.Request{AdmissionRequest: newCreateRequest(cr, hcoV1beta1Codec)}
+				res := mutator.Handle(context.TODO(), req)
+
+				Expect(res.Allowed).To(BeTrue())
+				Expect(res.Patches).To(HaveLen(1))
+			})
+
+			It("should not remove if already defined in the new format", func() {
+				cr.Spec.FeatureGates.DownwardMetrics = ptr.To(false)
+				cr.Spec.FeatureGates.PersistentReservation = ptr.To(false)
+				cr.Spec.FeatureGates.AutoResourceLimits = ptr.To(false)
+				cr.Spec.FeatureGates.AlignCPUs = ptr.To(false)
+				cr.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(false)
+
+				cr.Spec.KubeVirtFeatureGates = []string{kvDownwardMetrics, kvPersistentReservation, kvAutoResourceLimits, kvAlignCPUs, kvDisableMDevConfiguration}
+
+				req := admission.Request{AdmissionRequest: newCreateRequest(cr, hcoV1beta1Codec)}
+				res := mutator.Handle(context.TODO(), req)
+
+				Expect(res.Allowed).To(BeTrue())
+				Expect(res.Patches).To(BeEmpty())
+			})
+
+		})
+
+		Context("check getFeatureGateChecks gates", func() {
+			It("should add feature gates from the old format to the new list, if not already there", func() {
+				cr.Spec.FeatureGates.DownwardMetrics = ptr.To(true)
+				cr.Spec.FeatureGates.PersistentReservation = ptr.To(true)
+				cr.Spec.FeatureGates.AutoResourceLimits = ptr.To(true)
+				cr.Spec.FeatureGates.AlignCPUs = ptr.To(true)
+				cr.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
+
+				v, changed := getFeatureGateChecks(cr)
+				Expect(changed).To(BeTrue())
+				Expect(v).To(HaveLen(5))
+				Expect(v).To(ContainElements(kvDownwardMetrics, kvPersistentReservation, kvAutoResourceLimits, kvAlignCPUs, kvDisableMDevConfiguration))
+			})
+
+			It("should not add feature gates from the old format to the new list, if already there", func() {
+				cr.Spec.FeatureGates.DownwardMetrics = ptr.To(true)
+				cr.Spec.FeatureGates.PersistentReservation = ptr.To(true)
+				cr.Spec.FeatureGates.AutoResourceLimits = ptr.To(true)
+				cr.Spec.FeatureGates.AlignCPUs = ptr.To(true)
+				cr.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
+
+				cr.Spec.KubeVirtFeatureGates = []string{kvDownwardMetrics, kvPersistentReservation, kvAutoResourceLimits, kvAlignCPUs, kvDisableMDevConfiguration}
+
+				v, changed := getFeatureGateChecks(cr)
+				Expect(changed).To(BeFalse())
+				Expect(v).To(And(HaveLen(5), ContainElements(kvDownwardMetrics, kvPersistentReservation, kvAutoResourceLimits, kvAlignCPUs, kvDisableMDevConfiguration)))
+			})
+
+			It("should not remove existing feature gates", func() {
+				cr.Spec.FeatureGates.DownwardMetrics = ptr.To(true)
+				cr.Spec.FeatureGates.PersistentReservation = ptr.To(true)
+				cr.Spec.FeatureGates.AutoResourceLimits = ptr.To(true)
+				cr.Spec.FeatureGates.AlignCPUs = ptr.To(true)
+				cr.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
+
+				cr.Spec.KubeVirtFeatureGates = []string{"fg1", "fg2", "fg3"}
+
+				v, changed := getFeatureGateChecks(cr)
+				Expect(changed).To(BeTrue())
+				Expect(v).To(And(HaveLen(8), ContainElements("fg1", "fg2", "fg3", kvDownwardMetrics, kvPersistentReservation, kvAutoResourceLimits, kvAlignCPUs, kvDisableMDevConfiguration)))
+			})
+
+			It("should not remove if already defined in the new format", func() {
+				cr.Spec.FeatureGates.DownwardMetrics = ptr.To(false)
+				cr.Spec.FeatureGates.PersistentReservation = ptr.To(false)
+				cr.Spec.FeatureGates.AutoResourceLimits = ptr.To(false)
+				cr.Spec.FeatureGates.AlignCPUs = ptr.To(false)
+				cr.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(false)
+
+				cr.Spec.KubeVirtFeatureGates = []string{kvDownwardMetrics, kvPersistentReservation, kvAutoResourceLimits, kvAlignCPUs, kvDisableMDevConfiguration}
+
+				v, changed := getFeatureGateChecks(cr)
+				Expect(changed).To(BeFalse())
+				Expect(v).To(And(HaveLen(5), ContainElements(kvDownwardMetrics, kvPersistentReservation, kvAutoResourceLimits, kvAlignCPUs, kvDisableMDevConfiguration)))
+			})
+		})
 	})
 })
 

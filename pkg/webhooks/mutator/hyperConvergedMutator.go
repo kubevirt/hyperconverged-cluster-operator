@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"slices"
 
 	"gomodules.xyz/jsonpatch/v2"
 	admissionv1 "k8s.io/api/admission/v1"
@@ -15,6 +14,7 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 )
 
@@ -116,9 +116,47 @@ func (hcm *HyperConvergedMutator) mutateHyperConverged(_ context.Context, req ad
 		}
 	}
 
+	if fgs, changed := getFeatureGateChecks(hc); changed {
+		patches = append(patches, jsonpatch.JsonPatchOperation{
+			Operation: "add",
+			Path:      "/spec/kubevirtFeatureGates",
+			Value:     fgs,
+		})
+	}
+
 	if len(patches) > 0 {
 		return admission.Patched("mutated", patches...)
 	}
 
 	return admission.Allowed("")
+}
+
+// KubeVirt feature gates that are exposed in HCO API
+const (
+	kvDownwardMetrics          = "DownwardMetrics"
+	kvPersistentReservation    = "PersistentReservation"
+	kvAutoResourceLimits       = "AutoResourceLimitsGate"
+	kvAlignCPUs                = "AlignCPUs"
+	kvDisableMDevConfiguration = "DisableMDEVConfiguration"
+)
+
+func getFeatureGateChecks(hc *hcov1beta1.HyperConverged) (hcov1beta1.KubeVirtFeatureGates, bool) {
+	fgList := slices.Clone(hc.Spec.KubeVirtFeatureGates)
+
+	changed := addFromDeprecatedFeatureGate(hc.Spec.FeatureGates.AlignCPUs, kvAlignCPUs, &fgList)
+	changed = addFromDeprecatedFeatureGate(hc.Spec.FeatureGates.AutoResourceLimits, kvAutoResourceLimits, &fgList) || changed
+	changed = addFromDeprecatedFeatureGate(hc.Spec.FeatureGates.DisableMDevConfiguration, kvDisableMDevConfiguration, &fgList) || changed
+	changed = addFromDeprecatedFeatureGate(hc.Spec.FeatureGates.DownwardMetrics, kvDownwardMetrics, &fgList) || changed
+	changed = addFromDeprecatedFeatureGate(hc.Spec.FeatureGates.PersistentReservation, kvPersistentReservation, &fgList) || changed
+
+	return fgList, changed
+}
+
+func addFromDeprecatedFeatureGate(fg *bool, fgName string, fgList *hcov1beta1.KubeVirtFeatureGates) bool {
+	if fg != nil && *fg && !slices.Contains(*fgList, fgName) {
+		*fgList = append(*fgList, fgName)
+		return true
+	}
+
+	return false
 }
