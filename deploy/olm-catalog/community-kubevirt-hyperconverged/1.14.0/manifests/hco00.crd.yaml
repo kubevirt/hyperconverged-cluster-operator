@@ -1057,6 +1057,7 @@ spec:
                       Enable KubeVirt to request up to two additional dedicated CPUs
                       in order to complete the total CPU count to an even parity when using emulator thread isolation.
                       Note: this feature is in Developer Preview.
+                      Deprecated: to set this feature gate in KubeVirt, add "AlignCPUs" to the /spec/kubevirtFeatureGate list
                     type: boolean
                   autoResourceLimits:
                     default: false
@@ -1067,6 +1068,7 @@ spec:
                       When this feature gate is enabled, KubeVirt will set limits to the virt-launcher pod if they are not set manually
                       and if a resource quota with memory limits is associated with the creation namespace.
                       Note: this feature is in Developer Preview.
+                      Deprecated: to set this feature gate in KubeVirt, add "AutoResourceLimits" to the /spec/kubevirtFeatureGate list
                     type: boolean
                   deployKubeSecondaryDNS:
                     default: false
@@ -1084,12 +1086,15 @@ spec:
                     type: boolean
                   disableMDevConfiguration:
                     default: false
-                    description: Disable mediated devices handling on KubeVirt
+                    description: |-
+                      Disable mediated devices handling on KubeVirt
+                      Deprecated: to set this feature gate in KubeVirt, add "DisableMDevConfiguration" to the /spec/kubevirtFeatureGate list
                     type: boolean
                   downwardMetrics:
                     default: false
-                    description: Allow to expose a limited set of host metrics to
-                      guests.
+                    description: |-
+                      Allow to expose a limited set of host metrics to guests.
+                      Deprecated: to set this feature gate in KubeVirt, add "DownwardMetrics" to the /spec/kubevirtFeatureGate list
                     type: boolean
                   enableApplicationAwareQuota:
                     default: false
@@ -1111,6 +1116,7 @@ spec:
                       In order to issue privileged SCSI ioctls, the VM requires activation of the persistent reservation flag.
                       Once this feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod.
                       Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod.
+                      Deprecated: to set this feature gate in KubeVirt, add "PersistentReservation" to the /spec/kubevirtFeatureGate list
                     type: boolean
                   primaryUserDefinedNetworkBinding:
                     default: false
@@ -2223,6 +2229,12 @@ spec:
                 description: KubeSecondaryDNSNameServerIP defines name server IP used
                   by KubeSecondaryDNS
                 type: string
+              kubevirtFeatureGates:
+                description: KubeVirtFeatureGates is a list of feature gates to set
+                  in the KubeVirt custom resource
+                items:
+                  type: string
+                type: array
               liveMigrationConfig:
                 default:
                   allowAutoConverge: false
@@ -4876,6 +4888,13 @@ spec:
                   DataImportSchedule is the cron expression that is used in for the hard-coded data import cron templates. HCO
                   generates the value of this field once and stored in the status field, so will survive restart.
                 type: string
+              kubevirtFeatureGates:
+                description: |-
+                  KubeVirtFeatureGates is a list of feature gates that HCO set in the KubeVirt custom resource, including the
+                  feature gates set by the HCO code, and the once that was added from the spec.kubevirtFeatureGates field.
+                items:
+                  type: string
+                type: array
               observedGeneration:
                 description: |-
                   ObservedGeneration reflects the HyperConverged resource generation. If the ObservedGeneration is less than the

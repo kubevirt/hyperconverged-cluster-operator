@@ -233,7 +233,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 				Properties: map[string]spec.Schema{
 					"downwardMetrics": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Allow to expose a limited set of host metrics to guests.",
+							Description: "Allow to expose a limited set of host metrics to guests. Deprecated: to set this feature gate in KubeVirt, add \"DownwardMetrics\" to the /spec/kubevirtFeatureGate list",
 							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
@@ -280,7 +280,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"disableMDevConfiguration": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Disable mediated devices handling on KubeVirt",
+							Description: "Disable mediated devices handling on KubeVirt Deprecated: to set this feature gate in KubeVirt, add \"DisableMDevConfiguration\" to the /spec/kubevirtFeatureGate list",
 							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
@@ -288,7 +288,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"persistentReservation": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Enable persistent reservation of a LUN through the SCSI Persistent Reserve commands on Kubevirt. In order to issue privileged SCSI ioctls, the VM requires activation of the persistent reservation flag. Once this feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod.",
+							Description: "Enable persistent reservation of a LUN through the SCSI Persistent Reserve commands on Kubevirt. In order to issue privileged SCSI ioctls, the VM requires activation of the persistent reservation flag. Once this feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod. Deprecated: to set this feature gate in KubeVirt, add \"PersistentReservation\" to the /spec/kubevirtFeatureGate list",
 							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
@@ -296,7 +296,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"autoResourceLimits": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Enable KubeVirt to set automatic limits when they are needed. If ResourceQuota with set memory limits is associated with a namespace, each pod in that namespace must have memory limits set. By default, KubeVirt does not set such limits to the virt-launcher pod. When this feature gate is enabled, KubeVirt will set limits to the virt-launcher pod if they are not set manually and if a resource quota with memory limits is associated with the creation namespace. Note: this feature is in Developer Preview.",
+							Description: "Enable KubeVirt to set automatic limits when they are needed. If ResourceQuota with set memory limits is associated with a namespace, each pod in that namespace must have memory limits set. By default, KubeVirt does not set such limits to the virt-launcher pod. When this feature gate is enabled, KubeVirt will set limits to the virt-launcher pod if they are not set manually and if a resource quota with memory limits is associated with the creation namespace. Note: this feature is in Developer Preview. Deprecated: to set this feature gate in KubeVirt, add \"AutoResourceLimits\" to the /spec/kubevirtFeatureGate list",
 							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
@@ -304,7 +304,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"alignCPUs": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Enable KubeVirt to request up to two additional dedicated CPUs in order to complete the total CPU count to an even parity when using emulator thread isolation. Note: this feature is in Developer Preview.",
+							Description: "Enable KubeVirt to request up to two additional dedicated CPUs in order to complete the total CPU count to an even parity when using emulator thread isolation. Note: this feature is in Developer Preview. Deprecated: to set this feature gate in KubeVirt, add \"AlignCPUs\" to the /spec/kubevirtFeatureGate list",
 							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
@@ -412,6 +412,21 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 							Description: "featureGates is a map of feature gate flags. Setting a flag to `true` will enable the feature. Setting `false` or removing the feature gate, disables the feature.",
 							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedFeatureGates"),
+						},
+					},
+					"kubevirtFeatureGates": {
+						SchemaProps: spec.SchemaProps{
+							Description: "KubeVirtFeatureGates is a list of feature gates to set in the KubeVirt custom resource",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
 						},
 					},
 					"liveMigrationConfig": {
@@ -735,6 +750,21 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 							Description: "SystemHealthStatus reflects the health of HCO and its secondary resources, based on the aggregated conditions.",
 							Type:        []string{"string"},
 							Format:      "",
+						},
+					},
+					"kubevirtFeatureGates": {
+						SchemaProps: spec.SchemaProps{
+							Description: "KubeVirtFeatureGates is a list of feature gates that HCO set in the KubeVirt custom resource, including the feature gates set by the HCO code, and the once that was added from the spec.kubevirtFeatureGates field.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
 						},
 					},
 				},

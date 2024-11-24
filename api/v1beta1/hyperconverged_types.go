@@ -70,6 +70,9 @@ type HyperConvergedSpec struct {
 	// +optional
 	FeatureGates HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 
+	// KubeVirtFeatureGates is a list of feature gates to set in the KubeVirt custom resource
+	KubeVirtFeatureGates KubeVirtFeatureGates `json:"kubevirtFeatureGates,omitempty"`
+
 	// Live migration limits and timeouts are applied so that migration processes do not
 	// overwhelm the cluster.
 	// +kubebuilder:default={"completionTimeoutPerGiB": 800, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}
@@ -401,6 +404,7 @@ type HyperConvergedFeatureGates struct {
 	// +optional
 	// +kubebuilder:default=false
 	// +default=false
+	// Deprecated: to set this feature gate in KubeVirt, add "DownwardMetrics" to the /spec/kubevirtFeatureGate list
 	DownwardMetrics *bool `json:"downwardMetrics,omitempty"`
 
 	// Allow migrating a virtual machine with CPU host-passthrough mode. This should be
@@ -441,6 +445,7 @@ type HyperConvergedFeatureGates struct {
 	// +optional
 	// +kubebuilder:default=false
 	// +default=false
+	// Deprecated: to set this feature gate in KubeVirt, add "DisableMDevConfiguration" to the /spec/kubevirtFeatureGate list
 	DisableMDevConfiguration *bool `json:"disableMDevConfiguration,omitempty"`
 
 	// Enable persistent reservation of a LUN through the SCSI Persistent Reserve commands on Kubevirt.
@@ -450,6 +455,7 @@ type HyperConvergedFeatureGates struct {
 	// +optional
 	// +kubebuilder:default=false
 	// +default=false
+	// Deprecated: to set this feature gate in KubeVirt, add "PersistentReservation" to the /spec/kubevirtFeatureGate list
 	PersistentReservation *bool `json:"persistentReservation,omitempty"`
 
 	// TODO update description to also include cpu limits as well, after 4.14
@@ -463,6 +469,7 @@ type HyperConvergedFeatureGates struct {
 	// +optional
 	// +kubebuilder:default=false
 	// +default=false
+	// Deprecated: to set this feature gate in KubeVirt, add "AutoResourceLimits" to the /spec/kubevirtFeatureGate list
 	AutoResourceLimits *bool `json:"autoResourceLimits,omitempty"`
 
 	// Enable KubeVirt to request up to two additional dedicated CPUs
@@ -471,6 +478,7 @@ type HyperConvergedFeatureGates struct {
 	// +optional
 	// +kubebuilder:default=false
 	// +default=false
+	// Deprecated: to set this feature gate in KubeVirt, add "AlignCPUs" to the /spec/kubevirtFeatureGate list
 	AlignCPUs *bool `json:"alignCPUs,omitempty"`
 
 	// EnableApplicationAwareQuota if true, enables the Application Aware Quota feature
@@ -487,6 +495,9 @@ type HyperConvergedFeatureGates struct {
 	// +default=false
 	PrimaryUserDefinedNetworkBinding *bool `json:"primaryUserDefinedNetworkBinding,omitempty"`
 }
+
+// KubeVirtFeatureGates is a list of feature gates to set in the KubeVirt custom resource
+type KubeVirtFeatureGates []string
 
 // PermittedHostDevices holds information about devices allowed for passthrough
 // +k8s:openapi-gen=true
@@ -729,6 +740,10 @@ type HyperConvergedStatus struct {
 	// SystemHealthStatus reflects the health of HCO and its secondary resources, based on the aggregated conditions.
 	// +optional
 	SystemHealthStatus string `json:"systemHealthStatus,omitempty"`
+
+	// KubeVirtFeatureGates is a list of feature gates that HCO set in the KubeVirt custom resource, including the
+	// feature gates set by the HCO code, and the once that was added from the spec.kubevirtFeatureGates field.
+	KubeVirtFeatureGates KubeVirtFeatureGates `json:"kubevirtFeatureGates,omitempty"`
 }
 
 type Version struct {
