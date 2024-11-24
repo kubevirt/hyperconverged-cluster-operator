@@ -256,7 +256,16 @@ func (*kubevirtHooks) updateCr(req *common.HcoRequest, Client client.Client, exi
 	return false, false, nil
 }
 
-func (*kubevirtHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+func (h *kubevirtHooks) justBeforeComplete(req *common.HcoRequest) {
+	obj, _ := h.getFullCr(req.Instance) // from cache. computed earlier.
+	kv := obj.(*kubevirtcorev1.KubeVirt)
+
+	if kv.Spec.Configuration.DeveloperConfiguration != nil &&
+		!slices.Equal(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates, req.Instance.Status.KubeVirtFeatureGates) {
+		req.Instance.Status.KubeVirtFeatureGates = slices.Clone(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates)
+		req.StatusDirty = true
+	}
+}
 
 func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtcorev1.KubeVirt, error) {
 	config, err := getKVConfig(hc)
