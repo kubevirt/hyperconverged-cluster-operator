@@ -71,6 +71,8 @@ type HyperConvergedSpec struct {
 	FeatureGates HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 
 	// KubeVirtFeatureGates is a list of feature gates to set in the KubeVirt custom resource
+	// In order to remove a feature gate that was added by HCO, add the feature gate name with
+	// add a proceeding "!" to the feature gate name; e.g. "!GPU"
 	KubeVirtFeatureGates KubeVirtFeatureGates `json:"kubevirtFeatureGates,omitempty"`
 
 	// Live migration limits and timeouts are applied so that migration processes do not

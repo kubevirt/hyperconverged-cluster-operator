@@ -949,13 +949,25 @@ func getMandatoryKvFeatureGates(isKVMEmulation bool) []string {
 
 // get list of feature gates or KV FG list
 func getKvFeatureGateList(fgs hcov1beta1.KubeVirtFeatureGates) []string {
-	res := make([]string, 0, len(fgs)+len(mandatoryKvFeatureGates))
-	res = append(res, mandatoryKvFeatureGates...)
+	fgMap := make(map[string]bool)
+	for _, fg := range mandatoryKvFeatureGates {
+		fgMap[fg] = true
+	}
+
 	for _, fg := range fgs {
-		if !slices.Contains(mandatoryKvFeatureGates, fg) {
+		shouldRemove := false
+		fg, shouldRemove = strings.CutPrefix(fg, "!")
+		fgMap[fg] = !shouldRemove
+	}
+
+	res := make([]string, 0, len(fgMap))
+	for fg, toAdd := range fgMap {
+		if toAdd {
 			res = append(res, fg)
 		}
 	}
+
+	slices.Sort(res)
 
 	return res
 }

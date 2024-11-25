@@ -416,7 +416,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 					},
 					"kubevirtFeatureGates": {
 						SchemaProps: spec.SchemaProps{
-							Description: "KubeVirtFeatureGates is a list of feature gates to set in the KubeVirt custom resource",
+							Description: "KubeVirtFeatureGates is a list of feature gates to set in the KubeVirt custom resource In order to remove a feature gate that was added by HCO, add the feature gate name with add a proceeding \"!\" to the feature gate name; e.g. \"!GPU\"",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{

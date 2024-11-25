@@ -273,19 +273,29 @@ spec:
 ```
 
 ## KubeVirt Feature Gates
-To set a feature gate in the KubeVirt custom resource, add the name of the feature gate to the `spec.kubevirtFeatureGates` 
-filed. HCO does not check the values in this list. Make sure the spelling and the casing are correct.
+HCO adds a static list of feature gates to the KubeVirt custom resource. 
+
+HCO updates the `status.kubevirtFeatureGates` field with the final list set to KubeVirt CR, for reference.
+
+To add another feature gate to the KubeVirt custom resource, add the name of the feature gate to the 
+`spec.kubevirtFeatureGates` filed. 
+
+To remove a feature gate from the KubeVirt CR, if added as part of the static list, add this 
+feature gate's name with a proceeding `!`, e.g. `"!GPU"` 
+
+**Note**: HCO does not check the values in this list. Make sure the spelling and the casing are
+correct.
 
 ### KubeVirt Feature Gates
+In this example, we are adding the `DownwardMetrics` and the `PersistentReservation` feature gates to the KubeVirt CR,
+and removing the `GPU` feature gate, that was added by HCO.
 ```yaml
 ...
 spec:
   kubevirtFeatureGates:
-  - DownwardMetrics
-  - PersistentReservation
-  - AutoResourceLimitsGate
-  - AlignCPUs
-  - DisableMDEVConfiguration
+  - "DownwardMetrics"
+  - "PersistentReservation"
+  - "!GPU"
 ```
 
 ## Live Migration Configurations
