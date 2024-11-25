@@ -131,15 +131,20 @@ To enable a feature, add its name to the `featureGates` list and set it to `true
 disables the feature.
 
 ### downwardMetrics Feature Gate
-Set the `downwardMetrics` feature gate in order to allow exposing a limited set of VM and host metrics to the guest.
+***This field is deprecated***. To enable this feature gate in the KubeVirt custom resource, Add `"DownwardMetrics"` to
+the [spec.kubevirtFeatureGates list](#kubevirt-feature-gates), instead.
+
+>The old description:
+> 
+> Set the `downwardMetrics` feature gate in order to allow exposing a limited set of VM and host metrics to the guest.~
 The format is compatible with [vhostmd](https://github.com/vhostmd/vhostmd).
 These metrics allow third-parties diagnosing issues.
 DownwardMetrics may be exposed to the guest through a `volume` or a `virtio-serial port`.
-
-**Note**: Updates from previous versions require to enable this feature gate if the metrics was used in any 
+>
+> **Note**: Updates from previous versions require to enable this feature gate if the metrics was used in any 
 virtual machine.
-
-**Default**: `false`
+>
+>**Default**: `false`
 
 ### withHostPassthroughCPU Feature Gate
 This feature gate is deprecated and is ignored.
@@ -181,14 +186,19 @@ Note that if used on K8s cluster (non OCP), a cert manager is required to be dep
 **Default**: `false`
 
 ### persistentReservation Feature Gate
-Set the `persistentReservation` feature gate to true in order to enable the reservation of a LUN through the SCSI Persistent Reserve commands.
+***This field is deprecated***. To enable this feature gate in the KubeVirt custom resource, Add `"PersistentReservation"` to
+the [spec.kubevirtFeatureGates list](#kubevirt-feature-gates), instead.
 
-SCSI protocol offers dedicated commands in order to reserve and control access to the LUNs. This can be used to prevent data corruption if the disk is shared by multiple VMs (or more in general processes).
+> Old description:
+> 
+> Set the `persistentReservation` feature gate to true in order to enable the reservation of a LUN through the SCSI Persistent Reserve commands.
+> 
+> SCSI protocol offers dedicated commands in order to reserve and control access to the LUNs. This can be used to prevent data corruption if the disk is shared by multiple VMs (or more in general processes).
 The SCSI persistent reservation is handled by the qemu-pr-helper. The pr-helper is a privileged daemon that can be either started by libvirt directly or managed externally.
 In case of KubeVirt, the qemu-pr-helper needs to be started externally because it requires high privileges in order to perform the persistent SCSI reservation. Afterward, the pr-helper socket is accessed by the unprivileged virt-launcher pod for enabling the SCSI persistent reservation.
 Once the feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod.
-
-VMI example:
+>
+>VMI example:
 ```yaml
     devices:
       disks:
@@ -196,29 +206,39 @@ VMI example:
         lun:
           reservations: true
 ```
-**Note**: An important aspect of this feature is that the SCSI persistent reservation doesn't support migration. Even if you apply the reservation to an RWX PVC provisioning SCSI devices, the restriction is due to the reservation done by the initiator on the node. The VM could be migrated but not the reservation.
-
-**Default**: `false`
+>**Note**: An important aspect of this feature is that the SCSI persistent reservation doesn't support migration. Even if you apply the reservation to an RWX PVC provisioning SCSI devices, the restriction is due to the reservation done by the initiator on the node. The VM could be migrated but not the reservation.
+>
+>**Default**: `false`
 
 ### autoResourceLimits Feature Gate
-Set the `autoResourceLimits` feature gate to true in order to enable KubeVirt to set automatic limits when they are needed.
+***This field is deprecated***. To enable this feature gate in the KubeVirt custom resource, Add
+`"AutoResourceLimitsGate"` to the [spec.kubevirtFeatureGates list](#kubevirt-feature-gates), instead.
+
+> Old description:
+>
+> Set the `autoResourceLimits` feature gate to true in order to enable KubeVirt to set automatic limits when they are needed.
 If ResourceQuota with set memory limits is associated with a namespace, each pod in that namespace must have memory limits set.
 By default, KubeVirt does not set such limits to the virt-launcher pod.
 When this feature gate is enabled, KubeVirt will set limits to the virt-launcher pod if they are not set manually
 and if a resource quota with memory limits is associated with the creation namespace.
-
-**Note**: this feature is in Developer Preview.
-
-**Default**: `false`
+>
+>**Note**: this feature is in Developer Preview.
+>
+>**Default**: `false`
 
 ### alignCPUs Feature Gate
-Set the `alignCPUs` feature gate to enable KubeVirt
+***This field is deprecated***. To enable this feature gate in the KubeVirt custom resource, Add `"AlignCPUs"` to
+the [spec.kubevirtFeatureGates list](#kubevirt-feature-gates), instead.
+
+> Old description:
+>
+>Set the `alignCPUs` feature gate to enable KubeVirt
 to request up to two additional dedicated CPUs in order to complete the total CPU count
 to an even parity when using emulator thread isolation.
-
-**Note**: this feature is in Developer Preview.
-
-**Default**: `false`
+>
+>**Note**: this feature is in Developer Preview.
+>
+>**Default**: `false`
 
 ### enableApplicationAwareQuota Feature Gate
 Set the `enableApplicationAwareQuota` feature gate to `true` to enable the [Application Aware Quota](https://github.com/kubevirt/application-aware-quota) feature 
@@ -250,6 +270,22 @@ spec:
     deployKubeSecondaryDNS: true
     deployKubevirtIpamController: false
     enableApplicationAwareQuota: true
+```
+
+## KubeVirt Feature Gates
+To set a feature gate in the KubeVirt custom resource, add the name of the feature gate to the `spec.kubevirtFeatureGates` 
+filed. HCO does not check the values in this list. Make sure the spelling and the casing are correct.
+
+### KubeVirt Feature Gates
+```yaml
+...
+spec:
+  kubevirtFeatureGates:
+  - DownwardMetrics
+  - PersistentReservation
+  - AutoResourceLimitsGate
+  - AlignCPUs
+  - DisableMDEVConfiguration
 ```
 
 ## Live Migration Configurations
