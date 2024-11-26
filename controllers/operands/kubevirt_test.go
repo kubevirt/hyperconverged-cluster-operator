@@ -2088,6 +2088,45 @@ Version: 1.2.3`)
 					Expect(existingResource.Spec.Configuration.NetworkConfiguration.Binding).To(BeNil())
 				})
 
+				It("should add the DynamicPodInterfaceNaming feature gate if EnableDynamicPodInterfaceNaming is true in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						EnableDynamicPodInterfaceNaming: ptr.To(true),
+					}
+
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					By("KV CR should contain the DynamicPodInterfaceNaming feature gate", func() {
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvDynamicPodInterfaceNamingGate))
+					})
+				})
+
+				It("should not add the DynamicPodInterfaceNaming feature gate if EnableDynamicPodInterfaceNaming is false in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						EnableDynamicPodInterfaceNaming: ptr.To(false),
+					}
+
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					By("KV CR should not contain the DynamicPodInterfaceNaming feature gate", func() {
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvDynamicPodInterfaceNamingGate))
+					})
+				})
+
+				It("should not add the DynamicPodInterfaceNaming feature gate if EnableDynamicPodInterfaceNaming is not set in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						EnableDynamicPodInterfaceNaming: nil,
+					}
+
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					By("KV CR should not contain the DynamicPodInterfaceNaming feature gate", func() {
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
+						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvDynamicPodInterfaceNamingGate))
+					})
+				})
+
 				It("should not add the feature gates if FeatureGates field is empty", func() {
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{}

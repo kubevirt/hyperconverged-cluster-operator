@@ -106,6 +106,9 @@ const (
 
 	// Enable VM live update, to allow live propagation of VM changes to their VMI
 	kvVMLiveUpdateFeatures = "VMLiveUpdateFeatures"
+
+	// kvDynamicPodInterfaceNaming enables a mechanism to dynamically determine the primary pod interface for KubeVirt virtual machines.
+	kvDynamicPodInterfaceNamingGate = "DynamicPodInterfaceNaming"
 )
 
 const (
@@ -833,6 +836,9 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates) [
 	}
 	if featureGates.AlignCPUs != nil && *featureGates.AlignCPUs {
 		fgs = append(fgs, kvAlignCPUs)
+	}
+	if featureGates.EnableDynamicPodInterfaceNaming != nil && *featureGates.EnableDynamicPodInterfaceNaming {
+		fgs = append(fgs, kvDynamicPodInterfaceNamingGate)
 	}
 
 	return fgs
