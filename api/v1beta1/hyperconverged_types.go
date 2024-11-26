@@ -486,6 +486,13 @@ type HyperConvergedFeatureGates struct {
 	// +kubebuilder:default=false
 	// +default=false
 	PrimaryUserDefinedNetworkBinding *bool `json:"primaryUserDefinedNetworkBinding,omitempty"`
+
+	// Enable KubeVirt to dynamically detect the pod's primary NIC name.
+	// Note: this feature is in Developer Preview.
+	// +optional
+	// +kubebuilder:default=false
+	// +default=false
+	EnableDynamicPodInterfaceNaming *bool `json:"enableDynamicPodInterfaceNaming,omitempty"`
 }
 
 // PermittedHostDevices holds information about devices allowed for passthrough

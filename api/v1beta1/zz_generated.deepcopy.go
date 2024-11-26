@@ -313,6 +313,11 @@ func (in *HyperConvergedFeatureGates) DeepCopyInto(out *HyperConvergedFeatureGat
 		*out = new(bool)
 		**out = **in
 	}
+	if in.EnableDynamicPodInterfaceNaming != nil {
+		in, out := &in.EnableDynamicPodInterfaceNaming, &out.EnableDynamicPodInterfaceNaming
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

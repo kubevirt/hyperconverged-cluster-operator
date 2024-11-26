@@ -21,6 +21,7 @@ spec:
     downwardMetrics: false
     enableApplicationAwareQuota: false
     enableCommonBootImageImport: true
+    enableDynamicPodInterfaceNaming: false
     persistentReservation: false
     primaryUserDefinedNetworkBinding: false
   higherWorkloadDensity:

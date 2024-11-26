@@ -326,6 +326,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 							Format:      "",
 						},
 					},
+					"enableDynamicPodInterfaceNaming": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Enable KubeVirt to dynamically detect the pod's primary NIC name. Note: this feature is in Developer Preview.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

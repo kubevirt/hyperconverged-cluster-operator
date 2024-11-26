@@ -77,6 +77,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			AlignCPUs:                        ptr.To(false),
 			EnableApplicationAwareQuota:      ptr.To(false),
 			PrimaryUserDefinedNetworkBinding: ptr.To(false),
+			EnableDynamicPodInterfaceNaming:  ptr.To(false),
 		}
 
 		DescribeTable("Check that featureGates defaults are behaving as expected", func(ctx context.Context, path string) {
@@ -99,6 +100,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			Entry("when removing /spec/featureGates/autoResourceLimits", "/spec/featureGates/autoResourceLimits"),
 			Entry("when removing /spec/featureGates/alignCPUs", "/spec/featureGates/alignCPUs"),
 			Entry("when removing /spec/featureGates/primaryUserDefinedNetworkBinding", "/spec/featureGates/primaryUserDefinedNetworkBinding"),
+			Entry("when removing /spec/featureGates/enableDynamicPodInterfaceNaming", "/spec/featureGates/enableDynamicPodInterfaceNaming"),
 			Entry("when removing /spec/featureGates", "/spec/featureGates"),
 			Entry("when removing /spec", "/spec"),
 		)

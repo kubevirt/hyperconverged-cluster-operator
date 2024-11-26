@@ -165,6 +165,7 @@ HyperConvergedFeatureGates is a set of optional feature gates to enable or disab
 | alignCPUs | Enable KubeVirt to request up to two additional dedicated CPUs in order to complete the total CPU count to an even parity when using emulator thread isolation. Note: this feature is in Developer Preview. | *bool | false | false |
 | enableApplicationAwareQuota | EnableApplicationAwareQuota if true, enables the Application Aware Quota feature | *bool | false | false |
 | primaryUserDefinedNetworkBinding | primaryUserDefinedNetworkBinding deploys the needed configurations for kubevirt users to be able to bind their VM to a UDN network on the VM's primary interface. Note: this feature is in Developer Preview. | *bool | false | false |
+| enableDynamicPodInterfaceNaming | Enable KubeVirt to dynamically detect the pod's primary NIC name. Note: this feature is in Developer Preview. | *bool | false | false |
 
 [Back to TOC](#table-of-contents)
 
