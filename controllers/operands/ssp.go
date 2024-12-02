@@ -21,6 +21,7 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/boolean"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -238,7 +239,7 @@ func getDataImportCronTemplates(hc *hcov1beta1.HyperConverged) ([]hcov1beta1.Dat
 	}
 
 	var dictList []hcov1beta1.DataImportCronTemplateStatus
-	if hc.Spec.FeatureGates.EnableCommonBootImageImport != nil && *hc.Spec.FeatureGates.EnableCommonBootImageImport {
+	if boolean.IsTrue(hc.Spec.EnableCommonBootImageImport) {
 		dictList = getCommonDicts(dictList, crDicts, hc)
 	}
 	dictList = getCustomDicts(dictList, crDicts)

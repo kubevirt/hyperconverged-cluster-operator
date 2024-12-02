@@ -248,8 +248,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"enableCommonBootImageImport": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Opt-in to automatic delivery/updates of the common data import cron templates. There are two sources for the data import cron templates: hard coded list of common templates, and custom templates that can be added to the dataImportCronTemplates field. This feature gates only control the common templates. It is possible to use custom templates by adding them to the dataImportCronTemplates field.",
-							Default:     true,
+							Description: "Opt-in to automatic delivery/updates of the common data import cron templates. There are two sources for the data import cron templates: hard coded list of common templates, and custom templates that can be added to the dataImportCronTemplates field. This feature gates only control the common templates. It is possible to use custom templates by adding them to the dataImportCronTemplates field. Deprecated: use spec.enableCommonBootImageImport instead",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -626,6 +625,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 							Description: "HigherWorkloadDensity holds configurataion aimed to increase virtual machine density",
 							Default:     map[string]interface{}{"memoryOvercommitPercentage": 100},
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HigherWorkloadDensityConfiguration"),
+						},
+					},
+					"enableCommonBootImageImport": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Opt-in to automatic delivery/updates of the common data import cron templates. There are two sources for the data import cron templates: hard coded list of common templates, and custom templates that can be added to the dataImportCronTemplates field. This feature gates only control the common templates. It is possible to use custom templates by adding them to the dataImportCronTemplates field.",
+							Default:     true,
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},

@@ -18,6 +18,7 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/boolean"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -40,9 +41,8 @@ type imageStreamOperand struct {
 }
 
 func (iso imageStreamOperand) ensure(req *common.HcoRequest) *EnsureResult {
-	if req.Instance.Spec.FeatureGates.EnableCommonBootImageImport != nil && *req.Instance.Spec.FeatureGates.EnableCommonBootImageImport {
-		// if the FG is set, make sure the imageStream is in place and up-to-date
-
+	// if the EnableCommonBootImageImport field is set, make sure the imageStream is in place and up-to-date
+	if boolean.IsTrue(req.Instance.Spec.EnableCommonBootImageImport) {
 		if result := iso.checkCustomNamespace(req); result != nil {
 			return result
 		}
