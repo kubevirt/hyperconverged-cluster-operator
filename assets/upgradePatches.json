@@ -34,7 +34,37 @@
         {
           "op": "replace",
           "path": "/spec/virtualMachineOptions/disableFreePageReporting",
-	  "value": false
+          "value": false
+        }
+      ],
+      "jsonPatchApplyOptions": {
+        "allowMissingPathOnRemove": true
+      }
+    },
+    {
+      "semverRange": "<1.15.0",
+      "jsonPatch": [
+        {
+          "op": "test",
+          "path": "/spec/featureGates/enableCommonBootImageImport",
+          "value": false
+        },
+        {
+          "op": "replace",
+          "path": "/spec/enableCommonBootImageImport",
+          "value": false
+        }
+      ],
+      "jsonPatchApplyOptions": {
+        "allowMissingPathOnRemove": true
+      }
+    },
+    {
+      "semverRange": "<1.15.0",
+      "jsonPatch": [
+        {
+          "op": "remove",
+          "path": "/spec/featureGates/enableCommonBootImageImport"
         }
       ],
       "jsonPatchApplyOptions": {
