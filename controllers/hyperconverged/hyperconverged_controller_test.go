@@ -1791,7 +1791,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 			})
 
-			Context("Remove v2v CRDs and related objects", func() {
+			Context("Remove MTQ CRD and related objects", func() {
 
 				var (
 					currentCRDs          []*apiextensionsv1.CustomResourceDefinition
@@ -1831,17 +1831,7 @@ var _ = Describe("HyperconvergedController", func() {
 					oldCRDs = []*apiextensionsv1.CustomResourceDefinition{
 						{
 							ObjectMeta: metav1.ObjectMeta{
-								Name: "vmimportconfigs.v2v.kubevirt.io",
-							},
-						},
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "v2vvmwares.v2v.kubevirt.io",
-							},
-						},
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "ovirtproviders.v2v.kubevirt.io",
+								Name: "mtqs.mtq.kubevirt.io",
 							},
 						},
 						{
@@ -1852,9 +1842,9 @@ var _ = Describe("HyperconvergedController", func() {
 					}
 					oldCRDRelatedObjects = []corev1.ObjectReference{
 						{
-							APIVersion:      "v2v.kubevirt.io/v1alpha1",
-							Kind:            "VMImportConfig",
-							Name:            "vmimport-kubevirt-hyperconverged",
+							APIVersion:      "mtq.kubevirt.io/v1alpha1",
+							Kind:            "MTQ",
+							Name:            "mtq-kubevirt-hyperconverged",
 							ResourceVersion: "999",
 						},
 					}
@@ -1883,7 +1873,7 @@ var _ = Describe("HyperconvergedController", func() {
 					}
 				})
 
-				It("should remove v2v CRDs during upgrades", func() {
+				It("should remove the MTQ CRD during upgrades", func() {
 					// Simulate ongoing upgrade
 					UpdateVersion(&expected.hco.Status, hcoVersionName, "1.6.1")
 
@@ -1919,7 +1909,7 @@ var _ = Describe("HyperconvergedController", func() {
 					}
 				})
 
-				It("shouldn't remove v2v CRDs if upgrade isn't in progress", func() {
+				It("shouldn't remove the MTQ CRD if upgrade isn't in progress", func() {
 					resources := expected.toArray()
 					for _, r := range currentCRDs {
 						resources = append(resources, r)
@@ -1947,7 +1937,7 @@ var _ = Describe("HyperconvergedController", func() {
 					}
 				})
 
-				It("should remove v2v related objects if upgrade is in progress", func() {
+				It("should remove the MTQ related object if upgrade is in progress", func() {
 					// Simulate ongoing upgrade
 					UpdateVersion(&expected.hco.Status, hcoVersionName, oldVersion)
 
@@ -1990,7 +1980,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				})
 
-				It("should remove v2v related objects if upgrade isn't in progress", func() {
+				It("should remove the MTQ related object if upgrade isn't in progress", func() {
 					// Initialize RelatedObjects with a bunch of objects
 					// including old SSP ones.
 					for _, objRef := range oldCRDRelatedObjects {

@@ -87,7 +87,7 @@ const (
 	apiServerCRPrefix = "api-server-cr-"
 
 	// These group are no longer supported. Use these constants to remove unused resources
-	v2vGroup = "v2v.kubevirt.io"
+	mtqGroup = "mtq.kubevirt.io"
 
 	requestedStatusKey = "requested status"
 )
@@ -134,10 +134,8 @@ func newCRDremover(client client.Client) *CRDRemover {
 	crdRemover := &CRDRemover{
 		client: client,
 		crdsToRemove: []schema.GroupKind{
-			// These are the v2v CRDs we have to remove moving to MTV
-			{Group: v2vGroup, Kind: "V2VVmware"},
-			{Group: v2vGroup, Kind: "OVirtProvider"},
-			{Group: v2vGroup, Kind: "VMImportConfig"},
+			// These is the MTQ CRD we have to remove moving to AAQ
+			{Group: mtqGroup, Kind: "MTQ"},
 		},
 	}
 
