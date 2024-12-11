@@ -198,7 +198,7 @@ var _ = Describe("test clusterInfo", func() {
 
 	DescribeTable(
 		"check Init on openshift, with OLM, infrastructure topology ...",
-		func(controlPlaneTopology, infrastructureTopology openshiftconfigv1.TopologyMode, expectedIsControlPlaneHighlyAvailable, expectedIsInfrastructureHighlyAvailable bool) {
+		func(controlPlaneTopology, infrastructureTopology openshiftconfigv1.TopologyMode, numMasterNodes, numWorkerNodes int, expectedIsControlPlaneHighlyAvailable, expectedIsInfrastructureHighlyAvailable bool) {
 
 			testInfrastructure := &openshiftconfigv1.Infrastructure{
 				ObjectMeta: metav1.ObjectMeta{
@@ -212,11 +212,35 @@ var _ = Describe("test clusterInfo", func() {
 					},
 				},
 			}
+			var nodesArray []client.Object
+			for i := 0; i < numMasterNodes; i++ {
+				masterNode := &corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: fmt.Sprintf("master%d", i),
+						Labels: map[string]string{
+							"node-role.kubernetes.io/control-plane": "",
+						},
+					},
+				}
+				nodesArray = append(nodesArray, masterNode)
+			}
+			for i := 0; i < numWorkerNodes; i++ {
+				workerNode := &corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: fmt.Sprintf("worker%d", i),
+						Labels: map[string]string{
+							"node-role.kubernetes.io/worker": "",
+						},
+					},
+				}
+				nodesArray = append(nodesArray, workerNode)
+			}
 
 			os.Setenv(OperatorConditionNameEnvVar, "aValue")
 			cl := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(clusterVersion, testInfrastructure, ingress, apiServer, dns, ipv4network).
+				WithObjects(nodesArray...).
 				WithStatusSubresource(clusterVersion, testInfrastructure, ingress, apiServer, dns, ipv4network).
 				Build()
 			Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
@@ -230,6 +254,8 @@ var _ = Describe("test clusterInfo", func() {
 			"HighlyAvailable ControlPlane and Infrastructure",
 			openshiftconfigv1.HighlyAvailableTopologyMode,
 			openshiftconfigv1.HighlyAvailableTopologyMode,
+			3,
+			2,
 			true,
 			true,
 		),
@@ -237,6 +263,8 @@ var _ = Describe("test clusterInfo", func() {
 			"HighlyAvailable ControlPlane, SingleReplica Infrastructure",
 			openshiftconfigv1.HighlyAvailableTopologyMode,
 			openshiftconfigv1.SingleReplicaTopologyMode,
+			3,
+			1,
 			true,
 			false,
 		),
@@ -244,6 +272,8 @@ var _ = Describe("test clusterInfo", func() {
 			"SingleReplica ControlPlane, HighlyAvailable Infrastructure",
 			openshiftconfigv1.SingleReplicaTopologyMode,
 			openshiftconfigv1.HighlyAvailableTopologyMode,
+			1,
+			2,
 			false,
 			true,
 		),
@@ -251,6 +281,8 @@ var _ = Describe("test clusterInfo", func() {
 			"SingleReplica ControlPlane and Infrastructure",
 			openshiftconfigv1.SingleReplicaTopologyMode,
 			openshiftconfigv1.SingleReplicaTopologyMode,
+			1,
+			1,
 			false,
 			false,
 		),
@@ -264,7 +296,7 @@ var _ = Describe("test clusterInfo", func() {
 			for i := 0; i < numMasterNodes; i++ {
 				masterNode := &corev1.Node{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "master" + fmt.Sprint(i),
+						Name: fmt.Sprintf("master%d", i),
 						Labels: map[string]string{
 							"node-role.kubernetes.io/master": "",
 						},
@@ -275,7 +307,7 @@ var _ = Describe("test clusterInfo", func() {
 			for i := 0; i < numWorkerNodes; i++ {
 				workerNode := &corev1.Node{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "worker" + fmt.Sprint(i),
+						Name: fmt.Sprintf("worker%d", i),
 						Labels: map[string]string{
 							"node-role.kubernetes.io/worker": "",
 						},
