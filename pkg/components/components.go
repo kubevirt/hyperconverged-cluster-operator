@@ -501,7 +501,7 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		{
 			APIGroups: emptyAPIGroup,
 			Resources: stringListToSlice("nodes"),
-			Verbs:     stringListToSlice("get", "list"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
 		},
 		{
 			APIGroups: emptyAPIGroup,
