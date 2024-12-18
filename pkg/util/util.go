@@ -56,13 +56,6 @@ func GetOperatorNamespaceFromEnv() (string, error) {
 	return "", fmt.Errorf("%s unset or empty in environment", OperatorNamespaceEnv)
 }
 
-func CheckPrimaryUDNImageEnvExists() error {
-	if _, primaryUDNImageVarExists := os.LookupEnv(PrimaryUDNImageEnvV); !primaryUDNImageVarExists {
-		return fmt.Errorf("%s env var not found", PrimaryUDNImageEnvV)
-	}
-	return nil
-}
-
 func IsRunModeLocal() bool {
 	return os.Getenv(ForceRunModeEnv) == string(LocalRunMode)
 }
