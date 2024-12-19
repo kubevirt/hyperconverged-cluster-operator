@@ -77,7 +77,7 @@ var (
 	hppoVersion             = flag.String("hppo-version", "", "HPP operator version")
 	_                       = flag.String("mtq-version", "", "deprecated. This flag is ignored")
 	aaqVersion              = flag.String("aaq-version", "", "AAQ operator version")
-	primaryUDNImage         = flag.String("primary-udn-binding-image-name", "", "Primary UDN binding image")
+	_                       = flag.String("primary-udn-binding-image-name", "", "deprecated. This flag is ignored")
 	apiSources              = flag.String("api-sources", cwd+"/...", "Project sources")
 )
 
@@ -431,7 +431,6 @@ func getOperatorParameters() *components.DeploymentOperatorParams {
 		SspVersion:             *sspVersion,
 		HppoVersion:            *hppoVersion,
 		AaqVersion:             *aaqVersion,
-		PrimaryUDNImage:        *primaryUDNImage,
 		Env:                    []corev1.EnvVar{},
 	}
 	return params
