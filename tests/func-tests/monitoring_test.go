@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	kubevirtcorev1 "kubevirt.io/api/core/v1"
+	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 
 	hcoalerts "github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/rules/alerts"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/rules/recordingrules"
@@ -107,8 +107,8 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 	It("KubeVirtCRModified alert should fired when there is a modification on a CR", Serial, func(ctx context.Context) {
 
 		const (
-			query     = `kubevirt_hco_out_of_band_modifications_total{component_name="kubevirt/kubevirt-kubevirt-hyperconverged"}`
-			jsonPatch = `[{"op": "add", "path": "/spec/configuration/developerConfiguration/featureGates/-", "value": "fake-fg-for-testing"}]`
+			query     = `kubevirt_hco_out_of_band_modifications_total{component_name="cdi/cdi-kubevirt-hyperconverged"}`
+			jsonPatch = `[{"op": "add", "path": "/spec/config/logVerbosity", "value": 5}]`
 		)
 
 		By(fmt.Sprintf("Reading the `%s` metric from HCO prometheus endpoint", query))
@@ -120,17 +120,16 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		}).WithTimeout(10 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
 		GinkgoWriter.Printf("The metric value before the test is: %0.2f\n", valueBefore)
 
-		By("Patching kubevirt object")
+		By("Patching the CDI object")
 		patch := client.RawPatch(types.JSONPatchType, []byte(jsonPatch))
 
-		kv := &kubevirtcorev1.KubeVirt{
+		cdi := &cdiv1beta1.CDI{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      "kubevirt-kubevirt-hyperconverged",
-				Namespace: tests.InstallNamespace,
+				Name: "cdi-kubevirt-hyperconverged",
 			},
 		}
 
-		Expect(cli.Patch(ctx, kv, patch)).To(Succeed())
+		Expect(cli.Patch(ctx, cdi, patch)).To(Succeed())
 
 		By("checking that the HCO metric was increased by 1")
 		Eventually(func(g Gomega, ctx context.Context) float64 {
