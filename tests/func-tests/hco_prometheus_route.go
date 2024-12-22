@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"github.com/onsi/ginkgo/v2"
 	"net/http"
 	"strconv"
 	"strings"
@@ -108,6 +109,31 @@ func (hcoCli HCOPrometheusClient) GetHCOMetric(ctx context.Context, query string
 		}
 	}
 	return 0, nil
+}
+
+func (hcoCli HCOPrometheusClient) GetHCOMetricDebug(ctx context.Context, query string) error {
+	req, err := http.NewRequest(http.MethodGet, hcoCli.url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := hcoCli.cli.Do(req.WithContext(ctx))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to read the temp route status: %s", resp.Status)
+	}
+
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.HasPrefix(line, query) {
+			ginkgo.GinkgoLogr.Info(line)
+		}
+	}
+	return nil
 }
 
 // CreateTempRoute creates a route to the HCO prometheus endpoint, to allow reading the metrics.

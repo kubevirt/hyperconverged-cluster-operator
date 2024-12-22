@@ -165,6 +165,10 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			return alert
 		}).WithTimeout(60 * time.Second).WithPolling(time.Second).WithContext(ctx).ShouldNot(BeNil())
 
+		/// DEBUG
+		Expect(hcoClient.GetHCOMetricDebug(ctx, "kubevirt_hyperconverged_operator_health_status")).To(Succeed())
+		/// END DEBUG
+
 		verifyOperatorHealthMetricValue(ctx, promClient, initialOperatorHealthMetricValue, recordingrules.WarningImpact)
 	})
 
