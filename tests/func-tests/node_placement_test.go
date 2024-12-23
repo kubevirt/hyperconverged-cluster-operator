@@ -43,14 +43,14 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 		cli, err = kubecli.GetKubevirtClient()
 		Expect(err).ToNot(HaveOccurred())
 
-		nodes := listNodesByLabels(cli, "node-role.kubernetes.io/control-plane!=")
-		tests.FailIfSingleNode(len(nodes.Items) < 2)
+		workerNodes := listNodesByLabels(cli, "node-role.kubernetes.io/worker")
+		tests.FailIfSingleNodeCluster(len(workerNodes.Items) < 2)
 
 		// Label all but first node with "node.kubernetes.io/hco-test-node-type=infra"
 		// We are doing this to remove dependency of this Describe block on a shell script that
 		// labels the nodes this way
 		Eventually(func(g Gomega) {
-			for _, node := range nodes.Items[:len(nodes.Items)-1] {
+			for _, node := range workerNodes.Items[:len(workerNodes.Items)-1] {
 				done, err := setHcoNodeTypeLabel(cli, &node, infra)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(done).To(BeTrue())
@@ -58,7 +58,7 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 		// Label the last node with "node.kubernetes.io/hco-test-node-type=workloads"
 		Eventually(func(g Gomega) {
-			done, err := setHcoNodeTypeLabel(cli, &nodes.Items[len(nodes.Items)-1], workloads)
+			done, err := setHcoNodeTypeLabel(cli, &workerNodes.Items[len(workerNodes.Items)-1], workloads)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(done).To(BeTrue())
 		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())

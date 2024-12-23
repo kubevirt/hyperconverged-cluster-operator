@@ -2,6 +2,10 @@ package nodes
 
 import (
 	"context"
+	"maps"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/utils/ptr"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -67,20 +71,20 @@ type nodeCountChangePredicate struct {
 }
 
 func (nodeCountChangePredicate) Update(e event.UpdateEvent) bool {
-	return false
+	return !maps.Equal(e.ObjectOld.GetLabels(), e.ObjectNew.GetLabels())
 }
 
-func (nodeCountChangePredicate) Create(e event.CreateEvent) bool {
+func (nodeCountChangePredicate) Create(_ event.CreateEvent) bool {
 	// node is added
 	return true
 }
 
-func (nodeCountChangePredicate) Delete(e event.DeleteEvent) bool {
+func (nodeCountChangePredicate) Delete(_ event.DeleteEvent) bool {
 	// node is removed
 	return true
 }
 
-func (nodeCountChangePredicate) Generic(e event.GenericEvent) bool {
+func (nodeCountChangePredicate) Generic(_ event.GenericEvent) bool {
 	return false
 }
 
@@ -111,11 +115,19 @@ func (r *ReconcileNodeCounter) Reconcile(ctx context.Context, _ reconcile.Reques
 	}
 	err = r.client.Get(ctx, hcoKey, hco)
 	if err != nil {
+		if errors.IsNotFound(err) {
+			return reconcile.Result{}, nil
+		}
 		return reconcile.Result{}, err
 	}
 
-	if hco.Status.InfrastructureHighlyAvailable != clusterInfo.IsInfrastructureHighlyAvailable() {
-		hco.Status.InfrastructureHighlyAvailable = clusterInfo.IsInfrastructureHighlyAvailable()
+	if !hco.ObjectMeta.DeletionTimestamp.IsZero() {
+		return reconcile.Result{}, nil
+	}
+	if hco.Status.InfrastructureHighlyAvailable == nil ||
+		*hco.Status.InfrastructureHighlyAvailable != clusterInfo.IsInfrastructureHighlyAvailable() {
+
+		hco.Status.InfrastructureHighlyAvailable = ptr.To(clusterInfo.IsInfrastructureHighlyAvailable())
 		err = r.client.Status().Update(ctx, hco)
 		if err != nil {
 			return reconcile.Result{}, err
