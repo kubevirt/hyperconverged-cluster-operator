@@ -52,6 +52,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/hyperconverged"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/nodes"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/observability"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/metrics"
@@ -179,6 +180,13 @@ func main() {
 			logger.Error(err, "unable to create controller", "controller", "Observability")
 			os.Exit(1)
 		}
+	}
+
+	// Create a new Nodes reconciler
+	if err := nodes.RegisterReconciler(mgr); err != nil {
+		logger.Error(err, "failed to register the Nodes controller")
+		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register Nodes controller; "+err.Error())
+		os.Exit(1)
 	}
 
 	err = createPriorityClass(ctx, mgr)
