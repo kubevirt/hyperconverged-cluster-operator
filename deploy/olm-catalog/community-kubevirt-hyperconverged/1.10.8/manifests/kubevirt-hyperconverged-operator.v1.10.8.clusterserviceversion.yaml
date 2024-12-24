@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.10.8-unstable
-    createdAt: "2024-04-22 05:05:40"
+    createdAt: "2024-12-24 05:06:00"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -2405,7 +2405,12 @@ spec:
           - clusterrolebindings
           - clusterroles
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
         - apiGroups:
           - security.openshift.io
           resources:
@@ -2417,22 +2422,17 @@ spec:
           - update
           - create
         - apiGroups:
-          - ""
-          resources:
-          - pods
-          - services
-          verbs:
-          - get
-          - list
-          - watch
-          - delete
-        - apiGroups:
           - apiextensions.k8s.io
           resources:
           - customresourcedefinitions
           - customresourcedefinitions/status
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
         - apiGroups:
           - cdi.kubevirt.io
           - upload.cdi.kubevirt.io
@@ -2446,13 +2446,44 @@ spec:
           - validatingwebhookconfigurations
           - mutatingwebhookconfigurations
           verbs:
-          - '*'
+          - create
+          - list
+          - watch
+        - apiGroups:
+          - admissionregistration.k8s.io
+          resourceNames:
+          - cdi-api-dataimportcron-validate
+          - cdi-api-populator-validate
+          - cdi-api-datavolume-validate
+          - cdi-api-validate
+          - objecttransfer-api-validate
+          resources:
+          - validatingwebhookconfigurations
+          verbs:
+          - get
+          - update
+          - delete
+        - apiGroups:
+          - admissionregistration.k8s.io
+          resourceNames:
+          - cdi-api-datavolume-mutate
+          resources:
+          - mutatingwebhookconfigurations
+          verbs:
+          - get
+          - update
+          - delete
         - apiGroups:
           - apiregistration.k8s.io
           resources:
           - apiservices
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
         - apiGroups:
           - authorization.k8s.io
           resources:
@@ -2497,7 +2528,6 @@ spec:
           resources:
           - datasources
           verbs:
-          - list
           - get
         - apiGroups:
           - cdi.kubevirt.io
@@ -2510,7 +2540,7 @@ spec:
           resources:
           - cdis/finalizers
           verbs:
-          - '*'
+          - update
         - apiGroups:
           - ""
           resources:
@@ -2521,7 +2551,6 @@ spec:
         - apiGroups:
           - ""
           resources:
-          - persistentvolumes
           - persistentvolumeclaims
           verbs:
           - get
@@ -2532,6 +2561,15 @@ spec:
           - delete
           - deletecollection
           - patch
+        - apiGroups:
+          - ""
+          resources:
+          - persistentvolumes
+          verbs:
+          - get
+          - list
+          - watch
+          - update
         - apiGroups:
           - ""
           resources:
@@ -2583,9 +2621,22 @@ spec:
         - apiGroups:
           - snapshot.storage.k8s.io
           resources:
-          - '*'
+          - volumesnapshots
+          - volumesnapshotclasses
+          - volumesnapshotcontents
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - create
+          - delete
+        - apiGroups:
+          - snapshot.storage.k8s.io
+          resources:
+          - volumesnapshots
+          verbs:
+          - update
+          - deletecollection
         - apiGroups:
           - apiextensions.k8s.io
           resources:
@@ -2616,20 +2667,6 @@ spec:
           - secrets
           verbs:
           - create
-        - apiGroups:
-          - batch
-          resources:
-          - cronjobs
-          verbs:
-          - list
-          - watch
-        - apiGroups:
-          - batch
-          resources:
-          - jobs
-          verbs:
-          - list
-          - watch
         - apiGroups:
           - kubevirt.io
           resources:
@@ -3067,7 +3104,7 @@ spec:
                 - name: KUBEVIRT_VERSION
                   value: v1.0.1
                 - name: CDI_VERSION
-                  value: v1.57.0
+                  value: v1.57.1
                 - name: NETWORK_ADDONS_VERSION
                   value: v0.89.3
                 - name: SSP_VERSION
@@ -3574,25 +3611,25 @@ spec:
                 - name: DEPLOY_CLUSTER_RESOURCES
                   value: "true"
                 - name: OPERATOR_VERSION
-                  value: v1.57.0
+                  value: v1.57.1
                 - name: CONTROLLER_IMAGE
-                  value: quay.io/kubevirt/cdi-controller@sha256:27c47883a08226f83757971d3adafb0cd9bcb26e58fbcf7208236070e0adf37e
+                  value: quay.io/kubevirt/cdi-controller@sha256:fe01037a7930dac7e827a98f73269ff27afc07a61b2bcb8efd70dbca3fbbc690
                 - name: IMPORTER_IMAGE
-                  value: quay.io/kubevirt/cdi-importer@sha256:3143bbc67cdc6267eb48b7eaac664b8551ac4c11401dfbf4921efd3f233e6ce9
+                  value: quay.io/kubevirt/cdi-importer@sha256:694341f03c03ec253098968dc6d4745e395932d1a879736016051de225b50dc3
                 - name: CLONER_IMAGE
-                  value: quay.io/kubevirt/cdi-cloner@sha256:9d31b14f23259398c5bac636f5ead13ad0afd6fe8eeab4499e8e047b4d85074f
+                  value: quay.io/kubevirt/cdi-cloner@sha256:ed4b9e21c45f8a3a7752b4e4cee89d90d76056e6387cf2397784bf7e44303cfa
                 - name: APISERVER_IMAGE
-                  value: quay.io/kubevirt/cdi-apiserver@sha256:e9e39408413b1478d2e98eba68913f9e20c93000558b190b47de73bdfd1d9ac4
+                  value: quay.io/kubevirt/cdi-apiserver@sha256:762a0769eea5db82e43861ea99aa72c507a6b1101e16f816f84daa52f7e91f2c
                 - name: UPLOAD_SERVER_IMAGE
-                  value: quay.io/kubevirt/cdi-uploadserver@sha256:30f1827d3696cf996b081c22c3267ca78e7219c872fdb54950198fa54359f6ee
+                  value: quay.io/kubevirt/cdi-uploadserver@sha256:cda29a56827064bc9df82e3f3706f5b5958f6565e5e60511e26ca28cd07e1df6
                 - name: UPLOAD_PROXY_IMAGE
-                  value: quay.io/kubevirt/cdi-uploadproxy@sha256:551221d79902a5053d1c734b81163d69f087217e2ac13c49bdf6900336ef0786
+                  value: quay.io/kubevirt/cdi-uploadproxy@sha256:9af6e7d351a4c04a2603c39c6c7c28ab113d702b03e777fc321e23ff4f36e72c
                 - name: VERBOSITY
                   value: "1"
                 - name: PULL_POLICY
                   value: IfNotPresent
                 - name: MONITORING_NAMESPACE
-                image: quay.io/kubevirt/cdi-operator@sha256:6c63521d835578b0fbb77d3145b648f95ab0932d5d1b36ff2068ed8fcd91bc5a
+                image: quay.io/kubevirt/cdi-operator@sha256:008358155dda76ee9e0ba5f8d2c1044761ed115d12acff754a0819ea1a9ada46
                 imagePullPolicy: IfNotPresent
                 name: cdi-operator
                 ports:
@@ -3601,7 +3638,7 @@ spec:
                   protocol: TCP
                 resources:
                   requests:
-                    cpu: 10m
+                    cpu: 100m
                     memory: 150Mi
                 securityContext:
                   allowPrivilegeEscalation: false
@@ -3978,7 +4015,12 @@ spec:
           - rolebindings
           - roles
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
         - apiGroups:
           - ""
           resources:
@@ -3988,21 +4030,36 @@ spec:
           - secrets
           - services
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
         - apiGroups:
           - apps
           resources:
           - deployments
           - deployments/finalizers
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
         - apiGroups:
           - route.openshift.io
           resources:
           - routes
           - routes/custom-host
           verbs:
-          - '*'
+          - get
+          - list
+          - watch
+          - create
+          - update
         - apiGroups:
           - config.openshift.io
           resources:
@@ -4029,7 +4086,98 @@ spec:
           resources:
           - leases
           verbs:
-          - '*'
+          - get
+          - create
+          - update
+        - apiGroups:
+          - ""
+          resources:
+          - secrets
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - secrets
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - batch
+          resources:
+          - cronjobs
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - deletecollection
+        - apiGroups:
+          - batch
+          resources:
+          - jobs
+          verbs:
+          - create
+          - deletecollection
+          - list
+          - watch
+        - apiGroups:
+          - coordination.k8s.io
+          resources:
+          - leases
+          verbs:
+          - get
+          - create
+          - update
+        - apiGroups:
+          - networking.k8s.io
+          resources:
+          - ingresses
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - route.openshift.io
+          resources:
+          - routes
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+        - apiGroups:
+          - ""
+          resources:
+          - services
+          - endpoints
+          - pods
+          verbs:
+          - get
+          - list
+          - watch
         serviceAccountName: cdi-operator
       - rules:
         - apiGroups:
@@ -4308,19 +4456,19 @@ spec:
   relatedImages:
   - image: quay.io/kubevirt/bridge-marker@sha256:bba066e3b5ff3fb8c5e20861fe8abe51e3c9b50ad6ce3b2616af9cb5479a06d0
     name: bridge-marker
-  - image: quay.io/kubevirt/cdi-apiserver@sha256:e9e39408413b1478d2e98eba68913f9e20c93000558b190b47de73bdfd1d9ac4
+  - image: quay.io/kubevirt/cdi-apiserver@sha256:762a0769eea5db82e43861ea99aa72c507a6b1101e16f816f84daa52f7e91f2c
     name: cdi-apiserver
-  - image: quay.io/kubevirt/cdi-cloner@sha256:9d31b14f23259398c5bac636f5ead13ad0afd6fe8eeab4499e8e047b4d85074f
+  - image: quay.io/kubevirt/cdi-cloner@sha256:ed4b9e21c45f8a3a7752b4e4cee89d90d76056e6387cf2397784bf7e44303cfa
     name: cdi-cloner
-  - image: quay.io/kubevirt/cdi-controller@sha256:27c47883a08226f83757971d3adafb0cd9bcb26e58fbcf7208236070e0adf37e
+  - image: quay.io/kubevirt/cdi-controller@sha256:fe01037a7930dac7e827a98f73269ff27afc07a61b2bcb8efd70dbca3fbbc690
     name: cdi-controller
-  - image: quay.io/kubevirt/cdi-importer@sha256:3143bbc67cdc6267eb48b7eaac664b8551ac4c11401dfbf4921efd3f233e6ce9
+  - image: quay.io/kubevirt/cdi-importer@sha256:694341f03c03ec253098968dc6d4745e395932d1a879736016051de225b50dc3
     name: cdi-importer
-  - image: quay.io/kubevirt/cdi-operator@sha256:6c63521d835578b0fbb77d3145b648f95ab0932d5d1b36ff2068ed8fcd91bc5a
+  - image: quay.io/kubevirt/cdi-operator@sha256:008358155dda76ee9e0ba5f8d2c1044761ed115d12acff754a0819ea1a9ada46
     name: cdi-operator
-  - image: quay.io/kubevirt/cdi-uploadproxy@sha256:551221d79902a5053d1c734b81163d69f087217e2ac13c49bdf6900336ef0786
+  - image: quay.io/kubevirt/cdi-uploadproxy@sha256:9af6e7d351a4c04a2603c39c6c7c28ab113d702b03e777fc321e23ff4f36e72c
     name: cdi-uploadproxy
-  - image: quay.io/kubevirt/cdi-uploadserver@sha256:30f1827d3696cf996b081c22c3267ca78e7219c872fdb54950198fa54359f6ee
+  - image: quay.io/kubevirt/cdi-uploadserver@sha256:cda29a56827064bc9df82e3f3706f5b5958f6565e5e60511e26ca28cd07e1df6
     name: cdi-uploadserver
   - image: quay.io/kubevirt/cluster-network-addons-operator@sha256:0102e02b15749e4fcef62f31ca6ebc41290829143239b9bcb3e30f6de7e79028
     name: cluster-network-addons-operator
