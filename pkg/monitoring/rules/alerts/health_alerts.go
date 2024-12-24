@@ -12,11 +12,13 @@ import (
 func healthAlerts() []promv1.Rule {
 	return []promv1.Rule{
 		{
-			Alert: "OperatorConditionsUnhealthy",
+			Alert: "HCOOperatorConditionsUnhealthy",
 			Expr:  intstr.FromString(fmt.Sprintf("kubevirt_hco_system_health_status == %f", metrics.SystemHealthStatusError)),
 			Annotations: map[string]string{
-				"description": "HCO and its secondary resources are in a critical state due to {{ $labels.reason }}.",
-				"summary":     "HCO and its secondary resources are in a critical state.",
+				"description": "HCO and its secondary resources are in a critical state due to system error. Go to " +
+					"Installed Operators -> kubevirt-hyperconverged-operator -> HyperConverged details " +
+					"and inspect the Conditions.",
+				"summary": "HCO and its secondary resources are in a critical state.",
 			},
 			Labels: map[string]string{
 				severityAlertLabelKey:     "critical",
@@ -24,11 +26,13 @@ func healthAlerts() []promv1.Rule {
 			},
 		},
 		{
-			Alert: "OperatorConditionsUnhealthy",
+			Alert: "HCOOperatorConditionsUnhealthy",
 			Expr:  intstr.FromString(fmt.Sprintf("kubevirt_hco_system_health_status == %f", metrics.SystemHealthStatusWarning)),
 			Annotations: map[string]string{
-				"description": "HCO and its secondary resources are in a warning state due to {{ $labels.reason }}.",
-				"summary":     "HCO and its secondary resources are in a warning state.",
+				"description": "HCO and its secondary resources are in a warning state due to system warning. Go to " +
+					"Installed Operators -> kubevirt-hyperconverged-operator -> HyperConverged details " +
+					"and inspect the Conditions.",
+				"summary": "HCO and its secondary resources are in a warning state.",
 			},
 			Labels: map[string]string{
 				severityAlertLabelKey:     "warning",
