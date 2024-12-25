@@ -7,6 +7,8 @@ import (
 	"os"
 	"reflect"
 
+	"k8s.io/utils/ptr"
+
 	"github.com/blang/semver/v4"
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/go-logr/logr"
@@ -162,7 +164,8 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) er
 	err = c.Watch(
 		source.Kind(mgr.GetCache(), &hcov1beta1.HyperConverged{}),
 		&operatorhandler.InstrumentedEnqueueRequestForObject{},
-		predicate.Or(predicate.GenerationChangedPredicate{}, predicate.AnnotationChangedPredicate{}))
+		predicate.Or(predicate.GenerationChangedPredicate{}, predicate.AnnotationChangedPredicate{},
+			predicate.ResourceVersionChangedPredicate{}))
 	if err != nil {
 		return err
 	}
@@ -419,6 +422,9 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 	if init {
 		r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "InitHCO", "Initiating the HyperConverged")
 		r.setInitialConditions(req)
+
+		req.Instance.Status.InfrastructureHighlyAvailable = ptr.To(hcoutil.GetClusterInfo().IsInfrastructureHighlyAvailable())
+		req.StatusDirty = true
 	}
 
 	r.setLabels(req)
