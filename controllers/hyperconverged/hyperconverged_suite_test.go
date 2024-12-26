@@ -1,6 +1,7 @@
 package hyperconverged
 
 import (
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/upgradepatches"
 	"os"
 	"path"
 	"strings"
@@ -36,6 +37,8 @@ func TestHyperconverged(t *testing.T) {
 		wd, _ := os.Getwd()
 		destFile = path.Join(wd, "upgradePatches.json")
 		Expect(commontestutils.CopyFile(destFile, path.Join(testFilesLocation, "upgradePatches.json"))).To(Succeed())
+
+		Expect(upgradepatches.Init(GinkgoLogr)).To(Succeed())
 	})
 
 	AfterSuite(func() {

@@ -87,9 +87,6 @@ const (
 	secondaryCRPrefix = "hco-controlled-cr-"
 	apiServerCRPrefix = "api-server-cr-"
 
-	// These group are no longer supported. Use these constants to remove unused resources
-	v2vGroup = "v2v.kubevirt.io"
-
 	requestedStatusKey = "requested status"
 )
 
@@ -128,26 +125,6 @@ func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond 
 	}
 
 	return r
-}
-
-// newCRDremover returns a new CRDRemover
-func newCRDremover(client client.Client) *CRDRemover {
-	crdRemover := &CRDRemover{
-		client: client,
-		crdsToRemove: []schema.GroupKind{
-			// These are the v2v CRDs we have to remove moving to MTV
-			{Group: v2vGroup, Kind: "V2VVmware"},
-			{Group: v2vGroup, Kind: "OVirtProvider"},
-			{Group: v2vGroup, Kind: "VMImportConfig"},
-		},
-	}
-
-	// The list of related objects to remove is initialized empty;
-	// Once the corresponding CRD (and hence CR) is removed successfully,
-	// the CR can be removed from the list of related objects.
-	crdRemover.relatedObjectsToRemove = make([]schema.GroupKind, 0, len(crdRemover.crdsToRemove))
-
-	return crdRemover
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -458,7 +435,7 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 	req.SetUpgradeMode(r.upgradeMode)
 
 	if r.upgradeMode {
-		if result, err := r.handleUpgrade(req, init); result != nil {
+		if result, err := r.handleUpgrade(req); result != nil {
 			return *result, err
 		}
 	}
@@ -466,7 +443,7 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 	return r.EnsureOperandAndComplete(req, init)
 }
 
-func (r *ReconcileHyperConverged) handleUpgrade(req *common.HcoRequest, init bool) (*reconcile.Result, error) {
+func (r *ReconcileHyperConverged) handleUpgrade(req *common.HcoRequest) (*reconcile.Result, error) {
 
 	crdStatusUpdated, err := r.updateCrdStoredVersions(req)
 	if err != nil {
@@ -474,30 +451,6 @@ func (r *ReconcileHyperConverged) handleUpgrade(req *common.HcoRequest, init boo
 	}
 
 	if crdStatusUpdated {
-		return &reconcile.Result{Requeue: true}, nil
-	}
-
-	// Attempt to remove old CRDs and related objects:
-	// Directly removing v2v CRDs will be enough to trigger the
-	// removal of the corresponding CRs.
-	// vmimportconfigs CR is protected by "vm-import-finalizer"
-	// which is managed by vm-import-operator that should remove
-	// all of its operands before removing the finalizer so that the
-	// CR and then the CRD can be really deleted.
-	// We don't have any race condition here because the CRD will be
-	// deleted without blocking the caller.
-	// vm-import-operator pod on the other side is not deleted during the
-	// upgrade process, but only at the end of it as a consequence of
-	// the removal of the old CSV (vm-import-operator deployment has
-	// an owner reference on it) once the upgrade successfully completed.
-
-	cdrRemover := newCRDremover(r.client)
-	err = cdrRemover.Remove(req)
-	if err != nil {
-		return &reconcile.Result{Requeue: init}, err
-	}
-	// if we still have something to remove, requeue to retry
-	if !cdrRemover.Done() {
 		return &reconcile.Result{Requeue: true}, nil
 	}
 
