@@ -1,17 +1,17 @@
 package hyperconverged
 
 import (
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/upgradepatches"
 	"os"
 	"path"
 	"strings"
 	"testing"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/upgradepatches"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 const (
