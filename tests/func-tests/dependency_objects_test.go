@@ -12,6 +12,8 @@ import (
 	"kubevirt.io/client-go/kubecli"
 )
 
+const priorityClassName = "kubevirt-cluster-critical"
+
 var _ = Describe("[rfe_id:5672][crit:medium][vendor:cnv-qe@redhat.com][level:system]Dependency objects", func() {
 	flag.Parse()
 
