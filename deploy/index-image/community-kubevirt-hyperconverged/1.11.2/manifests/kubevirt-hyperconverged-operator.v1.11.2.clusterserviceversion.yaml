@@ -431,6 +431,7 @@ spec:
           - watch
           - create
           - delete
+          - patch
         - apiGroups:
           - admissionregistration.k8s.io
           resources:
