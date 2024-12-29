@@ -44,6 +44,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/metrics"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/upgradepatches"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/version"
 )
@@ -821,12 +822,12 @@ var _ = Describe("HyperconvergedController", func() {
 
 				Expect(foundResource.Status.RelatedObjects).ToNot(BeNil())
 				Expect(foundResource.Status.RelatedObjects).To(HaveLen(21))
-				Expect(foundResource.ObjectMeta.Finalizers).To(Equal([]string{FinalizerName}))
+				Expect(foundResource.ObjectMeta.Finalizers).To(Equal([]string{finalizerName}))
 
 				// Now, delete HCO
 				delTime := time.Now().UTC().Add(-1 * time.Minute)
 				expected.hco.ObjectMeta.DeletionTimestamp = &k8sTime.Time{Time: delTime}
-				expected.hco.ObjectMeta.Finalizers = []string{FinalizerName}
+				expected.hco.ObjectMeta.Finalizers = []string{finalizerName}
 				cl = expected.initClient()
 
 				r = initReconciler(cl, nil)
@@ -863,7 +864,7 @@ var _ = Describe("HyperconvergedController", func() {
 				).To(Succeed())
 
 				Expect(foundResource.Status.RelatedObjects).ToNot(BeNil())
-				Expect(foundResource.ObjectMeta.Finalizers).To(Equal([]string{FinalizerName}))
+				Expect(foundResource.ObjectMeta.Finalizers).To(Equal([]string{finalizerName}))
 			})
 
 			It("Should not be ready if one of the operands is returns error, on create", func() {
@@ -1881,6 +1882,8 @@ var _ = Describe("HyperconvergedController", func() {
 							ResourceVersion: "999",
 						},
 					}
+
+					Expect(upgradepatches.Init(GinkgoLogr)).To(Succeed())
 				})
 
 				It("should remove v2v CRDs during upgrades", func() {
