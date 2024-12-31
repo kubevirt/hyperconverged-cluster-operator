@@ -1,14 +1,15 @@
-package hyperconverged
+package upgradepatches
 
 import (
 	"os"
 	"path"
 
+	"github.com/blang/semver/v4"
+	"github.com/onsi/gomega/types"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 )
 
@@ -20,41 +21,31 @@ var _ = Describe("upgradePatches", func() {
 		wd, _ := os.Getwd()
 		origFile = path.Join(wd, "upgradePatches.json")
 		Expect(commontestutils.CopyFile(origFile+".orig", origFile)).To(Succeed())
-		hcoUpgradeChangesRead = false
+		resetOnce()
 	})
 
 	AfterEach(func() {
 		Expect(os.Remove(origFile + ".orig")).To(Succeed())
-		hcoUpgradeChangesRead = false
 	})
 
 	Context("readUpgradeChangesFromFile", func() {
-
-		var hco *hcov1beta1.HyperConverged
-		var req *common.HcoRequest
-
-		BeforeEach(func() {
-			hco = commontestutils.NewHco()
-			req = commontestutils.NewReq(hco)
-		})
-
 		AfterEach(func() {
 			Expect(commontestutils.CopyFile(origFile, origFile+".orig")).To(Succeed())
 		})
 
 		It("should correctly parse and validate actual upgradePatches.json", func() {
-			Expect(validateUpgradePatches(req)).To(Succeed())
+			Expect(Init(GinkgoLogr)).To(Succeed())
 		})
 
 		It("should correctly parse and validate empty upgradePatches", func() {
 			Expect(copyTestFile("empty.json")).To(Succeed())
-			Expect(validateUpgradePatches(req)).To(Succeed())
+			Expect(Init(GinkgoLogr)).To(Succeed())
 		})
 
 		It("should fail parsing upgradePatches with bad json", func() {
 			Expect(copyTestFile("badJson.json")).To(Succeed())
 
-			err := validateUpgradePatches(req)
+			err := Init(GinkgoLogr)
 			Expect(err).To(MatchError(HavePrefix("invalid character")))
 		})
 
@@ -63,7 +54,7 @@ var _ = Describe("upgradePatches", func() {
 			It("should fail validating upgradePatches with bad semver ranges", func() {
 				Expect(copyTestFile("badSemverRange.json")).To(Succeed())
 
-				err := validateUpgradePatches(req)
+				err := Init(GinkgoLogr)
 				Expect(err).To(MatchError(HavePrefix("Could not get version from string:")))
 			})
 
@@ -71,7 +62,7 @@ var _ = Describe("upgradePatches", func() {
 				"should fail validating upgradePatches with bad patches",
 				func(filename, message string) {
 					Expect(copyTestFile(filename)).To(Succeed())
-					Expect(validateUpgradePatches(req)).To(MatchError(HavePrefix(message)))
+					Expect(Init(GinkgoLogr)).To(MatchError(HavePrefix(message)))
 				},
 				Entry(
 					"bad operation kind",
@@ -95,7 +86,7 @@ var _ = Describe("upgradePatches", func() {
 				func(filename string, expectedErr bool, message string) {
 					Expect(copyTestFile(filename)).To(Succeed())
 
-					err := validateUpgradePatches(req)
+					err := Init(GinkgoLogr)
 					if expectedErr {
 						Expect(err).To(MatchError(HavePrefix(message)))
 					} else {
@@ -134,14 +125,14 @@ var _ = Describe("upgradePatches", func() {
 
 			It("should fail validating upgradePatches with bad semver ranges", func() {
 				Expect(copyTestFile("badSemverRangeOR.json")).To(Succeed())
-				Expect(validateUpgradePatches(req)).To(MatchError(HavePrefix("Could not get version from string:")))
+				Expect(Init(GinkgoLogr)).To(MatchError(HavePrefix("Could not get version from string:")))
 			})
 
 			DescribeTable(
 				"should fail validating upgradePatches with bad patches",
 				func(filename, message string) {
 					Expect(copyTestFile(filename)).To(Succeed())
-					Expect(validateUpgradePatches(req)).To(MatchError(HavePrefix(message)))
+					Expect(Init(GinkgoLogr)).To(MatchError(HavePrefix(message)))
 				},
 				Entry(
 					"empty object kind",
@@ -179,9 +170,27 @@ var _ = Describe("upgradePatches", func() {
 
 	})
 
-})
+	Context("check semverRange type", func() {
+		DescribeTable("check isAffectedRange", func(verRange, ver string, m types.GomegaMatcher) {
+			vr, err := newSemverRange(verRange)
+			Expect(err).NotTo(HaveOccurred())
 
-func copyTestFile(filename string) error {
-	testFilesLocation := getTestFilesLocation() + "/upgradePatches"
-	return commontestutils.CopyFile(origFile, path.Join(testFilesLocation, filename))
-}
+			v, err := semver.Parse(ver)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(vr.isAffectedRange(v)).To(m)
+		},
+			Entry("", ">4.16.0", "4.16.9", BeTrue()),
+			Entry("", ">4.16.0", "4.17.2", BeTrue()),
+			Entry("", ">4.16.0", "4.16.0", BeFalse()),
+			Entry("", ">4.16.0", "4.15.2", BeFalse()),
+
+			Entry("", "<=4.17.0", "4.16.4", BeTrue()),
+			Entry("", "<=4.17.0", "4.17.2", BeFalse()),
+			Entry("", "<4.17.3", "4.17.2", BeTrue()),
+			Entry("", "<4.17.3", "4.17.3", BeFalse()),
+			Entry("", "<4.17.3", "4.17.4", BeFalse()),
+			Entry("", "<4.17.3", "4.16.9", BeTrue()),
+		)
+	})
+
+})

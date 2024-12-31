@@ -821,12 +821,12 @@ var _ = Describe("HyperconvergedController", func() {
 
 				Expect(foundResource.Status.RelatedObjects).ToNot(BeNil())
 				Expect(foundResource.Status.RelatedObjects).To(HaveLen(21))
-				Expect(foundResource.ObjectMeta.Finalizers).To(Equal([]string{FinalizerName}))
+				Expect(foundResource.ObjectMeta.Finalizers).To(Equal([]string{finalizerName}))
 
 				// Now, delete HCO
 				delTime := time.Now().UTC().Add(-1 * time.Minute)
 				expected.hco.ObjectMeta.DeletionTimestamp = &k8sTime.Time{Time: delTime}
-				expected.hco.ObjectMeta.Finalizers = []string{FinalizerName}
+				expected.hco.ObjectMeta.Finalizers = []string{finalizerName}
 				cl = expected.initClient()
 
 				r = initReconciler(cl, nil)
@@ -863,7 +863,7 @@ var _ = Describe("HyperconvergedController", func() {
 				).To(Succeed())
 
 				Expect(foundResource.Status.RelatedObjects).ToNot(BeNil())
-				Expect(foundResource.ObjectMeta.Finalizers).To(Equal([]string{FinalizerName}))
+				Expect(foundResource.ObjectMeta.Finalizers).To(Equal([]string{finalizerName}))
 			})
 
 			It("Should not be ready if one of the operands is returns error, on create", func() {
@@ -1235,7 +1235,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 		Context("Upgrade Mode", func() {
 			var (
-				oldVersion          string // to be sure to cover v2v CRDs removal during upgrades
+				oldVersion          string
 				newHCOVersion       string
 				oldComponentVersion string
 				newComponentVersion string
@@ -1261,13 +1261,12 @@ var _ = Describe("HyperconvergedController", func() {
 				// set before getBasicDeployment so that the existing resource can
 				// have the correct labels
 				_ = os.Setenv(hcoutil.HcoKvIoVersionName, newHCOVersion)
+				_ = os.Setenv("VIRTIOWIN_CONTAINER", commontestutils.VirtioWinImage)
+				_ = os.Setenv("OPERATOR_NAMESPACE", namespace)
 
 				expected = getBasicDeployment()
 				origConditions = expected.hco.Status.Conditions
 				okConds = expected.hco.Status.Conditions
-
-				_ = os.Setenv("VIRTIOWIN_CONTAINER", commontestutils.VirtioWinImage)
-				_ = os.Setenv("OPERATOR_NAMESPACE", namespace)
 
 				expected.kv.Status.ObservedKubeVirtVersion = newComponentVersion
 				_ = os.Setenv(hcoutil.KubevirtVersionEnvV, newComponentVersion)
@@ -1730,297 +1729,6 @@ var _ = Describe("HyperconvergedController", func() {
 					},
 				),
 			)
-
-			Context("Remove deprecated versions from .status.storedVersions on the CRD", func() {
-
-				It("should update .status.storedVersions on the HCO CRD during upgrades", func() {
-					// Simulate ongoing upgrade
-					UpdateVersion(&expected.hco.Status, hcoVersionName, oldVersion)
-
-					expected.hcoCRD.Status.StoredVersions = []string{"v1alpha1", "v1beta1", "v1"}
-
-					cl := expected.initClient()
-
-					foundHC, reconciler, requeue := doReconcile(cl, expected.hco, nil)
-					Expect(requeue).To(BeTrue())
-
-					foundCrd := &apiextensionsv1.CustomResourceDefinition{}
-					Expect(
-						cl.Get(context.TODO(),
-							client.ObjectKeyFromObject(expected.hcoCRD),
-							foundCrd),
-					).To(Succeed())
-					Expect(foundCrd.Status.StoredVersions).ToNot(ContainElement("v1alpha1"))
-					Expect(foundCrd.Status.StoredVersions).To(ContainElement("v1beta1"))
-					Expect(foundCrd.Status.StoredVersions).To(ContainElement("v1"))
-
-					By("Run reconcile again")
-					foundHC, reconciler, requeue = doReconcile(cl, foundHC, reconciler)
-					Expect(requeue).To(BeTrue())
-
-					// call again, make sure this time the requeue is false and the upgrade successfully completes
-					foundHC, _, requeue = doReconcile(cl, foundHC, reconciler)
-					Expect(requeue).To(BeFalse())
-
-					checkAvailability(foundHC, metav1.ConditionTrue)
-					ver, ok := GetVersion(&foundHC.Status, hcoVersionName)
-					Expect(ok).To(BeTrue())
-					Expect(ver).To(Equal(newHCOVersion))
-				})
-
-				It("should not update .status.storedVersions on the HCO CRD if not in upgrade mode", func() {
-					expected.hcoCRD.Status.StoredVersions = []string{"v1alpha1", "v1beta1", "v1"}
-
-					cl := expected.initClient()
-
-					foundHC, _, requeue := doReconcile(cl, expected.hco, nil)
-					checkAvailability(foundHC, metav1.ConditionTrue)
-					Expect(requeue).To(BeFalse())
-
-					foundCrd := &apiextensionsv1.CustomResourceDefinition{}
-					Expect(
-						cl.Get(context.TODO(),
-							client.ObjectKeyFromObject(expected.hcoCRD),
-							foundCrd),
-					).To(Succeed())
-					Expect(foundCrd.Status.StoredVersions).To(ContainElement("v1alpha1"))
-					Expect(foundCrd.Status.StoredVersions).To(ContainElement("v1beta1"))
-					Expect(foundCrd.Status.StoredVersions).To(ContainElement("v1"))
-
-				})
-
-			})
-
-			Context("Remove v2v CRDs and related objects", func() {
-
-				var (
-					currentCRDs          []*apiextensionsv1.CustomResourceDefinition
-					oldCRDs              []*apiextensionsv1.CustomResourceDefinition
-					oldCRDRelatedObjects []corev1.ObjectReference
-					otherRelatedObjects  []corev1.ObjectReference
-				)
-
-				BeforeEach(func() {
-					currentCRDs = []*apiextensionsv1.CustomResourceDefinition{
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "cdis.cdi.kubevirt.io",
-							},
-						},
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "hostpathprovisioners.hostpathprovisioner.kubevirt.io",
-							},
-						},
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "kubevirts.kubevirt.io",
-							},
-						},
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "networkaddonsconfigs.networkaddonsoperator.network.kubevirt.io",
-							},
-						},
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "ssps.ssp.kubevirt.io",
-							},
-						},
-					}
-					oldCRDs = []*apiextensionsv1.CustomResourceDefinition{
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "vmimportconfigs.v2v.kubevirt.io",
-							},
-						},
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "v2vvmwares.v2v.kubevirt.io",
-							},
-						},
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "ovirtproviders.v2v.kubevirt.io",
-							},
-						},
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "nodemaintenances.nodemaintenance.kubevirt.io",
-							},
-						},
-					}
-					oldCRDRelatedObjects = []corev1.ObjectReference{
-						{
-							APIVersion:      "v2v.kubevirt.io/v1alpha1",
-							Kind:            "VMImportConfig",
-							Name:            "vmimport-kubevirt-hyperconverged",
-							ResourceVersion: "999",
-						},
-					}
-					otherRelatedObjects = []corev1.ObjectReference{
-						{
-							APIVersion:      "v1",
-							Kind:            "Service",
-							Name:            "kubevirt-hyperconverged-operator-metrics",
-							Namespace:       "kubevirt-hyperconverged",
-							ResourceVersion: "999",
-						},
-						{
-							APIVersion:      "monitoring.coreos.com/v1",
-							Kind:            "ServiceMonitor",
-							Name:            "kubevirt-hyperconverged-operator-metrics",
-							Namespace:       "kubevirt-hyperconverged",
-							ResourceVersion: "999",
-						},
-						{
-							APIVersion:      "monitoring.coreos.com/v1",
-							Kind:            "PrometheusRule",
-							Name:            "kubevirt-hyperconverged-prometheus-rule",
-							Namespace:       "kubevirt-hyperconverged",
-							ResourceVersion: "999",
-						},
-					}
-				})
-
-				It("should remove v2v CRDs during upgrades", func() {
-					// Simulate ongoing upgrade
-					UpdateVersion(&expected.hco.Status, hcoVersionName, "1.6.1")
-
-					resources := expected.toArray()
-					for _, r := range currentCRDs {
-						resources = append(resources, r)
-					}
-					for _, r := range oldCRDs {
-						resources = append(resources, r)
-					}
-					cl := commontestutils.InitClient(resources)
-					foundResource, reconciler, requeue := doReconcile(cl, expected.hco, nil)
-					Expect(requeue).To(BeTrue())
-					checkAvailability(foundResource, metav1.ConditionTrue)
-
-					By("Run reconcile again")
-					foundResource, _, requeue = doReconcile(cl, expected.hco, reconciler)
-					Expect(requeue).To(BeFalse())
-					checkAvailability(foundResource, metav1.ConditionTrue)
-
-					foundCrds := apiextensionsv1.CustomResourceDefinitionList{}
-					Expect(cl.List(context.TODO(), &foundCrds)).To(Succeed())
-					crdNames := make([]string, len(foundCrds.Items))
-					for i := range crdNames {
-						crdNames[i] = foundCrds.Items[i].Name
-					}
-					Expect(crdNames).To(ContainElement(expected.hcoCRD.Name))
-					for _, c := range currentCRDs {
-						Expect(crdNames).To(ContainElement(c.Name))
-					}
-					for _, c := range oldCRDs {
-						Expect(crdNames).To(Not(ContainElement(c.Name)))
-					}
-				})
-
-				It("shouldn't remove v2v CRDs if upgrade isn't in progress", func() {
-					resources := expected.toArray()
-					for _, r := range currentCRDs {
-						resources = append(resources, r)
-					}
-					for _, r := range oldCRDs {
-						resources = append(resources, r)
-					}
-					cl := commontestutils.InitClient(resources)
-					foundResource, _, requeue := doReconcile(cl, expected.hco, nil)
-					Expect(requeue).To(BeFalse())
-					checkAvailability(foundResource, metav1.ConditionTrue)
-
-					foundCrds := apiextensionsv1.CustomResourceDefinitionList{}
-					Expect(cl.List(context.TODO(), &foundCrds)).To(Succeed())
-					crdNames := make([]string, len(foundCrds.Items))
-					for i := range crdNames {
-						crdNames[i] = foundCrds.Items[i].Name
-					}
-					Expect(crdNames).To(ContainElement(expected.hcoCRD.Name))
-					for _, c := range currentCRDs {
-						Expect(crdNames).To(ContainElement(c.Name))
-					}
-					for _, c := range oldCRDs {
-						Expect(crdNames).To(ContainElement(c.Name))
-					}
-				})
-
-				It("should remove v2v related objects if upgrade is in progress", func() {
-					// Simulate ongoing upgrade
-					UpdateVersion(&expected.hco.Status, hcoVersionName, oldVersion)
-
-					// Initialize RelatedObjects with a bunch of objects
-					// including old SSP ones.
-					for _, objRef := range oldCRDRelatedObjects {
-						Expect(v1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
-					}
-					for _, objRef := range otherRelatedObjects {
-						Expect(v1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
-					}
-
-					resources := expected.toArray()
-					for _, r := range currentCRDs {
-						resources = append(resources, r)
-					}
-					for _, r := range oldCRDs {
-						resources = append(resources, r)
-					}
-					cl := commontestutils.InitClient(resources)
-					_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
-					Expect(requeue).To(BeTrue())
-
-					By("Run reconcile again")
-					foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
-					Expect(requeue).To(BeTrue())
-					checkAvailability(foundResource, metav1.ConditionTrue)
-
-					By("Run reconcile again")
-					foundResource, _, requeue = doReconcile(cl, expected.hco, reconciler)
-					Expect(requeue).To(BeFalse())
-					checkAvailability(foundResource, metav1.ConditionTrue)
-
-					for _, objRef := range oldCRDRelatedObjects {
-						Expect(foundResource.Status.RelatedObjects).ToNot(ContainElement(objRef))
-					}
-					for _, objRef := range otherRelatedObjects {
-						Expect(foundResource.Status.RelatedObjects).To(ContainElement(objRef))
-					}
-
-				})
-
-				It("should remove v2v related objects if upgrade isn't in progress", func() {
-					// Initialize RelatedObjects with a bunch of objects
-					// including old SSP ones.
-					for _, objRef := range oldCRDRelatedObjects {
-						Expect(v1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
-					}
-					for _, objRef := range otherRelatedObjects {
-						Expect(v1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
-					}
-
-					resources := expected.toArray()
-					for _, r := range currentCRDs {
-						resources = append(resources, r)
-					}
-					for _, r := range oldCRDs {
-						resources = append(resources, r)
-					}
-					cl := commontestutils.InitClient(resources)
-					foundResource, _, requeue := doReconcile(cl, expected.hco, nil)
-					Expect(requeue).To(BeFalse())
-
-					for _, objRef := range oldCRDRelatedObjects {
-						Expect(foundResource.Status.RelatedObjects).To(ContainElement(objRef))
-					}
-					for _, objRef := range otherRelatedObjects {
-						Expect(foundResource.Status.RelatedObjects).To(ContainElement(objRef))
-					}
-
-				})
-
-			})
 
 			Context("Amend bad defaults", func() {
 				const (

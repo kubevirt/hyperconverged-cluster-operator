@@ -58,6 +58,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/observability"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/metrics"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/upgradepatches"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -173,6 +174,12 @@ func main() {
 	// a channel to trigger a restart of the operator
 	// via a clean cancel of the manager
 	restartCh := make(chan struct{})
+
+	if err = upgradepatches.Init(logger); err != nil {
+		logger.Error(err, "Failed validating upgrade patches file")
+		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "Failed validating upgrade patches file", err.Error())
+		os.Exit(1)
+	}
 
 	// Create a new reconciler
 	if err := hyperconverged.RegisterReconciler(mgr, ci, upgradeableCondition); err != nil {

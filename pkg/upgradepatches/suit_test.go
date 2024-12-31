@@ -1,53 +1,47 @@
-package hyperconverged
+package upgradepatches
 
 import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/upgradepatches"
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-const (
-	pkgDirectory = "controllers/hyperconverged"
-	testFilesLoc = "test-files"
-)
-
-func TestHyperconverged(t *testing.T) {
+func TestUpgradePatches(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	var (
 		testFilesLocation = getTestFilesLocation() + "/upgradePatches"
 		destFile          string
+		origOnce          *sync.Once
 	)
 
-	getClusterInfo := hcoutil.GetClusterInfo
-
 	BeforeSuite(func() {
-		hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-			return &commontestutils.ClusterInfoMock{}
-		}
-
+		origOnce = once
 		wd, _ := os.Getwd()
 		destFile = path.Join(wd, "upgradePatches.json")
 		Expect(commontestutils.CopyFile(destFile, path.Join(testFilesLocation, "upgradePatches.json"))).To(Succeed())
 
-		Expect(upgradepatches.Init(GinkgoLogr)).To(Succeed())
 	})
 
 	AfterSuite(func() {
-		hcoutil.GetClusterInfo = getClusterInfo
+		once = origOnce
 		Expect(os.Remove(destFile)).To(Succeed())
 	})
 
-	RunSpecs(t, "Hyperconverged Suite")
+	RunSpecs(t, "Upgrade Patches Suite")
 }
+
+const (
+	pkgDirectory = "pkg/upgradepatches"
+	testFilesLoc = "test-files"
+)
 
 func getTestFilesLocation() string {
 	wd, err := os.Getwd()
@@ -56,4 +50,13 @@ func getTestFilesLocation() string {
 		return testFilesLoc
 	}
 	return path.Join(pkgDirectory, testFilesLoc)
+}
+
+func copyTestFile(filename string) error {
+	testFilesLocation := getTestFilesLocation() + "/upgradePatches"
+	return commontestutils.CopyFile(origFile, path.Join(testFilesLocation, filename))
+}
+
+func resetOnce() {
+	once = &sync.Once{}
 }
