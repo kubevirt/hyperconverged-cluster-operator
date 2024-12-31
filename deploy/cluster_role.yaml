@@ -1046,6 +1046,7 @@ rules:
   resources:
   - virtualmachinesnapshots
   - virtualmachinerestores
+  - virtualmachinesnapshotcontents
   verbs:
   - get
   - list
@@ -1054,6 +1055,7 @@ rules:
   - cdi.kubevirt.io
   resources:
   - datasources
+  - datavolumes
   verbs:
   - get
   - list
@@ -1216,6 +1218,8 @@ rules:
   resources:
   - virtualmachinepools
   - virtualmachinepools/finalizers
+  - virtualmachinepools/status
+  - virtualmachinepools/scale
   verbs:
   - watch
   - list
@@ -1333,6 +1337,13 @@ rules:
   - namespaces
   verbs:
   - get
+- apiGroups:
+  - ""
+  resources:
+  - resourcequotas
+  verbs:
+  - list
+  - watch
 - apiGroups:
   - route.openshift.io
   resources:

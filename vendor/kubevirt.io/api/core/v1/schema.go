@@ -431,6 +431,9 @@ type Devices struct {
 	// Defaults to false.
 	// +optional
 	AutoattachInputDevice *bool `json:"autoattachInputDevice,omitempty"`
+	// Whether to attach the VSOCK CID to the VM or not.
+	// VSOCK access will be available if set to true. Defaults to false.
+	AutoattachVSOCK *bool `json:"autoattachVSOCK,omitempty"`
 	// Whether to have random number generator from host
 	// +optional
 	Rng *Rng `json:"rng,omitempty"`
@@ -628,7 +631,7 @@ type DiskBus string
 const (
 	DiskBusSCSI   DiskBus = "scsi"
 	DiskBusSATA   DiskBus = "sata"
-	DiskBusVirtio DiskBus = "virtio"
+	DiskBusVirtio DiskBus = VirtIO
 	DiskBusUSB    DiskBus = "usb"
 )
 
@@ -858,7 +861,7 @@ type Clock struct {
 	ClockOffset `json:",inline"`
 	// Timer specifies whih timers are attached to the vmi.
 	// +optional
-	Timer *Timer `json:"timer"`
+	Timer *Timer `json:"timer,omitempty"`
 }
 
 // Represents all available timers in a vmi.
@@ -1173,6 +1176,11 @@ type Interface struct {
 	// If specified, the virtual network interface address and its tag will be provided to the guest via config drive
 	// +optional
 	Tag string `json:"tag,omitempty"`
+	// If specified, the ACPI index is used to provide network interface device naming, that is stable across changes
+	// in PCI addresses assigned to the device.
+	// This value is required to be unique across all devices and be between 1 and (16*1024-1).
+	// +optional
+	ACPIIndex int `json:"acpiIndex,omitempty"`
 }
 
 // Extra DHCP options to use in the interface.

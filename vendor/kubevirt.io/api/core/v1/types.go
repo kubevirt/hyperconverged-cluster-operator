@@ -262,6 +262,10 @@ type VirtualMachineInstanceStatus struct {
 	// +optional
 	RuntimeUser uint64 `json:"runtimeUser"`
 
+	// VSOCKCID is used to track the allocated VSOCK CID in the VM.
+	// +optional
+	VSOCKCID *uint32 `json:"VSOCKCID,omitempty"`
+
 	// SELinuxContext is the actual SELinux context of the virt-launcher pod
 	// +optional
 	SelinuxContext string `json:"selinuxContext,omitempty"`
@@ -479,8 +483,6 @@ const (
 	VirtualMachineInstanceReasonSEVNotMigratable = "SEVNotLiveMigratable"
 	// Reason means that VMI is not live migratable because it uses HyperV Reenlightenment while TSC Frequency is not available
 	VirtualMachineInstanceReasonNoTSCFrequencyMigratable = "NoTSCFrequencyNotLiveMigratable"
-	// Reason means that VMI is not live migratable because it uses dedicated CPU and emulator thread isolation
-	VirtualMachineInstanceReasonDedicatedCPU = "DedicatedCPUNotLiveMigratable"
 )
 
 const (
@@ -502,7 +504,8 @@ type VirtualMachineInstanceMigrationConditionType string
 // These are valid conditions of VMIs.
 const (
 	// VirtualMachineInstanceMigrationAbortRequested indicates that live migration abort has been requested
-	VirtualMachineInstanceMigrationAbortRequested VirtualMachineInstanceMigrationConditionType = "migrationAbortRequested"
+	VirtualMachineInstanceMigrationAbortRequested          VirtualMachineInstanceMigrationConditionType = "migrationAbortRequested"
+	VirtualMachineInstanceMigrationRejectedByResourceQuota VirtualMachineInstanceMigrationConditionType = "migrationRejectedByResourceQuota"
 )
 
 type VirtualMachineInstanceCondition struct {
@@ -829,10 +832,13 @@ const (
 	// This label represents vendor of cpu model on the node
 	CPUModelVendorLabel = "cpu-vendor.node.kubevirt.io/"
 
+	VirtIO = "virtio"
+
 	// This label represents the host model CPU name
 	HostModelCPULabel = "host-model-cpu.node.kubevirt.io/"
 	// This label represents the host model required features
 	HostModelRequiredFeaturesLabel = "host-model-required-features.node.kubevirt.io/"
+	NodeHostModelIsObsoleteLabel   = "node-labeller.kubevirt.io/obsolete-host-model"
 
 	LabellerSkipNodeAnnotation        = "node-labeller.kubevirt.io/skip-node"
 	VirtualMachineLabel               = AppLabel + "/vm"
@@ -1171,6 +1177,8 @@ type VirtualMachineInstanceMigrationStatus struct {
 	// +listType=atomic
 	// +optional
 	PhaseTransitionTimestamps []VirtualMachineInstanceMigrationPhaseTransitionTimestamp `json:"phaseTransitionTimestamps,omitempty"`
+	// Represents the status of a live migration
+	MigrationState *VirtualMachineInstanceMigrationState `json:"migrationState,omitempty"`
 }
 
 // VirtualMachineInstanceMigrationPhase is a label for the condition of a VirtualMachineInstanceMigration at the current time.
@@ -1265,8 +1273,9 @@ type VirtualMachine struct {
 
 // Return the current runStrategy for the VirtualMachine
 // if vm.spec.running is set, that will be mapped to runStrategy:
-//   false: RunStrategyHalted
-//   true: RunStrategyAlways
+//
+//	false: RunStrategyHalted
+//	true: RunStrategyAlways
 func (vm *VirtualMachine) RunStrategy() (VirtualMachineRunStrategy, error) {
 	if vm.Spec.Running != nil && vm.Spec.RunStrategy != nil {
 		return RunStrategyUnknown, fmt.Errorf("running and runstrategy are mutually exclusive")
@@ -1538,9 +1547,6 @@ const (
 	// IONative - Kernel native I/O tasks (AIO) offer a better performance but can block the VM if the file is not fully
 	// allocated so this method recommended only when the backing file/disk/etc is fully preallocated.
 	IONative DriverIO = "native"
-	// IODefault - Fallback to the default value from the kernel. With recent Kernel versions (for example RHEL-7) the
-	// default is AIO.
-	IODefault DriverIO = "default"
 )
 
 // Handler defines a specific action that should be taken
@@ -1662,7 +1668,6 @@ const (
 	WorkloadUpdateMethodEvict WorkloadUpdateMethod = "Evict"
 )
 
-//
 // KubeVirtWorkloadUpdateStrategy defines options related to updating a KubeVirt install
 type KubeVirtWorkloadUpdateStrategy struct {
 	// WorkloadUpdateMethods defines the methods that can be used to disrupt workloads
@@ -1704,6 +1709,11 @@ type KubeVirtSpec struct {
 
 	// The ImagePullPolicy to use.
 	ImagePullPolicy k8sv1.PullPolicy `json:"imagePullPolicy,omitempty" valid:"required"`
+
+	// The imagePullSecrets to pull the container images from
+	// Defaults to none
+	// +listType=atomic
+	ImagePullSecrets []k8sv1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 
 	// The namespace Prometheus is deployed in
 	// Defaults to openshift-monitor
@@ -2131,6 +2141,11 @@ type ScreenshotOptions struct {
 	MoveCursor bool `json:"moveCursor"`
 }
 
+type VSOCKOptions struct {
+	TargetPort uint32 `json:"targetPort"`
+	UseTLS     *bool  `json:"useTLS,omitempty"`
+}
+
 // RemoveVolumeOptions is provided when dynamically hot unplugging volume and disk
 type RemoveVolumeOptions struct {
 	// Name represents the name that maps to both the disk and volume that
@@ -2214,6 +2229,7 @@ type KubeVirtConfiguration struct {
 	ControllerConfiguration        *ReloadableComponentConfiguration `json:"controllerConfiguration,omitempty"`
 	HandlerConfiguration           *ReloadableComponentConfiguration `json:"handlerConfiguration,omitempty"`
 	TLSConfiguration               *TLSConfiguration                 `json:"tlsConfiguration,omitempty"`
+	SeccompConfiguration           *SeccompConfiguration             `json:"seccompConfiguration,omitempty"`
 }
 
 type SMBiosConfiguration struct {
@@ -2236,6 +2252,22 @@ const (
 	// VersionTLS13 is version 1.3 of the TLS security protocol.
 	VersionTLS13 TLSProtocolVersion = "VersionTLS13"
 )
+
+type CustomProfile struct {
+	LocalhostProfile      *string `json:"localhostProfile,omitempty"`
+	RuntimeDefaultProfile bool    `json:"runtimeDefaultProfile,omitempty"`
+}
+
+type VirtualMachineInstanceProfile struct {
+	// CustomProfile allows to request arbitrary profile for virt-launcher
+	CustomProfile *CustomProfile `json:"customProfile,omitempty"`
+}
+
+// SeccompConfiguration holds Seccomp configuration for Kubevirt components
+type SeccompConfiguration struct {
+	// VirtualMachineInstanceProfile defines what profile should be used with virt-launcher. Defaults to none
+	VirtualMachineInstanceProfile *VirtualMachineInstanceProfile `json:"virtualMachineInstanceProfile,omitempty"`
+}
 
 // TLSConfiguration holds TLS options
 type TLSConfiguration struct {
@@ -2440,10 +2472,17 @@ type ClusterProfilerRequest struct {
 	PageSize      int64  `json:"pageSize"`
 }
 
+type Matcher interface {
+	GetName() string
+	GetRevisionName() string
+}
+
 // InstancetypeMatcher references a instancetype that is used to fill fields in the VMI template.
 type InstancetypeMatcher struct {
 	// Name is the name of the VirtualMachineInstancetype or VirtualMachineClusterInstancetype
-	Name string `json:"name"`
+	//
+	// +optional
+	Name string `json:"name,omitempty"`
 
 	// Kind specifies which instancetype resource is referenced.
 	// Allowed values are: "VirtualMachineInstancetype" and "VirtualMachineClusterInstancetype".
@@ -2458,12 +2497,29 @@ type InstancetypeMatcher struct {
 	//
 	// +optional
 	RevisionName string `json:"revisionName,omitempty"`
+
+	// InferFromVolume lists the name of a volume that should be used to infer or discover the instancetype
+	// to be used through known annotations on the underlying resource. Once applied to the InstancetypeMatcher
+	// this field is removed.
+	//
+	// +optional
+	InferFromVolume string `json:"inferFromVolume,omitempty"`
+}
+
+func (i InstancetypeMatcher) GetName() string {
+	return i.Name
+}
+
+func (i InstancetypeMatcher) GetRevisionName() string {
+	return i.RevisionName
 }
 
 // PreferenceMatcher references a set of preference that is used to fill fields in the VMI template.
 type PreferenceMatcher struct {
 	// Name is the name of the VirtualMachinePreference or VirtualMachineClusterPreference
-	Name string `json:"name"`
+	//
+	// +optional
+	Name string `json:"name,omitempty"`
 
 	// Kind specifies which preference resource is referenced.
 	// Allowed values are: "VirtualMachinePreference" and "VirtualMachineClusterPreference".
@@ -2478,4 +2534,19 @@ type PreferenceMatcher struct {
 	//
 	// +optional
 	RevisionName string `json:"revisionName,omitempty"`
+
+	// InferFromVolume lists the name of a volume that should be used to infer or discover the preference
+	// to be used through known annotations on the underlying resource. Once applied to the PreferenceMatcher
+	// this field is removed.
+	//
+	// +optional
+	InferFromVolume string `json:"inferFromVolume,omitempty"`
+}
+
+func (p PreferenceMatcher) GetName() string {
+	return p.Name
+}
+
+func (p PreferenceMatcher) GetRevisionName() string {
+	return p.RevisionName
 }
