@@ -2,6 +2,7 @@ package operands
 
 import (
 	"context"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/stream"
 	"maps"
 	"time"
 
@@ -103,9 +104,11 @@ var _ = Describe("CDI Operand", func() {
 			outdatedResource, err := NewCDI(hco)
 			Expect(err).ToNot(HaveOccurred())
 			expectedLabels := maps.Clone(outdatedResource.Labels)
-			for k, v := range expectedLabels {
-				outdatedResource.Labels[k] = "wrong_" + v
-			}
+
+			outdatedResource.Labels = maps.Collect(stream.Transform22(maps.All(outdatedResource.Labels), func(k, v string) (string, string) {
+				return k, "wrong_" + v
+			}))
+
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})

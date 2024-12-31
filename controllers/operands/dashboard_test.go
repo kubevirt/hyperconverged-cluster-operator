@@ -3,9 +3,11 @@ package operands
 import (
 	"context"
 	"fmt"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/stream"
 	"maps"
 	"os"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
@@ -192,13 +194,11 @@ var _ = Describe("Dashboard tests", func() {
 				Expect(cmList.Items[0].Name).To(Equal("grafana-dashboard-kubevirt-top-consumers"))
 			})
 
-			expectedLabels := make(map[string]map[string]string)
-
-			By("getting opinionated labels", func() {
-				for _, cm := range cmList.Items {
-					expectedLabels[cm.Name] = maps.Clone(cm.Labels)
-				}
-			})
+			By("getting opinionated labels")
+			mapNameLabels := func(cm corev1.ConfigMap) (string, map[string]string) {
+				return cm.Name, maps.Clone(cm.Labels)
+			}
+			expectedLabels := maps.Collect(stream.Transform2(slices.Values(cmList.Items), mapNameLabels))
 
 			By("altering the cm objects", func() {
 				for _, foundResource := range cmList.Items {
