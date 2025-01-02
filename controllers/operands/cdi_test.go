@@ -19,6 +19,7 @@ import (
 	"k8s.io/client-go/tools/reference"
 	"k8s.io/utils/ptr"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/stream"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -103,9 +104,11 @@ var _ = Describe("CDI Operand", func() {
 			outdatedResource, err := NewCDI(hco)
 			Expect(err).ToNot(HaveOccurred())
 			expectedLabels := maps.Clone(outdatedResource.Labels)
-			for k, v := range expectedLabels {
-				outdatedResource.Labels[k] = "wrong_" + v
-			}
+
+			outdatedResource.Labels = maps.Collect(stream.Transform22(maps.All(outdatedResource.Labels), func(k, v string) (string, string) {
+				return k, "wrong_" + v
+			}))
+
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})

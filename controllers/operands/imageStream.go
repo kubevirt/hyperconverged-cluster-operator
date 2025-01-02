@@ -3,9 +3,11 @@ package operands
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 
 	log "github.com/go-logr/logr"
@@ -18,6 +20,7 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/stream"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -138,10 +141,9 @@ type isHooks struct {
 }
 
 func newIsHook(required *imagev1.ImageStream, origNS string) *isHooks {
-	tags := make(map[string]imagev1.TagReference)
-	for _, tag := range required.Spec.Tags {
-		tags[tag.Name] = tag
-	}
+	tags := maps.Collect(stream.Transform22(slices.All(required.Spec.Tags), func(_ int, tag imagev1.TagReference) (string, imagev1.TagReference) {
+		return tag.Name, tag
+	}))
 	return &isHooks{required: required, tags: tags, originalNS: origNS}
 }
 

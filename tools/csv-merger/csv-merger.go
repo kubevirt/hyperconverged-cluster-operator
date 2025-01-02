@@ -42,6 +42,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/stream"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
 )
@@ -65,10 +66,13 @@ var (
 type EnvVarFlags []corev1.EnvVar
 
 func (i *EnvVarFlags) String() string {
-	es := make([]string, 0)
-	for _, ev := range *i {
-		es = append(es, fmt.Sprintf("%s=%s", ev.Name, ev.Value))
-	}
+	es := slices.Collect(stream.Transform(
+		slices.Values(*i),
+		func(ev corev1.EnvVar) string {
+			return fmt.Sprintf("%s=%s", ev.Name, ev.Value)
+		},
+	))
+
 	return strings.Join(es, ",")
 }
 
@@ -136,16 +140,17 @@ var (
 )
 
 func IOReadDir(root string) ([]string, error) {
-	var files []string
 	fileInfo, err := os.ReadDir(root)
 	if err != nil {
-		return files, err
+		return nil, err
 	}
 
-	for _, file := range fileInfo {
-		files = append(files, filepath.Join(root, file.Name()))
-	}
-	return files, nil
+	return slices.Collect(stream.Transform(
+		slices.Values(fileInfo),
+		func(file os.DirEntry) string {
+			return filepath.Join(root, file.Name())
+		},
+	)), nil
 }
 
 func validateNoAPIOverlap(crdDir string) error {
@@ -182,11 +187,6 @@ func detectAPIOverlap(crdMap map[string][]string) map[string]sets.Set[string] {
 	overlapsMap := make(map[string]sets.Set[string])
 	for operator, groups := range crdMap {
 		for _, apiGroup := range groups {
-			// We work on replacement for current v2v. Remove this check when vmware import is removed
-			if apiGroup == "v2v.kubevirt.io" {
-				continue
-			}
-
 			compareMapWithEntry(crdMap, operator, apiGroup, overlapsMap)
 		}
 	}
