@@ -1,11 +1,12 @@
 package stream
 
 import (
-	"github.com/onsi/gomega"
 	"maps"
 	"slices"
 	"strconv"
 	"testing"
+
+	"github.com/onsi/gomega"
 )
 
 func TestTransform(t *testing.T) {

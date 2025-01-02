@@ -540,16 +540,19 @@ func getNetworkBindings(hcoNetworkBindings map[string]kubevirtcorev1.InterfaceBi
 }
 
 func getObsoleteCPUConfig(hcObsoleteCPUConf *hcov1beta1.HyperConvergedObsoleteCPUs) (map[string]bool, string) {
-	obsoleteCPUModels := make(map[string]bool)
-	for _, cpu := range hardcodedObsoleteCPUModels {
-		obsoleteCPUModels[cpu] = true
+	transformFunc := func(cpu string) (string, bool) {
+		return cpu, true
 	}
+
+	obsoleteCPUModels := maps.Collect(stream.Transform2(slices.Values(hardcodedObsoleteCPUModels), transformFunc))
+
 	minCPUModel := ""
 
 	if hcObsoleteCPUConf != nil {
-		for _, cpu := range hcObsoleteCPUConf.CPUModels {
-			obsoleteCPUModels[cpu] = true
-		}
+		maps.Insert(
+			obsoleteCPUModels,
+			stream.Transform2(slices.Values(hcObsoleteCPUConf.CPUModels), transformFunc),
+		)
 
 		minCPUModel = hcObsoleteCPUConf.MinCPUModel
 	}

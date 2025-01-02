@@ -2,7 +2,6 @@ package operands
 
 import (
 	"context"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/stream"
 	"maps"
 	"time"
 
@@ -20,6 +19,7 @@ import (
 	"k8s.io/client-go/tools/reference"
 	"k8s.io/utils/ptr"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/stream"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"

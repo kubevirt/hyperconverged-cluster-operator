@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	jsonpatch "github.com/evanphx/json-patch/v5"
@@ -18,6 +19,7 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/stream"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -443,14 +445,5 @@ func osConditionToK8s(condition conditionsv1.Condition) metav1.Condition {
 }
 
 func osConditionsToK8s(conditions []conditionsv1.Condition) []metav1.Condition {
-	if len(conditions) == 0 {
-		return nil
-	}
-
-	newCond := make([]metav1.Condition, len(conditions))
-	for i, c := range conditions {
-		newCond[i] = osConditionToK8s(c)
-	}
-
-	return newCond
+	return slices.Collect(stream.Transform(slices.Values(conditions), osConditionToK8s))
 }

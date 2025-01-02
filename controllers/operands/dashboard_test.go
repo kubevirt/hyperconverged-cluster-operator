@@ -3,7 +3,6 @@ package operands
 import (
 	"context"
 	"fmt"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/stream"
 	"maps"
 	"os"
 	"path"
@@ -19,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/stream"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
