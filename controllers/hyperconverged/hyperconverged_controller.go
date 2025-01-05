@@ -52,6 +52,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/metrics"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/upgradepatch"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/version"
 )
@@ -294,7 +295,7 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 
 	if r.firstLoop {
 		r.firstLoopInitialization(hcoRequest)
-		if err := validateUpgradePatches(hcoRequest); err != nil {
+		if err := upgradepatch.ValidateUpgradePatches(hcoRequest); err != nil {
 			logger.Error(err, "Failed validating upgrade patches file")
 			r.eventEmitter.EmitEvent(hcoRequest.Instance, corev1.EventTypeWarning, "Failed validating upgrade patches file", err.Error())
 			os.Exit(1)
@@ -1118,14 +1119,14 @@ func (r *ReconcileHyperConverged) applyUpgradePatches(req *common.HcoRequest) (b
 		return false, err
 	}
 
-	for _, p := range hcoUpgradeChanges.HCOCRPatchList {
+	for _, p := range upgradepatch.GetHCOCRPatchList() {
 		hcoJSON, err = r.applyUpgradePatch(req, hcoJSON, knownHcoSV, p)
 		if err != nil {
 			return false, err
 		}
 	}
 
-	for _, p := range hcoUpgradeChanges.ObjectsToBeRemoved {
+	for _, p := range upgradepatch.GetObjectsToBeRemoved() {
 		removed, err := r.removeLeftover(req, knownHcoSV, p)
 		if err != nil {
 			return removed, err
@@ -1147,7 +1148,7 @@ func (r *ReconcileHyperConverged) applyUpgradePatches(req *common.HcoRequest) (b
 	return modified, nil
 }
 
-func (r *ReconcileHyperConverged) applyUpgradePatch(req *common.HcoRequest, hcoJSON []byte, knownHcoSV semver.Version, p hcoCRPatch) ([]byte, error) {
+func (r *ReconcileHyperConverged) applyUpgradePatch(req *common.HcoRequest, hcoJSON []byte, knownHcoSV semver.Version, p upgradepatch.HcoCRPatch) ([]byte, error) {
 	affectedRange, err := semver.ParseRange(p.SemverRange)
 	if err != nil {
 		return hcoJSON, err
@@ -1173,7 +1174,7 @@ func (r *ReconcileHyperConverged) applyUpgradePatch(req *common.HcoRequest, hcoJ
 	return hcoJSON, nil
 }
 
-func (r *ReconcileHyperConverged) removeLeftover(req *common.HcoRequest, knownHcoSV semver.Version, p objectToBeRemoved) (bool, error) {
+func (r *ReconcileHyperConverged) removeLeftover(req *common.HcoRequest, knownHcoSV semver.Version, p upgradepatch.ObjectToBeRemoved) (bool, error) {
 
 	affectedRange, err := semver.ParseRange(p.SemverRange)
 	if err != nil {

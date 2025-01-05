@@ -1,4 +1,4 @@
-package hyperconverged
+package upgradepatch
 
 import (
 	"encoding/json"
@@ -6,11 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
-
 	"github.com/blang/semver/v4"
 	jsonpatch "github.com/evanphx/json-patch/v5"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 )
@@ -19,7 +18,7 @@ const (
 	upgradeChangesFileLocation = "./upgradePatches.json"
 )
 
-type hcoCRPatch struct {
+type HcoCRPatch struct {
 	// SemverRange is a set of conditions which specify which versions satisfy the range
 	// (see https://github.com/blang/semver#ranges as a reference).
 	SemverRange string `json:"semverRange"`
@@ -32,7 +31,7 @@ type hcoCRPatch struct {
 	JSONPatchApplyOptions *jsonpatch.ApplyOptions `json:"jsonPatchApplyOptions,omitempty"`
 }
 
-type objectToBeRemoved struct {
+type ObjectToBeRemoved struct {
 	// SemverRange is a set of conditions which specify which versions satisfy the range
 	// (see https://github.com/blang/semver#ranges as a reference).
 	SemverRange string `json:"semverRange"`
@@ -45,16 +44,24 @@ type objectToBeRemoved struct {
 type UpgradePatches struct {
 	// hcoCRPatchList is a list of upgrade patches.
 	// Each hcoCRPatch consists in a semver range of affected source versions and a json patch to be applied during the upgrade if relevant.
-	HCOCRPatchList []hcoCRPatch `json:"hcoCRPatchList"`
+	HCOCRPatchList []HcoCRPatch `json:"hcoCRPatchList"`
 	// ObjectsToBeRemoved is a list of objects to be removed on upgrades.
 	// Each objectToBeRemoved consists in a semver range of affected source versions and schema.GroupVersionKind and types.NamespacedName of the object to be eventually removed during the upgrade.
-	ObjectsToBeRemoved []objectToBeRemoved `json:"objectsToBeRemoved"`
+	ObjectsToBeRemoved []ObjectToBeRemoved `json:"objectsToBeRemoved"`
 }
 
 var (
 	hcoUpgradeChanges     UpgradePatches
 	hcoUpgradeChangesRead = false
 )
+
+func GetHCOCRPatchList() []HcoCRPatch {
+	return hcoUpgradeChanges.HCOCRPatchList
+}
+
+func GetObjectsToBeRemoved() []ObjectToBeRemoved {
+	return hcoUpgradeChanges.ObjectsToBeRemoved
+}
 
 var getUpgradeChangesFileLocation = func() string {
 	return upgradeChangesFileLocation
@@ -83,7 +90,7 @@ func readUpgradePatchesFromFile(req *common.HcoRequest) error {
 	return nil
 }
 
-func validateUpgradePatches(req *common.HcoRequest) error {
+func ValidateUpgradePatches(req *common.HcoRequest) error {
 	err := readUpgradePatchesFromFile(req)
 	if err != nil {
 		return err
@@ -101,7 +108,7 @@ func validateUpgradePatches(req *common.HcoRequest) error {
 	return nil
 }
 
-func validateUpgradePatch(req *common.HcoRequest, p hcoCRPatch) error {
+func validateUpgradePatch(req *common.HcoRequest, p HcoCRPatch) error {
 	_, err := semver.ParseRange(p.SemverRange)
 	if err != nil {
 		return err
@@ -132,7 +139,7 @@ func validateUpgradePatch(req *common.HcoRequest, p hcoCRPatch) error {
 	return nil
 }
 
-func validateUpgradeLeftover(_ *common.HcoRequest, r objectToBeRemoved) error {
+func validateUpgradeLeftover(_ *common.HcoRequest, r ObjectToBeRemoved) error {
 	_, err := semver.ParseRange(r.SemverRange)
 	if err != nil {
 		return err
