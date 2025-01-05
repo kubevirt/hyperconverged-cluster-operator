@@ -295,11 +295,6 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 
 	if r.firstLoop {
 		r.firstLoopInitialization(hcoRequest)
-		if err := upgradepatch.ValidateUpgradePatches(hcoRequest); err != nil {
-			logger.Error(err, "Failed validating upgrade patches file")
-			r.eventEmitter.EmitEvent(hcoRequest.Instance, corev1.EventTypeWarning, "Failed validating upgrade patches file", err.Error())
-			os.Exit(1)
-		}
 	}
 
 	if err = r.monitoringReconciler.UpdateRelatedObjects(hcoRequest); err != nil {

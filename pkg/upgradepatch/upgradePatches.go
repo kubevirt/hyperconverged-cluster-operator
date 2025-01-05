@@ -1,8 +1,10 @@
 package upgradepatch
 
 import (
+	_ "embed"
 	"encoding/json"
 	"errors"
+	"github.com/go-logr/logr"
 	"os"
 	"strings"
 
@@ -10,9 +12,11 @@ import (
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 )
+
+//go:generate go run ../../tools/crwriter/ --format=json --out=./hc.cr.json
+//go:embed hc.cr.json
+var hcCRBytes []byte
 
 const (
 	upgradeChangesFileLocation = "./upgradePatches.json"
@@ -67,7 +71,7 @@ var getUpgradeChangesFileLocation = func() string {
 	return upgradeChangesFileLocation
 }
 
-func readUpgradePatchesFromFile(req *common.HcoRequest) error {
+func readUpgradePatchesFromFile(logger logr.Logger) error {
 	if hcoUpgradeChangesRead {
 		return nil
 	}
@@ -76,7 +80,7 @@ func readUpgradePatchesFromFile(req *common.HcoRequest) error {
 
 	file, err := os.Open(fileLocation)
 	if err != nil {
-		req.Logger.Error(err, "Can't open the upgradeChanges yaml file", "file name", fileLocation)
+		logger.Error(err, "Can't open the upgradeChanges yaml file", "file name", fileLocation)
 		return err
 	}
 
@@ -90,25 +94,25 @@ func readUpgradePatchesFromFile(req *common.HcoRequest) error {
 	return nil
 }
 
-func ValidateUpgradePatches(req *common.HcoRequest) error {
-	err := readUpgradePatchesFromFile(req)
+func ValidateUpgradePatches(logger logr.Logger) error {
+	err := readUpgradePatchesFromFile(logger)
 	if err != nil {
 		return err
 	}
 	for _, p := range hcoUpgradeChanges.HCOCRPatchList {
-		if verr := validateUpgradePatch(req, p); verr != nil {
+		if verr := validateUpgradePatch(p); verr != nil {
 			return verr
 		}
 	}
 	for _, r := range hcoUpgradeChanges.ObjectsToBeRemoved {
-		if verr := validateUpgradeLeftover(req, r); verr != nil {
+		if verr := validateUpgradeLeftover(r); verr != nil {
 			return verr
 		}
 	}
 	return nil
 }
 
-func validateUpgradePatch(req *common.HcoRequest, p HcoCRPatch) error {
+func validateUpgradePatch(p HcoCRPatch) error {
 	_, err := semver.ParseRange(p.SemverRange)
 	if err != nil {
 		return err
@@ -123,14 +127,11 @@ func validateUpgradePatch(req *common.HcoRequest, p HcoCRPatch) error {
 			return errors.New("can only modify spec fields")
 		}
 	}
-	specBytes, err := json.Marshal(req.Instance)
-	if err != nil {
-		return err
-	}
+
 	if p.JSONPatchApplyOptions != nil {
-		_, err = p.JSONPatch.ApplyWithOptions(specBytes, p.JSONPatchApplyOptions)
+		_, err = p.JSONPatch.ApplyWithOptions(hcCRBytes, p.JSONPatchApplyOptions)
 	} else {
-		_, err = p.JSONPatch.Apply(specBytes)
+		_, err = p.JSONPatch.Apply(hcCRBytes)
 	}
 	// tolerate jsonpatch test failures
 	if err != nil && !errors.Is(errors.Unwrap(err), jsonpatch.ErrTestFailed) {
@@ -139,7 +140,7 @@ func validateUpgradePatch(req *common.HcoRequest, p HcoCRPatch) error {
 	return nil
 }
 
-func validateUpgradeLeftover(_ *common.HcoRequest, r ObjectToBeRemoved) error {
+func validateUpgradeLeftover(r ObjectToBeRemoved) error {
 	_, err := semver.ParseRange(r.SemverRange)
 	if err != nil {
 		return err

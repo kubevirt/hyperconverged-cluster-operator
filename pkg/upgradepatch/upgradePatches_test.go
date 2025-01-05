@@ -3,14 +3,13 @@ package upgradepatch
 import (
 	"os"
 	"path"
+	"slices"
 	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 )
 
@@ -19,7 +18,10 @@ const (
 	testFilesLoc = "test-files"
 )
 
-var origFile string
+var (
+	origFile      string
+	hcCRBytesOrig []byte
+)
 
 var _ = Describe("upgradePatches", func() {
 
@@ -28,6 +30,7 @@ var _ = Describe("upgradePatches", func() {
 		origFile = path.Join(wd, "upgradePatches.json")
 		Expect(commontestutils.CopyFile(origFile+".orig", origFile)).To(Succeed())
 		hcoUpgradeChangesRead = false
+		hcCRBytes = slices.Clone(hcCRBytesOrig)
 	})
 
 	AfterEach(func() {
@@ -36,32 +39,23 @@ var _ = Describe("upgradePatches", func() {
 	})
 
 	Context("readUpgradeChangesFromFile", func() {
-
-		var hco *hcov1beta1.HyperConverged
-		var req *common.HcoRequest
-
-		BeforeEach(func() {
-			hco = commontestutils.NewHco()
-			req = commontestutils.NewReq(hco)
-		})
-
 		AfterEach(func() {
 			Expect(commontestutils.CopyFile(origFile, origFile+".orig")).To(Succeed())
 		})
 
 		It("should correctly parse and validate actual upgradePatches.json", func() {
-			Expect(ValidateUpgradePatches(req)).To(Succeed())
+			Expect(ValidateUpgradePatches(GinkgoLogr)).To(Succeed())
 		})
 
 		It("should correctly parse and validate empty upgradePatches", func() {
 			Expect(copyTestFile("empty.json")).To(Succeed())
-			Expect(ValidateUpgradePatches(req)).To(Succeed())
+			Expect(ValidateUpgradePatches(GinkgoLogr)).To(Succeed())
 		})
 
 		It("should fail parsing upgradePatches with bad json", func() {
 			Expect(copyTestFile("badJson.json")).To(Succeed())
 
-			err := ValidateUpgradePatches(req)
+			err := ValidateUpgradePatches(GinkgoLogr)
 			Expect(err).To(MatchError(HavePrefix("invalid character")))
 		})
 
@@ -70,7 +64,7 @@ var _ = Describe("upgradePatches", func() {
 			It("should fail validating upgradePatches with bad semver ranges", func() {
 				Expect(copyTestFile("badSemverRange.json")).To(Succeed())
 
-				err := ValidateUpgradePatches(req)
+				err := ValidateUpgradePatches(GinkgoLogr)
 				Expect(err).To(MatchError(HavePrefix("Could not get version from string:")))
 			})
 
@@ -78,7 +72,7 @@ var _ = Describe("upgradePatches", func() {
 				"should fail validating upgradePatches with bad patches",
 				func(filename, message string) {
 					Expect(copyTestFile(filename)).To(Succeed())
-					Expect(ValidateUpgradePatches(req)).To(MatchError(HavePrefix(message)))
+					Expect(ValidateUpgradePatches(GinkgoLogr)).To(MatchError(HavePrefix(message)))
 				},
 				Entry(
 					"bad operation kind",
@@ -102,7 +96,7 @@ var _ = Describe("upgradePatches", func() {
 				func(filename string, expectedErr bool, message string) {
 					Expect(copyTestFile(filename)).To(Succeed())
 
-					err := ValidateUpgradePatches(req)
+					err := ValidateUpgradePatches(GinkgoLogr)
 					if expectedErr {
 						Expect(err).To(MatchError(HavePrefix(message)))
 					} else {
@@ -141,14 +135,14 @@ var _ = Describe("upgradePatches", func() {
 
 			It("should fail validating upgradePatches with bad semver ranges", func() {
 				Expect(copyTestFile("badSemverRangeOR.json")).To(Succeed())
-				Expect(ValidateUpgradePatches(req)).To(MatchError(HavePrefix("Could not get version from string:")))
+				Expect(ValidateUpgradePatches(GinkgoLogr)).To(MatchError(HavePrefix("Could not get version from string:")))
 			})
 
 			DescribeTable(
 				"should fail validating upgradePatches with bad patches",
 				func(filename, message string) {
 					Expect(copyTestFile(filename)).To(Succeed())
-					Expect(ValidateUpgradePatches(req)).To(MatchError(HavePrefix(message)))
+					Expect(ValidateUpgradePatches(GinkgoLogr)).To(MatchError(HavePrefix(message)))
 				},
 				Entry(
 					"empty object kind",
@@ -212,10 +206,12 @@ func TestUpgradePatch(t *testing.T) {
 		wd, _ := os.Getwd()
 		destFile = path.Join(wd, "upgradePatches.json")
 		Expect(commontestutils.CopyFile(destFile, path.Join(getTestFilesLocation(), "upgradePatches.json"))).To(Succeed())
+		hcCRBytesOrig = slices.Clone(hcCRBytes)
 	})
 
 	AfterSuite(func() {
 		Expect(os.Remove(destFile)).To(Succeed())
+		hcCRBytes = hcCRBytesOrig
 	})
 
 	RunSpecs(t, "Upgrade Patches Suite")
