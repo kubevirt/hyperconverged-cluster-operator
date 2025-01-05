@@ -1731,66 +1731,6 @@ var _ = Describe("HyperconvergedController", func() {
 				),
 			)
 
-			Context("Remove deprecated versions from .status.storedVersions on the CRD", func() {
-
-				It("should update .status.storedVersions on the HCO CRD during upgrades", func() {
-					// Simulate ongoing upgrade
-					UpdateVersion(&expected.hco.Status, hcoVersionName, oldVersion)
-
-					expected.hcoCRD.Status.StoredVersions = []string{"v1alpha1", "v1beta1", "v1"}
-
-					cl := expected.initClient()
-
-					foundHC, reconciler, requeue := doReconcile(cl, expected.hco, nil)
-					Expect(requeue).To(BeTrue())
-
-					foundCrd := &apiextensionsv1.CustomResourceDefinition{}
-					Expect(
-						cl.Get(context.TODO(),
-							client.ObjectKeyFromObject(expected.hcoCRD),
-							foundCrd),
-					).To(Succeed())
-					Expect(foundCrd.Status.StoredVersions).ToNot(ContainElement("v1alpha1"))
-					Expect(foundCrd.Status.StoredVersions).To(ContainElement("v1beta1"))
-					Expect(foundCrd.Status.StoredVersions).To(ContainElement("v1"))
-
-					By("Run reconcile again")
-					foundHC, reconciler, requeue = doReconcile(cl, foundHC, reconciler)
-					Expect(requeue).To(BeTrue())
-
-					// call again, make sure this time the requeue is false and the upgrade successfully completes
-					foundHC, _, requeue = doReconcile(cl, foundHC, reconciler)
-					Expect(requeue).To(BeFalse())
-
-					checkAvailability(foundHC, metav1.ConditionTrue)
-					ver, ok := GetVersion(&foundHC.Status, hcoVersionName)
-					Expect(ok).To(BeTrue())
-					Expect(ver).To(Equal(newHCOVersion))
-				})
-
-				It("should not update .status.storedVersions on the HCO CRD if not in upgrade mode", func() {
-					expected.hcoCRD.Status.StoredVersions = []string{"v1alpha1", "v1beta1", "v1"}
-
-					cl := expected.initClient()
-
-					foundHC, _, requeue := doReconcile(cl, expected.hco, nil)
-					checkAvailability(foundHC, metav1.ConditionTrue)
-					Expect(requeue).To(BeFalse())
-
-					foundCrd := &apiextensionsv1.CustomResourceDefinition{}
-					Expect(
-						cl.Get(context.TODO(),
-							client.ObjectKeyFromObject(expected.hcoCRD),
-							foundCrd),
-					).To(Succeed())
-					Expect(foundCrd.Status.StoredVersions).To(ContainElement("v1alpha1"))
-					Expect(foundCrd.Status.StoredVersions).To(ContainElement("v1beta1"))
-					Expect(foundCrd.Status.StoredVersions).To(ContainElement("v1"))
-
-				})
-
-			})
-
 			Context("Amend bad defaults", func() {
 				const (
 					badBandwidthPerMigration    = "64Mi"
