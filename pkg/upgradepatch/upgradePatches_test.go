@@ -7,10 +7,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/blang/semver/v4"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
+	"k8s.io/utils/ptr"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 )
 
 const (
@@ -41,6 +45,8 @@ var _ = Describe("upgradePatches", func() {
 	Context("readUpgradeChangesFromFile", func() {
 		AfterEach(func() {
 			Expect(commontestutils.CopyFile(origFile, origFile+".orig")).To(Succeed())
+			hcoUpgradeChangesRead = false
+			Expect(ValidateUpgradePatches(GinkgoLogr)).To(Succeed())
 		})
 
 		It("should correctly parse and validate actual upgradePatches.json", func() {
@@ -180,6 +186,54 @@ var _ = Describe("upgradePatches", func() {
 
 	})
 
+	Context("check semverRange type", func() {
+		DescribeTable("check isAffectedRange", func(verRange, ver string, m types.GomegaMatcher) {
+			vr, err := newSemverRange(verRange)
+			Expect(err).NotTo(HaveOccurred())
+
+			v, err := semver.Parse(ver)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(vr.isAffectedRange(v)).To(m)
+		},
+			Entry("", ">4.16.0", "4.16.9", BeTrue()),
+			Entry("", ">4.16.0", "4.17.2", BeTrue()),
+			Entry("", ">4.16.0", "4.16.0", BeFalse()),
+			Entry("", ">4.16.0", "4.15.2", BeFalse()),
+
+			Entry("", "<=4.17.0", "4.16.4", BeTrue()),
+			Entry("", "<=4.17.0", "4.17.2", BeFalse()),
+			Entry("", "<4.17.3", "4.17.2", BeTrue()),
+			Entry("", "<4.17.3", "4.17.3", BeFalse()),
+			Entry("", "<4.17.3", "4.17.4", BeFalse()),
+			Entry("", "<4.17.3", "4.16.9", BeTrue()),
+		)
+	})
+
+	//nolint:staticcheck // ignore SA1019 for old code
+	Context("check patches", func() {
+		It("should apply changes as defined in the upgradePatches.json file", func() {
+			hc := components.GetOperatorCR()
+			hc.Spec.FeatureGates.DeployKubevirtIpamController = ptr.To(false)
+			hc.Spec.FeatureGates.EnableManagedTenantQuota = ptr.To(false)
+			hc.Spec.FeatureGates.EnableManagedTenantQuota = ptr.To(false)
+			hc.Spec.FeatureGates.NonRoot = ptr.To(false)
+			hc.Spec.FeatureGates.WithHostPassthroughCPU = ptr.To(false)
+			hc.Spec.FeatureGates.PrimaryUserDefinedNetworkBinding = ptr.To(false)
+
+			ver, err := semver.Parse("1.13.9")
+			Expect(err).NotTo(HaveOccurred())
+
+			newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(newHc.Spec.FeatureGates.DeployKubevirtIpamController).To(BeNil())
+			Expect(newHc.Spec.FeatureGates.EnableManagedTenantQuota).To(BeNil())
+			Expect(newHc.Spec.FeatureGates.EnableManagedTenantQuota).To(BeNil())
+			Expect(newHc.Spec.FeatureGates.NonRoot).To(BeNil())
+			Expect(newHc.Spec.FeatureGates.WithHostPassthroughCPU).To(BeNil())
+			Expect(newHc.Spec.FeatureGates.PrimaryUserDefinedNetworkBinding).To(BeNil())
+		})
+	})
 })
 
 func copyTestFile(filename string) error {

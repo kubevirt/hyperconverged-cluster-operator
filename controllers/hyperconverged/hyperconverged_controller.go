@@ -3,7 +3,6 @@ package hyperconverged
 import (
 	"cmp"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"reflect"
@@ -18,7 +17,6 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	routev1 "github.com/openshift/api/route/v1"
 	operatorhandler "github.com/operator-framework/operator-lib/handler"
-	"github.com/pkg/errors"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -1109,16 +1107,9 @@ func (r *ReconcileHyperConverged) applyUpgradePatches(req *common.HcoRequest) (b
 		return false, err
 	}
 
-	hcoJSON, err := json.Marshal(req.Instance)
+	tmpInstance, err := upgradepatch.ApplyUpgradePatch(req.Logger, req.Instance, knownHcoSV)
 	if err != nil {
 		return false, err
-	}
-
-	for _, p := range upgradepatch.GetHCOCRPatchList() {
-		hcoJSON, err = r.applyUpgradePatch(req, hcoJSON, knownHcoSV, p)
-		if err != nil {
-			return false, err
-		}
 	}
 
 	for _, p := range upgradepatch.GetObjectsToBeRemoved() {
@@ -1128,11 +1119,6 @@ func (r *ReconcileHyperConverged) applyUpgradePatches(req *common.HcoRequest) (b
 		}
 	}
 
-	tmpInstance := &hcov1beta1.HyperConverged{}
-	err = json.Unmarshal(hcoJSON, tmpInstance)
-	if err != nil {
-		return false, err
-	}
 	if !reflect.DeepEqual(tmpInstance.Spec, req.Instance.Spec) {
 		req.Logger.Info("updating HCO spec as a result of upgrade patches")
 		tmpInstance.Spec.DeepCopyInto(&req.Instance.Spec)
@@ -1143,39 +1129,8 @@ func (r *ReconcileHyperConverged) applyUpgradePatches(req *common.HcoRequest) (b
 	return modified, nil
 }
 
-func (r *ReconcileHyperConverged) applyUpgradePatch(req *common.HcoRequest, hcoJSON []byte, knownHcoSV semver.Version, p upgradepatch.HcoCRPatch) ([]byte, error) {
-	affectedRange, err := semver.ParseRange(p.SemverRange)
-	if err != nil {
-		return hcoJSON, err
-	}
-	if affectedRange(knownHcoSV) {
-		req.Logger.Info("applying upgrade patch", "knownHcoSV", knownHcoSV, "affectedRange", p.SemverRange, "patches", p.JSONPatch, "applyOptions", p.JSONPatchApplyOptions)
-		var patchedBytes []byte
-		if p.JSONPatchApplyOptions != nil {
-			patchedBytes, err = p.JSONPatch.ApplyWithOptions(hcoJSON, p.JSONPatchApplyOptions)
-		} else {
-			patchedBytes, err = p.JSONPatch.Apply(hcoJSON)
-		}
-		if err != nil {
-			// tolerate jsonpatch test failures
-			if errors.Is(err, jsonpatch.ErrTestFailed) {
-				return hcoJSON, nil
-			}
-
-			return hcoJSON, err
-		}
-		return patchedBytes, nil
-	}
-	return hcoJSON, nil
-}
-
 func (r *ReconcileHyperConverged) removeLeftover(req *common.HcoRequest, knownHcoSV semver.Version, p upgradepatch.ObjectToBeRemoved) (bool, error) {
-
-	affectedRange, err := semver.ParseRange(p.SemverRange)
-	if err != nil {
-		return false, err
-	}
-	if affectedRange(knownHcoSV) {
+	if p.IsAffectedRange(knownHcoSV) {
 		removeRelatedObject(req, r.client, p.GroupVersionKind, p.ObjectKey)
 		u := &unstructured.Unstructured{}
 		u.SetGroupVersionKind(p.GroupVersionKind)
