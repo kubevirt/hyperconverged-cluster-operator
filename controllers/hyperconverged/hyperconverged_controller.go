@@ -287,9 +287,7 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 	if instance == nil {
 		// if the HyperConverged CR was deleted during an upgrade process, then this is not an upgrade anymore
 		r.upgradeMode = false
-		if err == nil {
-			err = r.setOperatorUpgradeableStatus(hcoRequest)
-		}
+		err = r.setOperatorUpgradeableStatus(hcoRequest)
 
 		return reconcile.Result{}, err
 	}
@@ -653,7 +651,7 @@ func (r *ReconcileHyperConverged) ensureHcoDeleted(req *common.HcoRequest) (reco
 	if slices.Contains(req.Instance.ObjectMeta.Finalizers, FinalizerName) {
 		req.Instance.ObjectMeta.Finalizers, finDropped = drop(req.Instance.ObjectMeta.Finalizers, FinalizerName)
 		req.Dirty = true
-		requeue = requeue || finDropped
+		requeue = finDropped
 	}
 
 	// Need to requeue because finalizer update does not change metadata.generation
