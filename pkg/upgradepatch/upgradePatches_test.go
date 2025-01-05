@@ -5,6 +5,7 @@ import (
 	"path"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/blang/semver/v4"
@@ -27,41 +28,45 @@ var (
 	hcCRBytesOrig []byte
 )
 
+func resetOnce() {
+	once = &sync.Once{}
+}
+
 var _ = Describe("upgradePatches", func() {
 
 	BeforeEach(func() {
 		wd, _ := os.Getwd()
 		origFile = path.Join(wd, "upgradePatches.json")
 		Expect(commontestutils.CopyFile(origFile+".orig", origFile)).To(Succeed())
-		hcoUpgradeChangesRead = false
+		resetOnce()
 		hcCRBytes = slices.Clone(hcCRBytesOrig)
 	})
 
 	AfterEach(func() {
 		Expect(os.Remove(origFile + ".orig")).To(Succeed())
-		hcoUpgradeChangesRead = false
+		resetOnce()
 	})
 
 	Context("readUpgradeChangesFromFile", func() {
 		AfterEach(func() {
 			Expect(commontestutils.CopyFile(origFile, origFile+".orig")).To(Succeed())
-			hcoUpgradeChangesRead = false
-			Expect(ValidateUpgradePatches(GinkgoLogr)).To(Succeed())
+			resetOnce()
+			Expect(Init(GinkgoLogr)).To(Succeed())
 		})
 
 		It("should correctly parse and validate actual upgradePatches.json", func() {
-			Expect(ValidateUpgradePatches(GinkgoLogr)).To(Succeed())
+			Expect(Init(GinkgoLogr)).To(Succeed())
 		})
 
 		It("should correctly parse and validate empty upgradePatches", func() {
 			Expect(copyTestFile("empty.json")).To(Succeed())
-			Expect(ValidateUpgradePatches(GinkgoLogr)).To(Succeed())
+			Expect(Init(GinkgoLogr)).To(Succeed())
 		})
 
 		It("should fail parsing upgradePatches with bad json", func() {
 			Expect(copyTestFile("badJson.json")).To(Succeed())
 
-			err := ValidateUpgradePatches(GinkgoLogr)
+			err := Init(GinkgoLogr)
 			Expect(err).To(MatchError(HavePrefix("invalid character")))
 		})
 
@@ -70,7 +75,7 @@ var _ = Describe("upgradePatches", func() {
 			It("should fail validating upgradePatches with bad semver ranges", func() {
 				Expect(copyTestFile("badSemverRange.json")).To(Succeed())
 
-				err := ValidateUpgradePatches(GinkgoLogr)
+				err := Init(GinkgoLogr)
 				Expect(err).To(MatchError(HavePrefix("Could not get version from string:")))
 			})
 
@@ -78,7 +83,7 @@ var _ = Describe("upgradePatches", func() {
 				"should fail validating upgradePatches with bad patches",
 				func(filename, message string) {
 					Expect(copyTestFile(filename)).To(Succeed())
-					Expect(ValidateUpgradePatches(GinkgoLogr)).To(MatchError(HavePrefix(message)))
+					Expect(Init(GinkgoLogr)).To(MatchError(HavePrefix(message)))
 				},
 				Entry(
 					"bad operation kind",
@@ -102,7 +107,7 @@ var _ = Describe("upgradePatches", func() {
 				func(filename string, expectedErr bool, message string) {
 					Expect(copyTestFile(filename)).To(Succeed())
 
-					err := ValidateUpgradePatches(GinkgoLogr)
+					err := Init(GinkgoLogr)
 					if expectedErr {
 						Expect(err).To(MatchError(HavePrefix(message)))
 					} else {
@@ -141,14 +146,14 @@ var _ = Describe("upgradePatches", func() {
 
 			It("should fail validating upgradePatches with bad semver ranges", func() {
 				Expect(copyTestFile("badSemverRangeOR.json")).To(Succeed())
-				Expect(ValidateUpgradePatches(GinkgoLogr)).To(MatchError(HavePrefix("Could not get version from string:")))
+				Expect(Init(GinkgoLogr)).To(MatchError(HavePrefix("Could not get version from string:")))
 			})
 
 			DescribeTable(
 				"should fail validating upgradePatches with bad patches",
 				func(filename, message string) {
 					Expect(copyTestFile(filename)).To(Succeed())
-					Expect(ValidateUpgradePatches(GinkgoLogr)).To(MatchError(HavePrefix(message)))
+					Expect(Init(GinkgoLogr)).To(MatchError(HavePrefix(message)))
 				},
 				Entry(
 					"empty object kind",

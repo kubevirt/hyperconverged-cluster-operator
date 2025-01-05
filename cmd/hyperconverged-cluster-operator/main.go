@@ -167,7 +167,7 @@ func main() {
 	})
 	cmdHelper.ExitOnError(err, "Failed to set the status of the Upgradeable Operator Condition")
 
-	if err = upgradepatch.ValidateUpgradePatches(logger); err != nil {
+	if err = upgradepatch.Init(logger); err != nil {
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Failed validating upgrade patches file")
 		cmdHelper.ExitOnError(err, "Failed validating upgrade patches file")
 	}

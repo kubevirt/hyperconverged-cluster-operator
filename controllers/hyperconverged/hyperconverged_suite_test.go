@@ -37,7 +37,7 @@ func TestHyperconverged(t *testing.T) {
 		wd, _ := os.Getwd()
 		destFile = path.Join(wd, "upgradePatches.json")
 		Expect(commontestutils.CopyFile(destFile, path.Join(testFilesLocation, "upgradePatches.json"))).To(Succeed())
-		Expect(upgradepatch.ValidateUpgradePatches(GinkgoLogr)).To(Succeed())
+		Expect(upgradepatch.Init(GinkgoLogr)).To(Succeed())
 	})
 
 	AfterSuite(func() {

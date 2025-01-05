@@ -4,15 +4,17 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/blang/semver/v4"
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 )
 
 //go:generate go run ../../tools/crwriter/ --format=json --out=./hc.cr.json
@@ -159,8 +161,9 @@ func (up UpgradePatches) applyUpgradePatch(logger logr.Logger, hc *v1beta1.Hyper
 }
 
 var (
-	hcoUpgradeChanges     UpgradePatches
-	hcoUpgradeChangesRead = false
+	hcoUpgradeChanges UpgradePatches
+	once              = &sync.Once{}
+	onceErr           error
 )
 
 func ApplyUpgradePatch(logger logr.Logger, hc *v1beta1.HyperConverged, knownHcoSV semver.Version) (*v1beta1.HyperConverged, error) {
@@ -176,9 +179,6 @@ var getUpgradeChangesFileLocation = func() string {
 }
 
 func readUpgradePatchesFromFile(logger logr.Logger) error {
-	if hcoUpgradeChangesRead {
-		return nil
-	}
 	hcoUpgradeChanges = UpgradePatches{}
 	fileLocation := getUpgradeChangesFileLocation()
 
@@ -188,29 +188,34 @@ func readUpgradePatchesFromFile(logger logr.Logger) error {
 		return err
 	}
 
+	defer file.Close()
+
 	jDec := json.NewDecoder(file)
 	err = jDec.Decode(&hcoUpgradeChanges)
 	if err != nil {
 		return err
 	}
 
-	hcoUpgradeChangesRead = true
 	return nil
 }
 
-func ValidateUpgradePatches(logger logr.Logger) error {
-	err := readUpgradePatchesFromFile(logger)
-	if err != nil {
-		return err
+func Init(logger logr.Logger) error {
+	once.Do(func() {
+		onceErr = readUpgradePatchesFromFile(logger)
+	})
+
+	if onceErr != nil {
+		return onceErr
 	}
+
 	for _, p := range hcoUpgradeChanges.HCOCRPatchList {
-		if verr := validateUpgradePatch(p); verr != nil {
-			return verr
+		if err := validateUpgradePatch(p); err != nil {
+			return err
 		}
 	}
 	for _, r := range hcoUpgradeChanges.ObjectsToBeRemoved {
-		if verr := validateUpgradeLeftover(r); verr != nil {
-			return verr
+		if err := validateUpgradeLeftover(r); err != nil {
+			return err
 		}
 	}
 	return nil
