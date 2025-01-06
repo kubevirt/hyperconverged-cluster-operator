@@ -1,6 +1,7 @@
 package upgradepatch
 
 import (
+	"bytes"
 	_ "embed"
 	"encoding/json"
 	"errors"
@@ -40,10 +41,15 @@ type hcoCRPatch struct {
 
 func (p hcoCRPatch) applyUpgradePatch(logger logr.Logger, hcoJSON []byte, knownHcoSV semver.Version) ([]byte, error) {
 	if p.IsAffectedRange(knownHcoSV) {
-		logger.Info("applying upgrade patch", "knownHcoSV", knownHcoSV, "affectedRange", p.SemverRange, "patches", p.JSONPatch, "applyOptions", p.JSONPatchApplyOptions)
+		buff := &bytes.Buffer{}
+		err := json.NewEncoder(buff).Encode(p.JSONPatch)
+		if err != nil {
+			buff = bytes.NewBuffer([]byte("<unknown>"))
+		}
+
+		logger.Info("applying upgrade patch", "knownHcoSV", knownHcoSV, "affectedRange", p.SemverRange.ver, "patches", buff.String(), "applyOptions", p.JSONPatchApplyOptions)
 		var (
 			patchedBytes []byte
-			err          error
 		)
 		if p.JSONPatchApplyOptions != nil {
 			patchedBytes, err = p.JSONPatch.ApplyWithOptions(hcoJSON, p.JSONPatchApplyOptions)
