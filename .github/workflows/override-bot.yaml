@@ -2,6 +2,9 @@ name: Override Bot
 on:
   issue_comment:
     types: [created]
+  schedule:
+    - cron:  '0/10 * * * *'
+  workflow_dispatch:
 jobs:
   override:
     name: Check for redundant CI lanes for override
