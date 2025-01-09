@@ -58,7 +58,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/observability"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/authorization"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/metrics"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
