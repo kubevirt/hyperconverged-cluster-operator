@@ -35,3 +35,38 @@ tests:
               operator_health_impact: "none"
               kubernetes_operator_part_of: "kubevirt"
               kubernetes_operator_component: "cnv-observability"
+
+
+  - interval: 1m
+    input_series:
+      # Control plane node - n1.cnv.redhat.com
+      - series: 'kube_node_role{node="n1.cnv.redhat.com",role="control-plane"}'
+        values: "1+0x30"
+      # Non-control plane node - n2.cnv.redhat.com
+      - series: 'kube_node_role{node="n2.cnv.redhat.com",role="worker"}'
+        values: "0+0x30"
+      # n1.cnv.redhat.com is ready for 10 minutes and then becomes not ready
+      - series: 'kube_node_status_condition{condition="Ready",status="true",node="n1.cnv.redhat.com"}'
+        values: "1+0x10 0+0x10"
+      # n2.cnv.redhat.com is always not ready but doesn't have the control-plane role
+      - series: 'kube_node_status_condition{condition="Ready",status="true",node="n2.cnv.redhat.com"}'
+        values: "0+0x20"
+
+    alert_rule_test:
+        - eval_time: 8m
+          alertname: HAControlPlaneDown
+          exp_alerts: [ ]
+
+        - eval_time: 18m
+          alertname: HAControlPlaneDown
+          exp_alerts:
+          - exp_annotations:
+              summary: "Control plane node n1.cnv.redhat.com is not ready"
+              description: "Control plane node n1.cnv.redhat.com has been not ready for more than 5 minutes."
+              runbook_url: "https://kubevirt.io/monitoring/runbooks/HAControlPlaneDown"
+            exp_labels:
+              node: "n1.cnv.redhat.com"
+              severity: "critical"
+              operator_health_impact: "none"
+              kubernetes_operator_part_of: "kubevirt"
+              kubernetes_operator_component: "cnv-observability"
