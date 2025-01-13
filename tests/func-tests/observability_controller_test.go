@@ -2,22 +2,50 @@ package tests_test
 
 import (
 	"context"
+	"errors"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/observability"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
-var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, "observability_controller"), func() {
-	Context("PodDisruptionBudgetAtLimit", func() {
-		It("should be silenced", func() {
-			r := observability.NewReconciler(tests.GetClientConfig())
+const testName = "observability_controller"
 
+var logger = logf.Log.WithName("observability-controller")
+
+var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, "observability_controller"), func() {
+	var r *observability.Reconciler
+
+	BeforeEach(func(ctx context.Context) {
+		cli := tests.GetControllerRuntimeClient()
+		tests.FailIfNotOpenShift(ctx, cli, testName)
+
+		mgr, err := commontestutils.NewManagerMock(tests.GetClientConfig(), manager.Options{}, cli, logger)
+		Expect(err).ToNot(HaveOccurred())
+
+		r = observability.NewReconciler(mgr, tests.InstallNamespace, nil)
+	})
+
+	Context("PodDisruptionBudgetAtLimit", func() {
+		BeforeEach(func(ctx context.Context) {
+			certExists, err := serviceAccountTlsCertPathExists()
+			Expect(err).ToNot(HaveOccurred())
+
+			if !certExists {
+				Skip("Service account TLS certificate path does not exist")
+			}
+		})
+
+		It("should be silenced", func() {
 			amApi, err := r.NewAlertmanagerApi()
 			Expect(err).ToNot(HaveOccurred())
 
@@ -55,3 +83,15 @@ var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, "observ
 		})
 	})
 })
+
+func serviceAccountTlsCertPathExists() (bool, error) {
+	_, err := os.Stat(observability.TlsCertPath)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
