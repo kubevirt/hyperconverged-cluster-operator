@@ -34,5 +34,18 @@ func clusterAlerts() []promv1.Rule {
 				"operator_health_impact": "none",
 			},
 		},
+		{
+			Alert: "NodeNetworkInterfaceDown",
+			Expr:  intstr.FromString("count by (instance) (node_network_up{device!~\"veth.+|tunbr\"} == 0) > 0"),
+			For:   ptr.To(promv1.Duration("5m")),
+			Annotations: map[string]string{
+				"summary":     "Network interfaces are down",
+				"description": "{{ $value }} network devices have been down on instance {{ $labels.instance }} for more than 5 minutes.",
+			},
+			Labels: map[string]string{
+				"severity":               "warning",
+				"operator_health_impact": "none",
+			},
+		},
 	}
 }
