@@ -1,0 +1,37 @@
+---
+rule_files:
+  - /tmp/rules.verify
+
+group_eval_order:
+  - kubevirt.hyperconverged.rules
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'instance:node_cpu_utilisation:rate1m{instance="n1.cnv.redhat.com"}'
+        values: "0.5+0x30"
+      - series: 'instance:node_cpu_utilisation:rate1m{instance="n2.cnv.redhat.com"}'
+        values: "stale+0x10 0.5+0x10 0.9+0x10"
+
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: HighCPUWorkload
+        exp_alerts: [ ]
+
+      - eval_time: 18m
+        alertname: HighCPUWorkload
+        exp_alerts: [ ]
+
+      - eval_time: 28m
+        alertname: HighCPUWorkload
+        exp_alerts:
+          - exp_annotations:
+              summary: "High CPU usage on host n2.cnv.redhat.com"
+              description: "CPU utilization for n2.cnv.redhat.com has been above 90% for more than 5 minutes."
+              runbook_url: "https://kubevirt.io/monitoring/runbooks/HighCPUWorkload"
+            exp_labels:
+              instance: "n2.cnv.redhat.com"
+              severity: "warning"
+              operator_health_impact: "none"
+              kubernetes_operator_part_of: "kubevirt"
+              kubernetes_operator_component: "cnv-observability"
