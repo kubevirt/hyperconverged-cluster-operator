@@ -195,7 +195,7 @@ func main() {
 	}
 
 	if ci.IsOpenshift() {
-		if err = observability.SetupWithManager(mgr); err != nil {
+		if err = observability.SetupWithManager(mgr, ci.GetDeployment()); err != nil {
 			logger.Error(err, "unable to create controller", "controller", "Observability")
 			os.Exit(1)
 		}
