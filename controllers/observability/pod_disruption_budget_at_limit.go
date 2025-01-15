@@ -12,8 +12,11 @@ import (
 )
 
 const (
-	alertmanagerSvcHost = "https://alertmanager-main.openshift-monitoring.svc.cluster.local:9094"
-	TlsCertPath         = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
+	// ServiceAccountTlsCertPath is the path to the service account TLS certificate
+	// used for TLS communication with the alertmanager API
+	ServiceAccountTlsCertPath = "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
+
+	AlertmanagerSvcHost = "https://alertmanager-main.openshift-monitoring.svc.cluster.local:9094"
 )
 
 func (r *Reconciler) ensurePodDisruptionBudgetAtLimitIsSilenced() error {
@@ -64,20 +67,28 @@ func (r *Reconciler) ensurePodDisruptionBudgetAtLimitIsSilenced() error {
 }
 
 func (r *Reconciler) NewAlertmanagerApi() (*alertmanager.Api, error) {
-	caCert, err := os.ReadFile(TlsCertPath)
+	httpClient, err := NewHTTPClient()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read ca cert: %w", err)
+		return nil, fmt.Errorf("failed to create http client: %w", err)
+	}
+
+	return alertmanager.NewAPI(*httpClient, AlertmanagerSvcHost, r.config.BearerToken), nil
+}
+
+func NewHTTPClient() (*http.Client, error) {
+	caCert, err := os.ReadFile(ServiceAccountTlsCertPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read service account TLS certificate: %w", err)
 	}
 
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
 
-	httpClient := http.Client{}
-	httpClient.Transport = &http.Transport{
-		TLSClientConfig: &tls.Config{RootCAs: caCertPool},
-	}
-
-	return alertmanager.NewAPI(httpClient, alertmanagerSvcHost, r.config.BearerToken), nil
+	return &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{RootCAs: caCertPool},
+		},
+	}, nil
 }
 
 func FindPodDisruptionBudgetAtLimitSilence(amSilences []alertmanager.Silence) *alertmanager.Silence {
