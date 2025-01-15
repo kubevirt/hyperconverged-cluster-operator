@@ -8,29 +8,20 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/observability"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/alertmanager"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
 const testName = "observability_controller"
 
-var logger = logf.Log.WithName("observability-controller")
-
 var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, testName), func() {
-	var r *observability.Reconciler
+	var cli client.Client
 
 	BeforeEach(func(ctx context.Context) {
-		cli := tests.GetControllerRuntimeClient()
+		cli = tests.GetControllerRuntimeClient()
 		tests.FailIfNotOpenShift(ctx, cli, testName)
-
-		mgr, err := commontestutils.NewManagerMock(tests.GetClientConfig(), manager.Options{}, cli, logger)
-		Expect(err).ToNot(HaveOccurred())
-
-		r = observability.NewReconciler(mgr, tests.InstallNamespace, nil)
 	})
 
 	Context("PodDisruptionBudgetAtLimit", func() {
@@ -39,9 +30,10 @@ var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, testNam
 			tests.FailIfNotOpenShift(ctx, cli, testName)
 		})
 
-		It("should be silenced", func() {
-			amApi, err := r.NewAlertmanagerApi()
+		It("should be silenced", func(ctx context.Context) {
+			httpClient, err := observability.NewHTTPClient()
 			Expect(err).ToNot(HaveOccurred())
+			amApi := alertmanager.NewAPI(*httpClient, observability.AlertmanagerSvcHost, tests.GetClientConfig().BearerToken)
 
 			amSilences, err := amApi.ListSilences()
 			Expect(err).ToNot(HaveOccurred())
@@ -55,14 +47,14 @@ var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, testNam
 
 			// Restart pod to force reconcile (reconcile periodicity is 1h)
 			var hcoPods v1.PodList
-			err = r.List(context.Background(), &hcoPods, &client.MatchingLabels{
+			err = cli.List(ctx, &hcoPods, &client.MatchingLabels{
 				"name": "hyperconverged-cluster-operator",
 			})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(hcoPods.Items).ToNot(BeEmpty())
 
 			for _, pod := range hcoPods.Items {
-				err = r.Delete(context.Background(), &pod)
+				err = cli.Delete(ctx, &pod)
 				Expect(err).ToNot(HaveOccurred())
 			}
 
