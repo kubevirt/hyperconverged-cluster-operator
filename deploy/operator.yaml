@@ -55,7 +55,7 @@ spec:
         - name: KUBEVIRT_VERSION
           value: v1.1.1
         - name: CDI_VERSION
-          value: v1.58.3
+          value: v1.58.5
         - name: NETWORK_ADDONS_VERSION
           value: v0.91.1
         - name: SSP_VERSION
@@ -600,25 +600,25 @@ spec:
         - name: DEPLOY_CLUSTER_RESOURCES
           value: "true"
         - name: OPERATOR_VERSION
-          value: v1.58.3
+          value: v1.58.5
         - name: CONTROLLER_IMAGE
-          value: quay.io/kubevirt/cdi-controller@sha256:6aea91b795e4b60f963ef74e4f2eda4d08eb89772c8caa15e77b2a81940bcd10
+          value: quay.io/kubevirt/cdi-controller@sha256:311a24bf0d05b0e9c04f2797291ebb3f2947176c5ab6c802175e0cd205404110
         - name: IMPORTER_IMAGE
-          value: quay.io/kubevirt/cdi-importer@sha256:f5005a344533fd2d1ac84ee13357e5f9fa291dc5b8ae3467956c72547ad19071
+          value: quay.io/kubevirt/cdi-importer@sha256:6a2f7116775b6a6b0f32d0f3e2a77a91654383d030a89e01372fb75b6d6bcc30
         - name: CLONER_IMAGE
-          value: quay.io/kubevirt/cdi-cloner@sha256:df1502ad04fb910715c2f7ab822abd1fd167ad63ccc45e32343ce5c06c329722
+          value: quay.io/kubevirt/cdi-cloner@sha256:70a7147afce61b01fef83733129a82396ba0977ba5677271ec24255c93c1d98b
         - name: APISERVER_IMAGE
-          value: quay.io/kubevirt/cdi-apiserver@sha256:699ecd04e9c16490f920daba4e6bee4f148ab323c24d07ac554272a9694c8c6f
+          value: quay.io/kubevirt/cdi-apiserver@sha256:9007573c526db06f2990830f26c2da4324d9355e499b29119865c0812d043696
         - name: UPLOAD_SERVER_IMAGE
-          value: quay.io/kubevirt/cdi-uploadserver@sha256:d9c84bef695700f674ca5526a17fe337d6d2d3a046a9c1fb7e7ff23e6d29adc7
+          value: quay.io/kubevirt/cdi-uploadserver@sha256:d28bfdd3e9e6f8a5a4e8ab4bf4a0105fb0e210c52928d7ed44a6a39ca9697bfe
         - name: UPLOAD_PROXY_IMAGE
-          value: quay.io/kubevirt/cdi-uploadproxy@sha256:78f49c4858cbe685d596cffdfebbc62e4a581d3369b419622d1d25d4dbb00469
+          value: quay.io/kubevirt/cdi-uploadproxy@sha256:cfd559a2b20dc0e302bd1e2c9456a2394c7f4a6d810b76a891ad18ae7554cd22
         - name: VERBOSITY
           value: "1"
         - name: PULL_POLICY
           value: IfNotPresent
         - name: MONITORING_NAMESPACE
-        image: quay.io/kubevirt/cdi-operator@sha256:f76a486f1b7c8f53ab5e009bfa0374c102767e58e875fceccd787368a09ae442
+        image: quay.io/kubevirt/cdi-operator@sha256:a48c4a7fdfaec26a0a8d2736d0ee40919e9d3737ccb8760ab414440469043eab
         imagePullPolicy: IfNotPresent
         name: cdi-operator
         ports:
