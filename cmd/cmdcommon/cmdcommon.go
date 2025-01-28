@@ -8,6 +8,7 @@ import (
 	"net/http/pprof"
 	"os"
 	"runtime"
+	"slices"
 
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -144,7 +145,7 @@ func (h HcCmdHelper) checkNameSpace() {
 		communityHubNamespace,
 		communityHubTargetNamespace,
 	}
-	if !StringInSlice(actualNS, nsAllowList) {
+	if !slices.Contains(nsAllowList, actualNS) {
 		err := fmt.Errorf("%s is running in different namespace than expected", h.Name)
 		msg := fmt.Sprintf("Please re-deploy this %s into %v namespace", h.Name, requiredNS)
 		h.ExitOnError(err, msg, "Expected.Namespace", requiredNS, "Deployed.Namespace", actualNS)
@@ -164,13 +165,4 @@ func updateFlagSet(flags ...*flag.FlagSet) {
 	for _, f := range flags {
 		pflag.CommandLine.AddGoFlagSet(f)
 	}
-}
-
-func StringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
 }
