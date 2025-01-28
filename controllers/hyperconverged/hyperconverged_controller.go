@@ -145,10 +145,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) er
 		return err
 	}
 
-	secCRPlaceholder, err := getSecondaryCRPlaceholder()
-	if err != nil {
-		return err
-	}
+	secCRPlaceholder := getSecondaryCRPlaceholder()
 
 	// To limit the memory usage, the controller manager got instantiated with a custom cache
 	// that is watching only a specific set of objects with selectors.
@@ -205,10 +202,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) er
 		}
 	}
 
-	apiServerCRPlaceholder, err := getAPIServerCRPlaceholder()
-	if err != nil {
-		return err
-	}
+	apiServerCRPlaceholder := getAPIServerCRPlaceholder()
 
 	if ci.IsOpenshift() {
 		// Watch openshiftconfigv1.APIServer separately
@@ -322,10 +316,7 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 // regardless of which resource has triggered it.
 func (r *ReconcileHyperConverged) resolveReconcileRequest(ctx context.Context, logger logr.Logger, originalRequest reconcile.Request) (reconcile.Request, bool, error) {
 
-	hcoTriggered, err := isTriggeredByHyperConverged(originalRequest)
-	if err != nil {
-		return reconcile.Request{}, hcoTriggered, err
-	}
+	hcoTriggered := isTriggeredByHyperConverged(originalRequest)
 	if hcoTriggered {
 		logger.Info("Reconciling HyperConverged operator")
 		return originalRequest, hcoTriggered, nil
@@ -339,11 +330,7 @@ func (r *ReconcileHyperConverged) resolveReconcileRequest(ctx context.Context, l
 		NamespacedName: hc,
 	}
 
-	apiServerCRTriggered, err := isTriggeredByAPIServerCR(originalRequest)
-	if err != nil {
-		return reconcile.Request{}, hcoTriggered, err
-	}
-	if apiServerCRTriggered {
+	if isTriggeredByAPIServerCR(originalRequest) {
 		logger.Info("Triggered by ApiServer CR, refreshing it")
 		err = hcoutil.GetClusterInfo().RefreshAPIServerCR(ctx, r.client)
 		if err != nil {
@@ -358,27 +345,16 @@ func (r *ReconcileHyperConverged) resolveReconcileRequest(ctx context.Context, l
 	return resolvedRequest, hcoTriggered, nil
 }
 
-func isTriggeredByHyperConverged(request reconcile.Request) (bool, error) {
-	placeholder, err := getSecondaryCRPlaceholder()
-	if err != nil {
-		return false, err
-	}
-	apiServerPlaceholder, err := getAPIServerCRPlaceholder()
-	if err != nil {
-		return false, err
-	}
+func isTriggeredByHyperConverged(request reconcile.Request) bool {
+	placeholder := getSecondaryCRPlaceholder()
+	apiServerPlaceholder := getAPIServerCRPlaceholder()
 
 	isHyperConverged := request.NamespacedName != placeholder && request.NamespacedName != apiServerPlaceholder
-	return isHyperConverged, nil
+	return isHyperConverged
 }
 
-func isTriggeredByAPIServerCR(request reconcile.Request) (bool, error) {
-	placeholder, err := getAPIServerCRPlaceholder()
-	if err != nil {
-		return false, err
-	}
-
-	return request.NamespacedName == placeholder, nil
+func isTriggeredByAPIServerCR(request reconcile.Request) bool {
+	return request.NamespacedName == getAPIServerCRPlaceholder()
 }
 
 func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile.Result, error) {
@@ -1261,11 +1237,7 @@ func getHyperConvergedNamespacedName() (types.NamespacedName, error) {
 		Name: hcoutil.HyperConvergedName,
 	}
 
-	namespace, err := hcoutil.GetOperatorNamespaceFromEnv()
-	if err != nil {
-		return hco, err
-	}
-	hco.Namespace = namespace
+	hco.Namespace = hcoutil.GetOperatorNamespaceFromEnv()
 
 	return hco, nil
 }
@@ -1273,32 +1245,25 @@ func getHyperConvergedNamespacedName() (types.NamespacedName, error) {
 // getOtherCrPlaceholder returns a placeholder to be able to discriminate
 // reconciliation requests triggered by secondary watched resources
 // use a random generated suffix for security reasons
-func getSecondaryCRPlaceholder() (types.NamespacedName, error) {
+func getSecondaryCRPlaceholder() types.NamespacedName {
 	fakeHco := types.NamespacedName{
 		Name: secondaryCRPrefix + randomConstSuffix,
 	}
 
-	namespace, err := hcoutil.GetOperatorNamespaceFromEnv()
-	if err != nil {
-		return fakeHco, err
-	}
+	namespace := hcoutil.GetOperatorNamespaceFromEnv()
 	fakeHco.Namespace = namespace
 
-	return fakeHco, nil
+	return fakeHco
 }
 
-func getAPIServerCRPlaceholder() (types.NamespacedName, error) {
+func getAPIServerCRPlaceholder() types.NamespacedName {
 	fakeHco := types.NamespacedName{
 		Name: apiServerCRPrefix + randomConstSuffix,
 	}
 
-	namespace, err := hcoutil.GetOperatorNamespaceFromEnv()
-	if err != nil {
-		return fakeHco, err
-	}
-	fakeHco.Namespace = namespace
+	fakeHco.Namespace = hcoutil.GetOperatorNamespaceFromEnv()
 
-	return fakeHco, nil
+	return fakeHco
 }
 
 func drop(slice []string, s string) ([]string, bool) {

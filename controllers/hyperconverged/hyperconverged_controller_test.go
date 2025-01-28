@@ -383,8 +383,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cl.Update(context.TODO(), foundKubevirt)).ToNot(HaveOccurred())
 
 				// mock a reconciliation triggered by a change in secondary CR
-				ph, err := getSecondaryCRPlaceholder()
-				Expect(err).ToNot(HaveOccurred())
+				ph := getSecondaryCRPlaceholder()
 				rq := request
 				rq.NamespacedName = ph
 
@@ -470,8 +469,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cl.Update(context.TODO(), foundKubevirt)).ToNot(HaveOccurred())
 
 				// mock a reconciliation triggered by a change in secondary CR
-				ph, err := getSecondaryCRPlaceholder()
-				Expect(err).ToNot(HaveOccurred())
+				ph := getSecondaryCRPlaceholder()
 				rq := request
 				rq.NamespacedName = ph
 
@@ -515,8 +513,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cl.Update(context.TODO(), foundKubevirt)).ToNot(HaveOccurred())
 
 				// mock a reconciliation triggered by a change in secondary CR
-				ph, err := getSecondaryCRPlaceholder()
-				Expect(err).ToNot(HaveOccurred())
+				ph := getSecondaryCRPlaceholder()
 				rq := request
 				rq.NamespacedName = ph
 
@@ -644,8 +641,7 @@ var _ = Describe("HyperconvergedController", func() {
 				r := initReconciler(cl, nil)
 
 				// mock a reconciliation triggered by a change in secondary CR
-				ph, err := getSecondaryCRPlaceholder()
-				Expect(err).ToNot(HaveOccurred())
+				ph := getSecondaryCRPlaceholder()
 				rq := request
 				rq.NamespacedName = ph
 
@@ -1127,8 +1123,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(hcoutil.GetClusterInfo().GetTLSSecurityProfile(expected.hco.Spec.TLSSecurityProfile)).To(Equal(initialTLSSecurityProfile), "should still return the cached value (initial value)")
 
 				// mock a reconciliation triggered by a change in the APIServer CR
-				ph, err := getAPIServerCRPlaceholder()
-				Expect(err).ToNot(HaveOccurred())
+				ph := getAPIServerCRPlaceholder()
 				rq := request
 				rq.NamespacedName = ph
 
@@ -1391,8 +1386,7 @@ var _ = Describe("HyperconvergedController", func() {
 				cl := expected.initClient()
 				r := initReconciler(cl, nil)
 
-				ph, err := getSecondaryCRPlaceholder()
-				Expect(err).ToNot(HaveOccurred())
+				ph := getSecondaryCRPlaceholder()
 				rq := reconcile.Request{
 					NamespacedName: ph,
 				}

@@ -10,15 +10,14 @@ import (
 	"runtime"
 	"slices"
 
+	"github.com/go-logr/logr"
+	"github.com/spf13/pflag"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-
-	"github.com/go-logr/logr"
-	"github.com/spf13/pflag"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 // list of namespace allowed for HCO installations (for tests)
@@ -122,7 +121,7 @@ func (h HcCmdHelper) printVersion() {
 
 func (h HcCmdHelper) checkNameSpace() {
 	// Get the namespace that we should be deployed in.
-	requiredNS, err := hcoutil.GetOperatorNamespaceFromEnv()
+	requiredNS, err := getOperatorNamespaceFromEnv()
 	h.ExitOnError(err, "Failed to get namespace from the environment")
 
 	// Get the namespace we are currently deployed in.
@@ -165,4 +164,13 @@ func updateFlagSet(flags ...*flag.FlagSet) {
 	for _, f := range flags {
 		pflag.CommandLine.AddGoFlagSet(f)
 	}
+}
+
+func getOperatorNamespaceFromEnv() (string, error) {
+	namespace := os.Getenv(hcoutil.OperatorNamespaceEnv)
+	if len(namespace) == 0 {
+		return "", fmt.Errorf("%s unset or empty in environment", hcoutil.OperatorNamespaceEnv)
+	}
+
+	return namespace, nil
 }
