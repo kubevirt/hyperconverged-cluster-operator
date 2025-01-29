@@ -12,6 +12,7 @@ import (
 const (
 	secondaryCRPrefix = "hco-controlled-cr-"
 	apiServerCRPrefix = "api-server-cr-"
+	ingressCRPrefix   = "ingress-cr-"
 )
 
 var (
@@ -26,25 +27,36 @@ var (
 	secondaryCRPlaceholder types.NamespacedName
 
 	apiServerCRPlaceholder types.NamespacedName
+
+	ingressCRPlaceholder types.NamespacedName
 )
 
 // ResolveReconcileRequest returns a reconcile.Request to be used throughout the reconciliation cycle,
 // regardless of which resource has triggered it.
 func ResolveReconcileRequest(logger logr.Logger, originalRequest reconcile.Request) (reconcile.Request, bool) {
-	if isTriggeredByHyperConvergedOrUnknown(originalRequest) {
+	var (
+		triggeredByHyperConverged = false
+	)
+	switch originalRequest.NamespacedName {
+	case apiServerCRPlaceholder:
+		logger.Info("The reconciliation got triggered by ApiServer CR")
+		// consider a change in APIServerCr like a change in HCO
+		triggeredByHyperConverged = true
+
+	case ingressCRPlaceholder:
+		logger.Info("The reconciliation got triggered by Ingress CR")
+		// consider a change in Ingress like a change in HCO
+		triggeredByHyperConverged = true
+
+	case secondaryCRPlaceholder:
+		logger.Info("The reconciliation got triggered by a secondary CR object")
+
+	default: // triggered by the HyperConverged CR or unknown
 		logger.Info("Reconciling HyperConverged operator")
 		return originalRequest, true
 	}
 
-	resolvedRequest := getHyperConvergedCRRequest()
-
-	if IsTriggeredByAPIServerCR(originalRequest) {
-		// consider a change in APIServerCr like a change in HCO
-		return resolvedRequest, true
-	}
-
-	logger.Info("The reconciliation got triggered by a secondary CR object")
-	return resolvedRequest, false
+	return getHyperConvergedCRRequest(), triggeredByHyperConverged
 }
 
 func GetHyperConvergedNamespacedName() types.NamespacedName {
@@ -69,12 +81,14 @@ func GetAPIServerCRRequest() reconcile.Request {
 	}
 }
 
-func IsTriggeredByHyperConverged(nsName types.NamespacedName) bool {
-	return nsName == hyperConvergedNamespacedName
+func GetIngressCRResource() reconcile.Request {
+	return reconcile.Request{
+		NamespacedName: ingressCRPlaceholder,
+	}
 }
 
-func isTriggeredByHyperConvergedOrUnknown(request reconcile.Request) bool {
-	return request.NamespacedName != secondaryCRPlaceholder && request.NamespacedName != apiServerCRPlaceholder
+func IsTriggeredByHyperConverged(nsName types.NamespacedName) bool {
+	return nsName == hyperConvergedNamespacedName
 }
 
 func IsTriggeredByAPIServerCR(request reconcile.Request) bool {
@@ -97,6 +111,11 @@ func GeneratePlaceHolders() {
 
 	apiServerCRPlaceholder = types.NamespacedName{
 		Name:      apiServerCRPrefix + randomConstSuffix,
+		Namespace: ns,
+	}
+
+	ingressCRPlaceholder = types.NamespacedName{
+		Name:      ingressCRPrefix + randomConstSuffix,
 		Namespace: ns,
 	}
 }
