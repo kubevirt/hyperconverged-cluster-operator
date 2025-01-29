@@ -31,6 +31,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -95,8 +96,8 @@ var JSONPatchAnnotationNames = []string{
 }
 
 // RegisterReconciler creates a new HyperConverged Reconciler and registers it into manager.
-func RegisterReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond hcoutil.Condition) error {
-	return add(mgr, newReconciler(mgr, ci, upgradeableCond), ci)
+func RegisterReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond hcoutil.Condition, ingressEventCh <-chan event.TypedGenericEvent[client.Object]) error {
+	return add(mgr, newReconciler(mgr, ci, upgradeableCond), ci, ingressEventCh)
 }
 
 // newReconciler returns a new reconcile.Reconciler
@@ -123,7 +124,7 @@ func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond 
 }
 
 // newCRDremover returns a new CRDRemover
-func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) error {
+func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, ingressEventCh <-chan event.TypedGenericEvent[client.Object]) error {
 	// Create a new controller
 	c, err := controller.New("hyperconverged-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
@@ -198,9 +199,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) er
 	}
 
 	if ci.IsOpenshift() {
-		// Watch openshiftconfigv1.APIServer separately
-		msg := "Reconciling for openshiftconfigv1.APIServer"
-
 		err = c.Watch(
 			source.Kind(
 				mgr.GetCache(),
@@ -209,7 +207,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) er
 					// enqueue using a placeholder to signal that the change is not
 					// directly on HCO CR but on the APIServer CR that we want to reload
 					// only if really changed
-					log.Info(msg)
+					log.Info("Reconciling for openshiftconfigv1.APIServer")
 					return []reconcile.Request{
 						reqresolver.GetAPIServerCRRequest(),
 					}
@@ -218,7 +216,25 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo) er
 		if err != nil {
 			return err
 		}
+
+		err = c.Watch(
+			source.Channel(
+				ingressEventCh,
+				handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, a client.Object) []reconcile.Request {
+					// the ingress-cluster controller initiate this by pushing an event to the ingressEventCh channel
+					// This will force this controller to update the URL of the cli download route, if the user
+					// customized the hostname.
+					log.Info("Reconciling for openshiftconfigv1.Ingress")
+					return []reconcile.Request{
+						reqresolver.GetIngressCRResource(),
+					}
+				}),
+			))
+		if err != nil {
+			return err
+		}
 	}
+
 	return nil
 }
 
@@ -309,7 +325,7 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 // refreshAPIServerCR refreshes the APIServer cR, if the request is triggered by this CR.
 func (r *ReconcileHyperConverged) refreshAPIServerCR(ctx context.Context, logger logr.Logger, originalRequest reconcile.Request) error {
 	if reqresolver.IsTriggeredByAPIServerCR(originalRequest) {
-		logger.Info("Triggered by ApiServer CR, refreshing it")
+		logger.Info("Refreshing the ApiServer CR")
 		return hcoutil.GetClusterInfo().RefreshAPIServerCR(ctx, r.client)
 	}
 
