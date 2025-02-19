@@ -4,8 +4,10 @@ WORKDIR /go/src/github.com/kubevirt/hyperconverged-cluster-operator/
 COPY . .
 ARG TARGETOS
 ARG TARGETARCH
+ARG BUILDOS
+ARG BUILDARCH
 
-RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} make build-operator build-csv-merger
+RUN BUILDOS=${BUILDOS} BUILDARCH=${BUILDARCH} GOOS=${TARGETOS} GOARCH=${TARGETARCH} make build-operator build-csv-merger
 
 FROM registry.access.redhat.com/ubi9/ubi-minimal
 ENV OPERATOR=/usr/local/bin/hyperconverged-cluster-operator \
@@ -32,5 +34,4 @@ ARG git_sha=NONE
 
 LABEL multi.GIT_URL=${git_url} \
       multi.GIT_SHA=${git_sha} \
-      app=hyperconverged-cluster-operator \
-      arch=${ARCH}
+      app=hyperconverged-cluster-operator

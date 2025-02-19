@@ -18,7 +18,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 )
 
-//go:generate go run ../../tools/crwriter/ --format=json --out=./hc.cr.json
+//go:generate ../../hack/build-cr-json.sh ./hc.cr.json
 //go:embed hc.cr.json
 var hcCRBytes []byte
 
