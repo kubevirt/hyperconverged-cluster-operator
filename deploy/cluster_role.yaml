@@ -42,6 +42,15 @@ metadata:
 rules:
 - apiGroups:
   - ""
+  resourceNames:
+  - kubevirt-ca
+  - kubevirt-export-ca
+  - kubevirt-virt-handler-certs
+  - kubevirt-virt-handler-server-certs
+  - kubevirt-operator-certs
+  - kubevirt-virt-api-certs
+  - kubevirt-controller-certs
+  - kubevirt-exportproxy-certs
   resources:
   - secrets
   verbs:
@@ -807,6 +816,18 @@ rules:
   - delete
   - patch
 - apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - delete
+  - update
+  - create
+  - patch
+- apiGroups:
   - ""
   resources:
   - configmaps
@@ -1128,6 +1149,18 @@ rules:
   - configmaps
   - endpoints
   - services
+  verbs:
+  - get
+  - list
+  - watch
+  - delete
+  - update
+  - create
+  - patch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
   verbs:
   - get
   - list
@@ -1512,6 +1545,7 @@ rules:
   - virtualmachines/removevolume
   - virtualmachines/migrate
   - virtualmachines/memorydump
+  - virtualmachines/addinterface
   verbs:
   - update
 - apiGroups:
@@ -1656,6 +1690,7 @@ rules:
   - virtualmachines/removevolume
   - virtualmachines/migrate
   - virtualmachines/memorydump
+  - virtualmachines/addinterface
   verbs:
   - update
 - apiGroups:
