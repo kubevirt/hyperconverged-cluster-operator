@@ -172,6 +172,8 @@ function upgrade() {
   Msg "make sure that the VM is still running, after the upgrade"
   ${CMD} get vm -n ${VMS_NAMESPACE} -o yaml testvm
   ${CMD} get vmi -n ${VMS_NAMESPACE} -o yaml testvm
+  ${CMD} get vmim -n ${VMS_NAMESPACE} -o yaml
+
   ${CMD} get vmi -n ${VMS_NAMESPACE} testvm -o jsonpath='{ .status.phase }' | grep 'Running'
   CURRENT_BOOTTIME=$(check_uptime 10 60)
 
