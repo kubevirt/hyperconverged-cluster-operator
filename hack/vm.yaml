@@ -11,6 +11,10 @@ spec:
         kubevirt.io/domain: testvm
     spec:
       domain:
+        cpu:
+          features:
+            - name: "gds-no"
+              policy: "disable"
         devices:
           disks:
             - name: containerdisk
