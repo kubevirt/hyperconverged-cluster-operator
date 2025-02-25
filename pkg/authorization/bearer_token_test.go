@@ -12,8 +12,12 @@ import (
 var _ = Describe("BearerToken", func() {
 	const tokenPath = "/tmp/fake-token"
 
+	var tmpFile *os.File
+
 	BeforeEach(func() {
-		tmpFile, err := os.Create(tokenPath)
+		var err error
+
+		tmpFile, err = os.Create(tokenPath)
 		Expect(err).ToNot(HaveOccurred())
 
 		_, err = tmpFile.Write([]byte("test-secret-key"))
@@ -25,6 +29,7 @@ var _ = Describe("BearerToken", func() {
 	AfterEach(func() {
 		os.Remove(tokenPath)
 		os.Unsetenv(authorization.TokenPathEnvVar)
+		authorization.RefreshSecretKey()
 	})
 
 	Context("with a valid ServiceAccount token", func() {
@@ -67,11 +72,32 @@ var _ = Describe("BearerToken", func() {
 			Expect(valid).To(BeFalse())
 		})
 
-		It("should fail validation using in-memory token", func() {
+		It("should fail validation for old token", func() {
+			token, err := authorization.CreateToken()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(token).ToNot(BeEmpty())
+
+			authorization.RefreshSecretKey()
+
+			_, err = tmpFile.Write([]byte("new-test-secret-key"))
+			Expect(err).ToNot(HaveOccurred())
+
+			valid, err := authorization.ValidateToken(token)
+			Expect(err).To(HaveOccurred())
+			Expect(valid).To(BeFalse())
+		})
+
+		It("should fail validation for old token using in-memory token", func() {
 			os.Remove(tokenPath)
 			os.Setenv(authorization.TokenPathEnvVar, "random-path")
 
-			valid, err := authorization.ValidateToken("invalid-token")
+			token, err := authorization.CreateToken()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(token).ToNot(BeEmpty())
+
+			authorization.RefreshSecretKey()
+
+			valid, err := authorization.ValidateToken(token)
 			Expect(err).To(HaveOccurred())
 			Expect(valid).To(BeFalse())
 		})

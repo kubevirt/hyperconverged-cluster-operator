@@ -14,17 +14,17 @@ const (
 	defaultTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 )
 
-var inMemoryToken *[]byte
+var secretKey []byte
 
 func CreateToken() (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 
-	secretKey, err := getSecretKey()
+	key, err := getSecretKey()
 	if err != nil {
 		return "", fmt.Errorf("error getting secret key: %v", err)
 	}
 
-	tokenString, err := token.SignedString(secretKey)
+	tokenString, err := token.SignedString(key)
 	if err != nil {
 		return "", fmt.Errorf("error signing token: %v", err)
 	}
@@ -43,26 +43,43 @@ func ValidateToken(tokenString string) (bool, error) {
 	return token.Valid, nil
 }
 
+func RefreshSecretKey() {
+	secretKey = nil
+}
+
 func getSecretKey() ([]byte, error) {
-	if inMemoryToken != nil {
-		return *inMemoryToken, nil
+	// if secretKey is already available, return it
+	if secretKey != nil {
+		return secretKey, nil
 	}
 
+	var err error
+
+	// get ServiceAccount token from file
+	secretKey, err = getServiceAccountToken()
+	if err != nil {
+		// if ServiceAccount token is not available, generate an in-memory token
+		secretKey, err = generateInMemorySecretKey()
+	}
+
+	return secretKey, err
+}
+
+func getServiceAccountToken() ([]byte, error) {
 	tokenPath := os.Getenv(TokenPathEnvVar)
 	if tokenPath == "" {
 		tokenPath = defaultTokenPath
 	}
 
-	token, err := os.ReadFile(tokenPath)
+	saToken, err := os.ReadFile(tokenPath)
 	if err != nil {
-		// if ServiceAccount token is not available, generate an in-memory token
-		return generateInMemoryToken()
+		return nil, fmt.Errorf("error reading ServiceAccount token: %v", err)
 	}
 
-	return token, nil
+	return saToken, nil
 }
 
-func generateInMemoryToken() ([]byte, error) {
+func generateInMemorySecretKey() ([]byte, error) {
 	tokenBytes := make([]byte, 32)
 
 	_, err := rand.Read(tokenBytes)
@@ -70,6 +87,5 @@ func generateInMemoryToken() ([]byte, error) {
 		return nil, fmt.Errorf("error generating in-memory token: %v", err)
 	}
 
-	inMemoryToken = &tokenBytes
 	return tokenBytes, nil
 }
