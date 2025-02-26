@@ -22,8 +22,10 @@ package main
 import (
 	"flag"
 	"log"
+	"maps"
 	"os"
 	"path"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -470,10 +472,7 @@ func writeOperatorDeploymentsAndServices(deployments []appsv1.Deployment, servic
 }
 
 func writeServiceAccounts(serviceAccounts map[string]v1.ServiceAccount) {
-	var keys []string
-	for saName := range serviceAccounts {
-		keys = append(keys, saName)
-	}
+	keys := slices.Collect(maps.Keys(serviceAccounts))
 	// since maps are not ordered we must enforce one before writing
 	sort.Strings(keys)
 
