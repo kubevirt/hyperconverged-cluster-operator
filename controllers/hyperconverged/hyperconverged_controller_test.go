@@ -244,7 +244,7 @@ var _ = Describe("HyperconvergedController", func() {
 						foundResource),
 				).ToNot(HaveOccurred())
 				// Check conditions
-				Expect(foundResource.Status.RelatedObjects).To(HaveLen(26))
+				Expect(foundResource.Status.RelatedObjects).To(HaveLen(27))
 				expectedRef := corev1.ObjectReference{
 					Kind:            "PrometheusRule",
 					Namespace:       namespace,
@@ -309,7 +309,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				verifySystemHealthStatusError(foundResource)
 
-				Expect(foundResource.Status.RelatedObjects).To(HaveLen(21))
+				Expect(foundResource.Status.RelatedObjects).To(HaveLen(22))
 				expectedRef := corev1.ObjectReference{
 					Kind:            "PrometheusRule",
 					Namespace:       namespace,
@@ -820,7 +820,7 @@ var _ = Describe("HyperconvergedController", func() {
 				).To(Succeed())
 
 				Expect(foundResource.Status.RelatedObjects).ToNot(BeNil())
-				Expect(foundResource.Status.RelatedObjects).To(HaveLen(21))
+				Expect(foundResource.Status.RelatedObjects).To(HaveLen(22))
 				Expect(foundResource.ObjectMeta.Finalizers).To(Equal([]string{FinalizerName}))
 
 				// Now, delete HCO
