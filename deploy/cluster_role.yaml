@@ -861,6 +861,16 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+- apiGroups:
+  - ""
+  resources:
   - endpoints
   verbs:
   - get
