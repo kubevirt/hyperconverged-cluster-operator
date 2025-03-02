@@ -1,10 +1,15 @@
-FROM docker.io/golang:1.22.11 AS builder
+FROM --platform=${BUILDPLATFORM} docker.io/golang:1.22.11 AS builder
 
 WORKDIR /go/src/github.com/kubevirt/hyperconverged-cluster-operator/
 COPY . .
-RUN make build-operator build-csv-merger
+ARG TARGETOS
+ARG TARGETARCH
 
-FROM registry.access.redhat.com/ubi9/ubi-minimal
+RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} make build-operator build-csv-merger
+
+FROM --platform=${TARGETPLATFORM} registry.access.redhat.com/ubi9/ubi-minimal
+ARG TARGETPLATFORM
+
 ENV OPERATOR=/usr/local/bin/hyperconverged-cluster-operator \
     CSV_MERGER=/usr/local/bin/csv-merger \
     USER_UID=1001 \
@@ -29,4 +34,5 @@ ARG git_sha=NONE
 
 LABEL multi.GIT_URL=${git_url} \
       multi.GIT_SHA=${git_sha} \
-      app=hyperconverged-cluster-operator
+      app=hyperconverged-cluster-operator \
+      golang.build.platform=${TARGETPLATFORM}

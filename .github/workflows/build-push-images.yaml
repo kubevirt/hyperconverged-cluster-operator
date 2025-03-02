@@ -22,6 +22,8 @@ jobs:
       REGISTRY_NAMESPACE: kubevirt
       OPM_VERSION: v1.47.0
     steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
       - name: Checkout the latest code
         uses: actions/checkout@v4
         with:
@@ -29,7 +31,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.22"
+          go-version-file: go.mod
       - name: Get latest version
         run: |
           PACKAGE_DIR="./deploy/olm-catalog/community-kubevirt-hyperconverged"
@@ -42,17 +44,12 @@ jobs:
           echo "IMAGE_TAG=${CSV_VERSION}-unstable" >> $GITHUB_ENV
           echo "UNSTABLE=UNSTABLE" >> $GITHUB_ENV
 
-      - name: Build Applications Images
-        env:
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
-        run: |
-          IMAGE_TAG=${IMAGE_TAG} make container-build
-      - name: Push Application Images
+      - name: Build and Push Applications Images
         env:
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
         run: |
           make quay-login
-          IMAGE_TAG=${IMAGE_TAG} make container-push
+          IMAGE_TAG=${IMAGE_TAG} make build-push-multi-arch-images
       - name: Build Digester
         run: |
           (cd tools/digester && go build .)
