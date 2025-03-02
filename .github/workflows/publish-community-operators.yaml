@@ -15,6 +15,8 @@ jobs:
       REGISTRY_NAMESPACE: kubevirt
       OPM_VERSION: v1.47.0
     steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
       - name: resolve the correct branch of the tag
         run: |
           GIT_TAG=${{ github.ref }}
@@ -32,7 +34,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version-file: go.mod
       - name: Checkout the latest code of ${{ env.TARGET_BRANCH }} branch
         uses: actions/checkout@v4
         with:
@@ -44,17 +46,12 @@ jobs:
           CSV_VERSION=$(ls -d ${PACKAGE_DIR}/*/ | sort -rV | awk "NR==1" | cut -d '/' -f 5)
           echo "CSV_VERSION=${CSV_VERSION}" >> $GITHUB_ENV
           echo "PACKAGE_DIR=${PACKAGE_DIR}" >> $GITHUB_ENV
-      - name: Build Applications Images
-        env:
-          IMAGE_TAG: ${{ env.CSV_VERSION }}
-        run: |
-          IMAGE_TAG=${CSV_VERSION} make container-build
-      - name: Push Application Images
+      - name: Build and Push Applications Images
         env:
           IMAGE_TAG: ${{ env.CSV_VERSION }}
         run: |
           make quay-login
-          IMAGE_TAG=${IMAGE_TAG} make container-push
+          IMAGE_TAG=${CSV_VERSION} make build-push-multi-arch-images
       - name: Build Digester
         run: |
           (cd tools/digester && go build .)
@@ -93,16 +90,11 @@ jobs:
           echo "NEW_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
           echo "NEW_IMAGE_TAG=${NEW_IMAGE_TAG}" >> $GITHUB_ENV
 
-      - name: Build Applications next version Images
+      - name: Build and Push Applications next version Images
         env:
           NEW_IMAGE_TAG: ${{ env.NEW_IMAGE_TAG }}
         run: |
-          IMAGE_TAG=${NEW_IMAGE_TAG} make container-build
-      - name: Push next version Application Images
-        env:
-          NEW_IMAGE_TAG: ${{ env.NEW_IMAGE_TAG }}
-        run: |
-          IMAGE_TAG=${NEW_IMAGE_TAG} make container-push
+          IMAGE_TAG=${NEW_IMAGE_TAG} make build-push-multi-arch-images
       - name: run manifest for next version
         env:
           PACKAGE_DIR: ${{ env.PACKAGE_DIR }}

@@ -13,7 +13,16 @@ VIRT_ARTIFACTS_SERVER ?= $(REGISTRY_NAMESPACE)/virt-artifacts-server
 LDFLAGS            ?= -w -s
 GOLANDCI_LINT_VERSION ?= v1.57.0
 HCO_BUMP_LEVEL ?= minor
+UNAME_ARCH     := $(shell uname -m)
+ifeq ($(UNAME_ARCH),x86_64)
+	TEMP_ARCH = amd64
+else ifeq ($(UNAME_ARCH),aarch64)
+	TEMP_ARCH = arm64
+else
+	TEMP_ARCH := $(UNAME_ARCH)
+endif
 
+ARCH ?= $(TEMP_ARCH)
 
 # Prow doesn't have docker command
 DO=./hack/in-docker.sh
@@ -88,11 +97,19 @@ hack-clean: ## Run ./hack/clean.sh
 
 container-build: container-build-operator container-build-webhook container-build-operator-courier container-build-functest container-build-artifacts-server
 
+build-push-multi-arch-images: build-push-multi-arch-operator-image build-push-multi-arch-webhook-image build-push-multi-arch-functest-image build-push-multi-arch-artifacts-server
+
 container-build-operator:
-	. "hack/cri-bin.sh" && $$CRI_BIN build -f build/Dockerfile -t $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
+	. "hack/cri-bin.sh" && $$CRI_BIN build --platform=linux/$(ARCH) -f build/Dockerfile -t $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
+
+build-push-multi-arch-operator-image:
+	IMAGE_NAME=$(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG) SHA=SHA DOCKER_FILE=build/Dockerfile ./hack/build-push-multi-arch-images.sh
 
 container-build-webhook:
-	. "hack/cri-bin.sh" && $$CRI_BIN build -f build/Dockerfile.webhook -t $(IMAGE_REGISTRY)/$(WEBHOOK_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
+	. "hack/cri-bin.sh" && $$CRI_BIN build --platform=linux/$(ARCH) -f build/Dockerfile.webhook -t $(IMAGE_REGISTRY)/$(WEBHOOK_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
+
+build-push-multi-arch-webhook-image:
+	IMAGE_NAME=$(IMAGE_REGISTRY)/$(WEBHOOK_IMAGE):$(IMAGE_TAG) SHA=$(SHA) DOCKER_FILE="build/Dockerfile.webhook" ./hack/build-push-multi-arch-images.sh
 
 container-build-operator-courier:
 	podman build -f tools/operator-courier/Dockerfile -t hco-courier .
@@ -101,10 +118,16 @@ container-build-validate-bundles:
 	podman build -f tools/operator-sdk-validate/Dockerfile -t operator-sdk-validate-hco .
 
 container-build-functest:
-	. "hack/cri-bin.sh" && $$CRI_BIN build -f build/Dockerfile.functest -t $(IMAGE_REGISTRY)/$(FUNC_TEST_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
+	. "hack/cri-bin.sh" && $$CRI_BIN build  --platform=linux/$(ARCH) -f build/Dockerfile.functest -t $(IMAGE_REGISTRY)/$(FUNC_TEST_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
+
+build-push-multi-arch-functest-image:
+	IMAGE_NAME=$(IMAGE_REGISTRY)/$(FUNC_TEST_IMAGE):$(IMAGE_TAG) SHA=$(SHA) DOCKER_FILE="build/Dockerfile.functest" ./hack/build-push-multi-arch-images.sh
 
 container-build-artifacts-server:
 	podman build -f build/Dockerfile.artifacts -t $(IMAGE_REGISTRY)/$(VIRT_ARTIFACTS_SERVER):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
+
+build-push-multi-arch-artifacts-server:
+	IMAGE_NAME=$(IMAGE_REGISTRY)/$(VIRT_ARTIFACTS_SERVER):$(IMAGE_TAG) SHA=$(SHA) DOCKER_FILE="build/Dockerfile.artifacts" ./hack/build-push-multi-arch-images.sh
 
 container-push: container-push-operator container-push-webhook container-push-functest container-push-artifacts-server
 
@@ -121,7 +144,7 @@ container-push-functest:
 	. "hack/cri-bin.sh" && $$CRI_BIN push $$CRI_INSECURE $(IMAGE_REGISTRY)/$(FUNC_TEST_IMAGE):$(IMAGE_TAG)
 
 container-push-artifacts-server:
-	podman push $(IMAGE_REGISTRY)/$(VIRT_ARTIFACTS_SERVER):$(IMAGE_TAG)
+	. "hack/cri-bin.sh" && $$CRI_BIN manifest push $(IMAGE_REGISTRY)/$(VIRT_ARTIFACTS_SERVER):$(IMAGE_TAG)
 
 cluster-up:
 	./cluster/up.sh
@@ -292,4 +315,9 @@ bump-hco:
 		lint-monitoring \
 		sanity \
 		goimport \
-		bump-hco
+		bump-hco \
+		build-push-multi-arch-operator-image \
+		build-push-multi-arch-webhook-image \
+		build-push-multi-arch-functest-image \
+		build-push-multi-arch-artifacts-server \
+		build-push-multi-arch-images

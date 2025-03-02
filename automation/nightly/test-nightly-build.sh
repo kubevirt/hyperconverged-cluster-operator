@@ -22,6 +22,9 @@ wget -q https://dl.google.com/go/go1.22.6.linux-amd64.tar.gz
 tar -C /usr/local -xf go*.tar.gz
 export PATH=/usr/local/go/bin:$PATH
 
+# add qemu-user-static
+$CRI_BIN run --rm --privileged docker.io/multiarch/qemu-user-static --reset -p yes
+
 # get latest KubeVirt commit
 latest_kubevirt=$(curl -sL https://storage.googleapis.com/kubevirt-prow/devel/nightly/release/kubevirt/kubevirt/latest)
 latest_kubevirt_image=$(curl -sL "https://storage.googleapis.com/kubevirt-prow/devel/nightly/release/kubevirt/kubevirt/${latest_kubevirt}/kubevirt-operator.yaml" | grep 'OPERATOR_IMAGE' -A1 | tail -n 1 | sed 's/.*value: //g')
@@ -60,11 +63,13 @@ export IMAGE_TAG="nb_${build_date}_$(git show -s --format=%h)"
 export IMAGE_PREFIX=kubevirtci
 TEMP_OPERATOR_IMAGE=${IMAGE_PREFIX}/hyperconverged-cluster-operator
 TEMP_WEBHOOK_IMAGE=${IMAGE_PREFIX}/hyperconverged-cluster-webhook
+TEMP_DOWNLOAD_IMAGE=${IMAGE_PREFIX}/virt-artifacts-server
 CSV_OPERATOR_IMAGE=${IMAGE_REGISTRY}/${TEMP_OPERATOR_IMAGE}
 CSV_WEBHOOK_IMAGE=${IMAGE_REGISTRY}/${TEMP_WEBHOOK_IMAGE}
+CSV_DOWNLOAD_IMAGE=${IMAGE_REGISTRY}/${TEMP_DOWNLOAD_IMAGE}
 
 # Build HCO & HCO Webhook
-OPERATOR_IMAGE=${TEMP_OPERATOR_IMAGE} WEBHOOK_IMAGE=${TEMP_WEBHOOK_IMAGE} make container-build-operator container-push-operator container-build-webhook container-push-webhook
+OPERATOR_IMAGE=${TEMP_OPERATOR_IMAGE} WEBHOOK_IMAGE=${TEMP_WEBHOOK_IMAGE} make build-push-multi-arch-operator-image build-push-multi-arch-webhook-image build-push-multi-arch-artifacts-server
 
 # Update image digests
 sed -i "s#quay.io/kubevirt/virt-#${kv_image/-*/-}#" deploy/images.csv
@@ -76,9 +81,10 @@ export HCO_VERSION="${IMAGE_TAG}"
 
 HCO_OPERATOR_IMAGE_DIGEST=$(tools/digester/digester --image ${CSV_OPERATOR_IMAGE}:${IMAGE_TAG})
 HCO_WEBHOOK_IMAGE_DIGEST=$(tools/digester/digester --image ${CSV_WEBHOOK_IMAGE}:${IMAGE_TAG})
+HCO_DOWNLOAD_IMAGE_DIGEST=$(tools/digester/digester --image ${CSV_DOWNLOAD_IMAGE}:${IMAGE_TAG})
 
 # Build the CSV
-HCO_OPERATOR_IMAGE=${HCO_OPERATOR_IMAGE_DIGEST} HCO_WEBHOOK_IMAGE=${HCO_WEBHOOK_IMAGE_DIGEST} ./hack/build-manifests.sh
+HCO_OPERATOR_IMAGE=${HCO_OPERATOR_IMAGE_DIGEST} HCO_WEBHOOK_IMAGE=${HCO_WEBHOOK_IMAGE_DIGEST} HCO_DOWNLOADS_IMAGE=${HCO_DOWNLOAD_IMAGE_DIGEST} ./hack/build-manifests.sh
 
 # Download OPM
 OPM_VERSION=v1.47.0
