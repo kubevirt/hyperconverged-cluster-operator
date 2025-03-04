@@ -102,9 +102,6 @@ const (
 	// Enable VM state persistence
 	kvVMPersistentState = "VMPersistentState"
 
-	// Enable using a plugin to bind the pod and the VM network
-	kvHNetworkBindingPluginsGate = "NetworkBindingPlugins"
-
 	// Enable VM live update, to allow live propagation of VM changes to their VMI
 	kvVMLiveUpdateFeatures = "VMLiveUpdateFeatures"
 
@@ -135,7 +132,6 @@ var (
 		kvDisableCustomSELinuxPolicyGate,
 		kvKubevirtSeccompProfile,
 		kvVMPersistentState,
-		kvHNetworkBindingPluginsGate,
 		kvVMLiveUpdateFeatures,
 		kvDynamicPodInterfaceNamingGate,
 		kvVolumesUpdateStrategyGate,
