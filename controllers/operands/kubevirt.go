@@ -105,9 +105,6 @@ const (
 	// Enable VM live update, to allow live propagation of VM changes to their VMI
 	kvVMLiveUpdateFeatures = "VMLiveUpdateFeatures"
 
-	// kvDynamicPodInterfaceNaming enables a mechanism to dynamically determine the primary pod interface for KubeVirt virtual machines.
-	kvDynamicPodInterfaceNamingGate = "DynamicPodInterfaceNaming"
-
 	// enables to specify the strategy on the volume updates.
 	kvVolumesUpdateStrategyGate = "VolumesUpdateStrategy"
 
@@ -133,7 +130,6 @@ var (
 		kvKubevirtSeccompProfile,
 		kvVMPersistentState,
 		kvVMLiveUpdateFeatures,
-		kvDynamicPodInterfaceNamingGate,
 		kvVolumesUpdateStrategyGate,
 		kvVolumeMigrationGate,
 	}

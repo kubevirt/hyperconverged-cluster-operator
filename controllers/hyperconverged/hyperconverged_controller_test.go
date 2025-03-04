@@ -212,7 +212,6 @@ var _ = Describe("HyperconvergedController", func() {
 					"KubevirtSeccompProfile",
 					"VMPersistentState",
 					"VMLiveUpdateFeatures",
-					"DynamicPodInterfaceNaming",
 					"VolumesUpdateStrategy",
 					"VolumeMigration",
 				}
