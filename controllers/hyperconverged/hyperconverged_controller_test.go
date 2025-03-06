@@ -1517,6 +1517,37 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(counterValueAfter).To(Equal(counterValueBefore))
 			})
 
+			It("Should remove v1beta1 from SSP CRD on upgrade, if exists", func() {
+				expected.sspCRD.Status.StoredVersions = []string{
+					"v1beta1",
+					"v1beta2",
+				}
+
+				const sspCrd = "ssps.ssp.kubevirt.io"
+				foundResource := &apiextensionsv1.CustomResourceDefinition{}
+				UpdateVersion(&expected.hco.Status, hcoVersionName, "1.12.0")
+
+				cl := expected.initClient()
+
+				r := initReconciler(cl, nil)
+				r.firstLoop = false
+				r.ownVersion = newHCOVersion
+
+				res, err := r.Reconcile(context.TODO(), request)
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: sspCrd, Namespace: ""},
+						foundResource),
+				).To(Succeed())
+
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res.Requeue).To(BeTrue())
+
+				Expect(foundResource.Status.StoredVersions).To(HaveLen(1))
+				Expect(foundResource.Status.StoredVersions).ToNot(ContainElement("v1beta1"))
+				Expect(foundResource.Status.StoredVersions).To(ContainElement("v1beta2"))
+			})
+
 			DescribeTable(
 				"be tolerant parsing parse version",
 				func(testHcoVersion string, acceptableVersion bool, errorMessage string) {
@@ -1916,11 +1947,6 @@ var _ = Describe("HyperconvergedController", func() {
 						{
 							ObjectMeta: metav1.ObjectMeta{
 								Name: "networkaddonsconfigs.networkaddonsoperator.network.kubevirt.io",
-							},
-						},
-						{
-							ObjectMeta: metav1.ObjectMeta{
-								Name: "ssps.ssp.kubevirt.io",
 							},
 						},
 					}
