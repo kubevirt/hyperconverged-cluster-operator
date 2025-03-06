@@ -21,6 +21,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -397,6 +398,12 @@ func (r *ReconcileHyperConverged) handleUpgrade(req *common.HcoRequest) (*reconc
 	modified, err := r.migrateBeforeUpgrade(req)
 	if err != nil {
 		return &reconcile.Result{Requeue: true}, err
+	}
+
+	const sspCrd = "ssps.ssp.kubevirt.io"
+	const sspApiVersionToRemove = "v1beta1"
+	if err = r.removeOldApifromCrd(req, sspCrd, sspApiVersionToRemove); err != nil {
+		return &reconcile.Result{Requeue: false}, err
 	}
 
 	if modified {
@@ -1039,6 +1046,33 @@ func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (
 	removeOldQuickStartGuides(req, r.client, r.operandHandler.GetQuickStartNames())
 
 	return upgradePatched, nil
+}
+
+func (r *ReconcileHyperConverged) removeOldApifromCrd(req *common.HcoRequest, crdName, removedApiVersion string) error {
+	var crd apiextensionsv1.CustomResourceDefinition
+	if err := r.client.Get(req.Ctx, types.NamespacedName{Name: crdName}, &crd); err != nil {
+		req.Logger.Error(err, fmt.Sprintf("unable to get %s CRD", crdName))
+		return err
+	}
+
+	versionIndex := slices.Index(crd.Status.StoredVersions, removedApiVersion)
+	if versionIndex == -1 {
+		return nil
+	}
+
+	patchBytes := []byte(fmt.Sprintf(`[
+					{"op":"test", "path":"/status/storedVersions/%[1]d", "value": "%[2]s"},
+					{"op":"remove", "path":"/status/storedVersions/%[1]d"}]`,
+		versionIndex, removedApiVersion))
+	patch := client.RawPatch(types.JSONPatchType, patchBytes)
+
+	if err := r.client.Status().Patch(req.Ctx, &crd, patch); err != nil {
+		req.Logger.Error(err, fmt.Sprintf("failed to remove %v from status of CRD %v", removedApiVersion, crdName))
+		return err
+	}
+
+	req.Logger.Info(fmt.Sprintf("%s has been removed from the CRD %v stored versions", removedApiVersion, crdName))
+	return nil
 }
 
 func (r *ReconcileHyperConverged) applyUpgradePatches(req *common.HcoRequest) (bool, error) {
