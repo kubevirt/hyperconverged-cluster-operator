@@ -120,6 +120,9 @@ Msg "HCO deployOVS annotation and OVS state in CNAO CR before the upgrade"
 PREVIOUS_OVS_ANNOTATION=$(${CMD} get ${HCO_KIND} ${HCO_RESOURCE_NAME} -n ${HCO_NAMESPACE} -o jsonpath='{.metadata.annotations.deployOVS}')
 PREVIOUS_OVS_STATE=$(${CMD} get networkaddonsconfigs cluster -o jsonpath='{.spec.ovs}')
 
+Msg "Add v1beta1 to SSP CRD before starting the upgrade"
+${CMD} patch crd ssps.ssp.kubevirt.io --subresource=status --patch='{"status":{"storedVersions":["v1beta1", "v1beta2"]}}'
+
 # Before starting the upgrade, make sure the CSV is installed properly.
 Msg "Read the CSV to make sure the deployment is done"
 # Make sure the CSV is in Succeeded phase
@@ -306,6 +309,10 @@ if ${CMD} -n ${HCO_NAMESPACE} ${HCO_KIND} ${HCO_RESOURCE_NAME} -o=jsonpath={.sta
 else
     echo "TTO reference removed from .status.relatedObjects"
 fi
+
+Msg "Check that v1beta1 has been removed from the SSP CRD .status.storedVersions and it contains only v1beta2"
+RESULT=$(${CMD} get crd ssps.ssp.kubevirt.io -o json | jq '(.status.storedVersions | length == 1) and (.status.storedVersions[0] == "v1beta2")')
+[[ "${RESULT}" == "true" ]]
 
 Msg "check virtio-win image is in configmap"
 VIRTIOWIN_IMAGE_CSV=$(${CMD} get ${CSV} -n ${HCO_NAMESPACE} \

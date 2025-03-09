@@ -128,6 +128,7 @@ type BasicExpected struct {
 	virtioWinRole        *rbacv1.Role
 	virtioWinRoleBinding *rbacv1.RoleBinding
 	hcoCRD               *apiextensionsv1.CustomResourceDefinition
+	sspCRD               *apiextensionsv1.CustomResourceDefinition
 	consolePluginDeploy  *appsv1.Deployment
 	consoleProxyDeploy   *appsv1.Deployment
 	consolePluginSvc     *corev1.Service
@@ -155,6 +156,7 @@ func (be BasicExpected) toArray() []client.Object {
 		be.virtioWinRole,
 		be.virtioWinRoleBinding,
 		be.hcoCRD,
+		be.sspCRD,
 		be.consolePluginDeploy,
 		be.consoleProxyDeploy,
 		be.consolePluginSvc,
@@ -308,6 +310,13 @@ func getBasicDeployment() *BasicExpected {
 		},
 	}
 	res.hcoCRD = hcoCrd
+
+	sspCrd := &apiextensionsv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "ssps.ssp.kubevirt.io",
+		},
+	}
+	res.sspCRD = sspCrd
 
 	csv := hcoutil.GetClusterInfo().GetCSV()
 	res.csv = csv
