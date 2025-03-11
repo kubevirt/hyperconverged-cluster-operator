@@ -75,7 +75,6 @@ type ConfigMapVolumeSource struct {
 type SecretVolumeSource struct {
 	// Name of the secret in the pod's namespace to use.
 	// More info: https://kubernetes.io/docs/concepts/storage/volumes#secret
-	// +optional
 	SecretName string `json:"secretName,omitempty"`
 	// Specify whether the Secret or it's keys must be defined
 	// +optional
@@ -294,6 +293,9 @@ type CPU struct {
 	// Sockets specifies the number of sockets inside the vmi.
 	// Must be a value greater or equal 1.
 	Sockets uint32 `json:"sockets,omitempty"`
+	// MaxSockets specifies the maximum amount of sockets that can
+	// be hotplugged
+	MaxSockets uint32 `json:"maxSockets,omitempty"`
 	// Threads specifies the number of threads inside the vmi.
 	// Must be a value greater or equal 1.
 	Threads uint32 `json:"threads,omitempty"`
@@ -493,7 +495,11 @@ type SoundDevice struct {
 	Model string `json:"model,omitempty"`
 }
 
-type TPMDevice struct{}
+type TPMDevice struct {
+	// Persistent indicates the state of the TPM device should be kept accross reboots
+	// Defaults to false
+	Persistent *bool `json:"persistent,omitempty"`
+}
 
 type InputBus string
 
@@ -653,6 +659,16 @@ type LaunchSecurity struct {
 }
 
 type SEV struct {
+	// Guest policy flags as defined in AMD SEV API specification.
+	// Note: due to security reasons it is not allowed to enable guest debugging. Therefore NoDebug flag is not exposed to users and is always true.
+	Policy *SEVPolicy `json:"policy,omitempty"`
+}
+
+type SEVPolicy struct {
+	// SEV-ES is required.
+	// Defaults to false.
+	// +optional
+	EncryptedState *bool `json:"encryptedState,omitempty"`
 }
 
 type LunTarget struct {
@@ -662,6 +678,8 @@ type LunTarget struct {
 	// ReadOnly.
 	// Defaults to false.
 	ReadOnly bool `json:"readonly,omitempty"`
+	// Reservation indicates if the disk needs to support the persistent reservation for the SCSI disk
+	Reservation bool `json:"reservation,omitempty"`
 }
 
 // TrayState indicates if a tray of a cdrom is open or closed.
@@ -1181,7 +1199,17 @@ type Interface struct {
 	// This value is required to be unique across all devices and be between 1 and (16*1024-1).
 	// +optional
 	ACPIIndex int `json:"acpiIndex,omitempty"`
+	// State represents the requested operational state of the interface.
+	// The (only) value supported is `absent`, expressing a request to remove the interface.
+	// +optional
+	State InterfaceState `json:"state,omitempty"`
 }
+
+type InterfaceState string
+
+const (
+	InterfaceStateAbsent InterfaceState = "absent"
+)
 
 // Extra DHCP options to use in the interface.
 type DHCPOptions struct {
@@ -1438,4 +1466,18 @@ type MultusNetwork struct {
 	// Select the default network and add it to the
 	// multus-cni.io/default-network annotation.
 	Default bool `json:"default,omitempty"`
+}
+
+// CPUTopology allows specifying the amount of cores, sockets
+// and threads.
+type CPUTopology struct {
+	// Cores specifies the number of cores inside the vmi.
+	// Must be a value greater or equal 1.
+	Cores uint32 `json:"cores,omitempty"`
+	// Sockets specifies the number of sockets inside the vmi.
+	// Must be a value greater or equal 1.
+	Sockets uint32 `json:"sockets,omitempty"`
+	// Threads specifies the number of threads inside the vmi.
+	// Must be a value greater or equal 1.
+	Threads uint32 `json:"threads,omitempty"`
 }
