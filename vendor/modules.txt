@@ -295,7 +295,7 @@ golang.org/x/exp/maps
 # golang.org/x/mod v0.20.0
 ## explicit; go 1.18
 golang.org/x/mod/semver
-# golang.org/x/net v0.28.0 => golang.org/x/net v0.33.0
+# golang.org/x/net v0.33.0 => golang.org/x/net v0.33.0
 ## explicit; go 1.18
 golang.org/x/net/context
 golang.org/x/net/html
@@ -863,8 +863,8 @@ k8s.io/utils/trace
 ## explicit; go 1.22.0
 kubevirt.io/api/core
 kubevirt.io/api/core/v1
-# kubevirt.io/application-aware-quota v1.3.0
-## explicit; go 1.22.3
+# kubevirt.io/application-aware-quota v1.3.1
+## explicit; go 1.22.11
 kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core
 kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1
 # kubevirt.io/containerized-data-importer-api v1.60.5
