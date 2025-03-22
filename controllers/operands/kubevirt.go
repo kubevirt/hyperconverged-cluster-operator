@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -26,6 +27,7 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/stream"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 )
@@ -369,16 +371,17 @@ func hcWorkloadUpdateStrategyToKv(hcObject *hcov1beta1.HyperConvergedWorkloadUpd
 		}
 
 		if hcObject.BatchEvictionSize != nil {
-			kvObject.BatchEvictionSize = new(int)
-			*kvObject.BatchEvictionSize = *hcObject.BatchEvictionSize
+			kvObject.BatchEvictionSize = ptr.To(*hcObject.BatchEvictionSize)
 		}
 
-		if size := len(hcObject.WorkloadUpdateMethods); size > 0 {
-			kvObject.WorkloadUpdateMethods = make([]kubevirtcorev1.WorkloadUpdateMethod, size)
-			for i, updateMethod := range hcObject.WorkloadUpdateMethods {
-				kvObject.WorkloadUpdateMethods[i] = kubevirtcorev1.WorkloadUpdateMethod(updateMethod)
-			}
-		}
+		kvObject.WorkloadUpdateMethods = slices.Collect(
+			stream.Transform(
+				slices.Values(hcObject.WorkloadUpdateMethods),
+				func(method string) kubevirtcorev1.WorkloadUpdateMethod {
+					return kubevirtcorev1.WorkloadUpdateMethod(method)
+				},
+			),
+		)
 	}
 
 	return kvObject
@@ -509,16 +512,19 @@ func getNetworkBindings(hcoNetworkBindings map[string]kubevirtcorev1.InterfaceBi
 }
 
 func getObsoleteCPUConfig(hcObsoleteCPUConf *hcov1beta1.HyperConvergedObsoleteCPUs) (map[string]bool, string) {
-	obsoleteCPUModels := make(map[string]bool)
-	for _, cpu := range hardcodedObsoleteCPUModels {
-		obsoleteCPUModels[cpu] = true
+	transformFunc := func(cpu string) (string, bool) {
+		return cpu, true
 	}
+
+	obsoleteCPUModels := maps.Collect(stream.Transform2(slices.Values(hardcodedObsoleteCPUModels), transformFunc))
+
 	minCPUModel := ""
 
 	if hcObsoleteCPUConf != nil {
-		for _, cpu := range hcObsoleteCPUConf.CPUModels {
-			obsoleteCPUModels[cpu] = true
-		}
+		maps.Insert(
+			obsoleteCPUModels,
+			stream.Transform2(slices.Values(hcObsoleteCPUConf.CPUModels), transformFunc),
+		)
 
 		minCPUModel = hcObsoleteCPUConf.MinCPUModel
 	}
@@ -623,21 +629,20 @@ func toKvUSBHostDevices(hcoUSBHostdevices []hcov1beta1.USBHostDevice) []kubevirt
 }
 
 func toKvMediatedDevices(hcoMediatedDevices []hcov1beta1.MediatedHostDevice) []kubevirtcorev1.MediatedHostDevice {
-	if len(hcoMediatedDevices) > 0 {
-		mediatedDevices := make([]kubevirtcorev1.MediatedHostDevice, 0, len(hcoMediatedDevices))
-		for _, hcoMediatedHostDevice := range hcoMediatedDevices {
-			if !hcoMediatedHostDevice.Disabled {
-				mediatedDevices = append(mediatedDevices, kubevirtcorev1.MediatedHostDevice{
-					MDEVNameSelector:         hcoMediatedHostDevice.MDEVNameSelector,
-					ResourceName:             hcoMediatedHostDevice.ResourceName,
-					ExternalResourceProvider: hcoMediatedHostDevice.ExternalResourceProvider,
-				})
-			}
-		}
 
-		return mediatedDevices
+	filter := func(dev hcov1beta1.MediatedHostDevice) bool {
+		return !dev.Disabled
 	}
-	return nil
+
+	mapHCO2KV := func(hcoDev hcov1beta1.MediatedHostDevice) kubevirtcorev1.MediatedHostDevice {
+		return kubevirtcorev1.MediatedHostDevice{
+			MDEVNameSelector:         hcoDev.MDEVNameSelector,
+			ResourceName:             hcoDev.ResourceName,
+			ExternalResourceProvider: hcoDev.ExternalResourceProvider,
+		}
+	}
+
+	return slices.Collect(stream.Transform(stream.Filter(slices.Values(hcoMediatedDevices), filter), mapHCO2KV))
 }
 
 func hcLiveMigrationToKv(lm hcov1beta1.LiveMigrationConfigurations) (*kubevirtcorev1.MigrationConfiguration, error) {
