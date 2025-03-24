@@ -16,14 +16,12 @@ import (
 	consolev1 "github.com/openshift/api/console/v1"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 	objectreferencesv1 "github.com/openshift/custom-resource-status/objectreferences/v1"
-	v1 "github.com/openshift/custom-resource-status/objectreferences/v1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/api/meta"
-	k8sTime "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -805,12 +803,12 @@ var _ = Describe("HyperconvergedController", func() {
 
 				Expect(foundResource.Status.RelatedObjects).ToNot(BeNil())
 				Expect(foundResource.Status.RelatedObjects).To(HaveLen(22))
-				Expect(foundResource.ObjectMeta.Finalizers).To(Equal([]string{FinalizerName}))
+				Expect(foundResource.Finalizers).To(Equal([]string{FinalizerName}))
 
 				// Now, delete HCO
 				delTime := time.Now().UTC().Add(-1 * time.Minute)
-				expected.hco.ObjectMeta.DeletionTimestamp = &k8sTime.Time{Time: delTime}
-				expected.hco.ObjectMeta.Finalizers = []string{FinalizerName}
+				expected.hco.DeletionTimestamp = &metav1.Time{Time: delTime}
+				expected.hco.Finalizers = []string{FinalizerName}
 				cl = expected.initClient()
 
 				r = initReconciler(cl, nil)
@@ -847,7 +845,7 @@ var _ = Describe("HyperconvergedController", func() {
 				).To(Succeed())
 
 				Expect(foundResource.Status.RelatedObjects).ToNot(BeNil())
-				Expect(foundResource.ObjectMeta.Finalizers).To(Equal([]string{FinalizerName}))
+				Expect(foundResource.Finalizers).To(Equal([]string{FinalizerName}))
 			})
 
 			It("Should not be ready if one of the operands is returns error, on create", func() {
@@ -931,7 +929,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 			It("Should upgrade the status.observedGeneration field", func() {
 				expected := getBasicDeployment()
-				expected.hco.ObjectMeta.Generation = 10
+				expected.hco.Generation = 10
 				cl := expected.initClient()
 				foundResource, _, _ := doReconcile(cl, expected.hco, nil)
 
@@ -1200,7 +1198,7 @@ var _ = Describe("HyperconvergedController", func() {
 				foundResource, _, requeue := doReconcile(cl, expected.hco, nil)
 				Expect(requeue).To(BeTrue())
 
-				Expect(foundResource.ObjectMeta.Labels[hcoutil.AppLabel]).To(Equal(hcoutil.HyperConvergedName))
+				Expect(foundResource.Labels[hcoutil.AppLabel]).To(Equal(hcoutil.HyperConvergedName))
 			})
 
 			It("Should set required fields when missing", func() {
@@ -1210,7 +1208,7 @@ var _ = Describe("HyperconvergedController", func() {
 				foundResource, _, requeue := doReconcile(cl, expected.hco, nil)
 				Expect(requeue).To(BeFalse())
 
-				Expect(foundResource.ObjectMeta.Labels[hcoutil.AppLabel]).To(Equal(hcoutil.HyperConvergedName))
+				Expect(foundResource.Labels[hcoutil.AppLabel]).To(Equal(hcoutil.HyperConvergedName))
 			})
 		})
 
@@ -1770,11 +1768,11 @@ var _ = Describe("HyperconvergedController", func() {
 
 					kvRef, err := reference.GetReference(commontestutils.GetScheme(), expected.kv)
 					Expect(err).ToNot(HaveOccurred())
-					Expect(v1.SetObjectReference(&expected.hco.Status.RelatedObjects, *kvRef)).ToNot(HaveOccurred())
+					Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, *kvRef)).ToNot(HaveOccurred())
 
 					oldQsRef, err := reference.GetReference(commontestutils.GetScheme(), oldQs)
 					Expect(err).ToNot(HaveOccurred())
-					Expect(v1.SetObjectReference(&expected.hco.Status.RelatedObjects, *oldQsRef)).ToNot(HaveOccurred())
+					Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, *oldQsRef)).ToNot(HaveOccurred())
 
 					resources := append(expected.toArray(), oldQs)
 
@@ -1862,10 +1860,10 @@ var _ = Describe("HyperconvergedController", func() {
 					UpdateVersion(&expected.hco.Status, hcoVersionName, "1.4.99")
 
 					for _, objRef := range toBeRemovedRelatedObjects {
-						Expect(v1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
+						Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
 					}
 					for _, objRef := range otherRelatedObjects {
-						Expect(v1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
+						Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
 					}
 
 					resources := append(expected.toArray(), cmToBeRemoved1, cmToBeRemoved2, cmNotToBeRemoved1, cmNotToBeRemoved2)
@@ -2047,10 +2045,10 @@ var _ = Describe("HyperconvergedController", func() {
 					UpdateVersion(&expected.hco.Status, hcoVersionName, "1.6.9")
 
 					for _, objRef := range toBeRemovedRelatedObjects {
-						Expect(v1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
+						Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
 					}
 					for _, objRef := range otherRelatedObjects {
-						Expect(v1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
+						Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
 					}
 
 					resources := append(expected.toArray(), cmToBeRemoved1, roleToBeRemoved, roleBindingToBeRemoved, cmNotToBeRemoved1, cmNotToBeRemoved2)
@@ -2200,10 +2198,10 @@ var _ = Describe("HyperconvergedController", func() {
 					UpdateVersion(&expected.hco.Status, hcoVersionName, "1.9.0")
 
 					for _, objRef := range toBeRemovedRelatedObjects {
-						Expect(v1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
+						Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
 					}
 					for _, objRef := range otherRelatedObjects {
-						Expect(v1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
+						Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
 					}
 
 					resources := append(expected.toArray(), crdToBeRemoved, cmNotToBeRemoved)
@@ -2751,7 +2749,7 @@ var _ = Describe("HyperconvergedController", func() {
 			Context("Detection of a tainted configuration for kubevirt", func() {
 
 				It("Raises a TaintedConfiguration condition upon detection of such configuration", func() {
-					hco.ObjectMeta.Annotations = map[string]string{
+					hco.Annotations = map[string]string{
 						common.JSONPatchKVAnnotationName: `
 						[
 							{
@@ -2856,7 +2854,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					metrics.SetUnsafeModificationCount(5, common.JSONPatchKVAnnotationName)
 
-					hco.ObjectMeta.Annotations = map[string]string{
+					hco.Annotations = map[string]string{
 						// Set bad json format (missing comma)
 						common.JSONPatchKVAnnotationName: `
 						[
@@ -2901,7 +2899,7 @@ var _ = Describe("HyperconvergedController", func() {
 			Context("Detection of a tainted configuration for cdi", func() {
 
 				It("Raises a TaintedConfiguration condition upon detection of such configuration", func() {
-					hco.ObjectMeta.Annotations = map[string]string{
+					hco.Annotations = map[string]string{
 						common.JSONPatchCDIAnnotationName: `[
 					{
 						"op": "add",
@@ -3015,7 +3013,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					metrics.SetUnsafeModificationCount(5, common.JSONPatchCDIAnnotationName)
 
-					hco.ObjectMeta.Annotations = map[string]string{
+					hco.Annotations = map[string]string{
 						// Set bad json format (missing comma)
 						common.JSONPatchKVAnnotationName: `[{`,
 					}
@@ -3052,7 +3050,7 @@ var _ = Describe("HyperconvergedController", func() {
 			Context("Detection of a tainted configuration for cna", func() {
 
 				It("Raises a TaintedConfiguration condition upon detection of such configuration", func() {
-					hco.ObjectMeta.Annotations = map[string]string{
+					hco.Annotations = map[string]string{
 						common.JSONPatchCNAOAnnotationName: `[
 							{
 								"op": "add",
@@ -3153,7 +3151,7 @@ var _ = Describe("HyperconvergedController", func() {
 				})
 
 				It("Removes the TaintedConfiguration condition if the annotation is wrong", func() {
-					hco.ObjectMeta.Annotations = map[string]string{
+					hco.Annotations = map[string]string{
 						// Set bad json
 						common.JSONPatchKVAnnotationName: `[{`,
 					}
@@ -3191,7 +3189,7 @@ var _ = Describe("HyperconvergedController", func() {
 			Context("Detection of a tainted configuration for SSP", func() {
 
 				It("Raises a TaintedConfiguration condition upon detection of such configuration", func() {
-					hco.ObjectMeta.Annotations = map[string]string{
+					hco.Annotations = map[string]string{
 						common.JSONPatchSSPAnnotationName: `[
 							{
 								"op": "replace",
@@ -3285,7 +3283,7 @@ var _ = Describe("HyperconvergedController", func() {
 				})
 
 				It("Removes the TaintedConfiguration condition if the annotation is wrong", func() {
-					hco.ObjectMeta.Annotations = map[string]string{
+					hco.Annotations = map[string]string{
 						// Set bad json
 						common.JSONPatchSSPAnnotationName: `[{`,
 					}
@@ -3322,7 +3320,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 			Context("Detection of a tainted configuration for all the annotations", func() {
 				It("Raises a TaintedConfiguration condition upon detection of such configuration", func() {
-					hco.ObjectMeta.Annotations = map[string]string{
+					hco.Annotations = map[string]string{
 						common.JSONPatchKVAnnotationName: `
 						[
 							{
@@ -3507,8 +3505,8 @@ func openshift2CdiSecProfile(hcProfile *openshiftconfigv1.TLSSecurityProfile) *c
 	if hcProfile.Custom != nil {
 		custom = &cdiv1beta1.CustomTLSProfile{
 			TLSProfileSpec: cdiv1beta1.TLSProfileSpec{
-				Ciphers:       hcProfile.Custom.TLSProfileSpec.Ciphers,
-				MinTLSVersion: cdiv1beta1.TLSProtocolVersion(hcProfile.Custom.TLSProfileSpec.MinTLSVersion),
+				Ciphers:       hcProfile.Custom.Ciphers,
+				MinTLSVersion: cdiv1beta1.TLSProtocolVersion(hcProfile.Custom.MinTLSVersion),
 			},
 		}
 	}
