@@ -538,6 +538,11 @@ func (in *HyperConvergedSpec) DeepCopyInto(out *HyperConvergedSpec) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.DeployVMConsoleProxy != nil {
+		in, out := &in.DeployVMConsoleProxy, &out.DeployVMConsoleProxy
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
