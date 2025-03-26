@@ -196,7 +196,8 @@ replace github.com/openshift/api => github.com/openshift/api v0.0.0-202305031333
 // Fixes various security issues forcing newer versions of affected dependencies,
 // prune the list once not explicitly required
 replace (
-	github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
+	// Fix CVE-2025-30204
+	github.com/dgrijalva/jwt-go => github.com/golang-jwt/jwt/v4 v4.5.2
 	github.com/gorilla/websocket => github.com/gorilla/websocket v1.5.0
 )
 
