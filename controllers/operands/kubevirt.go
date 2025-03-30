@@ -145,6 +145,7 @@ const (
 	kvDisableMDevConfig     = "DisableMDEVConfiguration"
 	kvPersistentReservation = "PersistentReservation"
 	kvAlignCPUs             = "AlignCPUs"
+	kvCommonInstancetypesDeploymentGate = "CommonInstancetypesDeploymentGate"
 )
 
 // CPU Plugin default values
@@ -845,7 +846,10 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates) [
 	if featureGates.AlignCPUs != nil && *featureGates.AlignCPUs {
 		fgs = append(fgs, kvAlignCPUs)
 	}
-
+	if featureGates.CommonInstancetypesDeploymentGate != nil && *featureGates.CommonInstancetypesDeploymentGate {
+		fgs = append(fgs, kvCommonInstancetypesDeploymentGate)
+	}
+	
 	return fgs
 }
 

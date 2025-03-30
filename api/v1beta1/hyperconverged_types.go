@@ -490,6 +490,13 @@ type HyperConvergedFeatureGates struct {
 	// be able to bind their VM to a UDN network on the VM's primary interface.
 	// Deprecated: this field is ignored and will be removed in the next version of the API.
 	PrimaryUserDefinedNetworkBinding *bool `json:"primaryUserDefinedNetworkBinding,omitempty"`
+
+	// Enable the control of Kubevirt's CR CommonInstancetypesDeploymentGate feature
+	// gate through the HyperConverged CR
+	// +optional
+	// +kubebuilder:default=true
+	// +default=true
+	CommonInstancetypesDeploymentGate *bool `json:"commonInstancetypesDeploymentGate,omitempty"`
 }
 
 // PermittedHostDevices holds information about devices allowed for passthrough
