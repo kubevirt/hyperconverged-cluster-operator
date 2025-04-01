@@ -10,7 +10,7 @@ require (
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-logr/logr v1.4.2
 	github.com/google/uuid v1.6.0
-	github.com/kubevirt/cluster-network-addons-operator v0.95.0
+	github.com/kubevirt/cluster-network-addons-operator v0.95.1
 	github.com/kubevirt/monitoring/pkg/metrics/parser v0.0.0-20240505100225-e29dee0bb12b
 	github.com/machadovilaca/operator-observability v0.0.21
 	github.com/onsi/ginkgo/v2 v2.20.2
@@ -28,7 +28,7 @@ require (
 	github.com/prometheus/common v0.57.0
 	github.com/samber/lo v1.47.0
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/sync v0.10.0
+	golang.org/x/sync v0.11.0
 	golang.org/x/tools v0.24.0
 	gomodules.xyz/jsonpatch/v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -90,11 +90,11 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/exp v0.0.0-20240823005443-9b4947da3948 // indirect
 	golang.org/x/mod v0.20.0 // indirect
-	golang.org/x/net v0.28.0 // indirect
+	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/oauth2 v0.22.0 // indirect
-	golang.org/x/sys v0.28.0 // indirect
-	golang.org/x/term v0.27.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
+	golang.org/x/term v0.29.0 // indirect
+	golang.org/x/text v0.22.0 // indirect
 	golang.org/x/time v0.6.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
