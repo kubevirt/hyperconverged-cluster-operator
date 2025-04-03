@@ -59,5 +59,18 @@ func clusterAlerts() []promv1.Rule {
 				"operator_health_impact": "none",
 			},
 		},
+		{
+			Alert: "UnsupportedOrDeprecatedMachineType",
+			Expr:  intstr.FromString(`kubevirt_vm_info * on(machine_type) group_left(deprecated) (kubevirt_supported_machine_types unless kubevirt_supported_machine_types{deprecated="yes"})`),
+			For:   ptr.To(promv1.Duration("5m")),
+			Annotations: map[string]string{
+				"summary":     "A VM is using an unsupported or deprecated machine type",
+				"description": "Virtual Machine with machine type '{{ $labels.machine_type }}' on node '{{ $labels.node }}' is either unsupported or deprecated.",
+			},
+			Labels: map[string]string{
+				"severity":               "warning",
+				"operator_health_impact": "none",
+			},
+		},
 	}
 }
