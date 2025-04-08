@@ -25,8 +25,8 @@ require (
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/client_model v0.2.0
 	github.com/spf13/pflag v1.0.5
-	golang.org/x/text v0.3.4 // indirect
-	golang.org/x/tools v0.0.0-20210106214847-113979e3529a
+	golang.org/x/text v0.3.8 // indirect
+	golang.org/x/tools v0.1.12
 	google.golang.org/genproto v0.0.0-20200701001935-0939c5918c31 // indirect
 	k8s.io/api v0.19.4
 	k8s.io/apiextensions-apiserver v0.19.0-rc.2
