@@ -36,7 +36,7 @@ require (
 	kubevirt.io/client-go v0.36.0
 	kubevirt.io/containerized-data-importer v1.28.0
 	kubevirt.io/controller-lifecycle-operator-sdk v0.1.1
-	kubevirt.io/kubevirt v0.36.0
+	kubevirt.io/kubevirt v1.2.1
 	kubevirt.io/ssp-operator v0.1.3
 	sigs.k8s.io/controller-runtime v0.6.3
 	sigs.k8s.io/controller-tools v0.4.0

@@ -21,7 +21,7 @@ require (
 	k8s.io/apimachinery v0.19.0-rc.2
 	k8s.io/client-go v12.0.0+incompatible
 	kubevirt.io/client-go v0.36.0
-	kubevirt.io/kubevirt v0.36.0
+	kubevirt.io/kubevirt v1.2.1
 )
 
 // Pinned to kubernetes-1.16.4 to kubevirt.io/kubevirt v0.33.0
