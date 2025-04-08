@@ -1,0 +1,61 @@
+# docker.io/go-docker v1.0.0
+## explicit
+docker.io/go-docker
+docker.io/go-docker/api
+docker.io/go-docker/api/types
+docker.io/go-docker/api/types/blkiodev
+docker.io/go-docker/api/types/container
+docker.io/go-docker/api/types/events
+docker.io/go-docker/api/types/filters
+docker.io/go-docker/api/types/image
+docker.io/go-docker/api/types/mount
+docker.io/go-docker/api/types/network
+docker.io/go-docker/api/types/registry
+docker.io/go-docker/api/types/strslice
+docker.io/go-docker/api/types/swarm
+docker.io/go-docker/api/types/swarm/runtime
+docker.io/go-docker/api/types/time
+docker.io/go-docker/api/types/versions
+docker.io/go-docker/api/types/volume
+# github.com/Microsoft/go-winio v0.4.15
+## explicit
+github.com/Microsoft/go-winio
+github.com/Microsoft/go-winio/pkg/guid
+# github.com/docker/distribution v2.7.1+incompatible
+## explicit
+github.com/docker/distribution/digestset
+github.com/docker/distribution/reference
+# github.com/docker/docker v24.0.9+incompatible
+## explicit
+# github.com/docker/go-connections v0.4.0
+## explicit
+github.com/docker/go-connections/nat
+github.com/docker/go-connections/sockets
+github.com/docker/go-connections/tlsconfig
+# github.com/docker/go-units v0.4.0
+## explicit
+github.com/docker/go-units
+# github.com/gogo/protobuf v1.3.1
+## explicit
+github.com/gogo/protobuf/proto
+# github.com/opencontainers/go-digest v1.0.0
+## explicit
+github.com/opencontainers/go-digest
+# github.com/opencontainers/image-spec v1.0.1
+## explicit
+github.com/opencontainers/image-spec/specs-go
+github.com/opencontainers/image-spec/specs-go/v1
+# github.com/pkg/errors v0.9.1
+## explicit
+github.com/pkg/errors
+# github.com/sirupsen/logrus v1.4.1
+## explicit
+# golang.org/x/net v0.0.0-20201110031124-69a78807bb2b
+## explicit
+golang.org/x/net/context
+golang.org/x/net/context/ctxhttp
+golang.org/x/net/internal/socks
+golang.org/x/net/proxy
+# golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f
+golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/windows
