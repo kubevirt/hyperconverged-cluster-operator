@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -21,6 +22,7 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -63,11 +65,15 @@ func newSspHandler(Client client.Client, Scheme *runtime.Scheme) *sspHandler {
 }
 
 type sspHooks struct {
+	sync.Mutex
 	cache        *sspv1beta2.SSP
 	dictStatuses []hcov1beta1.DataImportCronTemplateStatus
 }
 
 func (h *sspHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+	h.Lock()
+	defer h.Unlock()
+
 	if h.cache == nil {
 		ssp, dictStatus, err := NewSSP(hc)
 		if err != nil {
@@ -88,6 +94,9 @@ func (*sspHooks) checkComponentVersion(cr runtime.Object) bool {
 	return checkComponentVersion(hcoutil.SspVersionEnvV, found.Status.ObservedVersion)
 }
 func (h *sspHooks) reset() {
+	h.Lock()
+	defer h.Unlock()
+
 	h.cache = nil
 	h.dictStatuses = nil
 }
@@ -171,7 +180,12 @@ func NewSSP(hc *hcov1beta1.HyperConverged, opts ...string) (*sspv1beta2.SSP, []h
 	ssp := NewSSPWithNameOnly(hc)
 	ssp.Spec = spec
 
-	if err := applyPatchToSpec(hc, common.JSONPatchSSPAnnotationName, ssp); err != nil {
+	if err = applyPatchToSpec(hc, common.JSONPatchSSPAnnotationName, ssp); err != nil {
+		return nil, nil, err
+	}
+
+	ssp, err = reformatobj.ReformatObj(ssp)
+	if err != nil {
 		return nil, nil, err
 	}
 
