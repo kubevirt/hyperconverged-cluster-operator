@@ -3,7 +3,7 @@ certifi==2023.11.17
 chardet==5.2.0
 google-auth==2.26.2
 graphviz==0.20.1
-idna==3.6
+idna==3.7
 kubernetes==29.0.0
 marshmallow==3.20.2
 marshmallow-dataclass==8.6.0
