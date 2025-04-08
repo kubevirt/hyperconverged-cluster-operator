@@ -21,7 +21,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	k8s.io/api v0.18.3
 	k8s.io/apiextensions-apiserver v0.18.2
-	k8s.io/apimachinery v0.18.3
+	k8s.io/apimachinery v0.18.8
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.0.0-20200204173128-addea2498afe
 	kubevirt.io/client-go v0.30.3
@@ -34,7 +34,7 @@ require (
 replace (
 	k8s.io/api => k8s.io/api v0.16.4
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.16.4
-	k8s.io/apimachinery => k8s.io/apimachinery v0.16.4
+	k8s.io/apimachinery => k8s.io/apimachinery v0.16.13
 	k8s.io/apiserver => k8s.io/apiserver v0.16.4
 	k8s.io/cli-runtime => k8s.io/cli-runtime v0.16.4
 	k8s.io/client-go => k8s.io/client-go v0.16.4
