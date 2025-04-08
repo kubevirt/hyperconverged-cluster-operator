@@ -1,6 +1,8 @@
 module github.com/kubevirt/hyperconverged-cluster-operator/tools/release-notes
 
-go 1.19
+go 1.23.0
+
+toolchain go1.24.2
 
 require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
@@ -26,10 +28,10 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
-	golang.org/x/crypto v0.8.0 // indirect
-	golang.org/x/net v0.9.0 // indirect
+	golang.org/x/crypto v0.35.0 // indirect
+	golang.org/x/net v0.36.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
-	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
@@ -41,7 +43,7 @@ replace github.com/kubevirt/hyperconverged-cluster-operator/tools/release-notes/
 replace golang.org/x/text => golang.org/x/text v0.7.0
 
 // FIX: Uncontrolled Resource Consumption
-replace golang.org/x/net => golang.org/x/net v0.9.0
+replace golang.org/x/net => golang.org/x/net v0.36.0
 
 // FIX: Use of a Broken or Risky Cryptographic Algorithm in golang.org/x/crypto/ssh
 replace golang.org/x/crypto => golang.org/x/crypto v0.8.0

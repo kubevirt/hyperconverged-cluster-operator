@@ -1,6 +1,8 @@
 module github.com/kubevirt/hyperconverged-cluster-operator/tools/release-notes/git
 
-go 1.19
+go 1.23.0
+
+toolchain go1.24.2
 
 require (
 	github.com/Masterminds/semver v1.5.0
@@ -24,9 +26,9 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
-	golang.org/x/crypto v0.1.0 // indirect
-	golang.org/x/net v0.7.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/crypto v0.35.0 // indirect
+	golang.org/x/net v0.36.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
 	google.golang.org/appengine v1.6.6 // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

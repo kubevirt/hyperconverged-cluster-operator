@@ -1,6 +1,8 @@
 module github.com/kubevirt/hyperconverged-cluster-operator/tools/digester
 
-go 1.19
+go 1.23.0
+
+toolchain go1.24.2
 
 require (
 	github.com/containers/image/v5 v5.19.2
@@ -45,8 +47,8 @@ require (
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/vbatts/tar-split v0.11.2 // indirect
-	golang.org/x/net v0.9.0 // indirect
-	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/net v0.36.0 // indirect
+	golang.org/x/sys v0.30.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
@@ -58,7 +60,7 @@ replace github.com/gogo/protobuf => github.com/gogo/protobuf v1.3.2
 replace gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.1
 
 // FIX: golang.org/x/net/http2/h2c vulnerable to request smuggling attack
-replace golang.org/x/net => golang.org/x/net v0.9.0
+replace golang.org/x/net => golang.org/x/net v0.36.0
 
 replace (
 	github.com/opencontainers/runc => github.com/opencontainers/runc v1.1.7
