@@ -18,7 +18,7 @@ require (
 	kubevirt.io/api v1.0.1
 	kubevirt.io/client-go v1.0.1
 	kubevirt.io/containerized-data-importer-api v1.57.0
-	kubevirt.io/kubevirt v1.0.1
+	kubevirt.io/kubevirt v1.2.1
 	kubevirt.io/managed-tenant-quota v1.1.12
 	kubevirt.io/qe-tools v0.1.8
 )
@@ -26,7 +26,7 @@ require (
 // -----
 // to be able to bump k8s/* deps to 0.26.3, see: https://github.com/kubevirt/kubevirt/pull/9623
 // remove when we will move to kubevirt.io/kubevirt v1.0.1
-replace kubevirt.io/kubevirt => kubevirt.io/kubevirt v1.0.1
+replace kubevirt.io/kubevirt => kubevirt.io/kubevirt v1.2.1
 
 replace kubevirt.io/client-go => kubevirt.io/client-go v1.0.1
 
