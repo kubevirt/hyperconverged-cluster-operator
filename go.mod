@@ -24,7 +24,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
 	kubevirt.io/client-go v0.26.0
 	kubevirt.io/containerized-data-importer v1.13.1
-	kubevirt.io/kubevirt v0.26.0
+	kubevirt.io/kubevirt v1.2.1
 	sigs.k8s.io/controller-runtime v0.4.0
 
 )
@@ -67,7 +67,7 @@ replace (
 	github.com/operator-framework/operator-sdk => github.com/operator-framework/operator-sdk v0.15.1
 	github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.0.0-20190424153033-d3245f150225
 	kubevirt.io/client-go => kubevirt.io/client-go v0.26.0
-	kubevirt.io/kubevirt => kubevirt.io/kubevirt v0.26.0
+	kubevirt.io/kubevirt => kubevirt.io/kubevirt v1.2.1
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.4.0
 	sigs.k8s.io/controller-tools => sigs.k8s.io/controller-tools v0.1.11-0.20190411181648-9d55346c2bde
 )
