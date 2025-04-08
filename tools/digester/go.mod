@@ -3,7 +3,7 @@ module github.com/kubevirt/hyperconverged-cluster-operator/tools/digester
 go 1.20
 
 require (
-	github.com/containers/image/v5 v5.29.0
+	github.com/containers/image/v5 v5.29.3
 	github.com/opencontainers/go-digest v1.0.0
 )
 
