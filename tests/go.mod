@@ -105,7 +105,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/opencontainers/runc v1.1.7 // indirect
+	github.com/opencontainers/runc v1.1.14 // indirect
 	github.com/openshift/client-go v0.0.0 // indirect
 	github.com/operator-framework/api v0.17.6 // indirect
 	github.com/operator-framework/operator-lib v0.11.1-0.20220921174810-791cc547e6c5 // indirect
@@ -128,7 +128,7 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
 	google.golang.org/grpc v1.56.3 // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
+	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	k8s.io/apiextensions-apiserver v0.27.7 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
