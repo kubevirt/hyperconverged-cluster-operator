@@ -18,7 +18,7 @@ require (
 	kubevirt.io/api v1.2.0
 	kubevirt.io/client-go v1.1.1
 	kubevirt.io/containerized-data-importer-api v1.58.3
-	kubevirt.io/kubevirt v1.1.1
+	kubevirt.io/kubevirt v1.2.1
 )
 
 replace (
