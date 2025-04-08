@@ -249,7 +249,7 @@ replace (
 	golang.org/x/crypto/ssh/terminal => golang.org/x/crypto/ssh/terminal v0.0.0-20220525230936-793ad666bf5e
 )
 
-replace github.com/u-root/u-root => github.com/u-root/u-root v0.1.0
+replace github.com/u-root/u-root => github.com/u-root/u-root v0.9.0
 
 // FIX: Unhandled exception in gopkg.in/yaml.v3
 replace gopkg.in/yaml.v3 => gopkg.in/yaml.v3 v3.0.1
