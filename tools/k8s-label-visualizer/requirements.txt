@@ -1,5 +1,5 @@
 cachetools==5.3.2
-certifi==2023.11.17
+certifi==2024.7.4
 chardet==5.2.0
 google-auth==2.26.2
 graphviz==0.20.1
