@@ -31,7 +31,7 @@ require (
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/skeema/knownhosts v1.2.1 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	golang.org/x/crypto v0.21.0 // indirect
+	golang.org/x/crypto v0.35.0 // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
@@ -51,4 +51,4 @@ replace golang.org/x/text => golang.org/x/text v0.7.0
 replace golang.org/x/net => golang.org/x/net v0.23.0
 
 // FIX: Use of a Broken or Risky Cryptographic Algorithm in golang.org/x/crypto/ssh
-replace golang.org/x/crypto => golang.org/x/crypto v0.8.0
+replace golang.org/x/crypto => golang.org/x/crypto v0.35.0
