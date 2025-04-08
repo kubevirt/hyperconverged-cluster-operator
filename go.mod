@@ -25,7 +25,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.19.0-rc.2
 	k8s.io/apimachinery v0.19.0-rc.2
 	k8s.io/client-go v12.0.0+incompatible
-	k8s.io/kube-openapi v0.0.0-20200410145947-61e04a5be9a6
+	k8s.io/kube-openapi v0.0.0-20200410163147-594e756bea31
 	kubevirt.io/client-go v0.34.0
 	kubevirt.io/containerized-data-importer v1.23.5
 	kubevirt.io/controller-lifecycle-operator-sdk v0.1.1
@@ -38,7 +38,7 @@ require (
 replace (
 	k8s.io/api => k8s.io/api v0.16.4
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.16.4
-	k8s.io/apimachinery => k8s.io/apimachinery v0.16.4
+	k8s.io/apimachinery => k8s.io/apimachinery v0.16.13
 	k8s.io/apiserver => k8s.io/apiserver v0.16.4
 	k8s.io/cli-runtime => k8s.io/cli-runtime v0.16.4
 	k8s.io/client-go => k8s.io/client-go v0.16.4
