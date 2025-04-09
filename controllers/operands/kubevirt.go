@@ -528,6 +528,11 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 	if hc.Spec.ResourceRequirements != nil {
 		config.AutoCPULimitNamespaceLabelSelector = hc.Spec.ResourceRequirements.AutoCPULimitNamespaceLabelSelector.DeepCopy()
 	}
+
+	if hc.Spec.CommonInstancetypesDeployment != nil {
+		config.CommonInstancetypesDeployment = hc.Spec.CommonInstancetypesDeployment.DeepCopy()
+	}
+
 	return config, nil
 }
 
