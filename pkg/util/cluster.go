@@ -341,26 +341,35 @@ func (c *ClusterInfoImp) RefreshAPIServerCR(ctx context.Context, cl client.Clien
 }
 
 func (c *ClusterInfoImp) RefreshDeschedulerCR(ctx context.Context, cl client.Client) error {
-	if c.IsDeschedulerAvailable() {
-		instance := &deschedulerv1.KubeDescheduler{}
-
-		key := client.ObjectKey{Namespace: DeschedulerNamespace, Name: DeschedulerCRName}
-		err := cl.Get(ctx, key, instance)
-		if err != nil {
-			if apierrors.IsNotFound(err) {
-				misconfiguredDescheduler = false
-				return nil
-			}
-			return err
-		}
-		if instance.Spec.ProfileCustomizations == nil {
-			misconfiguredDescheduler = true
-		} else {
-			misconfiguredDescheduler = !instance.Spec.ProfileCustomizations.DevEnableEvictionsInBackground
-		}
+	if !c.IsDeschedulerAvailable() {
+		misconfiguredDescheduler = false
 		return nil
 	}
-	misconfiguredDescheduler = false
+
+	instance := &deschedulerv1.KubeDescheduler{}
+
+	key := client.ObjectKey{Namespace: DeschedulerNamespace, Name: DeschedulerCRName}
+	err := cl.Get(ctx, key, instance)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			misconfiguredDescheduler = false
+			return nil
+		}
+		return err
+	}
+
+	// TODO: modify this once deschedulerv1.RelieveAndMigrate will graduate, loosing
+	// the "Dev" prefix, and will be "KubeVirtRelieveAndMigrate", then we will need
+	// to change it to:
+	// misconfiguredDescheduler = slices.Contains(instance.Spec.Profiles, deschedulerv1.RelieveAndMigrate)
+	misconfiguredDescheduler = !slices.ContainsFunc(instance.Spec.Profiles, func(profile deschedulerv1.DeschedulerProfile) bool {
+		switch profile {
+		case deschedulerv1.RelieveAndMigrate, "KubeVirtRelieveAndMigrate":
+			return true
+		}
+		return false
+	})
+
 	return nil
 }
 
