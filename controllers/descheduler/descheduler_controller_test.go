@@ -161,7 +161,7 @@ var _ = Describe("DeschedulerController", func() {
 				Expect(res.Requeue).To(BeFalse())
 				Expect(res).To(Equal(reconcile.Result{}))
 
-				// Update KubeDescheduler CR
+				// Update KubeDescheduler CR with an old unexpected configuration
 				descheduler.Spec.ProfileCustomizations = &deschedulerv1.ProfileCustomizations{
 					DevEnableEvictionsInBackground: true,
 				}
@@ -174,11 +174,53 @@ var _ = Describe("DeschedulerController", func() {
 				Expect(res.Requeue).To(BeFalse())
 				Expect(res).To(Equal(reconcile.Result{}))
 
-				Expect(hcoutil.GetClusterInfo().IsDeschedulerMisconfigured()).To(BeFalse(), "should return the up-to-date value")
+				Expect(hcoutil.GetClusterInfo().IsDeschedulerMisconfigured()).To(BeTrue(), "should return the up-to-date value")
 
-				// Update again the KubeDescheduler CR
+				// Update KubeDescheduler CR with an old unexpected configuration
 				descheduler.Spec.ProfileCustomizations = &deschedulerv1.ProfileCustomizations{
-					DevEnableEvictionsInBackground: false,
+					DevEnableEvictionsInBackground: true,
+				}
+				Expect(cl.Update(context.TODO(), descheduler)).To(Succeed())
+				Expect(hcoutil.GetClusterInfo().IsDeschedulerMisconfigured()).To(BeTrue(), "should still return the cached value (previous value)")
+
+				// Reconcile again to refresh KubeDescheduler CR in memory
+				res, err = r.Reconcile(context.TODO(), request)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res.Requeue).To(BeFalse())
+				Expect(res).To(Equal(reconcile.Result{}))
+
+				Expect(hcoutil.GetClusterInfo().IsDeschedulerMisconfigured()).To(BeTrue(), "should return the up-to-date value")
+
+				// Update again the KubeDescheduler CR with a valid configuration
+				descheduler.Spec = deschedulerv1.KubeDeschedulerSpec{
+					Profiles: []deschedulerv1.DeschedulerProfile{
+						deschedulerv1.RelieveAndMigrate,
+					},
+					ProfileCustomizations: &deschedulerv1.ProfileCustomizations{
+						DevDeviationThresholds:      &deschedulerv1.AsymmetricLowDeviationThreshold,
+						DevEnableSoftTainter:        true,
+						DevActualUtilizationProfile: deschedulerv1.PrometheusCPUCombinedProfile,
+					},
+				}
+				Expect(cl.Update(context.TODO(), descheduler)).To(Succeed())
+				Expect(hcoutil.GetClusterInfo().IsDeschedulerMisconfigured()).To(BeTrue(), "should still return the cached value (previous value)")
+
+				// Reconcile again to refresh KubeDescheduler CR in memory
+				res, err = r.Reconcile(context.TODO(), request)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res.Requeue).To(BeFalse())
+				Expect(res).To(Equal(reconcile.Result{}))
+
+				Expect(hcoutil.GetClusterInfo().IsDeschedulerMisconfigured()).To(BeFalse(), "should return the up-to-date value: no alert")
+
+				// Now deconfigure it
+				descheduler.Spec = deschedulerv1.KubeDeschedulerSpec{
+					Profiles: []deschedulerv1.DeschedulerProfile{
+						deschedulerv1.CompactAndScale,
+					},
+					ProfileCustomizations: &deschedulerv1.ProfileCustomizations{
+						DevEnableEvictionsInBackground: true,
+					},
 				}
 				Expect(cl.Update(context.TODO(), descheduler)).To(Succeed())
 				Expect(hcoutil.GetClusterInfo().IsDeschedulerMisconfigured()).To(BeFalse(), "should still return the cached value (previous value)")
