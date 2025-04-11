@@ -49,6 +49,9 @@ require (
 	sigs.k8s.io/controller-tools v0.17.3
 )
 
+// TODO: remove me, only to proove https://github.com/openshift/library-go/pull/1956
+replace github.com/openshift/library-go => github.com/tiraboschi/library-go v0.0.0-20250411124643-a08fdba4c607
+
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
