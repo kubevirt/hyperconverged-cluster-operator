@@ -239,19 +239,42 @@ var _ = Describe("test clusterInfo", func() {
 			true,
 		),
 		Entry(
-			"with configuration tuned for KubeVirt",
+			"with KubeVirt specific profile",
 			&deschedulerv1.KubeDescheduler{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      DeschedulerCRName,
 					Namespace: DeschedulerNamespace,
 				},
 				Spec: deschedulerv1.KubeDeschedulerSpec{
+					Profiles: []deschedulerv1.DeschedulerProfile{
+						deschedulerv1.RelieveAndMigrate,
+					},
+					ProfileCustomizations: &deschedulerv1.ProfileCustomizations{
+						DevDeviationThresholds:      &deschedulerv1.AsymmetricLowDeviationThreshold,
+						DevEnableSoftTainter:        true,
+						DevActualUtilizationProfile: deschedulerv1.PrometheusCPUCombinedProfile,
+					},
+				},
+			},
+			false,
+		),
+		Entry(
+			"with obsolete configuration",
+			&deschedulerv1.KubeDescheduler{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      DeschedulerCRName,
+					Namespace: DeschedulerNamespace,
+				},
+				Spec: deschedulerv1.KubeDeschedulerSpec{
+					Profiles: []deschedulerv1.DeschedulerProfile{
+						deschedulerv1.LifecycleAndUtilization,
+					},
 					ProfileCustomizations: &deschedulerv1.ProfileCustomizations{
 						DevEnableEvictionsInBackground: true,
 					},
 				},
 			},
-			false,
+			true,
 		),
 		Entry(
 			"with wrong configuration 1",

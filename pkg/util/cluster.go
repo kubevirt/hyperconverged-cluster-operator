@@ -353,11 +353,17 @@ func (c *ClusterInfoImp) RefreshDeschedulerCR(ctx context.Context, cl client.Cli
 			}
 			return err
 		}
-		if instance.Spec.ProfileCustomizations == nil {
-			misconfiguredDescheduler = true
+
+		// TODO: remove this once deschedulerv1.RelieveAndMigrate will graduate loosing
+		// the dev prefix
+		futureRelieveAndMigrateStable := deschedulerv1.DeschedulerProfile("KubeVirtRelieveAndMigrate")
+
+		if slices.Contains(instance.Spec.Profiles, deschedulerv1.RelieveAndMigrate) || slices.Contains(instance.Spec.Profiles, futureRelieveAndMigrateStable) {
+			misconfiguredDescheduler = false
 		} else {
-			misconfiguredDescheduler = !instance.Spec.ProfileCustomizations.DevEnableEvictionsInBackground
+			misconfiguredDescheduler = true
 		}
+
 		return nil
 	}
 	misconfiguredDescheduler = false
