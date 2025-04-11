@@ -533,6 +533,11 @@ func (in *HyperConvergedSpec) DeepCopyInto(out *HyperConvergedSpec) {
 		*out = new(HigherWorkloadDensityConfiguration)
 		**out = **in
 	}
+	if in.CommonInstancetypesDeployment != nil {
+		in, out := &in.CommonInstancetypesDeployment, &out.CommonInstancetypesDeployment
+		*out = new(corev1.CommonInstancetypesDeployment)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 

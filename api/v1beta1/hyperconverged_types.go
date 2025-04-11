@@ -243,6 +243,10 @@ type HyperConvergedSpec struct {
 	// +default={"memoryOvercommitPercentage": 100}
 	// +optional
 	HigherWorkloadDensity *HigherWorkloadDensityConfiguration `json:"higherWorkloadDensity,omitempty"`
+
+	// CommonInstancetypesDeployment holds the configuration of common-instancetypes deployment within KubeVirt.
+	// +optional
+	CommonInstancetypesDeployment *v1.CommonInstancetypesDeployment `json:"CommonInstancetypesDeployment,omitempty"`
 }
 
 // CertRotateConfigCA contains the tunables for TLS certificates.

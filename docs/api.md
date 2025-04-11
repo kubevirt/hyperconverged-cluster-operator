@@ -233,6 +233,7 @@ HyperConvergedSpec defines the desired state of HyperConverged
 | networkBinding | NetworkBinding defines the network binding plugins. Those bindings can be used when defining virtual machine interfaces. | map[string]v1.InterfaceBindingPlugin |  | false |
 | applicationAwareConfig | ApplicationAwareConfig set the AAQ configurations | *[ApplicationAwareConfigurations](#applicationawareconfigurations) |  | false |
 | higherWorkloadDensity | HigherWorkloadDensity holds configurataion aimed to increase virtual machine density | *[HigherWorkloadDensityConfiguration](#higherworkloaddensityconfiguration) | {"memoryOvercommitPercentage": 100} | false |
+| CommonInstancetypesDeployment | CommonInstancetypesDeployment holds the configuration of common-instancetypes deployment within KubeVirt. | *v1.CommonInstancetypesDeployment |  | false |
 
 [Back to TOC](#table-of-contents)
 
