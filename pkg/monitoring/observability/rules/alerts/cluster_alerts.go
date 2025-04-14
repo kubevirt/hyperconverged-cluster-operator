@@ -48,8 +48,14 @@ func clusterAlerts() []promv1.Rule {
 		},
 		{
 			Alert: "NodeNetworkInterfaceDown",
-			Expr:  intstr.FromString(fmt.Sprintf("count by (instance) (node_network_up{device!~'%s'} == 0) > 0", strings.Join(ignoredInterfacesForNetworkDown, "|"))),
-			For:   ptr.To(promv1.Duration("5m")),
+			Expr: intstr.FromString(fmt.Sprintf(`count by (instance) (
+					(node_network_flags %% 2) >= 1												# IFF_UP is set
+					and
+					(node_network_flags %% 128) < 64											# IFF_RUNNING is NOT set
+					and
+					on(device) (node_network_flags unless node_network_flags{device=~"%s"})		# Excluding ignored interfaces
+				) > 0`, strings.Join(ignoredInterfacesForNetworkDown, "|"))),
+			For: ptr.To(promv1.Duration("5m")),
 			Annotations: map[string]string{
 				"summary":     "Network interfaces are down",
 				"description": "{{ $value }} network devices have been down on instance {{ $labels.instance }} for more than 5 minutes.",
