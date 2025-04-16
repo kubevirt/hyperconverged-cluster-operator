@@ -171,7 +171,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			Expect(err).ToNot(HaveOccurred())
 			alert := getAlertByName(alerts, "UnsupportedHCOModification")
 			return alert
-		}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
+		}).WithTimeout(prometheousTimeout + 1).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
 	})
 
 	Describe("KubeDescheduler", Serial, Ordered, Label(tests.OpenshiftLabel, "monitoring"), func() {
