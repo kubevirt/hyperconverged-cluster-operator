@@ -13,8 +13,7 @@
 # limitations under the License.
 
 export KUBEVIRT_PROVIDER=${KUBEVIRT_PROVIDER:-'k8s-1.32'}
-# export LATEST_KUBEVIRTCI_TAG=$(curl -L -Ss https://storage.googleapis.com/kubevirt-prow/release/kubevirt/kubevirtci/latest)
-# export KUBEVIRTCI_TAG=${KUBEVIRTCI_TAG:-${LATEST_KUBEVIRTCI_TAG}}
+# auto updated by hack/bump-kubevirtci.sh
 export KUBEVIRTCI_TAG=${KUBEVIRTCI_TAG:-"2504171552-a558e3fe"}
 
 KUBEVIRTCI_PATH="${PWD}/_kubevirtci"
