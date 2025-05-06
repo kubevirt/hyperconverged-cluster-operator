@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/rules"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/rules"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func verifyArgs() error {
