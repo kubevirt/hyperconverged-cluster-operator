@@ -23,10 +23,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kubevirt/monitoring/pkg/metrics/parser"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/rules"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/metrics"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/rules"
+	"github.com/kubevirt/monitoring/pkg/metrics/parser"
 )
 
 // This should be used only for very rare cases where the naming conventions that are explained in the best practices:

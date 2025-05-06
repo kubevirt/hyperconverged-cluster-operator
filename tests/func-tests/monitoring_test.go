@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"time"
 
+	hcoalerts "github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/rules/alerts"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	openshiftroutev1 "github.com/openshift/api/route/v1"
@@ -31,7 +33,6 @@ import (
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
-	hcoalerts "github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/rules/alerts"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )

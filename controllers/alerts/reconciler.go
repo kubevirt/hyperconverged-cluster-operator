@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
+
 	"github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -16,7 +18,6 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/metrics"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 

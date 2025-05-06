@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/machadovilaca/operator-observability/pkg/docs"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/rules"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/metrics"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/rules"
+	"github.com/machadovilaca/operator-observability/pkg/docs"
 )
 
 const tpl = `# Hyperconverged Cluster Operator metrics

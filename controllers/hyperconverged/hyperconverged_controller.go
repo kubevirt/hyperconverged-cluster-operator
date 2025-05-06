@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"slices"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
+
 	"github.com/blang/semver/v4"
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/go-logr/logr"
@@ -52,7 +54,6 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/metrics"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/version"
 )

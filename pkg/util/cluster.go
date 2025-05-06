@@ -7,6 +7,8 @@ import (
 	"slices"
 	"sync/atomic"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
+
 	"github.com/go-logr/logr"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	deschedulerv1 "github.com/openshift/cluster-kube-descheduler-operator/pkg/apis/descheduler/v1"
@@ -20,8 +22,6 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/utils/net"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/metrics"
 )
 
 type ClusterInfo interface {

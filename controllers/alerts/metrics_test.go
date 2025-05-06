@@ -7,11 +7,13 @@ import (
 	"os"
 	"testing"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/rules"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 
-	"github.com/machadovilaca/operator-observability/pkg/operatorrules"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -23,8 +25,6 @@ import (
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/metrics"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/rules"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -52,8 +52,7 @@ var _ = Describe("alert tests", func() {
 
 		req = commontestutils.NewReq(nil)
 
-		err := operatorrules.CleanRegistry()
-		Expect(err).ToNot(HaveOccurred())
+		rules.ResetRules()
 	})
 
 	Context("test reconciler", func() {
@@ -348,13 +347,12 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should use the desired runbook URL template when its ENV Variable is set", func() {
-			err := operatorrules.CleanRegistry()
-			Expect(err).ToNot(HaveOccurred())
+			rules.ResetRules()
 
 			desiredRunbookURLTemplate := "desired/runbookURL/template/%s"
 			os.Setenv(runbookURLTemplateEnv, desiredRunbookURLTemplate)
 
-			err = rules.SetupRules()
+			err := rules.SetupRules()
 			Expect(err).ToNot(HaveOccurred())
 
 			owner := getDeploymentReference(ci.GetDeployment())

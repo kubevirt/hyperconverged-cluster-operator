@@ -2,6 +2,8 @@ package tests_test
 
 import (
 	"context"
+	"errors"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -10,16 +12,34 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/observability"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/alertmanager"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
-var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, "observability_controller"), func() {
-	Context("PodDisruptionBudgetAtLimit", func() {
-		It("should be silenced", func() {
-			r := observability.NewReconciler(tests.GetClientConfig())
+const testName = "observability_controller"
 
-			amApi, err := r.NewAlertmanagerApi()
+var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, testName), func() {
+	var cli client.Client
+
+	BeforeEach(func(ctx context.Context) {
+		cli = tests.GetControllerRuntimeClient()
+		tests.FailIfNotOpenShift(ctx, cli, testName)
+	})
+
+	Context("PodDisruptionBudgetAtLimit", func() {
+		BeforeEach(func(ctx context.Context) {
+			certExists, err := serviceAccountTlsCertPathExists()
 			Expect(err).ToNot(HaveOccurred())
+
+			if !certExists {
+				Skip("Service account TLS certificate path does not exist")
+			}
+		})
+
+		It("should be silenced", func(ctx context.Context) {
+			httpClient, err := observability.NewHTTPClient()
+			Expect(err).ToNot(HaveOccurred())
+			amApi := alertmanager.NewAPI(*httpClient, observability.AlertmanagerSvcHost, tests.GetClientConfig().BearerToken)
 
 			amSilences, err := amApi.ListSilences()
 			Expect(err).ToNot(HaveOccurred())
@@ -32,16 +52,15 @@ var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, "observ
 			Expect(err).ToNot(HaveOccurred())
 
 			// Restart pod to force reconcile (reconcile periodicity is 1h)
-			cli := tests.GetControllerRuntimeClient()
 			var hcoPods v1.PodList
-			err = cli.List(context.Background(), &hcoPods, &client.MatchingLabels{
+			err = cli.List(ctx, &hcoPods, &client.MatchingLabels{
 				"name": "hyperconverged-cluster-operator",
 			})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(hcoPods.Items).ToNot(BeEmpty())
 
 			for _, pod := range hcoPods.Items {
-				err = cli.Delete(context.Background(), &pod)
+				err = cli.Delete(ctx, &pod)
 				Expect(err).ToNot(HaveOccurred())
 			}
 
@@ -55,3 +74,15 @@ var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, "observ
 		})
 	})
 })
+
+func serviceAccountTlsCertPathExists() (bool, error) {
+	_, err := os.Stat(observability.ServiceAccountTlsCertPath)
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
