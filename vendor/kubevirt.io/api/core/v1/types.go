@@ -257,8 +257,9 @@ type VirtualMachineInstanceStatus struct {
 	// +optional
 	KernelBootStatus *KernelBootStatus `json:"kernelBootStatus,omitempty"`
 
-	// FSFreezeStatus is the state of the fs of the guest
-	// it can be either frozen or thawed
+	// FSFreezeStatus indicates whether a freeze operation was requested for the guest filesystem.
+	// It will be set to "frozen" if the request was made, or unset otherwise.
+	// This does not reflect the actual state of the guest filesystem.
 	// +optional
 	FSFreezeStatus string `json:"fsFreezeStatus,omitempty"`
 
@@ -606,7 +607,7 @@ const (
 	VirtualMachineInstanceReasonPRNotMigratable = "PersistentReservationNotLiveMigratable"
 	// Reason means that not all of the VMI's DVs are ready
 	VirtualMachineInstanceReasonNotAllDVsReady = "NotAllDVsReady"
-	// Reason means that all of the VMI's DVs are bound and not running
+	// Reason means that all of the VMI's DVs are bound and ready
 	VirtualMachineInstanceReasonAllDVsReady = "AllDVsReady"
 	// Indicates a generic reason that the VMI isn't migratable and more details are spiecified in the condition message.
 	VirtualMachineInstanceReasonNotMigratable = "NotMigratable"
@@ -989,6 +990,8 @@ const (
 	HypervLabel = "hyperv.node.kubevirt.io/"
 	// This label represents vendor of cpu model on the node
 	CPUModelVendorLabel = "cpu-vendor.node.kubevirt.io/"
+	// This label represents supported machine type on the node
+	SupportedMachineTypeLabel = "machine-type.node.kubevirt.io/"
 
 	VirtIO = "virtio"
 
@@ -1124,6 +1127,10 @@ const (
 	// ImmediateDataVolumeCreation indicates that the data volumes should be created immediately
 	// Even if the VM is halted
 	ImmediateDataVolumeCreation string = "kubevirt.io/immediate-data-volume-creation"
+
+	// DisablePCIHole64 indicates that the 64-Bit PCI hole should be disabled on a VirtualMachineInstance.
+	// This annotation might be deprecated in the future if we decided to add a struct for it.
+	DisablePCIHole64 string = "kubevirt.io/disablePCIHole64"
 )
 
 func NewVMI(name string, uid types.UID) *VirtualMachineInstance {
@@ -1383,6 +1390,15 @@ type VirtualMachineInstanceMigrationList struct {
 type VirtualMachineInstanceMigrationSpec struct {
 	// The name of the VMI to perform the migration on. VMI must exist in the migration objects namespace
 	VMIName string `json:"vmiName,omitempty" valid:"required"`
+
+	// AddedNodeSelector is an additional selector that can be used to
+	// complement a NodeSelector or NodeAffinity as set on the VM
+	// to restrict the set of allowed target nodes for a migration.
+	// In case of key collisions, values set on the VM objects
+	// are going to be preserved to ensure that addedNodeSelector
+	// can only restrict but not bypass constraints already set on the VM object.
+	// +optional
+	AddedNodeSelector map[string]string `json:"addedNodeSelector,omitempty"`
 }
 
 // VirtualMachineInstanceMigrationPhaseTransitionTimestamp gives a timestamp in relation to when a phase is set on a vmi
@@ -2312,6 +2328,15 @@ type MigrateOptions struct {
 	// +optional
 	// +listType=atomic
 	DryRun []string `json:"dryRun,omitempty" protobuf:"bytes,1,rep,name=dryRun"`
+
+	// AddedNodeSelector is an additional selector that can be used to
+	// complement a NodeSelector or NodeAffinity as set on the VM
+	// to restrict the set of allowed target nodes for a migration.
+	// In case of key collisions, values set on the VM objects
+	// are going to be preserved to ensure that addedNodeSelector
+	// can only restrict but not bypass constraints already set on the VM object.
+	// +optional
+	AddedNodeSelector map[string]string `json:"addedNodeSelector,omitempty"`
 }
 
 // VirtualMachineInstanceGuestAgentInfo represents information from the installed guest agent
@@ -2334,8 +2359,9 @@ type VirtualMachineInstanceGuestAgentInfo struct {
 	UserList []VirtualMachineInstanceGuestOSUser `json:"userList,omitempty"`
 	// FSInfo is a guest os filesystem information containing the disk mapping and disk mounts with usage
 	FSInfo VirtualMachineInstanceFileSystemInfo `json:"fsInfo,omitempty"`
-	// FSFreezeStatus is the state of the fs of the guest
-	// it can be either frozen or thawed
+	// FSFreezeStatus indicates whether a freeze operation was requested for the guest filesystem.
+	// It will be set to "frozen" if the request was made, or unset otherwise.
+	// This does not reflect the actual state of the guest filesystem.
 	FSFreezeStatus string `json:"fsFreezeStatus,omitempty"`
 }
 
@@ -2825,6 +2851,9 @@ type DeveloperConfiguration struct {
 	MinimumClusterTSCFrequency *int64            `json:"minimumClusterTSCFrequency,omitempty"`
 	DiskVerification           *DiskVerification `json:"diskVerification,omitempty"`
 	LogVerbosity               *LogVerbosity     `json:"logVerbosity,omitempty"`
+
+	// Enable the ability to pprof profile KubeVirt control plane
+	ClusterProfiler bool `json:"clusterProfiler,omitempty"`
 }
 
 // LogVerbosity sets log verbosity level of  various components
