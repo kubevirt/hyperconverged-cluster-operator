@@ -73,7 +73,7 @@ func (VirtualMachineInstanceStatus) SwaggerDoc() map[string]string {
 		"activePods":                    "ActivePods is a mapping of pod UID to node name.\nIt is possible for multiple pods to be running for a single VMI during migration.",
 		"volumeStatus":                  "VolumeStatus contains the statuses of all the volumes\n+optional\n+listType=atomic",
 		"kernelBootStatus":              "KernelBootStatus contains info about the kernelBootContainer\n+optional",
-		"fsFreezeStatus":                "FSFreezeStatus is the state of the fs of the guest\nit can be either frozen or thawed\n+optional",
+		"fsFreezeStatus":                "FSFreezeStatus indicates whether a freeze operation was requested for the guest filesystem.\nIt will be set to \"frozen\" if the request was made, or unset otherwise.\nThis does not reflect the actual state of the guest filesystem.\n+optional",
 		"topologyHints":                 "+optional",
 		"virtualMachineRevisionName":    "VirtualMachineRevisionName is used to get the vm revision of the vmi when doing\nan online vm snapshot\n+optional",
 		"runtimeUser":                   "RuntimeUser is used to determine what user will be used in launcher\n+optional",
@@ -317,7 +317,8 @@ func (VirtualMachineInstanceMigrationList) SwaggerDoc() map[string]string {
 
 func (VirtualMachineInstanceMigrationSpec) SwaggerDoc() map[string]string {
 	return map[string]string{
-		"vmiName": "The name of the VMI to perform the migration on. VMI must exist in the migration objects namespace",
+		"vmiName":           "The name of the VMI to perform the migration on. VMI must exist in the migration objects namespace",
+		"addedNodeSelector": "AddedNodeSelector is an additional selector that can be used to\ncomplement a NodeSelector or NodeAffinity as set on the VM\nto restrict the set of allowed target nodes for a migration.\nIn case of key collisions, values set on the VM objects\nare going to be preserved to ensure that addedNodeSelector\ncan only restrict but not bypass constraints already set on the VM object.\n+optional",
 	}
 }
 
@@ -643,8 +644,9 @@ func (StopOptions) SwaggerDoc() map[string]string {
 
 func (MigrateOptions) SwaggerDoc() map[string]string {
 	return map[string]string{
-		"":       "MigrateOptions may be provided on migrate request.",
-		"dryRun": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional\n+listType=atomic",
+		"":                  "MigrateOptions may be provided on migrate request.",
+		"dryRun":            "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional\n+listType=atomic",
+		"addedNodeSelector": "AddedNodeSelector is an additional selector that can be used to\ncomplement a NodeSelector or NodeAffinity as set on the VM\nto restrict the set of allowed target nodes for a migration.\nIn case of key collisions, values set on the VM objects\nare going to be preserved to ensure that addedNodeSelector\ncan only restrict but not bypass constraints already set on the VM object.\n+optional",
 	}
 }
 
@@ -658,7 +660,7 @@ func (VirtualMachineInstanceGuestAgentInfo) SwaggerDoc() map[string]string {
 		"timezone":          "Timezone is guest os current timezone",
 		"userList":          "UserList is a list of active guest OS users",
 		"fsInfo":            "FSInfo is a guest os filesystem information containing the disk mapping and disk mounts with usage",
-		"fsFreezeStatus":    "FSFreezeStatus is the state of the fs of the guest\nit can be either frozen or thawed",
+		"fsFreezeStatus":    "FSFreezeStatus indicates whether a freeze operation was requested for the guest filesystem.\nIt will be set to \"frozen\" if the request was made, or unset otherwise.\nThis does not reflect the actual state of the guest filesystem.",
 	}
 }
 
@@ -903,6 +905,7 @@ func (DeveloperConfiguration) SwaggerDoc() map[string]string {
 		"useEmulation":                    "UseEmulation can be set to true to allow fallback to software emulation\nin case hardware-assisted emulation is not available. Defaults to false",
 		"cpuAllocationRatio":              "For each requested virtual CPU, CPUAllocationRatio defines how much physical CPU to request per VMI\nfrom the hosting node. The value is in fraction of a CPU thread (or core on non-hyperthreaded nodes).\nFor example, a value of 1 means 1 physical CPU thread per VMI CPU thread.\nA value of 100 would be 1% of a physical thread allocated for each requested VMI thread.\nThis option has no effect on VMIs that request dedicated CPUs. More information at:\nhttps://kubevirt.io/user-guide/operations/node_overcommit/#node-cpu-allocation-ratio\nDefaults to 10",
 		"minimumClusterTSCFrequency":      "Allow overriding the automatically determined minimum TSC frequency of the cluster\nand fixate the minimum to this frequency.",
+		"clusterProfiler":                 "Enable the ability to pprof profile KubeVirt control plane",
 	}
 }
 
