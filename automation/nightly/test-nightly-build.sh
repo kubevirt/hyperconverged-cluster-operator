@@ -37,24 +37,44 @@ latest_cdi_image=$(curl -sL "https://storage.googleapis.com/kubevirt-prow/devel/
 IFS=: read -r cdi_image cdi_tag <<< "${latest_cdi_image}"
 latest_cdi_commit=$(curl -sL "https://storage.googleapis.com/kubevirt-prow/devel/nightly/release/kubevirt/containerized-data-importer/${latest_cdi}/commit")
 
+latest_cnao=$(curl -sL https://storage.googleapis.com/kubevirt-prow/devel/nightly/release/kubevirt/cluster-network-addons-operator/latest)
+latest_cnao_image=$(curl -sL "https://storage.googleapis.com/kubevirt-prow/devel/nightly/release/kubevirt/cluster-network-addons-operator/${latest_cnao}/operator.yaml" | grep "image:" | grep "cluster-network-addons-operator" | sed -E "s|^ +image: (.*)$|\1|")
+IFS=: read -r cnao_image cnao_tag <<< "${latest_cnao_image}"
+latest_cnao_commit=$(curl -sL "https://storage.googleapis.com/kubevirt-prow/devel/nightly/release/kubevirt/cluster-network-addons-operator/${latest_cnao}/commit")
+
 # Update HCO dependencies
 go mod tidy
 go mod vendor
-rm -rf kubevirt cdi
+rm -rf kubevirt cdi cnao
 
 # Get latest kubevirt
 git clone https://github.com/kubevirt/kubevirt.git
-(cd kubevirt; git checkout "${latest_kubevirt_commit}")
+(
+  cd kubevirt
+  git checkout "${latest_kubevirt_commit}"
+ )
 
 # Get latest CDI
 git clone https://github.com/kubevirt/containerized-data-importer.git cdi
-(cd cdi; git checkout "${latest_cdi_commit}")
+(
+  cd cdi
+  git checkout "${latest_cdi_commit}"
+)
+
+git clone https://github.com/kubevirt/cluster-network-addons-operator.git cnao
+(
+  cd cnao
+  git checkout "${latest_cnao_commit}"
+)
 
 go mod edit -replace kubevirt.io/api=./kubevirt/staging/src/kubevirt.io/api
 go mod edit -replace kubevirt.io/containerized-data-importer-api=./cdi/staging/src/kubevirt.io/containerized-data-importer-api
+go mod edit -replace github.com/kubevirt/cluster-network-addons-operator=./cnao
 
 go mod tidy
 go mod vendor
+
+go test ./pkg/... ./controller/...
 
 # set envs
 build_date="$(date +%Y%m%d)"
@@ -67,9 +87,11 @@ make build-push-multi-arch-operator-image build-push-multi-arch-webhook-image bu
 
 # Update image digests
 sed -i "s#quay.io/kubevirt/virt-#${kv_image/-*/-}#" deploy/images.csv
+sed -i "s#quay.io/kubevirt/cluster-network-addons-operator#${cnao_image}#" deploy/images.csv
+
 sed -i "s#^KUBEVIRT_VERSION=.*#KUBEVIRT_VERSION=\"${kv_tag}\"#" hack/config
 sed -i "s#^CDI_VERSION=.*#CDI_VERSION=\"${cdi_tag}\"#" hack/config
-(cd ./tools/digester && go build .)
+sed -i "s#^NETWORK_ADDONS_VERSION=.*\$#NETWORK_ADDONS_VERSION=\"${cnao_tag}\"#" hack/config
 export HCO_VERSION="${IMAGE_TAG}"
 ./automation/digester/update_images.sh
 
