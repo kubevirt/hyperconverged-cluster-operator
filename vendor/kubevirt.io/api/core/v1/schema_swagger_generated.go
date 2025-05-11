@@ -92,7 +92,7 @@ func (DomainSpec) SwaggerDoc() map[string]string {
 		"clock":           "Clock sets the clock and timers of the vmi.\n+optional",
 		"features":        "Features like acpi, apic, hyperv, smm.\n+optional",
 		"devices":         "Devices allows adding disks, network interfaces, and others",
-		"ioThreadsPolicy": "Controls whether or not disks will share IOThreads.\nOmitting IOThreadsPolicy disables use of IOThreads.\nOne of: shared, auto\n+optional",
+		"ioThreadsPolicy": "Controls whether or not disks will share IOThreads.\nOmitting IOThreadsPolicy disables use of IOThreads.\nOne of: shared, auto, supplementalPool\n+optional",
 		"ioThreads":       "IOThreads specifies the IOThreads options.\n+optional",
 		"chassis":         "Chassis specifies the chassis info passed to the domain.\n+optional",
 		"launchSecurity":  "Launch Security setting of the vmi.\n+optional",
@@ -288,6 +288,7 @@ func (SoundDevice) SwaggerDoc() map[string]string {
 
 func (TPMDevice) SwaggerDoc() map[string]string {
 	return map[string]string{
+		"enabled":    "Enabled allows a user to explictly disable the vTPM even when one is enabled by a preference referenced by the VirtualMachine\nDefaults to True",
 		"persistent": "Persistent indicates the state of the TPM device should be kept accross reboots\nDefaults to false",
 	}
 }
@@ -656,12 +657,20 @@ func (WatchdogDevice) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"":         "Hardware watchdog device.\nExactly one of its members must be set.",
 		"i6300esb": "i6300esb watchdog device.\n+optional",
+		"diag288":  "diag288 watchdog device (specific to s390x architecture).\n+optional",
 	}
 }
 
 func (I6300ESBWatchdog) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"":       "i6300esb watchdog device.",
+		"action": "The action to take. Valid values are poweroff, reset, shutdown.\nDefaults to reset.",
+	}
+}
+
+func (Diag288Watchdog) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":       "diag288 watchdog device.",
 		"action": "The action to take. Valid values are poweroff, reset, shutdown.\nDefaults to reset.",
 	}
 }
