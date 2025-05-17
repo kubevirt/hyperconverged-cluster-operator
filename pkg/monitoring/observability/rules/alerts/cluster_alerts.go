@@ -65,5 +65,27 @@ func clusterAlerts() []promv1.Rule {
 				"operator_health_impact": "none",
 			},
 		},
+		{
+			Alert: "PersistentVolumeFillingUp",
+			Expr: intstr.FromString(`
+				(
+					kubelet_volume_stats_available_bytes{job="kubelet",metrics_path="/metrics"}
+					/
+					kubelet_volume_stats_capacity_bytes{job="kubelet",metrics_path="/metrics"}
+				) < 0.10
+				and kubelet_volume_stats_used_bytes{job="kubelet",metrics_path="/metrics"} > 0
+				and predict_linear(kubelet_volume_stats_available_bytes{job="kubelet",metrics_path="/metrics"}[6h], 4 * 24 * 3600) < 0
+				unless on (cluster, namespace, persistentvolumeclaim) kube_persistentvolumeclaim_access_mode{access_mode="ReadOnlyMany"} == 1
+			`),
+			For: ptr.To[promv1.Duration]("5m"),
+			Annotations: map[string]string{
+				"summary":     "PersistentVolume is filling up",
+				"description": "Based on recent sampling, the PersistentVolume claimed by {{ $labels.persistentvolumeclaim }} in Namespace {{ $labels.namespace }} is expected to fill up within four days. Currently {{ $value | humanizePercentage }} is available.",
+			},
+			Labels: map[string]string{
+				"severity":               "warning",
+				"operator_health_impact": "none",
+			},
+		},
 	}
 }
