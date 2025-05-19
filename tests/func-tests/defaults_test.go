@@ -66,11 +66,12 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 	Context("feature gate defaults", func() {
 		defaultFeatureGates := v1beta1.HyperConvergedFeatureGates{
-			DownwardMetrics:          ptr.To(false),
-			DeployKubeSecondaryDNS:   ptr.To(false),
-			DisableMDevConfiguration: ptr.To(false),
-			PersistentReservation:    ptr.To(false),
-			AlignCPUs:                ptr.To(false),
+			DownwardMetrics:                      ptr.To(false),
+			DeployKubeSecondaryDNS:               ptr.To(false),
+			DisableMDevConfiguration:             ptr.To(false),
+			PersistentReservation:                ptr.To(false),
+			AlignCPUs:                            ptr.To(false),
+			EnableMultiArchCommonBootImageImport: ptr.To(false),
 		}
 
 		DescribeTable("Check that featureGates defaults are behaving as expected", func(ctx context.Context, path string) {
@@ -88,6 +89,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			Entry("when removing /spec/featureGates/deployKubeSecondaryDNS", "/spec/featureGates/deployKubeSecondaryDNS"),
 			Entry("when removing /spec/featureGates/persistentReservation", "/spec/featureGates/persistentReservation"),
 			Entry("when removing /spec/featureGates/alignCPUs", "/spec/featureGates/alignCPUs"),
+			Entry("when removing /spec/featureGates/enableMultiArchCommonBootImageImport", "/spec/featureGates/enableMultiArchCommonBootImageImport"),
 			Entry("when removing /spec/featureGates", "/spec/featureGates"),
 			Entry("when removing /spec", "/spec"),
 		)
