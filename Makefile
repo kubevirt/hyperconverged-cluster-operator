@@ -15,6 +15,7 @@ INDEX_IMAGE        ?= $(REGISTRY_NAMESPACE)/hyperconverged-cluster-index
 LDFLAGS            ?= -w -s
 GOLANDCI_LINT_VERSION ?= v2.0.2
 HCO_BUMP_LEVEL ?= minor
+ASSETS_DIR ?= assets
 UNAME_ARCH     := $(shell uname -m)
 ifeq ($(UNAME_ARCH),x86_64)
 	TEMP_ARCH = amd64
@@ -282,6 +283,9 @@ lint-monitoring:
 bump-hco:
 	./hack/bump-hco.sh ${HCO_BUMP_LEVEL}
 
+annotate-dicts:
+	ASSETS_DIR=$(ASSETS_DIR) ./hack/annotate-dicts.sh
+
 .PHONY: start \
 		clean \
 		build \
@@ -342,4 +346,5 @@ bump-hco:
 		build-push-multi-arch-functest-image \
 		build-push-multi-arch-artifacts-server \
 		build-push-multi-arch-images \
-		retag-push-all-images
+		retag-push-all-images \
+		annotate-dicts
