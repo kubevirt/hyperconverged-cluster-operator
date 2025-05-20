@@ -204,7 +204,7 @@ func getKSDNameServerIP(nameServerIPPtr *string) (string, error) {
 func NewNetworkAddonsWithNameOnly(hc *hcov1beta1.HyperConverged, opts ...string) *networkaddonsv1.NetworkAddonsConfig {
 	return &networkaddonsv1.NetworkAddonsConfig{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      networkaddonsnames.OPERATOR_CONFIG,
+			Name:      networkaddonsnames.OperatorConfig,
 			Labels:    getLabels(hc, util.AppComponentNetwork),
 			Namespace: getNamespace(util.UndefinedNamespace, opts),
 		},
