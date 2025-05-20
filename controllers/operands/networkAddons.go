@@ -144,7 +144,7 @@ func setDeployOvsAnnotation(req *common.HcoRequest, found *networkaddonsv1.Netwo
 	}
 }
 
-func NewNetworkAddons(hc *hcov1beta1.HyperConverged, opts ...string) (*networkaddonsv1.NetworkAddonsConfig, error) {
+func NewNetworkAddons(hc *hcov1beta1.HyperConverged) (*networkaddonsv1.NetworkAddonsConfig, error) {
 
 	cnaoSpec := networkaddonsshared.NetworkAddonsConfigSpec{
 		Multus:                 &networkaddonsshared.Multus{},
@@ -179,7 +179,7 @@ func NewNetworkAddons(hc *hcov1beta1.HyperConverged, opts ...string) (*networkad
 
 	cnaoSpec.TLSSecurityProfile = util.GetClusterInfo().GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile)
 
-	cna := NewNetworkAddonsWithNameOnly(hc, opts...)
+	cna := NewNetworkAddonsWithNameOnly(hc)
 	cna.Spec = cnaoSpec
 
 	if err = applyPatchToSpec(hc, common.JSONPatchCNAOAnnotationName, cna); err != nil {
@@ -201,12 +201,11 @@ func getKSDNameServerIP(nameServerIPPtr *string) (string, error) {
 	return nameServerIP, nil
 }
 
-func NewNetworkAddonsWithNameOnly(hc *hcov1beta1.HyperConverged, opts ...string) *networkaddonsv1.NetworkAddonsConfig {
+func NewNetworkAddonsWithNameOnly(hc *hcov1beta1.HyperConverged) *networkaddonsv1.NetworkAddonsConfig {
 	return &networkaddonsv1.NetworkAddonsConfig{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      networkaddonsnames.OPERATOR_CONFIG,
-			Labels:    getLabels(hc, util.AppComponentNetwork),
-			Namespace: getNamespace(util.UndefinedNamespace, opts),
+			Name:   networkaddonsnames.OperatorConfig,
+			Labels: getLabels(hc, util.AppComponentNetwork),
 		},
 	}
 }
