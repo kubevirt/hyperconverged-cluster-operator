@@ -2521,7 +2521,6 @@ type KubeVirtConfiguration struct {
 	SeccompConfiguration           *SeccompConfiguration             `json:"seccompConfiguration,omitempty"`
 
 	// VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM.
-	// The storage class must support RWX in filesystem mode.
 	VMStateStorageClass   string                 `json:"vmStateStorageClass,omitempty"`
 	VirtualMachineOptions *VirtualMachineOptions `json:"virtualMachineOptions,omitempty"`
 
@@ -2536,7 +2535,8 @@ type KubeVirtConfiguration struct {
 	// LiveUpdateConfiguration holds defaults for live update features
 	LiveUpdateConfiguration *LiveUpdateConfiguration `json:"liveUpdateConfiguration,omitempty"`
 
-	// VMRolloutStrategy defines how changes to a VM object propagate to its VMI
+	// VMRolloutStrategy defines how live-updatable fields, like CPU sockets, memory,
+	// tolerations, and affinity, are propagated from a VM to its VMI.
 	// +nullable
 	// +kubebuilder:validation:Enum=Stage;LiveUpdate
 	VMRolloutStrategy *VMRolloutStrategy `json:"vmRolloutStrategy,omitempty"`

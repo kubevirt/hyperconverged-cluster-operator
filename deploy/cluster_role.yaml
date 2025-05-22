@@ -1783,6 +1783,7 @@ rules:
   resources:
   - virtualmachinesnapshots
   - virtualmachinesnapshots/status
+  - virtualmachinesnapshots/finalizers
   - virtualmachinesnapshotcontents
   - virtualmachinesnapshotcontents/status
   - virtualmachinesnapshotcontents/finalizers
@@ -1835,6 +1836,7 @@ rules:
   - kubevirt.io
   resources:
   - virtualmachines/finalizers
+  - virtualmachineinstances/finalizers
   verbs:
   - update
 - apiGroups:
