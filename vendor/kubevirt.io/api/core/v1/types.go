@@ -257,8 +257,9 @@ type VirtualMachineInstanceStatus struct {
 	// +optional
 	KernelBootStatus *KernelBootStatus `json:"kernelBootStatus,omitempty"`
 
-	// FSFreezeStatus is the state of the fs of the guest
-	// it can be either frozen or thawed
+	// FSFreezeStatus indicates whether a freeze operation was requested for the guest filesystem.
+	// It will be set to "frozen" if the request was made, or unset otherwise.
+	// This does not reflect the actual state of the guest filesystem.
 	// +optional
 	FSFreezeStatus string `json:"fsFreezeStatus,omitempty"`
 
@@ -606,7 +607,7 @@ const (
 	VirtualMachineInstanceReasonPRNotMigratable = "PersistentReservationNotLiveMigratable"
 	// Reason means that not all of the VMI's DVs are ready
 	VirtualMachineInstanceReasonNotAllDVsReady = "NotAllDVsReady"
-	// Reason means that all of the VMI's DVs are bound and not running
+	// Reason means that all of the VMI's DVs are bound and ready
 	VirtualMachineInstanceReasonAllDVsReady = "AllDVsReady"
 	// Indicates a generic reason that the VMI isn't migratable and more details are spiecified in the condition message.
 	VirtualMachineInstanceReasonNotMigratable = "NotMigratable"
@@ -727,6 +728,65 @@ type VirtualMachineInstanceGuestOSInfo struct {
 	ID string `json:"id,omitempty"`
 }
 
+// +k8s:openapi-gen=true
+type MigrationNetworkType string
+
+// +k8s:openapi-gen=true
+const (
+	// PodNetworkMigration indicates the migration will happen over the pod network
+	Pod MigrationNetworkType = "Pod"
+	// MigrationNetworkMigration indicates the migration will happen over a dedicated migration network
+	Migration MigrationNetworkType = "Migration"
+)
+
+type VirtualMachineInstanceCommonMigrationState struct {
+	// The source node that the VMI originated on
+	Node string `json:"node,omitempty"`
+	// The source pod that the VMI is originated on
+	Pod string `json:"pod,omitempty"`
+	// The Source VirtualMachineInstanceMigration object associated with this migration
+	MigrationUID types.UID `json:"migrationUID,omitempty"`
+	// The name of the domain on the source libvirt domain
+	DomainName *string `json:"domainName,omitempty"`
+	// Namespace used in the name of the source libvirt domain. Can be used to find and modify paths in the domain
+	DomainNamespace *string `json:"domainNamespace,omitempty"`
+	// The ip address/fqdn:port combination to use to synchronize the VMI with the target.
+	SyncAddress *string `json:"syncAddress,omitempty"`
+	// If the VMI being migrated uses persistent features (backend-storage), its source PVC name is saved here
+	PersistentStatePVCName *string `json:"persistentStatePVCName,omitempty"`
+}
+
+// +k8s:openapi-gen=true
+type VirtualMachineInstanceMigrationSourceState struct {
+	VirtualMachineInstanceCommonMigrationState `json:",inline"`
+
+	// Node selectors needed by the target to start the receiving pod.
+	NodeSelectors map[string]string `json:"nodeSelectors,omitempty"`
+}
+
+// +k8s:openapi-gen=true
+type VirtualMachineInstanceMigrationTargetState struct {
+	VirtualMachineInstanceCommonMigrationState `json:",inline"`
+
+	// The timestamp at which the target node detects the domain is active
+	DomainReadyTimestamp *metav1.Time `json:"domainReadyTimestamp,omitempty"`
+	// The Target Node has seen the Domain Start Event
+	DomainDetected bool `json:"domainDetected,omitempty"`
+	// The address of the target node to use for the migration
+	NodeAddress *string `json:"nodeAddress,omitempty"`
+	// The list of ports opened for live migration on the destination node
+	DirectMigrationNodePorts map[string]int `json:"directMigrationNodePorts,omitempty"`
+	// The UID of the target attachment pod for hotplug volumes
+	AttachmentPodUID *types.UID `json:"attachmentPodUID,omitempty"`
+	// If the VMI requires dedicated CPUs, this field will
+	// hold the dedicated CPU set on the target node
+	// +listType=atomic
+	CPUSet []int `json:"cpuSet,omitempty"`
+	// If the VMI requires dedicated CPUs, this field will
+	// hold the numa topology on the target node
+	NodeTopology *string `json:"nodeTopology,omitempty"`
+}
+
 // MigrationConfigSource indicates the source of migration configuration.
 //
 // +k8s:openapi-gen=true
@@ -790,6 +850,12 @@ type VirtualMachineInstanceMigrationState struct {
 	SourcePersistentStatePVCName string `json:"sourcePersistentStatePVCName,omitempty"`
 	// If the VMI being migrated uses persistent features (backend-storage), its target PVC name is saved here
 	TargetPersistentStatePVCName string `json:"targetPersistentStatePVCName,omitempty"`
+	// SourceState contains migration state managed by the source virt handler
+	SourceState *VirtualMachineInstanceMigrationSourceState `json:"sourceState,omitempty"`
+	// TargetState contains migration state managed by the target virt handler
+	TargetState *VirtualMachineInstanceMigrationTargetState `json:"targetState,omitempty"`
+	// The type of migration network, either 'pod' or 'migration'
+	MigrationNetworkType MigrationNetworkType `json:"migrationNetworkType,omitempty"`
 }
 
 type MigrationAbortStatus string
@@ -989,6 +1055,8 @@ const (
 	HypervLabel = "hyperv.node.kubevirt.io/"
 	// This label represents vendor of cpu model on the node
 	CPUModelVendorLabel = "cpu-vendor.node.kubevirt.io/"
+	// This label represents supported machine type on the node
+	SupportedMachineTypeLabel = "machine-type.node.kubevirt.io/"
 
 	VirtIO = "virtio"
 
@@ -1124,6 +1192,10 @@ const (
 	// ImmediateDataVolumeCreation indicates that the data volumes should be created immediately
 	// Even if the VM is halted
 	ImmediateDataVolumeCreation string = "kubevirt.io/immediate-data-volume-creation"
+
+	// DisablePCIHole64 indicates that the 64-Bit PCI hole should be disabled on a VirtualMachineInstance.
+	// This annotation might be deprecated in the future if we decided to add a struct for it.
+	DisablePCIHole64 string = "kubevirt.io/disablePCIHole64"
 )
 
 func NewVMI(name string, uid types.UID) *VirtualMachineInstance {
@@ -1383,6 +1455,32 @@ type VirtualMachineInstanceMigrationList struct {
 type VirtualMachineInstanceMigrationSpec struct {
 	// The name of the VMI to perform the migration on. VMI must exist in the migration objects namespace
 	VMIName string `json:"vmiName,omitempty" valid:"required"`
+
+	// AddedNodeSelector is an additional selector that can be used to
+	// complement a NodeSelector or NodeAffinity as set on the VM
+	// to restrict the set of allowed target nodes for a migration.
+	// In case of key collisions, values set on the VM objects
+	// are going to be preserved to ensure that addedNodeSelector
+	// can only restrict but not bypass constraints already set on the VM object.
+	// +optional
+	AddedNodeSelector map[string]string `json:"addedNodeSelector,omitempty"`
+
+	// If sendTo is specified, this VirtualMachineInstanceMigration will be considered the source
+	SendTo *VirtualMachineInstanceMigrationSource `json:"sendTo,omitempty"`
+	// If receieve is specified, this VirtualMachineInstanceMigration will be considered the target
+	Receive *VirtualMachineInstanceMigrationTarget `json:"receive,omitempty"`
+}
+
+type VirtualMachineInstanceMigrationSource struct {
+	// A unique identifier to identify this migration.
+	MigrationID string `json:"migrationID"`
+	// The synchronization controller URL to connect to.
+	ConnectURL string `json:"connectURL"`
+}
+
+type VirtualMachineInstanceMigrationTarget struct {
+	// A unique identifier to identify this migration.
+	MigrationID string `json:"migrationID"`
 }
 
 // VirtualMachineInstanceMigrationPhaseTransitionTimestamp gives a timestamp in relation to when a phase is set on a vmi
@@ -2312,6 +2410,15 @@ type MigrateOptions struct {
 	// +optional
 	// +listType=atomic
 	DryRun []string `json:"dryRun,omitempty" protobuf:"bytes,1,rep,name=dryRun"`
+
+	// AddedNodeSelector is an additional selector that can be used to
+	// complement a NodeSelector or NodeAffinity as set on the VM
+	// to restrict the set of allowed target nodes for a migration.
+	// In case of key collisions, values set on the VM objects
+	// are going to be preserved to ensure that addedNodeSelector
+	// can only restrict but not bypass constraints already set on the VM object.
+	// +optional
+	AddedNodeSelector map[string]string `json:"addedNodeSelector,omitempty"`
 }
 
 // VirtualMachineInstanceGuestAgentInfo represents information from the installed guest agent
@@ -2334,8 +2441,9 @@ type VirtualMachineInstanceGuestAgentInfo struct {
 	UserList []VirtualMachineInstanceGuestOSUser `json:"userList,omitempty"`
 	// FSInfo is a guest os filesystem information containing the disk mapping and disk mounts with usage
 	FSInfo VirtualMachineInstanceFileSystemInfo `json:"fsInfo,omitempty"`
-	// FSFreezeStatus is the state of the fs of the guest
-	// it can be either frozen or thawed
+	// FSFreezeStatus indicates whether a freeze operation was requested for the guest filesystem.
+	// It will be set to "frozen" if the request was made, or unset otherwise.
+	// This does not reflect the actual state of the guest filesystem.
 	FSFreezeStatus string `json:"fsFreezeStatus,omitempty"`
 }
 
@@ -2825,6 +2933,9 @@ type DeveloperConfiguration struct {
 	MinimumClusterTSCFrequency *int64            `json:"minimumClusterTSCFrequency,omitempty"`
 	DiskVerification           *DiskVerification `json:"diskVerification,omitempty"`
 	LogVerbosity               *LogVerbosity     `json:"logVerbosity,omitempty"`
+
+	// Enable the ability to pprof profile KubeVirt control plane
+	ClusterProfiler bool `json:"clusterProfiler,omitempty"`
 }
 
 // LogVerbosity sets log verbosity level of  various components
