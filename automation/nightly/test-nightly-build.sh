@@ -74,7 +74,7 @@ go mod edit -replace github.com/kubevirt/cluster-network-addons-operator=./cnao
 go mod tidy
 go mod vendor
 
-go test ./pkg/... ./controller/...
+go test ./pkg/... ./controllers/...
 
 # set envs
 build_date="$(date +%Y%m%d)"
