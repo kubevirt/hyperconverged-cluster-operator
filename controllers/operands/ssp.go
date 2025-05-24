@@ -37,6 +37,8 @@ const (
 	dataImportCronTemplatesFileLocation = "./dataImportCronTemplates"
 
 	CDIImmediateBindAnnotation = "cdi.kubevirt.io/storage.bind.immediate.requested"
+
+	MultiArchDICTAnnotation = "ssp.kubevirt.io/dict.architectures"
 )
 
 var (
@@ -156,7 +158,7 @@ func NewSSP(hc *hcov1beta1.HyperConverged, opts ...string) (*sspv1beta2.SSP, []h
 		},
 		CommonTemplates: sspv1beta2.CommonTemplates{
 			Namespace:               templatesNamespace,
-			DataImportCronTemplates: hcoDictSliceToSSP(dataImportCronTemplates),
+			DataImportCronTemplates: hcoDictSliceToSSP(hc, dataImportCronTemplates),
 		},
 		// NodeLabeller field is explicitly initialized to its zero-value,
 		// in order to future-proof from bugs if SSP changes it to pointer-type,
@@ -349,7 +351,7 @@ func (d dataImportTemplateSlice) Len() int           { return len(d) }
 func (d dataImportTemplateSlice) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
 func (d dataImportTemplateSlice) Less(i, j int) bool { return d[i].Name < d[j].Name }
 
-func hcoDictToSSP(hcoDict hcov1beta1.DataImportCronTemplate) sspv1beta2.DataImportCronTemplate {
+func hcoDictToSSP(hc *hcov1beta1.HyperConverged, hcoDict hcov1beta1.DataImportCronTemplate) sspv1beta2.DataImportCronTemplate {
 	spec := cdiv1beta1.DataImportCronSpec{}
 	if hcoDict.Spec != nil {
 		hcoDict.Spec.DeepCopyInto(&spec)
@@ -368,10 +370,14 @@ func hcoDictToSSP(hcoDict hcov1beta1.DataImportCronTemplate) sspv1beta2.DataImpo
 		dict.Annotations[CDIImmediateBindAnnotation] = "true"
 	}
 
+	if hc.Spec.FeatureGates.EnableMultiArchCommonBootImageImport == nil || !*hc.Spec.FeatureGates.EnableMultiArchCommonBootImageImport {
+		delete(dict.Annotations, MultiArchDICTAnnotation)
+	} // todo: else {remove unsupported architectures from the list}
+
 	return dict
 }
 
-func hcoDictSliceToSSP(hcoDicts []hcov1beta1.DataImportCronTemplate) []sspv1beta2.DataImportCronTemplate {
+func hcoDictSliceToSSP(hc *hcov1beta1.HyperConverged, hcoDicts []hcov1beta1.DataImportCronTemplate) []sspv1beta2.DataImportCronTemplate {
 	if len(hcoDicts) == 0 {
 		return nil
 	}
@@ -379,7 +385,7 @@ func hcoDictSliceToSSP(hcoDicts []hcov1beta1.DataImportCronTemplate) []sspv1beta
 	res := make([]sspv1beta2.DataImportCronTemplate, len(hcoDicts))
 
 	for i, hcoDict := range hcoDicts {
-		res[i] = hcoDictToSSP(hcoDict)
+		res[i] = hcoDictToSSP(hc, hcoDict)
 	}
 
 	return res

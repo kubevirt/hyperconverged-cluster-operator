@@ -13,7 +13,8 @@
       "deployKubeSecondaryDNS": false,
       "disableMDevConfiguration": false,
       "persistentReservation": false,
-      "alignCPUs": false
+      "alignCPUs": false,
+      "enableMultiArchCommonBootImageImport": false
     },
     "liveMigrationConfig": {
       "parallelMigrationsPerCluster": 5,
