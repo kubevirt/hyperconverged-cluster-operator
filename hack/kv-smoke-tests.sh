@@ -247,7 +247,6 @@ ${TESTS_BINARY} \
     -ginkgo.slow-spec-threshold=60s \
     -ginkgo.succinct \
     -ginkgo.flake-attempts=3 \
-    -oc-path="$(which oc)" \
     -kubectl-path="$(which oc)" \
     -container-tag="${KUBEVIRT_VERSION}" \
     -utility-container-prefix=quay.io/kubevirt \
