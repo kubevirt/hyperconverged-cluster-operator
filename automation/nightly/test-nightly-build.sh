@@ -135,7 +135,7 @@ export KUBEVIRT_PROVIDER=k8s-1.32
 export KUBEVIRT_MEMORY_SIZE=12G
 export KUBEVIRT_NUM_NODES=4
 # auto updated by hack/bump-kubevirtci.sh
-export KUBEVIRTCI_TAG=${KUBEVIRTCI_TAG:-"2505092222-a43ac80c"}
+export KUBEVIRTCI_TAG=${KUBEVIRTCI_TAG:-"2505231304-615fbebc"}
 make cluster-up
 
 export KUBECONFIG=$(_kubevirtci/cluster-up/kubeconfig.sh)
