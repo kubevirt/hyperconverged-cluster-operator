@@ -95,9 +95,15 @@ sed -i "s#^NETWORK_ADDONS_VERSION=.*\$#NETWORK_ADDONS_VERSION=\"${cnao_tag}\"#" 
 export HCO_VERSION="${IMAGE_TAG}"
 ./automation/digester/update_images.sh
 
-HCO_OPERATOR_IMAGE_DIGEST=$(tools/digester/digester --image "${IMAGE_REGISTRY}/${REGISTRY_NAMESPACE}/hyperconverged-cluster-operator:${IMAGE_TAG}")
-HCO_WEBHOOK_IMAGE_DIGEST=$(tools/digester/digester --image "${IMAGE_REGISTRY}/${REGISTRY_NAMESPACE}/hyperconverged-cluster-webhook:${IMAGE_TAG}")
-HCO_DOWNLOAD_IMAGE_DIGEST=$(tools/digester/digester --image "${IMAGE_REGISTRY}/${REGISTRY_NAMESPACE}/virt-artifacts-server:${IMAGE_TAG}")
+HCO_OPERATOR_IMAGE_REPO="${IMAGE_REGISTRY}/${REGISTRY_NAMESPACE}/hyperconverged-cluster-operator"
+HCO_WEBHOOK_IMAGE_REPO="${IMAGE_REGISTRY}/${REGISTRY_NAMESPACE}/hyperconverged-cluster-webhook"
+HCO_DOWNLOAD_IMAGE_REPO="${IMAGE_REGISTRY}/${REGISTRY_NAMESPACE}/virt-artifacts-server"
+HCO_BUNDLE_IMAGE_REPO="${IMAGE_REGISTRY}/${REGISTRY_NAMESPACE}/hyperconverged-cluster-bundle"
+HCO_INDEX_IMAGE_REPO="${IMAGE_REGISTRY}/${REGISTRY_NAMESPACE}/hyperconverged-cluster-index"
+
+HCO_OPERATOR_IMAGE_DIGEST=$(tools/digester/digester --image "${HCO_OPERATOR_IMAGE_REPO}:${IMAGE_TAG}")
+HCO_WEBHOOK_IMAGE_DIGEST=$(tools/digester/digester --image "${HCO_WEBHOOK_IMAGE_REPO}:${IMAGE_TAG}")
+HCO_DOWNLOAD_IMAGE_DIGEST=$(tools/digester/digester --image "${HCO_DOWNLOAD_IMAGE_REPO}:${IMAGE_TAG}")
 
 # Build the CSV
 HCO_OPERATOR_IMAGE=${HCO_OPERATOR_IMAGE_DIGEST} HCO_WEBHOOK_IMAGE=${HCO_WEBHOOK_IMAGE_DIGEST} HCO_DOWNLOADS_IMAGE=${HCO_DOWNLOAD_IMAGE_DIGEST} ./hack/build-manifests.sh
@@ -111,10 +117,8 @@ export OPM=$(pwd)/opm
 # create and push bundle image and index image
 REGISTRY_NAMESPACE=${REGISTRY_NAMESPACE} IMAGE_TAG=${IMAGE_TAG} ./hack/build-index-image.sh latest UNSTABLE
 
-BUNDLE_REGISTRY_IMAGE_NAME=${BUNDLE_REGISTRY_IMAGE_NAME:-hyperconverged-cluster-bundle}
-INDEX_REGISTRY_IMAGE_NAME=${INDEX_REGISTRY_IMAGE_NAME:-hyperconverged-cluster-index}
-BUNDLE_IMAGE_NAME="${IMAGE_REGISTRY}/${REGISTRY_NAMESPACE}/${BUNDLE_REGISTRY_IMAGE_NAME}:${IMAGE_TAG}"
-INDEX_IMAGE_NAME="${IMAGE_REGISTRY}/${REGISTRY_NAMESPACE}/${INDEX_REGISTRY_IMAGE_NAME}:${IMAGE_TAG}"
+BUNDLE_IMAGE_NAME="${HCO_BUNDLE_IMAGE_REPO}:${IMAGE_TAG}"
+INDEX_IMAGE_NAME="${HCO_INDEX_IMAGE_REPO}:${IMAGE_TAG}"
 
 # build succeeded: publish the nightly build
 hco_bucket="kubevirt-prow/devel/nightly/release/kubevirt/hyperconverged-cluster-operator"
@@ -174,3 +178,9 @@ fi
 # functional test passed: publish latest nightly build
 echo "${build_date}" > build-date
 gsutil cp ./build-date gs://${hco_bucket}/latest
+
+IMAGE_REPO=${HCO_OPERATOR_IMAGE_REPO} MULTIARCH=true CURRENT_TAG=${IMAGE_TAG} NEW_TAG=nightly ./hack/retag-multi-arch-images.sh
+IMAGE_REPO=${HCO_WEBHOOK_IMAGE_REPO}  MULTIARCH=true CURRENT_TAG=${IMAGE_TAG} NEW_TAG=nightly ./hack/retag-multi-arch-images.sh
+IMAGE_REPO=${HCO_DOWNLOAD_IMAGE_REPO} MULTIARCH=true CURRENT_TAG=${IMAGE_TAG} NEW_TAG=nightly ./hack/retag-multi-arch-images.sh
+IMAGE_REPO=${HCO_BUNDLE_IMAGE_REPO}                  CURRENT_TAG=${IMAGE_TAG} NEW_TAG=nightly ./hack/retag-multi-arch-images.sh
+IMAGE_REPO=${HCO_INDEX_IMAGE_REPO}    MULTIARCH=true CURRENT_TAG=${IMAGE_TAG} NEW_TAG=nightly ./hack/retag-multi-arch-images.sh
