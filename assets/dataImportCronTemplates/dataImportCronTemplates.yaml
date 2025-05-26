@@ -1,8 +1,11 @@
 - metadata:
     annotations:
       cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+      ssp.kubevirt.io/dict.architectures: amd64,arm64,s390x
     name: centos-stream9-image-cron
   spec:
+    garbageCollect: Outdated
+    managedDataSource: centos-stream9
     schedule: "0 */12 * * *"
     template:
       spec:
@@ -13,13 +16,14 @@
           resources:
             requests:
               storage: 10Gi
-    garbageCollect: Outdated
-    managedDataSource: centos-stream9
 - metadata:
     annotations:
       cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+      ssp.kubevirt.io/dict.architectures: amd64,arm64,s390x
     name: centos-stream10-image-cron
   spec:
+    garbageCollect: Outdated
+    managedDataSource: centos-stream10
     schedule: "0 */12 * * *"
     template:
       spec:
@@ -30,13 +34,14 @@
           resources:
             requests:
               storage: 10Gi
-    garbageCollect: Outdated
-    managedDataSource: centos-stream10
 - metadata:
     annotations:
       cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+      ssp.kubevirt.io/dict.architectures: arm64,s390x,amd64
     name: fedora-image-cron
   spec:
+    garbageCollect: Outdated
+    managedDataSource: fedora
     schedule: "0 */12 * * *"
     template:
       spec:
@@ -47,5 +52,4 @@
           resources:
             requests:
               storage: 5Gi
-    garbageCollect: Outdated
-    managedDataSource: fedora
+

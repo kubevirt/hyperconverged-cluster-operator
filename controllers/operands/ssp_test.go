@@ -1020,7 +1020,7 @@ var _ = Describe("SSP Operands", func() {
 					commonImages = append(commonImages, image3)
 					commonImages = append(commonImages, image4)
 
-					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(ContainElements(hcoDictSliceToSSP(commonImages)))
+					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(ContainElements(hcoDictSliceToSSP(hco, commonImages)))
 				})
 
 				It("Should not add a common DIC template if it marked as disabled", func() {
@@ -1048,7 +1048,7 @@ var _ = Describe("SSP Operands", func() {
 					ssp, _, err := NewSSP(hco)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(3))
-					expected := hcoDictSliceToSSP([]hcov1beta1.DataImportCronTemplate{commonCentos8, image3, image4})
+					expected := hcoDictSliceToSSP(hco, []hcov1beta1.DataImportCronTemplate{commonCentos8, image3, image4})
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(ContainElements(expected))
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).ToNot(ContainElement(commonFedora))
 				})
@@ -1105,7 +1105,7 @@ var _ = Describe("SSP Operands", func() {
 
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).ToNot(BeNil())
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
-					expected := hcoDictSliceToSSP([]hcov1beta1.DataImportCronTemplate{image3, image4})
+					expected := hcoDictSliceToSSP(hco, []hcov1beta1.DataImportCronTemplate{image3, image4})
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(ContainElements(expected))
 				})
 
@@ -1127,7 +1127,7 @@ var _ = Describe("SSP Operands", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
-					expected := hcoDictSliceToSSP([]hcov1beta1.DataImportCronTemplate{image3, image4})
+					expected := hcoDictSliceToSSP(hco, []hcov1beta1.DataImportCronTemplate{image3, image4})
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(ContainElements(expected))
 				})
 
@@ -1163,7 +1163,7 @@ var _ = Describe("SSP Operands", func() {
 					ssp, _, err := NewSSP(hco)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(4))
-					expected := hcoDictSliceToSSP([]hcov1beta1.DataImportCronTemplate{*fedoraDic, commonCentos8, image3, image4})
+					expected := hcoDictSliceToSSP(hco, []hcov1beta1.DataImportCronTemplate{*fedoraDic, commonCentos8, image3, image4})
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(ContainElements(expected))
 				})
 
@@ -1265,7 +1265,130 @@ var _ = Describe("SSP Operands", func() {
 					commonImages = append(commonImages, image3)
 					commonImages = append(commonImages, image4)
 
-					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(ContainElements(hcoDictSliceToSSP(commonImages)))
+					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(ContainElements(hcoDictSliceToSSP(hco, commonImages)))
+				})
+
+				Context("heterogeneous cluster: the EnableMultiArchCommonBootImageImport FG", func() {
+					BeforeEach(func() {
+						Expect(os.Mkdir(dir, os.ModePerm)).To(Succeed())
+						destFile := path.Join(dir, "dataImportCronTemplates.yaml")
+
+						Expect(
+							commontestutils.CopyFile(destFile, path.Join(testFilesLocation, "dataImportCronTemplatesMultiArch.yaml")),
+						).To(Succeed())
+
+						DeferCleanup(func() {
+							Expect(os.RemoveAll(dir)).To(Succeed())
+						})
+					})
+
+					It("should drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is disabled (default)", func() {
+						Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
+
+						hco := commontestutils.NewHco()
+						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+						ssp, _, err := NewSSP(hco)
+						Expect(err).ToNot(HaveOccurred())
+
+						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).ToNot(BeNil())
+						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
+
+						for _, dict := range ssp.Spec.CommonTemplates.DataImportCronTemplates {
+							Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+							Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+							Expect(dict.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
+						}
+					})
+
+					It("should not drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is enabled", func() {
+						Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
+
+						hco := commontestutils.NewHco()
+						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(true)
+
+						ssp, _, err := NewSSP(hco)
+						Expect(err).ToNot(HaveOccurred())
+
+						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).ToNot(BeNil())
+						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
+
+						for _, dict := range ssp.Spec.CommonTemplates.DataImportCronTemplates {
+							Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+							Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+							Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
+						}
+					})
+
+					It("should drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is disabled (default) also for custom DICTs", func() {
+						image3Modified := image3.DeepCopy()
+						image3Modified.Annotations = map[string]string{
+							CDIImmediateBindAnnotation:            "true",
+							MultiArchDICTAnnotation:               "amd64,arm64,s390x",
+							"testing.kubevirt.io/fake.annotation": "true",
+						}
+
+						image4Modified := image4.DeepCopy()
+						image4Modified.Annotations = map[string]string{
+							CDIImmediateBindAnnotation:            "true",
+							MultiArchDICTAnnotation:               "amd64,arm64,s390x",
+							"testing.kubevirt.io/fake.annotation": "true",
+						}
+
+						Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
+
+						hco := commontestutils.NewHco()
+						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(false)
+						hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{*image3Modified, *image4Modified}
+
+						ssp, _, err := NewSSP(hco)
+						Expect(err).ToNot(HaveOccurred())
+
+						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).ToNot(BeNil())
+						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(4))
+
+						for _, dict := range ssp.Spec.CommonTemplates.DataImportCronTemplates {
+							Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+							Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+							Expect(dict.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
+						}
+					})
+
+					It("should not drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is enabled also for custom DICTs", func() {
+						image3Modified := image3.DeepCopy()
+						image3Modified.Annotations = map[string]string{
+							CDIImmediateBindAnnotation:            "true",
+							MultiArchDICTAnnotation:               "amd64,arm64,s390x",
+							"testing.kubevirt.io/fake.annotation": "true",
+						}
+
+						image4Modified := image4.DeepCopy()
+						image4Modified.Annotations = map[string]string{
+							CDIImmediateBindAnnotation:            "true",
+							MultiArchDICTAnnotation:               "amd64,arm64,s390x",
+							"testing.kubevirt.io/fake.annotation": "true",
+						}
+
+						Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
+
+						hco := commontestutils.NewHco()
+						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(true)
+						hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{*image3Modified, *image4Modified}
+
+						ssp, _, err := NewSSP(hco)
+						Expect(err).ToNot(HaveOccurred())
+
+						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).ToNot(BeNil())
+						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(4))
+
+						for _, dict := range ssp.Spec.CommonTemplates.DataImportCronTemplates {
+							Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+							Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+							Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
+						}
+					})
 				})
 			})
 
