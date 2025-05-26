@@ -11,7 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
@@ -31,24 +30,14 @@ var (
 )
 
 var _ = Describe("NodesController", func() {
-
-	getClusterInfo := hcoutil.GetClusterInfo
-
 	Describe("Reconcile NodesController", func() {
 
 		BeforeEach(func() {
 			_ = os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)
 		})
 
-		AfterEach(func() {
-			hcoutil.GetClusterInfo = getClusterInfo
-		})
-
 		Context("Node Count Change", func() {
 			It("Should update InfrastructureHighlyAvailable to true if there are two or more worker nodes", func() {
-				hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-					return commontestutils.ClusterInfoMock{}
-				}
 				hco := commontestutils.NewHco()
 				numWorkerNodes := 3
 				var nodesArray []client.Object
@@ -64,7 +53,9 @@ var _ = Describe("NodesController", func() {
 					nodesArray = append(nodesArray, workerNode)
 				}
 
-				resources := []client.Object{hco, nodesArray[0], nodesArray[1], nodesArray[2]}
+				resources := []client.Object{hco}
+				resources = append(resources, nodesArray...)
+
 				cl := commontestutils.InitClient(resources)
 				r := &ReconcileNodeCounter{
 					client: cl,
@@ -85,9 +76,6 @@ var _ = Describe("NodesController", func() {
 				Expect(latestHCO.Status.InfrastructureHighlyAvailable).To(HaveValue(BeTrue()))
 			})
 			It("Should update InfrastructureHighlyAvailable to false if there is only one worker node", func() {
-				hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-					return commontestutils.ClusterInfoSNOMock{}
-				}
 				hco := commontestutils.NewHco()
 				workerNode := &corev1.Node{
 					ObjectMeta: metav1.ObjectMeta{
@@ -130,8 +118,7 @@ var _ = Describe("NodesController", func() {
 				}
 				resources := []client.Object{workerNode}
 				cl := commontestutils.InitClient(resources)
-				logger := zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("nodes_controller_test")
-				Expect(hcoutil.GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
+
 				r := &ReconcileNodeCounter{
 					client: cl,
 				}
