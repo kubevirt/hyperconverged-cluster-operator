@@ -79,8 +79,8 @@ go test ./pkg/... ./controllers/...
 # set envs
 build_date="$(date +%Y%m%d)"
 export IMAGE_REGISTRY=quay.io
-export IMAGE_TAG="nb_${build_date}_$(git show -s --format=%h)"
-export REGISTRY_NAMESPACE=kubevirtci
+export IMAGE_TAG="${build_date}_$(git show -s --format=%h)"
+export REGISTRY_NAMESPACE=kubevirt
 
 # Build HCO & HCO Webhook
 make build-push-multi-arch-operator-image build-push-multi-arch-webhook-image build-push-multi-arch-artifacts-server
