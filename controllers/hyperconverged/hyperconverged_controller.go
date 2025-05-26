@@ -51,6 +51,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/upgradepatch"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/version"
@@ -345,7 +346,7 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 		r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "InitHCO", "Initiating the HyperConverged")
 		r.setInitialConditions(req)
 
-		req.Instance.Status.InfrastructureHighlyAvailable = ptr.To(hcoutil.GetClusterInfo().IsInfrastructureHighlyAvailable())
+		req.Instance.Status.InfrastructureHighlyAvailable = ptr.To(nodeinfo.IsInfrastructureHighlyAvailable())
 		req.StatusDirty = true
 	}
 

@@ -25,6 +25,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -119,7 +120,7 @@ func NewKvUIProxyDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
 func getKvUIDeployment(hc *hcov1beta1.HyperConverged, deploymentName string, image string,
 	servingCertName string, servingCertPath string, port int32, componentName hcoutil.AppComponent) *appsv1.Deployment {
 	labels := getLabels(hc, componentName)
-	infrastructureHighlyAvailable := hcoutil.GetClusterInfo().IsInfrastructureHighlyAvailable()
+	infrastructureHighlyAvailable := nodeinfo.IsInfrastructureHighlyAvailable()
 	var replicas int32
 	if infrastructureHighlyAvailable {
 		replicas = int32(2)

@@ -53,18 +53,9 @@ var _ = Describe("AAQ tests", func() {
 		}
 	)
 
-	getClusterInfo := hcoutil.GetClusterInfo
-
 	BeforeEach(func() {
 		hco = commontestutils.NewHco()
 		req = commontestutils.NewReq(hco)
-		hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-			return &commontestutils.ClusterInfoMock{}
-		}
-	})
-
-	AfterEach(func() {
-		hcoutil.GetClusterInfo = getClusterInfo
 	})
 
 	Context("test NewAAQ", func() {

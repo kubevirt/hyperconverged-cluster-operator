@@ -252,23 +252,23 @@ var _ = Describe("KubeVirt Operand", func() {
 		BeforeEach(func() {
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
-			os.Setenv(smbiosEnvName,
+			Expect(os.Setenv(smbiosEnvName,
 				`Family: smbios family
 Product: smbios product
 Manufacturer: smbios manufacturer
 Sku: 1.2.3
-Version: 1.2.3`)
+Version: 1.2.3`)).To(Succeed())
 
-			os.Setenv(amd64MachineTypeEnvName, "q35")
-			os.Setenv(arm64MachineTypeEnvName, "virt")
-			os.Setenv(kvmEmulationEnvName, "false")
+			Expect(os.Setenv(amd64MachineTypeEnvName, "q35")).To(Succeed())
+			Expect(os.Setenv(arm64MachineTypeEnvName, "virt")).To(Succeed())
+			Expect(os.Setenv(kvmEmulationEnvName, "false")).To(Succeed())
 
 			DeferCleanup(func() {
-				os.Unsetenv(smbiosEnvName)
-				os.Unsetenv(machineTypeEnvName)
-				os.Unsetenv(amd64MachineTypeEnvName)
-				os.Unsetenv(arm64MachineTypeEnvName)
-				os.Unsetenv(kvmEmulationEnvName)
+				Expect(os.Unsetenv(smbiosEnvName)).To(Succeed())
+				Expect(os.Unsetenv(machineTypeEnvName)).To(Succeed())
+				Expect(os.Unsetenv(amd64MachineTypeEnvName)).To(Succeed())
+				Expect(os.Unsetenv(arm64MachineTypeEnvName)).To(Succeed())
+				Expect(os.Unsetenv(kvmEmulationEnvName)).To(Succeed())
 			})
 		})
 
@@ -1713,17 +1713,12 @@ Version: 1.2.3`)
 		})
 
 		Context("Test node placement", func() {
-
-			getClusterInfo := hcoutil.GetClusterInfo
-
 			BeforeEach(func() {
-				hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-					return &commontestutils.ClusterInfoMock{}
-				}
-			})
+				commontestutils.HighlyAvailableNodeInfoMocks()
 
-			AfterEach(func() {
-				hcoutil.GetClusterInfo = getClusterInfo
+				DeferCleanup(func() {
+					commontestutils.ResetNodeInfoMocks()
+				})
 			})
 
 			It("should add node placement if missing in KubeVirt", func() {
@@ -1891,17 +1886,12 @@ Version: 1.2.3`)
 		})
 
 		Context("Feature Gates", func() {
-
-			getClusterInfo := hcoutil.GetClusterInfo
-
 			BeforeEach(func() {
-				hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-					return &commontestutils.ClusterInfoMock{}
-				}
-			})
+				commontestutils.HighlyAvailableNodeInfoMocks()
 
-			AfterEach(func() {
-				hcoutil.GetClusterInfo = getClusterInfo
+				DeferCleanup(func() {
+					commontestutils.ResetNodeInfoMocks()
+				})
 			})
 
 			Context("test feature gates in NewKubeVirt", func() {
@@ -2029,19 +2019,6 @@ Version: 1.2.3`)
 			})
 
 			Context("test feature gates in KV handler", func() {
-
-				getClusterInfo := hcoutil.GetClusterInfo
-
-				BeforeEach(func() {
-					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-						return &commontestutils.ClusterInfoMock{}
-					}
-				})
-
-				AfterEach(func() {
-					hcoutil.GetClusterInfo = getClusterInfo
-				})
-
 				It("should add feature gates if they are set to true", func() {
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -2267,19 +2244,6 @@ Version: 1.2.3`)
 			})
 
 			Context("Test getKvFeatureGateList", func() {
-
-				getClusterInfo := hcoutil.GetClusterInfo
-
-				BeforeEach(func() {
-					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-						return &commontestutils.ClusterInfoMock{}
-					}
-				})
-
-				AfterEach(func() {
-					hcoutil.GetClusterInfo = getClusterInfo
-				})
-
 				DescribeTable("Should return featureGate slice",
 					func(isKVMEmulation bool, fgs *hcov1beta1.HyperConvergedFeatureGates, expectedLength int, expectedFgs [][]string) {
 						mandatoryKvFeatureGates = getMandatoryKvFeatureGates(isKVMEmulation)
@@ -2708,17 +2672,12 @@ Version: 1.2.3`)
 
 		Context("Workload Update Strategy", func() {
 			const defaultBatchEvictionSize = 10
-
-			getClusterInfo := hcoutil.GetClusterInfo
-
 			BeforeEach(func() {
-				hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-					return &commontestutils.ClusterInfoMock{}
-				}
-			})
+				commontestutils.HighlyAvailableNodeInfoMocks()
 
-			AfterEach(func() {
-				hcoutil.GetClusterInfo = getClusterInfo
+				DeferCleanup(func() {
+					commontestutils.ResetNodeInfoMocks()
+				})
 			})
 
 			It("should add Workload Update Strategy if missing in KV", func() {
@@ -2882,11 +2841,12 @@ Version: 1.2.3`)
 		})
 
 		Context("SNO replicas", func() {
+			BeforeEach(func() {
+				commontestutils.HighlyAvailableNodeInfoMocks()
 
-			getClusterInfo := hcoutil.GetClusterInfo
-
-			AfterEach(func() {
-				hcoutil.GetClusterInfo = getClusterInfo
+				DeferCleanup(func() {
+					commontestutils.ResetNodeInfoMocks()
+				})
 			})
 
 			Context("Custom Infra placement, default Workloads placement", func() {
@@ -2896,9 +2856,7 @@ Version: 1.2.3`)
 				})
 
 				It("should set replica=1 on SNO", func() {
-					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-						return &commontestutils.ClusterInfoSNOMock{}
-					}
+					commontestutils.SNONodeInfoMock()
 
 					kv, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -2909,9 +2867,8 @@ Version: 1.2.3`)
 				})
 
 				It("should not set replica when not on SNO", func() {
-					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-						return &commontestutils.ClusterInfoMock{}
-					}
+					commontestutils.HighlyAvailableNodeInfoMocks()
+
 					kv, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(Not(BeNil()))
@@ -2920,9 +2877,8 @@ Version: 1.2.3`)
 				})
 
 				It("should set replica=1 with SingleReplica ControlPlane and HighAvailable Infrastructure ", func() {
-					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-						return &commontestutils.ClusterInfoSRCPHAIMock{}
-					}
+					commontestutils.SRCPHAINodeInfoMock()
+
 					kv, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(Not(BeNil()))
@@ -2939,9 +2895,7 @@ Version: 1.2.3`)
 				})
 
 				It("should set replica=1 on SNO", func() {
-					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-						return &commontestutils.ClusterInfoSNOMock{}
-					}
+					commontestutils.SNONodeInfoMock()
 
 					kv, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -2953,9 +2907,8 @@ Version: 1.2.3`)
 				})
 
 				It("should not set replica when not on SNO", func() {
-					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-						return &commontestutils.ClusterInfoMock{}
-					}
+					commontestutils.HighlyAvailableNodeInfoMocks()
+
 					kv, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(BeNil())
@@ -2964,9 +2917,8 @@ Version: 1.2.3`)
 				})
 
 				It("should set replica=1 with SingleReplica ControlPlane but HighAvailable Infrastructure ", func() {
-					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-						return &commontestutils.ClusterInfoSRCPHAIMock{}
-					}
+					commontestutils.SRCPHAINodeInfoMock()
+
 					kv, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(Not(BeNil()))
@@ -2980,9 +2932,7 @@ Version: 1.2.3`)
 			Context("Default Infra and Workload placement", func() {
 
 				It("should set replica=1 on SNO", func() {
-					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-						return &commontestutils.ClusterInfoSNOMock{}
-					}
+					commontestutils.SNONodeInfoMock()
 
 					kv, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -2994,9 +2944,8 @@ Version: 1.2.3`)
 				})
 
 				It("should not set replica when not on SNO", func() {
-					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-						return &commontestutils.ClusterInfoMock{}
-					}
+					commontestutils.HighlyAvailableNodeInfoMocks()
+
 					kv, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(BeNil())
@@ -3004,9 +2953,8 @@ Version: 1.2.3`)
 				})
 
 				It("should set replica=1 with SingleReplica ControlPlane but HighAvailable Infrastructure ", func() {
-					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-						return &commontestutils.ClusterInfoSRCPHAIMock{}
-					}
+					commontestutils.SRCPHAINodeInfoMock()
+
 					kv, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(Not(BeNil()))
@@ -3024,9 +2972,7 @@ Version: 1.2.3`)
 				})
 
 				It("should set replica=1 on SNO", func() {
-					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-						return &commontestutils.ClusterInfoSNOMock{}
-					}
+					commontestutils.SNONodeInfoMock()
 
 					kv, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -3037,9 +2983,8 @@ Version: 1.2.3`)
 				})
 
 				It("should not set replica when not on SNO", func() {
-					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-						return &commontestutils.ClusterInfoMock{}
-					}
+					commontestutils.HighlyAvailableNodeInfoMocks()
+
 					kv, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(Not(BeNil()))
@@ -3049,9 +2994,8 @@ Version: 1.2.3`)
 				})
 
 				It("should set replica=1 with SingleReplica ControlPlane and HighAvailable Infrastructure ", func() {
-					hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-						return &commontestutils.ClusterInfoSRCPHAIMock{}
-					}
+					commontestutils.SRCPHAINodeInfoMock()
+
 					kv, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).To(Not(BeNil()))
@@ -3645,19 +3589,6 @@ Version: 1.2.3`)
 		})
 
 		Context("jsonpath Annotation", func() {
-
-			getClusterInfo := hcoutil.GetClusterInfo
-
-			BeforeEach(func() {
-				hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-					return &commontestutils.ClusterInfoMock{}
-				}
-			})
-
-			AfterEach(func() {
-				hcoutil.GetClusterInfo = getClusterInfo
-			})
-
 			mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
 			It("Should create KV object with changes from the annotation", func() {
 
