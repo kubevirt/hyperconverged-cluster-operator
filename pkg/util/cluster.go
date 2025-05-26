@@ -3,10 +3,6 @@ package util
 import (
 	"context"
 	"errors"
-	"os"
-	"slices"
-	"sync/atomic"
-
 	"github.com/go-logr/logr"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -18,7 +14,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
 	"k8s.io/utils/net"
+	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"slices"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 )
@@ -29,10 +27,6 @@ type ClusterInfo interface {
 	IsRunningLocally() bool
 	GetBaseDomain() string
 	IsManagedByOLM() bool
-	IsControlPlaneHighlyAvailable() bool
-	IsControlPlaneNodeExists() bool
-	IsInfrastructureHighlyAvailable() bool
-	SetHighAvailabilityMode(ctx context.Context, cl client.Client) error
 	IsConsolePluginImageProvided() bool
 	IsMonitoringAvailable() bool
 	IsDeschedulerAvailable() bool
@@ -46,19 +40,16 @@ type ClusterInfo interface {
 }
 
 type ClusterInfoImp struct {
-	runningInOpenshift            bool
-	managedByOLM                  bool
-	runningLocally                bool
-	controlPlaneHighlyAvailable   atomic.Bool
-	controlPlaneNodeExist         atomic.Bool
-	infrastructureHighlyAvailable atomic.Bool
-	consolePluginImageProvided    bool
-	monitoringAvailable           bool
-	deschedulerAvailable          bool
-	singlestackipv6               bool
-	baseDomain                    string
-	ownResources                  *OwnResources
-	logger                        logr.Logger
+	runningInOpenshift         bool
+	managedByOLM               bool
+	runningLocally             bool
+	consolePluginImageProvided bool
+	monitoringAvailable        bool
+	deschedulerAvailable       bool
+	singlestackipv6            bool
+	baseDomain                 string
+	ownResources               *OwnResources
+	logger                     logr.Logger
 }
 
 var clusterInfo ClusterInfo
@@ -84,9 +75,8 @@ func (c *ClusterInfoImp) Init(ctx context.Context, cl client.Client, logger logr
 
 	if c.runningInOpenshift {
 		err = c.initOpenshift(ctx, cl)
-	} else {
-		err = c.initKubernetes(ctx, cl)
 	}
+
 	if err != nil {
 		return err
 	}
@@ -114,10 +104,6 @@ func (c *ClusterInfoImp) Init(ctx context.Context, cl client.Client, logger logr
 	return nil
 }
 
-func (c *ClusterInfoImp) initKubernetes(ctx context.Context, cl client.Client) error {
-	return c.SetHighAvailabilityMode(ctx, cl)
-}
-
 func (c *ClusterInfoImp) initOpenshift(ctx context.Context, cl client.Client) error {
 	clusterInfrastructure := &openshiftconfigv1.Infrastructure{
 		ObjectMeta: metav1.ObjectMeta{
@@ -134,11 +120,6 @@ func (c *ClusterInfoImp) initOpenshift(ctx context.Context, cl client.Client) er
 		"controlPlaneTopology", clusterInfrastructure.Status.ControlPlaneTopology,
 		"infrastructureTopology", clusterInfrastructure.Status.InfrastructureTopology,
 	)
-
-	err = c.SetHighAvailabilityMode(ctx, cl)
-	if err != nil {
-		return err
-	}
 
 	clusterNetwork := &openshiftconfigv1.Network{
 		ObjectMeta: metav1.ObjectMeta{
@@ -190,31 +171,6 @@ func (c *ClusterInfoImp) IsRunningLocally() bool {
 
 func (c *ClusterInfoImp) IsSingleStackIPv6() bool {
 	return c.singlestackipv6
-}
-
-func (c *ClusterInfoImp) IsControlPlaneHighlyAvailable() bool {
-	return c.controlPlaneHighlyAvailable.Load()
-}
-
-func (c *ClusterInfoImp) IsControlPlaneNodeExists() bool {
-	return c.controlPlaneNodeExist.Load()
-}
-
-func (c *ClusterInfoImp) IsInfrastructureHighlyAvailable() bool {
-	return c.infrastructureHighlyAvailable.Load()
-}
-
-func (c *ClusterInfoImp) SetHighAvailabilityMode(ctx context.Context, cl client.Client) error {
-	var err error
-	masterNodeCount, workerNodeCount, err := getNodesCount(ctx, cl)
-	if err != nil {
-		return err
-	}
-
-	c.controlPlaneHighlyAvailable.Store(masterNodeCount >= 3)
-	c.controlPlaneNodeExist.Store(masterNodeCount >= 1)
-	c.infrastructureHighlyAvailable.Store(workerNodeCount >= 2)
-	return nil
 }
 
 func (c *ClusterInfoImp) GetBaseDomain() string {

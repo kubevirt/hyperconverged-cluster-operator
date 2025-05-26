@@ -464,8 +464,6 @@ var _ = Describe("test clusterInfo", func() {
 
 			Expect(GetClusterInfo().IsOpenshift()).To(BeTrue(), "should return true for IsOpenshift()")
 			Expect(GetClusterInfo().IsManagedByOLM()).To(BeTrue(), "should return true for IsManagedByOLM()")
-			Expect(GetClusterInfo().IsControlPlaneHighlyAvailable()).To(Equal(expectedIsControlPlaneHighlyAvailable), "should return true for HighlyAvailable ControlPlane")
-			Expect(GetClusterInfo().IsInfrastructureHighlyAvailable()).To(Equal(expectedIsInfrastructureHighlyAvailable), "should return true for HighlyAvailable Infrastructure")
 		},
 		Entry(
 			"HighlyAvailable ControlPlane and Infrastructure",
@@ -498,77 +496,6 @@ var _ = Describe("test clusterInfo", func() {
 			"SingleReplica ControlPlane and Infrastructure",
 			openshiftconfigv1.SingleReplicaTopologyMode,
 			openshiftconfigv1.SingleReplicaTopologyMode,
-			1,
-			1,
-			false,
-			false,
-		),
-	)
-
-	DescribeTable(
-		"check Init on k8s, infrastructure topology ...",
-		func(numMasterNodes, numWorkerNodes int, expectedIsControlPlaneHighlyAvailable, expectedIsInfrastructureHighlyAvailable bool) {
-
-			var nodesArray []client.Object
-			for i := range numMasterNodes {
-				masterNode := &corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: fmt.Sprintf("master%d", i),
-						Labels: map[string]string{
-							"node-role.kubernetes.io/master": "",
-						},
-					},
-				}
-				nodesArray = append(nodesArray, masterNode)
-			}
-			for i := range numWorkerNodes {
-				workerNode := &corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: fmt.Sprintf("worker%d", i),
-						Labels: map[string]string{
-							"node-role.kubernetes.io/worker": "",
-						},
-					},
-				}
-				nodesArray = append(nodesArray, workerNode)
-			}
-			Expect(os.Unsetenv(OperatorConditionNameEnvVar)).To(Succeed())
-			cl := fake.NewClientBuilder().
-				WithScheme(testScheme).
-				WithObjects(nodesArray...).
-				WithStatusSubresource(nodesArray...).
-				Build()
-
-			Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
-
-			Expect(GetClusterInfo().IsOpenshift()).To(BeFalse(), "should return false for IsOpenshift()")
-			Expect(GetClusterInfo().IsManagedByOLM()).To(BeFalse(), "should return false for IsManagedByOLM()")
-			Expect(GetClusterInfo().IsControlPlaneHighlyAvailable()).To(Equal(expectedIsControlPlaneHighlyAvailable), "should return true for HighlyAvailable ControlPlane")
-			Expect(GetClusterInfo().IsInfrastructureHighlyAvailable()).To(Equal(expectedIsInfrastructureHighlyAvailable), "should return true for HighlyAvailable Infrastructure")
-		},
-		Entry(
-			"3 master nodes, 3 worker nodes",
-			3,
-			3,
-			true,
-			true,
-		),
-		Entry(
-			"2 master nodes, 2 worker nodes",
-			2,
-			2,
-			false,
-			true,
-		),
-		Entry(
-			"3 master nodes, 1 worker node",
-			3,
-			1,
-			true,
-			false,
-		),
-		Entry(
-			"1 master mode, 1 worker node",
 			1,
 			1,
 			false,

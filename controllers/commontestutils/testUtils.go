@@ -291,18 +291,6 @@ func (ClusterInfoMock) IsRunningLocally() bool {
 func (ClusterInfoMock) IsManagedByOLM() bool {
 	return true
 }
-func (ClusterInfoMock) IsControlPlaneHighlyAvailable() bool {
-	return true
-}
-func (ClusterInfoMock) IsControlPlaneNodeExists() bool {
-	return true
-}
-func (ClusterInfoMock) IsInfrastructureHighlyAvailable() bool {
-	return true
-}
-func (ClusterInfoMock) SetHighAvailabilityMode(_ context.Context, _ client.Client) error {
-	return nil
-}
 func (ClusterInfoMock) GetBaseDomain() string {
 	return BaseDomain
 }
@@ -357,18 +345,6 @@ func (ClusterInfoSNOMock) IsRunningLocally() bool {
 func (ClusterInfoSNOMock) IsManagedByOLM() bool {
 	return true
 }
-func (ClusterInfoSNOMock) IsControlPlaneHighlyAvailable() bool {
-	return false
-}
-func (ClusterInfoSNOMock) IsControlPlaneNodeExists() bool {
-	return true
-}
-func (ClusterInfoSNOMock) IsInfrastructureHighlyAvailable() bool {
-	return false
-}
-func (ClusterInfoSNOMock) SetHighAvailabilityMode(_ context.Context, _ client.Client) error {
-	return nil
-}
 func (ClusterInfoSNOMock) GetBaseDomain() string {
 	return BaseDomain
 }
@@ -422,18 +398,6 @@ func (ClusterInfoSRCPHAIMock) IsRunningLocally() bool {
 }
 func (ClusterInfoSRCPHAIMock) IsManagedByOLM() bool {
 	return true
-}
-func (ClusterInfoSRCPHAIMock) IsControlPlaneHighlyAvailable() bool {
-	return false
-}
-func (ClusterInfoSRCPHAIMock) IsControlPlaneNodeExists() bool {
-	return true
-}
-func (ClusterInfoSRCPHAIMock) IsInfrastructureHighlyAvailable() bool {
-	return true
-}
-func (ClusterInfoSRCPHAIMock) SetHighAvailabilityMode(_ context.Context, _ client.Client) error {
-	return nil
 }
 func (ClusterInfoSRCPHAIMock) GetPod() *corev1.Pod {
 	return pod
