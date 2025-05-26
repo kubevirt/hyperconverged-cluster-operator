@@ -87,5 +87,22 @@ func clusterAlerts() []promv1.Rule {
 				"operator_health_impact": "none",
 			},
 		},
+		{
+			Alert: "HighNodeCPUFrequency",
+			Expr: intstr.FromString(`
+				node_cpu_frequency_hertz > 0
+				and on(instance, cpu)
+				node_cpu_frequency_hertz - on(instance, cpu) group_left() node_cpu_frequency_max_hertz * 0.8 > 0
+			`),
+			For: ptr.To[promv1.Duration]("5m"),
+			Annotations: map[string]string{
+				"summary":     "High CPU frequency detected on node {{ $labels.instance }}",
+				"description": "CPU frequency on node {{ $labels.instance }} (CPU {{ $labels.cpu }}) is {{ $value | humanize }}Hz, which is above 80% of the maximum frequency. This may indicate high CPU utilization or thermal throttling.",
+			},
+			Labels: map[string]string{
+				"severity":               "warning",
+				"operator_health_impact": "none",
+			},
+		},
 	}
 }

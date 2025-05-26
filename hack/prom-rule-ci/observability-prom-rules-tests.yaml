@@ -291,3 +291,51 @@ tests:
               kubernetes_operator_component: "cnv-observability"
               job: "kubelet"
               metrics_path: "/metrics"
+
+  - interval: 1m
+    input_series:
+      # Test case 1: CPU frequency is above 80% of max (should alert)
+      # Current frequency: 2800 MHz, Max frequency: 3000 MHz (93.3% > 80%)
+      - series: 'node_cpu_frequency_hertz{instance="n1.cnv.redhat.com",cpu="0"}'
+        values: "2800000000+0x30"
+      - series: 'node_cpu_frequency_max_hertz{instance="n1.cnv.redhat.com",cpu="0"}'
+        values: "3000000000+0x30"
+
+      # Test case 2: CPU frequency is below 80% of max (should NOT alert)
+      # Current frequency: 2000 MHz, Max frequency: 3000 MHz (66.7% < 80%)
+      - series: 'node_cpu_frequency_hertz{instance="n2.cnv.redhat.com",cpu="0"}'
+        values: "2000000000+0x30"
+      - series: 'node_cpu_frequency_max_hertz{instance="n2.cnv.redhat.com",cpu="0"}'
+        values: "3000000000+0x30"
+
+      # Test case 3: Missing max frequency metric (should NOT alert)
+      # Current frequency exists but max frequency doesn't
+      - series: 'node_cpu_frequency_hertz{instance="n3.cnv.redhat.com",cpu="0"}'
+        values: "2800000000+0x30"
+
+      # Test case 4: Missing current frequency metric (should NOT alert)
+      # Max frequency exists but current frequency doesn't
+      - series: 'node_cpu_frequency_max_hertz{instance="n4.cnv.redhat.com",cpu="0"}'
+        values: "3000000000+0x30"
+
+    alert_rule_test:
+      # At 3 minutes, no alerts should fire yet (not enough time elapsed)
+      - eval_time: 3m
+        alertname: HighNodeCPUFrequency
+        exp_alerts: [ ]
+
+      # At 8 minutes, alerts should fire for instances with high CPU frequency
+      - eval_time: 8m
+        alertname: HighNodeCPUFrequency
+        exp_alerts:
+          - exp_annotations:
+              summary: "High CPU frequency detected on node n1.cnv.redhat.com"
+              description: "CPU frequency on node n1.cnv.redhat.com (CPU 0) is 2.8GHz, which is above 80% of the maximum frequency. This may indicate high CPU utilization or thermal throttling."
+              runbook_url: "https://kubevirt.io/monitoring/runbooks/HighNodeCPUFrequency"
+            exp_labels:
+              instance: "n1.cnv.redhat.com"
+              cpu: "0"
+              severity: "warning"
+              operator_health_impact: "none"
+              kubernetes_operator_part_of: "kubevirt"
+              kubernetes_operator_component: "cnv-observability"
