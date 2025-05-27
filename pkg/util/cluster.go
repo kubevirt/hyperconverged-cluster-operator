@@ -3,6 +3,9 @@ package util
 import (
 	"context"
 	"errors"
+	"os"
+	"slices"
+
 	"github.com/go-logr/logr"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -14,9 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
 	"k8s.io/utils/net"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"slices"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 )
@@ -316,27 +317,4 @@ func isValidCipherName(str string) bool {
 	return slices.Contains(openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileOldType].Ciphers, str) ||
 		slices.Contains(openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers, str) ||
 		slices.Contains(openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileModernType].Ciphers, str)
-}
-
-func getNodesCount(ctx context.Context, cl client.Client) (int, int, error) {
-	nodesList := &corev1.NodeList{}
-	err := cl.List(ctx, nodesList)
-	if err != nil {
-		return 0, 0, err
-	}
-	workerNodeCount := 0
-	masterNodeCount := 0
-
-	for _, node := range nodesList.Items {
-		_, workerLabelExists := node.Labels["node-role.kubernetes.io/worker"]
-		if workerLabelExists {
-			workerNodeCount++
-		}
-		_, masterLabelExists := node.Labels["node-role.kubernetes.io/master"]
-		_, cpLabelExists := node.Labels["node-role.kubernetes.io/control-plane"]
-		if masterLabelExists || cpLabelExists {
-			masterNodeCount++
-		}
-	}
-	return masterNodeCount, workerNodeCount, nil
 }
