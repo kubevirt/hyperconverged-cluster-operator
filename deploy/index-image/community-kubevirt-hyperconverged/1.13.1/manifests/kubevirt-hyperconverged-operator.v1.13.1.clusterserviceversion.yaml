@@ -3147,7 +3147,7 @@ spec:
                 - name: CDI_VERSION
                   value: v1.60.5
                 - name: NETWORK_ADDONS_VERSION
-                  value: v0.95.1
+                  value: v0.95.2
                 - name: SSP_VERSION
                   value: v0.21.1
                 - name: HPPO_VERSION
@@ -3367,11 +3367,11 @@ spec:
                 - name: PASST_BINDING_CNI_IMAGE
                   value: ghcr.io/kubevirt/passt-binding-cni@sha256:26c19e9292a76c5311c8ff66059ddf4f8085eee9c075d642cd86d645ebc31088
                 - name: OPERATOR_IMAGE
-                  value: quay.io/kubevirt/cluster-network-addons-operator@sha256:0374ea2e16258e697028f691379f1e8dbb6b3dc14ba77e0c55f86b80e57f0e92
+                  value: quay.io/kubevirt/cluster-network-addons-operator@sha256:03fbdbc357f925f642d3128c200bc4734d92be3eeb40e62e95792aa73d2356e1
                 - name: OPERATOR_NAME
                   value: cluster-network-addons-operator
                 - name: OPERATOR_VERSION
-                  value: v0.95.1
+                  value: v0.95.2
                 - name: OPERATOR_NAMESPACE
                   valueFrom:
                     fieldRef:
@@ -3391,7 +3391,7 @@ spec:
                   value: prometheus-k8s
                 - name: RUNBOOK_URL_TEMPLATE
                   value: https://kubevirt.io/monitoring/runbooks/%s
-                image: quay.io/kubevirt/cluster-network-addons-operator@sha256:0374ea2e16258e697028f691379f1e8dbb6b3dc14ba77e0c55f86b80e57f0e92
+                image: quay.io/kubevirt/cluster-network-addons-operator@sha256:03fbdbc357f925f642d3128c200bc4734d92be3eeb40e62e95792aa73d2356e1
                 imagePullPolicy: IfNotPresent
                 name: cluster-network-addons-operator
                 resources:
@@ -4644,7 +4644,7 @@ spec:
     name: cdi-uploadproxy
   - image: quay.io/kubevirt/cdi-uploadserver@sha256:a3acf8d8a3516c1ed77c54243da5f3dc7e36861c106965515e540f12ea3bdf6f
     name: cdi-uploadserver
-  - image: quay.io/kubevirt/cluster-network-addons-operator@sha256:0374ea2e16258e697028f691379f1e8dbb6b3dc14ba77e0c55f86b80e57f0e92
+  - image: quay.io/kubevirt/cluster-network-addons-operator@sha256:03fbdbc357f925f642d3128c200bc4734d92be3eeb40e62e95792aa73d2356e1
     name: cluster-network-addons-operator
   - image: quay.io/kubevirt/cni-default-plugins@sha256:0c354fa9d695b8cab97b459e8afea2f7662407a987e83f6f6f1a8af4b45726be
     name: cni-default-plugins
