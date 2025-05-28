@@ -109,7 +109,7 @@ ${CMD} create secret -n ${VMS_NAMESPACE} generic testvm-secret --from-file=userd
 ${CMD} apply -n ${VMS_NAMESPACE} -f ./hack/vm.yaml
 ${CMD} get vm -n ${VMS_NAMESPACE} -o yaml testvm
 ~/virtctl start testvm -n ${VMS_NAMESPACE}
-./hack/retry.sh 30 10 "${CMD} get vmi -n ${VMS_NAMESPACE} testvm -o jsonpath='{ .status.phase }' | grep 'Running'"
+./hack/retry.sh 30 10 "${CMD} get vmi -n ${VMS_NAMESPACE} testvm -o jsonpath='{ .status.phase }' | grep 'Running'" "${CMD} get vm -n ${VMS_NAMESPACE} testvm -o yaml;${CMD} events -n ${VMS_NAMESPACE} virtualmachineinstance/testvm;${CMD} get pod -n ${VMS_NAMESPACE} -l "kubevirt.io/name=testvm" -l "kubevirt.io=virt-launcher" -o yaml"
 ${CMD} get vmi -n ${VMS_NAMESPACE} -o yaml testvm
 
 source ./hack/check-uptime.sh
