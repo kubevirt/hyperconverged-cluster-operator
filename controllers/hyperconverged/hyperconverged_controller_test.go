@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
+
 	"github.com/blang/semver/v4"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -43,7 +45,6 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/metrics"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/version"
 )

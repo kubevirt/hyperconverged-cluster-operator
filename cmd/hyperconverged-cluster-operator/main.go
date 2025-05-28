@@ -6,6 +6,8 @@ import (
 	"maps"
 	"os"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
+
 	"github.com/machadovilaca/operator-observability/pkg/operatormetrics"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
@@ -57,7 +59,6 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/nodes"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/observability"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/metrics"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -189,7 +190,7 @@ func main() {
 	}
 
 	if ci.IsOpenshift() {
-		if err = observability.SetupWithManager(mgr); err != nil {
+		if err = observability.SetupWithManager(mgr, ci.GetDeployment()); err != nil {
 			logger.Error(err, "unable to create controller", "controller", "Observability")
 			os.Exit(1)
 		}
