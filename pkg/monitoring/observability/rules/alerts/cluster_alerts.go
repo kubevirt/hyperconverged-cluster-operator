@@ -9,6 +9,14 @@ import (
 	"k8s.io/utils/ptr"
 )
 
+// Network interface flag bitmasks for Linux interface flags
+// See: https://github.com/torvalds/linux/blob/master/include/uapi/linux/if.h
+const (
+	IFF_UP       = 1
+	IFF_RUNNING  = 64
+	IFF_LOWER_UP = 65536
+)
+
 var ignoredInterfacesForNetworkDown = []string{
 	"lo",          // loopback interface
 	"tunbr",       // tunnel bridge
@@ -49,12 +57,16 @@ func clusterAlerts() []promv1.Rule {
 		{
 			Alert: "NodeNetworkInterfaceDown",
 			Expr: intstr.FromString(fmt.Sprintf(`count by (instance) (
-					(node_network_flags %% 2) >= 1												# IFF_UP is set
+					(node_network_flags %% %d) >= %d											# IFF_UP is set
 					and
-					(node_network_flags %% 128) < 64											# IFF_RUNNING is NOT set
+					(node_network_flags %% %d) < %d											# IFF_RUNNING is NOT set
 					and
-					on(device) (node_network_flags unless node_network_flags{device=~"%s"})		# Excluding ignored interfaces
-				) > 0`, strings.Join(ignoredInterfacesForNetworkDown, "|"))),
+					(node_network_flags %% %d) < %d										    # IFF_LOWER_UP is NOT set
+					and
+					on(device) node_network_up == 1											    # Interface is up
+					and
+					on(device) (node_network_flags unless node_network_flags{device=~"%s"})     # Excluding ignored interfaces
+				) > 0`, (IFF_UP << 1), IFF_UP, (IFF_RUNNING << 1), IFF_RUNNING, (IFF_LOWER_UP << 1), IFF_LOWER_UP, strings.Join(ignoredInterfacesForNetworkDown, "|"))),
 			For: ptr.To[promv1.Duration]("5m"),
 			Annotations: map[string]string{
 				"summary":     "Network interfaces are down",

@@ -73,37 +73,67 @@ tests:
 
   - interval: 1m
     input_series:
-      # Test case 1: IFF_UP is set and IFF_RUNNING is NOT set (should alert)
-      # Flag value = 1 (IFF_UP=1, IFF_RUNNING=0)
+      # Test case 1: IFF_UP is set, IFF_RUNNING and IFF_LOWER_UP are NOT set, interface is up (should alert)
+      # Flag value = 1 (IFF_UP=1, IFF_RUNNING=0, IFF_LOWER_UP=0)
       - series: 'node_network_flags{instance="n1.cnv.redhat.com",device="eth0"}'
+        values: "1+0x30"
+      - series: 'node_network_up{instance="n1.cnv.redhat.com",device="eth0"}'
         values: "1+0x30"
 
       # Test case 2: IFF_UP is set and IFF_RUNNING is set (should NOT alert)
-      # Flag value = 65 (IFF_UP=1, IFF_RUNNING=64)
+      # Flag value = 65 (IFF_UP=1, IFF_RUNNING=64, IFF_LOWER_UP=0)
       - series: 'node_network_flags{instance="n1.cnv.redhat.com",device="eth1"}'
         values: "65+0x30"
+      - series: 'node_network_up{instance="n1.cnv.redhat.com",device="eth1"}'
+        values: "1+0x30"
 
       # Test case 3: IFF_UP is NOT set and IFF_RUNNING is NOT set (should NOT alert)
-      # Flag value = 0 (IFF_UP=0, IFF_RUNNING=0)
+      # Flag value = 0 (IFF_UP=0, IFF_RUNNING=0, IFF_LOWER_UP=0)
       - series: 'node_network_flags{instance="n1.cnv.redhat.com",device="eth2"}'
         values: "0+0x30"
+      - series: 'node_network_up{instance="n1.cnv.redhat.com",device="eth2"}'
+        values: "0+0x30"
 
-      # Test case 4: IFF_UP is set and IFF_RUNNING is NOT set but device is in ignored list (should NOT alert)
-      # Flag value = 1 (IFF_UP=1, IFF_RUNNING=0)
+      # Test case 4: IFF_UP is set, IFF_RUNNING and IFF_LOWER_UP are NOT set but device is in ignored list (should NOT alert)
+      # Flag value = 1 (IFF_UP=1, IFF_RUNNING=0, IFF_LOWER_UP=0)
       - series: 'node_network_flags{instance="n1.cnv.redhat.com",device="lo"}'
         values: "1+0x30"
+      - series: 'node_network_up{instance="n1.cnv.redhat.com",device="lo"}'
+        values: "1+0x30"
 
-      # Test case 5: Multiple interfaces with different states on same instance
-      # Two interfaces with IFF_UP=1, IFF_RUNNING=0 (should alert with count=2)
+      # Test case 5: IFF_UP is set, IFF_RUNNING and IFF_LOWER_UP are NOT set but node_network_up is 0 (should NOT alert)
+      # Flag value = 1 (IFF_UP=1, IFF_RUNNING=0, IFF_LOWER_UP=0)
+      - series: 'node_network_flags{instance="n1.cnv.redhat.com",device="eth3"}'
+        values: "1+0x30"
+      - series: 'node_network_up{instance="n1.cnv.redhat.com",device="eth3"}'
+        values: "0+0x30"
+
+      # Test case 5a: IFF_UP is set, IFF_RUNNING is NOT set but IFF_LOWER_UP is set (should NOT alert)
+      # Flag value = 65537 (IFF_UP=1, IFF_RUNNING=0, IFF_LOWER_UP=65536)
+      - series: 'node_network_flags{instance="n1.cnv.redhat.com",device="eth5"}'
+        values: "65537+0x30"
+      - series: 'node_network_up{instance="n1.cnv.redhat.com",device="eth5"}'
+        values: "1+0x30"
+
+      # Test case 6: Multiple interfaces with different states on same instance
+      # Two interfaces with IFF_UP=1, IFF_RUNNING=0, IFF_LOWER_UP=0, node_network_up=1 (should alert with count=2)
       - series: 'node_network_flags{instance="n2.cnv.redhat.com",device="eth0"}'
         values: "1+0x30"
-      - series: 'node_network_flags{instance="n2.cnv.redhat.com",device="eth3"}'
+      - series: 'node_network_up{instance="n2.cnv.redhat.com",device="eth0"}'
+        values: "1+0x30"
+      - series: 'node_network_flags{instance="n2.cnv.redhat.com",device="eth4"}'
+        values: "1+0x30"
+      - series: 'node_network_up{instance="n2.cnv.redhat.com",device="eth4"}'
         values: "1+0x30"
       # One interface with IFF_UP=1, IFF_RUNNING=64 (should NOT alert)
       - series: 'node_network_flags{instance="n2.cnv.redhat.com",device="eth1"}'
         values: "65+0x30"
+      - series: 'node_network_up{instance="n2.cnv.redhat.com",device="eth1"}'
+        values: "1+0x30"
       # One ignored interface with IFF_UP=1, IFF_RUNNING=0 (should NOT alert)
       - series: 'node_network_flags{instance="n2.cnv.redhat.com",device="veth123"}'
+        values: "1+0x30"
+      - series: 'node_network_up{instance="n2.cnv.redhat.com",device="veth123"}'
         values: "1+0x30"
 
     alert_rule_test:
@@ -141,30 +171,51 @@ tests:
     input_series:
       # Test case 6: Interface transitioning between states
       # Flag values:
-      # - 0 minutes to 5 minutes: 65 (IFF_UP=1, IFF_RUNNING=64) - healthy
-      # - 5 minutes to 15 minutes: 1 (IFF_UP=1, IFF_RUNNING=0) - should alert after 5 minutes in this state
-      # - After 15 minutes: 65 (IFF_UP=1, IFF_RUNNING=64) - becomes healthy again
+      # - 0 minutes to 5 minutes: 65 (IFF_UP=1, IFF_RUNNING=64, IFF_LOWER_UP=0) - healthy
+      # - 5 minutes to 15 minutes: 1 (IFF_UP=1, IFF_RUNNING=0, IFF_LOWER_UP=0) - should alert after 5 minutes in this state
+      # - After 15 minutes: 65 (IFF_UP=1, IFF_RUNNING=64, IFF_LOWER_UP=0) - becomes healthy again
       - series: 'node_network_flags{instance="n3.cnv.redhat.com",device="eth0"}'
         values: "65+0x5 1+0x10 65+0x15"
+      - series: 'node_network_up{instance="n3.cnv.redhat.com",device="eth0"}'
+        values: "1+0x30"
 
       # Test case 7: Interface with complex flag changes
       # Flag transitions:
-      # - 0 to 8 minutes: 0 (IFF_UP=0, IFF_RUNNING=0) - down but shouldn't alert due to no IFF_UP
-      # - 8 to 25 minutes: 1 (IFF_UP=1, IFF_RUNNING=0) - should alert after 5 minutes in this state
+      # - 0 to 8 minutes: 0 (IFF_UP=0, IFF_RUNNING=0, IFF_LOWER_UP=0) - down but shouldn't alert due to no IFF_UP
+      # - 8 to 25 minutes: 1 (IFF_UP=1, IFF_RUNNING=0, IFF_LOWER_UP=0) - should alert after 5 minutes in this state
       - series: 'node_network_flags{instance="n3.cnv.redhat.com",device="eth1"}'
         values: "0+0x8 1+0x17"
+      - series: 'node_network_up{instance="n3.cnv.redhat.com",device="eth1"}'
+        values: "1+0x30"
 
-      # Test case 8: Multiple ignored interfaces with same instance
-      # Flag value = 1 (IFF_UP=1, IFF_RUNNING=0) - would alert if not ignored
+      # Test case 8: Multiple ignored interfaces with same instance (should NOT alert)
+      # All interfaces with problematic flags are in the ignored list
       - series: 'node_network_flags{instance="n4.cnv.redhat.com",device="lo"}'
+        values: "1+0x30"
+      - series: 'node_network_up{instance="n4.cnv.redhat.com",device="lo"}'
         values: "1+0x30"
       - series: 'node_network_flags{instance="n4.cnv.redhat.com",device="br-int"}'
         values: "1+0x30"
-      - series: 'node_network_flags{instance="n4.cnv.redhat.com",device="vethXYZ"}'
+      - series: 'node_network_up{instance="n4.cnv.redhat.com",device="br-int"}'
         values: "1+0x30"
-      # One non-ignored interface that's healthy (IFF_UP=1, IFF_RUNNING=64)
+      - series: 'node_network_flags{instance="n4.cnv.redhat.com",device="veth123"}'
+        values: "1+0x30"
+      - series: 'node_network_up{instance="n4.cnv.redhat.com",device="veth123"}'
+        values: "1+0x30"
+      # Test additional ignore patterns
+      - series: 'node_network_flags{instance="n4.cnv.redhat.com",device="ovs-system"}'
+        values: "1+0x30"
+      - series: 'node_network_up{instance="n4.cnv.redhat.com",device="ovs-system"}'
+        values: "1+0x30"
+      - series: 'node_network_flags{instance="n4.cnv.redhat.com",device="genev_sys_6081"}'
+        values: "1+0x30"
+      - series: 'node_network_up{instance="n4.cnv.redhat.com",device="genev_sys_6081"}'
+        values: "1+0x30"
+      # One non-ignored interface that's healthy (should NOT contribute to alert)
       - series: 'node_network_flags{instance="n4.cnv.redhat.com",device="eth0"}'
         values: "65+0x30"
+      - series: 'node_network_up{instance="n4.cnv.redhat.com",device="eth0"}'
+        values: "1+0x30"
 
     alert_rule_test:
       # At 8 minutes, no alert should fire (eth0 on n3 has only been down for 3 minutes)
