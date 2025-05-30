@@ -22,6 +22,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -774,14 +775,14 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			DescribeTable("apply PodAntiAffinity and two replicas if HighlyAvailable", func(ctx context.Context, appComponent hcoutil.AppComponent,
 				deploymentManifestor func(converged *hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc GetHandler) {
 
-				originalGetClusterInfo := hcoutil.GetClusterInfo
-				hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-					return &commontestutils.ClusterInfoMock{}
+				originalNodeInfoFunc := nodeinfo.IsInfrastructureHighlyAvailable
+				nodeinfo.IsInfrastructureHighlyAvailable = func() bool {
+					return true
 				}
 
-				defer func() {
-					hcoutil.GetClusterInfo = originalGetClusterInfo
-				}()
+				DeferCleanup(func() {
+					nodeinfo.IsInfrastructureHighlyAvailable = originalNodeInfoFunc
+				})
 
 				existingResource := deploymentManifestor(hco)
 
@@ -821,14 +822,10 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			DescribeTable("use one replica on SNO", func(ctx context.Context, appComponent hcoutil.AppComponent,
 				deploymentManifestor func(converged *hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc GetHandler) {
 
-				originalGetClusterInfo := hcoutil.GetClusterInfo
-				hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-					return &commontestutils.ClusterInfoSNOMock{}
-				}
-
-				defer func() {
-					hcoutil.GetClusterInfo = originalGetClusterInfo
-				}()
+				commontestutils.SNONodeInfoMock()
+				DeferCleanup(func() {
+					commontestutils.ResetNodeInfoMocks()
+				})
 
 				existingResource := deploymentManifestor(hco)
 				existingResource.Spec.Replicas = ptr.To(int32(3))

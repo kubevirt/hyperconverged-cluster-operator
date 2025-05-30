@@ -24,11 +24,13 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	kubevirtcorev1 "kubevirt.io/api/core/v1"
+
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-	kubevirtcorev1 "kubevirt.io/api/core/v1"
 )
 
 // env vars
@@ -258,9 +260,9 @@ func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtcorev1
 
 	kvCertConfig := hcoCertConfig2KvCertificateRotateStrategy(hc.Spec.CertConfig)
 
-	controlPlaneHighlyAvailable := hcoutil.GetClusterInfo().IsControlPlaneHighlyAvailable()
-	controlPlaneNodeExists := hcoutil.GetClusterInfo().IsControlPlaneNodeExists()
-	infraHighlyAvailable := hcoutil.GetClusterInfo().IsInfrastructureHighlyAvailable()
+	controlPlaneHighlyAvailable := nodeinfo.IsControlPlaneHighlyAvailable()
+	controlPlaneNodeExists := nodeinfo.IsControlPlaneNodeExists()
+	infraHighlyAvailable := nodeinfo.IsInfrastructureHighlyAvailable()
 
 	uninstallStrategy := kubevirtcorev1.KubeVirtUninstallStrategyBlockUninstallIfWorkloadsExist
 	if hc.Spec.UninstallStrategy == hcov1beta1.HyperConvergedUninstallStrategyRemoveWorkloads {

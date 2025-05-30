@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -97,8 +98,8 @@ type ReconcileNodeCounter struct {
 // Reconcile updates the nodes count on ClusterInfo singleton
 func (r *ReconcileNodeCounter) Reconcile(ctx context.Context, _ reconcile.Request) (reconcile.Result, error) {
 	log.Info("Triggered by a node count change")
-	clusterInfo := hcoutil.GetClusterInfo()
-	err := clusterInfo.SetHighAvailabilityMode(ctx, r.client)
+
+	err := nodeinfo.HandleNodeChanges(ctx, r.client)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -121,10 +122,10 @@ func (r *ReconcileNodeCounter) Reconcile(ctx context.Context, _ reconcile.Reques
 		return reconcile.Result{}, nil
 	}
 
-	if hco.Status.InfrastructureHighlyAvailable == nil ||
-		*hco.Status.InfrastructureHighlyAvailable != clusterInfo.IsInfrastructureHighlyAvailable() {
+	if infraHighlyAvailable := nodeinfo.IsInfrastructureHighlyAvailable(); hco.Status.InfrastructureHighlyAvailable == nil ||
+		*hco.Status.InfrastructureHighlyAvailable != infraHighlyAvailable {
 
-		hco.Status.InfrastructureHighlyAvailable = ptr.To(clusterInfo.IsInfrastructureHighlyAvailable())
+		hco.Status.InfrastructureHighlyAvailable = ptr.To(infraHighlyAvailable)
 		err = r.client.Status().Update(ctx, hco)
 		if err != nil {
 			return reconcile.Result{}, err
