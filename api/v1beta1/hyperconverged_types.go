@@ -754,6 +754,9 @@ type HyperConvergedStatus struct {
 	// (false) or more (true).
 	// +optional
 	InfrastructureHighlyAvailable *bool `json:"infrastructureHighlyAvailable,omitempty"`
+
+	// NodeInfo holds information about the cluster nodes
+	NodeInfo NodeInfoStatus `json:"nodeInfo,omitempty"`
 }
 
 type Version struct {
@@ -781,6 +784,8 @@ type DataImportCronStatus struct {
 
 	// Modified indicates if a common template was customized. Always false for custom templates.
 	Modified bool `json:"modified,omitempty"`
+
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // DataImportCronTemplate defines the template type for DataImportCrons.
@@ -796,6 +801,14 @@ type DataImportCronTemplateStatus struct {
 	DataImportCronTemplate `json:",inline"`
 
 	Status DataImportCronStatus `json:"status,omitempty"`
+}
+
+// NodeInfoStatus holds information about the cluster nodes
+type NodeInfoStatus struct {
+	// WorkloadsArchitectures is a distinct list of the CPU architectures of the workloads nodes in the cluster.
+	WorkloadsArchitectures []string `json:"workloadsArchitectures,omitempty"`
+	// ControllerNodeArchitecture is a distinct list of the CPU architecture of the control-plane nodes.
+	ControllerNodeArchitecture []string `json:"controllerNodeArchitecture,omitempty"`
 }
 
 // ApplicationAwareConfigurations holds the AAQ configurations
