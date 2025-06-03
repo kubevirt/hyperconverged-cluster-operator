@@ -53,5 +53,7 @@
     "deployVmConsoleProxy": false,
     "enableApplicationAwareQuota": false
   },
-  "status": {}
+  "status": {
+    "nodeInfo": {}
+  }
 }

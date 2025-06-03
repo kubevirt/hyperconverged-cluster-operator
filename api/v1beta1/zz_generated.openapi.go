@@ -803,11 +803,18 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 							Format:      "",
 						},
 					},
+					"nodeInfo": {
+						SchemaProps: spec.SchemaProps{
+							Description: "NodeInfo holds information about the cluster nodes",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.NodeInfoStatus"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.DataImportCronTemplateStatus", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.Version", "k8s.io/api/core/v1.ObjectReference", "k8s.io/apimachinery/pkg/apis/meta/v1.Condition"},
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.DataImportCronTemplateStatus", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.NodeInfoStatus", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.Version", "k8s.io/api/core/v1.ObjectReference", "k8s.io/apimachinery/pkg/apis/meta/v1.Condition"},
 	}
 }
 
