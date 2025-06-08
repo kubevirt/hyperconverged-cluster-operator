@@ -68,14 +68,35 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	return c.Watch(source.Kind(mgr.GetCache(), client.Object(&configv1.Ingress{
+	if err = c.Watch(source.Kind(mgr.GetCache(), client.Object(&configv1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: ingressName,
 		},
 	}),
 		&operatorhandler.InstrumentedEnqueueRequestForObject[client.Object]{},
 		predicate.ResourceVersionChangedPredicate{}),
-	)
+	); err != nil {
+		return err
+	}
+
+	createDeleteOnly := predicate.Funcs{
+		CreateFunc:  func(e event.CreateEvent) bool { return true },
+		DeleteFunc:  func(e event.DeleteEvent) bool { return true },
+		UpdateFunc:  func(e event.UpdateEvent) bool { return false },
+		GenericFunc: func(e event.GenericEvent) bool { return false },
+	}
+
+	if err = c.Watch(source.Kind(mgr.GetCache(), client.Object(&v1beta1.HyperConverged{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: v1beta1.HyperConvergedName,
+		},
+	}),
+		&operatorhandler.InstrumentedEnqueueRequestForObject[client.Object]{}, createDeleteOnly),
+	); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *ReconcileIngressCluster) Reconcile(ctx context.Context, _ reconcile.Request) (reconcile.Result, error) {
@@ -102,37 +123,39 @@ func (r *ReconcileIngressCluster) Reconcile(ctx context.Context, _ reconcile.Req
 		r.ingressEventCh <- event.TypedGenericEvent[client.Object]{Object: clusterIngress}
 	}
 
-	routeInd, needUpdate := updateComponentInStatus(clusterIngress, hcExists, dh)
+	routeInd, needUpdate, deleted := updateComponentInStatus(clusterIngress, hcExists, dh)
 
 	if needUpdate {
-		if dhErr != nil {
+		if !deleted {
+			if dhErr != nil {
+				meta.SetStatusCondition(&clusterIngress.Status.ComponentRoutes[routeInd].Conditions, metav1.Condition{
+					Type:    "Degraded",
+					Status:  metav1.ConditionTrue,
+					Reason:  "WrongConfiguration",
+					Message: dhErr.Error(),
+				})
+			} else {
+				meta.SetStatusCondition(&clusterIngress.Status.ComponentRoutes[routeInd].Conditions, metav1.Condition{
+					Type:    "Degraded",
+					Status:  metav1.ConditionFalse,
+					Reason:  validConditionReason,
+					Message: validConditionMsg,
+				})
+			}
+
 			meta.SetStatusCondition(&clusterIngress.Status.ComponentRoutes[routeInd].Conditions, metav1.Condition{
-				Type:    "Degraded",
-				Status:  metav1.ConditionTrue,
-				Reason:  "WrongConfiguration",
-				Message: dhErr.Error(),
-			})
-		} else {
-			meta.SetStatusCondition(&clusterIngress.Status.ComponentRoutes[routeInd].Conditions, metav1.Condition{
-				Type:    "Degraded",
+				Type:    "Progressing",
 				Status:  metav1.ConditionFalse,
 				Reason:  validConditionReason,
 				Message: validConditionMsg,
 			})
+			meta.SetStatusCondition(&clusterIngress.Status.ComponentRoutes[routeInd].Conditions, metav1.Condition{
+				Type:    "Available",
+				Status:  metav1.ConditionTrue,
+				Reason:  validConditionReason,
+				Message: validConditionMsg,
+			})
 		}
-
-		meta.SetStatusCondition(&clusterIngress.Status.ComponentRoutes[routeInd].Conditions, metav1.Condition{
-			Type:    "Progressing",
-			Status:  metav1.ConditionFalse,
-			Reason:  validConditionReason,
-			Message: validConditionMsg,
-		})
-		meta.SetStatusCondition(&clusterIngress.Status.ComponentRoutes[routeInd].Conditions, metav1.Condition{
-			Type:    "Available",
-			Status:  metav1.ConditionTrue,
-			Reason:  validConditionReason,
-			Message: validConditionMsg,
-		})
 		err = r.Status().Update(ctx, clusterIngress)
 		if err != nil {
 			return ctrl.Result{}, err
@@ -142,8 +165,9 @@ func (r *ReconcileIngressCluster) Reconcile(ctx context.Context, _ reconcile.Req
 	return ctrl.Result{}, nil
 }
 
-func updateComponentInStatus(clusterIngress *configv1.Ingress, hcExists bool, dh downloadhost.CLIDownloadHost) (int, bool) {
+func updateComponentInStatus(clusterIngress *configv1.Ingress, hcExists bool, dh downloadhost.CLIDownloadHost) (int, bool, bool) {
 	needUpdate := false
+	deleted := false
 	routeInd := slices.IndexFunc(clusterIngress.Status.ComponentRoutes, func(component configv1.ComponentRouteStatus) bool {
 		return component.Name == componentName && component.Namespace == selfNamespace
 	})
@@ -152,6 +176,7 @@ func updateComponentInStatus(clusterIngress *configv1.Ingress, hcExists bool, dh
 		if routeInd >= 0 {
 			clusterIngress.Status.ComponentRoutes = slices.Delete(clusterIngress.Status.ComponentRoutes, routeInd, routeInd+1)
 			needUpdate = true
+			deleted = true
 			logger.Info(fmt.Sprintf("HyperConverged wasn't found; removing the %s component from the cluster Ingress", componentName))
 		}
 	} else {
@@ -168,7 +193,7 @@ func updateComponentInStatus(clusterIngress *configv1.Ingress, hcExists bool, dh
 			needUpdate = true
 		}
 	}
-	return routeInd, needUpdate
+	return routeInd, needUpdate, deleted
 }
 
 func (r *ReconcileIngressCluster) hyperConvergedExists(ctx context.Context, looger logr.Logger) (bool, error) {

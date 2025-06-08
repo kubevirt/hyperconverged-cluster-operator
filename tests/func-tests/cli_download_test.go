@@ -107,14 +107,14 @@ var _ = Describe("[rfe_id:5100][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 			}
 		})
 
-		It("should allow download URL customisation", Label("custom_dl_link"), func(ctx context.Context) {
+		It("should allow download URL customization", Label("custom_dl_link"), func(ctx context.Context) {
 			By("make sure the ingress contains the virt-downloads route component")
 			ingress := &configv1.Ingress{}
 			Expect(cli.Get(ctx, client.ObjectKey{Name: "cluster"}, ingress)).To(Succeed())
 
 			Expect(slices.ContainsFunc(ingress.Status.ComponentRoutes, func(route configv1.ComponentRouteStatus) bool {
 				return route.Name == "virt-downloads"
-			})).To(BeTrueBecause("can't find the virt-downloads route in staus of the the cluster Ingress"))
+			})).To(BeTrueBecause("can't find the virt-downloads route in status of the the cluster Ingress"))
 
 			By("customize the virt-downloads route, to set another host")
 			baseDomain := ingress.Spec.Domain
