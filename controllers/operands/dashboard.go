@@ -2,6 +2,7 @@ package operands
 
 import (
 	"errors"
+	"io"
 	"maps"
 	"os"
 	filepath "path/filepath"
@@ -64,8 +65,7 @@ func processDashboardConfigMapFile(path string, info os.FileInfo, logger log.Log
 			return nil, err
 		}
 
-		cm := &v1.ConfigMap{}
-		err = util.UnmarshalYamlFileToObject(file, cm)
+		cm, err := cmFromFile(file)
 		if err != nil {
 			logger.Error(err, "Can't generate a Configmap object from yaml file", "file name", path)
 		} else {
@@ -73,5 +73,17 @@ func processDashboardConfigMapFile(path string, info os.FileInfo, logger log.Log
 			return newCmHandler(Client, Scheme, cm), nil
 		}
 	}
+
 	return nil, nil
+}
+
+func cmFromFile(reader io.Reader) (*v1.ConfigMap, error) {
+	cm := &v1.ConfigMap{}
+	err := util.UnmarshalYamlFileToObject(reader, cm)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return cm, nil
 }

@@ -36,6 +36,15 @@ var _ = Describe("SSP Operands", func() {
 	var (
 		testFilesLocation = getTestFilesLocation() + "/dataImportCronTemplates"
 	)
+
+	origDICTMap := dataImportCronTemplateHardCodedMap
+	BeforeEach(func() {
+		dataImportCronTemplateHardCodedMap = nil
+		DeferCleanup(func() {
+			dataImportCronTemplateHardCodedMap = origDICTMap
+		})
+	})
+
 	Context("SSP", func() {
 		var hco *hcov1beta1.HyperConverged
 		var req *common.HcoRequest
@@ -501,8 +510,15 @@ var _ = Describe("SSP Operands", func() {
 		})
 
 		Context("Cache", func() {
-			cl := commontestutils.InitClient([]client.Object{})
-			handler := (*genericOperand)(newSspHandler(cl, commontestutils.GetScheme()))
+			var (
+				cl      client.Client
+				handler *sspHandler
+			)
+
+			BeforeEach(func() {
+				cl = commontestutils.InitClient([]client.Object{})
+				handler = newSspHandler(cl, commontestutils.GetScheme())
+			})
 
 			It("should start with empty cache", func() {
 				Expect(handler.hooks.(*sspHooks).cache).To(BeNil())
@@ -553,99 +569,17 @@ var _ = Describe("SSP Operands", func() {
 			dir := path.Join(os.TempDir(), fmt.Sprint(time.Now().UTC().Unix()))
 			origFunc := getDataImportCronTemplatesFileLocation
 
-			image1 := hcov1beta1.DataImportCronTemplate{
-				ObjectMeta: metav1.ObjectMeta{Name: "image1"},
-				Spec: &cdiv1beta1.DataImportCronSpec{
-					Schedule: "1 */12 * * *",
-					Template: cdiv1beta1.DataVolume{
-						Spec: cdiv1beta1.DataVolumeSpec{
-							Source: &cdiv1beta1.DataVolumeSource{
-								Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/image1")},
-							},
-						},
-					},
-					ManagedDataSource: "image1",
-				},
-			}
-
-			statusImage1 := hcov1beta1.DataImportCronTemplateStatus{
-				DataImportCronTemplate: image1,
-				Status: hcov1beta1.DataImportCronStatus{
-					CommonTemplate: true,
-					Modified:       false,
-				},
-			}
-
-			image2 := hcov1beta1.DataImportCronTemplate{
-				ObjectMeta: metav1.ObjectMeta{Name: "image2"},
-				Spec: &cdiv1beta1.DataImportCronSpec{
-					Schedule: "2 */12 * * *",
-					Template: cdiv1beta1.DataVolume{
-						Spec: cdiv1beta1.DataVolumeSpec{
-							Source: &cdiv1beta1.DataVolumeSource{
-								Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/image2")},
-							},
-						},
-					},
-					ManagedDataSource: "image2",
-				},
-			}
-
-			statusImage2 := hcov1beta1.DataImportCronTemplateStatus{
-				DataImportCronTemplate: image2,
-				Status: hcov1beta1.DataImportCronStatus{
-					CommonTemplate: true,
-					Modified:       false,
-				},
-			}
-
-			image3 := hcov1beta1.DataImportCronTemplate{
-				ObjectMeta: metav1.ObjectMeta{Name: "image3"},
-				Spec: &cdiv1beta1.DataImportCronSpec{
-					Schedule: "3 */12 * * *",
-					Template: cdiv1beta1.DataVolume{
-						Spec: cdiv1beta1.DataVolumeSpec{
-							Source: &cdiv1beta1.DataVolumeSource{
-								Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/image3")},
-							},
-						},
-					},
-					ManagedDataSource: "image3",
-				},
-			}
-
-			statusImage3 := hcov1beta1.DataImportCronTemplateStatus{
-				DataImportCronTemplate: image3,
-				Status: hcov1beta1.DataImportCronStatus{
-					CommonTemplate: false,
-					Modified:       false,
-				},
-			}
-
-			image4 := hcov1beta1.DataImportCronTemplate{
-				ObjectMeta: metav1.ObjectMeta{Name: "image4"},
-				Spec: &cdiv1beta1.DataImportCronSpec{
-					Schedule: "4 */12 * * *",
-					Template: cdiv1beta1.DataVolume{
-						Spec: cdiv1beta1.DataVolumeSpec{
-							Source: &cdiv1beta1.DataVolumeSource{
-								Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/image4")},
-							},
-						},
-					},
-					ManagedDataSource: "image4",
-				},
-			}
-
-			statusImage4 := hcov1beta1.DataImportCronTemplateStatus{
-				DataImportCronTemplate: image4,
-				Status: hcov1beta1.DataImportCronStatus{
-					CommonTemplate: false,
-					Modified:       false,
-				},
-			}
+			var (
+				image1, image2, image3, image4                         hcov1beta1.DataImportCronTemplate
+				statusImage1, statusImage2, statusImage3, statusImage4 hcov1beta1.DataImportCronTemplateStatus
+			)
 
 			BeforeEach(func() {
+				image1, statusImage1 = makeDICT(1, true)
+				image2, statusImage2 = makeDICT(2, true)
+				image3, statusImage3 = makeDICT(3, false)
+				image4, statusImage4 = makeDICT(4, false)
+
 				getDataImportCronTemplatesFileLocation = func() string {
 					return dir
 				}
@@ -684,12 +618,6 @@ var _ = Describe("SSP Operands", func() {
 			})
 
 			Context("test getDataImportCronTemplates", func() {
-				origList := dataImportCronTemplateHardCodedMap
-
-				AfterEach(func() {
-					dataImportCronTemplateHardCodedMap = origList
-				})
-
 				It("should not return the hard coded list dataImportCron FeatureGate is false", func() {
 					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(false)
@@ -748,21 +676,19 @@ var _ = Describe("SSP Operands", func() {
 					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
-					disabledImage1 := image1.DeepCopy()
-					disableDict(disabledImage1)
-					enabledImage2 := image2.DeepCopy()
-					enableDict(enabledImage2)
+					disabledImage1, _ := makeDICT(1, true)
+					disableDict(&disabledImage1)
+					enabledImage2, expectedStatus2 := makeDICT(2, true)
+					enableDict(&enabledImage2)
+					expectedStatus2.Status.Modified = true
 
-					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{*disabledImage1, *enabledImage2, image3, image4}
+					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{disabledImage1, enabledImage2, image3, image4}
 					goldenImageList, err := getDataImportCronTemplates(hco)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(goldenImageList).To(HaveLen(3))
 					Expect(goldenImageList).To(HaveCap(4))
 
-					statusImage2Enabled := statusImage2.DeepCopy()
-					statusImage2Enabled.Status.Modified = true
-
-					Expect(goldenImageList).To(ContainElements(*statusImage2Enabled, statusImage3, statusImage4))
+					Expect(goldenImageList).To(ContainElements(expectedStatus2, statusImage3, statusImage4))
 				})
 
 				It("should not add user DIC template if it is disabled", func() {
@@ -770,18 +696,16 @@ var _ = Describe("SSP Operands", func() {
 					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
-					disabledUserImage := image1.DeepCopy()
-					disableDict(disabledUserImage)
-					enabledUserImage := image2.DeepCopy()
-					enableDict(enabledUserImage)
+					disableDict(&image1)
+					enableDict(&image2)
 
-					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{*disabledUserImage, *enabledUserImage}
+					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image1, image2}
 					goldenImageList, err := getDataImportCronTemplates(hco)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(goldenImageList).To(HaveLen(1))
 
 					statusImageEnabled := hcov1beta1.DataImportCronTemplateStatus{
-						DataImportCronTemplate: *enabledUserImage,
+						DataImportCronTemplate: image2,
 						Status:                 hcov1beta1.DataImportCronStatus{},
 					}
 
@@ -796,10 +720,9 @@ var _ = Describe("SSP Operands", func() {
 					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
-					image3Modified := image3.DeepCopy()
-					image3Modified.Name = image4.Name
+					image3.Name = image4.Name
 
-					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{*image3Modified, image4}
+					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
 					_, err := getDataImportCronTemplates(hco)
 					Expect(err).To(HaveOccurred())
 				})
@@ -808,10 +731,9 @@ var _ = Describe("SSP Operands", func() {
 					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
-					image3Modified := image3.DeepCopy()
-					image3Modified.Name = image4.Name
+					image3.Name = image4.Name
 
-					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{*image3Modified, image4}
+					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
 					_, err := getDataImportCronTemplates(hco)
 					Expect(err).To(HaveOccurred())
 				})
@@ -869,20 +791,19 @@ var _ = Describe("SSP Operands", func() {
 						anotherURL  = "docker://someregistry/anotherURL"
 					)
 
-					image1FromFile := image1.DeepCopy()
-					image1FromFile.Spec.Template.Spec.Source = &cdiv1beta1.DataVolumeSource{
+					image1.Spec.Template.Spec.Source = &cdiv1beta1.DataVolumeSource{
 						Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To(modifiedURL)},
 					}
 
 					dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
-						image1.Name: *image1FromFile,
+						image1.Name: image1,
 						image2.Name: image2,
 					}
 
 					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
-					modifiedImage1 := image1.DeepCopy()
+					modifiedImage1, _ := makeDICT(1, true)
 					modifiedImage1.Spec.Template.Spec.Source = &cdiv1beta1.DataVolumeSource{
 						Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To(anotherURL)},
 					}
@@ -890,7 +811,7 @@ var _ = Describe("SSP Operands", func() {
 					By("check that if the CR schedule is empty, HCO adds it from the common dict")
 					modifiedImage1.Spec.Schedule = ""
 
-					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{*modifiedImage1, image3, image4}
+					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{modifiedImage1, image3, image4}
 
 					goldenImageList, err := getDataImportCronTemplates(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -913,23 +834,19 @@ var _ = Describe("SSP Operands", func() {
 				})
 
 				It("Should replace the common DICT spec field if the CR list includes it", func() {
-					image1FromFile := image1.DeepCopy()
-
-					storageFromFile := &cdiv1beta1.StorageSpec{
+					image1.Spec.Template.Spec.Storage = &cdiv1beta1.StorageSpec{
 						VolumeName:       "volume-name",
 						StorageClassName: ptr.To("testName"),
 					}
-					image1FromFile.Spec.Template.Spec.Storage = storageFromFile
 
 					dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
-						image1.Name: *image1FromFile,
+						image1.Name: image1,
 						image2.Name: image2,
 					}
 
 					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
-					modifiedImage1 := image1.DeepCopy()
 					storageFromCr := &cdiv1beta1.StorageSpec{
 						VolumeName: "another-class-name",
 
@@ -940,10 +857,9 @@ var _ = Describe("SSP Operands", func() {
 							},
 						},
 					}
-					modifiedImage1.Spec.Template.Spec.Storage = storageFromCr.DeepCopy()
-					modifiedImage1.Spec.Schedule = image1.Spec.Schedule
+					image1.Spec.Template.Spec.Storage = storageFromCr.DeepCopy()
 
-					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{*modifiedImage1, image3, image4}
+					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image1, image3, image4}
 
 					goldenImageList, err := getDataImportCronTemplates(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -965,7 +881,6 @@ var _ = Describe("SSP Operands", func() {
 			})
 
 			Context("test data import cron templates in NewSsp", func() {
-
 				It("should return an empty list if there is no file and no list in the HyperConverged CR", func() {
 					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
@@ -1068,10 +983,9 @@ var _ = Describe("SSP Operands", func() {
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
 					Expect(dataImportCronTemplateHardCodedMap).ToNot(BeEmpty())
-					image3Modified := image3.DeepCopy()
-					image3Modified.Name = image4.Name
+					image3.Name = image4.Name
 
-					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{*image3Modified, image4}
+					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
 					ssp, _, err := NewSSP(hco)
 					Expect(err).To(HaveOccurred())
 					Expect(ssp).To(BeNil())
@@ -1084,10 +998,9 @@ var _ = Describe("SSP Operands", func() {
 					hco.Spec.EnableCommonBootImageImport = ptr.To(false)
 
 					Expect(dataImportCronTemplateHardCodedMap).To(BeEmpty())
-					image3Modified := image3.DeepCopy()
-					image3Modified.Name = image4.Name
+					image3.Name = image4.Name
 
-					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{*image3Modified, image4}
+					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
 					ssp, _, err := NewSSP(hco)
 					Expect(err).To(HaveOccurred())
 					Expect(ssp).To(BeNil())
@@ -1183,14 +1096,12 @@ var _ = Describe("SSP Operands", func() {
 
 					Expect(dataImportCronTemplateHardCodedMap).To(HaveLen(2))
 
-					var customDicAnnotationFalse hcov1beta1.DataImportCronTemplate
-					image3.DeepCopyInto(&customDicAnnotationFalse)
-					customDicAnnotationFalse.Name = "custom-dict-annotation-false"
-					customDicAnnotationFalse.Annotations = map[string]string{
+					image3.Name = "custom-dict-annotation-false"
+					image3.Annotations = map[string]string{
 						CDIImmediateBindAnnotation: "false",
 					}
 
-					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{customDicAnnotationFalse, image4}
+					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
 					ssp, _, err := NewSSP(hco)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(4))
@@ -1321,15 +1232,13 @@ var _ = Describe("SSP Operands", func() {
 					})
 
 					It("should drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is disabled (default) also for custom DICTs", func() {
-						image3Modified := image3.DeepCopy()
-						image3Modified.Annotations = map[string]string{
+						image3.Annotations = map[string]string{
 							CDIImmediateBindAnnotation:            "true",
 							MultiArchDICTAnnotation:               "amd64,arm64,s390x",
 							"testing.kubevirt.io/fake.annotation": "true",
 						}
 
-						image4Modified := image4.DeepCopy()
-						image4Modified.Annotations = map[string]string{
+						image4.Annotations = map[string]string{
 							CDIImmediateBindAnnotation:            "true",
 							MultiArchDICTAnnotation:               "amd64,arm64,s390x",
 							"testing.kubevirt.io/fake.annotation": "true",
@@ -1340,7 +1249,7 @@ var _ = Describe("SSP Operands", func() {
 						hco := commontestutils.NewHco()
 						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 						hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(false)
-						hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{*image3Modified, *image4Modified}
+						hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
 
 						ssp, _, err := NewSSP(hco)
 						Expect(err).ToNot(HaveOccurred())
@@ -1356,15 +1265,13 @@ var _ = Describe("SSP Operands", func() {
 					})
 
 					It("should not drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is enabled also for custom DICTs", func() {
-						image3Modified := image3.DeepCopy()
-						image3Modified.Annotations = map[string]string{
+						image3.Annotations = map[string]string{
 							CDIImmediateBindAnnotation:            "true",
 							MultiArchDICTAnnotation:               "amd64,arm64,s390x",
 							"testing.kubevirt.io/fake.annotation": "true",
 						}
 
-						image4Modified := image4.DeepCopy()
-						image4Modified.Annotations = map[string]string{
+						image4.Annotations = map[string]string{
 							CDIImmediateBindAnnotation:            "true",
 							MultiArchDICTAnnotation:               "amd64,arm64,s390x",
 							"testing.kubevirt.io/fake.annotation": "true",
@@ -1375,7 +1282,7 @@ var _ = Describe("SSP Operands", func() {
 						hco := commontestutils.NewHco()
 						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 						hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(true)
-						hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{*image3Modified, *image4Modified}
+						hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
 
 						ssp, _, err := NewSSP(hco)
 						Expect(err).ToNot(HaveOccurred())
@@ -2001,50 +1908,44 @@ var _ = Describe("SSP Operands", func() {
 			})
 
 			Context("test isDataImportCronTemplateEnabled", func() {
-				var image *hcov1beta1.DataImportCronTemplate
-
-				BeforeEach(func() {
-					image = image1.DeepCopy()
+				It("should be true if the annotation is missing", func() {
+					image1.Annotations = nil
+					Expect(isDataImportCronTemplateEnabled(image1)).To(BeTrue())
 				})
 
 				It("should be true if the annotation is missing", func() {
-					image.Annotations = nil
-					Expect(isDataImportCronTemplateEnabled(*image)).To(BeTrue())
-				})
-
-				It("should be true if the annotation is missing", func() {
-					image.Annotations = make(map[string]string)
-					Expect(isDataImportCronTemplateEnabled(*image)).To(BeTrue())
+					image1.Annotations = make(map[string]string)
+					Expect(isDataImportCronTemplateEnabled(image1)).To(BeTrue())
 				})
 
 				It("should be true if the annotation is set to 'true'", func() {
-					image.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: "true"}
-					Expect(isDataImportCronTemplateEnabled(*image)).To(BeTrue())
+					image1.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: "true"}
+					Expect(isDataImportCronTemplateEnabled(image1)).To(BeTrue())
 				})
 
 				It("should be true if the annotation is set to 'TRUE'", func() {
-					image.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: "TRUE"}
-					Expect(isDataImportCronTemplateEnabled(*image)).To(BeTrue())
+					image1.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: "TRUE"}
+					Expect(isDataImportCronTemplateEnabled(image1)).To(BeTrue())
 				})
 
 				It("should be true if the annotation is set to 'TrUe'", func() {
-					image.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: "TrUe"}
-					Expect(isDataImportCronTemplateEnabled(*image)).To(BeTrue())
+					image1.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: "TrUe"}
+					Expect(isDataImportCronTemplateEnabled(image1)).To(BeTrue())
 				})
 
 				It("should be false if the annotation is empty", func() {
-					image.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: ""}
-					Expect(isDataImportCronTemplateEnabled(*image)).To(BeFalse())
+					image1.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: ""}
+					Expect(isDataImportCronTemplateEnabled(image1)).To(BeFalse())
 				})
 
 				It("should be false if the annotation is set to 'false'", func() {
-					image.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: "false"}
-					Expect(isDataImportCronTemplateEnabled(*image)).To(BeFalse())
+					image1.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: "false"}
+					Expect(isDataImportCronTemplateEnabled(image1)).To(BeFalse())
 				})
 
 				It("should be false if the annotation is set to 'something-else'", func() {
-					image.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: "something-else"}
-					Expect(isDataImportCronTemplateEnabled(*image)).To(BeFalse())
+					image1.Annotations = map[string]string{hcoutil.DataImportCronEnabledAnnotation: "something-else"}
+					Expect(isDataImportCronTemplateEnabled(image1)).To(BeFalse())
 				})
 			})
 		})
@@ -2135,4 +2036,31 @@ func disableDict(dict *hcov1beta1.DataImportCronTemplate) {
 		dict.Annotations = make(map[string]string)
 	}
 	dict.Annotations[hcoutil.DataImportCronEnabledAnnotation] = "false"
+}
+
+func makeDICT(num int, CommonTemplate bool) (hcov1beta1.DataImportCronTemplate, hcov1beta1.DataImportCronTemplateStatus) {
+	name := fmt.Sprintf("image%d", num)
+
+	dict := hcov1beta1.DataImportCronTemplate{
+		ObjectMeta: metav1.ObjectMeta{Name: name},
+		Spec: &cdiv1beta1.DataImportCronSpec{
+			Schedule: fmt.Sprintf("%d */12 * * *", num),
+			Template: cdiv1beta1.DataVolume{
+				Spec: cdiv1beta1.DataVolumeSpec{
+					Source: &cdiv1beta1.DataVolumeSource{
+						Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To(fmt.Sprintf("docker://someregistry/%s", name))},
+					},
+				},
+			},
+			ManagedDataSource: name,
+		},
+	}
+
+	return dict, hcov1beta1.DataImportCronTemplateStatus{
+		DataImportCronTemplate: dict,
+		Status: hcov1beta1.DataImportCronStatus{
+			CommonTemplate: CommonTemplate,
+			Modified:       false,
+		},
+	}
 }

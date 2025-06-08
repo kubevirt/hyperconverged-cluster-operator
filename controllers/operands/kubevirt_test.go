@@ -3795,8 +3795,15 @@ Version: 1.2.3`)
 		})
 
 		Context("Cache", func() {
-			cl := commontestutils.InitClient([]client.Object{})
-			handler := newKubevirtHandler(cl, commontestutils.GetScheme())
+			var (
+				cl      client.Client
+				handler *kubevirtHandler
+			)
+
+			BeforeEach(func() {
+				cl = commontestutils.InitClient([]client.Object{})
+				handler = newKubevirtHandler(cl, commontestutils.GetScheme())
+			})
 
 			It("should start with empty cache", func() {
 				Expect(handler.hooks.(*kubevirtHooks).cache).To(BeNil())

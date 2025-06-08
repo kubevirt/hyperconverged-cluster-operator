@@ -108,7 +108,6 @@ var _ = Describe("QuickStart tests", func() {
 
 	Context("test quickStartHandler", func() {
 
-		var exists *consolev1.ConsoleQuickStart = nil
 		It("should create the ConsoleQuickStart resource if not exists", func() {
 			_ = os.Setenv(quickStartManifestLocationVarName, testFilesLocation)
 
@@ -117,14 +116,6 @@ var _ = Describe("QuickStart tests", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 			Expect(quickstartNames).To(ContainElement("test-quick-start"))
-
-			{ // for the next test
-				handler, ok := handlers[0].(*genericOperand)
-				Expect(ok).To(BeTrue())
-				hooks, ok := handler.hooks.(*qsHooks)
-				Expect(ok).To(BeTrue())
-				exists = hooks.required.DeepCopy()
-			}
 
 			hco := commontestutils.NewHco()
 			By("apply the quickstart CRs", func() {
@@ -141,11 +132,12 @@ var _ = Describe("QuickStart tests", func() {
 		})
 
 		It("should update the ConsoleQuickStart resource if not not equal to the expected one", func() {
+			Expect(os.Setenv(quickStartManifestLocationVarName, testFilesLocation)).To(Succeed())
 
-			Expect(exists).ToNot(BeNil(), "Must run the previous test first")
+			exists, err := getQSsFromTestData(testFilesLocation)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exists).ToNot(BeNil())
 			exists.Spec.DurationMinutes = exists.Spec.DurationMinutes * 2
-
-			_ = os.Setenv(quickStartManifestLocationVarName, testFilesLocation)
 
 			cli := commontestutils.InitClient([]client.Object{exists})
 			handlers, err := getQuickStartHandlers(logger, cli, schemeForTest, hco)
@@ -305,3 +297,32 @@ var _ = Describe("QuickStart tests", func() {
 		})
 	})
 })
+
+func getQSsFromTestData(testFilesLocation string) (*consolev1.ConsoleQuickStart, error) {
+	dirEntries, err := os.ReadDir(testFilesLocation)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range dirEntries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+
+		filePath := path.Join(testFilesLocation, entry.Name())
+		return getQSFromTestData(filePath)
+	}
+
+	return nil, nil
+}
+
+func getQSFromTestData(filePath string) (*consolev1.ConsoleQuickStart, error) {
+	file, err := os.Open(filePath)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file %s: %w", filePath, err)
+	}
+	defer file.Close()
+
+	return quickStartFromFile(file)
+}

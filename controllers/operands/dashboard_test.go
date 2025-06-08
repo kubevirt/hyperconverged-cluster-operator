@@ -106,8 +106,6 @@ var _ = Describe("Dashboard tests", func() {
 	})
 
 	Context("test dashboardHandler", func() {
-
-		var exists *corev1.ConfigMap = nil
 		It("should create the Dashboard Configmap resource if not exists", func() {
 			_ = os.Setenv(dashboardManifestLocationVarName, testFilesLocation)
 
@@ -115,14 +113,6 @@ var _ = Describe("Dashboard tests", func() {
 			handlers, err := getDashboardHandlers(logger, cli, schemeForTest, hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
-
-			{ // for the next test
-				handler, ok := handlers[0].(*genericOperand)
-				Expect(ok).To(BeTrue())
-				hooks, ok := handler.hooks.(*cmHooks)
-				Expect(ok).To(BeTrue())
-				exists = hooks.required.DeepCopy()
-			}
 
 			hco := commontestutils.NewHco()
 			By("apply the configmap", func() {
@@ -139,11 +129,13 @@ var _ = Describe("Dashboard tests", func() {
 		})
 
 		It("should update the ConfigMap resource if not not equal to the expected one", func() {
+			Expect(os.Setenv(dashboardManifestLocationVarName, testFilesLocation)).To(Succeed())
 
-			Expect(exists).ToNot(BeNil(), "Must run the previous test first")
+			exists, err := getCMsFromTestData(testFilesLocation)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exists).ToNot(BeNil())
+
 			exists.Data = map[string]string{"fakeKey": "fakeValue"}
-
-			_ = os.Setenv(dashboardManifestLocationVarName, testFilesLocation)
 
 			cli := commontestutils.InitClient([]client.Object{exists})
 			handlers, err := getDashboardHandlers(logger, cli, schemeForTest, hco)
@@ -151,21 +143,24 @@ var _ = Describe("Dashboard tests", func() {
 			Expect(handlers).To(HaveLen(1))
 
 			hco := commontestutils.NewHco()
-			By("apply the confimap", func() {
-				req := commontestutils.NewReq(hco)
-				res := handlers[0].ensure(req)
-				Expect(res.Err).ToNot(HaveOccurred())
-				Expect(res.Updated).To(BeTrue())
 
-				cmList := &corev1.ConfigMapList{}
-				Expect(cli.List(context.TODO(), cmList)).To(Succeed())
-				Expect(cmList.Items).To(HaveLen(1))
-				Expect(cmList.Items[0].Name).To(Equal("grafana-dashboard-kubevirt-top-consumers"))
+			By("reconcile the confimap")
+			req := commontestutils.NewReq(hco)
+			res := handlers[0].ensure(req)
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Updated).To(BeTrue())
 
-				// check that data is reconciled
-				_, ok := cmList.Items[0].Data["kubevirt-top-consumers.json"]
-				Expect(ok).To(BeTrue())
-			})
+			cmList := &corev1.ConfigMapList{}
+			Expect(cli.List(context.TODO(), cmList)).To(Succeed())
+			Expect(cmList.Items).To(HaveLen(1))
+
+			cm := cmList.Items[0]
+			Expect(cm.Name).To(Equal("grafana-dashboard-kubevirt-top-consumers"))
+			Expect(cm.Data).ToNot(HaveKey("fakeKey"))
+
+			// check that data is reconciled
+			_, ok := cm.Data["kubevirt-top-consumers.json"]
+			Expect(ok).To(BeTrue())
 		})
 
 		It("should reconcile managed labels to default without touching user added ones", func() {
@@ -293,3 +288,32 @@ var _ = Describe("Dashboard tests", func() {
 		})
 	})
 })
+
+func getCMsFromTestData(testFilesLocation string) (*corev1.ConfigMap, error) {
+	dirEntries, err := os.ReadDir(testFilesLocation)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range dirEntries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+
+		filePath := path.Join(testFilesLocation, entry.Name())
+		return getCMFromTestData(filePath)
+	}
+
+	return nil, nil
+}
+
+func getCMFromTestData(filePath string) (*corev1.ConfigMap, error) {
+	file, err := os.Open(filePath)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file %s: %w", filePath, err)
+	}
+	defer file.Close()
+
+	return cmFromFile(file)
+}
