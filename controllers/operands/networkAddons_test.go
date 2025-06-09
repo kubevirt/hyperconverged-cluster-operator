@@ -1006,8 +1006,15 @@ var _ = Describe("CNA Operand", func() {
 		})
 
 		Context("Cache", func() {
-			cl := commontestutils.InitClient([]client.Object{})
-			handler := newCnaHandler(cl, commontestutils.GetScheme())
+			var (
+				cl      client.Client
+				handler *cnaHandler
+			)
+
+			BeforeEach(func() {
+				cl = commontestutils.InitClient([]client.Object{})
+				handler = newCnaHandler(cl, commontestutils.GetScheme())
+			})
 
 			It("should start with empty cache", func() {
 				Expect(handler.hooks.(*cnaHooks).cache).To(BeNil())

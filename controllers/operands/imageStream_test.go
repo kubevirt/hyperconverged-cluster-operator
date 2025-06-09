@@ -14,7 +14,6 @@ import (
 	"k8s.io/client-go/tools/reference"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
@@ -26,14 +25,19 @@ var _ = Describe("imageStream tests", func() {
 	schemeForTest := commontestutils.GetScheme()
 
 	var (
-		logger            = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("imageStream_test")
 		testFilesLocation = getTestFilesLocation() + "/imageStreams"
 		storeOrigFunc     = getImageStreamFileLocation
 		hco               *hcov1beta1.HyperConverged
 	)
 
+	origLogger := logger
 	BeforeEach(func() {
 		hco = commontestutils.NewHco()
+		logger = GinkgoLogr
+
+		DeferCleanup(func() {
+			logger = origLogger
+		})
 	})
 
 	AfterEach(func() {

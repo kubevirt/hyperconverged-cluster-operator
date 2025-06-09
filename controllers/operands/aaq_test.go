@@ -348,6 +348,7 @@ var _ = Describe("AAQ tests", func() {
 	Context("check cache", func() {
 		It("should create new cache if it empty", func() {
 			hco.Spec.EnableApplicationAwareQuota = ptr.To(true)
+			cl = commontestutils.InitClient([]client.Object{hco})
 			handler := newAAQHandler(cl, commontestutils.GetScheme())
 			op, ok := handler.(*conditionalHandler)
 			Expect(ok).To(BeTrue())

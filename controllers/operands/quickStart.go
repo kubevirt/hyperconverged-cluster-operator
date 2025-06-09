@@ -2,6 +2,7 @@ package operands
 
 import (
 	"errors"
+	"io"
 	"os"
 	filepath "path/filepath"
 	"reflect"
@@ -124,8 +125,7 @@ func processQuickstartFile(path string, info os.FileInfo, logger log.Logger, hc 
 			return nil, err
 		}
 
-		qs := &consolev1.ConsoleQuickStart{}
-		err = util.UnmarshalYamlFileToObject(file, qs)
+		qs, err := quickStartFromFile(file)
 		if err != nil {
 			logger.Error(err, "Can't generate a ConsoleQuickStart object from yaml file", "file name", path)
 		} else {
@@ -135,4 +135,15 @@ func processQuickstartFile(path string, info os.FileInfo, logger log.Logger, hc 
 		}
 	}
 	return nil, nil
+}
+
+func quickStartFromFile(reader io.Reader) (*consolev1.ConsoleQuickStart, error) {
+	qs := &consolev1.ConsoleQuickStart{}
+	err := util.UnmarshalYamlFileToObject(reader, qs)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return qs, nil
 }

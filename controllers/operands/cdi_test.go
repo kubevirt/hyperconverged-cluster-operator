@@ -1261,8 +1261,15 @@ var _ = Describe("CDI Operand", func() {
 		})
 
 		Context("Cache", func() {
-			cl := commontestutils.InitClient([]client.Object{})
-			handler := newCdiHandler(cl, commontestutils.GetScheme())
+			var (
+				cl      client.Client
+				handler *cdiHandler
+			)
+
+			BeforeEach(func() {
+				cl = commontestutils.InitClient([]client.Object{})
+				handler = newCdiHandler(cl, commontestutils.GetScheme())
+			})
 
 			It("should start with empty cache", func() {
 				Expect(handler.hooks.(*cdiHooks).cache).To(BeNil())

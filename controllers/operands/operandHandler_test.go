@@ -22,6 +22,14 @@ import (
 )
 
 var _ = Describe("Test operandHandler", func() {
+	origLogger := logger
+	BeforeEach(func() {
+		logger = GinkgoLogr
+		DeferCleanup(func() {
+			logger = origLogger
+		})
+	})
+
 	Context("Test operandHandler", func() {
 		testFileLocation := getTestFilesLocation()
 

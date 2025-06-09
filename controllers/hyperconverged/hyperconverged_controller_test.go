@@ -55,21 +55,37 @@ const (
 
 var _ = Describe("HyperconvergedController", func() {
 
-	_ = os.Setenv(hcoutil.OperatorConditionNameEnvVar, "OPERATOR_CONDITION")
-
 	getClusterInfo := hcoutil.GetClusterInfo
 
+	origOperatorCondVarName := os.Getenv(hcoutil.OperatorConditionNameEnvVar)
+	origVirtIOWinContainer := os.Getenv("VIRTIOWIN_CONTAINER")
+	origOperatorNS := os.Getenv("OPERATOR_NAMESPACE")
+	origVersion := os.Getenv(hcoutil.HcoKvIoVersionName)
+
+	BeforeEach(func() {
+		hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
+			return commontestutils.ClusterInfoMock{}
+		}
+
+		Expect(os.Setenv(hcoutil.OperatorConditionNameEnvVar, "OPERATOR_CONDITION")).To(Succeed())
+		Expect(os.Setenv("VIRTIOWIN_CONTAINER", commontestutils.VirtioWinImage)).To(Succeed())
+		Expect(os.Setenv("OPERATOR_NAMESPACE", namespace)).To(Succeed())
+		Expect(os.Setenv(hcoutil.HcoKvIoVersionName, version.Version)).To(Succeed())
+
+		reqresolver.GeneratePlaceHolders()
+	})
+
+	AfterEach(func() {
+		hcoutil.GetClusterInfo = getClusterInfo
+
+		Expect(os.Setenv(hcoutil.OperatorConditionNameEnvVar, origOperatorCondVarName)).To(Succeed())
+		Expect(os.Setenv("VIRTIOWIN_CONTAINER", origVirtIOWinContainer)).To(Succeed())
+		Expect(os.Setenv("OPERATOR_NAMESPACE", origOperatorNS)).To(Succeed())
+		Expect(os.Setenv(hcoutil.HcoKvIoVersionName, origVersion)).To(Succeed())
+
+	})
+
 	Describe("Reconcile HyperConverged", func() {
-
-		BeforeEach(func() {
-			hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
-				return commontestutils.ClusterInfoMock{}
-			}
-		})
-
-		AfterEach(func() {
-			hcoutil.GetClusterInfo = getClusterInfo
-		})
 
 		Context("HCO Lifecycle", func() {
 
@@ -78,12 +94,7 @@ var _ = Describe("HyperconvergedController", func() {
 			)
 
 			BeforeEach(func() {
-				_ = os.Setenv("VIRTIOWIN_CONTAINER", commontestutils.VirtioWinImage)
-				_ = os.Setenv("OPERATOR_NAMESPACE", namespace)
-				_ = os.Setenv(hcoutil.HcoKvIoVersionName, version.Version)
 				hcoNamespace = commontestutils.NewHcoNamespace()
-
-				reqresolver.GeneratePlaceHolders()
 			})
 
 			It("should handle not found", func() {
@@ -1187,10 +1198,6 @@ var _ = Describe("HyperconvergedController", func() {
 			)
 
 			BeforeEach(func() {
-				_ = os.Setenv("VIRTIOWIN_CONTAINER", commontestutils.VirtioWinImage)
-				_ = os.Setenv("OPERATOR_NAMESPACE", namespace)
-				_ = os.Setenv(hcoutil.HcoKvIoVersionName, version.Version)
-
 				expected = getBasicDeployment()
 				origConds = expected.hco.Status.Conditions
 			})
@@ -1248,9 +1255,6 @@ var _ = Describe("HyperconvergedController", func() {
 				expected = getBasicDeployment()
 				origConditions = expected.hco.Status.Conditions
 				okConds = expected.hco.Status.Conditions
-
-				_ = os.Setenv("VIRTIOWIN_CONTAINER", commontestutils.VirtioWinImage)
-				_ = os.Setenv("OPERATOR_NAMESPACE", namespace)
 
 				expected.kv.Status.ObservedKubeVirtVersion = newComponentVersion
 				_ = os.Setenv(hcoutil.KubevirtVersionEnvV, newComponentVersion)
@@ -2250,7 +2254,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 		Context("Aggregate Negative Conditions", func() {
 			const errorReason = "CdiTestError1"
-			_ = os.Setenv(hcoutil.HcoKvIoVersionName, version.Version)
+
 			It("should be degraded when a component is degraded", func() {
 				expected := getBasicDeployment()
 				conditionsv1.SetStatusCondition(&expected.cdi.Status.Conditions, conditionsv1.Condition{
@@ -2747,7 +2751,6 @@ var _ = Describe("HyperconvergedController", func() {
 				hcoNamespace = commontestutils.NewHcoNamespace()
 				hco = commontestutils.NewHco()
 				UpdateVersion(&hco.Status, hcoVersionName, version.Version)
-				_ = os.Setenv(hcoutil.HcoKvIoVersionName, version.Version)
 			})
 
 			Context("Detection of a tainted configuration for kubevirt", func() {

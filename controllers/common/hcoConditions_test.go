@@ -111,8 +111,12 @@ var _ = Describe("HCO Conditions Tests", func() {
 	})
 
 	Context("Test IsStatusConditionTrue", func() {
-		conds := NewHcoConditions()
-		Expect(conds.IsEmpty()).To(BeTrue())
+		var conds HcoConditions
+
+		BeforeEach(func() {
+			conds = NewHcoConditions()
+			Expect(conds.IsEmpty()).To(BeTrue())
+		})
 
 		It("Should return false when the conditionType is not present", func() {
 			Expect(conds.IsStatusConditionTrue(hcov1beta1.ConditionReconcileComplete)).To(BeFalse())
