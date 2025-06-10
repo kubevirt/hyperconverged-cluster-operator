@@ -81,6 +81,10 @@ spec:
           initialDelaySeconds: 30
           periodSeconds: 5
         name: hyperconverged-cluster-operator
+        ports:
+        - containerPort: 8383
+          name: metrics
+          protocol: TCP
         readinessProbe:
           failureThreshold: 1
           httpGet:
@@ -159,6 +163,10 @@ spec:
           initialDelaySeconds: 30
           periodSeconds: 5
         name: hyperconverged-cluster-webhook
+        ports:
+        - containerPort: 8383
+          name: metrics
+          protocol: TCP
         readinessProbe:
           failureThreshold: 1
           httpGet:
