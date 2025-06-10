@@ -91,6 +91,9 @@ function create_file_based_catalog() {
     IMAGES="${IMAGES} ${current_image}"
   done
 
+  if podman manifest exists "${INDEX_IMAGE_NAME}"; then
+    podman manifest rm "${INDEX_IMAGE_NAME}"
+  fi
   podman manifest create "${INDEX_IMAGE_NAME}" ${IMAGES}
   podman manifest push "${INDEX_IMAGE_NAME}"
 }
