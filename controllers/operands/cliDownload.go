@@ -139,7 +139,7 @@ func NewCliDownloadsService(hc *hcov1beta1.HyperConverged) *corev1.Service {
 			},
 			Ports: []corev1.ServicePort{
 				{
-					Name:       strconv.Itoa(util.CliDownloadsServerPort),
+					Name:       strconv.Itoa(int(util.CliDownloadsServerPort)),
 					Port:       util.CliDownloadsServerPort,
 					Protocol:   corev1.ProtocolTCP,
 					TargetPort: intstr.FromInt32(util.CliDownloadsServerPort),
