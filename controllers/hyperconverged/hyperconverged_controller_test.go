@@ -14,6 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
+	imagev1 "github.com/openshift/api/image/v1"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 	objectreferencesv1 "github.com/openshift/custom-resource-status/objectreferences/v1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -1798,7 +1799,48 @@ var _ = Describe("HyperconvergedController", func() {
 
 					Expect(searchInRelatedObjects(foundResource.Status.RelatedObjects, "ConsoleQuickStart", oldQSName)).To(BeFalse())
 				})
+			})
 
+			Context("remove old ImageStream guides", func() {
+				It("should drop old ImageStream guide", func() {
+					const oldISName = "old-imagestream-guide"
+					UpdateVersion(&expected.hco.Status, hcoVersionName, oldVersion)
+
+					oldIs := &imagev1.ImageStream{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      oldISName,
+							Namespace: "some-namespace",
+							Labels: map[string]string{
+								hcoutil.AppLabel:          expected.hco.Name,
+								hcoutil.AppLabelManagedBy: hcoutil.OperatorName,
+							},
+						},
+					}
+
+					kvRef, err := reference.GetReference(commontestutils.GetScheme(), expected.kv)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, *kvRef)).ToNot(HaveOccurred())
+
+					oldQsRef, err := reference.GetReference(commontestutils.GetScheme(), oldIs)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, *oldQsRef)).ToNot(HaveOccurred())
+
+					resources := append(expected.toArray(), oldIs)
+
+					cl := commontestutils.InitClient(resources)
+					foundResource, _, requeue := doReconcile(cl, expected.hco, nil)
+					Expect(requeue).To(BeTrue())
+					checkAvailability(foundResource, metav1.ConditionTrue)
+
+					foundOldQs := &consolev1.ConsoleQuickStart{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "old-quickstart-guide",
+						},
+					}
+					Expect(cl.Get(context.Background(), client.ObjectKeyFromObject(oldIs), foundOldQs)).To(HaveOccurred())
+
+					Expect(searchInRelatedObjects(foundResource.Status.RelatedObjects, "ConsoleQuickStart", oldISName)).To(BeFalse())
+				})
 			})
 
 			Context("remove leftovers on upgrades", func() {

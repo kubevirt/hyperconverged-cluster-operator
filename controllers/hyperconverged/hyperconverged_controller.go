@@ -589,11 +589,10 @@ func (r *ReconcileHyperConverged) ensureHcoDeleted(req *common.HcoRequest) (reco
 	requeue := false
 
 	// Remove the finalizers
-	finDropped := false
-	if slices.Contains(req.Instance.Finalizers, FinalizerName) {
-		req.Instance.Finalizers, finDropped = drop(req.Instance.Finalizers, FinalizerName)
+	if idx := slices.Index(req.Instance.Finalizers, FinalizerName); idx >= 0 {
+		req.Instance.Finalizers = slices.Delete(req.Instance.Finalizers, idx, idx+1)
 		req.Dirty = true
-		requeue = finDropped
+		requeue = true
 	}
 
 	// Need to requeue because finalizer update does not change metadata.generation
@@ -1038,6 +1037,7 @@ func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (
 	}
 
 	removeOldQuickStartGuides(req, r.client, r.operandHandler.GetQuickStartNames())
+	removeOldImageStream(req, r.client, r.operandHandler.GetImageStreamNames())
 
 	return upgradePatched, nil
 }
@@ -1121,57 +1121,6 @@ func (r *ReconcileHyperConverged) deleteObj(req *common.HcoRequest, obj client.O
 	return removed, nil
 }
 
-func removeOldQuickStartGuides(req *common.HcoRequest, cl client.Client, requiredQSList []string) {
-	existingQSList := &consolev1.ConsoleQuickStartList{}
-	req.Logger.Info("reading quickstart guides")
-	err := cl.List(req.Ctx, existingQSList, client.MatchingLabels{hcoutil.AppLabelManagedBy: hcoutil.OperatorName})
-	if err != nil {
-		req.Logger.Error(err, "failed to read list of quickstart guides")
-		return
-	}
-
-	var existingQSNames map[string]consolev1.ConsoleQuickStart
-	if len(existingQSList.Items) > 0 {
-		existingQSNames = make(map[string]consolev1.ConsoleQuickStart)
-		for _, qs := range existingQSList.Items {
-			existingQSNames[qs.Name] = qs
-		}
-
-		for name, existQs := range existingQSNames {
-			if !slices.Contains(requiredQSList, name) {
-				req.Logger.Info("deleting ConsoleQuickStart", "name", name)
-				if _, err = hcoutil.EnsureDeleted(req.Ctx, cl, &existQs, req.Instance.Name, req.Logger, false, false, true); err != nil {
-					req.Logger.Error(err, "failed to delete ConsoleQuickStart", "name", name)
-				}
-			}
-		}
-
-		removeRelatedQSObjects(req, requiredQSList)
-	}
-}
-
-// removeRelatedQSObjects removes old quickstart from the related object list
-// can't use the removeRelatedObject function because the status not get updated during each reconcile loop,
-// but the old qs already removed (above) so you loos track of it. That why we must re-check all the qs names
-func removeRelatedQSObjects(req *common.HcoRequest, requiredNames []string) {
-	refs := make([]corev1.ObjectReference, 0, len(req.Instance.Status.RelatedObjects))
-	foundOldQs := false
-
-	for _, obj := range req.Instance.Status.RelatedObjects {
-		if obj.Kind == "ConsoleQuickStart" && !slices.Contains(requiredNames, obj.Name) {
-			foundOldQs = true
-			continue
-		}
-		refs = append(refs, obj)
-	}
-
-	if foundOldQs {
-		req.Instance.Status.RelatedObjects = refs
-		req.StatusDirty = true
-	}
-
-}
-
 func removeRelatedObject(req *common.HcoRequest, cl client.Client, gvk schema.GroupVersionKind, objectKey types.NamespacedName) {
 	refs := make([]corev1.ObjectReference, 0, len(req.Instance.Status.RelatedObjects))
 	foundRO := false
@@ -1201,19 +1150,6 @@ func removeRelatedObject(req *common.HcoRequest, cl client.Client, gvk schema.Gr
 		req.StatusDirty = true
 	}
 
-}
-
-func drop(slice []string, s string) ([]string, bool) {
-	var newSlice []string
-	dropped := false
-	for _, element := range slice {
-		if element != s {
-			newSlice = append(newSlice, element)
-		} else {
-			dropped = true
-		}
-	}
-	return newSlice, dropped
 }
 
 func checkFinalizers(req *common.HcoRequest) bool {

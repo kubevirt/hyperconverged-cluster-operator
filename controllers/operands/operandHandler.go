@@ -116,6 +116,10 @@ func (h *OperandHandler) GetQuickStartNames() []string {
 	return quickstartNames
 }
 
+func (h *OperandHandler) GetImageStreamNames() []string {
+	return imageStreamNames
+}
+
 type GetHandlers func(log.Logger, client.Client, *runtime.Scheme, *hcov1beta1.HyperConverged) ([]Operand, error)
 
 func (h *OperandHandler) addOperandObject(handler Operand, hc *hcov1beta1.HyperConverged) {
