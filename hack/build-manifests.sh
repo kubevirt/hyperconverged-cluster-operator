@@ -354,6 +354,8 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --kubevirt-consoleproxy-image-name="${KUBEVIRT_CONSOLE_PROXY_IMAGE}" \
   --cli-downloads-image-name="${HCO_DOWNLOADS_IMAGE}" > "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}"
 
+(cd ${PROJECT_ROOT}/tools/csv-merger/ && go clean)
+
 rendered_csv="$(cat "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}")"
 rendered_keywords="$(echo "$rendered_csv" |grep 'keywords' -A 3)"
 # assert that --csv-overrides work
@@ -369,8 +371,7 @@ cp -f ${TEMPDIR}/*.${CRD_EXT} ${CSV_DIR}
 (cd ${CSV_DIR} && $CRI_BIN run --rm -v "$(pwd)":/yaml quay.io/pusher/yamllint yamllint -d "{extends: relaxed, rules: {line-length: disable}}" /yaml)
 
 # Check there are not API Groups overlap between different CNV operators
-${PROJECT_ROOT}/tools/csv-merger/csv-merger --crds-dir=${CRD_DIR}
-(cd ${PROJECT_ROOT}/tools/csv-merger/ && go clean)
+go run ${PROJECT_ROOT}/tools/crd-overlap-validator --crds-dir=${CRD_DIR}
 
 if [[ "$1" == "UNIQUE"  ]]; then
   # Add the current CSV_TIMESTAMP to the currentCSV in the packages file
