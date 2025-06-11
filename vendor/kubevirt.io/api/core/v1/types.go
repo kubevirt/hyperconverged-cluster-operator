@@ -606,7 +606,7 @@ const (
 	VirtualMachineInstanceReasonPRNotMigratable = "PersistentReservationNotLiveMigratable"
 	// Reason means that not all of the VMI's DVs are ready
 	VirtualMachineInstanceReasonNotAllDVsReady = "NotAllDVsReady"
-	// Reason means that all of the VMI's DVs are bound and not running
+	// Reason means that all of the VMI's DVs are bound and ready
 	VirtualMachineInstanceReasonAllDVsReady = "AllDVsReady"
 	// Indicates a generic reason that the VMI isn't migratable and more details are spiecified in the condition message.
 	VirtualMachineInstanceReasonNotMigratable = "NotMigratable"
@@ -989,6 +989,8 @@ const (
 	HypervLabel = "hyperv.node.kubevirt.io/"
 	// This label represents vendor of cpu model on the node
 	CPUModelVendorLabel = "cpu-vendor.node.kubevirt.io/"
+	// This label represents supported machine type on the node
+	SupportedMachineTypeLabel = "machine-type.node.kubevirt.io/"
 
 	VirtIO = "virtio"
 
