@@ -16,7 +16,10 @@ SHA=$(git describe --no-match  --always --abbrev=40 --dirty)
 
 . ./hack/cri-bin.sh && export CRI_BIN=${CRI_BIN}
 
-${CRI_BIN} manifest create -a "${IMAGE_NAME}"
+if ${CRI_BIN} manifest exists "${IMAGE_NAME}"; then
+  ${CRI_BIN} manifest rm "${IMAGE_NAME}"
+fi
+${CRI_BIN} manifest create "${IMAGE_NAME}"
 for arch in ${ARCHITECTURES}; do
   ${CRI_BIN} build  --platform=linux/${arch} -f ${DOCKER_FILE} -t "${IMAGE_NAME}-${arch}" --build-arg git_sha=${SHA} .
   ./hack/retry.sh 3 10 "${CRI_BIN} push ${IMAGE_NAME}-${arch}"
