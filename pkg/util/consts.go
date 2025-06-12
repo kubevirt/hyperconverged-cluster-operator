@@ -53,6 +53,7 @@ const (
 	HyperConvergedName           = "kubevirt-hyperconverged"
 	MetricsHost                  = "0.0.0.0"
 	MetricsPort            int32 = 8383
+	MetricsPortName              = "metrics"
 	HealthProbeHost              = "0.0.0.0"
 	HealthProbePort        int32 = 6060
 	ReadinessEndpointName        = "/readyz"
@@ -66,7 +67,7 @@ const (
 	WebhookKeyName        = "apiserver.key"
 	DefaultWebhookCertDir = "/apiserver.local.config/certificates"
 
-	CliDownloadsServerPort       = 8080
+	CliDownloadsServerPort int32 = 8080
 	UIPluginServerPort     int32 = 9443
 	UIProxyServerPort      int32 = 8080
 

@@ -190,6 +190,9 @@ func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.Deployme
 						},
 						SecurityContext:          GetStdContainerSecurityContext(),
 						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+						Ports: []corev1.ContainerPort{
+							getMetricsPort(),
+						},
 					},
 				},
 				PriorityClassName: "system-cluster-critical",
@@ -334,12 +337,12 @@ func GetDeploymentSpecCliDownloads(params *DeploymentOperatorParams) appsv1.Depl
 						Ports: []corev1.ContainerPort{
 							{
 								Protocol:      corev1.ProtocolTCP,
-								ContainerPort: int32(8080),
+								ContainerPort: util.CliDownloadsServerPort,
 							},
 						},
 						SecurityContext:          GetStdContainerSecurityContext(),
-						ReadinessProbe:           getReadinessProbe("/health", 8080),
-						LivenessProbe:            getLivenessProbe("/health", 8080),
+						ReadinessProbe:           getReadinessProbe("/health", util.CliDownloadsServerPort),
+						LivenessProbe:            getLivenessProbe("/health", util.CliDownloadsServerPort),
 						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 					},
 				},
@@ -453,6 +456,9 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion 
 						},
 						SecurityContext:          GetStdContainerSecurityContext(),
 						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+						Ports: []corev1.ContainerPort{
+							getMetricsPort(),
+						},
 					},
 				},
 				PriorityClassName: "system-node-critical",
@@ -1157,6 +1163,14 @@ func getLivenessProbe(endpoint string, port int32) *corev1.Probe {
 		InitialDelaySeconds: 30,
 		PeriodSeconds:       5,
 		FailureThreshold:    1,
+	}
+}
+
+func getMetricsPort() corev1.ContainerPort {
+	return corev1.ContainerPort{
+		Name:          util.MetricsPortName,
+		ContainerPort: util.MetricsPort,
+		Protocol:      corev1.ProtocolTCP,
 	}
 }
 
