@@ -51,10 +51,6 @@ const (
 
 	kubevirtProjectName = "KubeVirt project"
 	rbacVersionV1       = "rbac.authorization.k8s.io/v1"
-
-	// labels to apply network policies:
-	allowEgressToDNSAndAPIServerLabel  = "hco.kubevirt.io/allow-access-cluster-services"
-	allowIngressToMetricsEndpointLabel = "hco.kubevirt.io/allow-prometheus-access"
 )
 
 var deploymentType = metav1.TypeMeta{
@@ -379,8 +375,8 @@ func getLabels(name, hcoKvIoVersion string) map[string]string {
 func getLabelsWithNetworkPolicies(deploymentName string, params *DeploymentOperatorParams) map[string]string {
 	labels := getLabels(deploymentName, params.HcoKvIoVersion)
 	if params.AddNetworkPolicyLabels {
-		labels[allowEgressToDNSAndAPIServerLabel] = "true"
-		labels[allowIngressToMetricsEndpointLabel] = "true"
+		labels[util.AllowEgressToDNSAndAPIServerLabel] = "true"
+		labels[util.AllowIngressToMetricsEndpointLabel] = "true"
 	}
 
 	return labels

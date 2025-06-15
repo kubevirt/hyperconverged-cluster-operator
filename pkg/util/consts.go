@@ -80,6 +80,11 @@ const (
 	DeschedulerNamespace = "openshift-kube-descheduler-operator"
 
 	DataImportCronEnabledAnnotation = "dataimportcrontemplate.kubevirt.io/enable"
+
+	// AllowEgressToDNSAndAPIServerLabel if this label is set, the network policy will allow egress to DNS and API server
+	AllowEgressToDNSAndAPIServerLabel = "hco.kubevirt.io/allow-access-cluster-services"
+	// AllowIngressToMetricsEndpointLabel if this label is set, the network policy will allow ingress to the metrics endpoint
+	AllowIngressToMetricsEndpointLabel = "hco.kubevirt.io/allow-prometheus-access"
 )
 
 type AppComponent string

@@ -151,6 +151,12 @@ func main() {
 		panicOnError(util.MarshallObject(components.GetOperatorCRD(*apiSources), os.Stdout))
 	case CSVMode:
 		getHcoCsv()
+		if *dumpNetworkPolicies {
+			if err := generateNetworkPolicies(); err != nil {
+				fmt.Fprintf(os.Stderr, "error generating network policies: %v\n", err)
+				os.Exit(1)
+			}
+		}
 
 	default:
 		panic("Unsupported output mode: " + *outputMode)
