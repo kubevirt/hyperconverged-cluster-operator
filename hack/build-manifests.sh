@@ -78,23 +78,12 @@ function gen_csv() {
 
   # Handle important vars
   local csv="${operatorName}.${CSV_EXT}"
-  local csvWithCRDs="${operatorName}.${CSV_CRD_EXT}"
   local crds="${operatorName}.crds.yaml"
 
   # TODO: Use oc to run if cluster is available
   local dockerArgs="$CRI_BIN run --rm --entrypoint=${csvGeneratorPath} ${imagePullUrl} ${operatorArgs}"
 
-  eval $dockerArgs > $csv
-  eval $dockerArgs $dumpCRDsArg > $csvWithCRDs
-
-  # diff returns 1 when there is a diff, and there is always diff here. Added `|| :` to cancel trap here.
-  diff -u $csv $csvWithCRDs | grep -E "^\+" | sed -E 's/^\+//' | tail -n+2 > $crds || :
-
-  csplit --digits=2 --quiet --elide-empty-files \
-    --prefix="${operatorName}" \
-    --suffix-format="%02d.${CRD_EXT}" \
-    $crds \
-    "/^---$/" "{*}"
+  eval $dockerArgs $dumpCRDsArg | ${PROJECT_ROOT}/tools/manifest-splitter/manifest-splitter --operator-name="${operatorName}"
 }
 
 function create_virt_csv() {
@@ -218,6 +207,8 @@ function create_aaq_csv() {
   echo "${operatorName}"
 }
 
+(cd ${PROJECT_ROOT}/tools/manifest-splitter/ && go build)
+
 TEMPDIR=$(mktemp -d) || (echo "Failed to create temp directory" && exit 1)
 pushd $TEMPDIR
 virtFile=$(create_virt_csv)
@@ -247,13 +238,11 @@ EOM
 (cd ${PROJECT_ROOT}/tools/csv-merger/ && go build)
 hco_crds=${PROJECT_ROOT}/config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml
 (cd ${PROJECT_ROOT} && ${PROJECT_ROOT}/tools/csv-merger/csv-merger  --api-sources=${PROJECT_ROOT}/api/... --output-mode=CRDs > $hco_crds)
-csplit --digits=2 --quiet --elide-empty-files \
-  --prefix=hco \
-  --suffix-format="%02d.${CRD_EXT}" \
-  $hco_crds \
-  "/^---$/" "{*}"
+cat ${hco_crds} | ${PROJECT_ROOT}/tools/manifest-splitter/manifest-splitter --operator-name="hco"
 
 popd
+
+(cd ${PROJECT_ROOT}/tools/manifest-splitter/ && go clean)
 
 rm -fr "${CSV_DIR}"
 mkdir -p "${CSV_DIR}/metadata" "${CSV_DIR}/manifests"
