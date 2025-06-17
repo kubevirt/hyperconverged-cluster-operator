@@ -14,6 +14,7 @@ jobs:
       QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
       REGISTRY_NAMESPACE: kubevirt
       OPM_VERSION: v1.47.0
+      PACKAGE_DIR: "./deploy/olm-catalog/community-kubevirt-hyperconverged"
     steps:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -30,7 +31,7 @@ jobs:
             TARGET_BRANCH=main
           fi
           echo "TARGET_BRANCH=${TARGET_BRANCH}" >> $GITHUB_ENV
-          echo "TAGGED_VERSION=${TAGGED_VERSION}" >> $GITHUB_ENV
+          echo "TAGGED_VERSION=${GIT_TAG}" >> $GITHUB_ENV
       - name: Checkout the latest code of ${{ env.TARGET_BRANCH }} branch
         uses: actions/checkout@v4
         with:
@@ -42,10 +43,8 @@ jobs:
           go-version-file: go.mod
       - name: Get latest version on ${{ env.TARGET_BRANCH }} branch
         run: |
-          PACKAGE_DIR="./deploy/olm-catalog/community-kubevirt-hyperconverged"
           CSV_VERSION=$(ls -d ${PACKAGE_DIR}/*/ | sort -rV | awk "NR==1" | cut -d '/' -f 5)
           echo "CSV_VERSION=${CSV_VERSION}" >> $GITHUB_ENV
-          echo "PACKAGE_DIR=${PACKAGE_DIR}" >> $GITHUB_ENV
       - name: Build and Push Applications Images
         env:
           IMAGE_TAG: ${{ env.CSV_VERSION }}
@@ -57,7 +56,6 @@ jobs:
           (cd tools/digester && go build .)
       - name: Build Manifests for version ${{ env.CSV_VERSION }}
         env:
-          PACKAGE_DIR: ${{ env.PACKAGE_DIR }}
           CSV_VERSION: ${{ env.CSV_VERSION }}
         run: |
           export HCO_OPERATOR_IMAGE=$(tools/digester/digester --image="quay.io/kubevirt/hyperconverged-cluster-operator:${CSV_VERSION}")
@@ -80,24 +78,61 @@ jobs:
           export TARGET_BRANCH=${{ env.TARGET_BRANCH }}
           export HCO_BOT_TOKEN=${{ secrets.HCO_BOT_TOKEN }}
           curl https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/automation/publisher/publisher.sh | bash
+      - name: Prepare variables for next job
+        id: job-outputs
+        run: |
+          echo "TARGET_BRANCH=${{ env.TARGET_BRANCH }}" >> "$GITHUB_OUTPUT"
+          echo "CSV_VERSION=${{ env.CSV_VERSION }}" >> "$GITHUB_OUTPUT"
+    outputs:
+        TARGET_BRANCH: ${{ steps.job-outputs.outputs.TARGET_BRANCH }}
+        CSV_VERSION: ${{ steps.job-outputs.outputs.CSV_VERSION }}
 
+  prepare_next_version:
+    if: (github.repository == 'kubevirt/hyperconverged-cluster-operator' && !contains(github.ref, 'unstable'))
+    needs: publish_hco
+    name: Prepare Next Patch Version and open a new PR
+    runs-on: ubuntu-latest
+    env:
+      QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+      QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
+      REGISTRY_NAMESPACE: kubevirt
+      OPM_VERSION: v1.47.0
+      PACKAGE_DIR: "./deploy/olm-catalog/community-kubevirt-hyperconverged"
+      TARGET_BRANCH: ${{ needs.publish_hco.outputs.TARGET_BRANCH }}
+      CSV_VERSION: ${{ needs.publish_hco.outputs.CSV_VERSION }}
+    steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Checkout the latest code of ${{ env.TARGET_BRANCH }} branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
       - name: get next version
-        env:
-          CSV_VERSION: ${{ env.CSV_VERSION }}
         run: |
           NEW_VERSION=$(./hack/get-next-version.sh "${CSV_VERSION}")
           NEW_IMAGE_TAG="${NEW_VERSION}-unstable"
           echo "NEW_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
           echo "NEW_IMAGE_TAG=${NEW_IMAGE_TAG}" >> $GITHUB_ENV
 
+      - name: Update version/version.go
+        env:
+          NEW_VERSION: ${{ env.NEW_VERSION }}
+        run: |
+          sed -E -i "s|^(\s+Version = \")[^\"]+\"|\1${NEW_VERSION}\"|g" version/version.go
+          git add version/version.go
+
       - name: Build and Push Applications next version Images
         env:
           NEW_IMAGE_TAG: ${{ env.NEW_IMAGE_TAG }}
         run: |
           IMAGE_TAG=${NEW_IMAGE_TAG} make build-push-multi-arch-images
+
       - name: run manifest for next version
         env:
-          PACKAGE_DIR: ${{ env.PACKAGE_DIR }}
           CSV_VERSION: ${{ env.NEW_VERSION }}
         run: |
           mkdir -p "${PACKAGE_DIR}/${CSV_VERSION}"
