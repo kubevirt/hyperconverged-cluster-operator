@@ -17,7 +17,7 @@
     },
     {
       "group": "ssp.kubevirt.io",
-      "version": "v1beta1",
+      "version": "v1beta2",
       "kind": "ssps"
     },
     {

@@ -22,6 +22,7 @@ class ObjectFetcher(object):
 
         result = []
         for nt in self.conf.namespaced:
+            print(f"Fetching {nt.group}/{nt.version} {nt.kind} in namespace {ns}")
             response = api.list_namespaced_custom_object(
                 namespace=ns,
                 group=nt.group,
@@ -32,6 +33,7 @@ class ObjectFetcher(object):
             result.extend(response["items"])
 
         for ct in self.conf.cluster:
+            print(f"Fetching cluster scoped {ct.group}/{ct.version} {ct.kind}")
             response = api.list_cluster_custom_object(
                 group=ct.group,
                 version=ct.version,

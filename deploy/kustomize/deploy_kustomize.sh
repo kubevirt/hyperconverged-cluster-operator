@@ -13,6 +13,7 @@ QUAY_PASSWORD="${QUAY_PASSWORD:-}"
 CONTENT_ONLY="${CONTENT_ONLY:-false}"
 KVM_EMULATION="${KVM_EMULATION:-false}"
 OC_TOOL="${OC_TOOL:-oc}"
+TIMEOUT="${TIMEOUT:-15m}"
 
 #####################
 
@@ -152,8 +153,8 @@ retry_loop() {
 
   if [[ $success -eq 1 ]]; then
     echo "[INFO] Deployment successful, waiting for HCO Operator to report Ready..."
-    ${OC_TOOL} wait -n ${TARGET_NAMESPACE} hyperconverged kubevirt-hyperconverged --for condition=Available --timeout=15m
-    ${OC_TOOL} wait "$(${OC_TOOL} get pods -n ${TARGET_NAMESPACE} -l name=hyperconverged-cluster-operator -o name)" -n "${TARGET_NAMESPACE}" --for condition=Ready --timeout=15m
+    ${OC_TOOL} wait -n ${TARGET_NAMESPACE} hyperconverged kubevirt-hyperconverged --for condition=Available --timeout=${TIMEOUT}
+    ${OC_TOOL} wait "$(${OC_TOOL} get pods -n ${TARGET_NAMESPACE} -l name=hyperconverged-cluster-operator -o name)" -n "${TARGET_NAMESPACE}" --for condition=Ready --timeout=${TIMEOUT}
   else
     echo "[ERROR] Deployment failed."
     exit 1
