@@ -87,9 +87,6 @@ digraph "managed-by" {
 	"daemonset/kube-cni-linux-bridge-plugin" [label="daemonset/kube-cni-linux-bridge-plugin"]
 	"deployment/cluster-network-addons-operator" [label="deployment/cluster-network-addons-operator"]
 	"deployment/cluster-network-addons-operator" -> "daemonset/kube-cni-linux-bridge-plugin"
-	"daemonset/passt-binding-cni" [label="daemonset/passt-binding-cni"]
-	"deployment/cluster-network-addons-operator" [label="deployment/cluster-network-addons-operator"]
-	"deployment/cluster-network-addons-operator" -> "daemonset/passt-binding-cni"
 	"daemonset/virt-handler" [label="daemonset/virt-handler"]
 	"deployment/virt-operator" [label="deployment/virt-operator"]
 	"deployment/virt-operator" -> "daemonset/virt-handler"
