@@ -61,6 +61,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/authorization"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/upgradepatch"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -125,6 +126,9 @@ func main() {
 	ctx := context.TODO()
 	err = ci.Init(ctx, apiClient, logger)
 	cmdHelper.ExitOnError(err, "Cannot detect cluster type")
+
+	_, err = nodeinfo.HandleNodeChanges(ctx, apiClient, nil, logger)
+	cmdHelper.ExitOnError(err, "Failed to read cluster nodes")
 
 	needLeaderElection := !ci.IsRunningLocally()
 
