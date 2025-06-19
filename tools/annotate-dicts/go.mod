@@ -1,6 +1,6 @@
 module github.com/kubevirt/hyperconverged-cluster-operator/tools/annotate-dicts
 
-go 1.23.6
+go 1.24.3
 
 require (
 	github.com/containers/image/v5 v5.35.0
