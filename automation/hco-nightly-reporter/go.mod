@@ -1,6 +1,6 @@
 module github.com/hyperconverged-cluster-operator/automation/hco-nightly-reporter
 
-go 1.23
+go 1.24
 
 require github.com/slack-go/slack v0.15.0
 

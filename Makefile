@@ -49,7 +49,7 @@ goimport:
 
 
 lint:
-	GOTOOLCHAIN=go1.23.4 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANDCI_LINT_VERSION}
+	GOTOOLCHAIN=go1.24.3 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANDCI_LINT_VERSION}
 	golangci-lint run
 
 build: build-operator build-csv-merger build-webhook
@@ -277,7 +277,7 @@ lint-metrics:
 	./hack/prom_metric_linter.sh --operator-name="kubevirt" --sub-operator-name="hco"
 
 lint-monitoring:
-	go install github.com/kubevirt/monitoring/monitoringlinter/cmd/monitoringlinter@e2be790
+	go install github.com/kubevirt/monitoring/monitoringlinter/cmd/monitoringlinter@a697c0c
 	monitoringlinter ./...
 
 bump-hco:

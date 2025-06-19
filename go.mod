@@ -1,6 +1,6 @@
 module github.com/kubevirt/hyperconverged-cluster-operator
 
-go 1.23.6
+go 1.24.3
 
 require (
 	dario.cat/mergo v1.0.1
