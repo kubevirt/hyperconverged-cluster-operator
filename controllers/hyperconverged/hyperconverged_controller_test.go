@@ -35,7 +35,7 @@ import (
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
-	sspv1beta2 "kubevirt.io/ssp-operator/api/v1beta2"
+	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
@@ -556,7 +556,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res).To(Equal(reconcile.Result{}))
 
-				foundResource := &sspv1beta2.SSP{}
+				foundResource := &sspv1beta3.SSP{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expected.ssp.Name, Namespace: expected.hco.Namespace},

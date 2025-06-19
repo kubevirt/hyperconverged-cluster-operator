@@ -28,7 +28,7 @@ import (
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
-	sspv1beta2 "kubevirt.io/ssp-operator/api/v1beta2"
+	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 
@@ -118,7 +118,7 @@ type BasicExpected struct {
 	kv                   *kubevirtcorev1.KubeVirt
 	cdi                  *cdiv1beta1.CDI
 	cna                  *networkaddonsv1.NetworkAddonsConfig
-	ssp                  *sspv1beta2.SSP
+	ssp                  *sspv1beta3.SSP
 	mService             *corev1.Service
 	serviceMonitor       *monitoringv1.ServiceMonitor
 	cliDownload          *consolev1.ConsoleCLIDownload

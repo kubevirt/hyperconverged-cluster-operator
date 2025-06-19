@@ -41,7 +41,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
-	sspv1beta2 "kubevirt.io/ssp-operator/api/v1beta2"
+	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 )
 
 // Change below variables to serve metrics on different host or port.
@@ -54,7 +54,7 @@ var (
 		appsv1.AddToScheme,
 		cdiv1beta1.AddToScheme,
 		networkaddonsv1.AddToScheme,
-		sspv1beta2.AddToScheme,
+		sspv1beta3.AddToScheme,
 		admissionregistrationv1.AddToScheme,
 		openshiftconfigv1.Install,
 		kubevirtcorev1.AddToScheme,

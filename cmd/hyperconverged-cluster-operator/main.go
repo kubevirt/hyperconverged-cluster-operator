@@ -47,7 +47,7 @@ import (
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
-	sspv1beta2 "kubevirt.io/ssp-operator/api/v1beta2"
+	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
@@ -79,7 +79,7 @@ var (
 		rbacv1.AddToScheme,
 		cdiv1beta1.AddToScheme,
 		networkaddonsv1.AddToScheme,
-		sspv1beta2.AddToScheme,
+		sspv1beta3.AddToScheme,
 		csvv1alpha1.AddToScheme,
 		admissionregistrationv1.AddToScheme,
 		consolev1.Install,
@@ -272,7 +272,7 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 			&kubevirtcorev1.KubeVirt{}:             {},
 			&cdiv1beta1.CDI{}:                      {},
 			&networkaddonsv1.NetworkAddonsConfig{}: {},
-			&sspv1beta2.SSP{}:                      {},
+			&sspv1beta3.SSP{}:                      {},
 			&schedulingv1.PriorityClass{}: {
 				Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
 			},

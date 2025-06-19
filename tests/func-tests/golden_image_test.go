@@ -19,10 +19,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
-	"kubevirt.io/ssp-operator/api/v1beta2"
+	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
@@ -217,7 +216,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		}
 
 		It("should empty the DICT in SSP", func(ctx context.Context) {
-			Eventually(func(g Gomega, ctx context.Context) []v1beta2.DataImportCronTemplate {
+			Eventually(func(g Gomega, ctx context.Context) []sspv1beta3.DataImportCronTemplate {
 				ssp := getSSP(ctx, cli)
 				return ssp.Spec.CommonTemplates.DataImportCronTemplates
 			}).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(BeEmpty())
@@ -268,7 +267,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		}
 
 		It("should propagate the DICT in SSP", func(ctx context.Context) {
-			Eventually(func(g Gomega, ctx context.Context) []v1beta2.DataImportCronTemplate {
+			Eventually(func(g Gomega, ctx context.Context) []sspv1beta3.DataImportCronTemplate {
 				ssp := getSSP(ctx, cli)
 				return ssp.Spec.CommonTemplates.DataImportCronTemplates
 			}).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(HaveLen(len(expectedImages)))
@@ -378,8 +377,8 @@ func getDICT() hcov1beta1.DataImportCronTemplate {
 	}
 }
 
-func getSSP(ctx context.Context, cli client.Client) *v1beta2.SSP {
-	ssp := &v1beta2.SSP{
+func getSSP(ctx context.Context, cli client.Client) *sspv1beta3.SSP {
+	ssp := &sspv1beta3.SSP{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ssp-kubevirt-hyperconverged",
 			Namespace: tests.InstallNamespace,

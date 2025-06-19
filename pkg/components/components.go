@@ -30,7 +30,7 @@ import (
 	kvapi "kubevirt.io/api/core"
 	aaqapi "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core"
 	cdiapi "kubevirt.io/containerized-data-importer-api/pkg/apis/core"
-	sspapi "kubevirt.io/ssp-operator/api/v1beta2"
+	sspapi "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
