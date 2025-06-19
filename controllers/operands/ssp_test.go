@@ -21,7 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
-	sspv1beta2 "kubevirt.io/ssp-operator/api/v1beta2"
+	sspv1beta2 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
@@ -207,15 +207,6 @@ var _ = Describe("SSP Operands", func() {
 
 			Expect(expectedResource.Spec.TokenGenerationService).ToNot(BeNil())
 			Expect(expectedResource.Spec.TokenGenerationService.Enabled).To(BeTrue())
-		})
-
-		It("should create with deployCommonInstancetypes feature gate disabled", func() {
-			hco := commontestutils.NewHco()
-
-			expectedResource, _, err := NewSSP(hco)
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(expectedResource.Spec.FeatureGates.DeployCommonInstancetypes).To(HaveValue(BeFalse()))
 		})
 
 		Context("Node placement", func() {

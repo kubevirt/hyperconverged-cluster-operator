@@ -18,7 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
-	sspv1beta2 "kubevirt.io/ssp-operator/api/v1beta2"
+	sspv1beta2 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
@@ -164,7 +164,6 @@ func NewSSP(hc *hcov1beta1.HyperConverged, opts ...string) (*sspv1beta2.SSP, []h
 		// in order to future-proof from bugs if SSP changes it to pointer-type,
 		// causing nil pointers dereferences at the DeepCopyInto() below.
 		TLSSecurityProfile: util.GetClusterInfo().GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile),
-		FeatureGates:       &sspv1beta2.FeatureGates{},
 	}
 
 	if hc.Spec.DeployVMConsoleProxy != nil {
@@ -172,9 +171,6 @@ func NewSSP(hc *hcov1beta1.HyperConverged, opts ...string) (*sspv1beta2.SSP, []h
 			Enabled: *hc.Spec.DeployVMConsoleProxy,
 		}
 	}
-
-	// Disable common-instancetypes deployment by SSP from 4.16, now handled by virt-operator
-	spec.FeatureGates.DeployCommonInstancetypes = ptr.To(false)
 
 	if hc.Spec.Infra.NodePlacement != nil {
 		spec.TemplateValidator.Placement = hc.Spec.Infra.NodePlacement.DeepCopy()
