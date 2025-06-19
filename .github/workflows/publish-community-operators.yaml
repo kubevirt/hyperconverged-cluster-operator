@@ -129,6 +129,7 @@ jobs:
         env:
           NEW_IMAGE_TAG: ${{ env.NEW_IMAGE_TAG }}
         run: |
+          make quay-login
           IMAGE_TAG=${NEW_IMAGE_TAG} make build-push-multi-arch-images
 
       - name: run manifest for next version
