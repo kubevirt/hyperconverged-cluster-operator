@@ -43,7 +43,7 @@ import (
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
-	sspv1beta2 "kubevirt.io/ssp-operator/api/v1beta3"
+	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
@@ -167,7 +167,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 	}
 	if ci.IsOpenshift() {
 		secondaryResources = append(secondaryResources, []client.Object{
-			&sspv1beta2.SSP{},
+			&sspv1beta3.SSP{},
 			&corev1.Service{},
 			&routev1.Route{},
 			&consolev1.ConsoleCLIDownload{},

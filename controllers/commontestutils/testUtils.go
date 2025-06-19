@@ -34,7 +34,7 @@ import (
 	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
-	sspv1beta2 "kubevirt.io/ssp-operator/api/v1beta3"
+	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
@@ -155,7 +155,7 @@ func GetScheme() *runtime.Scheme {
 		kubevirtcorev1.AddToScheme,
 		cdiv1beta1.AddToScheme,
 		networkaddonsv1.AddToScheme,
-		sspv1beta2.AddToScheme,
+		sspv1beta3.AddToScheme,
 		monitoringv1.AddToScheme,
 		apiextensionsv1.AddToScheme,
 		routev1.Install,

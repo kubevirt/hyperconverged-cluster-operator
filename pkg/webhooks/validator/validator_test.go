@@ -28,7 +28,7 @@ import (
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
-	sspv1beta2 "kubevirt.io/ssp-operator/api/v1beta3"
+	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
@@ -113,7 +113,7 @@ var _ = Describe("webhooks validator", func() {
 		cdiv1beta1.AddToScheme,
 		kubevirtcorev1.AddToScheme,
 		networkaddonsv1.AddToScheme,
-		sspv1beta2.AddToScheme,
+		sspv1beta3.AddToScheme,
 	} {
 		Expect(f(s)).To(Succeed())
 	}
@@ -2078,7 +2078,7 @@ func getUpdateError(failure fakeFailure) commontestutils.FakeWriteErrorGenerator
 
 	case sspUpdateFailure:
 		return func(obj client.Object) error {
-			if _, ok := obj.(*sspv1beta2.SSP); ok {
+			if _, ok := obj.(*sspv1beta3.SSP); ok {
 				return ErrFakeSspError
 			}
 			return nil
