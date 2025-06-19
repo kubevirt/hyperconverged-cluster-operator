@@ -4,14 +4,17 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"iter"
 	"os"
 	"path"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
@@ -22,6 +25,7 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -39,6 +43,10 @@ const (
 	CDIImmediateBindAnnotation = "cdi.kubevirt.io/storage.bind.immediate.requested"
 
 	MultiArchDICTAnnotation = "ssp.kubevirt.io/dict.architectures"
+
+	dictConditionDeployedType    = "Deployed"
+	dictConditionDeployedReason  = "UnsupportedArchitectures"
+	dictConditionDeployedMessage = "DataImportCronTemplate has no supported architectures for the current cluster"
 )
 
 var (
@@ -147,10 +155,10 @@ func NewSSP(hc *hcov1beta1.HyperConverged, opts ...string) (*sspv1beta3.SSP, []h
 		return nil, nil, err
 	}
 
-	var dataImportCronTemplates []hcov1beta1.DataImportCronTemplate
-	for _, dictStatus := range dataImportCronStatuses {
-		dataImportCronTemplates = append(dataImportCronTemplates, dictStatus.DataImportCronTemplate)
-	}
+	//var dataImportCronTemplates []hcov1beta1.DataImportCronTemplate
+	//for _, dictStatus := range dataImportCronStatuses {
+	//	dataImportCronTemplates = append(dataImportCronTemplates, dictStatus.DataImportCronTemplate)
+	//}
 
 	spec := sspv1beta3.SSPSpec{
 		TemplateValidator: &sspv1beta3.TemplateValidator{
@@ -158,7 +166,7 @@ func NewSSP(hc *hcov1beta1.HyperConverged, opts ...string) (*sspv1beta3.SSP, []h
 		},
 		CommonTemplates: sspv1beta3.CommonTemplates{
 			Namespace:               templatesNamespace,
-			DataImportCronTemplates: hcoDictSliceToSSP(hc, dataImportCronTemplates),
+			DataImportCronTemplates: hcoDictSliceToSSP(hc, dataImportCronStatuses),
 		},
 		// NodeLabeller field is explicitly initialized to its zero-value,
 		// in order to future-proof from bugs if SSP changes it to pointer-type,
@@ -254,6 +262,12 @@ func getDataImportCronTemplates(hc *hcov1beta1.HyperConverged) ([]hcov1beta1.Dat
 	}
 	dictList = getCustomDicts(dictList, crDicts)
 
+	if hc.Spec.FeatureGates.EnableMultiArchCommonBootImageImport != nil && *hc.Spec.FeatureGates.EnableMultiArchCommonBootImageImport {
+		for i := range dictList {
+			setDataImportCronTemplateStatusMultiArch(&dictList[i], nodeinfo.GetWorkloadsArchitectures())
+		}
+	}
+
 	sort.Sort(dataImportTemplateSlice(dictList))
 
 	return dictList, nil
@@ -347,7 +361,35 @@ func (d dataImportTemplateSlice) Len() int           { return len(d) }
 func (d dataImportTemplateSlice) Swap(i, j int)      { d[i], d[j] = d[j], d[i] }
 func (d dataImportTemplateSlice) Less(i, j int) bool { return d[i].Name < d[j].Name }
 
-func hcoDictToSSP(hc *hcov1beta1.HyperConverged, hcoDict hcov1beta1.DataImportCronTemplate) sspv1beta3.DataImportCronTemplate {
+func setDataImportCronTemplateStatusMultiArch(hcoDictStatus *hcov1beta1.DataImportCronTemplateStatus, workloadsArchs []string) {
+	hcoArchsAnnotation, hcoArchsAnnotationExists := hcoDictStatus.Annotations[MultiArchDICTAnnotation]
+	sspArchsAnnotation := removeUnsupportedArchs(hcoArchsAnnotation, workloadsArchs)
+	if hcoArchsAnnotationExists && sspArchsAnnotation == "" {
+		meta.SetStatusCondition(&hcoDictStatus.Status.Conditions, metav1.Condition{
+			Type:    dictConditionDeployedType,
+			Status:  metav1.ConditionFalse,
+			Reason:  dictConditionDeployedReason,
+			Message: dictConditionDeployedMessage,
+		})
+		// leave the original annotation, so that the user can see which architectures were requested
+	} else {
+		meta.RemoveStatusCondition(&hcoDictStatus.Status.Conditions, "Deployed")
+		if hcoDictStatus.Annotations == nil {
+			hcoDictStatus.Annotations = make(map[string]string)
+		}
+		hcoDictStatus.Annotations[MultiArchDICTAnnotation] = sspArchsAnnotation
+	}
+}
+
+func hcoDictToSSP(hcoDictStatus hcov1beta1.DataImportCronTemplateStatus, multiArchEnabled bool) (sspv1beta3.DataImportCronTemplate, bool) {
+	hcoDict := hcoDictStatus.DataImportCronTemplate
+	var sspArchsAnnotation string
+	if multiArchEnabled && meta.IsStatusConditionFalse(hcoDictStatus.Status.Conditions, "Deployed") {
+		// if the condition is false, it means that the DataImportCronTemplate has no supported architectures
+		// for the current cluster, so we skip it
+		return sspv1beta3.DataImportCronTemplate{}, false
+	}
+
 	spec := cdiv1beta1.DataImportCronSpec{}
 	if hcoDict.Spec != nil {
 		hcoDict.Spec.DeepCopyInto(&spec)
@@ -366,23 +408,46 @@ func hcoDictToSSP(hc *hcov1beta1.HyperConverged, hcoDict hcov1beta1.DataImportCr
 		dict.Annotations[CDIImmediateBindAnnotation] = "true"
 	}
 
-	if hc.Spec.FeatureGates.EnableMultiArchCommonBootImageImport == nil || !*hc.Spec.FeatureGates.EnableMultiArchCommonBootImageImport {
+	if multiArchEnabled {
+		if sspArchsAnnotation != "" {
+			dict.Annotations[MultiArchDICTAnnotation] = sspArchsAnnotation
+		}
+	} else {
 		delete(dict.Annotations, MultiArchDICTAnnotation)
-	} // todo: else {remove unsupported architectures from the list}
+	}
 
-	return dict
+	return dict, true
 }
 
-func hcoDictSliceToSSP(hc *hcov1beta1.HyperConverged, hcoDicts []hcov1beta1.DataImportCronTemplate) []sspv1beta3.DataImportCronTemplate {
-	if len(hcoDicts) == 0 {
-		return nil
+func hcoDictToSSPSeq(hc *hcov1beta1.HyperConverged, hcoDicts iter.Seq[hcov1beta1.DataImportCronTemplateStatus]) iter.Seq[sspv1beta3.DataImportCronTemplate] {
+	multiArchEnabled := hc.Spec.FeatureGates.EnableMultiArchCommonBootImageImport != nil && *hc.Spec.FeatureGates.EnableMultiArchCommonBootImageImport
+
+	return func(yield func(sspv1beta3.DataImportCronTemplate) bool) {
+		for hcoDict := range hcoDicts {
+			sspDict, valid := hcoDictToSSP(hcoDict, multiArchEnabled)
+			if valid && !yield(sspDict) {
+				return
+			}
+		}
+	}
+}
+
+func removeUnsupportedArchs(archAnnotation string, workloadsArchs []string) string {
+	var newArchList []string
+
+	for _, arch := range strings.Split(archAnnotation, ",") {
+		if slices.Contains(workloadsArchs, arch) {
+			newArchList = append(newArchList, arch)
+		}
 	}
 
-	res := make([]sspv1beta3.DataImportCronTemplate, len(hcoDicts))
-
-	for i, hcoDict := range hcoDicts {
-		res[i] = hcoDictToSSP(hc, hcoDict)
+	if len(newArchList) > 0 {
+		return strings.Join(newArchList, ",")
 	}
 
-	return res
+	return ""
+}
+
+func hcoDictSliceToSSP(hc *hcov1beta1.HyperConverged, hcoDictStatuses []hcov1beta1.DataImportCronTemplateStatus) []sspv1beta3.DataImportCronTemplate {
+	return slices.Collect(hcoDictToSSPSeq(hc, slices.Values(hcoDictStatuses)))
 }
