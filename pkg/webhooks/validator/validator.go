@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/component-helpers/scheduling/corev1/nodeaffinity"
 	"net/http"
 	"reflect"
 	"strings"
@@ -16,8 +14,10 @@ import (
 	"github.com/samber/lo"
 	xsync "golang.org/x/sync/errgroup"
 	admissionv1 "k8s.io/api/admission/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/component-helpers/scheduling/corev1/nodeaffinity"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -29,6 +29,7 @@ import (
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -259,6 +260,20 @@ func (wh *WebhookHandler) ValidateUpdate(ctx context.Context, dryrun bool, reque
 	}
 
 	if wh.isOpenshift {
+		origGetControlPlaneArchitectures := nodeinfo.GetControlPlaneArchitectures
+		origGetWorkloadsArchitectures := nodeinfo.GetWorkloadsArchitectures
+		defer func() {
+			nodeinfo.GetControlPlaneArchitectures = origGetControlPlaneArchitectures
+			nodeinfo.GetWorkloadsArchitectures = origGetWorkloadsArchitectures
+		}()
+
+		nodeinfo.GetControlPlaneArchitectures = func() []string {
+			return requested.Status.NodeInfo.ControlPlaneNodesArchitecture
+		}
+		nodeinfo.GetWorkloadsArchitectures = func() []string {
+			return requested.Status.NodeInfo.WorkloadsArchitectures
+		}
+
 		ssp, _, err := operands.NewSSP(requested)
 		if err != nil {
 			return err
