@@ -123,8 +123,9 @@ var (
 		"Comma separated list of CSVs that can be skipped (read replaced) by this version")
 	olmSkipRange = flag.String("olm-skip-range", "",
 		"Semver range expression for CSVs that can be skipped (read replaced) by this version")
-	mgImage        = flag.String("mg-image", "quay.io/kubevirt/must-gather", "Operator suggested must-gather image")
-	testImagesNVRs = flag.String("test-images-nvrs", "", "Test Images NVRs")
+	mgImage             = flag.String("mg-image", "quay.io/kubevirt/must-gather", "Operator suggested must-gather image")
+	testImagesNVRs      = flag.String("test-images-nvrs", "", "Test Images NVRs")
+	dumpNetworkPolicies = flag.Bool("dump-network-policies", false, "Dump network policy yamls to stdout")
 
 	envVars EnvVarFlags
 )
@@ -424,6 +425,7 @@ func getDeploymentParams() *components.DeploymentOperatorParams {
 		HppoVersion:            *hppoVersion,
 		AaqVersion:             *aaqVersion,
 		Env:                    envVars,
+		AddNetworkPolicyLabels: *dumpNetworkPolicies,
 	}
 }
 
