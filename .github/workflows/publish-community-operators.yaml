@@ -163,6 +163,6 @@ jobs:
             ```release-note
             Prepare version ${{ env.NEW_VERSION }}
             ```
-          assignees: tiraboschi,orenc1,nunnatsa,machadovilaca,dharmit
-          reviewers: tiraboschi,orenc1,nunnatsa,machadovilaca,dharmit
+          assignees: orenc1,nunnatsa,machadovilaca,avlitman
+          reviewers: orenc1,nunnatsa,machadovilaca,avlitman
           branch: prepare_version_${{ env.NEW_VERSION }}
