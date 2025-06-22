@@ -100,8 +100,13 @@ var JSONPatchAnnotationNames = []string{
 }
 
 // RegisterReconciler creates a new HyperConverged Reconciler and registers it into manager.
-func RegisterReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond hcoutil.Condition, ingressEventCh <-chan event.TypedGenericEvent[client.Object]) error {
-	return add(mgr, newReconciler(mgr, ci, upgradeableCond), ci, ingressEventCh)
+func RegisterReconciler(mgr manager.Manager,
+	ci hcoutil.ClusterInfo,
+	upgradeableCond hcoutil.Condition,
+	ingressEventCh <-chan event.GenericEvent,
+	nodeEventChannel <-chan event.GenericEvent) error {
+
+	return add(mgr, newReconciler(mgr, ci, upgradeableCond), ci, ingressEventCh, nodeEventChannel)
 }
 
 // newReconciler returns a new reconcile.Reconciler
@@ -128,7 +133,7 @@ func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond 
 }
 
 // newCRDremover returns a new CRDRemover
-func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, ingressEventCh <-chan event.TypedGenericEvent[client.Object]) error {
+func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, ingressEventCh <-chan event.GenericEvent, nodeEventChannel <-chan event.GenericEvent) error {
 	// Create a new controller
 	c, err := controller.New("hyperconverged-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
@@ -231,6 +236,23 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 					log.Info("Reconciling for openshiftconfigv1.Ingress")
 					return []reconcile.Request{
 						reqresolver.GetIngressCRResource(),
+					}
+				}),
+			))
+		if err != nil {
+			return err
+		}
+
+		err = c.Watch(
+			source.Channel(
+				nodeEventChannel,
+				handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, a client.Object) []reconcile.Request {
+					// the nodes controller initiate this by pushing an event to the nodeEventChannel channel
+					// This will force this controller to update the status fields related to the cluster nodes, and
+					// to re-generate the DataImportCronTemplates in the SSP CR.
+					log.Info("Reconciling for core.Node")
+					return []reconcile.Request{
+						reqresolver.GetNodeResource(),
 					}
 				}),
 			))
@@ -349,13 +371,12 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 		r.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "InitHCO", "Initiating the HyperConverged")
 		r.setInitialConditions(req)
 
-		req.Instance.Status.InfrastructureHighlyAvailable = ptr.To(nodeinfo.IsInfrastructureHighlyAvailable())
 		req.StatusDirty = true
 	}
 
 	r.setLabels(req)
 
-	updateStatusGeneration(req)
+	updateStatus(req)
 
 	// in-memory conditions should start off empty. It will only ever hold
 	// negative conditions (!Available, Degraded, Progressing)
@@ -432,9 +453,32 @@ func (r *ReconcileHyperConverged) EnsureOperandAndComplete(req *common.HcoReques
 	return reconcile.Result{}, nil
 }
 
-func updateStatusGeneration(req *common.HcoRequest) {
+func updateStatus(req *common.HcoRequest) {
 	if req.Instance.Generation != req.Instance.Status.ObservedGeneration {
 		req.Instance.Status.ObservedGeneration = req.Instance.Generation
+		req.StatusDirty = true
+	}
+
+	if infraHighlyAvailable := nodeinfo.IsInfrastructureHighlyAvailable(); req.Instance.Status.InfrastructureHighlyAvailable == nil ||
+		*req.Instance.Status.InfrastructureHighlyAvailable != infraHighlyAvailable {
+
+		if infraHighlyAvailable {
+			req.Logger.Info("infrastructure became highly available")
+		} else {
+			req.Logger.Info("infrastructure became not highly available")
+		}
+
+		req.Instance.Status.InfrastructureHighlyAvailable = ptr.To(infraHighlyAvailable)
+		req.StatusDirty = true
+	}
+
+	if cpArch := nodeinfo.GetControlPlaneArchitectures(); slices.Compare(req.Instance.Status.NodeInfo.ControlPlaneNodesArchitecture, cpArch) != 0 {
+		req.Instance.Status.NodeInfo.ControlPlaneNodesArchitecture = cpArch
+		req.StatusDirty = true
+	}
+
+	if workloadsArch := nodeinfo.GetWorkloadsArchitectures(); slices.Compare(req.Instance.Status.NodeInfo.WorkloadsArchitectures, workloadsArch) != 0 {
+		req.Instance.Status.NodeInfo.WorkloadsArchitectures = workloadsArch
 		req.StatusDirty = true
 	}
 }

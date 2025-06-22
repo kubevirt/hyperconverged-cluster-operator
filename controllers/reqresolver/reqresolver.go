@@ -13,6 +13,7 @@ const (
 	secondaryCRPrefix = "hco-controlled-cr-"
 	apiServerCRPrefix = "api-server-cr-"
 	ingressCRPrefix   = "ingress-cr-"
+	nodePrefix        = "node-"
 )
 
 var (
@@ -29,6 +30,8 @@ var (
 	apiServerCRPlaceholder types.NamespacedName
 
 	ingressCRPlaceholder types.NamespacedName
+
+	nodePlaceholder types.NamespacedName
 )
 
 // ResolveReconcileRequest returns a reconcile.Request to be used throughout the reconciliation cycle,
@@ -45,6 +48,11 @@ func ResolveReconcileRequest(logger logr.Logger, originalRequest reconcile.Reque
 
 	case ingressCRPlaceholder:
 		logger.Info("The reconciliation got triggered by Ingress CR")
+		// consider a change in Ingress like a change in HCO
+		triggeredByHyperConverged = true
+
+	case nodePlaceholder:
+		logger.Info("The reconciliation got triggered by a cluster Node")
 		// consider a change in Ingress like a change in HCO
 		triggeredByHyperConverged = true
 
@@ -87,6 +95,12 @@ func GetIngressCRResource() reconcile.Request {
 	}
 }
 
+func GetNodeResource() reconcile.Request {
+	return reconcile.Request{
+		NamespacedName: nodePlaceholder,
+	}
+}
+
 func IsTriggeredByHyperConverged(nsName types.NamespacedName) bool {
 	return nsName == hyperConvergedNamespacedName
 }
@@ -116,6 +130,11 @@ func GeneratePlaceHolders() {
 
 	ingressCRPlaceholder = types.NamespacedName{
 		Name:      ingressCRPrefix + randomConstSuffix,
+		Namespace: ns,
+	}
+
+	nodePlaceholder = types.NamespacedName{
+		Name:      nodePrefix + randomConstSuffix,
 		Namespace: ns,
 	}
 }
