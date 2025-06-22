@@ -74,16 +74,15 @@ var _ = Describe("HyperconvergedController", func() {
 		Expect(os.Setenv(hcoutil.HcoKvIoVersionName, version.Version)).To(Succeed())
 
 		reqresolver.GeneratePlaceHolders()
-	})
 
-	AfterEach(func() {
-		hcoutil.GetClusterInfo = getClusterInfo
+		DeferCleanup(func() {
+			hcoutil.GetClusterInfo = getClusterInfo
 
-		Expect(os.Setenv(hcoutil.OperatorConditionNameEnvVar, origOperatorCondVarName)).To(Succeed())
-		Expect(os.Setenv("VIRTIOWIN_CONTAINER", origVirtIOWinContainer)).To(Succeed())
-		Expect(os.Setenv("OPERATOR_NAMESPACE", origOperatorNS)).To(Succeed())
-		Expect(os.Setenv(hcoutil.HcoKvIoVersionName, origVersion)).To(Succeed())
-
+			Expect(os.Setenv(hcoutil.OperatorConditionNameEnvVar, origOperatorCondVarName)).To(Succeed())
+			Expect(os.Setenv("VIRTIOWIN_CONTAINER", origVirtIOWinContainer)).To(Succeed())
+			Expect(os.Setenv("OPERATOR_NAMESPACE", origOperatorNS)).To(Succeed())
+			Expect(os.Setenv(hcoutil.HcoKvIoVersionName, origVersion)).To(Succeed())
+		})
 	})
 
 	Describe("Reconcile HyperConverged", func() {
@@ -2745,6 +2744,10 @@ var _ = Describe("HyperconvergedController", func() {
 		})
 
 		Context("Update Conflict Error", func() {
+			BeforeEach(func() {
+				Expect(os.Setenv("VIRTIOWIN_CONTAINER", commontestutils.VirtioWinImage)).To(Succeed())
+			})
+
 			It("Should requeue in case of update conflict", func() {
 				expected := getBasicDeployment()
 				expected.hco.Labels = nil

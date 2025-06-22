@@ -2,19 +2,20 @@ package nodes
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -31,101 +32,102 @@ var (
 var _ = Describe("NodesController", func() {
 	Describe("Reconcile NodesController", func() {
 
+		var nodeEvents chan event.GenericEvent
 		BeforeEach(func() {
+			nodeEvents = make(chan event.GenericEvent, 1)
+			DeferCleanup(func() {
+				close(nodeEvents)
+			})
+		})
+
+		origHandleNodeChanges := nodeinfo.HandleNodeChanges
+		AfterEach(func() {
+			nodeinfo.HandleNodeChanges = origHandleNodeChanges
+
 			_ = os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)
 		})
 
 		Context("Node Count Change", func() {
-			It("Should update InfrastructureHighlyAvailable to true if there are two or more worker nodes", func() {
-				hco := commontestutils.NewHco()
-				numWorkerNodes := 3
-				var nodesArray []client.Object
-				for i := range numWorkerNodes {
-					workerNode := &corev1.Node{
-						ObjectMeta: metav1.ObjectMeta{
-							Name: fmt.Sprintf("worker%d", i),
-							Labels: map[string]string{
-								"node-role.kubernetes.io/worker": "",
-							},
-						},
-					}
-					nodesArray = append(nodesArray, workerNode)
+			It("Should send event if nodeInfo was changed", func() {
+				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1beta1.HyperConverged, _ logr.Logger) (bool, error) {
+					return true, nil
 				}
 
+				hco := commontestutils.NewHco()
 				resources := []client.Object{hco}
-				resources = append(resources, nodesArray...)
-
 				cl := commontestutils.InitClient(resources)
+
 				r := &ReconcileNodeCounter{
-					Client: cl,
+					Client:     cl,
+					nodeEvents: nodeEvents,
 				}
 
-				// Reconcile to update HCO's status with the correct InfrastructureHighlyAvailable value
+				// Reconcile
 				res, err := r.Reconcile(context.TODO(), request)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res.RequeueAfter).To(BeZero())
-
-				latestHCO := &hcov1beta1.HyperConverged{}
-				Expect(
-					cl.Get(context.TODO(),
-						types.NamespacedName{Name: commontestutils.Name, Namespace: commontestutils.Namespace},
-						latestHCO),
-				).To(Succeed())
-
-				Expect(latestHCO.Status.InfrastructureHighlyAvailable).To(HaveValue(BeTrue()))
+				Expect(res.IsZero()).To(BeTrue())
+				Expect(nodeEvents).To(Receive())
 			})
-			It("Should update InfrastructureHighlyAvailable to false if there is only one worker node", func() {
+
+			It("Should not send event if nodeInfo was changed, but there is no HC CR", func() {
+				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1beta1.HyperConverged, _ logr.Logger) (bool, error) {
+					return true, nil
+				}
+
+				cl := commontestutils.InitClient(nil)
+
+				r := &ReconcileNodeCounter{
+					Client:     cl,
+					nodeEvents: nodeEvents,
+				}
+
+				// Reconcile
+				res, err := r.Reconcile(context.TODO(), request)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res.IsZero()).To(BeTrue())
+				Expect(nodeEvents).ToNot(Receive())
+			})
+
+			It("Should not send event if nodeInfo was not changed", func() {
+				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1beta1.HyperConverged, _ logr.Logger) (bool, error) {
+					return false, nil
+				}
+
 				hco := commontestutils.NewHco()
-				workerNode := &corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "worker",
-						Labels: map[string]string{
-							"node-role.kubernetes.io/worker": "",
-						},
-					},
-				}
-				resources := []client.Object{hco, workerNode}
+				resources := []client.Object{hco}
 				cl := commontestutils.InitClient(resources)
+
 				r := &ReconcileNodeCounter{
-					Client: cl,
+					Client:     cl,
+					nodeEvents: nodeEvents,
 				}
 
-				// Reconcile to update HCO's status with the correct InfrastructureHighlyAvailable value
+				// Reconcile
 				res, err := r.Reconcile(context.TODO(), request)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res.RequeueAfter).To(BeZero())
-
-				latestHCO := &hcov1beta1.HyperConverged{}
-				Expect(
-					cl.Get(context.TODO(),
-						types.NamespacedName{Name: commontestutils.Name, Namespace: commontestutils.Namespace},
-						latestHCO),
-				).To(Succeed())
-
-				Expect(latestHCO.Status.InfrastructureHighlyAvailable).To(HaveValue(BeFalse()))
-				Expect(res).To(Equal(reconcile.Result{}))
+				Expect(res.IsZero()).To(BeTrue())
+				Expect(nodeEvents).ToNot(Receive())
 			})
 
-			It("Should not return error if the HyperConverged CR is not exist", func() {
-				workerNode := &corev1.Node{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "worker",
-						Labels: map[string]string{
-							"node-role.kubernetes.io/worker": "",
-						},
-					},
+			It("Should return error is failed to handle nodeInfo", func() {
+				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1beta1.HyperConverged, _ logr.Logger) (bool, error) {
+					return false, errors.New("fake error")
 				}
-				resources := []client.Object{workerNode}
+
+				hco := commontestutils.NewHco()
+				resources := []client.Object{hco}
 				cl := commontestutils.InitClient(resources)
 
 				r := &ReconcileNodeCounter{
-					Client: cl,
+					Client:     cl,
+					nodeEvents: nodeEvents,
 				}
 
-				// Reconcile to update HCO's status with the correct InfrastructureHighlyAvailable value
+				// Reconcile
 				res, err := r.Reconcile(context.TODO(), request)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(res.RequeueAfter).To(BeZero())
+				Expect(err).To(HaveOccurred())
+				Expect(res.IsZero()).To(BeTrue())
+				Expect(nodeEvents).ToNot(Receive())
 			})
 		})
 
