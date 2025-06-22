@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/component-helpers/scheduling/corev1/nodeaffinity"
 	"net/http"
 	"reflect"
 	"strings"
@@ -158,6 +160,10 @@ func (wh *WebhookHandler) ValidateCreate(_ context.Context, dryrun bool, hc *v1b
 		return err
 	}
 
+	if err := wh.validateAffinity(hc); err != nil {
+		return err
+	}
+
 	if _, err := operands.NewKubeVirt(hc); err != nil {
 		return err
 	}
@@ -222,6 +228,10 @@ func (wh *WebhookHandler) ValidateUpdate(ctx context.Context, dryrun bool, reque
 	}
 
 	if err := wh.validateFeatureGatesOnUpdate(requested, exists); err != nil {
+		return err
+	}
+
+	if err := wh.validateAffinity(requested); err != nil {
 		return err
 	}
 
@@ -479,6 +489,32 @@ func (wh *WebhookHandler) validateDeprecatedFeatureGates(hc *v1beta1.HyperConver
 	}
 
 	return warnings
+}
+
+func (wh *WebhookHandler) validateAffinity(hc *v1beta1.HyperConverged) error {
+	if hc.Spec.Workloads.NodePlacement != nil {
+		if err := validateAffinity(hc.Spec.Workloads.NodePlacement.Affinity); err != nil {
+			return fmt.Errorf("invalid workloads node placement affinity: %v", err.Error())
+		}
+	}
+
+	if hc.Spec.Infra.NodePlacement != nil {
+		if err := validateAffinity(hc.Spec.Infra.NodePlacement.Affinity); err != nil {
+			return fmt.Errorf("invalid infra node placement affinity: %v", err.Error())
+		}
+	}
+
+	return nil
+}
+
+func validateAffinity(affinity *corev1.Affinity) error {
+	if affinity == nil || affinity.NodeAffinity == nil || affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution == nil {
+		return nil
+	}
+
+	_, err := nodeaffinity.NewNodeSelector(affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution)
+
+	return err
 }
 
 func validateOldFGOnCreate(warnings []string, hc *v1beta1.HyperConverged) []string {
