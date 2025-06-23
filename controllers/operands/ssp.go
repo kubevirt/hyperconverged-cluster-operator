@@ -142,7 +142,7 @@ func (h *sspHooks) justBeforeComplete(req *common.HcoRequest) {
 	}
 }
 
-func NewSSP(hc *hcov1beta1.HyperConverged, opts ...string) (*sspv1beta3.SSP, []hcov1beta1.DataImportCronTemplateStatus, error) {
+func NewSSP(hc *hcov1beta1.HyperConverged) (*sspv1beta3.SSP, []hcov1beta1.DataImportCronTemplateStatus, error) {
 	templatesNamespace := defaultCommonTemplatesNamespace
 
 	if hc.Spec.CommonTemplatesNamespace != nil {
