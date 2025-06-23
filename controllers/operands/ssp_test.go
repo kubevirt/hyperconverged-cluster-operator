@@ -218,7 +218,7 @@ var _ = Describe("SSP Operands", func() {
 		Context("Node placement", func() {
 
 			It("should add node placement if missing", func() {
-				existingResource, _, err := NewSSP(hco, commontestutils.Namespace)
+				existingResource, _, err := NewSSP(hco)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Spec.Workloads.NodePlacement = commontestutils.NewNodePlacement()
@@ -251,7 +251,7 @@ var _ = Describe("SSP Operands", func() {
 				hcoNodePlacement := commontestutils.NewHco()
 				hcoNodePlacement.Spec.Workloads.NodePlacement = commontestutils.NewNodePlacement()
 				hcoNodePlacement.Spec.Infra.NodePlacement = commontestutils.NewOtherNodePlacement()
-				existingResource, _, err := NewSSP(hcoNodePlacement, commontestutils.Namespace)
+				existingResource, _, err := NewSSP(hcoNodePlacement)
 				Expect(err).ToNot(HaveOccurred())
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
@@ -279,7 +279,7 @@ var _ = Describe("SSP Operands", func() {
 
 				hco.Spec.Workloads.NodePlacement = commontestutils.NewNodePlacement()
 				hco.Spec.Infra.NodePlacement = commontestutils.NewOtherNodePlacement()
-				existingResource, _, err := NewSSP(hco, commontestutils.Namespace)
+				existingResource, _, err := NewSSP(hco)
 				Expect(err).ToNot(HaveOccurred())
 
 				// now, modify HCO's node placement
@@ -323,7 +323,7 @@ var _ = Describe("SSP Operands", func() {
 			It("should overwrite node placement if directly set on SSP CR", func() {
 				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
 				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewOtherNodePlacement()}
-				existingResource, _, err := NewSSP(hco, commontestutils.Namespace)
+				existingResource, _, err := NewSSP(hco)
 				Expect(err).ToNot(HaveOccurred())
 
 				// mock a reconciliation triggered by a change in NewKubeVirtNodeLabellerBundle CR
