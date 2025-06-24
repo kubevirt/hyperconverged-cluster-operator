@@ -11,6 +11,8 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 )
 
+const S390X = "s390x"
+
 var (
 	controlPlaneArchitectures = newArchitectures()
 	workloadArchitectures     = newArchitectures()
