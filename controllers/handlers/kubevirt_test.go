@@ -27,6 +27,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -2446,6 +2447,16 @@ Version: 1.2.3`)
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
 					// Should contain HotplugVolumes by default when DeclarativeHotplugVolumes is not set
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvHotplugVolumesGate))
+				})
+
+				It("should enable architecture specific feature gates", func() {
+					commontestutils.WorkloadsArchitecturesMock(nodeinfo.S390X)
+					DeferCleanup(func() {
+						commontestutils.ResetNodeInfoMocks()
+					})
+					fgList := getKvFeatureGateList(&hco.Spec.FeatureGates, nil)
+
+					Expect(fgList).To(ContainElement(kvSecureExecution))
 				})
 			})
 
