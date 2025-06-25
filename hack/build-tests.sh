@@ -9,12 +9,12 @@ if [ "${JOB_TYPE}" == "travis" ]; then
     go get -v -t ./...
     go install github.com/mattn/goveralls@latest
     go mod vendor
-    PKG_PACKAGE_PATH="./pkg/"
-    CONTROLLERS_PACKAGE_PATH="./controllers/"
+    PACKAGES=($(go list ./pkg/... ./controllers/... | grep -v 'controllers/commontestutils'))
+    COVERPKG="$(echo ${PACKAGES[@]}|sed 's| |,|g')"
     mkdir -p coverprofiles
     # Workaround - run tests on webhooks first to prevent failure when running all the test in the following line.
-    go test ${PKG_PACKAGE_PATH}webhooks/...
-    go test -v -outputdir=./coverprofiles -coverprofile=cover.coverprofile ${PKG_PACKAGE_PATH}... ${CONTROLLERS_PACKAGE_PATH}...
+    go test -v -outputdir=./coverprofiles -coverpkg="${COVERPKG}" -coverprofile=cover.coverprofile ${PACKAGES[@]}
+
 else
     set +u
     test_path="./tests/func-tests"

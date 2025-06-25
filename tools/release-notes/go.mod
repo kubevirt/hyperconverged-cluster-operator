@@ -1,6 +1,6 @@
 module github.com/kubevirt/hyperconverged-cluster-operator/tools/release-notes
 
-go 1.23.2
+go 1.24.3
 
 require (
 	github.com/Masterminds/semver v1.5.0
