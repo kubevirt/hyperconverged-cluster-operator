@@ -26,12 +26,12 @@ defaulter-gen \
 	--go-header-file "${PROJECT_ROOT}/hack/boilerplate.go.txt" \
 	"${PACKAGE}/${API_FOLDER}/${API_VERSION}"
 
-openapi-gen \
-	--output-file zz_generated.openapi.go \
-	--go-header-file "${PROJECT_ROOT}/hack/boilerplate.go.txt" \
-	--output-dir api/v1beta1/ \
-	--output-pkg github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1 \
-	"${PACKAGE}/${API_FOLDER}/${API_VERSION}"
+#openapi-gen \
+#	--output-file zz_generated.openapi.go \
+#	--go-header-file "${PROJECT_ROOT}/hack/boilerplate.go.txt" \
+#	--output-dir api/v1beta1/ \
+#	--output-pkg github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1 \
+#	"${PACKAGE}/${API_FOLDER}/${API_VERSION}"
 
 go fmt api/v1beta1/zz_generated.deepcopy.go
 go fmt api/v1beta1/zz_generated.defaults.go
