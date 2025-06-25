@@ -7,9 +7,14 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -56,9 +61,35 @@ func NetworkBinding(sidecarImage string) kubevirtcorev1.InterfaceBindingPlugin {
 	}
 }
 
+// NewPasstBindingCNISA creates a ServiceAccount for the passt binding CNI
+func NewPasstBindingCNISA(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount {
+	return &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "passt-binding-cni",
+			Namespace: hc.Namespace,
+			Labels:    hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentNetwork),
+		},
+	}
+}
+
+// GetImage gets the passt image from environment variable
 func GetImage() string {
 	passtImageOnce.Do(func() {
 		passtImage = os.Getenv(hcoutil.PasstImageEnvV)
 	})
 	return passtImage
+}
+
+// NewPasstServiceAccountHandler creates a conditional handler for passt ServiceAccount
+func NewPasstServiceAccountHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewConditionalHandler(
+		operands.NewServiceAccountHandler(Client, Scheme, NewPasstBindingCNISA),
+		func(hc *hcov1beta1.HyperConverged) bool {
+			value, ok := hc.Annotations[DeployPasstNetworkBindingAnnotation]
+			return ok && value == "true"
+		},
+		func(hc *hcov1beta1.HyperConverged) client.Object {
+			return NewPasstBindingCNISA(hc)
+		},
+	)
 }
