@@ -246,6 +246,9 @@ func main() {
 	err = metrics.SetupMetrics()
 	cmdHelper.ExitOnError(err, "failed to setup metrics: %v")
 
+	err = checkPasstImagesEnvExists()
+	cmdHelper.ExitOnError(err, "failed to retrieve passt env vars")
+
 	logger.Info("Starting the Cmd.")
 	eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Init", "Starting the HyperConverged Pod")
 
@@ -399,4 +402,11 @@ func createPriorityClass(ctx context.Context, mgr manager.Manager) error {
 	}
 
 	return err
+}
+
+func checkPasstImagesEnvExists() error {
+	if _, passtImageVarExists := os.LookupEnv(hcoutil.PasstImageEnvV); !passtImageVarExists {
+		return fmt.Errorf("the %s environment variable must be set", hcoutil.PasstImageEnvV)
+	}
+	return nil
 }
