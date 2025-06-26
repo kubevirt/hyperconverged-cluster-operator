@@ -173,7 +173,6 @@ var _ = Describe("HyperconvergedController", func() {
 				// Reconcile to get all related objects under HCO's status
 				res, err := r.Reconcile(context.TODO(), request)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res.Requeue).To(BeFalse())
 				Expect(res.RequeueAfter).To(Equal(1 * time.Minute))
 
 				// Update ApiServer CR
@@ -184,7 +183,6 @@ var _ = Describe("HyperconvergedController", func() {
 				// Reconcile again to refresh ApiServer CR in memory
 				res, err = r.Reconcile(context.TODO(), request)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res.Requeue).To(BeFalse())
 				Expect(res.RequeueAfter).To(Equal(1 * time.Minute))
 
 				Expect(hcoutil.GetClusterInfo().GetTLSSecurityProfile(nil)).To(Equal(customTLSSecurityProfile), "should return the up-to-date value")

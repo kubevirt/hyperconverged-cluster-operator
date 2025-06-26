@@ -162,7 +162,7 @@ var _ = Describe("HyperconvergedController", func() {
 				// Do the reconcile
 				res, err := r.Reconcile(context.TODO(), request)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res).To(Equal(reconcile.Result{Requeue: true}))
+				Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 				validateOperatorCondition(r, metav1.ConditionTrue, hcoutil.UpgradeableAllowReason, hcoutil.UpgradeableAllowMessage)
 				verifyHyperConvergedCRExistsMetricTrue()
 
@@ -239,7 +239,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				res, err = r.Reconcile(context.TODO(), request)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res).To(Equal(reconcile.Result{Requeue: false}))
+				Expect(res.IsZero()).To(BeTrue())
 				validateOperatorCondition(r, metav1.ConditionTrue, hcoutil.UpgradeableAllowReason, hcoutil.UpgradeableAllowMessage)
 				verifyHyperConvergedCRExistsMetricTrue()
 
@@ -650,7 +650,7 @@ var _ = Describe("HyperconvergedController", func() {
 				// Do the reconcile
 				res, err := r.Reconcile(context.TODO(), rq)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res).To(Equal(reconcile.Result{Requeue: true}))
+				Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 
 				foundResource := &kubevirtcorev1.KubeVirt{}
 				Expect(
@@ -703,7 +703,7 @@ var _ = Describe("HyperconvergedController", func() {
 				// Do the reconcile triggered by HCO
 				res, err := r.Reconcile(context.TODO(), request)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res).To(Equal(reconcile.Result{Requeue: true}))
+				Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 
 				foundResource := &kubevirtcorev1.KubeVirt{}
 				Expect(
@@ -827,11 +827,11 @@ var _ = Describe("HyperconvergedController", func() {
 				r = initReconciler(cl, nil)
 				res, err = r.Reconcile(context.TODO(), request)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res).To(Equal(reconcile.Result{Requeue: true}))
+				Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 
 				res, err = r.Reconcile(context.TODO(), request)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res).To(Equal(reconcile.Result{Requeue: false}))
+				Expect(res.IsZero()).To(BeTrue())
 
 				foundResource = &hcov1beta1.HyperConverged{}
 				err = cl.Get(context.TODO(),
@@ -875,7 +875,7 @@ var _ = Describe("HyperconvergedController", func() {
 				// Do the reconcile
 				res, err := r.Reconcile(context.TODO(), request)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res).To(Equal(reconcile.Result{Requeue: true}))
+				Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 
 				// Get the HCO
 				foundResource := &hcov1beta1.HyperConverged{}
@@ -917,7 +917,7 @@ var _ = Describe("HyperconvergedController", func() {
 				// Do the reconcile
 				res, err := r.Reconcile(context.TODO(), request)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res).To(Equal(reconcile.Result{Requeue: false}))
+				Expect(res.IsZero()).To(BeTrue())
 
 				// Get the HCO
 				foundHyperConverged := &hcov1beta1.HyperConverged{}
@@ -1054,7 +1054,6 @@ var _ = Describe("HyperconvergedController", func() {
 				// Reconcile to get all related objects under HCO's status
 				res, err := r.Reconcile(context.TODO(), request)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res.Requeue).To(BeFalse())
 				Expect(res).To(Equal(reconcile.Result{}))
 
 				foundResource := &hcov1beta1.HyperConverged{}
@@ -1130,7 +1129,6 @@ var _ = Describe("HyperconvergedController", func() {
 				// Reconcile again to refresh ApiServer CR in memory
 				res, err = r.Reconcile(context.TODO(), rq)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res.Requeue).To(BeFalse())
 				Expect(res).To(Equal(reconcile.Result{}))
 
 				Expect(
@@ -1386,7 +1384,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				result, err := r.Reconcile(context.Background(), rq)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(result.Requeue).To(BeTrue())
+				Expect(result.RequeueAfter).To(Equal(requeueAfter))
 
 				foundHC := &hcov1beta1.HyperConverged{}
 				Expect(
@@ -1427,13 +1425,13 @@ var _ = Describe("HyperconvergedController", func() {
 
 					if acceptableVersion {
 						Expect(err).ToNot(HaveOccurred())
-						Expect(res.Requeue).To(BeTrue())
+						Expect(res.RequeueAfter).To(Equal(requeueAfter))
 						Expect(ok).To(BeTrue())
 						Expect(ver).To(Equal(testHcoVersion))
 						// reconcile again to complete the upgrade
 						res, err = r.Reconcile(context.TODO(), request)
 						Expect(err).ToNot(HaveOccurred())
-						Expect(res.Requeue).To(BeFalse())
+						Expect(res.RequeueAfter).To(BeZero())
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: request.Name, Namespace: request.Namespace},
@@ -1445,14 +1443,14 @@ var _ = Describe("HyperconvergedController", func() {
 					} else {
 						Expect(err).To(HaveOccurred())
 						Expect(err.Error()).To(ContainSubstring(errorMessage))
-						Expect(res.Requeue).To(BeTrue())
+						Expect(res.RequeueAfter).To(Equal(requeueAfter))
 						Expect(ok).To(BeTrue())
 						Expect(ver).To(Equal(testHcoVersion))
 						// try a second time
 						res, err = r.Reconcile(context.TODO(), request)
 						Expect(err).To(HaveOccurred())
 						Expect(err.Error()).To(ContainSubstring(errorMessage))
-						Expect(res.Requeue).To(BeTrue())
+						Expect(res.RequeueAfter).To(Equal(requeueAfter))
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: request.Name, Namespace: request.Namespace},
@@ -1464,7 +1462,7 @@ var _ = Describe("HyperconvergedController", func() {
 						// and a third
 						res, err = r.Reconcile(context.TODO(), request)
 						Expect(err).To(MatchError(ContainSubstring(errorMessage)))
-						Expect(res.Requeue).To(BeTrue())
+						Expect(res.RequeueAfter).To(Equal(requeueAfter))
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: request.Name, Namespace: request.Namespace},
@@ -2764,7 +2762,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				res, err := r.Reconcile(context.TODO(), request)
 				Expect(err).To(MatchError(apierrors.IsConflict, "conflict error"))
-				Expect(res.Requeue).To(BeTrue())
+				Expect(res.RequeueAfter).To(Equal(requeueAfter))
 			})
 
 			It("Should requeue in case of update status conflict", func() {
@@ -2779,7 +2777,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				res, err := r.Reconcile(context.TODO(), request)
 				Expect(err).To(MatchError(apierrors.IsConflict, "conflict error"))
-				Expect(res.Requeue).To(BeTrue())
+				Expect(res.RequeueAfter).To(Equal(requeueAfter))
 
 			})
 		})
@@ -2816,7 +2814,7 @@ var _ = Describe("HyperconvergedController", func() {
 					By("Reconcile", func() {
 						res, err := r.Reconcile(context.TODO(), request)
 						Expect(err).ToNot(HaveOccurred())
-						Expect(res).To(Equal(reconcile.Result{Requeue: true}))
+						Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 					})
 
 					foundResource := &hcov1beta1.HyperConverged{}
@@ -2871,7 +2869,7 @@ var _ = Describe("HyperconvergedController", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// Expecting "Requeue: false" since the conditions aren't empty
-					Expect(res).To(Equal(reconcile.Result{Requeue: false}))
+					Expect(res.IsZero()).To(BeTrue())
 
 					// Get the HCO
 					foundResource := &hcov1beta1.HyperConverged{}
@@ -2921,7 +2919,7 @@ var _ = Describe("HyperconvergedController", func() {
 					By("Reconcile", func() {
 						res, err := r.Reconcile(context.TODO(), request)
 						Expect(err).ToNot(HaveOccurred())
-						Expect(res.Requeue).To(BeFalse())
+						Expect(res.RequeueAfter).To(BeZero())
 					})
 
 					foundResource := &hcov1beta1.HyperConverged{}
@@ -2971,7 +2969,7 @@ var _ = Describe("HyperconvergedController", func() {
 					By("Reconcile", func() {
 						res, err := r.Reconcile(context.TODO(), request)
 						Expect(err).ToNot(HaveOccurred())
-						Expect(res).To(Equal(reconcile.Result{Requeue: true}))
+						Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 					})
 
 					foundResource := &hcov1beta1.HyperConverged{}
@@ -3030,7 +3028,7 @@ var _ = Describe("HyperconvergedController", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// Expecting "Requeue: false" since the conditions aren't empty
-					Expect(res.Requeue).To(BeFalse())
+					Expect(res.RequeueAfter).To(BeZero())
 
 					// Get the HCO
 					foundResource := &hcov1beta1.HyperConverged{}
@@ -3073,7 +3071,7 @@ var _ = Describe("HyperconvergedController", func() {
 					By("Reconcile", func() {
 						res, err := r.Reconcile(context.TODO(), request)
 						Expect(err).ToNot(HaveOccurred())
-						Expect(res.Requeue).To(BeFalse())
+						Expect(res.RequeueAfter).To(BeZero())
 					})
 
 					foundResource := &hcov1beta1.HyperConverged{}
@@ -3122,7 +3120,7 @@ var _ = Describe("HyperconvergedController", func() {
 					By("Reconcile", func() {
 						res, err := r.Reconcile(context.TODO(), request)
 						Expect(err).ToNot(HaveOccurred())
-						Expect(res).To(Equal(reconcile.Result{Requeue: true}))
+						Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 					})
 
 					foundResource := &hcov1beta1.HyperConverged{}
@@ -3177,7 +3175,7 @@ var _ = Describe("HyperconvergedController", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// Expecting "Requeue: false" since the conditions aren't empty
-					Expect(res.Requeue).To(BeFalse())
+					Expect(res.RequeueAfter).To(BeZero())
 
 					// Get the HCO
 					foundResource := &hcov1beta1.HyperConverged{}
@@ -3212,7 +3210,7 @@ var _ = Describe("HyperconvergedController", func() {
 					By("Reconcile", func() {
 						res, err := r.Reconcile(context.TODO(), request)
 						Expect(err).ToNot(HaveOccurred())
-						Expect(res).To(Equal(reconcile.Result{Requeue: true}))
+						Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 					})
 
 					foundResource := &hcov1beta1.HyperConverged{}
@@ -3256,7 +3254,7 @@ var _ = Describe("HyperconvergedController", func() {
 					By("Reconcile", func() {
 						res, err := r.Reconcile(context.TODO(), request)
 						Expect(err).ToNot(HaveOccurred())
-						Expect(res).To(Equal(reconcile.Result{Requeue: true}))
+						Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 					})
 
 					foundResource := &hcov1beta1.HyperConverged{}
@@ -3309,7 +3307,7 @@ var _ = Describe("HyperconvergedController", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// Expecting "Requeue: false" since the conditions aren't empty
-					Expect(res.Requeue).To(BeFalse())
+					Expect(res.RequeueAfter).To(BeZero())
 
 					// Get the HCO
 					foundResource := &hcov1beta1.HyperConverged{}
@@ -3344,7 +3342,7 @@ var _ = Describe("HyperconvergedController", func() {
 					By("Reconcile", func() {
 						res, err := r.Reconcile(context.TODO(), request)
 						Expect(err).ToNot(HaveOccurred())
-						Expect(res).To(Equal(reconcile.Result{Requeue: true}))
+						Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 					})
 
 					foundResource := &hcov1beta1.HyperConverged{}
@@ -3421,7 +3419,7 @@ var _ = Describe("HyperconvergedController", func() {
 					By("Reconcile", func() {
 						res, err := r.Reconcile(context.TODO(), request)
 						Expect(err).ToNot(HaveOccurred())
-						Expect(res).To(Equal(reconcile.Result{Requeue: true}))
+						Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 					})
 
 					foundResource := &hcov1beta1.HyperConverged{}

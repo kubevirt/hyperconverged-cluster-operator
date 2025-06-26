@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"slices"
+	"time"
 
 	"github.com/blang/semver/v4"
 	jsonpatch "github.com/evanphx/json-patch/v5"
@@ -85,6 +86,8 @@ const (
 	hcoVersionName = "operator"
 
 	requestedStatusKey = "requested status"
+
+	requeueAfter = time.Millisecond * 100
 )
 
 // JSONPatchAnnotationNames - annotations used to patch operand CRs with unsupported/unofficial/hidden features.
@@ -317,7 +320,7 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 
 	requeue, err := r.updateHyperConverged(hcoRequest)
 	if requeue || apierrors.IsConflict(err) {
-		result.Requeue = true
+		result.RequeueAfter = requeueAfter
 	}
 
 	return result, err
@@ -397,12 +400,12 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 func (r *ReconcileHyperConverged) handleUpgrade(req *common.HcoRequest) (*reconcile.Result, error) {
 	modified, err := r.migrateBeforeUpgrade(req)
 	if err != nil {
-		return &reconcile.Result{Requeue: true}, err
+		return &reconcile.Result{RequeueAfter: requeueAfter}, err
 	}
 
 	if modified {
 		r.updateConditions(req)
-		return &reconcile.Result{Requeue: true}, nil
+		return &reconcile.Result{RequeueAfter: requeueAfter}, nil
 	}
 	return nil, nil
 }
@@ -410,14 +413,18 @@ func (r *ReconcileHyperConverged) handleUpgrade(req *common.HcoRequest) (*reconc
 func (r *ReconcileHyperConverged) EnsureOperandAndComplete(req *common.HcoRequest, init bool) (reconcile.Result, error) {
 	if err := r.operandHandler.Ensure(req); err != nil {
 		r.updateConditions(req)
-		return reconcile.Result{Requeue: init}, nil
+		requeue := time.Duration(0)
+		if init {
+			requeue = requeueAfter
+		}
+		return reconcile.Result{RequeueAfter: requeue}, nil
 	}
 
 	req.Logger.Info("Reconcile complete")
 
 	// Requeue if we just created everything
 	if init {
-		return reconcile.Result{Requeue: true}, nil
+		return reconcile.Result{RequeueAfter: requeueAfter}, nil
 	}
 
 	r.completeReconciliation(req)
@@ -586,17 +593,17 @@ func (r *ReconcileHyperConverged) ensureHcoDeleted(req *common.HcoRequest) (reco
 		return reconcile.Result{}, err
 	}
 
-	requeue := false
+	requeue := time.Duration(0)
 
 	// Remove the finalizers
 	if idx := slices.Index(req.Instance.Finalizers, FinalizerName); idx >= 0 {
 		req.Instance.Finalizers = slices.Delete(req.Instance.Finalizers, idx, idx+1)
 		req.Dirty = true
-		requeue = true
+		requeue = requeueAfter
 	}
 
 	// Need to requeue because finalizer update does not change metadata.generation
-	return reconcile.Result{Requeue: requeue}, nil
+	return reconcile.Result{RequeueAfter: requeue}, nil
 }
 
 func (r *ReconcileHyperConverged) aggregateComponentConditions(req *common.HcoRequest) bool {

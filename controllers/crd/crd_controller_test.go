@@ -138,7 +138,7 @@ var _ = Describe("CRDController", func() {
 
 				res, err := r.Reconcile(context.Background(), deschedulerRequest)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res.Requeue).To(BeFalse())
+				Expect(res.IsZero()).To(BeTrue())
 				Expect(res).To(Equal(reconcile.Result{}))
 				Eventually(testCh).Should(Receive())
 
@@ -165,7 +165,7 @@ var _ = Describe("CRDController", func() {
 
 				res, err := r.Reconcile(context.Background(), otherRequest)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res.Requeue).To(BeFalse())
+				Expect(res.IsZero()).To(BeTrue())
 				Expect(res).To(Equal(reconcile.Result{}))
 				Consistently(testCh).Should(Not(Receive()))
 
@@ -199,7 +199,7 @@ var _ = Describe("CRDController", func() {
 
 				res, err := r.Reconcile(context.Background(), deschedulerRequest)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res.Requeue).To(BeFalse())
+				Expect(res.IsZero()).To(BeTrue())
 				Expect(res).To(Equal(reconcile.Result{}))
 				Consistently(testCh).Should(Not(Receive()))
 
@@ -233,7 +233,7 @@ var _ = Describe("CRDController", func() {
 
 				res, err := r.Reconcile(context.Background(), otherRequest)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res.Requeue).To(BeFalse())
+				Expect(res.IsZero()).To(BeTrue())
 				Expect(res).To(Equal(reconcile.Result{}))
 				Consistently(testCh).Should(Not(Receive()))
 

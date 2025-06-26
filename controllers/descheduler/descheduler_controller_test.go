@@ -56,8 +56,7 @@ var _ = Describe("DeschedulerController", func() {
 
 				res, err := r.Reconcile(context.TODO(), request)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res.Requeue).To(BeFalse())
-				Expect(res).To(Equal(reconcile.Result{}))
+				Expect(res.IsZero()).To(BeTrue())
 
 				misconfiguredDeschedulerMetrix, err := metrics.GetHCOMetrictMisconfiguredDescheduler()
 				Expect(err).ToNot(HaveOccurred())
