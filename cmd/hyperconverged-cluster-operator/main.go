@@ -282,6 +282,7 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 			&corev1.Service{}: {
 				Field: namespaceSelector,
 			},
+			//nolint:staticcheck
 			&corev1.Endpoints{}: {
 				Field: namespaceSelector,
 			},

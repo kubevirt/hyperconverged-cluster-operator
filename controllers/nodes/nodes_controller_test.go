@@ -64,7 +64,7 @@ var _ = Describe("NodesController", func() {
 				// Reconcile to update HCO's status with the correct InfrastructureHighlyAvailable value
 				res, err := r.Reconcile(context.TODO(), request)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res.Requeue).To(BeFalse())
+				Expect(res.RequeueAfter).To(BeZero())
 
 				latestHCO := &hcov1beta1.HyperConverged{}
 				Expect(
@@ -94,7 +94,7 @@ var _ = Describe("NodesController", func() {
 				// Reconcile to update HCO's status with the correct InfrastructureHighlyAvailable value
 				res, err := r.Reconcile(context.TODO(), request)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res.Requeue).To(BeFalse())
+				Expect(res.RequeueAfter).To(BeZero())
 
 				latestHCO := &hcov1beta1.HyperConverged{}
 				Expect(
@@ -126,7 +126,7 @@ var _ = Describe("NodesController", func() {
 				// Reconcile to update HCO's status with the correct InfrastructureHighlyAvailable value
 				res, err := r.Reconcile(context.TODO(), request)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(res.Requeue).To(BeFalse())
+				Expect(res.RequeueAfter).To(BeZero())
 			})
 		})
 

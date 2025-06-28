@@ -332,7 +332,7 @@ func doReconcile(cl client.Client, hco *hcov1beta1.HyperConverged, old *Reconcil
 			foundResource),
 	).ToNot(HaveOccurred())
 
-	return foundResource, r, res.Requeue
+	return foundResource, r, res.RequeueAfter != 0
 }
 
 func getGenericCompletedConditions() []conditionsv1.Condition {
