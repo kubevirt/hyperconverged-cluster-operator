@@ -116,13 +116,7 @@ func main() {
 	// same service account multiple times.
 	deployments := []appsv1.Deployment{
 		components.GetDeploymentOperator(operatorParams),
-		components.GetDeploymentWebhook(
-			*operatorNamespace,
-			*webhookImage,
-			"IfNotPresent",
-			*hcoKvIoVersion,
-			[]corev1.EnvVar{},
-		),
+		components.GetDeploymentWebhook(operatorParams),
 		components.GetDeploymentCliDownloads(operatorParams),
 	}
 	// hco-operator and hco-webhook

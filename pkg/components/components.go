@@ -51,6 +51,10 @@ const (
 
 	kubevirtProjectName = "KubeVirt project"
 	rbacVersionV1       = "rbac.authorization.k8s.io/v1"
+
+	// labels to apply network policies:
+	allowEgressToDNSAndAPIServerLabel  = "hco.kubevirt.io/allow-access-cluster-services"
+	allowIngressToMetricsEndpointLabel = "hco.kubevirt.io/allow-prometheus-access"
 )
 
 var deploymentType = metav1.TypeMeta{
@@ -83,6 +87,7 @@ type DeploymentOperatorParams struct {
 	MtqVersion             string
 	AaqVersion             string
 	Env                    []corev1.EnvVar
+	AddNetworkPolicyLabels bool
 }
 
 func GetDeploymentOperator(params *DeploymentOperatorParams) appsv1.Deployment {
@@ -98,7 +103,7 @@ func GetDeploymentOperator(params *DeploymentOperatorParams) appsv1.Deployment {
 	}
 }
 
-func GetDeploymentWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion string, env []corev1.EnvVar) appsv1.Deployment {
+func GetDeploymentWebhook(params *DeploymentOperatorParams) appsv1.Deployment {
 	deploy := appsv1.Deployment{
 		TypeMeta: deploymentType,
 		ObjectMeta: metav1.ObjectMeta{
@@ -107,7 +112,7 @@ func GetDeploymentWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion stri
 				"name": hcoNameWebhook,
 			},
 		},
-		Spec: GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion, env),
+		Spec: GetDeploymentSpecWebhook(params),
 	}
 
 	InjectVolumesForWebHookCerts(&deploy)
@@ -168,7 +173,7 @@ func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.Deployme
 		},
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{
-				Labels: getLabels(hcoName, params.HcoKvIoVersion),
+				Labels: getLabelsWithNetworkPolicies(hcoName, params),
 			},
 			Spec: corev1.PodSpec{
 				ServiceAccountName: hcoName,
@@ -361,6 +366,16 @@ func getLabels(name, hcoKvIoVersion string) map[string]string {
 	}
 }
 
+func getLabelsWithNetworkPolicies(deploymentName string, params *DeploymentOperatorParams) map[string]string {
+	labels := getLabels(deploymentName, params.HcoKvIoVersion)
+	if params.AddNetworkPolicyLabels {
+		labels[allowEgressToDNSAndAPIServerLabel] = "true"
+		labels[allowIngressToMetricsEndpointLabel] = "true"
+	}
+
+	return labels
+}
+
 func GetStdPodSecurityContext() *corev1.PodSecurityContext {
 	return &corev1.PodSecurityContext{
 		RunAsNonRoot: ptr.To(true),
@@ -391,7 +406,7 @@ func GetStdContainerSecurityContext() *corev1.SecurityContext {
 // in the meanwhile a quick (but dirty!) solution is to expose the same hco binary on two distinct pods:
 // the first one will run only the controller and the second one (almost always ready) just the validating
 // webhook one.
-func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion string, env []corev1.EnvVar) appsv1.DeploymentSpec {
+func GetDeploymentSpecWebhook(params *DeploymentOperatorParams) appsv1.DeploymentSpec {
 	return appsv1.DeploymentSpec{
 		Replicas: ptr.To[int32](1),
 		Selector: &metav1.LabelSelector{
@@ -404,7 +419,7 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion 
 		},
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{
-				Labels: getLabels(hcoNameWebhook, hcoKvIoVersion),
+				Labels: getLabelsWithNetworkPolicies(hcoNameWebhook, params),
 			},
 			Spec: corev1.PodSpec{
 				ServiceAccountName: hcoName,
@@ -412,8 +427,8 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion 
 				Containers: []corev1.Container{
 					{
 						Name:            hcoNameWebhook,
-						Image:           image,
-						ImagePullPolicy: corev1.PullPolicy(imagePullPolicy),
+						Image:           params.WebhookImage,
+						ImagePullPolicy: corev1.PullPolicy(params.ImagePullPolicy),
 						Command:         stringListToSlice(hcoNameWebhook),
 						ReadinessProbe:  getReadinessProbe(util.ReadinessEndpointName, util.HealthProbePort),
 						LivenessProbe:   getLivenessProbe(util.LivenessEndpointName, util.HealthProbePort),
@@ -429,7 +444,7 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion 
 							},
 							{
 								Name:  "OPERATOR_IMAGE",
-								Value: image,
+								Value: params.WebhookImage,
 							},
 							{
 								Name:  "OPERATOR_NAME",
@@ -437,7 +452,7 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion 
 							},
 							{
 								Name:  "OPERATOR_NAMESPACE",
-								Value: namespace,
+								Value: params.Namespace,
 							},
 							{
 								Name: "POD_NAME",
@@ -447,7 +462,7 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion 
 									},
 								},
 							},
-						}, env...),
+						}, params.Env...),
 						Resources: corev1.ResourceRequirements{
 							Requests: map[corev1.ResourceName]resource.Quantity{
 								corev1.ResourceCPU:    resource.MustParse("5m"),
@@ -774,7 +789,7 @@ func GetInstallStrategyBase(params *DeploymentOperatorParams) *csvv1alpha1.Strat
 			},
 			{
 				Name:  hcoWhDeploymentName,
-				Spec:  GetDeploymentSpecWebhook(params.Namespace, params.WebhookImage, params.ImagePullPolicy, params.HcoKvIoVersion, params.Env),
+				Spec:  GetDeploymentSpecWebhook(params),
 				Label: getLabels(hcoNameWebhook, params.HcoKvIoVersion),
 			},
 			{
