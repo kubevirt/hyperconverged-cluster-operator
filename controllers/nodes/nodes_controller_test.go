@@ -14,7 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -58,7 +57,7 @@ var _ = Describe("NodesController", func() {
 
 				cl := commontestutils.InitClient(resources)
 				r := &ReconcileNodeCounter{
-					client: cl,
+					Client: cl,
 				}
 
 				// Reconcile to update HCO's status with the correct InfrastructureHighlyAvailable value
@@ -88,7 +87,7 @@ var _ = Describe("NodesController", func() {
 				resources := []client.Object{hco, workerNode}
 				cl := commontestutils.InitClient(resources)
 				r := &ReconcileNodeCounter{
-					client: cl,
+					Client: cl,
 				}
 
 				// Reconcile to update HCO's status with the correct InfrastructureHighlyAvailable value
@@ -120,7 +119,7 @@ var _ = Describe("NodesController", func() {
 				cl := commontestutils.InitClient(resources)
 
 				r := &ReconcileNodeCounter{
-					client: cl,
+					Client: cl,
 				}
 
 				// Reconcile to update HCO's status with the correct InfrastructureHighlyAvailable value

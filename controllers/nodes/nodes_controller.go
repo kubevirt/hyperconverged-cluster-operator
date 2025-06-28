@@ -36,7 +36,7 @@ func RegisterReconciler(mgr manager.Manager) error {
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	r := &ReconcileNodeCounter{
-		client: mgr.GetClient(),
+		Client: mgr.GetClient(),
 	}
 
 	return r
@@ -91,7 +91,7 @@ func (nodeCountChangePredicate) Generic(_ event.GenericEvent) bool {
 type ReconcileNodeCounter struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client              client.Client
+	client.Client
 	HyperConvergedQueue workqueue.TypedRateLimitingInterface[reconcile.Request]
 }
 
@@ -99,37 +99,47 @@ type ReconcileNodeCounter struct {
 func (r *ReconcileNodeCounter) Reconcile(ctx context.Context, _ reconcile.Request) (reconcile.Result, error) {
 	log.Info("Triggered by a node count change")
 
-	err := nodeinfo.HandleNodeChanges(ctx, r.client)
+	hc, err := r.readHyperConverged(ctx)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	hco := &hcov1beta1.HyperConverged{}
+	_, err = nodeinfo.HandleNodeChanges(ctx, r, hc, log)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
+
+	if hc == nil || !hc.DeletionTimestamp.IsZero() {
+		return reconcile.Result{}, nil
+	}
+
+	if infraHighlyAvailable := nodeinfo.IsInfrastructureHighlyAvailable(); hc.Status.InfrastructureHighlyAvailable == nil ||
+		*hc.Status.InfrastructureHighlyAvailable != infraHighlyAvailable {
+
+		hc.Status.InfrastructureHighlyAvailable = ptr.To(infraHighlyAvailable)
+		err = r.Status().Update(ctx, hc)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	}
+
+	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileNodeCounter) readHyperConverged(ctx context.Context) (*hcov1beta1.HyperConverged, error) {
+	hc := &hcov1beta1.HyperConverged{}
 	namespace := hcoutil.GetOperatorNamespaceFromEnv()
 	hcoKey := types.NamespacedName{
 		Name:      hcoutil.HyperConvergedName,
 		Namespace: namespace,
 	}
-	err = r.client.Get(ctx, hcoKey, hco)
+	err := r.Get(ctx, hcoKey, hc)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			return reconcile.Result{}, nil
+			return nil, nil
 		}
-		return reconcile.Result{}, err
+		return nil, err
 	}
 
-	if !hco.DeletionTimestamp.IsZero() {
-		return reconcile.Result{}, nil
-	}
-
-	if infraHighlyAvailable := nodeinfo.IsInfrastructureHighlyAvailable(); hco.Status.InfrastructureHighlyAvailable == nil ||
-		*hco.Status.InfrastructureHighlyAvailable != infraHighlyAvailable {
-
-		hco.Status.InfrastructureHighlyAvailable = ptr.To(infraHighlyAvailable)
-		err = r.client.Status().Update(ctx, hco)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
-	}
-	return reconcile.Result{}, nil
+	return hc, nil
 }
