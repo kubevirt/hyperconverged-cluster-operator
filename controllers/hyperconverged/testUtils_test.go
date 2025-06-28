@@ -26,11 +26,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
-
-	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
@@ -52,11 +51,11 @@ var (
 	}
 )
 
-func initReconciler(client client.Client, old *ReconcileHyperConverged) *ReconcileHyperConverged {
+func initReconciler(cli client.Client, old *ReconcileHyperConverged) *ReconcileHyperConverged {
 	s := commontestutils.GetScheme()
 	eventEmitter := commontestutils.NewEventEmitterMock()
 	ci := commontestutils.ClusterInfoMock{}
-	operandHandler := operands.NewOperandHandler(client, s, ci, eventEmitter)
+	operandHandler := operands.NewOperandHandler(cli, s, ci, eventEmitter)
 	upgradeMode := false
 	firstLoop := true
 	upgradeableCondition := newStubOperatorCondition()
@@ -65,9 +64,10 @@ func initReconciler(client client.Client, old *ReconcileHyperConverged) *Reconci
 		firstLoop = old.firstLoop
 		upgradeableCondition = old.upgradeableCondition
 	}
+
 	// Create a ReconcileHyperConverged object with the scheme and fake client
 	return &ReconcileHyperConverged{
-		client:               client,
+		client:               cli,
 		scheme:               s,
 		operandHandler:       operandHandler,
 		eventEmitter:         eventEmitter,

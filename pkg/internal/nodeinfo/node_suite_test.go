@@ -1,4 +1,4 @@
-package nodeinfo
+package nodeinfo_test
 
 import (
 	"testing"

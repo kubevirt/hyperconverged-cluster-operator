@@ -25,6 +25,7 @@ This Document documents the types introduced by the hyperconverged-cluster-opera
 * [LogVerbosityConfiguration](#logverbosityconfiguration)
 * [MediatedDevicesConfiguration](#mediateddevicesconfiguration)
 * [MediatedHostDevice](#mediatedhostdevice)
+* [NodeInfoStatus](#nodeinfostatus)
 * [NodeMediatedDeviceTypesConfig](#nodemediateddevicetypesconfig)
 * [OperandResourceRequirements](#operandresourcerequirements)
 * [PciHostDevice](#pcihostdevice)
@@ -77,6 +78,7 @@ DataImportCronStatus is the status field of the DIC template
 | ----- | ----------- | ------ | -------- |-------- |
 | commonTemplate | CommonTemplate indicates whether this is a common template (true), or a custom one (false) | bool |  | false |
 | modified | Modified indicates if a common template was customized. Always false for custom templates. | bool |  | false |
+| conditions |  | []metav1.Condition |  | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -255,6 +257,7 @@ HyperConvergedStatus defines the observed state of HyperConverged
 | dataImportCronTemplates | DataImportCronTemplates is a list of the actual DataImportCronTemplates as HCO update in the SSP CR. The list contains both the common and the custom templates, including any modification done by HCO. | [][DataImportCronTemplateStatus](#dataimportcrontemplatestatus) |  | false |
 | systemHealthStatus | SystemHealthStatus reflects the health of HCO and its secondary resources, based on the aggregated conditions. | string |  | false |
 | infrastructureHighlyAvailable | InfrastructureHighlyAvailable describes whether the cluster has only one worker node (false) or more (true). | *bool |  | false |
+| nodeInfo | NodeInfo holds information about the cluster nodes | [NodeInfoStatus](#nodeinfostatus) |  | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -320,6 +323,17 @@ MediatedHostDevice represents a host mediated device allowed for passthrough
 | resourceName | name by which a device is advertised and being requested | string |  | true |
 | externalResourceProvider | indicates that this resource is being provided by an external device plugin | bool |  | false |
 | disabled | HCO enforces the existence of several MediatedHostDevice objects. Set disabled field to true instead of remove these objects. | bool |  | false |
+
+[Back to TOC](#table-of-contents)
+
+## NodeInfoStatus
+
+NodeInfoStatus holds information about the cluster nodes
+
+| Field | Description | Scheme | Default | Required |
+| ----- | ----------- | ------ | -------- |-------- |
+| workloadsArchitectures | WorkloadsArchitectures is a distinct list of the CPU architectures of the workloads nodes in the cluster. | []string |  | false |
+| controllerNodeArchitecture | ControllerNodeArchitecture is a distinct list of the CPU architecture of the control-plane nodes. | []string |  | false |
 
 [Back to TOC](#table-of-contents)
 
