@@ -3,7 +3,10 @@ package tests_test
 import (
 	"context"
 	"fmt"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"os"
+	"slices"
 	"sort"
 	"time"
 
@@ -43,7 +46,10 @@ var (
 )
 
 var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered, Label(tests.OpenshiftLabel), func() {
-	var cli client.Client
+	var (
+		cli   client.Client
+		archs []string
+	)
 
 	tests.FlagParse()
 
@@ -66,6 +72,11 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 	BeforeEach(func(ctx context.Context) {
 		cli = tests.GetControllerRuntimeClient()
+
+		var err error
+		archs, err = getArchs(ctx)
+		GinkgoWriter.Printf("Worker nodes architectures: %v\n", archs)
+		Expect(err).ToNot(HaveOccurred(), "failed to get worker nodes architectures")
 
 		tests.FailIfNotOpenShift(ctx, cli, "golden image test")
 	})
@@ -344,7 +355,58 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 			}).WithPolling(time.Second * 3).WithTimeout(time.Second * 60).WithContext(ctx).Should(Succeed())
 		})
 	})
+
+	Context("test multi-arch", func() {
+		BeforeEach(func(ctx context.Context) {
+			const patchTmplt = `[{ "op": "replace", "path": "/spec/featureGates/enableMultiArchCommonBootImageImport", "value": %t }]`
+			Expect(tests.PatchHCO(ctx, cli, []byte(fmt.Sprintf(patchTmplt, true)))).To(Succeed())
+
+			DeferCleanup(func() {
+				Expect(tests.PatchHCO(ctx, cli, []byte(fmt.Sprintf(patchTmplt, false)))).To(Succeed())
+			})
+		})
+
+		It("should have the architectures in the SSP", func(ctx context.Context) {
+			Eventually(func(g Gomega, ctx context.Context) {
+				ssp := getSSP(ctx, cli)
+				g.Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(len(expectedImages)))
+
+				for _, dict := range ssp.Spec.CommonTemplates.DataImportCronTemplates {
+					multiArchAnnotation, exists := dict.GetAnnotations()[operands.MultiArchDICTAnnotation]
+					g.Expect(exists).To(BeTrue(), "should have the multi-arch annotation in the DICT")
+					g.Expect(multiArchAnnotation).ToNot(BeEmpty(), "should have a value in the the multi-arch annotation")
+					for _, arch := range archs {
+						g.Expect(multiArchAnnotation).To(ContainSubstring(arch), "should have the architecture %s in the multi-arch annotation %q", arch, multiArchAnnotation)
+					}
+				}
+
+			}).WithTimeout(10 * time.Second).
+				WithPolling(500 * time.Millisecond).
+				WithContext(ctx).
+				Should(Succeed())
+		})
+	})
 })
+
+func getArchs(ctx context.Context) ([]string, error) {
+	cli := tests.GetK8sClientSet()
+	nodes, err := cli.CoreV1().Nodes().List(ctx, metav1.ListOptions{LabelSelector: "node-role.kubernetes.io/worker"})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list nodes: %w", err)
+	}
+
+	archSet := sets.New[string]()
+	for _, node := range nodes.Items {
+		if arch := node.Status.NodeInfo.Architecture; len(arch) > 0 {
+			archSet.Insert(arch)
+		}
+	}
+
+	a := archSet.UnsortedList()
+	slices.Sort(a)
+
+	return a, nil
+}
 
 func getDICT() hcov1beta1.DataImportCronTemplate {
 	return hcov1beta1.DataImportCronTemplate{
