@@ -61,6 +61,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/authorization"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/upgradepatch"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -126,6 +127,9 @@ func main() {
 	err = ci.Init(ctx, apiClient, logger)
 	cmdHelper.ExitOnError(err, "Cannot detect cluster type")
 
+	_, err = nodeinfo.HandleNodeChanges(ctx, apiClient, nil, logger)
+	cmdHelper.ExitOnError(err, "Failed to read cluster nodes")
+
 	needLeaderElection := !ci.IsRunningLocally()
 
 	// Create a new Cmd to provide shared dependencies and start components
@@ -181,8 +185,11 @@ func main() {
 	ingressEventCh := make(chan event.TypedGenericEvent[client.Object], 10)
 	defer close(ingressEventCh)
 
+	nodeEventChannel := make(chan event.GenericEvent, 10)
+	defer close(nodeEventChannel)
+
 	// Create a new reconciler
-	if err := hyperconverged.RegisterReconciler(mgr, ci, upgradeableCondition, ingressEventCh); err != nil {
+	if err = hyperconverged.RegisterReconciler(mgr, ci, upgradeableCondition, ingressEventCh, nodeEventChannel); err != nil {
 		logger.Error(err, "failed to register the HyperConverged controller")
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register HyperConverged controller; "+err.Error())
 		os.Exit(1)
@@ -194,7 +201,7 @@ func main() {
 	defer close(restartCh)
 
 	// Create a new CRD reconciler
-	if err := crd.RegisterReconciler(mgr, restartCh); err != nil {
+	if err = crd.RegisterReconciler(mgr, restartCh); err != nil {
 		logger.Error(err, "failed to register the CRD controller")
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register CRD controller; "+err.Error())
 		os.Exit(1)
@@ -209,7 +216,7 @@ func main() {
 
 	if ci.IsDeschedulerAvailable() {
 		// Create a new reconciler for KubeDescheduler
-		if err := descheduler.RegisterReconciler(mgr); err != nil {
+		if err = descheduler.RegisterReconciler(mgr); err != nil {
 			logger.Error(err, "failed to register the KubeDescheduler controller")
 			eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register KubeDescheduler controller; "+err.Error())
 			os.Exit(1)
@@ -217,7 +224,7 @@ func main() {
 	}
 
 	// Create a new Nodes reconciler
-	if err := nodes.RegisterReconciler(mgr); err != nil {
+	if err = nodes.RegisterReconciler(mgr, nodeEventChannel); err != nil {
 		logger.Error(err, "failed to register the Nodes controller")
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register Nodes controller; "+err.Error())
 		os.Exit(1)
@@ -252,7 +259,7 @@ func main() {
 	}()
 
 	// Start the Cmd
-	if err := mgr.Start(mgrCtx); err != nil {
+	if err = mgr.Start(mgrCtx); err != nil {
 		logger.Error(err, "Manager exited non-zero")
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "UnexpectedError", "HyperConverged crashed; "+err.Error())
 		os.Exit(1)

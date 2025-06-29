@@ -38,6 +38,7 @@ require (
 	k8s.io/apimachinery v0.33.2
 	k8s.io/apiserver v0.33.2
 	k8s.io/client-go v12.0.0+incompatible
+	k8s.io/component-helpers v0.33.2
 	k8s.io/kube-openapi v0.33.2
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
 	kubevirt.io/api v1.5.0
