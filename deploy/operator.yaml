@@ -72,6 +72,8 @@ spec:
         - name: KV_CONSOLE_PROXY_IMAGE
         - name: PASST_SIDECAR_IMAGE
           value: quay.io/kubevirt/network-passt-binding@sha256:1a93a0b44d81c3787c3c7e0024495f667b61d73dac8fafd23be4fa41952236d4
+        - name: PASST_CNI_IMAGE
+          value: quay.io/kubevirt/network-passt-binding-cni@sha256:8e9a0fe4c0096abfea49f4eb36038842621bcb770ab6358ff5a6315016b6a243
         image: quay.io/kubevirt/hyperconverged-cluster-operator:1.16.0-unstable
         imagePullPolicy: Always
         livenessProbe:
