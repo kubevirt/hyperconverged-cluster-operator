@@ -408,5 +408,8 @@ func checkPasstImagesEnvExists() error {
 	if _, passtImageVarExists := os.LookupEnv(hcoutil.PasstImageEnvV); !passtImageVarExists {
 		return fmt.Errorf("the %s environment variable must be set", hcoutil.PasstImageEnvV)
 	}
+	if _, passtCNIImageVarExists := os.LookupEnv(hcoutil.PasstCNIImageEnvV); !passtCNIImageVarExists {
+		return fmt.Errorf("the %s environment variable must be set", hcoutil.PasstCNIImageEnvV)
+	}
 	return nil
 }
