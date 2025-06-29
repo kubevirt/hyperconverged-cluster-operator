@@ -308,6 +308,7 @@ ${PROJECT_ROOT}/tools/manifest-templator/manifest-templator \
   --operator-image="${HCO_OPERATOR_IMAGE}" \
   --webhook-image="${HCO_WEBHOOK_IMAGE}" \
   --network-passt-binding-image-name="${NETWORK_PASST_BINDING_IMAGE}" \
+  --network-passt-binding-cni-image-name="${NETWORK_PASST_BINDING_CNI_IMAGE}" \
   --cli-downloads-image="${HCO_DOWNLOADS_IMAGE}"
 
 (cd ${PROJECT_ROOT}/tools/manifest-templator/ && go clean)
@@ -354,7 +355,8 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --kubevirt-consoleplugin-image-name="${KUBEVIRT_CONSOLE_PLUGIN_IMAGE}" \
   --kubevirt-consoleproxy-image-name="${KUBEVIRT_CONSOLE_PROXY_IMAGE}" \
   --cli-downloads-image-name="${HCO_DOWNLOADS_IMAGE}" \
-  --network-passt-binding-image-name="${NETWORK_PASST_BINDING_IMAGE}" > "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}"
+  --network-passt-binding-image-name="${NETWORK_PASST_BINDING_IMAGE}" \
+  --network-passt-binding-cni-image-name="${NETWORK_PASST_BINDING_CNI_IMAGE}" > "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}"
 
 (cd ${PROJECT_ROOT}/tools/csv-merger/ && go clean)
 

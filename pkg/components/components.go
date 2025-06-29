@@ -70,6 +70,7 @@ type DeploymentOperatorParams struct {
 	KVUIPluginImage        string
 	KVUIProxyImage         string
 	PasstImage             string
+	PasstCNIImage          string
 	ImagePullPolicy        string
 	ConversionContainer    string
 	VmwareContainer        string
@@ -301,6 +302,10 @@ func buildEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 		{
 			Name:  util.PasstImageEnvV,
 			Value: params.PasstImage,
+		},
+		{
+			Name:  util.PasstCNIImageEnvV,
+			Value: params.PasstCNIImage,
 		},
 	}, params.Env...)
 
