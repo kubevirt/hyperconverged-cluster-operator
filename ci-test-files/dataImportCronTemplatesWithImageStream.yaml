@@ -1,4 +1,7 @@
 - metadata:
+    annotations:
+      cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+      ssp.kubevirt.io/dict.architectures: amd64,arm64,s390x
     name: centos-stream9-image-cron-is
   spec:
     schedule: "0 */12 * * *"

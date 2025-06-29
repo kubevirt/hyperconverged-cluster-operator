@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"sort"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -15,6 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -22,6 +25,7 @@ import (
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
@@ -43,7 +47,9 @@ var (
 )
 
 var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered, Label(tests.OpenshiftLabel), func() {
-	var cli client.Client
+	var (
+		cli client.Client
+	)
 
 	tests.FlagParse()
 
@@ -344,7 +350,429 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 			}).WithPolling(time.Second * 3).WithTimeout(time.Second * 60).WithContext(ctx).Should(Succeed())
 		})
 	})
+
+	Context("test multi-arch", Label("multi-arch"), func() {
+		var archs []string
+
+		BeforeEach(func(ctx context.Context) {
+			var err error
+			archs, err = getArchs(ctx)
+			Expect(err).ToNot(HaveOccurred(), "failed to get worker nodes architectures")
+
+			GinkgoWriter.Printf("Worker nodes architectures: %v\n", archs)
+
+			const patchTmplt = `[{ "op": "replace", "path": "/spec/featureGates/enableMultiArchCommonBootImageImport", "value": %t }]`
+			Eventually(func(ctx context.Context) error {
+				return tests.PatchHCO(ctx, cli, []byte(fmt.Sprintf(patchTmplt, true)))
+			}).WithTimeout(10 * time.Second).
+				WithPolling(500 * time.Millisecond).
+				WithContext(ctx).
+				Should(Succeed())
+
+			removeCustomDICTFromHC(ctx, cli)
+
+			DeferCleanup(func(ctx context.Context) {
+				Eventually(func(ctx context.Context) error {
+					return tests.PatchHCO(ctx, cli, []byte(fmt.Sprintf(patchTmplt, false)))
+				}).WithTimeout(10 * time.Second).
+					WithPolling(500 * time.Millisecond).
+					WithContext(ctx).
+					Should(Succeed())
+
+				removeCustomDICTFromHC(ctx, cli)
+			})
+		})
+
+		It("should have the architectures in the HCO Status", func(ctx context.Context) {
+			hc := tests.GetHCO(ctx, cli)
+			Expect(hc.Status.NodeInfo.WorkloadsArchitectures).To(Equal(archs))
+		})
+
+		It("should have the architectures in the SSP CR", func(ctx context.Context) {
+			Eventually(func(g Gomega, ctx context.Context) {
+				ssp := getSSP(ctx, cli)
+				g.Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(len(expectedImages)))
+
+				hc := tests.GetHCO(ctx, cli)
+
+				for _, dict := range ssp.Spec.CommonTemplates.DataImportCronTemplates {
+					hcoDict, exists := getHCODICT(hc, dict.Name)
+					g.Expect(exists).To(BeTrue(), "should have the DICT in the HCO status")
+
+					if _, hcoAnnotationExists := hcoDict.Annotations[operands.MultiArchDICTAnnotation]; !hcoAnnotationExists {
+						GinkgoLogr.Info(fmt.Sprintf("The %q DICT does not have the multi-arch annotation in the HCO status; skipping it", dict.Name))
+						continue
+					}
+
+					multiArchAnnotation, exists := dict.GetAnnotations()[operands.MultiArchDICTAnnotation]
+
+					g.Expect(exists).To(BeTrue(), "should have the multi-arch annotation in the DICT")
+					g.Expect(multiArchAnnotation).ToNot(Equal(""), "should have a value in the the multi-arch annotation; the %q DICT is:\n%#v", dict.Name, dict)
+
+					expectedArches := getExpectedArchs(hcoDict.Status.OriginalSupportedArchitectures, archs)
+
+					g.Expect(multiArchAnnotation).To(Equal(expectedArches), "the SSP %q DICT %q annotation should be %q", dict.Name, operands.MultiArchDICTAnnotation, expectedArches)
+				}
+
+			}).WithTimeout(10 * time.Second).
+				WithPolling(500 * time.Millisecond).
+				WithContext(ctx).
+				Should(Succeed())
+		})
+
+		It("should have the architectures in a user-defined DICT the SSP CR", func(ctx context.Context) {
+			var hcCustomDict hcov1beta1.DataImportCronTemplate
+
+			By("adding a user define DICT to the HyperConverged CR, with some supported and some unsupported architectures")
+			Eventually(func(g Gomega, ctx context.Context) {
+				hc := tests.GetHCO(ctx, cli)
+
+				g.Expect(hc.Status.DataImportCronTemplates).ToNot(BeEmpty())
+				hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
+
+				hcCustomDict.Name = "custom-dict"
+				hcCustomDict.Spec.ManagedDataSource = "custom-source"
+				if hcCustomDict.Annotations == nil {
+					hcCustomDict.Annotations = make(map[string]string)
+				}
+
+				customDictArchs := append(archs, "someOtherArch1", "someOtherArch2")
+				hcCustomDict.Annotations[operands.MultiArchDICTAnnotation] = strings.Join(customDictArchs, ",")
+
+				hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
+
+				var err error
+				_, err = tests.UpdateHCO(ctx, cli, hc)
+				g.Expect(err).ToNot(HaveOccurred(), "failed to update HCO with custom DICT")
+
+			}).WithTimeout(10 * time.Second).
+				WithPolling(500 * time.Millisecond).
+				WithContext(ctx).
+				Should(Succeed())
+
+			By("Check that only the cluster support architectures are in the multi-arch annotation in SSP")
+			Eventually(func(g Gomega, ctx context.Context) {
+				ssp := getSSP(ctx, cli)
+				g.Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(len(expectedImages) + 1))
+
+				idx := slices.IndexFunc(ssp.Spec.CommonTemplates.DataImportCronTemplates, func(d sspv1beta3.DataImportCronTemplate) bool {
+					return d.Name == "custom-dict"
+				})
+
+				g.Expect(idx).To(BeNumerically(">", -1), "should have the custom-dict in the SSP")
+				sspDict := ssp.Spec.CommonTemplates.DataImportCronTemplates[idx]
+
+				multiArchAnnotation, exists := sspDict.GetAnnotations()[operands.MultiArchDICTAnnotation]
+
+				g.Expect(exists).To(BeTrue(), "should have the multi-arch annotation in the DICT")
+				g.Expect(multiArchAnnotation).ToNot(BeEmpty(), "should have a value in the the multi-arch annotation")
+
+				expectedArches := getExpectedArchs(hcCustomDict.Annotations[operands.MultiArchDICTAnnotation], archs)
+
+				g.Expect(multiArchAnnotation).To(Equal(expectedArches), "the SSP %q DICT %q annotation should be %q", "custom-dict", operands.MultiArchDICTAnnotation, expectedArches)
+
+			}).WithTimeout(10 * time.Second).
+				WithPolling(500 * time.Millisecond).
+				WithContext(ctx).
+				Should(Succeed())
+		})
+
+		It("should have the architectures in a customized common DICT the SSP CR", func(ctx context.Context) {
+			var hcCustomDict hcov1beta1.DataImportCronTemplate
+
+			By("modify a common DICT in the HyperConverged CR, with some supported and some unsupported architectures")
+			Eventually(func(g Gomega, ctx context.Context) {
+				hc := tests.GetHCO(ctx, cli)
+
+				g.Expect(hc.Status.DataImportCronTemplates).ToNot(BeEmpty())
+				hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
+
+				if hcCustomDict.Annotations == nil {
+					hcCustomDict.Annotations = make(map[string]string)
+				}
+
+				customDictArchs := append(archs, "someOtherArch1", "someOtherArch2")
+				hcCustomDict.Annotations[operands.MultiArchDICTAnnotation] = strings.Join(customDictArchs, ",")
+
+				hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
+
+				var err error
+				_, err = tests.UpdateHCO(ctx, cli, hc)
+				g.Expect(err).ToNot(HaveOccurred(), "failed to update HCO with custom DICT")
+
+			}).WithTimeout(10 * time.Second).
+				WithPolling(500 * time.Millisecond).
+				WithContext(ctx).
+				Should(Succeed())
+
+			By("Check that only the cluster support architectures are in the multi-arch annotation in SSP")
+			Eventually(func(g Gomega, ctx context.Context) {
+				ssp := getSSP(ctx, cli)
+				g.Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(len(expectedImages)))
+
+				idx := slices.IndexFunc(ssp.Spec.CommonTemplates.DataImportCronTemplates, func(d sspv1beta3.DataImportCronTemplate) bool {
+					return d.Name == hcCustomDict.Name
+				})
+
+				g.Expect(idx).To(BeNumerically(">", -1), "should have the %q in the SSP", hcCustomDict.Name)
+				sspDict := ssp.Spec.CommonTemplates.DataImportCronTemplates[idx]
+
+				multiArchAnnotation, exists := sspDict.GetAnnotations()[operands.MultiArchDICTAnnotation]
+
+				g.Expect(exists).To(BeTrue(), "should have the multi-arch annotation in the DICT")
+				g.Expect(multiArchAnnotation).ToNot(BeEmpty(), "should have a value in the the multi-arch annotation")
+
+				expectedArches := getExpectedArchs(hcCustomDict.Annotations[operands.MultiArchDICTAnnotation], archs)
+
+				g.Expect(multiArchAnnotation).To(Equal(expectedArches), "the SSP %q DICT %q annotation should be %q", hcCustomDict.Name, operands.MultiArchDICTAnnotation, expectedArches)
+
+				hc := tests.GetHCO(ctx, cli)
+				idx = slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
+					return d.Name == hcCustomDict.Name
+				})
+				g.Expect(idx).To(BeNumerically(">", -1), "should have the %q in the HC status", hcCustomDict.Name)
+
+				hcoDictStatus := hc.Status.DataImportCronTemplates[idx]
+				g.Expect(hcoDictStatus.Annotations).To(HaveKeyWithValue(operands.MultiArchDICTAnnotation, expectedArches))
+				g.Expect(hcoDictStatus.Status.OriginalSupportedArchitectures).To(Equal(hcCustomDict.Annotations[operands.MultiArchDICTAnnotation]))
+				g.Expect(hcoDictStatus.Status.Conditions).To(BeEmpty())
+
+			}).WithTimeout(10 * time.Second).
+				WithPolling(500 * time.Millisecond).
+				WithContext(ctx).
+				Should(Succeed())
+		})
+
+		When("the multi-arch annotation is not set in the DICT", func() {
+			It("should not implement multi-arch changes for user defined DICT", func(ctx context.Context) {
+				var hcCustomDict hcov1beta1.DataImportCronTemplate
+
+				By("Add a user-defined DICT to the HyperConverged CR, without the multi-arch annotation")
+				Eventually(func(g Gomega, ctx context.Context) {
+					hc := tests.GetHCO(ctx, cli)
+
+					g.Expect(hc.Status.DataImportCronTemplates).ToNot(BeEmpty())
+					hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
+
+					hcCustomDict.Name = "custom-dict"
+					hcCustomDict.Spec.ManagedDataSource = "custom-source"
+					delete(hcCustomDict.Annotations, operands.MultiArchDICTAnnotation)
+
+					hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
+
+					var err error
+					_, err = tests.UpdateHCO(ctx, cli, hc)
+					g.Expect(err).ToNot(HaveOccurred(), "failed to update HCO with custom DICT")
+
+				}).WithTimeout(10 * time.Second).
+					WithPolling(500 * time.Millisecond).
+					WithContext(ctx).
+					Should(Succeed())
+
+				By("Check that the custom DICT is in the SSP, without the multi-arch annotation, and that the DICT in the HC status also does not have the annotation")
+				Eventually(func(g Gomega, ctx context.Context) {
+					ssp := getSSP(ctx, cli)
+					g.Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(len(expectedImages) + 1))
+
+					idx := slices.IndexFunc(ssp.Spec.CommonTemplates.DataImportCronTemplates, func(d sspv1beta3.DataImportCronTemplate) bool {
+						return d.Name == "custom-dict"
+					})
+
+					g.Expect(idx).To(BeNumerically(">", -1), "should have the custom-dict DICT in the SSP")
+					sspDict := ssp.Spec.CommonTemplates.DataImportCronTemplates[idx]
+
+					g.Expect(sspDict.GetAnnotations()).ToNot(HaveKey(operands.MultiArchDICTAnnotation))
+
+					hc := tests.GetHCO(ctx, cli)
+					idx = slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
+						return d.Name == "custom-dict"
+					})
+					g.Expect(idx).To(BeNumerically(">", -1), "should have the custom-dict in the HC status")
+
+					hcoDictStatus := hc.Status.DataImportCronTemplates[idx]
+					g.Expect(hcoDictStatus.Annotations).ToNot(HaveKey(operands.MultiArchDICTAnnotation))
+					g.Expect(hcoDictStatus.Status.OriginalSupportedArchitectures).To(Equal(""))
+					g.Expect(hcoDictStatus.Status.Conditions).To(BeEmpty())
+
+				}).WithTimeout(10 * time.Second).
+					WithPolling(500 * time.Millisecond).
+					WithContext(ctx).
+					Should(Succeed())
+			})
+		})
+
+		When("there are no supported architectures", func() {
+			It("should not add a user-defined DICT to the SSP CR", func(ctx context.Context) {
+				var hcCustomDict hcov1beta1.DataImportCronTemplate
+
+				By("Add a user-defined DICT to the HyperConverged CR, with no supported architectures")
+				Eventually(func(g Gomega, ctx context.Context) {
+					hc := tests.GetHCO(ctx, cli)
+
+					g.Expect(hc.Status.DataImportCronTemplates).ToNot(BeEmpty())
+					hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
+
+					hcCustomDict.Name = "custom-dict"
+					hcCustomDict.Spec.ManagedDataSource = "custom-source"
+					if hcCustomDict.Annotations == nil {
+						hcCustomDict.Annotations = make(map[string]string)
+					}
+
+					hcCustomDict.Annotations[operands.MultiArchDICTAnnotation] = "someOtherArch1,someOtherArch2"
+
+					hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
+
+					var err error
+					_, err = tests.UpdateHCO(ctx, cli, hc)
+					g.Expect(err).ToNot(HaveOccurred(), "failed to update HCO with custom DICT")
+
+				}).WithTimeout(10 * time.Second).
+					WithPolling(500 * time.Millisecond).
+					WithContext(ctx).
+					Should(Succeed())
+
+				By("Check that the custom DICT is not in the SSP, and its corresponding object in the HC status has the Deploy=False condition")
+				Eventually(func(g Gomega, ctx context.Context) {
+					ssp := getSSP(ctx, cli)
+					g.Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(len(expectedImages)))
+
+					idx := slices.IndexFunc(ssp.Spec.CommonTemplates.DataImportCronTemplates, func(d sspv1beta3.DataImportCronTemplate) bool {
+						return d.Name == "custom-dict"
+					})
+
+					g.Expect(idx).To(Equal(-1), "should not have the custom-dict in the SSP")
+
+					hc := tests.GetHCO(ctx, cli)
+					idx = slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
+						return d.Name == "custom-dict"
+					})
+					g.Expect(idx).To(BeNumerically(">", -1), "should have the custom-dict in the HC status")
+
+					hcoDictStatus := hc.Status.DataImportCronTemplates[idx]
+					g.Expect(hcoDictStatus.Annotations).To(HaveKeyWithValue(operands.MultiArchDICTAnnotation, ""))
+					g.Expect(hcoDictStatus.Status.OriginalSupportedArchitectures).To(Equal("someOtherArch1,someOtherArch2"))
+
+					g.Expect(hcoDictStatus.Status.Conditions).To(HaveLen(1), "should have one condition in the DICT status")
+					g.Expect(hcoDictStatus.Status.Conditions[0].Type).To(Equal("Deployed"))
+					g.Expect(hcoDictStatus.Status.Conditions[0].Reason).To(Equal("UnsupportedArchitectures"))
+
+				}).WithTimeout(10 * time.Second).
+					WithPolling(500 * time.Millisecond).
+					WithContext(ctx).
+					Should(Succeed())
+			})
+
+			It("should not add a customized common DICT to the SSP CR", func(ctx context.Context) {
+				var hcCustomDict hcov1beta1.DataImportCronTemplate
+
+				By("modify a common DICT in the HyperConverged CR, to have no supported architectures")
+				Eventually(func(g Gomega, ctx context.Context) {
+					hc := tests.GetHCO(ctx, cli)
+
+					g.Expect(hc.Status.DataImportCronTemplates).ToNot(BeEmpty())
+					hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
+
+					if hcCustomDict.Annotations == nil {
+						hcCustomDict.Annotations = make(map[string]string)
+					}
+
+					hcCustomDict.Annotations[operands.MultiArchDICTAnnotation] = "someOtherArch1,someOtherArch2"
+
+					hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
+
+					var err error
+					_, err = tests.UpdateHCO(ctx, cli, hc)
+					g.Expect(err).ToNot(HaveOccurred(), "failed to update HCO with custom DICT")
+
+				}).WithTimeout(10 * time.Second).
+					WithPolling(500 * time.Millisecond).
+					WithContext(ctx).
+					Should(Succeed())
+
+				By("Check that the modified DICT is not in the SSP, and its corresponding object in the HC status has the Deploy=False condition")
+				Eventually(func(g Gomega, ctx context.Context) {
+					ssp := getSSP(ctx, cli)
+					g.Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(len(expectedImages) - 1))
+
+					idx := slices.IndexFunc(ssp.Spec.CommonTemplates.DataImportCronTemplates, func(d sspv1beta3.DataImportCronTemplate) bool {
+						return d.Name == hcCustomDict.Name
+					})
+
+					g.Expect(idx).To(Equal(-1), "should not have the custom-dict in the SSP")
+
+					hc := tests.GetHCO(ctx, cli)
+					idx = slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
+						return d.Name == hcCustomDict.Name
+					})
+					g.Expect(idx).To(BeNumerically(">", -1), "should have the %q in the HC status", hcCustomDict.Name)
+
+					hcoDictStatus := hc.Status.DataImportCronTemplates[idx]
+					g.Expect(hcoDictStatus.Annotations).To(HaveKeyWithValue(operands.MultiArchDICTAnnotation, ""))
+					g.Expect(hcoDictStatus.Status.OriginalSupportedArchitectures).To(Equal("someOtherArch1,someOtherArch2"))
+
+					g.Expect(hcoDictStatus.Status.Conditions).To(HaveLen(1), "should have one condition in the DICT status")
+					g.Expect(hcoDictStatus.Status.Conditions[0].Type).To(Equal("Deployed"))
+					g.Expect(hcoDictStatus.Status.Conditions[0].Reason).To(Equal("UnsupportedArchitectures"))
+				}).WithTimeout(10 * time.Second).
+					WithPolling(500 * time.Millisecond).
+					WithContext(ctx).
+					Should(Succeed())
+			})
+		})
+	})
 })
+
+func removeCustomDICTFromHC(ctx context.Context, cli client.Client) {
+	// clear the DICTs if they exist. ignore error of not found, as it may not exist
+	Eventually(func(ctx context.Context) error {
+		return tests.PatchHCO(ctx, cli, []byte(`[{"op": "remove", "path": "/spec/dataImportCronTemplates"}]`))
+	}).WithTimeout(10 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).
+		Should(Or(Not(HaveOccurred()), MatchError(ContainSubstring("the server rejected our request due to an error in our request"))))
+}
+
+func getExpectedArchs(originalArchs string, archs []string) string {
+	imageSupportedArchs := strings.Split(originalArchs, ",")
+	var expectedArchs []string
+
+	for _, arch := range imageSupportedArchs {
+		if slices.Contains(archs, arch) {
+			expectedArchs = append(expectedArchs, arch)
+		}
+	}
+
+	slices.Sort(expectedArchs)
+	return strings.Join(expectedArchs, ",")
+}
+
+func getHCODICT(hc *hcov1beta1.HyperConverged, name string) (hcov1beta1.DataImportCronTemplateStatus, bool) {
+	for _, dict := range hc.Status.DataImportCronTemplates {
+		if dict.Name == name {
+			return dict, true
+		}
+	}
+
+	return hcov1beta1.DataImportCronTemplateStatus{}, false
+}
+
+func getArchs(ctx context.Context) ([]string, error) {
+	cli := tests.GetK8sClientSet()
+	nodes, err := cli.CoreV1().Nodes().List(ctx, metav1.ListOptions{LabelSelector: "node-role.kubernetes.io/worker"})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list nodes: %w", err)
+	}
+
+	archSet := sets.New[string]()
+	for _, node := range nodes.Items {
+		if arch := node.Status.NodeInfo.Architecture; len(arch) > 0 {
+			archSet.Insert(arch)
+		}
+	}
+
+	a := archSet.UnsortedList()
+	slices.Sort(a)
+
+	return a, nil
+}
 
 func getDICT() hcov1beta1.DataImportCronTemplate {
 	return hcov1beta1.DataImportCronTemplate{
