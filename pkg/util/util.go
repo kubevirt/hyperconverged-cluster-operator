@@ -56,6 +56,9 @@ func CheckPasstImagesEnvExists() error {
 	if _, passtImageVarExists := os.LookupEnv(PasstImageEnvV); !passtImageVarExists {
 		return fmt.Errorf("%s env var not found", PasstImageEnvV)
 	}
+	if _, passtCNIImageVarExists := os.LookupEnv(PasstCNIImageEnvV); !passtCNIImageVarExists {
+		return fmt.Errorf("%s env var not found", PasstCNIImageEnvV)
+	}
 	return nil
 }
 

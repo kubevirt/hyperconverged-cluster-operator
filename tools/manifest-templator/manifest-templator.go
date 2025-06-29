@@ -75,6 +75,7 @@ var (
 	hppoVersion             = flag.String("hppo-version", "", "HPP operator version")
 	aaqVersion              = flag.String("aaq-version", "", "AAQ operator version")
 	passtImage              = flag.String("network-passt-binding-image-name", "", "Passt binding image")
+	passtCNIImage           = flag.String("network-passt-binding-cni-image-name", "", "Passt binding cni image")
 	_                       = flag.String("primary-udn-binding-image-name", "", "deprecated. This flag is ignored")
 	apiSources              = flag.String("api-sources", cwd+"/...", "Project sources")
 )
@@ -431,6 +432,7 @@ func getOperatorParameters() *components.DeploymentOperatorParams {
 		HppoVersion:            *hppoVersion,
 		AaqVersion:             *aaqVersion,
 		PasstImage:             *passtImage,
+		PasstCNIImage:          *passtCNIImage,
 		Env:                    []corev1.EnvVar{},
 	}
 	return params
