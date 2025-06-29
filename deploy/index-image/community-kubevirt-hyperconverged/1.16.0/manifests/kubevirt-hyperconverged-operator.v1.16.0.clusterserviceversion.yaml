@@ -3076,6 +3076,8 @@ spec:
                   value: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:935475c2850466aa5ac57e4de627fb177515cb2c402a95842ead095d82b6df5f
                 - name: PASST_SIDECAR_IMAGE
                   value: quay.io/kubevirt/network-passt-binding@sha256:e6e01ca7adedb6215caa7284c8e38ee5afa9ff9033180907d6027941b2477f0a
+                - name: PASST_CNI_IMAGE
+                  value: quay.io/oshoval/network-passt-binding-cni@sha256:237dfdc49476a2477665faf2b74262ed8821f31a6da261eb78883eaa2134716c
                 image: +IMAGE_TO_REPLACE+
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
@@ -4657,6 +4659,8 @@ spec:
     name: multus-dynamic-networks-controller
   - image: quay.io/kubevirt/network-passt-binding@sha256:e6e01ca7adedb6215caa7284c8e38ee5afa9ff9033180907d6027941b2477f0a
     name: network-passt-binding
+  - image: quay.io/oshoval/network-passt-binding-cni@sha256:237dfdc49476a2477665faf2b74262ed8821f31a6da261eb78883eaa2134716c
+    name: network-passt-binding-cni
   - image: quay.io/openshift/origin-kube-rbac-proxy@sha256:e2def4213ec0657e72eb790ae8a115511d5b8f164a62d3568d2f1bff189917e8
     name: origin-kube-rbac-proxy
   - image: ghcr.io/k8snetworkplumbingwg/ovs-cni-plugin@sha256:435f374b434b3bc70a5cfaba0011fdcf5f433d96b98b06d29306cbd8db3a8c21

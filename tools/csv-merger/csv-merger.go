@@ -92,6 +92,7 @@ var (
 	kvUIProxyImage      = flag.String("kubevirt-consoleproxy-image-name", "", "KubeVirt Console Proxy image")
 	kvVirtIOWinImage    = flag.String("kv-virtiowin-image-name", "", "KubeVirt VirtIO Win image")
 	passtImage          = flag.String("network-passt-binding-image-name", "", "Passt binding image")
+	passtCNIImage       = flag.String("network-passt-binding-cni-image-name", "", "Passt binding cni image")
 	_                   = flag.String("primary-udn-binding-image-name", "", "deprecated. This flag is ignored")
 	smbios              = flag.String("smbios", "", "Custom SMBIOS string for KubeVirt ConfigMap")
 	machinetype         = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap (Deprecated, use amd64-machinetype)")
@@ -426,6 +427,7 @@ func getDeploymentParams() *components.DeploymentOperatorParams {
 		HppoVersion:            *hppoVersion,
 		AaqVersion:             *aaqVersion,
 		PasstImage:             *passtImage,
+		PasstCNIImage:          *passtCNIImage,
 		Env:                    envVars,
 		AddNetworkPolicyLabels: *dumpNetworkPolicies,
 	}
