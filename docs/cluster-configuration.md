@@ -179,6 +179,14 @@ to an even parity when using emulator thread isolation.
 
 **Default**: `false`
 
+### PasstNetworkBinding Feature Gate
+Set the `PasstNetworkBinding` feature gate to deploy the needed configurations for kubevirt users, so they
+can bind their VM using a Passt Network binding.
+
+**Note**: this feature is in Developer Preview.
+
+**Default**: `false`
+
 ### Feature Gates Example
 
 ```yaml

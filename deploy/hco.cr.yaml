@@ -20,6 +20,7 @@ spec:
     disableMDevConfiguration: false
     downwardMetrics: false
     enableMultiArchCommonBootImageImport: false
+    passtNetworkBinding: false
     persistentReservation: false
   higherWorkloadDensity:
     memoryOvercommitPercentage: 100

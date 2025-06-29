@@ -60,6 +60,10 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		var ptrVar1 bool = false
 		in.Spec.FeatureGates.AlignCPUs = &ptrVar1
 	}
+	if in.Spec.FeatureGates.PasstNetworkBinding == nil {
+		var ptrVar1 bool = false
+		in.Spec.FeatureGates.PasstNetworkBinding = &ptrVar1
+	}
 	if in.Spec.FeatureGates.EnableMultiArchCommonBootImageImport == nil {
 		var ptrVar1 bool = false
 		in.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = &ptrVar1

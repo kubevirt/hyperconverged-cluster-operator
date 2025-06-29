@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"path"
 	"reflect"
 	"strconv"
 	"strings"
@@ -49,7 +50,13 @@ const (
 	DefaultARM64EmulatedMachines = "virt*"
 )
 
-const primaryUDNNetworkBindingName = "l2bridge"
+const (
+	primaryUDNNetworkBindingName = "l2bridge"
+
+	passtBindingName                = "passt"
+	passtNetworkBindingNADName      = "primary-udn-kubevirt-binding"
+	passtNetworkBindingNADNamespace = "default"
+)
 
 var (
 	useKVMEmulation = false
@@ -142,6 +149,7 @@ const (
 	kvDisableMDevConfig     = "DisableMDEVConfiguration"
 	kvPersistentReservation = "PersistentReservation"
 	kvAlignCPUs             = "AlignCPUs"
+	kvPasstIPStackMigration = "PasstIPStackMigration"
 )
 
 // CPU Plugin default values
@@ -426,7 +434,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 
 	seccompConfig := getKVSeccompConfig()
 
-	networkBindings := getNetworkBindings(hc.Spec.NetworkBinding)
+	networkBindings := getNetworkBindings(hc.Spec.NetworkBinding, hc.Spec.FeatureGates)
 
 	config := &kubevirtcorev1.KubeVirtConfiguration{
 		DeveloperConfiguration: devConfig,
@@ -528,7 +536,8 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 	return config, nil
 }
 
-func getNetworkBindings(hcoNetworkBindings map[string]kubevirtcorev1.InterfaceBindingPlugin) map[string]kubevirtcorev1.InterfaceBindingPlugin {
+func getNetworkBindings(hcoNetworkBindings map[string]kubevirtcorev1.InterfaceBindingPlugin,
+	hcoFeatureGates hcov1beta1.HyperConvergedFeatureGates) map[string]kubevirtcorev1.InterfaceBindingPlugin {
 	networkBindings := maps.Clone(hcoNetworkBindings)
 
 	if networkBindings == nil {
@@ -536,6 +545,11 @@ func getNetworkBindings(hcoNetworkBindings map[string]kubevirtcorev1.InterfaceBi
 	}
 
 	networkBindings[primaryUDNNetworkBindingName] = primaryUserDefinedNetworkBinding()
+
+	if hcoFeatureGates.PasstNetworkBinding != nil && *hcoFeatureGates.PasstNetworkBinding {
+		passtImage, _ := os.LookupEnv(hcoutil.PasstImageEnvV)
+		networkBindings[passtBindingName] = passtNetworkBinding(passtImage)
+	}
 	return networkBindings
 }
 
@@ -853,6 +867,9 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates) [
 	if featureGates.AlignCPUs != nil && *featureGates.AlignCPUs {
 		fgs = append(fgs, kvAlignCPUs)
 	}
+	if featureGates.PasstNetworkBinding != nil && *featureGates.PasstNetworkBinding {
+		fgs = append(fgs, kvPasstIPStackMigration)
+	}
 
 	return fgs
 }
@@ -1001,6 +1018,20 @@ func hcoCertConfig2KvCertificateRotateStrategy(hcoCertConfig hcov1beta1.HyperCon
 			Server: &kubevirtcorev1.CertConfig{
 				Duration:    hcoCertConfig.Server.Duration.DeepCopy(),
 				RenewBefore: hcoCertConfig.Server.RenewBefore.DeepCopy(),
+			},
+		},
+	}
+}
+
+func passtNetworkBinding(sidecarImage string) kubevirtcorev1.InterfaceBindingPlugin {
+	const bindingComputeMemoryOverhead = "500Mi"
+	return kubevirtcorev1.InterfaceBindingPlugin{
+		NetworkAttachmentDefinition: path.Join(passtNetworkBindingNADNamespace, passtNetworkBindingNADName),
+		SidecarImage:                sidecarImage,
+		Migration:                   &kubevirtcorev1.InterfaceBindingMigration{},
+		ComputeResourceOverhead: &kubevirtcorev1.ResourceRequirementsWithoutClaims{
+			Requests: corev1.ResourceList{
+				corev1.ResourceMemory: resource.MustParse(bindingComputeMemoryOverhead),
 			},
 		},
 	}

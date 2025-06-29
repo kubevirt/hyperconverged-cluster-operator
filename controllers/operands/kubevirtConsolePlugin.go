@@ -281,6 +281,17 @@ func NewKvUIPluginSvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
 	}
 }
 
+// TODO move to a new fileu
+func NewPasstBindingCNISA(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount {
+	return &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "passt-binding-cni",
+			Namespace: hc.Namespace,
+			Labels:    getLabels(hc, hcoutil.AppComponentNetwork),
+		},
+	}
+}
+
 func NewKvUIProxySvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
 	servicePorts := []corev1.ServicePort{
 		{

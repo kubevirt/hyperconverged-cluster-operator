@@ -328,6 +328,11 @@ func (in *HyperConvergedFeatureGates) DeepCopyInto(out *HyperConvergedFeatureGat
 		*out = new(bool)
 		**out = **in
 	}
+	if in.PasstNetworkBinding != nil {
+		in, out := &in.PasstNetworkBinding, &out.PasstNetworkBinding
+		*out = new(bool)
+		**out = **in
+	}
 	if in.EnableMultiArchCommonBootImageImport != nil {
 		in, out := &in.EnableMultiArchCommonBootImageImport, &out.EnableMultiArchCommonBootImageImport
 		*out = new(bool)
