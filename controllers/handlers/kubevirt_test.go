@@ -1886,12 +1886,21 @@ Version: 1.2.3`)
 		})
 
 		Context("Feature Gates", func() {
+			const expectedPasstImage = "quay.io/some-org/some-repo@some-sha"
+
 			BeforeEach(func() {
 				commontestutils.HighlyAvailableNodeInfoMocks()
 
 				DeferCleanup(func() {
 					commontestutils.ResetNodeInfoMocks()
 				})
+
+				hco.Annotations = make(map[string]string)
+				Expect(os.Setenv(hcoutil.PasstImageEnvV, expectedPasstImage)).To(Succeed())
+			})
+
+			AfterEach(func() {
+				Expect(os.Unsetenv(hcoutil.PasstImageEnvV)).To(Succeed())
 			})
 
 			Context("test feature gates in NewKubeVirt", func() {
@@ -1964,6 +1973,45 @@ Version: 1.2.3`)
 					Expect(existingResource.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
 				})
 
+				It("should add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is true in HyperConverged CR", func() {
+					hco.Annotations[deployPasstNetworkBindingAnnotation] = "true"
+					hco.Spec.NetworkBinding = nil
+
+					kv, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(kv.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
+					Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).NotTo(BeNil())
+
+					expectedPasstInterfaceBindingPlugin := passtInterfaceBindingPlugin(networkAttachmentDefinition, expectedPasstImage)
+					Expect(kv.Spec.Configuration.NetworkConfiguration.Binding[passtBindingName]).To(Equal(expectedPasstInterfaceBindingPlugin))
+					Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvPasstIPStackMigration))
+				})
+
+				It("should not add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is false in HyperConverged CR", func() {
+					hco.Annotations[deployPasstNetworkBindingAnnotation] = "false"
+					hco.Spec.NetworkBinding = nil
+
+					kv, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(kv.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
+					Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvPasstIPStackMigration))
+					Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).ToNot(HaveKey(passtBindingName))
+				})
+
+				It("should not add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is not set in HyperConverged CR", func() {
+					delete(hco.Annotations, deployPasstNetworkBindingAnnotation)
+					hco.Spec.NetworkBinding = nil
+
+					kv, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(kv.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
+					Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvPasstIPStackMigration))
+					Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).ToNot(HaveKey(passtBindingName))
+				})
+
 				It("should not add the feature gates if FeatureGates field is empty", func() {
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{}
@@ -1972,7 +2020,7 @@ Version: 1.2.3`)
 					Expect(err).ToNot(HaveOccurred())
 
 					Expect(existingResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-					fgList := getKvFeatureGateList(&hco.Spec.FeatureGates)
+					fgList := getKvFeatureGateList(&hco.Spec.FeatureGates, nil)
 					Expect(fgList).To(HaveLen(basicNumFgOnOpenshift))
 					Expect(fgList).To(ContainElements(hardCodeKvFgs))
 					Expect(fgList).To(ContainElements(sspConditionKvFgs))
@@ -2077,7 +2125,7 @@ Version: 1.2.3`)
 					By("KV CR should contain the HC enabled managed feature gates", func() {
 						mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
 						Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-						fgList := getKvFeatureGateList(&hco.Spec.FeatureGates)
+						fgList := getKvFeatureGateList(&hco.Spec.FeatureGates, nil)
 						Expect(fgList).To(HaveLen(basicNumFgOnOpenshift))
 						Expect(fgList).To(ContainElements(hardCodeKvFgs))
 						Expect(fgList).To(ContainElements(sspConditionKvFgs))
@@ -2108,8 +2156,8 @@ Version: 1.2.3`)
 					By("KV CR should contain the HC enabled managed feature gates", func() {
 						mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
 						Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-						fgList := getKvFeatureGateList(&hco.Spec.FeatureGates)
-						Expect(fgList).To(HaveLen(len(getKvFeatureGateList(&hco.Spec.FeatureGates))))
+						fgList := getKvFeatureGateList(&hco.Spec.FeatureGates, nil)
+						Expect(fgList).To(HaveLen(len(getKvFeatureGateList(&hco.Spec.FeatureGates, nil))))
 						Expect(fgList).To(ContainElements(hardCodeKvFgs))
 						Expect(fgList).To(ContainElements(sspConditionKvFgs))
 					})
@@ -2117,7 +2165,7 @@ Version: 1.2.3`)
 
 				It("should keep FG if already exist", func() {
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(true)
-					fgs := getKvFeatureGateList(&hco.Spec.FeatureGates)
+					fgs := getKvFeatureGateList(&hco.Spec.FeatureGates, nil)
 					fgs = append(fgs, kvPersistentReservation)
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -2176,7 +2224,7 @@ Version: 1.2.3`)
 					).ToNot(HaveOccurred())
 
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(len(getKvFeatureGateList(&hco.Spec.FeatureGates))))
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(len(getKvFeatureGateList(&hco.Spec.FeatureGates, nil))))
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(sspConditionKvFgs))
 				})
@@ -2207,7 +2255,7 @@ Version: 1.2.3`)
 					).ToNot(HaveOccurred())
 
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(len(getKvFeatureGateList(&hco.Spec.FeatureGates))))
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(len(getKvFeatureGateList(&hco.Spec.FeatureGates, nil))))
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(sspConditionKvFgs))
 				})
@@ -2247,8 +2295,8 @@ Version: 1.2.3`)
 				DescribeTable("Should return featureGate slice",
 					func(isKVMEmulation bool, fgs *hcov1beta1.HyperConvergedFeatureGates, expectedLength int, expectedFgs [][]string) {
 						mandatoryKvFeatureGates = getMandatoryKvFeatureGates(isKVMEmulation)
-						fgList := getKvFeatureGateList(fgs)
-						Expect(getKvFeatureGateList(fgs)).To(HaveLen(expectedLength))
+						fgList := getKvFeatureGateList(fgs, nil)
+						Expect(getKvFeatureGateList(fgs, nil)).To(HaveLen(expectedLength))
 						for _, expected := range expectedFgs {
 							Expect(fgList).To(ContainElements(expected))
 						}
@@ -3787,7 +3835,7 @@ Version: 1.2.3`)
 				).ToNot(HaveOccurred())
 
 				Expect(kv.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(len(getKvFeatureGateList(&hco.Spec.FeatureGates))))
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(len(getKvFeatureGateList(&hco.Spec.FeatureGates, nil))))
 				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
 				Expect(kv.Spec.Configuration.CPURequest).To(BeNil())
 
@@ -4376,3 +4424,16 @@ Version: 1.2.3`)
 		})
 	})
 })
+
+func passtInterfaceBindingPlugin(networkAttachmentDefinition, sidecarImage string) kubevirtcorev1.InterfaceBindingPlugin {
+	return kubevirtcorev1.InterfaceBindingPlugin{
+		NetworkAttachmentDefinition: networkAttachmentDefinition,
+		SidecarImage:                sidecarImage,
+		Migration:                   &kubevirtcorev1.InterfaceBindingMigration{},
+		ComputeResourceOverhead: &kubevirtcorev1.ResourceRequirementsWithoutClaims{
+			Requests: corev1.ResourceList{
+				corev1.ResourceMemory: resource.MustParse("500Mi"),
+			},
+		},
+	}
+}
