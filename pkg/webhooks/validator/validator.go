@@ -14,8 +14,10 @@ import (
 	"github.com/samber/lo"
 	xsync "golang.org/x/sync/errgroup"
 	admissionv1 "k8s.io/api/admission/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/component-helpers/scheduling/corev1/nodeaffinity"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -27,6 +29,7 @@ import (
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -158,6 +161,10 @@ func (wh *WebhookHandler) ValidateCreate(_ context.Context, dryrun bool, hc *v1b
 		return err
 	}
 
+	if err := wh.validateAffinity(hc); err != nil {
+		return err
+	}
+
 	if _, err := operands.NewKubeVirt(hc); err != nil {
 		return err
 	}
@@ -225,6 +232,10 @@ func (wh *WebhookHandler) ValidateUpdate(ctx context.Context, dryrun bool, reque
 		return err
 	}
 
+	if err := wh.validateAffinity(requested); err != nil {
+		return err
+	}
+
 	// If no change is detected in the spec nor the annotations - nothing to validate
 	if reflect.DeepEqual(exists.Spec, requested.Spec) &&
 		reflect.DeepEqual(exists.Annotations, requested.Annotations) {
@@ -249,6 +260,20 @@ func (wh *WebhookHandler) ValidateUpdate(ctx context.Context, dryrun bool, reque
 	}
 
 	if wh.isOpenshift {
+		origGetControlPlaneArchitectures := nodeinfo.GetControlPlaneArchitectures
+		origGetWorkloadsArchitectures := nodeinfo.GetWorkloadsArchitectures
+		defer func() {
+			nodeinfo.GetControlPlaneArchitectures = origGetControlPlaneArchitectures
+			nodeinfo.GetWorkloadsArchitectures = origGetWorkloadsArchitectures
+		}()
+
+		nodeinfo.GetControlPlaneArchitectures = func() []string {
+			return requested.Status.NodeInfo.ControlPlaneNodesArchitecture
+		}
+		nodeinfo.GetWorkloadsArchitectures = func() []string {
+			return requested.Status.NodeInfo.WorkloadsArchitectures
+		}
+
 		ssp, _, err := operands.NewSSP(requested)
 		if err != nil {
 			return err
@@ -479,6 +504,32 @@ func (wh *WebhookHandler) validateDeprecatedFeatureGates(hc *v1beta1.HyperConver
 	}
 
 	return warnings
+}
+
+func (wh *WebhookHandler) validateAffinity(hc *v1beta1.HyperConverged) error {
+	if hc.Spec.Workloads.NodePlacement != nil {
+		if err := validateAffinity(hc.Spec.Workloads.NodePlacement.Affinity); err != nil {
+			return fmt.Errorf("invalid workloads node placement affinity: %v", err.Error())
+		}
+	}
+
+	if hc.Spec.Infra.NodePlacement != nil {
+		if err := validateAffinity(hc.Spec.Infra.NodePlacement.Affinity); err != nil {
+			return fmt.Errorf("invalid infra node placement affinity: %v", err.Error())
+		}
+	}
+
+	return nil
+}
+
+func validateAffinity(affinity *corev1.Affinity) error {
+	if affinity == nil || affinity.NodeAffinity == nil || affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution == nil {
+		return nil
+	}
+
+	_, err := nodeaffinity.NewNodeSelector(affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution)
+
+	return err
 }
 
 func validateOldFGOnCreate(warnings []string, hc *v1beta1.HyperConverged) []string {

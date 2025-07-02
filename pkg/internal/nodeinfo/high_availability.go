@@ -2,8 +2,6 @@ package nodeinfo
 
 import (
 	"sync/atomic"
-
-	corev1 "k8s.io/api/core/v1"
 )
 
 const (
@@ -31,25 +29,4 @@ func IsControlPlaneNodeExists() bool {
 
 func IsInfrastructureHighlyAvailable() bool {
 	return infrastructureHighlyAvailable.Load()
-}
-
-func setHighAvailabilityMode(nodes []corev1.Node) {
-	workerNodeCount := 0
-	cpNodeCount := 0
-
-	for _, node := range nodes {
-		if _, workerLabelExists := node.Labels[LabelNodeRoleWorker]; workerLabelExists {
-			workerNodeCount++
-		}
-
-		_, masterLabelExists := node.Labels[LabelNodeRoleMaster]
-		_, cpLabelExists := node.Labels[LabelNodeRoleControlPlane]
-		if masterLabelExists || cpLabelExists {
-			cpNodeCount++
-		}
-	}
-
-	controlPlaneHighlyAvailable.Store(cpNodeCount >= 3)
-	controlPlaneNodeExist.Store(cpNodeCount >= 1)
-	infrastructureHighlyAvailable.Store(workerNodeCount >= 2)
 }

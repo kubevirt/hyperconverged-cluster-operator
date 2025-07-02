@@ -3,9 +3,11 @@ package operands
 import (
 	"context"
 	"fmt"
+	"iter"
 	"maps"
 	"os"
 	"path"
+	"slices"
 	"strings"
 	"time"
 
@@ -14,6 +16,7 @@ import (
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
@@ -26,6 +29,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -38,10 +42,13 @@ var _ = Describe("SSP Operands", func() {
 	)
 
 	origDICTMap := dataImportCronTemplateHardCodedMap
+	origGetWorkloadsArchFunc := nodeinfo.GetWorkloadsArchitectures
+
 	BeforeEach(func() {
 		dataImportCronTemplateHardCodedMap = nil
 		DeferCleanup(func() {
 			dataImportCronTemplateHardCodedMap = origDICTMap
+			nodeinfo.GetWorkloadsArchitectures = origGetWorkloadsArchFunc
 		})
 	})
 
@@ -199,7 +206,6 @@ var _ = Describe("SSP Operands", func() {
 		})
 
 		It("should create ssp with deployVmConsoleProxy feature gate enabled", func() {
-			hco := commontestutils.NewHco()
 			hco.Spec.DeployVMConsoleProxy = ptr.To(true)
 
 			expectedResource, _, err := NewSSP(hco)
@@ -212,7 +218,7 @@ var _ = Describe("SSP Operands", func() {
 		Context("Node placement", func() {
 
 			It("should add node placement if missing", func() {
-				existingResource, _, err := NewSSP(hco, commontestutils.Namespace)
+				existingResource, _, err := NewSSP(hco)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Spec.Workloads.NodePlacement = commontestutils.NewNodePlacement()
@@ -245,7 +251,7 @@ var _ = Describe("SSP Operands", func() {
 				hcoNodePlacement := commontestutils.NewHco()
 				hcoNodePlacement.Spec.Workloads.NodePlacement = commontestutils.NewNodePlacement()
 				hcoNodePlacement.Spec.Infra.NodePlacement = commontestutils.NewOtherNodePlacement()
-				existingResource, _, err := NewSSP(hcoNodePlacement, commontestutils.Namespace)
+				existingResource, _, err := NewSSP(hcoNodePlacement)
 				Expect(err).ToNot(HaveOccurred())
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
@@ -273,7 +279,7 @@ var _ = Describe("SSP Operands", func() {
 
 				hco.Spec.Workloads.NodePlacement = commontestutils.NewNodePlacement()
 				hco.Spec.Infra.NodePlacement = commontestutils.NewOtherNodePlacement()
-				existingResource, _, err := NewSSP(hco, commontestutils.Namespace)
+				existingResource, _, err := NewSSP(hco)
 				Expect(err).ToNot(HaveOccurred())
 
 				// now, modify HCO's node placement
@@ -317,7 +323,7 @@ var _ = Describe("SSP Operands", func() {
 			It("should overwrite node placement if directly set on SSP CR", func() {
 				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
 				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewOtherNodePlacement()}
-				existingResource, _, err := NewSSP(hco, commontestutils.Namespace)
+				existingResource, _, err := NewSSP(hco)
 				Expect(err).ToNot(HaveOccurred())
 
 				// mock a reconciliation triggered by a change in NewKubeVirtNodeLabellerBundle CR
@@ -610,7 +616,6 @@ var _ = Describe("SSP Operands", func() {
 
 			Context("test getDataImportCronTemplates", func() {
 				It("should not return the hard coded list dataImportCron FeatureGate is false", func() {
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(false)
 					dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
 						image1.Name: image1,
@@ -649,7 +654,6 @@ var _ = Describe("SSP Operands", func() {
 						image1.Name: image1,
 						image2.Name: image2,
 					}
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
 					goldenImageList, err := getDataImportCronTemplates(hco)
@@ -664,13 +668,12 @@ var _ = Describe("SSP Operands", func() {
 						image1.Name: image1,
 						image2.Name: image2,
 					}
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
 					disabledImage1, _ := makeDICT(1, true)
 					disableDict(&disabledImage1)
 					enabledImage2, expectedStatus2 := makeDICT(2, true)
-					enableDict(&enabledImage2)
+					enableDict(&enabledImage2, &expectedStatus2)
 					expectedStatus2.Status.Modified = true
 
 					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{disabledImage1, enabledImage2, image3, image4}
@@ -679,16 +682,18 @@ var _ = Describe("SSP Operands", func() {
 					Expect(goldenImageList).To(HaveLen(3))
 					Expect(goldenImageList).To(HaveCap(4))
 
+					Expect(goldenImageList[0].Status).To(Equal(expectedStatus2.Status))
+					Expect(goldenImageList[0].ObjectMeta).To(Equal(expectedStatus2.ObjectMeta))
+					Expect(goldenImageList[0].Spec).To(Equal(expectedStatus2.Spec))
 					Expect(goldenImageList).To(ContainElements(expectedStatus2, statusImage3, statusImage4))
 				})
 
 				It("should not add user DIC template if it is disabled", func() {
 					dataImportCronTemplateHardCodedMap = nil
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
 					disableDict(&image1)
-					enableDict(&image2)
+					enableDict(&image2, &statusImage2)
 
 					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image1, image2}
 					goldenImageList, err := getDataImportCronTemplates(hco)
@@ -708,7 +713,6 @@ var _ = Describe("SSP Operands", func() {
 						image1.Name: image1,
 						image2.Name: image2,
 					}
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
 					image3.Name = image4.Name
@@ -719,7 +723,6 @@ var _ = Describe("SSP Operands", func() {
 				})
 
 				It("Should reject if the CR list contain DIC templates with the same name", func() {
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
 					image3.Name = image4.Name
@@ -736,7 +739,6 @@ var _ = Describe("SSP Operands", func() {
 						image2.Name: image2,
 					}
 
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 					hco.Spec.DataImportCronTemplates = nil
 					goldenImageList, err := getDataImportCronTemplates(hco)
@@ -754,7 +756,6 @@ var _ = Describe("SSP Operands", func() {
 				})
 
 				It("Should return only the CR list, if the hard-coded list is empty", func() {
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
 
@@ -791,7 +792,6 @@ var _ = Describe("SSP Operands", func() {
 						image2.Name: image2,
 					}
 
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
 					modifiedImage1, _ := makeDICT(1, true)
@@ -835,7 +835,6 @@ var _ = Describe("SSP Operands", func() {
 						image2.Name: image2,
 					}
 
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
 					storageFromCr := &cdiv1beta1.StorageSpec{
@@ -873,7 +872,6 @@ var _ = Describe("SSP Operands", func() {
 
 			Context("test data import cron templates in NewSsp", func() {
 				It("should return an empty list if there is no file and no list in the HyperConverged CR", func() {
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 					ssp, _, err := NewSSP(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -890,7 +888,6 @@ var _ = Describe("SSP Operands", func() {
 					defer os.Remove(destFile)
 					Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
 
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 					ssp, _, err := NewSSP(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -910,7 +907,6 @@ var _ = Describe("SSP Operands", func() {
 					defer os.Remove(destFile)
 					Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
 
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
 					ssp, _, err := NewSSP(hco)
@@ -926,7 +922,7 @@ var _ = Describe("SSP Operands", func() {
 					commonImages = append(commonImages, image3)
 					commonImages = append(commonImages, image4)
 
-					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(ContainElements(hcoDictSliceToSSP(hco, commonImages)))
+					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(ContainElements(hcoDictSliceToSSP(hco, hcoDictsSliceToDictStatuses(commonImages))))
 				})
 
 				It("Should not add a common DIC template if it marked as disabled", func() {
@@ -940,7 +936,6 @@ var _ = Describe("SSP Operands", func() {
 					defer os.Remove(destFile)
 					Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
 
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
 					Expect(dataImportCronTemplateHardCodedMap).To(HaveLen(2))
@@ -954,7 +949,7 @@ var _ = Describe("SSP Operands", func() {
 					ssp, _, err := NewSSP(hco)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(3))
-					expected := hcoDictSliceToSSP(hco, []hcov1beta1.DataImportCronTemplate{commonCentos8, image3, image4})
+					expected := hcoDictSliceToSSP(hco, hcoDictsToDictStatuses(commonCentos8, image3, image4))
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(ContainElements(expected))
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).ToNot(ContainElement(commonFedora))
 				})
@@ -970,7 +965,6 @@ var _ = Describe("SSP Operands", func() {
 					defer os.Remove(destFile)
 					Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
 
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
 					Expect(dataImportCronTemplateHardCodedMap).ToNot(BeEmpty())
@@ -985,7 +979,6 @@ var _ = Describe("SSP Operands", func() {
 				It("Should reject if the CR list contain DIC template with the same name", func() {
 					Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
 
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(false)
 
 					Expect(dataImportCronTemplateHardCodedMap).To(BeEmpty())
@@ -1001,7 +994,6 @@ var _ = Describe("SSP Operands", func() {
 					Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
 					Expect(dataImportCronTemplateHardCodedMap).To(BeEmpty())
 
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
 					ssp, _, err := NewSSP(hco)
@@ -1009,7 +1001,7 @@ var _ = Describe("SSP Operands", func() {
 
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).ToNot(BeNil())
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
-					expected := hcoDictSliceToSSP(hco, []hcov1beta1.DataImportCronTemplate{image3, image4})
+					expected := hcoDictSliceToSSP(hco, hcoDictsToDictStatuses(image3, image4))
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(ContainElements(expected))
 				})
 
@@ -1024,14 +1016,13 @@ var _ = Describe("SSP Operands", func() {
 					defer os.Remove(destFile)
 					Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
 
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(false)
 					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
 					ssp, _, err := NewSSP(hco)
 					Expect(err).ToNot(HaveOccurred())
 
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
-					expected := hcoDictSliceToSSP(hco, []hcov1beta1.DataImportCronTemplate{image3, image4})
+					expected := hcoDictSliceToSSP(hco, hcoDictsToDictStatuses(image3, image4))
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(ContainElements(expected))
 				})
 
@@ -1046,7 +1037,6 @@ var _ = Describe("SSP Operands", func() {
 					defer os.Remove(destFile)
 					Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
 
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
 					Expect(dataImportCronTemplateHardCodedMap).To(HaveLen(2))
@@ -1067,7 +1057,7 @@ var _ = Describe("SSP Operands", func() {
 					ssp, _, err := NewSSP(hco)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(4))
-					expected := hcoDictSliceToSSP(hco, []hcov1beta1.DataImportCronTemplate{*fedoraDic, commonCentos8, image3, image4})
+					expected := hcoDictSliceToSSP(hco, hcoDictsToDictStatuses(*fedoraDic, commonCentos8, image3, image4))
 					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(ContainElements(expected))
 				})
 
@@ -1082,7 +1072,6 @@ var _ = Describe("SSP Operands", func() {
 					defer os.Remove(destFile)
 					Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
 
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
 					Expect(dataImportCronTemplateHardCodedMap).To(HaveLen(2))
@@ -1122,7 +1111,6 @@ var _ = Describe("SSP Operands", func() {
 					defer os.Remove(destFile)
 					Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
 
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 					hco.Spec.CommonBootImageNamespace = ptr.To(customNS)
 					ssp, _, err := NewSSP(hco)
@@ -1147,7 +1135,6 @@ var _ = Describe("SSP Operands", func() {
 					defer os.Remove(destFile)
 					Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
 
-					hco := commontestutils.NewHco()
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 					hco.Spec.CommonBootImageNamespace = ptr.To(customNS)
 					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
@@ -1167,132 +1154,93 @@ var _ = Describe("SSP Operands", func() {
 					commonImages = append(commonImages, image3)
 					commonImages = append(commonImages, image4)
 
-					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(ContainElements(hcoDictSliceToSSP(hco, commonImages)))
+					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(ContainElements(hcoDictSliceToSSP(hco, hcoDictsSliceToDictStatuses(commonImages))))
 				})
 
-				Context("heterogeneous cluster: the EnableMultiArchCommonBootImageImport FG", func() {
-					BeforeEach(func() {
-						Expect(os.Mkdir(dir, os.ModePerm)).To(Succeed())
-						destFile := path.Join(dir, "dataImportCronTemplates.yaml")
+				It("DICT status should contain the final architecture list", func() {
+					image1.Annotations = map[string]string{MultiArchDICTAnnotation: "arch1,arch2"}
+					image2.Annotations = map[string]string{MultiArchDICTAnnotation: "arch2,arch3"}
+					image3.Annotations = map[string]string{MultiArchDICTAnnotation: "arch1,arch2"}
+					image4.Annotations = map[string]string{MultiArchDICTAnnotation: "arch2,arch3"}
 
-						Expect(
-							commontestutils.CopyFile(destFile, path.Join(testFilesLocation, "dataImportCronTemplatesMultiArch.yaml")),
-						).To(Succeed())
+					dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+						image1.Name: image1,
+						image2.Name: image2,
+					}
 
-						DeferCleanup(func() {
-							Expect(os.RemoveAll(dir)).To(Succeed())
-						})
-					})
+					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+					hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(true)
+					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
 
-					It("should drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is disabled (default)", func() {
-						Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
+					nodeinfo.GetWorkloadsArchitectures = func() []string {
+						return []string{"arch1", "arch2"}
+					}
 
-						hco := commontestutils.NewHco()
-						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-						ssp, _, err := NewSSP(hco)
-						Expect(err).ToNot(HaveOccurred())
+					ssp, statuses, err := NewSSP(hco)
+					Expect(err).ToNot(HaveOccurred())
 
-						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).ToNot(BeNil())
-						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
+					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(4))
+					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates[0].Annotations[MultiArchDICTAnnotation]).To(Equal("arch1,arch2"))
+					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates[1].Annotations[MultiArchDICTAnnotation]).To(Equal("arch2"))
+					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates[2].Annotations[MultiArchDICTAnnotation]).To(Equal("arch1,arch2"))
+					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates[3].Annotations[MultiArchDICTAnnotation]).To(Equal("arch2"))
 
-						for _, dict := range ssp.Spec.CommonTemplates.DataImportCronTemplates {
-							Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
-							Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
-							Expect(dict.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
-						}
-					})
+					Expect(statuses).To(HaveLen(4))
+					Expect(statuses[0].Annotations[MultiArchDICTAnnotation]).To(Equal("arch1,arch2"))
+					Expect(statuses[0].Status.OriginalSupportedArchitectures).To(Equal("arch1,arch2"))
+					Expect(statuses[1].Annotations[MultiArchDICTAnnotation]).To(Equal("arch2"))
+					Expect(statuses[1].Status.OriginalSupportedArchitectures).To(Equal("arch2,arch3"))
+					Expect(statuses[2].Annotations[MultiArchDICTAnnotation]).To(Equal("arch1,arch2"))
+					Expect(statuses[2].Status.OriginalSupportedArchitectures).To(Equal("arch1,arch2"))
+					Expect(statuses[3].Annotations[MultiArchDICTAnnotation]).To(Equal("arch2"))
+					Expect(statuses[3].Status.OriginalSupportedArchitectures).To(Equal("arch2,arch3"))
+				})
 
-					It("should not drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is enabled", func() {
-						Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
+				It("should not deploy DICT with no supported architecture and add condition in the DICT status", func() {
+					image1.Annotations = map[string]string{MultiArchDICTAnnotation: "arch1,arch2"}
+					image2.Annotations = map[string]string{MultiArchDICTAnnotation: "arch3,arch4"}
+					image3.Annotations = map[string]string{MultiArchDICTAnnotation: "arch1,arch2"}
+					image4.Annotations = map[string]string{MultiArchDICTAnnotation: "arch3,arch4"}
 
-						hco := commontestutils.NewHco()
-						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-						hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(true)
+					dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+						image1.Name: image1,
+						image2.Name: image2,
+					}
 
-						ssp, _, err := NewSSP(hco)
-						Expect(err).ToNot(HaveOccurred())
+					nodeinfo.GetWorkloadsArchitectures = func() []string {
+						return []string{"arch1", "arch2"}
+					}
 
-						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).ToNot(BeNil())
-						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
+					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+					hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(true)
+					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
 
-						for _, dict := range ssp.Spec.CommonTemplates.DataImportCronTemplates {
-							Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
-							Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
-							Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
-						}
-					})
+					ssp, statuses, err := NewSSP(hco)
+					Expect(err).ToNot(HaveOccurred())
 
-					It("should drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is disabled (default) also for custom DICTs", func() {
-						image3.Annotations = map[string]string{
-							CDIImmediateBindAnnotation:            "true",
-							MultiArchDICTAnnotation:               "amd64,arm64,s390x",
-							"testing.kubevirt.io/fake.annotation": "true",
-						}
+					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
+					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates[0].Annotations[MultiArchDICTAnnotation]).To(Equal("arch1,arch2"))
+					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates[1].Annotations[MultiArchDICTAnnotation]).To(Equal("arch1,arch2"))
 
-						image4.Annotations = map[string]string{
-							CDIImmediateBindAnnotation:            "true",
-							MultiArchDICTAnnotation:               "amd64,arm64,s390x",
-							"testing.kubevirt.io/fake.annotation": "true",
-						}
+					Expect(statuses).To(HaveLen(4))
+					Expect(statuses[0].Annotations[MultiArchDICTAnnotation]).To(Equal("arch1,arch2"))
+					Expect(statuses[0].Status.OriginalSupportedArchitectures).To(Equal("arch1,arch2"))
+					Expect(statuses[1].Annotations[MultiArchDICTAnnotation]).To(Equal(""))
+					Expect(statuses[1].Status.OriginalSupportedArchitectures).To(Equal("arch3,arch4"))
+					Expect(statuses[2].Annotations[MultiArchDICTAnnotation]).To(Equal("arch1,arch2"))
+					Expect(statuses[2].Status.OriginalSupportedArchitectures).To(Equal("arch1,arch2"))
+					Expect(statuses[3].Annotations[MultiArchDICTAnnotation]).To(Equal(""))
+					Expect(statuses[3].Status.OriginalSupportedArchitectures).To(Equal("arch3,arch4"))
 
-						Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
-
-						hco := commontestutils.NewHco()
-						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-						hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(false)
-						hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
-
-						ssp, _, err := NewSSP(hco)
-						Expect(err).ToNot(HaveOccurred())
-
-						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).ToNot(BeNil())
-						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(4))
-
-						for _, dict := range ssp.Spec.CommonTemplates.DataImportCronTemplates {
-							Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
-							Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
-							Expect(dict.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
-						}
-					})
-
-					It("should not drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is enabled also for custom DICTs", func() {
-						image3.Annotations = map[string]string{
-							CDIImmediateBindAnnotation:            "true",
-							MultiArchDICTAnnotation:               "amd64,arm64,s390x",
-							"testing.kubevirt.io/fake.annotation": "true",
-						}
-
-						image4.Annotations = map[string]string{
-							CDIImmediateBindAnnotation:            "true",
-							MultiArchDICTAnnotation:               "amd64,arm64,s390x",
-							"testing.kubevirt.io/fake.annotation": "true",
-						}
-
-						Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
-
-						hco := commontestutils.NewHco()
-						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-						hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(true)
-						hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
-
-						ssp, _, err := NewSSP(hco)
-						Expect(err).ToNot(HaveOccurred())
-
-						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).ToNot(BeNil())
-						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(4))
-
-						for _, dict := range ssp.Spec.CommonTemplates.DataImportCronTemplates {
-							Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
-							Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
-							Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
-						}
-					})
+					Expect(statuses[0].Status.Conditions).To(BeEmpty())
+					Expect(meta.IsStatusConditionFalse(statuses[1].Status.Conditions, dictConditionDeployedType)).To(BeTrue())
+					Expect(statuses[2].Status.Conditions).To(BeEmpty())
+					Expect(meta.IsStatusConditionFalse(statuses[3].Status.Conditions, dictConditionDeployedType)).To(BeTrue())
 				})
 			})
 
 			Context("test applyDataImportSchedule", func() {
 				It("should not set the schedule filed if missing from the status", func() {
-					hco := commontestutils.NewHco()
 					dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
 						image1.Name: image1,
 						image2.Name: image2,
@@ -1306,7 +1254,6 @@ var _ = Describe("SSP Operands", func() {
 
 				It("should set the variable and the images, if the schedule is in the status field", func() {
 					const schedule = "42 */1 * * *"
-					hco := commontestutils.NewHco()
 					hco.Status.DataImportSchedule = schedule
 
 					dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
@@ -1939,6 +1886,204 @@ var _ = Describe("SSP Operands", func() {
 					Expect(isDataImportCronTemplateEnabled(image1)).To(BeFalse())
 				})
 			})
+
+			Context("heterogeneous cluster: the EnableMultiArchCommonBootImageImport FG", func() {
+
+				BeforeEach(func() {
+					image1.Annotations = map[string]string{
+						"testing.kubevirt.io/fake.annotation": "true",
+						MultiArchDICTAnnotation:               "amd64,arm64,s390x",
+					}
+					image2.Annotations = map[string]string{
+						"testing.kubevirt.io/fake.annotation": "true",
+						MultiArchDICTAnnotation:               "amd64,arm64,s390x",
+					}
+					image3.Annotations = map[string]string{
+						"testing.kubevirt.io/fake.annotation": "true",
+						MultiArchDICTAnnotation:               "amd64,arm64,s390x",
+					}
+					image4.Annotations = map[string]string{
+						"testing.kubevirt.io/fake.annotation": "true",
+						MultiArchDICTAnnotation:               "amd64,arm64,s390x",
+					}
+
+					dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+						image1.Name: image1,
+						image2.Name: image2,
+					}
+
+					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
+
+					nodeinfo.GetWorkloadsArchitectures = func() []string {
+						return []string{"amd64", "arm64", "s390x"}
+					}
+				})
+
+				It("should drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is disabled (default)", func() {
+					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+					hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(false)
+
+					dictsStatuses, err := getDataImportCronTemplates(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(dictsStatuses).To(HaveLen(4))
+
+					for _, status := range dictsStatuses {
+						Expect(status.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(status.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
+						Expect(status.Status.Conditions).To(BeEmpty())
+					}
+
+					sspDicts := hcoDictSliceToSSP(hco, dictsStatuses)
+					Expect(sspDicts).To(HaveLen(4))
+
+					for _, dict := range sspDicts {
+						Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(dict.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
+					}
+				})
+
+				It("should not drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is enabled", func() {
+					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+					hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(true)
+
+					dictsStatuses, err := getDataImportCronTemplates(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(dictsStatuses).To(HaveLen(4))
+
+					for _, status := range dictsStatuses {
+						Expect(status.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(status.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
+						Expect(status.Status.Conditions).To(BeEmpty())
+					}
+
+					sspDicts := hcoDictSliceToSSP(hco, dictsStatuses)
+					Expect(sspDicts).To(HaveLen(4))
+
+					for _, dict := range sspDicts {
+						Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
+					}
+				})
+
+				It("should remove unsupported architectures from the annotation", func() {
+					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+					hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(true)
+
+					nodeinfo.GetWorkloadsArchitectures = func() []string {
+						return []string{"amd64", "arm64"}
+					}
+
+					image1.Annotations[MultiArchDICTAnnotation] = "amd64,s390x"
+					image2.Annotations[MultiArchDICTAnnotation] = "amd64,s390x"
+					image3.Annotations[MultiArchDICTAnnotation] = "amd64,s390x"
+					image4.Annotations[MultiArchDICTAnnotation] = "amd64,s390x"
+
+					dictsStatuses, err := getDataImportCronTemplates(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(dictsStatuses).To(HaveLen(4))
+
+					for _, status := range dictsStatuses {
+						Expect(status.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(status.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64"))
+						Expect(status.Status.Conditions).To(BeEmpty())
+					}
+
+					sspDicts := hcoDictSliceToSSP(hco, dictsStatuses)
+					Expect(sspDicts).To(HaveLen(4))
+
+					for _, dict := range sspDicts {
+						Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64"))
+					}
+				})
+
+				It("should drop a DICT with no supported architectures", func() {
+					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+					hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(true)
+
+					nodeinfo.GetWorkloadsArchitectures = func() []string {
+						return []string{"amd64", "s390x"}
+					}
+
+					image2.Annotations[MultiArchDICTAnnotation] = "arm64"
+					image4.Annotations[MultiArchDICTAnnotation] = "arm64"
+
+					dictsStatuses, err := getDataImportCronTemplates(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(dictsStatuses).To(HaveLen(4))
+
+					Expect(dictsStatuses[0].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+					Expect(dictsStatuses[0].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
+					Expect(dictsStatuses[0].Status.Conditions).To(BeEmpty())
+
+					Expect(dictsStatuses[1].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+					Expect(dictsStatuses[1].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, ""))
+					Expect(dictsStatuses[1].Status.OriginalSupportedArchitectures).To(Equal("arm64"))
+					Expect(meta.IsStatusConditionFalse(dictsStatuses[1].Status.Conditions, dictConditionDeployedType)).To(BeTrue())
+
+					Expect(dictsStatuses[2].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+					Expect(dictsStatuses[2].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
+					Expect(dictsStatuses[2].Status.Conditions).To(BeEmpty())
+
+					Expect(dictsStatuses[3].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+					Expect(dictsStatuses[3].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, ""))
+					Expect(dictsStatuses[3].Status.OriginalSupportedArchitectures).To(Equal("arm64"))
+					Expect(meta.IsStatusConditionFalse(dictsStatuses[3].Status.Conditions, dictConditionDeployedType)).To(BeTrue())
+
+					sspDicts := hcoDictSliceToSSP(hco, dictsStatuses)
+					Expect(sspDicts).To(HaveLen(2))
+
+					for _, dict := range sspDicts {
+						Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
+					}
+				})
+
+				It("should not add the multi-arch annotation if wasn't already exist in the original DICT", func() {
+					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+					hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(true)
+
+					nodeinfo.GetWorkloadsArchitectures = func() []string {
+						return []string{"amd64", "s390x"}
+					}
+
+					delete(image2.Annotations, MultiArchDICTAnnotation)
+					delete(image4.Annotations, MultiArchDICTAnnotation)
+
+					dictsStatuses, err := getDataImportCronTemplates(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(dictsStatuses).To(HaveLen(4))
+
+					for i, dictStatus := range dictsStatuses {
+						if i%2 == 0 {
+							Expect(dictStatus.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
+							Expect(dictStatus.Status.OriginalSupportedArchitectures).To(Equal("amd64,arm64,s390x"))
+							Expect(dictStatus.Status.Conditions).To(BeEmpty())
+						} else {
+							Expect(dictStatus.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
+							Expect(dictStatus.Status.OriginalSupportedArchitectures).To(Equal(""))
+							Expect(dictStatus.Status.Conditions).To(BeEmpty())
+						}
+					}
+
+					sspDicts := hcoDictSliceToSSP(hco, dictsStatuses)
+					Expect(sspDicts).To(HaveLen(4))
+
+					for i, dict := range sspDicts {
+						Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+						Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						if i%2 == 0 {
+							Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
+						} else {
+							Expect(dict.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
+						}
+					}
+				})
+			})
 		})
 
 		Context("TLSSecurityProfile", func() {
@@ -2011,15 +2156,19 @@ var _ = Describe("SSP Operands", func() {
 				Expect(req.Conditions).To(BeEmpty())
 			})
 		})
-
 	})
 })
 
-func enableDict(dict *hcov1beta1.DataImportCronTemplate) {
+func enableDict(dict *hcov1beta1.DataImportCronTemplate, status *hcov1beta1.DataImportCronTemplateStatus) {
 	if dict.Annotations == nil {
 		dict.Annotations = make(map[string]string)
 	}
 	dict.Annotations[hcoutil.DataImportCronEnabledAnnotation] = "true"
+
+	if status.Annotations == nil {
+		status.Annotations = make(map[string]string)
+	}
+	status.Annotations[hcoutil.DataImportCronEnabledAnnotation] = "true"
 }
 
 func disableDict(dict *hcov1beta1.DataImportCronTemplate) {
@@ -2033,7 +2182,10 @@ func makeDICT(num int, CommonTemplate bool) (hcov1beta1.DataImportCronTemplate, 
 	name := fmt.Sprintf("image%d", num)
 
 	dict := hcov1beta1.DataImportCronTemplate{
-		ObjectMeta: metav1.ObjectMeta{Name: name},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+			//Annotations: make(map[string]string),
+		},
 		Spec: &cdiv1beta1.DataImportCronSpec{
 			Schedule: fmt.Sprintf("%d */12 * * *", num),
 			Template: cdiv1beta1.DataVolume{
@@ -2053,5 +2205,31 @@ func makeDICT(num int, CommonTemplate bool) (hcov1beta1.DataImportCronTemplate, 
 			CommonTemplate: CommonTemplate,
 			Modified:       false,
 		},
+	}
+}
+
+// hcoDictSliceToSSP converts a slice of DataImportCronTemplateStatus to a slice of DataImportCronTemplate slice, because
+// of the change in the hcoDictsToDictStatuses function, that now receives a slice of DataImportCronTemplateStatus.
+// It used to not change the current tests too much These tests used the hcoDictsToDictStatuses with a slice of
+// hcov1beta1.DataImportCronTemplate, but now it's slice of hcov1beta1.DataImportCronTemplateStatus.
+func hcoDictsToDictStatuses(dicts ...hcov1beta1.DataImportCronTemplate) []hcov1beta1.DataImportCronTemplateStatus {
+	return slices.Collect(transformDictToStatus(slices.Values(dicts)))
+}
+
+func hcoDictsSliceToDictStatuses(dicts []hcov1beta1.DataImportCronTemplate) []hcov1beta1.DataImportCronTemplateStatus {
+	return slices.Collect(transformDictToStatus(slices.Values(dicts)))
+}
+
+func transformDictToStatus(ds iter.Seq[hcov1beta1.DataImportCronTemplate]) iter.Seq[hcov1beta1.DataImportCronTemplateStatus] {
+	return func(yield func(hcov1beta1.DataImportCronTemplateStatus) bool) {
+		for dict := range ds {
+			status := hcov1beta1.DataImportCronTemplateStatus{
+				DataImportCronTemplate: dict,
+				Status:                 hcov1beta1.DataImportCronStatus{},
+			}
+			if !yield(status) {
+				return
+			}
+		}
 	}
 }

@@ -520,6 +520,270 @@ var _ = Describe("webhooks validator", func() {
 					}, "enableManagedTenantQuota", "nonRoot", "enableApplicationAwareQuota", "enableCommonBootImageImport", "deployVmConsoleProxy"),
 			)
 		})
+
+		Context("validate affinity", func() {
+			It("should allow empty affinity", func() {
+				cr.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{
+					Affinity: nil,
+				}
+				cr.Spec.Workloads.NodePlacement = &sdkapi.NodePlacement{
+					Affinity: nil,
+				}
+
+				Expect(wh.ValidateCreate(ctx, dryRun, cr)).To(Succeed())
+			})
+
+			It("should allow empty affinity", func() {
+				cr.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{
+					Affinity: &corev1.Affinity{},
+				}
+				cr.Spec.Workloads.NodePlacement = &sdkapi.NodePlacement{
+					Affinity: &corev1.Affinity{},
+				}
+
+				Expect(wh.ValidateCreate(ctx, dryRun, cr)).To(Succeed())
+			})
+
+			It("should allow valid affinity", func() {
+				cr.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "kubernetes.io/os",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   []string{"linux"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				cr.Spec.Workloads.NodePlacement = &sdkapi.NodePlacement{
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "kubernetes.io/os",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   []string{"linux"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				Expect(wh.ValidateCreate(ctx, dryRun, cr)).To(Succeed())
+			})
+
+			It("should reject invalid workloads affinity: unknown operator", func() {
+				cr.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "kubernetes.io/os",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   []string{"linux"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				cr.Spec.Workloads.NodePlacement = &sdkapi.NodePlacement{
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "kubernetes.io/os",
+												Operator: "WrongOperator",
+												Values:   []string{"linux"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				Expect(wh.ValidateCreate(ctx, dryRun, cr)).To(MatchError(
+					And(
+						ContainSubstring("invalid workloads node placement affinity:"),
+						ContainSubstring(`Unsupported value: "WrongOperator"`),
+					),
+				))
+			})
+
+			It("should reject invalid workloads affinity: more than one value in matchFields", func() {
+				cr.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "kubernetes.io/os",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   []string{"linux"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				cr.Spec.Workloads.NodePlacement = &sdkapi.NodePlacement{
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchFields: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "kubernetes.io/os",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   []string{"linux", "windows"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				Expect(wh.ValidateCreate(ctx, dryRun, cr)).To(MatchError(
+					And(
+						ContainSubstring("invalid workloads node placement affinity:"),
+						ContainSubstring("must have one element"),
+					),
+				))
+			})
+
+			It("should reject invalid infra affinity: unknown operator", func() {
+				cr.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "kubernetes.io/os",
+												Operator: "WrongOperator",
+												Values:   []string{"linux"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				cr.Spec.Workloads.NodePlacement = &sdkapi.NodePlacement{
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "kubernetes.io/os",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   []string{"linux"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				Expect(wh.ValidateCreate(ctx, dryRun, cr)).To(MatchError(
+					And(
+						ContainSubstring("invalid infra node placement affinity:"),
+						ContainSubstring(`Unsupported value: "WrongOperator"`),
+					),
+				))
+			})
+
+			It("should reject invalid infra affinity: more than one value in fieldSelector", func() {
+				cr.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchFields: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "kubernetes.io/os",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   []string{"linux", "windows"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				cr.Spec.Workloads.NodePlacement = &sdkapi.NodePlacement{
+					Affinity: &corev1.Affinity{
+						NodeAffinity: &corev1.NodeAffinity{
+							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+								NodeSelectorTerms: []corev1.NodeSelectorTerm{
+									{
+										MatchExpressions: []corev1.NodeSelectorRequirement{
+											{
+												Key:      "kubernetes.io/os",
+												Operator: corev1.NodeSelectorOpIn,
+												Values:   []string{"linux"},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				Expect(wh.ValidateCreate(ctx, dryRun, cr)).To(MatchError(
+					And(
+						ContainSubstring("invalid infra node placement affinity:"),
+						ContainSubstring("must have one element"),
+					),
+				))
+			})
+		})
 	})
 
 	Context("validate update validation webhook", func() {
@@ -1998,12 +2262,12 @@ func newHyperConvergedConfig() *sdkapi.NodePlacement {
 					NodeSelectorTerms: []corev1.NodeSelectorTerm{
 						{
 							MatchExpressions: []corev1.NodeSelectorRequirement{
-								{Key: "key1", Operator: "operator1", Values: []string{"value11, value12"}},
-								{Key: "key2", Operator: "operator2", Values: []string{"value21, value22"}},
+								{Key: "key1", Operator: "In", Values: []string{"value11", "value12"}},
+								{Key: "key2", Operator: "In", Values: []string{"value21", "value22"}},
 							},
 							MatchFields: []corev1.NodeSelectorRequirement{
-								{Key: "key1", Operator: "operator1", Values: []string{"value11, value12"}},
-								{Key: "key2", Operator: "operator2", Values: []string{"value21, value22"}},
+								{Key: "key1", Operator: "In", Values: []string{"value1"}},
+								{Key: "key2", Operator: "In", Values: []string{"value2"}},
 							},
 						},
 					},
@@ -2011,8 +2275,8 @@ func newHyperConvergedConfig() *sdkapi.NodePlacement {
 			},
 		},
 		Tolerations: []corev1.Toleration{
-			{Key: "key1", Operator: "operator1", Value: "value1", Effect: "effect1", TolerationSeconds: ptr.To[int64](1)},
-			{Key: "key2", Operator: "operator2", Value: "value2", Effect: "effect2", TolerationSeconds: ptr.To[int64](2)},
+			{Key: "key1", Operator: "In", Value: "value1", Effect: "effect1", TolerationSeconds: ptr.To[int64](1)},
+			{Key: "key2", Operator: "In", Value: "value2", Effect: "effect2", TolerationSeconds: ptr.To[int64](2)},
 		},
 	}
 }
