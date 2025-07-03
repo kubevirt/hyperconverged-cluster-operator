@@ -51,11 +51,6 @@ func (hyperconvergedPredicate) Update(e event.TypedUpdateEvent[*v1beta1.HyperCon
 		return true
 	}
 
-	if !reflect.DeepEqual(e.ObjectNew.Spec.Infra, e.ObjectOld.Spec.Infra) {
-		// If the Infra spec not changed, we want to reconcile
-		return true
-	}
-
 	return false
 }
 
