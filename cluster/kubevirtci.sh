@@ -13,8 +13,8 @@
 # limitations under the License.
 
 export KUBEVIRT_PROVIDER=${KUBEVIRT_PROVIDER:-'k8s-1.32'}
-# auto updated by hack/bump-kubevirtci.sh
-export KUBEVIRTCI_TAG=${KUBEVIRTCI_TAG:-"2507021136-75c28cbe"}
+# cluster/kubevirtci_tag.txt is auto updated by hack/bump-kubevirtci.sh
+export KUBEVIRTCI_TAG=${KUBEVIRTCI_TAG:-$(cat cluster/kubevirtci_tag.txt)}
 
 KUBEVIRTCI_PATH="${PWD}/_kubevirtci"
 KUBEVIRTCI_REPO='https://github.com/kubevirt/kubevirtci.git'

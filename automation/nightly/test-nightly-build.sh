@@ -138,8 +138,8 @@ OLM_VERSION=$(curl https://api.github.com/repos/operator-framework/operator-life
 export KUBEVIRT_PROVIDER=k8s-1.32
 export KUBEVIRT_MEMORY_SIZE=12G
 export KUBEVIRT_NUM_NODES=4
-# auto updated by hack/bump-kubevirtci.sh
-export KUBEVIRTCI_TAG=${KUBEVIRTCI_TAG:-"2507021136-75c28cbe"}
+# cluster/kubevirtci_tag.txt is auto updated by hack/bump-kubevirtci.sh
+export KUBEVIRTCI_TAG=${KUBEVIRTCI_TAG:-$(cat cluster/kubevirtci_tag.txt)}
 make cluster-up
 
 export KUBECONFIG=$(_kubevirtci/cluster-up/kubeconfig.sh)
