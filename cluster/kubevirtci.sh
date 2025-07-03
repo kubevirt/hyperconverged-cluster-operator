@@ -14,7 +14,7 @@
 
 export KUBEVIRT_PROVIDER=${KUBEVIRT_PROVIDER:-'k8s-1.32'}
 # auto updated by hack/bump-kubevirtci.sh
-export KUBEVIRTCI_TAG=${KUBEVIRTCI_TAG:-"2507020818-93505f35"}
+export KUBEVIRTCI_TAG=${KUBEVIRTCI_TAG:-"2507021136-75c28cbe"}
 
 KUBEVIRTCI_PATH="${PWD}/_kubevirtci"
 KUBEVIRTCI_REPO='https://github.com/kubevirt/kubevirtci.git'
