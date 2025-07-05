@@ -64,6 +64,7 @@ spec:
                 disableMDevConfiguration: false
                 downwardMetrics: false
                 enableMultiArchCommonBootImageImport: false
+                passtNetworkBinding: false
                 persistentReservation: false
               liveMigrationConfig:
                 allowAutoConverge: false
@@ -1066,6 +1067,7 @@ spec:
                   disableMDevConfiguration: false
                   downwardMetrics: false
                   enableMultiArchCommonBootImageImport: false
+                  passtNetworkBinding: false
                   persistentReservation: false
                 description: |-
                   featureGates is a map of feature gate flags. Setting a flag to `true` will enable
@@ -1132,6 +1134,13 @@ spec:
                   nonRoot:
                     description: 'Deprecated: // Deprecated: This field is ignored
                       and will be removed on the next version of the API.'
+                    type: boolean
+                  passtNetworkBinding:
+                    default: false
+                    description: |-
+                      passtNetworkBinding deploys the needed configurations for kubevirt users to
+                      be able to use passt network binding plugin.
+                      Note: this feature is in Developer Preview.
                     type: boolean
                   persistentReservation:
                     default: false
