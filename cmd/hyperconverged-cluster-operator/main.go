@@ -246,6 +246,9 @@ func main() {
 	err = metrics.SetupMetrics()
 	cmdHelper.ExitOnError(err, "failed to setup metrics: %v")
 
+	err = hcoutil.CheckPasstImagesEnvExists()
+	cmdHelper.ExitOnError(err, "failed to retrieve passt env vars")
+
 	logger.Info("Starting the Cmd.")
 	eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Init", "Starting the HyperConverged Pod")
 

@@ -1886,12 +1886,22 @@ Version: 1.2.3`)
 		})
 
 		Context("Feature Gates", func() {
+			const expectedPasstImage = "quay.io/some-org/some-repo@some-sha"
+
 			BeforeEach(func() {
 				commontestutils.HighlyAvailableNodeInfoMocks()
 
 				DeferCleanup(func() {
 					commontestutils.ResetNodeInfoMocks()
 				})
+			})
+
+			BeforeEach(func() {
+				Expect(os.Setenv(hcoutil.PasstImageEnvV, expectedPasstImage)).To(Succeed())
+			})
+
+			AfterEach(func() {
+				Expect(os.Unsetenv(hcoutil.PasstImageEnvV)).To(Succeed())
 			})
 
 			Context("test feature gates in NewKubeVirt", func() {
@@ -1962,6 +1972,57 @@ Version: 1.2.3`)
 					})
 
 					Expect(existingResource.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
+				})
+
+				It("should add the Passt Binding to Kubevirt CR if PasstNetworkBinding is true in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						PasstNetworkBinding: ptr.To(true),
+					}
+					hco.Spec.NetworkBinding = nil
+
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(existingResource.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
+					Expect(existingResource.Spec.Configuration.NetworkConfiguration.Binding).NotTo(BeNil())
+					expectedInterfaceBindingPlugin := kubevirtcorev1.InterfaceBindingPlugin{
+						NetworkAttachmentDefinition: passtNetworkBindingNADNamespace + "/" + passtNetworkBindingNADName,
+						SidecarImage:                expectedPasstImage,
+						Migration:                   &kubevirtcorev1.InterfaceBindingMigration{},
+						ComputeResourceOverhead: &kubevirtcorev1.ResourceRequirementsWithoutClaims{
+							Requests: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("500Mi"),
+							},
+						},
+					}
+					Expect(existingResource.Spec.Configuration.NetworkConfiguration.Binding[passtBindingName]).To(Equal(expectedInterfaceBindingPlugin))
+					Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement("PasstIPStackMigration"))
+				})
+
+				It("should not add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is false in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						PasstNetworkBinding: ptr.To(false),
+					}
+					hco.Spec.NetworkBinding = nil
+
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(existingResource.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
+					Expect(existingResource.Spec.Configuration.NetworkConfiguration.Binding).ToNot(ContainElement("PasstIPStackMigration"))
+				})
+
+				It("should not add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is not set in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						PasstNetworkBinding: nil,
+					}
+					hco.Spec.NetworkBinding = nil
+
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+
+					Expect(existingResource.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
+					Expect(existingResource.Spec.Configuration.NetworkConfiguration.Binding).ToNot(ContainElement("PasstIPStackMigration"))
 				})
 
 				It("should not add the feature gates if FeatureGates field is empty", func() {

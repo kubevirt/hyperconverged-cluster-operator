@@ -71,6 +71,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			DisableMDevConfiguration:             ptr.To(false),
 			PersistentReservation:                ptr.To(false),
 			AlignCPUs:                            ptr.To(false),
+			PasstNetworkBinding:                  ptr.To(false),
 			EnableMultiArchCommonBootImageImport: ptr.To(false),
 		}
 
@@ -89,6 +90,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			Entry("when removing /spec/featureGates/deployKubeSecondaryDNS", "/spec/featureGates/deployKubeSecondaryDNS"),
 			Entry("when removing /spec/featureGates/persistentReservation", "/spec/featureGates/persistentReservation"),
 			Entry("when removing /spec/featureGates/alignCPUs", "/spec/featureGates/alignCPUs"),
+			Entry("when removing /spec/featureGates/passtNetworkBinding", "/spec/featureGates/passtNetworkBinding"),
 			Entry("when removing /spec/featureGates/enableMultiArchCommonBootImageImport", "/spec/featureGates/enableMultiArchCommonBootImageImport"),
 			Entry("when removing /spec/featureGates", "/spec/featureGates"),
 			Entry("when removing /spec", "/spec"),
