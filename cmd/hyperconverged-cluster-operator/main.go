@@ -56,6 +56,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/crd"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/descheduler"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/hyperconverged"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/ingresscluster"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/nodes"
@@ -250,7 +251,7 @@ func main() {
 	err = metrics.SetupMetrics()
 	cmdHelper.ExitOnError(err, "failed to setup metrics: %v")
 
-	err = checkPasstImagesEnvExists()
+	err = passt.CheckPasstImagesEnvExists()
 	cmdHelper.ExitOnError(err, "failed to retrieve passt env vars")
 
 	logger.Info("Starting the Cmd.")
@@ -408,14 +409,4 @@ func createPriorityClass(ctx context.Context, mgr manager.Manager) error {
 	}
 
 	return err
-}
-
-func checkPasstImagesEnvExists() error {
-	if _, passtImageVarExists := os.LookupEnv(hcoutil.PasstImageEnvV); !passtImageVarExists {
-		return fmt.Errorf("the %s environment variable must be set", hcoutil.PasstImageEnvV)
-	}
-	if _, passtCNIImageVarExists := os.LookupEnv(hcoutil.PasstCNIImageEnvV); !passtCNIImageVarExists {
-		return fmt.Errorf("the %s environment variable must be set", hcoutil.PasstCNIImageEnvV)
-	}
-	return nil
 }
