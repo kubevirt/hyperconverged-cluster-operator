@@ -20,7 +20,7 @@ import (
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -80,15 +80,15 @@ var _ = Describe("test HyperConverged mutator", func() {
 			Entry("no annotations", nil, &jsonpatch.JsonPatchOperation{
 				Operation: "add",
 				Path:      fmt.Sprintf(annotationPathTemplate, 0),
-				Value:     map[string]string{operands.CDIImmediateBindAnnotation: "true"},
+				Value:     map[string]string{handlers.CDIImmediateBindAnnotation: "true"},
 			}),
 			Entry("different annotations", map[string]string{"something/else": "value"}, &jsonpatch.JsonPatchOperation{
 				Operation: "add",
 				Path:      fmt.Sprintf(dictAnnotationPathTemplate, 0),
 				Value:     "true",
 			}),
-			Entry("annotation=true", map[string]string{operands.CDIImmediateBindAnnotation: "true"}, nil),
-			Entry("annotation=false", map[string]string{operands.CDIImmediateBindAnnotation: "false"}, nil),
+			Entry("annotation=true", map[string]string{handlers.CDIImmediateBindAnnotation: "true"}, nil),
+			Entry("annotation=false", map[string]string{handlers.CDIImmediateBindAnnotation: "false"}, nil),
 		)
 
 		DescribeTable("check dict annotation on update", func(annotations map[string]string, expectedPatches *jsonpatch.JsonPatchOperation) {
@@ -117,15 +117,15 @@ var _ = Describe("test HyperConverged mutator", func() {
 			Entry("no annotations", nil, &jsonpatch.JsonPatchOperation{
 				Operation: "add",
 				Path:      fmt.Sprintf(annotationPathTemplate, 0),
-				Value:     map[string]string{operands.CDIImmediateBindAnnotation: "true"},
+				Value:     map[string]string{handlers.CDIImmediateBindAnnotation: "true"},
 			}),
 			Entry("different annotations", map[string]string{"something/else": "value"}, &jsonpatch.JsonPatchOperation{
 				Operation: "add",
 				Path:      fmt.Sprintf(dictAnnotationPathTemplate, 0),
 				Value:     "true",
 			}),
-			Entry("annotation=true", map[string]string{operands.CDIImmediateBindAnnotation: "true"}, nil),
-			Entry("annotation=false", map[string]string{operands.CDIImmediateBindAnnotation: "false"}, nil),
+			Entry("annotation=true", map[string]string{handlers.CDIImmediateBindAnnotation: "true"}, nil),
+			Entry("annotation=false", map[string]string{handlers.CDIImmediateBindAnnotation: "false"}, nil),
 		)
 
 		It("should handle multiple DICTs", func() {
@@ -144,13 +144,13 @@ var _ = Describe("test HyperConverged mutator", func() {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "annotation-true",
-						Annotations: map[string]string{operands.CDIImmediateBindAnnotation: "true"},
+						Annotations: map[string]string{handlers.CDIImmediateBindAnnotation: "true"},
 					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "annotation-true",
-						Annotations: map[string]string{operands.CDIImmediateBindAnnotation: "false"},
+						Annotations: map[string]string{handlers.CDIImmediateBindAnnotation: "false"},
 					},
 				},
 			}
@@ -164,7 +164,7 @@ var _ = Describe("test HyperConverged mutator", func() {
 			Expect(res.Patches[0]).To(Equal(jsonpatch.JsonPatchOperation{
 				Operation: "add",
 				Path:      fmt.Sprintf(annotationPathTemplate, 0),
-				Value:     map[string]string{operands.CDIImmediateBindAnnotation: "true"},
+				Value:     map[string]string{handlers.CDIImmediateBindAnnotation: "true"},
 			}))
 			Expect(res.Patches[1]).To(Equal(jsonpatch.JsonPatchOperation{
 				Operation: "add",
@@ -189,13 +189,13 @@ var _ = Describe("test HyperConverged mutator", func() {
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "annotation-true",
-						Annotations: map[string]string{operands.CDIImmediateBindAnnotation: "true"},
+						Annotations: map[string]string{handlers.CDIImmediateBindAnnotation: "true"},
 					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "annotation-true",
-						Annotations: map[string]string{operands.CDIImmediateBindAnnotation: "false"},
+						Annotations: map[string]string{handlers.CDIImmediateBindAnnotation: "false"},
 					},
 				},
 			}
@@ -239,7 +239,7 @@ var _ = Describe("test HyperConverged mutator", func() {
 			Expect(res.Patches[0]).To(Equal(jsonpatch.JsonPatchOperation{
 				Operation: "add",
 				Path:      fmt.Sprintf(annotationPathTemplate, 0),
-				Value:     map[string]string{operands.CDIImmediateBindAnnotation: "true"},
+				Value:     map[string]string{handlers.CDIImmediateBindAnnotation: "true"},
 			}))
 			Expect(res.Patches[1]).To(Equal(jsonpatch.JsonPatchOperation{
 				Operation: "add",

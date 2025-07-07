@@ -33,7 +33,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -842,7 +842,7 @@ var _ = Describe("webhooks validator", func() {
 			ctx := context.TODO()
 			cli := getFakeClient(hco)
 
-			kv := operands.NewKubeVirtWithNameOnly(hco)
+			kv := handlers.NewKubeVirtWithNameOnly(hco)
 			Expect(cli.Delete(ctx, kv)).To(Succeed())
 
 			wh := NewWebhookHandler(logger, cli, decoder, HcoValidNamespace, true, nil)
@@ -875,7 +875,7 @@ var _ = Describe("webhooks validator", func() {
 		It("should return error if CDI CR is missing", func() {
 			ctx := context.TODO()
 			cli := getFakeClient(hco)
-			cdi, err := operands.NewCDI(hco)
+			cdi, err := handlers.NewCDI(hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cli.Delete(ctx, cdi)).To(Succeed())
 
@@ -922,7 +922,7 @@ var _ = Describe("webhooks validator", func() {
 		It("should return error if NetworkAddons CR is missing", func() {
 			ctx := context.TODO()
 			cli := getFakeClient(hco)
-			cna, err := operands.NewNetworkAddons(hco)
+			cna, err := handlers.NewNetworkAddons(hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cli.Delete(ctx, cna)).To(Succeed())
 			wh := NewWebhookHandler(logger, cli, decoder, HcoValidNamespace, true, nil)
@@ -956,7 +956,7 @@ var _ = Describe("webhooks validator", func() {
 			ctx := context.TODO()
 			cli := getFakeClient(hco)
 
-			Expect(cli.Delete(ctx, operands.NewSSPWithNameOnly(hco))).To(Succeed())
+			Expect(cli.Delete(ctx, handlers.NewSSPWithNameOnly(hco))).To(Succeed())
 			wh := NewWebhookHandler(logger, cli, decoder, HcoValidNamespace, true, nil)
 
 			newHco := &v1beta1.HyperConverged{}
@@ -1068,7 +1068,7 @@ var _ = Describe("webhooks validator", func() {
 				hco := &v1beta1.HyperConverged{}
 				ctx := context.TODO()
 				cli := getFakeClient(hco)
-				kv, err := operands.NewKubeVirt(hco)
+				kv, err := handlers.NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(cli.Delete(ctx, kv)).To(Succeed())
 				wh := NewWebhookHandler(logger, cli, decoder, HcoValidNamespace, false, nil)
@@ -1101,7 +1101,7 @@ var _ = Describe("webhooks validator", func() {
 				// and so it exits with no error before finding that KV is not there.
 				// Later we'll check that there is no error from the webhook, and that will prove that
 				// the comparison works.
-				kv := operands.NewKubeVirtWithNameOnly(hco)
+				kv := handlers.NewKubeVirtWithNameOnly(hco)
 				Expect(cli.Delete(context.TODO(), kv)).To(Succeed())
 
 				wh := NewWebhookHandler(logger, cli, decoder, HcoValidNamespace, true, nil)
@@ -1157,7 +1157,7 @@ var _ = Describe("webhooks validator", func() {
 				// and so it exits with no error before finding that KV is not there.
 				// Later we'll check that there is no error from the webhook, and that will prove that
 				// the comparison works.
-				kv := operands.NewKubeVirtWithNameOnly(hco)
+				kv := handlers.NewKubeVirtWithNameOnly(hco)
 				Expect(cli.Delete(context.TODO(), kv)).To(Succeed())
 
 				wh := NewWebhookHandler(logger, cli, decoder, HcoValidNamespace, true, nil)
@@ -1633,11 +1633,11 @@ var _ = Describe("webhooks validator", func() {
 			Expect(wh.ValidateDelete(ctx, dryRun, hco)).To(Succeed())
 
 			By("Validate that KV still exists, as it a dry-run deletion")
-			kv := operands.NewKubeVirtWithNameOnly(hco)
+			kv := handlers.NewKubeVirtWithNameOnly(hco)
 			Expect(util.GetRuntimeObject(context.TODO(), cli, kv)).To(Succeed())
 
 			By("Validate that CDI still exists, as it a dry-run deletion")
-			cdi := operands.NewCDIWithNameOnly(hco)
+			cdi := handlers.NewCDIWithNameOnly(hco)
 			Expect(util.GetRuntimeObject(context.TODO(), cli, cdi)).To(Succeed())
 		})
 
@@ -1683,7 +1683,7 @@ var _ = Describe("webhooks validator", func() {
 			cli := getFakeClient(hco)
 			ctx := context.TODO()
 
-			kv := operands.NewKubeVirtWithNameOnly(hco)
+			kv := handlers.NewKubeVirtWithNameOnly(hco)
 			Expect(cli.Delete(ctx, kv)).To(Succeed())
 
 			wh := NewWebhookHandler(logger, cli, decoder, HcoValidNamespace, true, nil)
@@ -1711,7 +1711,7 @@ var _ = Describe("webhooks validator", func() {
 			cli := getFakeClient(hco)
 			ctx := context.TODO()
 
-			cdi := operands.NewCDIWithNameOnly(hco)
+			cdi := handlers.NewCDIWithNameOnly(hco)
 			Expect(cli.Delete(ctx, cdi)).To(Succeed())
 
 			wh := NewWebhookHandler(logger, cli, decoder, HcoValidNamespace, true, nil)
@@ -2282,16 +2282,16 @@ func newHyperConvergedConfig() *sdkapi.NodePlacement {
 }
 
 func getFakeClient(hco *v1beta1.HyperConverged) *commontestutils.HcoTestClient {
-	kv, err := operands.NewKubeVirt(hco)
+	kv, err := handlers.NewKubeVirt(hco)
 	Expect(err).ToNot(HaveOccurred())
 
-	cdi, err := operands.NewCDI(hco)
+	cdi, err := handlers.NewCDI(hco)
 	Expect(err).ToNot(HaveOccurred())
 
-	cna, err := operands.NewNetworkAddons(hco)
+	cna, err := handlers.NewNetworkAddons(hco)
 	Expect(err).ToNot(HaveOccurred())
 
-	ssp, _, err := operands.NewSSP(hco)
+	ssp, _, err := handlers.NewSSP(hco)
 	Expect(err).ToNot(HaveOccurred())
 
 	return commontestutils.InitClient([]client.Object{hco, kv, cdi, cna, ssp})

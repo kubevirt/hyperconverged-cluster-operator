@@ -28,7 +28,7 @@ import (
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -165,19 +165,19 @@ func (wh *WebhookHandler) ValidateCreate(_ context.Context, dryrun bool, hc *v1b
 		return err
 	}
 
-	if _, err := operands.NewKubeVirt(hc); err != nil {
+	if _, err := handlers.NewKubeVirt(hc); err != nil {
 		return err
 	}
 
-	if _, err := operands.NewCDI(hc); err != nil {
+	if _, err := handlers.NewCDI(hc); err != nil {
 		return err
 	}
 
-	if _, err := operands.NewNetworkAddons(hc); err != nil {
+	if _, err := handlers.NewNetworkAddons(hc); err != nil {
 		return err
 	}
 
-	if _, _, err := operands.NewSSP(hc); err != nil {
+	if _, _, err := handlers.NewSSP(hc); err != nil {
 		return err
 	}
 
@@ -193,17 +193,17 @@ func (wh *WebhookHandler) getOperands(requested *v1beta1.HyperConverged) (*kubev
 		return nil, nil, nil, err
 	}
 
-	kv, err := operands.NewKubeVirt(requested)
+	kv, err := handlers.NewKubeVirt(requested)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	cdi, err := operands.NewCDI(requested)
+	cdi, err := handlers.NewCDI(requested)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	cna, err := operands.NewNetworkAddons(requested)
+	cna, err := handlers.NewNetworkAddons(requested)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -274,7 +274,7 @@ func (wh *WebhookHandler) ValidateUpdate(ctx context.Context, dryrun bool, reque
 			return requested.Status.NodeInfo.WorkloadsArchitectures
 		}
 
-		ssp, _, err := operands.NewSSP(requested)
+		ssp, _, err := handlers.NewSSP(requested)
 		if err != nil {
 			return err
 		}
@@ -310,28 +310,28 @@ func (wh *WebhookHandler) updateOperatorCr(ctx context.Context, hc *v1beta1.Hype
 
 	switch existing := exists.(type) {
 	case *kubevirtcorev1.KubeVirt:
-		required, err := operands.NewKubeVirt(hc)
+		required, err := handlers.NewKubeVirt(hc)
 		if err != nil {
 			return err
 		}
 		required.Spec.DeepCopyInto(&existing.Spec)
 
 	case *cdiv1beta1.CDI:
-		required, err := operands.NewCDI(hc)
+		required, err := handlers.NewCDI(hc)
 		if err != nil {
 			return err
 		}
 		required.Spec.DeepCopyInto(&existing.Spec)
 
 	case *networkaddonsv1.NetworkAddonsConfig:
-		required, err := operands.NewNetworkAddons(hc)
+		required, err := handlers.NewNetworkAddons(hc)
 		if err != nil {
 			return err
 		}
 		required.Spec.DeepCopyInto(&existing.Spec)
 
 	case *sspv1beta3.SSP:
-		required, _, err := operands.NewSSP(hc)
+		required, _, err := handlers.NewSSP(hc)
 		if err != nil {
 			return err
 		}
@@ -350,8 +350,8 @@ func (wh *WebhookHandler) updateOperatorCr(ctx context.Context, hc *v1beta1.Hype
 func (wh *WebhookHandler) ValidateDelete(ctx context.Context, dryrun bool, hc *v1beta1.HyperConverged) error {
 	wh.logger.Info("Validating delete", "name", hc.Name, "namespace", hc.Namespace)
 
-	kv := operands.NewKubeVirtWithNameOnly(hc)
-	cdi := operands.NewCDIWithNameOnly(hc)
+	kv := handlers.NewKubeVirtWithNameOnly(hc)
+	cdi := handlers.NewCDIWithNameOnly(hc)
 
 	for _, obj := range []client.Object{
 		kv,
