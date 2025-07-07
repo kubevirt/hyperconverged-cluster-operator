@@ -1,4 +1,4 @@
-package operands
+package handlers
 
 import (
 	"os"
@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	pkgDirectory = "controllers/operands"
+	pkgDirectory = "controllers/handlers"
 	testFilesLoc = "testFiles"
 )
 

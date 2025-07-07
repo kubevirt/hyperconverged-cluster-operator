@@ -1,4 +1,4 @@
-package operands
+package handlers
 
 import (
 	"context"
@@ -13,13 +13,13 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
+	"kubevirt.io/controller-lifecycle-operator-sdk/api"
+
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-
-	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
-	"kubevirt.io/controller-lifecycle-operator-sdk/api"
 )
 
 var _ = Describe("AAQ tests", func() {
@@ -169,9 +169,9 @@ var _ = Describe("AAQ tests", func() {
 		It("should not create AAQ if the FG is not set", func() {
 			cl = commontestutils.InitClient([]client.Object{hco})
 
-			handler := newAAQHandler(cl, commontestutils.GetScheme())
+			handler := NewAAQHandler(cl, commontestutils.GetScheme())
 
-			res := handler.ensure(req)
+			res := handler.Ensure(req)
 
 			Expect(res.Err).ToNot(HaveOccurred())
 			Expect(res.Created).To(BeFalse())
@@ -188,9 +188,9 @@ var _ = Describe("AAQ tests", func() {
 			Expect(err).ToNot(HaveOccurred())
 			cl = commontestutils.InitClient([]client.Object{hco, aaq})
 
-			handler := newAAQHandler(cl, commontestutils.GetScheme())
+			handler := NewAAQHandler(cl, commontestutils.GetScheme())
 
-			res := handler.ensure(req)
+			res := handler.Ensure(req)
 
 			Expect(res.Err).ToNot(HaveOccurred())
 			Expect(res.Name).To(Equal(aaq.Name))
@@ -207,9 +207,9 @@ var _ = Describe("AAQ tests", func() {
 			hco.Spec.EnableApplicationAwareQuota = ptr.To(true)
 			cl = commontestutils.InitClient([]client.Object{hco})
 
-			handler := newAAQHandler(cl, commontestutils.GetScheme())
+			handler := NewAAQHandler(cl, commontestutils.GetScheme())
 
-			res := handler.ensure(req)
+			res := handler.Ensure(req)
 
 			Expect(res.Err).ToNot(HaveOccurred())
 			Expect(res.Name).To(Equal("aaq-kubevirt-hyperconverged"))
@@ -248,9 +248,9 @@ var _ = Describe("AAQ tests", func() {
 			}
 
 			cl = commontestutils.InitClient([]client.Object{hco, aaq})
-			handler := newAAQHandler(cl, commontestutils.GetScheme())
+			handler := NewAAQHandler(cl, commontestutils.GetScheme())
 
-			res := handler.ensure(req)
+			res := handler.Ensure(req)
 
 			Expect(res.Err).ToNot(HaveOccurred())
 			Expect(res.Created).To(BeFalse())
@@ -292,9 +292,9 @@ var _ = Describe("AAQ tests", func() {
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler := newAAQHandler(cl, commontestutils.GetScheme())
+			handler := NewAAQHandler(cl, commontestutils.GetScheme())
 
-			res := handler.ensure(req)
+			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -323,9 +323,9 @@ var _ = Describe("AAQ tests", func() {
 			delete(outdatedResource.Labels, hcoutil.AppLabelVersion)
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler := newAAQHandler(cl, commontestutils.GetScheme())
+			handler := NewAAQHandler(cl, commontestutils.GetScheme())
 
-			res := handler.ensure(req)
+			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -347,35 +347,29 @@ var _ = Describe("AAQ tests", func() {
 
 	Context("check cache", func() {
 		It("should create new cache if it empty", func() {
-			hco.Spec.EnableApplicationAwareQuota = ptr.To(true)
-			cl = commontestutils.InitClient([]client.Object{hco})
-			handler := newAAQHandler(cl, commontestutils.GetScheme())
-			op, ok := handler.(*conditionalHandler)
-			Expect(ok).To(BeTrue())
+			hook := &aaqHooks{}
+			Expect(hook.cache).To(BeNil())
 
-			hooks, ok := op.operand.hooks.(*aaqHooks)
-			Expect(ok).To(BeTrue())
+			firstCallResult, err := hook.GetFullCr(hco)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(firstCallResult).ToNot(BeNil())
+			Expect(hook.cache).To(BeIdenticalTo(firstCallResult))
 
-			Expect(hooks.cache).To(BeNil())
+			secondCallResult, err := hook.GetFullCr(hco)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secondCallResult).ToNot(BeNil())
+			Expect(hook.cache).To(BeIdenticalTo(secondCallResult))
+			Expect(firstCallResult).To(BeIdenticalTo(secondCallResult))
 
-			res := handler.ensure(req)
-			Expect(res.Err).ToNot(HaveOccurred())
+			hook.Reset()
+			Expect(hook.cache).To(BeNil())
 
-			cache := hooks.cache
-			Expect(cache).ToNot(BeNil())
-
-			Expect(hooks.getFullCr(hco)).To(BeIdenticalTo(cache))
-
-			By("recreate cache after reset")
-			handler.reset()
-			Expect(hooks.cache).To(BeNil())
-			res = handler.ensure(req)
-			Expect(res.Err).ToNot(HaveOccurred())
-
-			Expect(hooks.cache).ToNot(BeIdenticalTo(cache))
-			mtq, _ := hooks.getFullCr(hco)
-			Expect(mtq).ToNot(BeIdenticalTo(cache))
-			Expect(mtq).To(BeIdenticalTo(hooks.cache))
+			thirdCallResult, err := hook.GetFullCr(hco)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(thirdCallResult).ToNot(BeNil())
+			Expect(hook.cache).To(BeIdenticalTo(thirdCallResult))
+			Expect(thirdCallResult).ToNot(BeIdenticalTo(firstCallResult))
+			Expect(thirdCallResult).ToNot(BeIdenticalTo(secondCallResult))
 		})
 	})
 })

@@ -1,4 +1,4 @@
-package operands
+package handlers
 
 import (
 	"context"
@@ -6,23 +6,25 @@ import (
 	"os"
 	"reflect"
 
-	rbacv1 "k8s.io/api/rbac/v1"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 var _ = Describe("VirtioWin", func() {
+
+	var testLogger = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("VirtioWin_test")
+
 	Context("Virtio-Win ConfigMap", func() {
 
 		var hco *hcov1beta1.HyperConverged
@@ -38,7 +40,7 @@ var _ = Describe("VirtioWin", func() {
 			os.Unsetenv("VIRTIOWIN_CONTAINER")
 
 			cl := commontestutils.InitClient([]client.Object{})
-			handler, err := newVirtioWinCmHandler(logger, cl, commontestutils.GetScheme(), hco)
+			handler, err := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
 
 			Expect(err).To(HaveOccurred())
 			Expect(handler).To(BeNil())
@@ -48,8 +50,8 @@ var _ = Describe("VirtioWin", func() {
 			expectedResource, err := NewVirtioWinCm(hco)
 			Expect(err).ToNot(HaveOccurred())
 			cl := commontestutils.InitClient([]client.Object{})
-			handler, _ := newVirtioWinCmHandler(logger, cl, commontestutils.GetScheme(), hco)
-			res := handler.ensure(req)
+			handler, _ := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).ToNot(HaveOccurred())
 
@@ -69,8 +71,8 @@ var _ = Describe("VirtioWin", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
-			handler, _ := newVirtioWinCmHandler(logger, cl, commontestutils.GetScheme(), hco)
-			res := handler.ensure(req)
+			handler, _ := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).ToNot(HaveOccurred())
 
@@ -100,8 +102,8 @@ var _ = Describe("VirtioWin", func() {
 			outdatedResource.Data[toBeRemovedKey] = "value-we-should-remove"
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler, _ := newVirtioWinCmHandler(logger, cl, commontestutils.GetScheme(), hco)
-			res := handler.ensure(req)
+			handler, _ := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -142,8 +144,8 @@ var _ = Describe("VirtioWin", func() {
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler, _ := newVirtioWinCmHandler(logger, cl, commontestutils.GetScheme(), hco)
-			res := handler.ensure(req)
+			handler, _ := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -171,8 +173,8 @@ var _ = Describe("VirtioWin", func() {
 			delete(outdatedResource.Labels, hcoutil.AppLabelVersion)
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler, _ := newVirtioWinCmHandler(logger, cl, commontestutils.GetScheme(), hco)
-			res := handler.ensure(req)
+			handler, _ := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -205,8 +207,8 @@ var _ = Describe("VirtioWin", func() {
 			expectedRole := NewVirtioWinCmReaderRole(hco)
 			cl := commontestutils.InitClient([]client.Object{hco, expectedRole})
 
-			handler, _ := newVirtioWinCmReaderRoleHandler(logger, cl, commontestutils.GetScheme(), hco)
-			res := handler.ensure(req)
+			handler, _ := NewVirtioWinCmReaderRoleHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			foundRole := &rbacv1.Role{}
@@ -227,8 +229,8 @@ var _ = Describe("VirtioWin", func() {
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedRole})
 
-			handler, _ := newVirtioWinCmReaderRoleHandler(logger, cl, commontestutils.GetScheme(), hco)
-			res := handler.ensure(req)
+			handler, _ := NewVirtioWinCmReaderRoleHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			foundRole := &rbacv1.Role{}
@@ -256,8 +258,8 @@ var _ = Describe("VirtioWin", func() {
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedRoleBinding})
 
-			handler, _ := newVirtioWinCmReaderRoleBindingHandler(logger, cl, commontestutils.GetScheme(), hco)
-			res := handler.ensure(req)
+			handler, _ := NewVirtioWinCmReaderRoleBindingHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			foundRoleBinding := &rbacv1.RoleBinding{}
@@ -277,8 +279,8 @@ var _ = Describe("VirtioWin", func() {
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedRoleBinding})
 
-			handler, _ := newVirtioWinCmReaderRoleBindingHandler(logger, cl, commontestutils.GetScheme(), hco)
-			res := handler.ensure(req)
+			handler, _ := NewVirtioWinCmReaderRoleBindingHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			foundRoleBinding := &rbacv1.RoleBinding{}

@@ -1,4 +1,4 @@
-package operands
+package handlers
 
 import (
 	"context"
@@ -9,17 +9,15 @@ import (
 	"strings"
 	"time"
 
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-
-	"k8s.io/client-go/tools/reference"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	consolev1 "github.com/openshift/api/console/v1"
+	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 var _ = Describe("QuickStart tests", func() {
@@ -27,19 +25,19 @@ var _ = Describe("QuickStart tests", func() {
 	schemeForTest := commontestutils.GetScheme()
 
 	var (
-		logger            = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("quickstart_test")
+		testLogger        = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("quickstart_test")
 		testFilesLocation = getTestFilesLocation() + "/quickstarts"
 		hco               = commontestutils.NewHco()
 	)
 
-	Context("test getQuickStartHandlers", func() {
+	Context("test GetQuickStartHandlers", func() {
 		It("should use env var to override the yaml locations", func() {
 			// create temp folder for the test
 			dir := path.Join(os.TempDir(), fmt.Sprint(time.Now().UTC().Unix()))
-			_ = os.Setenv(quickStartManifestLocationVarName, dir)
+			_ = os.Setenv(QuickStartManifestLocationVarName, dir)
 			By("folder not exists", func() {
 				cli := commontestutils.InitClient([]client.Object{})
-				handlers, err := getQuickStartHandlers(logger, cli, schemeForTest, hco)
+				handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(handlers).To(BeEmpty())
@@ -50,7 +48,7 @@ var _ = Describe("QuickStart tests", func() {
 
 			By("folder is empty", func() {
 				cli := commontestutils.InitClient([]client.Object{})
-				handlers, err := getQuickStartHandlers(logger, cli, schemeForTest, hco)
+				handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(handlers).To(BeEmpty())
@@ -66,7 +64,7 @@ var _ = Describe("QuickStart tests", func() {
 
 			By("no yaml files", func() {
 				cli := commontestutils.InitClient([]client.Object{})
-				handlers, err := getQuickStartHandlers(logger, cli, schemeForTest, hco)
+				handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(handlers).To(BeEmpty())
@@ -76,7 +74,7 @@ var _ = Describe("QuickStart tests", func() {
 
 			By("yaml file exists", func() {
 				cli := commontestutils.InitClient([]client.Object{})
-				handlers, err := getQuickStartHandlers(logger, cli, schemeForTest, hco)
+				handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(handlers).To(HaveLen(1))
@@ -86,7 +84,7 @@ var _ = Describe("QuickStart tests", func() {
 
 		It("should return error if quickstart path is not a directory", func() {
 			filePath := "/testFiles/quickstarts/quickstart.yaml"
-			const currentDir = "/controllers/operands"
+			const currentDir = "/controllers/handlers"
 			wd, _ := os.Getwd()
 			if !strings.HasSuffix(wd, currentDir) {
 				filePath = wd + currentDir + filePath
@@ -95,24 +93,23 @@ var _ = Describe("QuickStart tests", func() {
 			}
 
 			// quickstart directory path of a file
-			_ = os.Setenv(quickStartManifestLocationVarName, filePath)
-			By("check that getQuickStartHandlers returns error", func() {
-				cli := commontestutils.InitClient([]client.Object{})
-				handlers, err := getQuickStartHandlers(logger, cli, schemeForTest, hco)
+			_ = os.Setenv(QuickStartManifestLocationVarName, filePath)
+			By("check that GetQuickStartHandlers returns error")
+			cli := commontestutils.InitClient([]client.Object{})
+			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
 
-				Expect(err).To(HaveOccurred())
-				Expect(handlers).To(BeEmpty())
-			})
+			Expect(err).To(HaveOccurred())
+			Expect(handlers).To(BeEmpty())
 		})
 	})
 
 	Context("test quickStartHandler", func() {
 
 		It("should create the ConsoleQuickStart resource if not exists", func() {
-			_ = os.Setenv(quickStartManifestLocationVarName, testFilesLocation)
+			_ = os.Setenv(QuickStartManifestLocationVarName, testFilesLocation)
 
 			cli := commontestutils.InitClient([]client.Object{})
-			handlers, err := getQuickStartHandlers(logger, cli, schemeForTest, hco)
+			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 			Expect(quickstartNames).To(ContainElement("test-quick-start"))
@@ -120,7 +117,7 @@ var _ = Describe("QuickStart tests", func() {
 			hco := commontestutils.NewHco()
 			By("apply the quickstart CRs", func() {
 				req := commontestutils.NewReq(hco)
-				res := handlers[0].ensure(req)
+				res := handlers[0].Ensure(req)
 				Expect(res.Err).ToNot(HaveOccurred())
 				Expect(res.Created).To(BeTrue())
 
@@ -132,7 +129,7 @@ var _ = Describe("QuickStart tests", func() {
 		})
 
 		It("should update the ConsoleQuickStart resource if not not equal to the expected one", func() {
-			Expect(os.Setenv(quickStartManifestLocationVarName, testFilesLocation)).To(Succeed())
+			Expect(os.Setenv(QuickStartManifestLocationVarName, testFilesLocation)).To(Succeed())
 
 			exists, err := getQSsFromTestData(testFilesLocation)
 			Expect(err).ToNot(HaveOccurred())
@@ -140,7 +137,7 @@ var _ = Describe("QuickStart tests", func() {
 			exists.Spec.DurationMinutes = exists.Spec.DurationMinutes * 2
 
 			cli := commontestutils.InitClient([]client.Object{exists})
-			handlers, err := getQuickStartHandlers(logger, cli, schemeForTest, hco)
+			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 			Expect(quickstartNames).To(ContainElement("test-quick-start"))
@@ -148,7 +145,7 @@ var _ = Describe("QuickStart tests", func() {
 			hco := commontestutils.NewHco()
 			By("apply the quickstart CRs", func() {
 				req := commontestutils.NewReq(hco)
-				res := handlers[0].ensure(req)
+				res := handlers[0].Ensure(req)
 				Expect(res.Err).ToNot(HaveOccurred())
 				Expect(res.Updated).To(BeTrue())
 
@@ -171,13 +168,13 @@ var _ = Describe("QuickStart tests", func() {
 		})
 
 		It("should reconcile managed labels to default without touching user added ones", func() {
-			_ = os.Setenv(quickStartManifestLocationVarName, testFilesLocation)
+			_ = os.Setenv(QuickStartManifestLocationVarName, testFilesLocation)
 
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
 
 			cli := commontestutils.InitClient([]client.Object{})
-			handlers, err := getQuickStartHandlers(logger, cli, schemeForTest, hco)
+			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 
@@ -186,7 +183,7 @@ var _ = Describe("QuickStart tests", func() {
 			req := commontestutils.NewReq(hco)
 
 			By("apply the quickstart CRs", func() {
-				res := handlers[0].ensure(req)
+				res := handlers[0].Ensure(req)
 				Expect(res.Err).ToNot(HaveOccurred())
 				Expect(res.Created).To(BeTrue())
 
@@ -216,7 +213,7 @@ var _ = Describe("QuickStart tests", func() {
 
 			By("reconciling quickstart objects", func() {
 				for _, handler := range handlers {
-					res := handler.ensure(req)
+					res := handler.Ensure(req)
 					Expect(res.UpgradeDone).To(BeFalse())
 					Expect(res.Updated).To(BeTrue())
 					Expect(res.Err).ToNot(HaveOccurred())
@@ -235,13 +232,13 @@ var _ = Describe("QuickStart tests", func() {
 		})
 
 		It("should reconcile managed labels to default on label deletion without touching user added ones", func() {
-			_ = os.Setenv(quickStartManifestLocationVarName, testFilesLocation)
+			_ = os.Setenv(QuickStartManifestLocationVarName, testFilesLocation)
 
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
 
 			cli := commontestutils.InitClient([]client.Object{})
-			handlers, err := getQuickStartHandlers(logger, cli, schemeForTest, hco)
+			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 
@@ -250,7 +247,7 @@ var _ = Describe("QuickStart tests", func() {
 			req := commontestutils.NewReq(hco)
 
 			By("apply the quickstart CRs", func() {
-				res := handlers[0].ensure(req)
+				res := handlers[0].Ensure(req)
 				Expect(res.Err).ToNot(HaveOccurred())
 				Expect(res.Created).To(BeTrue())
 
@@ -278,7 +275,7 @@ var _ = Describe("QuickStart tests", func() {
 
 			By("reconciling quickstart objects", func() {
 				for _, handler := range handlers {
-					res := handler.ensure(req)
+					res := handler.Ensure(req)
 					Expect(res.UpgradeDone).To(BeFalse())
 					Expect(res.Updated).To(BeTrue())
 					Expect(res.Err).ToNot(HaveOccurred())

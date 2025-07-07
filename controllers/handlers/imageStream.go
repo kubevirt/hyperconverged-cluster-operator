@@ -1,4 +1,4 @@
-package operands
+package handlers
 
 import (
 	"errors"
@@ -18,6 +18,7 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -25,33 +26,36 @@ import (
 
 // ImageStream resources are a short user guids
 const (
+	ImageStreamManifestLocationVarName = "IMAGE_STREAM_FILES_LOCATION"
 	imageStreamDefaultManifestLocation = "./imageStreams"
 )
 
 var (
-	imageStreamNames           []string
-	getImageStreamFileLocation = func() string {
-		return imageStreamDefaultManifestLocation
-	}
+	imageStreamNames []string
 )
 
-type imageStreamOperand struct {
-	operand *genericOperand
+func GetImageStreamNames() []string {
+	return imageStreamNames
 }
 
-func (iso imageStreamOperand) ensure(req *common.HcoRequest) *EnsureResult {
+type imageStreamOperand struct {
+	operand *operands.GenericOperand
+	hooks   *isHooks
+}
+
+func (iso imageStreamOperand) Ensure(req *common.HcoRequest) *operands.EnsureResult {
 	// if the EnableCommonBootImageImport field is set, make sure the imageStream is in place and up-to-date
 	if req.Instance.Spec.EnableCommonBootImageImport != nil && *req.Instance.Spec.EnableCommonBootImageImport {
 		if result := iso.checkCustomNamespace(req); result != nil {
 			return result
 		}
 
-		return iso.operand.ensure(req)
+		return iso.operand.Ensure(req)
 	}
 
 	// if the FG is not set, make sure the imageStream is not exist
-	cr := iso.operand.hooks.getEmptyCr()
-	res := NewEnsureResult(cr)
+	cr := iso.hooks.GetEmptyCr()
+	res := operands.NewEnsureResult(cr)
 	res.SetName(cr.GetName())
 	deleted, err := util.EnsureDeleted(req.Ctx, iso.operand.Client, cr, req.Instance.Name, req.Logger, false, false, true)
 	if err != nil {
@@ -74,59 +78,55 @@ func (iso imageStreamOperand) ensure(req *common.HcoRequest) *EnsureResult {
 	return res.SetUpgradeDone(req.ComponentUpgradeInProgress)
 }
 
-func (iso imageStreamOperand) checkCustomNamespace(req *common.HcoRequest) *EnsureResult {
-	if ns, h := req.Instance.Spec.CommonBootImageNamespace, iso.operand.hooks.(*isHooks); ns != nil && len(*ns) > 0 && h.required.Namespace != *ns {
+func (iso imageStreamOperand) checkCustomNamespace(req *common.HcoRequest) *operands.EnsureResult {
+	if ns := req.Instance.Spec.CommonBootImageNamespace; ns != nil && len(*ns) > 0 && iso.hooks.required.Namespace != *ns {
 		if result := iso.deleteImageStream(req); result != nil {
 			return result
 		}
 
-		h.required.Namespace = *ns
-	} else if (ns == nil || len(*ns) == 0) && h.required.Namespace != h.originalNS {
+		iso.hooks.required.Namespace = *ns
+	} else if (ns == nil || len(*ns) == 0) && iso.hooks.required.Namespace != iso.hooks.originalNS {
 		if result := iso.deleteImageStream(req); result != nil {
 			return result
 		}
 
-		h.required.Namespace = h.originalNS
+		iso.hooks.required.Namespace = iso.hooks.originalNS
 	}
 	return nil
 }
 
-func (iso imageStreamOperand) deleteImageStream(req *common.HcoRequest) *EnsureResult {
-	h := iso.operand.hooks.(*isHooks)
-	_, err := util.EnsureDeleted(req.Ctx, iso.operand.Client, h.required, req.Instance.Name, req.Logger, false, true, false)
+func (iso imageStreamOperand) deleteImageStream(req *common.HcoRequest) *operands.EnsureResult {
+	_, err := util.EnsureDeleted(req.Ctx, iso.operand.Client, iso.hooks.required, req.Instance.Name, req.Logger, false, true, false)
 	if err != nil {
-		return NewEnsureResult(h.required).Error(fmt.Errorf("failed to delete imagestream %s/%s; %w", h.required.Namespace, h.required.Name, err))
+		return operands.NewEnsureResult(iso.hooks.required).Error(fmt.Errorf("failed to delete imagestream %s/%s; %w", iso.hooks.required.Namespace, iso.hooks.required.Name, err))
 	}
 
-	objectRef, err := reference.GetReference(iso.operand.Scheme, h.required)
+	objectRef, err := reference.GetReference(iso.operand.Scheme, iso.hooks.required)
 	if err != nil {
-		return NewEnsureResult(req.Instance).Error(err)
+		return operands.NewEnsureResult(req.Instance).Error(err)
 	}
 
 	if err = objectreferencesv1.RemoveObjectReference(&req.Instance.Status.RelatedObjects, *objectRef); err != nil {
-		return NewEnsureResult(req.Instance).Error(err)
+		return operands.NewEnsureResult(req.Instance).Error(err)
 	}
 	req.StatusDirty = true
 
 	return nil
 }
 
-func (iso imageStreamOperand) reset() {
-	iso.operand.reset()
+func (iso imageStreamOperand) Reset() {
+	iso.operand.Reset()
 }
 
-func (iso imageStreamOperand) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	return iso.operand.getFullCr(hc)
+func (iso imageStreamOperand) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+	return iso.operand.GetFullCr(hc)
 }
 
-func newImageStreamHandler(Client client.Client, Scheme *runtime.Scheme, required *imagev1.ImageStream, origNS string) Operand {
+func newImageStreamHandler(Client client.Client, Scheme *runtime.Scheme, required *imagev1.ImageStream, origNS string) operands.Operand {
+	hooks := newIsHook(required, origNS)
 	return &imageStreamOperand{
-		operand: &genericOperand{
-			Client: Client,
-			Scheme: Scheme,
-			crType: "ImageStream",
-			hooks:  newIsHook(required, origNS),
-		},
+		operand: operands.NewGenericOperand(Client, Scheme, "ImageStream", hooks, false),
+		hooks:   hooks,
 	}
 }
 
@@ -144,11 +144,11 @@ func newIsHook(required *imagev1.ImageStream, origNS string) *isHooks {
 	return &isHooks{required: required, tags: tags, originalNS: origNS}
 }
 
-func (h isHooks) getFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h isHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
 
-func (h isHooks) getEmptyCr() client.Object {
+func (h isHooks) GetEmptyCr() client.Object {
 	return &imagev1.ImageStream{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      h.required.Name,
@@ -157,7 +157,7 @@ func (h isHooks) getEmptyCr() client.Object {
 	}
 }
 
-func (h isHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
+func (h isHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
 	found, ok := exists.(*imagev1.ImageStream)
 
 	if !ok {
@@ -186,7 +186,7 @@ func (h isHooks) updateCr(req *common.HcoRequest, Client client.Client, exists r
 	return true, !req.HCOTriggered, nil
 }
 
-func (isHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+func (isHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
 func (h isHooks) compareAndUpgradeImageStream(found *imagev1.ImageStream) bool {
 	modified := false
@@ -238,8 +238,8 @@ func (h isHooks) addMissingTags(found *imagev1.ImageStream, newTags []imagev1.Ta
 	return newTags, modified
 }
 
-func getImageStreamHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]Operand, error) {
-	filesLocation := getImageStreamFileLocation()
+func GetImageStreamHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]operands.Operand, error) {
+	filesLocation := util.GetManifestDirPath(ImageStreamManifestLocationVarName, imageStreamDefaultManifestLocation)
 
 	err := util.ValidateManifestDir(filesLocation)
 	if err != nil {
@@ -250,8 +250,8 @@ func getImageStreamHandlers(logger log.Logger, Client client.Client, Scheme *run
 	return createImageStreamHandlersFromFiles(logger, Client, Scheme, hc, filesLocation)
 }
 
-func createImageStreamHandlersFromFiles(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, filesLocation string) ([]Operand, error) {
-	var handlers []Operand
+func createImageStreamHandlersFromFiles(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, filesLocation string) ([]operands.Operand, error) {
+	var handlers []operands.Operand
 	imageStreamNames = []string{}
 
 	logger.Info("walking over the files in " + filesLocation + ", to find imageStream files.")
@@ -292,7 +292,7 @@ func compareOneTag(foundTag, reqTag *imagev1.TagReference) bool {
 	return modified
 }
 
-func processImageStreamFile(path string, info os.FileInfo, logger log.Logger, hc *hcov1beta1.HyperConverged, Client client.Client, Scheme *runtime.Scheme) (Operand, error) {
+func processImageStreamFile(path string, info os.FileInfo, logger log.Logger, hc *hcov1beta1.HyperConverged, Client client.Client, Scheme *runtime.Scheme) (operands.Operand, error) {
 	if !info.IsDir() && strings.HasSuffix(info.Name(), ".yaml") {
 		file, err := os.Open(path)
 		if err != nil {
@@ -311,7 +311,7 @@ func processImageStreamFile(path string, info os.FileInfo, logger log.Logger, hc
 			is.Namespace = *ns
 		}
 
-		is.Labels = getLabels(hc, util.AppComponentCompute)
+		is.Labels = operands.GetLabels(hc, util.AppComponentCompute)
 		imageStreamNames = append(imageStreamNames, is.Name)
 		return newImageStreamHandler(Client, Scheme, is, origNS), nil
 	}

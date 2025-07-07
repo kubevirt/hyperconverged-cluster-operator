@@ -1,4 +1,4 @@
-package operands
+package handlers
 
 import (
 	"context"
@@ -9,10 +9,9 @@ import (
 	"strings"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -25,7 +24,7 @@ var _ = Describe("Dashboard tests", func() {
 	schemeForTest := commontestutils.GetScheme()
 
 	var (
-		logger            = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("dashboard_test")
+		testLogger        = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("dashboard_test")
 		testFilesLocation = getTestFilesLocation() + "/dashboards"
 		hco               = commontestutils.NewHco()
 	)
@@ -34,11 +33,11 @@ var _ = Describe("Dashboard tests", func() {
 		It("should use env var to override the yaml locations", func() {
 			// create temp folder for the test
 			dir := path.Join(os.TempDir(), fmt.Sprint(time.Now().UTC().Unix()))
-			_ = os.Setenv(dashboardManifestLocationVarName, dir)
+			_ = os.Setenv(DashboardManifestLocationVarName, dir)
 
 			By("folder not exists", func() {
 				cli := commontestutils.InitClient([]client.Object{})
-				handlers, err := getDashboardHandlers(logger, cli, schemeForTest, hco)
+				handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(handlers).To(BeEmpty())
@@ -49,7 +48,7 @@ var _ = Describe("Dashboard tests", func() {
 
 			By("folder is empty", func() {
 				cli := commontestutils.InitClient([]client.Object{})
-				handlers, err := getDashboardHandlers(logger, cli, schemeForTest, hco)
+				handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(handlers).To(BeEmpty())
@@ -65,7 +64,7 @@ var _ = Describe("Dashboard tests", func() {
 
 			By("no yaml files", func() {
 				cli := commontestutils.InitClient([]client.Object{})
-				handlers, err := getDashboardHandlers(logger, cli, schemeForTest, hco)
+				handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(handlers).To(BeEmpty())
@@ -77,7 +76,7 @@ var _ = Describe("Dashboard tests", func() {
 
 			By("yaml file exists", func() {
 				cli := commontestutils.InitClient([]client.Object{})
-				handlers, err := getDashboardHandlers(logger, cli, schemeForTest, hco)
+				handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
 
 				Expect(err).ToNot(HaveOccurred())
 				Expect(handlers).To(HaveLen(1))
@@ -86,38 +85,39 @@ var _ = Describe("Dashboard tests", func() {
 
 		It("should return error if dashboard path is not a directory", func() {
 			filePath := "/testFiles/dashboards/kubevirt-top-consumers.yaml"
-			const currentDir = "/controllers/operands"
-			wd, _ := os.Getwd()
+			const currentDir = "/controllers/handlers"
+			wd, err := os.Getwd()
+			Expect(err).ToNot(HaveOccurred())
+
 			if !strings.HasSuffix(wd, currentDir) {
 				filePath = wd + currentDir + filePath
 			} else {
 				filePath = wd + filePath
 			}
 
-			_ = os.Setenv(dashboardManifestLocationVarName, filePath)
-			By("check that getDashboardHandlers returns error", func() {
-				cli := commontestutils.InitClient([]client.Object{})
-				handlers, err := getDashboardHandlers(logger, cli, schemeForTest, hco)
+			Expect(os.Setenv(DashboardManifestLocationVarName, filePath)).To(Succeed())
+			By("check that GetDashboardHandlers returns error")
+			cli := commontestutils.InitClient([]client.Object{})
+			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
 
-				Expect(err).To(HaveOccurred())
-				Expect(handlers).To(BeEmpty())
-			})
+			Expect(err).To(HaveOccurred())
+			Expect(handlers).To(BeEmpty())
 		})
 	})
 
 	Context("test dashboardHandler", func() {
 		It("should create the Dashboard Configmap resource if not exists", func() {
-			_ = os.Setenv(dashboardManifestLocationVarName, testFilesLocation)
+			_ = os.Setenv(DashboardManifestLocationVarName, testFilesLocation)
 
 			cli := commontestutils.InitClient([]client.Object{})
-			handlers, err := getDashboardHandlers(logger, cli, schemeForTest, hco)
+			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 
 			hco := commontestutils.NewHco()
 			By("apply the configmap", func() {
 				req := commontestutils.NewReq(hco)
-				res := handlers[0].ensure(req)
+				res := handlers[0].Ensure(req)
 				Expect(res.Err).ToNot(HaveOccurred())
 				Expect(res.Created).To(BeTrue())
 
@@ -129,7 +129,7 @@ var _ = Describe("Dashboard tests", func() {
 		})
 
 		It("should update the ConfigMap resource if not not equal to the expected one", func() {
-			Expect(os.Setenv(dashboardManifestLocationVarName, testFilesLocation)).To(Succeed())
+			Expect(os.Setenv(DashboardManifestLocationVarName, testFilesLocation)).To(Succeed())
 
 			exists, err := getCMsFromTestData(testFilesLocation)
 			Expect(err).ToNot(HaveOccurred())
@@ -138,7 +138,7 @@ var _ = Describe("Dashboard tests", func() {
 			exists.Data = map[string]string{"fakeKey": "fakeValue"}
 
 			cli := commontestutils.InitClient([]client.Object{exists})
-			handlers, err := getDashboardHandlers(logger, cli, schemeForTest, hco)
+			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 
@@ -146,7 +146,7 @@ var _ = Describe("Dashboard tests", func() {
 
 			By("reconcile the confimap")
 			req := commontestutils.NewReq(hco)
-			res := handlers[0].ensure(req)
+			res := handlers[0].Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 			Expect(res.Updated).To(BeTrue())
 
@@ -167,9 +167,9 @@ var _ = Describe("Dashboard tests", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
 
-			_ = os.Setenv(dashboardManifestLocationVarName, testFilesLocation)
+			_ = os.Setenv(DashboardManifestLocationVarName, testFilesLocation)
 			cli := commontestutils.InitClient([]client.Object{})
-			handlers, err := getDashboardHandlers(logger, cli, schemeForTest, hco)
+			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 
@@ -178,7 +178,7 @@ var _ = Describe("Dashboard tests", func() {
 			req := commontestutils.NewReq(hco)
 
 			By("apply the CMs", func() {
-				res := handlers[0].ensure(req)
+				res := handlers[0].Ensure(req)
 				Expect(res.Err).ToNot(HaveOccurred())
 				Expect(res.Created).To(BeTrue())
 
@@ -208,7 +208,7 @@ var _ = Describe("Dashboard tests", func() {
 
 			By("reconciling cm objects", func() {
 				for _, handler := range handlers {
-					res := handler.ensure(req)
+					res := handler.Ensure(req)
 					Expect(res.UpgradeDone).To(BeFalse())
 					Expect(res.Updated).To(BeTrue())
 					Expect(res.Err).ToNot(HaveOccurred())
@@ -230,9 +230,9 @@ var _ = Describe("Dashboard tests", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
 
-			_ = os.Setenv(dashboardManifestLocationVarName, testFilesLocation)
+			_ = os.Setenv(DashboardManifestLocationVarName, testFilesLocation)
 			cli := commontestutils.InitClient([]client.Object{})
-			handlers, err := getDashboardHandlers(logger, cli, schemeForTest, hco)
+			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 
@@ -241,7 +241,7 @@ var _ = Describe("Dashboard tests", func() {
 			req := commontestutils.NewReq(hco)
 
 			By("apply the CMs", func() {
-				res := handlers[0].ensure(req)
+				res := handlers[0].Ensure(req)
 				Expect(res.Err).ToNot(HaveOccurred())
 				Expect(res.Created).To(BeTrue())
 
@@ -269,7 +269,7 @@ var _ = Describe("Dashboard tests", func() {
 
 			By("reconciling cm objects", func() {
 				for _, handler := range handlers {
-					res := handler.ensure(req)
+					res := handler.Ensure(req)
 					Expect(res.UpgradeDone).To(BeFalse())
 					Expect(res.Updated).To(BeTrue())
 					Expect(res.Err).ToNot(HaveOccurred())

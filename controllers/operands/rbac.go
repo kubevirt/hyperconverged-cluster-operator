@@ -16,31 +16,25 @@ import (
 
 // ********* Role Handler *****************************
 
-func newRoleHandler(Client client.Client, Scheme *runtime.Scheme, required *rbacv1.Role) Operand {
-	return &genericOperand{
-		Client:                 Client,
-		Scheme:                 Scheme,
-		crType:                 "Role",
-		setControllerReference: true,
-		hooks:                  &roleHooks{required: required},
-	}
+func NewRoleHandler(Client client.Client, Scheme *runtime.Scheme, required *rbacv1.Role) *GenericOperand {
+	return NewGenericOperand(Client, Scheme, "Role", &roleHooks{required: required}, true)
 }
 
 type roleHooks struct {
 	required *rbacv1.Role
 }
 
-func (h *roleHooks) getFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *roleHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
-func (h *roleHooks) getEmptyCr() client.Object {
+func (h *roleHooks) GetEmptyCr() client.Object {
 	return &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: h.required.Name,
 		},
 	}
 }
-func (h *roleHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
+func (h *roleHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
 	role := h.required
 	found, ok := exists.(*rbacv1.Role)
 	if !ok {
@@ -68,35 +62,29 @@ func (h *roleHooks) updateCr(req *common.HcoRequest, Client client.Client, exist
 	return false, false, nil
 }
 
-func (*roleHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+func (*roleHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
 // ********* Role Binding Handler *****************************
 
-func newRoleBindingHandler(Client client.Client, Scheme *runtime.Scheme, required *rbacv1.RoleBinding) Operand {
-	return &genericOperand{
-		Client:                 Client,
-		Scheme:                 Scheme,
-		crType:                 "RoleBinding",
-		setControllerReference: true,
-		hooks:                  &roleBindingHooks{required: required},
-	}
+func NewRoleBindingHandler(Client client.Client, Scheme *runtime.Scheme, required *rbacv1.RoleBinding) *GenericOperand {
+	return NewGenericOperand(Client, Scheme, "RoleBinding", &roleBindingHooks{required: required}, true)
 }
 
 type roleBindingHooks struct {
 	required *rbacv1.RoleBinding
 }
 
-func (h roleBindingHooks) getFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h roleBindingHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
-func (h roleBindingHooks) getEmptyCr() client.Object {
+func (h roleBindingHooks) GetEmptyCr() client.Object {
 	return &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: h.required.Name,
 		},
 	}
 }
-func (h roleBindingHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
+func (h roleBindingHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
 	configReaderRoleBinding := h.required
 	found, ok := exists.(*rbacv1.RoleBinding)
 	if !ok {
@@ -123,4 +111,4 @@ func (h roleBindingHooks) updateCr(req *common.HcoRequest, Client client.Client,
 	return false, false, nil
 }
 
-func (roleBindingHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+func (roleBindingHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }

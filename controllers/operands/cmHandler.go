@@ -15,26 +15,19 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-func newCmHandler(Client client.Client, Scheme *runtime.Scheme, required *corev1.ConfigMap) Operand {
-	h := &genericOperand{
-		Client: Client,
-		Scheme: Scheme,
-		crType: "ConfigMap",
-		hooks:  &cmHooks{required: required},
-	}
-
-	return h
+func NewCmHandler(Client client.Client, Scheme *runtime.Scheme, required *corev1.ConfigMap) *GenericOperand {
+	return NewGenericOperand(Client, Scheme, "ConfigMap", &cmHooks{required: required}, false)
 }
 
 type cmHooks struct {
 	required *corev1.ConfigMap
 }
 
-func (h cmHooks) getFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h cmHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
 
-func (h cmHooks) getEmptyCr() client.Object {
+func (h cmHooks) GetEmptyCr() client.Object {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: h.required.Name,
@@ -42,7 +35,7 @@ func (h cmHooks) getEmptyCr() client.Object {
 	}
 }
 
-func (h cmHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
+func (h cmHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
 	found, ok := exists.(*corev1.ConfigMap)
 
 	if !ok {
@@ -82,4 +75,4 @@ func (h cmHooks) updateCr(req *common.HcoRequest, Client client.Client, exists r
 	return labelChanged, false, nil
 }
 
-func (cmHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+func (cmHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }

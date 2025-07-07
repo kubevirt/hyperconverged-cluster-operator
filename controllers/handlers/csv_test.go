@@ -1,11 +1,10 @@
-package operands
+package handlers
 
 import (
 	"context"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -76,8 +75,8 @@ var _ = Describe("CSV Operand", func() {
 
 func ensure(req *common.HcoRequest, hco *hcov1beta1.HyperConverged, ci hcoutil.ClusterInfo) *csvv1alpha1.ClusterServiceVersion {
 	cl := commontestutils.InitClient([]client.Object{hco, ci.GetCSV()})
-	handler := newCsvHandler(cl, ci)
-	res := handler.ensure(req)
+	handler := NewCsvHandler(cl, ci)
+	res := handler.Ensure(req)
 	Expect(res.UpgradeDone).To(BeTrue())
 	Expect(res.Err).ToNot(HaveOccurred())
 

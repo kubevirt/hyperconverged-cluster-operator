@@ -4,19 +4,17 @@ import (
 	"context"
 	"fmt"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 )
 
 var _ = Describe("Test operator.go", func() {
@@ -100,7 +98,7 @@ var _ = Describe("Test operator.go", func() {
 			req := commontestutils.NewReq(hco)
 			found := &cdiv1beta1.CDI{}
 
-			operand := genericOperand{Scheme: scheme.Scheme}
+			operand := GenericOperand{Scheme: commontestutils.GetScheme()}
 			Expect(
 				operand.addCrToTheRelatedObjectList(req, found),
 			).To(MatchError(ContainSubstring("object reference must have, at a minimum: apiVersion, kind, and name")))
@@ -119,7 +117,7 @@ var _ = Describe("Test operator.go", func() {
 				},
 			}
 
-			operand := genericOperand{Scheme: scheme.Scheme}
+			operand := GenericOperand{Scheme: commontestutils.GetScheme()}
 			Expect(operand.addCrToTheRelatedObjectList(req, found)).To(Succeed())
 
 			foundRef, err := reference.GetReference(operand.Scheme, found)
@@ -143,7 +141,7 @@ var _ = Describe("Test operator.go", func() {
 				},
 			}
 
-			operand := genericOperand{Scheme: scheme.Scheme}
+			operand := GenericOperand{Scheme: commontestutils.GetScheme()}
 			Expect(operand.addCrToTheRelatedObjectList(req, found)).To(Succeed())
 
 			oldRef, err := reference.GetReference(operand.Scheme, found)
@@ -168,14 +166,13 @@ var _ = Describe("Test operator.go", func() {
 			hco := commontestutils.NewHco()
 			req := commontestutils.NewReq(hco)
 
-			expectedResource, err := NewCDI(hco)
-			Expect(err).ToNot(HaveOccurred())
+			expectedResource := newCDI()
 
 			cl := commontestutils.InitClient([]client.Object{hco})
 
 			res := NewEnsureResult(expectedResource)
 
-			operand := genericOperand{Scheme: scheme.Scheme, Client: cl}
+			operand := GenericOperand{Scheme: commontestutils.GetScheme(), Client: cl}
 			outRes := operand.createNewCr(req, expectedResource, res)
 			Expect(outRes.Err).ToNot(HaveOccurred())
 			Expect(outRes.Created).To(BeTrue())
@@ -196,14 +193,13 @@ var _ = Describe("Test operator.go", func() {
 			hco := commontestutils.NewHco()
 			req := commontestutils.NewReq(hco)
 
-			expectedResource, err := NewCDI(hco)
-			Expect(err).ToNot(HaveOccurred())
+			expectedResource := newCDI()
 			expectedResource.ResourceVersion = "1234"
 			cl := commontestutils.InitClient([]client.Object{hco})
 
 			res := NewEnsureResult(expectedResource)
 
-			operand := genericOperand{Scheme: scheme.Scheme, Client: cl}
+			operand := GenericOperand{Scheme: commontestutils.GetScheme(), Client: cl}
 			outRes := operand.createNewCr(req, expectedResource, res)
 			Expect(outRes.Err).ToNot(HaveOccurred())
 			Expect(outRes.Created).To(BeTrue())
@@ -224,14 +220,13 @@ var _ = Describe("Test operator.go", func() {
 			hco := commontestutils.NewHco()
 			req := commontestutils.NewReq(hco)
 
-			expectedResource, err := NewCDI(hco)
-			Expect(err).ToNot(HaveOccurred())
+			expectedResource := newCDI()
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
 
 			res := NewEnsureResult(expectedResource)
 
-			operand := genericOperand{Scheme: scheme.Scheme, Client: cl}
+			operand := GenericOperand{Scheme: commontestutils.GetScheme(), Client: cl}
 			outRes := operand.createNewCr(req, expectedResource, res)
 			Expect(outRes.Err).To(MatchError(apierrors.IsAlreadyExists, "already exists error"))
 			Expect(outRes.Created).To(BeFalse())
@@ -245,3 +240,15 @@ var _ = Describe("Test operator.go", func() {
 	})
 
 })
+
+func newCDI() *cdiv1beta1.CDI {
+	return &cdiv1beta1.CDI{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "CDI",
+			APIVersion: "cdi.kubevirt.io/v1beta1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "cdi-test",
+		},
+	}
+}

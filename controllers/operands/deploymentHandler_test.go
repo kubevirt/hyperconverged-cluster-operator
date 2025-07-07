@@ -49,9 +49,9 @@ var _ = Describe("Deployment Handler", func() {
 			).ToNot(HaveOccurred())
 			Expect(foundResource.GetUID()).To(Equal(types.UID("oldObjectUID")))
 
-			// let's ensure the handler properly reconcile it back to the expected state
-			handler := newDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, hco)
-			res := handler.ensure(req)
+			// let's Ensure the handler properly reconcile it back to the expected state
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, hco)
+			res := handler.Ensure(req)
 			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
 
@@ -63,7 +63,7 @@ var _ = Describe("Deployment Handler", func() {
 			).ToNot(HaveOccurred())
 
 			Expect(foundResource.Spec.Selector).To(Equal(expectedDeployment.Spec.Selector))
-			// let's check the object UID to ensure that the object get really deleted and recreated
+			// let's check the object UID to Ensure that the object get really deleted and recreated
 			Expect(foundResource.ObjectMeta.UID).ToNot(Equal(modifiedDeployment.UID))
 		})
 
@@ -87,9 +87,9 @@ var _ = Describe("Deployment Handler", func() {
 			).ToNot(HaveOccurred())
 			Expect(foundResource.GetUID()).To(Equal(types.UID("oldObjectUID")))
 
-			// let's ensure the handler properly reconcile it back to the expected state
-			handler := newDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, hco)
-			res := handler.ensure(req)
+			// let's Ensure the handler properly reconcile it back to the expected state
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, hco)
+			res := handler.Ensure(req)
 			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
 
@@ -101,7 +101,7 @@ var _ = Describe("Deployment Handler", func() {
 			).ToNot(HaveOccurred())
 
 			Expect(foundResource.Spec.Selector).To(Equal(expectedDeployment.Spec.Selector))
-			// let's check the object UID to ensure that the object get updated and not deleted and recreated
+			// let's check the object UID to Ensure that the object get updated and not deleted and recreated
 			Expect(foundResource.GetUID()).To(Equal(types.UID("oldObjectUID")))
 		})
 
@@ -117,9 +117,9 @@ var _ = Describe("Deployment Handler", func() {
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler := newDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, hco)
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, hco)
 
-			res := handler.ensure(req)
+			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -153,9 +153,9 @@ var _ = Describe("Deployment Handler", func() {
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler := newDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, hco)
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, hco)
 
-			res := handler.ensure(req)
+			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())

@@ -35,7 +35,8 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operandhandler"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/version"
@@ -55,7 +56,7 @@ func initReconciler(cli client.Client, old *ReconcileHyperConverged) *ReconcileH
 	s := commontestutils.GetScheme()
 	eventEmitter := commontestutils.NewEventEmitterMock()
 	ci := commontestutils.ClusterInfoMock{}
-	operandHandler := operands.NewOperandHandler(cli, s, ci, eventEmitter)
+	operandHandler := operandhandler.NewOperandHandler(cli, s, ci, eventEmitter)
 	upgradeMode := false
 	firstLoop := true
 	upgradeableCondition := newStubOperatorCondition()
@@ -210,7 +211,7 @@ func getBasicDeployment() *BasicExpected {
 		},
 	}
 
-	res.pc = operands.NewKubeVirtPriorityClass(hco)
+	res.pc = handlers.NewKubeVirtPriorityClass(hco)
 
 	deploymentRef := metav1.OwnerReference{
 		APIVersion:         appsv1.SchemeGroupVersion.String(),
@@ -223,7 +224,7 @@ func getBasicDeployment() *BasicExpected {
 	res.mService = alerts.NewMetricsService(namespace, deploymentRef)
 	res.serviceMonitor = alerts.NewServiceMonitor(namespace, deploymentRef)
 
-	expectedKV, err := operands.NewKubeVirt(hco, namespace)
+	expectedKV, err := handlers.NewKubeVirt(hco, namespace)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 
 	expectedKV.Status.Conditions = []kubevirtcorev1.KubeVirtCondition{
@@ -242,53 +243,53 @@ func getBasicDeployment() *BasicExpected {
 	}
 	res.kv = expectedKV
 
-	expectedCDI, err := operands.NewCDI(hco)
+	expectedCDI, err := handlers.NewCDI(hco)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	expectedCDI.Status.Conditions = getGenericCompletedConditions()
 	res.cdi = expectedCDI
 
-	expectedCNA, err := operands.NewNetworkAddons(hco)
+	expectedCNA, err := handlers.NewNetworkAddons(hco)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	expectedCNA.Status.Conditions = getGenericCompletedConditions()
 	res.cna = expectedCNA
 
-	expectedSSP, _, err := operands.NewSSP(hco)
+	expectedSSP, _, err := handlers.NewSSP(hco)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	expectedSSP.Status.Conditions = getGenericCompletedConditions()
 	res.ssp = expectedSSP
 
-	expectedCliDownload := operands.NewConsoleCLIDownload(hco)
+	expectedCliDownload := handlers.NewConsoleCLIDownload(hco)
 	res.cliDownload = expectedCliDownload
 
-	expectedCliDownloadsRoute := operands.NewCliDownloadsRoute(hco)
+	expectedCliDownloadsRoute := handlers.NewCliDownloadsRoute(hco)
 	res.cliDownloadsRoute = expectedCliDownloadsRoute
 
-	expectedCliDownloadsService := operands.NewCliDownloadsService(hco)
+	expectedCliDownloadsService := handlers.NewCliDownloadsService(hco)
 	res.cliDownloadsService = expectedCliDownloadsService
 
-	expectedVirtioWinConfig, err := operands.NewVirtioWinCm(hco)
+	expectedVirtioWinConfig, err := handlers.NewVirtioWinCm(hco)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	res.virtioWinConfig = expectedVirtioWinConfig
 
-	expectedVirtioWinRole := operands.NewVirtioWinCmReaderRole(hco)
+	expectedVirtioWinRole := handlers.NewVirtioWinCmReaderRole(hco)
 	res.virtioWinRole = expectedVirtioWinRole
 
-	expectedVirtioWinRoleBinding := operands.NewVirtioWinCmReaderRoleBinding(hco)
+	expectedVirtioWinRoleBinding := handlers.NewVirtioWinCmReaderRoleBinding(hco)
 	res.virtioWinRoleBinding = expectedVirtioWinRoleBinding
 
-	expectedConsolePluginDeployment := operands.NewKvUIPluginDeployment(hco)
+	expectedConsolePluginDeployment := handlers.NewKvUIPluginDeployment(hco)
 	res.consolePluginDeploy = expectedConsolePluginDeployment
 
-	expectedConsoleProxyDeployment := operands.NewKvUIProxyDeployment(hco)
+	expectedConsoleProxyDeployment := handlers.NewKvUIProxyDeployment(hco)
 	res.consoleProxyDeploy = expectedConsoleProxyDeployment
 
-	expectedConsolePluginService := operands.NewKvUIPluginSvc(hco)
+	expectedConsolePluginService := handlers.NewKvUIPluginSvc(hco)
 	res.consolePluginSvc = expectedConsolePluginService
 
-	expectedConsoleProxyService := operands.NewKvUIProxySvc(hco)
+	expectedConsoleProxyService := handlers.NewKvUIProxySvc(hco)
 	res.consoleProxySvc = expectedConsoleProxyService
 
-	expectedConsolePlugin := operands.NewKVConsolePlugin(hco)
+	expectedConsolePlugin := handlers.NewKVConsolePlugin(hco)
 	res.consolePlugin = expectedConsolePlugin
 
 	expectedConsoleConfig := &operatorv1.Console{

@@ -1,4 +1,4 @@
-package operands
+package handlers
 
 import (
 	"errors"
@@ -14,6 +14,7 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -26,15 +27,10 @@ const (
 	cdiConfigAuthorityAnnotation = "cdi.kubevirt.io/configAuthority"
 )
 
-type cdiHandler genericOperand
+func NewCdiHandler(Client client.Client, Scheme *runtime.Scheme) *operands.GenericOperand {
+	hook := &cdiHooks{Client: Client, Scheme: Scheme}
 
-func newCdiHandler(Client client.Client, Scheme *runtime.Scheme) *cdiHandler {
-	return &cdiHandler{
-		Client: Client,
-		Scheme: Scheme,
-		crType: "CDI",
-		hooks:  &cdiHooks{Client: Client, Scheme: Scheme},
-	}
+	return operands.NewGenericOperand(Client, Scheme, "CDI", hook, false)
 }
 
 type cdiHooks struct {
@@ -44,7 +40,7 @@ type cdiHooks struct {
 	cache  *cdiv1beta1.CDI
 }
 
-func (h *cdiHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *cdiHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
 	h.Lock()
 	defer h.Unlock()
 
@@ -57,22 +53,22 @@ func (h *cdiHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, erro
 	}
 	return h.cache, nil
 }
-func (*cdiHooks) getEmptyCr() client.Object { return &cdiv1beta1.CDI{} }
-func (*cdiHooks) getConditions(cr runtime.Object) []metav1.Condition {
-	return osConditionsToK8s(cr.(*cdiv1beta1.CDI).Status.Conditions)
+func (*cdiHooks) GetEmptyCr() client.Object { return &cdiv1beta1.CDI{} }
+func (*cdiHooks) GetConditions(cr runtime.Object) []metav1.Condition {
+	return operands.OSConditionsToK8s(cr.(*cdiv1beta1.CDI).Status.Conditions)
 }
-func (*cdiHooks) checkComponentVersion(cr runtime.Object) bool {
+func (*cdiHooks) CheckComponentVersion(cr runtime.Object) bool {
 	found := cr.(*cdiv1beta1.CDI)
-	return checkComponentVersion(util.CdiVersionEnvV, found.Status.ObservedVersion)
+	return operands.CheckComponentVersion(util.CdiVersionEnvV, found.Status.ObservedVersion)
 }
-func (h *cdiHooks) reset() {
+func (h *cdiHooks) Reset() {
 	h.Lock()
 	defer h.Unlock()
 
 	h.cache = nil
 }
 
-func (*cdiHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
+func (*cdiHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
 	cdi, ok1 := required.(*cdiv1beta1.CDI)
 	found, ok2 := exists.(*cdiv1beta1.CDI)
 	if !ok1 || !ok2 {
@@ -99,7 +95,7 @@ func (*cdiHooks) updateCr(req *common.HcoRequest, Client client.Client, exists r
 	return false, false, nil
 }
 
-func (*cdiHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+func (*cdiHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
 func getDefaultFeatureGates() []string {
 	return []string{honorWaitForFirstConsumerGate, dataVolumeClaimAdoptionGate, webhookPvcRenderingGate}
@@ -163,7 +159,7 @@ func NewCDI(hc *hcov1beta1.HyperConverged, opts ...string) (*cdiv1beta1.CDI, err
 	cdi := NewCDIWithNameOnly(hc, opts...)
 	cdi.Spec = spec
 
-	if err := applyPatchToSpec(hc, common.JSONPatchCDIAnnotationName, cdi); err != nil {
+	if err := operands.ApplyPatchToSpec(hc, common.JSONPatchCDIAnnotationName, cdi); err != nil {
 		return nil, err
 	}
 
@@ -174,8 +170,8 @@ func NewCDIWithNameOnly(hc *hcov1beta1.HyperConverged, opts ...string) *cdiv1bet
 	return &cdiv1beta1.CDI{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        "cdi-" + hc.Name,
-			Labels:      getLabels(hc, util.AppComponentStorage),
-			Namespace:   getNamespace(util.UndefinedNamespace, opts),
+			Labels:      operands.GetLabels(hc, util.AppComponentStorage),
+			Namespace:   operands.GetNamespace(util.UndefinedNamespace, opts),
 			Annotations: map[string]string{cdiConfigAuthorityAnnotation: ""},
 		},
 	}

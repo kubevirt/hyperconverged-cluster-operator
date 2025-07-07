@@ -13,10 +13,8 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-type genericServiceHandler genericOperand
-
-func newServiceHandler(Client client.Client, Scheme *runtime.Scheme, newCrFunc newSvcFunc) *genericServiceHandler {
-	h := &genericServiceHandler{
+func NewServiceHandler(Client client.Client, Scheme *runtime.Scheme, newCrFunc newSvcFunc) *GenericOperand {
+	h := &GenericOperand{
 		Client: Client,
 		Scheme: Scheme,
 		crType: "Service",
@@ -32,17 +30,17 @@ type serviceHooks struct {
 	newCrFunc newSvcFunc
 }
 
-func (h serviceHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h serviceHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
 	return h.newCrFunc(hc), nil
 }
 
-func (serviceHooks) getEmptyCr() client.Object {
+func (serviceHooks) GetEmptyCr() client.Object {
 	return &corev1.Service{}
 }
 
-func (serviceHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+func (serviceHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
-func (serviceHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
+func (serviceHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
 	return updateService(req, Client, exists, required)
 }
 
@@ -52,7 +50,7 @@ func updateService(req *common.HcoRequest, Client client.Client, exists runtime.
 	if !ok1 || !ok2 {
 		return false, false, errors.New("can't convert to Service")
 	}
-	if !hasServiceRightFields(found, service) {
+	if !HasServiceRightFields(found, service) {
 		if req.HCOTriggered {
 			req.Logger.Info("Updating existing Service Spec to new opinionated values")
 		} else {
@@ -70,11 +68,12 @@ func updateService(req *common.HcoRequest, Client client.Client, exists runtime.
 	return false, false, nil
 }
 
+// HasServiceRightFields checks if the found Service object has the right fields
 // We need to check only certain fields of Service object. Since there
 // are some fields in the Spec that are set by k8s like "clusterIP", "ipFamilyPolicy", etc.
 // When we compare current spec with expected spec by using reflect.DeepEqual, it
 // never returns true.
-func hasServiceRightFields(found *corev1.Service, required *corev1.Service) bool {
+func HasServiceRightFields(found *corev1.Service, required *corev1.Service) bool {
 	return util.CompareLabels(required, found) &&
 		reflect.DeepEqual(required.Spec.Selector, found.Spec.Selector) &&
 		reflect.DeepEqual(required.Spec.Ports, found.Spec.Ports)

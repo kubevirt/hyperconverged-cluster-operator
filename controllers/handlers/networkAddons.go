@@ -1,4 +1,4 @@
-package operands
+package handlers
 
 import (
 	"errors"
@@ -19,22 +19,16 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-type cnaHandler genericOperand
-
 var defaultHco = components.GetOperatorCR()
 
-func newCnaHandler(Client client.Client, Scheme *runtime.Scheme) *cnaHandler {
-	return &cnaHandler{
-		Client: Client,
-		Scheme: Scheme,
-		crType: "NetworkAddonsConfig",
-		hooks:  &cnaHooks{},
-	}
+func NewCnaHandler(Client client.Client, Scheme *runtime.Scheme) *operands.GenericOperand {
+	return operands.NewGenericOperand(Client, Scheme, "NetworkAddonsConfig", &cnaHooks{}, false)
 }
 
 type cnaHooks struct {
@@ -42,7 +36,7 @@ type cnaHooks struct {
 	cache *networkaddonsv1.NetworkAddonsConfig
 }
 
-func (h *cnaHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *cnaHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
 	h.Lock()
 	defer h.Unlock()
 
@@ -56,22 +50,22 @@ func (h *cnaHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, erro
 	return h.cache, nil
 }
 
-func (h *cnaHooks) getEmptyCr() client.Object { return &networkaddonsv1.NetworkAddonsConfig{} }
-func (h *cnaHooks) getConditions(cr runtime.Object) []metav1.Condition {
-	return osConditionsToK8s(cr.(*networkaddonsv1.NetworkAddonsConfig).Status.Conditions)
+func (h *cnaHooks) GetEmptyCr() client.Object { return &networkaddonsv1.NetworkAddonsConfig{} }
+func (h *cnaHooks) GetConditions(cr runtime.Object) []metav1.Condition {
+	return operands.OSConditionsToK8s(cr.(*networkaddonsv1.NetworkAddonsConfig).Status.Conditions)
 }
-func (h *cnaHooks) checkComponentVersion(cr runtime.Object) bool {
+func (h *cnaHooks) CheckComponentVersion(cr runtime.Object) bool {
 	found := cr.(*networkaddonsv1.NetworkAddonsConfig)
-	return checkComponentVersion(util.CnaoVersionEnvV, found.Status.ObservedVersion)
+	return operands.CheckComponentVersion(util.CnaoVersionEnvV, found.Status.ObservedVersion)
 }
-func (h *cnaHooks) reset() {
+func (h *cnaHooks) Reset() {
 	h.Lock()
 	defer h.Unlock()
 
 	h.cache = nil
 }
 
-func (h *cnaHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
+func (h *cnaHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
 	networkAddons, ok1 := required.(*networkaddonsv1.NetworkAddonsConfig)
 	found, ok2 := exists.(*networkaddonsv1.NetworkAddonsConfig)
 
@@ -91,7 +85,7 @@ func (h *cnaHooks) updateCr(req *common.HcoRequest, Client client.Client, exists
 	return false, false, nil
 }
 
-func (*cnaHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+func (*cnaHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
 func (*cnaHooks) updateCnaCr(req *common.HcoRequest, Client client.Client, found *networkaddonsv1.NetworkAddonsConfig) (bool, bool, error) {
 	err := Client.Update(req.Ctx, found)
@@ -182,7 +176,7 @@ func NewNetworkAddons(hc *hcov1beta1.HyperConverged) (*networkaddonsv1.NetworkAd
 	cna := NewNetworkAddonsWithNameOnly(hc)
 	cna.Spec = cnaoSpec
 
-	if err = applyPatchToSpec(hc, common.JSONPatchCNAOAnnotationName, cna); err != nil {
+	if err = operands.ApplyPatchToSpec(hc, common.JSONPatchCNAOAnnotationName, cna); err != nil {
 		return nil, err
 	}
 
@@ -205,7 +199,7 @@ func NewNetworkAddonsWithNameOnly(hc *hcov1beta1.HyperConverged) *networkaddonsv
 	return &networkaddonsv1.NetworkAddonsConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   networkaddonsnames.OperatorConfig,
-			Labels: getLabels(hc, util.AppComponentNetwork),
+			Labels: operands.GetLabels(hc, util.AppComponentNetwork),
 		},
 	}
 }
