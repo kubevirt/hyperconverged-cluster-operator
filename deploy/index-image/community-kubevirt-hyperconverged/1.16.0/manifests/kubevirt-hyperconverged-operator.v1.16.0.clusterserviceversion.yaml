@@ -593,6 +593,18 @@ spec:
           - update
           - delete
           - patch
+        - apiGroups:
+          - apps
+          resources:
+          - daemonsets
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
+          - patch
         serviceAccountName: hyperconverged-cluster-operator
       - rules: []
         serviceAccountName: hyperconverged-cluster-cli-download

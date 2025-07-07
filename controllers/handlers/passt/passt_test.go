@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -36,6 +37,43 @@ var _ = Describe("Passt tests", func() {
 			Expect(sa.Namespace).To(Equal(hco.Namespace))
 			Expect(sa.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
 			Expect(sa.Labels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentNetwork)))
+		})
+	})
+
+	Context("test NewPasstBindingCNIDaemonSet", func() {
+		It("should have all default fields", func() {
+			ds := passt.NewPasstBindingCNIDaemonSet(hco, false)
+
+			Expect(ds.Name).To(Equal("passt-binding-cni"))
+			Expect(ds.Namespace).To(Equal(hco.Namespace))
+
+			Expect(ds.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
+			Expect(ds.Labels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentNetwork)))
+			Expect(ds.Labels).To(HaveKeyWithValue("tier", "node"))
+			Expect(ds.Labels).To(HaveKeyWithValue("app", "kubevirt-hyperconverged"))
+
+			Expect(ds.Spec.Selector.MatchLabels).To(HaveKeyWithValue("name", "passt-binding-cni"))
+
+			Expect(ds.Spec.Template.Labels).To(HaveKeyWithValue("name", "passt-binding-cni"))
+			Expect(ds.Spec.Template.Labels).To(HaveKeyWithValue("tier", "node"))
+			Expect(ds.Spec.Template.Labels).To(HaveKeyWithValue("app", "passt-binding-cni"))
+
+			Expect(ds.Spec.Template.Annotations).To(HaveKeyWithValue("description", "passt-binding-cni installs 'passt binding' CNI on cluster nodes"))
+
+			Expect(ds.Spec.Template.Spec.PriorityClassName).To(Equal("system-cluster-critical"))
+			Expect(ds.Spec.Template.Spec.ServiceAccountName).To(Equal("passt-binding-cni"))
+
+			Expect(ds.Spec.Template.Spec.Containers).To(HaveLen(1))
+			container := ds.Spec.Template.Spec.Containers[0]
+			Expect(container.Name).To(Equal("installer"))
+			Expect(container.SecurityContext.Privileged).ToNot(BeNil())
+			Expect(*container.SecurityContext.Privileged).To(BeTrue())
+
+			Expect(ds.Spec.Template.Spec.Volumes).To(HaveLen(1))
+			volume := ds.Spec.Template.Spec.Volumes[0]
+			Expect(volume.Name).To(Equal("cnibin"))
+			Expect(volume.HostPath).ToNot(BeNil())
+			Expect(volume.HostPath.Path).To(Equal("/opt/cni/bin"))
 		})
 	})
 
@@ -95,6 +133,71 @@ var _ = Describe("Passt tests", func() {
 
 			Expect(foundSA.Name).To(Equal("passt-binding-cni"))
 			Expect(foundSA.Namespace).To(Equal(hco.Namespace))
+		})
+	})
+
+	Context("DaemonSet deployment", func() {
+		It("should not create DaemonSet if the annotation is not set", func() {
+			cl = commontestutils.InitClient([]client.Object{hco})
+
+			handler := passt.NewPasstDaemonSetHandler(cl, commontestutils.GetScheme(), false)
+
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeFalse())
+
+			foundDSs := &appsv1.DaemonSetList{}
+			Expect(cl.List(context.Background(), foundDSs)).To(Succeed())
+			Expect(foundDSs.Items).To(BeEmpty())
+		})
+
+		It("should delete DaemonSet if the deployPasstNetworkBinding annotation is false", func() {
+			hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "false"
+
+			ds := passt.NewPasstBindingCNIDaemonSet(hco, false)
+			cl = commontestutils.InitClient([]client.Object{hco, ds})
+
+			handler := passt.NewPasstDaemonSetHandler(cl, commontestutils.GetScheme(), false)
+
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Name).To(Equal(ds.Name))
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeTrue())
+
+			foundDSs := &appsv1.DaemonSetList{}
+			Expect(cl.List(context.Background(), foundDSs)).To(Succeed())
+			Expect(foundDSs.Items).To(BeEmpty())
+		})
+
+		It("should create DaemonSet if the deployPasstNetworkBinding annotation is true", func() {
+			hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "true"
+
+			cl = commontestutils.InitClient([]client.Object{hco})
+
+			handler := passt.NewPasstDaemonSetHandler(cl, commontestutils.GetScheme(), true)
+
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Name).To(Equal("passt-binding-cni"))
+			Expect(res.Created).To(BeTrue())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeFalse())
+
+			foundDS := &appsv1.DaemonSet{}
+			Expect(cl.Get(context.Background(), client.ObjectKey{Name: res.Name, Namespace: hco.Namespace}, foundDS)).To(Succeed())
+
+			Expect(foundDS.Name).To(Equal("passt-binding-cni"))
+			Expect(foundDS.Namespace).To(Equal(hco.Namespace))
+
+			// example of field set by the handler
+			Expect(foundDS.Spec.Template.Spec.PriorityClassName).To(Equal("system-cluster-critical"))
 		})
 	})
 })
