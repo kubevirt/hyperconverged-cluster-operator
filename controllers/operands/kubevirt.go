@@ -29,6 +29,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/operands/passt"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -51,26 +52,10 @@ const (
 
 const (
 	primaryUDNNetworkBindingName = "l2bridge"
-
-	deployPasstNetworkBindingAnnotation = "deployPasstNetworkBinding"
-
-	passtBindingName                = "passt"
-	passtNetworkBindingNADName      = "primary-udn-kubevirt-binding"
-	passtNetworkBindingNADNamespace = "default"
-	networkAttachmentDefinition     = passtNetworkBindingNADNamespace + "/" + passtNetworkBindingNADName
-
-	bindingComputeMemoryOverhead = "500Mi"
 )
 
 var (
 	useKVMEmulation = false
-)
-
-var passtResourceMemory = resource.MustParse(bindingComputeMemoryOverhead)
-
-var (
-	passtImage     string
-	passtImageOnce sync.Once
 )
 
 func init() {
@@ -557,10 +542,10 @@ func getNetworkBindings(hcoNetworkBindings map[string]kubevirtcorev1.InterfaceBi
 
 	networkBindings[primaryUDNNetworkBindingName] = primaryUserDefinedNetworkBinding()
 
-	value, ok := hcoAnnotations[deployPasstNetworkBindingAnnotation]
+	value, ok := hcoAnnotations[passt.DeployPasstNetworkBindingAnnotation]
 
 	if ok && value == "true" {
-		networkBindings[passtBindingName] = passtNetworkBinding(passtImageOnceFn())
+		networkBindings[passt.PasstBindingName] = passt.NetworkBinding(passt.ImageOnceFn())
 	}
 	return networkBindings
 }
@@ -880,7 +865,7 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, a
 		fgs = append(fgs, kvAlignCPUs)
 	}
 
-	value, ok := annotations[deployPasstNetworkBindingAnnotation]
+	value, ok := annotations[passt.DeployPasstNetworkBindingAnnotation]
 	if ok && value == "true" {
 		fgs = append(fgs, kvPasstIPStackMigration)
 	}
@@ -1035,24 +1020,4 @@ func hcoCertConfig2KvCertificateRotateStrategy(hcoCertConfig hcov1beta1.HyperCon
 			},
 		},
 	}
-}
-
-func passtNetworkBinding(sidecarImage string) kubevirtcorev1.InterfaceBindingPlugin {
-	return kubevirtcorev1.InterfaceBindingPlugin{
-		NetworkAttachmentDefinition: networkAttachmentDefinition,
-		SidecarImage:                sidecarImage,
-		Migration:                   &kubevirtcorev1.InterfaceBindingMigration{},
-		ComputeResourceOverhead: &kubevirtcorev1.ResourceRequirementsWithoutClaims{
-			Requests: corev1.ResourceList{
-				corev1.ResourceMemory: passtResourceMemory,
-			},
-		},
-	}
-}
-
-func passtImageOnceFn() string {
-	passtImageOnce.Do(func() {
-		passtImage = os.Getenv(hcoutil.PasstImageEnvV)
-	})
-	return passtImage
 }

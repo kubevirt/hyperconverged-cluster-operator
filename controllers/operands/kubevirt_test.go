@@ -25,6 +25,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/operands/passt"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -1976,7 +1977,7 @@ Version: 1.2.3`)
 				})
 
 				It("should add the Passt Binding to Kubevirt CR if PasstNetworkBinding is true in HyperConverged CR", func() {
-					hco.Annotations[deployPasstNetworkBindingAnnotation] = "true"
+					hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "true"
 					hco.Spec.NetworkBinding = nil
 
 					existingResource, err := NewKubeVirt(hco)
@@ -1985,7 +1986,7 @@ Version: 1.2.3`)
 					Expect(existingResource.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
 					Expect(existingResource.Spec.Configuration.NetworkConfiguration.Binding).NotTo(BeNil())
 					expectedInterfaceBindingPlugin := kubevirtcorev1.InterfaceBindingPlugin{
-						NetworkAttachmentDefinition: passtNetworkBindingNADNamespace + "/" + passtNetworkBindingNADName,
+						NetworkAttachmentDefinition: passt.NetworkAttachmentDefinition,
 						SidecarImage:                expectedPasstImage,
 						Migration:                   &kubevirtcorev1.InterfaceBindingMigration{},
 						ComputeResourceOverhead: &kubevirtcorev1.ResourceRequirementsWithoutClaims{
@@ -1994,12 +1995,12 @@ Version: 1.2.3`)
 							},
 						},
 					}
-					Expect(existingResource.Spec.Configuration.NetworkConfiguration.Binding[passtBindingName]).To(Equal(expectedInterfaceBindingPlugin))
+					Expect(existingResource.Spec.Configuration.NetworkConfiguration.Binding[passt.PasstBindingName]).To(Equal(expectedInterfaceBindingPlugin))
 					Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement("PasstIPStackMigration"))
 				})
 
 				It("should not add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is false in HyperConverged CR", func() {
-					hco.Annotations[deployPasstNetworkBindingAnnotation] = "false"
+					hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "false"
 					hco.Spec.NetworkBinding = nil
 
 					existingResource, err := NewKubeVirt(hco)
@@ -2010,7 +2011,7 @@ Version: 1.2.3`)
 				})
 
 				It("should not add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is not set in HyperConverged CR", func() {
-					delete(hco.Annotations, deployPasstNetworkBindingAnnotation)
+					delete(hco.Annotations, passt.DeployPasstNetworkBindingAnnotation)
 					hco.Spec.NetworkBinding = nil
 
 					existingResource, err := NewKubeVirt(hco)
