@@ -18,7 +18,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
-	passt "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -54,6 +54,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		handlers.NewCdiHandler(client, scheme),
 		handlers.NewCnaHandler(client, scheme),
 		handlers.NewAAQHandler(client, scheme),
+		passt.NewPasstDaemonSetHandler(client, scheme),
 	}
 
 	if ci.IsOpenshift() {
@@ -216,6 +217,7 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		handlers.NewConsoleCLIDownload(req.Instance),
 		handlers.NewAAQWithNameOnly(req.Instance),
 		passt.NewPasstBindingCNISA(req.Instance),
+		passt.NewPasstBindingCNIDaemonSetWithNameOnly(req.Instance),
 	}
 
 	resources = append(resources, h.objects...)
