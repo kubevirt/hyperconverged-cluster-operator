@@ -54,11 +54,11 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/crd"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/descheduler"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/hyperconverged"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/ingresscluster"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/nodes"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/observability"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/authorization"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
@@ -390,7 +390,7 @@ func getManagerOptions(operatorNamespace string, needLeaderElection bool, ci hco
 // so we are never supposed to delete it: because the priority class
 // is completely opaque to OLM it will remain as a leftover on the cluster
 func createPriorityClass(ctx context.Context, mgr manager.Manager) error {
-	pc := operands.NewKubeVirtPriorityClass(&hcov1beta1.HyperConverged{})
+	pc := handlers.NewKubeVirtPriorityClass(&hcov1beta1.HyperConverged{})
 
 	err := mgr.GetAPIReader().Get(ctx, client.ObjectKeyFromObject(pc), pc)
 	if err != nil && apierrors.IsNotFound(err) {

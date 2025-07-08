@@ -1,4 +1,4 @@
-package operands
+package handlers
 
 import (
 	"errors"
@@ -12,28 +12,29 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 const virtioWinCmName = "virtio-win"
 
-// **** Virtio-Win ConfigMap Handler ****
-func newVirtioWinCmHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (Operand, error) {
+// NewVirtioWinCmHandler creates the Virtio-Win ConfigMap Handler
+func NewVirtioWinCmHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
 	virtioWincm, err := NewVirtioWinCm(hc)
 	if err != nil {
 		return nil, err
 	}
-	return newCmHandler(Client, Scheme, virtioWincm), nil
+	return operands.NewCmHandler(Client, Scheme, virtioWincm), nil
 }
 
-// **** Virtio-Win ConfigMap Role Handler ****
-func newVirtioWinCmReaderRoleHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (Operand, error) {
-	return newRoleHandler(Client, Scheme, NewVirtioWinCmReaderRole(hc)), nil
+// NewVirtioWinCmReaderRoleHandler creates the Virtio-Win ConfigMap Role Handler
+func NewVirtioWinCmReaderRoleHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
+	return operands.NewRoleHandler(Client, Scheme, NewVirtioWinCmReaderRole(hc)), nil
 }
 
-// **** Virtio-Win ConfigMap RoleBinding Handler ****
-func newVirtioWinCmReaderRoleBindingHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (Operand, error) {
-	return newRoleBindingHandler(Client, Scheme, NewVirtioWinCmReaderRoleBinding(hc)), nil
+// NewVirtioWinCmReaderRoleBindingHandler creates the Virtio-Win ConfigMap RoleBinding Handler
+func NewVirtioWinCmReaderRoleBindingHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
+	return operands.NewRoleBindingHandler(Client, Scheme, NewVirtioWinCmReaderRoleBinding(hc)), nil
 }
 
 func NewVirtioWinCm(hc *hcov1beta1.HyperConverged) (*corev1.ConfigMap, error) {
@@ -45,7 +46,7 @@ func NewVirtioWinCm(hc *hcov1beta1.HyperConverged) (*corev1.ConfigMap, error) {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      virtioWinCmName,
-			Labels:    getLabels(hc, hcoutil.AppComponentDeployment),
+			Labels:    operands.GetLabels(hc, hcoutil.AppComponentDeployment),
 			Namespace: hc.Namespace,
 		},
 		Data: map[string]string{
@@ -58,7 +59,7 @@ func NewVirtioWinCmReaderRole(hc *hcov1beta1.HyperConverged) *rbacv1.Role {
 	return &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      virtioWinCmName,
-			Labels:    getLabels(hc, hcoutil.AppComponentDeployment),
+			Labels:    operands.GetLabels(hc, hcoutil.AppComponentDeployment),
 			Namespace: hc.Namespace,
 		},
 		Rules: []rbacv1.PolicyRule{
@@ -76,7 +77,7 @@ func NewVirtioWinCmReaderRoleBinding(hc *hcov1beta1.HyperConverged) *rbacv1.Role
 	return &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      virtioWinCmName,
-			Labels:    getLabels(hc, hcoutil.AppComponentStorage),
+			Labels:    operands.GetLabels(hc, hcoutil.AppComponentStorage),
 			Namespace: hc.Namespace,
 		},
 		RoleRef: rbacv1.RoleRef{

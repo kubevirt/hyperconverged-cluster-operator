@@ -49,7 +49,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operandhandler"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
@@ -117,7 +117,7 @@ func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond 
 	r := &ReconcileHyperConverged{
 		client:               mgr.GetClient(),
 		scheme:               mgr.GetScheme(),
-		operandHandler:       operands.NewOperandHandler(mgr.GetClient(), mgr.GetScheme(), ci, hcoutil.GetEventEmitter()),
+		operandHandler:       operandhandler.NewOperandHandler(mgr.GetClient(), mgr.GetScheme(), ci, hcoutil.GetEventEmitter()),
 		upgradeMode:          false,
 		ownVersion:           ownVersion,
 		eventEmitter:         hcoutil.GetEventEmitter(),
@@ -272,7 +272,7 @@ type ReconcileHyperConverged struct {
 	// that reads objects from the cache and writes to the apiserver
 	client               client.Client
 	scheme               *runtime.Scheme
-	operandHandler       *operands.OperandHandler
+	operandHandler       *operandhandler.OperandHandler
 	upgradeMode          bool
 	ownVersion           string
 	eventEmitter         hcoutil.EventEmitter

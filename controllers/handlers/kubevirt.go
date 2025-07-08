@@ -1,4 +1,4 @@
-package operands
+package handlers
 
 import (
 	"cmp"
@@ -28,7 +28,9 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/patch"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -50,6 +52,8 @@ const (
 )
 
 const primaryUDNNetworkBindingName = "l2bridge"
+
+const kvPriorityClass = "kubevirt-cluster-critical"
 
 var (
 	useKVMEmulation = false
@@ -190,16 +194,8 @@ var (
 )
 
 // ************  KubeVirt Handler  **************
-type kubevirtHandler genericOperand
-
-func newKubevirtHandler(Client client.Client, Scheme *runtime.Scheme) *kubevirtHandler {
-	return &kubevirtHandler{
-		Client:                 Client,
-		Scheme:                 Scheme,
-		crType:                 "KubeVirt",
-		setControllerReference: true,
-		hooks:                  &kubevirtHooks{},
-	}
+func NewKubevirtHandler(Client client.Client, Scheme *runtime.Scheme) *operands.GenericOperand {
+	return operands.NewGenericOperand(Client, Scheme, "KubeVirt", &kubevirtHooks{}, true)
 }
 
 type kubevirtHooks struct {
@@ -212,7 +208,7 @@ type rateLimits struct {
 	Burst int     `json:"burst"`
 }
 
-func (h *kubevirtHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *kubevirtHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
 	h.Lock()
 	defer h.Unlock()
 
@@ -226,21 +222,21 @@ func (h *kubevirtHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object,
 	return h.cache, nil
 }
 
-func (*kubevirtHooks) getEmptyCr() client.Object { return &kubevirtcorev1.KubeVirt{} }
-func (*kubevirtHooks) getConditions(cr runtime.Object) []metav1.Condition {
+func (*kubevirtHooks) GetEmptyCr() client.Object { return &kubevirtcorev1.KubeVirt{} }
+func (*kubevirtHooks) GetConditions(cr runtime.Object) []metav1.Condition {
 	return translateKubeVirtConds(cr.(*kubevirtcorev1.KubeVirt).Status.Conditions)
 }
-func (*kubevirtHooks) checkComponentVersion(cr runtime.Object) bool {
+func (*kubevirtHooks) CheckComponentVersion(cr runtime.Object) bool {
 	found := cr.(*kubevirtcorev1.KubeVirt)
-	return checkComponentVersion(hcoutil.KubevirtVersionEnvV, found.Status.ObservedKubeVirtVersion)
+	return operands.CheckComponentVersion(hcoutil.KubevirtVersionEnvV, found.Status.ObservedKubeVirtVersion)
 }
-func (h *kubevirtHooks) reset() {
+func (h *kubevirtHooks) Reset() {
 	h.Lock()
 	defer h.Unlock()
 	h.cache = nil
 }
 
-func (*kubevirtHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
+func (*kubevirtHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
 	virt, ok1 := required.(*kubevirtcorev1.KubeVirt)
 	found, ok2 := exists.(*kubevirtcorev1.KubeVirt)
 	if !ok1 || !ok2 {
@@ -267,7 +263,7 @@ func (*kubevirtHooks) updateCr(req *common.HcoRequest, Client client.Client, exi
 	return false, false, nil
 }
 
-func (*kubevirtHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+func (*kubevirtHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
 func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtcorev1.KubeVirt, error) {
 	config, err := getKVConfig(hc)
@@ -296,14 +292,14 @@ func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtcorev1
 		ProductName:                 hcoutil.HyperConvergedCluster,
 		ProductVersion:              os.Getenv(hcoutil.HcoKvIoVersionName),
 		ProductComponent:            string(hcoutil.AppComponentCompute),
-		ServiceMonitorNamespace:     getNamespace(hc.Namespace, opts),
+		ServiceMonitorNamespace:     operands.GetNamespace(hc.Namespace, opts),
 	}
 
 	kv := NewKubeVirtWithNameOnly(hc, opts...)
 	setAnnotationsToReqState(hc, kv)
 	kv.Spec = spec
 
-	if err = applyPatchToSpec(hc, common.JSONPatchKVAnnotationName, kv); err != nil {
+	if err = operands.ApplyPatchToSpec(hc, common.JSONPatchKVAnnotationName, kv); err != nil {
 		return nil, err
 	}
 
@@ -786,8 +782,8 @@ func NewKubeVirtWithNameOnly(hc *hcov1beta1.HyperConverged, opts ...string) *kub
 	return &kubevirtcorev1.KubeVirt{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kubevirt-" + hc.Name,
-			Labels:    getLabels(hc, hcoutil.AppComponentCompute),
-			Namespace: getNamespace(hc.Namespace, opts),
+			Labels:    operands.GetLabels(hc, hcoutil.AppComponentCompute),
+			Namespace: operands.GetNamespace(hc.Namespace, opts),
 		},
 	}
 }
@@ -858,26 +854,18 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates) [
 }
 
 // ***********  KubeVirt Priority Class  ************
-type kvPriorityClassHandler genericOperand
-
-func newKvPriorityClassHandler(Client client.Client, Scheme *runtime.Scheme) *kvPriorityClassHandler {
-	return &kvPriorityClassHandler{
-		Client:                 Client,
-		Scheme:                 Scheme,
-		crType:                 "KubeVirtPriorityClass",
-		setControllerReference: false,
-		hooks:                  &kvPriorityClassHooks{},
-	}
+func NewKvPriorityClassHandler(Client client.Client, Scheme *runtime.Scheme) *operands.GenericOperand {
+	return operands.NewGenericOperand(Client, Scheme, "PriorityClass", &kvPriorityClassHooks{}, false)
 }
 
 type kvPriorityClassHooks struct{}
 
-func (kvPriorityClassHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (kvPriorityClassHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
 	return NewKubeVirtPriorityClass(hc), nil
 }
-func (kvPriorityClassHooks) getEmptyCr() client.Object { return &schedulingv1.PriorityClass{} }
+func (kvPriorityClassHooks) GetEmptyCr() client.Object { return &schedulingv1.PriorityClass{} }
 
-func (kvPriorityClassHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
+func (kvPriorityClassHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
 	pc, ok1 := required.(*schedulingv1.PriorityClass)
 	found, ok2 := exists.(*schedulingv1.PriorityClass)
 	if !ok1 || !ok2 {
@@ -919,12 +907,12 @@ func (kvPriorityClassHooks) updateCr(req *common.HcoRequest, Client client.Clien
 			return false, false, err
 		}
 	} else {
-		patch, err := getLabelPatch(found.Labels, labels)
+		p, err := getLabelPatch(found.Labels, labels)
 		if err != nil {
 			return false, false, err
 		}
 
-		err = Client.Patch(req.Ctx, found, client.RawPatch(types.JSONPatchType, patch))
+		err = Client.Patch(req.Ctx, found, client.RawPatch(types.JSONPatchType, p))
 		if err != nil {
 			return false, false, err
 		}
@@ -935,7 +923,7 @@ func (kvPriorityClassHooks) updateCr(req *common.HcoRequest, Client client.Clien
 	return true, !req.HCOTriggered, nil
 }
 
-func (kvPriorityClassHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+func (kvPriorityClassHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
 func NewKubeVirtPriorityClass(hc *hcov1beta1.HyperConverged) *schedulingv1.PriorityClass {
 	return &schedulingv1.PriorityClass{
@@ -945,7 +933,7 @@ func NewKubeVirtPriorityClass(hc *hcov1beta1.HyperConverged) *schedulingv1.Prior
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kvPriorityClass,
-			Labels: getLabels(hc, hcoutil.AppComponentCompute),
+			Labels: operands.GetLabels(hc, hcoutil.AppComponentCompute),
 		},
 		// 1 billion is the highest value we can set
 		// https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass
@@ -1004,4 +992,28 @@ func hcoCertConfig2KvCertificateRotateStrategy(hcoCertConfig hcov1beta1.HyperCon
 			},
 		},
 	}
+}
+
+func getLabelPatch(dest, src map[string]string) ([]byte, error) {
+	const labelPath = "/metadata/labels/"
+	var patches []patch.JSONPatchAction
+
+	for k, v := range src {
+		op := "replace"
+		lbl, ok := dest[k]
+
+		if !ok {
+			op = "add"
+		} else if lbl == v {
+			continue
+		}
+
+		patches = append(patches, patch.JSONPatchAction{
+			Op:    op,
+			Path:  labelPath + patch.EscapeJSONPointer(k),
+			Value: v,
+		})
+	}
+
+	return json.Marshal(patches)
 }

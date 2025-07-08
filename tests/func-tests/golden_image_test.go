@@ -25,7 +25,7 @@ import (
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
@@ -399,19 +399,19 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					hcoDict, exists := getHCODICT(hc, dict.Name)
 					g.Expect(exists).To(BeTrue(), "should have the DICT in the HCO status")
 
-					if _, hcoAnnotationExists := hcoDict.Annotations[operands.MultiArchDICTAnnotation]; !hcoAnnotationExists {
+					if _, hcoAnnotationExists := hcoDict.Annotations[handlers.MultiArchDICTAnnotation]; !hcoAnnotationExists {
 						GinkgoLogr.Info(fmt.Sprintf("The %q DICT does not have the multi-arch annotation in the HCO status; skipping it", dict.Name))
 						continue
 					}
 
-					multiArchAnnotation, exists := dict.GetAnnotations()[operands.MultiArchDICTAnnotation]
+					multiArchAnnotation, exists := dict.GetAnnotations()[handlers.MultiArchDICTAnnotation]
 
 					g.Expect(exists).To(BeTrue(), "should have the multi-arch annotation in the DICT")
 					g.Expect(multiArchAnnotation).ToNot(Equal(""), "should have a value in the the multi-arch annotation; the %q DICT is:\n%#v", dict.Name, dict)
 
 					expectedArches := getExpectedArchs(hcoDict.Status.OriginalSupportedArchitectures, archs)
 
-					g.Expect(multiArchAnnotation).To(Equal(expectedArches), "the SSP %q DICT %q annotation should be %q", dict.Name, operands.MultiArchDICTAnnotation, expectedArches)
+					g.Expect(multiArchAnnotation).To(Equal(expectedArches), "the SSP %q DICT %q annotation should be %q", dict.Name, handlers.MultiArchDICTAnnotation, expectedArches)
 				}
 
 			}).WithTimeout(10 * time.Second).
@@ -437,7 +437,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				}
 
 				customDictArchs := append(archs, "someOtherArch1", "someOtherArch2")
-				hcCustomDict.Annotations[operands.MultiArchDICTAnnotation] = strings.Join(customDictArchs, ",")
+				hcCustomDict.Annotations[handlers.MultiArchDICTAnnotation] = strings.Join(customDictArchs, ",")
 
 				hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
 
@@ -462,14 +462,14 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				g.Expect(idx).To(BeNumerically(">", -1), "should have the custom-dict in the SSP")
 				sspDict := ssp.Spec.CommonTemplates.DataImportCronTemplates[idx]
 
-				multiArchAnnotation, exists := sspDict.GetAnnotations()[operands.MultiArchDICTAnnotation]
+				multiArchAnnotation, exists := sspDict.GetAnnotations()[handlers.MultiArchDICTAnnotation]
 
 				g.Expect(exists).To(BeTrue(), "should have the multi-arch annotation in the DICT")
 				g.Expect(multiArchAnnotation).ToNot(BeEmpty(), "should have a value in the the multi-arch annotation")
 
-				expectedArches := getExpectedArchs(hcCustomDict.Annotations[operands.MultiArchDICTAnnotation], archs)
+				expectedArches := getExpectedArchs(hcCustomDict.Annotations[handlers.MultiArchDICTAnnotation], archs)
 
-				g.Expect(multiArchAnnotation).To(Equal(expectedArches), "the SSP %q DICT %q annotation should be %q", "custom-dict", operands.MultiArchDICTAnnotation, expectedArches)
+				g.Expect(multiArchAnnotation).To(Equal(expectedArches), "the SSP %q DICT %q annotation should be %q", "custom-dict", handlers.MultiArchDICTAnnotation, expectedArches)
 
 			}).WithTimeout(10 * time.Second).
 				WithPolling(500 * time.Millisecond).
@@ -492,7 +492,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				}
 
 				customDictArchs := append(archs, "someOtherArch1", "someOtherArch2")
-				hcCustomDict.Annotations[operands.MultiArchDICTAnnotation] = strings.Join(customDictArchs, ",")
+				hcCustomDict.Annotations[handlers.MultiArchDICTAnnotation] = strings.Join(customDictArchs, ",")
 
 				hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
 
@@ -517,14 +517,14 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				g.Expect(idx).To(BeNumerically(">", -1), "should have the %q in the SSP", hcCustomDict.Name)
 				sspDict := ssp.Spec.CommonTemplates.DataImportCronTemplates[idx]
 
-				multiArchAnnotation, exists := sspDict.GetAnnotations()[operands.MultiArchDICTAnnotation]
+				multiArchAnnotation, exists := sspDict.GetAnnotations()[handlers.MultiArchDICTAnnotation]
 
 				g.Expect(exists).To(BeTrue(), "should have the multi-arch annotation in the DICT")
 				g.Expect(multiArchAnnotation).ToNot(BeEmpty(), "should have a value in the the multi-arch annotation")
 
-				expectedArches := getExpectedArchs(hcCustomDict.Annotations[operands.MultiArchDICTAnnotation], archs)
+				expectedArches := getExpectedArchs(hcCustomDict.Annotations[handlers.MultiArchDICTAnnotation], archs)
 
-				g.Expect(multiArchAnnotation).To(Equal(expectedArches), "the SSP %q DICT %q annotation should be %q", hcCustomDict.Name, operands.MultiArchDICTAnnotation, expectedArches)
+				g.Expect(multiArchAnnotation).To(Equal(expectedArches), "the SSP %q DICT %q annotation should be %q", hcCustomDict.Name, handlers.MultiArchDICTAnnotation, expectedArches)
 
 				hc := tests.GetHCO(ctx, cli)
 				idx = slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
@@ -533,8 +533,8 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				g.Expect(idx).To(BeNumerically(">", -1), "should have the %q in the HC status", hcCustomDict.Name)
 
 				hcoDictStatus := hc.Status.DataImportCronTemplates[idx]
-				g.Expect(hcoDictStatus.Annotations).To(HaveKeyWithValue(operands.MultiArchDICTAnnotation, expectedArches))
-				g.Expect(hcoDictStatus.Status.OriginalSupportedArchitectures).To(Equal(hcCustomDict.Annotations[operands.MultiArchDICTAnnotation]))
+				g.Expect(hcoDictStatus.Annotations).To(HaveKeyWithValue(handlers.MultiArchDICTAnnotation, expectedArches))
+				g.Expect(hcoDictStatus.Status.OriginalSupportedArchitectures).To(Equal(hcCustomDict.Annotations[handlers.MultiArchDICTAnnotation]))
 				g.Expect(hcoDictStatus.Status.Conditions).To(BeEmpty())
 
 			}).WithTimeout(10 * time.Second).
@@ -556,7 +556,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 					hcCustomDict.Name = "custom-dict"
 					hcCustomDict.Spec.ManagedDataSource = "custom-source"
-					delete(hcCustomDict.Annotations, operands.MultiArchDICTAnnotation)
+					delete(hcCustomDict.Annotations, handlers.MultiArchDICTAnnotation)
 
 					hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
 
@@ -581,7 +581,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					g.Expect(idx).To(BeNumerically(">", -1), "should have the custom-dict DICT in the SSP")
 					sspDict := ssp.Spec.CommonTemplates.DataImportCronTemplates[idx]
 
-					g.Expect(sspDict.GetAnnotations()).ToNot(HaveKey(operands.MultiArchDICTAnnotation))
+					g.Expect(sspDict.GetAnnotations()).ToNot(HaveKey(handlers.MultiArchDICTAnnotation))
 
 					hc := tests.GetHCO(ctx, cli)
 					idx = slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
@@ -590,7 +590,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					g.Expect(idx).To(BeNumerically(">", -1), "should have the custom-dict in the HC status")
 
 					hcoDictStatus := hc.Status.DataImportCronTemplates[idx]
-					g.Expect(hcoDictStatus.Annotations).ToNot(HaveKey(operands.MultiArchDICTAnnotation))
+					g.Expect(hcoDictStatus.Annotations).ToNot(HaveKey(handlers.MultiArchDICTAnnotation))
 					g.Expect(hcoDictStatus.Status.OriginalSupportedArchitectures).To(Equal(""))
 					g.Expect(hcoDictStatus.Status.Conditions).To(BeEmpty())
 
@@ -618,7 +618,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 						hcCustomDict.Annotations = make(map[string]string)
 					}
 
-					hcCustomDict.Annotations[operands.MultiArchDICTAnnotation] = "someOtherArch1,someOtherArch2"
+					hcCustomDict.Annotations[handlers.MultiArchDICTAnnotation] = "someOtherArch1,someOtherArch2"
 
 					hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
 
@@ -649,7 +649,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					g.Expect(idx).To(BeNumerically(">", -1), "should have the custom-dict in the HC status")
 
 					hcoDictStatus := hc.Status.DataImportCronTemplates[idx]
-					g.Expect(hcoDictStatus.Annotations).To(HaveKeyWithValue(operands.MultiArchDICTAnnotation, ""))
+					g.Expect(hcoDictStatus.Annotations).To(HaveKeyWithValue(handlers.MultiArchDICTAnnotation, ""))
 					g.Expect(hcoDictStatus.Status.OriginalSupportedArchitectures).To(Equal("someOtherArch1,someOtherArch2"))
 
 					g.Expect(hcoDictStatus.Status.Conditions).To(HaveLen(1), "should have one condition in the DICT status")
@@ -676,7 +676,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 						hcCustomDict.Annotations = make(map[string]string)
 					}
 
-					hcCustomDict.Annotations[operands.MultiArchDICTAnnotation] = "someOtherArch1,someOtherArch2"
+					hcCustomDict.Annotations[handlers.MultiArchDICTAnnotation] = "someOtherArch1,someOtherArch2"
 
 					hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
 
@@ -707,7 +707,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					g.Expect(idx).To(BeNumerically(">", -1), "should have the %q in the HC status", hcCustomDict.Name)
 
 					hcoDictStatus := hc.Status.DataImportCronTemplates[idx]
-					g.Expect(hcoDictStatus.Annotations).To(HaveKeyWithValue(operands.MultiArchDICTAnnotation, ""))
+					g.Expect(hcoDictStatus.Annotations).To(HaveKeyWithValue(handlers.MultiArchDICTAnnotation, ""))
 					g.Expect(hcoDictStatus.Status.OriginalSupportedArchitectures).To(Equal("someOtherArch1,someOtherArch2"))
 
 					g.Expect(hcoDictStatus.Status.Conditions).To(HaveLen(1), "should have one condition in the DICT status")

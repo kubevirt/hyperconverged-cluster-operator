@@ -1,11 +1,10 @@
-package operands
+package operandhandler
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	log "github.com/go-logr/logr"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,6 +17,8 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -33,54 +34,49 @@ const (
 	deleteTimeOut         = 30 * time.Second
 )
 
-// common constants
-const (
-	kvPriorityClass = "kubevirt-cluster-critical"
-)
-
 var (
 	logger = logf.Log.WithName("operandHandlerInit")
 )
 
 type OperandHandler struct {
 	client   client.Client
-	operands []Operand
+	operands []operands.Operand
 	// save for deletions
 	objects      []client.Object
 	eventEmitter hcoutil.EventEmitter
 }
 
 func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.ClusterInfo, eventEmitter hcoutil.EventEmitter) *OperandHandler {
-	operands := []Operand{
-		(*genericOperand)(newKvPriorityClassHandler(client, scheme)),
-		(*genericOperand)(newKubevirtHandler(client, scheme)),
-		(*genericOperand)(newCdiHandler(client, scheme)),
-		(*genericOperand)(newCnaHandler(client, scheme)),
-		newAAQHandler(client, scheme),
+	operandList := []operands.Operand{
+		handlers.NewKvPriorityClassHandler(client, scheme),
+		handlers.NewKubevirtHandler(client, scheme),
+		handlers.NewCdiHandler(client, scheme),
+		handlers.NewCnaHandler(client, scheme),
+		handlers.NewAAQHandler(client, scheme),
 	}
 
 	if ci.IsOpenshift() {
-		operands = append(operands, []Operand{
-			(*genericOperand)(newSspHandler(client, scheme)),
-			(*genericOperand)(newCliDownloadHandler(client, scheme)),
-			(*genericOperand)(newCliDownloadsRouteHandler(client, scheme)),
-			(*genericOperand)(newServiceHandler(client, scheme, NewCliDownloadsService)),
+		operandList = append(operandList, []operands.Operand{
+			handlers.NewSspHandler(client, scheme),
+			handlers.NewCliDownloadHandler(client, scheme),
+			handlers.NewCliDownloadsRouteHandler(client, scheme),
+			operands.NewServiceHandler(client, scheme, handlers.NewCliDownloadsService),
 		}...)
 	}
 
 	if ci.IsOpenshift() && ci.IsConsolePluginImageProvided() {
-		operands = append(operands, newConsoleHandler(client))
-		operands = append(operands, (*genericOperand)(newServiceHandler(client, scheme, NewKvUIPluginSvc)))
-		operands = append(operands, (*genericOperand)(newServiceHandler(client, scheme, NewKvUIProxySvc)))
+		operandList = append(operandList, handlers.NewConsoleHandler(client))
+		operandList = append(operandList, operands.NewServiceHandler(client, scheme, handlers.NewKvUIPluginSvc))
+		operandList = append(operandList, operands.NewServiceHandler(client, scheme, handlers.NewKvUIProxySvc))
 	}
 
 	if ci.IsManagedByOLM() {
-		operands = append(operands, newCsvHandler(client, ci))
+		operandList = append(operandList, handlers.NewCsvHandler(client, ci))
 	}
 
 	return &OperandHandler{
 		client:       client,
-		operands:     operands,
+		operands:     operandList,
 		eventEmitter: eventEmitter,
 	}
 }
@@ -91,45 +87,43 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.ClusterInfo, hc *hcov1beta1.HyperConverged) {
 	h.objects = make([]client.Object, 0)
 	if ci.IsOpenshift() {
-		h.addOperands(scheme, hc, getQuickStartHandlers)
-		h.addOperands(scheme, hc, getDashboardHandlers)
-		h.addOperands(scheme, hc, getImageStreamHandlers)
-		h.addOperand(scheme, hc, newVirtioWinCmHandler)
-		h.addOperand(scheme, hc, newVirtioWinCmReaderRoleHandler)
-		h.addOperand(scheme, hc, newVirtioWinCmReaderRoleBindingHandler)
+		h.addOperands(scheme, hc, handlers.GetQuickStartHandlers)
+		h.addOperands(scheme, hc, handlers.GetDashboardHandlers)
+		h.addOperands(scheme, hc, handlers.GetImageStreamHandlers)
+		h.addOperand(scheme, hc, handlers.NewVirtioWinCmHandler)
+		h.addOperand(scheme, hc, handlers.NewVirtioWinCmReaderRoleHandler)
+		h.addOperand(scheme, hc, handlers.NewVirtioWinCmReaderRoleBindingHandler)
 	}
 
 	if ci.IsOpenshift() && ci.IsConsolePluginImageProvided() {
-		h.addOperand(scheme, hc, newKvUIPluginDeploymentHandler)
-		h.addOperand(scheme, hc, newKvUIProxyDeploymentHandler)
-		h.addOperand(scheme, hc, newKvUINginxCMHandler)
-		h.addOperand(scheme, hc, newKvUIPluginCRHandler)
-		h.addOperand(scheme, hc, newKvUIUserSettingsCMHandler)
-		h.addOperand(scheme, hc, newKvUIFeaturesCMHandler)
-		h.addOperand(scheme, hc, newKvUIConfigReaderRoleHandler)
-		h.addOperand(scheme, hc, newKvUIConfigReaderRoleBindingHandler)
+		h.addOperand(scheme, hc, handlers.NewKvUIPluginDeploymentHandler)
+		h.addOperand(scheme, hc, handlers.NewKvUIProxyDeploymentHandler)
+		h.addOperand(scheme, hc, handlers.NewKvUINginxCMHandler)
+		h.addOperand(scheme, hc, handlers.NewKvUIPluginCRHandler)
+		h.addOperand(scheme, hc, handlers.NewKvUIUserSettingsCMHandler)
+		h.addOperand(scheme, hc, handlers.NewKvUIFeaturesCMHandler)
+		h.addOperand(scheme, hc, handlers.NewKvUIConfigReaderRoleHandler)
+		h.addOperand(scheme, hc, handlers.NewKvUIConfigReaderRoleBindingHandler)
 
 	}
 }
 
 func (h *OperandHandler) GetQuickStartNames() []string {
-	return quickstartNames
+	return handlers.GetQuickStartNames()
 }
 
 func (h *OperandHandler) GetImageStreamNames() []string {
-	return imageStreamNames
+	return handlers.GetImageStreamNames()
 }
 
-type GetHandlers func(log.Logger, client.Client, *runtime.Scheme, *hcov1beta1.HyperConverged) ([]Operand, error)
-
-func (h *OperandHandler) addOperandObject(handler Operand, hc *hcov1beta1.HyperConverged) {
+func (h *OperandHandler) addOperandObject(handler operands.Operand, hc *hcov1beta1.HyperConverged) {
 	var (
 		obj client.Object
 		err error
 	)
 
-	if gh, ok := handler.(crGetter); ok {
-		obj, err = gh.getFullCr(hc)
+	if gh, ok := handler.(operands.CRGetter); ok {
+		obj, err = gh.GetFullCr(hc)
 	} else {
 		err = fmt.Errorf("unknown handler with type %T", handler)
 	}
@@ -141,7 +135,7 @@ func (h *OperandHandler) addOperandObject(handler Operand, hc *hcov1beta1.HyperC
 	}
 }
 
-func (h *OperandHandler) addOperands(scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, getHandlers GetHandlers) {
+func (h *OperandHandler) addOperands(scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, getHandlers operands.GetHandlers) {
 	handlers, err := getHandlers(logger, h.client, scheme, hc)
 	if err != nil {
 		logger.Error(err, "can't create handler")
@@ -153,9 +147,7 @@ func (h *OperandHandler) addOperands(scheme *runtime.Scheme, hc *hcov1beta1.Hype
 	}
 }
 
-type GetHandler func(log.Logger, client.Client, *runtime.Scheme, *hcov1beta1.HyperConverged) (Operand, error)
-
-func (h *OperandHandler) addOperand(scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, getHandler GetHandler) {
+func (h *OperandHandler) addOperand(scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, getHandler operands.GetHandler) {
 	handler, err := getHandler(logger, h.client, scheme, hc)
 	if err != nil {
 		logger.Error(err, "can't create handler")
@@ -169,9 +161,9 @@ func (h *OperandHandler) addOperand(scheme *runtime.Scheme, hc *hcov1beta1.Hyper
 
 func (h *OperandHandler) Ensure(req *common.HcoRequest) error {
 	for _, handler := range h.operands {
-		res := handler.ensure(req)
+		res := handler.Ensure(req)
 		if res.Err != nil {
-			req.Logger.Error(res.Err, "failed to ensure an operand")
+			req.Logger.Error(res.Err, "failed to Ensure an operand")
 
 			req.ComponentUpgradeInProgress = false
 			req.Conditions.SetStatusCondition(metav1.Condition{
@@ -198,7 +190,7 @@ func (h *OperandHandler) Ensure(req *common.HcoRequest) error {
 
 }
 
-func (h *OperandHandler) handleUpdatedOperand(req *common.HcoRequest, res *EnsureResult) {
+func (h *OperandHandler) handleUpdatedOperand(req *common.HcoRequest, res *operands.EnsureResult) {
 	if !res.Overwritten {
 		h.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "Updated", fmt.Sprintf("Updated %s %s", res.Type, res.Name))
 	} else {
@@ -215,12 +207,12 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 	defer cancel()
 
 	resources := []client.Object{
-		NewKubeVirtWithNameOnly(req.Instance),
-		NewCDIWithNameOnly(req.Instance),
-		NewNetworkAddonsWithNameOnly(req.Instance),
-		NewSSPWithNameOnly(req.Instance),
-		NewConsoleCLIDownload(req.Instance),
-		NewAAQWithNameOnly(req.Instance),
+		handlers.NewKubeVirtWithNameOnly(req.Instance),
+		handlers.NewCDIWithNameOnly(req.Instance),
+		handlers.NewNetworkAddonsWithNameOnly(req.Instance),
+		handlers.NewSSPWithNameOnly(req.Instance),
+		handlers.NewConsoleCLIDownload(req.Instance),
+		handlers.NewAAQWithNameOnly(req.Instance),
 	}
 
 	resources = append(resources, h.objects...)
@@ -260,6 +252,6 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 
 func (h *OperandHandler) Reset() {
 	for _, op := range h.operands {
-		op.reset()
+		op.Reset()
 	}
 }

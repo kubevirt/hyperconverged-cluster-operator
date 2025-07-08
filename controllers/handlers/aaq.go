@@ -1,4 +1,4 @@
-package operands
+package handlers
 
 import (
 	"errors"
@@ -15,25 +15,21 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-func newAAQHandler(Client client.Client, Scheme *runtime.Scheme) Operand {
-	return &conditionalHandler{
-		operand: &genericOperand{
-			Client: Client,
-			Scheme: Scheme,
-			crType: "AAQ",
-			hooks:  &aaqHooks{},
-		},
-		shouldDeploy: func(hc *hcov1beta1.HyperConverged) bool {
+func NewAAQHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewConditionalHandler(
+		operands.NewGenericOperand(Client, Scheme, "AAQ", &aaqHooks{}, false),
+		func(hc *hcov1beta1.HyperConverged) bool {
 			return hc.Spec.EnableApplicationAwareQuota != nil && *hc.Spec.EnableApplicationAwareQuota
 		},
-		getCRWithName: func(hc *hcov1beta1.HyperConverged) client.Object {
+		func(hc *hcov1beta1.HyperConverged) client.Object {
 			return NewAAQWithNameOnly(hc)
 		},
-	}
+	)
 }
 
 type aaqHooks struct {
@@ -41,7 +37,7 @@ type aaqHooks struct {
 	cache *aaqv1alpha1.AAQ
 }
 
-func (h *aaqHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *aaqHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
 	h.Lock()
 	defer h.Unlock()
 
@@ -55,25 +51,25 @@ func (h *aaqHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, erro
 	return h.cache, nil
 }
 
-func (*aaqHooks) getEmptyCr() client.Object { return &aaqv1alpha1.AAQ{} }
+func (*aaqHooks) GetEmptyCr() client.Object { return &aaqv1alpha1.AAQ{} }
 
-func (*aaqHooks) getConditions(cr runtime.Object) []metav1.Condition {
-	return osConditionsToK8s(cr.(*aaqv1alpha1.AAQ).Status.Conditions)
+func (*aaqHooks) GetConditions(cr runtime.Object) []metav1.Condition {
+	return operands.OSConditionsToK8s(cr.(*aaqv1alpha1.AAQ).Status.Conditions)
 }
 
-func (*aaqHooks) checkComponentVersion(cr runtime.Object) bool {
+func (*aaqHooks) CheckComponentVersion(cr runtime.Object) bool {
 	found := cr.(*aaqv1alpha1.AAQ)
-	return checkComponentVersion(hcoutil.AaqVersionEnvV, found.Status.ObservedVersion)
+	return operands.CheckComponentVersion(hcoutil.AaqVersionEnvV, found.Status.ObservedVersion)
 }
 
-func (h *aaqHooks) reset() {
+func (h *aaqHooks) Reset() {
 	h.Lock()
 	defer h.Unlock()
 
 	h.cache = nil
 }
 
-func (*aaqHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
+func (*aaqHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
 	aaq, ok1 := required.(*aaqv1alpha1.AAQ)
 	found, ok2 := exists.(*aaqv1alpha1.AAQ)
 	if !ok1 || !ok2 {
@@ -100,7 +96,7 @@ func (*aaqHooks) updateCr(req *common.HcoRequest, Client client.Client, exists r
 	return false, false, nil
 }
 
-func (*aaqHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+func (*aaqHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
 func NewAAQ(hc *hcov1beta1.HyperConverged) (*aaqv1alpha1.AAQ, error) {
 	spec := aaqv1alpha1.AAQSpec{
@@ -149,7 +145,7 @@ func NewAAQWithNameOnly(hc *hcov1beta1.HyperConverged) *aaqv1alpha1.AAQ {
 	return &aaqv1alpha1.AAQ{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "aaq-" + hc.Name,
-			Labels: getLabels(hc, hcoutil.AppComponentQuotaMngt),
+			Labels: operands.GetLabels(hc, hcoutil.AppComponentQuotaMngt),
 		},
 	}
 }

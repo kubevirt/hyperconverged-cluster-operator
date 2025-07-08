@@ -18,13 +18,8 @@ import (
 
 type newDeploymentFunc func(hc *hcov1beta1.HyperConverged) *appsv1.Deployment
 
-func newDeploymentHandler(Client client.Client, Scheme *runtime.Scheme, deploymentGenerator newDeploymentFunc, hc *hcov1beta1.HyperConverged) Operand {
-	return &genericOperand{
-		Client: Client,
-		Scheme: Scheme,
-		crType: "Deployment",
-		hooks:  newDeploymentHooks(deploymentGenerator, hc),
-	}
+func NewDeploymentHandler(Client client.Client, Scheme *runtime.Scheme, deploymentGenerator newDeploymentFunc, hc *hcov1beta1.HyperConverged) *GenericOperand {
+	return NewGenericOperand(Client, Scheme, "Deployment", newDeploymentHooks(deploymentGenerator, hc), false)
 }
 
 type deploymentHooks struct {
@@ -40,14 +35,14 @@ func newDeploymentHooks(deploymentGenerator newDeploymentFunc, hc *hcov1beta1.Hy
 	}
 }
 
-func (h *deploymentHooks) reset() {
+func (h *deploymentHooks) Reset() {
 	h.Lock()
 	defer h.Unlock()
 
 	h.cache = nil
 }
 
-func (h *deploymentHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *deploymentHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
 	h.Lock()
 	defer h.Unlock()
 
@@ -58,7 +53,7 @@ func (h *deploymentHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Objec
 	return h.cache, nil
 }
 
-func (h *deploymentHooks) getEmptyCr() client.Object {
+func (h *deploymentHooks) GetEmptyCr() client.Object {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: h.cache.Name,
@@ -66,9 +61,9 @@ func (h *deploymentHooks) getEmptyCr() client.Object {
 	}
 }
 
-func (h *deploymentHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+func (h *deploymentHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
-func (h *deploymentHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
+func (h *deploymentHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
 	deployment, ok1 := required.(*appsv1.Deployment)
 	found, ok2 := exists.(*appsv1.Deployment)
 

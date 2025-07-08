@@ -1,4 +1,4 @@
-package operands
+package handlers
 
 import (
 	"errors"
@@ -24,6 +24,7 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -47,32 +48,32 @@ const (
 )
 
 // **** Kubevirt UI Plugin Deployment Handler ****
-func newKvUIPluginDeploymentHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (Operand, error) {
-	return newDeploymentHandler(Client, Scheme, NewKvUIPluginDeployment, hc), nil
+func NewKvUIPluginDeploymentHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
+	return operands.NewDeploymentHandler(Client, Scheme, NewKvUIPluginDeployment, hc), nil
 }
 
 // **** Kubevirt UI apiserver proxy Deployment Handler ****
-func newKvUIProxyDeploymentHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (Operand, error) {
-	return newDeploymentHandler(Client, Scheme, NewKvUIProxyDeployment, hc), nil
+func NewKvUIProxyDeploymentHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
+	return operands.NewDeploymentHandler(Client, Scheme, NewKvUIProxyDeployment, hc), nil
 }
 
 // **** nginx config map Handler ****
-func newKvUINginxCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (Operand, error) {
-	return newCmHandler(Client, Scheme, NewKVUINginxCM(hc)), nil
+func NewKvUINginxCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
+	return operands.NewCmHandler(Client, Scheme, NewKVUINginxCM(hc)), nil
 }
 
 // **** UI user settings config map Handler ****
-func newKvUIUserSettingsCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (Operand, error) {
-	return newCmHandler(Client, Scheme, NewKvUIUserSettingsCM(hc)), nil
+func NewKvUIUserSettingsCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
+	return operands.NewCmHandler(Client, Scheme, NewKvUIUserSettingsCM(hc)), nil
 }
 
 // **** UI features config map Handler ****
-func newKvUIFeaturesCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (Operand, error) {
-	return newCmHandler(Client, Scheme, NewKvUIFeaturesCM(hc)), nil
+func NewKvUIFeaturesCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
+	return operands.NewCmHandler(Client, Scheme, NewKvUIFeaturesCM(hc)), nil
 }
 
 // **** Kubevirt UI Console Plugin Custom Resource Handler ****
-func newKvUIPluginCRHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (Operand, error) {
+func NewKvUIPluginCRHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
 	return newConsolePluginHandler(Client, Scheme, NewKVConsolePlugin(hc)), nil
 }
 
@@ -119,7 +120,7 @@ func NewKvUIProxyDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
 
 func getKvUIDeployment(hc *hcov1beta1.HyperConverged, deploymentName string, image string,
 	servingCertName string, servingCertPath string, port int32, componentName hcoutil.AppComponent) *appsv1.Deployment {
-	labels := getLabels(hc, componentName)
+	labels := operands.GetLabels(hc, componentName)
 	infrastructureHighlyAvailable := nodeinfo.IsInfrastructureHighlyAvailable()
 	var replicas int32
 	if infrastructureHighlyAvailable {
@@ -271,7 +272,7 @@ func NewKvUIPluginSvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kvUIPluginSvcName,
-			Labels: getLabels(hc, hcoutil.AppComponentUIPlugin),
+			Labels: operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
 			Annotations: map[string]string{
 				"service.beta.openshift.io/serving-cert-secret-name": kvUIPluginServingCertName,
 			},
@@ -299,7 +300,7 @@ func NewKvUIProxySvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kvUIProxySvcName,
-			Labels: getLabels(hc, hcoutil.AppComponentUIProxy),
+			Labels: operands.GetLabels(hc, hcoutil.AppComponentUIProxy),
 			Annotations: map[string]string{
 				"service.beta.openshift.io/serving-cert-secret-name": kvUIProxyServingCertName,
 			},
@@ -344,7 +345,7 @@ func NewKVUINginxCM(hc *hcov1beta1.HyperConverged) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nginxConfigMapName,
-			Labels:    getLabels(hc, hcoutil.AppComponentUIPlugin),
+			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
 			Namespace: hc.Namespace,
 		},
 		Data: map[string]string{
@@ -357,7 +358,7 @@ func NewKvUIUserSettingsCM(hc *hcov1beta1.HyperConverged) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIUserSettingsCMName,
-			Labels:    getLabels(hc, hcoutil.AppComponentUIConfig),
+			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIConfig),
 			Namespace: hc.Namespace,
 		},
 		Data: map[string]string{},
@@ -378,7 +379,7 @@ func NewKvUIFeaturesCM(hc *hcov1beta1.HyperConverged) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIFeaturesCMName,
-			Labels:    getLabels(hc, hcoutil.AppComponentUIConfig),
+			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIConfig),
 			Namespace: hc.Namespace,
 		},
 		Data: UIFeaturesConfig,
@@ -389,7 +390,7 @@ func NewKVConsolePlugin(hc *hcov1beta1.HyperConverged) *consolev1.ConsolePlugin 
 	return &consolev1.ConsolePlugin{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kvUIPluginName,
-			Labels: getLabels(hc, hcoutil.AppComponentUIPlugin),
+			Labels: operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
 		},
 		Spec: consolev1.ConsolePluginSpec{
 			DisplayName: "Kubevirt Console Plugin",
@@ -418,32 +419,25 @@ func NewKVConsolePlugin(hc *hcov1beta1.HyperConverged) *consolev1.ConsolePlugin 
 	}
 }
 
-func newConsolePluginHandler(Client client.Client, Scheme *runtime.Scheme, required *consolev1.ConsolePlugin) Operand {
-	h := &genericOperand{
-		Client: Client,
-		Scheme: Scheme,
-		crType: "ConsolePlugin",
-		hooks:  &consolePluginHooks{required: required},
-	}
-
-	return h
+func newConsolePluginHandler(Client client.Client, Scheme *runtime.Scheme, required *consolev1.ConsolePlugin) *operands.GenericOperand {
+	return operands.NewGenericOperand(Client, Scheme, "ConsolePlugin", &consolePluginHooks{required: required}, false)
 }
 
-// **** UI configuration (user settings and features) ConfigMap Role Handler ****
-func newKvUIConfigReaderRoleHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (Operand, error) {
-	return newRoleHandler(Client, Scheme, NewKvUIConfigCMReaderRole(hc)), nil
+// NewKvUIConfigReaderRoleHandler returns UI configuration (user settings and features) ConfigMap Role Handler
+func NewKvUIConfigReaderRoleHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
+	return operands.NewRoleHandler(Client, Scheme, NewKvUIConfigCMReaderRole(hc)), nil
 }
 
-// **** UI configuration (user settings and features) ConfigMap RoleBinding Handler ****
-func newKvUIConfigReaderRoleBindingHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (Operand, error) {
-	return newRoleBindingHandler(Client, Scheme, NewKvUIConfigCMReaderRoleBinding(hc)), nil
+// NewKvUIConfigReaderRoleBindingHandler returns UI configuration (user settings and features) ConfigMap RoleBinding Handler
+func NewKvUIConfigReaderRoleBindingHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
+	return operands.NewRoleBindingHandler(Client, Scheme, NewKvUIConfigCMReaderRoleBinding(hc)), nil
 }
 
 func NewKvUIConfigCMReaderRole(hc *hcov1beta1.HyperConverged) *rbacv1.Role {
 	return &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIConfigReaderRoleName,
-			Labels:    getLabels(hc, hcoutil.AppComponentUIPlugin),
+			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
 			Namespace: hc.Namespace,
 		},
 		Rules: []rbacv1.PolicyRule{
@@ -467,7 +461,7 @@ func NewKvUIConfigCMReaderRoleBinding(hc *hcov1beta1.HyperConverged) *rbacv1.Rol
 	return &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIConfigReaderRBName,
-			Labels:    getLabels(hc, hcoutil.AppComponentUIPlugin),
+			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
 			Namespace: hc.Namespace,
 		},
 		RoleRef: rbacv1.RoleRef{
@@ -489,11 +483,11 @@ type consolePluginHooks struct {
 	required *consolev1.ConsolePlugin
 }
 
-func (h consolePluginHooks) getFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h consolePluginHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
 
-func (h consolePluginHooks) getEmptyCr() client.Object {
+func (h consolePluginHooks) GetEmptyCr() client.Object {
 	return &consolev1.ConsolePlugin{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: h.required.Name,
@@ -501,9 +495,9 @@ func (h consolePluginHooks) getEmptyCr() client.Object {
 	}
 }
 
-func (consolePluginHooks) justBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+func (consolePluginHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
-func (h consolePluginHooks) updateCr(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
+func (h consolePluginHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
 	found, ok := exists.(*consolev1.ConsolePlugin)
 
 	if !ok {
@@ -533,7 +527,7 @@ type consoleHandler struct {
 	Client client.Client
 }
 
-func (h consoleHandler) ensure(req *common.HcoRequest) *EnsureResult {
+func (h consoleHandler) Ensure(req *common.HcoRequest) *operands.EnsureResult {
 	// Enable console plugin for kubevirt if not already enabled
 	consoleKey := client.ObjectKey{Namespace: hcoutil.UndefinedNamespace, Name: "cluster"}
 	consoleObj := &operatorv1.Console{}
@@ -541,7 +535,7 @@ func (h consoleHandler) ensure(req *common.HcoRequest) *EnsureResult {
 	if err != nil {
 		req.Logger.Error(err, fmt.Sprintf("Could not find resource - APIVersion: %s, Kind: %s, Name: %s",
 			consoleObj.APIVersion, consoleObj.Kind, consoleObj.Name))
-		return &EnsureResult{
+		return &operands.EnsureResult{
 			Err: nil,
 		}
 	}
@@ -553,27 +547,27 @@ func (h consoleHandler) ensure(req *common.HcoRequest) *EnsureResult {
 		if err != nil {
 			req.Logger.Error(err, fmt.Sprintf("Could not update resource - APIVersion: %s, Kind: %s, Name: %s",
 				consoleObj.APIVersion, consoleObj.Kind, consoleObj.Name))
-			return &EnsureResult{
+			return &operands.EnsureResult{
 				Err: err,
 			}
 		}
 
-		return &EnsureResult{
+		return &operands.EnsureResult{
 			Err:         nil,
 			Updated:     true,
 			UpgradeDone: true,
 		}
 	}
-	return &EnsureResult{
+	return &operands.EnsureResult{
 		Err:         nil,
 		Updated:     false,
 		UpgradeDone: true,
 	}
 }
 
-func (consoleHandler) reset() { /* no implementation */ }
+func (consoleHandler) Reset() { /* no implementation */ }
 
-func newConsoleHandler(Client client.Client) Operand {
+func NewConsoleHandler(Client client.Client) operands.Operand {
 	h := &consoleHandler{
 		Client: Client,
 	}

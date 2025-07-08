@@ -1,4 +1,4 @@
-package operands
+package handlers
 
 import (
 	"errors"
@@ -20,12 +20,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -56,22 +58,18 @@ var (
 	dataImportCronTemplateHardCodedMap map[string]hcov1beta1.DataImportCronTemplate
 )
 
+var (
+	logger = logf.Log.WithName("dataImportCronTemplateInit")
+)
+
 func init() {
 	if err := readDataImportCronTemplatesFromFile(); err != nil {
 		panic(fmt.Errorf("can't process the data import cron template file; %s; %w", err.Error(), err))
 	}
 }
 
-type sspHandler genericOperand
-
-func newSspHandler(Client client.Client, Scheme *runtime.Scheme) *sspHandler {
-	return &sspHandler{
-		Client:                 Client,
-		Scheme:                 Scheme,
-		crType:                 "SSP",
-		setControllerReference: false,
-		hooks:                  &sspHooks{},
-	}
+func NewSspHandler(Client client.Client, Scheme *runtime.Scheme) *operands.GenericOperand {
+	return operands.NewGenericOperand(Client, Scheme, "SSP", &sspHooks{}, false)
 }
 
 type sspHooks struct {
@@ -80,7 +78,7 @@ type sspHooks struct {
 	dictStatuses []hcov1beta1.DataImportCronTemplateStatus
 }
 
-func (h *sspHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *sspHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
 	h.Lock()
 	defer h.Unlock()
 
@@ -95,15 +93,15 @@ func (h *sspHooks) getFullCr(hc *hcov1beta1.HyperConverged) (client.Object, erro
 	return h.cache, nil
 }
 
-func (*sspHooks) getEmptyCr() client.Object { return &sspv1beta3.SSP{} }
-func (*sspHooks) getConditions(cr runtime.Object) []metav1.Condition {
-	return osConditionsToK8s(cr.(*sspv1beta3.SSP).Status.Conditions)
+func (*sspHooks) GetEmptyCr() client.Object { return &sspv1beta3.SSP{} }
+func (*sspHooks) GetConditions(cr runtime.Object) []metav1.Condition {
+	return operands.OSConditionsToK8s(cr.(*sspv1beta3.SSP).Status.Conditions)
 }
-func (*sspHooks) checkComponentVersion(cr runtime.Object) bool {
+func (*sspHooks) CheckComponentVersion(cr runtime.Object) bool {
 	found := cr.(*sspv1beta3.SSP)
-	return checkComponentVersion(util.SspVersionEnvV, found.Status.ObservedVersion)
+	return operands.CheckComponentVersion(util.SspVersionEnvV, found.Status.ObservedVersion)
 }
-func (h *sspHooks) reset() {
+func (h *sspHooks) Reset() {
 	h.Lock()
 	defer h.Unlock()
 
@@ -111,7 +109,7 @@ func (h *sspHooks) reset() {
 	h.dictStatuses = nil
 }
 
-func (*sspHooks) updateCr(req *common.HcoRequest, client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
+func (*sspHooks) UpdateCR(req *common.HcoRequest, client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
 	ssp, ok1 := required.(*sspv1beta3.SSP)
 	found, ok2 := exists.(*sspv1beta3.SSP)
 	if !ok1 || !ok2 {
@@ -135,7 +133,7 @@ func (*sspHooks) updateCr(req *common.HcoRequest, client client.Client, exists r
 	return false, false, nil
 }
 
-func (h *sspHooks) justBeforeComplete(req *common.HcoRequest) {
+func (h *sspHooks) JustBeforeComplete(req *common.HcoRequest) {
 	if !reflect.DeepEqual(h.dictStatuses, req.Instance.Status.DataImportCronTemplates) {
 		req.Instance.Status.DataImportCronTemplates = h.dictStatuses
 		req.StatusDirty = true
@@ -183,7 +181,7 @@ func NewSSP(hc *hcov1beta1.HyperConverged) (*sspv1beta3.SSP, []hcov1beta1.DataIm
 	ssp := NewSSPWithNameOnly(hc)
 	ssp.Spec = spec
 
-	if err = applyPatchToSpec(hc, common.JSONPatchSSPAnnotationName, ssp); err != nil {
+	if err = operands.ApplyPatchToSpec(hc, common.JSONPatchSSPAnnotationName, ssp); err != nil {
 		return nil, nil, err
 	}
 
@@ -199,8 +197,8 @@ func NewSSPWithNameOnly(hc *hcov1beta1.HyperConverged, opts ...string) *sspv1bet
 	return &sspv1beta3.SSP{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ssp-" + hc.Name,
-			Labels:    getLabels(hc, util.AppComponentSchedule),
-			Namespace: getNamespace(hc.Namespace, opts),
+			Labels:    operands.GetLabels(hc, util.AppComponentSchedule),
+			Namespace: operands.GetNamespace(hc.Namespace, opts),
 		},
 	}
 }

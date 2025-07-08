@@ -1,4 +1,4 @@
-package operands
+package handlers
 
 import (
 	"context"
@@ -18,6 +18,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/downloadhost"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -36,8 +37,8 @@ var _ = Describe("CLI Download", func() {
 		It("should create if not present", func() {
 			expectedResource := NewConsoleCLIDownload(hco)
 			cl := commontestutils.InitClient([]client.Object{})
-			handler := (*genericOperand)(newCliDownloadHandler(cl, commontestutils.GetScheme()))
-			res := handler.ensure(req)
+			handler := NewCliDownloadHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			key := client.ObjectKeyFromObject(expectedResource)
@@ -52,8 +53,8 @@ var _ = Describe("CLI Download", func() {
 		It("should find if present", func() {
 			expectedResource := NewConsoleCLIDownload(hco)
 			cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
-			handler := (*genericOperand)(newCliDownloadHandler(cl, commontestutils.GetScheme()))
-			res := handler.ensure(req)
+			handler := NewCliDownloadHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			// Check HCO's status
@@ -71,8 +72,8 @@ var _ = Describe("CLI Download", func() {
 			modify(modifiedResource)
 
 			cl := commontestutils.InitClient([]client.Object{modifiedResource})
-			handler := (*genericOperand)(newCliDownloadHandler(cl, commontestutils.GetScheme()))
-			res := handler.ensure(req)
+			handler := NewCliDownloadHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			key := client.ObjectKeyFromObject(expectedResource)
@@ -114,9 +115,9 @@ var _ = Describe("CLI Download", func() {
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler := (*genericOperand)(newCliDownloadHandler(cl, commontestutils.GetScheme()))
+			handler := NewCliDownloadHandler(cl, commontestutils.GetScheme())
 
-			res := handler.ensure(req)
+			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -143,9 +144,9 @@ var _ = Describe("CLI Download", func() {
 			delete(outdatedResource.Labels, hcoutil.AppLabelVersion)
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler := (*genericOperand)(newCliDownloadHandler(cl, commontestutils.GetScheme()))
+			handler := NewCliDownloadHandler(cl, commontestutils.GetScheme())
 
-			res := handler.ensure(req)
+			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -180,8 +181,8 @@ var _ = Describe("Downloads Service", func() {
 		It("should create if not present", func() {
 			expectedResource := NewCliDownloadsService(hco)
 			cl := commontestutils.InitClient([]client.Object{})
-			handler := (*genericOperand)(newServiceHandler(cl, commontestutils.GetScheme(), NewCliDownloadsService))
-			res := handler.ensure(req)
+			handler := operands.NewServiceHandler(cl, commontestutils.GetScheme(), NewCliDownloadsService)
+			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			key := client.ObjectKeyFromObject(expectedResource)
@@ -195,8 +196,8 @@ var _ = Describe("Downloads Service", func() {
 		It("should find if present", func() {
 			expectedResource := NewCliDownloadsService(hco)
 			cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
-			handler := (*genericOperand)(newServiceHandler(cl, commontestutils.GetScheme(), NewCliDownloadsService))
-			res := handler.ensure(req)
+			handler := operands.NewServiceHandler(cl, commontestutils.GetScheme(), NewCliDownloadsService)
+			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			// Check HCO's status
@@ -215,14 +216,14 @@ var _ = Describe("Downloads Service", func() {
 
 			cl := commontestutils.InitClient([]client.Object{modifiedResource})
 
-			handler := (*genericOperand)(newServiceHandler(cl, commontestutils.GetScheme(), NewCliDownloadsService))
-			res := handler.ensure(req)
+			handler := operands.NewServiceHandler(cl, commontestutils.GetScheme(), NewCliDownloadsService)
+			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			key := client.ObjectKeyFromObject(expectedResource)
 			foundResource := &corev1.Service{}
 			Expect(cl.Get(context.TODO(), key, foundResource)).To(Succeed())
-			Expect(hasServiceRightFields(foundResource, expectedResource)).To(BeTrue())
+			Expect(operands.HasServiceRightFields(foundResource, expectedResource)).To(BeTrue())
 
 			// ObjectReference should have been updated
 			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
@@ -261,8 +262,8 @@ var _ = Describe("Cli Downloads Route", func() {
 		It("should create if not present", func() {
 			expectedResource := NewCliDownloadsRoute(hco)
 			cl := commontestutils.InitClient([]client.Object{})
-			handler := (*genericOperand)(newCliDownloadsRouteHandler(cl, commontestutils.GetScheme()))
-			res := handler.ensure(req)
+			handler := NewCliDownloadsRouteHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			key := client.ObjectKeyFromObject(expectedResource)
@@ -276,8 +277,8 @@ var _ = Describe("Cli Downloads Route", func() {
 		It("should find if present", func() {
 			expectedResource := NewCliDownloadsRoute(hco)
 			cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
-			handler := (*genericOperand)(newCliDownloadsRouteHandler(cl, commontestutils.GetScheme()))
-			res := handler.ensure(req)
+			handler := NewCliDownloadsRouteHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			// Check HCO's status
@@ -295,8 +296,8 @@ var _ = Describe("Cli Downloads Route", func() {
 			modify(modifiedResource)
 
 			cl := commontestutils.InitClient([]client.Object{modifiedResource})
-			handler := (*genericOperand)(newCliDownloadsRouteHandler(cl, commontestutils.GetScheme()))
-			res := handler.ensure(req)
+			handler := NewCliDownloadsRouteHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			key := client.ObjectKeyFromObject(expectedResource)

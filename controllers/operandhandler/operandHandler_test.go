@@ -1,25 +1,39 @@
-package operands
+package operandhandler
 
 import (
 	"context"
 	"fmt"
 	"os"
+	"path"
+	"strings"
+	"testing"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	consolev1 "github.com/openshift/api/console/v1"
+	imagev1 "github.com/openshift/api/image/v1"
+	objectreferencesv1 "github.com/openshift/custom-resource-status/objectreferences/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/reference"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
+
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 )
+
+func TestOperators(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "OperatorHandler Suite")
+}
 
 var _ = Describe("Test operandHandler", func() {
 	origLogger := logger
@@ -28,19 +42,42 @@ var _ = Describe("Test operandHandler", func() {
 		DeferCleanup(func() {
 			logger = origLogger
 		})
+
+		testFileLocation := getTestFilesLocation()
+
+		qsVal, qsExists := os.LookupEnv(handlers.QuickStartManifestLocationVarName)
+		Expect(os.Setenv(handlers.QuickStartManifestLocationVarName, testFileLocation+"/quickstarts")).To(Succeed())
+		dashboardVal, dashboardExists := os.LookupEnv(handlers.DashboardManifestLocationVarName)
+		Expect(os.Setenv(handlers.DashboardManifestLocationVarName, testFileLocation+"/dashboards")).To(Succeed())
+		imageStreamVal, imageStreamExists := os.LookupEnv(handlers.ImageStreamManifestLocationVarName)
+		Expect(os.Setenv(handlers.ImageStreamManifestLocationVarName, testFileLocation+"/imageStreams")).To(Succeed())
+
+		DeferCleanup(func() {
+			if qsExists {
+				Expect(os.Setenv(handlers.QuickStartManifestLocationVarName, qsVal)).To(Succeed())
+			} else {
+				Expect(os.Unsetenv(handlers.QuickStartManifestLocationVarName)).To(Succeed())
+			}
+			if dashboardExists {
+				Expect(os.Setenv(handlers.DashboardManifestLocationVarName, dashboardVal)).To(Succeed())
+			} else {
+				Expect(os.Unsetenv(handlers.DashboardManifestLocationVarName)).To(Succeed())
+			}
+			if imageStreamExists {
+				Expect(os.Setenv(handlers.ImageStreamManifestLocationVarName, imageStreamVal)).To(Succeed())
+			} else {
+				Expect(os.Unsetenv(handlers.ImageStreamManifestLocationVarName)).To(Succeed())
+			}
+		})
 	})
 
 	Context("Test operandHandler", func() {
-		testFileLocation := getTestFilesLocation()
 
 		var (
 			hcoNamespace *corev1.Namespace
 		)
 
 		BeforeEach(func() {
-			_ = os.Setenv(quickStartManifestLocationVarName, testFileLocation+"/quickstarts")
-			_ = os.Setenv(dashboardManifestLocationVarName, testFileLocation+"/dashboards")
-			_ = os.Setenv("VIRTIOWIN_CONTAINER", "just-a-value:version")
 			hcoNamespace = commontestutils.NewHcoNamespace()
 		})
 
@@ -141,7 +178,7 @@ var _ = Describe("Test operandHandler", func() {
 			})
 		})
 
-		It("should handle errors on ensure loop", func() {
+		It("should handle errors on Ensure loop", func() {
 			hco := commontestutils.NewHco()
 			cli := commontestutils.InitClient([]client.Object{hcoNamespace, hco})
 
@@ -461,4 +498,100 @@ var _ = Describe("Test operandHandler", func() {
 			})
 		})
 	})
+
+	Context("test imageStream deletion", func() {
+		It("should delete the ImageStream resource if the FG is not set, and emit event", func() {
+			hcoNamespace := commontestutils.NewHcoNamespace()
+			hco := commontestutils.NewHco()
+			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+			eventEmitter := commontestutils.NewEventEmitterMock()
+			ci := commontestutils.ClusterInfoMock{}
+			cli := commontestutils.InitClient([]client.Object{hcoNamespace, hco, ci.GetCSV()})
+
+			handler := NewOperandHandler(cli, commontestutils.GetScheme(), ci, eventEmitter)
+			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco)
+
+			req := commontestutils.NewReq(hco)
+			Expect(handler.Ensure(req)).To(Succeed())
+
+			ImageStreamObjects := &imagev1.ImageStreamList{}
+			Expect(cli.List(context.TODO(), ImageStreamObjects)).To(Succeed())
+			Expect(ImageStreamObjects.Items).To(HaveLen(1))
+			Expect(ImageStreamObjects.Items[0].Name).To(Equal("test-image-stream"))
+
+			objectRef, err := reference.GetReference(commontestutils.GetScheme(), &ImageStreamObjects.Items[0])
+			Expect(err).ToNot(HaveOccurred())
+			hco.Status.RelatedObjects = append(hco.Status.RelatedObjects, *objectRef)
+
+			By("check related object - the imageStream ref should be there")
+			existingRef, err := objectreferencesv1.FindObjectReference(hco.Status.RelatedObjects, *objectRef)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(existingRef).ToNot(BeNil())
+
+			By("Run again, this time when the FG is false")
+			eventEmitter.Reset()
+			hco.Spec.EnableCommonBootImageImport = ptr.To(false)
+			req = commontestutils.NewReq(hco)
+			Expect(handler.Ensure(req)).To(Succeed())
+
+			By("check that the image stream was removed")
+			ImageStreamObjects = &imagev1.ImageStreamList{}
+			Expect(cli.List(context.TODO(), ImageStreamObjects)).To(Succeed())
+			Expect(ImageStreamObjects.Items).To(BeEmpty())
+
+			By("check that the delete event was emitted")
+			expectedEvents := []commontestutils.MockEvent{
+				{
+					EventType: corev1.EventTypeNormal,
+					Reason:    "Killing",
+					Msg:       "Removed ImageStream test-image-stream",
+				},
+			}
+			Expect(eventEmitter.CheckEvents(expectedEvents)).To(BeTrue())
+
+			By("check that the related object was removed")
+			existingRef, err = objectreferencesv1.FindObjectReference(hco.Status.RelatedObjects, *objectRef)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(existingRef).To(BeNil())
+		})
+
+		It("should not emit event if the FG is not set and the image stream is not exist", func() {
+			hcoNamespace := commontestutils.NewHcoNamespace()
+			hco := commontestutils.NewHco()
+			ci := commontestutils.ClusterInfoMock{}
+			cli := commontestutils.InitClient([]client.Object{hcoNamespace, hco, ci.GetCSV()})
+
+			eventEmitter := commontestutils.NewEventEmitterMock()
+
+			handler := NewOperandHandler(cli, commontestutils.GetScheme(), ci, eventEmitter)
+			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco)
+
+			req := commontestutils.NewReq(hco)
+			Expect(handler.Ensure(req)).To(Succeed())
+
+			expectedEvents := []commontestutils.MockEvent{
+				{
+					EventType: corev1.EventTypeNormal,
+					Reason:    "Killing",
+					Msg:       "Removed ImageStream test-image-stream",
+				},
+			}
+			Expect(eventEmitter.CheckEvents(expectedEvents)).To(BeFalse())
+		})
+
+	})
 })
+
+func getTestFilesLocation() string {
+	const (
+		pkgDirectory = "controllers/operandhandler"
+		testFilesLoc = "testFiles"
+	)
+
+	wd, err := os.Getwd()
+	Expect(err).ToNot(HaveOccurred())
+	if strings.HasSuffix(wd, pkgDirectory) {
+		return testFilesLoc
+	}
+	return path.Join(pkgDirectory, testFilesLoc)
+}

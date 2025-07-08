@@ -11,26 +11,37 @@ import (
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-// conditionalHandler is an operand handler that only deploy the operand CR if a given shouldDeploy function returns true.
+type ConditionFunc func(hc *v1beta1.HyperConverged) bool
+type GetCRWithNameFunc func(hc *v1beta1.HyperConverged) client.Object
+
+// ConditionalHandler is an operand handler that only deploy the operand CR if a given shouldDeploy function returns true.
 // If not, it makes sure the CR is deleted.
-type conditionalHandler struct {
-	operand       *genericOperand
-	shouldDeploy  func(hc *v1beta1.HyperConverged) bool
-	getCRWithName func(hc *v1beta1.HyperConverged) client.Object
+type ConditionalHandler struct {
+	operand       *GenericOperand
+	shouldDeploy  ConditionFunc
+	getCRWithName GetCRWithNameFunc
 }
 
-func (ch *conditionalHandler) ensure(req *common.HcoRequest) *EnsureResult {
+func NewConditionalHandler(operand *GenericOperand, shouldDeploy ConditionFunc, getCRWithName GetCRWithNameFunc) *ConditionalHandler {
+	return &ConditionalHandler{
+		operand:       operand,
+		shouldDeploy:  shouldDeploy,
+		getCRWithName: getCRWithName,
+	}
+}
+
+func (ch *ConditionalHandler) Ensure(req *common.HcoRequest) *EnsureResult {
 	if ch.shouldDeploy(req.Instance) {
-		return ch.operand.ensure(req)
+		return ch.operand.Ensure(req)
 	}
 	return ch.ensureDeleted(req)
 }
 
-func (ch *conditionalHandler) reset() {
-	ch.operand.reset()
+func (ch *ConditionalHandler) Reset() {
+	ch.operand.Reset()
 }
 
-func (ch *conditionalHandler) ensureDeleted(req *common.HcoRequest) *EnsureResult {
+func (ch *ConditionalHandler) ensureDeleted(req *common.HcoRequest) *EnsureResult {
 	cr := ch.getCRWithName(req.Instance)
 	res := NewEnsureResult(req.Instance)
 	res.SetName(cr.GetName())
@@ -38,7 +49,7 @@ func (ch *conditionalHandler) ensureDeleted(req *common.HcoRequest) *EnsureResul
 	// hcoutil.EnsureDeleted does check that the CR exists before removing it. But it also writes a log message each
 	// time it happens, i.e. for every reconcile loop. Assuming the client cache is up-to-date, we can safely get it here
 	// with no meaningful performance cost.
-	err := ch.operand.Client.Get(req.Ctx, client.ObjectKeyFromObject(cr), cr)
+	err := ch.operand.Get(req.Ctx, client.ObjectKeyFromObject(cr), cr)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return res.Error(err)
@@ -66,6 +77,6 @@ func (ch *conditionalHandler) ensureDeleted(req *common.HcoRequest) *EnsureResul
 	return res.SetUpgradeDone(req.ComponentUpgradeInProgress)
 }
 
-func (ch *conditionalHandler) getFullCr(hc *v1beta1.HyperConverged) (client.Object, error) {
-	return ch.operand.getFullCr(hc)
+func (ch *ConditionalHandler) GetFullCr(hc *v1beta1.HyperConverged) (client.Object, error) {
+	return ch.operand.GetFullCr(hc)
 }
