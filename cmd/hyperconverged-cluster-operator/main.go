@@ -12,6 +12,7 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	openshiftroutev1 "github.com/openshift/api/route/v1"
+	securityv1 "github.com/openshift/api/security/v1"
 	deschedulerv1 "github.com/openshift/cluster-kube-descheduler-operator/pkg/apis/descheduler/v1"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operatorsapiv2 "github.com/operator-framework/api/pkg/operators/v2"
@@ -91,6 +92,7 @@ var (
 		operatorv1.Install,
 		openshiftconfigv1.Install,
 		openshiftroutev1.Install,
+		securityv1.Install,
 		monitoringv1.AddToScheme,
 		apiextensionsv1.AddToScheme,
 		kubevirtcorev1.AddToScheme,
