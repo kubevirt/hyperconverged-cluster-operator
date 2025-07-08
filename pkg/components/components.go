@@ -655,6 +655,11 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			Resources: stringListToSlice("daemonsets"),
 			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
+		{
+			APIGroups: stringListToSlice("k8s.cni.cncf.io"),
+			Resources: stringListToSlice("network-attachment-definitions"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
 	}
 }
 
