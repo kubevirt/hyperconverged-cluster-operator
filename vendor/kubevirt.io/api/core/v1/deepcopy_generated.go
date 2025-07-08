@@ -135,6 +135,12 @@ func (in *ArchConfiguration) DeepCopyInto(out *ArchConfiguration) {
 		*out = new(ArchSpecificConfiguration)
 		(*in).DeepCopyInto(*out)
 	}
+	// TODO: Remove this after https://github.com/kubevirt/kubevirt/tree/v1.5.0/staging/src/kubevirt.io/api release (1.6 release) includes deepcopy for S390x ,
+	if in.S390x != nil {
+		in, out := &in.S390x, &out.S390x
+		*out = new(ArchSpecificConfiguration)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 

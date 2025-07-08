@@ -261,6 +261,7 @@ Version: 1.2.3`)).To(Succeed())
 
 			Expect(os.Setenv(amd64MachineTypeEnvName, "q35")).To(Succeed())
 			Expect(os.Setenv(arm64MachineTypeEnvName, "virt")).To(Succeed())
+			Expect(os.Setenv(s390xMachineTypeEnvName, "s390-ccw-virtio")).To(Succeed())
 			Expect(os.Setenv(kvmEmulationEnvName, "false")).To(Succeed())
 
 			DeferCleanup(func() {
@@ -268,6 +269,7 @@ Version: 1.2.3`)).To(Succeed())
 				Expect(os.Unsetenv(machineTypeEnvName)).To(Succeed())
 				Expect(os.Unsetenv(amd64MachineTypeEnvName)).To(Succeed())
 				Expect(os.Unsetenv(arm64MachineTypeEnvName)).To(Succeed())
+				Expect(os.Unsetenv(s390xMachineTypeEnvName)).To(Succeed())
 				Expect(os.Unsetenv(kvmEmulationEnvName)).To(Succeed())
 			})
 		})
@@ -320,6 +322,8 @@ Version: 1.2.3`)).To(Succeed())
 			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Amd64.OVMFPath).To(Equal(DefaultAMD64OVMFPath))
 			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Arm64.MachineType).To(Equal("virt"))
 			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Arm64.OVMFPath).To(Equal(DefaultARM64OVMFPath))
+			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.S390x.MachineType).To(Equal("s390-ccw-virtio"))
+			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.S390x.OVMFPath).To(Equal(DefaultS390xOVMFPath))
 
 			Expect(foundResource.Spec.Configuration.SMBIOSConfig).ToNot(BeNil())
 			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Family).To(Equal("smbios family"))
@@ -458,6 +462,7 @@ Sku: 1.2.3
 Version: 1.2.3`)
 			os.Setenv(amd64MachineTypeEnvName, "q35")
 			os.Setenv(arm64MachineTypeEnvName, "virt")
+			os.Setenv(s390xMachineTypeEnvName, "s390-ccw-virtio")
 
 			existKv, err := NewKubeVirt(hco, commontestutils.Namespace)
 			Expect(err).ToNot(HaveOccurred())
@@ -470,6 +475,9 @@ Version: 1.2.3`)
 				},
 				Arm64: &kubevirtcorev1.ArchSpecificConfiguration{
 					MachineType: "wrong arm64 machine type",
+				},
+				S390x: &kubevirtcorev1.ArchSpecificConfiguration{
+					MachineType: "wrong s390x machine type",
 				},
 			}
 			existKv.Spec.Configuration.SMBIOSConfig = &kubevirtcorev1.SMBiosConfiguration{
@@ -528,6 +536,8 @@ Version: 1.2.3`)
 			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Amd64.OVMFPath).To(Equal(DefaultAMD64OVMFPath))
 			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Arm64.MachineType).To(Equal("virt"))
 			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Arm64.OVMFPath).To(Equal(DefaultARM64OVMFPath))
+			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.S390x.MachineType).To(Equal("s390-ccw-virtio"))
+			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.S390x.OVMFPath).To(Equal(DefaultS390xOVMFPath))
 
 			Expect(foundResource.Spec.Configuration.SMBIOSConfig).ToNot(BeNil())
 			Expect(foundResource.Spec.Configuration.SMBIOSConfig.Family).To(Equal("smbios family"))
@@ -558,6 +568,7 @@ Version: 1.2.3`)
 			os.Setenv(machineTypeEnvName, "legacy")
 			os.Setenv(amd64MachineTypeEnvName, "q35")
 			os.Unsetenv(arm64MachineTypeEnvName)
+			os.Unsetenv(s390xMachineTypeEnvName)
 
 			kv, err := NewKubeVirt(hco, commontestutils.Namespace)
 			Expect(err).ToNot(HaveOccurred())
@@ -566,12 +577,14 @@ Version: 1.2.3`)
 			Expect(kv.Spec.Configuration.ArchitectureConfiguration.Amd64.MachineType).To(Equal("legacy"))
 			Expect(kv.Spec.Configuration.ArchitectureConfiguration.Amd64.OVMFPath).To(Equal(DefaultAMD64OVMFPath))
 			Expect(kv.Spec.Configuration.ArchitectureConfiguration.Arm64).To(BeNil())
+			Expect(kv.Spec.Configuration.ArchitectureConfiguration.S390x).To(BeNil())
 		})
 
 		It("should not use legacy MACHINETYPE env if empty", func() {
 			os.Setenv(machineTypeEnvName, "")
 			os.Setenv(amd64MachineTypeEnvName, "q35")
 			os.Unsetenv(arm64MachineTypeEnvName)
+			os.Unsetenv(s390xMachineTypeEnvName)
 
 			kv, err := NewKubeVirt(hco, commontestutils.Namespace)
 			Expect(err).ToNot(HaveOccurred())
@@ -580,6 +593,7 @@ Version: 1.2.3`)
 			Expect(kv.Spec.Configuration.ArchitectureConfiguration.Amd64.MachineType).To(Equal("q35"))
 			Expect(kv.Spec.Configuration.ArchitectureConfiguration.Amd64.OVMFPath).To(Equal(DefaultAMD64OVMFPath))
 			Expect(kv.Spec.Configuration.ArchitectureConfiguration.Arm64).To(BeNil())
+			Expect(kv.Spec.Configuration.ArchitectureConfiguration.S390x).To(BeNil())
 		})
 
 		It("should fail if the SMBIOS is wrongly formatted mandatory configurations", func() {

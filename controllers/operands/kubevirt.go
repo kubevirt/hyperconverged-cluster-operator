@@ -40,13 +40,16 @@ const (
 	machineTypeEnvName      = "MACHINETYPE"
 	amd64MachineTypeEnvName = "AMD64_MACHINETYPE"
 	arm64MachineTypeEnvName = "ARM64_MACHINETYPE"
+	s390xMachineTypeEnvName = "S390X_MACHINETYPE"
 )
 
 const (
 	DefaultAMD64OVMFPath         = "/usr/share/OVMF"
 	DefaultARM64OVMFPath         = "/usr/share/AAVMF"
+	DefaultS390xOVMFPath         = ""
 	DefaultAMD64EmulatedMachines = "q35*,pc-q35*"
 	DefaultARM64EmulatedMachines = "virt*"
+	DefaultS390XEmulatedMachines = "s390-ccw-virtio*"
 )
 
 const primaryUDNNetworkBindingName = "l2bridge"
@@ -485,6 +488,18 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 				MachineType:      armMachineType,
 				OVMFPath:         DefaultARM64OVMFPath,
 				EmulatedMachines: strings.Split(DefaultARM64EmulatedMachines, ","),
+			}
+		}
+	}
+	if s390xMachineType, ok := os.LookupEnv(s390xMachineTypeEnvName); ok {
+		if s390xMachineType = strings.TrimSpace(s390xMachineType); s390xMachineType != "" {
+			if config.ArchitectureConfiguration == nil {
+				config.ArchitectureConfiguration = &kubevirtcorev1.ArchConfiguration{}
+			}
+			config.ArchitectureConfiguration.S390x = &kubevirtcorev1.ArchSpecificConfiguration{
+				MachineType:      s390xMachineType,
+				OVMFPath:         DefaultS390xOVMFPath,
+				EmulatedMachines: strings.Split(DefaultS390XEmulatedMachines, ","),
 			}
 		}
 	}

@@ -41,7 +41,7 @@ require (
 	k8s.io/component-helpers v0.33.2
 	k8s.io/kube-openapi v0.33.2
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
-	kubevirt.io/api v1.5.0
+	kubevirt.io/api v1.5.0 // TODO: Update version when kube-vert released with s390x Arch chnages .
 	kubevirt.io/application-aware-quota v1.4.0
 	kubevirt.io/containerized-data-importer-api v1.62.0
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4
