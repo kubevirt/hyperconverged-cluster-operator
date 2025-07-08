@@ -95,6 +95,9 @@ const (
 
 	// enables the instance type reference policy feature
 	kvInstancetypeReferencePolicy = "InstancetypeReferencePolicy"
+
+	// Allow running IBM Z Secure Execution VMs
+	kvSecureExecution = "SecureExecution"
 )
 
 const (
@@ -113,6 +116,7 @@ var (
 		kvKubevirtSeccompProfile,
 		kvVMPersistentState,
 		kvInstancetypeReferencePolicy,
+		kvSecureExecution,
 	}
 
 	// holds a list of mandatory KubeVirt feature gates. Some of them are the hard coded feature gates and some of
