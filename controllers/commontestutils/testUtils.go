@@ -29,6 +29,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
@@ -166,6 +168,7 @@ func GetScheme() *runtime.Scheme {
 		csvv1alpha1.AddToScheme,
 		aaqv1alpha1.AddToScheme,
 		deschedulerv1.AddToScheme,
+		netattdefv1.AddToScheme,
 	} {
 		Expect(f(testScheme)).ToNot(HaveOccurred())
 	}
