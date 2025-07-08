@@ -661,6 +661,11 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			Resources: stringListToSlice("network-attachment-definitions"),
 			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
+		{
+			APIGroups: stringListToSlice("security.openshift.io"),
+			Resources: stringListToSlice("securitycontextconstraints"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
 	}
 }
 

@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+	securityv1 "github.com/openshift/api/security/v1"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
@@ -234,6 +235,35 @@ func NewPasstBindingCNINetworkAttachmentDefinition(hc *hcov1beta1.HyperConverged
 	}
 }
 
+// NewPasstBindingCNISecurityContextConstraints creates a SecurityContextConstraints for the passt binding CNI
+func NewPasstBindingCNISecurityContextConstraints(hc *hcov1beta1.HyperConverged) *securityv1.SecurityContextConstraints {
+	return &securityv1.SecurityContextConstraints{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   "passt-binding-cni",
+			Labels: hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentNetwork),
+		},
+		AllowPrivilegedContainer: true,
+		AllowHostDirVolumePlugin: true,
+		AllowHostIPC:             false,
+		AllowHostNetwork:         false,
+		AllowHostPID:             false,
+		AllowHostPorts:           false,
+		ReadOnlyRootFilesystem:   false,
+		RunAsUser: securityv1.RunAsUserStrategyOptions{
+			Type: securityv1.RunAsUserStrategyRunAsAny,
+		},
+		SELinuxContext: securityv1.SELinuxContextStrategyOptions{
+			Type: securityv1.SELinuxStrategyRunAsAny,
+		},
+		Users: []string{
+			fmt.Sprintf("system:serviceaccount:%s:passt-binding-cni", hc.Namespace),
+		},
+		Volumes: []securityv1.FSType{
+			securityv1.FSTypeAll,
+		},
+	}
+}
+
 func getPodAntiAffinity(componentLabel string, infrastructureHighlyAvailable bool) *corev1.Affinity {
 	if infrastructureHighlyAvailable {
 		return &corev1.Affinity{
@@ -288,6 +318,16 @@ func NewPasstNetworkAttachmentDefinitionHandler(Client client.Client, Scheme *ru
 		operands.NewNetworkAttachmentDefinitionHandler(Client, Scheme, NewPasstBindingCNINetworkAttachmentDefinition),
 		func(hc *hcov1beta1.HyperConverged) client.Object {
 			return NewPasstBindingCNINetworkAttachmentDefinition(hc)
+		},
+	)
+}
+
+// NewPasstSecurityContextConstraintsHandler creates a conditional handler for passt SecurityContextConstraints
+func NewPasstSecurityContextConstraintsHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return createPasstConditionalHandler(
+		operands.NewSecurityContextConstraintsHandler(Client, Scheme, NewPasstBindingCNISecurityContextConstraints),
+		func(hc *hcov1beta1.HyperConverged) client.Object {
+			return NewPasstBindingCNISecurityContextConstraints(hc)
 		},
 	)
 }
