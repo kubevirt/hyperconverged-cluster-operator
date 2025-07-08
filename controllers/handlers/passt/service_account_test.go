@@ -97,5 +97,4 @@ var _ = Describe("Passt ServiceAccount tests", func() {
 			Expect(foundSA.Namespace).To(Equal(hco.Namespace))
 		})
 	})
-
 })

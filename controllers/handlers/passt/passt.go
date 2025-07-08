@@ -15,6 +15,8 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
@@ -209,6 +211,29 @@ func NewPasstBindingCNIDaemonSetWithNameOnly(hc *hcov1beta1.HyperConverged) *app
 		},
 	}
 }
+
+// NewPasstBindingCNINetworkAttachmentDefinition creates a NetworkAttachmentDefinition for the passt binding CNI
+func NewPasstBindingCNINetworkAttachmentDefinition(hc *hcov1beta1.HyperConverged) *netattdefv1.NetworkAttachmentDefinition {
+	return &netattdefv1.NetworkAttachmentDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      networkBindingNADName,
+			Namespace: "default",
+			Labels:    hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentNetwork),
+		},
+		Spec: netattdefv1.NetworkAttachmentDefinitionSpec{
+			Config: `{
+  "cniVersion": "1.0.0",
+  "name": "primary-udn-kubevirt-binding",
+  "plugins": [
+    {
+      "type": "kubevirt-passt-binding"
+    }
+  ]
+}`,
+		},
+	}
+}
+
 func getPodAntiAffinity(componentLabel string, infrastructureHighlyAvailable bool) *corev1.Affinity {
 	if infrastructureHighlyAvailable {
 		return &corev1.Affinity{
@@ -253,6 +278,16 @@ func NewPasstDaemonSetHandler(Client client.Client, Scheme *runtime.Scheme) oper
 		operands.NewDaemonSetHandler(Client, Scheme, NewPasstBindingCNIDaemonSet),
 		func(hc *hcov1beta1.HyperConverged) client.Object {
 			return NewPasstBindingCNIDaemonSet(hc)
+		},
+	)
+}
+
+// NewPasstNetworkAttachmentDefinitionHandler creates a conditional handler for passt NetworkAttachmentDefinition
+func NewPasstNetworkAttachmentDefinitionHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return createPasstConditionalHandler(
+		operands.NewNetworkAttachmentDefinitionHandler(Client, Scheme, NewPasstBindingCNINetworkAttachmentDefinition),
+		func(hc *hcov1beta1.HyperConverged) client.Object {
+			return NewPasstBindingCNINetworkAttachmentDefinition(hc)
 		},
 	)
 }

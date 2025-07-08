@@ -55,6 +55,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		handlers.NewCnaHandler(client, scheme),
 		handlers.NewAAQHandler(client, scheme),
 		passt.NewPasstDaemonSetHandler(client, scheme),
+		passt.NewPasstNetworkAttachmentDefinitionHandler(client, scheme),
 	}
 
 	if ci.IsOpenshift() {
@@ -218,6 +219,7 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		handlers.NewAAQWithNameOnly(req.Instance),
 		passt.NewPasstBindingCNISA(req.Instance),
 		passt.NewPasstBindingCNIDaemonSetWithNameOnly(req.Instance),
+		passt.NewPasstBindingCNINetworkAttachmentDefinition(req.Instance),
 	}
 
 	resources = append(resources, h.objects...)
