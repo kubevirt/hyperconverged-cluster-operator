@@ -3,6 +3,7 @@ package passt_test
 import (
 	"context"
 
+	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -74,6 +75,22 @@ var _ = Describe("Passt tests", func() {
 			Expect(volume.Name).To(Equal("cnibin"))
 			Expect(volume.HostPath).ToNot(BeNil())
 			Expect(volume.HostPath.Path).To(Equal("/opt/cni/bin"))
+		})
+	})
+
+	Context("test NewPasstBindingCNINetworkAttachmentDefinition", func() {
+		It("should have all default fields", func() {
+			nad := passt.NewPasstBindingCNINetworkAttachmentDefinition(hco)
+
+			Expect(nad.Name).To(Equal("primary-udn-kubevirt-binding"))
+			Expect(nad.Namespace).To(Equal("default"))
+
+			Expect(nad.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
+			Expect(nad.Labels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentNetwork)))
+
+			Expect(nad.Spec.Config).To(ContainSubstring(`"cniVersion": "1.0.0"`))
+			Expect(nad.Spec.Config).To(ContainSubstring(`"name": "primary-udn-kubevirt-binding"`))
+			Expect(nad.Spec.Config).To(ContainSubstring(`"type": "kubevirt-passt-binding"`))
 		})
 	})
 
@@ -198,6 +215,68 @@ var _ = Describe("Passt tests", func() {
 
 			// example of field set by the handler
 			Expect(foundDS.Spec.Template.Spec.PriorityClassName).To(Equal("system-cluster-critical"))
+		})
+	})
+
+	Context("NetworkAttachmentDefinition deployment", func() {
+		It("should not create NetworkAttachmentDefinition if the annotation is not set", func() {
+			cl = commontestutils.InitClient([]client.Object{hco})
+
+			handler := passt.NewPasstNetworkAttachmentDefinitionHandler(cl, commontestutils.GetScheme())
+
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeFalse())
+
+			foundNADs := &netattdefv1.NetworkAttachmentDefinitionList{}
+			Expect(cl.List(context.Background(), foundNADs)).To(Succeed())
+			Expect(foundNADs.Items).To(BeEmpty())
+		})
+
+		It("should delete NetworkAttachmentDefinition if the deployPasstNetworkBinding annotation is false", func() {
+			hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "false"
+			nad := passt.NewPasstBindingCNINetworkAttachmentDefinition(hco)
+			cl = commontestutils.InitClient([]client.Object{hco, nad})
+
+			handler := passt.NewPasstNetworkAttachmentDefinitionHandler(cl, commontestutils.GetScheme())
+
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Name).To(Equal(nad.Name))
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeTrue())
+
+			foundNADs := &netattdefv1.NetworkAttachmentDefinitionList{}
+			Expect(cl.List(context.Background(), foundNADs)).To(Succeed())
+			Expect(foundNADs.Items).To(BeEmpty())
+		})
+
+		It("should create NetworkAttachmentDefinition if the deployPasstNetworkBinding annotation is true", func() {
+			hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "true"
+			cl = commontestutils.InitClient([]client.Object{hco})
+
+			handler := passt.NewPasstNetworkAttachmentDefinitionHandler(cl, commontestutils.GetScheme())
+
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Name).To(Equal("primary-udn-kubevirt-binding"))
+			Expect(res.Created).To(BeTrue())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeFalse())
+
+			foundNAD := &netattdefv1.NetworkAttachmentDefinition{}
+			Expect(cl.Get(context.Background(), client.ObjectKey{Name: res.Name, Namespace: "default"}, foundNAD)).To(Succeed())
+
+			Expect(foundNAD.Name).To(Equal("primary-udn-kubevirt-binding"))
+			Expect(foundNAD.Namespace).To(Equal("default"))
+
+			Expect(foundNAD.Spec.Config).To(ContainSubstring(`"type": "kubevirt-passt-binding"`))
 		})
 	})
 })
