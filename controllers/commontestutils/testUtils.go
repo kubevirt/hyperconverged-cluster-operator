@@ -14,6 +14,7 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	routev1 "github.com/openshift/api/route/v1"
+	securityv1 "github.com/openshift/api/security/v1"
 	deschedulerv1 "github.com/openshift/cluster-kube-descheduler-operator/pkg/apis/descheduler/v1"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -165,6 +166,7 @@ func GetScheme() *runtime.Scheme {
 		consolev1.Install,
 		operatorv1.Install,
 		openshiftconfigv1.Install,
+		securityv1.Install,
 		csvv1alpha1.AddToScheme,
 		aaqv1alpha1.AddToScheme,
 		deschedulerv1.AddToScheme,

@@ -65,6 +65,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 			handlers.NewCliDownloadsRouteHandler(client, scheme),
 			operands.NewServiceHandler(client, scheme, handlers.NewCliDownloadsService),
 			passt.NewPasstServiceAccountHandler(client, scheme),
+			passt.NewPasstSecurityContextConstraintsHandler(client, scheme),
 		}...)
 	}
 
@@ -220,6 +221,7 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		passt.NewPasstBindingCNISA(req.Instance),
 		passt.NewPasstBindingCNIDaemonSetWithNameOnly(req.Instance),
 		passt.NewPasstBindingCNINetworkAttachmentDefinition(req.Instance),
+		passt.NewPasstBindingCNISecurityContextConstraints(req.Instance),
 	}
 
 	resources = append(resources, h.objects...)
