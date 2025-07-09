@@ -66,7 +66,7 @@ type HyperConvergedSpec struct {
 
 	// featureGates is a map of feature gate flags. Setting a flag to `true` will enable
 	// the feature. Setting `false` or removing the feature gate, disables the feature.
-	// +kubebuilder:default={"downwardMetrics": false, "deployKubeSecondaryDNS": false, "disableMDevConfiguration": false, "persistentReservation": false, "enableMultiArchCommonBootImageImport": false}
+	// +kubebuilder:default={"downwardMetrics": false, "deployKubeSecondaryDNS": false, "disableMDevConfiguration": false, "persistentReservation": false, "enableMultiArchBootImageImport": false}
 	// +optional
 	FeatureGates HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 
@@ -497,7 +497,7 @@ type HyperConvergedFeatureGates struct {
 	// Deprecated: this field is ignored and will be removed in the next version of the API.
 	PrimaryUserDefinedNetworkBinding *bool `json:"primaryUserDefinedNetworkBinding,omitempty"`
 
-	// EnableMultiArchCommonBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures.
+	// EnableMultiArchBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures.
 	// Setting this field to true will allow the HCO to create Golden Images for different CPU architectures.
 	//
 	// This feature is in Developer Preview.
@@ -505,7 +505,7 @@ type HyperConvergedFeatureGates struct {
 	// +optional
 	// +kubebuilder:default=false
 	// +default=false
-	EnableMultiArchCommonBootImageImport *bool `json:"enableMultiArchCommonBootImageImport,omitempty"`
+	EnableMultiArchBootImageImport *bool `json:"enableMultiArchBootImageImport,omitempty"`
 }
 
 // PermittedHostDevices holds information about devices allowed for passthrough
@@ -812,8 +812,8 @@ type DataImportCronTemplateStatus struct {
 type NodeInfoStatus struct {
 	// WorkloadsArchitectures is a distinct list of the CPU architectures of the workloads nodes in the cluster.
 	WorkloadsArchitectures []string `json:"workloadsArchitectures,omitempty"`
-	// ControlPlaneNodesArchitecture is a distinct list of the CPU architecture of the control-plane nodes.
-	ControlPlaneNodesArchitecture []string `json:"controlPlaneNodesArchitecture,omitempty"`
+	// ControlPlaneArchitectures is a distinct list of the CPU architecture of the control-plane nodes.
+	ControlPlaneArchitectures []string `json:"controlPlaneArchitectures,omitempty"`
 }
 
 // ApplicationAwareConfigurations holds the AAQ configurations
@@ -885,7 +885,7 @@ type HyperConverged struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}},"featureGates": {"downwardMetrics": false, "deployKubeSecondaryDNS": false, "disableMDevConfiguration": false, "persistentReservation": false, "enableMultiArchCommonBootImageImport": false}, "liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "resourceRequirements": {"vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
+	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}},"featureGates": {"downwardMetrics": false, "deployKubeSecondaryDNS": false, "disableMDevConfiguration": false, "persistentReservation": false, "enableMultiArchBootImageImport": false}, "liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "resourceRequirements": {"vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
 	// +optional
 	Spec   HyperConvergedSpec   `json:"spec,omitempty"`
 	Status HyperConvergedStatus `json:"status,omitempty"`

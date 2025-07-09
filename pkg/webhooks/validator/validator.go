@@ -268,7 +268,7 @@ func (wh *WebhookHandler) ValidateUpdate(ctx context.Context, dryrun bool, reque
 		}()
 
 		nodeinfo.GetControlPlaneArchitectures = func() []string {
-			return requested.Status.NodeInfo.ControlPlaneNodesArchitecture
+			return requested.Status.NodeInfo.ControlPlaneArchitectures
 		}
 		nodeinfo.GetWorkloadsArchitectures = func() []string {
 			return requested.Status.NodeInfo.WorkloadsArchitectures

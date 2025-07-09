@@ -361,7 +361,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 			GinkgoWriter.Printf("Worker nodes architectures: %v\n", archs)
 
-			const patchTmplt = `[{ "op": "replace", "path": "/spec/featureGates/enableMultiArchCommonBootImageImport", "value": %t }]`
+			const patchTmplt = `[{ "op": "replace", "path": "/spec/featureGates/enableMultiArchBootImageImport", "value": %t }]`
 			Eventually(func(ctx context.Context) error {
 				return tests.PatchHCO(ctx, cli, []byte(fmt.Sprintf(patchTmplt, true)))
 			}).WithTimeout(10 * time.Second).

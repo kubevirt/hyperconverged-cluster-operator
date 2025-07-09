@@ -472,8 +472,8 @@ func updateStatus(req *common.HcoRequest) {
 		req.StatusDirty = true
 	}
 
-	if cpArch := nodeinfo.GetControlPlaneArchitectures(); slices.Compare(req.Instance.Status.NodeInfo.ControlPlaneNodesArchitecture, cpArch) != 0 {
-		req.Instance.Status.NodeInfo.ControlPlaneNodesArchitecture = cpArch
+	if cpArch := nodeinfo.GetControlPlaneArchitectures(); slices.Compare(req.Instance.Status.NodeInfo.ControlPlaneArchitectures, cpArch) != 0 {
+		req.Instance.Status.NodeInfo.ControlPlaneArchitectures = cpArch
 		req.StatusDirty = true
 	}
 

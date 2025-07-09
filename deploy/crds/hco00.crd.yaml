@@ -63,7 +63,7 @@ spec:
                 deployKubeSecondaryDNS: false
                 disableMDevConfiguration: false
                 downwardMetrics: false
-                enableMultiArchCommonBootImageImport: false
+                enableMultiArchBootImageImport: false
                 persistentReservation: false
               liveMigrationConfig:
                 allowAutoConverge: false
@@ -1065,7 +1065,7 @@ spec:
                   deployKubeSecondaryDNS: false
                   disableMDevConfiguration: false
                   downwardMetrics: false
-                  enableMultiArchCommonBootImageImport: false
+                  enableMultiArchBootImageImport: false
                   persistentReservation: false
                 description: |-
                   featureGates is a map of feature gate flags. Setting a flag to `true` will enable
@@ -1121,10 +1121,10 @@ spec:
                     description: 'Deprecated: This field is ignored and will be removed
                       on the next version of the API.'
                     type: boolean
-                  enableMultiArchCommonBootImageImport:
+                  enableMultiArchBootImageImport:
                     default: false
                     description: |-
-                      EnableMultiArchCommonBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures.
+                      EnableMultiArchBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures.
                       Setting this field to true will allow the HCO to create Golden Images for different CPU architectures.
 
                       This feature is in Developer Preview.
@@ -5025,9 +5025,9 @@ spec:
               nodeInfo:
                 description: NodeInfo holds information about the cluster nodes
                 properties:
-                  controlPlaneNodesArchitecture:
-                    description: ControlPlaneNodesArchitecture is a distinct list
-                      of the CPU architecture of the control-plane nodes.
+                  controlPlaneArchitectures:
+                    description: ControlPlaneArchitectures is a distinct list of the
+                      CPU architecture of the control-plane nodes.
                     items:
                       type: string
                     type: array
