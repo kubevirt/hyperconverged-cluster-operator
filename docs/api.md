@@ -171,6 +171,7 @@ HyperConvergedFeatureGates is a set of optional feature gates to enable or disab
 | enableApplicationAwareQuota | Deprecated: This field is ignored and will be removed on the next version of the API. Use spec.enableApplicationAwareQuota instead | *bool |  | false |
 | primaryUserDefinedNetworkBinding | primaryUserDefinedNetworkBinding deploys the needed configurations for kubevirt users to be able to bind their VM to a UDN network on the VM's primary interface. Deprecated: this field is ignored and will be removed in the next version of the API. | *bool |  | false |
 | enableMultiArchCommonBootImageImport | EnableMultiArchCommonBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures. Setting this field to true will allow the HCO to create Golden Images for different CPU architectures.\n\nThis feature is in Developer Preview. | *bool | false | false |
+| videoConfig | EnableVideoDeviceConfiguration allows users to configure video device types for their virtual machines. This can be useful for workloads that require specific video capabilities or architectures. Note: This feature is in Developer Preview. | *bool | false | false |
 
 [Back to TOC](#table-of-contents)
 

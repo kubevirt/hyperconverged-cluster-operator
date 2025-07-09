@@ -506,6 +506,14 @@ type HyperConvergedFeatureGates struct {
 	// +kubebuilder:default=false
 	// +default=false
 	EnableMultiArchCommonBootImageImport *bool `json:"enableMultiArchCommonBootImageImport,omitempty"`
+
+	// EnableVideoDeviceConfiguration allows users to configure video device types for their virtual machines.
+	// This can be useful for workloads that require specific video capabilities or architectures.
+	// Note: This feature is in Developer Preview.
+	// +optional
+	// +kubebuilder:default=false
+	// +default=false
+	VideoConfig *bool `json:"videoConfig,omitempty"`
 }
 
 // PermittedHostDevices holds information about devices allowed for passthrough
