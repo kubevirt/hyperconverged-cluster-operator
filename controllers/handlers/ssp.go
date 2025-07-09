@@ -256,7 +256,7 @@ func getDataImportCronTemplates(hc *hcov1beta1.HyperConverged) ([]hcov1beta1.Dat
 	}
 	dictList = getCustomDicts(dictList, crDicts)
 
-	if hc.Spec.FeatureGates.EnableMultiArchCommonBootImageImport != nil && *hc.Spec.FeatureGates.EnableMultiArchCommonBootImageImport {
+	if hc.Spec.FeatureGates.EnableMultiArchBootImageImport != nil && *hc.Spec.FeatureGates.EnableMultiArchBootImageImport {
 		for i := range dictList {
 			setDataImportCronTemplateStatusMultiArch(&dictList[i], nodeinfo.GetWorkloadsArchitectures())
 		}
@@ -429,7 +429,7 @@ func hcoDictToSSP(hcoDictStatus hcov1beta1.DataImportCronTemplateStatus, multiAr
 }
 
 func hcoDictToSSPSeq(hc *hcov1beta1.HyperConverged, hcoDicts iter.Seq[hcov1beta1.DataImportCronTemplateStatus]) iter.Seq[sspv1beta3.DataImportCronTemplate] {
-	multiArchEnabled := hc.Spec.FeatureGates.EnableMultiArchCommonBootImageImport != nil && *hc.Spec.FeatureGates.EnableMultiArchCommonBootImageImport
+	multiArchEnabled := hc.Spec.FeatureGates.EnableMultiArchBootImageImport != nil && *hc.Spec.FeatureGates.EnableMultiArchBootImageImport
 
 	return func(yield func(sspv1beta3.DataImportCronTemplate) bool) {
 		for hcoDict := range hcoDicts {

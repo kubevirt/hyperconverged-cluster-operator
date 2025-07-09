@@ -335,8 +335,8 @@ func (in *HyperConvergedFeatureGates) DeepCopyInto(out *HyperConvergedFeatureGat
 		*out = new(bool)
 		**out = **in
 	}
-	if in.EnableMultiArchCommonBootImageImport != nil {
-		in, out := &in.EnableMultiArchCommonBootImageImport, &out.EnableMultiArchCommonBootImageImport
+	if in.EnableMultiArchBootImageImport != nil {
+		in, out := &in.EnableMultiArchBootImageImport, &out.EnableMultiArchBootImageImport
 		*out = new(bool)
 		**out = **in
 	}
@@ -799,8 +799,8 @@ func (in *NodeInfoStatus) DeepCopyInto(out *NodeInfoStatus) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.ControlPlaneNodesArchitecture != nil {
-		in, out := &in.ControlPlaneNodesArchitecture, &out.ControlPlaneNodesArchitecture
+	if in.ControlPlaneArchitectures != nil {
+		in, out := &in.ControlPlaneArchitectures, &out.ControlPlaneArchitectures
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}

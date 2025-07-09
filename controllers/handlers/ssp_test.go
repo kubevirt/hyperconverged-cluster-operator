@@ -1147,7 +1147,7 @@ var _ = Describe("SSP Operands", func() {
 					}
 
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-					hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(true)
+					hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
 					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
 
 					nodeinfo.GetWorkloadsArchitectures = func() []string {
@@ -1190,7 +1190,7 @@ var _ = Describe("SSP Operands", func() {
 					}
 
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-					hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(true)
+					hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
 					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
 
 					ssp, statuses, err := NewSSP(hco)
@@ -1865,7 +1865,7 @@ var _ = Describe("SSP Operands", func() {
 				})
 			})
 
-			Context("heterogeneous cluster: the EnableMultiArchCommonBootImageImport FG", func() {
+			Context("heterogeneous cluster: the EnableMultiArchBootImageImport FG", func() {
 
 				BeforeEach(func() {
 					image1.Annotations = map[string]string{
@@ -1899,7 +1899,7 @@ var _ = Describe("SSP Operands", func() {
 
 				It("should drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is disabled (default)", func() {
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-					hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(false)
+					hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(false)
 
 					dictsStatuses, err := getDataImportCronTemplates(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -1923,7 +1923,7 @@ var _ = Describe("SSP Operands", func() {
 
 				It("should not drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is enabled", func() {
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-					hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(true)
+					hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
 
 					dictsStatuses, err := getDataImportCronTemplates(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -1947,7 +1947,7 @@ var _ = Describe("SSP Operands", func() {
 
 				It("should remove unsupported architectures from the annotation", func() {
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-					hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(true)
+					hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
 
 					nodeinfo.GetWorkloadsArchitectures = func() []string {
 						return []string{"amd64", "arm64"}
@@ -1980,7 +1980,7 @@ var _ = Describe("SSP Operands", func() {
 
 				It("should drop a DICT with no supported architectures", func() {
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-					hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(true)
+					hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
 
 					nodeinfo.GetWorkloadsArchitectures = func() []string {
 						return []string{"amd64", "s390x"}
@@ -2023,7 +2023,7 @@ var _ = Describe("SSP Operands", func() {
 
 				It("should not add the multi-arch annotation if wasn't already exist in the original DICT", func() {
 					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-					hco.Spec.FeatureGates.EnableMultiArchCommonBootImageImport = ptr.To(true)
+					hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
 
 					nodeinfo.GetWorkloadsArchitectures = func() []string {
 						return []string{"amd64", "s390x"}

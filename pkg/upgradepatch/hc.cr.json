@@ -14,7 +14,7 @@
       "disableMDevConfiguration": false,
       "persistentReservation": false,
       "alignCPUs": false,
-      "enableMultiArchCommonBootImageImport": false
+      "enableMultiArchBootImageImport": false
     },
     "liveMigrationConfig": {
       "parallelMigrationsPerCluster": 5,

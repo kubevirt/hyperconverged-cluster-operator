@@ -19,7 +19,7 @@ spec:
     deployKubeSecondaryDNS: false
     disableMDevConfiguration: false
     downwardMetrics: false
-    enableMultiArchCommonBootImageImport: false
+    enableMultiArchBootImageImport: false
     persistentReservation: false
   higherWorkloadDensity:
     memoryOvercommitPercentage: 100
