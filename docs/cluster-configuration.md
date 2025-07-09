@@ -233,6 +233,19 @@ Set the `declarativeHotplugVolumes` feature gate to true to enable the declarati
 
 **Graduation Status**: Alpha
 
+### videoConfig Feature Gate
+Set the `videoConfig` feature gate to true in order to override the default video device type used by KubeVirt. By default, the video type depends on the architecture and firmware:
+* For amd64: vga for BIOS VMs, and bochs for UEFI VMs.
+* For arm64 and s390x: virtio.
+
+Enabling this feature gate allows explicitly configuring the video type in the VirtualMachine spec.
+
+**Note**: This feature is in Developer Preview.
+
+**Default**: `false`
+
+**Graduation Status**: Alpha
+
 ### The hco.kubevirt.io/deployPasstNetworkBinding annotation
 Set the `hco.kubevirt.io/deployPasstNetworkBinding` HyperConverged CR annotation to `true`, to deploy the needed
 configurations for kubevirt users, so they can bind their VM using a Passt Network binding.
