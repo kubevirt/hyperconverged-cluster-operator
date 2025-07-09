@@ -67,6 +67,7 @@ spec:
                 downwardMetrics: false
                 enableMultiArchBootImageImport: false
                 persistentReservation: false
+                videoConfig: false
               liveMigrationConfig:
                 allowAutoConverge: false
                 allowPostCopy: false
@@ -1085,6 +1086,7 @@ spec:
                   downwardMetrics: false
                   enableMultiArchBootImageImport: false
                   persistentReservation: false
+                  videoConfig: false
                 description: |-
                   featureGates is a map of feature gate flags. Setting a flag to `true` will enable
                   the feature. Setting `false` or removing the feature gate, disables the feature.
@@ -1179,6 +1181,13 @@ spec:
                       primaryUserDefinedNetworkBinding deploys the needed configurations for kubevirt users to
                       be able to bind their VM to a UDN network on the VM's primary interface.
                       Deprecated: this field is ignored and will be removed in the next version of the API.
+                    type: boolean
+                  videoConfig:
+                    default: false
+                    description: |-
+                      EnableVideoDeviceConfiguration allows users to configure video device types for their virtual machines.
+                      This can be useful for workloads that require specific video capabilities or architectures.
+                      Note: This feature is in Developer Preview.
                     type: boolean
                   withHostPassthroughCPU:
                     description: 'Deprecated: there is no such FG in KubeVirt. This

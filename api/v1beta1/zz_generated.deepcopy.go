@@ -350,6 +350,11 @@ func (in *HyperConvergedFeatureGates) DeepCopyInto(out *HyperConvergedFeatureGat
 		*out = new(bool)
 		**out = **in
 	}
+	if in.VideoConfig != nil {
+		in, out := &in.VideoConfig, &out.VideoConfig
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
