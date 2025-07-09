@@ -12,6 +12,7 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	openshiftroutev1 "github.com/openshift/api/route/v1"
+	securityv1 "github.com/openshift/api/security/v1"
 	deschedulerv1 "github.com/openshift/cluster-kube-descheduler-operator/pkg/apis/descheduler/v1"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operatorsapiv2 "github.com/operator-framework/api/pkg/operators/v2"
@@ -43,6 +44,8 @@ import (
 	controllerruntimemetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
+	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
@@ -55,6 +58,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/crd"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/descheduler"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/hyperconverged"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/ingresscluster"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/nodes"
@@ -88,6 +92,7 @@ var (
 		operatorv1.Install,
 		openshiftconfigv1.Install,
 		openshiftroutev1.Install,
+		securityv1.Install,
 		monitoringv1.AddToScheme,
 		apiextensionsv1.AddToScheme,
 		kubevirtcorev1.AddToScheme,
@@ -96,6 +101,7 @@ var (
 		imagev1.Install,
 		aaqv1alpha1.AddToScheme,
 		deschedulerv1.AddToScheme,
+		netattdefv1.AddToScheme,
 	}
 )
 
@@ -245,6 +251,9 @@ func main() {
 	operatormetrics.Register = controllerruntimemetrics.Registry.Register
 	err = metrics.SetupMetrics()
 	cmdHelper.ExitOnError(err, "failed to setup metrics: %v")
+
+	err = passt.CheckPasstImagesEnvExists()
+	cmdHelper.ExitOnError(err, "failed to retrieve passt env vars")
 
 	logger.Info("Starting the Cmd.")
 	eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Init", "Starting the HyperConverged Pod")
