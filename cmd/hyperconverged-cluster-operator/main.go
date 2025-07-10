@@ -321,6 +321,10 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 			Label: labelSelector,
 			Field: namespaceSelector,
 		},
+		&corev1.Secret{}: {
+			Label: labelSelector,
+			Field: namespaceSelector,
+		},
 	}
 
 	cacheOptionsByObjectForDescheduler := map[client.Object]cache.ByObject{
