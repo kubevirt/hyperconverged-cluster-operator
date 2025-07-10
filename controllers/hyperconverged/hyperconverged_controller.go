@@ -171,6 +171,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 		secondaryResources = append(secondaryResources, []client.Object{
 			&monitoringv1.ServiceMonitor{},
 			&monitoringv1.PrometheusRule{},
+			&corev1.Secret{},
 		}...)
 	}
 	if ci.IsOpenshift() {
