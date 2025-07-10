@@ -61,7 +61,7 @@ spec:
         - name: CDI_VERSION
           value: v1.61.5
         - name: NETWORK_ADDONS_VERSION
-          value: v0.97.5
+          value: v0.97.6
         - name: SSP_VERSION
           value: v0.22.3
         - name: HPPO_VERSION
@@ -294,15 +294,15 @@ spec:
         - name: CORE_DNS_IMAGE
           value: registry.k8s.io/coredns/coredns@sha256:a0ead06651cf580044aeb0a0feba63591858fb2e43ade8c9dea45a6a89ae7e5e
         - name: KUBEVIRT_IPAM_CONTROLLER_IMAGE
-          value: ghcr.io/kubevirt/ipam-controller@sha256:fd7c38e129ea4ed8a86d1801c9e1ca387802376fc4abc0b0d228d4278f448ecd
+          value: ghcr.io/kubevirt/ipam-controller@sha256:dd5b881acae85332fb8a9dba8622098ac63ec8f34d9e7076dfa268ad469724cb
         - name: PASST_BINDING_CNI_IMAGE
-          value: ghcr.io/kubevirt/passt-binding-cni@sha256:f3fea2ec66a26850489197edf7c85d074eb78bbac52916b10016ac0de8ef7c14
+          value: ghcr.io/kubevirt/passt-binding-cni@sha256:9bfc5d0c463d15a8b65b15323a078e2f3ce3a675972761305112d4775fac79a7
         - name: OPERATOR_IMAGE
-          value: quay.io/kubevirt/cluster-network-addons-operator@sha256:348b856b6659df0f2ad586fe356ade0cfec80e406364b740d1f53def99d46d5c
+          value: quay.io/kubevirt/cluster-network-addons-operator@sha256:33dfab0b8a5ab34443a1933fdb1c4e5096c24df992dcc84bfe1ca2840a4b2b4f
         - name: OPERATOR_NAME
           value: cluster-network-addons-operator
         - name: OPERATOR_VERSION
-          value: v0.97.5
+          value: v0.97.6
         - name: OPERATOR_NAMESPACE
           valueFrom:
             fieldRef:
@@ -322,7 +322,7 @@ spec:
           value: prometheus-k8s
         - name: RUNBOOK_URL_TEMPLATE
           value: https://kubevirt.io/monitoring/runbooks/%s
-        image: quay.io/kubevirt/cluster-network-addons-operator@sha256:348b856b6659df0f2ad586fe356ade0cfec80e406364b740d1f53def99d46d5c
+        image: quay.io/kubevirt/cluster-network-addons-operator@sha256:33dfab0b8a5ab34443a1933fdb1c4e5096c24df992dcc84bfe1ca2840a4b2b4f
         imagePullPolicy: IfNotPresent
         name: cluster-network-addons-operator
         resources:
