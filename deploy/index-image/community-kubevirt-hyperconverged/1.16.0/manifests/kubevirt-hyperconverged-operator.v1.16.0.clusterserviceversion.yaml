@@ -3063,7 +3063,7 @@ spec:
                 - name: CDI_VERSION
                   value: v1.62.0
                 - name: NETWORK_ADDONS_VERSION
-                  value: v0.99.0
+                  value: v0.99.1
                 - name: SSP_VERSION
                   value: v0.23.1
                 - name: HPPO_VERSION
@@ -3306,13 +3306,13 @@ spec:
                 - name: CORE_DNS_IMAGE
                   value: registry.k8s.io/coredns/coredns@sha256:a0ead06651cf580044aeb0a0feba63591858fb2e43ade8c9dea45a6a89ae7e5e
                 - name: KUBEVIRT_IPAM_CONTROLLER_IMAGE
-                  value: ghcr.io/kubevirt/ipam-controller@sha256:7f9574df14b5b6b0b8e8860a63c658fb683b3f13fdc3223bce5a6cf631c1a142
+                  value: ghcr.io/kubevirt/ipam-controller@sha256:c490ca20d6357470499a31e450df5852a22216890a31e453480a1ce571cc46db
                 - name: OPERATOR_IMAGE
-                  value: quay.io/kubevirt/cluster-network-addons-operator@sha256:825af35a263fa2b0c58fcecabbf3925c8db796f2d5399035d27e0ee5459fa0e8
+                  value: quay.io/kubevirt/cluster-network-addons-operator@sha256:7139c0a73da92c4f273823b5a917705031a0adb354a33e0a10e838d897a86fab
                 - name: OPERATOR_NAME
                   value: cluster-network-addons-operator
                 - name: OPERATOR_VERSION
-                  value: v0.99.0
+                  value: v0.99.1
                 - name: OPERATOR_NAMESPACE
                   valueFrom:
                     fieldRef:
@@ -3332,7 +3332,7 @@ spec:
                   value: prometheus-k8s
                 - name: RUNBOOK_URL_TEMPLATE
                   value: https://kubevirt.io/monitoring/runbooks/%s
-                image: quay.io/kubevirt/cluster-network-addons-operator@sha256:825af35a263fa2b0c58fcecabbf3925c8db796f2d5399035d27e0ee5459fa0e8
+                image: quay.io/kubevirt/cluster-network-addons-operator@sha256:7139c0a73da92c4f273823b5a917705031a0adb354a33e0a10e838d897a86fab
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -4609,7 +4609,7 @@ spec:
     name: cdi-uploadproxy
   - image: quay.io/kubevirt/cdi-uploadserver@sha256:de0e6e49f7086c1fc526e339d435dc92c51d51e416e90ae4b988271bf5fafe42
     name: cdi-uploadserver
-  - image: quay.io/kubevirt/cluster-network-addons-operator@sha256:825af35a263fa2b0c58fcecabbf3925c8db796f2d5399035d27e0ee5459fa0e8
+  - image: quay.io/kubevirt/cluster-network-addons-operator@sha256:7139c0a73da92c4f273823b5a917705031a0adb354a33e0a10e838d897a86fab
     name: cluster-network-addons-operator
   - image: quay.io/kubevirt/cni-default-plugins@sha256:976a24392c2a096c38c2663d234b2d3131f5c24558889196d30b9ac1b6716788
     name: cni-default-plugins
@@ -4631,7 +4631,7 @@ spec:
     name: hyperconverged-cluster-operator
   - image: +WEBHOOK_IMAGE_TO_REPLACE+
     name: hyperconverged-cluster-webhook
-  - image: ghcr.io/kubevirt/ipam-controller@sha256:7f9574df14b5b6b0b8e8860a63c658fb683b3f13fdc3223bce5a6cf631c1a142
+  - image: ghcr.io/kubevirt/ipam-controller@sha256:c490ca20d6357470499a31e450df5852a22216890a31e453480a1ce571cc46db
     name: ipam-controller
   - image: quay.io/kubevirt/kubemacpool@sha256:1cccec2d349be74a6c089f8331c46eb0a6adcf53437ae709f142f07fb3617515
     name: kubemacpool
