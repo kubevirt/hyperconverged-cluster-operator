@@ -20,8 +20,10 @@ import (
 	promConfig "github.com/prometheus/common/config"
 	promModel "github.com/prometheus/common/model"
 	authenticationv1 "k8s.io/api/authentication/v1"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -172,6 +174,69 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			alert := getAlertByName(alerts, "UnsupportedHCOModification")
 			return alert
 		}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
+	})
+
+	Context("should fire the DeprecatedMachineType alert", Serial, func() {
+
+		It("when a VM is using a deprecated machine type", func(ctx context.Context) {
+			By("Creating a VM with a deprecated machine type")
+			vm := &kubevirtcorev1.VirtualMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "deprecated-vm",
+					Namespace: tests.TestNamespace,
+				},
+				Spec: kubevirtcorev1.VirtualMachineSpec{
+					Template: &kubevirtcorev1.VirtualMachineInstanceTemplateSpec{
+						Spec: kubevirtcorev1.VirtualMachineInstanceSpec{
+							Domain: kubevirtcorev1.DomainSpec{
+								Machine: &kubevirtcorev1.Machine{Type: "pc-q35-rhel7.6.0"},
+								Resources: kubevirtcorev1.ResourceRequirements{
+									Requests: corev1.ResourceList{
+										corev1.ResourceMemory: resource.MustParse("128Mi"),
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			Expect(cli.Create(ctx, vm)).To(Succeed())
+
+			By("Ensuring the DeprecatedMachineType alert is firing")
+			Eventually(func(ctx context.Context) *promApiv1.Alert {
+				alerts, err := promClient.Alerts(ctx)
+				Expect(err).ToNot(HaveOccurred())
+				return getAlertByName(alerts, "DeprecatedMachineType")
+			}).WithTimeout(60 * time.Second).WithPolling(time.Second).WithContext(ctx).ShouldNot(BeNil())
+		})
+
+		It("when a VMI is using a deprecated machine type", func(ctx context.Context) {
+			By("Creating a VMI with a deprecated machine type")
+			vmi := &kubevirtcorev1.VirtualMachineInstance{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "deprecated-vmi",
+					Namespace: tests.TestNamespace,
+				},
+				Spec: kubevirtcorev1.VirtualMachineInstanceSpec{
+					Domain: kubevirtcorev1.DomainSpec{
+						Machine: &kubevirtcorev1.Machine{Type: "pc-q35-rhel7.6.0"},
+						Resources: kubevirtcorev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("128Mi"),
+							},
+						},
+					},
+				},
+			}
+			Expect(cli.Create(ctx, vmi)).To(Succeed())
+
+			By("Ensuring the DeprecatedMachineType alert is firing")
+			Eventually(func(ctx context.Context) *promApiv1.Alert {
+				alerts, err := promClient.Alerts(ctx)
+				Expect(err).ToNot(HaveOccurred())
+				return getAlertByName(alerts, "DeprecatedMachineType")
+			}).WithTimeout(60 * time.Second).WithPolling(time.Second).WithContext(ctx).ShouldNot(BeNil())
+		})
 	})
 
 	Describe("KubeDescheduler", Serial, Ordered, Label(tests.OpenshiftLabel, "monitoring"), func() {
@@ -348,7 +413,6 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
 		})
 	})
-
 })
 
 func getAlertByName(alerts promApiv1.AlertsResult, alertName string) *promApiv1.Alert {
