@@ -2459,6 +2459,7 @@ spec:
           - get
         - apiGroups:
           - cdi.kubevirt.io
+          - forklift.cdi.kubevirt.io
           resources:
           - '*'
           verbs:
@@ -2518,15 +2519,6 @@ spec:
           - virtualmachines/finalizers
           verbs:
           - update
-        - apiGroups:
-          - forklift.cdi.kubevirt.io
-          resources:
-          - ovirtvolumepopulators
-          - openstackvolumepopulators
-          verbs:
-          - get
-          - list
-          - watch
         - apiGroups:
           - ""
           resources:
@@ -3061,7 +3053,7 @@ spec:
                 - name: KUBEVIRT_VERSION
                   value: v1.5.0
                 - name: CDI_VERSION
-                  value: v1.62.0
+                  value: v1.63.0-alpha.0
                 - name: NETWORK_ADDONS_VERSION
                   value: v0.99.1
                 - name: SSP_VERSION
@@ -3638,27 +3630,27 @@ spec:
                 - name: DEPLOY_CLUSTER_RESOURCES
                   value: "true"
                 - name: OPERATOR_VERSION
-                  value: v1.62.0
+                  value: v1.63.0-alpha.0
                 - name: CONTROLLER_IMAGE
-                  value: quay.io/kubevirt/cdi-controller@sha256:c4c35dce67ecbca97d3eb854d5468b6e60b06cd90e140fec83bb58ec566abb43
+                  value: quay.io/kubevirt/cdi-controller@sha256:0cd25b425f50e1e04c5d842bdf4587777e33b3f4abe1ff45c8120d22ba6890d6
                 - name: IMPORTER_IMAGE
-                  value: quay.io/kubevirt/cdi-importer@sha256:df76770eef8bfc218a6423dea41a0d597b80821cd0434528aaa84951d2242abc
+                  value: quay.io/kubevirt/cdi-importer@sha256:fff582ac5299857cc75b7d98035f5099b7277e69aa6a8d9d09d4e3af0a2c3a8d
                 - name: CLONER_IMAGE
-                  value: quay.io/kubevirt/cdi-cloner@sha256:ece16cb37976eb1a075b9b276b9d42d9a5c349dc9f29d1b7d08f0b985e119f07
+                  value: quay.io/kubevirt/cdi-cloner@sha256:ec8bfee04e5e6c0bd42c529a752cdcbf16adf5098f40b61e2419df168769f478
                 - name: OVIRT_POPULATOR_IMAGE
-                  value: quay.io/kubevirt/cdi-importer@sha256:df76770eef8bfc218a6423dea41a0d597b80821cd0434528aaa84951d2242abc
+                  value: quay.io/kubevirt/cdi-importer@sha256:fff582ac5299857cc75b7d98035f5099b7277e69aa6a8d9d09d4e3af0a2c3a8d
                 - name: APISERVER_IMAGE
-                  value: quay.io/kubevirt/cdi-apiserver@sha256:aa5c2e16c67545f449086b4e49a25f9b304a17174985b841d82e8ff618fb809e
+                  value: quay.io/kubevirt/cdi-apiserver@sha256:d6caa249afb47cd0f77778bb2adce5d1804a356a930efcfe3b47d2f8a136a931
                 - name: UPLOAD_SERVER_IMAGE
-                  value: quay.io/kubevirt/cdi-uploadserver@sha256:de0e6e49f7086c1fc526e339d435dc92c51d51e416e90ae4b988271bf5fafe42
+                  value: quay.io/kubevirt/cdi-uploadserver@sha256:02a9de4d24d83dd1ea156da2a59485f440bd1802b269bbe87d1939521807620a
                 - name: UPLOAD_PROXY_IMAGE
-                  value: quay.io/kubevirt/cdi-uploadproxy@sha256:28d70e20ca6b1435470a7c7dd2bc28d394705b730c7d760ef827addb768ab5b1
+                  value: quay.io/kubevirt/cdi-uploadproxy@sha256:64806a9602188e2bae10da3afdaf53c3ded75d1bdd68fcbdc1c779dc1db1dc5f
                 - name: VERBOSITY
                   value: "1"
                 - name: PULL_POLICY
                   value: IfNotPresent
                 - name: MONITORING_NAMESPACE
-                image: quay.io/kubevirt/cdi-operator@sha256:21fe82706f57bc5378ba17be79d6831b223605ecf1ea6f43f533b1bccae68c50
+                image: quay.io/kubevirt/cdi-operator@sha256:52574ec0c8e66ec51f85b5dd82714e8410dd77dbdad985c4a9cfdbc386e27464
                 imagePullPolicy: IfNotPresent
                 name: cdi-operator
                 ports:
@@ -3678,7 +3670,7 @@ spec:
                   seccompProfile:
                     type: RuntimeDefault
                 terminationMessagePath: /dev/termination-log
-                terminationMessagePolicy: File
+                terminationMessagePolicy: FallbackToLogsOnError
               nodeSelector:
                 kubernetes.io/os: linux
               priorityClassName: kubevirt-cluster-critical
@@ -4595,19 +4587,19 @@ spec:
     name: aaq-server
   - image: quay.io/kubevirt/bridge-marker@sha256:bf269af61e618857e7b14439cfc003aac2d65db9ee633147a73f5d9648dab377
     name: bridge-marker
-  - image: quay.io/kubevirt/cdi-apiserver@sha256:aa5c2e16c67545f449086b4e49a25f9b304a17174985b841d82e8ff618fb809e
+  - image: quay.io/kubevirt/cdi-apiserver@sha256:d6caa249afb47cd0f77778bb2adce5d1804a356a930efcfe3b47d2f8a136a931
     name: cdi-apiserver
-  - image: quay.io/kubevirt/cdi-cloner@sha256:ece16cb37976eb1a075b9b276b9d42d9a5c349dc9f29d1b7d08f0b985e119f07
+  - image: quay.io/kubevirt/cdi-cloner@sha256:ec8bfee04e5e6c0bd42c529a752cdcbf16adf5098f40b61e2419df168769f478
     name: cdi-cloner
-  - image: quay.io/kubevirt/cdi-controller@sha256:c4c35dce67ecbca97d3eb854d5468b6e60b06cd90e140fec83bb58ec566abb43
+  - image: quay.io/kubevirt/cdi-controller@sha256:0cd25b425f50e1e04c5d842bdf4587777e33b3f4abe1ff45c8120d22ba6890d6
     name: cdi-controller
-  - image: quay.io/kubevirt/cdi-importer@sha256:df76770eef8bfc218a6423dea41a0d597b80821cd0434528aaa84951d2242abc
+  - image: quay.io/kubevirt/cdi-importer@sha256:fff582ac5299857cc75b7d98035f5099b7277e69aa6a8d9d09d4e3af0a2c3a8d
     name: cdi-importer
-  - image: quay.io/kubevirt/cdi-operator@sha256:21fe82706f57bc5378ba17be79d6831b223605ecf1ea6f43f533b1bccae68c50
+  - image: quay.io/kubevirt/cdi-operator@sha256:52574ec0c8e66ec51f85b5dd82714e8410dd77dbdad985c4a9cfdbc386e27464
     name: cdi-operator
-  - image: quay.io/kubevirt/cdi-uploadproxy@sha256:28d70e20ca6b1435470a7c7dd2bc28d394705b730c7d760ef827addb768ab5b1
+  - image: quay.io/kubevirt/cdi-uploadproxy@sha256:64806a9602188e2bae10da3afdaf53c3ded75d1bdd68fcbdc1c779dc1db1dc5f
     name: cdi-uploadproxy
-  - image: quay.io/kubevirt/cdi-uploadserver@sha256:de0e6e49f7086c1fc526e339d435dc92c51d51e416e90ae4b988271bf5fafe42
+  - image: quay.io/kubevirt/cdi-uploadserver@sha256:02a9de4d24d83dd1ea156da2a59485f440bd1802b269bbe87d1939521807620a
     name: cdi-uploadserver
   - image: quay.io/kubevirt/cluster-network-addons-operator@sha256:7139c0a73da92c4f273823b5a917705031a0adb354a33e0a10e838d897a86fab
     name: cluster-network-addons-operator
