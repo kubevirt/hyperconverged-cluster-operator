@@ -472,6 +472,7 @@ func GetDeploymentSpecWebhook(params *DeploymentOperatorParams) appsv1.Deploymen
 						SecurityContext:          GetStdContainerSecurityContext(),
 						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 						Ports: []corev1.ContainerPort{
+							getWebhookPort(),
 							getMetricsPort(),
 						},
 					},
@@ -1185,6 +1186,14 @@ func getMetricsPort() corev1.ContainerPort {
 	return corev1.ContainerPort{
 		Name:          util.MetricsPortName,
 		ContainerPort: util.MetricsPort,
+		Protocol:      corev1.ProtocolTCP,
+	}
+}
+
+func getWebhookPort() corev1.ContainerPort {
+	return corev1.ContainerPort{
+		Name:          util.WebhookPortName,
+		ContainerPort: util.WebhookPort,
 		Protocol:      corev1.ProtocolTCP,
 	}
 }

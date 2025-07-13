@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"maps"
 	"os"
@@ -66,7 +67,10 @@ import (
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-const openshiftMonitoringNamespace = "openshift-monitoring"
+const (
+	openshiftMonitoringNamespace = "openshift-monitoring"
+	operatorCertDirEnv           = "OPERATOR_CERT_DIR"
+)
 
 // Change below variables to serve metrics on different host or port.
 var (
@@ -366,8 +370,10 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 func getManagerOptions(operatorNamespace string, needLeaderElection bool, ci hcoutil.ClusterInfo, scheme *apiruntime.Scheme) manager.Options {
 	return manager.Options{
 		Metrics: server.Options{
+			SecureServing:  true,
 			BindAddress:    fmt.Sprintf("%s:%d", hcoutil.MetricsHost, hcoutil.MetricsPort),
 			FilterProvider: authorization.HttpWithBearerToken,
+			TLSOpts:        []func(*tls.Config){cmdcommon.MutateTLSConfig},
 		},
 		HealthProbeBindAddress: fmt.Sprintf("%s:%d", hcoutil.HealthProbeHost, hcoutil.HealthProbePort),
 		ReadinessEndpointName:  hcoutil.ReadinessEndpointName,

@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.16.0-unstable
-    createdAt: "2025-07-13 15:19:20"
+    createdAt: "2025-07-14 08:50:29"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -3078,7 +3078,7 @@ spec:
                   periodSeconds: 5
                 name: hyperconverged-cluster-operator
                 ports:
-                - containerPort: 8383
+                - containerPort: 8443
                   name: metrics
                   protocol: TCP
                 readinessProbe:
@@ -3158,7 +3158,10 @@ spec:
                   periodSeconds: 5
                 name: hyperconverged-cluster-webhook
                 ports:
-                - containerPort: 8383
+                - containerPort: 4343
+                  name: webhook
+                  protocol: TCP
+                - containerPort: 8443
                   name: metrics
                   protocol: TCP
                 readinessProbe:

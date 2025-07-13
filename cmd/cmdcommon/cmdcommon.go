@@ -2,6 +2,7 @@ package cmdcommon
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"slices"
 
 	"github.com/go-logr/logr"
+	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/spf13/pflag"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -18,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/validator"
 )
 
 // list of namespace allowed for HCO installations (for tests)
@@ -100,7 +103,7 @@ func (h HcCmdHelper) RegisterPPROFServer(mgr manager.Manager) error {
 	}))
 }
 
-func (h HcCmdHelper) ExitOnError(err error, message string, keysAndValues ...interface{}) {
+func (h HcCmdHelper) ExitOnError(err error, message string, keysAndValues ...any) {
 	if err != nil {
 		h.Logger.Error(err, message, keysAndValues...)
 		os.Exit(1)
@@ -173,4 +176,35 @@ func getOperatorNamespaceFromEnv() (string, error) {
 	}
 
 	return namespace, nil
+}
+
+func MutateTLSConfig(cfg *tls.Config) {
+	var ciphersTLS13 = map[string]uint16{
+		"TLS_AES_128_GCM_SHA256":       tls.TLS_AES_128_GCM_SHA256,
+		"TLS_AES_256_GCM_SHA384":       tls.TLS_AES_256_GCM_SHA384,
+		"TLS_CHACHA20_POLY1305_SHA256": tls.TLS_CHACHA20_POLY1305_SHA256,
+	}
+
+	// This callback executes on each client call returning a new config to be used
+	// please be aware that the APIServer is using http keepalive so this is going to
+	// be executed only after a while for fresh connections and not on existing ones
+	cfg.GetConfigForClient = func(_ *tls.ClientHelloInfo) (*tls.Config, error) {
+		cipherNames, minTypedTLSVersion := validator.SelectCipherSuitesAndMinTLSVersion()
+
+		// TODO: workaround: TLSv1.3 ciphers are now enabled on openshift/library-go
+		// but on the other side crypto.CipherSuitesOrDie is still failing with an
+		// explict error when it encounters the name of a TLSv1.3 cipher.
+		// Remove the workaround once we can consume https://github.com/openshift/library-go/pull/1956
+		cipherNamesIANAC := crypto.OpenSSLToIANACipherSuites(cipherNames)
+		cipherNamesFilteredNoTLS13 := []string{}
+		for _, cipherName := range cipherNamesIANAC {
+			if _, ok := ciphersTLS13[cipherName]; !ok {
+				cipherNamesFilteredNoTLS13 = append(cipherNamesFilteredNoTLS13, cipherName)
+			}
+		}
+
+		cfg.CipherSuites = crypto.CipherSuitesOrDie(crypto.OpenSSLToIANACipherSuites(cipherNamesFilteredNoTLS13))
+		cfg.MinVersion = crypto.TLSVersionOrDie(string(minTypedTLSVersion))
+		return cfg, nil
+	}
 }

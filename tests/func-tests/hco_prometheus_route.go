@@ -3,6 +3,7 @@ package tests
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -74,6 +75,12 @@ func newHCOPrometheusClient(ctx context.Context, cli client.Client) (*HCOPrometh
 				return nil, fmt.Errorf("can't create HTTP client; %w", err)
 			}
 
+			httpClient.Transport = &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true, // This is needed for self-signed certificates in the test environment
+				},
+			}
+
 			return &HCOPrometheusClient{
 				url:   fmt.Sprintf("https://%s/metrics", tempRouteHost),
 				token: string(secret.Data["token"]),
@@ -137,7 +144,7 @@ func CreateTempRoute(ctx context.Context, cli client.Client) error {
 				TargetPort: intstr.FromString("http-metrics"),
 			},
 			TLS: &openshiftroutev1.TLSConfig{
-				Termination:                   openshiftroutev1.TLSTerminationEdge,
+				Termination:                   openshiftroutev1.TLSTerminationPassthrough,
 				InsecureEdgeTerminationPolicy: openshiftroutev1.InsecureEdgeTerminationPolicyRedirect,
 			},
 			To: openshiftroutev1.RouteTargetReference{

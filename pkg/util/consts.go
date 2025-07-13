@@ -52,7 +52,7 @@ const (
 	// HyperConvergedName is the name of the HyperConverged resource that will be reconciled
 	HyperConvergedName           = "kubevirt-hyperconverged"
 	MetricsHost                  = "0.0.0.0"
-	MetricsPort            int32 = 8383
+	MetricsPort            int32 = 8443
 	MetricsPortName              = "metrics"
 	HealthProbeHost              = "0.0.0.0"
 	HealthProbePort        int32 = 6060
@@ -62,6 +62,7 @@ const (
 	HCOMutatingWebhookPath       = "/mutate-hco-kubevirt-io-v1beta1-hyperconverged"
 	HCONSWebhookPath             = "/mutate-ns-hco-kubevirt-io"
 	WebhookPort                  = 4343
+	WebhookPortName              = "webhook"
 
 	WebhookCertName       = "apiserver.crt"
 	WebhookKeyName        = "apiserver.key"

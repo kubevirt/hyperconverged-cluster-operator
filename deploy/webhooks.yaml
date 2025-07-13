@@ -8,6 +8,19 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
+  name: hyperconverged-cluster-operator-service-cert
+  labels:
+    name: hyperconverged-cluster-operator
+spec:
+  secretName: hyperconverged-cluster-operator-service-cert
+  dnsNames:
+  - hyperconverged-cluster-operator-service.kubevirt-hyperconverged.svc
+  issuerRef:
+    name: selfsigned
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
   name: hyperconverged-cluster-webhook-service-cert
   labels:
     name: hyperconverged-cluster-webhook
