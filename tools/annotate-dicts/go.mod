@@ -80,7 +80,7 @@ require (
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397 // indirect
 	kubevirt.io/api v1.6.0-beta.0 // indirect
 	kubevirt.io/application-aware-quota v1.4.0 // indirect
-	kubevirt.io/containerized-data-importer-api v1.62.0 // indirect
+	kubevirt.io/containerized-data-importer-api v1.63.0-alpha.0 // indirect
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4 // indirect
 	sigs.k8s.io/controller-runtime v0.21.0 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect

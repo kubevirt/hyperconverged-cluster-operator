@@ -3010,6 +3010,7 @@ rules:
   - get
 - apiGroups:
   - cdi.kubevirt.io
+  - forklift.cdi.kubevirt.io
   resources:
   - '*'
   verbs:
@@ -3069,15 +3070,6 @@ rules:
   - virtualmachines/finalizers
   verbs:
   - update
-- apiGroups:
-  - forklift.cdi.kubevirt.io
-  resources:
-  - ovirtvolumepopulators
-  - openstackvolumepopulators
-  verbs:
-  - get
-  - list
-  - watch
 - apiGroups:
   - ""
   resources:
