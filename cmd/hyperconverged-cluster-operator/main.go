@@ -302,6 +302,14 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 			&corev1.Service{}: {
 				Field: namespaceSelector,
 			},
+			&corev1.ServiceAccount{}: {
+				Label: labelSelector,
+				Field: namespaceSelector,
+			},
+			&appsv1.DaemonSet{}: {
+				Label: labelSelector,
+				Field: namespaceSelector,
+			},
 			//nolint:staticcheck
 			&corev1.Endpoints{}: {
 				Field: namespaceSelector,
@@ -360,6 +368,15 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 		&consolev1.ConsolePlugin{}: {
 			Label: labelSelector,
 		},
+		&securityv1.SecurityContextConstraints{}: {
+			Label: labelSelector,
+		},
+	}
+
+	cacheOptionsByObjectForNetwork := map[client.Object]cache.ByObject{
+		&netattdefv1.NetworkAttachmentDefinition{}: {
+			Label: labelSelector,
+		},
 	}
 
 	if ci.IsMonitoringAvailable() {
@@ -370,6 +387,10 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 	}
 	if ci.IsOpenshift() {
 		maps.Copy(cacheOptions.ByObject, cacheOptionsByObjectForOpenshift)
+	}
+
+	if ci.IsNADAvailable() {
+		maps.Copy(cacheOptions.ByObject, cacheOptionsByObjectForNetwork)
 	}
 
 	return cacheOptions

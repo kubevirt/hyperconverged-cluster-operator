@@ -308,6 +308,9 @@ func (c ClusterInfoMock) IsMonitoringAvailable() bool {
 func (c ClusterInfoMock) IsDeschedulerAvailable() bool {
 	return true
 }
+func (c ClusterInfoMock) IsNADAvailable() bool {
+	return true
+}
 func (c ClusterInfoMock) IsDeschedulerCRDDeployed(_ context.Context, _ client.Client) bool {
 	return true
 }
