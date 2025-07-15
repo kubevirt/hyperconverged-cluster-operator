@@ -20,6 +20,7 @@ import (
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
+	"github.com/go-logr/logr"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
@@ -31,10 +32,7 @@ const (
 
 	BindingName = "passt"
 
-	networkBindingNADName       = "primary-udn-kubevirt-binding"
-	networkBindingNADNamespace  = "default"
-	NetworkAttachmentDefinition = networkBindingNADNamespace + "/" + networkBindingNADName
-
+	networkBindingNADName        = "primary-udn-kubevirt-binding"
 	bindingComputeMemoryOverhead = "250Mi"
 )
 
@@ -56,9 +54,10 @@ func CheckPasstImagesEnvExists() error {
 }
 
 // NetworkBinding creates an InterfaceBindingPlugin for passt network binding
-func NetworkBinding(sidecarImage string) kubevirtcorev1.InterfaceBindingPlugin {
+func NetworkBinding(sidecarImage string, namespace string) kubevirtcorev1.InterfaceBindingPlugin {
+	nadNamespace := getPasstNADNamespace(namespace)
 	return kubevirtcorev1.InterfaceBindingPlugin{
-		NetworkAttachmentDefinition: NetworkAttachmentDefinition,
+		NetworkAttachmentDefinition: nadNamespace + "/" + networkBindingNADName,
 		SidecarImage:                sidecarImage,
 		Migration:                   &kubevirtcorev1.InterfaceBindingMigration{},
 		ComputeResourceOverhead: &kubevirtcorev1.ResourceRequirementsWithoutClaims{
@@ -67,6 +66,15 @@ func NetworkBinding(sidecarImage string) kubevirtcorev1.InterfaceBindingPlugin {
 			},
 		},
 	}
+}
+
+// getPasstNADNamespace determines the namespace for the NAD based on platform and HCO namespace
+func getPasstNADNamespace(hcoNamespace string) string {
+	isOpenShift := hcoutil.GetClusterInfo().IsOpenshift()
+	if isOpenShift && hcoNamespace == "openshift-cnv" {
+		return hcoNamespace
+	}
+	return "default"
 }
 
 // GetImage gets the passt image from environment variable
@@ -210,12 +218,13 @@ sleep 2147483647`,
 	return daemonSet
 }
 
-// NewPasstBindingCNINetworkAttachmentDefinition creates a NetworkAttachmentDefinition for the passt binding CNI
-func NewPasstBindingCNINetworkAttachmentDefinition(hc *hcov1beta1.HyperConverged) *netattdefv1.NetworkAttachmentDefinition {
+// NewPasstBindingCNINetworkAttachmentDefinition creates a NetworkAttachmentDefinition for passt binding
+func NewPasstBindingCNINetworkAttachmentDefinition(hc *hcov1beta1.HyperConverged, namespace string) *netattdefv1.NetworkAttachmentDefinition {
+	nadNamespace := getPasstNADNamespace(namespace)
 	return &netattdefv1.NetworkAttachmentDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      networkBindingNADName,
-			Namespace: "default",
+			Namespace: nadNamespace,
 			Labels:    hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentNetwork),
 		},
 		Spec: netattdefv1.NetworkAttachmentDefinitionSpec{
@@ -309,12 +318,17 @@ func NewPasstDaemonSetHandler(Client client.Client, Scheme *runtime.Scheme, isOp
 	)
 }
 
-// NewPasstNetworkAttachmentDefinitionHandler creates a conditional handler for passt NetworkAttachmentDefinition
-func NewPasstNetworkAttachmentDefinitionHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+// NewPasstNetworkAttachmentDefinitionHandler creates a passt NAD handler for use with OperandHandler.addOperand
+func NewPasstNetworkAttachmentDefinitionHandler(_ logr.Logger, client client.Client, scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
+	return newPasstNetworkAttachmentDefinitionHandler(client, scheme, hc.Namespace), nil
+}
+
+// newPasstNetworkAttachmentDefinitionHandler creates a conditional handler for passt NetworkAttachmentDefinition
+func newPasstNetworkAttachmentDefinitionHandler(Client client.Client, Scheme *runtime.Scheme, namespace string) operands.Operand {
 	return createPasstConditionalHandler(
-		operands.NewNetworkAttachmentDefinitionHandler(Client, Scheme, NewPasstBindingCNINetworkAttachmentDefinition),
+		operands.NewNetworkAttachmentDefinitionHandler(Client, Scheme, namespace, NewPasstBindingCNINetworkAttachmentDefinition),
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return NewPasstBindingCNINetworkAttachmentDefinition(hc)
+			return NewPasstBindingCNINetworkAttachmentDefinition(hc, namespace)
 		},
 	)
 }

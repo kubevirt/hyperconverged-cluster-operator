@@ -14,18 +14,19 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-type newNetworkAttachmentDefinitionFunc func(hc *hcov1beta1.HyperConverged) *netattdefv1.NetworkAttachmentDefinition
+type newNetworkAttachmentDefinitionFunc func(hc *hcov1beta1.HyperConverged, namespace string) *netattdefv1.NetworkAttachmentDefinition
 
-func NewNetworkAttachmentDefinitionHandler(Client client.Client, Scheme *runtime.Scheme, newCrFunc newNetworkAttachmentDefinitionFunc) *GenericOperand {
-	return NewGenericOperand(Client, Scheme, "NetworkAttachmentDefinition", &networkAttachmentDefinitionHooks{newCrFunc: newCrFunc}, false)
+func NewNetworkAttachmentDefinitionHandler(Client client.Client, Scheme *runtime.Scheme, namespace string, newCrFunc newNetworkAttachmentDefinitionFunc) *GenericOperand {
+	return NewGenericOperand(Client, Scheme, "NetworkAttachmentDefinition", &networkAttachmentDefinitionHooks{newCrFunc: newCrFunc, namespace: namespace}, false)
 }
 
 type networkAttachmentDefinitionHooks struct {
 	newCrFunc newNetworkAttachmentDefinitionFunc
+	namespace string
 }
 
 func (h networkAttachmentDefinitionHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	return h.newCrFunc(hc), nil
+	return h.newCrFunc(hc, h.namespace), nil
 }
 
 func (networkAttachmentDefinitionHooks) GetEmptyCr() client.Object {

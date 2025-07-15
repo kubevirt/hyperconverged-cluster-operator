@@ -56,7 +56,6 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		handlers.NewAAQHandler(client, scheme),
 		passt.NewPasstServiceAccountHandler(client, scheme),
 		passt.NewPasstDaemonSetHandler(client, scheme, ci.IsOpenshift()),
-		passt.NewPasstNetworkAttachmentDefinitionHandler(client, scheme),
 	}
 
 	if ci.IsOpenshift() {
@@ -94,6 +93,9 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 // Initial operations that need to read/write from the cluster can only be done when the client is already working.
 func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.ClusterInfo, hc *hcov1beta1.HyperConverged) {
 	h.objects = make([]client.Object, 0)
+
+	h.addOperand(scheme, hc, passt.NewPasstNetworkAttachmentDefinitionHandler)
+
 	if ci.IsOpenshift() {
 		h.addOperands(scheme, hc, handlers.GetQuickStartHandlers)
 		h.addOperands(scheme, hc, handlers.GetDashboardHandlers)

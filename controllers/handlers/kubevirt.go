@@ -426,7 +426,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 
 	seccompConfig := getKVSeccompConfig()
 
-	networkBindings := getNetworkBindings(hc.Spec.NetworkBinding, hc.Annotations)
+	networkBindings := getNetworkBindings(hc)
 
 	config := &kubevirtcorev1.KubeVirtConfiguration{
 		DeveloperConfiguration: devConfig,
@@ -528,9 +528,8 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 	return config, nil
 }
 
-func getNetworkBindings(hcoNetworkBindings map[string]kubevirtcorev1.InterfaceBindingPlugin,
-	hcoAnnotations map[string]string) map[string]kubevirtcorev1.InterfaceBindingPlugin {
-	networkBindings := maps.Clone(hcoNetworkBindings)
+func getNetworkBindings(hc *hcov1beta1.HyperConverged) map[string]kubevirtcorev1.InterfaceBindingPlugin {
+	networkBindings := maps.Clone(hc.Spec.NetworkBinding)
 
 	if networkBindings == nil {
 		networkBindings = make(map[string]kubevirtcorev1.InterfaceBindingPlugin)
@@ -538,8 +537,8 @@ func getNetworkBindings(hcoNetworkBindings map[string]kubevirtcorev1.InterfaceBi
 
 	networkBindings[primaryUDNNetworkBindingName] = primaryUserDefinedNetworkBinding()
 
-	if hcoAnnotations[passt.DeployPasstNetworkBindingAnnotation] == "true" {
-		networkBindings[passt.BindingName] = passt.NetworkBinding(passt.GetImage())
+	if hc.Annotations[passt.DeployPasstNetworkBindingAnnotation] == "true" {
+		networkBindings[passt.BindingName] = passt.NetworkBinding(passt.GetImage(), hc.Namespace)
 	}
 	return networkBindings
 }

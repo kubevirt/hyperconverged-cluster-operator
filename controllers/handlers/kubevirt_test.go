@@ -1984,7 +1984,7 @@ Version: 1.2.3`)
 					Expect(kv.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
 					Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).NotTo(BeNil())
 
-					expectedPasstBindingPlugin := passt.NetworkBinding(expectedPasstImage)
+					expectedPasstBindingPlugin := passt.NetworkBinding(expectedPasstImage, hco.Namespace)
 					Expect(kv.Spec.Configuration.NetworkConfiguration.Binding[passt.BindingName]).To(Equal(expectedPasstBindingPlugin))
 					Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvPasstIPStackMigration))
 				})
