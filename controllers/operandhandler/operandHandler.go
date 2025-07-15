@@ -18,6 +18,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -53,6 +54,8 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		handlers.NewCdiHandler(client, scheme),
 		handlers.NewCnaHandler(client, scheme),
 		handlers.NewAAQHandler(client, scheme),
+		passt.NewPasstServiceAccountHandler(client, scheme),
+		passt.NewPasstDaemonSetHandler(client, scheme, ci.IsOpenshift()),
 	}
 
 	if ci.IsOpenshift() {
@@ -68,6 +71,10 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		operandList = append(operandList, handlers.NewConsoleHandler(client))
 		operandList = append(operandList, operands.NewServiceHandler(client, scheme, handlers.NewKvUIPluginSvc))
 		operandList = append(operandList, operands.NewServiceHandler(client, scheme, handlers.NewKvUIProxySvc))
+	}
+
+	if ci.IsOpenshift() {
+		operandList = append(operandList, passt.NewPasstSecurityContextConstraintsHandler(client, scheme))
 	}
 
 	if ci.IsManagedByOLM() {
@@ -86,6 +93,9 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 // Initial operations that need to read/write from the cluster can only be done when the client is already working.
 func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.ClusterInfo, hc *hcov1beta1.HyperConverged) {
 	h.objects = make([]client.Object, 0)
+
+	h.addOperand(scheme, hc, passt.NewPasstNetworkAttachmentDefinitionHandler)
+
 	if ci.IsOpenshift() {
 		h.addOperands(scheme, hc, handlers.GetQuickStartHandlers)
 		h.addOperands(scheme, hc, handlers.GetDashboardHandlers)
