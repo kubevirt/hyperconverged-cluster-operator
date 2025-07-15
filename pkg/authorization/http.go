@@ -9,7 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
 
-func HttpWithBearerToken(config *rest.Config, httpClient *http.Client) (server.Filter, error) {
+func HttpWithBearerToken(_ *rest.Config, _ *http.Client) (server.Filter, error) {
 	return func(log logr.Logger, handler http.Handler) (http.Handler, error) {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			authValue := req.Header.Get("Authorization")

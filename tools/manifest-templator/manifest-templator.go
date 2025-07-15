@@ -28,19 +28,17 @@ import (
 	"strconv"
 	"strings"
 
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-
 	"github.com/ghodss/yaml"
-
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
-	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
-
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
 )
 
 var (

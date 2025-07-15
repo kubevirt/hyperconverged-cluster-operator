@@ -3078,7 +3078,7 @@ spec:
                   periodSeconds: 5
                 name: hyperconverged-cluster-operator
                 ports:
-                - containerPort: 8383
+                - containerPort: 8443
                   name: metrics
                   protocol: TCP
                 readinessProbe:
@@ -3158,7 +3158,10 @@ spec:
                   periodSeconds: 5
                 name: hyperconverged-cluster-webhook
                 ports:
-                - containerPort: 8383
+                - containerPort: 4343
+                  name: webhook
+                  protocol: TCP
+                - containerPort: 8443
                   name: metrics
                   protocol: TCP
                 readinessProbe:
