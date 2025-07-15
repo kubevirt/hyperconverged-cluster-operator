@@ -43,6 +43,25 @@ var _ = Describe("Passt NetworkAttachmentDefinition tests", func() {
 			Expect(nad.Spec.Config).To(ContainSubstring(`"name": "primary-udn-kubevirt-binding"`))
 			Expect(nad.Spec.Config).To(ContainSubstring(`"type": "kubevirt-passt-binding"`))
 		})
+
+		Context("OpenShift platform behavior", func() {
+			BeforeEach(func() {
+				getClusterInfo := hcoutil.GetClusterInfo
+
+				hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
+					return &commontestutils.ClusterInfoMock{}
+				}
+
+				DeferCleanup(func() {
+					hcoutil.GetClusterInfo = getClusterInfo
+				})
+			})
+
+			It("should use openshift-cnv namespace on OpenShift", func() {
+				nad := passt.NewPasstBindingCNINetworkAttachmentDefinition(hco)
+				Expect(nad.Namespace).To(Equal("openshift-cnv"))
+			})
+		})
 	})
 
 	Context("NetworkAttachmentDefinition deployment", func() {

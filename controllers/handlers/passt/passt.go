@@ -32,10 +32,7 @@ const (
 
 	passtCNIObjectName = "passt-binding-cni"
 
-	networkBindingNADName       = "primary-udn-kubevirt-binding"
-	networkBindingNADNamespace  = "default"
-	NetworkAttachmentDefinition = networkBindingNADNamespace + "/" + networkBindingNADName
-
+	networkBindingNADName        = "primary-udn-kubevirt-binding"
 	bindingComputeMemoryOverhead = "250Mi"
 )
 
@@ -55,7 +52,7 @@ func CheckPasstImagesEnvExists() error {
 // NetworkBinding creates an InterfaceBindingPlugin for passt network binding
 func NetworkBinding() kubevirtcorev1.InterfaceBindingPlugin {
 	return kubevirtcorev1.InterfaceBindingPlugin{
-		NetworkAttachmentDefinition: NetworkAttachmentDefinition,
+		NetworkAttachmentDefinition: getPasstNADNamespace() + "/" + networkBindingNADName,
 		SidecarImage:                os.Getenv(hcoutil.PasstImageEnvV),
 		Migration:                   &kubevirtcorev1.InterfaceBindingMigration{},
 		ComputeResourceOverhead: &kubevirtcorev1.ResourceRequirementsWithoutClaims{
@@ -64,6 +61,13 @@ func NetworkBinding() kubevirtcorev1.InterfaceBindingPlugin {
 			},
 		},
 	}
+}
+
+func getPasstNADNamespace() string {
+	if hcoutil.GetClusterInfo().IsOpenshift() {
+		return "openshift-cnv"
+	}
+	return "default"
 }
 
 // NewPasstBindingCNISA creates a ServiceAccount for the passt binding CNI
@@ -202,12 +206,12 @@ func NewPasstBindingCNIDaemonSetWithNameOnly(hc *hcov1beta1.HyperConverged) *app
 	}
 }
 
-// NewPasstBindingCNINetworkAttachmentDefinition creates a NetworkAttachmentDefinition for the passt binding CNI
+// NewPasstBindingCNINetworkAttachmentDefinition creates a NetworkAttachmentDefinition for passt binding
 func NewPasstBindingCNINetworkAttachmentDefinition(hc *hcov1beta1.HyperConverged) *netattdefv1.NetworkAttachmentDefinition {
 	return &netattdefv1.NetworkAttachmentDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      networkBindingNADName,
-			Namespace: "default",
+			Namespace: getPasstNADNamespace(),
 			Labels:    hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentNetwork),
 		},
 		Spec: netattdefv1.NetworkAttachmentDefinitionSpec{
