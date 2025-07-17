@@ -247,6 +247,11 @@ type HyperConvergedSpec struct {
 	// CommonInstancetypesDeployment holds the configuration of common-instancetypes deployment within KubeVirt.
 	// +optional
 	CommonInstancetypesDeployment *v1.CommonInstancetypesDeployment `json:"CommonInstancetypesDeployment,omitempty"`
+
+	// LiveUpdateConfiguration holds the cluster configuration for live update of virtual machines - max cpu sockets,
+	// max guest memory and max hotplug ratio. This setting can affect VM CPU and memory settings.
+	// +optional
+	LiveUpdateConfiguration *v1.LiveUpdateConfiguration `json:"liveUpdateConfiguration,omitempty"`
 }
 
 // CertRotateConfigCA contains the tunables for TLS certificates.
