@@ -12,10 +12,12 @@ import (
 	"github.com/blang/semver/v4"
 	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/go-logr/logr"
+	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	routev1 "github.com/openshift/api/route/v1"
+	securityv1 "github.com/openshift/api/security/v1"
 	operatorhandler "github.com/operator-framework/operator-lib/handler"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -164,6 +166,8 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 		&schedulingv1.PriorityClass{},
 		&corev1.ConfigMap{},
 		&corev1.Service{},
+		&corev1.ServiceAccount{},
+		&appsv1.DaemonSet{},
 		&rbacv1.Role{},
 		&rbacv1.RoleBinding{},
 	}
@@ -184,6 +188,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 			&imagev1.ImageStream{},
 			&corev1.Namespace{},
 			&appsv1.Deployment{},
+			&securityv1.SecurityContextConstraints{},
+		}...)
+	}
+
+	if ci.IsNADAvailable() {
+		secondaryResources = append(secondaryResources, []client.Object{
+			&netattdefv1.NetworkAttachmentDefinition{},
 		}...)
 	}
 
