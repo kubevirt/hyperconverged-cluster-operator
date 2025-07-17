@@ -1580,3 +1580,22 @@ spec:
     devEnableEvictionsInBackground: true
 ```
 should be merged in its configuration.
+
+## KubeVirt Live Update Configuration
+
+In order to configure the live upgrade of virtual machines, you can set the optional `spec.liveUpdateConfiguration` object in the HyperConverged CR. See more details in the [KubeVirt documentation](https://kubevirt.io/user-guide/compute/cpu_hotplug/#optional-set-maximum-sockets-or-hotplug-ratio).
+The `spec.liveUpdateConfiguration` field is with the same structure as the corresponding field in the [KubeVirt CR](https://kubevirt.io/api-reference/main/definitions.html#_v1_liveupdateconfiguration). 
+
+The following example sets cluster configuration for hotplug ratio, max cpu socket and max guest size.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  liveUpdateConfiguration:
+    maxHotplugRatio: 3
+    maxCpuSockets: 2
+    maxGuest: 2Gi
+```
