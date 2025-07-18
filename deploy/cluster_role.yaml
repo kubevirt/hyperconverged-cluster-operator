@@ -1254,22 +1254,6 @@ rules:
   - watch
   - patch
 - apiGroups:
-  - flavor.kubevirt.io
-  resources:
-  - virtualmachineflavors
-  - virtualmachineclusterflavors
-  - virtualmachinepreferences
-  - virtualmachineclusterpreferences
-  verbs:
-  - get
-  - delete
-  - create
-  - update
-  - patch
-  - list
-  - watch
-  - deletecollection
-- apiGroups:
   - ""
   resources:
   - pods
@@ -1558,6 +1542,8 @@ rules:
   - virtualmachineinstances/freeze
   - virtualmachineinstances/unfreeze
   - virtualmachineinstances/softreboot
+  - virtualmachineinstances/sev/setupsession
+  - virtualmachineinstances/sev/injectlaunchsecret
   verbs:
   - update
 - apiGroups:
@@ -1572,8 +1558,6 @@ rules:
   - network-attachment-definitions
   verbs:
   - get
-  - list
-  - watch
 - apiGroups:
   - apiextensions.k8s.io
   resources:
@@ -1786,6 +1770,13 @@ rules:
   - list
   - watch
 - apiGroups:
+  - kubevirt.io
+  resources:
+  - kubevirts
+  verbs:
+  - get
+  - list
+- apiGroups:
   - subresources.kubevirt.io
   resources:
   - version
@@ -1803,6 +1794,8 @@ rules:
   - virtualmachineinstances/guestosinfo
   - virtualmachineinstances/filesystemlist
   - virtualmachineinstances/userlist
+  - virtualmachineinstances/sev/fetchcertchain
+  - virtualmachineinstances/sev/querylaunchmeasurement
   verbs:
   - get
 - apiGroups:
@@ -1815,6 +1808,8 @@ rules:
   - virtualmachineinstances/freeze
   - virtualmachineinstances/unfreeze
   - virtualmachineinstances/softreboot
+  - virtualmachineinstances/sev/setupsession
+  - virtualmachineinstances/sev/injectlaunchsecret
   verbs:
   - update
 - apiGroups:
@@ -1834,7 +1829,6 @@ rules:
   - virtualmachines/removevolume
   - virtualmachines/migrate
   - virtualmachines/memorydump
-  - virtualmachines/addinterface
   verbs:
   - update
 - apiGroups:
@@ -1948,6 +1942,8 @@ rules:
   - virtualmachineinstances/guestosinfo
   - virtualmachineinstances/filesystemlist
   - virtualmachineinstances/userlist
+  - virtualmachineinstances/sev/fetchcertchain
+  - virtualmachineinstances/sev/querylaunchmeasurement
   verbs:
   - get
 - apiGroups:
@@ -1960,6 +1956,8 @@ rules:
   - virtualmachineinstances/freeze
   - virtualmachineinstances/unfreeze
   - virtualmachineinstances/softreboot
+  - virtualmachineinstances/sev/setupsession
+  - virtualmachineinstances/sev/injectlaunchsecret
   verbs:
   - update
 - apiGroups:
@@ -1979,7 +1977,6 @@ rules:
   - virtualmachines/removevolume
   - virtualmachines/migrate
   - virtualmachines/memorydump
-  - virtualmachines/addinterface
   verbs:
   - update
 - apiGroups:
@@ -2085,12 +2082,21 @@ rules:
   - list
   - watch
 - apiGroups:
+  - kubevirt.io
+  resources:
+  - kubevirts
+  verbs:
+  - get
+  - list
+- apiGroups:
   - subresources.kubevirt.io
   resources:
   - virtualmachines/expand-spec
   - virtualmachineinstances/guestosinfo
   - virtualmachineinstances/filesystemlist
   - virtualmachineinstances/userlist
+  - virtualmachineinstances/sev/fetchcertchain
+  - virtualmachineinstances/sev/querylaunchmeasurement
   verbs:
   - get
 - apiGroups:
