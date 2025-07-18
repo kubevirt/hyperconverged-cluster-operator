@@ -284,7 +284,7 @@ bump-hco:
 	./hack/bump-hco.sh ${HCO_BUMP_LEVEL}
 
 build-annotate-dicts:
-	cd tools/annotate-dicts; go build -o ../../_out/annotate-dicts .
+	go build -o ./_out/annotate-dicts ./tools/annotate-dicts/
 
 annotate-dicts: build-annotate-dicts
 	ASSETS_DIR=$(ASSETS_DIR) ./hack/annotate-dicts.sh
