@@ -57,7 +57,7 @@ spec:
         - name: HCO_KV_IO_VERSION
           value: 1.16.0
         - name: KUBEVIRT_VERSION
-          value: v1.5.0
+          value: v1.6.0-rc.0
         - name: CDI_VERSION
           value: v1.63.0-alpha.0
         - name: NETWORK_ADDONS_VERSION
@@ -457,33 +457,40 @@ spec:
         - virt-operator
         env:
         - name: VIRT_OPERATOR_IMAGE
-          value: quay.io/kubevirt/virt-operator@sha256:1591b45d3f35b857cb13921429b83e8da4e21a35aa54e1c88290baf996c05a2d
+          value: quay.io/kubevirt/virt-operator@sha256:b389ba2d4f7a5752c6510a7438bb7c7b9f59d36d328cb270e1f8f5c84d5bf9be
         - name: WATCH_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.annotations['olm.targetNamespaces']
         - name: VIRT_API_IMAGE
-          value: quay.io/kubevirt/virt-api@sha256:f9dd496df05456d47815f0b5861c6764b10c23657a48db886d8219acf5b44e86
+          value: quay.io/kubevirt/virt-api@sha256:1705b62a4e27a65d4b61f7b37fe88a54c35bde7c7ceeb9b5f5ab211a6330f004
         - name: VIRT_CONTROLLER_IMAGE
-          value: quay.io/kubevirt/virt-controller@sha256:c09a2c9b12a6a8657b02c557d5e169f8fbe3fb4339e64e6ce913ccf6c92714ab
+          value: quay.io/kubevirt/virt-controller@sha256:b8f5fa6095acd5d75809ed65c7c49c499d60e67bbe54ddc6e898872d99461222
         - name: VIRT_HANDLER_IMAGE
-          value: quay.io/kubevirt/virt-handler@sha256:70605363b54f4cc982a80dfdabd01462920bb2c64b028ab3b0c368ddb04e6370
+          value: quay.io/kubevirt/virt-handler@sha256:2f8d6314abc315f4bd32b5fbff597237ec3119a9492a26f49033d782e3b1c6a8
         - name: VIRT_LAUNCHER_IMAGE
-          value: quay.io/kubevirt/virt-launcher@sha256:d03a08135f821c4dfc73502b6fc1831a9342a2c97b0dcd5a1d865d2e23b05d49
+          value: quay.io/kubevirt/virt-launcher@sha256:49e755c1399e131a41d4748e4b9760ade4267972d43401652a867c046696a1d2
         - name: VIRT_EXPORTPROXY_IMAGE
-          value: quay.io/kubevirt/virt-exportproxy@sha256:1017c0e7097bf309e7a2e8542656f76c3ee1365ff03d01f563dbe108a98153b1
+          value: quay.io/kubevirt/virt-exportproxy@sha256:a6b6123ac151ccc074adcf833c10276ad03e34ca964b3a815c0b11b20f5b1c86
         - name: VIRT_EXPORTSERVER_IMAGE
-          value: quay.io/kubevirt/virt-exportserver@sha256:10d35daa56ec1981bbbcf898f5200909e044b3ae34a3f790ca82fedc906c52d9
+          value: quay.io/kubevirt/virt-exportserver@sha256:8baa90d98f9923e704b433a886c8c38e03dcf471ac1ea9332c8a763a5eda509f
         - name: GS_IMAGE
-          value: quay.io/kubevirt/libguestfs-tools@sha256:360ae79853f55195e9dd1571d8903b6d78a4f5612d6a85d42d8d59d852dc12eb
+          value: quay.io/kubevirt/libguestfs-tools@sha256:f229df085247cc72210c862bc8723f89792a8e2b5bf414b8efd56cf4fccdcbb6
         - name: PR_HELPER_IMAGE
-          value: quay.io/kubevirt/pr-helper@sha256:924b86dbb9a4e8d05bbd98a3acb79df642c51a19c6f57a557abff98b03db544c
+          value: quay.io/kubevirt/pr-helper@sha256:d08a777aa10eb19ef93dda0fe779ffa355df3a40735105cb20f8c31537de86d7
         - name: SIDECAR_SHIM_IMAGE
-          value: quay.io/kubevirt/sidecar-shim@sha256:3741dc9c9619be64313c5d0f0d6bd4f1453871ed0910165e209ef9aaa3f273f6
+          value: quay.io/kubevirt/sidecar-shim@sha256:442335d62dbbd4605ab4e852504047a4325088cfe12f581b49ea77fdab7fcc95
         - name: KUBEVIRT_VERSION
-          value: v1.5.0
-        image: quay.io/kubevirt/virt-operator@sha256:1591b45d3f35b857cb13921429b83e8da4e21a35aa54e1c88290baf996c05a2d
+          value: v1.6.0-rc.0
+        image: quay.io/kubevirt/virt-operator@sha256:b389ba2d4f7a5752c6510a7438bb7c7b9f59d36d328cb270e1f8f5c84d5bf9be
         imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 8443
+            scheme: HTTPS
+          initialDelaySeconds: 5
+          timeoutSeconds: 10
         name: virt-operator
         ports:
         - containerPort: 8443
@@ -510,6 +517,7 @@ spec:
             - ALL
           seccompProfile:
             type: RuntimeDefault
+        terminationMessagePolicy: FallbackToLogsOnError
         volumeMounts:
         - mountPath: /etc/virt-operator/certificates
           name: kubevirt-operator-certs

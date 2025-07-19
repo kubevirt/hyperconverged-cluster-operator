@@ -2379,6 +2379,8 @@ spec:
                         type: integer
                       virtOperator:
                         type: integer
+                      virtSynchronizationController:
+                        type: integer
                     type: object
                 type: object
               mediatedDevicesConfiguration:
