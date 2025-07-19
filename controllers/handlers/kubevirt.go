@@ -520,6 +520,10 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 	if hc.Spec.CommonInstancetypesDeployment != nil {
 		config.CommonInstancetypesDeployment = hc.Spec.CommonInstancetypesDeployment.DeepCopy()
 	}
+	
+	if hc.Spec.LiveUpdateConfiguration != nil {
+		config.LiveUpdateConfiguration = hc.Spec.LiveUpdateConfiguration.DeepCopy()
+	}
 
 	return config, nil
 }

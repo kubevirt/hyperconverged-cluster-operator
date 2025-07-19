@@ -1538,3 +1538,21 @@ spec:
     enabled: false
 
 ```
+
+## KubeVirt Live Update Configuration
+
+[Live update configuration](https://kubevirt.io/user-guide/compute/cpu_hotplug/#optional-set-maximum-sockets-or-hotplug-ratio) is mirroring functionality within the [KubeVirt CR](https://kubevirt.io/api-reference/main/definitions.html#_v1_liveupdateconfiguration). 
+
+The following example sets cluster configuration for hotplug ratio, max cpu socket and max guest size.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  liveUpdateConfiguration:
+    maxHotplugRatio: 3
+    maxCpuSockets: 2
+    maxGuest: 2Gi
+```
