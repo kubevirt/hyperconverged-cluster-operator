@@ -120,6 +120,8 @@ rules:
   - kubevirt-virt-api-certs
   - kubevirt-controller-certs
   - kubevirt-exportproxy-certs
+  - kubevirt-synchronization-controller-certs
+  - kubevirt-synchronization-controller-server-certs
   resources:
   - secrets
   verbs:
@@ -231,6 +233,28 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - ""
+  resourceNames:
+  - kubevirt-ca
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - delete
+  - update
+  - create
+  - patch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -1579,6 +1603,7 @@ rules:
   - persistentvolumeclaims
   verbs:
   - get
+  - list
 - apiGroups:
   - kubevirt.io
   resources:
@@ -1975,6 +2000,15 @@ rules:
   - get
   - delete
 - apiGroups:
+  - resource.k8s.io
+  resources:
+  - resourceslices
+  - resourceclaims
+  verbs:
+  - list
+  - watch
+  - get
+- apiGroups:
   - kubevirt.io
   resources:
   - virtualmachineinstances
@@ -2048,6 +2082,48 @@ rules:
 - apiGroups:
   - kubevirt.io
   resources:
+  - virtualmachineinstances
+  verbs:
+  - get
+  - list
+  - watch
+  - update
+  - patch
+- apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachineinstancemigrations
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kubevirt.io
+  resources:
+  - kubevirts
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - update
+  - create
+  - patch
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kubevirt.io
+  resources:
   - kubevirts
   verbs:
   - get
@@ -2073,6 +2149,8 @@ rules:
   - virtualmachineinstances/sev/fetchcertchain
   - virtualmachineinstances/sev/querylaunchmeasurement
   - virtualmachineinstances/usbredir
+  - virtualmachines/objectgraph
+  - virtualmachineinstances/objectgraph
   verbs:
   - get
 - apiGroups:
@@ -2229,6 +2307,8 @@ rules:
   - virtualmachineinstances/sev/fetchcertchain
   - virtualmachineinstances/sev/querylaunchmeasurement
   - virtualmachineinstances/usbredir
+  - virtualmachines/objectgraph
+  - virtualmachineinstances/objectgraph
   verbs:
   - get
 - apiGroups:
@@ -2389,6 +2469,8 @@ rules:
   - virtualmachineinstances/userlist
   - virtualmachineinstances/sev/fetchcertchain
   - virtualmachineinstances/sev/querylaunchmeasurement
+  - virtualmachines/objectgraph
+  - virtualmachineinstances/objectgraph
   verbs:
   - get
 - apiGroups:
