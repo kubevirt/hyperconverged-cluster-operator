@@ -271,6 +271,11 @@ type HyperConvergedSpec struct {
 	// +kubebuilder:default=false
 	// +default=false
 	EnableApplicationAwareQuota *bool `json:"enableApplicationAwareQuota,omitempty"`
+
+	// LiveUpdateConfiguration holds the cluster configuration for live update of virtual machines - max cpu sockets,
+	// max guest memory and max hotplug ratio. This setting can affect VM CPU and memory settings.
+	// +optional
+	LiveUpdateConfiguration *v1.LiveUpdateConfiguration `json:"liveUpdateConfiguration,omitempty"`
 }
 
 // CertRotateConfigCA contains the tunables for TLS certificates.
