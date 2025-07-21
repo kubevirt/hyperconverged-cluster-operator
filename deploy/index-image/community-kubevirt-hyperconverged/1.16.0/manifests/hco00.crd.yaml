@@ -3067,7 +3067,7 @@ spec:
               vmStateStorageClass:
                 description: |-
                   VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM.
-                  type: string
+                type: string
               workloadUpdateStrategy:
                 default:
                   batchEvictionInterval: 1m0s
