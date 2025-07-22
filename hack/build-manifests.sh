@@ -112,6 +112,7 @@ function create_virt_csv() {
     --virt-launcher-image="${KUBEVIRT_LAUNCHER_IMAGE}" \
     --virt-export-proxy-image="${KUBEVIRT_EXPORTPROXY_IMAGE}" \
     --virt-export-server-image="${KUBEVIRT_EXPORSERVER_IMAGE}" \
+    --virt-synchronization-controller-image="${KUBEVIRT_SYNC_CONTROLLER_IMAGE}" \
     --gs-image="${KUBEVIRT_LIBGUESTFS_TOOLS_IMAGE}" \
     --sidecar-shim-image="${KUBEVIRT_SIDECAR_SHIM}" \
     --pr-helper-image="${KUBEVIRT_PR_HELPER}" \

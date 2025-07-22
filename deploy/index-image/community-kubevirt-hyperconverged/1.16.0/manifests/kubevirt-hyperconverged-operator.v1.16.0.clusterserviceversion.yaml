@@ -3508,6 +3508,8 @@ spec:
                   value: quay.io/kubevirt/virt-exportproxy@sha256:a6b6123ac151ccc074adcf833c10276ad03e34ca964b3a815c0b11b20f5b1c86
                 - name: VIRT_EXPORTSERVER_IMAGE
                   value: quay.io/kubevirt/virt-exportserver@sha256:8baa90d98f9923e704b433a886c8c38e03dcf471ac1ea9332c8a763a5eda509f
+                - name: VIRT_SYNCHRONIZATIONCONTROLLER_IMAGE
+                  value: quay.io/kubevirt/virt-synchronization-controller@sha256:a643f5c23a4f33564d799083f63fd686894b39a87b65cc1cf0a6205c0ac85626
                 - name: GS_IMAGE
                   value: quay.io/kubevirt/libguestfs-tools@sha256:f229df085247cc72210c862bc8723f89792a8e2b5bf414b8efd56cf4fccdcbb6
                 - name: PR_HELPER_IMAGE
@@ -4768,6 +4770,8 @@ spec:
     name: virt-launcher
   - image: quay.io/kubevirt/virt-operator@sha256:b389ba2d4f7a5752c6510a7438bb7c7b9f59d36d328cb270e1f8f5c84d5bf9be
     name: virt-operator
+  - image: quay.io/kubevirt/virt-synchronization-controller@sha256:a643f5c23a4f33564d799083f63fd686894b39a87b65cc1cf0a6205c0ac85626
+    name: virt-synchronization-controller
   - image: quay.io/kubevirt/virtio-container-disk@sha256:bf2c634591d7fca1b90479785084fa108a66fe9da6777c4312bb4f57cc837faa
     name: virtio-container-disk
   replaces: kubevirt-hyperconverged-operator.v1.15.0
