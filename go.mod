@@ -46,10 +46,10 @@ require (
 	kubevirt.io/application-aware-quota v1.4.0
 	kubevirt.io/containerized-data-importer-api v1.63.0-alpha.0
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4
-	kubevirt.io/ssp-operator/api v0.23.1
+	kubevirt.io/ssp-operator/api v0.24.0-alpha.0
 	sigs.k8s.io/controller-runtime v0.21.0
 	sigs.k8s.io/controller-tools v0.18.0
-	sigs.k8s.io/yaml v1.4.0
+	sigs.k8s.io/yaml v1.5.0
 )
 
 require (
@@ -106,6 +106,7 @@ require (
 	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
+	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
