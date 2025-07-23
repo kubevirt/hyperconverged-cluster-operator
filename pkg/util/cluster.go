@@ -31,6 +31,7 @@ type ClusterInfo interface {
 	IsConsolePluginImageProvided() bool
 	IsMonitoringAvailable() bool
 	IsDeschedulerAvailable() bool
+	IsNADAvailable() bool
 	IsDeschedulerCRDDeployed(ctx context.Context, cl client.Client) bool
 	IsSingleStackIPv6() bool
 	GetTLSSecurityProfile(hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile) *openshiftconfigv1.TLSSecurityProfile
@@ -47,6 +48,7 @@ type ClusterInfoImp struct {
 	consolePluginImageProvided bool
 	monitoringAvailable        bool
 	deschedulerAvailable       bool
+	nadAvailable               bool
 	singlestackipv6            bool
 	baseDomain                 string
 	ownResources               *OwnResources
@@ -91,9 +93,11 @@ func (c *ClusterInfoImp) Init(ctx context.Context, cl client.Client, logger logr
 
 	c.monitoringAvailable = isPrometheusExists(ctx, cl)
 	c.deschedulerAvailable = isDeschedulerExists(ctx, cl)
+	c.nadAvailable = isNADExists(ctx, cl)
 	c.logger.Info("addOns ",
 		"monitoring", c.monitoringAvailable,
 		"kubeDescheduler", c.deschedulerAvailable,
+		"networkAttachmentDefinition", c.nadAvailable,
 	)
 
 	err = c.RefreshAPIServerCR(ctx, cl)
@@ -162,6 +166,10 @@ func (c *ClusterInfoImp) IsDeschedulerAvailable() bool {
 	return c.deschedulerAvailable
 }
 
+func (c *ClusterInfoImp) IsNADAvailable() bool {
+	return c.nadAvailable
+}
+
 func (c *ClusterInfoImp) IsDeschedulerCRDDeployed(ctx context.Context, cl client.Client) bool {
 	return isCRDExists(ctx, cl, DeschedulerCRDName)
 }
@@ -211,6 +219,10 @@ func isPrometheusExists(ctx context.Context, cl client.Client) bool {
 
 func isDeschedulerExists(ctx context.Context, cl client.Client) bool {
 	return isCRDExists(ctx, cl, DeschedulerCRDName)
+}
+
+func isNADExists(ctx context.Context, cl client.Client) bool {
+	return isCRDExists(ctx, cl, NetworkAttachmentDefinitionCRDName)
 }
 
 func isCRDExists(ctx context.Context, cl client.Client, crdName string) bool {
