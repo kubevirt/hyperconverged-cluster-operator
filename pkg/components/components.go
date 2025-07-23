@@ -70,6 +70,7 @@ type DeploymentOperatorParams struct {
 	KVUIPluginImage        string
 	KVUIProxyImage         string
 	PasstImage             string
+	PasstCNIImage          string
 	ImagePullPolicy        string
 	ConversionContainer    string
 	VmwareContainer        string
@@ -301,6 +302,10 @@ func buildEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 		{
 			Name:  util.PasstImageEnvV,
 			Value: params.PasstImage,
+		},
+		{
+			Name:  util.PasstCNIImageEnvV,
+			Value: params.PasstCNIImage,
 		},
 	}, params.Env...)
 
@@ -556,7 +561,7 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		},
 		{
 			APIGroups: stringListToSlice("apps"),
-			Resources: stringListToSlice("deployments", "replicasets"),
+			Resources: stringListToSlice("deployments", "replicasets", "daemonsets"),
 			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
 		roleWithAllPermissions("rbac.authorization.k8s.io", stringListToSlice("roles", "rolebindings")),
@@ -640,6 +645,21 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			APIGroups: stringListToSlice("monitoring.coreos.com"),
 			Resources: stringListToSlice("alertmanagers", "alertmanagers/api"),
 			Verbs:     stringListToSlice("get", "list", "create", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice(""),
+			Resources: stringListToSlice("serviceaccounts"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice("k8s.cni.cncf.io"),
+			Resources: stringListToSlice("network-attachment-definitions"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice("security.openshift.io"),
+			Resources: stringListToSlice("securitycontextconstraints"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
 	}
 }

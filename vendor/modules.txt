@@ -186,6 +186,10 @@ github.com/jpillora/backoff
 # github.com/json-iterator/go v1.1.12
 ## explicit; go 1.12
 github.com/json-iterator/go
+# github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.7
+## explicit; go 1.21
+github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io
+github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1
 # github.com/kubevirt/cluster-network-addons-operator v0.100.0-rc0
 ## explicit; go 1.24.0
 github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/shared
@@ -290,6 +294,7 @@ github.com/openshift/api/image/v1
 github.com/openshift/api/operator/v1
 github.com/openshift/api/quota/v1
 github.com/openshift/api/route/v1
+github.com/openshift/api/security/v1
 # github.com/openshift/cluster-kube-descheduler-operator v0.0.0-20250410114548-481d56a6c34e
 ## explicit; go 1.23.3
 github.com/openshift/cluster-kube-descheduler-operator/pkg/apis/descheduler/v1

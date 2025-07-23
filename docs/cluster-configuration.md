@@ -179,6 +179,14 @@ to an even parity when using emulator thread isolation.
 
 **Default**: `false`
 
+### deployPasstNetworkBinding annotation
+Set the `deployPasstNetworkBinding=true` HCO CR annotation to deploy the needed configurations for kubevirt users, so they
+can bind their VM using a Passt Network binding.
+
+**Note**: this feature is in Developer Preview.
+
+**Default**: `false` (annotation doesn't exist by default)
+
 ### Feature Gates Example
 
 ```yaml
