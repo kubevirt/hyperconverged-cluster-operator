@@ -774,22 +774,28 @@ tests:
 # Test HCOOperatorConditionsUnhealthy
 - interval: 1m
   input_series:
-    - series: 'kubevirt_hco_system_health_status'
-    - values: "stale stale 2 stale"
-
-    - series: 'kubevirt_hco_system_health_status'
-      values: "stale stale 2 stale 1 stale"
+  - series: 'kubevirt_hco_system_health_status'
+    # time:   0     1 2-12  13  14-25 26
+    values: "stale 0 2+0x10 1 1+0x11 0"
 
   alert_rule_test:
+    # No metric, no alert
     - eval_time: 1m
       alertname: HCOOperatorConditionsUnhealthy
       exp_alerts: [ ]
 
-    - eval_time: 1m
+    # Critical state for less than 10 minutes, no alert yet
+    - eval_time: 5m
       alertname: HCOOperatorConditionsUnhealthy
       exp_alerts: [ ]
 
-    - eval_time: 2m
+    # Critical state for less than 10 minutes, no alert yet
+    - eval_time: 10m
+      alertname: HCOOperatorConditionsUnhealthy
+      exp_alerts: [ ]
+
+    # Critical state for more than 10 minutes, alert should fire
+    - eval_time: 12m
       alertname: HCOOperatorConditionsUnhealthy
       exp_alerts:
         - exp_annotations:
@@ -802,7 +808,13 @@ tests:
             kubernetes_operator_part_of: "kubevirt"
             kubernetes_operator_component: "hyperconverged-cluster-operator"
 
-    - eval_time: 4m
+    # Warning state for less than 10 minutes, no alert yet
+    - eval_time: 18m
+      alertname: HCOOperatorConditionsUnhealthy
+      exp_alerts: [ ]
+
+    # Warning state for more than 10 minutes, alert should fire
+    - eval_time: 25m
       alertname: HCOOperatorConditionsUnhealthy
       exp_alerts:
         - exp_annotations:
