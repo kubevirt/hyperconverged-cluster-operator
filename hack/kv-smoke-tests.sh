@@ -4,6 +4,7 @@ set -euxo pipefail
 
 INSTALLED_NAMESPACE=${INSTALLED_NAMESPACE:-"kubevirt-hyperconverged"}
 OUTPUT_DIR=${ARTIFACT_DIR:-"$(pwd)/_out"}
+SERVICE_ACCOUNT_NAME=${SERVICE_ACCOUNT_NAME:-"kubevirt-testing"}
 
 source hack/common.sh
 source cluster/kubevirtci.sh
@@ -90,7 +91,7 @@ spec:
     spec:
       securityContext:
         runAsUser: 0
-      serviceAccountName: kubevirt-testing
+      serviceAccountName: ${SERVICE_ACCOUNT_NAME}
       containers:
         - name: cdi-http-import-server
           image: quay.io/kubevirt/cdi-http-import-server:latest
@@ -125,18 +126,28 @@ spec:
         kubevirt.io: disks-images-provider
       name: disks-images-provider
     spec:
-      serviceAccountName: kubevirt-testing
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+      serviceAccountName: ${SERVICE_ACCOUNT_NAME}
       containers:
         - name: target
-          image: quay.io/kubevirt/disks-images-provider:latest
+          image: quay.io/kubevirt/disks-images-provider:${KUBEVIRT_VERSION}
           imagePullPolicy: Always
+          env:
+          - name: NUM_TEST_IMAGE_REPLICAS
+            value: "3"
           volumeMounts:
           - name: images
             mountPath: /hostImages
           - name: local-storage
             mountPath: /local-storage
+          - name: host-dir
+            mountPath: /host
+            mountPropagation: Bidirectional
           securityContext:
             privileged: true
+            readOnlyRootFilesystem: false
           readinessProbe:
             exec:
               command:
@@ -153,6 +164,9 @@ spec:
           hostPath:
             path: /mnt/local-storage
             type: DirectoryOrCreate
+        - name: host-dir
+          hostPath:
+            path: /
 EOF
 
 cat <<EOF | ${CMD} apply -f -
@@ -187,17 +201,19 @@ cat <<EOF | ${CMD} apply -f -
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: kubevirt-testing
+  name: ${SERVICE_ACCOUNT_NAME}
   namespace: ${INSTALLED_NAMESPACE}
   labels:
     kubevirt.io: ""
 EOF
 
+oc adm policy add-scc-to-user hostaccess -z ${SERVICE_ACCOUNT_NAME} -n ${INSTALLED_NAMESPACE}
+
 cat <<EOF | ${CMD} apply -f -
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: kubevirt-testing-cluster-admin
+  name: ${SERVICE_ACCOUNT_NAME}-cluster-admin
   labels:
     kubevirt.io: ""
 roleRef:
@@ -206,7 +222,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 subjects:
   - kind: ServiceAccount
-    name: kubevirt-testing
+    name: ${SERVICE_ACCOUNT_NAME}
     namespace: ${INSTALLED_NAMESPACE}
 EOF
 
