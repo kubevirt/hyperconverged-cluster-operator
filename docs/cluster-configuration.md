@@ -179,6 +179,14 @@ to an even parity when using emulator thread isolation.
 
 **Default**: `false`
 
+### deployPasstNetworkBinding annotation
+Set the `deployPasstNetworkBinding=true` HCO CR annotation to deploy the needed configurations for kubevirt users, so they
+can bind their VM using a Passt Network binding.
+
+**Note**: this feature is in Developer Preview.
+
+**Default**: `false` (annotation doesn't exist by default)
+
 ### Feature Gates Example
 
 ```yaml
@@ -1537,4 +1545,23 @@ spec:
   commonInstancetypesDeployment:
     enabled: false
 
+```
+
+## KubeVirt Live Update Configuration
+
+In order to configure the live upgrade of virtual machines, you can set the optional `spec.liveUpdateConfiguration` object in the HyperConverged CR. See more details in the [KubeVirt documentation](https://kubevirt.io/user-guide/compute/cpu_hotplug/#optional-set-maximum-sockets-or-hotplug-ratio).
+The `spec.liveUpdateConfiguration` field is with the same structure as the corresponding field in the [KubeVirt CR](https://kubevirt.io/api-reference/main/definitions.html#_v1_liveupdateconfiguration). 
+
+The following example sets cluster configuration for hotplug ratio, max cpu socket and max guest size.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  liveUpdateConfiguration:
+    maxHotplugRatio: 3
+    maxCpuSockets: 2
+    maxGuest: 2Gi
 ```

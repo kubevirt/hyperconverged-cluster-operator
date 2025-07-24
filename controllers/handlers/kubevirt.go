@@ -28,6 +28,7 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/patch"
@@ -51,7 +52,9 @@ const (
 	DefaultARM64EmulatedMachines = "virt*"
 )
 
-const primaryUDNNetworkBindingName = "l2bridge"
+const (
+	primaryUDNNetworkBindingName = "l2bridge"
+)
 
 const kvPriorityClass = "kubevirt-cluster-critical"
 
@@ -146,6 +149,7 @@ const (
 	kvDisableMDevConfig     = "DisableMDEVConfiguration"
 	kvPersistentReservation = "PersistentReservation"
 	kvAlignCPUs             = "AlignCPUs"
+	kvPasstIPStackMigration = "PasstIPStackMigration"
 )
 
 // CPU Plugin default values
@@ -422,7 +426,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 
 	seccompConfig := getKVSeccompConfig()
 
-	networkBindings := getNetworkBindings(hc.Spec.NetworkBinding)
+	networkBindings := getNetworkBindings(hc.Spec.NetworkBinding, hc.Annotations)
 
 	config := &kubevirtcorev1.KubeVirtConfiguration{
 		DeveloperConfiguration: devConfig,
@@ -444,6 +448,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 		EvictionStrategy:             hc.Spec.EvictionStrategy,
 		KSMConfiguration:             hc.Spec.KSMConfiguration,
 		VMRolloutStrategy:            ptr.To(kubevirtcorev1.VMRolloutStrategyLiveUpdate),
+		LiveUpdateConfiguration:      hc.Spec.LiveUpdateConfiguration,
 	}
 
 	if smbiosConfig, ok := os.LookupEnv(smbiosEnvName); ok {
@@ -524,7 +529,8 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 	return config, nil
 }
 
-func getNetworkBindings(hcoNetworkBindings map[string]kubevirtcorev1.InterfaceBindingPlugin) map[string]kubevirtcorev1.InterfaceBindingPlugin {
+func getNetworkBindings(hcoNetworkBindings map[string]kubevirtcorev1.InterfaceBindingPlugin,
+	hcoAnnotations map[string]string) map[string]kubevirtcorev1.InterfaceBindingPlugin {
 	networkBindings := maps.Clone(hcoNetworkBindings)
 
 	if networkBindings == nil {
@@ -532,6 +538,10 @@ func getNetworkBindings(hcoNetworkBindings map[string]kubevirtcorev1.InterfaceBi
 	}
 
 	networkBindings[primaryUDNNetworkBindingName] = primaryUserDefinedNetworkBinding()
+
+	if hcoAnnotations[passt.DeployPasstNetworkBindingAnnotation] == "true" {
+		networkBindings[passt.BindingName] = passt.NetworkBinding()
+	}
 	return networkBindings
 }
 
@@ -743,7 +753,7 @@ func getKVDevConfig(hc *hcov1beta1.HyperConverged) *kubevirtcorev1.DeveloperConf
 		devConf.MemoryOvercommit = hc.Spec.HigherWorkloadDensity.MemoryOvercommitPercentage
 	}
 
-	fgs := getKvFeatureGateList(&hc.Spec.FeatureGates)
+	fgs := getKvFeatureGateList(&hc.Spec.FeatureGates, hc.Annotations)
 	if len(fgs) > 0 {
 		devConf.FeatureGates = fgs
 	}
@@ -834,7 +844,7 @@ func hcoConfig2KvConfig(
 	return kvConfig
 }
 
-func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates) []string {
+func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, annotations map[string]string) []string {
 	fgs := make([]string, 0, 2)
 
 	if featureGates.DownwardMetrics != nil && *featureGates.DownwardMetrics {
@@ -848,6 +858,10 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates) [
 	}
 	if featureGates.AlignCPUs != nil && *featureGates.AlignCPUs {
 		fgs = append(fgs, kvAlignCPUs)
+	}
+
+	if annotations[passt.DeployPasstNetworkBindingAnnotation] == "true" {
+		fgs = append(fgs, kvPasstIPStackMigration)
 	}
 
 	return fgs
@@ -970,8 +984,8 @@ func getMandatoryKvFeatureGates(isKVMEmulation bool) []string {
 }
 
 // get list of feature gates or KV FG list
-func getKvFeatureGateList(fgs *hcov1beta1.HyperConvergedFeatureGates) []string {
-	checks := getFeatureGateChecks(fgs)
+func getKvFeatureGateList(fgs *hcov1beta1.HyperConvergedFeatureGates, annotations map[string]string) []string {
+	checks := getFeatureGateChecks(fgs, annotations)
 	res := make([]string, 0, len(checks)+len(mandatoryKvFeatureGates))
 	res = append(res, mandatoryKvFeatureGates...)
 	res = append(res, checks...)

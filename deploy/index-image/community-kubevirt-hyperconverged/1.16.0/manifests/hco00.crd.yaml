@@ -678,6 +678,15 @@ spec:
                                           description: ImageStream is the name of
                                             image stream for import
                                           type: string
+                                        platform:
+                                          description: Platform describes the minimum
+                                            runtime requirements of the image
+                                          properties:
+                                            architecture:
+                                              description: Architecture specifies
+                                                the image target CPU architecture
+                                              type: string
+                                          type: object
                                         pullMethod:
                                           description: PullMethod can be either "pod"
                                             (default import), or "node" (node docker
@@ -744,6 +753,11 @@ spec:
                                           description: BackingFile is the path to
                                             the virtual hard disk to migrate from
                                             vCenter/ESXi
+                                          type: string
+                                        extraArgs:
+                                          description: ExtraArgs is a reference to
+                                            a ConfigMap containing extra arguments
+                                            to pass directly to the VDDK library
                                           type: string
                                         initImageURL:
                                           description: InitImageURL is an optional
@@ -2330,6 +2344,37 @@ spec:
                     format: int64
                     type: integer
                 type: object
+              liveUpdateConfiguration:
+                description: |-
+                  LiveUpdateConfiguration holds the cluster configuration for live update of virtual machines - max cpu sockets,
+                  max guest memory and max hotplug ratio. This setting can affect VM CPU and memory settings.
+                properties:
+                  maxCpuSockets:
+                    description: |-
+                      MaxCpuSockets provides a MaxSockets value for VMs that do not provide their own.
+                      For VMs with more sockets than maximum the MaxSockets will be set to equal number of sockets.
+                    format: int32
+                    type: integer
+                  maxGuest:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    description: |-
+                      MaxGuest defines the maximum amount memory that can be allocated
+                      to the guest using hotplug.
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
+                  maxHotplugRatio:
+                    description: |-
+                      MaxHotplugRatio is the ratio used to define the max amount
+                      of a hotplug resource that can be made available to a VM
+                      when the specific Max* setting is not defined (MaxCpuSockets, MaxGuest)
+                      Example: VM is configured with 512Mi of guest memory, if MaxGuest is not
+                      defined and MaxHotplugRatio is 2 then MaxGuest = 1Gi
+                      defaults to 4
+                    format: int32
+                    type: integer
+                type: object
               localStorageClassName:
                 description: 'Deprecated: LocalStorageClassName the name of the local
                   storage class.'
@@ -2364,6 +2409,8 @@ spec:
                       virtLauncher:
                         type: integer
                       virtOperator:
+                        type: integer
+                      virtSynchronizationController:
                         type: integer
                     type: object
                 type: object
@@ -4600,6 +4647,15 @@ spec:
                                           description: ImageStream is the name of
                                             image stream for import
                                           type: string
+                                        platform:
+                                          description: Platform describes the minimum
+                                            runtime requirements of the image
+                                          properties:
+                                            architecture:
+                                              description: Architecture specifies
+                                                the image target CPU architecture
+                                              type: string
+                                          type: object
                                         pullMethod:
                                           description: PullMethod can be either "pod"
                                             (default import), or "node" (node docker
@@ -4666,6 +4722,11 @@ spec:
                                           description: BackingFile is the path to
                                             the virtual hard disk to migrate from
                                             vCenter/ESXi
+                                          type: string
+                                        extraArgs:
+                                          description: ExtraArgs is a reference to
+                                            a ConfigMap containing extra arguments
+                                            to pass directly to the VDDK library
                                           type: string
                                         initImageURL:
                                           description: InitImageURL is an optional

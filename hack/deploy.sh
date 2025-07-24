@@ -135,6 +135,16 @@ fi
 # manifest-templator does not add them into operator.yaml at the moment. 
 # when a new webhook (deployed by OLM in production) is introduced, 
 # it must be added into webhooks.yaml as well.
+
+echo "Waiting for cert-manager webhook CA bundle..."
+hack/retry.sh 60 1 \
+    "${CMD} get validatingwebhookconfigurations cert-manager-webhook -o jsonpath='{.webhooks[0].clientConfig.caBundle}' | base64 -d | openssl x509 -noout 2>/dev/null" \
+    "echo 'Warning: cert-manager webhook CA bundle still not valid after 60 attempts'"
+
+if [ $? -eq 0 ]; then
+    echo "cert-manager webhook CA bundle is valid!"
+fi
+
 echo "Creating resources for webhooks"
 "${CMD}" apply $LABEL_SELECTOR_ARG -f _out/webhooks.yaml
 

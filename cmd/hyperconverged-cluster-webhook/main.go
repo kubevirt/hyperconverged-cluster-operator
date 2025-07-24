@@ -1,30 +1,17 @@
 package main
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"os"
 	"path/filepath"
 
-	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
-	"github.com/openshift/library-go/pkg/crypto"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
-
-	webhookscontrollers "github.com/kubevirt/hyperconverged-cluster-operator/controllers/webhooks"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/authorization"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/validator"
-
-	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
+	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -33,15 +20,21 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/api"
-	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks"
+	webhookscontrollers "github.com/kubevirt/hyperconverged-cluster-operator/controllers/webhooks"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/api"
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/authorization"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks"
 )
 
 // Change below variables to serve metrics on different host or port.
@@ -93,8 +86,13 @@ func main() {
 	// Create a new Cmd to provide shared dependencies and start components
 	mgr, err := manager.New(cfg, manager.Options{
 		Metrics: server.Options{
+			SecureServing:  true,
+			CertDir:        webhooks.GetWebhookCertDir(),
+			CertName:       hcoutil.WebhookCertName,
+			KeyName:        hcoutil.WebhookKeyName,
 			BindAddress:    fmt.Sprintf("%s:%d", hcoutil.MetricsHost, hcoutil.MetricsPort),
 			FilterProvider: authorization.HttpWithBearerToken,
+			TLSOpts:        []func(*tls.Config){cmdcommon.MutateTLSConfig},
 		},
 		HealthProbeBindAddress: fmt.Sprintf("%s:%d", hcoutil.HealthProbeHost, hcoutil.HealthProbePort),
 		ReadinessEndpointName:  hcoutil.ReadinessEndpointName,
@@ -106,7 +104,7 @@ func main() {
 			CertName: hcoutil.WebhookCertName,
 			KeyName:  hcoutil.WebhookKeyName,
 			Port:     hcoutil.WebhookPort,
-			TLSOpts:  []func(*tls.Config){MutateTLSConfig},
+			TLSOpts:  []func(*tls.Config){cmdcommon.MutateTLSConfig},
 		}),
 	})
 	cmdHelper.ExitOnError(err, "failed to create manager")
@@ -126,7 +124,8 @@ func main() {
 
 	// Detect OpenShift version
 	ci := hcoutil.GetClusterInfo()
-	ctx := context.TODO()
+	ctx := signals.SetupSignalHandler()
+
 	err = ci.Init(ctx, apiClient, logger)
 	cmdHelper.ExitOnError(err, "Cannot detect cluster type")
 
@@ -175,40 +174,9 @@ func main() {
 	logger.Info("Starting the Cmd.")
 	eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Init", "Starting the HyperConverged webhook Pod")
 	// Start the Cmd
-	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
+	if err = mgr.Start(ctx); err != nil {
 		logger.Error(err, "Manager exited non-zero")
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "UnexpectedError", "HyperConverged crashed; "+err.Error())
 		os.Exit(1)
-	}
-}
-
-func MutateTLSConfig(cfg *tls.Config) {
-	var ciphersTLS13 = map[string]uint16{
-		"TLS_AES_128_GCM_SHA256":       tls.TLS_AES_128_GCM_SHA256,
-		"TLS_AES_256_GCM_SHA384":       tls.TLS_AES_256_GCM_SHA384,
-		"TLS_CHACHA20_POLY1305_SHA256": tls.TLS_CHACHA20_POLY1305_SHA256,
-	}
-
-	// This callback executes on each client call returning a new config to be used
-	// please be aware that the APIServer is using http keepalive so this is going to
-	// be executed only after a while for fresh connections and not on existing ones
-	cfg.GetConfigForClient = func(_ *tls.ClientHelloInfo) (*tls.Config, error) {
-		cipherNames, minTypedTLSVersion := validator.SelectCipherSuitesAndMinTLSVersion()
-
-		// TODO: workaround: TLSv1.3 ciphers are now enabled on openshift/library-go
-		// but on the other side crypto.CipherSuitesOrDie is still failing with an
-		// explict error when it encounters the name of a TLSv1.3 cipher.
-		// Remove the workaround once we can consume https://github.com/openshift/library-go/pull/1956
-		cipherNamesIANAC := crypto.OpenSSLToIANACipherSuites(cipherNames)
-		cipherNamesFilteredNoTLS13 := []string{}
-		for _, cipherName := range cipherNamesIANAC {
-			if _, ok := ciphersTLS13[cipherName]; !ok {
-				cipherNamesFilteredNoTLS13 = append(cipherNamesFilteredNoTLS13, cipherName)
-			}
-		}
-
-		cfg.CipherSuites = crypto.CipherSuitesOrDie(crypto.OpenSSLToIANACipherSuites(cipherNamesFilteredNoTLS13))
-		cfg.MinVersion = crypto.TLSVersionOrDie(string(minTypedTLSVersion))
-		return cfg, nil
 	}
 }

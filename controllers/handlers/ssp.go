@@ -154,6 +154,17 @@ func NewSSP(hc *hcov1beta1.HyperConverged) (*sspv1beta3.SSP, []hcov1beta1.DataIm
 		return nil, nil, err
 	}
 
+	cpArches := nodeinfo.GetControlPlaneArchitectures()
+	wlArches := nodeinfo.GetWorkloadsArchitectures()
+
+	var cluster *sspv1beta3.Cluster
+	if len(cpArches) > 0 || len(wlArches) > 0 {
+		cluster = &sspv1beta3.Cluster{
+			ControlPlaneArchitectures: cpArches,
+			WorkloadArchitectures:     wlArches,
+		}
+	}
+
 	spec := sspv1beta3.SSPSpec{
 		TemplateValidator: &sspv1beta3.TemplateValidator{
 			Replicas: ptr.To(defaultTemplateValidatorReplicas),
@@ -162,6 +173,11 @@ func NewSSP(hc *hcov1beta1.HyperConverged) (*sspv1beta3.SSP, []hcov1beta1.DataIm
 			Namespace:               templatesNamespace,
 			DataImportCronTemplates: hcoDictSliceToSSP(hc, dataImportCronStatuses),
 		},
+
+		Cluster: cluster,
+
+		EnableMultipleArchitectures: hc.Spec.FeatureGates.EnableMultiArchBootImageImport,
+
 		// NodeLabeller field is explicitly initialized to its zero-value,
 		// in order to future-proof from bugs if SSP changes it to pointer-type,
 		// causing nil pointers dereferences at the DeepCopyInto() below.

@@ -47,10 +47,25 @@ type CommonTemplates struct {
 	DataImportCronTemplates []DataImportCronTemplate `json:"dataImportCronTemplates,omitempty"`
 }
 
+type Cluster struct {
+	// WorkloadArchitectures is a list of workload architectures supported by the cluster
+	WorkloadArchitectures []string `json:"workloadArchitectures,omitempty"`
+
+	// ControlPlaneArchitectures is a list of control plane architectures supported by the cluster
+	ControlPlaneArchitectures []string `json:"controlPlaneArchitectures,omitempty"`
+}
+
 // SSPSpec defines the desired state of SSP
 type SSPSpec struct {
+	// EnableMultipleArchitectures enables deployment of common Templates,
+	// DataSources and DataImportCrons for multiple node architectures.
+	EnableMultipleArchitectures *bool `json:"enableMultipleArchitectures,omitempty"`
+
 	// TemplateValidator is configuration of the template validator operand
 	TemplateValidator *TemplateValidator `json:"templateValidator,omitempty"`
+
+	// Cluster specifies what node architectures are present in the cluster.
+	Cluster *Cluster `json:"cluster,omitempty"`
 
 	// CommonTemplates is the configuration of the common templates operand
 	CommonTemplates CommonTemplates `json:"commonTemplates"`
@@ -96,6 +111,7 @@ type SSPStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
+// +kubebuilder:storageversion
 // +kubebuilder:printcolumn:name="Phase",type="string",JSONPath=".status.phase"
 
 // SSP is the Schema for the ssps API

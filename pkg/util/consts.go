@@ -2,36 +2,39 @@ package util
 
 // HCO common constants
 const (
-	OperatorNamespaceEnv             = "OPERATOR_NAMESPACE"
-	OperatorWebhookModeEnv           = "WEBHOOK_MODE"
-	ContainerAppName                 = "APP"
-	ContainerOperatorApp             = "OPERATOR"
-	ContainerWebhookApp              = "WEBHOOK"
-	HcoKvIoVersionName               = "HCO_KV_IO_VERSION"
-	KubevirtVersionEnvV              = "KUBEVIRT_VERSION"
-	KvVirtLauncherOSVersionEnvV      = "VIRT_LAUNCHER_OS_VERSION"
-	CdiVersionEnvV                   = "CDI_VERSION"
-	CnaoVersionEnvV                  = "NETWORK_ADDONS_VERSION"
-	SspVersionEnvV                   = "SSP_VERSION"
-	HppoVersionEnvV                  = "HPPO_VERSION"
-	AaqVersionEnvV                   = "AAQ_VERSION"
-	KVUIPluginImageEnvV              = "KV_CONSOLE_PLUGIN_IMAGE"
-	KVUIProxyImageEnvV               = "KV_CONSOLE_PROXY_IMAGE"
-	HcoValidatingWebhook             = "validate-hco.kubevirt.io"
-	HcoMutatingWebhookNS             = "mutate-ns-hco.kubevirt.io"
-	PrometheusRuleCRDName            = "prometheusrules.monitoring.coreos.com"
-	ServiceMonitorCRDName            = "servicemonitors.monitoring.coreos.com"
-	DeschedulerCRDName               = "kubedeschedulers.operator.openshift.io"
-	HcoMutatingWebhookHyperConverged = "mutate-hyperconverged-hco.kubevirt.io"
-	AppLabel                         = "app"
-	UndefinedNamespace               = ""
-	OpenshiftNamespace               = "openshift"
-	APIVersionAlpha                  = "v1alpha1"
-	APIVersionBeta                   = "v1beta1"
-	CurrentAPIVersion                = APIVersionBeta
-	APIVersionGroup                  = "hco.kubevirt.io"
-	APIVersion                       = APIVersionGroup + "/" + CurrentAPIVersion
-	HyperConvergedKind               = "HyperConverged"
+	OperatorNamespaceEnv               = "OPERATOR_NAMESPACE"
+	OperatorWebhookModeEnv             = "WEBHOOK_MODE"
+	ContainerAppName                   = "APP"
+	ContainerOperatorApp               = "OPERATOR"
+	ContainerWebhookApp                = "WEBHOOK"
+	HcoKvIoVersionName                 = "HCO_KV_IO_VERSION"
+	KubevirtVersionEnvV                = "KUBEVIRT_VERSION"
+	KvVirtLauncherOSVersionEnvV        = "VIRT_LAUNCHER_OS_VERSION"
+	CdiVersionEnvV                     = "CDI_VERSION"
+	CnaoVersionEnvV                    = "NETWORK_ADDONS_VERSION"
+	SspVersionEnvV                     = "SSP_VERSION"
+	HppoVersionEnvV                    = "HPPO_VERSION"
+	AaqVersionEnvV                     = "AAQ_VERSION"
+	KVUIPluginImageEnvV                = "KV_CONSOLE_PLUGIN_IMAGE"
+	KVUIProxyImageEnvV                 = "KV_CONSOLE_PROXY_IMAGE"
+	PasstImageEnvV                     = "PASST_SIDECAR_IMAGE"
+	PasstCNIImageEnvV                  = "PASST_CNI_IMAGE"
+	HcoValidatingWebhook               = "validate-hco.kubevirt.io"
+	HcoMutatingWebhookNS               = "mutate-ns-hco.kubevirt.io"
+	PrometheusRuleCRDName              = "prometheusrules.monitoring.coreos.com"
+	ServiceMonitorCRDName              = "servicemonitors.monitoring.coreos.com"
+	DeschedulerCRDName                 = "kubedeschedulers.operator.openshift.io"
+	NetworkAttachmentDefinitionCRDName = "network-attachment-definitions.k8s.cni.cncf.io"
+	HcoMutatingWebhookHyperConverged   = "mutate-hyperconverged-hco.kubevirt.io"
+	AppLabel                           = "app"
+	UndefinedNamespace                 = ""
+	OpenshiftNamespace                 = "openshift"
+	APIVersionAlpha                    = "v1alpha1"
+	APIVersionBeta                     = "v1beta1"
+	CurrentAPIVersion                  = APIVersionBeta
+	APIVersionGroup                    = "hco.kubevirt.io"
+	APIVersion                         = APIVersionGroup + "/" + CurrentAPIVersion
+	HyperConvergedKind                 = "HyperConverged"
 	// Recommended labels by Kubernetes. See
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	AppLabelPrefix    = "app.kubernetes.io"
@@ -52,7 +55,7 @@ const (
 	// HyperConvergedName is the name of the HyperConverged resource that will be reconciled
 	HyperConvergedName           = "kubevirt-hyperconverged"
 	MetricsHost                  = "0.0.0.0"
-	MetricsPort            int32 = 8383
+	MetricsPort            int32 = 8443
 	MetricsPortName              = "metrics"
 	HealthProbeHost              = "0.0.0.0"
 	HealthProbePort        int32 = 6060
@@ -62,6 +65,7 @@ const (
 	HCOMutatingWebhookPath       = "/mutate-hco-kubevirt-io-v1beta1-hyperconverged"
 	HCONSWebhookPath             = "/mutate-ns-hco-kubevirt-io"
 	WebhookPort                  = 4343
+	WebhookPortName              = "webhook"
 
 	WebhookCertName       = "apiserver.crt"
 	WebhookKeyName        = "apiserver.key"
@@ -76,6 +80,11 @@ const (
 	DeschedulerNamespace = "openshift-kube-descheduler-operator"
 
 	DataImportCronEnabledAnnotation = "dataimportcrontemplate.kubevirt.io/enable"
+
+	// AllowEgressToDNSAndAPIServerLabel if this label is set, the network policy will allow egress to DNS and API server
+	AllowEgressToDNSAndAPIServerLabel = "hco.kubevirt.io/allow-access-cluster-services"
+	// AllowIngressToMetricsEndpointLabel if this label is set, the network policy will allow ingress to the metrics endpoint
+	AllowIngressToMetricsEndpointLabel = "hco.kubevirt.io/allow-prometheus-access"
 )
 
 type AppComponent string

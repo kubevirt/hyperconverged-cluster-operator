@@ -78,23 +78,12 @@ function gen_csv() {
 
   # Handle important vars
   local csv="${operatorName}.${CSV_EXT}"
-  local csvWithCRDs="${operatorName}.${CSV_CRD_EXT}"
   local crds="${operatorName}.crds.yaml"
 
   # TODO: Use oc to run if cluster is available
   local dockerArgs="$CRI_BIN run --rm --entrypoint=${csvGeneratorPath} ${imagePullUrl} ${operatorArgs}"
 
-  eval $dockerArgs > $csv
-  eval $dockerArgs $dumpCRDsArg > $csvWithCRDs
-
-  # diff returns 1 when there is a diff, and there is always diff here. Added `|| :` to cancel trap here.
-  diff -u $csv $csvWithCRDs | grep -E "^\+" | sed -E 's/^\+//' | tail -n+2 > $crds || :
-
-  csplit --digits=2 --quiet --elide-empty-files \
-    --prefix="${operatorName}" \
-    --suffix-format="%02d.${CRD_EXT}" \
-    $crds \
-    "/^---$/" "{*}"
+  eval $dockerArgs $dumpCRDsArg | ${PROJECT_ROOT}/tools/manifest-splitter/manifest-splitter --operator-name="${operatorName}"
 }
 
 function create_virt_csv() {
@@ -112,6 +101,7 @@ function create_virt_csv() {
     --virt-launcher-image="${KUBEVIRT_LAUNCHER_IMAGE}" \
     --virt-export-proxy-image="${KUBEVIRT_EXPORTPROXY_IMAGE}" \
     --virt-export-server-image="${KUBEVIRT_EXPORSERVER_IMAGE}" \
+    --virt-synchronization-controller-image="${KUBEVIRT_SYNC_CONTROLLER_IMAGE}" \
     --gs-image="${KUBEVIRT_LIBGUESTFS_TOOLS_IMAGE}" \
     --sidecar-shim-image="${KUBEVIRT_SIDECAR_SHIM}" \
     --pr-helper-image="${KUBEVIRT_PR_HELPER}" \
@@ -218,6 +208,8 @@ function create_aaq_csv() {
   echo "${operatorName}"
 }
 
+(cd ${PROJECT_ROOT}/tools/manifest-splitter/ && go build)
+
 TEMPDIR=$(mktemp -d) || (echo "Failed to create temp directory" && exit 1)
 pushd $TEMPDIR
 virtFile=$(create_virt_csv)
@@ -247,13 +239,10 @@ EOM
 (cd ${PROJECT_ROOT}/tools/csv-merger/ && go build)
 hco_crds=${PROJECT_ROOT}/config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml
 (cd ${PROJECT_ROOT} && ${PROJECT_ROOT}/tools/csv-merger/csv-merger  --api-sources=${PROJECT_ROOT}/api/... --output-mode=CRDs > $hco_crds)
-csplit --digits=2 --quiet --elide-empty-files \
-  --prefix=hco \
-  --suffix-format="%02d.${CRD_EXT}" \
-  $hco_crds \
-  "/^---$/" "{*}"
+cat ${hco_crds} | ${PROJECT_ROOT}/tools/manifest-splitter/manifest-splitter --operator-name="hco"
 
 popd
+
 
 rm -fr "${CSV_DIR}"
 mkdir -p "${CSV_DIR}/metadata" "${CSV_DIR}/manifests"
@@ -307,6 +296,8 @@ ${PROJECT_ROOT}/tools/manifest-templator/manifest-templator \
   --aaq-version="${AAQ_VERSION}" \
   --operator-image="${HCO_OPERATOR_IMAGE}" \
   --webhook-image="${HCO_WEBHOOK_IMAGE}" \
+  --network-passt-binding-image-name="${NETWORK_PASST_BINDING_IMAGE}" \
+  --network-passt-binding-cni-image-name="${NETWORK_PASST_BINDING_CNI_IMAGE}" \
   --cli-downloads-image="${HCO_DOWNLOADS_IMAGE}"
 
 (cd ${PROJECT_ROOT}/tools/manifest-templator/ && go clean)
@@ -317,6 +308,12 @@ if [[ "$1" == "UNIQUE"  ]]; then
 else
   CSV_VERSION_PARAM=${CSV_VERSION}
   ENABLE_UNIQUE="false"
+fi
+
+NETWORK_POLICIES_PARAMS=""
+if [[ ${DUMP_NETWORK_POLICIES} == "true" ]]; then
+  # Dump network policies to the deploy directory
+  NETWORK_POLICIES_PARAMS="--dump-network-policies=true --deploy-k8s-dns-networkpolicy=true"
 fi
 
 # Build and merge CSVs
@@ -352,9 +349,20 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --webhook-image-name="${HCO_WEBHOOK_IMAGE}" \
   --kubevirt-consoleplugin-image-name="${KUBEVIRT_CONSOLE_PLUGIN_IMAGE}" \
   --kubevirt-consoleproxy-image-name="${KUBEVIRT_CONSOLE_PROXY_IMAGE}" \
-  --cli-downloads-image-name="${HCO_DOWNLOADS_IMAGE}" > "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}"
+  --cli-downloads-image-name="${HCO_DOWNLOADS_IMAGE}" \
+  --network-passt-binding-image-name="${NETWORK_PASST_BINDING_IMAGE}" \
+  --network-passt-binding-cni-image-name="${NETWORK_PASST_BINDING_CNI_IMAGE}" \
+  ${NETWORK_POLICIES_PARAMS} \
+  > temp_manifests.yaml
+
+  ${PROJECT_ROOT}/tools/manifest-splitter/manifest-splitter \
+  --manifests-file=temp_manifests.yaml \
+  --operator-name="${OPERATOR_NAME}" \
+  --output-dir="${CSV_DIR}" \
+  --csv-extension=".v${CSV_VERSION}.${CSV_EXT}"
 
 (cd ${PROJECT_ROOT}/tools/csv-merger/ && go clean)
+(cd ${PROJECT_ROOT}/tools/manifest-splitter/ && go clean)
 
 rendered_csv="$(cat "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}")"
 rendered_keywords="$(echo "$rendered_csv" |grep 'keywords' -A 3)"

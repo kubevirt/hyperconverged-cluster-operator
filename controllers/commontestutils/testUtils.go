@@ -14,6 +14,7 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	routev1 "github.com/openshift/api/route/v1"
+	securityv1 "github.com/openshift/api/security/v1"
 	deschedulerv1 "github.com/openshift/cluster-kube-descheduler-operator/pkg/apis/descheduler/v1"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -28,6 +29,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
@@ -163,9 +166,11 @@ func GetScheme() *runtime.Scheme {
 		consolev1.Install,
 		operatorv1.Install,
 		openshiftconfigv1.Install,
+		securityv1.Install,
 		csvv1alpha1.AddToScheme,
 		aaqv1alpha1.AddToScheme,
 		deschedulerv1.AddToScheme,
+		netattdefv1.AddToScheme,
 	} {
 		Expect(f(testScheme)).ToNot(HaveOccurred())
 	}
@@ -301,6 +306,9 @@ func (c ClusterInfoMock) IsMonitoringAvailable() bool {
 	return true
 }
 func (c ClusterInfoMock) IsDeschedulerAvailable() bool {
+	return true
+}
+func (c ClusterInfoMock) IsNADAvailable() bool {
 	return true
 }
 func (c ClusterInfoMock) IsDeschedulerCRDDeployed(_ context.Context, _ client.Client) bool {

@@ -2,16 +2,19 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"maps"
 	"os"
 
+	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/machadovilaca/operator-observability/pkg/operatormetrics"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	openshiftroutev1 "github.com/openshift/api/route/v1"
+	securityv1 "github.com/openshift/api/security/v1"
 	deschedulerv1 "github.com/openshift/cluster-kube-descheduler-operator/pkg/apis/descheduler/v1"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operatorsapiv2 "github.com/operator-framework/api/pkg/operators/v2"
@@ -20,6 +23,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -55,6 +59,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/crd"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/descheduler"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/hyperconverged"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/ingresscluster"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/nodes"
@@ -66,7 +71,10 @@ import (
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-const openshiftMonitoringNamespace = "openshift-monitoring"
+const (
+	openshiftMonitoringNamespace = "openshift-monitoring"
+	operatorCertDirEnv           = "OPERATOR_CERT_DIR"
+)
 
 // Change below variables to serve metrics on different host or port.
 var (
@@ -88,6 +96,7 @@ var (
 		operatorv1.Install,
 		openshiftconfigv1.Install,
 		openshiftroutev1.Install,
+		securityv1.Install,
 		monitoringv1.AddToScheme,
 		apiextensionsv1.AddToScheme,
 		kubevirtcorev1.AddToScheme,
@@ -96,6 +105,8 @@ var (
 		imagev1.Install,
 		aaqv1alpha1.AddToScheme,
 		deschedulerv1.AddToScheme,
+		netattdefv1.AddToScheme,
+		networkingv1.AddToScheme,
 	}
 )
 
@@ -246,6 +257,9 @@ func main() {
 	err = metrics.SetupMetrics()
 	cmdHelper.ExitOnError(err, "failed to setup metrics: %v")
 
+	err = passt.CheckPasstImagesEnvExists()
+	cmdHelper.ExitOnError(err, "failed to retrieve passt env vars")
+
 	logger.Info("Starting the Cmd.")
 	eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Init", "Starting the HyperConverged Pod")
 
@@ -289,6 +303,14 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 			&corev1.Service{}: {
 				Field: namespaceSelector,
 			},
+			&corev1.ServiceAccount{}: {
+				Label: labelSelector,
+				Field: namespaceSelector,
+			},
+			&appsv1.DaemonSet{}: {
+				Label: labelSelector,
+				Field: namespaceSelector,
+			},
 			//nolint:staticcheck
 			&corev1.Endpoints{}: {
 				Field: namespaceSelector,
@@ -318,6 +340,10 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 			Field: namespaceSelector,
 		},
 		&monitoringv1.PrometheusRule{}: {
+			Label: labelSelector,
+			Field: namespaceSelector,
+		},
+		&networkingv1.NetworkPolicy{}: {
 			Label: labelSelector,
 			Field: namespaceSelector,
 		},
@@ -351,6 +377,15 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 		&consolev1.ConsolePlugin{}: {
 			Label: labelSelector,
 		},
+		&securityv1.SecurityContextConstraints{}: {
+			Label: labelSelector,
+		},
+	}
+
+	cacheOptionsByObjectForNetwork := map[client.Object]cache.ByObject{
+		&netattdefv1.NetworkAttachmentDefinition{}: {
+			Label: labelSelector,
+		},
 	}
 
 	if ci.IsMonitoringAvailable() {
@@ -363,15 +398,20 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 		maps.Copy(cacheOptions.ByObject, cacheOptionsByObjectForOpenshift)
 	}
 
-	return cacheOptions
+	if ci.IsNADAvailable() {
+		maps.Copy(cacheOptions.ByObject, cacheOptionsByObjectForNetwork)
+	}
 
+	return cacheOptions
 }
 
 func getManagerOptions(operatorNamespace string, needLeaderElection bool, ci hcoutil.ClusterInfo, scheme *apiruntime.Scheme) manager.Options {
 	return manager.Options{
 		Metrics: server.Options{
+			SecureServing:  true,
 			BindAddress:    fmt.Sprintf("%s:%d", hcoutil.MetricsHost, hcoutil.MetricsPort),
 			FilterProvider: authorization.HttpWithBearerToken,
+			TLSOpts:        []func(*tls.Config){cmdcommon.MutateTLSConfig},
 		},
 		HealthProbeBindAddress: fmt.Sprintf("%s:%d", hcoutil.HealthProbeHost, hcoutil.HealthProbePort),
 		ReadinessEndpointName:  hcoutil.ReadinessEndpointName,

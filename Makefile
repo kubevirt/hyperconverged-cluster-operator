@@ -16,6 +16,7 @@ LDFLAGS            ?= -w -s
 GOLANDCI_LINT_VERSION ?= v2.0.2
 HCO_BUMP_LEVEL ?= minor
 ASSETS_DIR ?= assets
+DUMP_NETWORK_POLICIES ?= "false"
 UNAME_ARCH     := $(shell uname -m)
 ifeq ($(UNAME_ARCH),x86_64)
 	TEMP_ARCH = amd64
@@ -39,7 +40,7 @@ sanity: generate generate-doc validate-no-offensive-lang goimport lint-metrics l
 	go fmt ./...
 	go mod tidy -v
 	go mod vendor
-	./hack/build-manifests.sh
+	make build-manifests
 	git add -N vendor
 	git difftool -y --trust-exit-code --extcmd=./hack/diff-csv.sh
 
@@ -58,13 +59,13 @@ build-operator: gogenerate $(SOURCES) ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-operator ./cmd/hyperconverged-cluster-operator
 
 build-csv-merger: ## Build binary from source
-	go build -ldflags="${LDFLAGS}" -o _out/csv-merger tools/csv-merger/csv-merger.go
+	go build -ldflags="${LDFLAGS}" -o _out/csv-merger ./tools/csv-merger
 
 build-webhook: $(SOURCES) ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-webhook ./cmd/hyperconverged-cluster-webhook
 
 build-manifests:
-	./hack/build-manifests.sh
+	DUMP_NETWORK_POLICIES=$(DUMP_NETWORK_POLICIES) ./hack/build-manifests.sh
 
 build-manifests-prev:
 	RELEASE_DELTA=1 ./hack/build-manifests.sh
@@ -284,7 +285,7 @@ bump-hco:
 	./hack/bump-hco.sh ${HCO_BUMP_LEVEL}
 
 build-annotate-dicts:
-	cd tools/annotate-dicts; go build -o ../../_out/annotate-dicts .
+	go build -o ./_out/annotate-dicts ./tools/annotate-dicts/
 
 annotate-dicts: build-annotate-dicts
 	ASSETS_DIR=$(ASSETS_DIR) ./hack/annotate-dicts.sh

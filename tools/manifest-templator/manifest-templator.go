@@ -28,19 +28,17 @@ import (
 	"strconv"
 	"strings"
 
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-
 	"github.com/ghodss/yaml"
-
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
-	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
-
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
 )
 
 var (
@@ -74,6 +72,8 @@ var (
 	sspVersion              = flag.String("ssp-version", "", "SSP operator version")
 	hppoVersion             = flag.String("hppo-version", "", "HPP operator version")
 	aaqVersion              = flag.String("aaq-version", "", "AAQ operator version")
+	passtImage              = flag.String("network-passt-binding-image-name", "", "Passt binding image")
+	passtCNIImage           = flag.String("network-passt-binding-cni-image-name", "", "Passt binding cni image")
 	_                       = flag.String("primary-udn-binding-image-name", "", "deprecated. This flag is ignored")
 	apiSources              = flag.String("api-sources", cwd+"/...", "Project sources")
 )
@@ -423,6 +423,8 @@ func getOperatorParameters() *components.DeploymentOperatorParams {
 		SspVersion:             *sspVersion,
 		HppoVersion:            *hppoVersion,
 		AaqVersion:             *aaqVersion,
+		PasstImage:             *passtImage,
+		PasstCNIImage:          *passtCNIImage,
 		Env:                    []corev1.EnvVar{},
 	}
 	return params

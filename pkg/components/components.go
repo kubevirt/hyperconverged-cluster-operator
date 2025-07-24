@@ -13,6 +13,7 @@ import (
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -51,10 +52,6 @@ const (
 
 	kubevirtProjectName = "KubeVirt project"
 	rbacVersionV1       = "rbac.authorization.k8s.io/v1"
-
-	// labels to apply network policies:
-	allowEgressToDNSAndAPIServerLabel  = "hco.kubevirt.io/allow-access-cluster-services"
-	allowIngressToMetricsEndpointLabel = "hco.kubevirt.io/allow-prometheus-access"
 )
 
 var deploymentType = metav1.TypeMeta{
@@ -69,6 +66,8 @@ type DeploymentOperatorParams struct {
 	CliDownloadsImage      string
 	KVUIPluginImage        string
 	KVUIProxyImage         string
+	PasstImage             string
+	PasstCNIImage          string
 	ImagePullPolicy        string
 	ConversionContainer    string
 	VmwareContainer        string
@@ -297,6 +296,14 @@ func buildEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 			Name:  util.KVUIProxyImageEnvV,
 			Value: params.KVUIProxyImage,
 		},
+		{
+			Name:  util.PasstImageEnvV,
+			Value: params.PasstImage,
+		},
+		{
+			Name:  util.PasstCNIImageEnvV,
+			Value: params.PasstCNIImage,
+		},
 	}, params.Env...)
 
 	if params.KvVirtLancherOsVersion != "" {
@@ -369,8 +376,8 @@ func getLabels(name, hcoKvIoVersion string) map[string]string {
 func getLabelsWithNetworkPolicies(deploymentName string, params *DeploymentOperatorParams) map[string]string {
 	labels := getLabels(deploymentName, params.HcoKvIoVersion)
 	if params.AddNetworkPolicyLabels {
-		labels[allowEgressToDNSAndAPIServerLabel] = "true"
-		labels[allowIngressToMetricsEndpointLabel] = "true"
+		labels[util.AllowEgressToDNSAndAPIServerLabel] = "true"
+		labels[util.AllowIngressToMetricsEndpointLabel] = "true"
 	}
 
 	return labels
@@ -472,6 +479,7 @@ func GetDeploymentSpecWebhook(params *DeploymentOperatorParams) appsv1.Deploymen
 						SecurityContext:          GetStdContainerSecurityContext(),
 						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 						Ports: []corev1.ContainerPort{
+							getWebhookPort(),
 							getMetricsPort(),
 						},
 					},
@@ -550,7 +558,7 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		},
 		{
 			APIGroups: stringListToSlice("apps"),
-			Resources: stringListToSlice("deployments", "replicasets"),
+			Resources: stringListToSlice("deployments", "replicasets", "daemonsets"),
 			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
 		roleWithAllPermissions("rbac.authorization.k8s.io", stringListToSlice("roles", "rolebindings")),
@@ -634,6 +642,26 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			APIGroups: stringListToSlice("monitoring.coreos.com"),
 			Resources: stringListToSlice("alertmanagers", "alertmanagers/api"),
 			Verbs:     stringListToSlice("get", "list", "create", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice(""),
+			Resources: stringListToSlice("serviceaccounts"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice("k8s.cni.cncf.io"),
+			Resources: stringListToSlice("network-attachment-definitions"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice("security.openshift.io"),
+			Resources: stringListToSlice("securitycontextconstraints"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice(networkingv1.GroupName),
+			Resources: stringListToSlice("networkpolicies"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
 	}
 }
@@ -1185,6 +1213,14 @@ func getMetricsPort() corev1.ContainerPort {
 	return corev1.ContainerPort{
 		Name:          util.MetricsPortName,
 		ContainerPort: util.MetricsPort,
+		Protocol:      corev1.ProtocolTCP,
+	}
+}
+
+func getWebhookPort() corev1.ContainerPort {
+	return corev1.ContainerPort{
+		Name:          util.WebhookPortName,
+		ContainerPort: util.WebhookPort,
 		Protocol:      corev1.ProtocolTCP,
 	}
 }

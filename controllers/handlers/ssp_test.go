@@ -13,6 +13,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	gomegatypes "github.com/onsi/gomega/types"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -43,12 +44,14 @@ var _ = Describe("SSP Operands", func() {
 
 	origDICTMap := dataImportCronTemplateHardCodedMap
 	origGetWorkloadsArchFunc := nodeinfo.GetWorkloadsArchitectures
+	origGetControlPlaneArchFunc := nodeinfo.GetControlPlaneArchitectures
 
 	BeforeEach(func() {
 		dataImportCronTemplateHardCodedMap = nil
 		DeferCleanup(func() {
 			dataImportCronTemplateHardCodedMap = origDICTMap
 			nodeinfo.GetWorkloadsArchitectures = origGetWorkloadsArchFunc
+			nodeinfo.GetControlPlaneArchitectures = origGetControlPlaneArchFunc
 		})
 	})
 
@@ -213,6 +216,87 @@ var _ = Describe("SSP Operands", func() {
 
 			Expect(expectedResource.Spec.TokenGenerationService).ToNot(BeNil())
 			Expect(expectedResource.Spec.TokenGenerationService.Enabled).To(BeTrue())
+		})
+
+		DescribeTable("should copy the HC's EnableMultiArchBootImageImport feature gate, to SSP's EnableMultipleArchitectures field", func(hcFG *bool, matcher gomegatypes.GomegaMatcher) {
+			hco.Spec.FeatureGates.EnableMultiArchBootImageImport = hcFG
+
+			ssp, _, err := NewSSP(hco)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ssp.Spec.EnableMultipleArchitectures).To(matcher)
+		},
+			Entry("when HC's EnableMultiArchBootImageImport is nil", nil, BeNil()),
+			Entry("when HC's EnableMultiArchBootImageImport is false", ptr.To(false), HaveValue(BeFalse())),
+			Entry("when HC's EnableMultiArchBootImageImport is true", ptr.To(true), HaveValue(BeTrue())),
+		)
+
+		Context("SSP's Cluster filed", func() {
+			It("should set Cluster field to the HC's Cluster field", func() {
+				nodeinfo.GetControlPlaneArchitectures = func() []string {
+					return []string{"cparch1", "cparch2"}
+				}
+
+				nodeinfo.GetWorkloadsArchitectures = func() []string {
+					return []string{"wlarch1", "wlarch2", "wlarch3"}
+				}
+
+				ssp, _, err := NewSSP(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ssp.Spec.Cluster).ToNot(BeNil())
+				Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(HaveLen(2))
+				Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(ConsistOf("cparch1", "cparch2"))
+				Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(HaveLen(3))
+				Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(ConsistOf("wlarch1", "wlarch2", "wlarch3"))
+
+			})
+
+			It("should not set Cluster.ControlPlaneArchitectures field if there are no cp nodes", func() {
+				nodeinfo.GetControlPlaneArchitectures = func() []string {
+					return nil
+				}
+
+				nodeinfo.GetWorkloadsArchitectures = func() []string {
+					return []string{"wlarch1", "wlarch2", "wlarch3"}
+				}
+
+				ssp, _, err := NewSSP(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ssp.Spec.Cluster).ToNot(BeNil())
+				Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(BeNil())
+				Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(HaveLen(3))
+				Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(ConsistOf("wlarch1", "wlarch2", "wlarch3"))
+			})
+
+			It("should not set Cluster.WorkloadArchitectures field if there are no wl nodes", func() {
+				nodeinfo.GetControlPlaneArchitectures = func() []string {
+					return []string{"cparch1", "cparch2"}
+				}
+
+				nodeinfo.GetWorkloadsArchitectures = func() []string {
+					return nil
+				}
+
+				ssp, _, err := NewSSP(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ssp.Spec.Cluster).ToNot(BeNil())
+				Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(HaveLen(2))
+				Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(ConsistOf("cparch1", "cparch2"))
+				Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(BeNil())
+			})
+
+			It("should not set Cluster field if there are no nodes", func() { // should never happen, but just in case
+				nodeinfo.GetControlPlaneArchitectures = func() []string {
+					return nil
+				}
+
+				nodeinfo.GetWorkloadsArchitectures = func() []string {
+					return nil
+				}
+
+				ssp, _, err := NewSSP(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(ssp.Spec.Cluster).To(BeNil())
+			})
 		})
 
 		Context("Node placement", func() {

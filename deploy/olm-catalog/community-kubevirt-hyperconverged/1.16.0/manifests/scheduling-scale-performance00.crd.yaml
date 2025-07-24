@@ -20,6 +20,9 @@ spec:
     - jsonPath: .status.phase
       name: Phase
       type: string
+    deprecated: true
+    deprecationWarning: SSP v1beta2 is deprecated and will not be updated with new
+      functionality. It will stop being served in the next version.
     name: v1beta2
     schema:
       openAPIV3Schema:
@@ -540,6 +543,16 @@ spec:
                                               description: ImageStream is the name
                                                 of image stream for import
                                               type: string
+                                            platform:
+                                              description: Platform describes the
+                                                minimum runtime requirements of the
+                                                image
+                                              properties:
+                                                architecture:
+                                                  description: Architecture specifies
+                                                    the image target CPU architecture
+                                                  type: string
+                                              type: object
                                             pullMethod:
                                               description: PullMethod can be either
                                                 "pod" (default import), or "node"
@@ -610,6 +623,11 @@ spec:
                                               description: BackingFile is the path
                                                 to the virtual hard disk to migrate
                                                 from vCenter/ESXi
+                                              type: string
+                                            extraArgs:
+                                              description: ExtraArgs is a reference
+                                                to a ConfigMap containing extra arguments
+                                                to pass directly to the VDDK library
                                               type: string
                                             initImageURL:
                                               description: InitImageURL is an optional
@@ -1222,7 +1240,6 @@ spec:
                                             pod labels will be ignored. The default value is empty.
                                             The same key is forbidden to exist in both matchLabelKeys and labelSelector.
                                             Also, matchLabelKeys cannot be set when labelSelector isn't set.
-                                            This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                           items:
                                             type: string
                                           type: array
@@ -1237,7 +1254,6 @@ spec:
                                             pod labels will be ignored. The default value is empty.
                                             The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
                                             Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-                                            This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                           items:
                                             type: string
                                           type: array
@@ -1405,7 +1421,6 @@ spec:
                                         pod labels will be ignored. The default value is empty.
                                         The same key is forbidden to exist in both matchLabelKeys and labelSelector.
                                         Also, matchLabelKeys cannot be set when labelSelector isn't set.
-                                        This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                       items:
                                         type: string
                                       type: array
@@ -1420,7 +1435,6 @@ spec:
                                         pod labels will be ignored. The default value is empty.
                                         The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
                                         Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-                                        This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                       items:
                                         type: string
                                       type: array
@@ -1586,7 +1600,6 @@ spec:
                                             pod labels will be ignored. The default value is empty.
                                             The same key is forbidden to exist in both matchLabelKeys and labelSelector.
                                             Also, matchLabelKeys cannot be set when labelSelector isn't set.
-                                            This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                           items:
                                             type: string
                                           type: array
@@ -1601,7 +1614,6 @@ spec:
                                             pod labels will be ignored. The default value is empty.
                                             The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
                                             Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-                                            This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                           items:
                                             type: string
                                           type: array
@@ -1769,7 +1781,6 @@ spec:
                                         pod labels will be ignored. The default value is empty.
                                         The same key is forbidden to exist in both matchLabelKeys and labelSelector.
                                         Also, matchLabelKeys cannot be set when labelSelector isn't set.
-                                        This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                       items:
                                         type: string
                                       type: array
@@ -1784,7 +1795,6 @@ spec:
                                         pod labels will be ignored. The default value is empty.
                                         The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
                                         Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-                                        This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                       items:
                                         type: string
                                       type: array
@@ -2187,7 +2197,7 @@ spec:
             type: object
         type: object
     served: true
-    storage: true
+    storage: false
     subresources:
       status: {}
   - additionalPrinterColumns:
@@ -2219,6 +2229,23 @@ spec:
           spec:
             description: SSPSpec defines the desired state of SSP
             properties:
+              cluster:
+                description: Cluster specifies what node architectures are present
+                  in the cluster.
+                properties:
+                  controlPlaneArchitectures:
+                    description: ControlPlaneArchitectures is a list of control plane
+                      architectures supported by the cluster
+                    items:
+                      type: string
+                    type: array
+                  workloadArchitectures:
+                    description: WorkloadArchitectures is a list of workload architectures
+                      supported by the cluster
+                    items:
+                      type: string
+                    type: array
+                type: object
               commonTemplates:
                 description: CommonTemplates is the configuration of the common templates
                   operand
@@ -2686,6 +2713,16 @@ spec:
                                               description: ImageStream is the name
                                                 of image stream for import
                                               type: string
+                                            platform:
+                                              description: Platform describes the
+                                                minimum runtime requirements of the
+                                                image
+                                              properties:
+                                                architecture:
+                                                  description: Architecture specifies
+                                                    the image target CPU architecture
+                                                  type: string
+                                              type: object
                                             pullMethod:
                                               description: PullMethod can be either
                                                 "pod" (default import), or "node"
@@ -2756,6 +2793,11 @@ spec:
                                               description: BackingFile is the path
                                                 to the virtual hard disk to migrate
                                                 from vCenter/ESXi
+                                              type: string
+                                            extraArgs:
+                                              description: ExtraArgs is a reference
+                                                to a ConfigMap containing extra arguments
+                                                to pass directly to the VDDK library
                                               type: string
                                             initImageURL:
                                               description: InitImageURL is an optional
@@ -3040,6 +3082,11 @@ spec:
                 required:
                 - namespace
                 type: object
+              enableMultipleArchitectures:
+                description: |-
+                  EnableMultipleArchitectures enables deployment of common Templates,
+                  DataSources and DataImportCrons for multiple node architectures.
+                type: boolean
               templateValidator:
                 description: TemplateValidator is configuration of the template validator
                   operand
@@ -3339,7 +3386,6 @@ spec:
                                             pod labels will be ignored. The default value is empty.
                                             The same key is forbidden to exist in both matchLabelKeys and labelSelector.
                                             Also, matchLabelKeys cannot be set when labelSelector isn't set.
-                                            This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                           items:
                                             type: string
                                           type: array
@@ -3354,7 +3400,6 @@ spec:
                                             pod labels will be ignored. The default value is empty.
                                             The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
                                             Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-                                            This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                           items:
                                             type: string
                                           type: array
@@ -3522,7 +3567,6 @@ spec:
                                         pod labels will be ignored. The default value is empty.
                                         The same key is forbidden to exist in both matchLabelKeys and labelSelector.
                                         Also, matchLabelKeys cannot be set when labelSelector isn't set.
-                                        This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                       items:
                                         type: string
                                       type: array
@@ -3537,7 +3581,6 @@ spec:
                                         pod labels will be ignored. The default value is empty.
                                         The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
                                         Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-                                        This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                       items:
                                         type: string
                                       type: array
@@ -3703,7 +3746,6 @@ spec:
                                             pod labels will be ignored. The default value is empty.
                                             The same key is forbidden to exist in both matchLabelKeys and labelSelector.
                                             Also, matchLabelKeys cannot be set when labelSelector isn't set.
-                                            This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                           items:
                                             type: string
                                           type: array
@@ -3718,7 +3760,6 @@ spec:
                                             pod labels will be ignored. The default value is empty.
                                             The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
                                             Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-                                            This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                           items:
                                             type: string
                                           type: array
@@ -3886,7 +3927,6 @@ spec:
                                         pod labels will be ignored. The default value is empty.
                                         The same key is forbidden to exist in both matchLabelKeys and labelSelector.
                                         Also, matchLabelKeys cannot be set when labelSelector isn't set.
-                                        This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                       items:
                                         type: string
                                       type: array
@@ -3901,7 +3941,6 @@ spec:
                                         pod labels will be ignored. The default value is empty.
                                         The same key is forbidden to exist in both mismatchLabelKeys and labelSelector.
                                         Also, mismatchLabelKeys cannot be set when labelSelector isn't set.
-                                        This is a beta field and requires enabling MatchLabelKeysInPodAffinity feature gate (enabled by default).
                                       items:
                                         type: string
                                       type: array
@@ -4304,6 +4343,6 @@ spec:
             type: object
         type: object
     served: true
-    storage: false
+    storage: true
     subresources:
       status: {}
