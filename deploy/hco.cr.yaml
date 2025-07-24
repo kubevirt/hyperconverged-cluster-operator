@@ -16,6 +16,7 @@ spec:
   enableCommonBootImageImport: true
   featureGates:
     alignCPUs: false
+    decentralizedLiveMigration: false
     deployKubeSecondaryDNS: false
     disableMDevConfiguration: false
     downwardMetrics: false
