@@ -7,6 +7,7 @@ import (
 	"maps"
 	"os"
 
+	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	"github.com/machadovilaca/operator-observability/pkg/operatormetrics"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
@@ -22,6 +23,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -44,8 +46,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager/signals"
 	controllerruntimemetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
-	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
@@ -106,6 +106,7 @@ var (
 		aaqv1alpha1.AddToScheme,
 		deschedulerv1.AddToScheme,
 		netattdefv1.AddToScheme,
+		networkingv1.AddToScheme,
 	}
 )
 
@@ -342,6 +343,10 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 			Label: labelSelector,
 			Field: namespaceSelector,
 		},
+		&networkingv1.NetworkPolicy{}: {
+			Label: labelSelector,
+			Field: namespaceSelector,
+		},
 	}
 
 	cacheOptionsByObjectForDescheduler := map[client.Object]cache.ByObject{
@@ -394,7 +399,6 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 	}
 
 	return cacheOptions
-
 }
 
 func getManagerOptions(operatorNamespace string, needLeaderElection bool, ci hcoutil.ClusterInfo, scheme *apiruntime.Scheme) manager.Options {

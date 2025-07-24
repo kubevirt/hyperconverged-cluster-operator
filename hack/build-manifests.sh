@@ -78,23 +78,12 @@ function gen_csv() {
 
   # Handle important vars
   local csv="${operatorName}.${CSV_EXT}"
-  local csvWithCRDs="${operatorName}.${CSV_CRD_EXT}"
   local crds="${operatorName}.crds.yaml"
 
   # TODO: Use oc to run if cluster is available
   local dockerArgs="$CRI_BIN run --rm --entrypoint=${csvGeneratorPath} ${imagePullUrl} ${operatorArgs}"
 
-  eval $dockerArgs > $csv
-  eval $dockerArgs $dumpCRDsArg > $csvWithCRDs
-
-  # diff returns 1 when there is a diff, and there is always diff here. Added `|| :` to cancel trap here.
-  diff -u $csv $csvWithCRDs | grep -E "^\+" | sed -E 's/^\+//' | tail -n+2 > $crds || :
-
-  csplit --digits=2 --quiet --elide-empty-files \
-    --prefix="${operatorName}" \
-    --suffix-format="%02d.${CRD_EXT}" \
-    $crds \
-    "/^---$/" "{*}"
+  eval $dockerArgs $dumpCRDsArg | ${PROJECT_ROOT}/tools/manifest-splitter/manifest-splitter --operator-name="${operatorName}"
 }
 
 function create_virt_csv() {
@@ -219,6 +208,8 @@ function create_aaq_csv() {
   echo "${operatorName}"
 }
 
+(cd ${PROJECT_ROOT}/tools/manifest-splitter/ && go build)
+
 TEMPDIR=$(mktemp -d) || (echo "Failed to create temp directory" && exit 1)
 pushd $TEMPDIR
 virtFile=$(create_virt_csv)
@@ -248,13 +239,10 @@ EOM
 (cd ${PROJECT_ROOT}/tools/csv-merger/ && go build)
 hco_crds=${PROJECT_ROOT}/config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml
 (cd ${PROJECT_ROOT} && ${PROJECT_ROOT}/tools/csv-merger/csv-merger  --api-sources=${PROJECT_ROOT}/api/... --output-mode=CRDs > $hco_crds)
-csplit --digits=2 --quiet --elide-empty-files \
-  --prefix=hco \
-  --suffix-format="%02d.${CRD_EXT}" \
-  $hco_crds \
-  "/^---$/" "{*}"
+cat ${hco_crds} | ${PROJECT_ROOT}/tools/manifest-splitter/manifest-splitter --operator-name="hco"
 
 popd
+
 
 rm -fr "${CSV_DIR}"
 mkdir -p "${CSV_DIR}/metadata" "${CSV_DIR}/manifests"
@@ -322,6 +310,12 @@ else
   ENABLE_UNIQUE="false"
 fi
 
+NETWORK_POLICIES_PARAMS=""
+if [[ ${DUMP_NETWORK_POLICIES} == "true" ]]; then
+  # Dump network policies to the deploy directory
+  NETWORK_POLICIES_PARAMS="--dump-network-policies=true --deploy-k8s-dns-networkpolicy=true"
+fi
+
 # Build and merge CSVs
 CSV_DIR=${CSV_DIR}/manifests
 ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
@@ -357,9 +351,18 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --kubevirt-consoleproxy-image-name="${KUBEVIRT_CONSOLE_PROXY_IMAGE}" \
   --cli-downloads-image-name="${HCO_DOWNLOADS_IMAGE}" \
   --network-passt-binding-image-name="${NETWORK_PASST_BINDING_IMAGE}" \
-  --network-passt-binding-cni-image-name="${NETWORK_PASST_BINDING_CNI_IMAGE}" > "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}"
+  --network-passt-binding-cni-image-name="${NETWORK_PASST_BINDING_CNI_IMAGE}" \
+  ${NETWORK_POLICIES_PARAMS} \
+  > temp_manifests.yaml
+
+  ${PROJECT_ROOT}/tools/manifest-splitter/manifest-splitter \
+  --manifests-file=temp_manifests.yaml \
+  --operator-name="${OPERATOR_NAME}" \
+  --output-dir="${CSV_DIR}" \
+  --csv-extension=".v${CSV_VERSION}.${CSV_EXT}"
 
 (cd ${PROJECT_ROOT}/tools/csv-merger/ && go clean)
+(cd ${PROJECT_ROOT}/tools/manifest-splitter/ && go clean)
 
 rendered_csv="$(cat "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}")"
 rendered_keywords="$(echo "$rendered_csv" |grep 'keywords' -A 3)"

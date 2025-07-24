@@ -58,25 +58,35 @@ func NewMonitoringReconciler(ci hcoutil.ClusterInfo, cl client.Client, ee hcouti
 		owner = getDeploymentReference(deployment)
 	}
 
-	alertRuleReconciler, err := newAlertRuleReconciler(namespace, owner)
-	if err != nil {
-		logger.Error(err, "failed to create the 'PrometheusRule' reconciler")
-	}
-
 	return &MonitoringReconciler{
-		reconcilers: []MetricReconciler{
-			alertRuleReconciler,
-			newRoleReconciler(namespace, owner),
-			newRoleBindingReconciler(namespace, owner, ci),
-			newMetricServiceReconciler(namespace, owner),
-			newSecretReconciler(namespace, owner),
-			newServiceMonitorReconciler(namespace, owner),
-		},
+		reconcilers:  getReconcilers(ci, namespace, owner),
 		scheme:       scheme,
 		client:       cl,
 		namespace:    namespace,
 		eventEmitter: ee,
 	}
+}
+
+func getReconcilers(ci hcoutil.ClusterInfo, namespace string, owner metav1.OwnerReference) []MetricReconciler {
+	alertRuleReconciler, err := newAlertRuleReconciler(namespace, owner)
+	if err != nil {
+		logger.Error(err, "failed to create the 'PrometheusRule' reconciler")
+	}
+
+	reconcilers := []MetricReconciler{
+		alertRuleReconciler,
+		newRoleReconciler(namespace, owner),
+		newRoleBindingReconciler(namespace, owner, ci),
+		newMetricServiceReconciler(namespace, owner),
+		newSecretReconciler(namespace, owner),
+		newServiceMonitorReconciler(namespace, owner),
+	}
+
+	if shouldDeployNetworkPolicy(ci) {
+		reconcilers = append(reconcilers, newAlertManagerNetworkPolicyReconciler(namespace, owner, ci))
+	}
+
+	return reconcilers
 }
 
 func (r *MonitoringReconciler) Reconcile(req *common.HcoRequest, firstLoop bool) error {
@@ -212,4 +222,15 @@ func updateCommonDetails(required, existing *metav1.ObjectMeta) bool {
 	}
 
 	return true
+}
+
+func shouldDeployNetworkPolicy(ci hcoutil.ClusterInfo) bool {
+	selfPod := ci.GetPod()
+	if selfPod == nil {
+		return false
+	}
+	_, lbl1 := selfPod.Labels[hcoutil.AllowEgressToDNSAndAPIServerLabel]
+	_, lbl2 := selfPod.Labels[hcoutil.AllowIngressToMetricsEndpointLabel]
+
+	return lbl1 || lbl2
 }
