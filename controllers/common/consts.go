@@ -1,5 +1,7 @@
 package common
 
+import "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+
 const (
 	ReconcileCompleted        = "ReconcileCompleted"
 	ReconcileCompletedMessage = "Reconcile completed successfully"
@@ -10,5 +12,5 @@ const (
 	JSONPatchCNAOAnnotationName = "networkaddonsconfigs.kubevirt.io/jsonpatch"
 	JSONPatchSSPAnnotationName  = "ssp.kubevirt.io/jsonpatch"
 	// Tuning Policy annotation name
-	TuningPolicyAnnotationName = "hco.kubevirt.io/tuningPolicy"
+	TuningPolicyAnnotationName = util.HCOAnnotationPrefix + "tuningPolicy"
 )
