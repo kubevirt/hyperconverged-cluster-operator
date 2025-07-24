@@ -9,6 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	gomegatypes "github.com/onsi/gomega/types"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
@@ -1905,166 +1906,201 @@ Version: 1.2.3`)
 			})
 
 			Context("test feature gates in NewKubeVirt", func() {
-				It("should add the PersistentReservation feature gate if PersistentReservation is true in HyperConverged CR", func() {
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						PersistentReservation: ptr.To(true),
-					}
+				DescribeTable("featureGates in NewKubeVirt",
+					func(
+						modifyHC func(hc *hcov1beta1.HyperConverged),
+						matcher gomegatypes.GomegaMatcher,
+						additionalKvAssertions ...func(virt *kubevirtcorev1.KubeVirt),
+					) {
+						GinkgoHelper()
+						modifyHC(hco)
+						kv, err := NewKubeVirt(hco)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(kv.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
+						Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(matcher)
 
-					existingResource, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-					By("KV CR should contain the PersistentReservation feature gate", func() {
-						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
-						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvPersistentReservation))
-					})
-				})
+						for _, additionalKvAssertion := range additionalKvAssertions {
+							additionalKvAssertion(kv)
+						}
+					},
+					Entry("should not add the feature gates if FeatureGates field is empty",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{}
+						},
+						And(HaveLen(basicNumFgOnOpenshift), ContainElements(hardCodeKvFgs), ContainElements(sspConditionKvFgs)),
+					),
+					// PersistentReservation
+					Entry("should add the PersistentReservation feature gate if PersistentReservation is true in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								PersistentReservation: ptr.To(true),
+							}
+						},
+						ContainElement(kvPersistentReservation),
+					),
+					Entry("should not add the PersistentReservation feature gate if PersistentReservation is not set in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								PersistentReservation: nil,
+							}
+						},
+						Not(ContainElement(kvPersistentReservation)),
+					),
+					Entry("should not add the PersistentReservation feature gate if PersistentReservation is false in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								PersistentReservation: ptr.To(false),
+							}
+						},
+						Not(ContainElement(kvPersistentReservation)),
+					),
+					// DownwardMetrics
+					Entry("should add the DownwardMetrics feature gate if DownwardMetrics is true in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								DownwardMetrics: ptr.To(true),
+							}
+						},
+						ContainElement(kvDownwardMetrics),
+					),
+					Entry("should not add the DownwardMetrics feature gate if DownwardMetrics is not set in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								DownwardMetrics: nil,
+							}
+						},
+						Not(ContainElement(kvDownwardMetrics)),
+					),
+					Entry("should not add the DownwardMetrics feature gate if DownwardMetrics is false in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								DownwardMetrics: ptr.To(false),
+							}
+						},
+						Not(ContainElement(kvDownwardMetrics)),
+					),
+					// DisableMDEVConfiguration
+					Entry("should add the DisableMDEVConfiguration feature gate if DownwardMetrics is true in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								DisableMDevConfiguration: ptr.To(true),
+							}
+						},
+						ContainElement(kvDisableMDevConfig),
+					),
+					Entry("should not add the DisableMDEVConfiguration feature gate if DownwardMetrics is not set in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								DisableMDevConfiguration: nil,
+							}
+						},
+						Not(ContainElement(kvDisableMDevConfig)),
+					),
+					Entry("should not add the DisableMDEVConfiguration feature gate if DownwardMetrics is false in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								DisableMDevConfiguration: ptr.To(false),
+							}
+						},
+						Not(ContainElement(kvDisableMDevConfig)),
+					),
+					// DecentralizedLiveMigration
+					Entry("should add the DecentralizedLiveMigration feature gate if DownwardMetrics is true in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								DecentralizedLiveMigration: ptr.To(true),
+							}
+						},
+						ContainElement(kvDecentralizedLiveMigration),
+					),
+					Entry("should not add the DecentralizedLiveMigration feature gate if DownwardMetrics is not set in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								DecentralizedLiveMigration: nil,
+							}
+						},
+						Not(ContainElement(kvDecentralizedLiveMigration)),
+					),
+					Entry("should not add the DecentralizedLiveMigration feature gate if DownwardMetrics is false in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								DecentralizedLiveMigration: ptr.To(false),
+							}
+						},
+						Not(ContainElement(kvDecentralizedLiveMigration)),
+					),
+					// AlignCPUs
+					Entry("should add the AlignCPUs feature gate if DownwardMetrics is true in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								AlignCPUs: ptr.To(true),
+							}
+						},
+						ContainElement(kvAlignCPUs),
+						func(kv *kubevirtcorev1.KubeVirt) {
+							Expect(kv.Annotations).To(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
+						},
+					),
+					Entry("should not add the AlignCPUs feature gate if DownwardMetrics is false in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								AlignCPUs: ptr.To(false),
+							}
+						},
+						Not(ContainElement(kvAlignCPUs)),
+						func(kv *kubevirtcorev1.KubeVirt) {
+							Expect(kv.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
+						},
+					),
+					Entry("should not add the AlignCPUs feature gate if DownwardMetrics is not set in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								AlignCPUs: nil,
+							}
+						},
+						Not(ContainElement(kvAlignCPUs)),
+						func(kv *kubevirtcorev1.KubeVirt) {
+							Expect(kv.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
+						},
+					),
+					// PasstIPStackMigration
+					Entry("should add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is true in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "true"
+							hco.Spec.NetworkBinding = nil
+						},
+						ContainElement(kvPasstIPStackMigration),
+						func(kv *kubevirtcorev1.KubeVirt) {
+							Expect(kv.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
+							Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).NotTo(BeNil())
 
-				It("should not add the PersistentReservation feature gate if PersistentReservation is not set in HyperConverged CR", func() {
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						PersistentReservation: nil,
-					}
-
-					existingResource, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-					By("KV CR should not contain the PersistentReservation feature gate", func() {
-						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
-						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvPersistentReservation))
-					})
-				})
-
-				It("should not add the PersistentReservation feature gate if PersistentReservation is false in HyperConverged CR", func() {
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						PersistentReservation: ptr.To(false),
-					}
-
-					existingResource, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-					By("KV CR should not contain the PersistentReservation feature gate", func() {
-						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
-						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvPersistentReservation))
-					})
-				})
-
-				It("should not add the AlignCPUs feature gate if AlignCPUs is false in HyperConverged CR", func() {
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						AlignCPUs: ptr.To(false),
-					}
-
-					existingResource, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-					By("KV CR should not contain the AlignCPUs feature gate", func() {
-						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
-						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvAlignCPUs))
-					})
-
-					Expect(existingResource.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
-				})
-
-				It("should not add the AlignCPUs feature gate if AlignCPUs is not set in HyperConverged CR", func() {
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						AlignCPUs: nil,
-					}
-
-					existingResource, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-					By("KV CR should not contain the AlignCPUs feature gate", func() {
-						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
-						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvAlignCPUs))
-					})
-
-					Expect(existingResource.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
-				})
-
-				It("should add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is true in HyperConverged CR", func() {
-					hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "true"
-					hco.Spec.NetworkBinding = nil
-
-					kv, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-
-					Expect(kv.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
-					Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).NotTo(BeNil())
-
-					expectedPasstBindingPlugin := passt.NetworkBinding()
-					Expect(kv.Spec.Configuration.NetworkConfiguration.Binding[passt.BindingName]).To(Equal(expectedPasstBindingPlugin))
-					Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvPasstIPStackMigration))
-				})
-
-				It("should not add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is false in HyperConverged CR", func() {
-					hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "false"
-					hco.Spec.NetworkBinding = nil
-
-					kv, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-
-					Expect(kv.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
-					Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvPasstIPStackMigration))
-					Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).ToNot(HaveKey(passt.BindingName))
-				})
-
-				It("should not add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is not set in HyperConverged CR", func() {
-					delete(hco.Annotations, passt.DeployPasstNetworkBindingAnnotation)
-					hco.Spec.NetworkBinding = nil
-
-					kv, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-
-					Expect(kv.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
-					Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvPasstIPStackMigration))
-					Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).ToNot(HaveKey(passt.BindingName))
-				})
-
-				It("should not add the feature gates if FeatureGates field is empty", func() {
-					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{}
-
-					existingResource, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-
-					Expect(existingResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-					fgList := getKvFeatureGateList(&hco.Spec.FeatureGates, nil)
-					Expect(fgList).To(HaveLen(basicNumFgOnOpenshift))
-					Expect(fgList).To(ContainElements(hardCodeKvFgs))
-					Expect(fgList).To(ContainElements(sspConditionKvFgs))
-				})
-
-				It("should add the DownwardMetrics if feature gate DownwardMetrics is true in HyperConverged CR", func() {
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						DownwardMetrics: ptr.To(true),
-					}
-
-					existingResource, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-					By("KV CR should contain the DownwardMetrics feature gate", func() {
-						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
-						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvDownwardMetrics))
-					})
-				})
-
-				It("should no add the DownwardMetrics if feature gate DownwardMetrics is not in HyperConverged CR", func() {
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						DownwardMetrics: nil,
-					}
-
-					existingResource, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-					By("KV CR should contain the DownwardMetrics feature gate", func() {
-						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
-						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvDownwardMetrics))
-					})
-				})
-
-				It("should not add the DownwardMetrics if feature gate DownwardMetrics is set to false in HyperConverged CR", func() {
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						DownwardMetrics: ptr.To(false),
-					}
-
-					existingResource, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-					By("KV CR should not contain the DownwardMetrics feature gate", func() {
-						Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
-						Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvDownwardMetrics))
-					})
-				})
+							expectedPasstBindingPlugin := passt.NetworkBinding()
+							Expect(kv.Spec.Configuration.NetworkConfiguration.Binding[passt.BindingName]).To(Equal(expectedPasstBindingPlugin))
+						},
+					),
+					Entry("should not add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is false in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "false"
+							hco.Spec.NetworkBinding = nil
+						},
+						Not(ContainElement(kvPasstIPStackMigration)),
+						func(kv *kubevirtcorev1.KubeVirt) {
+							Expect(kv.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
+							Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).ToNot(HaveKey(passt.BindingName))
+						},
+					),
+					Entry("should not add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is not set in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							delete(hco.Annotations, passt.DeployPasstNetworkBindingAnnotation)
+							hco.Spec.NetworkBinding = nil
+						},
+						Not(ContainElement(kvPasstIPStackMigration)),
+						func(kv *kubevirtcorev1.KubeVirt) {
+							Expect(kv.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
+							Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).ToNot(HaveKey(passt.BindingName))
+						},
+					),
+				)
 			})
 
 			Context("test feature gates in KV handler", func() {
