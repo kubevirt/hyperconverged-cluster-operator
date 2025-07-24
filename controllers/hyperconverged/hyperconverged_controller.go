@@ -177,6 +177,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 			&monitoringv1.ServiceMonitor{},
 			&monitoringv1.PrometheusRule{},
 			&networkingv1.NetworkPolicy{},
+			&corev1.Secret{},
 		}...)
 	}
 	if ci.IsOpenshift() {
