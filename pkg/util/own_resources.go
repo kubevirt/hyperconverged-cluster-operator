@@ -26,7 +26,7 @@ func (or *OwnResources) GetPod() *corev1.Pod {
 	if or == nil {
 		return nil
 	}
-	return or.pod
+	return or.pod.DeepCopy()
 }
 
 // GetDeployment returns the deployment that controls the running pod, or nil if not exists

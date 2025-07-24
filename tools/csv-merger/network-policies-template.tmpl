@@ -1,0 +1,96 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hco-allow-egress-to-dns
+  namespace: {{ .Namespace }}
+spec:
+  podSelector:
+    matchExpressions:
+      - key: hco.kubevirt.io/allow-access-cluster-services
+        operator: Exists
+  policyTypes:
+    - Egress
+  egress:
+{{- range .DNSSelectors }}
+    - ports:
+        - protocol: TCP
+          port: {{.DNSPort}}
+        - protocol: UDP
+          port: {{.DNSPort}}
+      to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{.DNSNamespaceSelector}}
+          podSelector:
+            matchLabels:
+              {{.DNSPodSelectorLabel}}: {{.DNSPodSelectorVal}}
+{{- end }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hco-allow-egress-to-api-server
+  namespace: {{ .Namespace }}
+spec:
+  podSelector:
+    matchExpressions:
+      - key: hco.kubevirt.io/allow-access-cluster-services
+        operator: Exists
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - protocol: TCP
+          port: 6443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hco-allow-ingress-to-metrics-endpoint
+  namespace: {{ .Namespace }}
+spec:
+  podSelector:
+    matchExpressions:
+      - key: hco.kubevirt.io/allow-prometheus-access
+        operator: Exists
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 8443
+        - protocol: TCP
+          port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hco-allow-ingress-to-webhook
+  namespace: {{ .Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      name: hyperconverged-cluster-webhook
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: {{ .WebhookPort }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hco-allow-ingress-to-cli-dl
+  namespace: {{ .Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      name: hyperconverged-cluster-cli-download
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: {{ .CLIDownloadsPort }}
