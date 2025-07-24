@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	DeployPasstNetworkBindingAnnotation = "deployPasstNetworkBinding"
+	DeployPasstNetworkBindingAnnotation = hcoutil.HCOAnnotationPrefix + "deployPasstNetworkBinding"
 
 	BindingName = "passt"
 
