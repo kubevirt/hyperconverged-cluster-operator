@@ -136,12 +136,16 @@ The format is compatible with [vhostmd](https://github.com/vhostmd/vhostmd).
 These metrics allow third-parties diagnosing issues.
 DownwardMetrics may be exposed to the guest through a `volume` or a `virtio-serial port`.
 
-**Note**: Updates from previous versions require to enable this feature gate if the metrics was used in any 
+**Note**: Updates from previous versions requires enabling this feature gate if the metrics were used in any
 virtual machine.
+
+**Note**: this feature is in Developer Preview.
 
 **Default**: `false`
 
-### withHostPassthroughCPU Feature Gate
+**Graduation Status**: Alpha
+
+## withHostPassthroughCPU Feature Gate
 This feature gate is deprecated and is ignored.
 
 ### deployKubeSecondaryDNS Feature Gate
@@ -168,7 +172,11 @@ VMI example:
 ```
 **Note**: An important aspect of this feature is that the SCSI persistent reservation doesn't support migration. Even if you apply the reservation to an RWX PVC provisioning SCSI devices, the restriction is due to the reservation done by the initiator on the node. The VM could be migrated but not the reservation.
 
+**Note**: this feature is in Developer Preview.
+
 **Default**: `false`
+
+**Graduation Status**: Alpha
 
 ### alignCPUs Feature Gate
 Set the `alignCPUs` feature gate to enable KubeVirt
@@ -179,6 +187,33 @@ to an even parity when using emulator thread isolation.
 
 **Default**: `false`
 
+**Graduation Status**: Alpha
+
+### disableMDevConfiguration Feature Gate
+KubeVirt aims to facilitate the configuration of mediated devices on large clusters.
+
+If this is not desired, set the `disableMDevConfiguration` feature gate in order to disable this feature.
+
+**Note**: this feature is in Developer Preview.
+
+**Default**: `false`
+
+**Graduation Status**: Alpha
+
+### decentralizedLiveMigration Feature Gate
+By default, live migration is limited in its flexibility because the migration is centralized. This limits live
+migration to the same namespace and cluster. There are use cases where it would be beneficial to live migrate between
+namespaces and even between clusters. For instance for balancing VirtualMachines between clusters or promoting a VM from
+a UAT namespace to the production namespace.
+
+Set the `decentralizedLiveMigration` feature gate to true in order to enable decentralized live migration.
+
+**Note**: this feature is in Developer Preview.
+
+**Default**: `false`
+
+**Graduation Status**: Alpha
+
 ### The hco.kubevirt.io/deployPasstNetworkBinding annotation
 Set the `hco.kubevirt.io/deployPasstNetworkBinding` HyperConverged CR annotation to `true`, to deploy the needed
 configurations for kubevirt users, so they can bind their VM using a Passt Network binding.
@@ -186,6 +221,8 @@ configurations for kubevirt users, so they can bind their VM using a Passt Netwo
 **Note**: this feature is in Developer Preview.
 
 **Default**: `false` (annotation doesn't exist by default)
+
+**Graduation Status**: Alpha
 
 ### Feature Gates Example
 
