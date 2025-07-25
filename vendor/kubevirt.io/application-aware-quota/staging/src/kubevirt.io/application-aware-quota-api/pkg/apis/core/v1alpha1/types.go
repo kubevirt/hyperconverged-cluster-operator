@@ -188,10 +188,16 @@ const (
 	//VirtualResources:
 	// ResourcePodsOfVmi Launcher Pods, number.
 	ResourcePodsOfVmi corev1.ResourceName = "requests.instances/vmi"
+	// Short form of requested Launcher Pods, number.
+	ResourcePodsOfVmiShort corev1.ResourceName = "instances/vmi"
 	// Vmi CPUs, Total Threads number(Cores*Sockets*Threads).
 	ResourceRequestsVmiCPU corev1.ResourceName = "requests.cpu/vmi"
+	// Short form of requested vCPU threads for the VMI.
+	ResourceRequestsVmiCPUShort corev1.ResourceName = "cpu/vmi"
 	// Vmi Memory Ram Size, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
 	ResourceRequestsVmiMemory corev1.ResourceName = "requests.memory/vmi"
+	// Short form of requested memory for the VMI, in bytes.
+	ResourceRequestsVmiMemoryShort corev1.ResourceName = "memory/vmi"
 )
 
 // AAQPriorityClass defines the priority class of the AAQ control plane.
