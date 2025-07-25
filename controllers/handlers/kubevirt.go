@@ -145,11 +145,12 @@ var (
 
 // KubeVirt feature gates that are exposed in HCO API
 const (
-	kvDownwardMetrics       = "DownwardMetrics"
-	kvDisableMDevConfig     = "DisableMDEVConfiguration"
-	kvPersistentReservation = "PersistentReservation"
-	kvAlignCPUs             = "AlignCPUs"
-	kvPasstIPStackMigration = "PasstIPStackMigration"
+	kvDownwardMetrics            = "DownwardMetrics"
+	kvDisableMDevConfig          = "DisableMDEVConfiguration"
+	kvPersistentReservation      = "PersistentReservation"
+	kvAlignCPUs                  = "AlignCPUs"
+	kvPasstIPStackMigration      = "PasstIPStackMigration"
+	kvDecentralizedLiveMigration = "DecentralizedLiveMigration"
 )
 
 // CPU Plugin default values
@@ -847,17 +848,21 @@ func hcoConfig2KvConfig(
 func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, annotations map[string]string) []string {
 	fgs := make([]string, 0, 2)
 
-	if featureGates.DownwardMetrics != nil && *featureGates.DownwardMetrics {
+	if ptr.Deref(featureGates.DownwardMetrics, false) {
 		fgs = append(fgs, kvDownwardMetrics)
 	}
-	if featureGates.DisableMDevConfiguration != nil && *featureGates.DisableMDevConfiguration {
+	if ptr.Deref(featureGates.DisableMDevConfiguration, false) {
 		fgs = append(fgs, kvDisableMDevConfig)
 	}
-	if featureGates.PersistentReservation != nil && *featureGates.PersistentReservation {
+	if ptr.Deref(featureGates.PersistentReservation, false) {
 		fgs = append(fgs, kvPersistentReservation)
 	}
-	if featureGates.AlignCPUs != nil && *featureGates.AlignCPUs {
+	if ptr.Deref(featureGates.AlignCPUs, false) {
 		fgs = append(fgs, kvAlignCPUs)
+	}
+
+	if ptr.Deref(featureGates.DecentralizedLiveMigration, false) {
+		fgs = append(fgs, kvDecentralizedLiveMigration)
 	}
 
 	if annotations[passt.DeployPasstNetworkBindingAnnotation] == "true" {

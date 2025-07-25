@@ -340,6 +340,11 @@ func (in *HyperConvergedFeatureGates) DeepCopyInto(out *HyperConvergedFeatureGat
 		*out = new(bool)
 		**out = **in
 	}
+	if in.DecentralizedLiveMigration != nil {
+		in, out := &in.DecentralizedLiveMigration, &out.DecentralizedLiveMigration
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
