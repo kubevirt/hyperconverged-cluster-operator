@@ -290,8 +290,8 @@ github.com/openshift/cluster-kube-descheduler-operator v0.0.0-20250410114548-481
 github.com/openshift/cluster-kube-descheduler-operator v0.0.0-20250410114548-481d56a6c34e/go.mod h1:wl2qvwuZU+YWNingOkAzabrH5BJwd4OhUH5FAtOG00U=
 github.com/openshift/custom-resource-status v1.1.2 h1:C3DL44LEbvlbItfd8mT5jWrqPfHnSOQoQf/sypqA6A4=
 github.com/openshift/custom-resource-status v1.1.2/go.mod h1:DB/Mf2oTeiAmVVX1gN+NEqweonAPY0TKUwADizj8+ZA=
-github.com/openshift/library-go v0.0.0-20250402180609-ce2ba53fb2a4 h1:MDnTCGqFUULZ4+0fr0sQYlB80yTun8nEZ062azvFSCk=
-github.com/openshift/library-go v0.0.0-20250402180609-ce2ba53fb2a4/go.mod h1:DAa3BGl0CFtkfJn/g5rU8kDDTErfMVA/QlFm4cvU+MI=
+github.com/openshift/library-go v0.0.0-20250725103737-7f9bc3eb865a h1:wZ0M/4DgILzW+8NKcARzBSG7w/BlSjtjQlBUj/VCk+0=
+github.com/openshift/library-go v0.0.0-20250725103737-7f9bc3eb865a/go.mod h1:tptKNust9MdRI0p90DoBSPHIrBa9oh+Rok59tF0vT8c=
 github.com/operator-framework/api v0.32.0 h1:LZSZr7at3NrjsjwQVNsYD+04o5wMq75jrR0dMYiIIH8=
 github.com/operator-framework/api v0.32.0/go.mod h1:OGJo6HUYxoQwpGaLr0lPJzSek51RiXajJSSa8Jzjvp8=
 github.com/operator-framework/operator-lib v0.19.0 h1:az6ogYj21rtU0SF9uYctRLyKp2dtlqTsmpfehFy6Ce8=
