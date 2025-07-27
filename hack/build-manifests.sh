@@ -361,6 +361,8 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   --output-dir="${CSV_DIR}" \
   --csv-extension=".v${CSV_VERSION}.${CSV_EXT}"
 
+rm -f temp_manifests.yaml
+
 (cd ${PROJECT_ROOT}/tools/csv-merger/ && go clean)
 (cd ${PROJECT_ROOT}/tools/manifest-splitter/ && go clean)
 

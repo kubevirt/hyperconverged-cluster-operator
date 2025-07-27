@@ -438,10 +438,13 @@ func writeOperatorCR() {
 }
 
 func writeOperatorCRD() {
-	operatorCrd, err := os.Create(path.Join(*deployDir, "crds/hco.crd.yaml"))
+	crd, err := components.GetOperatorCRD(*apiSources)
 	check(err)
-	defer operatorCrd.Close()
-	check(util.MarshallObject(components.GetOperatorCRD(*apiSources), operatorCrd))
+
+	crdFile, err := os.Create(path.Join(*deployDir, "crds/hco.crd.yaml"))
+	check(err)
+	defer crdFile.Close()
+	check(util.MarshallObject(crd, crdFile))
 }
 
 func writeOperatorDeploymentsAndServices(deployments []appsv1.Deployment, services []corev1.Service) {
