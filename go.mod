@@ -21,7 +21,7 @@ require (
 	github.com/openshift/api v3.9.1-0.20190517100836-d5b34b957e91+incompatible
 	github.com/openshift/cluster-kube-descheduler-operator v0.0.0-20250410114548-481d56a6c34e
 	github.com/openshift/custom-resource-status v1.1.2
-	github.com/openshift/library-go v0.0.0-20250402180609-ce2ba53fb2a4
+	github.com/openshift/library-go v0.0.0-20250725103737-7f9bc3eb865a
 	github.com/operator-framework/api v0.32.0
 	github.com/operator-framework/operator-lib v0.19.0
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.83.0
