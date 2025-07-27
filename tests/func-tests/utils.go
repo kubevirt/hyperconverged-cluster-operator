@@ -196,6 +196,19 @@ func PatchHCO(ctx context.Context, cli client.Client, patchBytes []byte) error {
 	return cli.Patch(ctx, hco, patch)
 }
 
+// PatchMergeHCO patches the HCO CR using a DynamicClient, it can return errors on failures
+func PatchMergeHCO(ctx context.Context, cli client.Client, patchBytes []byte) error {
+	patch := client.RawPatch(types.MergePatchType, patchBytes)
+	hco := &v1beta1.HyperConverged{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      hcoutil.HyperConvergedName,
+			Namespace: InstallNamespace,
+		},
+	}
+
+	return cli.Patch(ctx, hco, patch)
+}
+
 func RestoreDefaults(ctx context.Context, cli client.Client) {
 	Eventually(func(ctx context.Context) error {
 		return PatchHCO(ctx, cli, []byte(`[{"op": "replace", "path": "/spec", "value": {}}]`))
