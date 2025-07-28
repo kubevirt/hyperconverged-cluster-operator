@@ -20,7 +20,9 @@
 package main
 
 import (
+	"bytes"
 	"flag"
+	"io"
 	"log"
 	"os"
 	"path"
@@ -47,7 +49,6 @@ var (
 
 // flags for the command line arguments we accept
 var (
-	cwd, _                  = os.Getwd()
 	deployDir               = flag.String("deploy-dir", "deploy", "Directory where manifests should be written")
 	cnaCsv                  = flag.String("cna-csv", "", "Cluster Network Addons CSV string")
 	virtCsv                 = flag.String("virt-csv", "", "KubeVirt CSV string")
@@ -75,7 +76,7 @@ var (
 	passtImage              = flag.String("network-passt-binding-image-name", "", "Passt binding image")
 	passtCNIImage           = flag.String("network-passt-binding-cni-image-name", "", "Passt binding cni image")
 	_                       = flag.String("primary-udn-binding-image-name", "", "deprecated. This flag is ignored")
-	apiSources              = flag.String("api-sources", cwd+"/...", "Project sources")
+	_                       = flag.String("api-sources", "", "ignored")
 )
 
 // check handles errors
@@ -438,13 +439,13 @@ func writeOperatorCR() {
 }
 
 func writeOperatorCRD() {
-	crd, err := components.GetOperatorCRD(*apiSources)
-	check(err)
-
 	crdFile, err := os.Create(path.Join(*deployDir, "crds/hco.crd.yaml"))
 	check(err)
 	defer crdFile.Close()
-	check(util.MarshallObject(crd, crdFile))
+
+	buff := bytes.NewBuffer(crdBytes)
+	_, err = io.Copy(crdFile, buff)
+	check(err)
 }
 
 func writeOperatorDeploymentsAndServices(deployments []appsv1.Deployment, services []corev1.Service) {
