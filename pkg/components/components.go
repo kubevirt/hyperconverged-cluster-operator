@@ -9,23 +9,16 @@ import (
 	"github.com/blang/semver/v4"
 	csvVersion "github.com/operator-framework/api/pkg/lib/version"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	"golang.org/x/tools/go/packages"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
-	crdgen "sigs.k8s.io/controller-tools/pkg/crd"
-	crdmarkers "sigs.k8s.io/controller-tools/pkg/crd/markers"
-	"sigs.k8s.io/controller-tools/pkg/loader"
-	"sigs.k8s.io/controller-tools/pkg/markers"
 
 	cnaoapi "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	kvapi "kubevirt.io/api/core"
@@ -725,70 +718,6 @@ func GetClusterRoleBinding(namespace string) rbacv1.ClusterRoleBinding {
 	}
 }
 
-func packageErrors(pkg *loader.Package, filterKinds ...packages.ErrorKind) error {
-	toSkip := make(map[packages.ErrorKind]struct{})
-	for _, errKind := range filterKinds {
-		toSkip[errKind] = struct{}{}
-	}
-	var outErr error
-	packages.Visit([]*packages.Package{pkg.Package}, nil, func(pkgRaw *packages.Package) {
-		for _, err := range pkgRaw.Errors {
-			if _, skip := toSkip[err.Kind]; skip {
-				continue
-			}
-			outErr = err
-		}
-	})
-	return outErr
-}
-
-const objectType = "object"
-
-func GetOperatorCRD(relPath string) (*extv1.CustomResourceDefinition, error) {
-	pkgs, err := loader.LoadRoots(relPath)
-	if err != nil {
-		return nil, err
-	}
-	reg := &markers.Registry{}
-	panicOnError(crdmarkers.Register(reg))
-
-	parser := &crdgen.Parser{
-		Collector:                  &markers.Collector{Registry: reg},
-		Checker:                    &loader.TypeChecker{},
-		GenerateEmbeddedObjectMeta: true,
-	}
-
-	crdgen.AddKnownTypes(parser)
-	if len(pkgs) == 0 {
-		panic("Failed identifying packages")
-	}
-	for _, p := range pkgs {
-		parser.NeedPackage(p)
-	}
-	groupKind := schema.GroupKind{Kind: util.HyperConvergedKind, Group: util.APIVersionGroup}
-	parser.NeedCRDFor(groupKind, nil)
-	for _, p := range pkgs {
-		err = packageErrors(p, packages.TypeError)
-		if err != nil {
-			panic(err)
-		}
-	}
-	c := parser.CustomResourceDefinitions[groupKind]
-	// enforce validation of CR name to prevent multiple CRs
-	for _, v := range c.Spec.Versions {
-		v.Schema.OpenAPIV3Schema.Properties["metadata"] = extv1.JSONSchemaProps{
-			Type: objectType,
-			Properties: map[string]extv1.JSONSchemaProps{
-				"name": {
-					Type:    "string",
-					Pattern: hcov1beta1.HyperConvergedName,
-				},
-			},
-		}
-	}
-	return &c, nil
-}
-
 func GetOperatorCR() *hcov1beta1.HyperConverged {
 	defaultScheme := runtime.NewScheme()
 	_ = hcov1beta1.AddToScheme(defaultScheme)
@@ -1227,10 +1156,4 @@ func getWebhookPort() corev1.ContainerPort {
 
 func stringListToSlice(words ...string) []string {
 	return words
-}
-
-func panicOnError(err error) {
-	if err != nil {
-		panic(err)
-	}
 }
