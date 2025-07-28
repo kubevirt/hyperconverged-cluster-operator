@@ -34,6 +34,8 @@ PROJECT_ROOT="$(readlink -e $(dirname "${BASH_SOURCE[0]}")/../)"
 source "${PROJECT_ROOT}"/hack/config
 source hack/cri-bin.sh
 
+TOOLS=${PROJECT_ROOT}/_out
+
 # update image digests
 "${PROJECT_ROOT}"/automation/digester/update_images.sh
 source "${PROJECT_ROOT}"/deploy/images.env
@@ -83,7 +85,7 @@ function gen_csv() {
   # TODO: Use oc to run if cluster is available
   local dockerArgs="$CRI_BIN run --rm --entrypoint=${csvGeneratorPath} ${imagePullUrl} ${operatorArgs}"
 
-  eval $dockerArgs $dumpCRDsArg | ${PROJECT_ROOT}/tools/manifest-splitter/manifest-splitter --operator-name="${operatorName}"
+  eval $dockerArgs $dumpCRDsArg | ${TOOLS}/manifest-splitter --operator-name="${operatorName}"
 }
 
 function create_virt_csv() {
@@ -208,6 +210,16 @@ function create_aaq_csv() {
   echo "${operatorName}"
 }
 
+function build_tools() {
+  make build-crd-creator build-csv-merger build-manifest-splitter build-manifest-templator
+}
+
+build_tools
+
+# Write HCO CRDs
+hco_crds=${PROJECT_ROOT}/config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml
+${TOOLS}/crd-creator --output-file=${hco_crds}
+
 (cd ${PROJECT_ROOT}/tools/manifest-splitter/ && go build)
 
 TEMPDIR=$(mktemp -d) || (echo "Failed to create temp directory" && exit 1)
@@ -235,11 +247,7 @@ spec:
 $keywords
 EOM
 
-# Write HCO CRDs
-(cd ${PROJECT_ROOT}/tools/csv-merger/ && go build)
-hco_crds=${PROJECT_ROOT}/config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml
-(cd ${PROJECT_ROOT} && ${PROJECT_ROOT}/tools/csv-merger/csv-merger  --api-sources=${PROJECT_ROOT}/api/... --output-mode=CRDs > $hco_crds)
-cat ${hco_crds} | ${PROJECT_ROOT}/tools/manifest-splitter/manifest-splitter --operator-name="hco"
+cat ${hco_crds} | ${TOOLS}/manifest-splitter --operator-name="hco"
 
 popd
 
@@ -273,8 +281,7 @@ for csv in "${csvs[@]}"; do
 done
 
 # Build and write deploy dir
-(cd ${PROJECT_ROOT}/tools/manifest-templator/ && go build)
-${PROJECT_ROOT}/tools/manifest-templator/manifest-templator \
+${TOOLS}/manifest-templator \
   --api-sources=${PROJECT_ROOT}/api/... \
   --cna-csv="$(<${cnaCsv})" \
   --virt-csv="$(<${virtCsv})" \
@@ -300,8 +307,6 @@ ${PROJECT_ROOT}/tools/manifest-templator/manifest-templator \
   --network-passt-binding-cni-image-name="${NETWORK_PASST_BINDING_CNI_IMAGE}" \
   --cli-downloads-image="${HCO_DOWNLOADS_IMAGE}"
 
-(cd ${PROJECT_ROOT}/tools/manifest-templator/ && go clean)
-
 if [[ "$1" == "UNIQUE"  ]]; then
   CSV_VERSION_PARAM=${CSV_VERSION}-${CSV_TIMESTAMP}
   ENABLE_UNIQUE="true"
@@ -318,7 +323,7 @@ fi
 
 # Build and merge CSVs
 CSV_DIR=${CSV_DIR}/manifests
-${PROJECT_ROOT}/tools/csv-merger/csv-merger \
+${TOOLS}/csv-merger \
   --cna-csv="$(<${cnaCsv})" \
   --virt-csv="$(<${virtCsv})" \
   --ssp-csv="$(<${sspCsv})" \
@@ -355,16 +360,13 @@ ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
   ${NETWORK_POLICIES_PARAMS} \
   > temp_manifests.yaml
 
-  ${PROJECT_ROOT}/tools/manifest-splitter/manifest-splitter \
+  ${TOOLS}/manifest-splitter \
   --manifests-file=temp_manifests.yaml \
   --operator-name="${OPERATOR_NAME}" \
   --output-dir="${CSV_DIR}" \
   --csv-extension=".v${CSV_VERSION}.${CSV_EXT}"
 
 rm -f temp_manifests.yaml
-
-(cd ${PROJECT_ROOT}/tools/csv-merger/ && go clean)
-(cd ${PROJECT_ROOT}/tools/manifest-splitter/ && go clean)
 
 rendered_csv="$(cat "${CSV_DIR}/${OPERATOR_NAME}.v${CSV_VERSION}.${CSV_EXT}")"
 rendered_keywords="$(echo "$rendered_csv" |grep 'keywords' -A 3)"

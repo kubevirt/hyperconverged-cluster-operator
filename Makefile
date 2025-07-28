@@ -58,8 +58,19 @@ build: build-operator build-csv-merger build-webhook
 build-operator: gogenerate $(SOURCES) ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-operator ./cmd/hyperconverged-cluster-operator
 
-build-csv-merger: ## Build binary from source
+build-csv-merger: generate ## Build binary from source
+	go generate ./tools/csv-merger
 	go build -ldflags="${LDFLAGS}" -o _out/csv-merger ./tools/csv-merger
+
+build-manifest-templator: generate ## Build binary from source
+	go generate ./tools/manifest-templator
+	go build -ldflags="${LDFLAGS}" -o _out/manifest-templator ./tools/manifest-templator
+
+build-crd-creator: generate
+	go build -ldflags="${LDFLAGS}" -o _out/crd-creator ./tools/crd-creator
+
+build-manifest-splitter:
+	go build -ldflags="${LDFLAGS}" -o _out/manifest-splitter ./tools/manifest-splitter
 
 build-webhook: $(SOURCES) ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-webhook ./cmd/hyperconverged-cluster-webhook
@@ -295,6 +306,9 @@ annotate-dicts: build-annotate-dicts
 		build \
 		build-operator \
 		build-csv-merger \
+		build-manifest-templator \
+		build-crd-creator \
+		build-manifest-splitter \
 		build-webhook \
 		build-manifests \
 		build-manifests-prev \
