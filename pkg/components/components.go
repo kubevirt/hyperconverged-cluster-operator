@@ -744,10 +744,10 @@ func packageErrors(pkg *loader.Package, filterKinds ...packages.ErrorKind) error
 
 const objectType = "object"
 
-func GetOperatorCRD(relPath string) *extv1.CustomResourceDefinition {
+func GetOperatorCRD(relPath string) (*extv1.CustomResourceDefinition, error) {
 	pkgs, err := loader.LoadRoots(relPath)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	reg := &markers.Registry{}
 	panicOnError(crdmarkers.Register(reg))
@@ -786,7 +786,7 @@ func GetOperatorCRD(relPath string) *extv1.CustomResourceDefinition {
 			},
 		}
 	}
-	return &c
+	return &c, nil
 }
 
 func GetOperatorCR() *hcov1beta1.HyperConverged {

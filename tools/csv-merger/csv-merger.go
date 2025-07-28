@@ -45,8 +45,9 @@ const (
 	operatorName            = "kubevirt-hyperconverged-operator"
 	CSVMode                 = "CSV"
 	CRDMode                 = "CRDs"
+	NPMode                  = "NPs"
 	almExamplesAnnotation   = "alm-examples"
-	validOutputModes        = CSVMode + "|" + CRDMode
+	validOutputModes        = CSVMode + "|" + CRDMode + "|" + NPMode
 	supported               = "supported"
 	operatorFrameworkPrefix = "operatorframework.io/"
 	mgImageAnnotation       = "operators.openshift.io/must-gather-image"
@@ -148,20 +149,20 @@ func main() {
 
 	switch *outputMode {
 	case CRDMode:
-		panicOnError(util.MarshallObject(components.GetOperatorCRD(*apiSources), os.Stdout))
+		crd, err := components.GetOperatorCRD(*apiSources)
+		panicOnError(err, "failed to generate the CRD")
+		panicOnError(util.MarshallObject(crd, os.Stdout))
 	case CSVMode:
 		getHcoCsv()
-		if *dumpNetworkPolicies {
-			if err := generateNetworkPolicies(); err != nil {
-				fmt.Fprintf(os.Stderr, "error generating network policies: %v\n", err)
-				os.Exit(1)
-			}
-		}
-
+	case NPMode:
+		*dumpNetworkPolicies = true
 	default:
 		panic("Unsupported output mode: " + *outputMode)
 	}
 
+	if *dumpNetworkPolicies {
+		panicOnError(generateNetworkPolicies())
+	}
 }
 
 func getHcoCsv() {
@@ -478,10 +479,7 @@ func addRelatedImage(images []csvv1alpha1.RelatedImage, image string) []csvv1alp
 
 func panicOnError(err error, info ...string) {
 	if err != nil {
-		moreInfo := ""
-		if len(info) > 0 {
-			moreInfo = strings.Join(info, " ")
-		}
+		moreInfo := strings.Join(info, " ")
 
 		log.Println("Error!", err, moreInfo)
 		panic(err)
