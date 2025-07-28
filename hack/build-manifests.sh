@@ -54,6 +54,7 @@ PACKAGE_NAME="community-kubevirt-hyperconverged"
 CSV_DIR="${OLM_DIR}/${PACKAGE_NAME}/${CSV_VERSION}"
 DEFAULT_CSV_GENERATOR="/usr/bin/csv-generator"
 SSP_CSV_GENERATOR="/csv-generator"
+UNIQUE="${UNIQUE:-false}"
 
 INDEX_IMAGE_DIR=${DEPLOY_DIR}/index-image
 CSV_INDEX_IMAGE_DIR="${INDEX_IMAGE_DIR}/${PACKAGE_NAME}/${CSV_VERSION}"
@@ -210,12 +211,6 @@ function create_aaq_csv() {
   echo "${operatorName}"
 }
 
-function build_tools() {
-  make build-crd-creator build-csv-merger build-manifest-splitter build-manifest-templator
-}
-
-build_tools
-
 # Write HCO CRDs
 hco_crds=${PROJECT_ROOT}/config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml
 ${TOOLS}/crd-creator --output-file=${hco_crds}
@@ -307,7 +302,7 @@ ${TOOLS}/manifest-templator \
   --network-passt-binding-cni-image-name="${NETWORK_PASST_BINDING_CNI_IMAGE}" \
   --cli-downloads-image="${HCO_DOWNLOADS_IMAGE}"
 
-if [[ "$1" == "UNIQUE"  ]]; then
+if [[ "${UNIQUE}" == "true"  ]]; then
   CSV_VERSION_PARAM=${CSV_VERSION}-${CSV_TIMESTAMP}
   ENABLE_UNIQUE="true"
 else

@@ -52,7 +52,7 @@ jobs:
 
       - name: Regenerage CSV
         if: ${{ env.CHANGED }}
-        run: ./hack/build-manifests.sh
+        run: make build-manifests
 
       - uses: peter-evans/create-pull-request@v6
         if: ${{ env.CHANGED }}
