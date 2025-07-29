@@ -27,7 +27,7 @@ LATEST_KUBEVIRT_COMMIT=$(curl -L https://storage.googleapis.com/kubevirt-prow/de
 go mod edit -require kubevirt.io/kubevirt@${LATEST_KUBEVIRT_COMMIT}
 go mod tidy
 go mod vendor
-KUBEVIRT_IMAGE=${LATEST_KUBEVIRT_IMAGE} hack/build-manifests.sh
+KUBEVIRT_IMAGE=${LATEST_KUBEVIRT_IMAGE} make build-manifests
 
 container_id=$(podman ps | grep kubevirtci | cut -d ' ' -f 1)
 registry_port=$(podman port $container_id | grep 5000 | cut -d ':' -f 2)
