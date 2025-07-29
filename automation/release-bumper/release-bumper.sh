@@ -47,7 +47,7 @@ function main {
   go mod vendor
 
   echo INFO: Executing "build-manifests.sh"...
-  ./hack/build-manifests.sh
+  make build-manifests
 }
 
 function get_current_branch() {

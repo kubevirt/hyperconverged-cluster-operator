@@ -78,7 +78,6 @@ func (i *EnvVarFlags) Set(value string) error {
 }
 
 var (
-	cwd, _              = os.Getwd()
 	outputMode          = flag.String("output-mode", CSVMode, "Working mode: "+validOutputModes)
 	cnaCsv              = flag.String("cna-csv", "", "Cluster Network Addons CSV string")
 	virtCsv             = flag.String("virt-csv", "", "KubeVirt CSV string")
@@ -120,7 +119,7 @@ var (
 	sspVersion                    = flag.String("ssp-version", "", "SSP operator version")
 	hppoVersion                   = flag.String("hppo-version", "", "HPP operator version")
 	aaqVersion                    = flag.String("aaq-version", "", "AAQ operator version")
-	apiSources                    = flag.String("api-sources", cwd+"/...", "Project sources")
+	_                             = flag.String("api-sources", "", "ignored")
 	enableUniqueSemver            = flag.Bool("enable-unique-version", false, "Insert a skipRange annotation to support unique semver in the CSV")
 	skipsList                     = flag.String("skips-list", "",
 		"Comma separated list of CSVs that can be skipped (read replaced) by this version")
@@ -149,9 +148,8 @@ func main() {
 
 	switch *outputMode {
 	case CRDMode:
-		crd, err := components.GetOperatorCRD(*apiSources)
-		panicOnError(err, "failed to generate the CRD")
-		panicOnError(util.MarshallObject(crd, os.Stdout))
+		_, err := os.Stdout.Write(crdBytes)
+		panicOnError(err)
 	case CSVMode:
 		getHcoCsv()
 	case NPMode:

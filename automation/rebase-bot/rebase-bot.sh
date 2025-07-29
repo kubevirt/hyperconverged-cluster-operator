@@ -75,7 +75,7 @@ git checkout -b $HEAD_BRANCH fork/$HEAD_BRANCH
 git rebase origin/$BASE_BRANCH
 
 # perform build-manifests and commit the changes
-./hack/build-manifests.sh
+make build-manifests
 if [[ $(git diff --name-only | wc -l) -gt 0 ]]; then
   git commit -sam "build-manifests"
 fi
