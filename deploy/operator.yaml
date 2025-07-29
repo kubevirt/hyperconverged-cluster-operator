@@ -61,7 +61,7 @@ spec:
         - name: CDI_VERSION
           value: v1.63.0-alpha.0
         - name: NETWORK_ADDONS_VERSION
-          value: v0.100.0-rc0
+          value: v0.100.0-rc1
         - name: SSP_VERSION
           value: v0.24.0-alpha.0
         - name: HPPO_VERSION
@@ -310,7 +310,7 @@ spec:
       containers:
       - env:
         - name: MULTUS_IMAGE
-          value: ghcr.io/k8snetworkplumbingwg/multus-cni@sha256:9c8f6b79653d783dd26caf30b1374368e89c4ff265ddf064941feae5c18aa2d9
+          value: ghcr.io/k8snetworkplumbingwg/multus-cni@sha256:a60a21ee1d00c9f215b0b2fa03b3d5e384ab7ddb9ea0d231d36aef220e95a69c
         - name: MULTUS_DYNAMIC_NETWORKS_CONTROLLER_IMAGE
           value: ghcr.io/k8snetworkplumbingwg/multus-dynamic-networks-controller@sha256:2a2bb32c0ea8b232b3dbe81c0323a107e8b05f8cad06704fca2efd0d993a87be
         - name: LINUX_BRIDGE_IMAGE
@@ -332,11 +332,11 @@ spec:
         - name: KUBEVIRT_IPAM_CONTROLLER_IMAGE
           value: ghcr.io/kubevirt/ipam-controller@sha256:4fdc9c77b9e683f274a31fcb7f6dbcf765799596efd93bc37512fb860f07b02f
         - name: OPERATOR_IMAGE
-          value: quay.io/kubevirt/cluster-network-addons-operator@sha256:7544347b3e8cc5f04d5ff68359848df9020e5dee0f4c28d580dc10759db3c343
+          value: quay.io/kubevirt/cluster-network-addons-operator@sha256:13d559ae4b81762af2a4bdff9fd543af948d3d9ec83e33e38a4024baa0136870
         - name: OPERATOR_NAME
           value: cluster-network-addons-operator
         - name: OPERATOR_VERSION
-          value: v0.100.0-rc0
+          value: v0.100.0-rc1
         - name: OPERATOR_NAMESPACE
           valueFrom:
             fieldRef:
@@ -356,7 +356,7 @@ spec:
           value: prometheus-k8s
         - name: RUNBOOK_URL_TEMPLATE
           value: https://kubevirt.io/monitoring/runbooks/%s
-        image: quay.io/kubevirt/cluster-network-addons-operator@sha256:7544347b3e8cc5f04d5ff68359848df9020e5dee0f4c28d580dc10759db3c343
+        image: quay.io/kubevirt/cluster-network-addons-operator@sha256:13d559ae4b81762af2a4bdff9fd543af948d3d9ec83e33e38a4024baa0136870
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:

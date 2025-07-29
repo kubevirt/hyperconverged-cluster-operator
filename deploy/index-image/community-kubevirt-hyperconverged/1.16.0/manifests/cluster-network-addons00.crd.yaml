@@ -62,6 +62,14 @@ spec:
               kubevirtIpamController:
                 description: KubevirtIpamController plugin allows to support IPAM
                   for secondary networks
+                properties:
+                  defaultNetworkNADNamespace:
+                    description: DefaultNetworkNADNamespace is the namespace of the
+                      cluster default network NetworkAttachmentDefinition exist. When
+                      a VM is attached to OVN-Kubernetes user-defined network, with
+                      persistent IPs, ipam-controller mutates the pod according to
+                      the provided default network NAD namespace.
+                    type: string
                 type: object
               linuxBridge:
                 description: LinuxBridge plugin allows users to create a bridge and
@@ -1699,6 +1707,14 @@ spec:
               kubevirtIpamController:
                 description: KubevirtIpamController plugin allows to support IPAM
                   for secondary networks
+                properties:
+                  defaultNetworkNADNamespace:
+                    description: DefaultNetworkNADNamespace is the namespace of the
+                      cluster default network NetworkAttachmentDefinition exist. When
+                      a VM is attached to OVN-Kubernetes user-defined network, with
+                      persistent IPs, ipam-controller mutates the pod according to
+                      the provided default network NAD namespace.
+                    type: string
                 type: object
               linuxBridge:
                 description: LinuxBridge plugin allows users to create a bridge and
