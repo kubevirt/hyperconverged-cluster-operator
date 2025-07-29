@@ -89,7 +89,12 @@ type MacvtapCni struct {
 }
 
 // KubevirtIpamController plugin allows to support IPAM for secondary networks
-type KubevirtIpamController struct{}
+type KubevirtIpamController struct {
+	// DefaultNetworkNADNamespace is the namespace of the cluster default network NetworkAttachmentDefinition exist.
+	// When a VM is attached to OVN-Kubernetes user-defined network, with persistent IPs, ipam-controller mutates
+	// the pod according to the provided default network NAD namespace.
+	DefaultNetworkNADNamespace string `json:"defaultNetworkNADNamespace,omitempty"`
+}
 
 // NetworkAddonsConfigStatus defines the observed state of NetworkAddonsConfig
 type NetworkAddonsConfigStatus struct {
