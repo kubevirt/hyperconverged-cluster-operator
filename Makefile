@@ -35,7 +35,7 @@ DO=eval
 export JOB_TYPE=prow
 endif
 
-sanity: generate generate-doc validate-no-offensive-lang goimport lint-metrics lint-monitoring
+sanity: generate gogenerate gogenerate-crd-creator generate-doc validate-no-offensive-lang goimport lint-metrics lint-monitoring
 	go version
 	go fmt ./...
 	go mod tidy -v
@@ -55,15 +55,13 @@ lint:
 
 build: build-operator build-csv-merger build-webhook
 
-build-operator: gogenerate $(SOURCES) ## Build binary from source
+build-operator: $(SOURCES) ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-operator ./cmd/hyperconverged-cluster-operator
 
-build-csv-merger: generate ## Build binary from source
-	go generate ./tools/csv-merger
+build-csv-merger: ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/csv-merger ./tools/csv-merger
 
-build-manifest-templator: generate ## Build binary from source
-	go generate ./tools/manifest-templator
+build-manifest-templator: ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/manifest-templator ./tools/manifest-templator
 
 build-crd-creator: generate
@@ -113,10 +111,10 @@ container-build: container-build-operator container-build-webhook container-buil
 
 build-push-multi-arch-images: build-push-multi-arch-operator-image build-push-multi-arch-webhook-image build-push-multi-arch-functest-image build-push-multi-arch-artifacts-server
 
-container-build-operator:
+container-build-operator: gogenerate gogenerate-crd-creator
 	. "hack/cri-bin.sh" && $$CRI_BIN build --platform=linux/$(ARCH) -f build/Dockerfile -t $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
 
-build-push-multi-arch-operator-image:
+build-push-multi-arch-operator-image: gogenerate gogenerate-crd-creator
 	IMAGE_NAME=$(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG) SHA=SHA DOCKER_FILE=build/Dockerfile ./hack/build-push-multi-arch-images.sh
 
 container-build-webhook:
@@ -237,8 +235,12 @@ dump-state:
 bump-kubevirtci:
 	./hack/bump-kubevirtci.sh
 
-gogenerate:
+gogenerate: generate
 	go generate ./pkg/upgradepatch
+
+gogenerate-crd-creator: generate
+	go generate ./tools/csv-merger
+	go generate ./tools/manifest-templator
 
 generate:
 	./hack/generate.sh
@@ -260,7 +262,7 @@ help: ## Show this help screen
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ''
 
-test-unit: gogenerate
+test-unit: gogenerate gogenerate gogenerate-crd-creator
 	JOB_TYPE="travis" ./hack/build-tests.sh
 
 test: test-unit
