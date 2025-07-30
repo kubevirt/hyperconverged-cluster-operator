@@ -697,6 +697,17 @@ var _ = Describe("CNA Operand", func() {
 			)
 		})
 
+		It("when running on openshift, it should override kubernetes-ipam-controller default network NAD namespace", func() {
+			getClusterInfo := hcoutil.GetClusterInfo
+			hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo { return &commontestutils.ClusterInfoMock{} }
+			defer func() { hcoutil.GetClusterInfo = getClusterInfo }()
+
+			cr, err := NewNetworkAddons(hco)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(cr.Spec.KubevirtIpamController.DefaultNetworkNADNamespace).To(Equal("openshift-ovn-kubernetes"))
+		})
+
 		It("should handle conditions", func() {
 			expectedResource, err := NewNetworkAddons(hco)
 			Expect(err).ToNot(HaveOccurred())
