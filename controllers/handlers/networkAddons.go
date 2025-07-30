@@ -139,12 +139,16 @@ func setDeployOvsAnnotation(req *common.HcoRequest, found *networkaddonsv1.Netwo
 }
 
 func NewNetworkAddons(hc *hcov1beta1.HyperConverged) (*networkaddonsv1.NetworkAddonsConfig, error) {
+	ipam := &networkaddonsshared.KubevirtIpamController{}
+	if util.GetClusterInfo().IsOpenshift() {
+		ipam.DefaultNetworkNADNamespace = "openshift-ovn-kubernetes"
+	}
 
 	cnaoSpec := networkaddonsshared.NetworkAddonsConfigSpec{
 		Multus:                 &networkaddonsshared.Multus{},
 		LinuxBridge:            &networkaddonsshared.LinuxBridge{},
 		KubeMacPool:            &networkaddonsshared.KubeMacPool{},
-		KubevirtIpamController: &networkaddonsshared.KubevirtIpamController{},
+		KubevirtIpamController: ipam,
 	}
 
 	nameServerIP, err := getKSDNameServerIP(hc.Spec.KubeSecondaryDNSNameServerIP)
