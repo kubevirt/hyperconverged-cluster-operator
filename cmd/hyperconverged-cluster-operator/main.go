@@ -260,6 +260,11 @@ func main() {
 	err = passt.CheckPasstImagesEnvExists()
 	cmdHelper.ExitOnError(err, "failed to retrieve passt env vars")
 
+	if ci.IsOpenshift() {
+		err = checkWaspAgentImageEnvExists()
+		cmdHelper.ExitOnError(err, "failed to retrieve wasp agent image env var")
+	}
+
 	logger.Info("Starting the Cmd.")
 	eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Init", "Starting the HyperConverged Pod")
 
@@ -320,6 +325,14 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 				Field: namespaceSelector,
 			},
 			&rbacv1.RoleBinding{}: {
+				Label: labelSelector,
+				Field: namespaceSelector,
+			},
+			&rbacv1.ClusterRole{}: {
+				Label: labelSelector,
+				Field: namespaceSelector,
+			},
+			&rbacv1.ClusterRoleBinding{}: {
 				Label: labelSelector,
 				Field: namespaceSelector,
 			},
@@ -443,4 +456,12 @@ func createPriorityClass(ctx context.Context, mgr manager.Manager) error {
 	}
 
 	return err
+}
+
+func checkWaspAgentImageEnvExists() error {
+	if _, exists := os.LookupEnv(hcoutil.WaspAgentImageEnvV); !exists {
+		return fmt.Errorf("%s env var not found", hcoutil.WaspAgentImageEnvV)
+	}
+
+	return nil
 }
