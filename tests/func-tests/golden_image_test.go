@@ -478,7 +478,10 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		})
 
 		It("should have the architectures in a customized common DICT the SSP CR", func(ctx context.Context) {
-			var hcCustomDict hcov1beta1.DataImportCronTemplate
+			var (
+				hcCustomDict                   hcov1beta1.DataImportCronTemplate
+				originalSupportedArchitectures string
+			)
 
 			By("modify a common DICT in the HyperConverged CR, with some supported and some unsupported architectures")
 			Eventually(func(g Gomega, ctx context.Context) {
@@ -486,6 +489,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 				g.Expect(hc.Status.DataImportCronTemplates).ToNot(BeEmpty())
 				hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
+				originalSupportedArchitectures = hc.Status.DataImportCronTemplates[0].Status.OriginalSupportedArchitectures
 
 				if hcCustomDict.Annotations == nil {
 					hcCustomDict.Annotations = make(map[string]string)
@@ -534,7 +538,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 				hcoDictStatus := hc.Status.DataImportCronTemplates[idx]
 				g.Expect(hcoDictStatus.Annotations).To(HaveKeyWithValue(handlers.MultiArchDICTAnnotation, expectedArches))
-				g.Expect(hcoDictStatus.Status.OriginalSupportedArchitectures).To(Equal(hcCustomDict.Annotations[handlers.MultiArchDICTAnnotation]))
+				g.Expect(hcoDictStatus.Status.OriginalSupportedArchitectures).To(Equal(originalSupportedArchitectures))
 				g.Expect(hcoDictStatus.Status.Conditions).To(BeEmpty())
 
 			}).WithTimeout(10 * time.Second).
@@ -662,19 +666,24 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					Should(Succeed())
 			})
 
-			It("should not add a customized common DICT to the SSP CR", func(ctx context.Context) {
+			It("when the image was changed, should not add a customized common DICT to the SSP CR", func(ctx context.Context) {
 				var hcCustomDict hcov1beta1.DataImportCronTemplate
 
 				By("modify a common DICT in the HyperConverged CR, to have no supported architectures")
 				Eventually(func(g Gomega, ctx context.Context) {
 					hc := tests.GetHCO(ctx, cli)
 
-					g.Expect(hc.Status.DataImportCronTemplates).ToNot(BeEmpty())
+					g.Expect(len(hc.Status.DataImportCronTemplates)).To(BeNumerically(">", 1))
 					hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
 
 					if hcCustomDict.Annotations == nil {
 						hcCustomDict.Annotations = make(map[string]string)
 					}
+
+					// modify the image source. use the next image in the list. Now the image source is not the same
+					// and HCO should use the customized annotation
+					nextDICT := hc.Status.DataImportCronTemplates[1].DataImportCronTemplate
+					hcCustomDict.Spec.Template.Spec.Source.Registry = nextDICT.Spec.Template.Spec.Source.Registry.DeepCopy()
 
 					hcCustomDict.Annotations[handlers.MultiArchDICTAnnotation] = "someOtherArch1,someOtherArch2"
 
@@ -713,6 +722,67 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					g.Expect(hcoDictStatus.Status.Conditions).To(HaveLen(1), "should have one condition in the DICT status")
 					g.Expect(hcoDictStatus.Status.Conditions[0].Type).To(Equal("Deployed"))
 					g.Expect(hcoDictStatus.Status.Conditions[0].Reason).To(Equal("UnsupportedArchitectures"))
+				}).WithTimeout(10 * time.Second).
+					WithPolling(500 * time.Millisecond).
+					WithContext(ctx).
+					Should(Succeed())
+			})
+
+			It("when the image not changed, should add a customized common DICT to the SSP CR", func(ctx context.Context) {
+				var (
+					hcCustomDict                   hcov1beta1.DataImportCronTemplate
+					originalSupportedArchitectures string
+				)
+
+				By("modify a common DICT in the HyperConverged CR, to have no supported architectures")
+				Eventually(func(g Gomega, ctx context.Context) {
+					hc := tests.GetHCO(ctx, cli)
+
+					g.Expect(len(hc.Status.DataImportCronTemplates)).To(BeNumerically(">", 1))
+					hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
+
+					if hcCustomDict.Annotations == nil {
+						hcCustomDict.Annotations = make(map[string]string)
+					}
+
+					originalSupportedArchitectures = hc.Status.DataImportCronTemplates[0].Status.OriginalSupportedArchitectures
+					hcCustomDict.Annotations[handlers.MultiArchDICTAnnotation] = "someOtherArch1,someOtherArch2"
+
+					hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
+
+					var err error
+					_, err = tests.UpdateHCO(ctx, cli, hc)
+					g.Expect(err).ToNot(HaveOccurred(), "failed to update HCO with custom DICT")
+
+				}).WithTimeout(10 * time.Second).
+					WithPolling(500 * time.Millisecond).
+					WithContext(ctx).
+					Should(Succeed())
+
+				By("Check that the modified DICT is in the SSP")
+				Eventually(func(g Gomega, ctx context.Context) {
+					ssp := getSSP(ctx, cli)
+					g.Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(len(expectedImages)))
+
+					idx := slices.IndexFunc(ssp.Spec.CommonTemplates.DataImportCronTemplates, func(d sspv1beta3.DataImportCronTemplate) bool {
+						return d.Name == hcCustomDict.Name
+					})
+
+					g.Expect(idx).To(BeNumerically(">", -1), "should have the custom-dict in the SSP")
+
+					hc := tests.GetHCO(ctx, cli)
+					idx = slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
+						return d.Name == hcCustomDict.Name
+					})
+					g.Expect(idx).To(BeNumerically(">", -1), "should have the %q in the HC status", hcCustomDict.Name)
+
+					By("check the we use the original annotation, not the custom one")
+					hcoDictStatus := hc.Status.DataImportCronTemplates[idx]
+					expectedAnnotation := getExpectedArchs(originalSupportedArchitectures, archs)
+					g.Expect(hcoDictStatus.Annotations).To(HaveKeyWithValue(handlers.MultiArchDICTAnnotation, expectedAnnotation))
+					g.Expect(hcoDictStatus.Status.OriginalSupportedArchitectures).To(Equal(originalSupportedArchitectures))
+
+					g.Expect(hcoDictStatus.Status.Conditions).To(BeEmpty(), "should have no conditions in the DICT status")
 				}).WithTimeout(10 * time.Second).
 					WithPolling(500 * time.Millisecond).
 					WithContext(ctx).
