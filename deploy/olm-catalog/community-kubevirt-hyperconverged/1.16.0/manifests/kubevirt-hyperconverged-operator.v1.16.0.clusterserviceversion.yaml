@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.16.0-unstable
-    createdAt: "2025-08-03 09:57:43"
+    createdAt: "2025-08-04 11:04:25"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -3176,6 +3176,8 @@ spec:
                   value: quay.io/kubevirt/network-passt-binding@sha256:5851a49a26ba84c3144d3068a0b2c348e933439a149d781ee06146ba6af0adcb
                 - name: PASST_CNI_IMAGE
                   value: quay.io/kubevirt/network-passt-binding-cni@sha256:8e9a0fe4c0096abfea49f4eb36038842621bcb770ab6358ff5a6315016b6a243
+                - name: WASP_AGENT_IMAGE
+                  value: quay.io/openshift-virtualization/wasp-agent@sha256:eabfa6a425213f520f7a9e5b81b43e8b6430779d42c5c8b1bfd48a4f1730447a
                 image: quay.io/kubevirt/hyperconverged-cluster-operator:1.16.0-unstable
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
@@ -4850,6 +4852,8 @@ spec:
     name: virt-synchronization-controller
   - image: quay.io/kubevirt/virtio-container-disk@sha256:bf2c634591d7fca1b90479785084fa108a66fe9da6777c4312bb4f57cc837faa
     name: virtio-container-disk
+  - image: quay.io/openshift-virtualization/wasp-agent@sha256:eabfa6a425213f520f7a9e5b81b43e8b6430779d42c5c8b1bfd48a4f1730447a
+    name: wasp-agent
   replaces: kubevirt-hyperconverged-operator.v1.15.0
   selector:
     matchLabels:
