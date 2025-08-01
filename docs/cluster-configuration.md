@@ -214,6 +214,16 @@ Set the `decentralizedLiveMigration` feature gate to true in order to enable dec
 
 **Graduation Status**: Alpha
 
+### enableMultiArchBootImageImport Feature Gates
+Set the `enableMultiArchBootImageImport` feature gate to true in order to enable the golden images support in
+heterogeneous clusters. See [Golden Images](#golden-images-in-heterogeneous-clusters) for more information.
+
+**Note**: this feature is in Developer Preview.
+
+**Default**: `false`
+
+**Graduation Status**: Alpha
+
 ### The hco.kubevirt.io/deployPasstNetworkBinding annotation
 Set the `hco.kubevirt.io/deployPasstNetworkBinding` HyperConverged CR annotation to `true`, to deploy the needed
 configurations for kubevirt users, so they can bind their VM using a Passt Network binding.
@@ -946,6 +956,108 @@ spec:
               url: docker://myprivateregistry/custom2
       managedDataSource: custom2
       retentionPolicy: "None" # created DataVolumes and DataSources are deleted when their DataImportCron is deleted
+```
+
+### Golden Images in Heterogeneous Clusters
+In heterogeneous clusters, where nodes have different CPU architectures, it is possible to use the same golden image, if
+the boot image supports the the CPU architecture of the cluster nodes. For example, a golden image that supports both
+`arm64` and `amd64` CPU architectures can be used on both types of nodes.
+
+Notice that this feature is on `Alpha` stage, and is not fully supported yet. Also, it is disabled by default. To 
+activate the golden images support in heterogeneous clusters, set the `spec.featureGates.enableMultiArchBootImageImport`
+field to `true`, in the HyperConverged CR. See the [feature gate documentation](#enablemultiarchbootimageimport-feature-gates)
+for more details.
+
+However, not activating this feature gate may cause virtual machine to fail to start on a node with a different CPU
+architecture than the one of the golden image. If activating this feature is not an option, it is possible to use the
+node selector to limit the workloads to run only on nodes with the desired architecture. It is possible to use the
+`kubernetes.io/arch` node label to select the nodes with the desired architecture; See [Node Placement](#node-placement)
+for more details about the workloads node selector.
+
+The rest of the section assumes the feature gate is enabled.
+
+#### Modifying a Common Golden Images in Heterogeneous Cluster
+When [modifying a common golden image](#modify-common-golden-images), if the change contains a change in the image
+source; i.e. the image is not the same as the original common golden image, then the modified DataImportCronTemplate
+object must be annotated with the `ssp.kubevirt.io/dict.architectures` annotation, with the value of a comma-separated
+list of CPU architectures that the image supports.
+
+For example, assume the following custom image support amd64 and arm64
+```yaml
+spec:
+  dataImportCronTemplates:
+  - metadata:
+      name: kubevirt-hyperconverged
+      annotations:
+        ssp.kubevirt.io/dict.architectures: "amd64,arm64"
+    spec:
+      schedule: "0 */12 * * *"
+      template:
+        spec:
+          source:
+            registry:
+                url: docker://my-private-registry/my-own-version-of-centos:8
+      managedDataSource: centos-stream8
+      ...
+```
+If the image source is the same as the original common golden image, then the annotation is not required, and if it
+exists, it will be ignored.
+
+#### Adding a Custom Golden Image in Heterogeneous Cluster
+When adding a custom golden image, the `DataImportCronTemplate` object must be annotated with the 
+`ssp.kubevirt.io/dict.architectures` annotation, with the value of a comma-separated list of CPU architectures that the
+image supports, as explained above.
+
+#### Troubleshooting and debugging
+The HyperConverged CR `status` contains the new `nodeInfo` object with two fields:
+* `controlPlaneArchitectures` contains a list of control plane node architectures.
+* `workloadsArchitectures` contains a list of workloads node architectures.
+
+The HyperConverged CR `status`, contains a list of `dataImportCronTemplates` that were created by HCO in the SSP CR.
+
+In case where a DataImportCronTemplate that does not match to any node in the cluster, the `status`, this 
+DataImportCronTemplate object will not be added to the SSP CR, but it will be in the HyperConverged CR `status` field.
+In this case, the specific DataImportCronTemplate staus will contain a condition to reflect this issue.
+
+Each DataImportCronTemplate in the HyperConverged CR `status` field will contain the `originalSupportedArchitectures` 
+field, with the original list of CPU architectures that the image supports, as defined in the
+`ssp.kubevirt.io/dict.architectures` of the DataImportCronTemplate object.
+
+Below is an example of the HyperConverged CR `status` field, with a DataImportCronTemplate object that does not match
+any node in the cluster, as reflected by the `Deployed` condition.
+The original supported architectures are `someUnsupportedArch` and `otherUnsupportedArch`, as shown in the
+`originalSupportedArchitectures` field, while the workloads node architectures are `amd64` and `arm64`, as shown in
+the `nodeInfo.workloadsArchitectures` field.
+```yaml
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+...
+status:
+  ...
+  dataImportCronTemplates:
+    - metadata:
+        annotations:
+          cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+          ssp.kubevirt.io/dict.architectures: ""
+        name: my-image
+      spec:
+        ...
+      status:
+        conditions:
+          - lastTransitionTime: "2025-07-09T11:00:30Z"
+            message: DataImportCronTemplate has no supported architectures for the current
+              cluster
+            reason: UnsupportedArchitectures
+            status: "False"
+            type: Deployed
+        originalSupportedArchitectures: someUnsupportedArch,otherUnsupportedArch
+    ...
+  nodeInfo:
+    controlPlaneArchitectures:
+      - amd64
+    workloadsArchitectures:
+      - amd64
+      - arm64
 ```
 
 ## Log verbosity
