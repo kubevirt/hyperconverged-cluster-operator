@@ -1949,201 +1949,428 @@ var _ = Describe("SSP Operands", func() {
 				})
 			})
 
-			Context("heterogeneous cluster: the EnableMultiArchBootImageImport FG", func() {
-
-				BeforeEach(func() {
-					image1.Annotations = map[string]string{
-						"testing.kubevirt.io/fake.annotation": "true",
-						MultiArchDICTAnnotation:               "amd64,arm64,s390x",
-					}
-					image2.Annotations = map[string]string{
-						"testing.kubevirt.io/fake.annotation": "true",
-						MultiArchDICTAnnotation:               "amd64,arm64,s390x",
-					}
-					image3.Annotations = map[string]string{
-						"testing.kubevirt.io/fake.annotation": "true",
-						MultiArchDICTAnnotation:               "amd64,arm64,s390x",
-					}
-					image4.Annotations = map[string]string{
-						"testing.kubevirt.io/fake.annotation": "true",
-						MultiArchDICTAnnotation:               "amd64,arm64,s390x",
-					}
-
-					dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
-						image1.Name: image1,
-						image2.Name: image2,
-					}
-
-					hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
-
-					nodeinfo.GetWorkloadsArchitectures = func() []string {
-						return []string{"amd64", "arm64", "s390x"}
-					}
-				})
-
-				It("should drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is disabled (default)", func() {
-					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-					hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(false)
-
-					dictsStatuses, err := getDataImportCronTemplates(hco)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(dictsStatuses).To(HaveLen(4))
-
-					for _, status := range dictsStatuses {
-						Expect(status.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
-						Expect(status.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
-						Expect(status.Status.Conditions).To(BeEmpty())
-					}
-
-					sspDicts := hcoDictSliceToSSP(hco, dictsStatuses)
-					Expect(sspDicts).To(HaveLen(4))
-
-					for _, dict := range sspDicts {
-						Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
-						Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
-						Expect(dict.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
-					}
-				})
-
-				It("should not drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is enabled", func() {
-					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-					hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
-
-					dictsStatuses, err := getDataImportCronTemplates(hco)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(dictsStatuses).To(HaveLen(4))
-
-					for _, status := range dictsStatuses {
-						Expect(status.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
-						Expect(status.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
-						Expect(status.Status.Conditions).To(BeEmpty())
-					}
-
-					sspDicts := hcoDictSliceToSSP(hco, dictsStatuses)
-					Expect(sspDicts).To(HaveLen(4))
-
-					for _, dict := range sspDicts {
-						Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
-						Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
-						Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
-					}
-				})
-
-				It("should remove unsupported architectures from the annotation", func() {
-					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-					hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
-
-					nodeinfo.GetWorkloadsArchitectures = func() []string {
-						return []string{"amd64", "arm64"}
-					}
-
-					image1.Annotations[MultiArchDICTAnnotation] = "amd64,s390x"
-					image2.Annotations[MultiArchDICTAnnotation] = "amd64,s390x"
-					image3.Annotations[MultiArchDICTAnnotation] = "amd64,s390x"
-					image4.Annotations[MultiArchDICTAnnotation] = "amd64,s390x"
-
-					dictsStatuses, err := getDataImportCronTemplates(hco)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(dictsStatuses).To(HaveLen(4))
-
-					for _, status := range dictsStatuses {
-						Expect(status.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
-						Expect(status.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64"))
-						Expect(status.Status.Conditions).To(BeEmpty())
-					}
-
-					sspDicts := hcoDictSliceToSSP(hco, dictsStatuses)
-					Expect(sspDicts).To(HaveLen(4))
-
-					for _, dict := range sspDicts {
-						Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
-						Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
-						Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64"))
-					}
-				})
-
-				It("should drop a DICT with no supported architectures", func() {
-					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-					hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
-
-					nodeinfo.GetWorkloadsArchitectures = func() []string {
-						return []string{"amd64", "s390x"}
-					}
-
-					image2.Annotations[MultiArchDICTAnnotation] = "arm64"
-					image4.Annotations[MultiArchDICTAnnotation] = "arm64"
-
-					dictsStatuses, err := getDataImportCronTemplates(hco)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(dictsStatuses).To(HaveLen(4))
-
-					Expect(dictsStatuses[0].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
-					Expect(dictsStatuses[0].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
-					Expect(dictsStatuses[0].Status.Conditions).To(BeEmpty())
-
-					Expect(dictsStatuses[1].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
-					Expect(dictsStatuses[1].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, ""))
-					Expect(dictsStatuses[1].Status.OriginalSupportedArchitectures).To(Equal("arm64"))
-					Expect(meta.IsStatusConditionFalse(dictsStatuses[1].Status.Conditions, dictConditionDeployedType)).To(BeTrue())
-
-					Expect(dictsStatuses[2].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
-					Expect(dictsStatuses[2].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
-					Expect(dictsStatuses[2].Status.Conditions).To(BeEmpty())
-
-					Expect(dictsStatuses[3].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
-					Expect(dictsStatuses[3].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, ""))
-					Expect(dictsStatuses[3].Status.OriginalSupportedArchitectures).To(Equal("arm64"))
-					Expect(meta.IsStatusConditionFalse(dictsStatuses[3].Status.Conditions, dictConditionDeployedType)).To(BeTrue())
-
-					sspDicts := hcoDictSliceToSSP(hco, dictsStatuses)
-					Expect(sspDicts).To(HaveLen(2))
-
-					for _, dict := range sspDicts {
-						Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
-						Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
-						Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
-					}
-				})
-
-				It("should not add the multi-arch annotation if wasn't already exist in the original DICT", func() {
-					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-					hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
-
-					nodeinfo.GetWorkloadsArchitectures = func() []string {
-						return []string{"amd64", "s390x"}
-					}
-
-					delete(image2.Annotations, MultiArchDICTAnnotation)
-					delete(image4.Annotations, MultiArchDICTAnnotation)
-
-					dictsStatuses, err := getDataImportCronTemplates(hco)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(dictsStatuses).To(HaveLen(4))
-
-					for i, dictStatus := range dictsStatuses {
-						if i%2 == 0 {
-							Expect(dictStatus.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
-							Expect(dictStatus.Status.OriginalSupportedArchitectures).To(Equal("amd64,arm64,s390x"))
-							Expect(dictStatus.Status.Conditions).To(BeEmpty())
-						} else {
-							Expect(dictStatus.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
-							Expect(dictStatus.Status.OriginalSupportedArchitectures).To(Equal(""))
-							Expect(dictStatus.Status.Conditions).To(BeEmpty())
+			Context("heterogeneous cluster", func() {
+				Context("the EnableMultiArchBootImageImport FG", func() {
+					BeforeEach(func() {
+						image1.Annotations = map[string]string{
+							"testing.kubevirt.io/fake.annotation": "true",
+							MultiArchDICTAnnotation:               "amd64,arm64,s390x",
 						}
-					}
+						image2.Annotations = map[string]string{
+							"testing.kubevirt.io/fake.annotation": "true",
+							MultiArchDICTAnnotation:               "amd64,arm64,s390x",
+						}
+						image3.Annotations = map[string]string{
+							"testing.kubevirt.io/fake.annotation": "true",
+							MultiArchDICTAnnotation:               "amd64,arm64,s390x",
+						}
+						image4.Annotations = map[string]string{
+							"testing.kubevirt.io/fake.annotation": "true",
+							MultiArchDICTAnnotation:               "amd64,arm64,s390x",
+						}
 
-					sspDicts := hcoDictSliceToSSP(hco, dictsStatuses)
-					Expect(sspDicts).To(HaveLen(4))
+						dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+							image1.Name: image1,
+							image2.Name: image2,
+						}
 
-					for i, dict := range sspDicts {
-						Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
-						Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
-						if i%2 == 0 {
-							Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
-						} else {
+						hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
+
+						nodeinfo.GetWorkloadsArchitectures = func() []string {
+							return []string{"amd64", "arm64", "s390x"}
+						}
+					})
+
+					It("should drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is disabled (default)", func() {
+						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(false)
+
+						dictsStatuses, err := getDataImportCronTemplates(hco)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(dictsStatuses).To(HaveLen(4))
+
+						for _, status := range dictsStatuses {
+							Expect(status.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+							Expect(status.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
+							Expect(status.Status.Conditions).To(BeEmpty())
+						}
+
+						sspDicts := hcoDictSliceToSSP(hco, dictsStatuses)
+						Expect(sspDicts).To(HaveLen(4))
+
+						for _, dict := range sspDicts {
+							Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+							Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
 							Expect(dict.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
 						}
-					}
+					})
+
+					It("should not drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is enabled", func() {
+						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
+
+						dictsStatuses, err := getDataImportCronTemplates(hco)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(dictsStatuses).To(HaveLen(4))
+
+						for _, status := range dictsStatuses {
+							Expect(status.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+							Expect(status.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
+							Expect(status.Status.Conditions).To(BeEmpty())
+						}
+
+						sspDicts := hcoDictSliceToSSP(hco, dictsStatuses)
+						Expect(sspDicts).To(HaveLen(4))
+
+						for _, dict := range sspDicts {
+							Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+							Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+							Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,arm64,s390x"))
+						}
+					})
+
+					It("should remove unsupported architectures from the annotation", func() {
+						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
+
+						nodeinfo.GetWorkloadsArchitectures = func() []string {
+							return []string{"amd64", "arm64"}
+						}
+
+						image1.Annotations[MultiArchDICTAnnotation] = "amd64,s390x"
+						image2.Annotations[MultiArchDICTAnnotation] = "amd64,s390x"
+						image3.Annotations[MultiArchDICTAnnotation] = "amd64,s390x"
+						image4.Annotations[MultiArchDICTAnnotation] = "amd64,s390x"
+
+						dictsStatuses, err := getDataImportCronTemplates(hco)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(dictsStatuses).To(HaveLen(4))
+
+						for _, status := range dictsStatuses {
+							Expect(status.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+							Expect(status.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64"))
+							Expect(status.Status.Conditions).To(BeEmpty())
+						}
+
+						sspDicts := hcoDictSliceToSSP(hco, dictsStatuses)
+						Expect(sspDicts).To(HaveLen(4))
+
+						for _, dict := range sspDicts {
+							Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+							Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+							Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64"))
+						}
+					})
+
+					It("should drop a DICT with no supported architectures", func() {
+						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
+
+						nodeinfo.GetWorkloadsArchitectures = func() []string {
+							return []string{"amd64", "s390x"}
+						}
+
+						image2.Annotations[MultiArchDICTAnnotation] = "arm64"
+						image4.Annotations[MultiArchDICTAnnotation] = "arm64"
+
+						dictsStatuses, err := getDataImportCronTemplates(hco)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(dictsStatuses).To(HaveLen(4))
+
+						Expect(dictsStatuses[0].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(dictsStatuses[0].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
+						Expect(dictsStatuses[0].Status.Conditions).To(BeEmpty())
+
+						Expect(dictsStatuses[1].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(dictsStatuses[1].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, ""))
+						Expect(dictsStatuses[1].Status.OriginalSupportedArchitectures).To(Equal("arm64"))
+						Expect(meta.IsStatusConditionFalse(dictsStatuses[1].Status.Conditions, dictConditionDeployedType)).To(BeTrue())
+
+						Expect(dictsStatuses[2].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(dictsStatuses[2].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
+						Expect(dictsStatuses[2].Status.Conditions).To(BeEmpty())
+
+						Expect(dictsStatuses[3].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+						Expect(dictsStatuses[3].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, ""))
+						Expect(dictsStatuses[3].Status.OriginalSupportedArchitectures).To(Equal("arm64"))
+						Expect(meta.IsStatusConditionFalse(dictsStatuses[3].Status.Conditions, dictConditionDeployedType)).To(BeTrue())
+
+						sspDicts := hcoDictSliceToSSP(hco, dictsStatuses)
+						Expect(sspDicts).To(HaveLen(2))
+
+						for _, dict := range sspDicts {
+							Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+							Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+							Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
+						}
+					})
+
+					It("should not add the multi-arch annotation if wasn't already exist in the original DICT", func() {
+						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+						hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
+
+						nodeinfo.GetWorkloadsArchitectures = func() []string {
+							return []string{"amd64", "s390x"}
+						}
+
+						delete(image2.Annotations, MultiArchDICTAnnotation)
+						delete(image4.Annotations, MultiArchDICTAnnotation)
+
+						dictsStatuses, err := getDataImportCronTemplates(hco)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(dictsStatuses).To(HaveLen(4))
+
+						for i, dictStatus := range dictsStatuses {
+							if i%2 == 0 {
+								Expect(dictStatus.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
+								Expect(dictStatus.Status.OriginalSupportedArchitectures).To(Equal("amd64,arm64,s390x"))
+								Expect(dictStatus.Status.Conditions).To(BeEmpty())
+							} else {
+								Expect(dictStatus.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
+								Expect(dictStatus.Status.OriginalSupportedArchitectures).To(Equal(""))
+								Expect(dictStatus.Status.Conditions).To(BeEmpty())
+							}
+						}
+
+						sspDicts := hcoDictSliceToSSP(hco, dictsStatuses)
+						Expect(sspDicts).To(HaveLen(4))
+
+						for i, dict := range sspDicts {
+							Expect(dict.Annotations).To(HaveKeyWithValue(CDIImmediateBindAnnotation, "true"))
+							Expect(dict.Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
+							if i%2 == 0 {
+								Expect(dict.Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
+							} else {
+								Expect(dict.Annotations).ToNot(HaveKey(MultiArchDICTAnnotation))
+							}
+						}
+					})
+				})
+
+				Context("test customizeCommonDictAnnotations", func() {
+					DescribeTable("should customize the common DICT annotations", func(modifyTargetDict, modifyCRDict func(*hcov1beta1.DataImportCronTemplate), enableMultiArchBootImageImport bool, matcher gomegatypes.GomegaMatcher) {
+						crDict, targetDict := makeDICT(1, true)
+
+						modifyTargetDict(&targetDict.DataImportCronTemplate)
+						modifyCRDict(&crDict)
+						origCrAnnotations := maps.Clone(crDict.Annotations)
+
+						customizeCommonDictAnnotations(&targetDict, crDict, enableMultiArchBootImageImport)
+						Expect(targetDict.Annotations).To(matcher)
+						Expect(crDict.Annotations).To(Equal(origCrAnnotations))
+					},
+						Entry("if enableMultiArchBootImageImport if false, just copy from CR to target; when annotations are different",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
+							},
+							false,
+							HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
+						),
+						Entry("if enableMultiArchBootImageImport if false, leave the target value; when cr annotations is missing",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
+							},
+							false,
+							HaveKeyWithValue(MultiArchDICTAnnotation, "targetVal1,targetVal2,targetVal3"),
+						),
+						Entry("if enableMultiArchBootImageImport if false, just copy from CR to target; when target annotation is missing",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
+							},
+							false,
+							HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
+						),
+						Entry("if enableMultiArchBootImageImport if false, do nothing; when both annotation are missing",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
+							},
+							false,
+							Not(HaveKey(MultiArchDICTAnnotation)),
+						),
+						Entry("if reg was not changed, and MultiArchDICTAnnotation annotation exists in target, keep it; when annotations are the same",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
+							},
+							true,
+							HaveKeyWithValue(MultiArchDICTAnnotation, "targetVal1,targetVal2,targetVal3"),
+						),
+						Entry("if reg was not changed, and MultiArchDICTAnnotation annotation exists in target, keep it; when annotations are different",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
+							},
+							true,
+							HaveKeyWithValue(MultiArchDICTAnnotation, "targetVal1,targetVal2,targetVal3"),
+						),
+						Entry("if reg was not changed, and MultiArchDICTAnnotation annotation exists in target, keep it; when annotations are missing from CR",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = map[string]string{}
+							},
+							true,
+							HaveKeyWithValue(MultiArchDICTAnnotation, "targetVal1,targetVal2,targetVal3"),
+						),
+						Entry("if reg was not changed, and MultiArchDICTAnnotation annotation exists in target, keep it; when annotations are missing from CR",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = nil
+							},
+							true,
+							HaveKeyWithValue(MultiArchDICTAnnotation, "targetVal1,targetVal2,targetVal3"),
+						),
+						Entry("if reg was not changed, and MultiArchDICTAnnotation annotation does not exist in target don't override; no target annotations",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = nil
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
+							},
+							true,
+							Not(HaveKey(MultiArchDICTAnnotation)),
+						),
+						Entry("if reg was not changed, and MultiArchDICTAnnotation annotation does not exist in target don't override; empty target annotations",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = make(map[string]string)
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
+							},
+							true,
+							Not(HaveKey(MultiArchDICTAnnotation)),
+						),
+						Entry("if reg was not changed, and MultiArchDICTAnnotation annotation does not exist in target, don't override; no MultiArchDICTAnnotation annotation in target",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = map[string]string{
+									"testing.kubevirt.io/fake.annotation": "true",
+								}
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
+							},
+							true,
+							Not(HaveKey(MultiArchDICTAnnotation)),
+						),
+						Entry("if reg was changed, and MultiArchDICTAnnotation annotation exists in CR, copy to target; when annotations are different",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
+								crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+							},
+							true,
+							HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
+						),
+						Entry("if reg was changed, and MultiArchDICTAnnotation annotation exists in CR, copy to target; when annotations are the same",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
+								crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+							},
+							true,
+							HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
+						),
+						Entry("if reg was changed, and MultiArchDICTAnnotation annotation exists in CR, copy to target; when no MultiArchDICTAnnotation is missing in target",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
+								crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+							},
+							true,
+							HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
+						),
+						Entry("if reg was changed, and MultiArchDICTAnnotation annotation exists in CR, copy to target; when no annotations in target",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = nil
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
+								crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+							},
+							true,
+							HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
+						),
+						Entry("if reg was changed, and MultiArchDICTAnnotation annotation exists in CR, copy to target; when annotations are empty in target",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = map[string]string{}
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
+								crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+							},
+							true,
+							HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
+						),
+						Entry("if reg was changed, and MultiArchDICTAnnotation annotation does not exist in CR, remove from target; when annotation exists in target",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
+								crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+							},
+							true,
+							Not(HaveKey(MultiArchDICTAnnotation)),
+						),
+						Entry("if reg was changed, and MultiArchDICTAnnotation annotation does not exist in CR, remove from target; when annotation does not exist in target",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
+								crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+							},
+							true,
+							Not(HaveKey(MultiArchDICTAnnotation)),
+						),
+						Entry("if reg was changed, and MultiArchDICTAnnotation annotation does not exist in CR, remove from target; when annotations are nil in CR",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = nil
+								crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+							},
+							true,
+							Not(HaveKey(MultiArchDICTAnnotation)),
+						),
+						Entry("if reg was changed, and MultiArchDICTAnnotation annotation does not exist in CR, remove from target; when annotations are both nil",
+							func(targetDict *hcov1beta1.DataImportCronTemplate) {
+								targetDict.Annotations = nil
+							},
+							func(crDict *hcov1beta1.DataImportCronTemplate) {
+								crDict.Annotations = nil
+								crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
+							},
+							true,
+							Not(HaveKey(MultiArchDICTAnnotation)),
+						),
+					)
 				})
 			})
 		})
@@ -2262,7 +2489,7 @@ func makeDICT(num int, CommonTemplate bool) (hcov1beta1.DataImportCronTemplate, 
 	}
 
 	return dict, hcov1beta1.DataImportCronTemplateStatus{
-		DataImportCronTemplate: dict,
+		DataImportCronTemplate: *dict.DeepCopy(),
 		Status: hcov1beta1.DataImportCronStatus{
 			CommonTemplate: CommonTemplate,
 			Modified:       false,

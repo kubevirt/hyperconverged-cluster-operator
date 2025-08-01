@@ -284,6 +284,7 @@ func getDataImportCronTemplates(hc *hcov1beta1.HyperConverged) ([]hcov1beta1.Dat
 }
 
 func getCommonDicts(list []hcov1beta1.DataImportCronTemplateStatus, crDicts map[string]hcov1beta1.DataImportCronTemplate, hc *hcov1beta1.HyperConverged) []hcov1beta1.DataImportCronTemplateStatus {
+	enableMultiArchBootImageImport := ptr.Deref(hc.Spec.FeatureGates.EnableMultiArchBootImageImport, false)
 	for dictName, commonDict := range dataImportCronTemplateHardCodedMap {
 		targetDict := hcov1beta1.DataImportCronTemplateStatus{
 			DataImportCronTemplate: *commonDict.DeepCopy(),
@@ -293,7 +294,7 @@ func getCommonDicts(list []hcov1beta1.DataImportCronTemplateStatus, crDicts map[
 		}
 
 		if crDict, found := crDicts[dictName]; found {
-			if !customizeCommonDICT(&targetDict, crDict) {
+			if !customizeCommonDICT(&targetDict, crDict, enableMultiArchBootImageImport) {
 				continue
 			}
 		} else if ns := hc.Spec.CommonBootImageNamespace; ns != nil && len(*ns) > 0 {
@@ -306,7 +307,7 @@ func getCommonDicts(list []hcov1beta1.DataImportCronTemplateStatus, crDicts map[
 	return list
 }
 
-func customizeCommonDICT(targetDict *hcov1beta1.DataImportCronTemplateStatus, crDict hcov1beta1.DataImportCronTemplate) bool {
+func customizeCommonDICT(targetDict *hcov1beta1.DataImportCronTemplateStatus, crDict hcov1beta1.DataImportCronTemplate, enableMultiArchBootImageImport bool) bool {
 	if !isDataImportCronTemplateEnabled(crDict) {
 		return false
 	}
@@ -316,18 +317,50 @@ func customizeCommonDICT(targetDict *hcov1beta1.DataImportCronTemplateStatus, cr
 		crDict.Spec.Schedule = targetDict.Spec.Schedule
 	}
 
-	if crDict.Annotations != nil {
-		if targetDict.Annotations == nil {
-			targetDict.Annotations = maps.Clone(crDict.Annotations)
-		} else {
-			maps.Copy(targetDict.Annotations, crDict.Annotations)
-		}
-	}
+	customizeCommonDictAnnotations(targetDict, crDict, enableMultiArchBootImageImport)
+
 	targetDict.Spec = crDict.Spec.DeepCopy()
 	targetDict.Namespace = crDict.Namespace
 	targetDict.Status.Modified = true
 
 	return true
+}
+
+// customizeCommonDictAnnotations updates the annotations of the target DICT, with a special handling of the MultiArch
+// DICT Annotation:
+//
+// if DICT registry was not customized, use the original common DICT annotation in the result DICT,
+// or if it's missing from the common DICT, remove it from the result DICT.
+//
+// if DICT registry was customized, use the customized DICT annotation in the result DICT, or if it's
+// missing from the customized DICT, remove it from the result DITC.
+func customizeCommonDictAnnotations(targetDict *hcov1beta1.DataImportCronTemplateStatus, crDict hcov1beta1.DataImportCronTemplate, enableMultiArchBootImageImport bool) {
+	registryModified := crDict.Spec.Template.Spec.Source.Registry != nil &&
+		!reflect.DeepEqual(crDict.Spec.Template.Spec.Source.Registry, targetDict.Spec.Template.Spec.Source.Registry)
+	crDictAnnotations := maps.Clone(crDict.Annotations)
+
+	if crDictAnnotations != nil {
+		if enableMultiArchBootImageImport && !registryModified {
+			targetSpecial, exists := targetDict.Annotations[MultiArchDICTAnnotation]
+			if !exists {
+				delete(crDictAnnotations, MultiArchDICTAnnotation)
+			} else {
+				// If the special key exists in target, keep it
+				crDictAnnotations[MultiArchDICTAnnotation] = targetSpecial
+			}
+		}
+		if targetDict.Annotations == nil {
+			targetDict.Annotations = maps.Clone(crDictAnnotations)
+		} else {
+			maps.Copy(targetDict.Annotations, crDictAnnotations)
+		}
+	}
+	if enableMultiArchBootImageImport && registryModified {
+		_, ext := crDictAnnotations[MultiArchDICTAnnotation]
+		if !ext {
+			delete(targetDict.Annotations, MultiArchDICTAnnotation)
+		}
+	}
 }
 
 func isDataImportCronTemplateEnabled(dict hcov1beta1.DataImportCronTemplate) bool {
@@ -445,7 +478,7 @@ func hcoDictToSSP(hcoDictStatus hcov1beta1.DataImportCronTemplateStatus, multiAr
 }
 
 func hcoDictToSSPSeq(hc *hcov1beta1.HyperConverged, hcoDicts iter.Seq[hcov1beta1.DataImportCronTemplateStatus]) iter.Seq[sspv1beta3.DataImportCronTemplate] {
-	multiArchEnabled := hc.Spec.FeatureGates.EnableMultiArchBootImageImport != nil && *hc.Spec.FeatureGates.EnableMultiArchBootImageImport
+	multiArchEnabled := ptr.Deref(hc.Spec.FeatureGates.EnableMultiArchBootImageImport, false)
 
 	return func(yield func(sspv1beta3.DataImportCronTemplate) bool) {
 		for hcoDict := range hcoDicts {
