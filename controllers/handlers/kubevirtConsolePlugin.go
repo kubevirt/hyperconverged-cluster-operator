@@ -8,8 +8,6 @@ import (
 	"reflect"
 	"slices"
 
-	"k8s.io/utils/ptr"
-
 	log "github.com/go-logr/logr"
 	consolev1 "github.com/openshift/api/console/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
@@ -20,6 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
@@ -129,7 +128,7 @@ func getKvUIDeployment(hc *hcov1beta1.HyperConverged, deploymentName string, ima
 		replicas = int32(1)
 	}
 
-	affinity := getPodAntiAffinity(labels[hcoutil.AppLabelComponent], infrastructureHighlyAvailable)
+	affinity := operands.GetPodAntiAffinity(labels[hcoutil.AppLabelComponent], infrastructureHighlyAvailable)
 
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -224,34 +223,6 @@ func getKvUIDeployment(hc *hcov1beta1.HyperConverged, deploymentName string, ima
 		deployment.Spec.Template.Spec.Tolerations = nil
 	}
 	return deployment
-}
-
-func getPodAntiAffinity(componentLabel string, infrastructureHighlyAvailable bool) *corev1.Affinity {
-	if infrastructureHighlyAvailable {
-		return &corev1.Affinity{
-			PodAntiAffinity: &corev1.PodAntiAffinity{
-				PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
-					{
-						Weight: 90,
-						PodAffinityTerm: corev1.PodAffinityTerm{
-							LabelSelector: &metav1.LabelSelector{
-								MatchExpressions: []metav1.LabelSelectorRequirement{
-									{
-										Key:      hcoutil.AppLabelComponent,
-										Operator: metav1.LabelSelectorOpIn,
-										Values:   []string{componentLabel},
-									},
-								},
-							},
-							TopologyKey: corev1.LabelHostname,
-						},
-					},
-				},
-			},
-		}
-	}
-
-	return nil
 }
 
 func NewKvUIPluginSvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
