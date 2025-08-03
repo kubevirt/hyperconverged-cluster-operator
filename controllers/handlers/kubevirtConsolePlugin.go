@@ -459,11 +459,7 @@ func (h consolePluginHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Obje
 }
 
 func (h consolePluginHooks) GetEmptyCr() client.Object {
-	return &consolev1.ConsolePlugin{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: h.required.Name,
-		},
-	}
+	return &consolev1.ConsolePlugin{}
 }
 
 func (consolePluginHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }

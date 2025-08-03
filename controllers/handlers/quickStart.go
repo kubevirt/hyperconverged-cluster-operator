@@ -10,7 +10,6 @@ import (
 
 	log "github.com/go-logr/logr"
 	consolev1 "github.com/openshift/api/console/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -45,11 +44,7 @@ func (h qsHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) 
 }
 
 func (h qsHooks) GetEmptyCr() client.Object {
-	return &consolev1.ConsoleQuickStart{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: h.required.Name,
-		},
-	}
+	return &consolev1.ConsoleQuickStart{}
 }
 
 func (h qsHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
