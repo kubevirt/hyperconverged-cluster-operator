@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.16.0-unstable
-    createdAt: "2025-08-01 07:30:20"
+    createdAt: "2025-08-03 09:57:43"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -368,7 +368,9 @@ spec:
           - rbac.authorization.k8s.io
           resources:
           - roles
+          - clusterroles
           - rolebindings
+          - clusterrolebindings
           verbs:
           - get
           - list

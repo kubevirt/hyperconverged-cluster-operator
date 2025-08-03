@@ -64,6 +64,65 @@ func (h *roleHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exist
 
 func (*roleHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
+// ********* Cluster Role Handler *****************************
+type newClusterRoleFunc func(hc *hcov1beta1.HyperConverged) *rbacv1.ClusterRole
+
+func NewClusterRoleHandler(Client client.Client, Scheme *runtime.Scheme, required newClusterRoleFunc) *GenericOperand {
+	return NewGenericOperand(Client, Scheme, "ClusterRole", &clusterRoleHooks{newCrFunc: required}, false)
+}
+
+type clusterRoleHooks struct {
+	newCrFunc newClusterRoleFunc
+}
+
+func (h *clusterRoleHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+	return h.newCrFunc(hc), nil
+}
+
+func (h *clusterRoleHooks) GetEmptyCr() client.Object { return &rbacv1.ClusterRole{} }
+
+func (h *clusterRoleHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
+	role, ok1 := required.(*rbacv1.ClusterRole)
+	found, ok2 := exists.(*rbacv1.ClusterRole)
+	if !ok1 || !ok2 {
+		return false, false, errors.New("can't convert to a Cluster Role")
+	}
+
+	if !util.CompareLabels(role, found) ||
+		!reflect.DeepEqual(role.Rules, found.Rules) ||
+		!reflect.DeepEqual(role.AggregationRule, found.AggregationRule) {
+
+		req.Logger.Info("Updating existing Cluster Role to its default values", "name", found.Name)
+
+		found.Rules = make([]rbacv1.PolicyRule, len(role.Rules))
+		for i := range role.Rules {
+			role.Rules[i].DeepCopyInto(&found.Rules[i])
+		}
+
+		util.MergeLabels(&role.ObjectMeta, &found.ObjectMeta)
+
+		if role.AggregationRule != nil {
+			found.AggregationRule = &rbacv1.AggregationRule{}
+
+			found.AggregationRule.ClusterRoleSelectors =
+				make([]metav1.LabelSelector, len(role.AggregationRule.ClusterRoleSelectors))
+
+			found.AggregationRule.ClusterRoleSelectors =
+				append(found.AggregationRule.ClusterRoleSelectors, role.AggregationRule.ClusterRoleSelectors...)
+		}
+
+		err := Client.Update(req.Ctx, found)
+		if err != nil {
+			return false, false, err
+		}
+		return true, !req.HCOTriggered, nil
+	}
+
+	return false, false, nil
+}
+
+func (*clusterRoleHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+
 // ********* Role Binding Handler *****************************
 
 func NewRoleBindingHandler(Client client.Client, Scheme *runtime.Scheme, required *rbacv1.RoleBinding) *GenericOperand {
@@ -112,3 +171,49 @@ func (h roleBindingHooks) UpdateCR(req *common.HcoRequest, Client client.Client,
 }
 
 func (roleBindingHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
+
+// ********* Cluster Role Binding Handler *****************************
+type newClusterRoleBindingFunc func(hc *hcov1beta1.HyperConverged) *rbacv1.ClusterRoleBinding
+
+func NewClusterRoleBindingHandler(Client client.Client, Scheme *runtime.Scheme, required newClusterRoleBindingFunc) *GenericOperand {
+	return NewGenericOperand(Client, Scheme, "ClusterRoleBinding", &clusterRoleBindingHooks{newCrFunc: required}, false)
+}
+
+type clusterRoleBindingHooks struct {
+	newCrFunc newClusterRoleBindingFunc
+}
+
+func (h clusterRoleBindingHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+	return h.newCrFunc(hc), nil
+}
+
+func (h clusterRoleBindingHooks) GetEmptyCr() client.Object { return &rbacv1.ClusterRoleBinding{} }
+
+func (h clusterRoleBindingHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
+	clusterRoleBinding, ok1 := required.(*rbacv1.ClusterRoleBinding)
+	found, ok2 := exists.(*rbacv1.ClusterRoleBinding)
+	if !ok1 || !ok2 {
+		return false, false, errors.New("can't convert to a ClusterRoleBinding")
+	}
+
+	if !util.CompareLabels(clusterRoleBinding, found) ||
+		!reflect.DeepEqual(clusterRoleBinding.Subjects, found.Subjects) ||
+		!reflect.DeepEqual(clusterRoleBinding.RoleRef, found.RoleRef) {
+		req.Logger.Info("Updating existing ClusterRoleBinding to its default values", "name", found.Name)
+
+		found.Subjects = make([]rbacv1.Subject, len(clusterRoleBinding.Subjects))
+		copy(found.Subjects, clusterRoleBinding.Subjects)
+		found.RoleRef = clusterRoleBinding.RoleRef
+		util.MergeLabels(&clusterRoleBinding.ObjectMeta, &found.ObjectMeta)
+
+		err := Client.Update(req.Ctx, found)
+		if err != nil {
+			return false, false, err
+		}
+		return true, !req.HCOTriggered, nil
+	}
+
+	return false, false, nil
+}
+
+func (clusterRoleBindingHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
