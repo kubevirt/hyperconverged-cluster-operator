@@ -341,25 +341,37 @@ func customizeCommonDictAnnotations(targetDict *hcov1beta1.DataImportCronTemplat
 
 	if crDictAnnotations != nil {
 		if enableMultiArchBootImageImport && !registryModified {
-			targetSpecial, exists := targetDict.Annotations[MultiArchDICTAnnotation]
-			if !exists {
-				delete(crDictAnnotations, MultiArchDICTAnnotation)
-			} else {
-				// If the special key exists in target, keep it
-				crDictAnnotations[MultiArchDICTAnnotation] = targetSpecial
-			}
+			adoptOrigCommonDictAnnotation(targetDict, crDictAnnotations)
 		}
-		if targetDict.Annotations == nil {
-			targetDict.Annotations = maps.Clone(crDictAnnotations)
-		} else {
-			maps.Copy(targetDict.Annotations, crDictAnnotations)
-		}
+		copyOrCloneMap(&targetDict.Annotations, crDictAnnotations)
 	}
 	if enableMultiArchBootImageImport && registryModified {
-		_, ext := crDictAnnotations[MultiArchDICTAnnotation]
-		if !ext {
-			delete(targetDict.Annotations, MultiArchDICTAnnotation)
-		}
+		adoptCRDictAnnotation(targetDict, crDictAnnotations)
+	}
+}
+
+func adoptOrigCommonDictAnnotation(targetDict *hcov1beta1.DataImportCronTemplateStatus, crDictAnnotations map[string]string) {
+	multiArchDICTAnnotation, exists := targetDict.Annotations[MultiArchDICTAnnotation]
+	if !exists {
+		delete(crDictAnnotations, MultiArchDICTAnnotation)
+	} else {
+		// If the MultiArchDICTAnnotation annotation exists in target, keep it
+		crDictAnnotations[MultiArchDICTAnnotation] = multiArchDICTAnnotation
+	}
+}
+
+func copyOrCloneMap(dst *map[string]string, src map[string]string) {
+	if *dst == nil {
+		*dst = maps.Clone(src)
+	} else {
+		maps.Copy(*dst, src)
+	}
+}
+
+func adoptCRDictAnnotation(targetDict *hcov1beta1.DataImportCronTemplateStatus, crDictAnnotations map[string]string) {
+	_, ext := crDictAnnotations[MultiArchDICTAnnotation]
+	if !ext {
+		delete(targetDict.Annotations, MultiArchDICTAnnotation)
 	}
 }
 
