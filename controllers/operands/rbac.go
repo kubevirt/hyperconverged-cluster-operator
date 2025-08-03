@@ -28,11 +28,7 @@ func (h *roleHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, erro
 	return h.required.DeepCopy(), nil
 }
 func (h *roleHooks) GetEmptyCr() client.Object {
-	return &rbacv1.Role{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: h.required.Name,
-		},
-	}
+	return &rbacv1.Role{}
 }
 func (h *roleHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
 	role := h.required
@@ -137,11 +133,7 @@ func (h roleBindingHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object
 	return h.required.DeepCopy(), nil
 }
 func (h roleBindingHooks) GetEmptyCr() client.Object {
-	return &rbacv1.RoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: h.required.Name,
-		},
-	}
+	return &rbacv1.RoleBinding{}
 }
 func (h roleBindingHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
 	configReaderRoleBinding := h.required

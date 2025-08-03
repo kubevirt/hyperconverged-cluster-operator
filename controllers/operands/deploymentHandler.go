@@ -6,7 +6,6 @@ import (
 	"sync"
 
 	appsv1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -54,11 +53,7 @@ func (h *deploymentHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Objec
 }
 
 func (h *deploymentHooks) GetEmptyCr() client.Object {
-	return &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: h.cache.Name,
-		},
-	}
+	return &appsv1.Deployment{}
 }
 
 func (h *deploymentHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
