@@ -716,7 +716,7 @@ var _ = Describe("Test data import cron template", func() {
 				Expect(dictsStatuses[1].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
 				Expect(dictsStatuses[1].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, ""))
 				Expect(dictsStatuses[1].Status.OriginalSupportedArchitectures).To(Equal("arm64"))
-				Expect(meta.IsStatusConditionFalse(dictsStatuses[1].Status.Conditions, dictConditionDeployedType)).To(BeTrue())
+				Expect(meta.IsStatusConditionFalse(dictsStatuses[1].Status.Conditions, DictConditionDeployedType)).To(BeTrue())
 
 				Expect(dictsStatuses[2].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
 				Expect(dictsStatuses[2].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, "amd64,s390x"))
@@ -725,7 +725,7 @@ var _ = Describe("Test data import cron template", func() {
 				Expect(dictsStatuses[3].Annotations).To(HaveKeyWithValue("testing.kubevirt.io/fake.annotation", "true"))
 				Expect(dictsStatuses[3].Annotations).To(HaveKeyWithValue(MultiArchDICTAnnotation, ""))
 				Expect(dictsStatuses[3].Status.OriginalSupportedArchitectures).To(Equal("arm64"))
-				Expect(meta.IsStatusConditionFalse(dictsStatuses[3].Status.Conditions, dictConditionDeployedType)).To(BeTrue())
+				Expect(meta.IsStatusConditionFalse(dictsStatuses[3].Status.Conditions, DictConditionDeployedType)).To(BeTrue())
 
 				sspDicts := HCODictSliceToSSP(hco, dictsStatuses)
 				Expect(sspDicts).To(HaveLen(2))

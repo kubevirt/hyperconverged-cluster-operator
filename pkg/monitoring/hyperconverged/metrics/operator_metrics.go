@@ -21,12 +21,21 @@ const (
 	SystemHealthStatusError
 )
 
+const (
+	counterLabelDICTName = "data_import_cron_name"
+	counterLabelDSName   = "data_source_name"
+
+	hasSupportedArchitectures   = float64(0)
+	hasNoSupportedArchitectures = float64(1)
+)
+
 var (
 	operatorMetrics = []operatormetrics.Metric{
 		overwrittenModifications,
 		unsafeModifications,
 		hyperConvergedCRExists,
 		systemHealthStatus,
+		dictWithNoSupportedArchitectures,
 	}
 
 	overwrittenModifications = operatormetrics.NewCounterVec(
@@ -57,6 +66,14 @@ var (
 			Name: "kubevirt_hco_system_health_status",
 			Help: "Indicates whether the system health status is healthy (0), warning (1), or error (2), by aggregating the conditions of HCO and its secondary resources",
 		},
+	)
+
+	dictWithNoSupportedArchitectures = operatormetrics.NewGaugeVec(
+		operatormetrics.MetricOpts{
+			Name: "kubevirt_hco_dict_with_no_supported_architectures",
+			Help: "Indicates whether the DataImportCron has supported architectures (0) or it has not (1)",
+		},
+		[]string{counterLabelDICTName, counterLabelDSName},
 	)
 )
 
@@ -132,10 +149,34 @@ func GetHCOMetricSystemHealthStatus() (float64, error) {
 	return value, nil
 }
 
+func SetDICTWithSupportedArchitectures(dictName, dsName string) {
+	dictWithNoSupportedArchitectures.WithLabelValues(getLabelsForDataImportCron(dictName, dsName)).Set(hasSupportedArchitectures)
+}
+
+func SetDICTWithNoSupportedArchitectures(dictName, dsName string) {
+	dictWithNoSupportedArchitectures.WithLabelValues(getLabelsForDataImportCron(dictName, dsName)).Set(hasNoSupportedArchitectures)
+}
+
+func IsDICTWithSupportedArchitectures(dictName, dsName string) (bool, error) {
+	dto := &ioprometheusclient.Metric{}
+	err := dictWithNoSupportedArchitectures.WithLabelValues(getLabelsForDataImportCron(dictName, dsName)).Write(dto)
+	value := dto.Gauge.GetValue()
+
+	if err != nil {
+		return false, err
+	}
+
+	return value == float64(0), nil
+}
+
 func getLabelsForObj(kind string, name string) string {
 	return strings.ToLower(kind + "/" + name)
 }
 
 func getLabelsForUnsafeAnnotation(unsafeAnnotation string) string {
 	return strings.ToLower(unsafeAnnotation)
+}
+
+func getLabelsForDataImportCron(dictName, dsName string) (string, string) {
+	return strings.ToLower(dictName), strings.ToLower(dsName)
 }

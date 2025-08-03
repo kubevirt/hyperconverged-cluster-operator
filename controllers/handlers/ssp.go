@@ -100,6 +100,8 @@ func (h *sspHooks) JustBeforeComplete(req *common.HcoRequest) {
 		req.Instance.Status.DataImportCronTemplates = h.dictStatuses
 		req.StatusDirty = true
 	}
+
+	goldenimages.CheckDataImportCronTemplates(req.Instance)
 }
 
 func NewSSP(hc *hcov1beta1.HyperConverged) (*sspv1beta3.SSP, []hcov1beta1.DataImportCronTemplateStatus, error) {
