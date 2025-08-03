@@ -14,7 +14,7 @@ import (
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
+	goldenimages "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/golden-images"
 )
 
 var (
@@ -67,9 +67,9 @@ func (hcm *HyperConvergedMutator) mutateHyperConverged(_ context.Context, req ad
 			patches = append(patches, jsonpatch.JsonPatchOperation{
 				Operation: "add",
 				Path:      fmt.Sprintf(annotationPathTemplate, index),
-				Value:     map[string]string{handlers.CDIImmediateBindAnnotation: "true"},
+				Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 			})
-		} else if _, annotationFound := dict.Annotations[handlers.CDIImmediateBindAnnotation]; !annotationFound {
+		} else if _, annotationFound := dict.Annotations[goldenimages.CDIImmediateBindAnnotation]; !annotationFound {
 			patches = append(patches, jsonpatch.JsonPatchOperation{
 				Operation: "add",
 				Path:      fmt.Sprintf(dictAnnotationPathTemplate, index),

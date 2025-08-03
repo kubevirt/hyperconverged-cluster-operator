@@ -5,6 +5,8 @@ import (
 	"maps"
 	"os"
 
+	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
+	securityv1 "github.com/openshift/api/security/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -13,9 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
-	securityv1 "github.com/openshift/api/security/v1"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
@@ -166,7 +165,7 @@ sleep 2147483647`,
 	daemonSet := NewPasstBindingCNIDaemonSetWithNameOnly(hc)
 	daemonSet.Spec = spec
 
-	affinity := getPodAntiAffinity(daemonSet.Labels[hcoutil.AppLabelComponent], nodeinfo.IsInfrastructureHighlyAvailable())
+	affinity := operands.GetPodAntiAffinity(daemonSet.Labels[hcoutil.AppLabelComponent], nodeinfo.IsInfrastructureHighlyAvailable())
 
 	if hc.Spec.Infra.NodePlacement != nil {
 		if hc.Spec.Infra.NodePlacement.NodeSelector != nil {
@@ -251,34 +250,6 @@ func NewPasstBindingCNISecurityContextConstraints(hc *hcov1beta1.HyperConverged)
 			securityv1.FSTypeAll,
 		},
 	}
-}
-
-func getPodAntiAffinity(componentLabel string, infrastructureHighlyAvailable bool) *corev1.Affinity {
-	if infrastructureHighlyAvailable {
-		return &corev1.Affinity{
-			PodAntiAffinity: &corev1.PodAntiAffinity{
-				PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
-					{
-						Weight: 90,
-						PodAffinityTerm: corev1.PodAffinityTerm{
-							LabelSelector: &metav1.LabelSelector{
-								MatchExpressions: []metav1.LabelSelectorRequirement{
-									{
-										Key:      hcoutil.AppLabelComponent,
-										Operator: metav1.LabelSelectorOpIn,
-										Values:   []string{componentLabel},
-									},
-								},
-							},
-							TopologyKey: corev1.LabelHostname,
-						},
-					},
-				},
-			},
-		}
-	}
-
-	return nil
 }
 
 // NewPasstServiceAccountHandler creates a conditional handler for passt ServiceAccount
