@@ -93,6 +93,7 @@ var (
 	kvVirtIOWinImage    = flag.String("kv-virtiowin-image-name", "", "KubeVirt VirtIO Win image")
 	passtImage          = flag.String("network-passt-binding-image-name", "", "Passt binding image")
 	passtCNIImage       = flag.String("network-passt-binding-cni-image-name", "", "Passt binding cni image")
+	waspAgentImage      = flag.String("wasp-agent-image-name", "", "Wasp Agent image")
 	_                   = flag.String("primary-udn-binding-image-name", "", "deprecated. This flag is ignored")
 	smbios              = flag.String("smbios", "", "Custom SMBIOS string for KubeVirt ConfigMap")
 	machinetype         = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap (Deprecated, use amd64-machinetype)")
@@ -433,6 +434,7 @@ func getDeploymentParams() *components.DeploymentOperatorParams {
 		AaqVersion:             *aaqVersion,
 		PasstImage:             *passtImage,
 		PasstCNIImage:          *passtCNIImage,
+		WaspAgentImage:         *waspAgentImage,
 		Env:                    envVars,
 		AddNetworkPolicyLabels: *dumpNetworkPolicies,
 	}
