@@ -121,16 +121,15 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should create network policy if the pod is with the np labels", func() {
-			pod := ci.GetPod()
-			if pod.Labels == nil {
-				pod.Labels = make(map[string]string)
+
+			origFunc := common.ShouldDeployNetworkPolicy
+
+			common.ShouldDeployNetworkPolicy = func() bool {
+				return true
 			}
-			pod.Labels[hcoutil.AllowEgressToDNSAndAPIServerLabel] = "true"
-			pod.Labels[hcoutil.AllowIngressToMetricsEndpointLabel] = "true"
 
 			DeferCleanup(func() {
-				delete(pod.Labels, hcoutil.AllowEgressToDNSAndAPIServerLabel)
-				delete(pod.Labels, hcoutil.AllowIngressToMetricsEndpointLabel)
+				common.ShouldDeployNetworkPolicy = origFunc
 			})
 
 			cl := commontestutils.InitClient([]client.Object{ns})
