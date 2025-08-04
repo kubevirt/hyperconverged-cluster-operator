@@ -6,6 +6,9 @@ Sum of CPU core requests for all running virt-launcher VMIs across the entire Ku
 ### cnv_abnormal
 Monitors resources for potential problems. Type: Gauge.
 
+### kubevirt_hco_dict_with_no_supported_architectures
+Indicates whether the DataImportCron has supported architectures (0) or it has not (1). Type: Gauge.
+
 ### kubevirt_hco_hyperconverged_cr_exists
 Indicates whether the HyperConverged custom resource exists (1) or not (0). Type: Gauge.
 
