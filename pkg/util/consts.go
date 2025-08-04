@@ -19,6 +19,7 @@ const (
 	KVUIProxyImageEnvV                 = "KV_CONSOLE_PROXY_IMAGE"
 	PasstImageEnvV                     = "PASST_SIDECAR_IMAGE"
 	PasstCNIImageEnvV                  = "PASST_CNI_IMAGE"
+	WaspAgentImageEnvV                 = "WASP_AGENT_IMAGE"
 	HcoValidatingWebhook               = "validate-hco.kubevirt.io"
 	HcoMutatingWebhookNS               = "mutate-ns-hco.kubevirt.io"
 	PrometheusRuleCRDName              = "prometheusrules.monitoring.coreos.com"

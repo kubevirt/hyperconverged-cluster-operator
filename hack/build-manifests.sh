@@ -300,7 +300,8 @@ ${TOOLS}/manifest-templator \
   --webhook-image="${HCO_WEBHOOK_IMAGE}" \
   --network-passt-binding-image-name="${NETWORK_PASST_BINDING_IMAGE}" \
   --network-passt-binding-cni-image-name="${NETWORK_PASST_BINDING_CNI_IMAGE}" \
-  --cli-downloads-image="${HCO_DOWNLOADS_IMAGE}"
+  --cli-downloads-image="${HCO_DOWNLOADS_IMAGE}" \
+  --wasp-agent-image-name="${WASP_AGENT_IMAGE}"
 
 if [[ "${UNIQUE}" == "true"  ]]; then
   CSV_VERSION_PARAM=${CSV_VERSION}-${CSV_TIMESTAMP}
@@ -350,6 +351,7 @@ ${TOOLS}/csv-merger \
   --kubevirt-consoleplugin-image-name="${KUBEVIRT_CONSOLE_PLUGIN_IMAGE}" \
   --kubevirt-consoleproxy-image-name="${KUBEVIRT_CONSOLE_PROXY_IMAGE}" \
   --cli-downloads-image-name="${HCO_DOWNLOADS_IMAGE}" \
+  --wasp-agent-image-name="${WASP_AGENT_IMAGE}" \
   --network-passt-binding-image-name="${NETWORK_PASST_BINDING_IMAGE}" \
   --network-passt-binding-cni-image-name="${NETWORK_PASST_BINDING_CNI_IMAGE}" \
   ${NETWORK_POLICIES_PARAMS} \
