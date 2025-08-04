@@ -3,6 +3,7 @@ package commontestutils
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
@@ -18,13 +19,16 @@ import (
 	deschedulerv1 "github.com/openshift/cluster-kube-descheduler-operator/pkg/apis/descheduler/v1"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	schedulingv1 "k8s.io/api/scheduling/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -146,34 +150,41 @@ func NewOtherNodePlacement() *sdkapi.NodePlacement {
 
 var testScheme *runtime.Scheme
 
+var schemeOnce = &sync.Once{}
+
 func GetScheme() *runtime.Scheme {
-	if testScheme != nil {
-		return testScheme
-	}
-
-	testScheme = scheme.Scheme
-
-	for _, f := range []func(*runtime.Scheme) error{
-		api.AddToScheme,
-		kubevirtcorev1.AddToScheme,
-		cdiv1beta1.AddToScheme,
-		networkaddonsv1.AddToScheme,
-		sspv1beta3.AddToScheme,
-		monitoringv1.AddToScheme,
-		apiextensionsv1.AddToScheme,
-		routev1.Install,
-		imagev1.Install,
-		consolev1.Install,
-		operatorv1.Install,
-		openshiftconfigv1.Install,
-		securityv1.Install,
-		csvv1alpha1.AddToScheme,
-		aaqv1alpha1.AddToScheme,
-		deschedulerv1.AddToScheme,
-		netattdefv1.AddToScheme,
-	} {
-		Expect(f(testScheme)).ToNot(HaveOccurred())
-	}
+	schemeOnce.Do(func() {
+		testScheme = runtime.NewScheme()
+		for _, f := range []func(*runtime.Scheme) error{
+			api.AddToScheme,
+			kubevirtcorev1.AddToScheme,
+			cdiv1beta1.AddToScheme,
+			networkaddonsv1.AddToScheme,
+			sspv1beta3.AddToScheme,
+			monitoringv1.AddToScheme,
+			apiextensionsv1.AddToScheme,
+			routev1.Install,
+			imagev1.Install,
+			consolev1.Install,
+			operatorv1.Install,
+			openshiftconfigv1.Install,
+			securityv1.Install,
+			csvv1alpha1.AddToScheme,
+			aaqv1alpha1.AddToScheme,
+			deschedulerv1.AddToScheme,
+			netattdefv1.AddToScheme,
+			rbacv1.AddToScheme,
+			networkingv1.AddToScheme,
+			appsv1.AddToScheme,
+			corev1.AddToScheme,
+			schedulingv1.AddToScheme,
+			admissionregistrationv1.AddToScheme,
+		} {
+			if err := f(testScheme); err != nil {
+				panic(fmt.Sprintf("failed to add scheme: %T, %v", f, err))
+			}
+		}
+	})
 
 	return testScheme
 }
