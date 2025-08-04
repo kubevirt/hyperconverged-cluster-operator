@@ -23,6 +23,7 @@ import (
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -34,7 +35,7 @@ const (
 
 	MultiArchDICTAnnotation = "ssp.kubevirt.io/dict.architectures"
 
-	dictConditionDeployedType    = "Deployed"
+	DictConditionDeployedType    = "Deployed"
 	dictConditionDeployedReason  = "UnsupportedArchitectures"
 	dictConditionDeployedMessage = "DataImportCronTemplate has no supported architectures for the current cluster"
 )
@@ -72,6 +73,19 @@ var GetDataImportCronTemplates = func(hc *hcov1beta1.HyperConverged) ([]hcov1bet
 	sort.Sort(dataImportTemplateSlice(dictList))
 
 	return dictList, nil
+}
+
+func CheckDataImportCronTemplates(hc *hcov1beta1.HyperConverged) {
+	multiArchEnabled := ptr.Deref(hc.Spec.FeatureGates.EnableMultiArchBootImageImport, false)
+
+	for _, dict := range hc.Status.DataImportCronTemplates {
+		if multiArchEnabled && meta.IsStatusConditionFalse(dict.Status.Conditions, DictConditionDeployedType) {
+			metrics.SetDICTWithNoSupportedArchitectures(dict.Name, dict.Spec.ManagedDataSource)
+			continue
+		}
+
+		metrics.SetDICTWithSupportedArchitectures(dict.Name, dict.Spec.ManagedDataSource)
+	}
 }
 
 func HCODictSliceToSSP(hc *hcov1beta1.HyperConverged, hcoDictStatuses []hcov1beta1.DataImportCronTemplateStatus) []sspv1beta3.DataImportCronTemplate {
@@ -279,13 +293,13 @@ func setDataImportCronTemplateStatusMultiArch(hcoDictStatus *hcov1beta1.DataImpo
 	sspArchsAnnotation := removeUnsupportedArchs(hcoArchsAnnotation, workloadsArchs)
 	if sspArchsAnnotation == "" {
 		meta.SetStatusCondition(&hcoDictStatus.Status.Conditions, metav1.Condition{
-			Type:    dictConditionDeployedType,
+			Type:    DictConditionDeployedType,
 			Status:  metav1.ConditionFalse,
 			Reason:  dictConditionDeployedReason,
 			Message: dictConditionDeployedMessage,
 		})
 	} else {
-		meta.RemoveStatusCondition(&hcoDictStatus.Status.Conditions, dictConditionDeployedType)
+		meta.RemoveStatusCondition(&hcoDictStatus.Status.Conditions, DictConditionDeployedType)
 		if hcoDictStatus.Annotations == nil {
 			hcoDictStatus.Annotations = make(map[string]string)
 		}
@@ -296,7 +310,7 @@ func setDataImportCronTemplateStatusMultiArch(hcoDictStatus *hcov1beta1.DataImpo
 
 func hcoDictToSSP(hcoDictStatus hcov1beta1.DataImportCronTemplateStatus, multiArchEnabled bool) (sspv1beta3.DataImportCronTemplate, bool) {
 	hcoDict := hcoDictStatus.DataImportCronTemplate
-	if multiArchEnabled && meta.IsStatusConditionFalse(hcoDictStatus.Status.Conditions, dictConditionDeployedType) {
+	if multiArchEnabled && meta.IsStatusConditionFalse(hcoDictStatus.Status.Conditions, DictConditionDeployedType) {
 		// if the condition is false, it means that the DataImportCronTemplate has no supported architectures
 		// for the current cluster, so we skip it
 		return sspv1beta3.DataImportCronTemplate{}, false
