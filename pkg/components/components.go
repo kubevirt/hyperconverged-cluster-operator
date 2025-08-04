@@ -311,6 +311,13 @@ func buildEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 		})
 	}
 
+	if params.AddNetworkPolicyLabels {
+		envs = append(envs, corev1.EnvVar{
+			Name:  util.DeployNetworkPoliciesEnvV,
+			Value: "true",
+		})
+	}
+
 	return envs
 }
 
