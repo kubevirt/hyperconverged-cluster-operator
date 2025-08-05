@@ -7,8 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"k8s.io/client-go/kubernetes/scheme"
-
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"k8s.io/client-go/rest"
@@ -66,10 +64,9 @@ var _ = Describe("Hyperconverged API: Webhook", func() {
 
 			resources := []client.Object{}
 			cl := commontestutils.InitClient(resources)
-			s := scheme.Scheme
 
 			ws := webhook.NewServer(webhook.Options{})
-			mgr, err := commontestutils.NewManagerMock(&rest.Config{}, manager.Options{WebhookServer: ws, Scheme: s}, cl, logger)
+			mgr, err := commontestutils.NewManagerMock(&rest.Config{}, manager.Options{WebhookServer: ws, Scheme: cl.Scheme()}, cl, logger)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(SetupWebhookWithManager(context.TODO(), mgr, true, nil)).To(Succeed())

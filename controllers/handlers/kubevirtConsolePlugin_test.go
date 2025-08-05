@@ -11,8 +11,10 @@ import (
 	operatorv1 "github.com/openshift/api/operator/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/reference"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,12 +31,18 @@ import (
 )
 
 var _ = Describe("Kubevirt Console Plugin", func() {
-	var testLogger = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("consoleplugin_test")
+	var (
+		testLogger = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("consoleplugin_test")
+		hco        *hcov1beta1.HyperConverged
+		req        *common.HcoRequest
+	)
+
+	BeforeEach(func() {
+		hco = commontestutils.NewHco()
+		req = commontestutils.NewReq(hco)
+	})
 
 	Context("Console Plugin CR", func() {
-		var hco *hcov1beta1.HyperConverged
-		var req *common.HcoRequest
-
 		var expectedConsoleConfig = &operatorv1.Console{
 			TypeMeta: metav1.TypeMeta{
 				Kind:       "Console",
@@ -44,11 +52,6 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Name: "cluster",
 			},
 		}
-
-		BeforeEach(func() {
-			hco = commontestutils.NewHco()
-			req = commontestutils.NewReq(hco)
-		})
 
 		It("should create plugin CR if not present", func() {
 			expectedResource := NewKVConsolePlugin(hco)
@@ -263,14 +266,6 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 	})
 
 	Context("Kubevirt Console Plugin and UI Proxy Deployments", func() {
-		var hco *hcov1beta1.HyperConverged
-		var req *common.HcoRequest
-
-		BeforeEach(func() {
-			hco = commontestutils.NewHco()
-			req = commontestutils.NewReq(hco)
-		})
-
 		DescribeTable("should create if not present", func(appComponent hcoutil.AppComponent,
 			deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc operands.GetHandler) {
 			expectedResource := deploymentManifestor(hco)
@@ -863,14 +858,6 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 	})
 
 	Context("Kubevirt Plugin and UI Proxy Service", func() {
-		var hco *hcov1beta1.HyperConverged
-		var req *common.HcoRequest
-
-		BeforeEach(func() {
-			hco = commontestutils.NewHco()
-			req = commontestutils.NewReq(hco)
-		})
-
 		DescribeTable("should create service if not present", func(appComponent hcoutil.AppComponent,
 			serviceManifestor func(*hcov1beta1.HyperConverged) *v1.Service) {
 			var expectedResource *v1.Service
@@ -969,6 +956,210 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		)
 	})
 
+	Context("Kubevirt Plugin and UI Proxy With NetworkPolicies", func() {
+		When("ShouldDeployNetworkPolicy returns true", func() {
+			BeforeEach(func() {
+				origFunc := common.ShouldDeployNetworkPolicy
+
+				common.ShouldDeployNetworkPolicy = func() bool {
+					return true
+				}
+
+				DeferCleanup(func() {
+					common.ShouldDeployNetworkPolicy = origFunc
+				})
+			})
+
+			It("should deploy NetworkPolicies for console plugin", func() {
+				cl := commontestutils.InitClient([]client.Object{hco})
+				handler, err := NewKVConsolePluginNetworkPolicyHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				res := handler.Ensure(req)
+				Expect(res.Created).To(BeTrue())
+				Expect(res.Err).ToNot(HaveOccurred())
+
+				foundNP := &networkingv1.NetworkPolicy{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: "kubevirt-console-plugin-np", Namespace: hco.Namespace},
+						foundNP),
+				).To(Succeed())
+
+				expectedNP := newKVConsolePluginNetworkPolicy(hco)
+
+				Expect(foundNP.Name).To(Equal(expectedNP.Name))
+				Expect(foundNP.Namespace).To(Equal(expectedNP.Namespace))
+				Expect(foundNP.Labels).To(Equal(expectedNP.Labels))
+
+				Expect(foundNP.Spec).To(Equal(expectedNP.Spec))
+			})
+
+			It("should deploy NetworkPolicies for api-server proxy", func() {
+				cl := commontestutils.InitClient([]client.Object{})
+				handler, err := NewKVAPIServerProxyNetworkPolicyHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				res := handler.Ensure(req)
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Err).ToNot(HaveOccurred())
+
+				foundResource := &networkingv1.NetworkPolicy{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: "kubevirt-apiserver-proxy-np", Namespace: hco.Namespace},
+						foundResource),
+				).To(Succeed())
+				Expect(foundResource.Name).To(Equal("kubevirt-apiserver-proxy-np"))
+				Expect(foundResource.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, commontestutils.Name))
+				Expect(foundResource.Namespace).To(Equal(hco.Namespace))
+			})
+
+			It("should add the NetworkPolicies label to the api-server-proxy deployment", func() {
+				apiServerProxyDeployment := NewKvUIProxyDeployment(hco)
+				Expect(apiServerProxyDeployment.Spec.Template.Labels).To(HaveKeyWithValue(hcoutil.AllowEgressToDNSAndAPIServerLabel, "true"))
+			})
+
+			It("should not add the NetworkPolicies label to the console plugin deployment", func() {
+				consolePluginDeployment := NewKvUIPluginDeployment(hco)
+				Expect(consolePluginDeployment.Spec.Template.Labels).ToNot(HaveKey(hcoutil.AllowEgressToDNSAndAPIServerLabel))
+			})
+
+			It("should update NetworkPolicies for console plugin, if it was modified", func() {
+				expectedNP := newKVConsolePluginNetworkPolicy(hco)
+
+				existingNP := expectedNP.DeepCopy()
+				existingNP.Spec.Egress = []networkingv1.NetworkPolicyEgressRule{
+					{
+						Ports: []networkingv1.NetworkPolicyPort{
+							{
+								Port: &intstr.IntOrString{Type: intstr.Int, IntVal: 8888},
+							},
+						},
+					},
+				}
+
+				existingNP.Spec.Ingress[0].Ports = append(existingNP.Spec.Ingress[0].Ports, networkingv1.NetworkPolicyPort{
+					Port: &intstr.IntOrString{Type: intstr.Int, IntVal: 8888},
+				})
+
+				existingNP.Labels[hcoutil.AppLabel] = "wrong-label"
+
+				cl := commontestutils.InitClient([]client.Object{hco, existingNP})
+
+				handler, err := NewKVConsolePluginNetworkPolicyHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				res := handler.Ensure(req)
+				Expect(res.Created).To(BeFalse())
+				Expect(res.Updated).To(BeTrue())
+				Expect(res.Err).ToNot(HaveOccurred())
+
+				foundNP := &networkingv1.NetworkPolicy{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: "kubevirt-console-plugin-np", Namespace: hco.Namespace},
+						foundNP),
+				).To(Succeed())
+
+				Expect(foundNP.Name).To(Equal(expectedNP.Name))
+				Expect(foundNP.Namespace).To(Equal(expectedNP.Namespace))
+				Expect(foundNP.Labels).To(Equal(expectedNP.Labels))
+
+				Expect(foundNP.Spec).To(Equal(expectedNP.Spec))
+
+				Expect(foundNP.Labels).ToNot(HaveKeyWithValue(hcoutil.AppLabel, "wrong-label"))
+				Expect(foundNP.Labels).To(Equal(expectedNP.Labels))
+
+				// ObjectReference should have been updated
+				Expect(hco.Status.RelatedObjects).ToNot(BeNil())
+				objectRefOutdated, err := reference.GetReference(commontestutils.GetScheme(), existingNP)
+				Expect(err).ToNot(HaveOccurred())
+				objectRefFound, err := reference.GetReference(commontestutils.GetScheme(), foundNP)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
+				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
+			})
+
+			It("should update NetworkPolicies for api-server proxy, if it was modified", func() {
+				expectedNP := newKVAPIServerProxyNetworkPolicy(hco)
+				existingNP := expectedNP.DeepCopy()
+				existingNP.Spec.Egress = []networkingv1.NetworkPolicyEgressRule{
+					{
+						Ports: []networkingv1.NetworkPolicyPort{
+							{
+								Port: &intstr.IntOrString{Type: intstr.Int, IntVal: 8888},
+							},
+						},
+					},
+				}
+
+				existingNP.Spec.Ingress[0].Ports = append(existingNP.Spec.Ingress[0].Ports, networkingv1.NetworkPolicyPort{
+					Port: &intstr.IntOrString{Type: intstr.Int, IntVal: 8888},
+				})
+
+				existingNP.Labels[hcoutil.AppLabel] = "wrong-label"
+
+				cl := commontestutils.InitClient([]client.Object{hco, existingNP})
+				handler, err := NewKVAPIServerProxyNetworkPolicyHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				res := handler.Ensure(req)
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Updated).To(BeTrue())
+				Expect(res.Err).ToNot(HaveOccurred())
+
+				foundNP := &networkingv1.NetworkPolicy{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: "kubevirt-apiserver-proxy-np", Namespace: hco.Namespace},
+						foundNP),
+				).To(Succeed())
+
+				Expect(foundNP.Name).To(Equal(expectedNP.Name))
+				Expect(foundNP.Namespace).To(Equal(expectedNP.Namespace))
+				Expect(foundNP.Labels).To(Equal(expectedNP.Labels))
+
+				Expect(foundNP.Spec).To(Equal(expectedNP.Spec))
+
+				Expect(foundNP.Labels).ToNot(HaveKeyWithValue(hcoutil.AppLabel, "wrong-label"))
+				Expect(foundNP.Labels).To(Equal(expectedNP.Labels))
+
+				// ObjectReference should have been updated
+				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+				objectRefOutdated, err := reference.GetReference(commontestutils.GetScheme(), existingNP)
+				Expect(err).ToNot(HaveOccurred())
+				objectRefFound, err := reference.GetReference(commontestutils.GetScheme(), foundNP)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
+				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
+			})
+		})
+
+		When("ShouldDeployNetworkPolicy returns false", func() {
+			BeforeEach(func() {
+				origFunc := common.ShouldDeployNetworkPolicy
+
+				common.ShouldDeployNetworkPolicy = func() bool {
+					return false
+				}
+
+				DeferCleanup(func() {
+					common.ShouldDeployNetworkPolicy = origFunc
+				})
+			})
+
+			It("should not add the NetworkPolicies label to the api-server-proxy deployment", func() {
+				apiServerProxyDeployment := NewKvUIProxyDeployment(hco)
+				Expect(apiServerProxyDeployment.Spec.Template.Labels).ToNot(HaveKey(hcoutil.AllowEgressToDNSAndAPIServerLabel))
+			})
+
+			It("should not add the NetworkPolicies label to the console plugin deployment", func() {
+				consolePluginDeployment := NewKvUIPluginDeployment(hco)
+				Expect(consolePluginDeployment.Spec.Template.Labels).ToNot(HaveKey(hcoutil.AllowEgressToDNSAndAPIServerLabel))
+			})
+		})
+	})
 })
 
 func expectedPodAntiAffinity(appComponent hcoutil.AppComponent) *v1.Affinity {
