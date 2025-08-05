@@ -82,7 +82,7 @@ func getReconcilers(ci hcoutil.ClusterInfo, namespace string, owner metav1.Owner
 		newServiceMonitorReconciler(namespace, owner),
 	}
 
-	if shouldDeployNetworkPolicy(ci) {
+	if common.ShouldDeployNetworkPolicy() {
 		reconcilers = append(reconcilers, newAlertManagerNetworkPolicyReconciler(namespace, owner, ci))
 	}
 
@@ -222,15 +222,4 @@ func updateCommonDetails(required, existing *metav1.ObjectMeta) bool {
 	}
 
 	return true
-}
-
-func shouldDeployNetworkPolicy(ci hcoutil.ClusterInfo) bool {
-	selfPod := ci.GetPod()
-	if selfPod == nil {
-		return false
-	}
-	_, lbl1 := selfPod.Labels[hcoutil.AllowEgressToDNSAndAPIServerLabel]
-	_, lbl2 := selfPod.Labels[hcoutil.AllowIngressToMetricsEndpointLabel]
-
-	return lbl1 || lbl2
 }

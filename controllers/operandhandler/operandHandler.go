@@ -91,25 +91,46 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 // Initial operations that need to read/write from the cluster can only be done when the client is already working.
 func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.ClusterInfo, hc *hcov1beta1.HyperConverged) {
 	h.objects = make([]client.Object, 0)
-	if ci.IsOpenshift() {
-		h.addOperands(scheme, hc, handlers.GetQuickStartHandlers)
-		h.addOperands(scheme, hc, handlers.GetDashboardHandlers)
-		h.addOperands(scheme, hc, handlers.GetImageStreamHandlers)
-		h.addOperand(scheme, hc, handlers.NewVirtioWinCmHandler)
-		h.addOperand(scheme, hc, handlers.NewVirtioWinCmReaderRoleHandler)
-		h.addOperand(scheme, hc, handlers.NewVirtioWinCmReaderRoleBindingHandler)
+	if !ci.IsOpenshift() {
+		return
 	}
 
-	if ci.IsOpenshift() && ci.IsConsolePluginImageProvided() {
-		h.addOperand(scheme, hc, handlers.NewKvUIPluginDeploymentHandler)
-		h.addOperand(scheme, hc, handlers.NewKvUIProxyDeploymentHandler)
-		h.addOperand(scheme, hc, handlers.NewKvUINginxCMHandler)
-		h.addOperand(scheme, hc, handlers.NewKvUIPluginCRHandler)
-		h.addOperand(scheme, hc, handlers.NewKvUIUserSettingsCMHandler)
-		h.addOperand(scheme, hc, handlers.NewKvUIFeaturesCMHandler)
-		h.addOperand(scheme, hc, handlers.NewKvUIConfigReaderRoleHandler)
-		h.addOperand(scheme, hc, handlers.NewKvUIConfigReaderRoleBindingHandler)
+	for _, fn := range []operands.GetHandlers{
+		handlers.GetQuickStartHandlers,
+		handlers.GetDashboardHandlers,
+		handlers.GetImageStreamHandlers,
+	} {
+		h.addOperands(scheme, hc, fn)
+	}
 
+	getHandlerFuncs := []operands.GetHandler{
+		handlers.NewVirtioWinCmHandler,
+		handlers.NewVirtioWinCmReaderRoleHandler,
+		handlers.NewVirtioWinCmReaderRoleBindingHandler,
+	}
+
+	if ci.IsConsolePluginImageProvided() {
+		getHandlerFuncs = append(getHandlerFuncs,
+			handlers.NewKvUIPluginDeploymentHandler,
+			handlers.NewKvUIProxyDeploymentHandler,
+			handlers.NewKvUINginxCMHandler,
+			handlers.NewKvUIPluginCRHandler,
+			handlers.NewKvUIUserSettingsCMHandler,
+			handlers.NewKvUIFeaturesCMHandler,
+			handlers.NewKvUIConfigReaderRoleHandler,
+			handlers.NewKvUIConfigReaderRoleBindingHandler,
+		)
+
+		if common.ShouldDeployNetworkPolicy() {
+			getHandlerFuncs = append(getHandlerFuncs,
+				handlers.NewKVConsolePluginNetworkPolicyHandler,
+				handlers.NewKVAPIServerProxyNetworkPolicyHandler,
+			)
+		}
+	}
+
+	for _, fn := range getHandlerFuncs {
+		h.addOperand(scheme, hc, fn)
 	}
 }
 

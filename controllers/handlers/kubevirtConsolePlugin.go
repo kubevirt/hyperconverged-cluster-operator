@@ -13,6 +13,7 @@ import (
 	operatorv1 "github.com/openshift/api/operator/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -113,8 +114,18 @@ func NewKvUIPluginDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
 func NewKvUIProxyDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
 	// The env var was validated prior to handler creation
 	kvUIProxyImage, _ := os.LookupEnv(hcoutil.KVUIProxyImageEnvV)
-	return getKvUIDeployment(hc, kvUIProxyDeploymentName, kvUIProxyImage, kvUIProxyServingCertName,
+	deployment := getKvUIDeployment(hc, kvUIProxyDeploymentName, kvUIProxyImage, kvUIProxyServingCertName,
 		kvUIProxyServingCertPath, hcoutil.UIProxyServerPort, hcoutil.AppComponentUIProxy)
+
+	if common.ShouldDeployNetworkPolicy() {
+		if deployment.Spec.Template.Labels == nil {
+			deployment.Spec.Template.Labels = make(map[string]string)
+		}
+
+		deployment.Spec.Template.Labels[hcoutil.AllowEgressToDNSAndAPIServerLabel] = "true"
+	}
+
+	return deployment
 }
 
 func getKvUIDeployment(hc *hcov1beta1.HyperConverged, deploymentName string, image string,
@@ -539,4 +550,109 @@ func NewConsoleHandler(Client client.Client) operands.Operand {
 		Client: Client,
 	}
 	return h
+}
+
+func newKVConsolePluginNetworkPolicyWithNameOnly(hc *hcov1beta1.HyperConverged) *networkingv1.NetworkPolicy {
+	return &networkingv1.NetworkPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "kubevirt-console-plugin-np",
+			Namespace: hc.Namespace,
+			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
+		},
+	}
+}
+
+func newKVConsolePluginNetworkPolicy(hc *hcov1beta1.HyperConverged) *networkingv1.NetworkPolicy {
+	spec := networkingv1.NetworkPolicySpec{
+		PodSelector: metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				hcoutil.AppLabel:          hc.Name,
+				hcoutil.AppLabelComponent: string(hcoutil.AppComponentUIPlugin),
+			},
+		},
+		Ingress: []networkingv1.NetworkPolicyIngressRule{
+			{
+				Ports: []networkingv1.NetworkPolicyPort{
+					{
+						Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: hcoutil.UIPluginServerPort},
+						Protocol: ptr.To(corev1.ProtocolTCP),
+					},
+				},
+				From: []networkingv1.NetworkPolicyPeer{
+					{
+						NamespaceSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								hcoutil.KubernetesMetadataName: "openshift-console",
+							},
+						},
+						PodSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"app":       "console",
+								"component": "ui",
+							},
+						},
+					},
+				},
+			},
+		},
+		PolicyTypes: []networkingv1.PolicyType{
+			networkingv1.PolicyTypeIngress,
+		},
+	}
+
+	np := newKVConsolePluginNetworkPolicyWithNameOnly(hc)
+	np.Spec = spec
+
+	return np
+}
+
+func NewKVConsolePluginNetworkPolicyHandler(_ log.Logger, cli client.Client, schm *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
+	np := newKVConsolePluginNetworkPolicy(hc)
+
+	return operands.NewNetworkPolicyHandler(cli, schm, np), nil
+}
+
+func newKVAPIServerProxyNetworkPolicyWithNameOnly(hc *hcov1beta1.HyperConverged) *networkingv1.NetworkPolicy {
+	return &networkingv1.NetworkPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "kubevirt-apiserver-proxy-np",
+			Namespace: hc.Namespace,
+			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
+		},
+	}
+}
+
+func newKVAPIServerProxyNetworkPolicy(hc *hcov1beta1.HyperConverged) *networkingv1.NetworkPolicy {
+	spec := networkingv1.NetworkPolicySpec{
+		PodSelector: metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				hcoutil.AppLabel:          hc.Name,
+				hcoutil.AppLabelComponent: string(hcoutil.AppComponentUIProxy),
+			},
+		},
+		Ingress: []networkingv1.NetworkPolicyIngressRule{
+			{
+				Ports: []networkingv1.NetworkPolicyPort{
+					{
+						Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: hcoutil.UIProxyServerPort},
+						Protocol: ptr.To(corev1.ProtocolTCP),
+					},
+				},
+			},
+		},
+		PolicyTypes: []networkingv1.PolicyType{
+			networkingv1.PolicyTypeIngress,
+		},
+	}
+
+	np := newKVAPIServerProxyNetworkPolicyWithNameOnly(hc)
+	np.Spec = spec
+
+	return np
+}
+
+func NewKVAPIServerProxyNetworkPolicyHandler(_ log.Logger, cli client.Client, schm *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
+	np := newKVAPIServerProxyNetworkPolicy(hc)
+
+	return operands.NewNetworkPolicyHandler(cli, schm, np), nil
 }
