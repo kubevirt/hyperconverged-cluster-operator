@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.15.3-unstable
-    createdAt: "2025-06-22 09:34:37"
+    createdAt: "2025-08-11 11:13:56"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -332,6 +332,7 @@ spec:
           - watch
           - create
           - update
+          - delete
         - apiGroups:
           - ""
           resources:

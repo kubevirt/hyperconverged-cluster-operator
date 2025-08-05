@@ -332,6 +332,7 @@ spec:
           - watch
           - create
           - update
+          - delete
         - apiGroups:
           - ""
           resources:
