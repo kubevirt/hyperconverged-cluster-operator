@@ -197,6 +197,7 @@ function create_hpp_csv() {
 function create_aaq_csv() {
   local operatorName="application-aware-quota"
   local dumpCRDsArg="--dump-crds"
+  local dumpNetworkPoliciesArg="--dump-network-policies"
   local operatorArgs=" \
     --csv-version=${CSV_VERSION} \
     --operator-image=${AAQ_OPERATOR_IMAGE} \
@@ -207,7 +208,7 @@ function create_aaq_csv() {
     --pull-policy=IfNotPresent \
   "
 
-  gen_csv ${DEFAULT_CSV_GENERATOR} ${operatorName} "${AAQ_OPERATOR_IMAGE}" ${dumpCRDsArg} ${operatorArgs}
+  gen_csv ${DEFAULT_CSV_GENERATOR} ${operatorName} "${AAQ_OPERATOR_IMAGE}" ${dumpCRDsArg} ${dumpNetworkPoliciesArg} ${operatorArgs}
   echo "${operatorName}"
 }
 
