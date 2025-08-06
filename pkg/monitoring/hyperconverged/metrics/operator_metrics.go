@@ -23,10 +23,13 @@ const (
 
 const (
 	counterLabelDICTName = "data_import_cron_name"
-	counterLabelDSName   = "data_source_name"
+	counterLabelDSName   = "managed_data_source_name"
 
-	hasSupportedArchitectures   = float64(0)
-	hasNoSupportedArchitectures = float64(1)
+	hasSupportedArchitectures   = float64(1)
+	hasNoSupportedArchitectures = float64(0)
+
+	hasArchitectureAnnotation   = float64(1)
+	hasNoArchitectureAnnotation = float64(0)
 )
 
 var (
@@ -35,7 +38,8 @@ var (
 		unsafeModifications,
 		hyperConvergedCRExists,
 		systemHealthStatus,
-		dictWithNoSupportedArchitectures,
+		dictWithSupportedArchitectures,
+		dictWithArchitectureAnnotation,
 	}
 
 	overwrittenModifications = operatormetrics.NewCounterVec(
@@ -68,10 +72,18 @@ var (
 		},
 	)
 
-	dictWithNoSupportedArchitectures = operatormetrics.NewGaugeVec(
+	dictWithSupportedArchitectures = operatormetrics.NewGaugeVec(
 		operatormetrics.MetricOpts{
-			Name: "kubevirt_hco_dict_with_no_supported_architectures",
-			Help: "Indicates whether the DataImportCron has supported architectures (0) or it has not (1)",
+			Name: "kubevirt_hco_dataimportcrontemplate_with_supported_architectures",
+			Help: "Indicates whether the DataImportCronTemplate has supported architectures (0) or not (1)",
+		},
+		[]string{counterLabelDICTName, counterLabelDSName},
+	)
+
+	dictWithArchitectureAnnotation = operatormetrics.NewGaugeVec(
+		operatormetrics.MetricOpts{
+			Name: "kubevirt_hco_dataimportcrontemplate_with_architecture_annotation",
+			Help: "Indicates whether the DataImportCronTemplate has the ssp.kubevirt.io/dict.architectures annotation (0) or not (1)",
 		},
 		[]string{counterLabelDICTName, counterLabelDSName},
 	)
@@ -150,23 +162,50 @@ func GetHCOMetricSystemHealthStatus() (float64, error) {
 }
 
 func SetDICTWithSupportedArchitectures(dictName, dsName string) {
-	dictWithNoSupportedArchitectures.WithLabelValues(getLabelsForDataImportCron(dictName, dsName)).Set(hasSupportedArchitectures)
+	dictWithSupportedArchitectures.WithLabelValues(getLabelsForDataImportCron(dictName, dsName)).Set(hasSupportedArchitectures)
 }
 
 func SetDICTWithNoSupportedArchitectures(dictName, dsName string) {
-	dictWithNoSupportedArchitectures.WithLabelValues(getLabelsForDataImportCron(dictName, dsName)).Set(hasNoSupportedArchitectures)
+	dictWithSupportedArchitectures.WithLabelValues(getLabelsForDataImportCron(dictName, dsName)).Set(hasNoSupportedArchitectures)
 }
 
+func ResetDICTWithSupportedArchitectures() {
+	dictWithSupportedArchitectures.Reset()
+}
 func IsDICTWithSupportedArchitectures(dictName, dsName string) (bool, error) {
 	dto := &ioprometheusclient.Metric{}
-	err := dictWithNoSupportedArchitectures.WithLabelValues(getLabelsForDataImportCron(dictName, dsName)).Write(dto)
+	err := dictWithSupportedArchitectures.WithLabelValues(getLabelsForDataImportCron(dictName, dsName)).Write(dto)
 	value := dto.Gauge.GetValue()
 
 	if err != nil {
 		return false, err
 	}
 
-	return value == float64(0), nil
+	return value == hasSupportedArchitectures, nil
+}
+
+func SetDICTWithArchitectureAnnotation(dictName, dsName string) {
+	dictWithArchitectureAnnotation.WithLabelValues(getLabelsForDataImportCron(dictName, dsName)).Set(hasArchitectureAnnotation)
+}
+
+func SetDICTWithNoArchitectureAnnotation(dictName, dsName string) {
+	dictWithArchitectureAnnotation.WithLabelValues(getLabelsForDataImportCron(dictName, dsName)).Set(hasNoArchitectureAnnotation)
+}
+
+func ResetDICTWithArchitectureAnnotation() {
+	dictWithArchitectureAnnotation.Reset()
+}
+
+func IsDICTWithArchitectureAnnotation(dictName, dsName string) (bool, error) {
+	dto := &ioprometheusclient.Metric{}
+	err := dictWithArchitectureAnnotation.WithLabelValues(getLabelsForDataImportCron(dictName, dsName)).Write(dto)
+	value := dto.Gauge.GetValue()
+
+	if err != nil {
+		return false, err
+	}
+
+	return value == hasArchitectureAnnotation, nil
 }
 
 func getLabelsForObj(kind string, name string) string {
