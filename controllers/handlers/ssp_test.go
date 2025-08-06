@@ -630,208 +630,414 @@ var _ = Describe("SSP Operands", func() {
 				})
 			})
 
-			When("creating new SSP CR", func() {
-				It("Should not rise metrics if the FG is disabled", func(ctx context.Context) {
-					nodeinfo.GetWorkloadsArchitectures = func() []string {
-						return []string{"arch1", "arch2"}
-					}
-
-					commonDICT := makeDICT(1)
-					commonDICT.Annotations = map[string]string{
-						goldenimages.MultiArchDICTAnnotation: "noarch1,noarch2",
-					}
-					commonDICT.Status.CommonTemplate = true
-
-					customDICT := makeDICT(2)
-					customDICT.Annotations = map[string]string{
-						goldenimages.MultiArchDICTAnnotation: "noarch1,noarch2",
-					}
-
-					goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-						return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
-					}
-
-					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-
-					cli := commontestutils.InitClient([]client.Object{hco})
-					handler := NewSspHandler(cli, commontestutils.GetScheme())
-
-					res := handler.Ensure(req)
-					Expect(res.Err).ToNot(HaveOccurred())
-					Expect(res.Created).To(BeTrue())
-
-					ssp := &sspv1beta3.SSP{}
-					expectedResource := NewSSPWithNameOnly(hco)
-
-					Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), ssp)).To(Succeed())
-					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
-
-					Expect(hco.Status.DataImportCronTemplates).To(HaveLen(2))
-					for _, dict := range hco.Status.DataImportCronTemplates {
-						Expect(dict.Status.Conditions).To(BeEmpty())
-						Expect(metrics.IsDICTWithSupportedArchitectures(dict.Name, dict.Spec.ManagedDataSource)).To(BeTrue())
-					}
+			Context("the kubevirt_hco_dataimportcrontemplate_with_supported_architectures metric", func() {
+				BeforeEach(func() {
+					metrics.ResetDICTWithSupportedArchitectures()
 				})
 
-				It("Should rise metrics if the FG is enabled", func(ctx context.Context) {
-					nodeinfo.GetWorkloadsArchitectures = func() []string {
-						return []string{"arch1", "arch2"}
-					}
+				When("creating new SSP CR", func() {
+					It("Should not rise metrics if the FG is disabled", func(ctx context.Context) {
+						nodeinfo.GetWorkloadsArchitectures = func() []string {
+							return []string{"arch1", "arch2"}
+						}
 
-					commonDICT := makeDICT(1)
-					commonDICT.Annotations = map[string]string{
-						goldenimages.MultiArchDICTAnnotation: "noarch1,noarch2",
-					}
-					meta.SetStatusCondition(&commonDICT.Status.Conditions, metav1.Condition{
-						Type:   goldenimages.DictConditionDeployedType,
-						Status: metav1.ConditionFalse,
+						commonDICT := makeDICT(1)
+						commonDICT.Annotations = map[string]string{
+							goldenimages.MultiArchDICTAnnotation: "noarch1,noarch2",
+						}
+						commonDICT.Status.CommonTemplate = true
+
+						customDICT := makeDICT(2)
+						customDICT.Annotations = map[string]string{
+							goldenimages.MultiArchDICTAnnotation: "noarch1,noarch2",
+						}
+
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
+							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						}
+
+						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+
+						cli := commontestutils.InitClient([]client.Object{hco})
+						handler := NewSspHandler(cli, commontestutils.GetScheme())
+
+						res := handler.Ensure(req)
+						Expect(res.Err).ToNot(HaveOccurred())
+						Expect(res.Created).To(BeTrue())
+
+						ssp := &sspv1beta3.SSP{}
+						expectedResource := NewSSPWithNameOnly(hco)
+
+						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), ssp)).To(Succeed())
+						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
+
+						Expect(hco.Status.DataImportCronTemplates).To(HaveLen(2))
+						for _, dict := range hco.Status.DataImportCronTemplates {
+							Expect(dict.Status.Conditions).To(BeEmpty())
+							Expect(metrics.IsDICTWithSupportedArchitectures(dict.Name, dict.Spec.ManagedDataSource)).To(BeTrue())
+						}
 					})
-					commonDICT.Status.CommonTemplate = true
 
-					customDICT := makeDICT(2)
-					customDICT.Annotations = map[string]string{
-						goldenimages.MultiArchDICTAnnotation: "noarch1,noarch2",
-					}
-					meta.SetStatusCondition(&customDICT.Status.Conditions, metav1.Condition{
-						Type:   goldenimages.DictConditionDeployedType,
-						Status: metav1.ConditionFalse,
+					It("Should rise metrics if the FG is enabled", func(ctx context.Context) {
+						nodeinfo.GetWorkloadsArchitectures = func() []string {
+							return []string{"arch1", "arch2"}
+						}
+
+						commonDICT := makeDICT(1)
+						commonDICT.Annotations = map[string]string{
+							goldenimages.MultiArchDICTAnnotation: "",
+						}
+						commonDICT.Status = hcov1beta1.DataImportCronStatus{
+							CommonTemplate: true,
+							Conditions: []metav1.Condition{
+								{
+									Type:   goldenimages.DictConditionDeployedType,
+									Status: metav1.ConditionFalse,
+								},
+							},
+							OriginalSupportedArchitectures: "noarch1,noarch2",
+						}
+
+						customDICT := makeDICT(2)
+						customDICT.Annotations = map[string]string{
+							goldenimages.MultiArchDICTAnnotation: "",
+						}
+						customDICT.Status = hcov1beta1.DataImportCronStatus{
+							Conditions: []metav1.Condition{
+								{
+									Type:   goldenimages.DictConditionDeployedType,
+									Status: metav1.ConditionFalse,
+								},
+							},
+							OriginalSupportedArchitectures: "noarch1,noarch2",
+						}
+
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
+							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						}
+
+						hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
+						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+
+						cli := commontestutils.InitClient([]client.Object{hco})
+						handler := NewSspHandler(cli, commontestutils.GetScheme())
+
+						res := handler.Ensure(req)
+						Expect(res.Err).ToNot(HaveOccurred())
+						Expect(res.Created).To(BeTrue())
+
+						ssp := &sspv1beta3.SSP{}
+						expectedResource := NewSSPWithNameOnly(hco)
+
+						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), ssp)).To(Succeed())
+						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(BeEmpty())
+
+						Expect(hco.Status.DataImportCronTemplates).To(HaveLen(2))
+						for _, dict := range hco.Status.DataImportCronTemplates {
+							Expect(meta.IsStatusConditionFalse(dict.Status.Conditions, goldenimages.DictConditionDeployedType)).To(BeTrue())
+							Expect(metrics.IsDICTWithSupportedArchitectures(dict.Name, dict.Spec.ManagedDataSource)).To(BeFalse())
+						}
+					})
+				})
+
+				When("updating existing SSP CR", func() {
+					It("Should not rise metrics if the FG is disabled", func(ctx context.Context) {
+						nodeinfo.GetWorkloadsArchitectures = func() []string {
+							return []string{"arch1", "arch2"}
+						}
+
+						commonDICT := makeDICT(1)
+						commonDICT.Annotations = map[string]string{
+							goldenimages.MultiArchDICTAnnotation: "noarch1,noarch2",
+						}
+
+						customDICT := makeDICT(2)
+						customDICT.Annotations = map[string]string{
+							goldenimages.MultiArchDICTAnnotation: "noarch1,noarch2",
+						}
+
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
+							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT}, nil
+						}
+
+						ssp, _, err := NewSSP(hco)
+						Expect(err).ToNot(HaveOccurred())
+
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
+							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						}
+						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+
+						cli := commontestutils.InitClient([]client.Object{hco, ssp})
+						handler := NewSspHandler(cli, commontestutils.GetScheme())
+
+						res := handler.Ensure(req)
+						Expect(res.Err).ToNot(HaveOccurred())
+						Expect(res.Created).To(BeFalse())
+						Expect(res.Updated).To(BeTrue())
+
+						newSSP := &sspv1beta3.SSP{}
+						expectedResource := NewSSPWithNameOnly(hco)
+
+						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), newSSP)).To(Succeed())
+						Expect(newSSP.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
+
+						Expect(hco.Status.DataImportCronTemplates).To(HaveLen(2))
+						for _, dict := range hco.Status.DataImportCronTemplates {
+							Expect(dict.Status.Conditions).To(BeEmpty())
+							Expect(metrics.IsDICTWithSupportedArchitectures(dict.Name, dict.Spec.ManagedDataSource)).To(BeTrue())
+						}
 					})
 
-					goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-						return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
-					}
+					It("Should rise metrics if the FG is enabled", func(ctx context.Context) {
+						nodeinfo.GetWorkloadsArchitectures = func() []string {
+							return []string{"arch1", "arch2"}
+						}
 
-					hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
-					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+						commonDICT := makeDICT(1)
+						commonDICT.Annotations = map[string]string{
+							goldenimages.MultiArchDICTAnnotation: "",
+						}
+						commonDICT.Status = hcov1beta1.DataImportCronStatus{
+							CommonTemplate: true,
+							Conditions: []metav1.Condition{
+								{
+									Type:   goldenimages.DictConditionDeployedType,
+									Status: metav1.ConditionFalse,
+								},
+							},
+							OriginalSupportedArchitectures: "noarch1,noarch2",
+						}
 
-					cli := commontestutils.InitClient([]client.Object{hco})
-					handler := NewSspHandler(cli, commontestutils.GetScheme())
+						customDICT := makeDICT(2)
+						customDICT.Annotations = map[string]string{
+							goldenimages.MultiArchDICTAnnotation: "",
+						}
 
-					res := handler.Ensure(req)
-					Expect(res.Err).ToNot(HaveOccurred())
-					Expect(res.Created).To(BeTrue())
+						customDICT.Status = hcov1beta1.DataImportCronStatus{
+							Conditions: []metav1.Condition{
+								{
+									Type:   goldenimages.DictConditionDeployedType,
+									Status: metav1.ConditionFalse,
+								},
+							},
+							OriginalSupportedArchitectures: "noarch1,noarch2",
+						}
 
-					ssp := &sspv1beta3.SSP{}
-					expectedResource := NewSSPWithNameOnly(hco)
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
+							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT}, nil
+						}
 
-					Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), ssp)).To(Succeed())
-					Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(BeEmpty())
+						ssp, _, err := NewSSP(hco)
+						Expect(err).ToNot(HaveOccurred())
 
-					Expect(hco.Status.DataImportCronTemplates).To(HaveLen(2))
-					for _, dict := range hco.Status.DataImportCronTemplates {
-						Expect(meta.IsStatusConditionFalse(dict.Status.Conditions, goldenimages.DictConditionDeployedType)).To(BeTrue())
-						Expect(metrics.IsDICTWithSupportedArchitectures(dict.Name, dict.Spec.ManagedDataSource)).To(BeFalse())
-					}
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
+							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						}
+						hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
+						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+
+						cli := commontestutils.InitClient([]client.Object{hco, ssp})
+						handler := NewSspHandler(cli, commontestutils.GetScheme())
+
+						res := handler.Ensure(req)
+						Expect(res.Err).ToNot(HaveOccurred())
+						Expect(res.Created).To(BeFalse())
+						Expect(res.Updated).To(BeTrue())
+
+						newSSP := &sspv1beta3.SSP{}
+						expectedResource := NewSSPWithNameOnly(hco)
+
+						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), newSSP)).To(Succeed())
+						Expect(newSSP.Spec.CommonTemplates.DataImportCronTemplates).To(BeEmpty())
+
+						Expect(hco.Status.DataImportCronTemplates).To(HaveLen(2))
+						for _, dict := range hco.Status.DataImportCronTemplates {
+							Expect(meta.IsStatusConditionFalse(dict.Status.Conditions, goldenimages.DictConditionDeployedType)).To(BeTrue())
+							Expect(metrics.IsDICTWithSupportedArchitectures(dict.Name, dict.Spec.ManagedDataSource)).To(BeFalse())
+						}
+					})
 				})
 			})
 
-			When("updating existing SSP CR", func() {
-				It("Should not rise metrics if the FG is disabled", func(ctx context.Context) {
-					nodeinfo.GetWorkloadsArchitectures = func() []string {
-						return []string{"arch1", "arch2"}
-					}
-
-					commonDICT := makeDICT(1)
-					commonDICT.Annotations = map[string]string{
-						goldenimages.MultiArchDICTAnnotation: "noarch1,noarch2",
-					}
-
-					customDICT := makeDICT(2)
-					customDICT.Annotations = map[string]string{
-						goldenimages.MultiArchDICTAnnotation: "noarch1,noarch2",
-					}
-
-					goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-						return []hcov1beta1.DataImportCronTemplateStatus{commonDICT}, nil
-					}
-
-					ssp, _, err := NewSSP(hco)
-					Expect(err).ToNot(HaveOccurred())
-
-					goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-						return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
-					}
-					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-
-					cli := commontestutils.InitClient([]client.Object{hco, ssp})
-					handler := NewSspHandler(cli, commontestutils.GetScheme())
-
-					res := handler.Ensure(req)
-					Expect(res.Err).ToNot(HaveOccurred())
-					Expect(res.Created).To(BeFalse())
-					Expect(res.Updated).To(BeTrue())
-
-					newSSP := &sspv1beta3.SSP{}
-					expectedResource := NewSSPWithNameOnly(hco)
-
-					Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), newSSP)).To(Succeed())
-					Expect(newSSP.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
-
-					Expect(hco.Status.DataImportCronTemplates).To(HaveLen(2))
-					for _, dict := range hco.Status.DataImportCronTemplates {
-						Expect(dict.Status.Conditions).To(BeEmpty())
-						Expect(metrics.IsDICTWithSupportedArchitectures(dict.Name, dict.Spec.ManagedDataSource)).To(BeTrue())
-					}
+			Context("the kubevirt_hco_dataimportcrontemplate_with_architecture_annotation metric", func() {
+				BeforeEach(func() {
+					metrics.ResetDICTWithArchitectureAnnotation()
 				})
 
-				It("Should rise metrics if the FG is enabled", func(ctx context.Context) {
-					nodeinfo.GetWorkloadsArchitectures = func() []string {
-						return []string{"arch1", "arch2"}
-					}
+				When("creating new SSP CR", func() {
+					It("Should not rise metrics if the FG is disabled", func(ctx context.Context) {
+						nodeinfo.GetWorkloadsArchitectures = func() []string {
+							return []string{"arch1", "arch2"}
+						}
 
-					commonDICT := makeDICT(1)
-					commonDICT.Annotations = map[string]string{
-						goldenimages.MultiArchDICTAnnotation: "noarch1,noarch2",
-					}
+						commonDICT := makeDICT(1)
+						commonDICT.Annotations = map[string]string{}
+						commonDICT.Status.CommonTemplate = true
 
-					meta.SetStatusCondition(&commonDICT.Status.Conditions, metav1.Condition{
-						Type:   goldenimages.DictConditionDeployedType,
-						Status: metav1.ConditionFalse,
+						customDICT := makeDICT(2)
+						customDICT.Annotations = map[string]string{}
+
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
+							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						}
+
+						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+
+						cli := commontestutils.InitClient([]client.Object{hco})
+						handler := NewSspHandler(cli, commontestutils.GetScheme())
+
+						res := handler.Ensure(req)
+						Expect(res.Err).ToNot(HaveOccurred())
+						Expect(res.Created).To(BeTrue())
+
+						ssp := &sspv1beta3.SSP{}
+						expectedResource := NewSSPWithNameOnly(hco)
+
+						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), ssp)).To(Succeed())
+						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
+
+						Expect(hco.Status.DataImportCronTemplates).To(HaveLen(2))
+						for _, dict := range hco.Status.DataImportCronTemplates {
+							Expect(dict.Status.Conditions).To(BeEmpty())
+							Expect(metrics.IsDICTWithArchitectureAnnotation(dict.Name, dict.Spec.ManagedDataSource)).To(BeTrue())
+						}
 					})
-					commonDICT.Status.CommonTemplate = true
 
-					customDICT := makeDICT(2)
-					customDICT.Annotations = map[string]string{
-						goldenimages.MultiArchDICTAnnotation: "noarch1,noarch2",
-					}
+					It("Should rise metrics if the FG is enabled", func(ctx context.Context) {
+						nodeinfo.GetWorkloadsArchitectures = func() []string {
+							return []string{"arch1", "arch2"}
+						}
 
-					meta.SetStatusCondition(&customDICT.Status.Conditions, metav1.Condition{
-						Type:   goldenimages.DictConditionDeployedType,
-						Status: metav1.ConditionFalse,
+						commonDICT := makeDICT(1)
+						commonDICT.Annotations = map[string]string{}
+						commonDICT.Status.CommonTemplate = true
+
+						customDICT := makeDICT(2)
+						customDICT.Annotations = map[string]string{}
+
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
+							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						}
+
+						hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
+						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+
+						cli := commontestutils.InitClient([]client.Object{hco})
+						handler := NewSspHandler(cli, commontestutils.GetScheme())
+
+						res := handler.Ensure(req)
+						Expect(res.Err).ToNot(HaveOccurred())
+						Expect(res.Created).To(BeTrue())
+
+						ssp := &sspv1beta3.SSP{}
+						expectedResource := NewSSPWithNameOnly(hco)
+
+						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), ssp)).To(Succeed())
+						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
+
+						Expect(hco.Status.DataImportCronTemplates).To(HaveLen(2))
+						for _, dict := range hco.Status.DataImportCronTemplates {
+							Expect(metrics.IsDICTWithArchitectureAnnotation(dict.Name, dict.Spec.ManagedDataSource)).To(BeFalse())
+						}
+					})
+				})
+
+				When("updating existing SSP CR", func() {
+					It("Should not rise metrics if the FG is disabled", func(ctx context.Context) {
+						nodeinfo.GetWorkloadsArchitectures = func() []string {
+							return []string{"arch1", "arch2"}
+						}
+
+						commonDICT := makeDICT(1)
+						commonDICT.Annotations = map[string]string{}
+						commonDICT.Status = hcov1beta1.DataImportCronStatus{
+							CommonTemplate: true,
+						}
+
+						customDICT := makeDICT(2)
+						customDICT.Annotations = map[string]string{}
+
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
+							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT}, nil
+						}
+
+						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+						ssp, _, err := NewSSP(hco)
+						Expect(err).ToNot(HaveOccurred())
+
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
+							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						}
+
+						cli := commontestutils.InitClient([]client.Object{hco, ssp})
+						handler := NewSspHandler(cli, commontestutils.GetScheme())
+
+						res := handler.Ensure(req)
+						Expect(res.Err).ToNot(HaveOccurred())
+						Expect(res.Created).To(BeFalse())
+						Expect(res.Updated).To(BeTrue())
+
+						newSSP := &sspv1beta3.SSP{}
+						expectedResource := NewSSPWithNameOnly(hco)
+
+						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), newSSP)).To(Succeed())
+						Expect(newSSP.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
+
+						Expect(hco.Status.DataImportCronTemplates).To(HaveLen(2))
+						for _, dict := range hco.Status.DataImportCronTemplates {
+							Expect(dict.Status.Conditions).To(BeEmpty())
+							Expect(metrics.IsDICTWithArchitectureAnnotation(dict.Name, dict.Spec.ManagedDataSource)).To(BeTrue())
+						}
 					})
 
-					goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-						return []hcov1beta1.DataImportCronTemplateStatus{commonDICT}, nil
-					}
+					It("Should rise metrics if the FG is enabled", func(ctx context.Context) {
+						nodeinfo.GetWorkloadsArchitectures = func() []string {
+							return []string{"arch1", "arch2"}
+						}
 
-					ssp, _, err := NewSSP(hco)
-					Expect(err).ToNot(HaveOccurred())
+						commonDICT := makeDICT(1)
+						commonDICT.Annotations = map[string]string{}
 
-					goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-						return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
-					}
-					hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
-					hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+						commonDICT.Status = hcov1beta1.DataImportCronStatus{
+							CommonTemplate: true,
+						}
 
-					cli := commontestutils.InitClient([]client.Object{hco, ssp})
-					handler := NewSspHandler(cli, commontestutils.GetScheme())
+						customDICT := makeDICT(2)
+						customDICT.Annotations = map[string]string{}
 
-					res := handler.Ensure(req)
-					Expect(res.Err).ToNot(HaveOccurred())
-					Expect(res.Created).To(BeFalse())
-					Expect(res.Updated).To(BeTrue())
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
+							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT}, nil
+						}
 
-					newSSP := &sspv1beta3.SSP{}
-					expectedResource := NewSSPWithNameOnly(hco)
+						ssp, _, err := NewSSP(hco)
+						Expect(err).ToNot(HaveOccurred())
 
-					Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), newSSP)).To(Succeed())
-					Expect(newSSP.Spec.CommonTemplates.DataImportCronTemplates).To(BeEmpty())
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
+							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						}
+						hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
+						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
-					Expect(hco.Status.DataImportCronTemplates).To(HaveLen(2))
-					for _, dict := range hco.Status.DataImportCronTemplates {
-						Expect(meta.IsStatusConditionFalse(dict.Status.Conditions, goldenimages.DictConditionDeployedType)).To(BeTrue())
-						Expect(metrics.IsDICTWithSupportedArchitectures(dict.Name, dict.Spec.ManagedDataSource)).To(BeFalse())
-					}
+						cli := commontestutils.InitClient([]client.Object{hco, ssp})
+						handler := NewSspHandler(cli, commontestutils.GetScheme())
+
+						res := handler.Ensure(req)
+						Expect(res.Err).ToNot(HaveOccurred())
+						Expect(res.Created).To(BeFalse())
+						Expect(res.Updated).To(BeTrue())
+
+						newSSP := &sspv1beta3.SSP{}
+						expectedResource := NewSSPWithNameOnly(hco)
+
+						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), newSSP)).To(Succeed())
+						Expect(newSSP.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
+
+						Expect(hco.Status.DataImportCronTemplates).To(HaveLen(2))
+						for _, dict := range hco.Status.DataImportCronTemplates {
+							Expect(metrics.IsDICTWithArchitectureAnnotation(dict.Name, dict.Spec.ManagedDataSource)).To(BeFalse())
+						}
+					})
 				})
 			})
 		})
