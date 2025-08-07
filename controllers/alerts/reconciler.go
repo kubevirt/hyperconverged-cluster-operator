@@ -176,6 +176,10 @@ func (r *MonitoringReconciler) UpdateRelatedObjects(req *common.HcoRequest) erro
 
 	wasChanged := false
 	for _, obj := range r.latestObjects {
+		if obj == nil {
+			continue
+		}
+
 		changed, err := hcoutil.AddCrToTheRelatedObjectList(&req.Instance.Status.RelatedObjects, obj, r.scheme)
 		if err != nil {
 			return err
