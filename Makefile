@@ -269,7 +269,7 @@ lint-metrics:
 	./hack/prom_metric_linter.sh --operator-name="kubevirt" --sub-operator-name="hco"
 
 lint-monitoring:
-	go install github.com/kubevirt/monitoring/monitoringlinter/cmd/monitoringlinter@e2be790
+	go install github.com/kubevirt/monitoring/monitoringlinter/cmd/monitoringlinter@v0.0.10
 	monitoringlinter ./...
 
 bump-hco:
