@@ -62,7 +62,7 @@ func (r *secretReconciler) UpdateExistingResource(ctx context.Context, cl client
 	}
 
 	// Check if the secret has the correct token
-	if found.Data["token"] != nil && string(found.Data["token"]) == token {
+	if string(found.Data["token"]) == token {
 		return nil, false, nil
 	}
 
