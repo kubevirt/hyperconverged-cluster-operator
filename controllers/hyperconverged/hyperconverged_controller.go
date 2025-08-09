@@ -171,6 +171,8 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 		&appsv1.DaemonSet{},
 		&rbacv1.Role{},
 		&rbacv1.RoleBinding{},
+		&rbacv1.ClusterRole{},
+		&rbacv1.ClusterRoleBinding{},
 	}
 	if ci.IsMonitoringAvailable() {
 		secondaryResources = append(secondaryResources, []client.Object{
