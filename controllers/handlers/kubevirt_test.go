@@ -2101,6 +2101,40 @@ Version: 1.2.3`)
 						},
 					),
 				)
+
+				It("should add the VideoConfig if feature gate VideoConfig is true in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						VideoConfig: ptr.To(true),
+					}
+
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
+					Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvVideoConfig))
+				})
+
+				It("should not add the VideoConfig if feature gate VideoConfig is not in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						VideoConfig: nil,
+					}
+
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
+					Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvVideoConfig))
+				})
+
+				It("should not add the VideoConfig if feature gate VideoConfig is set to false in HyperConverged CR", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						VideoConfig: ptr.To(false),
+					}
+
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
+					Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvVideoConfig))
+				})
+
 			})
 
 			Context("test feature gates in KV handler", func() {
