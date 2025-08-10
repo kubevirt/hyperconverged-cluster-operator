@@ -61,18 +61,17 @@ func (h *roleHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exist
 func (*roleHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
 // ********* Cluster Role Handler *****************************
-type newClusterRoleFunc func(hc *hcov1beta1.HyperConverged) *rbacv1.ClusterRole
 
-func NewClusterRoleHandler(Client client.Client, Scheme *runtime.Scheme, required newClusterRoleFunc) *GenericOperand {
-	return NewGenericOperand(Client, Scheme, "ClusterRole", &clusterRoleHooks{newCrFunc: required}, false)
+func NewClusterRoleHandler(Client client.Client, Scheme *runtime.Scheme, required *rbacv1.ClusterRole) *GenericOperand {
+	return NewGenericOperand(Client, Scheme, "ClusterRole", &clusterRoleHooks{required: required}, false)
 }
 
 type clusterRoleHooks struct {
-	newCrFunc newClusterRoleFunc
+	required *rbacv1.ClusterRole
 }
 
 func (h *clusterRoleHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	return h.newCrFunc(hc), nil
+	return h.required, nil
 }
 
 func (h *clusterRoleHooks) GetEmptyCr() client.Object { return &rbacv1.ClusterRole{} }
@@ -165,18 +164,17 @@ func (h roleBindingHooks) UpdateCR(req *common.HcoRequest, Client client.Client,
 func (roleBindingHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
 // ********* Cluster Role Binding Handler *****************************
-type newClusterRoleBindingFunc func(hc *hcov1beta1.HyperConverged) *rbacv1.ClusterRoleBinding
 
-func NewClusterRoleBindingHandler(Client client.Client, Scheme *runtime.Scheme, required newClusterRoleBindingFunc) *GenericOperand {
-	return NewGenericOperand(Client, Scheme, "ClusterRoleBinding", &clusterRoleBindingHooks{newCrFunc: required}, false)
+func NewClusterRoleBindingHandler(Client client.Client, Scheme *runtime.Scheme, required *rbacv1.ClusterRoleBinding) *GenericOperand {
+	return NewGenericOperand(Client, Scheme, "ClusterRoleBinding", &clusterRoleBindingHooks{required: required}, false)
 }
 
 type clusterRoleBindingHooks struct {
-	newCrFunc newClusterRoleBindingFunc
+	required *rbacv1.ClusterRoleBinding
 }
 
 func (h clusterRoleBindingHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	return h.newCrFunc(hc), nil
+	return h.required, nil
 }
 
 func (h clusterRoleBindingHooks) GetEmptyCr() client.Object { return &rbacv1.ClusterRoleBinding{} }

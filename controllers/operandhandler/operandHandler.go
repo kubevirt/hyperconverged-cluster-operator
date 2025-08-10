@@ -19,6 +19,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
+	waspagent "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/wasp-agent"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -66,6 +67,9 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 			operands.NewServiceHandler(client, scheme, handlers.NewCliDownloadsService),
 			passt.NewPasstServiceAccountHandler(client, scheme),
 			passt.NewPasstSecurityContextConstraintsHandler(client, scheme),
+			waspagent.NewWaspAgentServiceAccountHandler(client, scheme),
+			waspagent.NewWaspAgentSCCHandler(client, scheme),
+			waspagent.NewWaspAgentDaemonSetHandler(client, scheme),
 		}...)
 	}
 
@@ -107,6 +111,8 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 		handlers.NewVirtioWinCmHandler,
 		handlers.NewVirtioWinCmReaderRoleHandler,
 		handlers.NewVirtioWinCmReaderRoleBindingHandler,
+		waspagent.NewWaspAgentClusterRoleHandler,
+		waspagent.NewWaspAgentClusterRoleBindingHandler,
 	}
 
 	if ci.IsConsolePluginImageProvided() {
