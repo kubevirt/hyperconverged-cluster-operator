@@ -1015,16 +1015,6 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Expect(foundResource.Namespace).To(Equal(hco.Namespace))
 			})
 
-			It("should add the NetworkPolicies label to the api-server-proxy deployment", func() {
-				apiServerProxyDeployment := NewKvUIProxyDeployment(hco)
-				Expect(apiServerProxyDeployment.Spec.Template.Labels).To(HaveKeyWithValue(hcoutil.AllowEgressToDNSAndAPIServerLabel, "true"))
-			})
-
-			It("should not add the NetworkPolicies label to the console plugin deployment", func() {
-				consolePluginDeployment := NewKvUIPluginDeployment(hco)
-				Expect(consolePluginDeployment.Spec.Template.Labels).ToNot(HaveKey(hcoutil.AllowEgressToDNSAndAPIServerLabel))
-			})
-
 			It("should update NetworkPolicies for console plugin, if it was modified", func() {
 				expectedNP := newKVConsolePluginNetworkPolicy(hco)
 

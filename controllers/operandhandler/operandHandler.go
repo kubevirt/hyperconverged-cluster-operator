@@ -125,14 +125,9 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 			handlers.NewKvUIFeaturesCMHandler,
 			handlers.NewKvUIConfigReaderRoleHandler,
 			handlers.NewKvUIConfigReaderRoleBindingHandler,
+			handlers.NewKVConsolePluginNetworkPolicyHandler,
+			handlers.NewKVAPIServerProxyNetworkPolicyHandler,
 		)
-
-		if common.ShouldDeployNetworkPolicy() {
-			getHandlerFuncs = append(getHandlerFuncs,
-				handlers.NewKVConsolePluginNetworkPolicyHandler,
-				handlers.NewKVAPIServerProxyNetworkPolicyHandler,
-			)
-		}
 	}
 
 	for _, fn := range getHandlerFuncs {
