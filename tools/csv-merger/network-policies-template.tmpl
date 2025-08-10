@@ -66,6 +66,28 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  name: hco-allow-egress-to-alert-manager
+  namespace: {{ .Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      name: hyperconverged-cluster-operator
+    egress:
+      - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: openshift-monitoring
+          podSelector:
+            matchLabels:
+              alertmanager: main
+              app.kubernetes.io/component: alert-router
+              app.kubernetes.io/instance: main
+    policyTypes:
+      - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
   name: hco-allow-ingress-to-webhook
   namespace: {{ .Namespace }}
 spec:

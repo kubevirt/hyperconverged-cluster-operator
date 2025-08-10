@@ -82,10 +82,6 @@ func getReconcilers(ci hcoutil.ClusterInfo, namespace string, owner metav1.Owner
 		newServiceMonitorReconciler(namespace, owner),
 	}
 
-	if common.ShouldDeployNetworkPolicy() {
-		reconcilers = append(reconcilers, newAlertManagerNetworkPolicyReconciler(namespace, owner, ci))
-	}
-
 	return reconcilers
 }
 
