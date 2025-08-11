@@ -47,6 +47,20 @@ const (
 	kvUIConfigReaderRBName    = "kubevirt-ui-config-reader-rolebinding"
 )
 
+const ( // for network policies
+	k8sDNSNamespaceSelector = "kube-system"
+	k8sDNSPodSelectorLabel  = "k8s-app"
+	k8sDNSPodSelectorVal    = "kube-dns"
+	k8sDNSPort              = int32(53)
+
+	openshiftDNSNamespaceSelector = "openshift-dns"
+	openshiftDNSPodSelectorLabel  = "dns.operator.openshift.io/daemonset-dns"
+	openshiftDNSPodSelectorVal    = "default"
+	openshiftDNSPort              = int32(5353)
+
+	apiServerPort int32 = 6443
+)
+
 // **** Kubevirt UI Plugin Deployment Handler ****
 func NewKvUIPluginDeploymentHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
 	return operands.NewDeploymentHandler(Client, Scheme, NewKvUIPluginDeployment, hc), nil
@@ -116,14 +130,6 @@ func NewKvUIProxyDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
 	kvUIProxyImage, _ := os.LookupEnv(hcoutil.KVUIProxyImageEnvV)
 	deployment := getKvUIDeployment(hc, kvUIProxyDeploymentName, kvUIProxyImage, kvUIProxyServingCertName,
 		kvUIProxyServingCertPath, hcoutil.UIProxyServerPort, hcoutil.AppComponentUIProxy)
-
-	if common.ShouldDeployNetworkPolicy() {
-		if deployment.Spec.Template.Labels == nil {
-			deployment.Spec.Template.Labels = make(map[string]string)
-		}
-
-		deployment.Spec.Template.Labels[hcoutil.AllowEgressToDNSAndAPIServerLabel] = "true"
-	}
 
 	return deployment
 }
@@ -622,6 +628,49 @@ func newKVAPIServerProxyNetworkPolicyWithNameOnly(hc *hcov1beta1.HyperConverged)
 	}
 }
 
+func getApiServerEgressRule() networkingv1.NetworkPolicyEgressRule {
+	var (
+		dnsNamespcaeSelector = k8sDNSNamespaceSelector
+		dnsPodSelectorLabel  = k8sDNSPodSelectorLabel
+		dnsPodSelectorVal    = k8sDNSPodSelectorVal
+		dnsPort              = k8sDNSPort
+	)
+
+	if hcoutil.GetClusterInfo().IsOpenshift() {
+		dnsNamespcaeSelector = openshiftDNSNamespaceSelector
+		dnsPodSelectorLabel = openshiftDNSPodSelectorLabel
+		dnsPodSelectorVal = openshiftDNSPodSelectorVal
+		dnsPort = openshiftDNSPort
+	}
+
+	return networkingv1.NetworkPolicyEgressRule{
+		Ports: []networkingv1.NetworkPolicyPort{
+			{
+				Protocol: ptr.To(corev1.ProtocolTCP),
+				Port:     ptr.To(intstr.FromInt32(dnsPort)),
+			},
+			{
+				Protocol: ptr.To(corev1.ProtocolUDP),
+				Port:     ptr.To(intstr.FromInt32(dnsPort)),
+			},
+		},
+		To: []networkingv1.NetworkPolicyPeer{
+			{
+				NamespaceSelector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						hcoutil.KubernetesMetadataName: dnsNamespcaeSelector,
+					},
+				},
+				PodSelector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						dnsPodSelectorLabel: dnsPodSelectorVal,
+					},
+				},
+			},
+		},
+	}
+}
+
 func newKVAPIServerProxyNetworkPolicy(hc *hcov1beta1.HyperConverged) *networkingv1.NetworkPolicy {
 	spec := networkingv1.NetworkPolicySpec{
 		PodSelector: metav1.LabelSelector{
@@ -640,7 +689,19 @@ func newKVAPIServerProxyNetworkPolicy(hc *hcov1beta1.HyperConverged) *networking
 				},
 			},
 		},
+		Egress: []networkingv1.NetworkPolicyEgressRule{
+			getApiServerEgressRule(),
+			{
+				Ports: []networkingv1.NetworkPolicyPort{
+					{
+						Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: apiServerPort},
+						Protocol: ptr.To(corev1.ProtocolTCP),
+					},
+				},
+			},
+		},
 		PolicyTypes: []networkingv1.PolicyType{
+			networkingv1.PolicyTypeEgress,
 			networkingv1.PolicyTypeIngress,
 		},
 	}

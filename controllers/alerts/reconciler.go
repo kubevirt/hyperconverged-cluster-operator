@@ -82,10 +82,6 @@ func getReconcilers(ci hcoutil.ClusterInfo, namespace string, owner metav1.Owner
 		newServiceMonitorReconciler(namespace, owner),
 	}
 
-	if common.ShouldDeployNetworkPolicy() {
-		reconcilers = append(reconcilers, newAlertManagerNetworkPolicyReconciler(namespace, owner, ci))
-	}
-
 	return reconcilers
 }
 
@@ -98,14 +94,16 @@ func (r *MonitoringReconciler) Reconcile(req *common.HcoRequest, firstLoop bool)
 		return err
 	}
 
-	objects := make([]client.Object, len(r.reconcilers))
+	objects := make([]client.Object, 0, len(r.reconcilers))
 
-	for i, rc := range r.reconcilers {
+	for _, rc := range r.reconcilers {
 		obj, err := r.ReconcileOneResource(req, rc, firstLoop)
 		if err != nil {
 			return err
-		} else if obj != nil {
-			objects[i] = obj
+		}
+
+		if obj != nil {
+			objects = append(objects, obj)
 		}
 	}
 
