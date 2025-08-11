@@ -65,16 +65,17 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 		pluginServiceName := kubevirtPlugin.Spec.Backend.Service.Name
 		pluginServicePort := kubevirtPlugin.Spec.Backend.Service.Port
 
-		hcoPods := &corev1.PodList{}
-		Expect(cli.List(ctx, hcoPods, client.MatchingLabels{
-			"name": "hyperconverged-cluster-operator",
-		}, client.InNamespace(tests.InstallNamespace))).To(Succeed())
+		openshiftConsolePods := &corev1.PodList{}
+		Expect(cli.List(ctx, openshiftConsolePods, client.MatchingLabels{
+			"app":       "console",
+			"component": "ui",
+		}, client.InNamespace(openshiftConsoleNamespace))).To(Succeed())
 
-		Expect(hcoPods.Items).ToNot(BeEmpty())
+		Expect(openshiftConsolePods.Items).ToNot(BeEmpty())
 
-		testConsolePod := hcoPods.Items[0]
-		command := fmt.Sprintf(`curl -ks https://%s:%d/plugin-manifest.json`,
-			pluginServiceName, pluginServicePort)
+		testConsolePod := openshiftConsolePods.Items[0]
+		command := fmt.Sprintf(`curl -ks https://%s.%s:%d/plugin-manifest.json`,
+			pluginServiceName, tests.InstallNamespace, pluginServicePort)
 
 		Eventually(func(g Gomega, ctx context.Context) string {
 			stdout, stderr, err := executeCommandOnPod(ctx, k8sClientSet, &testConsolePod, command)
