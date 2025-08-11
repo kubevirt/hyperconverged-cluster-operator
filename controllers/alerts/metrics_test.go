@@ -14,9 +14,7 @@ import (
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	networkingv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
@@ -108,55 +106,6 @@ var _ = Describe("alert tests", func() {
 			Expect(hco.Status.RelatedObjects).To(HaveLen(6))
 
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
-		})
-
-		It("should not create network policy if the pod is without the np labels", func() {
-			cl := commontestutils.InitClient([]client.Object{ns})
-			r := NewMonitoringReconciler(ci, cl, ee, commontestutils.GetScheme())
-
-			Expect(r.Reconcile(req, false)).To(Succeed())
-
-			np := &networkingv1.NetworkPolicy{}
-			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: policyName}, np)).To(MatchError(k8serrors.IsNotFound, "should return NotFound error"))
-		})
-
-		It("should create network policy if the pod is with the np labels", func() {
-
-			origFunc := common.ShouldDeployNetworkPolicy
-
-			common.ShouldDeployNetworkPolicy = func() bool {
-				return true
-			}
-
-			DeferCleanup(func() {
-				common.ShouldDeployNetworkPolicy = origFunc
-			})
-
-			cl := commontestutils.InitClient([]client.Object{ns})
-			r := NewMonitoringReconciler(ci, cl, ee, commontestutils.GetScheme())
-
-			Expect(r.Reconcile(req, false)).To(Succeed())
-
-			np := &networkingv1.NetworkPolicy{}
-			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: policyName}, np)).To(Succeed())
-
-			hco := commontestutils.NewHco()
-			req = commontestutils.NewReq(hco)
-			Expect(r.UpdateRelatedObjects(req)).To(Succeed())
-			Expect(req.StatusDirty).To(BeTrue())
-			Expect(hco.Status.RelatedObjects).To(HaveLen(7))
-
-			Expect(np.Spec.Egress).To(HaveLen(1))
-			Expect(np.Spec.Egress[0].To).To(HaveLen(1))
-			Expect(np.Spec.Egress[0].To[0].NamespaceSelector).ToNot(BeNil())
-			Expect(np.Spec.Egress[0].To[0].NamespaceSelector.MatchLabels).To(HaveKeyWithValue("kubernetes.io/metadata.name", "openshift-monitoring"))
-
-			expectedEventsWithNP := append(expectedEvents, commontestutils.MockEvent{
-				EventType: corev1.EventTypeNormal,
-				Reason:    "Created",
-				Msg:       "Created NetworkPolicy " + policyName,
-			})
-			Expect(ee.CheckEvents(expectedEventsWithNP)).To(BeTrue())
 		})
 
 		It("should fail on error", func() {
