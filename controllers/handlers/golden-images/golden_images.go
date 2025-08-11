@@ -78,14 +78,28 @@ var GetDataImportCronTemplates = func(hc *hcov1beta1.HyperConverged) ([]hcov1bet
 func CheckDataImportCronTemplates(hc *hcov1beta1.HyperConverged) {
 	multiArchEnabled := ptr.Deref(hc.Spec.FeatureGates.EnableMultiArchBootImageImport, false)
 
-	for _, dict := range hc.Status.DataImportCronTemplates {
-		if multiArchEnabled && meta.IsStatusConditionFalse(dict.Status.Conditions, DictConditionDeployedType) {
-			metrics.SetDICTWithNoSupportedArchitectures(dict.Name, dict.Spec.ManagedDataSource)
-			continue
+	if multiArchEnabled {
+		for i := range hc.Status.DataImportCronTemplates {
+			validateMultiArchDict(&hc.Status.DataImportCronTemplates[i])
 		}
+	}
+}
 
+func validateMultiArchDict(dict *hcov1beta1.DataImportCronTemplateStatus) bool {
+	if dict.Status.OriginalSupportedArchitectures == "" {
+		metrics.SetDICTWithNoArchitectureAnnotation(dict.Name, dict.Spec.ManagedDataSource)
+		return false
+	} else {
+		metrics.SetDICTWithArchitectureAnnotation(dict.Name, dict.Spec.ManagedDataSource)
+	}
+
+	if meta.IsStatusConditionFalse(dict.Status.Conditions, DictConditionDeployedType) {
+		metrics.SetDICTWithNoSupportedArchitectures(dict.Name, dict.Spec.ManagedDataSource)
+	} else {
 		metrics.SetDICTWithSupportedArchitectures(dict.Name, dict.Spec.ManagedDataSource)
 	}
+
+	return true
 }
 
 func HCODictSliceToSSP(hc *hcov1beta1.HyperConverged, hcoDictStatuses []hcov1beta1.DataImportCronTemplateStatus) []sspv1beta3.DataImportCronTemplate {

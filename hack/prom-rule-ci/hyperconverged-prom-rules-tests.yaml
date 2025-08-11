@@ -826,3 +826,249 @@ tests:
             operator_health_impact: "warning"
             kubernetes_operator_part_of: "kubevirt"
             kubernetes_operator_component: "hyperconverged-cluster-operator"
+
+# Test HCOGoldenImageWithNoSupportedArchitecture
+- interval: 1m
+  input_series:
+    - series: 'kubevirt_hco_dataimportcrontemplate_with_supported_architectures{data_import_cron_name="dict1", managed_data_source_name="ds1"}'
+      # time:      0     1 2     3 4 5 6     7     8
+      values: "stale stale 0     0 0 0 stale 1     0"
+    - series: 'kubevirt_hco_dataimportcrontemplate_with_supported_architectures{data_import_cron_name="dict2", managed_data_source_name="ds2"}'
+      # time:      0     1     2 3 4 5 6     7     8
+      values: "stale stale stale 0 0 0 0     stale 1"
+
+  alert_rule_test:
+    # No metric, no alert
+    - eval_time: 1m
+      alertname: HCOGoldenImageWithNoSupportedArchitecture
+      exp_alerts: [ ]
+
+    # dict1 metric value of 1 must trigger an alert
+    - eval_time: 2m
+      alertname: HCOGoldenImageWithNoSupportedArchitecture
+      exp_alerts:
+        - exp_annotations:
+            description: "The cluster has no nodes with architecture that matches any of the architectures of the dict1 DataImportCronTemplate (for the ds1 DataSource). This golden image will not be available for use in the cluster."
+            summary: "DataImportCronTemplate with no supported architecture was detected in the HyperConverged resource."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOGoldenImageWithNoSupportedArchitecture"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+            data_import_cron_name: "dict1"
+            managed_data_source_name: "ds1"
+
+    # dict1 and dict2 metric values of 1 must trigger alerts
+    - eval_time: 3m
+      alertname: HCOGoldenImageWithNoSupportedArchitecture
+      exp_alerts:
+        - exp_annotations:
+            description: "The cluster has no nodes with architecture that matches any of the architectures of the dict1 DataImportCronTemplate (for the ds1 DataSource). This golden image will not be available for use in the cluster."
+            summary: "DataImportCronTemplate with no supported architecture was detected in the HyperConverged resource."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOGoldenImageWithNoSupportedArchitecture"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+            data_import_cron_name: "dict1"
+            managed_data_source_name: "ds1"
+        - exp_annotations:
+            description: "The cluster has no nodes with architecture that matches any of the architectures of the dict2 DataImportCronTemplate (for the ds2 DataSource). This golden image will not be available for use in the cluster."
+            summary: "DataImportCronTemplate with no supported architecture was detected in the HyperConverged resource."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOGoldenImageWithNoSupportedArchitecture"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+            data_import_cron_name: "dict2"
+            managed_data_source_name: "ds2"
+
+    # dict1 and dict2 metric values of 1 must trigger alerts
+    - eval_time: 4m
+      alertname: HCOGoldenImageWithNoSupportedArchitecture
+      exp_alerts:
+        - exp_annotations:
+            description: "The cluster has no nodes with architecture that matches any of the architectures of the dict1 DataImportCronTemplate (for the ds1 DataSource). This golden image will not be available for use in the cluster."
+            summary: "DataImportCronTemplate with no supported architecture was detected in the HyperConverged resource."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOGoldenImageWithNoSupportedArchitecture"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+            data_import_cron_name: "dict1"
+            managed_data_source_name: "ds1"
+        - exp_annotations:
+            description: "The cluster has no nodes with architecture that matches any of the architectures of the dict2 DataImportCronTemplate (for the ds2 DataSource). This golden image will not be available for use in the cluster."
+            summary: "DataImportCronTemplate with no supported architecture was detected in the HyperConverged resource."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOGoldenImageWithNoSupportedArchitecture"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+            data_import_cron_name: "dict2"
+            managed_data_source_name: "ds2"
+
+    # dict2 metric value of 1 must trigger an alert
+    - eval_time: 6m
+      alertname: HCOGoldenImageWithNoSupportedArchitecture
+      exp_alerts:
+        - exp_annotations:
+            description: "The cluster has no nodes with architecture that matches any of the architectures of the dict2 DataImportCronTemplate (for the ds2 DataSource). This golden image will not be available for use in the cluster."
+            summary: "DataImportCronTemplate with no supported architecture was detected in the HyperConverged resource."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOGoldenImageWithNoSupportedArchitecture"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+            data_import_cron_name: "dict2"
+            managed_data_source_name: "ds2"
+
+    # No metric, no alert
+    - eval_time: 7m
+      alertname: HCOGoldenImageWithNoSupportedArchitecture
+      exp_alerts: [ ]
+
+    # dict1 metric value of 1 must trigger an alert
+    - eval_time: 8m
+      alertname: HCOGoldenImageWithNoSupportedArchitecture
+      exp_alerts:
+        - exp_annotations:
+            description: "The cluster has no nodes with architecture that matches any of the architectures of the dict1 DataImportCronTemplate (for the ds1 DataSource). This golden image will not be available for use in the cluster."
+            summary: "DataImportCronTemplate with no supported architecture was detected in the HyperConverged resource."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOGoldenImageWithNoSupportedArchitecture"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+            data_import_cron_name: "dict1"
+            managed_data_source_name: "ds1"
+
+# Test HCOGoldenImageWithNoArchitectureAnnotation
+- interval: 1m
+  input_series:
+    - series: 'kubevirt_hco_dataimportcrontemplate_with_architecture_annotation{data_import_cron_name="dict1", managed_data_source_name="ds1"}'
+      # time:      0     1 2     3 4 5 6     7     8
+      values: "stale stale 0     0 0 0 stale 1     0"
+    - series: 'kubevirt_hco_dataimportcrontemplate_with_architecture_annotation{data_import_cron_name="dict2", managed_data_source_name="ds2"}'
+      # time:      0     1     2 3 4 5 6     7     8
+      values: "stale stale stale 0 0 0 0     stale 1"
+
+  alert_rule_test:
+    # No metric, no alert
+    - eval_time: 1m
+      alertname: HCOGoldenImageWithNoArchitectureAnnotation
+      exp_alerts: [ ]
+
+    # dict1 metric value of 1 must trigger an alert
+    - eval_time: 2m
+      alertname: HCOGoldenImageWithNoArchitectureAnnotation
+      exp_alerts:
+        - exp_annotations:
+            description: "The dict1 DataImportCronTemplate (for the ds1 DataSource) does not have the 'ssp.kubevirt.io/dict.architectures' annotation. Using this golden image for VM boot disk, may cause the VM to fail."
+            summary: "DataImportCronTemplate without 'ssp.kubevirt.io/dict.architectures' annotation was detected in the HyperConverged resource."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOGoldenImageWithNoArchitectureAnnotation"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+            data_import_cron_name: "dict1"
+            managed_data_source_name: "ds1"
+
+    # dict1 and dict2 metric values of 1 must trigger alerts
+    - eval_time: 3m
+      alertname: HCOGoldenImageWithNoArchitectureAnnotation
+      exp_alerts:
+        - exp_annotations:
+            description: "The dict1 DataImportCronTemplate (for the ds1 DataSource) does not have the 'ssp.kubevirt.io/dict.architectures' annotation. Using this golden image for VM boot disk, may cause the VM to fail."
+            summary: "DataImportCronTemplate without 'ssp.kubevirt.io/dict.architectures' annotation was detected in the HyperConverged resource."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOGoldenImageWithNoArchitectureAnnotation"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+            data_import_cron_name: "dict1"
+            managed_data_source_name: "ds1"
+        - exp_annotations:
+            description: "The dict2 DataImportCronTemplate (for the ds2 DataSource) does not have the 'ssp.kubevirt.io/dict.architectures' annotation. Using this golden image for VM boot disk, may cause the VM to fail."
+            summary: "DataImportCronTemplate without 'ssp.kubevirt.io/dict.architectures' annotation was detected in the HyperConverged resource."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOGoldenImageWithNoArchitectureAnnotation"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+            data_import_cron_name: "dict2"
+            managed_data_source_name: "ds2"
+
+    # dict1 and dict2 metric values of 1 must trigger alerts
+    - eval_time: 4m
+      alertname: HCOGoldenImageWithNoArchitectureAnnotation
+      exp_alerts:
+        - exp_annotations:
+            description: "The dict1 DataImportCronTemplate (for the ds1 DataSource) does not have the 'ssp.kubevirt.io/dict.architectures' annotation. Using this golden image for VM boot disk, may cause the VM to fail."
+            summary: "DataImportCronTemplate without 'ssp.kubevirt.io/dict.architectures' annotation was detected in the HyperConverged resource."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOGoldenImageWithNoArchitectureAnnotation"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+            data_import_cron_name: "dict1"
+            managed_data_source_name: "ds1"
+        - exp_annotations:
+            description: "The dict2 DataImportCronTemplate (for the ds2 DataSource) does not have the 'ssp.kubevirt.io/dict.architectures' annotation. Using this golden image for VM boot disk, may cause the VM to fail."
+            summary: "DataImportCronTemplate without 'ssp.kubevirt.io/dict.architectures' annotation was detected in the HyperConverged resource."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOGoldenImageWithNoArchitectureAnnotation"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+            data_import_cron_name: "dict2"
+            managed_data_source_name: "ds2"
+
+    # dict2 metric value of 1 must trigger an alert
+    - eval_time: 6m
+      alertname: HCOGoldenImageWithNoArchitectureAnnotation
+      exp_alerts:
+        - exp_annotations:
+            description: "The dict2 DataImportCronTemplate (for the ds2 DataSource) does not have the 'ssp.kubevirt.io/dict.architectures' annotation. Using this golden image for VM boot disk, may cause the VM to fail."
+            summary: "DataImportCronTemplate without 'ssp.kubevirt.io/dict.architectures' annotation was detected in the HyperConverged resource."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOGoldenImageWithNoArchitectureAnnotation"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+            data_import_cron_name: "dict2"
+            managed_data_source_name: "ds2"
+
+    # No metric, no alert
+    - eval_time: 7m
+      alertname: HCOGoldenImageWithNoArchitectureAnnotation
+      exp_alerts: [ ]
+
+    # dict1 metric value of 1 must trigger an alert
+    - eval_time: 8m
+      alertname: HCOGoldenImageWithNoArchitectureAnnotation
+      exp_alerts:
+        - exp_annotations:
+            description: "The dict1 DataImportCronTemplate (for the ds1 DataSource) does not have the 'ssp.kubevirt.io/dict.architectures' annotation. Using this golden image for VM boot disk, may cause the VM to fail."
+            summary: "DataImportCronTemplate without 'ssp.kubevirt.io/dict.architectures' annotation was detected in the HyperConverged resource."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOGoldenImageWithNoArchitectureAnnotation"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+            data_import_cron_name: "dict1"
+            managed_data_source_name: "ds1"
