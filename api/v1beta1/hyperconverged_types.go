@@ -206,7 +206,6 @@ type HyperConvergedSpec struct {
 	EvictionStrategy *v1.EvictionStrategy `json:"evictionStrategy,omitempty"`
 
 	// VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM.
-	// The storage class must support RWX in filesystem mode.
 	// +optional
 	VMStateStorageClass *string `json:"vmStateStorageClass,omitempty"`
 
