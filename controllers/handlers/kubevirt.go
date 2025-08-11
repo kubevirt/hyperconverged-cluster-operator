@@ -495,9 +495,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 		config.CPUModel = *hc.Spec.DefaultCPUModel
 	}
 
-	if hc.Spec.DefaultRuntimeClass != nil {
-		config.DefaultRuntimeClass = *hc.Spec.DefaultRuntimeClass
-	}
+	config.DefaultRuntimeClass = getKvPriorityClassName(hc)
 
 	if hc.Spec.VMStateStorageClass != nil {
 		config.VMStateStorageClass = *hc.Spec.VMStateStorageClass
@@ -1035,4 +1033,11 @@ func getLabelPatch(dest, src map[string]string) ([]byte, error) {
 	}
 
 	return json.Marshal(patches)
+}
+
+func getKvPriorityClassName(hc *hcov1beta1.HyperConverged) string {
+	if hc.Spec.DefaultRuntimeClass != nil && *hc.Spec.DefaultRuntimeClass != "" {
+		return *hc.Spec.DefaultRuntimeClass
+	}
+	return kvPriorityClass
 }

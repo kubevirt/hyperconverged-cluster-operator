@@ -3947,12 +3947,12 @@ Version: 1.2.3`)
 				Expect(kv.Spec.Configuration.DefaultRuntimeClass).To(Equal(runtimeClass))
 			})
 
-			DescribeTable("Should be empty on KubevirtCR if not defined in HCO CR", func(runtimeClass *string) {
+			DescribeTable("Should use the default priority class on the KubeVirt CR if not defined in HCO CR", func(runtimeClass *string) {
 				hco.Spec.DefaultRuntimeClass = runtimeClass
 				kv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(kv.Spec.Configuration.DefaultRuntimeClass).To(BeEmpty())
+				Expect(kv.Spec.Configuration.DefaultRuntimeClass).To(Equal(kvPriorityClass))
 			},
 				Entry("nil defaultRuntimeClass", nil),
 				Entry("empty defaultRuntimeClass", ptr.To("")),
