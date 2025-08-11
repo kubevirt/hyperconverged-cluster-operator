@@ -12,8 +12,11 @@ const (
 	installationNotCompletedAlert = "HCOInstallationIncomplete"
 	singleStackIPv6Alert          = "SingleStackIPv6Unsupported"
 	MisconfiguredDeschedulerAlert = "HCOMisconfiguredDescheduler"
-	severityAlertLabelKey         = "severity"
-	healthImpactAlertLabelKey     = "operator_health_impact"
+	unsupportedArchitecturesAlert = "HCOGoldenImageWithNoSupportedArchitecture"
+	dictWithNoArchAnnotationAlert = "HCOGoldenImageWithNoArchitectureAnnotation"
+
+	severityAlertLabelKey     = "severity"
+	healthImpactAlertLabelKey = "operator_health_impact"
 )
 
 func operatorAlerts() []promv1.Rule {
@@ -77,6 +80,30 @@ func operatorAlerts() []promv1.Rule {
 			Labels: map[string]string{
 				severityAlertLabelKey:     "critical",
 				healthImpactAlertLabelKey: "critical",
+			},
+		},
+		{
+			Alert: unsupportedArchitecturesAlert,
+			Expr:  intstr.FromString("kubevirt_hco_dataimportcrontemplate_with_supported_architectures == 0"),
+			Annotations: map[string]string{
+				"description": "The cluster has no nodes with architecture that matches any of the architectures of the {{ $labels.data_import_cron_name }} DataImportCronTemplate (for the {{ $labels.managed_data_source_name }} DataSource). This golden image will not be available for use in the cluster.",
+				"summary":     "DataImportCronTemplate with no supported architecture was detected in the HyperConverged resource.",
+			},
+			Labels: map[string]string{
+				severityAlertLabelKey:     "warning",
+				healthImpactAlertLabelKey: "none",
+			},
+		},
+		{
+			Alert: dictWithNoArchAnnotationAlert,
+			Expr:  intstr.FromString("kubevirt_hco_dataimportcrontemplate_with_architecture_annotation == 0"),
+			Annotations: map[string]string{
+				"description": "The {{ $labels.data_import_cron_name }} DataImportCronTemplate (for the {{ $labels.managed_data_source_name }} DataSource) does not have the 'ssp.kubevirt.io/dict.architectures' annotation. Using this golden image for VM boot disk, may cause the VM to fail.",
+				"summary":     "DataImportCronTemplate without 'ssp.kubevirt.io/dict.architectures' annotation was detected in the HyperConverged resource.",
+			},
+			Labels: map[string]string{
+				severityAlertLabelKey:     "warning",
+				healthImpactAlertLabelKey: "none",
 			},
 		},
 	}
