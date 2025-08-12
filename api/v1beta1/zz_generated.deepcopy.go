@@ -558,6 +558,11 @@ func (in *HyperConvergedSpec) DeepCopyInto(out *HyperConvergedSpec) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.LiveUpdateConfiguration != nil {
+		in, out := &in.LiveUpdateConfiguration, &out.LiveUpdateConfiguration
+		*out = new(corev1.LiveUpdateConfiguration)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 

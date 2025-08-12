@@ -4107,6 +4107,41 @@ Version: 1.2.3`)
 				Entry("not pass to KubeVirt when nil", hcov1beta1.HyperConvergedSpec{}, nil),
 			)
 		})
+
+		Context("LiveUpdateConfiguration", func() {
+			DescribeTable("should", func(spec hcov1beta1.HyperConvergedSpec, expectedConfig *kubevirtcorev1.LiveUpdateConfiguration) {
+				hco.Spec = spec
+				config, err := getKVConfig(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(config.LiveUpdateConfiguration).To(Equal(expectedConfig))
+			},
+				Entry("pass to KubeVirt when provided",
+					hcov1beta1.HyperConvergedSpec{
+						LiveUpdateConfiguration: &kubevirtcorev1.LiveUpdateConfiguration{
+							MaxHotplugRatio: uint32(3),
+							MaxCpuSockets:   ptr.To(uint32(2)),
+							MaxGuest:        resource.NewQuantity(int64(3), resource.BinarySI),
+						},
+					},
+					&kubevirtcorev1.LiveUpdateConfiguration{
+						MaxHotplugRatio: uint32(3),
+						MaxCpuSockets:   ptr.To(uint32(2)),
+						MaxGuest:        resource.NewQuantity(int64(3), resource.BinarySI),
+					},
+				),
+				Entry("pass to KubeVirt when provided",
+					hcov1beta1.HyperConvergedSpec{
+						LiveUpdateConfiguration: &kubevirtcorev1.LiveUpdateConfiguration{
+							MaxHotplugRatio: uint32(4),
+						},
+					},
+					&kubevirtcorev1.LiveUpdateConfiguration{
+						MaxHotplugRatio: uint32(4),
+					},
+				),
+				Entry("not pass to KubeVirt when nil", hcov1beta1.HyperConvergedSpec{}, nil),
+			)
+		})
 	})
 
 	Context("Test hcLiveMigrationToKv", func() {
