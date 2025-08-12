@@ -31,7 +31,7 @@ func (r ServiceMonitorReconciler) Kind() string {
 }
 
 func (r ServiceMonitorReconciler) ResourceName() string {
-	return serviceName
+	return r.theServiceMonitor.Name
 }
 
 func (r ServiceMonitorReconciler) GetFullResource() client.Object {

@@ -15,11 +15,11 @@ import (
 )
 
 const (
-	OperatorPortName    = "http-metrics"
-	defaultOperatorName = "hyperconverged-cluster-operator"
-	OperatorNameEnv     = "OPERATOR_NAME"
-	metricsSuffix       = "-operator-metrics"
-	serviceName         = hcoutil.HyperConvergedName + metricsSuffix
+	OperatorPortName = "http-metrics"
+	OperatorNameEnv  = "OPERATOR_NAME"
+
+	metricsSuffix = "-operator-metrics"
+	serviceName   = hcoutil.HyperConvergedName + metricsSuffix
 )
 
 type MetricServiceReconciler struct {
@@ -88,7 +88,7 @@ func NewMetricsService(namespace string, owner metav1.OwnerReference) *corev1.Se
 		},
 	}
 
-	operatorName := defaultOperatorName
+	operatorName := hcoutil.HCOOperatorName
 	val, ok := os.LookupEnv(OperatorNameEnv)
 	if ok && val != "" {
 		operatorName = val
