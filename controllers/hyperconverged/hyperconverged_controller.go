@@ -394,6 +394,10 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 
 	updateStatus(req)
 
+	metrics.SetHCOMetricMemoryOvercommitPercentage(
+		getMemoryOvercommitPercentage(req.Instance.Spec.HigherWorkloadDensity),
+	)
+
 	// in-memory conditions should start off empty. It will only ever hold
 	// negative conditions (!Available, Degraded, Progressing)
 	req.Conditions = common.NewHcoConditions()
@@ -1051,6 +1055,13 @@ func getNumericalHealthStatus(status string) float64 {
 	}
 
 	return healthStatusCodes[status]
+}
+
+func getMemoryOvercommitPercentage(densityConfig *hcov1beta1.HigherWorkloadDensityConfiguration) float64 {
+	if densityConfig == nil {
+		return 0
+	}
+	return float64(densityConfig.MemoryOvercommitPercentage)
 }
 
 func (r *ReconcileHyperConverged) firstLoopInitialization(request *common.HcoRequest) {

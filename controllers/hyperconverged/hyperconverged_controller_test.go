@@ -948,6 +948,25 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(foundResource.Status.ObservedGeneration).To(BeEquivalentTo(10))
 			})
 
+			It("Should update memory overcommit metrics according to the CR", func() {
+				expected := getBasicDeployment()
+				expected.hco.Spec.HigherWorkloadDensity = &hcov1beta1.HigherWorkloadDensityConfiguration{
+					MemoryOvercommitPercentage: 42,
+				}
+
+				cl := expected.initClient()
+				r := initReconciler(cl, nil)
+
+				// Do the reconcile
+				res, err := r.Reconcile(context.TODO(), request)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res).To(Equal(reconcile.Result{}))
+
+				value, err := metrics.GetHCOMetricMemoryOvercommitPercentage()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(int(value)).To(BeEquivalentTo(42))
+
+			})
 		})
 
 		Context("APIServer CR", func() {

@@ -40,6 +40,7 @@ var (
 		systemHealthStatus,
 		dictWithSupportedArchitectures,
 		dictWithArchitectureAnnotation,
+		memoryOvercommitPercentage,
 	}
 
 	overwrittenModifications = operatormetrics.NewCounterVec(
@@ -87,6 +88,13 @@ var (
 		},
 		[]string{counterLabelDICTName, counterLabelDSName},
 	)
+
+	memoryOvercommitPercentage = operatormetrics.NewGauge(
+		operatormetrics.MetricOpts{
+			Name: "kubevirt_hco_memory_overcommit_percentage",
+			Help: "Indicates the cluster-wide configured VM memory overcommit percentage",
+		},
+	)
 )
 
 // IncOverwrittenModifications increments counter by 1
@@ -99,6 +107,23 @@ func GetOverwrittenModificationsCount(kind, name string) (float64, error) {
 	dto := &ioprometheusclient.Metric{}
 	err := overwrittenModifications.WithLabelValues(getLabelsForObj(kind, name)).Write(dto)
 	value := dto.Counter.GetValue()
+
+	if err != nil {
+		return 0, err
+	}
+	return value, nil
+}
+
+// SetHCOMetricMemoryOvercommitPercentage sets the memory overcommit percentage from the HCO CR
+func SetHCOMetricMemoryOvercommitPercentage(percentage float64) {
+	memoryOvercommitPercentage.Set(percentage)
+}
+
+// GetHCOMetricMemoryOvercommitPercentage returns current value of gauge. If error is not nil then value is undefined
+func GetHCOMetricMemoryOvercommitPercentage() (float64, error) {
+	dto := &ioprometheusclient.Metric{}
+	err := memoryOvercommitPercentage.Write(dto)
+	value := dto.Gauge.GetValue()
 
 	if err != nil {
 		return 0, err
