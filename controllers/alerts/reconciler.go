@@ -37,9 +37,15 @@ type MonitoringReconciler struct {
 	eventEmitter  hcoutil.EventEmitter
 }
 
+type GetReconcilersFunc func(hcoutil.ClusterInfo, string, metav1.OwnerReference) []MetricReconciler
+
 var logger = logf.Log.WithName("hyperconverged-operator-monitoring-reconciler")
 
 func NewMonitoringReconciler(ci hcoutil.ClusterInfo, cl client.Client, ee hcoutil.EventEmitter, scheme *runtime.Scheme) *MonitoringReconciler {
+	return CreateMonitoringReconciler(ci, cl, ee, scheme, getReconcilers)
+}
+
+func CreateMonitoringReconciler(ci hcoutil.ClusterInfo, cl client.Client, ee hcoutil.EventEmitter, scheme *runtime.Scheme, getReconcilersFn GetReconcilersFunc) *MonitoringReconciler {
 	deployment := ci.GetDeployment()
 
 	var (
@@ -59,7 +65,7 @@ func NewMonitoringReconciler(ci hcoutil.ClusterInfo, cl client.Client, ee hcouti
 	}
 
 	return &MonitoringReconciler{
-		reconcilers:  getReconcilers(ci, namespace, owner),
+		reconcilers:  getReconcilersFn(ci, namespace, owner),
 		scheme:       scheme,
 		client:       cl,
 		namespace:    namespace,

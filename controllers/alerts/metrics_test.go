@@ -1008,7 +1008,7 @@ var _ = Describe("alert tests", func() {
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: serviceName}, svc)).To(Succeed())
 			Expect(svc.Spec.Ports).To(HaveLen(1))
 			Expect(svc.Spec.Ports[0].Port).To(Equal(hcoutil.MetricsPort))
-			Expect(svc.Spec.Ports[0].Name).To(Equal(operatorPortName))
+			Expect(svc.Spec.Ports[0].Name).To(Equal(OperatorPortName))
 			Expect(svc.Spec.Ports[0].Protocol).To(Equal(corev1.ProtocolTCP))
 			Expect(svc.Spec.Ports[0].TargetPort).To(Equal(intstr.IntOrString{Type: intstr.Int, IntVal: hcoutil.MetricsPort}))
 
@@ -1030,7 +1030,7 @@ var _ = Describe("alert tests", func() {
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: serviceName}, svc)).To(Succeed())
 			Expect(svc.Spec.Ports).To(HaveLen(1))
 			Expect(svc.Spec.Ports[0].Port).To(Equal(hcoutil.MetricsPort))
-			Expect(svc.Spec.Ports[0].Name).To(Equal(operatorPortName))
+			Expect(svc.Spec.Ports[0].Name).To(Equal(OperatorPortName))
 			Expect(svc.Spec.Ports[0].Protocol).To(Equal(corev1.ProtocolTCP))
 			Expect(svc.Spec.Ports[0].TargetPort).To(Equal(intstr.IntOrString{Type: intstr.Int, IntVal: hcoutil.MetricsPort}))
 
@@ -1202,7 +1202,7 @@ var _ = Describe("alert tests", func() {
 			sm := &monitoringv1.ServiceMonitor{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: serviceName}, sm)).To(Succeed())
 			Expect(sm.Spec.Selector).To(Equal(metav1.LabelSelector{MatchLabels: hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring)}))
-			Expect(sm.Spec.Endpoints[0].Port).To(Equal(operatorPortName))
+			Expect(sm.Spec.Endpoints[0].Port).To(Equal(OperatorPortName))
 
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount("ServiceMonitor", serviceName)).To(BeEquivalentTo(currentMetric))
@@ -1221,7 +1221,7 @@ var _ = Describe("alert tests", func() {
 			sm := &monitoringv1.ServiceMonitor{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: serviceName}, sm)).To(Succeed())
 			Expect(sm.Spec.Selector).To(Equal(metav1.LabelSelector{MatchLabels: hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring)}))
-			Expect(sm.Spec.Endpoints[0].Port).To(Equal(operatorPortName))
+			Expect(sm.Spec.Endpoints[0].Port).To(Equal(OperatorPortName))
 
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount("ServiceMonitor", serviceName)).To(BeEquivalentTo(currentMetric))
