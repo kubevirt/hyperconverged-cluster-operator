@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	roleName = operatorName + "-metrics"
+	roleName = hcoutil.HCOOperatorName + "-metrics"
 )
 
 // RoleReconciler maintains an RBAC Role to allow Prometheus operator to read from HCO metric

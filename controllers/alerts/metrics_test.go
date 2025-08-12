@@ -42,6 +42,9 @@ var _ = Describe("alert tests", func() {
 	)
 
 	BeforeEach(func() {
+		origNS, nsVarExists := os.LookupEnv(hcoutil.OperatorNamespaceEnv)
+		Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
+
 		ee.Reset()
 		ns = &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
@@ -50,6 +53,14 @@ var _ = Describe("alert tests", func() {
 		}
 
 		req = commontestutils.NewReq(nil)
+
+		DeferCleanup(func() {
+			if nsVarExists {
+				Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNS)).To(Succeed())
+			} else {
+				Expect(os.Unsetenv(hcoutil.OperatorNamespaceEnv)).To(Succeed())
+			}
+		})
 	})
 
 	Context("test reconciler", func() {

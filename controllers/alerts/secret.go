@@ -42,7 +42,7 @@ func (r *SecretReconciler) Kind() string {
 }
 
 func (r *SecretReconciler) ResourceName() string {
-	return secretName
+	return r.theSecret.Name
 }
 
 func (r *SecretReconciler) GetFullResource() client.Object {

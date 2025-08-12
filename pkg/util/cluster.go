@@ -91,9 +91,9 @@ func (c *ClusterInfoImp) Init(ctx context.Context, cl client.Client, logger logr
 	uiProxyVarValue, uiProxyVarExists := os.LookupEnv(KVUIProxyImageEnvV)
 	c.consolePluginImageProvided = uiPluginVarExists && len(uiPluginVarValue) > 0 && uiProxyVarExists && len(uiProxyVarValue) > 0
 
-	c.monitoringAvailable = isPrometheusExists(ctx, cl)
-	c.deschedulerAvailable = isDeschedulerExists(ctx, cl)
-	c.nadAvailable = isNADExists(ctx, cl)
+	c.monitoringAvailable = isPrometheusExists(ctx, cl, logger)
+	c.deschedulerAvailable = isDeschedulerExists(ctx, cl, logger)
+	c.nadAvailable = isNADExists(ctx, cl, logger)
 	c.logger.Info("addOns ",
 		"monitoring", c.monitoringAvailable,
 		"kubeDescheduler", c.deschedulerAvailable,
@@ -171,7 +171,7 @@ func (c *ClusterInfoImp) IsNADAvailable() bool {
 }
 
 func (c *ClusterInfoImp) IsDeschedulerCRDDeployed(ctx context.Context, cl client.Client) bool {
-	return isCRDExists(ctx, cl, DeschedulerCRDName)
+	return isCRDExists(ctx, cl, DeschedulerCRDName, logr.FromContextOrDiscard(ctx))
 }
 
 func (c *ClusterInfoImp) IsRunningLocally() bool {
@@ -210,25 +210,34 @@ func getClusterBaseDomain(ctx context.Context, cl client.Client) (string, error)
 	return clusterDNS.Spec.BaseDomain, nil
 }
 
-func isPrometheusExists(ctx context.Context, cl client.Client) bool {
-	prometheusRuleCRDExists := isCRDExists(ctx, cl, PrometheusRuleCRDName)
-	serviceMonitorCRDExists := isCRDExists(ctx, cl, ServiceMonitorCRDName)
+func isPrometheusExists(ctx context.Context, cl client.Client, logger logr.Logger) bool {
+	prometheusRuleCRDExists := isCRDExists(ctx, cl, PrometheusRuleCRDName, logger)
+	serviceMonitorCRDExists := isCRDExists(ctx, cl, ServiceMonitorCRDName, logger)
 
 	return prometheusRuleCRDExists && serviceMonitorCRDExists
 }
 
-func isDeschedulerExists(ctx context.Context, cl client.Client) bool {
-	return isCRDExists(ctx, cl, DeschedulerCRDName)
+func isDeschedulerExists(ctx context.Context, cl client.Client, logger logr.Logger) bool {
+	return isCRDExists(ctx, cl, DeschedulerCRDName, logger)
 }
 
-func isNADExists(ctx context.Context, cl client.Client) bool {
-	return isCRDExists(ctx, cl, NetworkAttachmentDefinitionCRDName)
+func isNADExists(ctx context.Context, cl client.Client, logger logr.Logger) bool {
+	return isCRDExists(ctx, cl, NetworkAttachmentDefinitionCRDName, logger)
 }
 
-func isCRDExists(ctx context.Context, cl client.Client, crdName string) bool {
+func isCRDExists(ctx context.Context, cl client.Client, crdName string, logger logr.Logger) bool {
 	found := &apiextensionsv1.CustomResourceDefinition{}
 	key := client.ObjectKey{Name: crdName}
 	err := cl.Get(ctx, key, found)
+	if err != nil {
+		if !apierrors.IsNotFound(err) {
+			logger.Error(err, "cannot find CRD", "CRD", crdName)
+		} else {
+			logger.Info("CRD not found", "CRD", crdName)
+		}
+	} else {
+		logger.Info("CRD found", "CRD", crdName)
+	}
 	return err == nil
 }
 

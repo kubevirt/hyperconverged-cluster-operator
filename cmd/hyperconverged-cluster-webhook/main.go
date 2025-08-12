@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"os"
@@ -8,12 +9,18 @@ import (
 
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/labels"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -32,6 +39,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
 	whapiservercontrollers "github.com/kubevirt/hyperconverged-cluster-operator/controllers/webhooks/apiserver-controller"
+	bearertokencontroller "github.com/kubevirt/hyperconverged-cluster-operator/controllers/webhooks/bearer-token-controller"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/authorization"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks"
@@ -53,6 +61,8 @@ var (
 		kubevirtcorev1.AddToScheme,
 		openshiftconfigv1.Install,
 		csvv1alpha1.AddToScheme,
+		apiextensionsv1.AddToScheme,
+		monitoringv1.AddToScheme,
 	}
 )
 
@@ -83,6 +93,19 @@ func main() {
 	scheme := apiruntime.NewScheme()
 	cmdHelper.AddToScheme(scheme, resourcesSchemeFuncs)
 
+	// apiclient.New() returns a client without cache.
+	// cache is not initialized before mgr.Start()
+	// we need this because we need to interact with OperatorCondition
+	apiClient, err := client.New(cfg, client.Options{
+		Scheme: scheme,
+	})
+	cmdHelper.ExitOnError(err, "Cannot create a new API client")
+
+	ci := hcoutil.GetClusterInfo()
+	ctx := context.Background()
+	err = ci.Init(ctx, apiClient, logger)
+	cmdHelper.ExitOnError(err, "Cannot detect cluster type")
+
 	// Create a new Cmd to provide shared dependencies and start components
 	mgr, err := manager.New(cfg, manager.Options{
 		Metrics: server.Options{
@@ -94,11 +117,14 @@ func main() {
 			FilterProvider: authorization.HttpWithBearerToken,
 			TLSOpts:        []func(*tls.Config){cmdcommon.MutateTLSConfig},
 		},
-		HealthProbeBindAddress: fmt.Sprintf("%s:%d", hcoutil.HealthProbeHost, hcoutil.HealthProbePort),
-		ReadinessEndpointName:  hcoutil.ReadinessEndpointName,
-		LivenessEndpointName:   hcoutil.LivenessEndpointName,
-		LeaderElection:         false,
-		Scheme:                 scheme,
+		HealthProbeBindAddress:     fmt.Sprintf("%s:%d", hcoutil.HealthProbeHost, hcoutil.HealthProbePort),
+		ReadinessEndpointName:      hcoutil.ReadinessEndpointName,
+		LivenessEndpointName:       hcoutil.LivenessEndpointName,
+		LeaderElection:             !ci.IsRunningLocally(),
+		LeaderElectionResourceLock: resourcelock.LeasesResourceLock,
+		LeaderElectionID:           "hyperconverged-cluster-webhook-lock",
+		Scheme:                     scheme,
+
 		WebhookServer: webhook.NewServer(webhook.Options{
 			CertDir:  webhooks.GetWebhookCertDir(),
 			CertName: hcoutil.WebhookCertName,
@@ -106,28 +132,16 @@ func main() {
 			Port:     hcoutil.WebhookPort,
 			TLSOpts:  []func(*tls.Config){cmdcommon.MutateTLSConfig},
 		}),
+		Cache: getCacheOption(operatorNamespace, hcoutil.GetClusterInfo()),
 	})
 	cmdHelper.ExitOnError(err, "failed to create manager")
-
-	// apiclient.New() returns a client without cache.
-	// cache is not initialized before mgr.Start()
-	// we need this because we need to interact with OperatorCondition
-	apiClient, err := client.New(mgr.GetConfig(), client.Options{
-		Scheme: mgr.GetScheme(),
-	})
-	cmdHelper.ExitOnError(err, "Cannot create a new API client")
 
 	// register pprof instrumentation if HCO_PPROF_ADDR is set
 	cmdHelper.ExitOnError(cmdHelper.RegisterPPROFServer(mgr), "can't register pprof server")
 
 	logger.Info("Registering Components.")
 
-	// Detect OpenShift version
-	ci := hcoutil.GetClusterInfo()
-	ctx := signals.SetupSignalHandler()
-
-	err = ci.Init(ctx, apiClient, logger)
-	cmdHelper.ExitOnError(err, "Cannot detect cluster type")
+	ctx = signals.SetupSignalHandler()
 
 	eventEmitter := hcoutil.GetEventEmitter()
 	eventEmitter.Init(ci.GetPod(), ci.GetCSV(), mgr.GetEventRecorderFor(hcoutil.HyperConvergedName))
@@ -137,18 +151,6 @@ func main() {
 
 	err = mgr.AddReadyzCheck("ready", healthz.Ping)
 	cmdHelper.ExitOnError(err, "unable to add ready check")
-
-	// CreateServiceMonitors will automatically create the prometheus-operator ServiceMonitor resources
-	// necessary to configure Prometheus to scrape metrics from this operator.
-
-	// apiclient.New() returns a client without cache.
-	// cache is not initialized before mgr.Start()
-	// we need this because we need to read the HCO CR, if there,
-	// to fetch the configured TLSSecurityProfile
-	apiClient, apiCerr := client.New(mgr.GetConfig(), client.Options{
-		Scheme: mgr.GetScheme(),
-	})
-	cmdHelper.ExitOnError(apiCerr, "Cannot create a new API client")
 
 	hcoCR := &hcov1beta1.HyperConverged{}
 	hcoCR.Name = hcoutil.HyperConvergedName
@@ -162,8 +164,13 @@ func main() {
 		hcoTLSSecurityProfile = hcoCR.Spec.TLSSecurityProfile
 	}
 
+	logger.Info("Registering the APIServer reconciler")
 	err = whapiservercontrollers.RegisterReconciler(mgr, ci)
 	cmdHelper.ExitOnError(err, "Cannot register APIServer reconciler")
+
+	logger.Info("Registering the Bearer Token reconciler")
+	err = bearertokencontroller.RegisterReconciler(mgr, ci, eventEmitter)
+	cmdHelper.ExitOnError(err, "Cannot register the Bearer Token reconciler")
 
 	if err = webhooks.SetupWebhookWithManager(ctx, mgr, ci.IsOpenshift(), hcoTLSSecurityProfile); err != nil {
 		logger.Error(err, "unable to create webhook", "webhook", "HyperConverged")
@@ -179,4 +186,36 @@ func main() {
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "UnexpectedError", "HyperConverged crashed; "+err.Error())
 		os.Exit(1)
 	}
+}
+
+func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Options {
+	if !ci.IsMonitoringAvailable() {
+		return cache.Options{}
+	}
+
+	namespaceSelector := fields.Set{"metadata.namespace": operatorNamespace}.AsSelector()
+	labelSelector := labels.Set{hcoutil.AppLabel: hcoutil.HCOWebhookName}.AsSelector()
+
+	cacheOptions := cache.Options{
+		ByObject: map[client.Object]cache.ByObject{
+			&appsv1.Deployment{}: {
+				Label: labels.Set{"name": hcoutil.HCOWebhookName}.AsSelector(),
+				Field: namespaceSelector,
+			},
+			&corev1.Service{}: {
+				Label: labelSelector,
+				Field: namespaceSelector,
+			},
+			&corev1.Secret{}: {
+				Label: labelSelector,
+				Field: namespaceSelector,
+			},
+			&monitoringv1.ServiceMonitor{}: {
+				Label: labelSelector,
+				Field: namespaceSelector,
+			},
+		},
+	}
+
+	return cacheOptions
 }
