@@ -24,7 +24,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
-	webhookscontrollers "github.com/kubevirt/hyperconverged-cluster-operator/controllers/webhooks"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
@@ -32,6 +31,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/api"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
+	whapiservercontrollers "github.com/kubevirt/hyperconverged-cluster-operator/controllers/webhooks/apiserver-controller"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/authorization"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks"
@@ -162,7 +162,7 @@ func main() {
 		hcoTLSSecurityProfile = hcoCR.Spec.TLSSecurityProfile
 	}
 
-	err = webhookscontrollers.RegisterReconciler(mgr, ci)
+	err = whapiservercontrollers.RegisterReconciler(mgr, ci)
 	cmdHelper.ExitOnError(err, "Cannot register APIServer reconciler")
 
 	if err = webhooks.SetupWebhookWithManager(ctx, mgr, ci.IsOpenshift(), hcoTLSSecurityProfile); err != nil {
