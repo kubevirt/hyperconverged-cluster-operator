@@ -63,7 +63,7 @@ spec:
         - name: NETWORK_ADDONS_VERSION
           value: v0.100.0
         - name: SSP_VERSION
-          value: v0.24.0-alpha.0
+          value: v0.24.0
         - name: HPPO_VERSION
           value: v0.22.0
         - name: AAQ_VERSION
@@ -578,6 +578,7 @@ spec:
         app.kubernetes.io/part-of: hyperconverged-cluster
         app.kubernetes.io/version: 1.16.0
         control-plane: ssp-operator
+        hco.kubevirt.io/allow-access-cluster-services: "true"
         name: ssp-operator
         prometheus.ssp.kubevirt.io: "true"
     spec:
@@ -588,15 +589,15 @@ spec:
         - /manager
         env:
         - name: VALIDATOR_IMAGE
-          value: quay.io/kubevirt/kubevirt-template-validator@sha256:af6453d9d564182434db4b40a3ce89386eba7bc3165054e2d956d3b30fffe13b
+          value: quay.io/kubevirt/kubevirt-template-validator@sha256:5eeff2736995e6694b428562b55afded3cfa78853245ceec9e3bb1f81fcd8d1f
         - name: OPERATOR_VERSION
-          value: v0.24.0-alpha.0
+          value: v0.24.0
         - name: VM_CONSOLE_PROXY_IMAGE
         - name: POD_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
-        image: quay.io/kubevirt/ssp-operator@sha256:5b26d268ba953f899993f049777b9f6a395e99ccb569b87f1253cbdb04e53df1
+        image: quay.io/kubevirt/ssp-operator@sha256:d117ebaefda9cfbde21830abbcfd4ea72d1d9217e6f816f61a7499e8119e17b7
         livenessProbe:
           httpGet:
             path: /healthz
@@ -620,7 +621,7 @@ spec:
         resources:
           requests:
             cpu: 200m
-            memory: 150Mi
+            memory: 200Mi
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
