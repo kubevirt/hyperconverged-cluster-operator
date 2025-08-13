@@ -15,10 +15,11 @@ import (
 
 func NewServiceHandler(Client client.Client, Scheme *runtime.Scheme, newCrFunc newSvcFunc) *GenericOperand {
 	h := &GenericOperand{
-		Client: Client,
-		Scheme: Scheme,
-		crType: "Service",
-		hooks:  &serviceHooks{newCrFunc: newCrFunc},
+		Client:                 Client,
+		Scheme:                 Scheme,
+		crType:                 "Service",
+		hooks:                  &serviceHooks{newCrFunc: newCrFunc},
+		setControllerReference: true,
 	}
 
 	return h
