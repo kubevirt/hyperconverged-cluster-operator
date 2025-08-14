@@ -69,8 +69,6 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		var err error
 		hcoClient, err = tests.GetHCOPrometheusClient(ctx, cli)
 		Expect(err).NotTo(HaveOccurred())
-
-		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("Alert rules should have all the required annotations", func() {
@@ -349,6 +347,25 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		})
 	})
 
+	Describe("Webhook monitoring", Label(tests.OpenshiftLabel, "monitoring", "webhook"), func() {
+		var webhookClient *tests.HCOPrometheusClient
+		BeforeEach(func(ctx context.Context) {
+			var err error
+			Expect(tests.CreateTempWebhookRoute(ctx, cli)).To(Succeed())
+			webhookClient, err = tests.GetWebhookPrometheusClient(ctx, cli)
+			Expect(err).NotTo(HaveOccurred())
+
+			DeferCleanup(func(ctx context.Context) {
+				Expect(tests.DeleteTempWebhookRoute(ctx, cli)).To(Succeed())
+			})
+		})
+
+		const justARandomMetric = `controller_runtime_max_concurrent_reconciles`
+		It("should allow reading from the webhook metrics endpoint, when using a bearer token", func(ctx context.Context) {
+			_, err := webhookClient.GetHCOMetric(ctx, justARandomMetric)
+			Expect(err).NotTo(HaveOccurred(), "should be able to read a metric from the webhook prometheus endpoint")
+		})
+	})
 })
 
 func getAlertByName(alerts promApiv1.AlertsResult, alertName string) *promApiv1.Alert {
