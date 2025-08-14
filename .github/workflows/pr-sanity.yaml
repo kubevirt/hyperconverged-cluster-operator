@@ -47,6 +47,7 @@ jobs:
         run: make prom-rules-verify
 
       - name: Coveralls
+        continue-on-error: true
         uses: coverallsapp/github-action@v2
         with:
           file: coverprofiles/cover.coverprofile
