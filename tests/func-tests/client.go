@@ -28,52 +28,49 @@ import (
 )
 
 var (
-	k8sCli       client.Client
-	k8sClientSet *kubernetes.Clientset
-	cfg          *rest.Config
+	k8sCli        client.Client
+	k8sClientSet  *kubernetes.Clientset
+	cfg           *rest.Config
+	cfgOnce       sync.Once
+	clientSetOnce sync.Once
+	crClientOnce  sync.Once
+	schemeOnce    sync.Once
 )
 
 func GetClientConfig() *rest.Config {
-	k8sconfig.RegisterFlags(flag.CommandLine)
-	logf.SetLogger(ginkgo.GinkgoLogr)
-
-	once := sync.Once{}
-	once.Do(func() {
+	cfgOnce.Do(func() {
+		k8sconfig.RegisterFlags(flag.CommandLine)
+		logf.SetLogger(ginkgo.GinkgoLogr)
 		cfg = k8sconfig.GetConfigOrDie()
 	})
 	return cfg
 }
 
 func GetK8sClientSet() *kubernetes.Clientset {
-	once := sync.Once{}
-	once.Do(func() {
+	clientSetOnce.Do(func() {
 		var err error
 		k8sClientSet, err = kubernetes.NewForConfig(GetClientConfig())
 		if err != nil {
-			panic("can't get  client: " + err.Error())
+			panic("can't get k8s client: " + err.Error())
 		}
 	})
 	return k8sClientSet
 }
 
 func GetControllerRuntimeClient() client.Client {
-	once := sync.Once{}
-	once.Do(func() {
+	crClientOnce.Do(func() {
 		var err error
-
 		k8sCli, err = client.New(GetClientConfig(), client.Options{})
 		if err != nil {
-			panic("can't get  client: " + err.Error())
+			panic("can't get CR client: " + err.Error())
 		}
 		setScheme(k8sCli)
 	})
-
 	return k8sCli
 }
 
 func setScheme(cli client.Client) {
-	once := sync.Once{}
-	once.Do(func() {
+	schemeOnce.Do(func() {
 		funcs := []func(scheme2 *runtime.Scheme) error{
 			corev1.AddToScheme,
 			appsv1.AddToScheme,
