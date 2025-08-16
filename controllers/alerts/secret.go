@@ -17,35 +17,39 @@ const (
 	secretName = "hco-bearer-auth"
 )
 
-type secretReconciler struct {
+type SecretReconciler struct {
 	theSecret *corev1.Secret
 }
 
-func newSecretReconciler(namespace string, owner metav1.OwnerReference) *secretReconciler {
+func CreateSecretReconciler(secret *corev1.Secret) *SecretReconciler {
+	return &SecretReconciler{
+		theSecret: secret,
+	}
+}
+
+func newSecretReconciler(namespace string, owner metav1.OwnerReference) *SecretReconciler {
 	token, err := authorization.CreateToken()
 	if err != nil {
 		logger.Error(err, "failed to create bearer token")
 		return nil
 	}
 
-	return &secretReconciler{
-		theSecret: NewSecret(namespace, owner, token),
-	}
+	return CreateSecretReconciler(NewSecret(namespace, owner, token))
 }
 
-func (r *secretReconciler) Kind() string {
+func (r *SecretReconciler) Kind() string {
 	return "Secret"
 }
 
-func (r *secretReconciler) ResourceName() string {
-	return secretName
+func (r *SecretReconciler) ResourceName() string {
+	return r.theSecret.Name
 }
 
-func (r *secretReconciler) GetFullResource() client.Object {
+func (r *SecretReconciler) GetFullResource() client.Object {
 	return r.theSecret.DeepCopy()
 }
 
-func (r *secretReconciler) EmptyObject() client.Object {
+func (r *SecretReconciler) EmptyObject() client.Object {
 	return &corev1.Secret{}
 }
 
@@ -53,7 +57,7 @@ func (r *secretReconciler) EmptyObject() client.Object {
 // If it does, it returns nil. If the secret exists but the token is incorrect, it deletes the old secret
 // and creates a new one with the updated token. If the secret does not exist, it creates a new one.
 // It deletes the old secret to force Prometheus to reload the configuration.
-func (r *secretReconciler) UpdateExistingResource(ctx context.Context, cl client.Client, resource client.Object, logger logr.Logger) (client.Object, bool, error) {
+func (r *SecretReconciler) UpdateExistingResource(ctx context.Context, cl client.Client, resource client.Object, logger logr.Logger) (client.Object, bool, error) {
 	found := resource.(*corev1.Secret)
 
 	token, err := authorization.CreateToken()

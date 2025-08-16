@@ -14,31 +14,35 @@ import (
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-type serviceMonitorReconciler struct {
+type ServiceMonitorReconciler struct {
 	theServiceMonitor *monitoringv1.ServiceMonitor
 }
 
-func newServiceMonitorReconciler(namespace string, owner metav1.OwnerReference) *serviceMonitorReconciler {
-	return &serviceMonitorReconciler{theServiceMonitor: NewServiceMonitor(namespace, owner)}
+func CreateServiceMonitorReconciler(serviceMonitor *monitoringv1.ServiceMonitor) *ServiceMonitorReconciler {
+	return &ServiceMonitorReconciler{theServiceMonitor: serviceMonitor}
 }
 
-func (r serviceMonitorReconciler) Kind() string {
+func newServiceMonitorReconciler(namespace string, owner metav1.OwnerReference) *ServiceMonitorReconciler {
+	return CreateServiceMonitorReconciler(NewServiceMonitor(namespace, owner))
+}
+
+func (r ServiceMonitorReconciler) Kind() string {
 	return monitoringv1.ServiceMonitorsKind
 }
 
-func (r serviceMonitorReconciler) ResourceName() string {
-	return serviceName
+func (r ServiceMonitorReconciler) ResourceName() string {
+	return r.theServiceMonitor.Name
 }
 
-func (r serviceMonitorReconciler) GetFullResource() client.Object {
+func (r ServiceMonitorReconciler) GetFullResource() client.Object {
 	return r.theServiceMonitor.DeepCopy()
 }
 
-func (r serviceMonitorReconciler) EmptyObject() client.Object {
+func (r ServiceMonitorReconciler) EmptyObject() client.Object {
 	return &monitoringv1.ServiceMonitor{}
 }
 
-func (r serviceMonitorReconciler) UpdateExistingResource(ctx context.Context, cl client.Client, resource client.Object, logger logr.Logger) (client.Object, bool, error) {
+func (r ServiceMonitorReconciler) UpdateExistingResource(ctx context.Context, cl client.Client, resource client.Object, logger logr.Logger) (client.Object, bool, error) {
 	found := resource.(*monitoringv1.ServiceMonitor)
 	modified := false
 	if !reflect.DeepEqual(found.Spec, r.theServiceMonitor.Spec) {
@@ -67,7 +71,7 @@ func NewServiceMonitor(namespace string, owner metav1.OwnerReference) *monitorin
 		},
 		Endpoints: []monitoringv1.Endpoint{
 			{
-				Port:   operatorPortName,
+				Port:   OperatorPortName,
 				Scheme: "https",
 				Authorization: &monitoringv1.SafeAuthorization{
 					Credentials: &corev1.SecretKeySelector{

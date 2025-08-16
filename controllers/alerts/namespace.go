@@ -11,6 +11,8 @@ import (
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
+type reconcileNamespaceFunc func(context.Context, client.Client, string, logr.Logger) error
+
 func reconcileNamespace(ctx context.Context, cl client.Client, namespace string, logger logr.Logger) error {
 	ns := &corev1.Namespace{}
 
@@ -31,7 +33,7 @@ func reconcileNamespace(ctx context.Context, cl client.Client, namespace string,
 	if ns.Labels == nil {
 		ns.Labels = make(map[string]string)
 	}
-	if val, hasKey := ns.Labels[hcoutil.PrometheusNSLabel]; !hasKey || val != "true" {
+	if ns.Labels[hcoutil.PrometheusNSLabel] != "true" {
 		ns.Labels[hcoutil.PrometheusNSLabel] = "true"
 		needUpdate = true
 	}
