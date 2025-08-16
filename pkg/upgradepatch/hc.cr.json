@@ -16,6 +16,7 @@
       "alignCPUs": false,
       "enableMultiArchBootImageImport": false,
       "decentralizedLiveMigration": false
+      "videoConfig": false
     },
     "liveMigrationConfig": {
       "parallelMigrationsPerCluster": 5,
