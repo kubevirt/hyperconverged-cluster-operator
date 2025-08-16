@@ -390,3 +390,30 @@ tests:
               operator_health_impact: "none"
               kubernetes_operator_part_of: "kubevirt"
               kubernetes_operator_component: "cnv-observability"
+
+  - interval: 1m
+    input_series:
+      - series: 'kubevirt_hco_memory_overcommit_percentage'
+        values: "80+0x10 101+0x10"
+      - series: 'kube_daemonset_metadata_generation{namespace="wasp",daemonset="wasp-agent"}'
+        values: "0+0x10 1+0x10"
+
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: DuplicateWaspAgentDSDetected
+        exp_alerts: [ ]
+      - eval_time: 9m
+        alertname: DuplicateWaspAgentDSDetected
+        exp_alerts: [ ]
+      - eval_time: 12m
+        alertname: DuplicateWaspAgentDSDetected
+        exp_alerts:
+          - exp_annotations:
+              summary: "Duplicate wasp-agent deployment detected"
+              description: "Two wasp-agent deployments exist in the cluster. Please follow the instructions mentioned in the runbook to remove the duplicate deployment."
+              runbook_url: "https://github.com/openshift/runbooks/blob/master/alerts/openshift-virtualization-operator/DuplicateWaspAgentDSDetected.md"
+            exp_labels:
+              severity: "warning"
+              operator_health_impact: "none"
+              kubernetes_operator_part_of: "kubevirt"
+              kubernetes_operator_component: "cnv-observability"
