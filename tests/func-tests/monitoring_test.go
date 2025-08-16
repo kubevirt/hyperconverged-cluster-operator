@@ -19,9 +19,12 @@ import (
 	promApiv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	promConfig "github.com/prometheus/common/config"
 	promModel "github.com/prometheus/common/model"
+	appsv1 "k8s.io/api/apps/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
+	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
@@ -172,6 +175,100 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			alert := getAlertByName(alerts, "UnsupportedHCOModification")
 			return alert
 		}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
+	})
+
+	Context("should fire the DeprecatedMachineType alert", Serial, func() {
+		var deprecatedMachineType string
+
+		var _ = BeforeEach(func(ctx context.Context) {
+			deploy := &appsv1.Deployment{}
+			err := cli.Get(ctx, client.ObjectKey{
+				Name:      "hco-operator",
+				Namespace: "openshift-cnv",
+			}, deploy)
+			Expect(err).ToNot(HaveOccurred(), "failed to get hco-operator deployment")
+
+			var envValue string
+			for _, container := range deploy.Spec.Template.Spec.Containers {
+				for _, envVar := range container.Env {
+					if envVar.Name == "VIRT_LAUNCHER_OS_VERSION" {
+						envValue = envVar.Value
+						break
+					}
+				}
+			}
+
+			Expect(envValue).ToNot(BeEmpty(), "VIRT_LAUNCHER_OS_VERSION env var not found in hco-operator deployment")
+
+			version, err := strconv.Atoi(envValue)
+			Expect(err).ToNot(HaveOccurred(), "VIRT_LAUNCHER_OS_VERSION must be a valid integer")
+
+			deprecatedMachineType = fmt.Sprintf("pc-q35-rhel%d.6.0", version-2)
+		})
+
+		It("when a VM is using a deprecated machine type", func(ctx context.Context) {
+			By("Creating a VM with a deprecated machine type")
+			runStrategy := kubevirtcorev1.RunStrategyAlways
+			vm := &kubevirtcorev1.VirtualMachine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "deprecated-vm",
+					Namespace: tests.TestNamespace,
+				},
+				Spec: kubevirtcorev1.VirtualMachineSpec{
+					RunStrategy: &runStrategy,
+					Template: &kubevirtcorev1.VirtualMachineInstanceTemplateSpec{
+						Spec: kubevirtcorev1.VirtualMachineInstanceSpec{
+							Domain: kubevirtcorev1.DomainSpec{
+								Machine: &kubevirtcorev1.Machine{Type: deprecatedMachineType},
+								Resources: kubevirtcorev1.ResourceRequirements{
+									Requests: corev1.ResourceList{
+										corev1.ResourceMemory: resource.MustParse("128Mi"),
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			Expect(cli.Create(ctx, vm)).To(Succeed())
+
+			By("Ensuring the DeprecatedMachineType alert is firing")
+			Eventually(func(ctx context.Context) *promApiv1.Alert {
+				alerts, err := promClient.Alerts(ctx)
+				Expect(err).ToNot(HaveOccurred())
+				alert := getAlertByName(alerts, "DeprecatedMachineType")
+				return alert
+			}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
+		})
+
+		It("when a VMI is using a deprecated machine type", func(ctx context.Context) {
+			By("Creating a VMI with a deprecated machine type")
+			vmi := &kubevirtcorev1.VirtualMachineInstance{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "deprecated-vmi",
+					Namespace: tests.TestNamespace,
+				},
+				Spec: kubevirtcorev1.VirtualMachineInstanceSpec{
+					Domain: kubevirtcorev1.DomainSpec{
+						Machine: &kubevirtcorev1.Machine{Type: deprecatedMachineType},
+						Resources: kubevirtcorev1.ResourceRequirements{
+							Requests: corev1.ResourceList{
+								corev1.ResourceMemory: resource.MustParse("128Mi"),
+							},
+						},
+					},
+				},
+			}
+			Expect(cli.Create(ctx, vmi)).To(Succeed())
+
+			By("Ensuring the DeprecatedMachineType alert is firing")
+			Eventually(func(ctx context.Context) *promApiv1.Alert {
+				alerts, err := promClient.Alerts(ctx)
+				Expect(err).ToNot(HaveOccurred())
+				alert := getAlertByName(alerts, "DeprecatedMachineType")
+				return alert
+			}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
+		})
 	})
 
 	Describe("KubeDescheduler", Serial, Ordered, Label(tests.OpenshiftLabel, "monitoring"), func() {
@@ -348,7 +445,6 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
 		})
 	})
-
 })
 
 func getAlertByName(alerts promApiv1.AlertsResult, alertName string) *promApiv1.Alert {

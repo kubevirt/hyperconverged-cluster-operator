@@ -116,5 +116,26 @@ func clusterAlerts() []promv1.Rule {
 				"operator_health_impact": "none",
 			},
 		},
+		{
+			Alert: "DeprecatedMachineType",
+			Expr: intstr.FromString(`
+				(
+				  kubevirt_vm_info
+				  or
+				  label_replace(kubevirt_vmi_info, "machine_type", "$1", "guest_os_machine", "(.*)")
+				)
+				* on(machine_type) group_left(node)
+				kubevirt_node_deprecated_machine_types
+			  `),
+			For: ptr.To(promv1.Duration("5m")),
+			Annotations: map[string]string{
+				"summary":     "VM {{ $labels.namespace }}/{{ $labels.name }} is using a deprecated machine type",
+				"description": "Virtual Machine '{{ $labels.namespace }}/{{ $labels.name }}' on node '{{ $labels.node }}' is using machine type '{{ $labels.machine_type }}', which is deprecated.",
+			},
+			Labels: map[string]string{
+				"severity":               "warning",
+				"operator_health_impact": "warning",
+			},
+		},
 	}
 }
