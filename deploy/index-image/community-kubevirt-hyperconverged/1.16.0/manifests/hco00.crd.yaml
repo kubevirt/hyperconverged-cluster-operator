@@ -1170,6 +1170,13 @@ spec:
                       be able to bind their VM to a UDN network on the VM's primary interface.
                       Deprecated: this field is ignored and will be removed in the next version of the API.
                     type: boolean
+                  videoConfig:
+                    default: false
+                    description: |-
+                      EnableVideoDeviceConfiguration allows users to configure video device types for their virtual machines.
+                      This can be useful for workloads that require specific video capabilities or architectures.
+                      Note: This feature is in Developer Preview.
+                    type: boolean
                   withHostPassthroughCPU:
                     description: 'Deprecated: there is no such FG in KubeVirt. This
                       field is ignored'
