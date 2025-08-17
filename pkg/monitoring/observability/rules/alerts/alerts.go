@@ -29,7 +29,9 @@ func Register(operatorRegistry *operatorrules.Registry) error {
 		for _, alert := range alertGroup {
 			alert.Labels["kubernetes_operator_part_of"] = "kubevirt"
 			alert.Labels["kubernetes_operator_component"] = "cnv-observability"
-			alert.Annotations["runbook_url"] = fmt.Sprintf(runbookURLTemplate, alert.Alert)
+			if _, ok := alert.Annotations["runbook_url"]; !ok {
+				alert.Annotations["runbook_url"] = fmt.Sprintf(runbookURLTemplate, alert.Alert)
+			}
 		}
 
 	}

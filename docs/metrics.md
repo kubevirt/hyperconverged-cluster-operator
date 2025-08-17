@@ -15,6 +15,9 @@ Indicates whether the DataImportCronTemplate has supported architectures (0) or 
 ### kubevirt_hco_hyperconverged_cr_exists
 Indicates whether the HyperConverged custom resource exists (1) or not (0). Type: Gauge.
 
+### kubevirt_hco_memory_overcommit_percentage
+Indicates the cluster-wide configured VM memory overcommit percentage. Type: Gauge.
+
 ### kubevirt_hco_misconfigured_descheduler
 Indicates whether the optional descheduler is not properly configured (1) to work with KubeVirt or not (0). Type: Gauge.
 
