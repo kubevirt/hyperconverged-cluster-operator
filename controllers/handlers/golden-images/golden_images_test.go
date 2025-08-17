@@ -29,7 +29,7 @@ func TestOperators(t *testing.T) {
 }
 
 var _ = Describe("Test data import cron template", func() {
-	dir := path.Join(os.TempDir(), fmt.Sprint(time.Now().UTC().Unix()))
+	dir := path.Join(os.TempDir(), fmt.Sprintf("custom-dict-dir-%d", time.Now().UTC().Unix()))
 	origFunc := getDataImportCronTemplatesFileLocation
 
 	var (
@@ -64,7 +64,9 @@ var _ = Describe("Test data import cron template", func() {
 
 		By("file does not exist - no error")
 		Expect(os.Mkdir(dir, os.ModePerm)).To(Succeed())
-		defer func() { _ = os.RemoveAll(dir) }()
+		DeferCleanup(func() {
+			Expect(os.RemoveAll(dir)).To(Succeed())
+		})
 
 		Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
 		Expect(dataImportCronTemplateHardCodedMap).To(BeEmpty())
@@ -73,13 +75,11 @@ var _ = Describe("Test data import cron template", func() {
 
 		By("valid file exits")
 		Expect(commontestutils.CopyFile(destFile, path.Join(testFilesLocation, "dataImportCronTemplates.yaml"))).To(Succeed())
-		defer os.Remove(destFile)
 		Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
 		Expect(dataImportCronTemplateHardCodedMap).To(HaveLen(2))
 
 		By("the file is wrong")
 		Expect(commontestutils.CopyFile(destFile, path.Join(testFilesLocation, "wrongDataImportCronTemplates.yaml"))).To(Succeed())
-		defer os.Remove(destFile)
 		Expect(readDataImportCronTemplatesFromFile()).To(HaveOccurred())
 		Expect(dataImportCronTemplateHardCodedMap).To(BeEmpty())
 	})
