@@ -330,11 +330,9 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 			},
 			&rbacv1.ClusterRole{}: {
 				Label: labelSelector,
-				Field: namespaceSelector,
 			},
 			&rbacv1.ClusterRoleBinding{}: {
 				Label: labelSelector,
-				Field: namespaceSelector,
 			},
 			&corev1.Namespace{}: {
 				Label: labelSelectorForNamespace,

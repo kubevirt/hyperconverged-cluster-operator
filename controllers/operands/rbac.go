@@ -70,8 +70,8 @@ type clusterRoleHooks struct {
 	required *rbacv1.ClusterRole
 }
 
-func (h *clusterRoleHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	return h.required, nil
+func (h *clusterRoleHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+	return h.required.DeepCopy(), nil
 }
 
 func (h *clusterRoleHooks) GetEmptyCr() client.Object { return &rbacv1.ClusterRole{} }
