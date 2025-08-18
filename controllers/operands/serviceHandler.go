@@ -17,10 +17,11 @@ type genericServiceHandler genericOperand
 
 func newServiceHandler(Client client.Client, Scheme *runtime.Scheme, newCrFunc newSvcFunc) *genericServiceHandler {
 	h := &genericServiceHandler{
-		Client: Client,
-		Scheme: Scheme,
-		crType: "Service",
-		hooks:  &serviceHooks{newCrFunc: newCrFunc},
+		Client:                 Client,
+		Scheme:                 Scheme,
+		crType:                 "Service",
+		hooks:                  &serviceHooks{newCrFunc: newCrFunc},
+		setControllerReference: true,
 	}
 
 	return h

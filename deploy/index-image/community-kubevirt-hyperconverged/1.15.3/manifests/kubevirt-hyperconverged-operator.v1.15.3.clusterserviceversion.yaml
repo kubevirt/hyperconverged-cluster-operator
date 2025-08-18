@@ -3085,6 +3085,10 @@ spec:
                   initialDelaySeconds: 30
                   periodSeconds: 5
                 name: hyperconverged-cluster-operator
+                ports:
+                - containerPort: 8443
+                  name: metrics
+                  protocol: TCP
                 readinessProbe:
                   failureThreshold: 1
                   httpGet:
@@ -3150,6 +3154,8 @@ spec:
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.name
+                - name: HCO_KV_IO_VERSION
+                  value: 1.15.3
                 image: +WEBHOOK_IMAGE_TO_REPLACE+
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
@@ -3161,6 +3167,13 @@ spec:
                   initialDelaySeconds: 30
                   periodSeconds: 5
                 name: hyperconverged-cluster-webhook
+                ports:
+                - containerPort: 4343
+                  name: webhook
+                  protocol: TCP
+                - containerPort: 8443
+                  name: metrics
+                  protocol: TCP
                 readinessProbe:
                   failureThreshold: 1
                   httpGet:

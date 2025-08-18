@@ -1,5 +1,12 @@
 package util
 
+// pod names
+const (
+	HCOOperatorName  = "hyperconverged-cluster-operator"
+	HCOWebhookName   = "hyperconverged-cluster-webhook"
+	CLIDownloadsName = "hyperconverged-cluster-cli-download"
+)
+
 // HCO common constants
 const (
 	OperatorNamespaceEnv             = "OPERATOR_NAMESPACE"
@@ -52,7 +59,8 @@ const (
 	// HyperConvergedName is the name of the HyperConverged resource that will be reconciled
 	HyperConvergedName           = "kubevirt-hyperconverged"
 	MetricsHost                  = "0.0.0.0"
-	MetricsPort            int32 = 8383
+	MetricsPort            int32 = 8443
+	MetricsPortName              = "metrics"
 	HealthProbeHost              = "0.0.0.0"
 	HealthProbePort        int32 = 6060
 	ReadinessEndpointName        = "/readyz"
@@ -61,6 +69,7 @@ const (
 	HCOMutatingWebhookPath       = "/mutate-hco-kubevirt-io-v1beta1-hyperconverged"
 	HCONSWebhookPath             = "/mutate-ns-hco-kubevirt-io"
 	WebhookPort                  = 4343
+	WebhookPortName              = "webhook"
 
 	WebhookCertName       = "apiserver.crt"
 	WebhookKeyName        = "apiserver.key"

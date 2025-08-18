@@ -47,7 +47,7 @@ var _ = BeforeSuite(func(ctx context.Context) {
 	if isOpenshift {
 		By("adding temporary route")
 		Eventually(ctx, func(g Gomega) error {
-			return tests.CreateTempRoute(ctx, controllerCli)
+			return tests.CreateTempOperatorRoute(ctx, controllerCli)
 		}).WithTimeout(time.Second * 60).
 			WithPolling(time.Second).
 			WithContext(ctx).
@@ -60,7 +60,7 @@ var _ = BeforeSuite(func(ctx context.Context) {
 		if isOpenshift {
 			By("removing the temporary route")
 			Eventually(ctx, func() error {
-				return tests.DeleteTempRoute(ctx, controllerCli)
+				return tests.DeleteTempOperatorRoute(ctx, controllerCli)
 			}).WithTimeout(time.Second * 60).
 				WithPolling(time.Second).
 				WithContext(ctx).
