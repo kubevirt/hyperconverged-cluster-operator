@@ -158,6 +158,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        - name: HCO_KV_IO_VERSION
+          value: 1.16.0
         image: quay.io/kubevirt/hyperconverged-cluster-webhook:1.16.0-unstable
         imagePullPolicy: Always
         livenessProbe:

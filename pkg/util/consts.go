@@ -1,5 +1,12 @@
 package util
 
+// pod names
+const (
+	HCOOperatorName  = "hyperconverged-cluster-operator"
+	HCOWebhookName   = "hyperconverged-cluster-webhook"
+	CLIDownloadsName = "hyperconverged-cluster-cli-download"
+)
+
 // HCO common constants
 const (
 	OperatorNamespaceEnv               = "OPERATOR_NAMESPACE"

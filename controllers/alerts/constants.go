@@ -3,7 +3,6 @@ package alerts
 import hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 
 const (
-	operatorName                 = "hyperconverged-cluster-operator"
 	defaultMonitoringNamespace   = "monitoring"
 	openshiftMonitoringNamespace = "openshift-monitoring"
 )
