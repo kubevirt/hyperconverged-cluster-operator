@@ -1,6 +1,8 @@
 module github.com/kubevirt/hyperconverged-cluster-operator
 
-go 1.23.6
+go 1.24.0
+
+toolchain go1.24.5
 
 require (
 	dario.cat/mergo v1.0.1
@@ -19,7 +21,7 @@ require (
 	github.com/openshift/api v3.9.1-0.20190517100836-d5b34b957e91+incompatible
 	github.com/openshift/cluster-kube-descheduler-operator v0.0.0-20250410114548-481d56a6c34e
 	github.com/openshift/custom-resource-status v1.1.2
-	github.com/openshift/library-go v0.0.0-20250402180609-ce2ba53fb2a4
+	github.com/openshift/library-go v0.0.0-20250725103737-7f9bc3eb865a
 	github.com/operator-framework/api v0.30.0
 	github.com/operator-framework/operator-lib v0.17.0
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.81.0
@@ -33,10 +35,10 @@ require (
 	golang.org/x/tools v0.32.0
 	gomodules.xyz/jsonpatch/v2 v2.5.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/api v0.32.3
-	k8s.io/apiextensions-apiserver v0.32.3
-	k8s.io/apimachinery v0.32.3
-	k8s.io/apiserver v0.32.3
+	k8s.io/api v0.33.2
+	k8s.io/apiextensions-apiserver v0.33.2
+	k8s.io/apimachinery v0.33.2
+	k8s.io/apiserver v0.33.2
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/kube-openapi v0.32.3
 	k8s.io/utils v0.0.0-20250321185631-1f6e0b77f77e

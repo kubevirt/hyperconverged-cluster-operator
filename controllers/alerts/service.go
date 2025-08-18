@@ -15,38 +15,42 @@ import (
 )
 
 const (
-	operatorPortName    = "http-metrics"
-	defaultOperatorName = "hyperconverged-cluster-operator"
-	operatorNameEnv     = "OPERATOR_NAME"
-	metricsSuffix       = "-operator-metrics"
-	serviceName         = hcoutil.HyperConvergedName + metricsSuffix
+	OperatorPortName = "http-metrics"
+	OperatorNameEnv  = "OPERATOR_NAME"
+
+	metricsSuffix = "-operator-metrics"
+	serviceName   = hcoutil.HyperConvergedName + metricsSuffix
 )
 
-type metricServiceReconciler struct {
+type MetricServiceReconciler struct {
 	theService *corev1.Service
 }
 
-func newMetricServiceReconciler(namespace string, owner metav1.OwnerReference) *metricServiceReconciler {
-	return &metricServiceReconciler{theService: NewMetricsService(namespace, owner)}
+func CreateMetricServiceReconciler(theService *corev1.Service) *MetricServiceReconciler {
+	return &MetricServiceReconciler{theService: theService}
 }
 
-func (r metricServiceReconciler) Kind() string {
+func newMetricServiceReconciler(namespace string, owner metav1.OwnerReference) *MetricServiceReconciler {
+	return CreateMetricServiceReconciler(NewMetricsService(namespace, owner))
+}
+
+func (r MetricServiceReconciler) Kind() string {
 	return "Service"
 }
 
-func (r metricServiceReconciler) ResourceName() string {
-	return serviceName
+func (r MetricServiceReconciler) ResourceName() string {
+	return r.theService.Name
 }
 
-func (r metricServiceReconciler) GetFullResource() client.Object {
+func (r MetricServiceReconciler) GetFullResource() client.Object {
 	return r.theService.DeepCopy()
 }
 
-func (r metricServiceReconciler) EmptyObject() client.Object {
+func (r MetricServiceReconciler) EmptyObject() client.Object {
 	return &corev1.Service{}
 }
 
-func (r metricServiceReconciler) UpdateExistingResource(ctx context.Context, cl client.Client, resource client.Object, logger logr.Logger) (client.Object, bool, error) {
+func (r MetricServiceReconciler) UpdateExistingResource(ctx context.Context, cl client.Client, resource client.Object, logger logr.Logger) (client.Object, bool, error) {
 	found := resource.(*corev1.Service)
 
 	modified := false
@@ -64,10 +68,10 @@ func (r metricServiceReconciler) UpdateExistingResource(ctx context.Context, cl 
 	if modified {
 		err := cl.Update(ctx, found)
 		if err != nil {
-			logger.Error(err, "failed to update the Service", "serviceName", serviceName)
+			logger.Error(err, "failed to update the Service", "serviceName", r.theService.Name)
 			return nil, false, err
 		}
-		logger.Info("successfully updated the Service", "serviceName", serviceName)
+		logger.Info("successfully updated the Service", "serviceName", r.theService.Name)
 	}
 	return found, modified, nil
 }
@@ -76,7 +80,7 @@ func NewMetricsService(namespace string, owner metav1.OwnerReference) *corev1.Se
 	servicePorts := []corev1.ServicePort{
 		{
 			Port:     hcoutil.MetricsPort,
-			Name:     operatorPortName,
+			Name:     OperatorPortName,
 			Protocol: corev1.ProtocolTCP,
 			TargetPort: intstr.IntOrString{
 				Type: intstr.Int, IntVal: hcoutil.MetricsPort,
@@ -84,8 +88,8 @@ func NewMetricsService(namespace string, owner metav1.OwnerReference) *corev1.Se
 		},
 	}
 
-	operatorName := defaultOperatorName
-	val, ok := os.LookupEnv(operatorNameEnv)
+	operatorName := hcoutil.HCOOperatorName
+	val, ok := os.LookupEnv(OperatorNameEnv)
 	if ok && val != "" {
 		operatorName = val
 	}

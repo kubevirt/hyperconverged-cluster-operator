@@ -19,7 +19,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const tempRouteName = "prom-route"
+const (
+	hcoTempRouteName     = "hco-prom-route"
+	webhookTempRouteName = "hco-wh-prom-route"
+)
 
 type HCOPrometheusClient struct {
 	url   string
@@ -29,13 +32,16 @@ type HCOPrometheusClient struct {
 
 var (
 	hcoClient     *HCOPrometheusClient
-	hcoClientOnce sync.Once
+	hcoClientOnce = &sync.Once{}
+
+	webhookClient     *HCOPrometheusClient
+	webhookClientOnce = &sync.Once{}
 )
 
 func GetHCOPrometheusClient(ctx context.Context, cli client.Client) (*HCOPrometheusClient, error) {
 	var err error
 	hcoClientOnce.Do(func() {
-		hcoClient, err = newHCOPrometheusClient(ctx, cli)
+		hcoClient, err = newHCOPrometheusClient(ctx, cli, "hco-bearer-auth", getOperatorTempRouteHost(hcoTempRouteName))
 	})
 
 	if err != nil {
@@ -49,11 +55,28 @@ func GetHCOPrometheusClient(ctx context.Context, cli client.Client) (*HCOPrometh
 	return hcoClient, nil
 }
 
-func newHCOPrometheusClient(ctx context.Context, cli client.Client) (*HCOPrometheusClient, error) {
-	secret := &corev1.Secret{}
-	err := cli.Get(ctx, client.ObjectKey{Namespace: InstallNamespace, Name: "hco-bearer-auth"}, secret)
+func GetWebhookPrometheusClient(ctx context.Context, cli client.Client) (*HCOPrometheusClient, error) {
+	var err error
+	webhookClientOnce.Do(func() {
+		webhookClient, err = newHCOPrometheusClient(ctx, cli, "hco-webhook-bearer-auth", getOperatorTempRouteHost(webhookTempRouteName))
+	})
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to read the secret; %w", err)
+		return nil, err
+	}
+
+	if webhookClient == nil {
+		return nil, fmt.Errorf("HCO client wasn't initiated")
+	}
+
+	return webhookClient, nil
+}
+
+func newHCOPrometheusClient(ctx context.Context, cli client.Client, secretName string, getHostFn getTempRouteHostFunc) (*HCOPrometheusClient, error) {
+	secret := &corev1.Secret{}
+	err := cli.Get(ctx, client.ObjectKey{Namespace: InstallNamespace, Name: secretName}, secret)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read the secret %s; %w", secretName, err)
 	}
 
 	ticker := time.NewTicker(5 * time.Second)
@@ -64,7 +87,7 @@ func newHCOPrometheusClient(ctx context.Context, cli client.Client) (*HCOPrometh
 	for {
 		select {
 		case <-ticker.C:
-			tempRouteHost, err := getTempRouteHost(ctx, cli)
+			tempRouteHost, err := getHostFn(ctx, cli)
 			if err != nil {
 				continue
 			}
@@ -120,16 +143,25 @@ func (hcoCli HCOPrometheusClient) GetHCOMetric(ctx context.Context, query string
 	return 0, nil
 }
 
-// CreateTempRoute creates a route to the HCO prometheus endpoint, to allow reading the metrics.
-func CreateTempRoute(ctx context.Context, cli client.Client) error {
-	err := openshiftroutev1.AddToScheme(cli.Scheme())
+// CreateTempOperatorRoute creates a route to the HCO prometheus endpoint, to allow reading the metrics.
+func CreateTempOperatorRoute(ctx context.Context, cli client.Client) error {
+	return createTempRoute(ctx, cli, hcoTempRouteName, "kubevirt-hyperconverged-operator-metrics")
+}
+
+// CreateTempWebhookRoute creates a route to the HCO prometheus endpoint, to allow reading the metrics.
+func CreateTempWebhookRoute(ctx context.Context, cli client.Client) error {
+	return createTempRoute(ctx, cli, webhookTempRouteName, "hyperconverged-cluster-webhook-operator-metrics")
+}
+
+func createTempRoute(ctx context.Context, cli client.Client, routeName, serviceName string) error {
+	err := openshiftroutev1.Install(cli.Scheme())
 	if err != nil {
 		return err
 	}
 
 	route := &openshiftroutev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      tempRouteName,
+			Name:      routeName,
 			Namespace: InstallNamespace,
 		},
 		Spec: openshiftroutev1.RouteSpec{
@@ -142,7 +174,7 @@ func CreateTempRoute(ctx context.Context, cli client.Client) error {
 			},
 			To: openshiftroutev1.RouteTargetReference{
 				Kind:   "Service",
-				Name:   "kubevirt-hyperconverged-operator-metrics",
+				Name:   serviceName,
 				Weight: ptr.To[int32](100),
 			},
 			WildcardPolicy: openshiftroutev1.WildcardPolicyNone,
@@ -152,31 +184,43 @@ func CreateTempRoute(ctx context.Context, cli client.Client) error {
 	return cli.Create(ctx, route)
 }
 
-func DeleteTempRoute(ctx context.Context, cli client.Client) error {
+func DeleteTempOperatorRoute(ctx context.Context, cli client.Client) error {
+	return deleteTempRoute(ctx, cli, hcoTempRouteName)
+}
+
+func DeleteTempWebhookRoute(ctx context.Context, cli client.Client) error {
+	return deleteTempRoute(ctx, cli, webhookTempRouteName)
+}
+
+func deleteTempRoute(ctx context.Context, cli client.Client, routeName string) error {
 	route := &openshiftroutev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      tempRouteName,
+			Name:      routeName,
 			Namespace: InstallNamespace,
 		},
 	}
 	return cli.Delete(ctx, route)
 }
 
-func getTempRouteHost(ctx context.Context, cli client.Client) (string, error) {
-	route := &openshiftroutev1.Route{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      tempRouteName,
-			Namespace: InstallNamespace,
-		},
-	}
-	err := cli.Get(ctx, client.ObjectKeyFromObject(route), route)
-	if err != nil {
-		return "", fmt.Errorf("failed to read the temp router; %w", err)
-	}
+type getTempRouteHostFunc func(context.Context, client.Client) (string, error)
 
-	if len(route.Status.Ingress) == 0 {
-		return "", fmt.Errorf("failed to read the temp route status")
-	}
+func getOperatorTempRouteHost(routeName string) getTempRouteHostFunc {
+	return func(ctx context.Context, cli client.Client) (string, error) {
+		route := &openshiftroutev1.Route{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      routeName,
+				Namespace: InstallNamespace,
+			},
+		}
+		err := cli.Get(ctx, client.ObjectKeyFromObject(route), route)
+		if err != nil {
+			return "", fmt.Errorf("failed to read the temp router; %w", err)
+		}
 
-	return route.Status.Ingress[0].Host, nil
+		if len(route.Status.Ingress) == 0 {
+			return "", fmt.Errorf("failed to read the temp route status")
+		}
+
+		return route.Status.Ingress[0].Host, nil
+	}
 }

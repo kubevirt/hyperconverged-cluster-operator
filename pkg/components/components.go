@@ -41,13 +41,9 @@ const DisableOperandDeletionAnnotation = "console.openshift.io/disable-operand-d
 const (
 	crName              = util.HyperConvergedName
 	packageName         = util.HyperConvergedName
-	hcoName             = "hyperconverged-cluster-operator"
-	hcoNameWebhook      = "hyperconverged-cluster-webhook"
 	hcoDeploymentName   = "hco-operator"
 	hcoWhDeploymentName = "hco-webhook"
 	certVolume          = "apiservice-cert"
-
-	cliDownloadsName = "hyperconverged-cluster-cli-download"
 
 	kubevirtProjectName = "KubeVirt project"
 	rbacVersionV1       = "rbac.authorization.k8s.io/v1"
@@ -89,9 +85,9 @@ func GetDeploymentOperator(params *DeploymentOperatorParams) appsv1.Deployment {
 	return appsv1.Deployment{
 		TypeMeta: deploymentType,
 		ObjectMeta: metav1.ObjectMeta{
-			Name: hcoName,
+			Name: util.HCOOperatorName,
 			Labels: map[string]string{
-				"name": hcoName,
+				"name": util.HCOOperatorName,
 			},
 		},
 		Spec: GetDeploymentSpecOperator(params),
@@ -102,9 +98,9 @@ func GetDeploymentWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion stri
 	deploy := appsv1.Deployment{
 		TypeMeta: deploymentType,
 		ObjectMeta: metav1.ObjectMeta{
-			Name: hcoNameWebhook,
+			Name: util.HCOWebhookName,
 			Labels: map[string]string{
-				"name": hcoNameWebhook,
+				"name": util.HCOWebhookName,
 			},
 		},
 		Spec: GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion, env),
@@ -118,9 +114,9 @@ func GetDeploymentCliDownloads(params *DeploymentOperatorParams) appsv1.Deployme
 	return appsv1.Deployment{
 		TypeMeta: deploymentType,
 		ObjectMeta: metav1.ObjectMeta{
-			Name: cliDownloadsName,
+			Name: util.CLIDownloadsName,
 			Labels: map[string]string{
-				"name": cliDownloadsName,
+				"name": util.CLIDownloadsName,
 			},
 		},
 		Spec: GetDeploymentSpecCliDownloads(params),
@@ -134,11 +130,11 @@ func GetServiceWebhook() corev1.Service {
 			Kind:       "Service",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: hcoNameWebhook + "-service",
+			Name: util.HCOWebhookName + "-service",
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
-				"name": hcoNameWebhook,
+				"name": util.HCOWebhookName,
 			},
 			Ports: []corev1.ServicePort{
 				{
@@ -160,7 +156,7 @@ func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.Deployme
 		Replicas: ptr.To[int32](1),
 		Selector: &metav1.LabelSelector{
 			MatchLabels: map[string]string{
-				"name": hcoName,
+				"name": util.HCOOperatorName,
 			},
 		},
 		Strategy: appsv1.DeploymentStrategy{
@@ -168,17 +164,17 @@ func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.Deployme
 		},
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{
-				Labels: getLabels(hcoName, params.HcoKvIoVersion),
+				Labels: getLabels(util.HCOOperatorName, params.HcoKvIoVersion),
 			},
 			Spec: corev1.PodSpec{
-				ServiceAccountName: hcoName,
+				ServiceAccountName: util.HCOOperatorName,
 				SecurityContext:    GetStdPodSecurityContext(),
 				Containers: []corev1.Container{
 					{
-						Name:            hcoName,
+						Name:            util.HCOOperatorName,
 						Image:           params.Image,
 						ImagePullPolicy: corev1.PullPolicy(params.ImagePullPolicy),
-						Command:         stringListToSlice(hcoName),
+						Command:         stringListToSlice(util.HCOOperatorName),
 						ReadinessProbe:  getReadinessProbe(util.ReadinessEndpointName, util.HealthProbePort),
 						LivenessProbe:   getLivenessProbe(util.LivenessEndpointName, util.HealthProbePort),
 						Env:             envs,
@@ -190,6 +186,9 @@ func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.Deployme
 						},
 						SecurityContext:          GetStdContainerSecurityContext(),
 						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+						Ports: []corev1.ContainerPort{
+							getMetricsPort(),
+						},
 					},
 				},
 				PriorityClassName: "system-cluster-critical",
@@ -219,7 +218,7 @@ func buildEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 		},
 		{
 			Name:  "OPERATOR_NAME",
-			Value: hcoName,
+			Value: util.HCOOperatorName,
 		},
 		{
 			Name:  "OPERATOR_NAMESPACE",
@@ -306,7 +305,7 @@ func GetDeploymentSpecCliDownloads(params *DeploymentOperatorParams) appsv1.Depl
 		Replicas: ptr.To[int32](1),
 		Selector: &metav1.LabelSelector{
 			MatchLabels: map[string]string{
-				"name": cliDownloadsName,
+				"name": util.CLIDownloadsName,
 			},
 		},
 		Strategy: appsv1.DeploymentStrategy{
@@ -314,10 +313,10 @@ func GetDeploymentSpecCliDownloads(params *DeploymentOperatorParams) appsv1.Depl
 		},
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{
-				Labels: getLabels(cliDownloadsName, params.HcoKvIoVersion),
+				Labels: getLabels(util.CLIDownloadsName, params.HcoKvIoVersion),
 			},
 			Spec: corev1.PodSpec{
-				ServiceAccountName:           cliDownloadsName,
+				ServiceAccountName:           util.CLIDownloadsName,
 				AutomountServiceAccountToken: ptr.To(false),
 				SecurityContext:              GetStdPodSecurityContext(),
 				Containers: []corev1.Container{
@@ -334,12 +333,12 @@ func GetDeploymentSpecCliDownloads(params *DeploymentOperatorParams) appsv1.Depl
 						Ports: []corev1.ContainerPort{
 							{
 								Protocol:      corev1.ProtocolTCP,
-								ContainerPort: int32(8080),
+								ContainerPort: util.CliDownloadsServerPort,
 							},
 						},
 						SecurityContext:          GetStdContainerSecurityContext(),
-						ReadinessProbe:           getReadinessProbe("/health", 8080),
-						LivenessProbe:            getLivenessProbe("/health", 8080),
+						ReadinessProbe:           getReadinessProbe("/health", util.CliDownloadsServerPort),
+						LivenessProbe:            getLivenessProbe("/health", util.CliDownloadsServerPort),
 						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 					},
 				},
@@ -393,7 +392,7 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion 
 		Replicas: ptr.To[int32](1),
 		Selector: &metav1.LabelSelector{
 			MatchLabels: map[string]string{
-				"name": hcoNameWebhook,
+				"name": util.HCOWebhookName,
 			},
 		},
 		Strategy: appsv1.DeploymentStrategy{
@@ -401,17 +400,17 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion 
 		},
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{
-				Labels: getLabels(hcoNameWebhook, hcoKvIoVersion),
+				Labels: getLabels(util.HCOWebhookName, hcoKvIoVersion),
 			},
 			Spec: corev1.PodSpec{
-				ServiceAccountName: hcoName,
+				ServiceAccountName: util.HCOOperatorName,
 				SecurityContext:    GetStdPodSecurityContext(),
 				Containers: []corev1.Container{
 					{
-						Name:            hcoNameWebhook,
+						Name:            util.HCOWebhookName,
 						Image:           image,
 						ImagePullPolicy: corev1.PullPolicy(imagePullPolicy),
-						Command:         stringListToSlice(hcoNameWebhook),
+						Command:         stringListToSlice(util.HCOWebhookName),
 						ReadinessProbe:  getReadinessProbe(util.ReadinessEndpointName, util.HealthProbePort),
 						LivenessProbe:   getLivenessProbe(util.LivenessEndpointName, util.HealthProbePort),
 						Env: append([]corev1.EnvVar{
@@ -430,7 +429,7 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion 
 							},
 							{
 								Name:  "OPERATOR_NAME",
-								Value: hcoNameWebhook,
+								Value: util.HCOWebhookName,
 							},
 							{
 								Name:  "OPERATOR_NAMESPACE",
@@ -444,6 +443,10 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion 
 									},
 								},
 							},
+							{
+								Name:  util.HcoKvIoVersionName,
+								Value: hcoKvIoVersion,
+							},
 						}, env...),
 						Resources: corev1.ResourceRequirements{
 							Requests: map[corev1.ResourceName]resource.Quantity{
@@ -453,6 +456,10 @@ func GetDeploymentSpecWebhook(namespace, image, imagePullPolicy, hcoKvIoVersion 
 						},
 						SecurityContext:          GetStdContainerSecurityContext(),
 						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+						Ports: []corev1.ContainerPort{
+							getWebhookPort(),
+							getMetricsPort(),
+						},
 					},
 				},
 				PriorityClassName: "system-node-critical",
@@ -468,9 +475,9 @@ func GetClusterRole() rbacv1.ClusterRole {
 			Kind:       "ClusterRole",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: hcoName,
+			Name: util.HCOOperatorName,
 			Labels: map[string]string{
-				"name": hcoName,
+				"name": util.HCOOperatorName,
 			},
 		},
 		Rules: GetClusterPermissions(),
@@ -626,11 +633,11 @@ func roleWithAllPermissions(apiGroup string, resources []string) rbacv1.PolicyRu
 }
 
 func GetServiceAccount(namespace string) corev1.ServiceAccount {
-	return createServiceAccount(namespace, hcoName)
+	return createServiceAccount(namespace, util.HCOOperatorName)
 }
 
 func GetCLIDownloadServiceAccount(namespace string) corev1.ServiceAccount {
-	return createServiceAccount(namespace, cliDownloadsName)
+	return createServiceAccount(namespace, util.CLIDownloadsName)
 }
 
 func createServiceAccount(namespace, name string) corev1.ServiceAccount {
@@ -656,20 +663,20 @@ func GetClusterRoleBinding(namespace string) rbacv1.ClusterRoleBinding {
 			Kind:       "ClusterRoleBinding",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name: hcoName,
+			Name: util.HCOOperatorName,
 			Labels: map[string]string{
-				"name": hcoName,
+				"name": util.HCOOperatorName,
 			},
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
 			Kind:     "ClusterRole",
-			Name:     hcoName,
+			Name:     util.HCOOperatorName,
 		},
 		Subjects: []rbacv1.Subject{
 			{
 				Kind:      "ServiceAccount",
-				Name:      hcoName,
+				Name:      util.HCOOperatorName,
 				Namespace: namespace,
 			},
 		},
@@ -764,27 +771,27 @@ func GetInstallStrategyBase(params *DeploymentOperatorParams) *csvv1alpha1.Strat
 			{
 				Name:  hcoDeploymentName,
 				Spec:  GetDeploymentSpecOperator(params),
-				Label: getLabels(hcoName, params.HcoKvIoVersion),
+				Label: getLabels(util.HCOOperatorName, params.HcoKvIoVersion),
 			},
 			{
 				Name:  hcoWhDeploymentName,
 				Spec:  GetDeploymentSpecWebhook(params.Namespace, params.WebhookImage, params.ImagePullPolicy, params.HcoKvIoVersion, params.Env),
-				Label: getLabels(hcoNameWebhook, params.HcoKvIoVersion),
+				Label: getLabels(util.HCOWebhookName, params.HcoKvIoVersion),
 			},
 			{
-				Name:  cliDownloadsName,
+				Name:  util.CLIDownloadsName,
 				Spec:  GetDeploymentSpecCliDownloads(params),
-				Label: getLabels(cliDownloadsName, params.HcoKvIoVersion),
+				Label: getLabels(util.CLIDownloadsName, params.HcoKvIoVersion),
 			},
 		},
 		Permissions: []csvv1alpha1.StrategyDeploymentPermissions{},
 		ClusterPermissions: []csvv1alpha1.StrategyDeploymentPermissions{
 			{
-				ServiceAccountName: hcoName,
+				ServiceAccountName: util.HCOOperatorName,
 				Rules:              GetClusterPermissions(),
 			},
 			{
-				ServiceAccountName: cliDownloadsName,
+				ServiceAccountName: util.CLIDownloadsName,
 				Rules:              []rbacv1.PolicyRule{},
 			},
 		},
@@ -1157,6 +1164,22 @@ func getLivenessProbe(endpoint string, port int32) *corev1.Probe {
 		InitialDelaySeconds: 30,
 		PeriodSeconds:       5,
 		FailureThreshold:    1,
+	}
+}
+
+func getMetricsPort() corev1.ContainerPort {
+	return corev1.ContainerPort{
+		Name:          util.MetricsPortName,
+		ContainerPort: util.MetricsPort,
+		Protocol:      corev1.ProtocolTCP,
+	}
+}
+
+func getWebhookPort() corev1.ContainerPort {
+	return corev1.ContainerPort{
+		Name:          util.WebhookPortName,
+		ContainerPort: util.WebhookPort,
+		Protocol:      corev1.ProtocolTCP,
 	}
 }
 
