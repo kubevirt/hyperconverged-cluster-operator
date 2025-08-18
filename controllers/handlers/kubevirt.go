@@ -151,6 +151,7 @@ const (
 	kvAlignCPUs                  = "AlignCPUs"
 	kvPasstIPStackMigration      = "PasstIPStackMigration"
 	kvDecentralizedLiveMigration = "DecentralizedLiveMigration"
+	kvMultiArchitecture          = "MultiArchitecture"
 )
 
 // CPU Plugin default values
@@ -863,6 +864,10 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, a
 
 	if ptr.Deref(featureGates.DecentralizedLiveMigration, false) {
 		fgs = append(fgs, kvDecentralizedLiveMigration)
+	}
+
+	if ptr.Deref(featureGates.EnableMultiArchBootImageImport, false) {
+		fgs = append(fgs, kvMultiArchitecture)
 	}
 
 	if annotations[passt.DeployPasstNetworkBindingAnnotation] == "true" {

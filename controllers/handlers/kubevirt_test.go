@@ -2063,6 +2063,31 @@ Version: 1.2.3`)
 							Expect(kv.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
 						},
 					),
+					// MultiArchitecture
+					Entry("should add the MultiArchitecture feature gate if enableMultiArchBootImageImport is true in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								EnableMultiArchBootImageImport: ptr.To(true),
+							}
+						},
+						ContainElement(kvMultiArchitecture),
+					),
+					Entry("should not add the MultiArchitecture feature gate if EnableMultiArchBootImageImport is false in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								EnableMultiArchBootImageImport: ptr.To(false),
+							}
+						},
+						Not(ContainElement(kvMultiArchitecture)),
+					),
+					Entry("should not add the MultiArchitecture feature gate if EnableMultiArchBootImageImport is not set in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								AlignCPUs: nil,
+							}
+						},
+						Not(ContainElement(kvMultiArchitecture)),
+					),
 					// PasstIPStackMigration
 					Entry("should add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is true in HyperConverged CR",
 						func(hc *hcov1beta1.HyperConverged) {
