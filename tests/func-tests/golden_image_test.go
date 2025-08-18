@@ -636,18 +636,22 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					Should(Succeed())
 
 				By("Check that the custom DICT is not in the SSP, and its corresponding object in the HC status has the Deploy=False condition")
-				Eventually(func(g Gomega, ctx context.Context) {
+				Consistently(func(g Gomega, ctx context.Context) {
 					ssp := getSSP(ctx, cli)
 					g.Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(len(expectedImages)))
 
 					idx := slices.IndexFunc(ssp.Spec.CommonTemplates.DataImportCronTemplates, func(d sspv1beta3.DataImportCronTemplate) bool {
 						return d.Name == "custom-dict"
 					})
-
 					g.Expect(idx).To(Equal(-1), "should not have the custom-dict in the SSP")
+				}).Within(60 * time.Second).
+					WithPolling(time.Second).
+					WithContext(ctx).
+					Should(Succeed())
 
+				Eventually(func(g Gomega, ctx context.Context) {
 					hc := tests.GetHCO(ctx, cli)
-					idx = slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
+					idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
 						return d.Name == "custom-dict"
 					})
 					g.Expect(idx).To(BeNumerically(">", -1), "should have the custom-dict in the HC status")
@@ -659,9 +663,8 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					g.Expect(hcoDictStatus.Status.Conditions).To(HaveLen(1), "should have one condition in the DICT status")
 					g.Expect(hcoDictStatus.Status.Conditions[0].Type).To(Equal("Deployed"))
 					g.Expect(hcoDictStatus.Status.Conditions[0].Reason).To(Equal("UnsupportedArchitectures"))
-
-				}).WithTimeout(10 * time.Second).
-					WithPolling(500 * time.Millisecond).
+				}).WithTimeout(60 * time.Second).
+					WithPolling(time.Second).
 					WithContext(ctx).
 					Should(Succeed())
 			})
@@ -776,15 +779,17 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					})
 					g.Expect(idx).To(BeNumerically(">", -1), "should have the %q in the HC status", hcCustomDict.Name)
 
-					By("check the we use the original annotation, not the custom one")
+					By("check that we used the original annotation, not the custom one")
 					hcoDictStatus := hc.Status.DataImportCronTemplates[idx]
 					expectedAnnotation := getExpectedArchs(originalSupportedArchitectures, archs)
-					g.Expect(hcoDictStatus.Annotations).To(HaveKeyWithValue(goldenimages.MultiArchDICTAnnotation, expectedAnnotation))
+					g.Expect(hcoDictStatus.Annotations).To(HaveKeyWithValue(goldenimages.MultiArchDICTAnnotation, expectedAnnotation),
+						"DICT name: %q; node architectures: %q; originalSupportedArchitectures: %q; expected annotation: %q",
+						hcCustomDict.Name, archs, originalSupportedArchitectures, expectedAnnotation)
 					g.Expect(hcoDictStatus.Status.OriginalSupportedArchitectures).To(Equal(originalSupportedArchitectures))
 
 					g.Expect(hcoDictStatus.Status.Conditions).To(BeEmpty(), "should have no conditions in the DICT status")
-				}).WithTimeout(10 * time.Second).
-					WithPolling(500 * time.Millisecond).
+				}).WithTimeout(60 * time.Second).
+					WithPolling(time.Second).
 					WithContext(ctx).
 					Should(Succeed())
 			})
@@ -793,11 +798,25 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 })
 
 func removeCustomDICTFromHC(ctx context.Context, cli client.Client) {
+	GinkgoHelper()
 	// clear the DICTs if they exist. ignore error of not found, as it may not exist
 	Eventually(func(ctx context.Context) error {
 		return tests.PatchHCO(ctx, cli, []byte(`[{"op": "remove", "path": "/spec/dataImportCronTemplates"}]`))
 	}).WithTimeout(10 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).
 		Should(Or(Not(HaveOccurred()), MatchError(ContainSubstring("the server rejected our request due to an error in our request"))))
+
+	Eventually(func(g Gomega, ctx context.Context) {
+		hc := tests.GetHCO(ctx, cli)
+		g.Expect(hc.Spec.DataImportCronTemplates).To(BeEmpty(), "should have no DataImportCronTemplates in the HyperConverged CR")
+		g.Expect(hc.Status.DataImportCronTemplates).To(HaveLen(len(expectedImages)))
+
+		for _, dictStatus := range hc.Status.DataImportCronTemplates {
+			g.Expect(dictStatus.Status.CommonTemplate).To(BeTrueBecause("should only have common DICT, but found non-common DICT %q", dictStatus.Name))
+			g.Expect(dictStatus.Status.Modified).To(BeFalseBecause("All DICTs should not be modified, but found modified DICT %q", dictStatus.Name))
+		}
+	}).WithTimeout(60 * time.Second).
+		WithPolling(time.Second).WithContext(ctx).
+		Should(Succeed())
 }
 
 func getExpectedArchs(originalArchs string, archs []string) string {

@@ -33,26 +33,30 @@ var _ = Describe("QuickStart tests", func() {
 	Context("test GetQuickStartHandlers", func() {
 		It("should use env var to override the yaml locations", func() {
 			// create temp folder for the test
-			dir := path.Join(os.TempDir(), fmt.Sprint(time.Now().UTC().Unix()))
-			_ = os.Setenv(QuickStartManifestLocationVarName, dir)
-			By("folder not exists", func() {
-				cli := commontestutils.InitClient([]client.Object{})
-				handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
-
-				Expect(err).ToNot(HaveOccurred())
-				Expect(handlers).To(BeEmpty())
+			dir := path.Join(os.TempDir(), fmt.Sprintf("custom-qs-dir-%d", time.Now().UTC().Unix()))
+			Expect(os.Setenv(QuickStartManifestLocationVarName, dir)).To(Succeed())
+			DeferCleanup(func() {
+				Expect(os.Unsetenv(QuickStartManifestLocationVarName)).To(Succeed())
 			})
+
+			By("folder not exists")
+			cli := commontestutils.InitClient([]client.Object{})
+			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(handlers).To(BeEmpty())
 
 			Expect(os.Mkdir(dir, 0744)).To(Succeed())
-			defer os.RemoveAll(dir)
-
-			By("folder is empty", func() {
-				cli := commontestutils.InitClient([]client.Object{})
-				handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
-
-				Expect(err).ToNot(HaveOccurred())
-				Expect(handlers).To(BeEmpty())
+			DeferCleanup(func() {
+				Expect(os.RemoveAll(dir)).To(Succeed())
 			})
+
+			By("folder is empty")
+			cli = commontestutils.InitClient([]client.Object{})
+			handlers, err = GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(handlers).To(BeEmpty())
 
 			nonYaml, err := os.OpenFile(path.Join(dir, "for_test.txt"), os.O_CREATE|os.O_WRONLY, 0644)
 			Expect(err).ToNot(HaveOccurred())
@@ -60,26 +64,24 @@ var _ = Describe("QuickStart tests", func() {
 
 			_, err = fmt.Fprintln(nonYaml, `some text`)
 			Expect(err).ToNot(HaveOccurred())
-			_ = nonYaml.Close()
+			Expect(nonYaml.Close()).To(Succeed())
 
-			By("no yaml files", func() {
-				cli := commontestutils.InitClient([]client.Object{})
-				handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
+			By("no yaml files")
+			cli = commontestutils.InitClient([]client.Object{})
+			handlers, err = GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
 
-				Expect(err).ToNot(HaveOccurred())
-				Expect(handlers).To(BeEmpty())
-			})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(handlers).To(BeEmpty())
 
 			Expect(commontestutils.CopyFile(path.Join(dir, "quickStart.yaml"), path.Join(testFilesLocation, "quickstart.yaml"))).To(Succeed())
 
-			By("yaml file exists", func() {
-				cli := commontestutils.InitClient([]client.Object{})
-				handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
+			By("yaml file exists")
+			cli = commontestutils.InitClient([]client.Object{})
+			handlers, err = GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
 
-				Expect(err).ToNot(HaveOccurred())
-				Expect(handlers).To(HaveLen(1))
-				Expect(quickstartNames).To(ContainElements("test-quick-start"))
-			})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(handlers).To(HaveLen(1))
+			Expect(quickstartNames).To(ContainElements("test-quick-start"))
 		})
 
 		It("should return error if quickstart path is not a directory", func() {
