@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/machadovilaca/operator-observability/pkg/docs"
+	"github.com/rhobs/operator-observability-toolkit/pkg/docs"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/rules"

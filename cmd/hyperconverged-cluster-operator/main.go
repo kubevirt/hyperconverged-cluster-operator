@@ -8,7 +8,6 @@ import (
 	"os"
 
 	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
-	"github.com/machadovilaca/operator-observability/pkg/operatormetrics"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	imagev1 "github.com/openshift/api/image/v1"
@@ -19,6 +18,7 @@ import (
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operatorsapiv2 "github.com/operator-framework/api/pkg/operators/v2"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	"github.com/rhobs/operator-observability-toolkit/pkg/operatormetrics"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	coordinationv1 "k8s.io/api/coordination/v1"

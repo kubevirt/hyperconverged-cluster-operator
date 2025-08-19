@@ -15,7 +15,6 @@ require (
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.7
 	github.com/kubevirt/cluster-network-addons-operator v0.100.1
 	github.com/kubevirt/monitoring/pkg/metrics/parser v0.0.0-20250603150502-a697c0c708fa
-	github.com/machadovilaca/operator-observability v0.0.27
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.37.0
 	github.com/openshift/api v3.9.1-0.20190517100836-d5b34b957e91+incompatible
@@ -28,6 +27,7 @@ require (
 	github.com/prometheus/client_golang v1.22.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.65.0
+	github.com/rhobs/operator-observability-toolkit v0.0.29
 	github.com/samber/lo v1.51.0
 	github.com/spf13/pflag v1.0.6
 	golang.org/x/mod v0.26.0
