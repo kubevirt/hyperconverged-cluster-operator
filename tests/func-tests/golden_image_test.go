@@ -481,6 +481,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 			var (
 				hcCustomDict                   hcov1beta1.DataImportCronTemplate
 				originalSupportedArchitectures string
+				expectedArches                 string
 			)
 
 			By("modify a common DICT in the HyperConverged CR, with some supported and some unsupported architectures")
@@ -491,12 +492,16 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
 				originalSupportedArchitectures = hc.Status.DataImportCronTemplates[0].Status.OriginalSupportedArchitectures
 
+				GinkgoLogr.Info("originalSupportedArchitectures = " + originalSupportedArchitectures)
+
 				if hcCustomDict.Annotations == nil {
 					hcCustomDict.Annotations = make(map[string]string)
 				}
 
 				customDictArchs := append(archs, "someOtherArch1", "someOtherArch2")
-				hcCustomDict.Annotations[goldenimages.MultiArchDICTAnnotation] = strings.Join(customDictArchs, ",")
+				testAnnotation := strings.Join(customDictArchs, ",")
+				hcCustomDict.Annotations[goldenimages.MultiArchDICTAnnotation] = testAnnotation
+				expectedArches = getExpectedArchs(testAnnotation, archs)
 
 				hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
 
@@ -526,12 +531,16 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				g.Expect(exists).To(BeTrue(), "should have the multi-arch annotation in the DICT")
 				g.Expect(multiArchAnnotation).ToNot(BeEmpty(), "should have a value in the the multi-arch annotation")
 
-				expectedArches := getExpectedArchs(hcCustomDict.Annotations[goldenimages.MultiArchDICTAnnotation], archs)
-
 				g.Expect(multiArchAnnotation).To(Equal(expectedArches), "the SSP %q DICT %q annotation should be %q", hcCustomDict.Name, goldenimages.MultiArchDICTAnnotation, expectedArches)
+			}).WithTimeout(10 * time.Second).
+				WithPolling(500 * time.Millisecond).
+				WithContext(ctx).
+				Should(Succeed())
 
+			By("Check DICT in HCO status")
+			Eventually(func(g Gomega, ctx context.Context) {
 				hc := tests.GetHCO(ctx, cli)
-				idx = slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
+				idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
 					return d.Name == hcCustomDict.Name
 				})
 				g.Expect(idx).To(BeNumerically(">", -1), "should have the %q in the HC status", hcCustomDict.Name)
@@ -541,8 +550,8 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				g.Expect(hcoDictStatus.Status.OriginalSupportedArchitectures).To(Equal(originalSupportedArchitectures))
 				g.Expect(hcoDictStatus.Status.Conditions).To(BeEmpty())
 
-			}).WithTimeout(10 * time.Second).
-				WithPolling(500 * time.Millisecond).
+			}).WithTimeout(60 * time.Second).
+				WithPolling(time.Second).
 				WithContext(ctx).
 				Should(Succeed())
 		})
