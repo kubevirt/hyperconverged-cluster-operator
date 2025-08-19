@@ -198,12 +198,6 @@ github.com/kubevirt/cluster-network-addons-operator/pkg/names
 # github.com/kubevirt/monitoring/pkg/metrics/parser v0.0.0-20250603150502-a697c0c708fa
 ## explicit; go 1.20
 github.com/kubevirt/monitoring/pkg/metrics/parser
-# github.com/machadovilaca/operator-observability v0.0.27
-## explicit; go 1.21
-github.com/machadovilaca/operator-observability/pkg/docs
-github.com/machadovilaca/operator-observability/pkg/operatormetrics
-github.com/machadovilaca/operator-observability/pkg/operatorrules
-github.com/machadovilaca/operator-observability/pkg/testutil
 # github.com/mailru/easyjson v0.9.0
 ## explicit; go 1.20
 github.com/mailru/easyjson/buffer
@@ -349,6 +343,12 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
+# github.com/rhobs/operator-observability-toolkit v0.0.29
+## explicit; go 1.21
+github.com/rhobs/operator-observability-toolkit/pkg/docs
+github.com/rhobs/operator-observability-toolkit/pkg/operatormetrics
+github.com/rhobs/operator-observability-toolkit/pkg/operatorrules
+github.com/rhobs/operator-observability-toolkit/pkg/testutil
 # github.com/samber/lo v1.51.0
 ## explicit; go 1.18
 github.com/samber/lo

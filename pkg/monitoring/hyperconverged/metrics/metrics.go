@@ -1,6 +1,6 @@
 package metrics
 
-import "github.com/machadovilaca/operator-observability/pkg/operatormetrics"
+import "github.com/rhobs/operator-observability-toolkit/pkg/operatormetrics"
 
 func SetupMetrics() error {
 	return operatormetrics.RegisterMetrics(

@@ -1,8 +1,8 @@
 package rules
 
 import (
-	"github.com/machadovilaca/operator-observability/pkg/operatorrules"
 	promv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	"github.com/rhobs/operator-observability-toolkit/pkg/operatorrules"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/rules/alerts"
