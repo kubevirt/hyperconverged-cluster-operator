@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.16.0-unstable
-    createdAt: "2025-08-14 10:03:27"
+    createdAt: "2025-08-19 05:06:25"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -3172,7 +3172,7 @@ spec:
                 - name: CDI_VERSION
                   value: v1.63.0-alpha.0
                 - name: NETWORK_ADDONS_VERSION
-                  value: v0.100.0
+                  value: v0.100.1
                 - name: SSP_VERSION
                   value: v0.24.0
                 - name: HPPO_VERSION
@@ -3418,7 +3418,7 @@ spec:
                 - name: OVS_CNI_IMAGE
                   value: ghcr.io/k8snetworkplumbingwg/ovs-cni-plugin@sha256:435f374b434b3bc70a5cfaba0011fdcf5f433d96b98b06d29306cbd8db3a8c21
                 - name: KUBEMACPOOL_IMAGE
-                  value: quay.io/kubevirt/kubemacpool@sha256:bc1c0b05cd71fd9cc3c15a4a90df7e8581bd19f69256895f6a711b412ba02a85
+                  value: quay.io/kubevirt/kubemacpool@sha256:f6d3e9a8f7935a8d8340ce669d47f1c64e4f7a47a02a279909f05f17a2438c01
                 - name: MACVTAP_CNI_IMAGE
                   value: quay.io/kubevirt/macvtap-cni@sha256:af31faae20c0128a469dd4c1aa866d6bf78d1d2f5972127adf4c9438dcde10f4
                 - name: KUBE_RBAC_PROXY_IMAGE
@@ -3430,11 +3430,11 @@ spec:
                 - name: KUBEVIRT_IPAM_CONTROLLER_IMAGE
                   value: ghcr.io/kubevirt/ipam-controller@sha256:4fdc9c77b9e683f274a31fcb7f6dbcf765799596efd93bc37512fb860f07b02f
                 - name: OPERATOR_IMAGE
-                  value: quay.io/kubevirt/cluster-network-addons-operator@sha256:076a856007ce3e3c84ea9c87b032f5b0adef9aaed93d91122d71dc76aa745201
+                  value: quay.io/kubevirt/cluster-network-addons-operator@sha256:75f3d6ca234a889f267e5bb8038dcb0246112a0e3984ddc08d664ed56270af53
                 - name: OPERATOR_NAME
                   value: cluster-network-addons-operator
                 - name: OPERATOR_VERSION
-                  value: v0.100.0
+                  value: v0.100.1
                 - name: OPERATOR_NAMESPACE
                   valueFrom:
                     fieldRef:
@@ -3454,7 +3454,7 @@ spec:
                   value: prometheus-k8s
                 - name: RUNBOOK_URL_TEMPLATE
                   value: https://kubevirt.io/monitoring/runbooks/%s
-                image: quay.io/kubevirt/cluster-network-addons-operator@sha256:076a856007ce3e3c84ea9c87b032f5b0adef9aaed93d91122d71dc76aa745201
+                image: quay.io/kubevirt/cluster-network-addons-operator@sha256:75f3d6ca234a889f267e5bb8038dcb0246112a0e3984ddc08d664ed56270af53
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -4788,7 +4788,7 @@ spec:
     name: cdi-uploadproxy
   - image: quay.io/kubevirt/cdi-uploadserver@sha256:02a9de4d24d83dd1ea156da2a59485f440bd1802b269bbe87d1939521807620a
     name: cdi-uploadserver
-  - image: quay.io/kubevirt/cluster-network-addons-operator@sha256:076a856007ce3e3c84ea9c87b032f5b0adef9aaed93d91122d71dc76aa745201
+  - image: quay.io/kubevirt/cluster-network-addons-operator@sha256:75f3d6ca234a889f267e5bb8038dcb0246112a0e3984ddc08d664ed56270af53
     name: cluster-network-addons-operator
   - image: quay.io/kubevirt/cni-default-plugins@sha256:976a24392c2a096c38c2663d234b2d3131f5c24558889196d30b9ac1b6716788
     name: cni-default-plugins
@@ -4812,7 +4812,7 @@ spec:
     name: hyperconverged-cluster-webhook
   - image: ghcr.io/kubevirt/ipam-controller@sha256:4fdc9c77b9e683f274a31fcb7f6dbcf765799596efd93bc37512fb860f07b02f
     name: ipam-controller
-  - image: quay.io/kubevirt/kubemacpool@sha256:bc1c0b05cd71fd9cc3c15a4a90df7e8581bd19f69256895f6a711b412ba02a85
+  - image: quay.io/kubevirt/kubemacpool@sha256:f6d3e9a8f7935a8d8340ce669d47f1c64e4f7a47a02a279909f05f17a2438c01
     name: kubemacpool
   - image: ghcr.io/kubevirt/kubesecondarydns@sha256:f5fe9c98fb6d7e5e57a6df23fe82e43e65db5953d76af44adda9ab40c46ad0bf
     name: kubesecondarydns
