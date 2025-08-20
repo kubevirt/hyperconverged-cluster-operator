@@ -120,7 +120,7 @@ func clusterAlerts() []promv1.Rule {
 			Alert: "DuplicateWaspAgentDSDetected",
 			Expr: intstr.FromString(
 				`count(kube_daemonset_metadata_generation{namespace="wasp",daemonset="wasp-agent"}) > 0
-					and kubevirt_hco_memory_overcommit_percentage > 100
+					and on() (kubevirt_hco_memory_overcommit_percentage > 100)
 			`),
 			For: ptr.To[promv1.Duration]("1m"),
 			Annotations: map[string]string{
