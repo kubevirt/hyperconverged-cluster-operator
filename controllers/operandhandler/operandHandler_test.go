@@ -3,10 +3,10 @@ package operandhandler
 import (
 	"context"
 	"fmt"
-	"os"
+	"io/fs"
 	"path"
-	"strings"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -30,45 +30,43 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 )
 
-func TestOperators(t *testing.T) {
+func TestOperandHandler(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "OperatorHandler Suite")
+	RunSpecs(t, "OperandHandler Suite")
 }
 
 var _ = Describe("Test operandHandler", func() {
 	origLogger := logger
+
+	var pwdFS fstest.MapFS
+
 	BeforeEach(func() {
 		logger = GinkgoLogr
 		DeferCleanup(func() {
 			logger = origLogger
 		})
 
-		testFileLocation := getTestFilesLocation()
+		pwdFS = fstest.MapFS{
+			handlers.DashboardManifestLocationDefault: &fstest.MapFile{
+				Mode: fs.ModeDir,
+			},
+			path.Join(handlers.DashboardManifestLocationDefault, "test-dashboard.yaml"): &fstest.MapFile{
+				Data: kubevirtTopConsumersFileContent,
+			},
 
-		qsVal, qsExists := os.LookupEnv(handlers.QuickStartManifestLocationVarName)
-		Expect(os.Setenv(handlers.QuickStartManifestLocationVarName, testFileLocation+"/quickstarts")).To(Succeed())
-		dashboardVal, dashboardExists := os.LookupEnv(handlers.DashboardManifestLocationVarName)
-		Expect(os.Setenv(handlers.DashboardManifestLocationVarName, testFileLocation+"/dashboards")).To(Succeed())
-		imageStreamVal, imageStreamExists := os.LookupEnv(handlers.ImageStreamManifestLocationVarName)
-		Expect(os.Setenv(handlers.ImageStreamManifestLocationVarName, testFileLocation+"/imageStreams")).To(Succeed())
-
-		DeferCleanup(func() {
-			if qsExists {
-				Expect(os.Setenv(handlers.QuickStartManifestLocationVarName, qsVal)).To(Succeed())
-			} else {
-				Expect(os.Unsetenv(handlers.QuickStartManifestLocationVarName)).To(Succeed())
-			}
-			if dashboardExists {
-				Expect(os.Setenv(handlers.DashboardManifestLocationVarName, dashboardVal)).To(Succeed())
-			} else {
-				Expect(os.Unsetenv(handlers.DashboardManifestLocationVarName)).To(Succeed())
-			}
-			if imageStreamExists {
-				Expect(os.Setenv(handlers.ImageStreamManifestLocationVarName, imageStreamVal)).To(Succeed())
-			} else {
-				Expect(os.Unsetenv(handlers.ImageStreamManifestLocationVarName)).To(Succeed())
-			}
-		})
+			handlers.ImageStreamDefaultManifestLocation: &fstest.MapFile{
+				Mode: fs.ModeDir,
+			},
+			path.Join(handlers.ImageStreamDefaultManifestLocation, "test-image-stream.yaml"): &fstest.MapFile{
+				Data: imageStreamFileContent,
+			},
+			handlers.QuickStartDefaultManifestLocation: &fstest.MapFile{
+				Mode: fs.ModeDir,
+			},
+			path.Join(handlers.QuickStartDefaultManifestLocation, "test-quick-start.yaml"): &fstest.MapFile{
+				Data: quickstartFileContent,
+			},
+		}
 	})
 
 	Context("Test operandHandler", func() {
@@ -89,7 +87,7 @@ var _ = Describe("Test operandHandler", func() {
 			eventEmitter := commontestutils.NewEventEmitterMock()
 
 			handler := NewOperandHandler(cli, commontestutils.GetScheme(), ci, eventEmitter)
-			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco)
+			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco, pwdFS)
 
 			req := commontestutils.NewReq(hco)
 
@@ -186,7 +184,7 @@ var _ = Describe("Test operandHandler", func() {
 			ci := commontestutils.ClusterInfoMock{}
 
 			handler := NewOperandHandler(cli, commontestutils.GetScheme(), ci, eventEmitter)
-			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco)
+			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco, pwdFS)
 
 			req := commontestutils.NewReq(hco)
 
@@ -226,7 +224,7 @@ var _ = Describe("Test operandHandler", func() {
 			eventEmitter := commontestutils.NewEventEmitterMock()
 
 			handler := NewOperandHandler(cli, commontestutils.GetScheme(), ci, eventEmitter)
-			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco)
+			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco, pwdFS)
 
 			req := commontestutils.NewReq(hco)
 			Expect(handler.Ensure(req)).To(Succeed())
@@ -314,7 +312,7 @@ var _ = Describe("Test operandHandler", func() {
 			eventEmitter := commontestutils.NewEventEmitterMock()
 
 			handler := NewOperandHandler(cli, commontestutils.GetScheme(), ci, eventEmitter)
-			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco)
+			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco, pwdFS)
 
 			req := commontestutils.NewReq(hco)
 			Expect(handler.Ensure(req)).To(Succeed())
@@ -363,7 +361,7 @@ var _ = Describe("Test operandHandler", func() {
 			eventEmitter := commontestutils.NewEventEmitterMock()
 
 			handler := NewOperandHandler(cli, commontestutils.GetScheme(), ci, eventEmitter)
-			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco)
+			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco, pwdFS)
 
 			req := commontestutils.NewReq(hco)
 			Expect(handler.Ensure(req)).To(Succeed())
@@ -414,7 +412,7 @@ var _ = Describe("Test operandHandler", func() {
 			eventEmitter := commontestutils.NewEventEmitterMock()
 
 			handler := NewOperandHandler(cli, commontestutils.GetScheme(), ci, eventEmitter)
-			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco)
+			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco, pwdFS)
 
 			req := commontestutils.NewReq(hco)
 			Expect(handler.Ensure(req)).To(Succeed())
@@ -463,7 +461,7 @@ var _ = Describe("Test operandHandler", func() {
 			eventEmitter := commontestutils.NewEventEmitterMock()
 
 			handler := NewOperandHandler(cli, commontestutils.GetScheme(), ci, eventEmitter)
-			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco)
+			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco, pwdFS)
 
 			req := commontestutils.NewReq(hco)
 			Expect(handler.Ensure(req)).To(Succeed())
@@ -509,7 +507,7 @@ var _ = Describe("Test operandHandler", func() {
 			cli := commontestutils.InitClient([]client.Object{hcoNamespace, hco, ci.GetCSV()})
 
 			handler := NewOperandHandler(cli, commontestutils.GetScheme(), ci, eventEmitter)
-			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco)
+			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco, pwdFS)
 
 			req := commontestutils.NewReq(hco)
 			Expect(handler.Ensure(req)).To(Succeed())
@@ -564,7 +562,7 @@ var _ = Describe("Test operandHandler", func() {
 			eventEmitter := commontestutils.NewEventEmitterMock()
 
 			handler := NewOperandHandler(cli, commontestutils.GetScheme(), ci, eventEmitter)
-			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco)
+			handler.FirstUseInitiation(commontestutils.GetScheme(), ci, hco, pwdFS)
 
 			req := commontestutils.NewReq(hco)
 			Expect(handler.Ensure(req)).To(Succeed())
@@ -581,17 +579,3 @@ var _ = Describe("Test operandHandler", func() {
 
 	})
 })
-
-func getTestFilesLocation() string {
-	const (
-		pkgDirectory = "controllers/operandhandler"
-		testFilesLoc = "testFiles"
-	)
-
-	wd, err := os.Getwd()
-	Expect(err).ToNot(HaveOccurred())
-	if strings.HasSuffix(wd, pkgDirectory) {
-		return testFilesLoc
-	}
-	return path.Join(pkgDirectory, testFilesLoc)
-}

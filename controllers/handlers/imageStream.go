@@ -3,8 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
+	"io/fs"
 	"reflect"
 	"strings"
 
@@ -22,12 +21,9 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-// TODO: this is very similar to the quickstart file; on golang 1.18, check if it possible to use type parameters instead.
-
 // ImageStream resources are a short user guids
 const (
-	ImageStreamManifestLocationVarName = "IMAGE_STREAM_FILES_LOCATION"
-	imageStreamDefaultManifestLocation = "./imageStreams"
+	ImageStreamDefaultManifestLocation = "imageStreams"
 )
 
 var (
@@ -238,31 +234,33 @@ func (h isHooks) addMissingTags(found *imagev1.ImageStream, newTags []imagev1.Ta
 	return newTags, modified
 }
 
-func GetImageStreamHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]operands.Operand, error) {
-	filesLocation := util.GetManifestDirPath(ImageStreamManifestLocationVarName, imageStreamDefaultManifestLocation)
-
-	err := util.ValidateManifestDir(filesLocation)
+func GetImageStreamHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, dir fs.FS) ([]operands.Operand, error) {
+	err := util.ValidateManifestDir(ImageStreamDefaultManifestLocation, dir)
 	if err != nil {
-		logger.Error(err, "can't get manifest directory for imageStreams", "imageStream files location", filesLocation)
+		logger.Error(err, "can't get manifest directory for imageStreams", "imageStream files location", ImageStreamDefaultManifestLocation)
 		return nil, errors.Unwrap(err) // if not wrapped, then it's not an error that stops processing, and it return nil
 	}
 
-	return createImageStreamHandlersFromFiles(logger, Client, Scheme, hc, filesLocation)
+	return createImageStreamHandlersFromFiles(logger, Client, Scheme, hc, ImageStreamDefaultManifestLocation, dir)
 }
 
-func createImageStreamHandlersFromFiles(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, filesLocation string) ([]operands.Operand, error) {
+func createImageStreamHandlersFromFiles(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, filesLocation string, dir fs.FS) ([]operands.Operand, error) {
 	var handlers []operands.Operand
 	imageStreamNames = []string{}
 
 	logger.Info("walking over the files in " + filesLocation + ", to find imageStream files.")
 
-	err := filepath.Walk(filesLocation, func(path string, info os.FileInfo, err error) error {
+	err := fs.WalkDir(dir, filesLocation, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		logger.Info("processing imageStream file", "fileName", path, "fileInfo", info)
-		is, err := processImageStreamFile(path, info, logger, hc, Client, Scheme)
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			return nil
+		}
+
+		logger.Info("processing imageStream file", "fileName", path, "fileInfo", entry)
+		is, err := processImageStreamFile(path, dir, logger, hc, Client, Scheme)
 		if err != nil {
 			return err
 		}
@@ -292,29 +290,25 @@ func compareOneTag(foundTag, reqTag *imagev1.TagReference) bool {
 	return modified
 }
 
-func processImageStreamFile(path string, info os.FileInfo, logger log.Logger, hc *hcov1beta1.HyperConverged, Client client.Client, Scheme *runtime.Scheme) (operands.Operand, error) {
-	if !info.IsDir() && strings.HasSuffix(info.Name(), ".yaml") {
-		file, err := os.Open(path)
-		if err != nil {
-			logger.Error(err, "Can't open the ImageStream yaml file", "file name", path)
-			return nil, err
-		}
-
-		is := &imagev1.ImageStream{}
-		err = util.UnmarshalYamlFileToObject(file, is)
-		if err != nil {
-			return nil, err
-		}
-
-		origNS := is.Namespace
-		if ns := hc.Spec.CommonBootImageNamespace; ns != nil && len(*ns) > 0 {
-			is.Namespace = *ns
-		}
-
-		is.Labels = operands.GetLabels(hc, util.AppComponentCompute)
-		imageStreamNames = append(imageStreamNames, is.Name)
-		return newImageStreamHandler(Client, Scheme, is, origNS), nil
+func processImageStreamFile(path string, dir fs.FS, logger log.Logger, hc *hcov1beta1.HyperConverged, Client client.Client, Scheme *runtime.Scheme) (operands.Operand, error) {
+	file, err := dir.Open(path)
+	if err != nil {
+		logger.Error(err, "Can't open the ImageStream yaml file", "file name", path)
+		return nil, err
 	}
 
-	return nil, nil
+	is := &imagev1.ImageStream{}
+	err = util.UnmarshalYamlFileToObject(file, is)
+	if err != nil {
+		return nil, err
+	}
+
+	origNS := is.Namespace
+	if ns := hc.Spec.CommonBootImageNamespace; ns != nil && len(*ns) > 0 {
+		is.Namespace = *ns
+	}
+
+	is.Labels = operands.GetLabels(hc, util.AppComponentCompute)
+	imageStreamNames = append(imageStreamNames, is.Name)
+	return newImageStreamHandler(Client, Scheme, is, origNS), nil
 }

@@ -3,6 +3,7 @@ package operandhandler
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"time"
 
 	"golang.org/x/sync/errgroup"
@@ -93,7 +94,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 // FirstUseInitiation is a lazy init function
 // The k8s client is not available when calling to NewOperandHandler.
 // Initial operations that need to read/write from the cluster can only be done when the client is already working.
-func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.ClusterInfo, hc *hcov1beta1.HyperConverged) {
+func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.ClusterInfo, hc *hcov1beta1.HyperConverged, pwdFS fs.FS) {
 	h.objects = make([]client.Object, 0)
 	if !ci.IsOpenshift() {
 		return
@@ -104,7 +105,7 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 		handlers.GetDashboardHandlers,
 		handlers.GetImageStreamHandlers,
 	} {
-		h.addOperands(scheme, hc, fn)
+		h.addOperands(scheme, hc, fn, pwdFS)
 	}
 
 	getHandlerFuncs := []operands.GetHandler{
@@ -162,8 +163,8 @@ func (h *OperandHandler) addOperandObject(handler operands.Operand, hc *hcov1bet
 	}
 }
 
-func (h *OperandHandler) addOperands(scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, getHandlers operands.GetHandlers) {
-	handlers, err := getHandlers(logger, h.client, scheme, hc)
+func (h *OperandHandler) addOperands(scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, getHandlers operands.GetHandlers, dir fs.FS) {
+	handlers, err := getHandlers(logger, h.client, scheme, hc, dir)
 	if err != nil {
 		logger.Error(err, "can't create handler")
 	} else if len(handlers) > 0 {
