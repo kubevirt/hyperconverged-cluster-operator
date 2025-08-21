@@ -1,5 +1,7 @@
 package util
 
+import "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+
 // pod names
 const (
 	HCOOperatorName  = "hyperconverged-cluster-operator"
@@ -38,11 +40,10 @@ const (
 	AppLabel                           = "app"
 	UndefinedNamespace                 = ""
 	OpenshiftNamespace                 = "openshift"
-	APIVersionAlpha                    = "v1alpha1"
-	APIVersionBeta                     = "v1beta1"
-	CurrentAPIVersion                  = APIVersionBeta
-	APIVersionGroup                    = "hco.kubevirt.io"
-	APIVersion                         = APIVersionGroup + "/" + CurrentAPIVersion
+	APIVersionBeta                     = v1beta1.APIVersionBeta
+	CurrentAPIVersion                  = v1beta1.CurrentAPIVersion
+	APIVersionGroup                    = v1beta1.APIVersionGroup
+	APIVersion                         = v1beta1.APIVersion
 	HyperConvergedKind                 = "HyperConverged"
 	// Recommended labels by Kubernetes. See
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/

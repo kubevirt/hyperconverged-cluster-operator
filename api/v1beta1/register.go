@@ -9,13 +9,18 @@ package v1beta1
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
+)
 
-	hcoutils "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+const (
+	APIVersionBeta    = "v1beta1"
+	CurrentAPIVersion = APIVersionBeta
+	APIVersionGroup   = "hco.kubevirt.io"
+	APIVersion        = APIVersionGroup + "/" + CurrentAPIVersion
 )
 
 var (
 	// SchemeGroupVersion is group version used to register these objects
-	SchemeGroupVersion = schema.GroupVersion{Group: hcoutils.APIVersionGroup, Version: hcoutils.APIVersionBeta}
+	SchemeGroupVersion = schema.GroupVersion{Group: APIVersionGroup, Version: APIVersionBeta}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
