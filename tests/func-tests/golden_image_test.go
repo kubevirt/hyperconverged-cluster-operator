@@ -352,7 +352,10 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 	})
 
 	Context("test multi-arch", Label("multi-arch"), func() {
-		var archs []string
+		var (
+			archs  []string
+			origHC *hcov1beta1.HyperConverged
+		)
 
 		BeforeEach(func(ctx context.Context) {
 			var err error
@@ -370,6 +373,20 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				Should(Succeed())
 
 			removeCustomDICTFromHC(ctx, cli)
+
+			Eventually(func(ctx context.Context) error {
+				origHC = tests.GetHCO(ctx, cli)
+				for _, dictStatus := range origHC.Status.DataImportCronTemplates {
+					if dictStatus.Status.OriginalSupportedArchitectures == "" {
+						return fmt.Errorf("the OriginalSupportedArchitectures is not set yet in the DICT %q", dictStatus.Name)
+					}
+				}
+
+				return nil
+			}).WithTimeout(20*time.Second).
+				WithPolling(500*time.Millisecond).
+				WithContext(ctx).
+				Should(Succeed(), tests.PrintHyperConvergedBecause(origHC, "the dictStatus.Status.OriginalSupportedArchitectures field should not be empty"))
 
 			DeferCleanup(func(ctx context.Context) {
 				Eventually(func(ctx context.Context) error {
@@ -389,11 +406,12 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		})
 
 		It("should have the architectures in the SSP CR", func(ctx context.Context) {
+			var hc *hcov1beta1.HyperConverged
 			Eventually(func(g Gomega, ctx context.Context) {
 				ssp := getSSP(ctx, cli)
 				g.Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(len(expectedImages)))
 
-				hc := tests.GetHCO(ctx, cli)
+				hc = tests.GetHCO(ctx, cli)
 
 				for _, dict := range ssp.Spec.CommonTemplates.DataImportCronTemplates {
 					hcoDict, exists := getHCODICT(hc, dict.Name)
@@ -414,18 +432,21 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					g.Expect(multiArchAnnotation).To(Equal(expectedArches), "the SSP %q DICT %q annotation should be %q", dict.Name, goldenimages.MultiArchDICTAnnotation, expectedArches)
 				}
 
-			}).WithTimeout(10 * time.Second).
-				WithPolling(500 * time.Millisecond).
+			}).WithTimeout(10*time.Second).
+				WithPolling(500*time.Millisecond).
 				WithContext(ctx).
-				Should(Succeed())
+				Should(Succeed(), tests.PrintHyperConverged(hc))
 		})
 
 		It("should have the architectures in a user-defined DICT the SSP CR", func(ctx context.Context) {
-			var hcCustomDict hcov1beta1.DataImportCronTemplate
+			var (
+				hc           *hcov1beta1.HyperConverged
+				hcCustomDict hcov1beta1.DataImportCronTemplate
+			)
 
 			By("adding a user define DICT to the HyperConverged CR, with some supported and some unsupported architectures")
 			Eventually(func(g Gomega, ctx context.Context) {
-				hc := tests.GetHCO(ctx, cli)
+				hc = tests.GetHCO(ctx, cli)
 
 				g.Expect(hc.Status.DataImportCronTemplates).ToNot(BeEmpty())
 				hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
@@ -445,10 +466,10 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				_, err = tests.UpdateHCO(ctx, cli, hc)
 				g.Expect(err).ToNot(HaveOccurred(), "failed to update HCO with custom DICT")
 
-			}).WithTimeout(10 * time.Second).
-				WithPolling(500 * time.Millisecond).
+			}).WithTimeout(10*time.Second).
+				WithPolling(500*time.Millisecond).
 				WithContext(ctx).
-				Should(Succeed())
+				Should(Succeed(), tests.PrintHyperConverged(hc))
 
 			By("Check that only the cluster support architectures are in the multi-arch annotation in SSP")
 			Eventually(func(g Gomega, ctx context.Context) {
@@ -471,10 +492,10 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 				g.Expect(multiArchAnnotation).To(Equal(expectedArches), "the SSP %q DICT %q annotation should be %q", "custom-dict", goldenimages.MultiArchDICTAnnotation, expectedArches)
 
-			}).WithTimeout(10 * time.Second).
-				WithPolling(500 * time.Millisecond).
+			}).WithTimeout(10*time.Second).
+				WithPolling(500*time.Millisecond).
 				WithContext(ctx).
-				Should(Succeed())
+				Should(Succeed(), tests.PrintHyperConverged(hc))
 		})
 
 		It("should have the architectures in a customized common DICT the SSP CR", func(ctx context.Context) {
@@ -482,17 +503,16 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				hcCustomDict                   hcov1beta1.DataImportCronTemplate
 				originalSupportedArchitectures string
 				expectedArches                 string
+				hc                             *hcov1beta1.HyperConverged
 			)
 
 			By("modify a common DICT in the HyperConverged CR, with some supported and some unsupported architectures")
 			Eventually(func(g Gomega, ctx context.Context) {
-				hc := tests.GetHCO(ctx, cli)
+				hc = tests.GetHCO(ctx, cli)
 
 				g.Expect(hc.Status.DataImportCronTemplates).ToNot(BeEmpty())
 				hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
 				originalSupportedArchitectures = hc.Status.DataImportCronTemplates[0].Status.OriginalSupportedArchitectures
-
-				GinkgoLogr.Info("originalSupportedArchitectures = " + originalSupportedArchitectures)
 
 				if hcCustomDict.Annotations == nil {
 					hcCustomDict.Annotations = make(map[string]string)
@@ -532,14 +552,14 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				g.Expect(multiArchAnnotation).ToNot(BeEmpty(), "should have a value in the the multi-arch annotation")
 
 				g.Expect(multiArchAnnotation).To(Equal(expectedArches), "the SSP %q DICT %q annotation should be %q", hcCustomDict.Name, goldenimages.MultiArchDICTAnnotation, expectedArches)
-			}).WithTimeout(10 * time.Second).
-				WithPolling(500 * time.Millisecond).
+			}).WithTimeout(10*time.Second).
+				WithPolling(500*time.Millisecond).
 				WithContext(ctx).
-				Should(Succeed())
+				Should(Succeed(), tests.PrintHyperConverged(hc))
 
 			By("Check DICT in HCO status")
 			Eventually(func(g Gomega, ctx context.Context) {
-				hc := tests.GetHCO(ctx, cli)
+				hc = tests.GetHCO(ctx, cli)
 				idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
 					return d.Name == hcCustomDict.Name
 				})
@@ -550,19 +570,22 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				g.Expect(hcoDictStatus.Status.OriginalSupportedArchitectures).To(Equal(originalSupportedArchitectures))
 				g.Expect(hcoDictStatus.Status.Conditions).To(BeEmpty())
 
-			}).WithTimeout(60 * time.Second).
+			}).WithTimeout(60*time.Second).
 				WithPolling(time.Second).
 				WithContext(ctx).
-				Should(Succeed())
+				Should(Succeed(), tests.PrintOrigAndCurrentHyperConvergeds(origHC, hc))
 		})
 
 		When("the multi-arch annotation is not set in the DICT", func() {
 			It("should not implement multi-arch changes for user defined DICT", func(ctx context.Context) {
-				var hcCustomDict hcov1beta1.DataImportCronTemplate
+				var (
+					hcCustomDict hcov1beta1.DataImportCronTemplate
+					hc           *hcov1beta1.HyperConverged
+				)
 
 				By("Add a user-defined DICT to the HyperConverged CR, without the multi-arch annotation")
 				Eventually(func(g Gomega, ctx context.Context) {
-					hc := tests.GetHCO(ctx, cli)
+					hc = tests.GetHCO(ctx, cli)
 
 					g.Expect(hc.Status.DataImportCronTemplates).ToNot(BeEmpty())
 					hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
@@ -577,10 +600,10 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					_, err = tests.UpdateHCO(ctx, cli, hc)
 					g.Expect(err).ToNot(HaveOccurred(), "failed to update HCO with custom DICT")
 
-				}).WithTimeout(10 * time.Second).
-					WithPolling(500 * time.Millisecond).
+				}).WithTimeout(10*time.Second).
+					WithPolling(500*time.Millisecond).
 					WithContext(ctx).
-					Should(Succeed())
+					Should(Succeed(), tests.PrintHyperConverged(hc))
 
 				By("Check that the custom DICT is in the SSP, without the multi-arch annotation, and that the DICT in the HC status also does not have the annotation")
 				Eventually(func(g Gomega, ctx context.Context) {
@@ -596,7 +619,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 					g.Expect(sspDict.GetAnnotations()).ToNot(HaveKey(goldenimages.MultiArchDICTAnnotation))
 
-					hc := tests.GetHCO(ctx, cli)
+					hc = tests.GetHCO(ctx, cli)
 					idx = slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
 						return d.Name == "custom-dict"
 					})
@@ -607,20 +630,23 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					g.Expect(hcoDictStatus.Status.OriginalSupportedArchitectures).To(Equal(""))
 					g.Expect(hcoDictStatus.Status.Conditions).To(BeEmpty())
 
-				}).WithTimeout(10 * time.Second).
-					WithPolling(500 * time.Millisecond).
+				}).WithTimeout(10*time.Second).
+					WithPolling(500*time.Millisecond).
 					WithContext(ctx).
-					Should(Succeed())
+					Should(Succeed(), tests.PrintOrigAndCurrentHyperConvergeds(origHC, hc))
 			})
 		})
 
 		When("there are no supported architectures", func() {
 			It("should not add a user-defined DICT to the SSP CR", func(ctx context.Context) {
-				var hcCustomDict hcov1beta1.DataImportCronTemplate
+				var (
+					hcCustomDict hcov1beta1.DataImportCronTemplate
+					hc           *hcov1beta1.HyperConverged
+				)
 
 				By("Add a user-defined DICT to the HyperConverged CR, with no supported architectures")
 				Eventually(func(g Gomega, ctx context.Context) {
-					hc := tests.GetHCO(ctx, cli)
+					hc = tests.GetHCO(ctx, cli)
 
 					g.Expect(hc.Status.DataImportCronTemplates).ToNot(BeEmpty())
 					hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
@@ -653,13 +679,14 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 						return d.Name == "custom-dict"
 					})
 					g.Expect(idx).To(Equal(-1), "should not have the custom-dict in the SSP")
-				}).Within(60 * time.Second).
+				}).Within(60*time.Second).
 					WithPolling(time.Second).
 					WithContext(ctx).
-					Should(Succeed())
+					Should(Succeed(), tests.PrintHyperConverged(hc))
 
+				By("Check the DICT in the HC status")
 				Eventually(func(g Gomega, ctx context.Context) {
-					hc := tests.GetHCO(ctx, cli)
+					hc = tests.GetHCO(ctx, cli)
 					idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
 						return d.Name == "custom-dict"
 					})
@@ -672,18 +699,21 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					g.Expect(hcoDictStatus.Status.Conditions).To(HaveLen(1), "should have one condition in the DICT status")
 					g.Expect(hcoDictStatus.Status.Conditions[0].Type).To(Equal("Deployed"))
 					g.Expect(hcoDictStatus.Status.Conditions[0].Reason).To(Equal("UnsupportedArchitectures"))
-				}).WithTimeout(60 * time.Second).
+				}).WithTimeout(60*time.Second).
 					WithPolling(time.Second).
 					WithContext(ctx).
-					Should(Succeed())
+					Should(Succeed(), tests.PrintOrigAndCurrentHyperConvergeds(origHC, hc))
 			})
 
 			It("when the image was changed, should not add a customized common DICT to the SSP CR", func(ctx context.Context) {
-				var hcCustomDict hcov1beta1.DataImportCronTemplate
+				var (
+					hcCustomDict hcov1beta1.DataImportCronTemplate
+					hc           *hcov1beta1.HyperConverged
+				)
 
 				By("modify a common DICT in the HyperConverged CR, to have no supported architectures")
 				Eventually(func(g Gomega, ctx context.Context) {
-					hc := tests.GetHCO(ctx, cli)
+					hc = tests.GetHCO(ctx, cli)
 
 					g.Expect(len(hc.Status.DataImportCronTemplates)).To(BeNumerically(">", 1))
 					hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
@@ -720,9 +750,15 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					})
 
 					g.Expect(idx).To(Equal(-1), "should not have the custom-dict in the SSP")
+				}).WithTimeout(60*time.Second).
+					WithPolling(time.Second).
+					WithContext(ctx).
+					Should(Succeed(), tests.PrintHyperConverged(hc))
 
-					hc := tests.GetHCO(ctx, cli)
-					idx = slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
+				By("Check the DICT in the HC status")
+				Eventually(func(g Gomega, ctx context.Context) {
+					hc = tests.GetHCO(ctx, cli)
+					idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
 						return d.Name == hcCustomDict.Name
 					})
 					g.Expect(idx).To(BeNumerically(">", -1), "should have the %q in the HC status", hcCustomDict.Name)
@@ -734,21 +770,22 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					g.Expect(hcoDictStatus.Status.Conditions).To(HaveLen(1), "should have one condition in the DICT status")
 					g.Expect(hcoDictStatus.Status.Conditions[0].Type).To(Equal("Deployed"))
 					g.Expect(hcoDictStatus.Status.Conditions[0].Reason).To(Equal("UnsupportedArchitectures"))
-				}).WithTimeout(10 * time.Second).
-					WithPolling(500 * time.Millisecond).
+				}).WithTimeout(10*time.Second).
+					WithPolling(500*time.Millisecond).
 					WithContext(ctx).
-					Should(Succeed())
+					Should(Succeed(), tests.PrintOrigAndCurrentHyperConvergeds(origHC, hc))
 			})
 
 			It("when the image not changed, should add a customized common DICT to the SSP CR", func(ctx context.Context) {
 				var (
 					hcCustomDict                   hcov1beta1.DataImportCronTemplate
 					originalSupportedArchitectures string
+					hc                             *hcov1beta1.HyperConverged
 				)
 
 				By("modify a common DICT in the HyperConverged CR, to have no supported architectures")
 				Eventually(func(g Gomega, ctx context.Context) {
-					hc := tests.GetHCO(ctx, cli)
+					hc = tests.GetHCO(ctx, cli)
 
 					g.Expect(len(hc.Status.DataImportCronTemplates)).To(BeNumerically(">", 1))
 					hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
@@ -781,9 +818,15 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					})
 
 					g.Expect(idx).To(BeNumerically(">", -1), "should have the custom-dict in the SSP")
+				}).WithTimeout(60*time.Second).
+					WithPolling(time.Second).
+					WithContext(ctx).
+					Should(Succeed(), tests.PrintHyperConverged(hc))
 
+				By("Check the DICT in the HC status")
+				Eventually(func(g Gomega, ctx context.Context) {
 					hc := tests.GetHCO(ctx, cli)
-					idx = slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
+					idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
 						return d.Name == hcCustomDict.Name
 					})
 					g.Expect(idx).To(BeNumerically(">", -1), "should have the %q in the HC status", hcCustomDict.Name)
@@ -797,10 +840,10 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					g.Expect(hcoDictStatus.Status.OriginalSupportedArchitectures).To(Equal(originalSupportedArchitectures))
 
 					g.Expect(hcoDictStatus.Status.Conditions).To(BeEmpty(), "should have no conditions in the DICT status")
-				}).WithTimeout(60 * time.Second).
+				}).WithTimeout(60*time.Second).
 					WithPolling(time.Second).
 					WithContext(ctx).
-					Should(Succeed())
+					Should(Succeed(), tests.PrintOrigAndCurrentHyperConvergeds(origHC, hc))
 			})
 		})
 	})
