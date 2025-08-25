@@ -1036,6 +1036,11 @@ func isSystemHealthStatusError(conditions common.HcoConditions) bool {
 }
 
 func isSystemHealthStatusWarning(conditions common.HcoConditions) bool {
+	// Treat upgrade progression as non-warning: ignore Progressing=true when reason is HCOUpgrading
+	if cond, found := conditions.GetCondition(hcov1beta1.ConditionProgressing); found && cond.Status == metav1.ConditionTrue && cond.Reason == "HCOUpgrading" {
+		return !conditions.IsStatusConditionTrue(hcov1beta1.ConditionReconcileComplete)
+	}
+
 	return !conditions.IsStatusConditionTrue(hcov1beta1.ConditionReconcileComplete) || conditions.IsStatusConditionTrue(hcov1beta1.ConditionProgressing)
 }
 
