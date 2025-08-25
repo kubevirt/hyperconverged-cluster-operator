@@ -12,7 +12,6 @@ linters:
     revive:
       rules:
         - name: bare-return
-          disabled: true
         - name: blank-imports
         - name: context-as-argument
         - name: context-keys-type
