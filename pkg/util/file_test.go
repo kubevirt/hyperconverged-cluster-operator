@@ -2,8 +2,10 @@ package util
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"strings"
+	"testing/fstest"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -60,36 +62,33 @@ fieldObj:
 	Context("test ValidateManifestDir", func() {
 
 		It("should return nil wrapped with error, if the directory des not exist", func() {
-			err := ValidateManifestDir("not-existing-dir")
+			dir := fstest.MapFS{}
+
+			err := ValidateManifestDir("not-existing-dir", dir)
 			Expect(err).To(HaveOccurred())
 			Expect(errors.Unwrap(err)).ToNot(HaveOccurred())
 		})
 
 		It("should return real error if trying to get the file stat (instead of a dir)", func() {
-			tempDir, err := os.MkdirTemp("", "")
-			Expect(err).ToNot(HaveOccurred())
-			defer func() {
-				_ = os.RemoveAll(tempDir)
-			}()
-
-			fileName := tempDir + "/testFile.txt"
-			_, err = os.Create(fileName)
-			Expect(err).ToNot(HaveOccurred())
-
-			err = ValidateManifestDir(fileName)
+			fileName := "testFile.txt"
+			dir := fstest.MapFS{
+				"testFile.txt": &fstest.MapFile{
+					Data: []byte("test content"),
+				},
+			}
+			err := ValidateManifestDir(fileName, dir)
 			Expect(err).To(HaveOccurred())
 			err = errors.Unwrap(err)
 			Expect(err).To(MatchError(fileName + " is not a directory"))
 		})
 
 		It("should return no error for a valid dir name", func() {
-			tempDir, err := os.MkdirTemp("", "")
-			Expect(err).ToNot(HaveOccurred())
-			defer func() {
-				_ = os.RemoveAll(tempDir)
-			}()
-
-			Expect(ValidateManifestDir(tempDir)).To(Succeed())
+			dir := fstest.MapFS{
+				"testdir": &fstest.MapFile{
+					Mode: fs.ModeDir,
+				},
+			}
+			Expect(ValidateManifestDir("testdir", dir)).To(Succeed())
 		})
 	})
 

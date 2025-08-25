@@ -3,11 +3,11 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"maps"
-	"os"
 	"path"
 	"strings"
-	"time"
+	"testing/fstest"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -25,59 +25,49 @@ var _ = Describe("QuickStart tests", func() {
 	schemeForTest := commontestutils.GetScheme()
 
 	var (
-		testLogger        = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("quickstart_test")
-		testFilesLocation = getTestFilesLocation() + "/quickstarts"
-		hco               = commontestutils.NewHco()
+		testLogger = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("quickstart_test")
+		hco        = commontestutils.NewHco()
 	)
 
 	Context("test GetQuickStartHandlers", func() {
 		It("should use env var to override the yaml locations", func() {
-			// create temp folder for the test
-			dir := path.Join(os.TempDir(), fmt.Sprintf("custom-qs-dir-%d", time.Now().UTC().Unix()))
-			Expect(os.Setenv(QuickStartManifestLocationVarName, dir)).To(Succeed())
-			DeferCleanup(func() {
-				Expect(os.Unsetenv(QuickStartManifestLocationVarName)).To(Succeed())
-			})
-
 			By("folder not exists")
 			cli := commontestutils.InitClient([]client.Object{})
-			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
+			dir := fstest.MapFS{}
+			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco, dir)
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(BeEmpty())
-
-			Expect(os.Mkdir(dir, 0744)).To(Succeed())
-			DeferCleanup(func() {
-				Expect(os.RemoveAll(dir)).To(Succeed())
-			})
 
 			By("folder is empty")
+			dir[QuickStartDefaultManifestLocation] = &fstest.MapFile{
+				Mode: fs.ModeDir,
+			}
+
 			cli = commontestutils.InitClient([]client.Object{})
-			handlers, err = GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
+			handlers, err = GetQuickStartHandlers(testLogger, cli, schemeForTest, hco, dir)
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(BeEmpty())
-
-			nonYaml, err := os.OpenFile(path.Join(dir, "for_test.txt"), os.O_CREATE|os.O_WRONLY, 0644)
-			Expect(err).ToNot(HaveOccurred())
-			defer os.Remove(nonYaml.Name())
-
-			_, err = fmt.Fprintln(nonYaml, `some text`)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(nonYaml.Close()).To(Succeed())
 
 			By("no yaml files")
+			dir[path.Join(QuickStartDefaultManifestLocation, "for_test.txt")] = &fstest.MapFile{
+				Data: []byte("some text"),
+			}
+
 			cli = commontestutils.InitClient([]client.Object{})
-			handlers, err = GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
+			handlers, err = GetQuickStartHandlers(testLogger, cli, schemeForTest, hco, dir)
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(BeEmpty())
 
-			Expect(commontestutils.CopyFile(path.Join(dir, "quickStart.yaml"), path.Join(testFilesLocation, "quickstart.yaml"))).To(Succeed())
-
 			By("yaml file exists")
+			dir[path.Join(QuickStartDefaultManifestLocation, "quickStart.yaml")] = &fstest.MapFile{
+				Data: quickstartFileContent,
+			}
+
 			cli = commontestutils.InitClient([]client.Object{})
-			handlers, err = GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
+			handlers, err = GetQuickStartHandlers(testLogger, cli, schemeForTest, hco, dir)
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
@@ -85,20 +75,15 @@ var _ = Describe("QuickStart tests", func() {
 		})
 
 		It("should return error if quickstart path is not a directory", func() {
-			filePath := "/testFiles/quickstarts/quickstart.yaml"
-			const currentDir = "/controllers/handlers"
-			wd, _ := os.Getwd()
-			if !strings.HasSuffix(wd, currentDir) {
-				filePath = wd + currentDir + filePath
-			} else {
-				filePath = wd + filePath
+			By("check that GetQuickStartHandlers returns error")
+			dir := fstest.MapFS{
+				QuickStartDefaultManifestLocation: &fstest.MapFile{
+					Data: quickstartFileContent,
+				},
 			}
 
-			// quickstart directory path of a file
-			_ = os.Setenv(QuickStartManifestLocationVarName, filePath)
-			By("check that GetQuickStartHandlers returns error")
 			cli := commontestutils.InitClient([]client.Object{})
-			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
+			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco, dir)
 
 			Expect(err).To(HaveOccurred())
 			Expect(handlers).To(BeEmpty())
@@ -107,11 +92,21 @@ var _ = Describe("QuickStart tests", func() {
 
 	Context("test quickStartHandler", func() {
 
-		It("should create the ConsoleQuickStart resource if not exists", func() {
-			_ = os.Setenv(QuickStartManifestLocationVarName, testFilesLocation)
+		var dir fs.FS
+		BeforeEach(func() {
+			dir = fstest.MapFS{
+				QuickStartDefaultManifestLocation: &fstest.MapFile{
+					Mode: fs.ModeDir,
+				},
+				path.Join(QuickStartDefaultManifestLocation, "test-quick-start.yaml"): &fstest.MapFile{
+					Data: quickstartFileContent,
+				},
+			}
+		})
 
+		It("should create the ConsoleQuickStart resource if not exists", func() {
 			cli := commontestutils.InitClient([]client.Object{})
-			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
+			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco, dir)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 			Expect(quickstartNames).To(ContainElement("test-quick-start"))
@@ -131,15 +126,13 @@ var _ = Describe("QuickStart tests", func() {
 		})
 
 		It("should update the ConsoleQuickStart resource if not not equal to the expected one", func() {
-			Expect(os.Setenv(QuickStartManifestLocationVarName, testFilesLocation)).To(Succeed())
-
-			exists, err := getQSsFromTestData(testFilesLocation)
+			exists, err := getQSsFromTestData(dir)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(exists).ToNot(BeNil())
 			exists.Spec.DurationMinutes = exists.Spec.DurationMinutes * 2
 
 			cli := commontestutils.InitClient([]client.Object{exists})
-			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
+			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco, dir)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 			Expect(quickstartNames).To(ContainElement("test-quick-start"))
@@ -170,13 +163,11 @@ var _ = Describe("QuickStart tests", func() {
 		})
 
 		It("should reconcile managed labels to default without touching user added ones", func() {
-			_ = os.Setenv(QuickStartManifestLocationVarName, testFilesLocation)
-
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
 
 			cli := commontestutils.InitClient([]client.Object{})
-			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
+			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco, dir)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 
@@ -234,13 +225,11 @@ var _ = Describe("QuickStart tests", func() {
 		})
 
 		It("should reconcile managed labels to default on label deletion without touching user added ones", func() {
-			_ = os.Setenv(QuickStartManifestLocationVarName, testFilesLocation)
-
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
 
 			cli := commontestutils.InitClient([]client.Object{})
-			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco)
+			handlers, err := GetQuickStartHandlers(testLogger, cli, schemeForTest, hco, dir)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 
@@ -297,8 +286,8 @@ var _ = Describe("QuickStart tests", func() {
 	})
 })
 
-func getQSsFromTestData(testFilesLocation string) (*consolev1.ConsoleQuickStart, error) {
-	dirEntries, err := os.ReadDir(testFilesLocation)
+func getQSsFromTestData(dir fs.FS) (*consolev1.ConsoleQuickStart, error) {
+	dirEntries, err := fs.ReadDir(dir, QuickStartDefaultManifestLocation)
 	if err != nil {
 		return nil, err
 	}
@@ -308,15 +297,15 @@ func getQSsFromTestData(testFilesLocation string) (*consolev1.ConsoleQuickStart,
 			continue
 		}
 
-		filePath := path.Join(testFilesLocation, entry.Name())
-		return getQSFromTestData(filePath)
+		filePath := path.Join(QuickStartDefaultManifestLocation, entry.Name())
+		return getQSFromTestData(dir, filePath)
 	}
 
 	return nil, nil
 }
 
-func getQSFromTestData(filePath string) (*consolev1.ConsoleQuickStart, error) {
-	file, err := os.Open(filePath)
+func getQSFromTestData(dir fs.FS, filePath string) (*consolev1.ConsoleQuickStart, error) {
+	file, err := dir.Open(filePath)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file %s: %w", filePath, err)

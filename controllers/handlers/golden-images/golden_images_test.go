@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"maps"
 	"os"
-	"path"
-	"strings"
 	"testing"
-	"time"
+	"testing/fstest"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -23,23 +21,19 @@ import (
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 )
 
-func TestOperators(t *testing.T) {
+func TestGoldenImages(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Golden Images Suite")
 }
 
 var _ = Describe("Test data import cron template", func() {
-	dir := path.Join(os.TempDir(), fmt.Sprintf("custom-dict-dir-%d", time.Now().UTC().Unix()))
-	origFunc := getDataImportCronTemplatesFileLocation
-
 	var (
 		hco *hcov1beta1.HyperConverged
 
 		image1, image2, image3, image4                         hcov1beta1.DataImportCronTemplate
 		statusImage1, statusImage2, statusImage3, statusImage4 hcov1beta1.DataImportCronTemplateStatus
-
-		testFilesLocation = getTestFilesLocation() + "/dataImportCronTemplates"
 	)
+
 	BeforeEach(func() {
 		hco = commontestutils.NewHco()
 
@@ -47,41 +41,92 @@ var _ = Describe("Test data import cron template", func() {
 		image2, statusImage2 = makeDICT(2, true)
 		image3, statusImage3 = makeDICT(3, false)
 		image4, statusImage4 = makeDICT(4, false)
-
-		getDataImportCronTemplatesFileLocation = func() string {
-			return dir
-		}
 	})
 
-	AfterEach(func() {
-		getDataImportCronTemplatesFileLocation = origFunc
-	})
+	Context("read the DataImportCronTemplate from file", func() {
+		It("should not return error if the directory does not exist", func() {
+			fs := fstest.MapFS{}
 
-	It("should read the dataImportCronTemplates file", func() {
-		By("directory does not exist - no error")
-		Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
-		Expect(dataImportCronTemplateHardCodedMap).To(BeEmpty())
-
-		By("file does not exist - no error")
-		Expect(os.Mkdir(dir, os.ModePerm)).To(Succeed())
-		DeferCleanup(func() {
-			Expect(os.RemoveAll(dir)).To(Succeed())
+			Expect(readDataImportCronTemplatesFromFile(fs)).To(Succeed())
+			Expect(dataImportCronTemplateHardCodedMap).To(BeEmpty())
 		})
 
-		Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
-		Expect(dataImportCronTemplateHardCodedMap).To(BeEmpty())
+		It("should not return error if the file does not exist", func() {
+			fs := fstest.MapFS{
+				"dataImportCronTemplates": &fstest.MapFile{
+					Mode: os.ModeDir,
+				},
+			}
+			Expect(readDataImportCronTemplatesFromFile(fs)).To(Succeed())
+			Expect(dataImportCronTemplateHardCodedMap).To(BeEmpty())
+		})
 
-		destFile := path.Join(dir, "dataImportCronTemplates.yaml")
+		It("should read a valid file and create a valid DICT map", func() {
+			fs := fstest.MapFS{
+				"dataImportCronTemplates": &fstest.MapFile{
+					Mode: os.ModeDir,
+				},
+				"dataImportCronTemplates/dataImportCronTemplates.yaml": &fstest.MapFile{
+					Data: validDataImportCronFileContent,
+				},
+			}
 
-		By("valid file exits")
-		Expect(commontestutils.CopyFile(destFile, path.Join(testFilesLocation, "dataImportCronTemplates.yaml"))).To(Succeed())
-		Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
-		Expect(dataImportCronTemplateHardCodedMap).To(HaveLen(2))
+			Expect(readDataImportCronTemplatesFromFile(fs)).To(Succeed())
+			Expect(dataImportCronTemplateHardCodedMap).To(HaveLen(2))
+			Expect(dataImportCronTemplateHardCodedMap).To(HaveKey("fedora-image-cron"))
+			Expect(dataImportCronTemplateHardCodedMap).To(HaveKey("centos8-image-cron"))
+		})
 
-		By("the file is wrong")
-		Expect(commontestutils.CopyFile(destFile, path.Join(testFilesLocation, "wrongDataImportCronTemplates.yaml"))).To(Succeed())
-		Expect(readDataImportCronTemplatesFromFile()).To(HaveOccurred())
-		Expect(dataImportCronTemplateHardCodedMap).To(BeEmpty())
+		It("should read multiple valid files and create a valid DICT map", func() {
+			fs := fstest.MapFS{
+				"dataImportCronTemplates": &fstest.MapFile{
+					Mode: os.ModeDir,
+				},
+				"dataImportCronTemplates/dataImportCronTemplates.yaml": &fstest.MapFile{
+					Data: validDataImportCronFileContent,
+				},
+				"dataImportCronTemplates/anotherDataImportCronTemplates.yaml": &fstest.MapFile{
+					Data: validDataImportCronWithImageStreamFileContent,
+				},
+			}
+
+			Expect(readDataImportCronTemplatesFromFile(fs)).To(Succeed())
+			Expect(dataImportCronTemplateHardCodedMap).To(HaveLen(3))
+			Expect(dataImportCronTemplateHardCodedMap).To(HaveKey("fedora-image-cron"))
+			Expect(dataImportCronTemplateHardCodedMap).To(HaveKey("centos8-image-cron"))
+			Expect(dataImportCronTemplateHardCodedMap).To(HaveKey("test-is"))
+		})
+
+		It("should reject duplicate DICTs", func() {
+			fs := fstest.MapFS{
+				"dataImportCronTemplates": &fstest.MapFile{
+					Mode: os.ModeDir,
+				},
+				"dataImportCronTemplates/dataImportCronTemplates.yaml": &fstest.MapFile{
+					Data: validDataImportCronFileContent,
+				},
+				"dataImportCronTemplates/anotherDataImportCronTemplates.yaml": &fstest.MapFile{
+					Data: validDataImportCronFileContent,
+				},
+			}
+			err := readDataImportCronTemplatesFromFile(fs)
+			Expect(err).To(MatchError(ContainSubstring("duplicate DataImportCronTemplate found: fedora-image-cron")))
+			Expect(err).To(MatchError(ContainSubstring("duplicate DataImportCronTemplate found: centos8-image-cron")))
+		})
+
+		It("should return error if the file is with wrong format", func() {
+			fs := fstest.MapFS{
+				"dataImportCronTemplates": &fstest.MapFile{
+					Mode: os.ModeDir,
+				},
+				"dataImportCronTemplates/dataImportCronTemplates.yaml": &fstest.MapFile{
+					Data: wrongDataImportCronTemplatesFileContent,
+				},
+			}
+
+			Expect(readDataImportCronTemplatesFromFile(fs)).To(MatchError(ContainSubstring("cannot unmarshal object into Go value of type")))
+			Expect(dataImportCronTemplateHardCodedMap).To(BeEmpty())
+		})
 	})
 
 	Context("test GetDataImportCronTemplates", func() {
@@ -519,23 +564,6 @@ var _ = Describe("Test data import cron template", func() {
 			for _, image := range dataImportCronTemplateHardCodedMap {
 				Expect(image.Spec.Schedule).To(Equal(schedule))
 			}
-		})
-	})
-
-	Context("test data import cron templates in Status", func() {
-		var destFile string
-		BeforeEach(func() {
-			Expect(os.Mkdir(dir, os.ModePerm)).To(Succeed())
-			destFile = path.Join(dir, "dataImportCronTemplates.yaml")
-			Expect(
-				commontestutils.CopyFile(destFile, path.Join(testFilesLocation, "dataImportCronTemplates.yaml")),
-			).To(Succeed())
-			Expect(readDataImportCronTemplatesFromFile()).To(Succeed())
-		})
-
-		AfterEach(func() {
-			_ = os.RemoveAll(dir)
-			_ = os.Remove(destFile)
 		})
 	})
 
@@ -1053,18 +1081,4 @@ func makeDICT(num int, CommonTemplate bool) (hcov1beta1.DataImportCronTemplate, 
 			Modified:       false,
 		},
 	}
-}
-
-const (
-	pkgDirectory = "controllers/handlers/golden-images"
-	testFilesLoc = "testFiles"
-)
-
-func getTestFilesLocation() string {
-	wd, err := os.Getwd()
-	Expect(err).ToNot(HaveOccurred())
-	if strings.HasSuffix(wd, pkgDirectory) {
-		return testFilesLoc
-	}
-	return path.Join(pkgDirectory, testFilesLoc)
 }

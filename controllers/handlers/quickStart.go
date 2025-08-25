@@ -3,8 +3,7 @@ package handlers
 import (
 	"errors"
 	"io"
-	"os"
-	"path/filepath"
+	"io/fs"
 	"reflect"
 	"strings"
 
@@ -21,8 +20,7 @@ import (
 
 // ConsoleQuickStart resources are a short user guids
 const (
-	QuickStartManifestLocationVarName = "QUICK_START_FILES_LOCATION"
-	quickStartDefaultManifestLocation = "./quickStart"
+	QuickStartDefaultManifestLocation = "quickStart"
 )
 
 var quickstartNames []string
@@ -75,27 +73,29 @@ func (h qsHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists r
 
 func (qsHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
-func GetQuickStartHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]operands.Operand, error) {
-	filesLocation := util.GetManifestDirPath(QuickStartManifestLocationVarName, quickStartDefaultManifestLocation)
-
-	err := util.ValidateManifestDir(filesLocation)
+func GetQuickStartHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, dir fs.FS) ([]operands.Operand, error) {
+	err := util.ValidateManifestDir(QuickStartDefaultManifestLocation, dir)
 	if err != nil {
 		return nil, errors.Unwrap(err) // if not wrapped, then it's not an error that stops processing, and it return nil
 	}
 
-	return createQuickstartHandlersFromFiles(logger, Client, Scheme, hc, filesLocation)
+	return createQuickstartHandlersFromFiles(logger, Client, Scheme, hc, QuickStartDefaultManifestLocation, dir)
 }
 
-func createQuickstartHandlersFromFiles(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, filesLocation string) ([]operands.Operand, error) {
+func createQuickstartHandlersFromFiles(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, filesLocation string, dir fs.FS) ([]operands.Operand, error) {
 	var handlers []operands.Operand
 	quickstartNames = []string{}
 
-	err := filepath.Walk(filesLocation, func(path string, info os.FileInfo, err error) error {
+	err := fs.WalkDir(dir, filesLocation, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		qs, err := processQuickstartFile(path, info, logger, hc, Client, Scheme)
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			return nil
+		}
+
+		qs, err := processQuickstartFile(path, logger, hc, Client, Scheme, dir)
 		if err != nil {
 			return err
 		}
@@ -110,23 +110,22 @@ func createQuickstartHandlersFromFiles(logger log.Logger, Client client.Client, 
 	return handlers, err
 }
 
-func processQuickstartFile(path string, info os.FileInfo, logger log.Logger, hc *hcov1beta1.HyperConverged, Client client.Client, Scheme *runtime.Scheme) (operands.Operand, error) {
-	if !info.IsDir() && strings.HasSuffix(info.Name(), ".yaml") {
-		file, err := os.Open(path)
-		if err != nil {
-			logger.Error(err, "Can't open the quickStart yaml file", "file name", path)
-			return nil, err
-		}
-
-		qs, err := quickStartFromFile(file)
-		if err != nil {
-			logger.Error(err, "Can't generate a ConsoleQuickStart object from yaml file", "file name", path)
-		} else {
-			qs.Labels = operands.GetLabels(hc, util.AppComponentCompute)
-			quickstartNames = append(quickstartNames, qs.Name)
-			return newQuickStartHandler(Client, Scheme, qs), nil
-		}
+func processQuickstartFile(path string, logger log.Logger, hc *hcov1beta1.HyperConverged, Client client.Client, Scheme *runtime.Scheme, dir fs.FS) (operands.Operand, error) {
+	file, err := dir.Open(path)
+	if err != nil {
+		logger.Error(err, "Can't open the quickStart yaml file", "file name", path)
+		return nil, err
 	}
+
+	qs, err := quickStartFromFile(file)
+	if err != nil {
+		logger.Error(err, "Can't generate a ConsoleQuickStart object from yaml file", "file name", path)
+	} else {
+		qs.Labels = operands.GetLabels(hc, util.AppComponentCompute)
+		quickstartNames = append(quickstartNames, qs.Name)
+		return newQuickStartHandler(Client, Scheme, qs), nil
+	}
+
 	return nil, nil
 }
 

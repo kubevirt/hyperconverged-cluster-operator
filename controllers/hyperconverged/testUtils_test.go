@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"testing/fstest"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -76,6 +77,7 @@ func initReconciler(cli client.Client, old *ReconcileHyperConverged) *ReconcileH
 		ownVersion:           version.Version,
 		upgradeMode:          upgradeMode,
 		upgradeableCondition: upgradeableCondition,
+		pwdFS:                fstest.MapFS{},
 	}
 }
 

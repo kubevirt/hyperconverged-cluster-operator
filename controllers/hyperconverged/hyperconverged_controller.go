@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"io/fs"
 	"os"
 	"reflect"
 	"slices"
@@ -117,6 +118,14 @@ func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond 
 
 	ownVersion := cmp.Or(os.Getenv(hcoutil.HcoKvIoVersionName), version.Version)
 
+	var pwdFS fs.FS
+	pwd, err := os.Getwd()
+	if err != nil {
+		panic("can't get the working directory")
+	}
+
+	pwdFS = os.DirFS(pwd)
+
 	r := &ReconcileHyperConverged{
 		client:               mgr.GetClient(),
 		scheme:               mgr.GetScheme(),
@@ -126,6 +135,7 @@ func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond 
 		eventEmitter:         hcoutil.GetEventEmitter(),
 		firstLoop:            true,
 		upgradeableCondition: upgradeableCond,
+		pwdFS:                pwdFS,
 	}
 
 	if ci.IsMonitoringAvailable() {
@@ -295,6 +305,7 @@ type ReconcileHyperConverged struct {
 	firstLoop            bool
 	upgradeableCondition hcoutil.Condition
 	monitoringReconciler *alerts.MonitoringReconciler
+	pwdFS                fs.FS
 }
 
 // Reconcile reads that state of the cluster for a HyperConverged object and makes changes based on the state read
@@ -309,8 +320,8 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 		return reconcile.Result{}, err
 	}
 
-	resolvedRequest, hcoTriggered := reqresolver.ResolveReconcileRequest(log, request)
-	hcoRequest := common.NewHcoRequest(ctx, resolvedRequest, log, r.upgradeMode, hcoTriggered)
+	resolvedRequest, hcoTriggered := reqresolver.ResolveReconcileRequest(logger, request)
+	hcoRequest := common.NewHcoRequest(ctx, resolvedRequest, logger, r.upgradeMode, hcoTriggered)
 
 	if hcoTriggered {
 		r.operandHandler.Reset()
@@ -1066,7 +1077,7 @@ func getMemoryOvercommitPercentage(densityConfig *hcov1beta1.HigherWorkloadDensi
 
 func (r *ReconcileHyperConverged) firstLoopInitialization(request *common.HcoRequest) {
 	// Initialize operand handler.
-	r.operandHandler.FirstUseInitiation(r.scheme, hcoutil.GetClusterInfo(), request.Instance)
+	r.operandHandler.FirstUseInitiation(r.scheme, hcoutil.GetClusterInfo(), request.Instance, r.pwdFS)
 
 	// Avoid re-initializing.
 	r.firstLoop = false

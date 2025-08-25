@@ -185,7 +185,10 @@ func main() {
 	})
 	cmdHelper.ExitOnError(err, "Failed to set the status of the Upgradeable Operator Condition")
 
-	if err = upgradepatch.Init(logger); err != nil {
+	wd, err := os.Getwd()
+	cmdHelper.ExitOnError(err, "Failed to get working directory")
+
+	if err = upgradepatch.Init(os.DirFS(wd), logger); err != nil {
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Failed validating upgrade patches file")
 		cmdHelper.ExitOnError(err, "Failed validating upgrade patches file")
 	}

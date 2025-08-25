@@ -1,19 +1,6 @@
 - metadata:
     annotations:
       cdi.kubevirt.io/storage.bind.immediate.requested: "true"
-    name: fedora-image-cron
-  spec:
-    schedule: "* */1 * * *"
-    template:
-      spec:
-        source:
-          registry:
-            url: docker://quay.io/kubevirt/fedora
-            imageStream: fedora
-    managedDataSource: fedora
-- metadata:
-    annotations:
-      cdi.kubevirt.io/storage.bind.immediate.requested: "true"
     name: test-is
   spec:
     schedule: "* */1 * * *"
@@ -23,15 +10,3 @@
           registry:
             imageStream: test-is
     managedDataSource: test-is
-- metadata:
-    annotations:
-      cdi.kubevirt.io/storage.bind.immediate.requested: "true"
-    name: centos8-image-cron
-  spec:
-    schedule: "* */1 * * *"
-    template:
-      spec:
-        source:
-          registry:
-            url: docker://quay.io/kubevirt/centos8
-    managedDataSource: centos8

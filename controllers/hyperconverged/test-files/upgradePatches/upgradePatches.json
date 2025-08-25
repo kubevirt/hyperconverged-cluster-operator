@@ -1,1 +1,347 @@
-../../../../assets/upgradePatches.json
+{
+  "hcoCRPatchList": [
+    {
+      "semverRange": ">=1.4.0 <1.5.0",
+      "jsonPatch": [
+        {
+          "op": "test",
+          "path": "/spec/liveMigrationConfig/bandwidthPerMigration",
+          "value": "64Mi"
+        },
+        {
+          "op": "remove",
+          "path": "/spec/liveMigrationConfig/bandwidthPerMigration"
+        }
+      ]
+    },
+    {
+      "semverRange": ">=1.4.0 <1.6.0",
+      "jsonPatch": [
+        {
+          "op": "replace",
+          "path": "/spec/workloadUpdateStrategy",
+          "value": {
+            "batchEvictionInterval": "1m0s",
+            "batchEvictionSize": 10,
+            "workloadUpdateMethods": [
+              "LiveMigrate"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "semverRange": ">=1.10.0 <1.11.0",
+      "jsonPatch": [
+        {
+          "op": "replace",
+          "path": "/spec/virtualMachineOptions/disableFreePageReporting",
+          "value": false
+        }
+      ],
+      "jsonPatchApplyOptions": {
+        "allowMissingPathOnRemove": true
+      }
+    },
+    {
+      "semverRange": "<=1.14.0",
+      "jsonPatch": [
+        {
+          "op": "remove",
+          "path": "/spec/featureGates/deployKubevirtIpamController"
+        },
+        {
+          "op": "remove",
+          "path": "/spec/featureGates/deployTektonTaskResources"
+        },
+        {
+          "op": "remove",
+          "path": "/spec/featureGates/enableManagedTenantQuota"
+        },
+        {
+          "op": "remove",
+          "path": "/spec/featureGates/nonRoot"
+        },
+        {
+          "op": "remove",
+          "path": "/spec/featureGates/primaryUserDefinedNetworkBinding"
+        },
+        {
+          "op": "remove",
+          "path": "/spec/featureGates/withHostPassthroughCPU"
+        }
+      ],
+      "jsonPatchApplyOptions": {
+        "allowMissingPathOnRemove": true
+      }
+    },
+    {
+      "semverRange": "<1.15.0",
+      "jsonPatch": [
+        {
+          "op": "test",
+          "path": "/spec/featureGates/enableCommonBootImageImport",
+          "value": false
+        },
+        {
+          "op": "move",
+          "from": "/spec/featureGates/enableCommonBootImageImport",
+          "path": "/spec/enableCommonBootImageImport"
+        }
+      ],
+      "jsonPatchApplyOptions": {
+        "allowMissingPathOnRemove": true
+      }
+    },
+    {
+      "semverRange": "<1.15.0",
+      "jsonPatch": [
+        {
+          "op": "test",
+          "path": "/spec/featureGates/deployVmConsoleProxy",
+          "value": true
+        },
+        {
+          "op": "move",
+          "from": "/spec/featureGates/deployVmConsoleProxy",
+          "path": "/spec/deployVmConsoleProxy"
+        }
+      ],
+      "jsonPatchApplyOptions": {
+        "allowMissingPathOnRemove": true
+      }
+    },
+    {
+      "semverRange": "<1.15.0",
+      "jsonPatch": [
+        {
+          "op": "test",
+          "path": "/spec/featureGates/enableApplicationAwareQuota",
+          "value": true
+        },
+        {
+          "op": "move",
+          "from": "/spec/featureGates/enableApplicationAwareQuota",
+          "path": "/spec/enableApplicationAwareQuota"
+        }
+      ],
+      "jsonPatchApplyOptions": {
+        "allowMissingPathOnRemove": true
+      }
+    },
+    {
+      "semverRange": "<1.15.0",
+      "jsonPatch": [
+        {
+          "op": "remove",
+          "path": "/spec/featureGates/enableCommonBootImageImport"
+        },
+        {
+          "op": "remove",
+          "path": "/spec/featureGates/deployVmConsoleProxy"
+        },
+        {
+          "op": "remove",
+          "path": "/spec/featureGates/enableApplicationAwareQuota"
+        }
+      ],
+      "jsonPatchApplyOptions": {
+        "allowMissingPathOnRemove": true
+      }
+    }
+  ],
+  "objectsToBeRemoved": [
+    {
+      "semverRange": "<=1.6.0",
+      "groupVersionKind": {
+        "group": "",
+        "version": "v1",
+        "kind": "ConfigMap"
+      },
+      "objectKey": {
+        "name": "v2v-vmware",
+        "namespace": "kubevirt-hyperconverged"
+      }
+    },
+    {
+      "semverRange": "<=1.6.0",
+      "groupVersionKind": {
+        "group": "",
+        "version": "v1",
+        "kind": "ConfigMap"
+      },
+      "objectKey": {
+        "name": "vm-import-controller-config",
+        "namespace": "kubevirt-hyperconverged"
+      }
+    },
+    {
+      "semverRange": "<1.7.0",
+      "groupVersionKind": {
+        "group": "",
+        "version": "v1",
+        "kind": "ConfigMap"
+      },
+      "objectKey": {
+        "name": "kubevirt-storage-class-defaults",
+        "namespace": "kubevirt-hyperconverged"
+      }
+    },
+    {
+      "semverRange": "<1.7.0",
+      "groupVersionKind": {
+        "group": "rbac.authorization.k8s.io",
+        "version": "v1",
+        "kind": "Role"
+      },
+      "objectKey": {
+        "name": "hco.kubevirt.io:config-reader",
+        "namespace": "kubevirt-hyperconverged"
+      }
+    },
+    {
+      "semverRange": "<1.7.0",
+      "groupVersionKind": {
+        "group": "rbac.authorization.k8s.io",
+        "version": "v1",
+        "kind": "RoleBinding"
+      },
+      "objectKey": {
+        "name": "hco.kubevirt.io:config-reader",
+        "namespace": "kubevirt-hyperconverged"
+      }
+    },
+    {
+      "semverRange": "<1.7.0",
+      "groupVersionKind": {
+        "group": "apiextensions.k8s.io",
+        "version": "v1",
+        "kind": "CustomResourceDefinition"
+      },
+      "objectKey": {
+        "name": "nodemaintenances.nodemaintenance.kubevirt.io",
+        "namespace": ""
+      }
+    },
+    {
+      "semverRange": "<1.9.0",
+      "groupVersionKind": {
+        "group": "",
+        "version": "apps/v1",
+        "kind": "Deployment"
+      },
+      "objectKey": {
+        "name": "kubevirt-plugin",
+        "namespace": "kubevirt-hyperconverged"
+      }
+    },
+    {
+      "semverRange": "<1.9.0",
+      "groupVersionKind": {
+        "group": "",
+        "version": "v1",
+        "kind": "Service"
+      },
+      "objectKey": {
+        "name": "kubevirt-plugin-service",
+        "namespace": "kubevirt-hyperconverged"
+      }
+    },
+    {
+      "semverRange": "<=1.10.0",
+      "groupVersionKind": {
+        "group": "apiextensions.k8s.io",
+        "version": "v1",
+        "kind": "CustomResourceDefinition"
+      },
+      "objectKey": {
+        "name": "tektontasks.tektontasks.kubevirt.io",
+        "namespace": ""
+      }
+    },
+    {
+      "semverRange": ">=1.13.0",
+      "groupVersionKind": {
+        "group": "apiextensions.k8s.io",
+        "version": "v1",
+        "kind": "CustomResourceDefinition"
+      },
+      "objectKey": {
+        "name": "mtqs.mtq.kubevirt.io",
+        "namespace": ""
+      }
+    },
+    {
+      "semverRange": "<1.14.0",
+      "groupVersionKind": {
+        "group": "",
+        "version": "v1",
+        "kind": "ConfigMap"
+      },
+      "objectKey": {
+        "name": "kubevirt-ui-features",
+        "namespace": "default"
+      }
+    },
+    {
+      "semverRange": "<1.14.0",
+      "groupVersionKind": {
+        "group": "",
+        "version": "v1",
+        "kind": "ConfigMap"
+      },
+      "objectKey": {
+        "name": "kubevirt-user-settings",
+        "namespace": "default"
+      }
+    },
+    {
+      "semverRange": "<1.14.0",
+      "groupVersionKind": {
+        "group": "rbac.authorization.k8s.io",
+        "version": "v1",
+        "kind": "Role"
+      },
+      "objectKey": {
+        "name": "kubevirt-ui-features-reader",
+        "namespace": "default"
+      }
+    },
+    {
+      "semverRange": "<1.14.0",
+      "groupVersionKind": {
+        "group": "rbac.authorization.k8s.io",
+        "version": "v1",
+        "kind": "RoleBinding"
+      },
+      "objectKey": {
+        "name": "kubevirt-ui-features-reader-binding",
+        "namespace": "default"
+      }
+    },
+    {
+      "semverRange": "<1.14.0",
+      "groupVersionKind": {
+        "group": "rbac.authorization.k8s.io",
+        "version": "v1",
+        "kind": "Role"
+      },
+      "objectKey": {
+        "name": "kubevirt-user-settings-reader",
+        "namespace": "default"
+      }
+    },
+    {
+      "semverRange": "<1.14.0",
+      "groupVersionKind": {
+        "group": "rbac.authorization.k8s.io",
+        "version": "v1",
+        "kind": "RoleBinding"
+      },
+      "objectKey": {
+        "name": "kubevirt-user-settings-reader-binding",
+        "namespace": "default"
+      }
+    }
+  ]
+}
