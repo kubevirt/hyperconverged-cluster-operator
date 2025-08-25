@@ -7,13 +7,14 @@ import (
 )
 
 const (
-	outOfBandUpdateAlert          = "KubeVirtCRModified"
-	unsafeModificationAlert       = "UnsupportedHCOModification"
-	installationNotCompletedAlert = "HCOInstallationIncomplete"
-	singleStackIPv6Alert          = "SingleStackIPv6Unsupported"
-	MisconfiguredDeschedulerAlert = "HCOMisconfiguredDescheduler"
-	unsupportedArchitecturesAlert = "HCOGoldenImageWithNoSupportedArchitecture"
-	dictWithNoArchAnnotationAlert = "HCOGoldenImageWithNoArchitectureAnnotation"
+	outOfBandUpdateAlert             = "KubeVirtCRModified"
+	unsafeModificationAlert          = "UnsupportedHCOModification"
+	installationNotCompletedAlert    = "HCOInstallationIncomplete"
+	singleStackIPv6Alert             = "SingleStackIPv6Unsupported"
+	MisconfiguredDeschedulerAlert    = "HCOMisconfiguredDescheduler"
+	unsupportedArchitecturesAlert    = "HCOGoldenImageWithNoSupportedArchitecture"
+	dictWithNoArchAnnotationAlert    = "HCOGoldenImageWithNoArchitectureAnnotation"
+	multiArchBootImagesDisabledAlert = "HCOMultiArchGoldenImagesDisabled"
 
 	severityAlertLabelKey     = "severity"
 	healthImpactAlertLabelKey = "operator_health_impact"
@@ -100,6 +101,18 @@ func operatorAlerts() []promv1.Rule {
 			Annotations: map[string]string{
 				"description": "The {{ $labels.data_import_cron_name }} DataImportCronTemplate (for the {{ $labels.managed_data_source_name }} DataSource) does not have the 'ssp.kubevirt.io/dict.architectures' annotation. Using this golden image for VM boot disk, may cause the VM to fail.",
 				"summary":     "DataImportCronTemplate without 'ssp.kubevirt.io/dict.architectures' annotation was detected in the HyperConverged resource.",
+			},
+			Labels: map[string]string{
+				severityAlertLabelKey:     "warning",
+				healthImpactAlertLabelKey: "none",
+			},
+		},
+		{
+			Alert: multiArchBootImagesDisabledAlert,
+			Expr:  intstr.FromString("kubevirt_hco_multi_arch_boot_images_enabled == 0"),
+			Annotations: map[string]string{
+				"description": "The cluster is multi-arch, but the enableMultiArchBootImageImport feature gate is disabled. This may cause issues with VM booting on nodes with different architectures.",
+				"summary":     "Multi-arch boot images feature is disabled in a multi-arch cluster.",
 			},
 			Labels: map[string]string{
 				severityAlertLabelKey:     "warning",

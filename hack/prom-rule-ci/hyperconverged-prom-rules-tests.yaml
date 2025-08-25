@@ -1072,3 +1072,79 @@ tests:
             kubernetes_operator_component: "hyperconverged-cluster-operator"
             data_import_cron_name: "dict1"
             managed_data_source_name: "ds1"
+
+# Test HCOMultiArchGoldenImagesDisabled
+- interval: 1m
+  input_series:
+    - series: 'kubevirt_hco_multi_arch_boot_images_enabled'
+      # time:      0     1 2 3 4 5 6 7     8     9
+      values: "stale stale 0 0 1 1 0 0 stale stale"
+
+  alert_rule_test:
+    - eval_time: 0m
+      alertname: HCOMultiArchGoldenImagesDisabled
+      exp_alerts: [ ]
+
+    - eval_time: 1m
+      alertname: HCOMultiArchGoldenImagesDisabled
+      exp_alerts: [ ]
+    - eval_time: 2m
+      alertname: HCOMultiArchGoldenImagesDisabled
+      exp_alerts:
+        - exp_annotations:
+            description: "The cluster is multi-arch, but the enableMultiArchBootImageImport feature gate is disabled. This may cause issues with VM booting on nodes with different architectures."
+            summary: "Multi-arch boot images feature is disabled in a multi-arch cluster."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOMultiArchGoldenImagesDisabled"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+    - eval_time: 3m
+      alertname: HCOMultiArchGoldenImagesDisabled
+      exp_alerts:
+        - exp_annotations:
+            description: "The cluster is multi-arch, but the enableMultiArchBootImageImport feature gate is disabled. This may cause issues with VM booting on nodes with different architectures."
+            summary: "Multi-arch boot images feature is disabled in a multi-arch cluster."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOMultiArchGoldenImagesDisabled"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+    - eval_time: 4m
+      alertname: HCOMultiArchGoldenImagesDisabled
+      exp_alerts: [ ]
+    - eval_time: 5m
+      alertname: HCOMultiArchGoldenImagesDisabled
+      exp_alerts: [ ]
+    - eval_time: 6m
+      alertname: HCOMultiArchGoldenImagesDisabled
+      exp_alerts:
+        - exp_annotations:
+            description: "The cluster is multi-arch, but the enableMultiArchBootImageImport feature gate is disabled. This may cause issues with VM booting on nodes with different architectures."
+            summary: "Multi-arch boot images feature is disabled in a multi-arch cluster."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOMultiArchGoldenImagesDisabled"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+    - eval_time: 7m
+      alertname: HCOMultiArchGoldenImagesDisabled
+      exp_alerts:
+        - exp_annotations:
+            description: "The cluster is multi-arch, but the enableMultiArchBootImageImport feature gate is disabled. This may cause issues with VM booting on nodes with different architectures."
+            summary: "Multi-arch boot images feature is disabled in a multi-arch cluster."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/HCOMultiArchGoldenImagesDisabled"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+    - eval_time: 8m
+      alertname: HCOMultiArchGoldenImagesDisabled
+      exp_alerts: [ ]
+    - eval_time: 9m
+      alertname: HCOMultiArchGoldenImagesDisabled
+      exp_alerts: [ ]
