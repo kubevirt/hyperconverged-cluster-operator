@@ -45,8 +45,8 @@ func (or *OwnResources) GetCSV() *csvv1alpha1.ClusterServiceVersion {
 	return or.csv
 }
 
-func findOwnResources(ctx context.Context, cl client.Reader, logger logr.Logger) (or *OwnResources) {
-	or = &OwnResources{}
+func findOwnResources(ctx context.Context, cl client.Reader, logger logr.Logger) *OwnResources {
+	or := &OwnResources{}
 
 	if !GetClusterInfo().IsRunningLocally() {
 		var err error
@@ -60,13 +60,13 @@ func findOwnResources(ctx context.Context, cl client.Reader, logger logr.Logger)
 		operatorNs, err := GetOperatorNamespace(logger)
 		if err != nil {
 			logger.Error(err, "Can't get operator namespace")
-			return
+			return or
 		}
 
 		or.deployment, err = getDeploymentFromPod(or.pod, cl, operatorNs, logger)
 		if err != nil {
 			logger.Error(err, "Can't get deployment")
-			return
+			return or
 		}
 		if GetClusterInfo().IsManagedByOLM() {
 			var err error
@@ -84,14 +84,14 @@ func findOwnResources(ctx context.Context, cl client.Reader, logger logr.Logger)
 		}, deployment)
 		if err != nil {
 			logger.Error(err, "Can't get deployment")
-			return
+			return or
 		}
 		or.deployment = deployment
 		or.pod = nil
 		or.csv = nil
 	}
 
-	return
+	return or
 }
 
 func getPod(ctx context.Context, c client.Reader, logger logr.Logger) (*corev1.Pod, error) {
