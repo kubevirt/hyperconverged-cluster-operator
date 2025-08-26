@@ -40,20 +40,18 @@ func getMultiArchBootImagesStatusCollector(cli client.Client, operatorNamespace 
 
 func getMultiArchBootImagesStatusCallback(cli client.Client, operatorNamespace string) func() []operatormetrics.CollectorResult {
 	return func() []operatormetrics.CollectorResult {
+		if len(nodeinfo.GetWorkloadsArchitectures()) <= 1 {
+			// Don't set the metric if the cluster is not multi-architecture
+			return []operatormetrics.CollectorResult{}
+		}
+
 		hc := hcov1beta1.HyperConverged{}
 		key := client.ObjectKey{Name: hcov1beta1.HyperConvergedName, Namespace: operatorNamespace}
 		if err := cli.Get(context.TODO(), key, &hc); err != nil {
 			if !errors.IsNotFound(err) {
-				logger.Info("HyperConverged not found")
-			} else {
-				logger.Error(err, "can't read HyperConverged")
+				logger.Error(err, "can't read HyperConverged CR")
 			}
 			// Don't set the metric if the HyperConverged CR does not exist
-			return []operatormetrics.CollectorResult{}
-		}
-
-		if len(nodeinfo.GetWorkloadsArchitectures()) <= 1 {
-			// Don't set the metric if the cluster is not multi-architecture
 			return []operatormetrics.CollectorResult{}
 		}
 
@@ -65,10 +63,7 @@ func getMultiArchBootImagesStatusCallback(cli client.Client, operatorNamespace s
 		// Set the metric based on the FeatureGate value
 		value := multiArchBootImagesFeatureDisabled
 		if ptr.Deref(hc.Spec.FeatureGates.EnableMultiArchBootImageImport, false) {
-			logger.Info("Multi-Arch boot images feature is enabled")
 			value = multiArchBootImagesFeatureEnabled
-		} else {
-			logger.Info("Multi-Arch boot images feature is disabled, but running on a multi-arch cluster with boot images enabled")
 		}
 
 		return []operatormetrics.CollectorResult{
