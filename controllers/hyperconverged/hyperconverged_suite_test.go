@@ -1,31 +1,23 @@
 package hyperconverged
 
 import (
-	"os"
-	"path"
-	"strings"
+	_ "embed"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/dirtest"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/upgradepatch"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-const (
-	pkgDirectory = "controllers/hyperconverged"
-	testFilesLoc = "test-files"
-)
+//go:embed test-files/upgradePatches/upgradePatches.json
+var upgradePatchesFileContent []byte
 
 func TestHyperconverged(t *testing.T) {
 	RegisterFailHandler(Fail)
-
-	var (
-		testFilesLocation = getTestFilesLocation() + "/upgradePatches"
-		destFile          string
-	)
 
 	getClusterInfo := hcoutil.GetClusterInfo
 
@@ -34,25 +26,13 @@ func TestHyperconverged(t *testing.T) {
 			return &commontestutils.ClusterInfoMock{}
 		}
 
-		wd, _ := os.Getwd()
-		destFile = path.Join(wd, "upgradePatches.json")
-		Expect(commontestutils.CopyFile(destFile, path.Join(testFilesLocation, "upgradePatches.json"))).To(Succeed())
-		Expect(upgradepatch.Init(GinkgoLogr)).To(Succeed())
+		pwdFS := dirtest.New(dirtest.WithFile(upgradepatch.UpgradeChangesFileLocation, upgradePatchesFileContent))
+		Expect(upgradepatch.Init(pwdFS, GinkgoLogr)).To(Succeed())
 	})
 
 	AfterSuite(func() {
 		hcoutil.GetClusterInfo = getClusterInfo
-		Expect(os.Remove(destFile)).To(Succeed())
 	})
 
 	RunSpecs(t, "Hyperconverged Suite")
-}
-
-func getTestFilesLocation() string {
-	wd, err := os.Getwd()
-	Expect(err).ToNot(HaveOccurred())
-	if strings.HasSuffix(wd, pkgDirectory) {
-		return testFilesLoc
-	}
-	return path.Join(pkgDirectory, testFilesLoc)
 }

@@ -5,7 +5,8 @@ import (
 	_ "embed"
 	"encoding/json"
 	"errors"
-	"os"
+	"io"
+	"io/fs"
 	"strings"
 	"sync"
 
@@ -23,7 +24,7 @@ import (
 var hcCRBytes []byte
 
 const (
-	upgradeChangesFileLocation = "./upgradePatches.json"
+	UpgradeChangesFileLocation = "upgradePatches.json"
 )
 
 type hcoCRPatch struct {
@@ -180,49 +181,47 @@ func GetObjectsToBeRemoved() []ObjectToBeRemoved {
 	return hcoUpgradeChanges.ObjectsToBeRemoved
 }
 
-var getUpgradeChangesFileLocation = func() string {
-	return upgradeChangesFileLocation
-}
-
-func readUpgradePatchesFromFile(logger logr.Logger) error {
+func readUpgradePatchesFromFile(pwdFS fs.FS, logger logr.Logger) error {
 	hcoUpgradeChanges = UpgradePatches{}
-	fileLocation := getUpgradeChangesFileLocation()
-
-	file, err := os.Open(fileLocation)
+	file, err := pwdFS.Open(UpgradeChangesFileLocation)
 	if err != nil {
-		logger.Error(err, "Can't open the upgradeChanges yaml file", "file name", fileLocation)
+		logger.Error(err, "Can't open the upgradeChanges yaml file", "file name", UpgradeChangesFileLocation)
 		return err
 	}
 
 	defer file.Close()
 
+	return readJsonFromReader(file)
+}
+
+func readJsonFromReader(file io.Reader) error {
 	jDec := json.NewDecoder(file)
-	err = jDec.Decode(&hcoUpgradeChanges)
+	err := jDec.Decode(&hcoUpgradeChanges)
 	if err != nil {
 		return err
+	}
+
+	for _, p := range hcoUpgradeChanges.HCOCRPatchList {
+		if err = validateUpgradePatch(p); err != nil {
+			return err
+		}
+	}
+	for _, r := range hcoUpgradeChanges.ObjectsToBeRemoved {
+		if err = validateUpgradeLeftover(r); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func Init(logger logr.Logger) error {
+func Init(pwdFS fs.FS, logger logr.Logger) error {
 	once.Do(func() {
-		onceErr = readUpgradePatchesFromFile(logger)
+		onceErr = readUpgradePatchesFromFile(pwdFS, logger)
 	})
 
 	if onceErr != nil {
 		return onceErr
-	}
-
-	for _, p := range hcoUpgradeChanges.HCOCRPatchList {
-		if err := validateUpgradePatch(p); err != nil {
-			return err
-		}
-	}
-	for _, r := range hcoUpgradeChanges.ObjectsToBeRemoved {
-		if err := validateUpgradeLeftover(r); err != nil {
-			return err
-		}
 	}
 	return nil
 }
