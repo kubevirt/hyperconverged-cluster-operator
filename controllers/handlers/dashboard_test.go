@@ -3,11 +3,11 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"maps"
-	"os"
 	"path"
 	"strings"
-	"time"
+	"testing/fstest"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/dirtest"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -24,93 +25,71 @@ var _ = Describe("Dashboard tests", func() {
 	schemeForTest := commontestutils.GetScheme()
 
 	var (
-		testLogger        = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("dashboard_test")
-		testFilesLocation = getTestFilesLocation() + "/dashboards"
-		hco               = commontestutils.NewHco()
+		testLogger = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("dashboard_test")
+		hco        = commontestutils.NewHco()
 	)
 
 	Context("test dashboardHandlers", func() {
-		It("should use env var to override the yaml locations", func() {
+		var cli client.Client
+		BeforeEach(func() {
+			cli = commontestutils.InitClient([]client.Object{})
+		})
+
+		It("should not create dashboard handler if the directory does not exist", func() {
 			// create temp folder name for the test
-			dir := path.Join(os.TempDir(), fmt.Sprintf("custom-dashboard-dir-%d", time.Now().UTC().Unix()))
-			Expect(os.Setenv(DashboardManifestLocationVarName, dir)).To(Succeed())
-			DeferCleanup(func() {
-				Expect(os.Unsetenv(DashboardManifestLocationVarName)).To(Succeed())
-			})
+			dir := dirtest.New()
+			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco, dir)
 
-			By("folder not exists")
-			cli := commontestutils.InitClient([]client.Object{})
-			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(handlers).To(BeEmpty())
+		})
+
+		It("should not create dashboard handler if the directory is empty", func() {
+			dir := dirtest.New(dirtest.WithDir(DashboardManifestLocation))
+			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco, dir)
+
+			Expect(err).ToNot(HaveOccurred())
+			Expect(handlers).To(BeEmpty())
+		})
+
+		It("should not create dashboard handler if there is only non-yaml file", func() {
+			fileName := path.Join(DashboardManifestLocation, "for_test.txt")
+			dir := dirtest.New(dirtest.WithFile(fileName, []byte("some text")))
+			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco, dir)
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(BeEmpty())
 
-			Expect(os.Mkdir(dir, 0744)).To(Succeed())
-			DeferCleanup(func() {
-				Expect(os.RemoveAll(dir)).To(Succeed())
-			})
+		})
 
-			By("folder is empty")
-			cli = commontestutils.InitClient([]client.Object{})
-			handlers, err = GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
+		It("should create dashboard handler if there is valid yaml file", func() {
+			fileName := path.Join(DashboardManifestLocation, "kubevirt-top-consumers.yaml")
+			dir := dirtest.New(dirtest.WithFile(fileName, kubevirtTopConsumersFileContent))
 
-			Expect(err).ToNot(HaveOccurred())
-			Expect(handlers).To(BeEmpty())
-
-			nonYaml, err := os.OpenFile(path.Join(dir, "for_test.txt"), os.O_CREATE|os.O_WRONLY, 0644)
-			Expect(err).ToNot(HaveOccurred())
-
-			_, err = fmt.Fprintln(nonYaml, `some text`)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(nonYaml.Close()).To(Succeed())
-
-			By("no yaml files")
-			cli = commontestutils.InitClient([]client.Object{})
-			handlers, err = GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
-
-			Expect(err).ToNot(HaveOccurred())
-			Expect(handlers).To(BeEmpty())
-
-			Expect(
-				commontestutils.CopyFile(path.Join(dir, "dashboard.yaml"), path.Join(testFilesLocation, "kubevirt-top-consumers.yaml")),
-			).To(Succeed())
-
-			By("yaml file exists")
-			cli = commontestutils.InitClient([]client.Object{})
-			handlers, err = GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
+			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco, dir)
 
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 		})
-
-		It("should return error if dashboard path is not a directory", func() {
-			filePath := "/testFiles/dashboards/kubevirt-top-consumers.yaml"
-			const currentDir = "/controllers/handlers"
-			wd, err := os.Getwd()
-			Expect(err).ToNot(HaveOccurred())
-
-			if !strings.HasSuffix(wd, currentDir) {
-				filePath = wd + currentDir + filePath
-			} else {
-				filePath = wd + filePath
-			}
-
-			Expect(os.Setenv(DashboardManifestLocationVarName, filePath)).To(Succeed())
-			By("check that GetDashboardHandlers returns error")
-			cli := commontestutils.InitClient([]client.Object{})
-			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
-
-			Expect(err).To(HaveOccurred())
-			Expect(handlers).To(BeEmpty())
-		})
 	})
 
 	Context("test dashboardHandler", func() {
-		It("should create the Dashboard Configmap resource if not exists", func() {
-			_ = os.Setenv(DashboardManifestLocationVarName, testFilesLocation)
+		var dir fs.FS
 
+		BeforeEach(func() {
+			dir = fstest.MapFS{
+				DashboardManifestLocation: &fstest.MapFile{
+					Mode: fs.ModeDir,
+				},
+				path.Join(DashboardManifestLocation, "kubevirt-top-consumers.yaml"): &fstest.MapFile{
+					Data: kubevirtTopConsumersFileContent,
+				},
+			}
+		})
+
+		It("should create the Dashboard Configmap resource if not exists", func() {
 			cli := commontestutils.InitClient([]client.Object{})
-			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
+			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco, dir)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 
@@ -129,16 +108,14 @@ var _ = Describe("Dashboard tests", func() {
 		})
 
 		It("should update the ConfigMap resource if not not equal to the expected one", func() {
-			Expect(os.Setenv(DashboardManifestLocationVarName, testFilesLocation)).To(Succeed())
-
-			exists, err := getCMsFromTestData(testFilesLocation)
+			exists, err := getCMsFromTestData(dir)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(exists).ToNot(BeNil())
 
 			exists.Data = map[string]string{"fakeKey": "fakeValue"}
 
 			cli := commontestutils.InitClient([]client.Object{exists})
-			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
+			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco, dir)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 
@@ -167,9 +144,8 @@ var _ = Describe("Dashboard tests", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
 
-			_ = os.Setenv(DashboardManifestLocationVarName, testFilesLocation)
 			cli := commontestutils.InitClient([]client.Object{})
-			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
+			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco, dir)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 
@@ -230,9 +206,8 @@ var _ = Describe("Dashboard tests", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
 
-			_ = os.Setenv(DashboardManifestLocationVarName, testFilesLocation)
 			cli := commontestutils.InitClient([]client.Object{})
-			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco)
+			handlers, err := GetDashboardHandlers(testLogger, cli, schemeForTest, hco, dir)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(handlers).To(HaveLen(1))
 
@@ -289,8 +264,8 @@ var _ = Describe("Dashboard tests", func() {
 	})
 })
 
-func getCMsFromTestData(testFilesLocation string) (*corev1.ConfigMap, error) {
-	dirEntries, err := os.ReadDir(testFilesLocation)
+func getCMsFromTestData(dir fs.FS) (*corev1.ConfigMap, error) {
+	dirEntries, err := fs.ReadDir(dir, DashboardManifestLocation)
 	if err != nil {
 		return nil, err
 	}
@@ -300,15 +275,15 @@ func getCMsFromTestData(testFilesLocation string) (*corev1.ConfigMap, error) {
 			continue
 		}
 
-		filePath := path.Join(testFilesLocation, entry.Name())
-		return getCMFromTestData(filePath)
+		filePath := path.Join(DashboardManifestLocation, entry.Name())
+		return getCMFromTestData(dir, filePath)
 	}
 
 	return nil, nil
 }
 
-func getCMFromTestData(filePath string) (*corev1.ConfigMap, error) {
-	file, err := os.Open(filePath)
+func getCMFromTestData(dir fs.FS, filePath string) (*corev1.ConfigMap, error) {
+	file, err := dir.Open(filePath)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file %s: %w", filePath, err)
