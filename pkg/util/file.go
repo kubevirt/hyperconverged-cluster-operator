@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 
 	"github.com/ghodss/yaml"
@@ -25,8 +26,9 @@ func UnmarshalYamlFileToObject(file io.Reader, o interface{}) error {
 //	err == nil - OK: directory exists
 //	err != nil && errors.Unwrap(err) == nil - directory does not exist, but that ok
 //	err != nil && errors.Unwrap(err) != nil - actual error
-func ValidateManifestDir(dir string) error {
-	info, err := os.Stat(dir)
+func ValidateManifestDir(dirName string, dir fs.FS) error {
+	// check if the directory exists
+	info, err := fs.Stat(dir, dirName)
 	if err != nil {
 		if os.IsNotExist(err) { // don't return error if there is no such a dir, just ignore it
 			return NewProcessingError(nil) // return error, but don't stop processing
@@ -35,7 +37,7 @@ func ValidateManifestDir(dir string) error {
 	}
 
 	if !info.IsDir() {
-		err := fmt.Errorf("%s is not a directory", dir)
+		err = fmt.Errorf("%s is not a directory", dirName)
 		return NewProcessingError(err) // return error
 	}
 
