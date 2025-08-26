@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"strings"
 
@@ -56,7 +57,7 @@ type Reseter interface {
 }
 
 type GetHandler func(log.Logger, client.Client, *runtime.Scheme, *hcov1beta1.HyperConverged) (Operand, error)
-type GetHandlers func(log.Logger, client.Client, *runtime.Scheme, *hcov1beta1.HyperConverged) ([]Operand, error)
+type GetHandlers func(log.Logger, client.Client, *runtime.Scheme, *hcov1beta1.HyperConverged, fs.FS) ([]Operand, error)
 
 func handleOperandDegradedCond(req *common.HcoRequest, component string, condition metav1.Condition) bool {
 	if condition.Status == metav1.ConditionTrue {
