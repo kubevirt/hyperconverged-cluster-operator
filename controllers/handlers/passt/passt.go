@@ -206,7 +206,7 @@ func NewPasstBindingCNINetworkAttachmentDefinition(hc *hcov1beta1.HyperConverged
 	return &netattdefv1.NetworkAttachmentDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      networkBindingNADName,
-			Namespace: "default",
+			Namespace: networkBindingNADNamespace,
 			Labels:    hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentNetwork),
 		},
 		Spec: netattdefv1.NetworkAttachmentDefinitionSpec{
@@ -267,7 +267,7 @@ func NewPasstDaemonSetHandler(Client client.Client, Scheme *runtime.Scheme) oper
 	return createPasstConditionalHandler(
 		operands.NewDaemonSetHandler(Client, Scheme, NewPasstBindingCNIDaemonSet),
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return NewPasstBindingCNIDaemonSet(hc)
+			return NewPasstBindingCNIDaemonSetWithNameOnly(hc)
 		},
 	)
 }

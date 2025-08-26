@@ -17,7 +17,7 @@ import (
 type newDaemonSetFunc func(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet
 
 func NewDaemonSetHandler(Client client.Client, Scheme *runtime.Scheme, newCrFunc newDaemonSetFunc) *GenericOperand {
-	return NewGenericOperand(Client, Scheme, "DaemonSet", &daemonSetHooks{newCrFunc: newCrFunc}, false)
+	return NewGenericOperand(Client, Scheme, "DaemonSet", &daemonSetHooks{newCrFunc: newCrFunc}, true)
 }
 
 type daemonSetHooks struct {

@@ -19,13 +19,13 @@ func NewWaspAgentSCCHandler(Client client.Client, Scheme *runtime.Scheme) operan
 		operands.NewSecurityContextConstraintsHandler(Client, Scheme, newWaspAgentSCC),
 		shouldDeployWaspAgent,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return newWaspAgentSCCWithNameOnly(hc)
+			return NewWaspAgentSCCWithNameOnly(hc)
 		},
 	)
 }
 
 func newWaspAgentSCC(hc *hcov1beta1.HyperConverged) *securityv1.SecurityContextConstraints {
-	scc := newWaspAgentSCCWithNameOnly(hc)
+	scc := NewWaspAgentSCCWithNameOnly(hc)
 
 	scc.AllowPrivilegedContainer = true
 	scc.AllowHostDirVolumePlugin = true
@@ -63,7 +63,7 @@ func newWaspAgentSCC(hc *hcov1beta1.HyperConverged) *securityv1.SecurityContextC
 	return scc
 }
 
-func newWaspAgentSCCWithNameOnly(hc *hcov1beta1.HyperConverged) *securityv1.SecurityContextConstraints {
+func NewWaspAgentSCCWithNameOnly(hc *hcov1beta1.HyperConverged) *securityv1.SecurityContextConstraints {
 	return &securityv1.SecurityContextConstraints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   waspAgentSCCName,

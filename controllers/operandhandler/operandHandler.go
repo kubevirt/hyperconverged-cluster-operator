@@ -13,9 +13,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	kubevirtcorev1 "kubevirt.io/api/core/v1"
-	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
-
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
@@ -235,20 +232,31 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 	defer cancel()
 
 	resources := []client.Object{
-		handlers.NewKubeVirtWithNameOnly(req.Instance),
-		handlers.NewCDIWithNameOnly(req.Instance),
 		handlers.NewNetworkAddonsWithNameOnly(req.Instance),
 		handlers.NewSSPWithNameOnly(req.Instance),
 		handlers.NewConsoleCLIDownload(req.Instance),
 		handlers.NewAAQWithNameOnly(req.Instance),
-		passt.NewPasstBindingCNISA(req.Instance),
-		passt.NewPasstBindingCNIDaemonSetWithNameOnly(req.Instance),
 		passt.NewPasstBindingCNINetworkAttachmentDefinition(req.Instance),
 		passt.NewPasstBindingCNISecurityContextConstraints(req.Instance),
+		waspagent.NewWaspAgentSCCWithNameOnly(req.Instance),
 	}
 
 	resources = append(resources, h.objects...)
 
+	err := h.deleteMultipleResources(tCtx, req, resources)
+	if err != nil {
+		return err
+	}
+
+	err = h.deleteSingleResource(tCtx, req, handlers.NewKubeVirtWithNameOnly(req.Instance), ErrVirtUninstall, uninstallVirtErrorMsg)
+	if err != nil {
+		return err
+	}
+
+	return h.deleteSingleResource(tCtx, req, handlers.NewCDIWithNameOnly(req.Instance), ErrCDIUninstall, uninstallCDIErrorMsg)
+}
+
+func (h *OperandHandler) deleteMultipleResources(tCtx context.Context, req *common.HcoRequest, resources []client.Object) error {
 	eg, egCtx := errgroup.WithContext(tCtx)
 
 	for _, res := range resources {
@@ -257,22 +265,10 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 				deleted, err := hcoutil.EnsureDeleted(egCtx, h.client, o, req.Instance.Name, req.Logger, false, true, true)
 				if err != nil {
 					req.Logger.Error(err, "Failed to manually delete objects")
-					errT := ErrHCOUninstall
-					errMsg := uninstallHCOErrorMsg
-					switch o.(type) {
-					case *kubevirtcorev1.KubeVirt:
-						errT = ErrVirtUninstall
-						errMsg = uninstallVirtErrorMsg + err.Error()
-					case *cdiv1beta1.CDI:
-						errT = ErrCDIUninstall
-						errMsg = uninstallCDIErrorMsg + err.Error()
-					}
-
-					h.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeWarning, errT, errMsg)
+					h.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeWarning, ErrHCOUninstall, uninstallHCOErrorMsg)
 					return err
 				} else if deleted {
-					key := client.ObjectKeyFromObject(o)
-					h.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "Killing", fmt.Sprintf("Removed %s %s", o.GetObjectKind().GroupVersionKind().Kind, key.Name))
+					h.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "Killing", fmt.Sprintf("Removed %s %s", o.GetObjectKind().GroupVersionKind().Kind, o.GetName()))
 				}
 				return nil
 			})
@@ -280,6 +276,19 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 	}
 
 	return eg.Wait()
+}
+
+func (h *OperandHandler) deleteSingleResource(ctx context.Context, req *common.HcoRequest, resource client.Object, errT, errMsg string) error {
+	deleted, err := hcoutil.EnsureDeleted(ctx, h.client, resource, req.Instance.Name, req.Logger, false, true, true)
+	if err != nil {
+		req.Logger.Error(err, "Failed to manually delete objects")
+
+		h.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeWarning, errT, errMsg+err.Error())
+		return err
+	} else if deleted {
+		h.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "Killing", fmt.Sprintf("Removed %s %s", resource.GetObjectKind().GroupVersionKind().Kind, resource.GetName()))
+	}
+	return nil
 }
 
 func (h *OperandHandler) Reset() {

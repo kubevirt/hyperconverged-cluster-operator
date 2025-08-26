@@ -15,7 +15,7 @@ import (
 type newSvcAccountFunc func(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount
 
 func NewServiceAccountHandler(Client client.Client, Scheme *runtime.Scheme, newCrFunc newSvcAccountFunc) *GenericOperand {
-	return NewGenericOperand(Client, Scheme, "ServiceAccount", &serviceAccountHooks{newCrFunc: newCrFunc}, false)
+	return NewGenericOperand(Client, Scheme, "ServiceAccount", &serviceAccountHooks{newCrFunc: newCrFunc}, true)
 }
 
 type serviceAccountHooks struct {
