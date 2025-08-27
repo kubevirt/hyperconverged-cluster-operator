@@ -1564,7 +1564,7 @@ The jsonpatch annotation feature is particularly dangerous when upgrading Kubevi
 As the usage of the jsonpatch annotation is not safe, the HyperConverged Cluster Operator will count the number of these
 modifications in a metric named kubevirt_hco_unsafe_modifications.
 if the counter is not zero, an alert named
-`UnsupportedHCOModification will` be eventually fired:
+`UnsupportedHCOModification` will be eventually fired:
 ```
 Labels
     alertname=UnsupportedHCOModification
