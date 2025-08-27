@@ -8,7 +8,6 @@ import (
 	"maps"
 	"os"
 	"path"
-	"path/filepath"
 	"reflect"
 	"slices"
 	"sort"
@@ -29,7 +28,7 @@ import (
 )
 
 const (
-	dataImportCronTemplatesFileLocation = "./dataImportCronTemplates"
+	dataImportCronTemplatesFileLocation = "dataImportCronTemplates"
 
 	CDIImmediateBindAnnotation = "cdi.kubevirt.io/storage.bind.immediate.requested"
 
@@ -44,10 +43,6 @@ var (
 	// dataImportCronTemplateHardCodedMap are set of data import cron template configurations. The handler reads a list
 	// of data import cron templates from a local file and updates SSP with the up-to-date list
 	dataImportCronTemplateHardCodedMap map[string]hcov1beta1.DataImportCronTemplate
-
-	getDataImportCronTemplatesFileLocation = func() string {
-		return dataImportCronTemplatesFileLocation
-	}
 
 	logger = logf.Log.WithName("dataImportCronTemplateInit")
 )
@@ -113,42 +108,55 @@ func ApplyDataImportSchedule(hc *hcov1beta1.HyperConverged) {
 }
 
 func init() {
-	if err := readDataImportCronTemplatesFromFile(); err != nil {
+	wd, err := os.Getwd()
+	if err != nil {
+		panic("can't get the working directory; " + err.Error())
+	}
+
+	if err = readDataImportCronTemplatesFromFile(os.DirFS(wd)); err != nil {
 		panic(fmt.Errorf("can't process the data import cron template file; %s; %w", err.Error(), err))
 	}
 }
 
-func readDataImportCronTemplatesFromFile() error {
+func readDataImportCronTemplatesFromFile(wdFS fs.FS) error {
 	dataImportCronTemplateHardCodedMap = make(map[string]hcov1beta1.DataImportCronTemplate)
 
-	fileLocation := getDataImportCronTemplatesFileLocation()
-
-	err := util.ValidateManifestDir(fileLocation)
-	if err != nil {
+	if err := util.ValidateManifestDir(dataImportCronTemplatesFileLocation, wdFS); err != nil {
 		return errors.Unwrap(err) // if not wrapped, then it's not an error that stops processing, and it returns nil
 	}
 
-	return filepath.Walk(fileLocation, func(filePath string, info fs.FileInfo, internalErr error) error {
+	return fs.WalkDir(wdFS, dataImportCronTemplatesFileLocation, func(filePath string, d fs.DirEntry, internalErr error) error {
 		if internalErr != nil {
 			return internalErr
 		}
 
-		if !info.IsDir() && path.Ext(info.Name()) == ".yaml" {
-			file, internalErr := os.Open(filePath)
-			if internalErr != nil {
-				logger.Error(internalErr, "Can't open the dataImportCronTemplate yaml file", "file name", filePath)
-				return internalErr
-			}
+		if d.IsDir() || path.Ext(d.Name()) != ".yaml" {
+			return nil
+		}
 
-			dataImportCronTemplateFromFile := make([]hcov1beta1.DataImportCronTemplate, 0)
-			internalErr = util.UnmarshalYamlFileToObject(file, &dataImportCronTemplateFromFile)
-			if internalErr != nil {
-				return internalErr
-			}
+		file, err := wdFS.Open(filePath)
+		if err != nil {
+			logger.Error(internalErr, "Can't open the dataImportCronTemplate yaml file", "file name", filePath)
+			return err
+		}
 
-			for _, dict := range dataImportCronTemplateFromFile {
-				dataImportCronTemplateHardCodedMap[dict.Name] = dict
+		dataImportCronTemplateFromFile := make([]hcov1beta1.DataImportCronTemplate, 0)
+		err = util.UnmarshalYamlFileToObject(file, &dataImportCronTemplateFromFile)
+		if err != nil {
+			return err
+		}
+
+		var duplicateDICTsErrors []error
+		for _, dict := range dataImportCronTemplateFromFile {
+			if _, found := dataImportCronTemplateHardCodedMap[dict.Name]; found {
+				duplicateDICTsErrors = append(duplicateDICTsErrors, fmt.Errorf("duplicate DataImportCronTemplate found: %s", dict.Name))
+				continue
 			}
+			dataImportCronTemplateHardCodedMap[dict.Name] = dict
+		}
+
+		if len(duplicateDICTsErrors) > 0 {
+			return errors.Join(duplicateDICTsErrors...)
 		}
 
 		return nil

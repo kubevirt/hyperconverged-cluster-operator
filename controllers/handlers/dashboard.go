@@ -3,9 +3,8 @@ package handlers
 import (
 	"errors"
 	"io"
+	"io/fs"
 	"maps"
-	"os"
-	"path/filepath"
 	"strings"
 
 	log "github.com/go-logr/logr"
@@ -20,29 +19,30 @@ import (
 
 // Dashboard ConfigMaps contain json definitions of OCP UI
 const (
-	DashboardManifestLocationVarName = "DASHBOARD_FILES_LOCATION"
-	dashboardManifestLocationDefault = "./dashboard"
+	DashboardManifestLocation = "dashboard"
 )
 
-func GetDashboardHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) ([]operands.Operand, error) {
-	filesLocation := util.GetManifestDirPath(DashboardManifestLocationVarName, dashboardManifestLocationDefault)
-
-	err := util.ValidateManifestDir(filesLocation)
+func GetDashboardHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, dir fs.FS) ([]operands.Operand, error) {
+	err := util.ValidateManifestDir(DashboardManifestLocation, dir)
 	if err != nil {
 		return nil, errors.Unwrap(err) // if not wrapped, then it's not an error that stops processing, and it return nil
 	}
 
-	return createDashboardHandlersFromFiles(logger, Client, Scheme, hc, filesLocation)
+	return createDashboardHandlersFromFiles(logger, Client, Scheme, hc, DashboardManifestLocation, dir)
 }
 
-func createDashboardHandlersFromFiles(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, filesLocation string) ([]operands.Operand, error) {
+func createDashboardHandlersFromFiles(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, filesLocation string, dir fs.FS) ([]operands.Operand, error) {
 	var handlers []operands.Operand
-	err := filepath.Walk(filesLocation, func(path string, info os.FileInfo, err error) error {
+	err := fs.WalkDir(dir, filesLocation, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		qs, err := processDashboardConfigMapFile(path, info, logger, hc, Client, Scheme)
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			return nil
+		}
+
+		qs, err := processDashboardConfigMapFile(path, dir, logger, hc, Client, Scheme)
 		if err != nil {
 			return err
 		}
@@ -57,21 +57,19 @@ func createDashboardHandlersFromFiles(logger log.Logger, Client client.Client, S
 	return handlers, err
 }
 
-func processDashboardConfigMapFile(path string, info os.FileInfo, logger log.Logger, hc *hcov1beta1.HyperConverged, Client client.Client, Scheme *runtime.Scheme) (operands.Operand, error) {
-	if !info.IsDir() && strings.HasSuffix(info.Name(), ".yaml") {
-		file, err := os.Open(path)
-		if err != nil {
-			logger.Error(err, "Can't open the dashboard yaml file", "file name", path)
-			return nil, err
-		}
+func processDashboardConfigMapFile(path string, dir fs.FS, logger log.Logger, hc *hcov1beta1.HyperConverged, Client client.Client, Scheme *runtime.Scheme) (operands.Operand, error) {
+	file, err := dir.Open(path)
+	if err != nil {
+		logger.Error(err, "Can't open the dashboard yaml file", "file name", path)
+		return nil, err
+	}
 
-		cm, err := cmFromFile(file)
-		if err != nil {
-			logger.Error(err, "Can't generate a Configmap object from yaml file", "file name", path)
-		} else {
-			maps.Copy(cm.Labels, operands.GetLabels(hc, util.AppComponentCompute))
-			return operands.NewCmHandler(Client, Scheme, cm), nil
-		}
+	cm, err := cmFromFile(file)
+	if err != nil {
+		logger.Error(err, "Can't generate a Configmap object from yaml file", "file name", path)
+	} else {
+		maps.Copy(cm.Labels, operands.GetLabels(hc, util.AppComponentCompute))
+		return operands.NewCmHandler(Client, Scheme, cm), nil
 	}
 
 	return nil, nil

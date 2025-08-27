@@ -1,10 +1,8 @@
 package upgradepatch
 
 import (
-	"os"
-	"path"
+	"bytes"
 	"slices"
-	"strings"
 	"sync"
 	"testing"
 
@@ -14,17 +12,11 @@ import (
 	"github.com/onsi/gomega/types"
 	"k8s.io/utils/ptr"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/dirtest"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 )
 
-const (
-	pkgDirectory = "pkg/upgradepatch"
-	testFilesLoc = "test-files"
-)
-
 var (
-	origFile      string
 	hcCRBytesOrig []byte
 )
 
@@ -32,82 +24,74 @@ func resetOnce() {
 	once = &sync.Once{}
 }
 
+func TestUpgradePatch(t *testing.T) {
+	RegisterFailHandler(Fail)
+
+	BeforeSuite(func() {
+		hcCRBytesOrig = slices.Clone(hcCRBytes)
+	})
+
+	AfterSuite(func() {
+		hcCRBytes = hcCRBytesOrig
+		resetOnce()
+	})
+
+	RunSpecs(t, "Upgrade Patches Suite")
+}
+
 var _ = Describe("upgradePatches", func() {
 
-	BeforeEach(func() {
-		wd, _ := os.Getwd()
-		origFile = path.Join(wd, "upgradePatches.json")
-		Expect(commontestutils.CopyFile(origFile+".orig", origFile)).To(Succeed())
-		resetOnce()
-		hcCRBytes = slices.Clone(hcCRBytesOrig)
-	})
-
-	AfterEach(func() {
-		Expect(os.Remove(origFile + ".orig")).To(Succeed())
-		resetOnce()
-	})
-
 	Context("readUpgradeChangesFromFile", func() {
-		AfterEach(func() {
-			Expect(commontestutils.CopyFile(origFile, origFile+".orig")).To(Succeed())
-			resetOnce()
-			Expect(Init(GinkgoLogr)).To(Succeed())
-		})
-
 		It("should correctly parse and validate actual upgradePatches.json", func() {
-			Expect(Init(GinkgoLogr)).To(Succeed())
+			reader := bytes.NewReader(upgradePatchesFileContent)
+			Expect(readJsonFromReader(reader)).To(Succeed())
 		})
 
 		It("should correctly parse and validate empty upgradePatches", func() {
-			Expect(copyTestFile("empty.json")).To(Succeed())
-			Expect(Init(GinkgoLogr)).To(Succeed())
-		})
-
-		It("should fail parsing upgradePatches with bad json", func() {
-			Expect(copyTestFile("badJson.json")).To(Succeed())
-
-			err := Init(GinkgoLogr)
-			Expect(err).To(MatchError(HavePrefix("invalid character")))
+			reader := bytes.NewReader(emptyFileContent)
+			Expect(readJsonFromReader(reader)).To(Succeed())
 		})
 
 		Context("hcoCRPatchList", func() {
-
-			It("should fail validating upgradePatches with bad semver ranges", func() {
-				Expect(copyTestFile("badSemverRange.json")).To(Succeed())
-
-				err := Init(GinkgoLogr)
-				Expect(err).To(MatchError(HavePrefix("Could not get version from string:")))
-			})
-
 			DescribeTable(
 				"should fail validating upgradePatches with bad patches",
-				func(filename, message string) {
-					Expect(copyTestFile(filename)).To(Succeed())
-					Expect(Init(GinkgoLogr)).To(MatchError(HavePrefix(message)))
+				func(fileContent []byte, message string) {
+					reader := bytes.NewReader(fileContent)
+					Expect(readJsonFromReader(reader)).To(MatchError(HavePrefix(message)))
 				},
 				Entry(
+					"invalid character",
+					badJsonFileContent,
+					"invalid character",
+				),
+				Entry(
+					"bad semver range",
+					badSemverRangeFileContent,
+					"Could not get version from string:",
+				),
+				Entry(
 					"bad operation kind",
-					"badPatches1.json",
+					badPatches1FileContent,
 					"Unexpected kind:",
 				),
 				Entry(
 					"not on spec",
-					"badPatches2.json",
+					badPatches2FileContent,
 					"can only modify spec fields",
 				),
 				Entry(
 					"unexisting path",
-					"badPatches3.json",
+					badPatches3FileContent,
 					"replace operation does not apply: doc is missing path:",
 				),
 			)
 
 			DescribeTable(
 				"should handle MissingPathOnRemove according to jsonPatchApplyOptions",
-				func(filename string, expectedErr bool, message string) {
-					Expect(copyTestFile(filename)).To(Succeed())
+				func(fileContent []byte, expectedErr bool, message string) {
+					reader := bytes.NewReader(fileContent)
+					err := readJsonFromReader(reader)
 
-					err := Init(GinkgoLogr)
 					if expectedErr {
 						Expect(err).To(MatchError(HavePrefix(message)))
 					} else {
@@ -116,25 +100,25 @@ var _ = Describe("upgradePatches", func() {
 				},
 				Entry(
 					"without jsonPatchApplyOptions",
-					"badPatches4.json",
+					badPatches4FileContent,
 					true,
 					"remove operation does not apply: doc is missing path: ",
 				),
 				Entry(
 					"with AllowMissingPathOnRemove on jsonPatchApplyOptions",
-					"badPatches5.json",
+					badPatches5FileContent,
 					false,
 					"",
 				),
 				Entry(
 					"without jsonPatchApplyOptions",
-					"badPatches6.json",
+					badPatches6FileContent,
 					true,
 					"add operation does not apply: doc is missing path: ",
 				),
 				Entry(
 					"with EnsurePathExistsOnAdd on jsonPatchApplyOptions",
-					"badPatches7.json",
+					badPatches7FileContent,
 					false,
 					"",
 				),
@@ -143,52 +127,49 @@ var _ = Describe("upgradePatches", func() {
 		})
 
 		Context("objectsToBeRemoved", func() {
-
-			It("should fail validating upgradePatches with bad semver ranges", func() {
-				Expect(copyTestFile("badSemverRangeOR.json")).To(Succeed())
-				Expect(Init(GinkgoLogr)).To(MatchError(HavePrefix("Could not get version from string:")))
-			})
-
 			DescribeTable(
 				"should fail validating upgradePatches with bad patches",
-				func(filename, message string) {
-					Expect(copyTestFile(filename)).To(Succeed())
-					Expect(Init(GinkgoLogr)).To(MatchError(HavePrefix(message)))
+				func(fileContent []byte, message string) {
+					reader := bytes.NewReader(fileContent)
+					Expect(readJsonFromReader(reader)).To(MatchError(HavePrefix(message)))
 				},
 				Entry(
+					"bad semver ranges",
+					badSemverRangeORFileContent,
+					"Could not get version from string:",
+				),
+				Entry(
 					"empty object kind",
-					"badObject1.json",
+					badObject1FileContent,
 					"missing object kind",
 				),
 				Entry(
 					"missing object kind",
-					"badObject1m.json",
+					badObject1mFileContent,
 					"missing object kind",
 				),
 				Entry(
 					"empty object API version",
-					"badObject2.json",
+					badObject2FileContent,
 					"missing object API version",
 				),
 				Entry(
 					"missing object API version",
-					"badObject2m.json",
+					badObject2mFileContent,
 					"missing object API version",
 				),
 				Entry(
 					"empty object name",
-					"badObject3.json",
+					badObject3FileContent,
 					"missing object name",
 				),
 				Entry(
 					"missing object name",
-					"badObject3m.json",
+					badObject3mFileContent,
 					"missing object name",
 				),
 			)
-
 		})
-
 	})
 
 	Context("check semverRange type", func() {
@@ -216,6 +197,13 @@ var _ = Describe("upgradePatches", func() {
 
 	//nolint:staticcheck // ignore SA1019 for old code
 	Context("check patches", func() {
+		BeforeEach(func() {
+			resetOnce()
+			pwdFS := dirtest.New(dirtest.WithFile("upgradePatches.json", upgradePatchesFileContent))
+			Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+			hcCRBytes = slices.Clone(hcCRBytesOrig)
+		})
+
 		It("should apply changes as defined in the upgradePatches.json file", func() {
 			hc := components.GetOperatorCR()
 			hc.Spec.FeatureGates.DeployKubevirtIpamController = ptr.To(false)
@@ -282,38 +270,3 @@ var _ = Describe("upgradePatches", func() {
 		)
 	})
 })
-
-func copyTestFile(filename string) error {
-	return commontestutils.CopyFile(origFile, path.Join(getTestFilesLocation(), filename))
-}
-
-func getTestFilesLocation() string {
-	wd, err := os.Getwd()
-	Expect(err).ToNot(HaveOccurred())
-	if strings.HasSuffix(wd, pkgDirectory) {
-		return testFilesLoc
-	}
-	return path.Join(pkgDirectory, testFilesLoc)
-}
-
-func TestUpgradePatch(t *testing.T) {
-	RegisterFailHandler(Fail)
-
-	var (
-		destFile string
-	)
-
-	BeforeSuite(func() {
-		wd, _ := os.Getwd()
-		destFile = path.Join(wd, "upgradePatches.json")
-		Expect(commontestutils.CopyFile(destFile, path.Join(getTestFilesLocation(), "upgradePatches.json"))).To(Succeed())
-		hcCRBytesOrig = slices.Clone(hcCRBytes)
-	})
-
-	AfterSuite(func() {
-		Expect(os.Remove(destFile)).To(Succeed())
-		hcCRBytes = hcCRBytesOrig
-	})
-
-	RunSpecs(t, "Upgrade Patches Suite")
-}

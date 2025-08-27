@@ -35,6 +35,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/dirtest"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operandhandler"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
@@ -76,6 +77,7 @@ func initReconciler(cli client.Client, old *ReconcileHyperConverged) *ReconcileH
 		ownVersion:           version.Version,
 		upgradeMode:          upgradeMode,
 		upgradeableCondition: upgradeableCondition,
+		pwdFS:                dirtest.New(),
 	}
 }
 
