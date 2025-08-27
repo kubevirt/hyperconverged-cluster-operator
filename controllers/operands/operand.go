@@ -38,8 +38,6 @@ type HCOResourceHooks interface {
 	GetEmptyCr() client.Object
 	// UpdateCR check if there is a change between the required resource and the resource read from K8s, and update K8s accordingly.
 	UpdateCR(*common.HcoRequest, client.Client, runtime.Object, runtime.Object) (bool, bool, error)
-	// JustBeforeComplete last hook before completing the operand handling
-	JustBeforeComplete(req *common.HcoRequest)
 }
 
 // HCOOperandHooks Set of operand handler hooks, to be implement in each handler

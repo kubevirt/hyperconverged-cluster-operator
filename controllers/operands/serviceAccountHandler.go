@@ -15,7 +15,7 @@ import (
 type newSvcAccountFunc func(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount
 
 func NewServiceAccountHandler(Client client.Client, Scheme *runtime.Scheme, newCrFunc newSvcAccountFunc) *GenericOperand {
-	return NewGenericOperand(Client, Scheme, "ServiceAccount", &serviceAccountHooks{newCrFunc: newCrFunc}, false)
+	return NewGenericOperand(Client, Scheme, "ServiceAccount", &serviceAccountHooks{newCrFunc: newCrFunc}, true)
 }
 
 type serviceAccountHooks struct {
@@ -29,8 +29,6 @@ func (h serviceAccountHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Ob
 func (serviceAccountHooks) GetEmptyCr() client.Object {
 	return &corev1.ServiceAccount{}
 }
-
-func (serviceAccountHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
 func (serviceAccountHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
 	return updateServiceAccount(req, Client, exists, required)

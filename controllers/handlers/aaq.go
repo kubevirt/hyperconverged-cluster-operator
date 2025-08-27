@@ -96,8 +96,6 @@ func (*aaqHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists r
 	return false, false, nil
 }
 
-func (*aaqHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
-
 func NewAAQ(hc *hcov1beta1.HyperConverged) (*aaqv1alpha1.AAQ, error) {
 	spec := aaqv1alpha1.AAQSpec{
 		PriorityClass:   ptr.To[aaqv1alpha1.AAQPriorityClass](kvPriorityClass),

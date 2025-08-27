@@ -32,9 +32,6 @@ func (networkAttachmentDefinitionHooks) GetEmptyCr() client.Object {
 	return &netattdefv1.NetworkAttachmentDefinition{}
 }
 
-func (networkAttachmentDefinitionHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */
-}
-
 func (networkAttachmentDefinitionHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
 	return updateNetworkAttachmentDefinition(req, Client, exists, required)
 }

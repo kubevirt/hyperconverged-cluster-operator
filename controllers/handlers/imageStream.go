@@ -183,8 +183,6 @@ func (h isHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists r
 	return true, !req.HCOTriggered, nil
 }
 
-func (isHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
-
 func (h isHooks) compareAndUpgradeImageStream(found *imagev1.ImageStream) bool {
 	modified := false
 	if !util.CompareLabels(h.required, found) {

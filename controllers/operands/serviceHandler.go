@@ -39,8 +39,6 @@ func (serviceHooks) GetEmptyCr() client.Object {
 	return &corev1.Service{}
 }
 
-func (serviceHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
-
 func (serviceHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
 	return updateService(req, Client, exists, required)
 }

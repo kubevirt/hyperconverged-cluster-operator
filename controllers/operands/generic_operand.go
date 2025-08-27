@@ -50,7 +50,7 @@ func (h *GenericOperand) Ensure(req *common.HcoRequest) *EnsureResult {
 
 	res := NewEnsureResult(cr)
 
-	if err := h.doSetControllerReference(req, cr); err != nil {
+	if err = h.doSetControllerReference(req, cr); err != nil {
 		return res.Error(err)
 	}
 
@@ -73,10 +73,6 @@ func (h *GenericOperand) Ensure(req *common.HcoRequest) *EnsureResult {
 		}
 	} else {
 		res = h.handleExistingCr(req, key, found, cr, res)
-	}
-
-	if res.Err == nil {
-		h.hooks.JustBeforeComplete(req)
 	}
 
 	return res
@@ -175,16 +171,16 @@ func (h *GenericOperand) addCrToTheRelatedObjectList(req *common.HcoRequest, fou
 }
 
 func (h *GenericOperand) doSetControllerReference(req *common.HcoRequest, cr client.Object) error {
-	if h.setControllerReference {
-		ref, ok := cr.(metav1.Object)
-		if !ok {
-			return fmt.Errorf("can't convert %T to k8s.io/apimachinery/pkg/apis/meta/v1.Object", cr)
-		}
-		if err := controllerutil.SetControllerReference(req.Instance, ref, h.Scheme); err != nil {
-			return err
-		}
+	if !h.setControllerReference {
+		return nil
 	}
-	return nil
+
+	ref, ok := cr.(metav1.Object)
+	if !ok {
+		return fmt.Errorf("can't convert %T to k8s.io/apimachinery/pkg/apis/meta/v1.Object", cr)
+	}
+
+	return controllerutil.SetControllerReference(req.Instance, ref, h.Scheme)
 }
 
 func (h *GenericOperand) createNewCr(req *common.HcoRequest, cr client.Object, res *EnsureResult) *EnsureResult {

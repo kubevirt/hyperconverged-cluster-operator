@@ -95,8 +95,6 @@ func (*cdiHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists r
 	return false, false, nil
 }
 
-func (*cdiHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
-
 func getDefaultFeatureGates() []string {
 	return []string{honorWaitForFirstConsumerGate, dataVolumeClaimAdoptionGate, webhookPvcRenderingGate}
 }

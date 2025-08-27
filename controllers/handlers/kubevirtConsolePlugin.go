@@ -479,8 +479,6 @@ func (h consolePluginHooks) GetEmptyCr() client.Object {
 	return &consolev1.ConsolePlugin{}
 }
 
-func (consolePluginHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
-
 func (h consolePluginHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, _ runtime.Object) (bool, bool, error) {
 	found, ok := exists.(*consolev1.ConsolePlugin)
 

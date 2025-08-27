@@ -17,7 +17,7 @@ import (
 type newDaemonSetFunc func(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet
 
 func NewDaemonSetHandler(Client client.Client, Scheme *runtime.Scheme, newCrFunc newDaemonSetFunc) *GenericOperand {
-	return NewGenericOperand(Client, Scheme, "DaemonSet", &daemonSetHooks{newCrFunc: newCrFunc}, false)
+	return NewGenericOperand(Client, Scheme, "DaemonSet", &daemonSetHooks{newCrFunc: newCrFunc}, true)
 }
 
 type daemonSetHooks struct {
@@ -46,8 +46,6 @@ func (h *daemonSetHooks) Reset() {
 
 	h.cache = nil
 }
-
-func (*daemonSetHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
 func (*daemonSetHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
 	return updateDaemonSet(req, Client, exists, required)

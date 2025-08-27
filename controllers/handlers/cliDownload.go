@@ -66,8 +66,6 @@ func (*cliDownloadHooks) UpdateCR(req *common.HcoRequest, Client client.Client, 
 	return false, false, nil
 }
 
-func (*cliDownloadHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
-
 func NewConsoleCLIDownload(hc *hcov1beta1.HyperConverged) *consolev1.ConsoleCLIDownload {
 	host := string(downloadhost.Get().CurrentHost)
 	baseURL := "https://" + host
@@ -178,8 +176,6 @@ func (cliDownloadsRouteHooks) UpdateCR(req *common.HcoRequest, Client client.Cli
 	}
 	return false, false, nil
 }
-
-func (cliDownloadsRouteHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
 func NewCliDownloadsRoute(hc *hcov1beta1.HyperConverged) *routev1.Route {
 	host := downloadhost.Get()

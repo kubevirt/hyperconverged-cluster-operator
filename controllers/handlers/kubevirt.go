@@ -269,8 +269,6 @@ func (*kubevirtHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exi
 	return false, false, nil
 }
 
-func (*kubevirtHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
-
 func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtcorev1.KubeVirt, error) {
 	config, err := getKVConfig(hc)
 	if err != nil {
@@ -946,8 +944,6 @@ func (kvPriorityClassHooks) UpdateCR(req *common.HcoRequest, Client client.Clien
 
 	return true, !req.HCOTriggered, nil
 }
-
-func (kvPriorityClassHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
 
 func NewKubeVirtPriorityClass(hc *hcov1beta1.HyperConverged) *schedulingv1.PriorityClass {
 	return &schedulingv1.PriorityClass{
