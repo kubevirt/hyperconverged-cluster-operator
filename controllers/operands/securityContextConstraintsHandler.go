@@ -32,9 +32,6 @@ func (securityContextConstraintsHooks) GetEmptyCr() client.Object {
 	return &securityv1.SecurityContextConstraints{}
 }
 
-func (securityContextConstraintsHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */
-}
-
 func (securityContextConstraintsHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
 	return updateSecurityContextConstraints(req, Client, exists, required)
 }

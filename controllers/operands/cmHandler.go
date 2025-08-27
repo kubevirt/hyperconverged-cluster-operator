@@ -69,5 +69,3 @@ func (h cmHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists r
 
 	return labelChanged, false, nil
 }
-
-func (cmHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }

@@ -85,8 +85,6 @@ func (h *cnaHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists
 	return false, false, nil
 }
 
-func (*cnaHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
-
 func (*cnaHooks) updateCnaCr(req *common.HcoRequest, Client client.Client, found *networkaddonsv1.NetworkAddonsConfig) (bool, bool, error) {
 	err := Client.Update(req.Ctx, found)
 	if err != nil {

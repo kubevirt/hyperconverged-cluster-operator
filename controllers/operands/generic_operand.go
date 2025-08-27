@@ -75,10 +75,6 @@ func (h *GenericOperand) Ensure(req *common.HcoRequest) *EnsureResult {
 		res = h.handleExistingCr(req, key, found, cr, res)
 	}
 
-	if res.Err == nil {
-		h.hooks.JustBeforeComplete(req)
-	}
-
 	return res
 }
 

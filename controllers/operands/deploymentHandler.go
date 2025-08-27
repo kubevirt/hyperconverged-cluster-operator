@@ -56,8 +56,6 @@ func (h *deploymentHooks) GetEmptyCr() client.Object {
 	return &appsv1.Deployment{}
 }
 
-func (h *deploymentHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
-
 func (h *deploymentHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
 	deployment, ok1 := required.(*appsv1.Deployment)
 	found, ok2 := exists.(*appsv1.Deployment)

@@ -71,8 +71,6 @@ func (h qsHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists r
 	return false, false, nil
 }
 
-func (qsHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
-
 func GetQuickStartHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, dir fs.FS) ([]operands.Operand, error) {
 	err := util.ValidateManifestDir(QuickStartDefaultManifestLocation, dir)
 	if err != nil {

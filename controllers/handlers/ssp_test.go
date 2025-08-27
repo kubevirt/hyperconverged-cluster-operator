@@ -90,7 +90,7 @@ var _ = Describe("SSP Operands", func() {
 
 			// Check HCO's status
 			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
-			objectRef, err := reference.GetReference(handler.Scheme, expectedResource)
+			objectRef, err := reference.GetReference(commontestutils.GetScheme(), expectedResource)
 			Expect(err).ToNot(HaveOccurred())
 			// ObjectReference should have been added
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
@@ -127,9 +127,9 @@ var _ = Describe("SSP Operands", func() {
 
 			// ObjectReference should have been updated
 			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
-			objectRefOutdated, err := reference.GetReference(handler.Scheme, existingResource)
+			objectRefOutdated, err := reference.GetReference(commontestutils.GetScheme(), existingResource)
 			Expect(err).ToNot(HaveOccurred())
-			objectRefFound, err := reference.GetReference(handler.Scheme, foundResource)
+			objectRefFound, err := reference.GetReference(commontestutils.GetScheme(), foundResource)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))

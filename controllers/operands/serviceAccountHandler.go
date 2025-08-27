@@ -30,8 +30,6 @@ func (serviceAccountHooks) GetEmptyCr() client.Object {
 	return &corev1.ServiceAccount{}
 }
 
-func (serviceAccountHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
-
 func (serviceAccountHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
 	return updateServiceAccount(req, Client, exists, required)
 }

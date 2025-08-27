@@ -63,5 +63,3 @@ func (nph *networkPolicyHook) UpdateCR(req *common.HcoRequest, cli client.Client
 	}
 	return false, false, nil
 }
-
-func (nph *networkPolicyHook) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }

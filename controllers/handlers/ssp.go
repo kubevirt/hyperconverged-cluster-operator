@@ -30,8 +30,33 @@ const (
 	defaultCommonTemplatesNamespace = util.OpenshiftNamespace
 )
 
-func NewSspHandler(Client client.Client, Scheme *runtime.Scheme) *operands.GenericOperand {
-	return operands.NewGenericOperand(Client, Scheme, "SSP", &sspHooks{}, false)
+type sspHandler struct {
+	handler *operands.GenericOperand
+	hook    *sspHooks
+}
+
+func (h *sspHandler) Ensure(req *common.HcoRequest) *operands.EnsureResult {
+	res := h.handler.Ensure(req)
+
+	if res.Err == nil {
+		h.hook.updateDICTsInHCStatus(req)
+	}
+
+	return res
+}
+
+func (h *sspHandler) Reset() {
+	h.handler.Reset()
+}
+
+func NewSspHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+	hook := &sspHooks{}
+	handler := operands.NewGenericOperand(Client, Scheme, "SSP", hook, false)
+
+	return &sspHandler{
+		handler: handler,
+		hook:    hook,
+	}
 }
 
 type sspHooks struct {
@@ -63,6 +88,7 @@ func (*sspHooks) CheckComponentVersion(cr runtime.Object) bool {
 	found := cr.(*sspv1beta3.SSP)
 	return operands.CheckComponentVersion(util.SspVersionEnvV, found.Status.ObservedVersion)
 }
+
 func (h *sspHooks) Reset() {
 	h.Lock()
 	defer h.Unlock()
@@ -95,7 +121,7 @@ func (*sspHooks) UpdateCR(req *common.HcoRequest, client client.Client, exists r
 	return false, false, nil
 }
 
-func (h *sspHooks) JustBeforeComplete(req *common.HcoRequest) {
+func (h *sspHooks) updateDICTsInHCStatus(req *common.HcoRequest) {
 	if !reflect.DeepEqual(h.dictStatuses, req.Instance.Status.DataImportCronTemplates) {
 		req.Instance.Status.DataImportCronTemplates = h.dictStatuses
 		req.StatusDirty = true

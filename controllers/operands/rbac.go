@@ -58,8 +58,6 @@ func (h *roleHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exist
 	return false, false, nil
 }
 
-func (*roleHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
-
 // ********* Cluster Role Handler *****************************
 
 func NewClusterRoleHandler(Client client.Client, Scheme *runtime.Scheme, required *rbacv1.ClusterRole) *GenericOperand {
@@ -116,8 +114,6 @@ func (h *clusterRoleHooks) UpdateCR(req *common.HcoRequest, Client client.Client
 	return false, false, nil
 }
 
-func (*clusterRoleHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
-
 // ********* Role Binding Handler *****************************
 
 func NewRoleBindingHandler(Client client.Client, Scheme *runtime.Scheme, required *rbacv1.RoleBinding) *GenericOperand {
@@ -161,8 +157,6 @@ func (h roleBindingHooks) UpdateCR(req *common.HcoRequest, Client client.Client,
 	return false, false, nil
 }
 
-func (roleBindingHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
-
 // ********* Cluster Role Binding Handler *****************************
 
 func NewClusterRoleBindingHandler(Client client.Client, Scheme *runtime.Scheme, required *rbacv1.ClusterRoleBinding) *GenericOperand {
@@ -205,5 +199,3 @@ func (h clusterRoleBindingHooks) UpdateCR(req *common.HcoRequest, Client client.
 
 	return false, false, nil
 }
-
-func (clusterRoleBindingHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }

@@ -47,8 +47,6 @@ func (h *daemonSetHooks) Reset() {
 	h.cache = nil
 }
 
-func (*daemonSetHooks) JustBeforeComplete(_ *common.HcoRequest) { /* no implementation */ }
-
 func (*daemonSetHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists runtime.Object, required runtime.Object) (bool, bool, error) {
 	return updateDaemonSet(req, Client, exists, required)
 }
