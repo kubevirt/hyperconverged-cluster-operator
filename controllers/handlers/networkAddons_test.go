@@ -1016,6 +1016,112 @@ var _ = Describe("CNA Operand", func() {
 			})
 		})
 
+		Context("KubeMacPoolConfiguration", func() {
+			It("should create KubeMacPool with empty config when KubeMacPoolConfiguration is nil", func() {
+				hco.Spec.KubeMacPoolConfiguration = nil
+
+				expectedResource, err := NewNetworkAddons(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(expectedResource.Spec.KubeMacPool).ToNot(BeNil())
+				Expect(expectedResource.Spec.KubeMacPool.RangeStart).To(BeEmpty())
+				Expect(expectedResource.Spec.KubeMacPool.RangeEnd).To(BeEmpty())
+			})
+
+			It("should create KubeMacPool with empty config when KubeMacPoolConfiguration is empty", func() {
+				hco.Spec.KubeMacPoolConfiguration = &hcov1beta1.KubeMacPoolConfig{}
+
+				expectedResource, err := NewNetworkAddons(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(expectedResource.Spec.KubeMacPool).ToNot(BeNil())
+				Expect(expectedResource.Spec.KubeMacPool.RangeStart).To(BeEmpty())
+				Expect(expectedResource.Spec.KubeMacPool.RangeEnd).To(BeEmpty())
+			})
+
+			It("should create KubeMacPool with only RangeStart when only RangeStart is specified", func() {
+				hco.Spec.KubeMacPoolConfiguration = &hcov1beta1.KubeMacPoolConfig{
+					RangeStart: ptr.To("02:00:00:00:00:00"),
+				}
+
+				expectedResource, err := NewNetworkAddons(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(expectedResource.Spec.KubeMacPool).ToNot(BeNil())
+				Expect(expectedResource.Spec.KubeMacPool.RangeStart).To(Equal("02:00:00:00:00:00"))
+				Expect(expectedResource.Spec.KubeMacPool.RangeEnd).To(BeEmpty())
+			})
+
+			It("should create KubeMacPool with only RangeEnd when only RangeEnd is specified", func() {
+				hco.Spec.KubeMacPoolConfiguration = &hcov1beta1.KubeMacPoolConfig{
+					RangeEnd: ptr.To("FD:FF:FF:FF:FF:FF"),
+				}
+
+				expectedResource, err := NewNetworkAddons(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(expectedResource.Spec.KubeMacPool).ToNot(BeNil())
+				Expect(expectedResource.Spec.KubeMacPool.RangeStart).To(BeEmpty())
+				Expect(expectedResource.Spec.KubeMacPool.RangeEnd).To(Equal("FD:FF:FF:FF:FF:FF"))
+			})
+
+			It("should create KubeMacPool with both RangeStart and RangeEnd when both are specified", func() {
+				hco.Spec.KubeMacPoolConfiguration = &hcov1beta1.KubeMacPoolConfig{
+					RangeStart: ptr.To("02:00:00:00:00:00"),
+					RangeEnd:   ptr.To("FD:FF:FF:FF:FF:FF"),
+				}
+
+				expectedResource, err := NewNetworkAddons(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(expectedResource.Spec.KubeMacPool).ToNot(BeNil())
+				Expect(expectedResource.Spec.KubeMacPool.RangeStart).To(Equal("02:00:00:00:00:00"))
+				Expect(expectedResource.Spec.KubeMacPool.RangeEnd).To(Equal("FD:FF:FF:FF:FF:FF"))
+			})
+
+			It("should propagate KubeMacPool configuration via Ensure", func() {
+				hco.Spec.KubeMacPoolConfiguration = &hcov1beta1.KubeMacPoolConfig{
+					RangeStart: ptr.To("02:00:00:00:00:00"),
+					RangeEnd:   ptr.To("FD:FF:FF:FF:FF:FF"),
+				}
+
+				expectedResource, err := NewNetworkAddons(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				cl := commontestutils.InitClient([]client.Object{})
+				handler := NewCnaHandler(cl, commontestutils.GetScheme())
+				res := handler.Ensure(req)
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Err).ToNot(HaveOccurred())
+
+				foundResource := &networkaddonsv1.NetworkAddonsConfig{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
+						foundResource),
+				).To(Succeed())
+
+				Expect(foundResource.Spec.KubeMacPool).ToNot(BeNil())
+				Expect(foundResource.Spec.KubeMacPool.RangeStart).To(Equal("02:00:00:00:00:00"))
+				Expect(foundResource.Spec.KubeMacPool.RangeEnd).To(Equal("FD:FF:FF:FF:FF:FF"))
+			})
+
+			It("should accept various valid MAC address formats", func() {
+				validMACs := [][]string{
+					{"02:00:00:00:00:00", "FD:FF:FF:FF:FF:FF"},
+					{"aa:bb:cc:dd:ee:ff", "AA:BB:CC:DD:EE:FF"},
+					{"12:34:56:78:9A:BC", "fe:dc:ba:98:76:54"},
+				}
+
+				for _, macPair := range validMACs {
+					hco.Spec.KubeMacPoolConfiguration = &hcov1beta1.KubeMacPoolConfig{
+						RangeStart: ptr.To(macPair[0]),
+						RangeEnd:   ptr.To(macPair[1]),
+					}
+
+					expectedResource, err := NewNetworkAddons(hco)
+					Expect(err).ToNot(HaveOccurred(), "Should accept MAC pair: %s - %s", macPair[0], macPair[1])
+					Expect(expectedResource.Spec.KubeMacPool.RangeStart).To(Equal(macPair[0]))
+					Expect(expectedResource.Spec.KubeMacPool.RangeEnd).To(Equal(macPair[1]))
+				}
+			})
+		})
+
 		Context("Cache", func() {
 			It("should create new cache if it empty", func() {
 				hook := &cnaHooks{}
