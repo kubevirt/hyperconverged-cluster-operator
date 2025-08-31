@@ -192,6 +192,10 @@ type HyperConvergedSpec struct {
 	// +optional
 	KubeSecondaryDNSNameServerIP *string `json:"kubeSecondaryDNSNameServerIP,omitempty"`
 
+	// KubeMacPoolConfiguration holds kubemacpool MAC address range configuration.
+	// +optional
+	KubeMacPoolConfiguration *KubeMacPoolConfig `json:"kubeMacPoolConfiguration,omitempty"`
+
 	// EvictionStrategy defines at the cluster level if the VirtualMachineInstance should be
 	// migrated instead of shut-off in case of a node drain. If the VirtualMachineInstance specific
 	// field is set it overrides the cluster level one.
@@ -874,6 +878,22 @@ type HigherWorkloadDensityConfiguration struct {
 	// +kubebuilder:default=100
 	// +default=100
 	MemoryOvercommitPercentage int `json:"memoryOvercommitPercentage,omitempty"`
+}
+
+// KubeMacPoolConfig defines kubemacpool MAC address range configuration
+// +k8s:openapi-gen=true
+// +kubebuilder:validation:XValidation:rule="(has(self.rangeStart) && has(self.rangeEnd)) || (!has(self.rangeStart) && !has(self.rangeEnd))",message="both rangeStart and rangeEnd must be configured together, or both omitted"
+type KubeMacPoolConfig struct {
+	// RangeStart defines the first MAC address in the kubemacpool range.
+	// The MAC address format should be AA:BB:CC:DD:EE:FF.
+	// +optional
+	// +kubebuilder:validation:Pattern=`^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$`
+	RangeStart *string `json:"rangeStart,omitempty"`
+	// RangeEnd defines the last MAC address in the kubemacpool range.
+	// The MAC address format should be AA:BB:CC:DD:EE:FF.
+	// +optional
+	// +kubebuilder:validation:Pattern=`^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$`
+	RangeEnd *string `json:"rangeEnd,omitempty"`
 }
 
 const (
