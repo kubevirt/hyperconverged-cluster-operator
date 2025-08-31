@@ -2284,6 +2284,29 @@ spec:
                     type: object
                     x-kubernetes-map-type: atomic
                 type: object
+              kubeMacPoolConfiguration:
+                description: |-
+                  KubeMacPoolConfiguration holds kubemacpool MAC address range configuration.
+                  Once set, the range values are immutable and cannot be changed.
+                properties:
+                  rangeEnd:
+                    description: |-
+                      RangeEnd defines the last MAC address in the kubemacpool range.
+                      The MAC address format should be AA:BB:CC:DD:EE:FF.
+                      This field is immutable once set.
+                    pattern: ^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$
+                    type: string
+                  rangeStart:
+                    description: |-
+                      RangeStart defines the first MAC address in the kubemacpool range.
+                      The MAC address format should be AA:BB:CC:DD:EE:FF.
+                      This field is immutable once set.
+                    pattern: ^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$
+                    type: string
+                type: object
+                x-kubernetes-validations:
+                - message: kubeMacPoolConfiguration is immutable once set
+                  rule: (self == oldSelf)
               kubeSecondaryDNSNameServerIP:
                 description: KubeSecondaryDNSNameServerIP defines name server IP used
                   by KubeSecondaryDNS
