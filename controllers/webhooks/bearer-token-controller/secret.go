@@ -3,26 +3,16 @@ package bearer_token_controller
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/authorization"
 )
 
 const (
 	secretName = "hco-webhook-bearer-auth"
 )
 
-var logger = logf.Log.WithName("init-bearer-token")
-
 func newWHSecretReconciler(namespace string, owner metav1.OwnerReference) *alerts.SecretReconciler {
-	token, err := authorization.CreateToken()
-	if err != nil {
-		logger.Error(err, "failed to create bearer token")
-		return nil
-	}
-
-	return alerts.CreateSecretReconciler(newSecret(namespace, owner, token))
+	return alerts.NewSecretReconciler(namespace, owner, secretName, newSecret)
 }
 
 func newSecret(namespace string, owner metav1.OwnerReference, token string) *corev1.Secret {
