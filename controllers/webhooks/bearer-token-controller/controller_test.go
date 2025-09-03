@@ -123,5 +123,35 @@ var _ = Describe("Controller setup and reconcile", func() {
 			Expect(err).To(MatchError(context.DeadlineExceeded))
 			Expect(res.RequeueAfter).To(Equal(100 * time.Millisecond))
 		})
+
+		It("should recreate Secret if token is changed", func(ctx context.Context) {
+			res, err := r.Reconcile(ctx, request)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res.RequeueAfter).To(Equal(5 * time.Minute))
+
+			// Secret
+			sec := &corev1.Secret{}
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: secretName}, sec)).To(Succeed())
+			Expect(sec.StringData).To(HaveKey("token"))
+
+			origToken := sec.StringData["token"]
+			sec.StringData["token"] = "some-wrong-token"
+			Expect(cl.Update(ctx, sec)).To(Succeed())
+
+			newSec := &corev1.Secret{}
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: secretName}, newSec)).To(Succeed())
+			Expect(newSec.StringData).To(HaveKey("token"))
+			Expect(newSec.StringData["token"]).To(Equal("some-wrong-token"))
+
+			// Reconcile should delete the old secret and create a new one
+			res, err = r.Reconcile(ctx, request)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res.RequeueAfter).To(Equal(5 * time.Minute))
+
+			newSec = &corev1.Secret{}
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: secretName}, newSec)).To(Succeed())
+			Expect(newSec.StringData).To(HaveKey("token"))
+			Expect(newSec.StringData["token"]).To(Equal(origToken))
+		})
 	})
 })

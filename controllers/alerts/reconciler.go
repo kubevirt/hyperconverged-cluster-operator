@@ -86,7 +86,7 @@ func getReconcilers(ci hcoutil.ClusterInfo, namespace string, owner metav1.Owner
 		newRoleReconciler(namespace, owner),
 		newRoleBindingReconciler(namespace, owner, ci),
 		newMetricServiceReconciler(namespace, owner),
-		newSecretReconciler(namespace, owner),
+		NewSecretReconciler(namespace, owner, secretName, newSecret),
 		newServiceMonitorReconciler(namespace, owner),
 	}
 

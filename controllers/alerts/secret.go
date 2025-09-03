@@ -2,6 +2,7 @@ package alerts
 
 import (
 	"context"
+	"sync"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -17,24 +18,27 @@ const (
 	secretName = "hco-bearer-auth"
 )
 
+type CreateSecretFunc func(namespace string, owner metav1.OwnerReference, token string) *corev1.Secret
 type SecretReconciler struct {
-	theSecret *corev1.Secret
+	theSecret    *corev1.Secret
+	lock         *sync.RWMutex
+	createSecret CreateSecretFunc
+	secretName   string
 }
 
-func CreateSecretReconciler(secret *corev1.Secret) *SecretReconciler {
-	return &SecretReconciler{
-		theSecret: secret,
-	}
-}
-
-func newSecretReconciler(namespace string, owner metav1.OwnerReference) *SecretReconciler {
+func NewSecretReconciler(namespace string, owner metav1.OwnerReference, secretName string, createSecret CreateSecretFunc) *SecretReconciler {
 	token, err := authorization.CreateToken()
 	if err != nil {
 		logger.Error(err, "failed to create bearer token")
 		return nil
 	}
 
-	return CreateSecretReconciler(NewSecret(namespace, owner, token))
+	return &SecretReconciler{
+		theSecret:    createSecret(namespace, owner, token),
+		lock:         &sync.RWMutex{},
+		createSecret: createSecret,
+		secretName:   secretName,
+	}
 }
 
 func (r *SecretReconciler) Kind() string {
@@ -42,11 +46,27 @@ func (r *SecretReconciler) Kind() string {
 }
 
 func (r *SecretReconciler) ResourceName() string {
-	return r.theSecret.Name
+	return r.secretName
 }
 
 func (r *SecretReconciler) GetFullResource() client.Object {
+	r.lock.RLock()
+	defer r.lock.RUnlock()
+
 	return r.theSecret.DeepCopy()
+}
+
+func (r *SecretReconciler) refreshToken() error {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	token, err := authorization.CreateToken()
+	if err != nil {
+		return err
+	}
+
+	r.theSecret = r.createSecret(r.theSecret.Namespace, r.theSecret.OwnerReferences[0], token)
+	return nil
 }
 
 func (r *SecretReconciler) EmptyObject() client.Object {
@@ -70,24 +90,29 @@ func (r *SecretReconciler) UpdateExistingResource(ctx context.Context, cl client
 		return nil, false, nil
 	}
 
-	// If the the token is incorrect, delete the old secret and create a new one
-	if err := cl.Delete(ctx, found); err != nil {
+	// If the token is incorrect, delete the old secret and create a new one
+	if err = cl.Delete(ctx, found); err != nil {
 		if !errors.IsNotFound(err) {
 			logger.Error(err, "failed to delete old secret")
 			return nil, false, err
 		}
 	}
 
-	newSecret := NewSecret(r.theSecret.Namespace, r.theSecret.OwnerReferences[0], token)
-	if err := cl.Create(ctx, newSecret); err != nil {
+	if err = r.refreshToken(); err != nil {
+		logger.Error(err, "failed to refresh token")
+		return nil, false, err
+	}
+
+	sec := r.GetFullResource()
+	if err = cl.Create(ctx, sec); err != nil {
 		logger.Error(err, "failed to create new secret")
 		return nil, false, err
 	}
 
-	return newSecret, true, nil
+	return sec, true, nil
 }
 
-func NewSecret(namespace string, owner metav1.OwnerReference, token string) *corev1.Secret {
+func newSecret(namespace string, owner metav1.OwnerReference, token string) *corev1.Secret {
 	return &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
