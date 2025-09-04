@@ -345,6 +345,11 @@ func (in *HyperConvergedFeatureGates) DeepCopyInto(out *HyperConvergedFeatureGat
 		*out = new(bool)
 		**out = **in
 	}
+	if in.DeclarativeHotplugVolumes != nil {
+		in, out := &in.DeclarativeHotplugVolumes, &out.DeclarativeHotplugVolumes
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
