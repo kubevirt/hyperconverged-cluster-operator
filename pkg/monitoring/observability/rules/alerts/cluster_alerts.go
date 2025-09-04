@@ -63,9 +63,11 @@ func clusterAlerts() []promv1.Rule {
 					and
 					(node_network_flags %% %d) < %d										    # IFF_LOWER_UP is NOT set
 					and
-					on(device) node_network_up == 1											    # Interface is up
+					on(instance,device) node_network_up == 1									        # Interface is up
 					and
-					on(device) (node_network_flags unless node_network_flags{device=~"%s"})     # Excluding ignored interfaces
+					on(instance,device) node_network_carrier == 1                                    # Interface carrier is up
+					and
+					on(instance,device) (node_network_flags unless node_network_flags{device=~"%s"})     # Excluding ignored interfaces
 				) > 0`, (IFF_UP << 1), IFF_UP, (IFF_RUNNING << 1), IFF_RUNNING, (IFF_LOWER_UP << 1), IFF_LOWER_UP, strings.Join(ignoredInterfacesForNetworkDown, "|"))),
 			For: ptr.To[promv1.Duration]("5m"),
 			Annotations: map[string]string{
