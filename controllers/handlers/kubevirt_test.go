@@ -32,8 +32,17 @@ import (
 
 var _ = Describe("KubeVirt Operand", func() {
 
+	const (
+		// Number of conditional featuregates always added by getFeatureGateChecks (volume hotplug is always added)
+		conditionalFeatureGatesCount = 1
+	)
+
 	var (
-		basicNumFgOnOpenshift = len(hardCodeKvFgs) + len(sspConditionKvFgs)
+		basicNumFgOnOpenshift = len(hardCodeKvFgs) + len(sspConditionKvFgs) + conditionalFeatureGatesCount
+		// Number of featuregates returned by getMandatoryKvFeatureGates (hardcoded + SSP conditional, excludes volume hotplug)
+		mandatoryFgCount = len(hardCodeKvFgs) + len(sspConditionKvFgs)
+		// Default featuregate count (not Openshift))
+		defaultFeatureGateCount = len(hardCodeKvFgs) + conditionalFeatureGatesCount
 	)
 
 	Context("KubeVirt Priority Classes", func() {
@@ -2125,6 +2134,30 @@ Version: 1.2.3`)
 							Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).ToNot(HaveKey(passt.BindingName))
 						},
 					),
+					Entry("should add the DeclarativeHotplugVolumes feature gate if DeclarativeHotplugVolumes is true in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								DeclarativeHotplugVolumes: ptr.To(true),
+							}
+						},
+						And(ContainElement(kvDeclarativeHotplugVolumesGate), Not(ContainElement(kvHotplugVolumesGate))),
+					),
+					Entry("should add the HotplugVolumes feature gate if DeclarativeHotplugVolumes is false in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								DeclarativeHotplugVolumes: ptr.To(false),
+							}
+						},
+						And(ContainElement(kvHotplugVolumesGate), Not(ContainElement(kvDeclarativeHotplugVolumesGate))),
+					),
+					Entry("should add the HotplugVolumes feature gate if DeclarativeHotplugVolumes is not set in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								DeclarativeHotplugVolumes: nil,
+							}
+						},
+						And(ContainElement(kvHotplugVolumesGate), Not(ContainElement(kvDeclarativeHotplugVolumesGate))),
+					),
 				)
 			})
 
@@ -2227,15 +2260,17 @@ Version: 1.2.3`)
 
 				It("should keep FG if already exist", func() {
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(true)
-					fgs := getKvFeatureGateList(&hco.Spec.FeatureGates, nil)
-					fgs = append(fgs, kvPersistentReservation)
-					existingResource, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-					existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates = fgs
 
+					// Set up HCO with PersistentReservation enabled first
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
 						PersistentReservation: ptr.To(true),
 					}
+
+					// Get the expected featuregates for this configuration
+					fgs := getKvFeatureGateList(&hco.Spec.FeatureGates, nil)
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates = fgs
 
 					cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 					handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -2348,8 +2383,11 @@ Version: 1.2.3`)
 					).ToNot(HaveOccurred())
 
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(len(hardCodeKvFgs)))
+					// Should have base KVM emulation featuregate count (hardcoded + conditional volume hotplug)
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(defaultFeatureGateCount))
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
+					// Should contain HotplugVolumes by default when DeclarativeHotplugVolumes is not set
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvHotplugVolumesGate))
 				})
 			})
 
@@ -2372,7 +2410,7 @@ Version: 1.2.3`)
 					Entry("When using kvm-emulation and FG is empty",
 						true,
 						&hcov1beta1.HyperConvergedFeatureGates{},
-						len(hardCodeKvFgs),
+						defaultFeatureGateCount,
 						[][]string{hardCodeKvFgs},
 					),
 					Entry("When not using kvm-emulation and all FGs are disabled",
@@ -2384,7 +2422,7 @@ Version: 1.2.3`)
 					Entry("When using kvm-emulation all FGs are disabled",
 						true,
 						&hcov1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: ptr.To(false)},
-						len(hardCodeKvFgs),
+						defaultFeatureGateCount,
 						[][]string{hardCodeKvFgs},
 					),
 					Entry("When not using kvm-emulation and all FGs are enabled",
@@ -2396,7 +2434,7 @@ Version: 1.2.3`)
 					Entry("When using kvm-emulation all FGs are enabled",
 						true,
 						&hcov1beta1.HyperConvergedFeatureGates{DownwardMetrics: ptr.To(true)},
-						len(hardCodeKvFgs)+1,
+						defaultFeatureGateCount+1, // +1 for DownwardMetrics
 						[][]string{hardCodeKvFgs, {kvDownwardMetrics}},
 					))
 			})
@@ -2404,7 +2442,7 @@ Version: 1.2.3`)
 			Context("Test getMandatoryKvFeatureGates", func() {
 				It("Should include the sspConditionKvFgs if running in openshift", func() {
 					fgs := getMandatoryKvFeatureGates(false)
-					Expect(fgs).To(HaveLen(basicNumFgOnOpenshift))
+					Expect(fgs).To(HaveLen(mandatoryFgCount))
 					Expect(fgs).To(ContainElements(hardCodeKvFgs))
 					Expect(fgs).To(ContainElements(sspConditionKvFgs))
 				})
