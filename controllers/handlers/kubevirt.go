@@ -85,6 +85,9 @@ const (
 	// Allow attaching a data volume to a running VMI
 	kvHotplugVolumesGate = "HotplugVolumes"
 
+	// Allow attaching a data volume to a running VMI using declarative API
+	kvDeclarativeHotplugVolumesGate = "DeclarativeHotplugVolumes"
+
 	// Allow assigning host devices to virtual machines
 	kvHostDevicesGate = "HostDevices"
 
@@ -113,7 +116,6 @@ var (
 	hardCodeKvFgs = []string{
 		kvCPUManagerGate,
 		kvSnapshotGate,
-		kvHotplugVolumesGate,
 		kvExpandDisksGate,
 		kvHostDevicesGate,
 		kvVMExportGate,
@@ -866,6 +868,14 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, a
 
 	if ptr.Deref(featureGates.EnableMultiArchBootImageImport, false) {
 		fgs = append(fgs, kvMultiArchitecture)
+	}
+
+	// Add the appropriate volume hotplug featuregate based on DeclarativeHotplugVolumes setting
+	if ptr.Deref(featureGates.DeclarativeHotplugVolumes, false) {
+		fgs = append(fgs, kvDeclarativeHotplugVolumesGate)
+	} else {
+		// Default behavior: use the original HotplugVolumes featuregate
+		fgs = append(fgs, kvHotplugVolumesGate)
 	}
 
 	if annotations[passt.DeployPasstNetworkBindingAnnotation] == "true" {
