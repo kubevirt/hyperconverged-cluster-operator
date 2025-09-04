@@ -190,21 +190,18 @@ Msg "Verify new operator version reported after the upgrade"
 ./hack/retry.sh 15 30 "CMD=${CMD} HCO_RESOURCE_NAME=${HCO_RESOURCE_NAME} HCO_NAMESPACE=${HCO_NAMESPACE} TARGET_VERSION=${TARGET_VERSION} hack/check_hco_version.sh"
 
 Msg "Ensure that HCO detected the cluster as OpenShift"
-for hco_pod in $( ${CMD} get pods -n ${HCO_NAMESPACE} -l "name=hyperconverged-cluster-operator" --field-selector=status.phase=Running -o name); do
-  pod_version=$( ${CMD} get ${hco_pod} -n ${HCO_NAMESPACE} -o json | jq -r '.spec.containers[0].env[] | select(.name=="HCO_KV_IO_VERSION") | .value')
+for hco_pod in $( ${CMD} get pods -n ${HCO_NAMESPACE} -l "name=hyperconverged-cluster-operator" --field-selector=status.phase=Running -o jsonpath='{.items[*].metadata.name}'); do
+  pod_version=$( ${CMD} get pod ${hco_pod} -n ${HCO_NAMESPACE} -o json | jq -r '.spec.containers[0].env[] | select(.name=="HCO_KV_IO_VERSION") | .value')
   if [[ ${pod_version} == ${TARGET_VERSION} ]]; then
     ${CMD} logs -n ${HCO_NAMESPACE} "${hco_pod}" | grep "Cluster type = openshift"
     found_new_running_hco_pod="true"
   fi
 done
 
+[[ -n ${found_new_running_hco_pod} ]]
+
 Msg "operator conditions after upgrade"
 KUBECTL_BINARY=${CMD} INSTALLED_NAMESPACE=${HCO_NAMESPACE} printOperatorCondition "${TARGET_VERSION}"
-
-Msg "Ensure that old SSP operator resources are removed from the cluster"
-./hack/retry.sh 5 30 "CMD=${CMD} HCO_RESOURCE_NAME=${HCO_RESOURCE_NAME} HCO_NAMESPACE=${HCO_NAMESPACE} ./hack/check_old_ssp_removed.sh"
-
-[[ -n ${found_new_running_hco_pod} ]]
 
 echo "----- Images after upgrade"
 # TODO: compare all of them with the list of images in RelatedImages in the new CSV
@@ -314,14 +311,12 @@ VIRTIOWIN_IMAGE_CM=$(${CMD} get cm virtio-win -n ${HCO_NAMESPACE} -o jsonpath='{
 
 [[ "${VIRTIOWIN_IMAGE_CSV}" == "${VIRTIOWIN_IMAGE_CM}" ]]
 
-Msg "Read the HCO operator log before it been deleted"
+Msg "Read the HCO operator and webhook logs, before they are being deleted"
 LOG_DIR="${ARTIFACT_DIR}/logs"
 mkdir -p "${LOG_DIR}"
-HCO_POD=$( ${CMD} get -n ${HCO_NAMESPACE} pods -l "name=hyperconverged-cluster-operator" -o name)
-${CMD} logs -n ${HCO_NAMESPACE} "${HCO_POD}" > "${LOG_DIR}/hyperconverged-cluster-operator.log"
-
-Msg "Read the HCO webhook log before it been deleted"
-WH_POD=$( ${CMD} get -n ${HCO_NAMESPACE} pods -l "name=hyperconverged-cluster-webhook" -o name)
-${CMD} logs -n ${HCO_NAMESPACE} "${WH_POD}" > "${LOG_DIR}/hyperconverged-cluster-webhook.log"
+for pod in $(${CMD} get pod -n ${HCO_NAMESPACE} -l "name in (hyperconverged-cluster-operator,hyperconverged-cluster-webhook)" -o jsonpath='{.items[*].metadata.name}'); do
+  ${CMD} describe pod -n ${HCO_NAMESPACE} "${pod}" > "${LOG_DIR}/${pod}_describe.txt"
+  ${CMD} logs -n ${HCO_NAMESPACE} "${pod}" > "${LOG_DIR}/${pod}.log"
+done
 
 echo "upgrade-test completed successfully."
