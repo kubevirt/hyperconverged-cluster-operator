@@ -224,6 +224,15 @@ heterogeneous clusters. See [Golden Images](#golden-images-in-heterogeneous-clus
 
 **Graduation Status**: Alpha
 
+### declarativeHotplugVolumes Feature Gate
+Set the `declarativeHotplugVolumes` feature gate to true to enable the declarative volume hotplug API in KubeVirt. By default, volume hotplug operations are performed using KubeVirt's subresource API. Changes made directly to the VirtualMachine spec require a VM restart to take effect. When enabled, volume hotplug operations can be performed declaratively by modifying the VirtualMachine spec directly. These changes are applied immediately without requiring a VM restart.
+
+**Note**: This feature is in Developer Preview.
+
+**Default**: `false`
+
+**Graduation Status**: Alpha
+
 ### The hco.kubevirt.io/deployPasstNetworkBinding annotation
 Set the `hco.kubevirt.io/deployPasstNetworkBinding` HyperConverged CR annotation to `true`, to deploy the needed
 configurations for kubevirt users, so they can bind their VM using a Passt Network binding.
@@ -261,9 +270,9 @@ Bandwidth limit of each migrationi, the value is in quantity of bytes per second
 
 ### completionTimeoutPerGiB
 
-If a migrating VM is big and busy, while the connection to the destination node 
+If a migrating VM is big and busy, while the connection to the destination node
 is slow, migration may never converge. The completion timeout is calculated
-based on completionTimeoutPerGiB times the size of the guest (both RAM and 
+based on completionTimeoutPerGiB times the size of the guest (both RAM and
 migrated disks, if any). For example, with completionTimeoutPerGiB set to 800,
 a virtual machine instance with 6GiB memory will timeout if it has not
 completed migration in 1h20m. Use a lower completionTimeoutPerGiB to induce
@@ -306,7 +315,7 @@ It allows the platform to compromise performance/availability of VMIs to guarant
 
 ### allowPostCopy
 
-When enabled, KubeVirt attempts to use post-copy live-migration in case it 
+When enabled, KubeVirt attempts to use post-copy live-migration in case it
 reaches its completion timeout while attempting pre-copy live-migration.
 Post-copy migrations allow even the busiest VMs to successfully live-migrate.
 However, events like a network failure or a failure in any of the source or
@@ -408,7 +417,7 @@ The `pciHostDevices` array is an array of `PciHostDevice` objects. The fields of
    ```shell
    lspci -nnv | grep -i nvidia
    ```
-  
+
 * `resourceName` - name by which a device is advertised and being requested.
 * `externalResourceProvider` - indicates that this resource is being provided by an external device plugin.
 
@@ -492,7 +501,7 @@ guarantees about the amount of space that can be fully occupied.
 
 In case a larger or smaller padding is needed, for example if the root reservation is larger or the file
 system recommends a larger percentage of the space should be unused for optimal performance, we can change
-this tunable through the HCO CR.  
+this tunable through the HCO CR.
 This is possible to do as a global setting and per-storage class name.
 
 Administrators can Override the storage class used for scratch space during transfer operations by setting the
@@ -749,18 +758,18 @@ The `workloadUpdateStrategy` fields are:
   shutdowns.
 
   The Default value is `1m`
-  
+
 * `batchEvictionSize` - Represents the number of VMIs that can be forced updated per the BatchShutdownInterval interval
 
   The default value is `10`
 
 * `workloadUpdateMethods` - defines the methods that can be used to disrupt workloads
   during automated workload updates.
-  
+
   When multiple methods are present, the least disruptive method takes
   precedence over more disruptive methods. For example if both LiveMigrate and Shutdown
   methods are listed, only VMs which are not live migratable will be restarted/shutdown.
-  
+
   An empty list defaults to no automated workload updating.
 
   The default values is `LiveMigrate`; `Evict` is not enabled by default being potentially disruptive for the existing workloads.
@@ -963,7 +972,7 @@ In heterogeneous clusters, where nodes have different CPU architectures, it is p
 the boot image supports the the CPU architecture of the cluster nodes. For example, a golden image that supports both
 `arm64` and `amd64` CPU architectures can be used on both types of nodes.
 
-Notice that this feature is on `Alpha` stage, and is not fully supported yet. Also, it is disabled by default. To 
+Notice that this feature is on `Alpha` stage, and is not fully supported yet. Also, it is disabled by default. To
 activate the golden images support in heterogeneous clusters, set the `spec.featureGates.enableMultiArchBootImageImport`
 field to `true`, in the HyperConverged CR. See the [feature gate documentation](#enablemultiarchbootimageimport-feature-gates)
 for more details.
@@ -1004,7 +1013,7 @@ If the image source is the same as the original common golden image, then the an
 exists, it will be ignored.
 
 #### Adding a Custom Golden Image in Heterogeneous Cluster
-When adding a custom golden image, the `DataImportCronTemplate` object must be annotated with the 
+When adding a custom golden image, the `DataImportCronTemplate` object must be annotated with the
 `ssp.kubevirt.io/dict.architectures` annotation, with the value of a comma-separated list of CPU architectures that the
 image supports, as explained above.
 
@@ -1015,11 +1024,11 @@ The HyperConverged CR `status` contains the new `nodeInfo` object with two field
 
 The HyperConverged CR `status`, contains a list of `dataImportCronTemplates` that were created by HCO in the SSP CR.
 
-In case where a DataImportCronTemplate that does not match to any node in the cluster, the `status`, this 
+In case where a DataImportCronTemplate that does not match to any node in the cluster, the `status`, this
 DataImportCronTemplate object will not be added to the SSP CR, but it will be in the HyperConverged CR `status` field.
 In this case, the specific DataImportCronTemplate staus will contain a condition to reflect this issue.
 
-Each DataImportCronTemplate in the HyperConverged CR `status` field will contain the `originalSupportedArchitectures` 
+Each DataImportCronTemplate in the HyperConverged CR `status` field will contain the `originalSupportedArchitectures`
 field, with the original list of CPU architectures that the image supports, as defined in the
 `ssp.kubevirt.io/dict.architectures` of the DataImportCronTemplate object.
 
@@ -1089,7 +1098,7 @@ All the values defined [here](https://kubevirt.io/api-reference/master/definitio
 can be applied.
 
 ### Containerized data importer (CDI)
-Different levels of verbosity are used in CDI to control the amount of information that is logged. The verbosity level of logs in CDI can be adjusted using a dedicated field that affect all of its components. 
+Different levels of verbosity are used in CDI to control the amount of information that is logged. The verbosity level of logs in CDI can be adjusted using a dedicated field that affect all of its components.
 This feature enables users to control the amount of detail displayed in logs, ranging from minimal to detailed debugging information.
 
 For example:
@@ -1155,8 +1164,8 @@ spec:
 ## Auto CPU limits
 
 `autoCPULimitNamespaceLabelSelector` allows defining a namespace label for which VM pods (virt-launcher) will have a
-CPU resource limit of 1 per vCPU.  
-This option allows defining namespace CPU quotas equal to the maximum total number of vCPU allowed in that namespace.  
+CPU resource limit of 1 per vCPU.
+This option allows defining namespace CPU quotas equal to the maximum total number of vCPU allowed in that namespace.
 Example:
 ```yaml
 kind: HyperConverged
@@ -1169,7 +1178,7 @@ spec:
         autocpulimit: "true"
 ```
 In the example above, VM pods in namespaces that have the label "autocpulimit" set to "true" will have a CPU resource
-limit of 1 per vCPU.  
+limit of 1 per vCPU.
 **Important note**: this setting is incompatible with a `vmiCPUAllocationRatio` of 1, since that configuration can lead to
 VM pods using more than 1 CPU per vCPU.
 
@@ -1183,24 +1192,24 @@ This defines the default behavior of some features related to the virtual machin
   With freePageReporting the guest OS informs the hypervisor about pages which are not
 in use by the guest anymore. The hypervisor can use this information for freeing these pages.
 
-  freePageReporting is an attribute that can be defined at [Memory balloon device](https://libvirt.org/formatdomain.html#memory-balloon-device) 
+  freePageReporting is an attribute that can be defined at [Memory balloon device](https://libvirt.org/formatdomain.html#memory-balloon-device)
 in libvirt. freePageReporting will NOT be enabled for the vmis which does not have the Memballoon driver,
 OR which are requesting any high performance components. A vmi is considered as high performance if one of the following is true:
   - the vmi requests a dedicated cpu.
   - the realtime flag is enabled.
   - the vmi requests hugepages.
-  
+
   With `DisableFreePageReporting` freePageReporting will never be enabled in any vmi.
 `DisableFreePageReporting` is a boolean and freePageReporting is enabled by default (disableFreePageReporting=false).
 
 - `disableSerialConsoleLog`
   DisableSerialConsoleLog disables logging the auto-attached default serial console.
   If not set, serial console logs will be written to a file in the virt-launcher pod and then streamed from a container named `guest-console-log` so that they can be consumed or aggregated according to the standard k8s logging architecture.
-  VM logs streamed over the serial console contain really useful debug/troubleshooting info.  
+  VM logs streamed over the serial console contain really useful debug/troubleshooting info.
   The value can be individually overridden for each VM, not relevant if AutoattachSerialConsole is disabled for the VM.
 
 > Caution
-> 
+>
 > If the serial console is used for interactive access, its output will also be streamed to the log system.
 > Passwords are normally not echoed on the screen so they are not going to be collected on the logs.
 > However, if you type by mistake a password for a command or if you have to pass it as a clear text parameter it will be written in the logs along with all other visible text.
@@ -1221,12 +1230,12 @@ spec:
 
 ## KSM Configuration
 
-`ksmConfiguration` instructs on which nodes KSM will be enabled, exposing a `nodeLabelSelector`.  
+`ksmConfiguration` instructs on which nodes KSM will be enabled, exposing a `nodeLabelSelector`.
 `nodeLabelSelector` is a [LabelSelector](https://github.com/kubernetes/apimachinery/blob/60180f072f73eafec72ef9f2c418a6bb1357d434/pkg/apis/meta/v1/types.go#L1195)
 and defines the filter, based on the node labels. If a node's labels match the label selector term,
 then on that node, KSM will be enabled.
->**NOTE**  
->If `nodeLabelSelector` is nil KSM will not be enabled on any nodes.  
+>**NOTE**
+>If `nodeLabelSelector` is nil KSM will not be enabled on any nodes.
 >Empty `nodeLabelSelector` will enable KSM on every node.
 
 Examples
@@ -1282,22 +1291,22 @@ On plain k8s, where APIServer CR is not available, the default value will be `In
 ## Configure Application Aware Quota (AAQ)
 To enable the AAQ feature, set the `spec.enableApplicationAwareQuota` field to `true`.
 
-To configure AAQ, set the fields of the `applicationAwareConfig` object in the HyperConverged resource's spec. The 
+To configure AAQ, set the fields of the `applicationAwareConfig` object in the HyperConverged resource's spec. The
 `applicationAwareConfig` object contains several fields:
 * `vmiCalcConfigName` - determines how resource allocation will be done with ApplicationResourceQuota.
   Supported values are:
-  * `VmiPodUsage` - calculates pod usage for VM-associated pods while concealing migration-specific resources. 
-  * `VirtualResources` - allocates resources for VM-associated pods, using the VM's RAM size for memory and CPU threads 
+  * `VmiPodUsage` - calculates pod usage for VM-associated pods while concealing migration-specific resources.
+  * `VirtualResources` - allocates resources for VM-associated pods, using the VM's RAM size for memory and CPU threads
      for processing.
-  * `DedicatedVirtualResources` (default) - allocates resources for VM-associated pods, appending a /vm suffix to 
-     `requests/limits.cpu` and `requests/limits.memory`, derived from the VM's RAM size and CPU threads. Notably, it 
+  * `DedicatedVirtualResources` (default) - allocates resources for VM-associated pods, appending a /vm suffix to
+     `requests/limits.cpu` and `requests/limits.memory`, derived from the VM's RAM size and CPU threads. Notably, it
      does not allocate resources for the standard `requests/limits.cpu` and `requests/limits.memory`.
   * `IgnoreVmiCalculator` - avoids allocating VM-associated pods differently from normal pods, maintaining uniform
      resource allocation.
-    * `namespaceSelector` - determines in which namespaces AAQ's scheduling gate will be added to pods at creation time. 
+    * `namespaceSelector` - determines in which namespaces AAQ's scheduling gate will be added to pods at creation time.
      This field follows the standard Kubernetes selector format.
 * `allowApplicationAwareClusterResourceQuota` (default = false) - set to true, to allow creation and management of ClusterAppsResourceQuota
-  
+
   **note**: this setting cause some performance cost. Only set to true if there is a good reason.
 
 ### Limitations
@@ -1333,7 +1342,7 @@ spec:
 ```
 As an example, if the VM compute container requests 4Gi memory, then the corresponding VM guest OS will see `4Gi * 150 / 100 = 6Gi`.
 
-**Note**: When updating the overcommit percentage, changes will apply to existing VM workloads only after a power cycle or after live-imgration. 
+**Note**: When updating the overcommit percentage, changes will apply to existing VM workloads only after a power cycle or after live-imgration.
 
 ## Allow access to the Virtual Machine's VNC Console
 In order to allow access toe the Virtual Machine's VNC Console, set the `spec.deployVmConsoleProxy` field to `true`.
@@ -1351,15 +1360,15 @@ spec:
 ## Configurations via Annotations
 
 In addition to `featureGates` field in HyperConverged CR's spec, the user can set annotations in the HyperConverged CR
-to unfold more configuration options.  
+to unfold more configuration options.
 **Warning:** Annotations are less formal means of cluster configuration and may be dropped without the same deprecation
 process of a regular API, such as in the `spec` section.
 
 ### OvS Opt-In Annotation
 
-Starting from HCO version 1.3.0, OvS CNI support is disabled by default on new installations.  
+Starting from HCO version 1.3.0, OvS CNI support is disabled by default on new installations.
 In order to enable the deployment of OvS CNI DaemonSet on all _workload_ nodes, an annotation of `deployOVS: true` must
-be set on HyperConverged CR.  
+be set on HyperConverged CR.
 It can be set while creating the HyperConverged custom resource during the initial deployment, or during run time.
 
 * To enable OvS CNI on the cluster, the HyperConverged CR should be similar to:
@@ -1377,12 +1386,12 @@ metadata:
 kubectl annotate HyperConverged kubevirt-hyperconverged -n kubevirt-hyperconverged deployOVS=true --overwrite
 ```
 
-If HCO was upgraded to 1.3.0 from a previous version, the annotation will be added as `true` and OvS will be deployed.  
+If HCO was upgraded to 1.3.0 from a previous version, the annotation will be added as `true` and OvS will be deployed.
 Subsequent upgrades to newer versions will preserve the state from previous version, i.e. OvS will be deployed in the upgraded version if and only if it was deployed in the previous one.
 
 ### jsonpatch Annotations
-HCO enables users to modify the operand CRs directly using jsonpatch annotations in HyperConverged CR.  
-Modifications done to CRs using jsonpatch annotations won't be reconciled back by HCO to the opinionated defaults.  
+HCO enables users to modify the operand CRs directly using jsonpatch annotations in HyperConverged CR.
+Modifications done to CRs using jsonpatch annotations won't be reconciled back by HCO to the opinionated defaults.
 The following annotations are supported in the HyperConverged CR:
 * `kubevirt.kubevirt.io/jsonpatch` - for [KubeVirt configurations](https://github.com/kubevirt/api)
 * `containerizeddataimporter.kubevirt.io/jsonpatch` - for [CDI configurations](https://github.com/kubevirt/containerized-data-importer-api)
@@ -1503,7 +1512,7 @@ If KubeMacPool is buggy on your cluster and you do not immediately need it you c
 kubectl annotate --overwrite -n kubevirt-hyperconverged hco kubevirt-hyperconverged 'networkaddonsconfigs.kubevirt.io/jsonpatch=[{"op": "replace","path": "/spec/kubeMacPool","value": null}]'
 ```
 
-**_Note:_** The full configurations options for Kubevirt, CDI and CNAO which are available on the cluster, can be explored by using `kubectl explain <resource name>.spec`. For example:  
+**_Note:_** The full configurations options for Kubevirt, CDI and CNAO which are available on the cluster, can be explored by using `kubectl explain <resource name>.spec`. For example:
 ```bash
 $ kubectl explain kv.spec
 KIND:     KubeVirt
@@ -1528,11 +1537,11 @@ FIELDS:
    imageRegistry	<string>
      The image registry to pull the container images from Defaults to the same
      registry the operator's container image is pulled from.
-  
+
   <truncated>
 ```
 
-To inspect lower-level objects under `spec`, they can be specified in `kubectl explain`, recursively. e.g.  
+To inspect lower-level objects under `spec`, they can be specified in `kubectl explain`, recursively. e.g.
 ```bash
 $ kubectl explain kv.spec.configuration.network
 KIND:     KubeVirt
@@ -1557,7 +1566,7 @@ FIELDS:
 * To explore SSP configuration options, use `kubectl explain ssp.spec`
 
 ### WARNING
-Using the jsonpatch annotation feature incorrectly might lead to unexpected results and could potentially render the Kubevirt-Hyperconverged system unstable.  
+Using the jsonpatch annotation feature incorrectly might lead to unexpected results and could potentially render the Kubevirt-Hyperconverged system unstable.
 The jsonpatch annotation feature is particularly dangerous when upgrading Kubevirt-Hyperconverged, as the structure or the semantics of the underlying components' CR might be changed. Please remove any jsonpatch annotation usage prior the upgrade, to avoid any potential issues.
 **USE WITH CAUTION!**
 
@@ -1625,7 +1634,7 @@ kubectl patch -n kubevirt-hyperconverged hco kubevirt-hyperconverged --type=json
 
 The `highBurst` profile is intended for high load scenarios where the user expect to create and maintain a high number of VMs
 in the same cluster.
-The profile configures internally the more suitable `burst` and `QPS` values for the most common high load scenarios. 
+The profile configures internally the more suitable `burst` and `QPS` values for the most common high load scenarios.
 Nevertheless, the specific configuration of those values is hidden to the user.
 Also, the values may change over time since they are based on an experimentation process.
 
@@ -1699,7 +1708,7 @@ spec:
 ## KubeVirt Live Update Configuration
 
 In order to configure the live upgrade of virtual machines, you can set the optional `spec.liveUpdateConfiguration` object in the HyperConverged CR. See more details in the [KubeVirt documentation](https://kubevirt.io/user-guide/compute/cpu_hotplug/#optional-set-maximum-sockets-or-hotplug-ratio).
-The `spec.liveUpdateConfiguration` field is with the same structure as the corresponding field in the [KubeVirt CR](https://kubevirt.io/api-reference/main/definitions.html#_v1_liveupdateconfiguration). 
+The `spec.liveUpdateConfiguration` field is with the same structure as the corresponding field in the [KubeVirt CR](https://kubevirt.io/api-reference/main/definitions.html#_v1_liveupdateconfiguration).
 
 The following example sets cluster configuration for hotplug ratio, max cpu socket and max guest size.
 

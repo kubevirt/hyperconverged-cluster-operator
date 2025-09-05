@@ -61,6 +61,7 @@ spec:
               enableCommonBootImageImport: true
               featureGates:
                 decentralizedLiveMigration: false
+                declarativeHotplugVolumes: false
                 deployKubeSecondaryDNS: false
                 disableMDevConfiguration: false
                 downwardMetrics: false
@@ -1078,6 +1079,7 @@ spec:
               featureGates:
                 default:
                   decentralizedLiveMigration: false
+                  declarativeHotplugVolumes: false
                   deployKubeSecondaryDNS: false
                   disableMDevConfiguration: false
                   downwardMetrics: false
@@ -1103,6 +1105,14 @@ spec:
                     description: |-
                       DecentralizedLiveMigration enables the decentralized live migration (cross-cluster migration) feature.
                       This feature allows live migration of VirtualMachineInstances between different clusters.
+                      This feature is in Developer Preview.
+                    type: boolean
+                  declarativeHotplugVolumes:
+                    default: false
+                    description: |-
+                      DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt.
+                      When set to true, the "DeclarativeHotplugVolumes" feature gate is enabled instead of "HotplugVolumes".
+                      When set to false or nil, the "HotplugVolumes" feature gate is enabled (default behavior).
                       This feature is in Developer Preview.
                     type: boolean
                   deployKubeSecondaryDNS:

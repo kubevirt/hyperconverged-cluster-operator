@@ -357,6 +357,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 							Format:      "",
 						},
 					},
+					"declarativeHotplugVolumes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt. When set to true, the \"DeclarativeHotplugVolumes\" feature gate is enabled instead of \"HotplugVolumes\". When set to false or nil, the \"HotplugVolumes\" feature gate is enabled (default behavior). This feature is in Developer Preview.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

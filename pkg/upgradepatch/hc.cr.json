@@ -15,7 +15,8 @@
       "persistentReservation": false,
       "alignCPUs": false,
       "enableMultiArchBootImageImport": false,
-      "decentralizedLiveMigration": false
+      "decentralizedLiveMigration": false,
+      "declarativeHotplugVolumes": false
     },
     "liveMigrationConfig": {
       "parallelMigrationsPerCluster": 5,

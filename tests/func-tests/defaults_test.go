@@ -73,6 +73,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			AlignCPUs:                      ptr.To(false),
 			EnableMultiArchBootImageImport: ptr.To(false),
 			DecentralizedLiveMigration:     ptr.To(false),
+			DeclarativeHotplugVolumes:      ptr.To(false),
 		}
 
 		DescribeTable("Check that featureGates defaults are behaving as expected", func(ctx context.Context, path string) {
@@ -92,6 +93,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			Entry("when removing /spec/featureGates/alignCPUs", "/spec/featureGates/alignCPUs"),
 			Entry("when removing /spec/featureGates/enableMultiArchBootImageImport", "/spec/featureGates/enableMultiArchBootImageImport"),
 			Entry("when removing /spec/featureGates/decentralizedLiveMigration", "/spec/featureGates/decentralizedLiveMigration"),
+			Entry("when removing /spec/featureGates/declarativeHotplugVolumes", "/spec/featureGates/declarativeHotplugVolumes"),
 			Entry("when removing /spec/featureGates", "/spec/featureGates"),
 			Entry("when removing /spec", "/spec"),
 		)
