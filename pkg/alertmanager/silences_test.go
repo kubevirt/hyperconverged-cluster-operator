@@ -1,6 +1,7 @@
 package alertmanager_test
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -44,8 +45,8 @@ var _ = Describe("Silences", func() {
 		ts.Close()
 	})
 
-	It("should successfully GET /api/v2/silences", func() {
-		silences, err := api.ListSilences()
+	It("should successfully GET /api/v2/silences", func(ctx context.Context) {
+		silences, err := api.ListSilences(ctx)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(silences).To(HaveLen(1))
 
@@ -57,13 +58,13 @@ var _ = Describe("Silences", func() {
 		Expect(silences[0].Matchers[0].Value).To(Equal("TestAlert"))
 	})
 
-	It("should successfully POST /api/v2/silences", func() {
-		err := api.CreateSilence(alertmanager.Silence{})
+	It("should successfully POST /api/v2/silences", func(ctx context.Context) {
+		err := api.CreateSilence(ctx, alertmanager.Silence{})
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should successfully DELETE /api/v2/silences/{id}", func() {
-		err := api.DeleteSilence("bb881d7f-3278-46fd-a638-d42c57f235b6")
+	It("should successfully DELETE /api/v2/silences/{id}", func(ctx context.Context) {
+		err := api.DeleteSilence(ctx, "bb881d7f-3278-46fd-a638-d42c57f235b6")
 		Expect(err).ToNot(HaveOccurred())
 	})
 })

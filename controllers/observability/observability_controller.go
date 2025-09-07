@@ -42,7 +42,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Result
 
 	var errors []error
 
-	if err := r.ensurePodDisruptionBudgetAtLimitIsSilenced(); err != nil {
+	if err := r.ensurePodDisruptionBudgetAtLimitIsSilenced(ctx); err != nil {
 		errors = append(errors, err)
 	}
 

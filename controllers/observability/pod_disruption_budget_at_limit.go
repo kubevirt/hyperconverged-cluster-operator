@@ -1,6 +1,7 @@
 package observability
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -19,7 +20,7 @@ const (
 	AlertmanagerSvcHost = "https://alertmanager-main.openshift-monitoring.svc.cluster.local:9094"
 )
 
-func (r *Reconciler) ensurePodDisruptionBudgetAtLimitIsSilenced() error {
+func (r *Reconciler) ensurePodDisruptionBudgetAtLimitIsSilenced(ctx context.Context) error {
 	if r.amApi == nil {
 		var err error
 		r.amApi, err = r.NewAlertmanagerApi()
@@ -28,7 +29,7 @@ func (r *Reconciler) ensurePodDisruptionBudgetAtLimitIsSilenced() error {
 		}
 	}
 
-	amSilences, err := r.amApi.ListSilences()
+	amSilences, err := r.amApi.ListSilences(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list alertmanager silences: %w", err)
 	}
@@ -58,7 +59,7 @@ func (r *Reconciler) ensurePodDisruptionBudgetAtLimitIsSilenced() error {
 		StartsAt: time.Now().Format(time.RFC3339),
 	}
 
-	if err := r.amApi.CreateSilence(silence); err != nil {
+	if err = r.amApi.CreateSilence(ctx, silence); err != nil {
 		return fmt.Errorf("failed to create alertmanager silence: %w", err)
 	}
 	log.Info("Silenced PodDisruptionBudgetAtLimit alerts")

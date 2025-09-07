@@ -36,8 +36,20 @@ var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, testNam
 		cliConfig = tests.GetClientConfig()
 		tests.FailIfNotOpenShift(ctx, cli, testName)
 
+		tlsConfig := &tls.Config{InsecureSkipVerify: true}
+
+		if cliConfig.BearerToken == "" {
+			if cliConfig.CertData == nil || cliConfig.KeyData == nil {
+				Fail("client certificate or bearer token is required to access the alertmanager API")
+			}
+
+			clientCert, err := tls.X509KeyPair(cliConfig.CertData, cliConfig.KeyData)
+			Expect(err).NotTo(HaveOccurred(), "failed to get client x509 certificate")
+			tlsConfig.Certificates = []tls.Certificate{clientCert}
+		}
+
 		httpClient = http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig: tlsConfig,
 		}}
 
 		if isAlertmanagerAccessible(httpClient, observability.AlertmanagerSvcHost, cliConfig.BearerToken) {
@@ -61,14 +73,14 @@ var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, testNam
 		It("should be silenced", func(ctx context.Context) {
 			amAPI := alertmanager.NewAPI(httpClient, alertmanagerURL, cliConfig.BearerToken)
 
-			amSilences, err := amAPI.ListSilences()
+			amSilences, err := amAPI.ListSilences(ctx)
 			Expect(err).ToNot(HaveOccurred())
 
 			// PodDisruptionBudgetAtLimit silence should have been created by the controller
 			podDisruptionBudgetAtLimitSilence := observability.FindPodDisruptionBudgetAtLimitSilence(amSilences)
 			Expect(podDisruptionBudgetAtLimitSilence).ToNot(BeNil())
 
-			err = amAPI.DeleteSilence(podDisruptionBudgetAtLimitSilence.ID)
+			err = amAPI.DeleteSilence(ctx, podDisruptionBudgetAtLimitSilence.ID)
 			Expect(err).ToNot(HaveOccurred())
 
 			// Restart pod to force reconcile (reconcile periodicity is 1h)
@@ -86,11 +98,14 @@ var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, testNam
 
 			// Wait for the controller to recreate the silence
 			Eventually(func() bool {
-				amSilences, err := amAPI.ListSilences()
+				amSilences, err := amAPI.ListSilences(ctx)
 				Expect(err).ToNot(HaveOccurred())
 
 				return observability.FindPodDisruptionBudgetAtLimitSilence(amSilences) != nil
-			}, "5m", "10s").Should(BeTrue())
+			}).
+				WithTimeout(5 * time.Minute).
+				WithPolling(10 * time.Second).
+				Should(BeTrue())
 		})
 	})
 })

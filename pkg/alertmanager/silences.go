@@ -2,6 +2,7 @@ package alertmanager
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -46,15 +47,13 @@ func NewAPI(httpClient http.Client, host string, token string) *Api {
 	}
 }
 
-func (api *Api) ListSilences() ([]Silence, error) {
+func (api *Api) ListSilences(ctx context.Context) ([]Silence, error) {
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/v2/silences", api.host), nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Add("Authorization", "Bearer "+api.token)
-
-	resp, err := api.httpClient.Do(req)
+	resp, err := api.do(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list silences: %w", err)
 	}
@@ -74,7 +73,7 @@ func (api *Api) ListSilences() ([]Silence, error) {
 	return amSilences, nil
 }
 
-func (api *Api) CreateSilence(s Silence) error {
+func (api *Api) CreateSilence(ctx context.Context, s Silence) error {
 	body, err := json.Marshal(s)
 	if err != nil {
 		return fmt.Errorf("failed to marshal silence: %w", err)
@@ -85,10 +84,9 @@ func (api *Api) CreateSilence(s Silence) error {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Add("Authorization", "Bearer "+api.token)
 	req.Header.Add("Content-Type", "application/json")
 
-	resp, err := api.httpClient.Do(req)
+	resp, err := api.do(ctx, req)
 	if err != nil {
 		return fmt.Errorf("failed to create silence: %w", err)
 	}
@@ -99,15 +97,13 @@ func (api *Api) CreateSilence(s Silence) error {
 	return nil
 }
 
-func (api *Api) DeleteSilence(id string) error {
+func (api *Api) DeleteSilence(ctx context.Context, id string) error {
 	req, err := http.NewRequest(http.MethodDelete, fmt.Sprintf("%s/api/v2/silence/%s", api.host, id), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Add("Authorization", "Bearer "+api.token)
-
-	resp, err := api.httpClient.Do(req)
+	resp, err := api.do(ctx, req)
 	if err != nil {
 		return fmt.Errorf("failed to delete silence: %w", err)
 	}
@@ -116,4 +112,14 @@ func (api *Api) DeleteSilence(id string) error {
 	}
 
 	return nil
+}
+
+func (api *Api) do(ctx context.Context, req *http.Request) (*http.Response, error) {
+	if api.token != "" {
+		req.Header.Add("Authorization", "Bearer "+api.token)
+	}
+
+	req = req.WithContext(ctx)
+
+	return api.httpClient.Do(req)
 }
