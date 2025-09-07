@@ -217,8 +217,6 @@ var _ = Describe("HyperconvergedController", func() {
 					"DownwardMetrics",
 					"VMExport",
 					"KubevirtSeccompProfile",
-					"VMPersistentState",
-					"InstancetypeReferencePolicy",
 				}
 				// Get the KV
 				kvList := &kubevirtcorev1.KubeVirtList{}
