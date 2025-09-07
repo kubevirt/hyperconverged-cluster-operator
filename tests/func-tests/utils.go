@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega" //nolint dot-imports
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -123,7 +124,10 @@ func IsOpenShift(ctx context.Context, cli client.Client) (bool, error) {
 
 // GetHCO reads the HCO CR from the APIServer with a DynamicClient
 func GetHCO(ctx context.Context, cli client.Client) *v1beta1.HyperConverged {
+	ginkgo.GinkgoHelper()
+
 	Expect(v1beta1.AddToScheme(cli.Scheme())).To(Succeed())
+
 	hco := &v1beta1.HyperConverged{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      hcoutil.HyperConvergedName,
