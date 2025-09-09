@@ -233,6 +233,7 @@ HyperConvergedSpec defines the desired state of HyperConverged
 | networkBinding | NetworkBinding defines the network binding plugins. Those bindings can be used when defining virtual machine interfaces. | map[string]v1.InterfaceBindingPlugin |  | false |
 | applicationAwareConfig | ApplicationAwareConfig set the AAQ configurations | *[ApplicationAwareConfigurations](#applicationawareconfigurations) |  | false |
 | higherWorkloadDensity | HigherWorkloadDensity holds configurataion aimed to increase virtual machine density | *[HigherWorkloadDensityConfiguration](#higherworkloaddensityconfiguration) | {"memoryOvercommitPercentage": 100} | false |
+| liveUpdateConfiguration | LiveUpdateConfiguration holds the cluster configuration for live update of virtual machines - max cpu sockets, max guest memory and max hotplug ratio. This setting can affect VM CPU and memory settings. | *v1.LiveUpdateConfiguration |  | false |
 
 [Back to TOC](#table-of-contents)
 
