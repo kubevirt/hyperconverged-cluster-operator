@@ -684,8 +684,8 @@ kubevirt.io/containerized-data-importer-api v1.63.0 h1:+y378kAPIitSHFZCThSx9jr8U
 kubevirt.io/containerized-data-importer-api v1.63.0/go.mod h1:VGp35wxpLXU18b7cnEpmcThI3AjcZUSfg/Zfql44U4o=
 kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4 h1:fZYvD3/Vnitfkx6IJxjLAk8ugnZQ7CXVYcRfkSKmuZY=
 kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4/go.mod h1:018lASpFYBsYN6XwmA2TIrPCx6e0gviTd/ZNtSitKgc=
-kubevirt.io/ssp-operator/api v0.24.0 h1:pLz6LDgqAJp+nbkTFgrYUieAA/Rnh2ZdRWGACceqlEA=
-kubevirt.io/ssp-operator/api v0.24.0/go.mod h1:yVfyh7HuECQydbHPaVOo+bzv+HJBa6Qiqo2LbadJXgQ=
+kubevirt.io/ssp-operator/api v0.24.1 h1:1VPkv5C9x8tc2QF/liJbjwAmFEQmQoaG4sch7xgqr/4=
+kubevirt.io/ssp-operator/api v0.24.1/go.mod h1:sTHqUNUggFD9aIKDLBMA8gu4iUs0dNiLvXBp61gvq6Q=
 sigs.k8s.io/controller-runtime v0.21.0 h1:CYfjpEuicjUecRk+KAeyYh+ouUBn4llGyDYytIGcJS8=
 sigs.k8s.io/controller-runtime v0.21.0/go.mod h1:OSg14+F65eWqIu4DceX7k/+QRAbTTvxeQSNSOQpukWM=
 sigs.k8s.io/controller-tools v0.18.0 h1:rGxGZCZTV2wJreeRgqVoWab/mfcumTMmSwKzoM9xrsE=
