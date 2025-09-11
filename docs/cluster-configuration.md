@@ -855,6 +855,28 @@ spec:
       networkAttachmentDefinition: customBinding2Nad
 ```
 
+## KubeMacPool MAC Address Range Configuration
+Configure MAC address ranges for KubeMacPool, which automatically allocates MAC addresses to VM interfaces.
+
+In order to set KubeMacPool MAC ranges, configure them on the HyperConverged CR under the `spec.kubeMacPoolConfiguration` field.
+Default: If not configured, cluster-network-addons-operator will automatically choose a MAC address range with a random prefix.
+
+The MAC address format should be `AA:BB:CC:DD:EE:FF` (colon-separated hexadecimal pairs).
+
+### KubeMacPool MAC Address Range Configuration example
+```yaml
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  kubeMacPoolConfiguration:
+    rangeStart: "AA:BB:CC:00:00:00"
+    rangeEnd: "FD:FF:FF:FF:FF:FF"
+```
+
+**Note**: You must configure both `rangeStart` and `rangeEnd` together. Partial configuration (only one field) is not supported.
+
 ## Modify common golden images
 Golden images are root disk images for commonly used operating systems. HCO provides several common images, but it is possible to modify them, if needed.
 
