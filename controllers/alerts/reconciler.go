@@ -29,54 +29,68 @@ type MetricReconciler interface {
 }
 
 type MonitoringReconciler struct {
-	reconcilers   []MetricReconciler
-	scheme        *runtime.Scheme
-	latestObjects []client.Object
-	client        client.Client
-	namespace     string
-	eventEmitter  hcoutil.EventEmitter
+	reconcilers        []MetricReconciler
+	scheme             *runtime.Scheme
+	latestObjects      []client.Object
+	client             client.Client
+	namespace          string
+	eventEmitter       hcoutil.EventEmitter
+	reconcileNamespace reconcileNamespaceFunc
 }
+
+type GetReconcilersFunc func(hcoutil.ClusterInfo, string, metav1.OwnerReference) []MetricReconciler
 
 var logger = logf.Log.WithName("hyperconverged-operator-monitoring-reconciler")
 
 func NewMonitoringReconciler(ci hcoutil.ClusterInfo, cl client.Client, ee hcoutil.EventEmitter, scheme *runtime.Scheme) *MonitoringReconciler {
+	return CreateMonitoringReconciler(ci, cl, ee, scheme, true, getReconcilers)
+}
+
+func CreateMonitoringReconciler(ci hcoutil.ClusterInfo, cl client.Client, ee hcoutil.EventEmitter, scheme *runtime.Scheme, shouldReconcileNS bool, getReconcilersFn GetReconcilersFunc) *MonitoringReconciler {
 	deployment := ci.GetDeployment()
 
-	var (
-		namespace string
-		owner     metav1.OwnerReference
-	)
+	var owner metav1.OwnerReference
 
-	if deployment == nil {
-		var err error
-		namespace, err = hcoutil.GetOperatorNamespace(logger)
-		if err != nil {
-			return nil
-		}
-	} else {
-		namespace = deployment.Namespace
+	namespace := hcoutil.GetOperatorNamespaceFromEnv()
+	if deployment != nil {
 		owner = getDeploymentReference(deployment)
 	}
 
-	alertRuleReconciler, err := newAlertRuleReconciler(namespace, owner)
-	if err != nil {
-		logger.Error(err, "failed to create the 'PrometheusRule' reconciler")
-	}
-
-	return &MonitoringReconciler{
-		reconcilers: []MetricReconciler{
-			alertRuleReconciler,
-			newRoleReconciler(namespace, owner),
-			newRoleBindingReconciler(namespace, owner, ci),
-			newMetricServiceReconciler(namespace, owner),
-			newSecretReconciler(namespace, owner),
-			newServiceMonitorReconciler(namespace, owner),
-		},
+	r := &MonitoringReconciler{
+		reconcilers:  getReconcilersFn(ci, namespace, owner),
 		scheme:       scheme,
 		client:       cl,
 		namespace:    namespace,
 		eventEmitter: ee,
 	}
+
+	if shouldReconcileNS {
+		r.reconcileNamespace = reconcileNamespace
+	} else {
+		r.reconcileNamespace = func(_ context.Context, _ client.Client, _ string, _ logr.Logger) error {
+			return nil
+		}
+	}
+
+	return r
+}
+
+func getReconcilers(ci hcoutil.ClusterInfo, namespace string, owner metav1.OwnerReference) []MetricReconciler {
+	alertRuleReconciler, err := newAlertRuleReconciler(namespace, owner)
+	if err != nil {
+		logger.Error(err, "failed to create the 'PrometheusRule' reconciler")
+	}
+
+	reconcilers := []MetricReconciler{
+		alertRuleReconciler,
+		newRoleReconciler(namespace, owner),
+		newRoleBindingReconciler(namespace, owner, ci),
+		newMetricServiceReconciler(namespace, owner),
+		NewSecretReconciler(namespace, owner, secretName, newSecret),
+		newServiceMonitorReconciler(namespace, owner),
+	}
+
+	return reconcilers
 }
 
 func (r *MonitoringReconciler) Reconcile(req *common.HcoRequest, firstLoop bool) error {
@@ -84,18 +98,21 @@ func (r *MonitoringReconciler) Reconcile(req *common.HcoRequest, firstLoop bool)
 		return nil
 	}
 
-	if err := reconcileNamespace(req.Ctx, r.client, r.namespace, req.Logger); err != nil {
+	if err := r.reconcileNamespace(req.Ctx, r.client, r.namespace, req.Logger); err != nil {
+		req.Logger.Error(err, "failed to reconcile the namespace")
 		return err
 	}
 
-	objects := make([]client.Object, len(r.reconcilers))
+	objects := make([]client.Object, 0, len(r.reconcilers))
 
-	for i, rc := range r.reconcilers {
-		obj, err := r.ReconcileOneResource(req, rc, firstLoop)
+	for _, rc := range r.reconcilers {
+		obj, err := r.reconcileOneResource(req, rc, firstLoop)
 		if err != nil {
 			return err
-		} else if obj != nil {
-			objects[i] = obj
+		}
+
+		if obj != nil {
+			objects = append(objects, obj)
 		}
 	}
 
@@ -103,7 +120,7 @@ func (r *MonitoringReconciler) Reconcile(req *common.HcoRequest, firstLoop bool)
 	return nil
 }
 
-func (r *MonitoringReconciler) ReconcileOneResource(req *common.HcoRequest, reconciler MetricReconciler, firstLoop bool) (client.Object, error) {
+func (r *MonitoringReconciler) reconcileOneResource(req *common.HcoRequest, reconciler MetricReconciler, firstLoop bool) (client.Object, error) {
 	if r == nil {
 		return nil, nil // not initialized (not running on openshift). do nothing
 	}

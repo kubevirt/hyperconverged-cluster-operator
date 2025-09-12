@@ -13,10 +13,7 @@ import (
 )
 
 const (
-	operatorName                 = "hyperconverged-cluster-operator"
-	roleName                     = operatorName + "-metrics"
-	defaultMonitoringNamespace   = "monitoring"
-	openshiftMonitoringNamespace = "openshift-monitoring"
+	roleName = hcoutil.HCOOperatorName + "-metrics"
 )
 
 // RoleReconciler maintains an RBAC Role to allow Prometheus operator to read from HCO metric
@@ -188,12 +185,4 @@ func newRoleBinding(owner metav1.OwnerReference, namespace string, ci hcoutil.Cl
 			},
 		},
 	}
-}
-
-func getMonitoringNamespace(ci hcoutil.ClusterInfo) string {
-	if ci.IsOpenshift() {
-		return openshiftMonitoringNamespace
-	}
-
-	return defaultMonitoringNamespace
 }
