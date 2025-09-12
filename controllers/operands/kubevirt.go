@@ -446,6 +446,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 		EvictionStrategy:             hc.Spec.EvictionStrategy,
 		KSMConfiguration:             hc.Spec.KSMConfiguration,
 		VMRolloutStrategy:            ptr.To(kubevirtcorev1.VMRolloutStrategyLiveUpdate),
+		LiveUpdateConfiguration:      hc.Spec.LiveUpdateConfiguration,
 	}
 
 	if smbiosConfig, ok := os.LookupEnv(smbiosEnvName); ok {
