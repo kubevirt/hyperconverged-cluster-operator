@@ -5,8 +5,11 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"iter"
 	"net/http"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -34,6 +37,7 @@ import (
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	hcoalerts "github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/rules/alerts"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
@@ -133,7 +137,11 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			},
 		}
 
-		Expect(cli.Patch(ctx, kv, patch)).To(Succeed())
+		Eventually(cli.Patch).
+			WithArguments(ctx, kv, patch).
+			WithTimeout(time.Minute).
+			WithPolling(time.Second).
+			To(Succeed())
 
 		By("checking that the HCO metric was increased by 1")
 		Eventually(func(g Gomega, ctx context.Context) float64 {
@@ -158,21 +166,40 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
 	})
 
-	It("UnsupportedHCOModification alert should fired when there is an jsonpatch annotation to modify an operand CRs", func(ctx context.Context) {
-		By("Updating HCO object with a new label")
+	It("UnsupportedHCOModification alert should fired when there is a jsonpatch annotation to modify an operand CRs", func(ctx context.Context) {
+		query := fmt.Sprintf(`kubevirt_hco_unsafe_modifications{annotation_name=%q}`, common.JSONPatchKVAnnotationName)
+
 		hco := tests.GetHCO(ctx, cli)
 
 		hco.Annotations = map[string]string{
-			"kubevirt.kubevirt.io/jsonpatch": `[{"op": "add", "path": "/spec/configuration/migrations", "value": {"allowPostCopy": true}}]`,
+			common.JSONPatchKVAnnotationName: `[{"op": "add", "path": "/spec/configuration/migrations", "value": {"allowPostCopy": true}}]`,
 		}
+
 		tests.UpdateHCORetry(ctx, cli, hco)
 
-		Eventually(func(ctx context.Context) *promApiv1.Alert {
-			alerts, err := promClient.Alerts(ctx)
-			Expect(err).ToNot(HaveOccurred())
-			alert := getAlertByName(alerts, "UnsupportedHCOModification")
-			return alert
-		}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
+		By(fmt.Sprintf("Reading the `%s` metric from HCO prometheus endpoint", query))
+		Eventually(func(g Gomega, ctx context.Context) {
+			var err error
+			metricValue, err := hcoClient.GetHCOMetric(ctx, query)
+
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(metricValue).To(Equal(float64(1)), "the expected value for the %q is 1, but got %.0f", query, metricValue)
+		}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+
+		By("Checking the alert in Prometheus")
+		var alerts promApiv1.AlertsResult
+		Eventually(func(g Gomega, ctx context.Context) *promApiv1.Alert {
+			var err error
+			alerts, err = promClient.Alerts(ctx)
+			g.Expect(err).ToNot(HaveOccurred())
+			return getAlertByName(alerts, "UnsupportedHCOModification")
+		}).WithTimeout(prometheousTimeout).
+			WithPolling(prometheousPolling).
+			WithContext(ctx).
+			ShouldNot(BeNil(), tests.PrintHyperConvergedBecause(
+				tests.GetHCO(ctx, cli),
+				`can't find the "UnsupportedHCOModification" alert in the list of firing alerts: %s`, getAlertNames(alerts),
+			))
 	})
 
 	It("should fire the DeprecatedMachineType alert when a VM is using a deprecated machine type", func(ctx context.Context) {
@@ -200,9 +227,19 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 				},
 			},
 		}
-		Expect(cli.Create(ctx, vm)).To(Succeed())
+
+		Eventually(cli.Create).
+			WithArguments(ctx, vm).
+			WithTimeout(time.Minute).
+			WithPolling(time.Second * 10).
+			Should(Succeed())
+
 		DeferCleanup(func(ctx context.Context) {
-			Expect(cli.Delete(ctx, vm)).To(Succeed())
+			Eventually(cli.Delete).
+				WithArguments(ctx, vm).
+				WithTimeout(time.Minute * 5).
+				WithPolling(time.Second * 10).
+				Should(Succeed())
 		})
 
 		By("Ensuring the DeprecatedMachineType alert is firing")
@@ -279,7 +316,11 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			}
 
 			By("Misconfiguring the descheduler")
-			Expect(cli.Patch(ctx, descheduler, patchMisconfigure)).To(Succeed())
+			Eventually(cli.Patch).WithArguments(ctx, descheduler, patchMisconfigure).
+				WithTimeout(10 * time.Second).
+				WithPolling(500 * time.Millisecond).
+				Should(Succeed())
+
 			By("checking that the metric reports it as misconfigured (1.0)")
 			Eventually(func(g Gomega, ctx context.Context) float64 {
 				valueAfter, err := hcoClient.GetHCOMetric(ctx, query)
@@ -294,7 +335,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 					"expected descheduler to be misconfigured; expected value: %0.2f", float64(1),
 				)
 
-			By("checking that the prometheus metric reports it as misconfigured (0.0)")
+			By("checking that the prometheus metric reports it as misconfigured (1.0)")
 			Eventually(func(ctx context.Context) float64 {
 				return getMetricValue(ctx, promClient, query)
 			}).
@@ -303,7 +344,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 				WithContext(ctx).
 				Should(
 					Equal(float64(1)),
-					"expected descheduler to be misconfigured; expected value: %0.2f", float64(1),
+					"expected descheduler to be misconfigured; expected value: 1", float64(1),
 				)
 
 			By("Checking the alert")
@@ -315,7 +356,11 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
 
 			By("Correctly configuring the descheduler for KubeVirt")
-			Expect(cli.Patch(ctx, descheduler, patchConfigure)).To(Succeed())
+			Eventually(cli.Patch).WithArguments(ctx, descheduler, patchConfigure).
+				WithTimeout(10 * time.Second).
+				WithPolling(500 * time.Millisecond).
+				Should(Succeed())
+
 			By("checking that the metric doesn't report it as misconfigured (0.0)")
 			Eventually(func(g Gomega, ctx context.Context) float64 {
 				valueAfter, err := hcoClient.GetHCOMetric(ctx, query)
@@ -351,7 +396,11 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).Should(BeNil())
 
 			By("Misconfiguring a second time the descheduler")
-			Expect(cli.Patch(ctx, descheduler, patchMisconfigure)).To(Succeed())
+			Eventually(cli.Patch).WithArguments(ctx, descheduler, patchMisconfigure).
+				WithTimeout(10 * time.Second).
+				WithPolling(500 * time.Millisecond).
+				Should(Succeed())
+
 			By("checking that the metric reports it as misconfigured (1.0)")
 			Eventually(func(g Gomega, ctx context.Context) float64 {
 				valueAfter, err := hcoClient.GetHCOMetric(ctx, query)
@@ -436,14 +485,15 @@ func getMetricValue(ctx context.Context, promClient promApiv1.API, metricName st
 }
 
 func getPrometheusRule(ctx context.Context, cli rest.Interface) monitoringv1.PrometheusRule {
+	GinkgoHelper()
 	var prometheusRule monitoringv1.PrometheusRule
 
-	ExpectWithOffset(1, cli.Get().
+	Expect(cli.Get().
 		Resource("prometheusrules").
 		Name("kubevirt-hyperconverged-prometheus-rule").
 		Namespace(tests.InstallNamespace).
 		AbsPath("/apis", monitoringv1.SchemeGroupVersion.Group, monitoringv1.SchemeGroupVersion.Version).
-		Timeout(10*time.Second).
+		Timeout(10 * time.Second).
 		Do(ctx).Into(&prometheusRule)).To(Succeed())
 	return prometheusRule
 }
@@ -514,4 +564,22 @@ func getPrometheusURL(ctx context.Context, cli rest.Interface) string {
 		Should(Succeed())
 
 	return fmt.Sprintf("https://%s", route.Spec.Host)
+}
+
+func getAlertNames(alert promApiv1.AlertsResult) string {
+	return "[" + strings.Join(slices.Collect(
+		alertToAlertName(
+			slices.Values(alert.Alerts),
+		),
+	), ", ") + "]"
+}
+
+func alertToAlertName(alerts iter.Seq[promApiv1.Alert]) iter.Seq[string] {
+	return func(yield func(string) bool) {
+		for alert := range alerts {
+			if !yield(string(alert.Labels["alertname"])) {
+				return
+			}
+		}
+	}
 }

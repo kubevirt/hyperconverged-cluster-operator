@@ -99,12 +99,6 @@ const (
 
 	// Enable the installation of the KubeVirt seccomp profile
 	kvKubevirtSeccompProfile = "KubevirtSeccompProfile"
-
-	// Enable VM state persistence
-	kvVMPersistentState = "VMPersistentState"
-
-	// enables the instance type reference policy feature
-	kvInstancetypeReferencePolicy = "InstancetypeReferencePolicy"
 )
 
 const (
@@ -120,8 +114,6 @@ var (
 		kvHostDevicesGate,
 		kvVMExportGate,
 		kvKubevirtSeccompProfile,
-		kvVMPersistentState,
-		kvInstancetypeReferencePolicy,
 	}
 
 	// holds a list of mandatory KubeVirt feature gates. Some of them are the hard coded feature gates and some of
