@@ -67,7 +67,7 @@ spec:
         - name: HPPO_VERSION
           value: v0.22.0
         - name: AAQ_VERSION
-          value: v1.5.0
+          value: v1.6.0
         - name: KV_CONSOLE_PLUGIN_IMAGE
         - name: KV_CONSOLE_PROXY_IMAGE
         - name: PASST_SIDECAR_IMAGE
@@ -887,6 +887,7 @@ spec:
   template:
     metadata:
       labels:
+        aaq.kubevirt.io: aaq-operator
         app.kubernetes.io/component: quota-management
         app.kubernetes.io/part-of: hyperconverged-cluster
         app.kubernetes.io/version: 1.17.0
@@ -901,17 +902,17 @@ spec:
         - name: DEPLOY_CLUSTER_RESOURCES
           value: "true"
         - name: OPERATOR_VERSION
-          value: v1.5.0
+          value: v1.6.0
         - name: CONTROLLER_IMAGE
-          value: quay.io/kubevirt/aaq-controller@sha256:e955d7fb3910f79b64d4ef5c6750fd1e6174e47564803b520a0c698985efcc96
+          value: quay.io/kubevirt/aaq-controller@sha256:04199fad9d42e0d9206ae042545b48da4c3bf14995d87aa6d8c804b0f9beeea4
         - name: AAQ_SERVER_IMAGE
-          value: quay.io/kubevirt/aaq-server@sha256:4ea9d00ead35530b3c58ce90dcba402a511e8981d8d170954683ad730a548f32
+          value: quay.io/kubevirt/aaq-server@sha256:dfb46682eb734e73a1142b9af5f94f2f70aa9a7e04a7c804565f2a89fbf0f989
         - name: VERBOSITY
           value: "1"
         - name: PULL_POLICY
           value: IfNotPresent
         - name: MONITORING_NAMESPACE
-        image: quay.io/kubevirt/aaq-operator@sha256:c7fbfc328d0993828447608a9b760dccbd68f8074c82c66c2c492add57f906a3
+        image: quay.io/kubevirt/aaq-operator@sha256:98c4d2e73c733468f3c4724c72c4d42411f49706cdfa843ce1d507c356621088
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
@@ -920,7 +921,7 @@ spec:
             scheme: HTTP
         name: aaq-operator
         ports:
-        - containerPort: 8080
+        - containerPort: 8443
           name: metrics
           protocol: TCP
         readinessProbe:

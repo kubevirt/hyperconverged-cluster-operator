@@ -979,7 +979,7 @@ k8s.io/utils/trace
 ## explicit; go 1.23.0
 kubevirt.io/api/core
 kubevirt.io/api/core/v1
-# kubevirt.io/application-aware-quota v1.5.0
+# kubevirt.io/application-aware-quota v1.6.0
 ## explicit; go 1.22.11
 kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core
 kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1

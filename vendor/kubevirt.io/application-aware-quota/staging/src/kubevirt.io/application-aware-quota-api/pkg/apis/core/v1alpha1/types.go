@@ -30,7 +30,7 @@ import (
 //
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:shortName=arq;arqs,categories=all
+// +kubebuilder:resource:shortName=arq;arqs
 // +kubebuilder:subresource:status
 // +k8s:openapi-gen=true
 // +genclient
@@ -108,7 +108,7 @@ type AAQCertConfig struct {
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:shortName=aaqjqc;aaqjqcs,categories=all
+// +kubebuilder:resource:shortName=aaqjqc;aaqjqcs
 // +kubebuilder:subresource:status
 type AAQJobQueueConfig struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -288,7 +288,7 @@ type ApplicationAwareClusterResourceQuotaList struct {
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:shortName=aacrq;aacrqs,categories=all
+// +kubebuilder:resource:shortName=aacrq;aacrqs
 // +k8s:openapi-gen=true
 type ApplicationAwareAppliedClusterResourceQuota struct {
 	metav1.TypeMeta `json:",inline"`
