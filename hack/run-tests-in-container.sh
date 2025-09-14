@@ -127,6 +127,13 @@ echo "Exiting... Exit code: $exitCode"
 # exit non-zero if exit code of functest is not zero
 [[ "${exitCode}" == "0" ]]
 
+echo "Read the HCO operator and webhook logs, before they are being deleted"
+LOG_DIR="${OUTPUT_DIR}/logs_after_test"
+mkdir -p "${LOG_DIR}"
+for pod in $(${KUBECTL_BINARY} get pod -n ${INSTALLED_NAMESPACE} -l "name in (hyperconverged-cluster-operator,hyperconverged-cluster-webhook)" -o jsonpath='{.items[*].metadata.name}'); do
+  ${KUBECTL_BINARY} logs -n ${INSTALLED_NAMESPACE} "${pod}" > "${LOG_DIR}/${pod}.log"
+done
+
 # Brutally delete HCO removing the namespace where it's running"
 source hack/test_delete_ns.sh
 CMD=${KUBECTL_BINARY} test_delete_ns
