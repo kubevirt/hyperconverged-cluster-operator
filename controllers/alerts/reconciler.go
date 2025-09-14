@@ -152,6 +152,8 @@ func (r *MonitoringReconciler) reconcileOneResource(req *common.HcoRequest, reco
 		return nil, err
 	}
 
+	req.Logger.Info(reconciler.Kind()+" already exists", reconciler.Kind()+".Namespace", r.namespace, reconciler.Kind()+".Name", reconciler.ResourceName())
+
 	resource, updated, err := reconciler.UpdateExistingResource(req.Ctx, r.client, existing, req.Logger)
 	if err != nil {
 		r.eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "UnexpectedError", fmt.Sprintf("failed to update the %s %s", reconciler.ResourceName(), reconciler.Kind()))
