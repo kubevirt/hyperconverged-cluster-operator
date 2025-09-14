@@ -3,6 +3,7 @@ package tests_test
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"iter"
@@ -163,7 +164,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			Expect(err).ToNot(HaveOccurred())
 			alert := getAlertByName(alerts, "KubeVirtCRModified")
 			return alert
-		}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
+		}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil(), getPromOperatorTargetStatus(ctx, promClient))
 	})
 
 	It("UnsupportedHCOModification alert should fired when there is a jsonpatch annotation to modify an operand CRs", func(ctx context.Context) {
@@ -198,7 +199,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			WithContext(ctx).
 			ShouldNot(BeNil(), tests.PrintHyperConvergedBecause(
 				tests.GetHCO(ctx, cli),
-				`can't find the "UnsupportedHCOModification" alert in the list of firing alerts: %s`, getAlertNames(alerts),
+				`can't find the "UnsupportedHCOModification" alert in the list of firing alerts: %s\n%s`, getAlertNames(alerts), getPromOperatorTargetStatus(ctx, promClient)(),
 			))
 	})
 
@@ -247,7 +248,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			alerts, err := promClient.Alerts(ctx)
 			Expect(err).ToNot(HaveOccurred())
 			return getAlertByName(alerts, "DeprecatedMachineType")
-		}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
+		}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil(), getPromOperatorTargetStatus(ctx, promClient))
 	})
 
 	Describe("KubeDescheduler", Serial, Ordered, Label(tests.OpenshiftLabel, "monitoring"), func() {
@@ -353,7 +354,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 				Expect(err).ToNot(HaveOccurred())
 				alert := getAlertByName(alerts, hcoalerts.MisconfiguredDeschedulerAlert)
 				return alert
-			}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
+			}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil(), getPromOperatorTargetStatus(ctx, promClient))
 
 			By("Correctly configuring the descheduler for KubeVirt")
 			Eventually(cli.Patch).WithArguments(ctx, descheduler, patchConfigure).
@@ -393,7 +394,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 				Expect(err).ToNot(HaveOccurred())
 				alert := getAlertByName(alerts, hcoalerts.MisconfiguredDeschedulerAlert)
 				return alert
-			}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).Should(BeNil())
+			}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).Should(BeNil(), getPromOperatorTargetStatus(ctx, promClient))
 
 			By("Misconfiguring a second time the descheduler")
 			Eventually(cli.Patch).WithArguments(ctx, descheduler, patchMisconfigure).
@@ -433,7 +434,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 				Expect(err).ToNot(HaveOccurred())
 				alert := getAlertByName(alerts, hcoalerts.MisconfiguredDeschedulerAlert)
 				return alert
-			}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
+			}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil(), getPromOperatorTargetStatus(ctx, promClient))
 		})
 	})
 
@@ -582,4 +583,31 @@ func alertToAlertName(alerts iter.Seq[promApiv1.Alert]) iter.Seq[string] {
 			}
 		}
 	}
+}
+
+func getPromOperatorTargetStatus(ctx context.Context, promClient promApiv1.API) func() string {
+	return func() string {
+		return getPromTarget(ctx, promClient, "kubevirt-hyperconverged-operator-metrics")
+	}
+}
+
+func getPromTarget(ctx context.Context, promClient promApiv1.API, serviceName string) string {
+	GinkgoHelper()
+
+	targets, err := promClient.Targets(ctx)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(targets).ToNot(BeNil())
+
+	idx := slices.IndexFunc(targets.Active, func(t promApiv1.ActiveTarget) bool {
+		return strings.HasPrefix(t.ScrapePool, "serviceMonitor") && strings.Contains(t.ScrapePool, serviceName)
+	})
+
+	Expect(idx).To(BeNumerically(">=", 0), fmt.Sprintf("no active target found for %q", serviceName))
+
+	sb := &strings.Builder{}
+	enc := json.NewEncoder(sb)
+	enc.SetIndent("", "  ")
+	Expect(enc.Encode(targets.Active[idx])).To(Succeed())
+
+	return fmt.Sprintf("Active target for target %q: %s\n", serviceName, sb.String())
 }
