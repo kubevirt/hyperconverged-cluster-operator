@@ -96,6 +96,7 @@ func (r *SecretReconciler) UpdateExistingResource(ctx context.Context, cl client
 	}
 
 	// If the token is incorrect, delete the old secret and create a new one
+	logger.Info("the Secret token is outdated, deleting the old secret and creating a new one", "namespace", found.Namespace, "name", found.Name)
 	if err = cl.Delete(ctx, found); err != nil {
 		if !errors.IsNotFound(err) {
 			logger.Error(err, "failed to delete old secret")
@@ -113,6 +114,8 @@ func (r *SecretReconciler) UpdateExistingResource(ctx context.Context, cl client
 		logger.Error(err, "failed to create new secret")
 		return nil, false, err
 	}
+
+	logger.Info("successfully created the new secret", "namespace", sec.GetNamespace(), "name", sec.GetName())
 
 	return sec, true, nil
 }
