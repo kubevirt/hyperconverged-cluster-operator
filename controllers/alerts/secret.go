@@ -132,3 +132,24 @@ func newSecret(namespace string, owner metav1.OwnerReference, token string) *cor
 		},
 	}
 }
+
+var secretCreationTime = &secretCreateTime{
+	lock: &sync.RWMutex{},
+}
+
+type secretCreateTime struct {
+	lock *sync.RWMutex
+	time string
+}
+
+func (s *secretCreateTime) Get() string {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.time
+}
+
+func (s *secretCreateTime) Set(secret *corev1.Secret) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.time = secret.CreationTimestamp.String()
+}

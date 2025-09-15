@@ -14,6 +14,10 @@ import (
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
+const (
+	SecretCreateTimeAnn = "hco.kubevirt.io/secret-creation-time"
+)
+
 type ServiceMonitorReconciler struct {
 	theServiceMonitor *monitoringv1.ServiceMonitor
 }
@@ -35,7 +39,14 @@ func (r ServiceMonitorReconciler) ResourceName() string {
 }
 
 func (r ServiceMonitorReconciler) GetFullResource() client.Object {
-	return r.theServiceMonitor.DeepCopy()
+	sm := r.theServiceMonitor.DeepCopy()
+	if sm.Annotations == nil {
+		sm.Annotations = make(map[string]string)
+	}
+
+	sm.Annotations[SecretCreateTimeAnn] = secretCreationTime.Get()
+
+	return sm
 }
 
 func (r ServiceMonitorReconciler) EmptyObject() client.Object {
@@ -47,6 +58,22 @@ func (r ServiceMonitorReconciler) UpdateExistingResource(ctx context.Context, cl
 	modified := false
 	if !reflect.DeepEqual(found.Spec, r.theServiceMonitor.Spec) {
 		r.theServiceMonitor.Spec.DeepCopyInto(&found.Spec)
+		modified = true
+	}
+
+	secretTime := secretCreationTime.Get()
+	if r.theServiceMonitor.Annotations[SecretCreateTimeAnn] != secretTime {
+		if r.theServiceMonitor.Annotations == nil {
+			r.theServiceMonitor.Annotations = make(map[string]string)
+		}
+		r.theServiceMonitor.Annotations[SecretCreateTimeAnn] = secretTime
+	}
+
+	if found.Annotations[SecretCreateTimeAnn] != r.theServiceMonitor.Annotations[SecretCreateTimeAnn] {
+		if found.Annotations == nil {
+			found.Annotations = make(map[string]string)
+		}
+		found.Annotations[SecretCreateTimeAnn] = secretTime
 		modified = true
 	}
 

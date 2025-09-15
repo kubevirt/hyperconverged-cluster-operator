@@ -87,6 +87,8 @@ func getReconcilers(ci hcoutil.ClusterInfo, namespace string, owner metav1.Owner
 		newRoleBindingReconciler(namespace, owner, ci),
 		newMetricServiceReconciler(namespace, owner),
 		NewSecretReconciler(namespace, owner, secretName, newSecret),
+		// must be after the secret reconciler, to ensure that the secret is created before the ServiceMonitor that
+		// uses it, so we can set the service the secret creation time label
 		newServiceMonitorReconciler(namespace, owner),
 	}
 
@@ -113,6 +115,12 @@ func (r *MonitoringReconciler) Reconcile(req *common.HcoRequest, firstLoop bool)
 
 		if obj != nil {
 			objects = append(objects, obj)
+
+			// this code assumes that there is only one secret reconciler; if we'll need to add more secrets, we'll need
+			// to change this
+			if secret, ok := obj.(*corev1.Secret); ok {
+				secretCreationTime.Set(secret)
+			}
 		}
 	}
 

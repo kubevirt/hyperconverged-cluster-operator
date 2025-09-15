@@ -1051,7 +1051,10 @@ var _ = Describe("alert tests", func() {
 	})
 
 	Context("test ServiceMonitor", func() {
+		var reconcileTime metav1.Time
+
 		BeforeEach(func() {
+			reconcileTime = metav1.Now()
 			currentMetric, _ = metrics.GetOverwrittenModificationsCount("ServiceMonitor", serviceName)
 		})
 
@@ -1073,6 +1076,7 @@ var _ = Describe("alert tests", func() {
 			}
 
 			cl := commontestutils.InitClient([]client.Object{ns, existSM})
+			cl.InitiateCreateErrors(setSecretCreateTime(reconcileTime))
 			r := NewMonitoringReconciler(ci, cl, ee, commontestutils.GetScheme())
 
 			Expect(r.Reconcile(req, false)).To(Succeed())
@@ -1080,6 +1084,7 @@ var _ = Describe("alert tests", func() {
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: serviceName}, sm)).To(Succeed())
 
 			Expect(sm.Labels).To(gstruct.MatchKeys(gstruct.IgnoreExtras, commontestutils.KeysFromSSMap(hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring))))
+			Expect(sm.Annotations).To(HaveKeyWithValue(SecretCreateTimeAnn, reconcileTime.String()))
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount("ServiceMonitor", serviceName)).To(BeEquivalentTo(currentMetric))
 		})
@@ -1090,13 +1095,14 @@ var _ = Describe("alert tests", func() {
 			existSM.Labels = nil
 
 			cl := commontestutils.InitClient([]client.Object{ns, existSM})
+			cl.InitiateCreateErrors(setSecretCreateTime(reconcileTime))
 			r := NewMonitoringReconciler(ci, cl, ee, commontestutils.GetScheme())
 
 			Expect(r.Reconcile(req, false)).To(Succeed())
 			sm := &monitoringv1.ServiceMonitor{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: serviceName}, sm)).To(Succeed())
-
-			Expect(sm.Labels).To(Equal(hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring)))
+			Expect(sm.Labels).To(gstruct.MatchKeys(gstruct.IgnoreExtras, commontestutils.KeysFromSSMap(hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentMonitoring))))
+			Expect(sm.Annotations).To(HaveKeyWithValue(SecretCreateTimeAnn, reconcileTime.String()))
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount("ServiceMonitor", serviceName)).To(BeEquivalentTo(currentMetric))
 		})
@@ -1344,3 +1350,13 @@ var _ = Describe("alert tests", func() {
 		})
 	})
 })
+
+func setSecretCreateTime(t metav1.Time) func(obj client.Object) error {
+	return func(obj client.Object) error {
+		if secret, ok := obj.(*corev1.Secret); ok {
+			secret.CreationTimestamp = t
+		}
+
+		return nil
+	}
+}

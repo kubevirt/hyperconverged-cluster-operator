@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
@@ -16,6 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -90,6 +92,10 @@ var _ = Describe("Controller setup and reconcile", func() {
 		})
 
 		It("creates Service, Secret, and ServiceMonitor and requeues in 5 minutes", func(ctx context.Context) {
+			initTime := metav1.Now()
+			cl.InitiateCreateErrors(setSecretCreateTime(initTime))
+
+			ctx = logr.NewContext(ctx, commontestutils.TestLogger)
 			res, err := r.Reconcile(ctx, request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.RequeueAfter).To(Equal(5 * time.Minute))
@@ -107,6 +113,8 @@ var _ = Describe("Controller setup and reconcile", func() {
 
 			sm := &monitoringv1.ServiceMonitor{}
 			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: serviceName}, sm)).To(Succeed())
+
+			Expect(sm.Annotations).To(HaveKeyWithValue(alerts.SecretCreateTimeAnn, initTime.String()))
 		})
 
 		It("propagates error from underlying metric reconciler and requeues quickly", func(ctx context.Context) {
@@ -119,15 +127,26 @@ var _ = Describe("Controller setup and reconcile", func() {
 			})
 
 			r = newReconciler(mgrIntf, ci, ee)
+			ctx = logr.NewContext(ctx, commontestutils.TestLogger)
 			res, err := r.Reconcile(ctx, request)
 			Expect(err).To(MatchError(context.DeadlineExceeded))
 			Expect(res.RequeueAfter).To(Equal(100 * time.Millisecond))
 		})
 
 		It("should recreate Secret if token is changed", func(ctx context.Context) {
+			ctx = logr.NewContext(ctx, commontestutils.TestLogger)
+
+			initTime := metav1.Time{Time: time.Now().Add(-10 * time.Minute)}
+			cl.InitiateCreateErrors(setSecretCreateTime(initTime))
+
 			res, err := r.Reconcile(ctx, request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.RequeueAfter).To(Equal(5 * time.Minute))
+
+			sm := &monitoringv1.ServiceMonitor{}
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: serviceName}, sm)).To(Succeed())
+
+			Expect(sm.Annotations).To(HaveKeyWithValue(alerts.SecretCreateTimeAnn, initTime.String()))
 
 			// Secret
 			sec := &corev1.Secret{}
@@ -143,6 +162,9 @@ var _ = Describe("Controller setup and reconcile", func() {
 			Expect(newSec.StringData).To(HaveKey("token"))
 			Expect(newSec.StringData["token"]).To(Equal("some-wrong-token"))
 
+			newCreationTime := metav1.Now()
+			cl.InitiateCreateErrors(setSecretCreateTime(newCreationTime))
+
 			// Reconcile should delete the old secret and create a new one
 			res, err = r.Reconcile(ctx, request)
 			Expect(err).ToNot(HaveOccurred())
@@ -152,6 +174,21 @@ var _ = Describe("Controller setup and reconcile", func() {
 			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: secretName}, newSec)).To(Succeed())
 			Expect(newSec.StringData).To(HaveKey("token"))
 			Expect(newSec.StringData["token"]).To(Equal(origToken))
+
+			sm = &monitoringv1.ServiceMonitor{}
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: serviceName}, sm)).To(Succeed())
+
+			Expect(sm.Annotations).To(HaveKeyWithValue(alerts.SecretCreateTimeAnn, newCreationTime.String()))
 		})
 	})
 })
+
+func setSecretCreateTime(t metav1.Time) func(obj client.Object) error {
+	return func(obj client.Object) error {
+		if secret, ok := obj.(*corev1.Secret); ok {
+			secret.CreationTimestamp = t
+		}
+
+		return nil
+	}
+}
