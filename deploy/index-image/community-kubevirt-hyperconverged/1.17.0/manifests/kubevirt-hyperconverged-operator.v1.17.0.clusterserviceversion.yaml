@@ -3187,7 +3187,7 @@ spec:
                 - name: SSP_VERSION
                   value: v0.24.1
                 - name: HPPO_VERSION
-                  value: v0.22.0
+                  value: v0.23.0
                 - name: AAQ_VERSION
                   value: v1.6.0
                 - name: KV_CONSOLE_PLUGIN_IMAGE
@@ -3881,7 +3881,7 @@ spec:
                 - name: OPERATOR_NAME
                   value: hostpath-provisioner-operator
                 - name: OPERATOR_IMAGE
-                  value: quay.io/kubevirt/hostpath-provisioner-operator@sha256:ac0c005304acb52033f3c4ad4af2aab81361346d5327c92ec6bcbd98097ae88b
+                  value: quay.io/kubevirt/hostpath-provisioner-operator@sha256:3737d52b8046c9c92dbf36fa9826af6da66f1b54063ad09ff77486727ba44ae5
                 - name: PROVISIONER_IMAGE
                   value: quay.io/kubevirt/hostpath-provisioner@sha256:a024ad8d0534d1e3ec6edd9a2a503a2aaa3853bf4c9e3181c6ace559d7cb6b23
                 - name: CSI_PROVISIONER_IMAGE
@@ -3899,7 +3899,7 @@ spec:
                 - name: MONITORING_NAMESPACE
                 - name: PRIORITY_CLASS
                   value: kubevirt-cluster-critical
-                image: quay.io/kubevirt/hostpath-provisioner-operator@sha256:ac0c005304acb52033f3c4ad4af2aab81361346d5327c92ec6bcbd98097ae88b
+                image: quay.io/kubevirt/hostpath-provisioner-operator@sha256:3737d52b8046c9c92dbf36fa9826af6da66f1b54063ad09ff77486727ba44ae5
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   failureThreshold: 1
@@ -4816,7 +4816,7 @@ spec:
     name: hostpath-csi-driver
   - image: quay.io/kubevirt/hostpath-provisioner@sha256:a024ad8d0534d1e3ec6edd9a2a503a2aaa3853bf4c9e3181c6ace559d7cb6b23
     name: hostpath-provisioner
-  - image: quay.io/kubevirt/hostpath-provisioner-operator@sha256:ac0c005304acb52033f3c4ad4af2aab81361346d5327c92ec6bcbd98097ae88b
+  - image: quay.io/kubevirt/hostpath-provisioner-operator@sha256:3737d52b8046c9c92dbf36fa9826af6da66f1b54063ad09ff77486727ba44ae5
     name: hostpath-provisioner-operator
   - image: +IMAGE_TO_REPLACE+
     name: hyperconverged-cluster-operator
