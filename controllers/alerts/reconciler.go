@@ -81,13 +81,14 @@ func getReconcilers(ci hcoutil.ClusterInfo, namespace string, owner metav1.Owner
 		logger.Error(err, "failed to create the 'PrometheusRule' reconciler")
 	}
 
+	refresh := NewRefresher()
 	reconcilers := []MetricReconciler{
 		alertRuleReconciler,
 		newRoleReconciler(namespace, owner),
 		newRoleBindingReconciler(namespace, owner, ci),
 		newMetricServiceReconciler(namespace, owner),
-		NewSecretReconciler(namespace, owner, secretName, newSecret),
-		newServiceMonitorReconciler(namespace, owner),
+		NewSecretReconciler(namespace, owner, secretName, newSecret, refresh),
+		newServiceMonitorReconciler(namespace, owner, refresh),
 	}
 
 	return reconcilers
