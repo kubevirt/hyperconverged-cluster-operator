@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
@@ -124,7 +125,7 @@ var _ = Describe("Controller setup and reconcile", func() {
 			Expect(res.RequeueAfter).To(Equal(100 * time.Millisecond))
 		})
 
-		It("should recreate Secret if token is changed", func(ctx context.Context) {
+		It("should recreate Secret, and delete the ServiceMonitor, if token is changed", func(ctx context.Context) {
 			res, err := r.Reconcile(ctx, request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.RequeueAfter).To(Equal(5 * time.Minute))
@@ -152,6 +153,14 @@ var _ = Describe("Controller setup and reconcile", func() {
 			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: secretName}, newSec)).To(Succeed())
 			Expect(newSec.StringData).To(HaveKey("token"))
 			Expect(newSec.StringData["token"]).To(Equal(origToken))
+
+			newSM := &monitoringv1.ServiceMonitor{}
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: serviceName}, newSM)).To(MatchError(apierrors.IsNotFound, "not found error"))
+
+			res, err = r.Reconcile(ctx, request)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(res.RequeueAfter).To(Equal(5 * time.Minute))
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: serviceName}, newSM)).To(Succeed())
 		})
 	})
 })
