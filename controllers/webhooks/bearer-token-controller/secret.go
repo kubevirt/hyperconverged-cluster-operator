@@ -11,8 +11,8 @@ const (
 	secretName = "hco-webhook-bearer-auth"
 )
 
-func newWHSecretReconciler(namespace string, owner metav1.OwnerReference) *alerts.SecretReconciler {
-	return alerts.NewSecretReconciler(namespace, owner, secretName, newSecret)
+func newWHSecretReconciler(namespace string, owner metav1.OwnerReference, refresher alerts.Refresher) *alerts.SecretReconciler {
+	return alerts.NewSecretReconciler(namespace, owner, secretName, newSecret, refresher)
 }
 
 func newSecret(namespace string, owner metav1.OwnerReference, token string) *corev1.Secret {

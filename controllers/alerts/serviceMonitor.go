@@ -15,15 +15,19 @@ import (
 )
 
 type ServiceMonitorReconciler struct {
+	refresher         Refresher
 	theServiceMonitor *monitoringv1.ServiceMonitor
 }
 
-func CreateServiceMonitorReconciler(serviceMonitor *monitoringv1.ServiceMonitor) *ServiceMonitorReconciler {
-	return &ServiceMonitorReconciler{theServiceMonitor: serviceMonitor}
+func CreateServiceMonitorReconciler(serviceMonitor *monitoringv1.ServiceMonitor, rfr Refresher) *ServiceMonitorReconciler {
+	return &ServiceMonitorReconciler{
+		theServiceMonitor: serviceMonitor,
+		refresher:         rfr,
+	}
 }
 
-func newServiceMonitorReconciler(namespace string, owner metav1.OwnerReference) *ServiceMonitorReconciler {
-	return CreateServiceMonitorReconciler(NewServiceMonitor(namespace, owner))
+func newServiceMonitorReconciler(namespace string, owner metav1.OwnerReference, rfr Refresher) *ServiceMonitorReconciler {
+	return CreateServiceMonitorReconciler(NewServiceMonitor(namespace, owner), rfr)
 }
 
 func (r ServiceMonitorReconciler) Kind() string {
@@ -44,6 +48,13 @@ func (r ServiceMonitorReconciler) EmptyObject() client.Object {
 
 func (r ServiceMonitorReconciler) UpdateExistingResource(ctx context.Context, cl client.Client, resource client.Object, logger logr.Logger) (client.Object, bool, error) {
 	found := resource.(*monitoringv1.ServiceMonitor)
+
+	if err := r.refresher.refresh(func() error {
+		return r.deleteServiceMonitor(ctx, cl, found)
+	}); err != nil {
+		return nil, false, err
+	}
+
 	modified := false
 	if !reflect.DeepEqual(found.Spec, r.theServiceMonitor.Spec) {
 		r.theServiceMonitor.Spec.DeepCopyInto(&found.Spec)
@@ -61,6 +72,10 @@ func (r ServiceMonitorReconciler) UpdateExistingResource(ctx context.Context, cl
 		logger.Info("successfully updated the ServiceMonitor")
 	}
 	return found, modified, nil
+}
+
+func (r ServiceMonitorReconciler) deleteServiceMonitor(ctx context.Context, cl client.Client, found *monitoringv1.ServiceMonitor) error {
+	return cl.Delete(ctx, found)
 }
 
 func NewServiceMonitor(namespace string, owner metav1.OwnerReference) *monitoringv1.ServiceMonitor {
