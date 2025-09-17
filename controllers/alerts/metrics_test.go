@@ -10,11 +10,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
-
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
@@ -133,6 +133,43 @@ var _ = Describe("alert tests", func() {
 			err := r.Reconcile(req, false)
 			Expect(err).To(MatchError(fakeError))
 		})
+
+		It("should recreate Secret, and delete ServiceMonitor, if token is changed", func(ctx context.Context) {
+			cl := commontestutils.InitClient([]client.Object{ns})
+			r := NewMonitoringReconciler(ci, cl, ee, commontestutils.GetScheme())
+
+			Expect(r.Reconcile(req, false)).To(Succeed())
+
+			// Secret
+			sec := &corev1.Secret{}
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: secretName}, sec)).To(Succeed())
+			Expect(sec.StringData).To(HaveKey("token"))
+
+			origToken := sec.StringData["token"]
+			sec.StringData["token"] = "some-wrong-token"
+			Expect(cl.Update(ctx, sec)).To(Succeed())
+
+			newSec := &corev1.Secret{}
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: secretName}, newSec)).To(Succeed())
+			Expect(newSec.StringData).To(HaveKey("token"))
+			Expect(newSec.StringData["token"]).To(Equal("some-wrong-token"))
+
+			// Reconcile should delete the old secret and create a new one
+			Expect(r.Reconcile(req, false)).To(Succeed())
+
+			newSec = &corev1.Secret{}
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: secretName}, newSec)).To(Succeed())
+			Expect(newSec.StringData).To(HaveKey("token"))
+			Expect(newSec.StringData["token"]).To(Equal(origToken))
+
+			newSM := &monitoringv1.ServiceMonitor{}
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceName}, newSM)).To(MatchError(apierrors.IsNotFound, "not found error"))
+
+			Expect(r.Reconcile(req, false)).To(Succeed())
+			newSM = &monitoringv1.ServiceMonitor{}
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceName}, newSM)).To(Succeed())
+		})
+
 	})
 
 	Context("test PrometheusRule", func() {
@@ -356,7 +393,7 @@ var _ = Describe("alert tests", func() {
 
 		It("should use the desired runbook URL template when its ENV Variable is set", func() {
 			desiredRunbookURLTemplate := "desired/runbookURL/template/%s"
-			os.Setenv(runbookURLTemplateEnv, desiredRunbookURLTemplate)
+			Expect(os.Setenv(runbookURLTemplateEnv, desiredRunbookURLTemplate)).To(Succeed())
 
 			err := rules.SetupRules()
 			Expect(err).ToNot(HaveOccurred())

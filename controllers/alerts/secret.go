@@ -24,9 +24,10 @@ type SecretReconciler struct {
 	lock         *sync.RWMutex
 	createSecret CreateSecretFunc
 	secretName   string
+	refresher    Refresher
 }
 
-func NewSecretReconciler(namespace string, owner metav1.OwnerReference, secretName string, createSecret CreateSecretFunc) *SecretReconciler {
+func NewSecretReconciler(namespace string, owner metav1.OwnerReference, secretName string, createSecret CreateSecretFunc, rfr Refresher) *SecretReconciler {
 	token, err := authorization.CreateToken()
 	if err != nil {
 		logger.Error(err, "failed to create bearer token")
@@ -38,6 +39,7 @@ func NewSecretReconciler(namespace string, owner metav1.OwnerReference, secretNa
 		lock:         &sync.RWMutex{},
 		createSecret: createSecret,
 		secretName:   secretName,
+		refresher:    rfr,
 	}
 }
 
@@ -66,6 +68,9 @@ func (r *SecretReconciler) refreshToken() error {
 	}
 
 	r.theSecret = r.createSecret(r.theSecret.Namespace, r.theSecret.OwnerReferences[0], token)
+
+	r.refresher.setShouldRefresh()
+
 	return nil
 }
 
