@@ -120,10 +120,12 @@ func (r *ReconcileWHBearerToken) Reconcile(ctx context.Context, request reconcil
 }
 
 func getReconcilers(_ hcoutil.ClusterInfo, namespace string, owner metav1.OwnerReference) []alerts.MetricReconciler {
+	refresher := alerts.NewRefresher()
+
 	reconcilers := []alerts.MetricReconciler{
 		newWHMetricServiceReconciler(namespace, owner),
-		newWHSecretReconciler(namespace, owner),
-		newWHServiceMonitorReconciler(namespace, owner),
+		newWHSecretReconciler(namespace, owner, refresher),
+		newWHServiceMonitorReconciler(namespace, owner, refresher),
 	}
 
 	return reconcilers

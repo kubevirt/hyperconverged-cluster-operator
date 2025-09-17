@@ -9,8 +9,8 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 )
 
-func newWHServiceMonitorReconciler(namespace string, owner metav1.OwnerReference) *alerts.ServiceMonitorReconciler {
-	return alerts.CreateServiceMonitorReconciler(newServiceMonitor(namespace, owner))
+func newWHServiceMonitorReconciler(namespace string, owner metav1.OwnerReference, refresher alerts.Refresher) *alerts.ServiceMonitorReconciler {
+	return alerts.CreateServiceMonitorReconciler(newServiceMonitor(namespace, owner), refresher)
 }
 
 func newServiceMonitor(namespace string, owner metav1.OwnerReference) *monitoringv1.ServiceMonitor {
