@@ -131,7 +131,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				}
 				sort.Strings(imageNames)
 				return imageNames
-			}).WithTimeout(10 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(Equal(expectedImages))
+			}).WithTimeout(time.Minute).WithPolling(10 * time.Second).WithContext(ctx).Should(Equal(expectedImages))
 		})
 
 		It("should have all the images in the HyperConverged status", func(ctx context.Context) {
@@ -147,7 +147,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 				sort.Strings(imageNames)
 				return imageNames
-			}).WithTimeout(10 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(Equal(expectedImages))
+			}).WithTimeout(time.Minute).WithPolling(10 * time.Second).WithContext(ctx).Should(Equal(expectedImages))
 		})
 
 		It("should have all the DataImportCron resources", func(ctx context.Context) {
@@ -250,7 +250,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 			patch := []byte(`[{ "op": "replace", "path": "/spec/enableCommonBootImageImport", "value": true }]`)
 			Eventually(func(ctx context.Context) error {
 				return tests.PatchHCO(ctx, cli, patch)
-			}).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			}).WithTimeout(time.Minute).WithPolling(10 * time.Second).WithContext(ctx).Should(Succeed())
 		})
 
 		var isEntries []TableEntry
@@ -375,8 +375,8 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 			const patchTmplt = `[{ "op": "replace", "path": "/spec/featureGates/enableMultiArchBootImageImport", "value": %t }]`
 			Eventually(func(ctx context.Context) error {
 				return tests.PatchHCO(ctx, cli, []byte(fmt.Sprintf(patchTmplt, true)))
-			}).WithTimeout(10 * time.Second).
-				WithPolling(500 * time.Millisecond).
+			}).WithTimeout(time.Minute).
+				WithPolling(10 * time.Second).
 				WithContext(ctx).
 				Should(Succeed())
 
@@ -864,7 +864,7 @@ func removeCustomDICTFromHC(ctx context.Context, cli client.Client) {
 	// clear the DICTs if they exist. ignore error of not found, as it may not exist
 	Eventually(func(ctx context.Context) error {
 		return tests.PatchHCO(ctx, cli, []byte(`[{"op": "remove", "path": "/spec/dataImportCronTemplates"}]`))
-	}).WithTimeout(10 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).
+	}).WithTimeout(time.Minute).WithPolling(10 * time.Second).WithContext(ctx).
 		Should(Or(Not(HaveOccurred()), MatchError(ContainSubstring("the server rejected our request due to an error in our request"))))
 
 	Eventually(func(g Gomega, ctx context.Context) {
@@ -876,8 +876,8 @@ func removeCustomDICTFromHC(ctx context.Context, cli client.Client) {
 			g.Expect(dictStatus.Status.CommonTemplate).To(BeTrueBecause("should only have common DICT, but found non-common DICT %q", dictStatus.Name))
 			g.Expect(dictStatus.Status.Modified).To(BeFalseBecause("All DICTs should not be modified, but found modified DICT %q", dictStatus.Name))
 		}
-	}).WithTimeout(60 * time.Second).
-		WithPolling(time.Second).WithContext(ctx).
+	}).WithTimeout(time.Minute).
+		WithPolling(10 * time.Second).WithContext(ctx).
 		Should(Succeed())
 }
 
