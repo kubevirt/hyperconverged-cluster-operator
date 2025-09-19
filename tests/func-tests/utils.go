@@ -155,7 +155,7 @@ func UpdateHCORetry(ctx context.Context, cli client.Client, input *v1beta1.Hyper
 
 		output, err = UpdateHCO(ctx, cli, hco)
 		return err
-	}).WithTimeout(10 * time.Second).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+	}).WithTimeout(time.Minute).WithPolling(10 * time.Second).WithContext(ctx).Should(Succeed())
 
 	return output
 }

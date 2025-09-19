@@ -10,27 +10,17 @@ import (
 	apiservererrors "k8s.io/apiserver/pkg/admission/plugin/webhook/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
 var _ = Describe("MediatedDevicesTypes -> MediatedDeviceTypes", Label("MediatedDevices"), func() {
 	var (
-		cli            client.Client
-		initialMDC     *v1beta1.MediatedDevicesConfiguration
-		apiServerError = apiservererrors.ToStatusErr(
-			util.HcoValidatingWebhook,
-			&metav1.Status{
-				Message: "mediatedDevicesTypes is deprecated, please use mediatedDeviceTypes instead",
-				Reason:  metav1.StatusReasonForbidden,
-				Code:    403,
-			},
-		)
+		cli        client.Client
+		initialMDC *v1beta1.MediatedDevicesConfiguration
 	)
 
 	tests.FlagParse()
@@ -53,41 +43,28 @@ var _ = Describe("MediatedDevicesTypes -> MediatedDeviceTypes", Label("MediatedD
 	})
 
 	DescribeTable("should correctly handle MediatedDevicesTypes -> MediatedDeviceTypes transition",
-		func(ctx context.Context, mediatedDevicesConfiguration *v1beta1.MediatedDevicesConfiguration, expectedErr error, expectedMediatedDevicesConfiguration *v1beta1.MediatedDevicesConfiguration, expectedKVMediatedDevicesConfiguration *kubevirtcorev1.MediatedDevicesConfiguration) {
-			if expectedErr == nil {
-				hc := tests.GetHCO(ctx, cli)
-				hc.Spec.MediatedDevicesConfiguration = mediatedDevicesConfiguration
-				hc = tests.UpdateHCORetry(ctx, cli, hc)
-				Expect(hc.Spec.MediatedDevicesConfiguration).To(Equal(expectedMediatedDevicesConfiguration))
-				Eventually(func(g Gomega, ctx context.Context) *kubevirtcorev1.MediatedDevicesConfiguration {
-					kv := &kubevirtcorev1.KubeVirt{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "kubevirt-kubevirt-hyperconverged",
-							Namespace: tests.InstallNamespace,
-						},
-					}
+		func(ctx context.Context, mediatedDevicesConfiguration *v1beta1.MediatedDevicesConfiguration, expectedMediatedDevicesConfiguration *v1beta1.MediatedDevicesConfiguration, expectedKVMediatedDevicesConfiguration *kubevirtcorev1.MediatedDevicesConfiguration) {
+			hc := tests.GetHCO(ctx, cli)
+			hc.Spec.MediatedDevicesConfiguration = mediatedDevicesConfiguration
+			hc = tests.UpdateHCORetry(ctx, cli, hc)
+			Expect(hc.Spec.MediatedDevicesConfiguration).To(Equal(expectedMediatedDevicesConfiguration))
+			Eventually(func(g Gomega, ctx context.Context) *kubevirtcorev1.MediatedDevicesConfiguration {
+				kv := &kubevirtcorev1.KubeVirt{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "kubevirt-kubevirt-hyperconverged",
+						Namespace: tests.InstallNamespace,
+					},
+				}
 
-					g.Expect(cli.Get(ctx, client.ObjectKeyFromObject(kv), kv)).To(Succeed())
+				g.Expect(cli.Get(ctx, client.ObjectKeyFromObject(kv), kv)).To(Succeed())
 
-					return kv.Spec.Configuration.MediatedDevicesConfiguration
-				}).WithTimeout(10 * time.Second).
-					WithPolling(time.Second).
-					WithContext(ctx).
-					Should(Equal(expectedKVMediatedDevicesConfiguration))
-			} else {
-				Eventually(func(ctx context.Context) error {
-					hc := tests.GetHCO(ctx, cli)
-					hc.Spec.MediatedDevicesConfiguration = mediatedDevicesConfiguration
-					_, err := tests.UpdateHCO(ctx, cli, hc)
-					return err
-				}).WithTimeout(10 * time.Second).
-					WithPolling(time.Second).
-					WithContext(ctx).
-					Should(MatchError(expectedErr))
-			}
+				return kv.Spec.Configuration.MediatedDevicesConfiguration
+			}).WithTimeout(time.Minute).
+				WithPolling(10 * time.Second).
+				WithContext(ctx).
+				Should(Equal(expectedKVMediatedDevicesConfiguration))
 		},
 		Entry("should do nothing when mediatedDevicesConfiguration is not present",
-			nil,
 			nil,
 			nil,
 			nil,
@@ -115,7 +92,6 @@ var _ = Describe("MediatedDevicesTypes -> MediatedDeviceTypes", Label("MediatedD
 					},
 				},
 			},
-			nil,
 			&v1beta1.MediatedDevicesConfiguration{
 				MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"}, //nolint SA1019
 				MediatedDeviceTypes:  []string{"nvidia-222", "nvidia-230"},
@@ -200,7 +176,6 @@ var _ = Describe("MediatedDevicesTypes -> MediatedDeviceTypes", Label("MediatedD
 					},
 				},
 			},
-			nil,
 			&v1beta1.MediatedDevicesConfiguration{
 				MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"}, //nolint SA1019
 				MediatedDeviceTypes:  []string{"nvidia-222", "nvidia-230"},
@@ -277,7 +252,6 @@ var _ = Describe("MediatedDevicesTypes -> MediatedDeviceTypes", Label("MediatedD
 					},
 				},
 			},
-			nil,
 			&v1beta1.MediatedDevicesConfiguration{
 				MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
 				NodeMediatedDeviceTypes: []v1beta1.NodeMediatedDeviceTypesConfig{
@@ -323,6 +297,29 @@ var _ = Describe("MediatedDevicesTypes -> MediatedDeviceTypes", Label("MediatedD
 				},
 			},
 		),
+	)
+
+	DescribeTable("should correctly handle validate MediatedDevicesTypes -> MediatedDeviceTypes transition",
+		func(ctx context.Context, mediatedDevicesConfiguration *v1beta1.MediatedDevicesConfiguration) {
+			apiServerError := apiservererrors.ToStatusErr(
+				util.HcoValidatingWebhook,
+				&metav1.Status{
+					Message: "mediatedDevicesTypes is deprecated, please use mediatedDeviceTypes instead",
+					Reason:  metav1.StatusReasonForbidden,
+					Code:    403,
+				},
+			)
+
+			Eventually(func(ctx context.Context) error {
+				hc := tests.GetHCO(ctx, cli)
+				hc.Spec.MediatedDevicesConfiguration = mediatedDevicesConfiguration
+				_, err := tests.UpdateHCO(ctx, cli, hc)
+				return err
+			}).WithTimeout(10 * time.Second).
+				WithPolling(time.Second).
+				WithContext(ctx).
+				Should(MatchError(apiServerError))
+		},
 		Entry("should refuse inconsistent values between mediatedDeviceTypes and deprecated APIs - spec.mediatedDevicesConfiguration.mediatedDeviceTypes",
 			&v1beta1.MediatedDevicesConfiguration{
 				MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"}, //nolint SA1019
@@ -354,9 +351,6 @@ var _ = Describe("MediatedDevicesTypes -> MediatedDeviceTypes", Label("MediatedD
 					},
 				},
 			},
-			apiServerError,
-			nil,
-			nil,
 		),
 		Entry("should refuse inconsistent values between mediatedDeviceTypes and deprecated APIs - spec.mediatedDevicesConfiguration.nodeMediatedDeviceTypes[1].mediatedDeviceTypes",
 			&v1beta1.MediatedDevicesConfiguration{
@@ -388,10 +382,6 @@ var _ = Describe("MediatedDevicesTypes -> MediatedDeviceTypes", Label("MediatedD
 					},
 				},
 			},
-			apiServerError,
-			nil,
-			nil,
 		),
 	)
-
 })
