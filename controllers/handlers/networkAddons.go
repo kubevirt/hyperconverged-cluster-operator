@@ -145,7 +145,7 @@ func NewNetworkAddons(hc *hcov1beta1.HyperConverged) (*networkaddonsv1.NetworkAd
 	cnaoSpec := networkaddonsshared.NetworkAddonsConfigSpec{
 		Multus:                 &networkaddonsshared.Multus{},
 		LinuxBridge:            &networkaddonsshared.LinuxBridge{},
-		KubeMacPool:            &networkaddonsshared.KubeMacPool{},
+		KubeMacPool:            hcoKubeMacPool2CnaoKubeMacPool(hc.Spec.KubeMacPoolConfiguration),
 		KubevirtIpamController: ipam,
 	}
 
@@ -241,6 +241,21 @@ func hcoAnnotation2CnaoSpec(hcoAnnotations map[string]string) *networkaddonsshar
 		return &networkaddonsshared.Ovs{}
 	}
 	return nil
+}
+
+func hcoKubeMacPool2CnaoKubeMacPool(hcoKubeMacPool *hcov1beta1.KubeMacPoolConfig) *networkaddonsshared.KubeMacPool {
+	kubeMacPool := &networkaddonsshared.KubeMacPool{}
+
+	if hcoKubeMacPool != nil {
+		if hcoKubeMacPool.RangeStart != nil {
+			kubeMacPool.RangeStart = *hcoKubeMacPool.RangeStart
+		}
+		if hcoKubeMacPool.RangeEnd != nil {
+			kubeMacPool.RangeEnd = *hcoKubeMacPool.RangeEnd
+		}
+	}
+
+	return kubeMacPool
 }
 
 func hcoCertConfig2CnaoSelfSignedConfig(hcoCertConfig *hcov1beta1.HyperConvergedCertConfig) *networkaddonsshared.SelfSignConfiguration {
