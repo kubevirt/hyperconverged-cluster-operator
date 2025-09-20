@@ -43,7 +43,7 @@ require (
 	k8s.io/component-helpers v0.33.2
 	k8s.io/kube-openapi v0.33.2
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397
-	kubevirt.io/api v1.6.0
+	kubevirt.io/api v1.6.1
 	kubevirt.io/application-aware-quota v1.6.0
 	kubevirt.io/containerized-data-importer-api v1.63.0
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4
