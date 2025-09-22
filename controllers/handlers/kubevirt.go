@@ -681,6 +681,10 @@ func hcLiveMigrationToKv(lm hcov1beta1.LiveMigrationConfigurations) (*kubevirtco
 		bandwidthPerMigration = &bandwidthPerMigrationObject
 	}
 
+	if lm.Network != nil && *lm.Network == "" {
+		lm.Network = nil
+	}
+
 	return &kubevirtcorev1.MigrationConfiguration{
 		BandwidthPerMigration:             bandwidthPerMigration,
 		CompletionTimeoutPerGiB:           lm.CompletionTimeoutPerGiB,

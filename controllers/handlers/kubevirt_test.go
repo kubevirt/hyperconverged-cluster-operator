@@ -4237,6 +4237,17 @@ Version: 1.2.3`)
 			Expect(mc.AllowPostCopy).To(HaveValue(BeTrue()))
 		})
 
+		It("should create valid KV LM config from Network with empty string", func() {
+
+			lmc := hcov1beta1.LiveMigrationConfigurations{
+				Network: ptr.To(""),
+			}
+
+			mc, err := hcLiveMigrationToKv(lmc)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(mc.Network).To(BeNil())
+		})
+
 		It("should create valid empty KV LM config from a valid empty HC LM config", func() {
 			lmc := hcov1beta1.LiveMigrationConfigurations{}
 			mc, err := hcLiveMigrationToKv(lmc)
