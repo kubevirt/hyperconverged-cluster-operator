@@ -807,7 +807,7 @@ spec:
         - name: NODE_DRIVER_REG_IMAGE
           value: registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:5244abbe87e01b35adeb8bb13882a74785df0c0619f8325c9e950395c3f72a97
         - name: LIVENESS_PROBE_IMAGE
-          value: registry.k8s.io/sig-storage/livenessprobe@sha256:88092d100909918ae0a768956cf78c88bc59cd7232720f7cdbdfb5d2e235001e
+          value: registry.k8s.io/sig-storage/livenessprobe@sha256:9b75b9ade162136291d5e8f13a1dfc3dec71ee61419b1bfc112e0796ff8a6aa9
         - name: CSI_SNAPSHOT_IMAGE
           value: registry.k8s.io/sig-storage/csi-snapshotter@sha256:bc7be893ecc3ad524194aa6573b2f5c06cd469bdf21a500ab6c99c2ba1c4d64d
         - name: CSI_SIG_STORAGE_PROVISIONER_IMAGE
