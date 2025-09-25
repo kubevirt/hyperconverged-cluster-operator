@@ -237,7 +237,7 @@ type HyperConvergedSpec struct {
 	// +optional
 	ApplicationAwareConfig *ApplicationAwareConfigurations `json:"applicationAwareConfig,omitempty"`
 
-	// HigherWorkloadDensity holds configurataion aimed to increase virtual machine density
+	// HigherWorkloadDensity holds configuration aimed to increase virtual machine density
 	// +kubebuilder:default={"memoryOvercommitPercentage": 100}
 	// +default={"memoryOvercommitPercentage": 100}
 	// +optional
@@ -856,13 +856,13 @@ type ApplicationAwareConfigurations struct {
 	AllowApplicationAwareClusterResourceQuota bool `json:"allowApplicationAwareClusterResourceQuota,omitempty"`
 }
 
-// HigherWorkloadDensity holds configurataion aimed to increase virtual machine density
+// HigherWorkloadDensity holds configuration aimed to increase virtual machine density
 type HigherWorkloadDensityConfiguration struct {
 	// MemoryOvercommitPercentage is the percentage of memory we want to give VMIs compared to the amount
 	// given to its parent pod (virt-launcher). For example, a value of 102 means the VMI will
 	// "see" 2% more memory than its parent pod. Values under 100 are effectively "undercommits".
 	// Overcommits can lead to memory exhaustion, which in turn can lead to crashes. Use carefully.
-	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Minimum=10
 	// +kubebuilder:default=100
 	// +default=100
 	MemoryOvercommitPercentage int `json:"memoryOvercommitPercentage,omitempty"`
