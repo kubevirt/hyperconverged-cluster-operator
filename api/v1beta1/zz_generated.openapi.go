@@ -662,7 +662,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 					},
 					"higherWorkloadDensity": {
 						SchemaProps: spec.SchemaProps{
-							Description: "HigherWorkloadDensity holds configurataion aimed to increase virtual machine density",
+							Description: "HigherWorkloadDensity holds configuration aimed to increase virtual machine density",
 							Default:     map[string]interface{}{"memoryOvercommitPercentage": 100},
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HigherWorkloadDensityConfiguration"),
 						},
