@@ -365,6 +365,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 							Format:      "",
 						},
 					},
+					"videoConfig": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EnableVideoDeviceConfiguration allows users to configure video device types for their virtual machines. This can be useful for workloads that require specific video capabilities or architectures. Note: This feature is in Developer Preview.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

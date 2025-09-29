@@ -146,6 +146,7 @@ const (
 	kvPasstIPStackMigration      = "PasstIPStackMigration"
 	kvDecentralizedLiveMigration = "DecentralizedLiveMigration"
 	kvMultiArchitecture          = "MultiArchitecture"
+	kvVideoConfig                = "VideoConfig"
 )
 
 // CPU Plugin default values
@@ -852,6 +853,9 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, a
 	}
 	if ptr.Deref(featureGates.AlignCPUs, false) {
 		fgs = append(fgs, kvAlignCPUs)
+	}
+	if ptr.Deref(featureGates.VideoConfig, false) {
+		fgs = append(fgs, kvVideoConfig)
 	}
 
 	if ptr.Deref(featureGates.DecentralizedLiveMigration, false) {
