@@ -1582,6 +1582,8 @@ spec:
           - get
           - list
           - watch
+          - patch
+          - delete
         - apiGroups:
           - kubevirt.io
           resources:
@@ -3179,7 +3181,7 @@ spec:
                 - name: HCO_KV_IO_VERSION
                   value: 1.16.0
                 - name: KUBEVIRT_VERSION
-                  value: v1.6.0
+                  value: v1.6.2
                 - name: CDI_VERSION
                   value: v1.63.1
                 - name: NETWORK_ADDONS_VERSION
@@ -3195,7 +3197,7 @@ spec:
                 - name: KV_CONSOLE_PROXY_IMAGE
                   value: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:935475c2850466aa5ac57e4de627fb177515cb2c402a95842ead095d82b6df5f
                 - name: PASST_SIDECAR_IMAGE
-                  value: quay.io/kubevirt/network-passt-binding@sha256:5851a49a26ba84c3144d3068a0b2c348e933439a149d781ee06146ba6af0adcb
+                  value: quay.io/kubevirt/network-passt-binding@sha256:11cf7036b49f30c4f6b5c28feb274ea231533df981a58fce9e191f9f815f0a1c
                 - name: PASST_CNI_IMAGE
                   value: quay.io/kubevirt/network-passt-binding-cni@sha256:8e9a0fe4c0096abfea49f4eb36038842621bcb770ab6358ff5a6315016b6a243
                 - name: WASP_AGENT_IMAGE
@@ -3569,34 +3571,34 @@ spec:
                 - virt-operator
                 env:
                 - name: VIRT_OPERATOR_IMAGE
-                  value: quay.io/kubevirt/virt-operator@sha256:fea0eac792ca269f936a9171e4e1f3b6be8319fe5550e63b00f3f63ffb82d1ef
+                  value: quay.io/kubevirt/virt-operator@sha256:2d6ed0d12c13d86117d77233ef98626f0418c273e45730e922882ddedac3c4a0
                 - name: WATCH_NAMESPACE
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.annotations['olm.targetNamespaces']
                 - name: VIRT_API_IMAGE
-                  value: quay.io/kubevirt/virt-api@sha256:7ef6c1aa7b76f693c7e2f4dbaaf1d52d63425d7ec521757e520d6e2adddfa69b
+                  value: quay.io/kubevirt/virt-api@sha256:15dcc9da661ff1738fefa5746b22471ac8e954d8e4d3dbd884e8cf399fbbbe6f
                 - name: VIRT_CONTROLLER_IMAGE
-                  value: quay.io/kubevirt/virt-controller@sha256:8612bab466360394646de5e3378826b8ba33dcb10ae1ce7c4ae4c18b86117b60
+                  value: quay.io/kubevirt/virt-controller@sha256:8a3788c01a667a4a52bfde3ea284cde459afcf54af2644d0b4e62feb42ec9d97
                 - name: VIRT_HANDLER_IMAGE
-                  value: quay.io/kubevirt/virt-handler@sha256:162887264d760869f867eed68ea26489d485ed36022410b502ff7f018938bad8
+                  value: quay.io/kubevirt/virt-handler@sha256:4e4a4c12d5781ebbcb8cbebef6fb2b9cb54b25f3804f1c19bbfd7fdb9dd383cc
                 - name: VIRT_LAUNCHER_IMAGE
-                  value: quay.io/kubevirt/virt-launcher@sha256:66fd042603f2f11e8e279dea52fdeef789d0b4d281ee3fa08437f50b331d5833
+                  value: quay.io/kubevirt/virt-launcher@sha256:66f02bfd67bfdbe59ea9c0139270d9efba4e1491e1ef81bccde5bd6c7794333d
                 - name: VIRT_EXPORTPROXY_IMAGE
-                  value: quay.io/kubevirt/virt-exportproxy@sha256:223df2b5933b0d9277d34934934fdb55ba3da393c3e09215fc980f47f17759c1
+                  value: quay.io/kubevirt/virt-exportproxy@sha256:fa49d5f034cf56ae73367879660bff402dfea4251db91d33364c376ddfa1e999
                 - name: VIRT_EXPORTSERVER_IMAGE
-                  value: quay.io/kubevirt/virt-exportserver@sha256:09bfbf6b1b911c5e641c601470ab34c2a69c81610d0c3a9a64ee89a18bc69415
+                  value: quay.io/kubevirt/virt-exportserver@sha256:371e217b1a7e68722a79203d4251e7034ef8c08e5ef5aec282a93cdcc0014cf7
                 - name: VIRT_SYNCHRONIZATIONCONTROLLER_IMAGE
-                  value: quay.io/kubevirt/virt-synchronization-controller@sha256:4c236292e2081ca2a5b705c99e073edd2603a16c0dd510a9932890aa57f9aa14
+                  value: quay.io/kubevirt/virt-synchronization-controller@sha256:e9a3347c0c140aaf0f4864cca1299db33421ad795c744292322ed4d3e2fbb6f8
                 - name: GS_IMAGE
-                  value: quay.io/kubevirt/libguestfs-tools@sha256:92853b8bbd5e755d01541a2d68261220d89ad817e0b460b4a8c729f1f7181e2b
+                  value: quay.io/kubevirt/libguestfs-tools@sha256:677e53432ac080d7b93031d501a9a8f2e6fa35ce67c48f5d43a05967e04467e5
                 - name: PR_HELPER_IMAGE
-                  value: quay.io/kubevirt/pr-helper@sha256:4d6df4bca32cfd50816f84a3ef2d087e614fea0d0bf502655353352c08a7636f
+                  value: quay.io/kubevirt/pr-helper@sha256:812fcb543d7519282607a4da991faaf7c734ff37e0c04dbf1083c9a9430ca168
                 - name: SIDECAR_SHIM_IMAGE
-                  value: quay.io/kubevirt/sidecar-shim@sha256:d1b54b3ae99df9e257d78b03e4dc4feaebbf63327fe4ecaa4b45004f856e481f
+                  value: quay.io/kubevirt/sidecar-shim@sha256:0252893b5cd3df04e417d82a8817b6dc1fc60ef475d73d7e87a36318c3257d0b
                 - name: KUBEVIRT_VERSION
-                  value: v1.6.0
-                image: quay.io/kubevirt/virt-operator@sha256:fea0eac792ca269f936a9171e4e1f3b6be8319fe5550e63b00f3f63ffb82d1ef
+                  value: v1.6.2
+                image: quay.io/kubevirt/virt-operator@sha256:2d6ed0d12c13d86117d77233ef98626f0418c273e45730e922882ddedac3c4a0
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -4834,7 +4836,7 @@ spec:
     name: kubevirt-plugin
   - image: quay.io/kubevirt/kubevirt-template-validator@sha256:87350bb8e68683509b8ffa72738ad719b22f48192b88bc58ab6223980c4ccee9
     name: kubevirt-template-validator
-  - image: quay.io/kubevirt/libguestfs-tools@sha256:92853b8bbd5e755d01541a2d68261220d89ad817e0b460b4a8c729f1f7181e2b
+  - image: quay.io/kubevirt/libguestfs-tools@sha256:677e53432ac080d7b93031d501a9a8f2e6fa35ce67c48f5d43a05967e04467e5
     name: libguestfs-tools
   - image: registry.k8s.io/sig-storage/livenessprobe@sha256:88092d100909918ae0a768956cf78c88bc59cd7232720f7cdbdfb5d2e235001e
     name: livenessprobe
@@ -4844,7 +4846,7 @@ spec:
     name: multus-cni
   - image: ghcr.io/k8snetworkplumbingwg/multus-dynamic-networks-controller@sha256:2a2bb32c0ea8b232b3dbe81c0323a107e8b05f8cad06704fca2efd0d993a87be
     name: multus-dynamic-networks-controller
-  - image: quay.io/kubevirt/network-passt-binding@sha256:5851a49a26ba84c3144d3068a0b2c348e933439a149d781ee06146ba6af0adcb
+  - image: quay.io/kubevirt/network-passt-binding@sha256:11cf7036b49f30c4f6b5c28feb274ea231533df981a58fce9e191f9f815f0a1c
     name: network-passt-binding
   - image: quay.io/kubevirt/network-passt-binding-cni@sha256:8e9a0fe4c0096abfea49f4eb36038842621bcb770ab6358ff5a6315016b6a243
     name: network-passt-binding-cni
@@ -4852,29 +4854,29 @@ spec:
     name: origin-kube-rbac-proxy
   - image: ghcr.io/k8snetworkplumbingwg/ovs-cni-plugin@sha256:435f374b434b3bc70a5cfaba0011fdcf5f433d96b98b06d29306cbd8db3a8c21
     name: ovs-cni-plugin
-  - image: quay.io/kubevirt/pr-helper@sha256:4d6df4bca32cfd50816f84a3ef2d087e614fea0d0bf502655353352c08a7636f
+  - image: quay.io/kubevirt/pr-helper@sha256:812fcb543d7519282607a4da991faaf7c734ff37e0c04dbf1083c9a9430ca168
     name: pr-helper
-  - image: quay.io/kubevirt/sidecar-shim@sha256:d1b54b3ae99df9e257d78b03e4dc4feaebbf63327fe4ecaa4b45004f856e481f
+  - image: quay.io/kubevirt/sidecar-shim@sha256:0252893b5cd3df04e417d82a8817b6dc1fc60ef475d73d7e87a36318c3257d0b
     name: sidecar-shim
   - image: quay.io/kubevirt/ssp-operator@sha256:7a8d04480403bcbbdd5cd854701013bfe57a4d7ae57aad6e9c83aae331e91bfa
     name: ssp-operator
-  - image: quay.io/kubevirt/virt-api@sha256:7ef6c1aa7b76f693c7e2f4dbaaf1d52d63425d7ec521757e520d6e2adddfa69b
+  - image: quay.io/kubevirt/virt-api@sha256:15dcc9da661ff1738fefa5746b22471ac8e954d8e4d3dbd884e8cf399fbbbe6f
     name: virt-api
   - image: +ARTIFACTS_SERVER_IMAGE_TO_REPLACE+
     name: virt-artifacts-server
-  - image: quay.io/kubevirt/virt-controller@sha256:8612bab466360394646de5e3378826b8ba33dcb10ae1ce7c4ae4c18b86117b60
+  - image: quay.io/kubevirt/virt-controller@sha256:8a3788c01a667a4a52bfde3ea284cde459afcf54af2644d0b4e62feb42ec9d97
     name: virt-controller
-  - image: quay.io/kubevirt/virt-exportproxy@sha256:223df2b5933b0d9277d34934934fdb55ba3da393c3e09215fc980f47f17759c1
+  - image: quay.io/kubevirt/virt-exportproxy@sha256:fa49d5f034cf56ae73367879660bff402dfea4251db91d33364c376ddfa1e999
     name: virt-exportproxy
-  - image: quay.io/kubevirt/virt-exportserver@sha256:09bfbf6b1b911c5e641c601470ab34c2a69c81610d0c3a9a64ee89a18bc69415
+  - image: quay.io/kubevirt/virt-exportserver@sha256:371e217b1a7e68722a79203d4251e7034ef8c08e5ef5aec282a93cdcc0014cf7
     name: virt-exportserver
-  - image: quay.io/kubevirt/virt-handler@sha256:162887264d760869f867eed68ea26489d485ed36022410b502ff7f018938bad8
+  - image: quay.io/kubevirt/virt-handler@sha256:4e4a4c12d5781ebbcb8cbebef6fb2b9cb54b25f3804f1c19bbfd7fdb9dd383cc
     name: virt-handler
-  - image: quay.io/kubevirt/virt-launcher@sha256:66fd042603f2f11e8e279dea52fdeef789d0b4d281ee3fa08437f50b331d5833
+  - image: quay.io/kubevirt/virt-launcher@sha256:66f02bfd67bfdbe59ea9c0139270d9efba4e1491e1ef81bccde5bd6c7794333d
     name: virt-launcher
-  - image: quay.io/kubevirt/virt-operator@sha256:fea0eac792ca269f936a9171e4e1f3b6be8319fe5550e63b00f3f63ffb82d1ef
+  - image: quay.io/kubevirt/virt-operator@sha256:2d6ed0d12c13d86117d77233ef98626f0418c273e45730e922882ddedac3c4a0
     name: virt-operator
-  - image: quay.io/kubevirt/virt-synchronization-controller@sha256:4c236292e2081ca2a5b705c99e073edd2603a16c0dd510a9932890aa57f9aa14
+  - image: quay.io/kubevirt/virt-synchronization-controller@sha256:e9a3347c0c140aaf0f4864cca1299db33421ad795c744292322ed4d3e2fbb6f8
     name: virt-synchronization-controller
   - image: quay.io/kubevirt/virtio-container-disk@sha256:bf2c634591d7fca1b90479785084fa108a66fe9da6777c4312bb4f57cc837faa
     name: virtio-container-disk
