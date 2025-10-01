@@ -44,7 +44,7 @@ spec:
               fieldPath: metadata.name
         - name: WATCH_NAMESPACE
         - name: VIRTIOWIN_CONTAINER
-          value: quay.io/kubevirt/virtio-container-disk@sha256:5b99c78ed831401048e72d72f9ec805710ee7625131fd9ad277b38ab1e67cfb9
+          value: quay.io/kubevirt/virtio-container-disk@sha256:f8e71a3a930ce95d646d80862d5ff6f9d3ed7ef2541dd2e2acec0bce26274734
         - name: SMBIOS
           value: |-
             Family: KubeVirt
@@ -54,7 +54,7 @@ spec:
         - name: HCO_KV_IO_VERSION
           value: 1.9.0
         - name: KUBEVIRT_VERSION
-          value: v0.59.2
+          value: v1.2.2
         - name: CDI_VERSION
           value: v1.56.1
         - name: NETWORK_ADDONS_VERSION
@@ -400,28 +400,28 @@ spec:
         - virt-operator
         env:
         - name: VIRT_OPERATOR_IMAGE
-          value: quay.io/kubevirt/virt-operator@sha256:5bfc28d150e853eda38b6d2e4f0cf68e6ade1040718cf7598e11cb32058d7c57
+          value: quay.io/kubevirt/virt-operator@sha256:1ecc62c25f869e17027c930150d5c9b52b72d7e1fb434376bc0be0d886952b2e
         - name: WATCH_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.annotations['olm.targetNamespaces']
         - name: VIRT_API_SHASUM
-          value: sha256:2bb3e1227651779f1222ce3b9fbd701226450875ad1f985c098b90b76ea9819b
+          value: sha256:aeeae94c9dd3b352ff2fbcdba77a6b084fb4ebe0fed35fe7af9481e9e2b1f24c
         - name: VIRT_CONTROLLER_SHASUM
-          value: sha256:37d65a4d4e49ae83a631f052dfcc69a47fd044302be9b7e7a4309513bc9efefd
+          value: sha256:3471b00eb9f4774ae33867c7d0b83e1d26a065a2bd19d305b5d3946ab665b5e9
         - name: VIRT_HANDLER_SHASUM
-          value: sha256:26734e9d4c41a11919661543c3d0c5a9cbd920eec6e8fa2f75426aee4c131e8b
+          value: sha256:2a7d96da4de3ea51339b3a047abb4b05e088e3d1080110b42a85ea5baff4a0cc
         - name: VIRT_LAUNCHER_SHASUM
-          value: sha256:c510629d04bab4cb621e9f2ccd2503f02a7051a0128a1f17e4faa34eacef8430
+          value: sha256:cd37543ed2bc6baadbcbffa6951d740e4c65dc0ea366dec0a8593193c384e6de
         - name: VIRT_EXPORTPROXY_SHASUM
-          value: sha256:ca0810c4202382b770345fdc26d32a6ed24fb25e00ecaf95684b1dce0d07a4d9
+          value: sha256:dd3b5c12314fa76b88d55d978210de81562fb888351748ea3997551c8c96a877
         - name: VIRT_EXPORTSERVER_SHASUM
-          value: sha256:e322c34e7d2c3070985d95fb380b4fe53fabd721fd5f380382a23d846a50a4d3
+          value: sha256:acac33a19528592cc3ef0cd3a25fa4c72bcf992e4c2c247437007fcb9de0aa6d
         - name: GS_SHASUM
-          value: sha256:149b1def5f2f3c629b514c3168aad68b6888c328c27f9f014e2a5303ddd29ff4
+          value: sha256:0de3de89720d4e5433a33944f00dac590daed6ab12e4d26a657ef082d0573747
         - name: KUBEVIRT_VERSION
-          value: v0.59.2
-        image: quay.io/kubevirt/virt-operator@sha256:5bfc28d150e853eda38b6d2e4f0cf68e6ade1040718cf7598e11cb32058d7c57
+          value: v1.2.2
+        image: quay.io/kubevirt/virt-operator@sha256:1ecc62c25f869e17027c930150d5c9b52b72d7e1fb434376bc0be0d886952b2e
         imagePullPolicy: IfNotPresent
         name: virt-operator
         ports:
@@ -609,7 +609,7 @@ spec:
         - name: WAIT_FOR_VMI_STATUS_IMG
         - name: GENERATE_SSH_KEYS_IMG
         - name: VIRTIO_IMG
-          value: quay.io/kubevirt/virtio-container-disk@sha256:5b99c78ed831401048e72d72f9ec805710ee7625131fd9ad277b38ab1e67cfb9
+          value: quay.io/kubevirt/virtio-container-disk@sha256:f8e71a3a930ce95d646d80862d5ff6f9d3ed7ef2541dd2e2acec0bce26274734
         - name: OPERATOR_NAMESPACE
           valueFrom:
             fieldRef:
