@@ -374,7 +374,7 @@ func hcoTuning2Kv(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.ReloadableComp
 	switch hc.Spec.TuningPolicy {
 	case hcov1beta1.HyperConvergedAnnotationTuningPolicy:
 		return getHcoAnnotationTuning(hc)
-	case hcov1beta1.HyperConvergedHighBurstProfile:
+	case hcov1beta1.DeprecatedHyperConvergedHighBurstProfile:
 		return getHcoHighBurstProfileTuningValues(hc)
 	}
 	return nil, nil
