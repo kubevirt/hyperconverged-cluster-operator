@@ -322,6 +322,11 @@ type VirtualMachineInstanceStatus struct {
 	// This feature is in alpha.
 	// +optional
 	DeviceStatus *DeviceStatus `json:"deviceStatus,omitempty"`
+
+	// ChangedBlockTracking represents the status of the changedBlockTracking
+	// +nullable
+	// +optional
+	ChangedBlockTracking *ChangedBlockTrackingStatus `json:"changedBlockTracking,omitempty" optional:"true"`
 }
 
 // DeviceStatus has the information of all devices allocated spec.domain.devices
@@ -1191,7 +1196,8 @@ const (
 	VirtOperatorComponentFinalizer string = "kubevirt.io/virtOperatorFinalizer"
 
 	// Set by VMI controller to ensure VMIs are processed during deletion
-	VirtualMachineInstanceFinalizer string = "foregroundDeleteVirtualMachine"
+	VirtualMachineInstanceFinalizer           string = "kubevirt.io/foregroundDeleteVirtualMachine"
+	DeprecatedVirtualMachineInstanceFinalizer string = "foregroundDeleteVirtualMachine"
 	// Set By VM controller on VMIs to ensure VMIs are processed by VM controller during deletion
 	VirtualMachineControllerFinalizer        string = "kubevirt.io/virtualMachineControllerFinalize"
 	VirtualMachineInstanceMigrationFinalizer string = "kubevirt.io/migrationJobFinalize"
@@ -2003,6 +2009,11 @@ type VirtualMachineStatus struct {
 	// updates related to the volumeUpdateStrategy
 	VolumeUpdateState *VolumeUpdateState `json:"volumeUpdateState,omitempty" optional:"true"`
 
+	// ChangedBlockTracking represents the status of the changedBlockTracking
+	// +nullable
+	// +optional
+	ChangedBlockTracking *ChangedBlockTrackingStatus `json:"changedBlockTracking,omitempty" optional:"true"`
+
 	// InstancetypeRef captures the state of any referenced instance type from the VirtualMachine
 	//+nullable
 	//+optional
@@ -2039,6 +2050,36 @@ type InstancetypeStatusRef struct {
 	//
 	// +optional
 	InferFromVolumeFailurePolicy *InferFromVolumeFailurePolicy `json:"inferFromVolumeFailurePolicy,omitempty"`
+}
+
+type ChangedBlockTrackingState string
+
+const (
+	// ChangedBlockTrackingUndefined indicates no updates for changedBlockTracking was made
+	ChangedBlockTrackingUndefined ChangedBlockTrackingState = ""
+
+	// ChangedBlockTrackingPendingRestart indicates the VM needs a restart for the changes to take effect. This state field will be deprecated once dynamic QCOW2 overylay addition will be supported
+	ChangedBlockTrackingPendingRestart ChangedBlockTrackingState = "PendingRestart"
+
+	// ChangedBlockTrackingInitializing VM restart has occurred, necessary steps for changedBlockTracking are in progress
+	ChangedBlockTrackingInitializing ChangedBlockTrackingState = "Initializing"
+
+	// ChangedBlockTrackingEnabled the VM's supported volumes now have Changed Block Tracking enabled with a QCOW2 overlay
+	ChangedBlockTrackingEnabled ChangedBlockTrackingState = "Enabled"
+
+	// ChangedBlockTrackingDisabled VM no longer matches changedBlockTracking label selector
+	ChangedBlockTrackingDisabled ChangedBlockTrackingState = "Disabled"
+
+	// ChangedBlockTrackingFGDisabled indicates the vm matches the labelselector but the IncrementalBackupGate is disabled
+	// so until the gate is enabled no changed will be made.
+	ChangedBlockTrackingFGDisabled ChangedBlockTrackingState = "IncrementalBackupFeatureGateDisabled"
+)
+
+// ChangedBlockTrackingStatus represents the status of ChangedBlockTracking for a VM
+// +k8s:openapi-gen=true
+type ChangedBlockTrackingStatus struct {
+	// State represents the current CBT state
+	State ChangedBlockTrackingState `json:"state"`
 }
 
 type VolumeUpdateState struct {
@@ -2626,6 +2667,22 @@ type MigrateOptions struct {
 	AddedNodeSelector map[string]string `json:"addedNodeSelector,omitempty"`
 }
 
+// VirtualMachineInstanceGuestOSLoad represents the system load averages from the guest agent
+type VirtualMachineInstanceGuestOSLoad struct {
+	// Load1mSet indicates whether the 1 minute load average is set
+	Load1mSet bool `json:"load1mSet,omitempty"`
+	// Load average over 1 minute
+	Load1m float64 `json:"load1m,omitempty"`
+	// Load5mSet indicates whether the 5 minute load average is set
+	Load5mSet bool `json:"load5mSet,omitempty"`
+	// Load average over 5 minutes
+	Load5m float64 `json:"load5m,omitempty"`
+	// Load15mSet indicates whether the 15 minute load average is set
+	Load15mSet bool `json:"load15mSet,omitempty"`
+	// Load average over 15 minutes
+	Load15m float64 `json:"load15m,omitempty"`
+}
+
 // VirtualMachineInstanceGuestAgentInfo represents information from the installed guest agent
 //
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -2650,6 +2707,8 @@ type VirtualMachineInstanceGuestAgentInfo struct {
 	// It will be set to "frozen" if the request was made, or unset otherwise.
 	// This does not reflect the actual state of the guest filesystem.
 	FSFreezeStatus string `json:"fsFreezeStatus,omitempty"`
+	// Load contains the system load averages (1M, 5M, 15M) from the guest agent
+	Load *VirtualMachineInstanceGuestOSLoad `json:"load,omitempty"`
 }
 
 // List of commands that QEMU guest agent supports
@@ -2669,8 +2728,10 @@ type VirtualMachineInstanceGuestOSUserList struct {
 
 // VirtualMachineGuestOSUser is the single user of the guest os
 type VirtualMachineInstanceGuestOSUser struct {
-	UserName  string  `json:"userName"`
-	Domain    string  `json:"domain,omitempty"`
+	UserName string `json:"userName"`
+	Domain   string `json:"domain,omitempty"`
+
+	// Time of login of this user on the computer. If multiple instances of the user are logged in, the earliest login time is reported. The value is in fractional seconds since epoch time.
 	LoginTime float64 `json:"loginTime,omitempty"`
 }
 
@@ -2899,6 +2960,20 @@ type KubeVirtConfiguration struct {
 	// Instancetype configuration
 	// +nullable
 	Instancetype *InstancetypeConfiguration `json:"instancetype,omitempty"`
+
+	// ChangedBlockTrackingLabelSelectors defines label selectors. VMs matching these selectors will have changed block tracking enabled.
+	// Enabling changedBlockTracking is mandatory for performing storage-agnostic backups and incremental backups.
+	// +nullable
+	ChangedBlockTrackingLabelSelectors *ChangedBlockTrackingSelectors `json:"changedBlockTrackingLabelSelectors,omitempty"`
+}
+
+type ChangedBlockTrackingSelectors struct {
+	// NamespaceSelector will enable changedBlockTracking on all VMs running inside namespaces that match the label selector.
+	//+optional
+	NamespaceLabelSelector *metav1.LabelSelector `json:"namespaceLabelSelector,omitempty"`
+	// VirtualMachineSelector will enable changedBlockTracking on all VMs that match the label selector.
+	//+optional
+	VirtualMachineLabelSelector *metav1.LabelSelector `json:"virtualMachineLabelSelector,omitempty"`
 }
 
 type InstancetypeConfiguration struct {
@@ -2938,9 +3013,12 @@ const (
 )
 
 type ArchConfiguration struct {
-	Amd64               *ArchSpecificConfiguration `json:"amd64,omitempty"`
-	Arm64               *ArchSpecificConfiguration `json:"arm64,omitempty"`
+	Amd64 *ArchSpecificConfiguration `json:"amd64,omitempty"`
+	Arm64 *ArchSpecificConfiguration `json:"arm64,omitempty"`
+
+	// Deprecated: ppc64le architecture is no longer supported.
 	Ppc64le             *ArchSpecificConfiguration `json:"ppc64le,omitempty"`
+	S390x               *ArchSpecificConfiguration `json:"s390x,omitempty"`
 	DefaultArchitecture string                     `json:"defaultArchitecture,omitempty"`
 }
 
@@ -3118,6 +3196,7 @@ type DeveloperConfiguration struct {
 	// "see" 2% more memory than its parent pod. Values under 100 are effectively "undercommits".
 	// Overcommits can lead to memory exhaustion, which in turn can lead to crashes. Use carefully.
 	// Defaults to 100
+	// +kubebuilder:validation:Minimum:=10
 	MemoryOvercommit int `json:"memoryOvercommit,omitempty"`
 	// NodeSelectors allows restricting VMI creation to nodes that match a set of labels.
 	// Defaults to none
