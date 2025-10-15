@@ -52,7 +52,7 @@ source hack/common.sh
 "${CMD}" delete -f _out/service_account.yaml --ignore-not-found || true
 
 # Remove cert-manager
-"${CMD}" delete -f _out/cert-manager.yaml --ignore-not-found || true
+"${CMD}" delete -f "https://github.com/cert-manager/cert-manager/releases/download/${CERT_MANAGER_VERSION}/cert-manager.yaml" --ignore-not-found || true
 "${CMD}" delete validatingwebhookconfigurations cert-manager-webhook --ignore-not-found || true
 "${CMD}" delete mutatingwebhookconfigurations cert-manager-webhook --ignore-not-found || true
 "${CMD}" delete secrets -n kubevirt-hyperconverged -l controller.cert-manager.io/fao=true --ignore-not-found || true

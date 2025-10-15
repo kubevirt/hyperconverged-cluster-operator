@@ -4,6 +4,8 @@ set -ex
 
 hco_namespace=kubevirt-hyperconverged
 
+CERT_MANAGER_VERSION=${CERT_MANAGER_VERSION:-"v1.18.2"}
+
 IS_OPENSHIFT=${IS_OPENSHIFT:-false}
 if kubectl api-resources |grep clusterversions |grep config.openshift.io; then
   IS_OPENSHIFT="true"
@@ -36,7 +38,7 @@ kubectl apply ${LABEL_SELECTOR_ARG} -f https://raw.githubusercontent.com/kubevir
 kubectl apply ${LABEL_SELECTOR_ARG} -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/deploy/crds/application-aware-quota00.crd.yaml
 
 # Deploy cert-manager for webhook certificates
-kubectl apply ${LABEL_SELECTOR_ARG} -f https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/deploy/cert-manager.yaml
+kubectl apply -f "https://github.com/cert-manager/cert-manager/releases/download/${CERT_MANAGER_VERSION}/cert-manager.yaml"
 kubectl -n cert-manager wait deployment/cert-manager --for=condition=Available --timeout="300s"
 kubectl -n cert-manager wait deployment/cert-manager-webhook --for=condition=Available --timeout="300s"
 

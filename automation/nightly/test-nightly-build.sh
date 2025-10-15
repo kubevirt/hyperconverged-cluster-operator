@@ -135,7 +135,7 @@ chmod +x operator-sdk
 OLM_VERSION=$(curl https://api.github.com/repos/operator-framework/operator-lifecycle-manager/releases/latest | jq -r .name)
 
 # start K8s cluster
-export KUBEVIRT_PROVIDER=k8s-1.32
+export KUBEVIRT_PROVIDER=k8s-1.34
 export KUBEVIRT_MEMORY_SIZE=12G
 export KUBEVIRT_NUM_NODES=4
 # cluster/kubevirtci_tag.txt is auto updated by hack/bump-kubevirtci.sh
@@ -145,12 +145,10 @@ make cluster-up
 export KUBECONFIG=$(_kubevirtci/cluster-up/kubeconfig.sh)
 export KUBECTL=$(pwd)/_kubevirtci/cluster-up/kubectl.sh
 
+CMD=${KUBECTL} ./hack/deploy-cert-manager.sh
+
 # install OLM on the cluster
 ./operator-sdk olm install --version "${OLM_VERSION}"
-
-# Deploy cert-manager for webhooks
-$KUBECTL apply -f deploy/cert-manager.yaml
-$KUBECTL -n cert-manager wait deployment/cert-manager-webhook --for=condition=Available --timeout="300s"
 
 trap "dump" INT TERM EXIT
 
