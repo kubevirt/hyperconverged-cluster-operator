@@ -39,6 +39,8 @@ KUBECTL=${KUBECTL:-}
 TEST_OUT_PATH=${TEST_OUT_PATH:-"tests/func-tests/_out"}
 JOB_TYPE=${JOB_TYPE:-}
 
+CERT_MANAGER_VERSION=${CERT_MANAGER_VERSION:-"v1.18.2"}
+
 KUBECTL=$(which kubectl 2> /dev/null) || true
 
 if [ -z "${CMD}" ]; then

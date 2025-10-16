@@ -114,9 +114,7 @@ if [ "$IS_OPENSHIFT" != "true" ]; then
     LABEL_SELECTOR_ARG="-l name!=ssp-operator,name!=hyperconverged-cluster-cli-download"
 fi
 
-# Deploy cert-manager for webhooks
-"${CMD}" apply -f _out/cert-manager.yaml
-"${CMD}" -n cert-manager wait deployment/cert-manager-webhook --for=condition=Available --timeout="300s"
+hack/deploy-cert-manager.sh
 
 # Deploy local manifests
 "${CMD}" apply $LABEL_SELECTOR_ARG -f _out/cluster_role.yaml
