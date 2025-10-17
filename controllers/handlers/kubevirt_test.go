@@ -3738,7 +3738,7 @@ Version: 1.2.3`)
 			Context("with highBurst profile", func() {
 
 				It("Should return error if the json annotation tuningPolicy is present", func() {
-					hco.Spec.TuningPolicy = hcov1beta1.HyperConvergedHighBurstProfile
+					hco.Spec.TuningPolicy = hcov1beta1.DeprecatedHyperConvergedHighBurstProfile
 					hco.Annotations = make(map[string]string, 1)
 					hco.Annotations[common.TuningPolicyAnnotationName] = `{"qps": 100, "burst": 200}`
 
@@ -3749,7 +3749,7 @@ Version: 1.2.3`)
 				})
 
 				It("Should create the fields and populate them using the highBurst profile values", func() {
-					hco.Spec.TuningPolicy = hcov1beta1.HyperConvergedHighBurstProfile
+					hco.Spec.TuningPolicy = hcov1beta1.DeprecatedHyperConvergedHighBurstProfile
 					kv, err := NewKubeVirt(hco)
 					const expectedQPS = float32(200)
 					const expectedBurst = 400
