@@ -20,7 +20,6 @@ package main
 // 31b9c7d48790f0d8c50ab433d9c3b7e17666d6993084c002c2ff1ca09b96391d
 //
 import (
-	"bufio"
 	"context"
 	"encoding/csv"
 	"flag"
@@ -235,32 +234,31 @@ func writeEnvFile(images []*Image) error {
 		return err
 	}
 	defer f.Close()
-	writer := bufio.NewWriter(f)
 
-	imageList := make([]string, len(images)-1, len(images)-1)
+	imageVarList := make([]string, len(images)-1, len(images)-1)
 	for i, image := range images[1:] {
 		imageDigest := buildImageDigestName(image.Name, image.Digest)
-		_, err = writer.WriteString(fmt.Sprintf("%s=%s\n", image.EnvVar, imageDigest))
+		_, err = fmt.Fprintf(f, `%[1]s="${%[1]s:-%[2]s}"`+"\n", image.EnvVar, imageDigest)
 		if err != nil {
 			return err
 		}
-		imageList[i] = imageDigest
+		imageVarList[i] = image.EnvVar //imageDigest
 	}
 
-	if len(imageList) > 0 {
-		_, err = writer.WriteString(fmt.Sprintf("DIGEST_LIST=\"%s\"\n", imageList[0]))
+	if len(imageVarList) > 0 {
+		_, err = fmt.Fprintf(f, `DIGEST_LIST="${%s}"`+"\n", imageVarList[0])
 		if err != nil {
 			return err
 		}
-		for _, image := range imageList[1:] {
-			_, err = writer.WriteString(fmt.Sprintf("DIGEST_LIST=\"${DIGEST_LIST},%s\"\n", image))
+		for _, image := range imageVarList[1:] {
+			_, err = fmt.Fprintf(f, `DIGEST_LIST="${DIGEST_LIST},${%s}"`+"\n", image)
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	return writer.Flush()
+	return nil
 }
 
 func exitOnError(err error, msg string, fmtParams ...interface{}) {
