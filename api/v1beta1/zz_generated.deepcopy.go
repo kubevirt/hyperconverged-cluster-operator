@@ -355,6 +355,11 @@ func (in *HyperConvergedFeatureGates) DeepCopyInto(out *HyperConvergedFeatureGat
 		*out = new(bool)
 		**out = **in
 	}
+	if in.ObjectGraph != nil {
+		in, out := &in.ObjectGraph, &out.ObjectGraph
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
