@@ -2158,6 +2158,30 @@ Version: 1.2.3`)
 						},
 						And(ContainElement(kvHotplugVolumesGate), Not(ContainElement(kvDeclarativeHotplugVolumesGate))),
 					),
+					Entry("should add the ObjectGraph feature gate if ObjectGraph is true in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								ObjectGraph: ptr.To(true),
+							}
+						},
+						And(ContainElement(kvObjectGraph)),
+					),
+					Entry("should not add the ObjectGraph feature gate if ObjectGraph is false in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								ObjectGraph: ptr.To(false),
+							}
+						},
+						Not(ContainElement(kvObjectGraph)),
+					),
+					Entry("should not add the ObjectGraph feature gate if ObjectGraph is not set in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								ObjectGraph: nil,
+							}
+						},
+						Not(ContainElement(kvObjectGraph)),
+					),
 				)
 
 				It("should add the VideoConfig if feature gate VideoConfig is true in HyperConverged CR", func() {
