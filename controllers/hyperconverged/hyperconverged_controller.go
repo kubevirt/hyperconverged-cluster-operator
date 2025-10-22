@@ -886,7 +886,7 @@ func (r *ReconcileHyperConverged) updateConditions(req *common.HcoRequest) {
 		req.StatusDirty = true
 	}
 
-	systemHealthStatus := r.getSystemHealthStatus(req.Conditions)
+	systemHealthStatus := r.getSystemHealthStatus(req)
 
 	if systemHealthStatus != req.Instance.Status.SystemHealthStatus {
 		req.Instance.Status.SystemHealthStatus = systemHealthStatus
@@ -948,24 +948,34 @@ func (r *ReconcileHyperConverged) detectTaintedConfiguration(req *common.HcoRequ
 	}
 }
 
-func (r *ReconcileHyperConverged) getSystemHealthStatus(conditions common.HcoConditions) string {
-	if isSystemHealthStatusError(conditions) {
+func (r *ReconcileHyperConverged) getSystemHealthStatus(req *common.HcoRequest) string {
+	if isSystemHealthStatusError(req) {
 		return systemHealthStatusError
 	}
 
-	if isSystemHealthStatusWarning(conditions) {
+	if isSystemHealthStatusWarning(req) {
 		return systemHealthStatusWarning
 	}
 
 	return systemHealthStatusHealthy
 }
 
-func isSystemHealthStatusError(conditions common.HcoConditions) bool {
-	return !conditions.IsStatusConditionTrue(hcov1beta1.ConditionAvailable) || conditions.IsStatusConditionTrue(hcov1beta1.ConditionDegraded)
+func isSystemHealthStatusError(req *common.HcoRequest) bool {
+	// During upgrade, only Degraded=True is an error. Temporary Available=false is expected.
+	if req.UpgradeMode {
+		return req.Conditions.IsStatusConditionTrue(hcov1beta1.ConditionDegraded)
+	}
+
+	return !req.Conditions.IsStatusConditionTrue(hcov1beta1.ConditionAvailable) || req.Conditions.IsStatusConditionTrue(hcov1beta1.ConditionDegraded)
 }
 
-func isSystemHealthStatusWarning(conditions common.HcoConditions) bool {
-	return !conditions.IsStatusConditionTrue(hcov1beta1.ConditionReconcileComplete) || conditions.IsStatusConditionTrue(hcov1beta1.ConditionProgressing)
+func isSystemHealthStatusWarning(req *common.HcoRequest) bool {
+	// During upgrade, treat health as non-warning while progressing; wait for reconcile complete.
+	if req.UpgradeMode {
+		return !req.Conditions.IsStatusConditionTrue(hcov1beta1.ConditionReconcileComplete)
+	}
+
+	return !req.Conditions.IsStatusConditionTrue(hcov1beta1.ConditionReconcileComplete) || req.Conditions.IsStatusConditionTrue(hcov1beta1.ConditionProgressing)
 }
 
 func getNumOfChangesJSONPatch(jsonPatch string) int {
