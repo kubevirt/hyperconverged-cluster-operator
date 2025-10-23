@@ -2,8 +2,7 @@
   "kind": "HyperConverged",
   "apiVersion": "hco.kubevirt.io/v1beta1",
   "metadata": {
-    "name": "kubevirt-hyperconverged",
-    "creationTimestamp": null
+    "name": "kubevirt-hyperconverged"
   },
   "spec": {
     "infra": {},
