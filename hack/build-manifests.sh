@@ -37,10 +37,7 @@ source hack/cri-bin.sh
 TOOLS=${PROJECT_ROOT}/_out
 
 # update image digests
-if [[ $1 != "skip-images-update" ]];
-then
-  "${PROJECT_ROOT}"/automation/digester/update_images.sh
-fi
+"${PROJECT_ROOT}"/automation/digester/update_images.sh
 source "${PROJECT_ROOT}"/deploy/images.env
 
 HCO_OPERATOR_IMAGE=${HCO_OPERATOR_IMAGE:-quay.io/kubevirt/hyperconverged-cluster-operator:${CSV_VERSION}-unstable}
