@@ -13,12 +13,12 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
 	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.7
-	github.com/kubevirt/cluster-network-addons-operator v0.100.2
+	github.com/kubevirt/cluster-network-addons-operator v0.101.0-rc-0
 	github.com/kubevirt/monitoring/pkg/metrics/parser v0.0.0-20250603150502-a697c0c708fa
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.37.0
 	github.com/openshift/api v3.9.1-0.20190517100836-d5b34b957e91+incompatible
-	github.com/openshift/cluster-kube-descheduler-operator v0.0.0-20250410114548-481d56a6c34e
+	github.com/openshift/cluster-kube-descheduler-operator v0.0.0-20251008211450-f537ae654848
 	github.com/openshift/custom-resource-status v1.1.2
 	github.com/openshift/library-go v0.0.0-20250725103737-7f9bc3eb865a
 	github.com/operator-framework/api v0.32.0
@@ -29,16 +29,16 @@ require (
 	github.com/prometheus/common v0.65.0
 	github.com/rhobs/operator-observability-toolkit v0.0.29
 	github.com/samber/lo v1.51.0
-	github.com/spf13/pflag v1.0.6
+	github.com/spf13/pflag v1.0.7
 	golang.org/x/mod v0.26.0
 	golang.org/x/sync v0.16.0
 	golang.org/x/tools v0.35.0
 	gomodules.xyz/jsonpatch/v2 v2.5.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.33.3
-	k8s.io/apiextensions-apiserver v0.33.2
+	k8s.io/apiextensions-apiserver v0.33.3
 	k8s.io/apimachinery v0.33.3
-	k8s.io/apiserver v0.33.2
+	k8s.io/apiserver v0.33.3
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/component-helpers v0.33.2
 	k8s.io/kube-openapi v0.33.2

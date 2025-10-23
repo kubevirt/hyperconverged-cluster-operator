@@ -101,13 +101,9 @@ func (r *ReconcileDescheduler) isDeschedulerMisconfigured(ctx context.Context) (
 		return false, err
 	}
 
-	// TODO: modify this once deschedulerv1.RelieveAndMigrate will graduate, loosing
-	// the "Dev" prefix, and will be "KubeVirtRelieveAndMigrate", then we will need
-	// to change it to:
-	// misconfiguredDescheduler = slices.Contains(instance.Spec.Profiles, deschedulerv1.RelieveAndMigrate)
 	return !slices.ContainsFunc(instance.Spec.Profiles, func(profile deschedulerv1.DeschedulerProfile) bool {
 		switch profile {
-		case deschedulerv1.RelieveAndMigrate, "KubeVirtRelieveAndMigrate":
+		case deschedulerv1.KubeVirtRelieveAndMigrate, deschedulerv1.DevKubeVirtRelieveAndMigrate, deschedulerv1.LifecycleAndUtilization:
 			return true
 		}
 		return false
