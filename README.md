@@ -43,11 +43,13 @@ To build a custom bundle and index image, with [opm](https://docs.redhat.com/en/
 ```bash
 # Set your image repository
 export REGISTRY_NAMESPACE=<your-org>
-export IMG_TAG=<your-tag>
+export IMAGE_TAG=<your-tag>
 
-export HCO_OPERATOR_IMAGE="quay.io/$REGISTRY_NAMESPACE/hyperconverged-cluster-operator:$IMG_TAG"
-export HCO_WEBHOOK_IMAGE="quay.io/$REGISTRY_NAMESPACE/hyperconverged-cluster-webhook:$IMG_TAG"
-export HCO_DOWNLOADS_IMAGE="quay.io/$REGISTRY_NAMESPACE/virt-artifacts-server:$IMG_TAG"
+make build-push-multi-arch-operator-image build-push-multi-arch-webhook-image build-push-multi-arch-artifacts-server
+
+export HCO_OPERATOR_IMAGE="quay.io/${REGISTRY_NAMESPACE}/hyperconverged-cluster-operator:${IMAGE_TAG}"
+export HCO_WEBHOOK_IMAGE="quay.io/${REGISTRY_NAMESPACE}/hyperconverged-cluster-webhook:${IMAGE_TAG}"
+export HCO_DOWNLOADS_IMAGE="quay.io/${REGISTRY_NAMESPACE}/virt-artifacts-server:${IMAGE_TAG}"
 
 # Set your custom operator images
 export KUBEVIRT_OPERATOR_IMAGE=<your-image-reference>
