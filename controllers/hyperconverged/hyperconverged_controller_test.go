@@ -1681,6 +1681,9 @@ var _ = Describe("HyperconvergedController", func() {
 					Expect(cond.Reason).To(Equal("HCOUpgrading"))
 					Expect(cond.Message).To(Equal("HCO is now upgrading to version " + newHCOVersion))
 
+					// system health should remain healthy during upgrade progression
+					verifySystemHealthStatusHealthy(foundResource)
+
 					// check that the upgrade is not done if the not all the versions are match.
 					// Conditions are valid
 					makeComponentReady()
@@ -1699,6 +1702,9 @@ var _ = Describe("HyperconvergedController", func() {
 					Expect(cond.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 					Expect(cond.Reason).To(Equal("HCOUpgrading"))
 					Expect(cond.Message).To(Equal("HCO is now upgrading to version " + newHCOVersion))
+
+					// system health should remain healthy during upgrade progression
+					verifySystemHealthStatusHealthy(foundResource)
 
 					// now, complete the upgrade
 					updateComponentVersion()
