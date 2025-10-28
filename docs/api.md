@@ -21,6 +21,7 @@ This Document documents the types introduced by the hyperconverged-cluster-opera
 * [HyperConvergedSpec](#hyperconvergedspec)
 * [HyperConvergedStatus](#hyperconvergedstatus)
 * [HyperConvergedWorkloadUpdateStrategy](#hyperconvergedworkloadupdatestrategy)
+* [KubeMacPoolConfig](#kubemacpoolconfig)
 * [LiveMigrationConfigurations](#livemigrationconfigurations)
 * [LogVerbosityConfiguration](#logverbosityconfiguration)
 * [MediatedDevicesConfiguration](#mediateddevicesconfiguration)
@@ -231,6 +232,7 @@ HyperConvergedSpec defines the desired state of HyperConverged
 | tektonPipelinesNamespace | TektonPipelinesNamespace defines namespace in which example pipelines will be deployed. If unset, then the default value is the operator namespace. Deprecated: This field is ignored. | *string |  | false |
 | tektonTasksNamespace | TektonTasksNamespace defines namespace in which tekton tasks will be deployed. If unset, then the default value is the operator namespace. Deprecated: This field is ignored. | *string |  | false |
 | kubeSecondaryDNSNameServerIP | KubeSecondaryDNSNameServerIP defines name server IP used by KubeSecondaryDNS | *string |  | false |
+| kubeMacPoolConfiguration | KubeMacPoolConfiguration holds kubemacpool MAC address range configuration. | *[KubeMacPoolConfig](#kubemacpoolconfig) |  | false |
 | evictionStrategy | EvictionStrategy defines at the cluster level if the VirtualMachineInstance should be migrated instead of shut-off in case of a node drain. If the VirtualMachineInstance specific field is set it overrides the cluster level one. Allowed values: - `None` no eviction strategy at cluster level. - `LiveMigrate` migrate the VM on eviction; a not live migratable VM with no specific strategy will block the drain of the node util manually evicted. - `LiveMigrateIfPossible` migrate the VM on eviction if live migration is possible, otherwise directly evict. - `External` block the drain, track eviction and notify an external controller. Defaults to LiveMigrate with multiple worker nodes, None on single worker clusters. | *v1.EvictionStrategy |  | false |
 | vmStateStorageClass | VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM. | *string |  | false |
 | virtualMachineOptions | VirtualMachineOptions holds the cluster level information regarding the virtual machine. | *[VirtualMachineOptions](#virtualmachineoptions) | {"disableFreePageReporting": false, "disableSerialConsoleLog": false} | false |
@@ -275,6 +277,17 @@ HyperConvergedWorkloadUpdateStrategy defines options related to updating a KubeV
 | workloadUpdateMethods | WorkloadUpdateMethods defines the methods that can be used to disrupt workloads during automated workload updates. When multiple methods are present, the least disruptive method takes precedence over more disruptive methods. For example if both LiveMigrate and Evict methods are listed, only VMs which are not live migratable will be restarted/shutdown. An empty list defaults to no automated workload updating. | []string | {"LiveMigrate"} | true |
 | batchEvictionSize | BatchEvictionSize Represents the number of VMIs that can be forced updated per the BatchShutdownInterval interval | *int | 10 | false |
 | batchEvictionInterval | BatchEvictionInterval Represents the interval to wait before issuing the next batch of shutdowns | *metav1.Duration | "1m0s" | false |
+
+[Back to TOC](#table-of-contents)
+
+## KubeMacPoolConfig
+
+KubeMacPoolConfig defines kubemacpool MAC address range configuration
+
+| Field | Description | Scheme | Default | Required |
+| ----- | ----------- | ------ | -------- |-------- |
+| rangeStart | RangeStart defines the first MAC address in the kubemacpool range. The MAC address format should be AA:BB:CC:DD:EE:FF. | *string |  | false |
+| rangeEnd | RangeEnd defines the last MAC address in the kubemacpool range. The MAC address format should be AA:BB:CC:DD:EE:FF. | *string |  | false |
 
 [Back to TOC](#table-of-contents)
 
