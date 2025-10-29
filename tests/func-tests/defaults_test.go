@@ -74,7 +74,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			EnableMultiArchBootImageImport: ptr.To(false),
 			DecentralizedLiveMigration:     ptr.To(false),
 			DeclarativeHotplugVolumes:      ptr.To(false),
-			VideoConfig:                    ptr.To(false),
+			VideoConfig:                    ptr.To(true),
 			ObjectGraph:                    ptr.To(false),
 		}
 

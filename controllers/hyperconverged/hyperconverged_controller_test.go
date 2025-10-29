@@ -149,6 +149,7 @@ var _ = Describe("HyperconvergedController", func() {
 				hco := commontestutils.NewHco()
 				hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
 					DownwardMetrics: ptr.To(true),
+					VideoConfig:     ptr.To(true),
 				}
 
 				ci := hcoutil.GetClusterInfo()
@@ -217,6 +218,7 @@ var _ = Describe("HyperconvergedController", func() {
 					"DownwardMetrics",
 					"VMExport",
 					"KubevirtSeccompProfile",
+					"VideoConfig",
 				}
 				// Get the KV
 				kvList := &kubevirtcorev1.KubeVirtList{}

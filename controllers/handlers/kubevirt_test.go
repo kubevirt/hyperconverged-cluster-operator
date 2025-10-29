@@ -34,7 +34,7 @@ var _ = Describe("KubeVirt Operand", func() {
 
 	const (
 		// Number of conditional featuregates always added by getFeatureGateChecks (volume hotplug is always added)
-		conditionalFeatureGatesCount = 1
+		conditionalFeatureGatesCount = 2
 	)
 
 	var (
@@ -2195,7 +2195,7 @@ Version: 1.2.3`)
 					Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvVideoConfig))
 				})
 
-				It("should not add the VideoConfig if feature gate VideoConfig is not in HyperConverged CR", func() {
+				It("should add the VideoConfig if feature gate VideoConfig is not in HyperConverged CR", func() {
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
 						VideoConfig: nil,
 					}
@@ -2203,7 +2203,7 @@ Version: 1.2.3`)
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
-					Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvVideoConfig))
+					Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvVideoConfig))
 				})
 
 				It("should not add the VideoConfig if feature gate VideoConfig is set to false in HyperConverged CR", func() {
