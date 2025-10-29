@@ -67,7 +67,7 @@ spec:
                 downwardMetrics: false
                 enableMultiArchBootImageImport: false
                 persistentReservation: false
-                videoConfig: false
+                videoConfig: true
               liveMigrationConfig:
                 allowAutoConverge: false
                 allowPostCopy: false
@@ -1084,7 +1084,7 @@ spec:
                   downwardMetrics: false
                   enableMultiArchBootImageImport: false
                   persistentReservation: false
-                  videoConfig: false
+                  videoConfig: true
                 description: |-
                   featureGates is a map of feature gate flags. Setting a flag to `true` will enable
                   the feature. Setting `false` or removing the feature gate, disables the feature.
