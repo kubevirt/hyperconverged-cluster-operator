@@ -84,7 +84,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			// Check HCO's status
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRef, err := reference.GetReference(commontestutils.GetScheme(), expectedResource)
 			Expect(err).ToNot(HaveOccurred())
 			// ObjectReference should have been added
@@ -116,12 +116,12 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			Expect(reflect.DeepEqual(expectedResource.Spec, foundResource.Spec)).To(BeTrue())
 
 			// ObjectReference should have been updated
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRefOutdated, err := reference.GetReference(commontestutils.GetScheme(), outdatedResource)
 			Expect(err).ToNot(HaveOccurred())
 			objectRefFound, err := reference.GetReference(commontestutils.GetScheme(), foundResource)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
+			Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
 		})
 
@@ -318,7 +318,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			).To(Succeed())
 
 			// Check HCO's status
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRef, err := reference.GetReference(commontestutils.GetScheme(), foundResource)
 			Expect(err).ToNot(HaveOccurred())
 			// ObjectReference should have been added
@@ -361,12 +361,12 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			Expect(reflect.DeepEqual(expectedResource.Spec, foundResource.Spec)).To(BeTrue())
 
 			// ObjectReference should have been updated
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRefOutdated, err := reference.GetReference(commontestutils.GetScheme(), outdatedResource)
 			Expect(err).ToNot(HaveOccurred())
 			objectRefFound, err := reference.GetReference(commontestutils.GetScheme(), foundResource)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
+			Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
 
 			// let's check the object UID to Ensure that the object get updated and not deleted and recreated
@@ -409,12 +409,12 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			Expect(reflect.DeepEqual(expectedResource.Spec, foundResource.Spec)).To(BeTrue())
 
 			// ObjectReference should have been updated
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRefOutdated, err := reference.GetReference(commontestutils.GetScheme(), outdatedResource)
 			Expect(err).ToNot(HaveOccurred())
 			objectRefFound, err := reference.GetReference(commontestutils.GetScheme(), foundResource)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
+			Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
 
 			// let's check the object UID to Ensure that the object get really deleted and recreated
@@ -499,7 +499,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				).To(Succeed())
 				Expect(foundResource.Name).To(Equal(outdatedResource.Name))
 				for k, v := range modifiedData {
-					Expect(foundResource.Data).To(Not(HaveKeyWithValue(k, v)))
+					Expect(foundResource.Data).ToNot(HaveKeyWithValue(k, v))
 				}
 				Expect(foundResource.Data).To(HaveKeyWithValue(userAddedDataKey, userAddedDataValue))
 			},
@@ -903,7 +903,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			).To(Succeed())
 
 			// Check HCO's status
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRef, err := reference.GetReference(commontestutils.GetScheme(), foundResource)
 			Expect(err).ToNot(HaveOccurred())
 			// ObjectReference should have been added
@@ -943,12 +943,12 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			Expect(foundResource.Spec.Ports).To(Equal(expectedResource.Spec.Ports))
 
 			// ObjectReference should have been updated
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRefOutdated, err := reference.GetReference(commontestutils.GetScheme(), outdatedResource)
 			Expect(err).ToNot(HaveOccurred())
 			objectRefFound, err := reference.GetReference(commontestutils.GetScheme(), foundResource)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
+			Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
 		},
 			Entry("ui plugin service", hcoutil.AppComponentUIPlugin, NewKvUIPluginSvc),
@@ -1116,12 +1116,12 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Expect(foundNP.Labels).To(Equal(expectedNP.Labels))
 
 				// ObjectReference should have been updated
-				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+				Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 				objectRefOutdated, err := reference.GetReference(commontestutils.GetScheme(), existingNP)
 				Expect(err).ToNot(HaveOccurred())
 				objectRefFound, err := reference.GetReference(commontestutils.GetScheme(), foundNP)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
+				Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
 			})
 		})

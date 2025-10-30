@@ -239,12 +239,12 @@ var _ = Describe("imageStream tests", func() {
 			Expect(tag.From.Name).To(Equal("test-registry.io/test/test-image"))
 
 			// ObjectReference should have been updated
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRefOutdated, err := reference.GetReference(schemeForTest, exists)
 			Expect(err).ToNot(HaveOccurred())
 			objectRefFound, err := reference.GetReference(schemeForTest, &imageStreamObjects.Items[0])
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
+			Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
 		})
 
@@ -298,12 +298,12 @@ var _ = Describe("imageStream tests", func() {
 				Expect(tag.From.Name).To(Equal("test-registry.io/test/test-image"))
 
 				// ObjectReference should have been updated
-				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+				Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 				objectRefOutdated, err := reference.GetReference(schemeForTest, exists)
 				Expect(err).ToNot(HaveOccurred())
 				objectRefFound, err := reference.GetReference(schemeForTest, &imageStreamObjects.Items[0])
 				Expect(err).ToNot(HaveOccurred())
-				Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
+				Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
 			})
 		})
@@ -368,12 +368,12 @@ var _ = Describe("imageStream tests", func() {
 				Expect(tag.From.UID).ToNot(BeEmpty())
 
 				// ObjectReference should have been updated
-				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+				Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 				objectRefOutdated, err := reference.GetReference(schemeForTest, exists)
 				Expect(err).ToNot(HaveOccurred())
 				objectRefFound, err := reference.GetReference(schemeForTest, &imageStreamObjects.Items[0])
 				Expect(err).ToNot(HaveOccurred())
-				Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
+				Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
 			})
 		})
@@ -433,7 +433,7 @@ var _ = Describe("imageStream tests", func() {
 				Expect(tag.ImportPolicy).To(Equal(imagev1.TagImportPolicy{Insecure: false, Scheduled: true}))
 
 				// ObjectReference should have been updated
-				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+				Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 				objectRefOutdated, err := reference.GetReference(schemeForTest, exists)
 				Expect(err).ToNot(HaveOccurred())
 				objectRefFound, err := reference.GetReference(schemeForTest, &imageStreamObjects.Items[0])
@@ -497,7 +497,7 @@ var _ = Describe("imageStream tests", func() {
 				Expect(tag.ImportPolicy).To(Equal(imagev1.TagImportPolicy{Insecure: true, Scheduled: false}))
 
 				// ObjectReference should have been updated
-				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+				Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 				objectRefOutdated, err := reference.GetReference(schemeForTest, exists)
 				Expect(err).ToNot(HaveOccurred())
 				objectRefFound, err := reference.GetReference(schemeForTest, &imageStreamObjects.Items[0])
@@ -562,7 +562,7 @@ var _ = Describe("imageStream tests", func() {
 				Expect(tag.ImportPolicy).To(Equal(imagev1.TagImportPolicy{Insecure: false, Scheduled: true}))
 
 				// ObjectReference should have been updated
-				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+				Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 				objectRefOutdated, err := reference.GetReference(schemeForTest, exists)
 				Expect(err).ToNot(HaveOccurred())
 				objectRefFound, err := reference.GetReference(schemeForTest, &imageStreamObjects.Items[0])
@@ -633,12 +633,12 @@ var _ = Describe("imageStream tests", func() {
 				Expect(tag.From.Name).To(Equal("test-registry.io/test/test-image"))
 
 				// ObjectReference should have been updated
-				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+				Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 				objectRefOutdated, err := reference.GetReference(schemeForTest, exists)
 				Expect(err).ToNot(HaveOccurred())
 				objectRefFound, err := reference.GetReference(schemeForTest, &imageStreamObjects.Items[0])
 				Expect(err).ToNot(HaveOccurred())
-				Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
+				Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
 
 				for k, v := range expectedLabels {

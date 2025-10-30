@@ -58,7 +58,7 @@ var _ = Describe("CLI Download", func() {
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			// Check HCO's status
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRef, err := reference.GetReference(handler.Scheme, expectedResource)
 			Expect(err).ToNot(HaveOccurred())
 			// ObjectReference should have been added
@@ -82,12 +82,12 @@ var _ = Describe("CLI Download", func() {
 			Expect(reflect.DeepEqual(expectedResource.Spec, foundResource.Spec)).To(BeTrue())
 
 			// ObjectReference should have been updated
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRefOutdated, err := reference.GetReference(handler.Scheme, modifiedResource)
 			Expect(err).ToNot(HaveOccurred())
 			objectRefFound, err := reference.GetReference(handler.Scheme, foundResource)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
+			Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
 		},
 			Entry("with modified description", func(resource *consolev1.ConsoleCLIDownload) {
@@ -201,7 +201,7 @@ var _ = Describe("Downloads Service", func() {
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			// Check HCO's status
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRef, err := reference.GetReference(handler.Scheme, expectedResource)
 			Expect(err).ToNot(HaveOccurred())
 			// ObjectReference should have been added
@@ -226,12 +226,12 @@ var _ = Describe("Downloads Service", func() {
 			Expect(operands.HasServiceRightFields(foundResource, expectedResource)).To(BeTrue())
 
 			// ObjectReference should have been updated
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRefOutdated, err := reference.GetReference(handler.Scheme, modifiedResource)
 			Expect(err).ToNot(HaveOccurred())
 			objectRefFound, err := reference.GetReference(handler.Scheme, foundResource)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
+			Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
 		},
 			Entry("with modified selector", func(resource *corev1.Service) {
@@ -282,7 +282,7 @@ var _ = Describe("Cli Downloads Route", func() {
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			// Check HCO's status
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRef, err := reference.GetReference(handler.Scheme, expectedResource)
 			Expect(err).ToNot(HaveOccurred())
 			// ObjectReference should have been added
@@ -306,12 +306,12 @@ var _ = Describe("Cli Downloads Route", func() {
 			Expect(hasRouteRightFields(foundResource, expectedResource)).To(BeTrue())
 
 			// ObjectReference should have been updated
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRefOutdated, err := reference.GetReference(handler.Scheme, modifiedResource)
 			Expect(err).ToNot(HaveOccurred())
 			objectRefFound, err := reference.GetReference(handler.Scheme, foundResource)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
+			Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
 		},
 			Entry("with modified labels", func(resource *routev1.Route) {

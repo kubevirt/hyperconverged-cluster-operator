@@ -167,7 +167,7 @@ var _ = Describe("CRDController", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.IsZero()).To(BeTrue())
 				Expect(res).To(Equal(reconcile.Result{}))
-				Consistently(testCh).Should(Not(Receive()))
+				Consistently(testCh).ShouldNot(Receive())
 
 			})
 
@@ -201,7 +201,7 @@ var _ = Describe("CRDController", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.IsZero()).To(BeTrue())
 				Expect(res).To(Equal(reconcile.Result{}))
-				Consistently(testCh).Should(Not(Receive()))
+				Consistently(testCh).ShouldNot(Receive())
 
 			})
 
@@ -235,7 +235,7 @@ var _ = Describe("CRDController", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.IsZero()).To(BeTrue())
 				Expect(res).To(Equal(reconcile.Result{}))
-				Consistently(testCh).Should(Not(Receive()))
+				Consistently(testCh).ShouldNot(Receive())
 
 			})
 

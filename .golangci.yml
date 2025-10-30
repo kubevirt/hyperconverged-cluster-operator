@@ -9,6 +9,7 @@ linters:
     ginkgolinter:
       forbid-focus-container: true
       force-expect-to: true
+      force-tonot: true
     revive:
       rules:
         - name: bare-return

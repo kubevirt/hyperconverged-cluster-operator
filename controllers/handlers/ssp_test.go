@@ -89,7 +89,7 @@ var _ = Describe("SSP Operands", func() {
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			// Check HCO's status
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRef, err := reference.GetReference(commontestutils.GetScheme(), expectedResource)
 			Expect(err).ToNot(HaveOccurred())
 			// ObjectReference should have been added
@@ -126,12 +126,12 @@ var _ = Describe("SSP Operands", func() {
 			Expect(foundResource.Spec.CommonTemplates.Namespace).To(Equal(cTNamespace), "common-templates namespace should equal")
 
 			// ObjectReference should have been updated
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRefOutdated, err := reference.GetReference(commontestutils.GetScheme(), existingResource)
 			Expect(err).ToNot(HaveOccurred())
 			objectRefFound, err := reference.GetReference(commontestutils.GetScheme(), foundResource)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
+			Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
 		})
 

@@ -2278,7 +2278,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					cl := commontestutils.InitClient(resources)
 					restMapper := cl.RESTMapper()
-					Expect(restMapper).To(Not(BeNil()))
+					Expect(restMapper).ToNot(BeNil())
 					dRestMapper := restMapper.(*apimetav1.DefaultRESTMapper)
 					dRestMapper.AddSpecific(
 						schema.GroupVersionKind{Group: "tektontasks.kubevirt.io", Version: "v1alpha1", Kind: "TektonTasks"},
@@ -2906,12 +2906,12 @@ var _ = Describe("HyperconvergedController", func() {
 					).To(Succeed())
 
 					// Check conditions
-					Expect(foundResource.Status.Conditions).To(Not(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
+					Expect(foundResource.Status.Conditions).ToNot(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
 						Type:    hcov1beta1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
-					}))))
+					})))
 					By("verify that the metrics match to the annotation", func() {
 						verifyUnsafeMetrics(0, common.JSONPatchKVAnnotationName)
 					})
@@ -2956,12 +2956,12 @@ var _ = Describe("HyperconvergedController", func() {
 					).To(Succeed())
 
 					// Check conditions
-					Expect(foundResource.Status.Conditions).To(Not(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
+					Expect(foundResource.Status.Conditions).ToNot(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
 						Type:    hcov1beta1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
-					}))))
+					})))
 
 					By("verify that the metrics match to the annotation", func() {
 						verifyUnsafeMetrics(0, common.JSONPatchKVAnnotationName)
@@ -3065,12 +3065,12 @@ var _ = Describe("HyperconvergedController", func() {
 					).To(Succeed())
 
 					// Check conditions
-					Expect(foundResource.Status.Conditions).To(Not(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
+					Expect(foundResource.Status.Conditions).ToNot(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
 						Type:    hcov1beta1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
-					}))))
+					})))
 					By("verify that the metrics match to the annotation", func() {
 						verifyUnsafeMetrics(0, common.JSONPatchKVAnnotationName)
 					})
@@ -3108,12 +3108,12 @@ var _ = Describe("HyperconvergedController", func() {
 					).To(Succeed())
 
 					// Check conditions
-					Expect(foundResource.Status.Conditions).To(Not(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
+					Expect(foundResource.Status.Conditions).ToNot(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
 						Type:    hcov1beta1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
-					}))))
+					})))
 					By("verify that the metrics match to the annotation", func() {
 						verifyUnsafeMetrics(0, common.JSONPatchKVAnnotationName)
 					})
@@ -3212,12 +3212,12 @@ var _ = Describe("HyperconvergedController", func() {
 					).To(Succeed())
 
 					// Check conditions
-					Expect(foundResource.Status.Conditions).To(Not(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
+					Expect(foundResource.Status.Conditions).ToNot(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
 						Type:    hcov1beta1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
-					}))))
+					})))
 					By("verify that the metrics match to the annotation", func() {
 						verifyUnsafeMetrics(0, common.JSONPatchCNAOAnnotationName)
 					})
@@ -3247,12 +3247,12 @@ var _ = Describe("HyperconvergedController", func() {
 					).To(Succeed())
 
 					// Check conditions
-					Expect(foundResource.Status.Conditions).To(Not(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
+					Expect(foundResource.Status.Conditions).ToNot(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
 						Type:    hcov1beta1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
-					}))))
+					})))
 					By("verify that the metrics match to the annotation", func() {
 						verifyUnsafeMetrics(0, common.JSONPatchCNAOAnnotationName)
 					})
@@ -3344,12 +3344,12 @@ var _ = Describe("HyperconvergedController", func() {
 					).To(Succeed())
 
 					// Check conditions
-					Expect(foundResource.Status.Conditions).To(Not(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
+					Expect(foundResource.Status.Conditions).ToNot(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
 						Type:    hcov1beta1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
-					}))))
+					})))
 					By("verify that the metrics match to the annotation", func() {
 						verifyUnsafeMetrics(0, common.JSONPatchSSPAnnotationName)
 					})
@@ -3379,12 +3379,12 @@ var _ = Describe("HyperconvergedController", func() {
 					).To(Succeed())
 
 					// Check conditions
-					Expect(foundResource.Status.Conditions).To(Not(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
+					Expect(foundResource.Status.Conditions).ToNot(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
 						Type:    hcov1beta1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
-					}))))
+					})))
 					By("verify that the metrics match to the annotation", func() {
 						verifyUnsafeMetrics(0, common.JSONPatchSSPAnnotationName)
 					})
