@@ -77,7 +77,7 @@ var _ = Describe("VirtioWin", func() {
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			// Check HCO's status
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRef, err := reference.GetReference(commontestutils.GetScheme(), expectedResource)
 			Expect(err).ToNot(HaveOccurred())
 			// ObjectReference should have been added
@@ -116,19 +116,19 @@ var _ = Describe("VirtioWin", func() {
 			).ToNot(HaveOccurred())
 
 			for _, k := range updatableKeys {
-				Expect(foundResource.Data[k]).To(Not(Equal(outdatedResource.Data[k])))
+				Expect(foundResource.Data[k]).ToNot(Equal(outdatedResource.Data[k]))
 				Expect(foundResource.Data[k]).To(Equal(expectedResource.Data[k]))
 			}
 
-			Expect(foundResource.Data).To(Not(HaveKey(toBeRemovedKey)))
+			Expect(foundResource.Data).ToNot(HaveKey(toBeRemovedKey))
 
 			// ObjectReference should have been updated
-			Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 			objectRefOutdated, err := reference.GetReference(commontestutils.GetScheme(), outdatedResource)
 			Expect(err).ToNot(HaveOccurred())
 			objectRefFound, err := reference.GetReference(commontestutils.GetScheme(), foundResource)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
+			Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
 		})
 

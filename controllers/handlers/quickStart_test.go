@@ -139,12 +139,12 @@ var _ = Describe("QuickStart tests", func() {
 				Expect(quickstartObjects.Items[0].Spec.DurationMinutes).To(Equal(20))
 
 				// ObjectReference should have been updated
-				Expect(hco.Status.RelatedObjects).To(Not(BeNil()))
+				Expect(hco.Status.RelatedObjects).ToNot(BeNil())
 				objectRefOutdated, err := reference.GetReference(schemeForTest, exists)
 				Expect(err).ToNot(HaveOccurred())
 				objectRefFound, err := reference.GetReference(schemeForTest, &quickstartObjects.Items[0])
 				Expect(err).ToNot(HaveOccurred())
-				Expect(hco.Status.RelatedObjects).To(Not(ContainElement(*objectRefOutdated)))
+				Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
 				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
 			})
 		})

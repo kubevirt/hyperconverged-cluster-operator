@@ -38,7 +38,7 @@ var _ = Describe("Observability Controller", func() {
 	It("Should successfully setup the controller", func() {
 		err := SetupWithManager(mgr, &appsv1.Deployment{})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(rules.ListAlerts()).To(Not(BeEmpty()))
+		Expect(rules.ListAlerts()).ToNot(BeEmpty())
 	})
 
 	It("Should successfully reconcile observability", func() {
