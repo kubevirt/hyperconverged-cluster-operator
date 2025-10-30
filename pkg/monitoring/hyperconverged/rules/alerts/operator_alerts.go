@@ -10,7 +10,6 @@ const (
 	outOfBandUpdateAlert             = "KubeVirtCRModified"
 	unsafeModificationAlert          = "UnsupportedHCOModification"
 	installationNotCompletedAlert    = "HCOInstallationIncomplete"
-	singleStackIPv6Alert             = "SingleStackIPv6Unsupported"
 	MisconfiguredDeschedulerAlert    = "HCOMisconfiguredDescheduler"
 	unsupportedArchitecturesAlert    = "HCOGoldenImageWithNoSupportedArchitecture"
 	dictWithNoArchAnnotationAlert    = "HCOGoldenImageWithNoArchitectureAnnotation"
@@ -56,18 +55,6 @@ func operatorAlerts() []promv1.Rule {
 			},
 			Labels: map[string]string{
 				severityAlertLabelKey:     "info",
-				healthImpactAlertLabelKey: "critical",
-			},
-		},
-		{
-			Alert: singleStackIPv6Alert,
-			Expr:  intstr.FromString("kubevirt_hco_single_stack_ipv6 == 1"),
-			Annotations: map[string]string{
-				"description": "KubeVirt Hyperconverged is not supported on a single stack IPv6 cluster",
-				"summary":     "KubeVirt Hyperconverged is not supported on a single stack IPv6 cluster",
-			},
-			Labels: map[string]string{
-				severityAlertLabelKey:     "critical",
 				healthImpactAlertLabelKey: "critical",
 			},
 		},
