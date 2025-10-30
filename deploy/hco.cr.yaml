@@ -23,7 +23,7 @@ spec:
     downwardMetrics: false
     enableMultiArchBootImageImport: false
     persistentReservation: false
-    videoConfig: false
+    videoConfig: true
   higherWorkloadDensity:
     memoryOvercommitPercentage: 100
   infra: {}
