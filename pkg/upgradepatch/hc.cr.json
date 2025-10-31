@@ -16,7 +16,8 @@
       "enableMultiArchBootImageImport": false,
       "decentralizedLiveMigration": false,
       "declarativeHotplugVolumes": false,
-      "videoConfig": false
+      "videoConfig": false,
+      "objectGraph": false
     },
     "liveMigrationConfig": {
       "parallelMigrationsPerCluster": 5,
