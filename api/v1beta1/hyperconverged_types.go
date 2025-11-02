@@ -686,10 +686,8 @@ type OperandResourceRequirements struct {
 // HyperConvergedObsoleteCPUs allows avoiding scheduling of VMs for obsolete CPU models
 // +k8s:openapi-gen=true
 type HyperConvergedObsoleteCPUs struct {
-	// MinCPUModel is the Minimum CPU model that is used for basic CPU features; e.g. Penryn or Haswell.
-	// The default value for this field is nil, but in KubeVirt, the default value is "Penryn", if nothing else is set.
-	// Use this field to override KubeVirt default value.
-	// +optional
+	// MinCPUModel is not in use
+	// Deprecated: This field is not in use and is ignored.
 	MinCPUModel string `json:"minCPUModel,omitempty"`
 	// CPUModels is a list of obsolete CPU models. When the node-labeller obtains the list of obsolete CPU models, it
 	// eliminates those CPU models and creates labels for valid CPU models.

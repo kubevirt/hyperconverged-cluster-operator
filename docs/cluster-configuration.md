@@ -657,13 +657,11 @@ HyperConverged custom resource, you can exclude them from the list of labels cre
 Through the process of iteration, the list of base CPU features in the minimum CPU model are eliminated from the list of
 labels generated for the node. For example, an environment might have two supported CPU models: `Penryn` and `Haswell`.
 
-Use the `spec.obsoleteCPUs` to configure the CPU plugin. Add the obsolete CPU list under `spec.obsoleteCPUs.cpuModels`,
-and the minCPUModel as the value of `spec.obsoleteCPUs.minCPUModel`.
+Use the `spec.obsoleteCPUs` to configure the CPU plugin. Add the obsolete CPU list under `spec.obsoleteCPUs.cpuModels`.
 
-The default value for the `spec.obsoleteCPUs.minCPUModel` field in KubeVirt is `"Penryn"`, but it won't be visible if
-missing in the CR. The default value for the `spec.obsoleteCPUs.cpuModels` field is hardcoded predefined list and is not
-visible. You can add new CPU models to the list, but can't remove CPU models from the predefined list. The predefined list
-is not visible in the HyperConverged CR.
+The default value for the `spec.obsoleteCPUs.cpuModels` field is hardcoded predefined list and is not visible. You can
+add new CPU models to the list, but can't remove CPU models from the predefined list. The predefined list is not visible
+in the HyperConverged CR.
 
 The hard-coded predefined list of obsolete CPU modes is:
 * `486`
@@ -698,7 +696,6 @@ spec:
       - "pentium2"
       - "pentium3"
       - "pentiumpro"
-    minCPUModel: "Penryn"
 ```
 
 ## Default CPU model configuration
