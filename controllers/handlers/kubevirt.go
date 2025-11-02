@@ -412,7 +412,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 		return nil, err
 	}
 
-	obsoleteCPUs, minCPUModel := getObsoleteCPUConfig(hc.Spec.ObsoleteCPUs)
+	obsoleteCPUs := getObsoleteCPUConfig(hc.Spec.ObsoleteCPUs)
 
 	rateLimiter, err := hcoTuning2Kv(hc)
 	if err != nil {
@@ -433,7 +433,6 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 		PermittedHostDevices:         toKvPermittedHostDevices(hc.Spec.PermittedHostDevices),
 		MediatedDevicesConfiguration: toKvMediatedDevicesConfiguration(hc.Spec.MediatedDevicesConfiguration),
 		ObsoleteCPUModels:            obsoleteCPUs,
-		MinCPUModel:                  minCPUModel,
 		TLSConfiguration:             hcTLSSecurityProfileToKv(hcoutil.GetClusterInfo().GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile)),
 		APIConfiguration:             rateLimiter,
 		WebhookConfiguration:         rateLimiter,
@@ -540,22 +539,19 @@ func getNetworkBindings(hcoNetworkBindings map[string]kubevirtcorev1.InterfaceBi
 	return networkBindings
 }
 
-func getObsoleteCPUConfig(hcObsoleteCPUConf *hcov1beta1.HyperConvergedObsoleteCPUs) (map[string]bool, string) {
+func getObsoleteCPUConfig(hcObsoleteCPUConf *hcov1beta1.HyperConvergedObsoleteCPUs) map[string]bool {
 	obsoleteCPUModels := make(map[string]bool)
 	for _, cpu := range hardcodedObsoleteCPUModels {
 		obsoleteCPUModels[cpu] = true
 	}
-	minCPUModel := ""
 
 	if hcObsoleteCPUConf != nil {
 		for _, cpu := range hcObsoleteCPUConf.CPUModels {
 			obsoleteCPUModels[cpu] = true
 		}
-
-		minCPUModel = hcObsoleteCPUConf.MinCPUModel
 	}
 
-	return obsoleteCPUModels, minCPUModel
+	return obsoleteCPUModels
 }
 
 func toKvMediatedDevicesConfiguration(mdevsConfig *hcov1beta1.MediatedDevicesConfiguration) *kubevirtcorev1.MediatedDevicesConfiguration {

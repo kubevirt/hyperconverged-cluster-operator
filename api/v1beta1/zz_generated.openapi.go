@@ -389,7 +389,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedO
 				Properties: map[string]spec.Schema{
 					"minCPUModel": {
 						SchemaProps: spec.SchemaProps{
-							Description: "MinCPUModel is the Minimum CPU model that is used for basic CPU features; e.g. Penryn or Haswell. The default value for this field is nil, but in KubeVirt, the default value is \"Penryn\", if nothing else is set. Use this field to override KubeVirt default value.",
+							Description: "MinCPUModel is not in use Deprecated: This field is not in use and is ignored.",
 							Type:        []string{"string"},
 							Format:      "",
 						},

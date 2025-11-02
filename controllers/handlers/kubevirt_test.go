@@ -2506,48 +2506,6 @@ Version: 1.2.3`)
 					for _, cpu := range hardcodedObsoleteCPUModels {
 						Expect(kv.Spec.Configuration.ObsoleteCPUModels[cpu]).To(BeTrue())
 					}
-
-					Expect(kv.Spec.Configuration.MinCPUModel).To(BeEmpty())
-				})
-
-				It("should add min CPU Model if exists in HC CR", func() {
-					hco.Spec.ObsoleteCPUs = &hcov1beta1.HyperConvergedObsoleteCPUs{
-						MinCPUModel: "Penryn",
-					}
-
-					kv, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-
-					Expect(kv.Spec.Configuration.ObsoleteCPUModels).ToNot(BeEmpty())
-					for _, cpu := range hardcodedObsoleteCPUModels {
-						Expect(kv.Spec.Configuration.ObsoleteCPUModels[cpu]).To(BeTrue())
-					}
-					Expect(kv.Spec.Configuration.MinCPUModel).To(Equal("Penryn"))
-				})
-
-				It("should not add min CPU Model and obsolete CPU Models if HC does not contain ObsoleteCPUs", func() {
-					kv, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-
-					Expect(kv.Spec.Configuration.ObsoleteCPUModels).To(HaveLen(len(hardcodedObsoleteCPUModels)))
-					for _, cpu := range hardcodedObsoleteCPUModels {
-						Expect(kv.Spec.Configuration.ObsoleteCPUModels[cpu]).To(BeTrue())
-					}
-
-					Expect(kv.Spec.Configuration.MinCPUModel).To(BeEmpty())
-				})
-
-				It("should not add min CPU Model and add only the hard coded obsolete CPU Models if ObsoleteCPUs is empty", func() {
-					hco.Spec.ObsoleteCPUs = &hcov1beta1.HyperConvergedObsoleteCPUs{}
-					kv, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-
-					Expect(kv.Spec.Configuration.ObsoleteCPUModels).To(HaveLen(len(hardcodedObsoleteCPUModels)))
-					for _, cpu := range hardcodedObsoleteCPUModels {
-						Expect(kv.Spec.Configuration.ObsoleteCPUModels[cpu]).To(BeTrue())
-					}
-
-					Expect(kv.Spec.Configuration.MinCPUModel).To(BeEmpty())
 				})
 			})
 
@@ -2557,8 +2515,7 @@ Version: 1.2.3`)
 					Expect(err).ToNot(HaveOccurred())
 
 					hco.Spec.ObsoleteCPUs = &hcov1beta1.HyperConvergedObsoleteCPUs{
-						CPUModels:   []string{"aaa", "bbb", "ccc"},
-						MinCPUModel: "Penryn",
+						CPUModels: []string{"aaa", "bbb", "ccc"},
 					}
 
 					cl := commontestutils.InitClient([]client.Object{hco, existingKV})
@@ -2576,7 +2533,7 @@ Version: 1.2.3`)
 							foundKV),
 					).ToNot(HaveOccurred())
 
-					By("KV CR should contain the HC obsolete CPU models and minCPUModel", func() {
+					By("KV CR should contain the HC obsolete CPU models", func() {
 						Expect(foundKV.Spec.Configuration.ObsoleteCPUModels).To(HaveLen(3 + len(hardcodedObsoleteCPUModels)))
 						Expect(foundKV.Spec.Configuration.ObsoleteCPUModels).To(HaveKeyWithValue("aaa", true))
 						Expect(foundKV.Spec.Configuration.ObsoleteCPUModels).To(HaveKeyWithValue("bbb", true))
@@ -2584,8 +2541,6 @@ Version: 1.2.3`)
 						for _, cpu := range hardcodedObsoleteCPUModels {
 							Expect(foundKV.Spec.Configuration.ObsoleteCPUModels[cpu]).To(BeTrue())
 						}
-
-						Expect(foundKV.Spec.Configuration.MinCPUModel).To(Equal("Penryn"))
 					})
 
 				})
@@ -2593,7 +2548,6 @@ Version: 1.2.3`)
 				It("Should modify obsolete CPU model if they are not the same as in HC CR", func() {
 					existingKV, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
-					existingKV.Spec.Configuration.MinCPUModel = "Haswell"
 					existingKV.Spec.Configuration.ObsoleteCPUModels = map[string]bool{
 						"shouldStay":      true,
 						"shouldBeTrue":    false,
@@ -2601,8 +2555,7 @@ Version: 1.2.3`)
 					}
 
 					hco.Spec.ObsoleteCPUs = &hcov1beta1.HyperConvergedObsoleteCPUs{
-						CPUModels:   []string{"shouldStay", "shouldBeTrue", "newOne"},
-						MinCPUModel: "Penryn",
+						CPUModels: []string{"shouldStay", "shouldBeTrue", "newOne"},
 					}
 
 					cl := commontestutils.InitClient([]client.Object{hco, existingKV})
@@ -2620,7 +2573,7 @@ Version: 1.2.3`)
 							foundKV),
 					).ToNot(HaveOccurred())
 
-					By("KV CR should contain the HC obsolete CPU models and minCPUModel", func() {
+					By("KV CR should contain the HC obsolete CPU models", func() {
 						Expect(foundKV.Spec.Configuration.ObsoleteCPUModels).To(HaveLen(3 + len(hardcodedObsoleteCPUModels)))
 						Expect(foundKV.Spec.Configuration.ObsoleteCPUModels).To(HaveKeyWithValue("shouldStay", true))
 						Expect(foundKV.Spec.Configuration.ObsoleteCPUModels).To(HaveKeyWithValue("shouldBeTrue", true))
@@ -2630,15 +2583,12 @@ Version: 1.2.3`)
 						}
 
 						Expect(foundKV.Spec.Configuration.ObsoleteCPUModels).ToNot(HaveKey("shouldBeRemoved"))
-
-						Expect(foundKV.Spec.Configuration.MinCPUModel).To(Equal("Penryn"))
 					})
 				})
 
 				It("Should remove obsolete CPU model if they are not set in HC CR", func() {
 					existingKV, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
-					existingKV.Spec.Configuration.MinCPUModel = "Penryn"
 					existingKV.Spec.Configuration.ObsoleteCPUModels = map[string]bool{
 						"aaa": true,
 						"bbb": true,
@@ -2665,10 +2615,6 @@ Version: 1.2.3`)
 						for _, cpu := range hardcodedObsoleteCPUModels {
 							Expect(foundKV.Spec.Configuration.ObsoleteCPUModels[cpu]).To(BeTrue())
 						}
-					})
-
-					By("KV CR minCPUModel field should be empty", func() {
-						Expect(foundKV.Spec.Configuration.MinCPUModel).To(BeEmpty())
 					})
 				})
 			})
