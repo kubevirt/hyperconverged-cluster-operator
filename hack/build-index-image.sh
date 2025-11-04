@@ -26,6 +26,10 @@ BUNDLE_REGISTRY_IMAGE_NAME=${BUNDLE_REGISTRY_IMAGE_NAME:-hyperconverged-cluster-
 INDEX_REGISTRY_IMAGE_NAME=${INDEX_REGISTRY_IMAGE_NAME:-hyperconverged-cluster-index}
 OPM=${OPM:-opm}
 UNSTABLE=$2
+DESCRIPTION="$(<${PROJECT_ROOT}/docs/operator_description.md)"
+ICON_PAYLOAD=$(base64 -w 0 ${PROJECT_ROOT}/images/icon.svg)
+ICON_OBJ="{\"base64data\": \"${ICON_PAYLOAD}\",\"mediatype\": \"image/svg+xml\"}"
+DESC_ICON="{\"description\": \"${DESCRIPTION}\", \"icon\": ${ICON_OBJ}}"
 
 function create_index_image() {
   CURRENT_VERSION=$1
@@ -78,7 +82,8 @@ function create_file_based_catalog() {
 
   rm -rf fbc-catalog
   mkdir fbc-catalog
-  ${OPM} alpha render-template semver --migrate-level=bundle-object-to-csv-metadata index-template.yaml > fbc-catalog/catalog.json
+  ${OPM} alpha render-template semver --migrate-level=bundle-object-to-csv-metadata index-template.yaml > catalog.tmp.json
+  jq 'if .schema == "olm.package" then . + '"${DESC_ICON}"' else . end' catalog.tmp.json > fbc-catalog/catalog.json
   ${OPM} validate fbc-catalog
   rm -f fbc-catalog.Dockerfile
   ${OPM} generate dockerfile fbc-catalog
