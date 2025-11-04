@@ -9,6 +9,7 @@ import (
 	"github.com/blang/semver/v4"
 	csvVersion "github.com/operator-framework/api/pkg/lib/version"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	persesv1alpha1 "github.com/rhobs/perses-operator/api/v1alpha1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -684,6 +685,11 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		{
 			APIGroups: stringListToSlice(admissionregistrationv1.GroupName),
 			Resources: stringListToSlice("validatingadmissionpolicies", "validatingadmissionpolicybindings"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice(persesv1alpha1.GroupVersion.Group),
+			Resources: stringListToSlice("persesdashboards", "persesdatasources"),
 			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
 	}

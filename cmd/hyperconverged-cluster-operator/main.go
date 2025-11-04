@@ -19,6 +19,7 @@ import (
 	operatorsapiv2 "github.com/operator-framework/api/pkg/operators/v2"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"github.com/rhobs/operator-observability-toolkit/pkg/operatormetrics"
+	persesv1alpha1 "github.com/rhobs/perses-operator/api/v1alpha1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	coordinationv1 "k8s.io/api/coordination/v1"
@@ -66,6 +67,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/ingresscluster"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/nodes"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/observability"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/perses"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/authorization"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/collectors"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
@@ -112,6 +114,7 @@ var (
 		deschedulerv1.AddToScheme,
 		netattdefv1.AddToScheme,
 		networkingv1.AddToScheme,
+		persesv1alpha1.AddToScheme,
 	}
 )
 
@@ -148,8 +151,11 @@ func main() {
 
 	needLeaderElection := !ci.IsRunningLocally()
 
+	// Determine Perses availability before creating the manager so we can shape the cache accordingly
+	persesAvailable := hcoutil.IsPersesAvailable(ctx, apiClient)
+
 	// Create a new Cmd to provide shared dependencies and start components
-	mgr, err := manager.New(cfg, getManagerOptions(operatorNamespace, needLeaderElection, ci, scheme))
+	mgr, err := manager.New(cfg, getManagerOptions(operatorNamespace, needLeaderElection, ci, scheme, persesAvailable))
 	cmdHelper.ExitOnError(err, "can't initiate manager")
 
 	// register pprof instrumentation if HCO_PPROF_ADDR is set
@@ -219,8 +225,8 @@ func main() {
 	restartCh := make(chan struct{})
 	defer close(restartCh)
 
-	// Create a new CRD reconciler
-	if err = crd.RegisterReconciler(mgr, restartCh); err != nil {
+	// Create a new CRD reconciler and pass Perses availability computed at startup
+	if err = crd.RegisterReconciler(mgr, restartCh, persesAvailable); err != nil {
 		logger.Error(err, "failed to register the CRD controller")
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register CRD controller; "+err.Error())
 		os.Exit(1)
@@ -230,6 +236,13 @@ func main() {
 		if err = observability.SetupWithManager(mgr, ownresources.GetDeploymentRef()); err != nil {
 			logger.Error(err, "unable to create controller", "controller", "Observability")
 			os.Exit(1)
+		}
+		// Register Perses controller only if CRDs are available; otherwise avoid watching unknown types.
+		if persesAvailable {
+			if err = perses.SetupPersesWithManager(mgr, ownresources.GetDeploymentRef()); err != nil {
+				logger.Error(err, "unable to create controller", "controller", "ObservabilityPerses")
+				os.Exit(1)
+			}
 		}
 	}
 
@@ -304,7 +317,7 @@ func main() {
 
 // Restricts the cache's ListWatch to specific fields/labels per GVK at the specified object to control the memory impact
 // this is used to completely overwrite the NewCache function so all the interesting objects should be explicitly listed here
-func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Options {
+func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo, persesAvailable bool) cache.Options {
 	namespaceSelector := fields.Set{"metadata.namespace": operatorNamespace}.AsSelector()
 	labelSelector := labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}.AsSelector()
 	labelSelectorForNamespace := labels.Set{hcoutil.KubernetesMetadataName: operatorNamespace}.AsSelector()
@@ -389,6 +402,16 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 		},
 	}
 
+	// Perses resources (namespaced): restrict cache to operator namespace, only when CRDs are available
+	if persesAvailable {
+		cacheOptionsByObjectForMonitoring[&persesv1alpha1.PersesDashboard{}] = cache.ByObject{
+			Field: namespaceSelector,
+		}
+		cacheOptionsByObjectForMonitoring[&persesv1alpha1.PersesDatasource{}] = cache.ByObject{
+			Field: namespaceSelector,
+		}
+	}
+
 	cacheOptionsByObjectForDescheduler := map[client.Object]cache.ByObject{
 		&deschedulerv1.KubeDescheduler{}: {},
 	}
@@ -441,7 +464,7 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 	return cacheOptions
 }
 
-func getManagerOptions(operatorNamespace string, needLeaderElection bool, ci hcoutil.ClusterInfo, scheme *apiruntime.Scheme) manager.Options {
+func getManagerOptions(operatorNamespace string, needLeaderElection bool, ci hcoutil.ClusterInfo, scheme *apiruntime.Scheme, persesAvailable bool) manager.Options {
 	return manager.Options{
 		Metrics: server.Options{
 			SecureServing:  true,
@@ -459,7 +482,7 @@ func getManagerOptions(operatorNamespace string, needLeaderElection bool, ci hco
 		// "configmapsleases". Therefore, having only "leases" should be safe now.
 		LeaderElectionResourceLock: resourcelock.LeasesResourceLock,
 		LeaderElectionID:           "hyperconverged-cluster-operator-lock",
-		Cache:                      getCacheOption(operatorNamespace, ci),
+		Cache:                      getCacheOption(operatorNamespace, ci, persesAvailable),
 		Scheme:                     scheme,
 	}
 }
