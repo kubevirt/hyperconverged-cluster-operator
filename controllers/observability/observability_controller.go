@@ -50,6 +50,11 @@ func (r *Reconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Result
 		errors = append(errors, err)
 	}
 
+	// Apply Perses dashboards/datasources shipped with the operator, if any
+	if err := r.ReconcilePersesResources(ctx); err != nil {
+		errors = append(errors, err)
+	}
+
 	if len(errors) > 0 {
 		err := fmt.Errorf("reconciliation failed: %v", errors)
 		log.Error(err, "Reconciliation failed")
