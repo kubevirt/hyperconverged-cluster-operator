@@ -25,7 +25,10 @@ RUN mkdir -p ${HOME} && \
 
 COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/_out/hyperconverged-cluster-operator $OPERATOR
 COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/_out/csv-merger $CSV_MERGER
-COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/assets/ ./
+# Copy the entire assets directory so it is available at /assets/...
+COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/assets ./assets
+# Keep legacy location for upgrade patches expected at container root
+COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/assets/upgradePatches.json ./upgradePatches.json
 ENTRYPOINT $OPERATOR
 USER ${USER_UID}
 

@@ -524,6 +524,19 @@ spec:
           - watch
           - update
         - apiGroups:
+          - perses.dev
+          resources:
+          - persesdashboards
+          - persesdatasources
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
           - monitoring.coreos.com
           resources:
           - alertmanagers

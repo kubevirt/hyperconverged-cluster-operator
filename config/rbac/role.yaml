@@ -13,11 +13,47 @@ rules:
   verbs:
   - create
   - delete
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts/token
+  verbs:
+  - create
   - get
   - list
   - patch
   - update
   - watch
+- apiGroups:
+  - perses.dev
+  resources:
+  - persesdashboards
+  - persesdatasources
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - perses.dev
+  resources:
+  - perses
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions
+  resourceNames:
+  - persesdashboards.perses.dev
+  - persesdatasources.perses.dev
+  verbs:
+  - get
 - apiGroups:
   - cache.kubevirt.io
   resources:
