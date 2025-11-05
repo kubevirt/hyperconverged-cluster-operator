@@ -58,7 +58,19 @@ type DNSSelector struct {
 }
 
 var (
-	networkPoliciesTemplate = template.Must(template.New("network-policies").Parse(networkPoliciesTemplateFile))
+	// lblFunMap makes the NetworkPolicy label go constants, available in the template
+	lblFuncMap = template.FuncMap{
+		"allowAccessClusterServicesLbl": func() string {
+			return hcoutil.AllowEgressToDNSAndAPIServerLabel
+		},
+		"allowPrometheusAccessLbl": func() string {
+			return hcoutil.AllowIngressToMetricsEndpointLabel
+		},
+	}
+
+	networkPoliciesTemplate = template.Must(template.New("network-policies").
+				Funcs(lblFuncMap).
+				Parse(networkPoliciesTemplateFile))
 
 	// deployK8sDNSNetworkPolicy is a flag to control whether the k8s DNS network policy should be deployed.
 	// By default, the bundle image that includes the network policy yaml files is going to be deployed on openshift.
