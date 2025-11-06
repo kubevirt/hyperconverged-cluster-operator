@@ -92,11 +92,12 @@ const (
 	DataImportCronEnabledAnnotation = "dataimportcrontemplate.kubevirt.io/enable"
 
 	HCOAnnotationPrefix = "hco.kubevirt.io/"
+	NPLabelPrefix       = "np.kubevirt.io/"
 
 	// AllowEgressToDNSAndAPIServerLabel if this label is set, the network policy will allow egress to DNS and API server
-	AllowEgressToDNSAndAPIServerLabel = HCOAnnotationPrefix + "allow-access-cluster-services"
+	AllowEgressToDNSAndAPIServerLabel = NPLabelPrefix + "allow-access-cluster-services"
 	// AllowIngressToMetricsEndpointLabel if this label is set, the network policy will allow ingress to the metrics endpoint
-	AllowIngressToMetricsEndpointLabel = HCOAnnotationPrefix + "allow-prometheus-access"
+	AllowIngressToMetricsEndpointLabel = NPLabelPrefix + "allow-prometheus-access"
 )
 
 type AppComponent string

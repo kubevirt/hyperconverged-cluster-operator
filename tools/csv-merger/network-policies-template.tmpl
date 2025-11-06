@@ -7,24 +7,24 @@ metadata:
 spec:
   podSelector:
     matchExpressions:
-      - key: hco.kubevirt.io/allow-access-cluster-services
-        operator: Exists
+    - key: {{allowAccessClusterServicesLbl}}
+      operator: Exists
   policyTypes:
-    - Egress
+  - Egress
   egress:
 {{- range .DNSSelectors }}
-    - ports:
-        - protocol: TCP
-          port: {{.DNSPort}}
-        - protocol: UDP
-          port: {{.DNSPort}}
-      to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: {{.DNSNamespaceSelector}}
-          podSelector:
-            matchLabels:
-              {{.DNSPodSelectorLabel}}: {{.DNSPodSelectorVal}}
+  - ports:
+    - protocol: TCP
+      port: {{.DNSPort}}
+    - protocol: UDP
+      port: {{.DNSPort}}
+    to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: {{.DNSNamespaceSelector}}
+      podSelector:
+        matchLabels:
+          {{.DNSPodSelectorLabel}}: {{.DNSPodSelectorVal}}
 {{- end }}
 ---
 apiVersion: networking.k8s.io/v1
@@ -35,14 +35,14 @@ metadata:
 spec:
   podSelector:
     matchExpressions:
-      - key: hco.kubevirt.io/allow-access-cluster-services
-        operator: Exists
+    - key: {{allowAccessClusterServicesLbl}}
+      operator: Exists
   policyTypes:
-    - Egress
+  - Egress
   egress:
-    - ports:
-        - protocol: TCP
-          port: 6443
+  - ports:
+    - protocol: TCP
+      port: 6443
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -52,16 +52,16 @@ metadata:
 spec:
   podSelector:
     matchExpressions:
-      - key: hco.kubevirt.io/allow-prometheus-access
-        operator: Exists
+    - key: {{allowPrometheusAccessLbl}}
+      operator: Exists
   policyTypes:
-    - Ingress
+  - Ingress
   ingress:
-    - ports:
-        - protocol: TCP
-          port: 8443
-        - protocol: TCP
-          port: 8080
+  - ports:
+    - protocol: TCP
+      port: 8443
+    - protocol: TCP
+      port: 8080
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -72,18 +72,18 @@ spec:
   podSelector:
     matchLabels:
       name: hyperconverged-cluster-operator
-    egress:
-      - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: openshift-monitoring
-          podSelector:
-            matchLabels:
-              alertmanager: main
-              app.kubernetes.io/component: alert-router
-              app.kubernetes.io/instance: main
-    policyTypes:
-      - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: openshift-monitoring
+      podSelector:
+        matchLabels:
+          alertmanager: main
+          app.kubernetes.io/component: alert-router
+          app.kubernetes.io/instance: main
+  policyTypes:
+  - Egress
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -95,11 +95,11 @@ spec:
     matchLabels:
       name: hyperconverged-cluster-webhook
   policyTypes:
-    - Ingress
+  - Ingress
   ingress:
-    - ports:
-        - protocol: TCP
-          port: {{ .WebhookPort }}
+  - ports:
+    - protocol: TCP
+      port: {{ .WebhookPort }}
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -111,8 +111,8 @@ spec:
     matchLabels:
       name: hyperconverged-cluster-cli-download
   policyTypes:
-    - Ingress
+  - Ingress
   ingress:
-    - ports:
-        - protocol: TCP
-          port: {{ .CLIDownloadsPort }}
+  - ports:
+    - protocol: TCP
+      port: {{ .CLIDownloadsPort }}
