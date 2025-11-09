@@ -13,7 +13,7 @@ ENV PATH=$PATH:/usr/local/go/bin:/go/bin \
     GOPATH=/go \
     PACKAGE=github.com/kubevirt/hyperconverged-cluster-operator \
     API_FOLDER=api \
-    API_VERSION=v1beta1 \ 
+    API_VERSION=v1beta1 \
     PROJECT_ROOT=/home/hco-builder/hco
 # Build args for code-generator versions
 ARG K8S_VER
