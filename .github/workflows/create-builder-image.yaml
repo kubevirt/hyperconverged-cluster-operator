@@ -1,0 +1,39 @@
+name: Build and Push Builder Image
+
+on:
+  push:
+    branches:
+      - main
+
+    paths:
+      - "hack/builder/**"
+      - "go.mod"
+  workflow_dispatch:
+jobs:
+  build_push_builder:
+    if: (github.repository == 'kubevirt/hyperconverged-cluster-operator')
+    name: Build and Push Builder Image
+    runs-on: ubuntu-latest
+    env:
+      QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+      QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
+      REGISTRY_NAMESPACE: kubevirt
+      IMAGE_NAME: hco-builder
+    steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Checkout the latest code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Login to Quay.io
+        run: |
+          make quay-login
+      - name: Build Builder Image
+        run: make create-builder-image
+      - name: Push Builder Image
+        run: make push-builder-image
