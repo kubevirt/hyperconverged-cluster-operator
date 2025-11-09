@@ -319,6 +319,9 @@ fi
 
 # Build and merge CSVs
 CSV_DIR=${CSV_DIR}/manifests
+
+ICON=$(base64 -w 0 ${PROJECT_ROOT}/images/icon.svg)
+
 ${TOOLS}/csv-merger \
   --cna-csv="$(<${cnaCsv})" \
   --virt-csv="$(<${virtCsv})" \
@@ -332,6 +335,7 @@ ${TOOLS}/csv-merger \
   --hco-kv-io-version="${CSV_VERSION}" \
   --spec-displayname="KubeVirt HyperConverged Cluster Operator" \
   --spec-description="$(<${PROJECT_ROOT}/docs/operator_description.md)" \
+  --icon="${ICON}" \
   --metadata-description="A unified operator deploying and controlling KubeVirt and its supporting operators with opinionated defaults" \
   --crd-display="HyperConverged Cluster Operator" \
   --smbios="${SMBIOS}" \
