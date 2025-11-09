@@ -12,6 +12,7 @@ FUNC_TEST_IMAGE    ?= $(REGISTRY_NAMESPACE)/hyperconverged-cluster-functest
 VIRT_ARTIFACTS_SERVER ?= $(REGISTRY_NAMESPACE)/virt-artifacts-server
 BUNDLE_IMAGE       ?= $(REGISTRY_NAMESPACE)/hyperconverged-cluster-bundle
 INDEX_IMAGE        ?= $(REGISTRY_NAMESPACE)/hyperconverged-cluster-index
+BUILDER_IMAGE      ?= $(IMAGE_REGISTRY)/$(REGISTRY_NAMESPACE)/hco-builder
 LDFLAGS            ?= -w -s
 GOLANDCI_LINT_VERSION ?= v2.6.0
 HCO_BUMP_LEVEL ?= minor
@@ -307,6 +308,12 @@ build-annotate-dicts:
 annotate-dicts: build-annotate-dicts
 	ASSETS_DIR=$(ASSETS_DIR) ./hack/annotate-dicts.sh
 
+create-builder-image:
+	IMAGE_NAME=$(BUILDER_IMAGE) ./hack/builder/create-builder-image.sh
+
+push-builder-image:
+	podman push $(BUILDER_IMAGE)
+
 .PHONY: start \
 		clean \
 		build \
@@ -373,4 +380,6 @@ annotate-dicts: build-annotate-dicts
 		retag-push-all-images \
 		build-annotate-dicts \
 		annotate-dicts \
-		cp-json-patch
+		cp-json-patch \
+		create-builder-image \
+		push-builder-image
