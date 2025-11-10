@@ -147,6 +147,7 @@ const (
 	kvDecentralizedLiveMigration = "DecentralizedLiveMigration"
 	kvMultiArchitecture          = "MultiArchitecture"
 	kvVideoConfig                = "VideoConfig"
+	kvObjectGraph                = "ObjectGraph"
 )
 
 // CPU Plugin default values
@@ -852,6 +853,10 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, a
 	}
 	if ptr.Deref(featureGates.VideoConfig, false) {
 		fgs = append(fgs, kvVideoConfig)
+	}
+
+	if ptr.Deref(featureGates.ObjectGraph, false) {
+		fgs = append(fgs, kvObjectGraph)
 	}
 
 	if ptr.Deref(featureGates.DecentralizedLiveMigration, false) {

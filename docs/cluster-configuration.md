@@ -246,6 +246,15 @@ Enabling this feature gate allows explicitly configuring the video type in the V
 
 **Graduation Status**: Alpha
 
+### Object Graph Feature Gate
+Set the `objectGraph` feature gate to true in order to enable the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking.
+
+**Note**: This feature is in Developer Preview.
+
+**Default**: `false`
+
+**Graduation Status**: Alpha
+
 ### The hco.kubevirt.io/deployPasstNetworkBinding annotation
 Set the `hco.kubevirt.io/deployPasstNetworkBinding` HyperConverged CR annotation to `true`, to deploy the needed
 configurations for kubevirt users, so they can bind their VM using a Passt Network binding.
