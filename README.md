@@ -33,6 +33,44 @@ The deployment is completed when HCO custom resource reports its condition as `A
 
 For more explanation and advanced options for HCO deployment using kustomize, refer to [kustomize deployment documentation](deploy/kustomize/README.md).
 
+##
+
+## Building Custom Bundle and Index Image
+As prerequisites, [OLM](https://sdk.operatorframework.io/docs/installation/) is required.
+If you wish to use cert-manager for certificates, the script in hack/deploy-cert-manager.sh might be helpful.
+
+To build a custom bundle and index image, with [opm](https://docs.redhat.com/en/documentation/openshift_container_platform/4.9/html/cli_tools/opm-cli) installed run:
+```bash
+# Set your image repository
+export REGISTRY_NAMESPACE=<your-org>
+export IMAGE_TAG=<your-tag>
+
+make build-push-multi-arch-operator-image build-push-multi-arch-webhook-image build-push-multi-arch-artifacts-server
+
+export HCO_OPERATOR_IMAGE="quay.io/${REGISTRY_NAMESPACE}/hyperconverged-cluster-operator:${IMAGE_TAG}"
+export HCO_WEBHOOK_IMAGE="quay.io/${REGISTRY_NAMESPACE}/hyperconverged-cluster-webhook:${IMAGE_TAG}"
+export HCO_DOWNLOADS_IMAGE="quay.io/${REGISTRY_NAMESPACE}/virt-artifacts-server:${IMAGE_TAG}"
+
+# Export env variables for your custom operator images. The environment variables can be found in the deploy/images.env file.
+# This file is auto-generated and should not be modified. For example, change the image of the KubeVirt Operator image by
+# setting the KUBEVIRT_OPERATOR_IMAGE environment variable.
+export KUBEVIRT_OPERATOR_IMAGE=<your-image-reference>
+# Build manifests with custom operator images
+UNIQUE=true make build-manifests
+
+./hack/build-index-image.sh latest UNSTABLE
+```
+
+This will:
+1. Generate ClusterServiceVersion (CSV) and other manifests with your custom operator images
+2. Build and push a bundle image containing the manifests
+3. Build and push an index image referencing the bundle
+
+You can then use the index image to deploy HCO via OLM by creating a CatalogSource pointing to your custom index image.
+Alternatively, you can install the operator via operator-sdk like so:
+```bash
+operator-sdk run bundle -n <NAMESPACE> --timeout=10m <BUNDLE_IMAGE_REFERENCE>
+```
 ## Installing Unreleased Bundle Using A Custom Catalog Source
 
 Hyperconverged Cluster Operator is publishing the latest bundle to [quay.io/kubevirt](https://quay.io/repository/kubevirt)
