@@ -278,12 +278,12 @@ done
 # Build and write deploy dir
 ${TOOLS}/manifest-templator \
   --api-sources=${PROJECT_ROOT}/api/... \
-  --cna-csv="$(<${cnaCsv})" \
-  --virt-csv="$(<${virtCsv})" \
-  --ssp-csv="$(<${sspCsv})" \
-  --cdi-csv="$(<${cdiCsv})" \
-  --hpp-csv="$(<${hppCsv})" \
-  --aaq-csv="$(<${aaqCsv})" \
+  --cna-csv-file="${cnaCsv}" \
+  --virt-csv-file="${virtCsv}" \
+  --ssp-csv-file="${sspCsv}" \
+  --cdi-csv-file="${cdiCsv}" \
+  --hpp-csv-file="${hppCsv}" \
+  --aaq-csv-file="${aaqCsv}" \
   --kv-virtiowin-image-name="${KUBEVIRT_VIRTIO_IMAGE}" \
   --operator-namespace="${OPERATOR_NAMESPACE}" \
   --smbios="${SMBIOS}" \
@@ -323,12 +323,12 @@ CSV_DIR=${CSV_DIR}/manifests
 ICON=$(base64 -w 0 ${PROJECT_ROOT}/images/icon.svg)
 
 ${TOOLS}/csv-merger \
-  --cna-csv="$(<${cnaCsv})" \
-  --virt-csv="$(<${virtCsv})" \
-  --ssp-csv="$(<${sspCsv})" \
-  --cdi-csv="$(<${cdiCsv})" \
-  --hpp-csv="$(<${hppCsv})" \
-  --aaq-csv="$(<${aaqCsv})" \
+  --cna-csv-file="${cnaCsv}" \
+  --virt-csv-file="${virtCsv}" \
+  --ssp-csv-file="${sspCsv}" \
+  --cdi-csv-file="${cdiCsv}" \
+  --hpp-csv-file="${hppCsv}" \
+  --aaq-csv-file="${aaqCsv}" \
   --kv-virtiowin-image-name="${KUBEVIRT_VIRTIO_IMAGE}" \
   --csv-version=${CSV_VERSION_PARAM} \
   --replaces-csv-version=${REPLACES_CSV_VERSION} \
