@@ -752,7 +752,6 @@ type CSVBaseParams struct {
 	MetaDescription string
 	Description     string
 	Image           string
-	Replaces        string
 	Version         semver.Version
 	CrdDisplay      string
 }
@@ -897,7 +896,6 @@ func GetCSVBase(params *CSVBaseParams) *csvv1alpha1.ClusterServiceVersion {
 			Description: params.Description,
 			Keywords:    stringListToSlice("KubeVirt", "Virtualization"),
 			Version:     csvVersion.OperatorVersion{Version: params.Version},
-			Replaces:    params.Replaces,
 			Maintainers: []csvv1alpha1.Maintainer{
 				{
 					Name:  kubevirtProjectName,
