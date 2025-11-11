@@ -16,6 +16,17 @@ jobs:
       OPM_VERSION: v1.47.0
       PACKAGE_DIR: "./deploy/olm-catalog/community-kubevirt-hyperconverged"
     steps:
+      - name: Check disk space before
+        run: df -h
+      - name: Free up space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          docker system prune -af
+      - name: Check disk space after
+        run: df -h
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: resolve the correct branch of the tag
@@ -101,6 +112,17 @@ jobs:
       TARGET_BRANCH: ${{ needs.publish_hco.outputs.TARGET_BRANCH }}
       CSV_VERSION: ${{ needs.publish_hco.outputs.CSV_VERSION }}
     steps:
+      - name: Check disk space before
+        run: df -h
+      - name: Free up space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          docker system prune -af
+      - name: Check disk space after
+        run: df -h
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Checkout the latest code of ${{ env.TARGET_BRANCH }} branch
