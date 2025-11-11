@@ -80,12 +80,6 @@ func (i *EnvVarFlags) Set(value string) error {
 
 var (
 	outputMode          = flag.String("output-mode", CSVMode, "Working mode: "+validOutputModes)
-	cnaCsv              = flag.String("cna-csv", "", "Cluster Network Addons CSV string")
-	virtCsv             = flag.String("virt-csv", "", "KubeVirt CSV string")
-	sspCsv              = flag.String("ssp-csv", "", "Scheduling Scale Performance CSV string")
-	cdiCsv              = flag.String("cdi-csv", "", "Containerized Data Importer CSV String")
-	hppCsv              = flag.String("hpp-csv", "", "HostPath Provisioner Operator CSV String")
-	aaqCsv              = flag.String("aaq-csv", "", "Applications Aware Quota Operator CSV String")
 	operatorImage       = flag.String("operator-image-name", "", "HyperConverged Cluster Operator image")
 	webhookImage        = flag.String("webhook-image-name", "", "HyperConverged Cluster Webhook image")
 	cliDownloadsImage   = flag.String("cli-downloads-image-name", "", "Downloads Server image")
@@ -169,7 +163,8 @@ func getHcoCsv() {
 		panic(errors.New("must specify spec-displayname and spec-description"))
 	}
 
-	componentsWithCsvs := getInitialCsvList()
+	componentsWithCsvs, err := util.GetInitialCsvList()
+	panicOnError(err)
 
 	version := semver.MustParse(*csvVersion)
 	replaces := getReplacesVersion()
@@ -340,41 +335,6 @@ func setSupported(csvBase *csvv1alpha1.ClusterServiceVersion) {
 	}
 	for _, ele := range supportedOS {
 		csvBase.Labels[operatorFrameworkPrefix+ele] = supported
-	}
-}
-
-func getInitialCsvList() []util.CsvWithComponent {
-	return []util.CsvWithComponent{
-		{
-			Name:      "CNA",
-			Csv:       *cnaCsv,
-			Component: hcoutil.AppComponentNetwork,
-		},
-		{
-			Name:      "KubeVirt",
-			Csv:       *virtCsv,
-			Component: hcoutil.AppComponentCompute,
-		},
-		{
-			Name:      "SSP",
-			Csv:       *sspCsv,
-			Component: hcoutil.AppComponentSchedule,
-		},
-		{
-			Name:      "CDI",
-			Csv:       *cdiCsv,
-			Component: hcoutil.AppComponentStorage,
-		},
-		{
-			Name:      "HPP",
-			Csv:       *hppCsv,
-			Component: hcoutil.AppComponentStorage,
-		},
-		{
-			Name:      "AAQ",
-			Csv:       *aaqCsv,
-			Component: hcoutil.AppComponentQuotaMngt,
-		},
 	}
 }
 
