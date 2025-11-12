@@ -240,11 +240,11 @@ Set the `videoConfig` feature gate to true in order to override the default vide
 
 Enabling this feature gate allows explicitly configuring the video type in the VirtualMachine spec.
 
-**Note**: This feature is in Developer Preview.
+**Note**: This feature is in Tech Preview.
 
-**Default**: `false`
+**Default**: `true`
 
-**Graduation Status**: Alpha
+**Graduation Status**: Beta
 
 ### Object Graph Feature Gate
 Set the `objectGraph` feature gate to true in order to enable the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking.

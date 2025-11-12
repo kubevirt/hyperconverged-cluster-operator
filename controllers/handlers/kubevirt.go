@@ -851,7 +851,7 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, a
 	if ptr.Deref(featureGates.AlignCPUs, false) {
 		fgs = append(fgs, kvAlignCPUs)
 	}
-	if ptr.Deref(featureGates.VideoConfig, false) {
+	if ptr.Deref(featureGates.VideoConfig, true) {
 		fgs = append(fgs, kvVideoConfig)
 	}
 
