@@ -14,7 +14,12 @@ import (
 type FakeWriteErrorGenerator func(obj client.Object) error
 type FakeReadErrorGenerator func(key client.ObjectKey) error
 
-// implements the client.Client interface (proxy pattern)
+// HcoTestClient is a fake k8s client, that can also initiate errors
+// at test request.
+// It implements the client.Client interface (proxy pattern).
+
+var _ client.Client = &HcoTestClient{}
+
 type HcoTestClient struct {
 	client      client.Client
 	sw          *HcoTestStatusWriter
@@ -22,6 +27,10 @@ type HcoTestClient struct {
 	createError FakeWriteErrorGenerator
 	updateError FakeWriteErrorGenerator
 	deleteError FakeWriteErrorGenerator
+}
+
+func (c *HcoTestClient) Apply(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.ApplyOption) error {
+	return c.client.Apply(ctx, obj, opts...)
 }
 
 func (c *HcoTestClient) GroupVersionKindFor(obj runtime.Object) (schema.GroupVersionKind, error) {
