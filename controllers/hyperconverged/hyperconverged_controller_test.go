@@ -641,7 +641,7 @@ var _ = Describe("HyperconvergedController", func() {
 				// mock a reconciliation triggered by a change in secondary CR
 				rq := reqresolver.GetSecondaryCRRequest()
 
-				counterValueBefore, err := metrics.GetOverwrittenModificationsCount(existingResource.Kind, existingResource.Name)
+				counterValueBefore, err := metrics.GetOverwrittenModificationsCount("KubeVirt", existingResource.Name)
 				Expect(err).ToNot(HaveOccurred())
 
 				// Do the reconcile
@@ -666,7 +666,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(foundResource.Spec.Infra.NodePlacement.NodeSelector["key1"]).To(Equal("value1"))
 				Expect(foundResource.Spec.Workloads.NodePlacement.NodeSelector["key2"]).To(Equal("value2"))
 
-				counterValueAfter, err := metrics.GetOverwrittenModificationsCount(foundResource.Kind, foundResource.Name)
+				counterValueAfter, err := metrics.GetOverwrittenModificationsCount("KubeVirt", foundResource.Name)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(counterValueAfter).To(Equal(counterValueBefore + 1))
 
@@ -719,7 +719,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(foundResource.Spec.Infra.NodePlacement.NodeSelector["key1"]).To(Equal("value1"))
 				Expect(foundResource.Spec.Workloads.NodePlacement.NodeSelector["key2"]).To(Equal("value2"))
 
-				counterValueAfter, err := metrics.GetOverwrittenModificationsCount(foundResource.Kind, foundResource.Name)
+				counterValueAfter, err := metrics.GetOverwrittenModificationsCount("KubeVirt", foundResource.Name)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(counterValueAfter).To(Equal(counterValueBefore))
 
