@@ -270,10 +270,15 @@ func getHcoCsv() {
 	version := semver.MustParse(*csvVersion)
 	replaces := getReplacesVersion()
 
-	csvParams := getCsvBaseParams(replaces, version)
+	csvParams := getCsvBaseParams(version)
 
 	// This is the basic CSV without an InstallStrategy defined
 	csvBase := components.GetCSVBase(csvParams)
+
+	// Only set the Replaces field if a replaces version was provided
+	if replaces != "" {
+		csvBase.Spec.Replaces = replaces
+	}
 
 	if *enableUniqueSemver {
 		csvBase.Annotations["olm.skipRange"] = fmt.Sprintf("<%v", version.String())
@@ -492,7 +497,7 @@ func getRelatedImages() []csvv1alpha1.RelatedImage {
 	return ris
 }
 
-func getCsvBaseParams(replaces string, version semver.Version) *components.CSVBaseParams {
+func getCsvBaseParams(version semver.Version) *components.CSVBaseParams {
 	return &components.CSVBaseParams{
 		Name:            operatorName,
 		Namespace:       *namespace,
@@ -500,7 +505,6 @@ func getCsvBaseParams(replaces string, version semver.Version) *components.CSVBa
 		MetaDescription: *metadataDescription,
 		Description:     *specDescription,
 		Image:           *operatorImage,
-		Replaces:        replaces,
 		Version:         version,
 		CrdDisplay:      *crdDisplay,
 	}
