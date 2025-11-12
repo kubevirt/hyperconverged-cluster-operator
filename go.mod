@@ -48,7 +48,7 @@ require (
 	kubevirt.io/containerized-data-importer-api v1.63.1
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4
 	kubevirt.io/ssp-operator/api v0.24.1
-	sigs.k8s.io/controller-runtime v0.21.0
+	sigs.k8s.io/controller-runtime v0.22.4
 	sigs.k8s.io/controller-tools v0.18.0
 	sigs.k8s.io/yaml v1.6.0
 )

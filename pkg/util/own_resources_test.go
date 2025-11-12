@@ -56,10 +56,6 @@ var _ = Describe("Test OwnResources", func() {
 
 	It("should update pod and csv if they are found", func() {
 		csv := &csvv1alpha1.ClusterServiceVersion{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "ClusterServiceVersion",
-				APIVersion: "operators.coreos.com/v1alpha1",
-			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      rsName,
 				Namespace: namespace,
@@ -67,10 +63,6 @@ var _ = Describe("Test OwnResources", func() {
 		}
 
 		dep := &appsv1.Deployment{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "Deployment",
-				APIVersion: "apps/v1",
-			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      rsName,
 				Namespace: namespace,
