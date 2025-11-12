@@ -334,14 +334,14 @@ ${TOOLS}/csv-merger \
   --replaces-csv-version=${REPLACES_CSV_VERSION} \
   --hco-kv-io-version="${CSV_VERSION}" \
   --spec-displayname="KubeVirt HyperConverged Cluster Operator" \
-  --spec-description="$(<${PROJECT_ROOT}/docs/operator_description.md)" \
+  --spec-description-file="${PROJECT_ROOT}/docs/operator_description.md" \
   --icon="${ICON}" \
   --metadata-description="A unified operator deploying and controlling KubeVirt and its supporting operators with opinionated defaults" \
   --crd-display="HyperConverged Cluster Operator" \
   --smbios="${SMBIOS}" \
   --amd64-machinetype="${amd64_machinetype}" \
   --arm64-machinetype="${arm64_machinetype}" \
-  --csv-overrides="$(<${csvOverrides})" \
+  --csv-overrides-file="${csvOverrides}" \
   --enable-unique-version=${ENABLE_UNIQUE} \
   --kubevirt-version="${KUBEVIRT_VERSION}" \
   --cdi-version="${CDI_VERSION}" \
