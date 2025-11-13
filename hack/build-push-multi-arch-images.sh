@@ -12,8 +12,6 @@ if [[ -z ${DOCKER_FILE} ]]; then
   exit 1
 fi
 
-CLEANUP=${CLEANUP:-"true"}
-
 SHA=$(git describe --no-match  --always --abbrev=40 --dirty)
 
 . ./hack/cri-bin.sh && export CRI_BIN=${CRI_BIN}
@@ -29,10 +27,3 @@ for arch in ${ARCHITECTURES}; do
 done
 
 ./hack/retry.sh 3 10 "${CRI_BIN} manifest push ${IMAGE_NAME}"
-
-if [[ ${CLEANUP} == "true" ]]; then
-  for arch in ${ARCHITECTURES}; do
-    ${CRI_BIN} rmi "${IMAGE_NAME}-${arch}"
-  done
-  ${CRI_BIN} manifest rm "${IMAGE_NAME}"
-fi
