@@ -572,12 +572,15 @@ func (v *VirtualMachineInstance) IsBootloaderEFI() bool {
 		v.Spec.Domain.Firmware.Bootloader.EFI != nil
 }
 
-// WantsToHaveQOSGuaranteed checks if cpu and memoyr limits and requests are identical on the VMI.
+// WantsToHaveQOSGuaranteed checks if cpu and memory limits and requests are identical on the VMI.
 // This is the indicator that people want a VMI with QOS of guaranteed
+// If memory limit is set but not its corresponding request, we will eventually set request=limit
 func (v *VirtualMachineInstance) WantsToHaveQOSGuaranteed() bool {
 	resources := v.Spec.Domain.Resources
-	return !resources.Requests.Memory().IsZero() && resources.Requests.Memory().Cmp(*resources.Limits.Memory()) == 0 &&
-		!resources.Requests.Cpu().IsZero() && resources.Requests.Cpu().Cmp(*resources.Limits.Cpu()) == 0
+	memoryWantsIt := (resources.Requests.Memory().IsZero() && !resources.Limits.Memory().IsZero()) ||
+		(!resources.Requests.Memory().IsZero() && resources.Requests.Memory().Cmp(*resources.Limits.Memory()) == 0)
+	cpuWantsIt := !resources.Requests.Cpu().IsZero() && resources.Requests.Cpu().Cmp(*resources.Limits.Cpu()) == 0
+	return memoryWantsIt && cpuWantsIt
 }
 
 // ShouldStartPaused returns true if VMI should be started in paused state
@@ -724,6 +727,9 @@ const (
 
 	// VirtualMachineInstanceMigrationRequired Indicates that an automatic migration is required
 	VirtualMachineInstanceMigrationRequired VirtualMachineInstanceConditionType = "MigrationRequired"
+
+	// VirtualMachineInstanceEvictionRequested indicates that an eviction has been requested for the VMI
+	VirtualMachineInstanceEvictionRequested VirtualMachineInstanceConditionType = "EvictionRequested"
 )
 
 // These are valid reasons for VMI conditions.
@@ -744,6 +750,8 @@ const (
 	VirtualMachineInstanceReasonSEVNotMigratable = "SEVNotLiveMigratable"
 	// Reason means that VMI is not live migratable because it uses IBM Secure Execution
 	VirtualMachineInstanceReasonSecureExecutionNotMigratable = "SecureExecutionNotLiveMigratable"
+	// Reason means that VMI is not live migratable because it uses Intel Trust Domain Extensions (TDX)
+	VirtualMachineInstanceReasonTDXNotMigratable = "TDXNotLiveMigratable"
 	// Reason means that VMI is not live migratable because it uses HyperV Reenlightenment while TSC Frequency is not available
 	VirtualMachineInstanceReasonNoTSCFrequencyMigratable = "NoTSCFrequencyNotLiveMigratable"
 	// Reason means that VMI is not live migratable because it uses HyperV Reenlightenment while TSC Frequency is not available
@@ -764,6 +772,9 @@ const (
 
 	// Indicates that automatic migration is pending
 	VirtualMachineInstanceReasonAutoMigrationPending = "AutoMigrationPending"
+
+	// Indicates that an eviction has been requested for the VMI
+	VirtualMachineInstanceReasonEvictionRequested = "EvictionRequested"
 )
 
 const (
@@ -820,6 +831,10 @@ func (m *VirtualMachineInstanceMigration) IsRunning() bool {
 	switch m.Status.Phase {
 	case MigrationFailed, MigrationPending, MigrationPhaseUnset, MigrationSucceeded, MigrationWaitingForSync, MigrationSynchronizing:
 		return false
+	case MigrationScheduling:
+		if m.IsDecentralizedSource() {
+			return false
+		}
 	}
 	return true
 }
@@ -1276,6 +1291,12 @@ const (
 	// SecureExecutionLabel marks the node as capable of running workloads with IBM Secure Execution
 	SecureExecutionLabel string = "kubevirt.io/s390-pv"
 
+	// SEVSNPLabel marks the node as capable of running workloads with SEV-SNP
+	SEVSNPLabel string = "kubevirt.io/sev-snp"
+
+	// TDXLabel marks the node as capable of running workloads with Intel TDX
+	TDXLabel string = "kubevirt.io/tdx"
+
 	// KSMEnabledLabel marks the node as KSM-handling enabled
 	KSMEnabledLabel string = "kubevirt.io/ksm-enabled"
 
@@ -1307,8 +1328,15 @@ const (
 	// originated from.
 	VirtualMachinePoolRevisionName string = "kubevirt.io/vm-pool-revision-name"
 
-	// VirtualMachineNameLabel is the name of the Virtual Machine
-	VirtualMachineNameLabel string = "vm.kubevirt.io/name"
+	// DeprecatedVirtualMachineNameLabel is the name of the Virtual Machine
+	// Deprecated: Use VirtualMachineInstanceSelectorLabel instead. Kept for backwards compatibility.
+	DeprecatedVirtualMachineNameLabel string = "vm.kubevirt.io/name"
+
+	// VirtualMachineInstanceIDLabel is applied to virt-launcher pods to provide a
+	// stable and unique identifier for a VMI, suitable for use in service selectors.
+	// For VMI names longer than 63 characters, its value is a truncated and hashed
+	// representation of the name to ensure uniqueness.
+	VirtualMachineInstanceIDLabel = "vmi.kubevirt.io/id"
 
 	// PVCMemoryDumpAnnotation is the name of the memory dump representing the vm name,
 	// pvc name and the timestamp the memory dump was collected
@@ -1365,6 +1393,57 @@ const (
 	// DisablePCIHole64 indicates that the 64-Bit PCI hole should be disabled on a VirtualMachineInstance.
 	// This annotation might be deprecated in the future if we decided to add a struct for it.
 	DisablePCIHole64 string = "kubevirt.io/disablePCIHole64"
+
+	// EvictionSourceAnnotation indicates the origin of an api initiated eviction in the VirtualMachineInstance.
+	// This annotation might be empty if the source is not a recognized actor (an admin for example).
+	// This could be useful to distinguish evictions originated from the descheduler.
+	EvictionSourceAnnotation = "kubevirt.io/eviction-source"
+
+	// AllowAccessClusterServicesNPLabel is a pod label to be set by virt-components to indicate that they require
+	// access to cluster services otherwise blocked by the strict network policy (NP).
+	// This label will be applied to the following virt pods:
+	// - virt-operator
+	// - virt-api
+	// - virt-handler
+	// - virt-controller
+	// - virt-exportproxy
+	// - virt-synchronization-controller
+	// - the installer strategy job pod
+	// This label is then used as pod selector to create a NP to give the pod access to cluster services (apiserver/dns).
+	// An example of a NP might be:
+	// ---
+	// apiVersion: networking.k8s.io/v1
+	// kind: NetworkPolicy
+	// metadata:
+	//   name: kv-allow-egress-to-api-server
+	//   namespace: kubevirt
+	// spec:
+	//   podSelector:
+	//     matchExpressions:
+	//       - key: np.kubevirt.io/allow-access-cluster-services
+	//         operator: In
+	//         values:
+	//           - "true"
+	//   policyTypes:
+	//     - Egress
+	//   egress:
+	//     - ports:
+	//         - protocol: TCP
+	//           port: 6443
+	//     - to:
+	//         # allow talking to the kube-dns pods in kubevirt
+	//         - namespaceSelector:
+	//             matchLabels:
+	//               kubernetes.io/metadata.name: kube-system
+	//           podSelector:
+	//             matchLabels:
+	//               k8s-app: kube-dns
+	//       ports:
+	//         - protocol: TCP
+	//           port: dns-tcp
+	//         - protocol: UDP
+	//           port: dns
+	AllowAccessClusterServicesNPLabel string = "np.kubevirt.io/allow-access-cluster-services"
 )
 
 func NewVMI(name string, uid types.UID) *VirtualMachineInstance {
@@ -1621,6 +1700,14 @@ type VirtualMachineInstanceMigrationList struct {
 	Items           []VirtualMachineInstanceMigration `json:"items"`
 }
 
+type MigrationPriority string
+
+const (
+	PrioritySystemCritical    MigrationPriority = "system-critical"
+	PriorityUserTriggered     MigrationPriority = "user-triggered"
+	PrioritySystemMaintenance MigrationPriority = "system-maintenance"
+)
+
 type VirtualMachineInstanceMigrationSpec struct {
 	// The name of the VMI to perform the migration on. VMI must exist in the migration objects namespace
 	VMIName string `json:"vmiName,omitempty" valid:"required"`
@@ -1638,6 +1725,9 @@ type VirtualMachineInstanceMigrationSpec struct {
 	SendTo *VirtualMachineInstanceMigrationSource `json:"sendTo,omitempty"`
 	// If receieve is specified, this VirtualMachineInstanceMigration will be considered the target
 	Receive *VirtualMachineInstanceMigrationTarget `json:"receive,omitempty"`
+	// Priority of the migration. This can be one of `system-critical`, `user-triggered`, `system-maintenance`.
+	// +optional
+	Priority *MigrationPriority `json:"priority,omitempty"`
 }
 
 type VirtualMachineInstanceMigrationSource struct {
@@ -2667,20 +2757,19 @@ type MigrateOptions struct {
 	AddedNodeSelector map[string]string `json:"addedNodeSelector,omitempty"`
 }
 
-// VirtualMachineInstanceGuestOSLoad represents the system load averages from the guest agent
-type VirtualMachineInstanceGuestOSLoad struct {
-	// Load1mSet indicates whether the 1 minute load average is set
-	Load1mSet bool `json:"load1mSet,omitempty"`
-	// Load average over 1 minute
-	Load1m float64 `json:"load1m,omitempty"`
-	// Load5mSet indicates whether the 5 minute load average is set
-	Load5mSet bool `json:"load5mSet,omitempty"`
-	// Load average over 5 minutes
-	Load5m float64 `json:"load5m,omitempty"`
-	// Load15mSet indicates whether the 15 minute load average is set
-	Load15mSet bool `json:"load15mSet,omitempty"`
-	// Load average over 15 minutes
-	Load15m float64 `json:"load15m,omitempty"`
+// EvacuateCancelOptions may be provided on evacuate cancel request.
+type EvacuateCancelOptions struct {
+	metav1.TypeMeta `json:",inline"`
+	// When present, indicates that modifications should not be
+	// persisted. An invalid or unrecognized dryRun directive will
+	// result in an error response and no further processing of the
+	// request. Valid values are:
+	// - All: all dry run stages will be processed
+	// +optional
+	// +listType=atomic
+	DryRun []string `json:"dryRun,omitempty" protobuf:"bytes,1,rep,name=dryRun"`
+
+	EvacuationNodeName string `json:"evacuationNodeName"`
 }
 
 // VirtualMachineInstanceGuestAgentInfo represents information from the installed guest agent
@@ -2707,8 +2796,6 @@ type VirtualMachineInstanceGuestAgentInfo struct {
 	// It will be set to "frozen" if the request was made, or unset otherwise.
 	// This does not reflect the actual state of the guest filesystem.
 	FSFreezeStatus string `json:"fsFreezeStatus,omitempty"`
-	// Load contains the system load averages (1M, 5M, 15M) from the guest agent
-	Load *VirtualMachineInstanceGuestOSLoad `json:"load,omitempty"`
 }
 
 // List of commands that QEMU guest agent supports
