@@ -2,6 +2,8 @@ package nodeinfo
 
 import internal "github.com/kubevirt/hyperconverged-cluster-operator/pkg/internal/nodeinfo"
 
+const S390X = internal.S390X
+
 var (
 	HandleNodeChanges = internal.HandleNodeChanges
 

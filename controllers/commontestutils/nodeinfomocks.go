@@ -6,12 +6,16 @@ var (
 	origIsControlPlaneHighlyAvailable = nodeinfo.IsControlPlaneHighlyAvailable
 	origIsControlPlaneNodeExists      = nodeinfo.IsControlPlaneNodeExists
 	origIsInfraHighlyAvailable        = nodeinfo.IsInfrastructureHighlyAvailable
+	origGetControlPlaneArchitectures  = nodeinfo.GetControlPlaneArchitectures
+	origGetWorkloadsArchitectures     = nodeinfo.GetWorkloadsArchitectures
 )
 
 func ResetNodeInfoMocks() {
 	nodeinfo.IsControlPlaneHighlyAvailable = origIsControlPlaneHighlyAvailable
 	nodeinfo.IsControlPlaneNodeExists = origIsControlPlaneNodeExists
 	nodeinfo.IsInfrastructureHighlyAvailable = origIsInfraHighlyAvailable
+	nodeinfo.GetControlPlaneArchitectures = origGetControlPlaneArchitectures
+	nodeinfo.GetWorkloadsArchitectures = origGetWorkloadsArchitectures
 }
 
 // HighlyAvailableNodeInfoMocks mocks highly available cluster
@@ -56,5 +60,15 @@ func SRCPHAINodeInfoMock() {
 
 	nodeinfo.IsControlPlaneHighlyAvailable = func() bool {
 		return false
+	}
+}
+
+// SpecificArchitectureNodeInfoMocks mocks a specific architecture for the nodes
+func SpecificArchitectureNodeInfoMocks(arch string) {
+	nodeinfo.GetControlPlaneArchitectures = func() []string {
+		return []string{arch}
+	}
+	nodeinfo.GetWorkloadsArchitectures = func() []string {
+		return []string{arch}
 	}
 }

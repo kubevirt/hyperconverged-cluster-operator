@@ -8,6 +8,7 @@ import (
 	"maps"
 	"os"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -99,6 +100,13 @@ const (
 
 	// Enable the installation of the KubeVirt seccomp profile
 	kvKubevirtSeccompProfile = "KubevirtSeccompProfile"
+)
+
+// KubeVirt architecture dependant feature gates.
+// These feature gates are set by HCO in the KubeVirt CR and can't be modified by the end user.
+const (
+	// Allow running IBM Z Secure Execution VMs
+	kvSecureExecution = "SecureExecution"
 )
 
 const (
@@ -877,6 +885,10 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, a
 
 	if annotations[passt.DeployPasstNetworkBindingAnnotation] == "true" {
 		fgs = append(fgs, kvPasstIPStackMigration)
+	}
+
+	if slices.Contains(nodeinfo.GetWorkloadsArchitectures(), nodeinfo.S390X) {
+		fgs = append(fgs, kvSecureExecution)
 	}
 
 	return fgs
