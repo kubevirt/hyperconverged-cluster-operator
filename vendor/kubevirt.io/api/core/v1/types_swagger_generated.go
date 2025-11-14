@@ -393,6 +393,7 @@ func (VirtualMachineInstanceMigrationSpec) SwaggerDoc() map[string]string {
 		"addedNodeSelector": "AddedNodeSelector is an additional selector that can be used to\ncomplement a NodeSelector or NodeAffinity as set on the VM\nto restrict the set of allowed target nodes for a migration.\nIn case of key collisions, values set on the VM objects\nare going to be preserved to ensure that addedNodeSelector\ncan only restrict but not bypass constraints already set on the VM object.\n+optional",
 		"sendTo":            "If sendTo is specified, this VirtualMachineInstanceMigration will be considered the source",
 		"receive":           "If receieve is specified, this VirtualMachineInstanceMigration will be considered the target",
+		"priority":          "Priority of the migration. This can be one of `system-critical`, `user-triggered`, `system-maintenance`.\n+optional",
 	}
 }
 
@@ -748,15 +749,10 @@ func (MigrateOptions) SwaggerDoc() map[string]string {
 	}
 }
 
-func (VirtualMachineInstanceGuestOSLoad) SwaggerDoc() map[string]string {
+func (EvacuateCancelOptions) SwaggerDoc() map[string]string {
 	return map[string]string{
-		"":           "VirtualMachineInstanceGuestOSLoad represents the system load averages from the guest agent",
-		"load1mSet":  "Load1mSet indicates whether the 1 minute load average is set",
-		"load1m":     "Load average over 1 minute",
-		"load5mSet":  "Load5mSet indicates whether the 5 minute load average is set",
-		"load5m":     "Load average over 5 minutes",
-		"load15mSet": "Load15mSet indicates whether the 15 minute load average is set",
-		"load15m":    "Load average over 15 minutes",
+		"":       "EvacuateCancelOptions may be provided on evacuate cancel request.",
+		"dryRun": "When present, indicates that modifications should not be\npersisted. An invalid or unrecognized dryRun directive will\nresult in an error response and no further processing of the\nrequest. Valid values are:\n- All: all dry run stages will be processed\n+optional\n+listType=atomic",
 	}
 }
 
@@ -771,7 +767,6 @@ func (VirtualMachineInstanceGuestAgentInfo) SwaggerDoc() map[string]string {
 		"userList":          "UserList is a list of active guest OS users",
 		"fsInfo":            "FSInfo is a guest os filesystem information containing the disk mapping and disk mounts with usage",
 		"fsFreezeStatus":    "FSFreezeStatus indicates whether a freeze operation was requested for the guest filesystem.\nIt will be set to \"frozen\" if the request was made, or unset otherwise.\nThis does not reflect the actual state of the guest filesystem.",
-		"load":              "Load contains the system load averages (1M, 5M, 15M) from the guest agent",
 	}
 }
 

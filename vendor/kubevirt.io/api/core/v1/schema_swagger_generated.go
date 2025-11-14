@@ -412,6 +412,8 @@ func (DiskTarget) SwaggerDoc() map[string]string {
 func (LaunchSecurity) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"sev": "AMD Secure Encrypted Virtualization (SEV).",
+		"snp": "AMD SEV-SNP flags defined by the SEV-SNP specifications.\n+optional",
+		"tdx": "Intel Trust Domain Extensions (TDX).",
 	}
 }
 
@@ -430,7 +432,15 @@ func (SEVPolicy) SwaggerDoc() map[string]string {
 	}
 }
 
+func (SEVSNP) SwaggerDoc() map[string]string {
+	return map[string]string{}
+}
+
 func (SEVAttestation) SwaggerDoc() map[string]string {
+	return map[string]string{}
+}
+
+func (TDX) SwaggerDoc() map[string]string {
 	return map[string]string{}
 }
 
