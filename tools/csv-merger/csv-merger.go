@@ -20,6 +20,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -84,12 +85,6 @@ func (i *EnvVarFlags) Set(value string) error {
 var (
 	cwd, _              = os.Getwd()
 	outputMode          = flag.String("output-mode", CSVMode, "Working mode: "+validOutputModes)
-	cnaCsv              = flag.String("cna-csv", "", "Cluster Network Addons CSV string")
-	virtCsv             = flag.String("virt-csv", "", "KubeVirt CSV string")
-	sspCsv              = flag.String("ssp-csv", "", "Scheduling Scale Performance CSV string")
-	cdiCsv              = flag.String("cdi-csv", "", "Containerized Data Importer CSV String")
-	hppCsv              = flag.String("hpp-csv", "", "HostPath Provisioner Operator CSV String")
-	aaqCsv              = flag.String("aaq-csv", "", "Applications Aware Quota Operator CSV String")
 	operatorImage       = flag.String("operator-image-name", "", "HyperConverged Cluster Operator image")
 	webhookImage        = flag.String("webhook-image-name", "", "HyperConverged Cluster Webhook image")
 	cliDownloadsImage   = flag.String("cli-downloads-image-name", "", "Downloads Server image")
@@ -97,7 +92,8 @@ var (
 	kvUIProxyImage      = flag.String("kubevirt-consoleproxy-image-name", "", "KubeVirt Console Proxy image")
 	kvVirtIOWinImage    = flag.String("kv-virtiowin-image-name", "", "KubeVirt VirtIO Win image")
 	_                   = flag.String("primary-udn-binding-image-name", "", "deprecated. This flag is ignored")
-	smbios              = flag.String("smbios", "", "Custom SMBIOS string for KubeVirt ConfigMap")
+	smbios              = flag.String("smbios", "", "Custom SMBIOS string, used by HCO to configure the SMBIOS in KubeVirt CR")
+	smbiosFile          = flag.String("smbios-file", "", "Custom SMBIOS file name, used by HCO to configure the SMBIOS in KubeVirt CR")
 	machinetype         = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap (Deprecated, use amd64-machinetype)")
 	amd64MachineType    = flag.String("amd64-machinetype", "", "Custom AMD64_MACHINETYPE string for KubeVirt ConfigMap")
 	arm64MachineType    = flag.String("arm64-machinetype", "", "Custom ARM64_MACHINETYPE string for KubeVirt ConfigMap")
@@ -105,10 +101,12 @@ var (
 	replacesCsvVersion  = flag.String("replaces-csv-version", "", "CSV version to replace")
 	metadataDescription = flag.String("metadata-description", "", "One-Liner Description")
 	specDescription     = flag.String("spec-description", "", "Description")
+	specDescriptionFile = flag.String("spec-description-file", "", "Description file")
 	specDisplayName     = flag.String("spec-displayname", "", "Display Name")
 	namespace           = flag.String("namespace", "kubevirt-hyperconverged", "Namespace")
 	crdDisplay          = flag.String("crd-display", "KubeVirt HyperConverged Cluster", "Label show in OLM UI about the primary CRD")
-	csvOverrides        = flag.String("csv-overrides", "", "CSV like string with punctual changes that will be recursively applied (if possible)")
+	csvOverrides        = flag.String("csv-overrides", "", "CSV-like string with punctual changes that will be recursively applied (if possible)")
+	csvOverridesFile    = flag.String("csv-overrides-file", "", "path of file with CSV-like format, with punctual changes that will be recursively applied (if possible)")
 	visibleCRDList      = flag.String("visible-crds-list", "hyperconvergeds.hco.kubevirt.io,hostpathprovisioners.hostpathprovisioner.kubevirt.io",
 		"Comma separated list of all the CRDs that should be visible in OLM console")
 	relatedImagesList = flag.String("related-images-list", "",
@@ -261,11 +259,14 @@ func main() {
 }
 
 func getHcoCsv() {
+	panicOnError(getFilesOrStrings())
+
 	if *specDisplayName == "" || *specDescription == "" {
 		panic(errors.New("must specify spec-displayname and spec-description"))
 	}
 
-	componentsWithCsvs := getInitialCsvList()
+	componentsWithCsvs, err := util.GetInitialCsvList()
+	panicOnError(err)
 
 	version := semver.MustParse(*csvVersion)
 	replaces := getReplacesVersion()
@@ -444,41 +445,6 @@ func setSupported(csvBase *csvv1alpha1.ClusterServiceVersion) {
 	}
 }
 
-func getInitialCsvList() []util.CsvWithComponent {
-	return []util.CsvWithComponent{
-		{
-			Name:      "CNA",
-			Csv:       *cnaCsv,
-			Component: hcoutil.AppComponentNetwork,
-		},
-		{
-			Name:      "KubeVirt",
-			Csv:       *virtCsv,
-			Component: hcoutil.AppComponentCompute,
-		},
-		{
-			Name:      "SSP",
-			Csv:       *sspCsv,
-			Component: hcoutil.AppComponentSchedule,
-		},
-		{
-			Name:      "CDI",
-			Csv:       *cdiCsv,
-			Component: hcoutil.AppComponentStorage,
-		},
-		{
-			Name:      "HPP",
-			Csv:       *hppCsv,
-			Component: hcoutil.AppComponentStorage,
-		},
-		{
-			Name:      "AAQ",
-			Csv:       *aaqCsv,
-			Component: hcoutil.AppComponentQuotaMngt,
-		},
-	}
-}
-
 func getReplacesVersion() string {
 	if *replacesCsvVersion != "" {
 		return fmt.Sprintf("%v.v%v", operatorName, semver.MustParse(*replacesCsvVersion).String())
@@ -575,10 +541,7 @@ func addRelatedImage(images []csvv1alpha1.RelatedImage, image string) []csvv1alp
 
 func panicOnError(err error, info ...string) {
 	if err != nil {
-		moreInfo := ""
-		if len(info) > 0 {
-			moreInfo = strings.Join(info, " ")
-		}
+		moreInfo := strings.Join(info, " ")
 
 		log.Println("Error!", err, moreInfo)
 		panic(err)
@@ -599,4 +562,35 @@ func sortRelatedImages(slice []csvv1alpha1.RelatedImage) []csvv1alpha1.RelatedIm
 		return slice[i].Name < slice[j].Name
 	})
 	return slice
+}
+
+func getFilesOrStrings() error {
+	for _, f := range []struct {
+		str      *string
+		fileName string
+		flagName string
+	}{
+		{str: smbios, fileName: *smbiosFile, flagName: "smbios"},
+		{str: specDescription, fileName: *specDescriptionFile, flagName: "spec-description"},
+		{str: csvOverrides, fileName: *csvOverridesFile, flagName: "csv-overrides"},
+	} {
+		if f.fileName != "" {
+			if *f.str != "" {
+				return fmt.Errorf(`only one of the "--%[1]s" or the "--%[1]s-file" flags may be used, but not both`, f.flagName)
+			}
+
+			fileContent, err := os.ReadFile(f.fileName)
+			if err != nil {
+				return fmt.Errorf("can't read %q; %w", f.fileName, err)
+			}
+
+			// to match the non-flag behavior, that is used like this in the script:
+			// --spec-description-file=$(<"${PROJECT_ROOT}/docs/operator_description.md")
+			// in this case, the last newline is dropped from the content. We want to do
+			// the same when reading directly from a file.
+			*f.str = string(bytes.TrimSuffix(fileContent, []byte{'\n'}))
+		}
+	}
+
+	return nil
 }
