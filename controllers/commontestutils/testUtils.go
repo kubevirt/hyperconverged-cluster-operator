@@ -328,6 +328,9 @@ func (c ClusterInfoMock) IsDeschedulerCRDDeployed(_ context.Context, _ client.Cl
 func (c ClusterInfoMock) IsSingleStackIPv6() bool {
 	return true
 }
+func (c ClusterInfoMock) IsHyperShiftManaged() bool {
+	return false
+}
 func (c ClusterInfoMock) GetPod() *corev1.Pod {
 	return pod
 }

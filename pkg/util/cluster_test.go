@@ -405,6 +405,129 @@ var _ = Describe("test clusterInfo", func() {
 		Expect(GetClusterInfo().IsSingleStackIPv6()).To(BeFalse())
 	})
 
+	Context("HyperShift Detection", func() {
+		It("should detect HyperShift managed cluster with external control plane", func() {
+			hypershiftInfrastructure := &openshiftconfigv1.Infrastructure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster",
+					Labels: map[string]string{
+						"hypershift.openshift.io/managed": "true",
+					},
+				},
+				Status: openshiftconfigv1.InfrastructureStatus{
+					ControlPlaneTopology:   openshiftconfigv1.ExternalTopologyMode,
+					InfrastructureTopology: openshiftconfigv1.SingleReplicaTopologyMode,
+					PlatformStatus: &openshiftconfigv1.PlatformStatus{
+						Type: "AWS",
+					},
+				},
+			}
+
+			cl := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(clusterVersion, hypershiftInfrastructure, ingress, apiServer, dns, ipv4network).
+				WithStatusSubresource(clusterVersion, hypershiftInfrastructure, ingress, apiServer, dns, ipv4network).
+				Build()
+
+			Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
+			Expect(GetClusterInfo().IsOpenshift()).To(BeTrue())
+			Expect(GetClusterInfo().IsHyperShiftManaged()).To(BeTrue())
+		})
+
+		It("should not detect HyperShift when label is missing", func() {
+			externalCPInfrastructure := &openshiftconfigv1.Infrastructure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster",
+					// No HyperShift label
+				},
+				Status: openshiftconfigv1.InfrastructureStatus{
+					ControlPlaneTopology:   openshiftconfigv1.ExternalTopologyMode,
+					InfrastructureTopology: openshiftconfigv1.SingleReplicaTopologyMode,
+					PlatformStatus: &openshiftconfigv1.PlatformStatus{
+						Type: "None",
+					},
+				},
+			}
+
+			cl := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(clusterVersion, externalCPInfrastructure, ingress, apiServer, dns, ipv4network).
+				WithStatusSubresource(clusterVersion, externalCPInfrastructure, ingress, apiServer, dns, ipv4network).
+				Build()
+
+			Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
+			Expect(GetClusterInfo().IsOpenshift()).To(BeTrue())
+			Expect(GetClusterInfo().IsHyperShiftManaged()).To(BeFalse())
+		})
+
+		It("should not detect HyperShift when control plane is not external", func() {
+			hypershiftLabeledInfrastructure := &openshiftconfigv1.Infrastructure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster",
+					Labels: map[string]string{
+						"hypershift.openshift.io/managed": "true",
+					},
+				},
+				Status: openshiftconfigv1.InfrastructureStatus{
+					ControlPlaneTopology:   openshiftconfigv1.HighlyAvailableTopologyMode,
+					InfrastructureTopology: openshiftconfigv1.HighlyAvailableTopologyMode,
+					PlatformStatus: &openshiftconfigv1.PlatformStatus{
+						Type: "AWS",
+					},
+				},
+			}
+
+			cl := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(clusterVersion, hypershiftLabeledInfrastructure, ingress, apiServer, dns, ipv4network).
+				WithStatusSubresource(clusterVersion, hypershiftLabeledInfrastructure, ingress, apiServer, dns, ipv4network).
+				Build()
+
+			Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
+			Expect(GetClusterInfo().IsOpenshift()).To(BeTrue())
+			Expect(GetClusterInfo().IsHyperShiftManaged()).To(BeFalse())
+		})
+
+		It("should not detect HyperShift when label value is not 'true'", func() {
+			wrongLabelValueInfrastructure := &openshiftconfigv1.Infrastructure{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster",
+					Labels: map[string]string{
+						"hypershift.openshift.io/managed": "false",
+					},
+				},
+				Status: openshiftconfigv1.InfrastructureStatus{
+					ControlPlaneTopology:   openshiftconfigv1.ExternalTopologyMode,
+					InfrastructureTopology: openshiftconfigv1.SingleReplicaTopologyMode,
+					PlatformStatus: &openshiftconfigv1.PlatformStatus{
+						Type: "AWS",
+					},
+				},
+			}
+
+			cl := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				WithObjects(clusterVersion, wrongLabelValueInfrastructure, ingress, apiServer, dns, ipv4network).
+				WithStatusSubresource(clusterVersion, wrongLabelValueInfrastructure, ingress, apiServer, dns, ipv4network).
+				Build()
+
+			Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
+			Expect(GetClusterInfo().IsOpenshift()).To(BeTrue())
+			Expect(GetClusterInfo().IsHyperShiftManaged()).To(BeFalse())
+		})
+
+		It("should not detect HyperShift on non-OpenShift cluster", func() {
+			// Non-OpenShift cluster (missing ClusterVersion)
+			cl := fake.NewClientBuilder().
+				WithScheme(testScheme).
+				Build()
+
+			Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
+			Expect(GetClusterInfo().IsOpenshift()).To(BeFalse())
+			Expect(GetClusterInfo().IsHyperShiftManaged()).To(BeFalse())
+		})
+	})
+
 	DescribeTable(
 		"check Init on openshift, with OLM, infrastructure topology ...",
 		func(controlPlaneTopology, infrastructureTopology openshiftconfigv1.TopologyMode, numMasterNodes, numWorkerNodes int, expectedIsControlPlaneHighlyAvailable, expectedIsInfrastructureHighlyAvailable bool) {
