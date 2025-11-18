@@ -13,10 +13,9 @@
 # limitations under the License.
 
 export KUBEVIRT_PROVIDER=${KUBEVIRT_PROVIDER:-'k8s-1.30'}
-export LATEST_KUBEVIRTCI_TAG=$(curl -L -Ss https://storage.googleapis.com/kubevirt-prow/release/kubevirt/kubevirtci/latest)
-export KUBEVIRTCI_TAG=${KUBEVIRTCI_TAG:-${LATEST_KUBEVIRTCI_TAG}}
 KUBEVIRTCI_PATH="${PWD}/_kubevirtci"
 KUBEVIRTCI_REPO='https://github.com/kubevirt/kubevirtci.git'
+export KUBEVIRTCI_TAG=${KUBEVIRTCI_TAG:-2412041602-733e595f}
 
 function cluster::_get_repo() {
     git --git-dir ${KUBEVIRTCI_PATH}/.git remote get-url origin
