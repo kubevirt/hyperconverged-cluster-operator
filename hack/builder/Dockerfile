@@ -20,11 +20,8 @@ RUN go install \
     k8s.io/code-generator/cmd/deepcopy-gen@${K8S_VER} \
     k8s.io/code-generator/cmd/defaulter-gen@${K8S_VER} && \
     go install \
-    k8s.io/kube-openapi/cmd/openapi-gen@${KUBEOPENAPI_VER}
-# Install rsync and rsync-daemon (for compatibility across different distributions)
-# In Fedora, rsync includes daemon functionality, but rsync-daemon may exist in other distros
-RUN dnf install -y rsync && \
-    (dnf install -y rsync-daemon || true) && \
+    k8s.io/kube-openapi/cmd/openapi-gen@${KUBEOPENAPI_VER} && \
+    dnf install -y rsync rsync-daemon && \
     dnf clean all
 COPY rsyncd.conf /etc/rsyncd.conf
 # Verify installation
