@@ -15,6 +15,7 @@ INDEX_IMAGE        ?= $(REGISTRY_NAMESPACE)/hyperconverged-cluster-index
 BUILDER_IMAGE      ?= $(IMAGE_REGISTRY)/$(REGISTRY_NAMESPACE)/hco-builder
 LDFLAGS            ?= -w -s
 GOLANDCI_LINT_VERSION ?= v2.6.0
+MULTIARCH          ?= true
 HCO_BUMP_LEVEL ?= minor
 ASSETS_DIR ?= assets
 DUMP_NETWORK_POLICIES ?= "false"
@@ -160,12 +161,12 @@ container-push-artifacts-server:
 	. "hack/cri-bin.sh" && $$CRI_BIN push $(IMAGE_REGISTRY)/$(VIRT_ARTIFACTS_SERVER):$(IMAGE_TAG)
 
 retag-push-all-images:
-	IMAGE_REPO=$(IMAGE_REGISTRY)/$(OPERATOR_IMAGE) MULTIARCH=true CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
-	IMAGE_REPO=$(IMAGE_REGISTRY)/$(WEBHOOK_IMAGE) MULTIARCH=true CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
-	IMAGE_REPO=$(IMAGE_REGISTRY)/$(FUNC_TEST_IMAGE) MULTIARCH=true CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
-	IMAGE_REPO=$(IMAGE_REGISTRY)/$(VIRT_ARTIFACTS_SERVER) MULTIARCH=true CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
+	IMAGE_REPO=$(IMAGE_REGISTRY)/$(OPERATOR_IMAGE) MULTIARCH=$(MULTIARCH) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
+	IMAGE_REPO=$(IMAGE_REGISTRY)/$(WEBHOOK_IMAGE) MULTIARCH=$(MULTIARCH) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
+	IMAGE_REPO=$(IMAGE_REGISTRY)/$(FUNC_TEST_IMAGE) MULTIARCH=$(MULTIARCH) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
+	IMAGE_REPO=$(IMAGE_REGISTRY)/$(VIRT_ARTIFACTS_SERVER) MULTIARCH=$(MULTIARCH) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
 	IMAGE_REPO=$(IMAGE_REGISTRY)/$(BUNDLE_IMAGE) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
-	IMAGE_REPO=$(IMAGE_REGISTRY)/$(INDEX_IMAGE) MULTIARCH=true CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
+	IMAGE_REPO=$(IMAGE_REGISTRY)/$(INDEX_IMAGE) MULTIARCH=$(MULTIARCH) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
 
 cluster-up:
 	./cluster/up.sh
