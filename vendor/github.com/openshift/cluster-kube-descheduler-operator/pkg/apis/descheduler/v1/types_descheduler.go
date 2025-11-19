@@ -50,6 +50,9 @@ type KubeDeschedulerSpec struct {
 type EvictionLimits struct {
 	// total restricts the maximum number of overall evictions
 	Total *int32 `json:"total,omitempty"`
+
+	// node restricts the maximum number of evictions per node
+	Node *int32 `json:"node,omitempty"`
 }
 
 // ProfileCustomizations contains various parameters for modifying the default behavior of certain profiles
@@ -78,6 +81,8 @@ type ProfileCustomizations struct {
 	// DevEnableSoftTainter enables SoftTainter alpha feature.
 	// The EnableSoftTainter alpha feature is a subject to change.
 	// Currently provided as an experimental feature.
+	// +kubebuilder:deprecatedversion:warning="devEnableSoftTainter field is deprecated and ignored"
+	// Deprecated: DevEnableSoftTainter field is deprecated and ignored.
 	DevEnableSoftTainter bool `json:"devEnableSoftTainter"`
 
 	// DevEnableEvictionsInBackground enables descheduler's EvictionsInBackground alpha feature.
@@ -191,7 +196,7 @@ type Namespaces struct {
 
 // DeschedulerProfile allows configuring the enabled strategy profiles for the descheduler
 // it allows multiple profiles to be enabled at once, which will have cumulative effects on the cluster.
-// +kubebuilder:validation:Enum=AffinityAndTaints;TopologyAndDuplicates;LifecycleAndUtilization;DevPreviewLongLifecycle;LongLifecycle;SoftTopologyAndDuplicates;EvictPodsWithLocalStorage;EvictPodsWithPVC;CompactAndScale;DevKubeVirtRelieveAndMigrate
+// +kubebuilder:validation:Enum=AffinityAndTaints;TopologyAndDuplicates;LifecycleAndUtilization;DevPreviewLongLifecycle;LongLifecycle;SoftTopologyAndDuplicates;EvictPodsWithLocalStorage;EvictPodsWithPVC;CompactAndScale;DevKubeVirtRelieveAndMigrate;KubeVirtRelieveAndMigrate
 type DeschedulerProfile string
 
 var (
@@ -226,8 +231,12 @@ var (
 	// CompactAndScale seeks to evict pods to enable the same workload to run on a smaller set of nodes.
 	CompactAndScale DeschedulerProfile = "CompactAndScale"
 
-	// RelieveAndMigrate seeks to evict pods from high-cost nodes to relieve overall expenses while considering workload migration.
-	RelieveAndMigrate DeschedulerProfile = "DevKubeVirtRelieveAndMigrate"
+	// KubeVirtRelieveAndMigrate seeks to evict pods from high-cost nodes to relieve overall expenses while considering workload migration.
+	KubeVirtRelieveAndMigrate DeschedulerProfile = "KubeVirtRelieveAndMigrate"
+
+	// DevKubeVirtRelieveAndMigrate seeks to evict pods from high-cost nodes to relieve overall expenses while considering workload migration.
+	// Deprecated: use KubeVirtRelieveAndMigrate instead
+	DevKubeVirtRelieveAndMigrate DeschedulerProfile = "DevKubeVirtRelieveAndMigrate"
 )
 
 // DeschedulerProfile allows configuring the enabled strategy profiles for the descheduler

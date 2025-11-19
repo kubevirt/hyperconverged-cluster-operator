@@ -91,7 +91,7 @@ var _ = Describe("DeschedulerController", func() {
 					},
 					BeTrue(),
 				),
-				Entry("should set the metric to false for the KubeDescheduler with a valid configuration",
+				Entry("should set the metric to false for the KubeDescheduler with a valid configuration - LifecycleAndUtilization",
 					[]client.Object{
 						&deschedulerv1.KubeDescheduler{
 							ObjectMeta: metav1.ObjectMeta{
@@ -100,12 +100,44 @@ var _ = Describe("DeschedulerController", func() {
 							},
 							Spec: deschedulerv1.KubeDeschedulerSpec{
 								Profiles: []deschedulerv1.DeschedulerProfile{
-									deschedulerv1.RelieveAndMigrate,
+									deschedulerv1.LifecycleAndUtilization,
+								},
+							},
+						},
+					},
+					BeFalse(),
+				),
+				Entry("should set the metric to false for the KubeDescheduler with a valid configuration - DevKubeVirtRelieveAndMigrate",
+					[]client.Object{
+						&deschedulerv1.KubeDescheduler{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      hcoutil.DeschedulerCRName,
+								Namespace: hcoutil.DeschedulerNamespace,
+							},
+							Spec: deschedulerv1.KubeDeschedulerSpec{
+								Profiles: []deschedulerv1.DeschedulerProfile{
+									deschedulerv1.DevKubeVirtRelieveAndMigrate,
 								},
 								ProfileCustomizations: &deschedulerv1.ProfileCustomizations{
 									DevDeviationThresholds:      &deschedulerv1.AsymmetricLowDeviationThreshold,
 									DevEnableSoftTainter:        true,
 									DevActualUtilizationProfile: deschedulerv1.PrometheusCPUCombinedProfile,
+								},
+							},
+						},
+					},
+					BeFalse(),
+				),
+				Entry("should set the metric to false for the KubeDescheduler with a valid configuration - KubeVirtRelieveAndMigrate",
+					[]client.Object{
+						&deschedulerv1.KubeDescheduler{
+							ObjectMeta: metav1.ObjectMeta{
+								Name:      hcoutil.DeschedulerCRName,
+								Namespace: hcoutil.DeschedulerNamespace,
+							},
+							Spec: deschedulerv1.KubeDeschedulerSpec{
+								Profiles: []deschedulerv1.DeschedulerProfile{
+									deschedulerv1.KubeVirtRelieveAndMigrate,
 								},
 							},
 						},

@@ -214,7 +214,7 @@ var _ = Describe("test clusterInfo", func() {
 
 	DescribeTable(
 		"check Init on openshift, with KubeDescheduler CRD with a CR for it ...",
-		func(deschedulerCR *deschedulerv1.KubeDescheduler, expectedIsDeschedulerMisconfigured bool) {
+		func(deschedulerCR *deschedulerv1.KubeDescheduler) {
 			cl := fake.NewClientBuilder().
 				WithScheme(testScheme).
 				WithObjects(clusterVersion, infrastructure, ingress, apiServer, dns, ipv4network, deschedulerCRD, deschedulerNamespace, deschedulerCR).
@@ -235,10 +235,9 @@ var _ = Describe("test clusterInfo", func() {
 				},
 				Spec: deschedulerv1.KubeDeschedulerSpec{},
 			},
-			true,
 		),
 		Entry(
-			"with KubeVirt specific profile",
+			"with KubeVirt specific profile - KubeVirtRelieveAndMigrate",
 			&deschedulerv1.KubeDescheduler{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      DeschedulerCRName,
@@ -246,7 +245,7 @@ var _ = Describe("test clusterInfo", func() {
 				},
 				Spec: deschedulerv1.KubeDeschedulerSpec{
 					Profiles: []deschedulerv1.DeschedulerProfile{
-						deschedulerv1.RelieveAndMigrate,
+						deschedulerv1.KubeVirtRelieveAndMigrate,
 					},
 					ProfileCustomizations: &deschedulerv1.ProfileCustomizations{
 						DevDeviationThresholds:      &deschedulerv1.AsymmetricLowDeviationThreshold,
@@ -255,7 +254,6 @@ var _ = Describe("test clusterInfo", func() {
 					},
 				},
 			},
-			false,
 		),
 		Entry(
 			"with obsolete configuration",
@@ -273,7 +271,6 @@ var _ = Describe("test clusterInfo", func() {
 					},
 				},
 			},
-			true,
 		),
 		Entry(
 			"with wrong configuration 1",
@@ -288,7 +285,6 @@ var _ = Describe("test clusterInfo", func() {
 					},
 				},
 			},
-			true,
 		),
 		Entry(
 			"with wrong configuration 2",
@@ -305,7 +301,6 @@ var _ = Describe("test clusterInfo", func() {
 					},
 				},
 			},
-			true,
 		),
 		Entry(
 			"with wrong configuration 3",
@@ -324,7 +319,6 @@ var _ = Describe("test clusterInfo", func() {
 					Mode:     "testvalue",
 				},
 			},
-			true,
 		),
 		Entry(
 			"with configuration tuned for KubeVirt but with a wrong name",
@@ -339,7 +333,6 @@ var _ = Describe("test clusterInfo", func() {
 					},
 				},
 			},
-			false,
 		),
 		Entry(
 			"with configuration tuned for KubeVirt but in the wrong namespace",
@@ -354,7 +347,6 @@ var _ = Describe("test clusterInfo", func() {
 					},
 				},
 			},
-			false,
 		),
 	)
 
