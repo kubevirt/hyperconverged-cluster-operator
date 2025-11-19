@@ -290,12 +290,12 @@ done
 (cd ${PROJECT_ROOT}/tools/manifest-templator/ && go build)
 ${PROJECT_ROOT}/tools/manifest-templator/manifest-templator \
   --api-sources=${PROJECT_ROOT}/api/... \
-  --cna-csv="$(<${cnaCsv})" \
-  --virt-csv="$(<${virtCsv})" \
-  --ssp-csv="$(<${sspCsv})" \
-  --tto-csv="$(<${ttoCsv})" \
-  --cdi-csv="$(<${cdiCsv})" \
-  --hpp-csv="$(<${hppCsv})" \
+  --cna-csv-file="${cnaCsv}" \
+  --virt-csv-file="${virtCsv}" \
+  --ssp-csv-file="${sspCsv}" \
+  --tto-csv-file="${ttoCsv}" \
+  --cdi-csv-file="${cdiCsv}" \
+  --hpp-csv-file="${hppCsv}" \
   --kv-virtiowin-image-name="${KUBEVIRT_VIRTIO_IMAGE}" \
   --operator-namespace="${OPERATOR_NAMESPACE}" \
   --smbios="${SMBIOS}" \
@@ -323,22 +323,22 @@ fi
 # Build and merge CSVs
 CSV_DIR=${CSV_DIR}/manifests
 ${PROJECT_ROOT}/tools/csv-merger/csv-merger \
-  --cna-csv="$(<${cnaCsv})" \
-  --virt-csv="$(<${virtCsv})" \
-  --ssp-csv="$(<${sspCsv})" \
-  --tto-csv="$(<${ttoCsv})" \
-  --cdi-csv="$(<${cdiCsv})" \
-  --hpp-csv="$(<${hppCsv})" \
+  --cna-csv-file="${cnaCsv}" \
+  --virt-csv-file="${virtCsv}" \
+  --ssp-csv-file="${sspCsv}" \
+  --tto-csv-file="${ttoCsv}" \
+  --cdi-csv-file="${cdiCsv}" \
+  --hpp-csv-file="${hppCsv}" \
   --kv-virtiowin-image-name="${KUBEVIRT_VIRTIO_IMAGE}" \
   --csv-version=${CSV_VERSION_PARAM} \
   --replaces-csv-version=${REPLACES_CSV_VERSION} \
   --hco-kv-io-version="${CSV_VERSION}" \
   --spec-displayname="KubeVirt HyperConverged Cluster Operator" \
-  --spec-description="$(<${PROJECT_ROOT}/docs/operator_description.md)" \
+  --spec-description-file="${PROJECT_ROOT}/docs/operator_description.md" \
   --metadata-description="A unified operator deploying and controlling KubeVirt and its supporting operators with opinionated defaults" \
   --crd-display="HyperConverged Cluster Operator" \
   --smbios="${SMBIOS}" \
-  --csv-overrides="$(<${csvOverrides})" \
+  --csv-overrides-file="${csvOverrides}" \
   --enable-unique-version=${ENABLE_UNIQUE} \
   --kubevirt-version="${KUBEVIRT_VERSION}" \
   --cdi-version="${CDI_VERSION}" \
