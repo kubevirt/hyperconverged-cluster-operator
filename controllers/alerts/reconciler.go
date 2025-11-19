@@ -63,14 +63,16 @@ func NewMonitoringReconciler(ci hcoutil.ClusterInfo, cl client.Client, ee hcouti
 		logger.Error(err, "failed to create the 'PrometheusRule' reconciler")
 	}
 
+	refresh := NewRefresher()
+
 	return &MonitoringReconciler{
 		reconcilers: []MetricReconciler{
 			alertRuleReconciler,
 			newRoleReconciler(namespace, owner),
 			newRoleBindingReconciler(namespace, owner, ci),
 			newMetricServiceReconciler(namespace, owner),
-			newSecretReconciler(namespace, owner),
-			newServiceMonitorReconciler(namespace, owner),
+			NewSecretReconciler(namespace, owner, secretName, newSecret, refresh),
+			newServiceMonitorReconciler(namespace, owner, refresh),
 		},
 		scheme:       scheme,
 		client:       cl,
