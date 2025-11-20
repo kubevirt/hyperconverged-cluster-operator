@@ -16,7 +16,6 @@ BUILDER_IMAGE      ?= $(REGISTRY_NAMESPACE)/hco-builder
 BUILDER_IMAGE_TAG  ?= latest
 LDFLAGS            ?= -w -s
 GOLANDCI_LINT_VERSION ?= v2.6.0
-MULTIARCH          ?= true
 HCO_BUMP_LEVEL ?= minor
 ASSETS_DIR ?= assets
 DUMP_NETWORK_POLICIES ?= "false"
@@ -162,12 +161,12 @@ container-push-artifacts-server:
 	. "hack/cri-bin.sh" && $$CRI_BIN push $(IMAGE_REGISTRY)/$(VIRT_ARTIFACTS_SERVER):$(IMAGE_TAG)
 
 retag-push-all-images:
-	IMAGE_REPO=$(IMAGE_REGISTRY)/$(OPERATOR_IMAGE) MULTIARCH=$(MULTIARCH) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
-	IMAGE_REPO=$(IMAGE_REGISTRY)/$(WEBHOOK_IMAGE) MULTIARCH=$(MULTIARCH) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
-	IMAGE_REPO=$(IMAGE_REGISTRY)/$(FUNC_TEST_IMAGE) MULTIARCH=$(MULTIARCH) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
-	IMAGE_REPO=$(IMAGE_REGISTRY)/$(VIRT_ARTIFACTS_SERVER) MULTIARCH=$(MULTIARCH) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
+	IMAGE_REPO=$(IMAGE_REGISTRY)/$(OPERATOR_IMAGE) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
+	IMAGE_REPO=$(IMAGE_REGISTRY)/$(WEBHOOK_IMAGE) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
+	IMAGE_REPO=$(IMAGE_REGISTRY)/$(FUNC_TEST_IMAGE) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
+	IMAGE_REPO=$(IMAGE_REGISTRY)/$(VIRT_ARTIFACTS_SERVER) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
 	IMAGE_REPO=$(IMAGE_REGISTRY)/$(BUNDLE_IMAGE) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
-	IMAGE_REPO=$(IMAGE_REGISTRY)/$(INDEX_IMAGE) MULTIARCH=$(MULTIARCH) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
+	IMAGE_REPO=$(IMAGE_REGISTRY)/$(INDEX_IMAGE) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(NEW_TAG) ./hack/retag-multi-arch-images.sh
 
 cluster-up:
 	./cluster/up.sh
@@ -314,7 +313,7 @@ create-builder-image:
 	IMAGE_NAME=$(IMAGE_REGISTRY)/$(BUILDER_IMAGE):$(IMAGE_TAG) ./hack/builder/create-builder-image.sh
 
 retag-builder-image:
-	IMAGE_REPO=$(IMAGE_REGISTRY)/$(BUILDER_IMAGE) MULTIARCH=false CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(BUILDER_IMAGE_TAG) ./hack/retag-multi-arch-images.sh
+	IMAGE_REPO=$(IMAGE_REGISTRY)/$(BUILDER_IMAGE) CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(BUILDER_IMAGE_TAG) ./hack/retag-multi-arch-images.sh
 
 # Temporary alias, until changing the usage of this target, from another repo
 push-builder-image: retag-builder-image

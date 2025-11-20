@@ -177,8 +177,8 @@ fi
 echo "${build_date}" > build-date
 gsutil cp ./build-date gs://${hco_bucket}/latest
 
-IMAGE_REPO=${HCO_OPERATOR_IMAGE_REPO} MULTIARCH=true CURRENT_TAG=${IMAGE_TAG} NEW_TAG=nightly ./hack/retag-multi-arch-images.sh
-IMAGE_REPO=${HCO_WEBHOOK_IMAGE_REPO}  MULTIARCH=true CURRENT_TAG=${IMAGE_TAG} NEW_TAG=nightly ./hack/retag-multi-arch-images.sh
-IMAGE_REPO=${HCO_DOWNLOAD_IMAGE_REPO} MULTIARCH=true CURRENT_TAG=${IMAGE_TAG} NEW_TAG=nightly ./hack/retag-multi-arch-images.sh
-IMAGE_REPO=${HCO_BUNDLE_IMAGE_REPO}                  CURRENT_TAG=${IMAGE_TAG} NEW_TAG=nightly ./hack/retag-multi-arch-images.sh
-IMAGE_REPO=${HCO_INDEX_IMAGE_REPO}    MULTIARCH=true CURRENT_TAG=${IMAGE_TAG} NEW_TAG=nightly ./hack/retag-multi-arch-images.sh
+IMAGE_REPO=${HCO_OPERATOR_IMAGE_REPO} CURRENT_TAG=${IMAGE_TAG} NEW_TAG=nightly ./hack/retag-multi-arch-images.sh
+IMAGE_REPO=${HCO_WEBHOOK_IMAGE_REPO}  CURRENT_TAG=${IMAGE_TAG} NEW_TAG=nightly ./hack/retag-multi-arch-images.sh
+IMAGE_REPO=${HCO_DOWNLOAD_IMAGE_REPO} CURRENT_TAG=${IMAGE_TAG} NEW_TAG=nightly ./hack/retag-multi-arch-images.sh
+IMAGE_REPO=${HCO_BUNDLE_IMAGE_REPO}   CURRENT_TAG=${IMAGE_TAG} NEW_TAG=nightly ./hack/retag-multi-arch-images.sh
+IMAGE_REPO=${HCO_INDEX_IMAGE_REPO}    CURRENT_TAG=${IMAGE_TAG} NEW_TAG=nightly ./hack/retag-multi-arch-images.sh
