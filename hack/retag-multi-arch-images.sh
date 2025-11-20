@@ -21,14 +21,6 @@ fi
 
 . ./hack/cri-bin.sh && export CRI_BIN=${CRI_BIN}
 
-if [[ "${MULTIARCH}" == "true" ]]; then
-  for arch in ${ARCHITECTURES}; do
-    NEW_IMAGE="${NEW_IMAGE_REPO}:${NEW_TAG}-${arch}"
-    ${CRI_BIN} tag "${IMAGE_REPO}:${CURRENT_TAG}-${arch}" "${NEW_IMAGE}"
-    ./hack/retry.sh 3 10 "${CRI_BIN} push ${NEW_IMAGE}"
-  done
-fi
-
 # retag the manifest
 NEW_IMAGE="${NEW_IMAGE_REPO}:${NEW_TAG}"
 ${CRI_BIN} tag "${IMAGE_REPO}:${CURRENT_TAG}" "${NEW_IMAGE}"
