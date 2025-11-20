@@ -784,6 +784,24 @@ var _ = Describe("webhooks validator", func() {
 				))
 			})
 		})
+
+		Context("validate tuning policy", func() {
+			It("should return warning for deprecated highBurst tuning policy", func() {
+				cr.Spec.TuningPolicy = v1beta1.HyperConvergedHighBurstProfile //nolint SA1019
+				err := wh.ValidateCreate(ctx, dryRun, cr)
+				Expect(err).To(HaveOccurred())
+				expected := &ValidationWarning{}
+				Expect(errors.As(err, &expected)).To(BeTrue())
+				Expect(expected.warnings).To(HaveLen(1))
+				Expect(expected.warnings[0]).To(ContainSubstring("highBurst profile is deprecated"))
+				Expect(expected.warnings[0]).To(ContainSubstring("v1.16.0"))
+			})
+
+			It("should not return warning when tuning policy is not set", func() {
+				cr.Spec.TuningPolicy = ""
+				Expect(wh.ValidateCreate(ctx, dryRun, cr)).To(Succeed())
+			})
+		})
 	})
 
 	Context("validate update validation webhook", func() {
@@ -1579,6 +1597,26 @@ var _ = Describe("webhooks validator", func() {
 				Entry("should not trigger warning if deployKubeSecondaryDNS (true) wasn't changed", ptr.To(true), ptr.To(true)),
 				Entry("should not trigger warning if deployKubeSecondaryDNS (false) wasn't changed", ptr.To(false), ptr.To(false)),
 			)
+		})
+
+		Context("validate tuning policy on update", func() {
+			It("should return warning for deprecated highBurst tuning policy", func() {
+				newHCO := hco.DeepCopy()
+				newHCO.Spec.TuningPolicy = v1beta1.HyperConvergedHighBurstProfile //nolint SA1019
+				err := wh.ValidateUpdate(ctx, dryRun, newHCO, hco)
+				Expect(err).To(HaveOccurred())
+				expected := &ValidationWarning{}
+				Expect(errors.As(err, &expected)).To(BeTrue())
+				Expect(expected.warnings).To(HaveLen(1))
+				Expect(expected.warnings[0]).To(ContainSubstring("highBurst profile is deprecated"))
+				Expect(expected.warnings[0]).To(ContainSubstring("v1.16.0"))
+			})
+
+			It("should not return warning when tuning policy is not set", func() {
+				newHCO := hco.DeepCopy()
+				newHCO.Spec.TuningPolicy = ""
+				Expect(wh.ValidateUpdate(ctx, dryRun, newHCO, hco)).To(Succeed())
+			})
 		})
 	})
 
