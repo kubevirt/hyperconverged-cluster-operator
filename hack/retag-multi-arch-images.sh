@@ -8,7 +8,7 @@ if [[ -z ${IMAGE_REPO} ]]; then
 fi
 
 NEW_IMAGE_REPO=${NEW_IMAGE_REPO:-${IMAGE_REPO}}
-
+CURRENT_TAG=${CURRENT_TAG:-${IMAGE_TAG}}
 if [[ -z ${CURRENT_TAG} ]]; then
   echo "CURRENT_TAG must be defined"
   exit 1

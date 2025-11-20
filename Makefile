@@ -12,7 +12,8 @@ FUNC_TEST_IMAGE    ?= $(REGISTRY_NAMESPACE)/hyperconverged-cluster-functest
 VIRT_ARTIFACTS_SERVER ?= $(REGISTRY_NAMESPACE)/virt-artifacts-server
 BUNDLE_IMAGE       ?= $(REGISTRY_NAMESPACE)/hyperconverged-cluster-bundle
 INDEX_IMAGE        ?= $(REGISTRY_NAMESPACE)/hyperconverged-cluster-index
-BUILDER_IMAGE      ?= $(IMAGE_REGISTRY)/$(REGISTRY_NAMESPACE)/hco-builder
+BUILDER_IMAGE      ?= $(REGISTRY_NAMESPACE)/hco-builder
+BUILDER_IMAGE_TAG  ?= latest
 LDFLAGS            ?= -w -s
 GOLANDCI_LINT_VERSION ?= v2.6.0
 MULTIARCH          ?= true
@@ -310,10 +311,13 @@ annotate-dicts: build-annotate-dicts
 	ASSETS_DIR=$(ASSETS_DIR) ./hack/annotate-dicts.sh
 
 create-builder-image:
-	IMAGE_NAME=$(BUILDER_IMAGE) ./hack/builder/create-builder-image.sh
+	IMAGE_NAME=$(IMAGE_REGISTRY)/$(BUILDER_IMAGE):$(IMAGE_TAG) ./hack/builder/create-builder-image.sh
 
-push-builder-image:
-	podman push $(BUILDER_IMAGE)
+retag-builder-image:
+	IMAGE_REPO=$(IMAGE_REGISTRY)/$(BUILDER_IMAGE) MULTIARCH=false CURRENT_TAG=$(IMAGE_TAG) NEW_TAG=$(BUILDER_IMAGE_TAG) ./hack/retag-multi-arch-images.sh
+
+# Temporary alias, until changing the usage of this target, from another repo
+push-builder-image: retag-builder-image
 
 .PHONY: start \
 		clean \
@@ -383,4 +387,5 @@ push-builder-image:
 		annotate-dicts \
 		cp-json-patch \
 		create-builder-image \
-		push-builder-image
+		push-builder-image \
+		retag-builder-image
