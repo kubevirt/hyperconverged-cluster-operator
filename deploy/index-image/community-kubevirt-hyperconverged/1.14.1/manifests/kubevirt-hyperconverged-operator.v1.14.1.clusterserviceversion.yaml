@@ -3199,7 +3199,7 @@ spec:
                 - name: CDI_VERSION
                   value: v1.61.5
                 - name: NETWORK_ADDONS_VERSION
-                  value: v0.97.6
+                  value: v0.97.7
                 - name: SSP_VERSION
                   value: v0.22.3
                 - name: HPPO_VERSION
@@ -3415,15 +3415,15 @@ spec:
                 - name: CORE_DNS_IMAGE
                   value: registry.k8s.io/coredns/coredns@sha256:a0ead06651cf580044aeb0a0feba63591858fb2e43ade8c9dea45a6a89ae7e5e
                 - name: KUBEVIRT_IPAM_CONTROLLER_IMAGE
-                  value: ghcr.io/kubevirt/ipam-controller@sha256:dd5b881acae85332fb8a9dba8622098ac63ec8f34d9e7076dfa268ad469724cb
+                  value: ghcr.io/kubevirt/ipam-controller@sha256:1da836bd2de809675b94bdc175de052829b1c42b576eea91902b0b4be0811cff
                 - name: PASST_BINDING_CNI_IMAGE
-                  value: ghcr.io/kubevirt/passt-binding-cni@sha256:9bfc5d0c463d15a8b65b15323a078e2f3ce3a675972761305112d4775fac79a7
+                  value: ghcr.io/kubevirt/passt-binding-cni@sha256:27e3bf8fd0324f80c78a18d10d0cdac8b58537a23ffa82f9ab8354bb9fff3d20
                 - name: OPERATOR_IMAGE
-                  value: quay.io/kubevirt/cluster-network-addons-operator@sha256:33dfab0b8a5ab34443a1933fdb1c4e5096c24df992dcc84bfe1ca2840a4b2b4f
+                  value: quay.io/kubevirt/cluster-network-addons-operator@sha256:f742baa33a0182afe126b1f0fe8a2273d45354d18a3583316c6a9ce32708336c
                 - name: OPERATOR_NAME
                   value: cluster-network-addons-operator
                 - name: OPERATOR_VERSION
-                  value: v0.97.6
+                  value: v0.97.7
                 - name: OPERATOR_NAMESPACE
                   valueFrom:
                     fieldRef:
@@ -3443,7 +3443,7 @@ spec:
                   value: prometheus-k8s
                 - name: RUNBOOK_URL_TEMPLATE
                   value: https://kubevirt.io/monitoring/runbooks/%s
-                image: quay.io/kubevirt/cluster-network-addons-operator@sha256:33dfab0b8a5ab34443a1933fdb1c4e5096c24df992dcc84bfe1ca2840a4b2b4f
+                image: quay.io/kubevirt/cluster-network-addons-operator@sha256:f742baa33a0182afe126b1f0fe8a2273d45354d18a3583316c6a9ce32708336c
                 imagePullPolicy: IfNotPresent
                 name: cluster-network-addons-operator
                 resources:
@@ -4701,7 +4701,7 @@ spec:
     name: cdi-uploadproxy
   - image: quay.io/kubevirt/cdi-uploadserver@sha256:104a2a27056c92ad3d5bb49729659f6f280fe48eb097c16a1338412b65606349
     name: cdi-uploadserver
-  - image: quay.io/kubevirt/cluster-network-addons-operator@sha256:33dfab0b8a5ab34443a1933fdb1c4e5096c24df992dcc84bfe1ca2840a4b2b4f
+  - image: quay.io/kubevirt/cluster-network-addons-operator@sha256:f742baa33a0182afe126b1f0fe8a2273d45354d18a3583316c6a9ce32708336c
     name: cluster-network-addons-operator
   - image: quay.io/kubevirt/cni-default-plugins@sha256:0c354fa9d695b8cab97b459e8afea2f7662407a987e83f6f6f1a8af4b45726be
     name: cni-default-plugins
@@ -4723,7 +4723,7 @@ spec:
     name: hyperconverged-cluster-operator
   - image: +WEBHOOK_IMAGE_TO_REPLACE+
     name: hyperconverged-cluster-webhook
-  - image: ghcr.io/kubevirt/ipam-controller@sha256:dd5b881acae85332fb8a9dba8622098ac63ec8f34d9e7076dfa268ad469724cb
+  - image: ghcr.io/kubevirt/ipam-controller@sha256:1da836bd2de809675b94bdc175de052829b1c42b576eea91902b0b4be0811cff
     name: ipam-controller
   - image: quay.io/kubevirt/kubemacpool@sha256:4990649b523f65a4b6a562af74260f4b147c04950eb196bd703bd9cfe7ce3120
     name: kubemacpool
@@ -4751,7 +4751,7 @@ spec:
     name: origin-kube-rbac-proxy
   - image: ghcr.io/k8snetworkplumbingwg/ovs-cni-plugin@sha256:d710de816e5f835af28709a92ff30c5ade559e99e16780aefd45f9c9747147cd
     name: ovs-cni-plugin
-  - image: ghcr.io/kubevirt/passt-binding-cni@sha256:9bfc5d0c463d15a8b65b15323a078e2f3ce3a675972761305112d4775fac79a7
+  - image: ghcr.io/kubevirt/passt-binding-cni@sha256:27e3bf8fd0324f80c78a18d10d0cdac8b58537a23ffa82f9ab8354bb9fff3d20
     name: passt-binding-cni
   - image: quay.io/kubevirt/pr-helper@sha256:56107dc7dfeb674a6cc1190437a50629372f070569fd8b0f8afedad699546196
     name: pr-helper
