@@ -34,6 +34,7 @@ type ClusterInfo interface {
 	IsNADAvailable() bool
 	IsDeschedulerCRDDeployed(ctx context.Context, cl client.Client) bool
 	IsSingleStackIPv6() bool
+	IsHyperShiftManaged() bool
 	GetTLSSecurityProfile(hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile) *openshiftconfigv1.TLSSecurityProfile
 	RefreshAPIServerCR(ctx context.Context, c client.Client) error
 	GetPod() *corev1.Pod
@@ -50,6 +51,7 @@ type ClusterInfoImp struct {
 	deschedulerAvailable       bool
 	nadAvailable               bool
 	singlestackipv6            bool
+	isHyperShiftManaged        bool
 	baseDomain                 string
 	ownResources               *OwnResources
 	logger                     logr.Logger
@@ -126,6 +128,17 @@ func (c *ClusterInfoImp) initOpenshift(ctx context.Context, cl client.Client) er
 		"infrastructureTopology", clusterInfrastructure.Status.InfrastructureTopology,
 	)
 
+	// Check if this is a HyperShift managed cluster
+	isExternalControlPlane := clusterInfrastructure.Status.ControlPlaneTopology == openshiftconfigv1.ExternalTopologyMode
+	hypershiftManagedLabel := clusterInfrastructure.Labels["hypershift.openshift.io/managed"]
+	c.isHyperShiftManaged = isExternalControlPlane && hypershiftManagedLabel == "true"
+
+	c.logger.Info("HyperShift Detection",
+		"isHyperShiftManaged", c.isHyperShiftManaged,
+		"externalControlPlane", isExternalControlPlane,
+		"hypershiftLabel", hypershiftManagedLabel,
+	)
+
 	clusterNetwork := &openshiftconfigv1.Network{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "cluster",
@@ -180,6 +193,10 @@ func (c *ClusterInfoImp) IsRunningLocally() bool {
 
 func (c *ClusterInfoImp) IsSingleStackIPv6() bool {
 	return c.singlestackipv6
+}
+
+func (c *ClusterInfoImp) IsHyperShiftManaged() bool {
+	return c.isHyperShiftManaged
 }
 
 func (c *ClusterInfoImp) GetBaseDomain() string {
