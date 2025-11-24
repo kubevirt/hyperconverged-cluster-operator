@@ -8,7 +8,6 @@ import (
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -86,19 +85,13 @@ func NewServiceMonitor(namespace string, owner metav1.OwnerReference) *monitorin
 		},
 		Endpoints: []monitoringv1.Endpoint{
 			{
-				Port:   operatorPortName,
-				Scheme: "https",
+				Port: operatorPortName,
 				Authorization: &monitoringv1.SafeAuthorization{
 					Credentials: &corev1.SecretKeySelector{
 						LocalObjectReference: corev1.LocalObjectReference{
 							Name: secretName,
 						},
 						Key: "token",
-					},
-				},
-				TLSConfig: &monitoringv1.TLSConfig{
-					SafeTLSConfig: monitoringv1.SafeTLSConfig{
-						InsecureSkipVerify: ptr.To(true),
 					},
 				},
 			},
