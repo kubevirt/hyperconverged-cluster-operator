@@ -1,11 +1,16 @@
 package hyperconverged
 
 import (
+	"errors"
+	"fmt"
 	"slices"
+	"sync"
 
 	consolev1 "github.com/openshift/api/console/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/networking/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
@@ -73,4 +78,47 @@ func removeOldImageStream(req *common.HcoRequest, cl client.Client, requiredISLi
 	}
 
 	removeRelatedObjects(req, requiredISList, "ImageStream")
+}
+
+func removeOldNetworkPolicies(req *common.HcoRequest, cl client.Client) error {
+	npList := &v1.NetworkPolicyList{}
+	err := cl.List(req.Ctx, npList, client.InNamespace(req.Instance.Namespace), mustGetOldNetworkPolicySelector())
+
+	if err != nil {
+		return fmt.Errorf("can't read NetworkPolicies; %v", err)
+	}
+
+	if len(npList.Items) == 0 {
+		return nil
+	}
+
+	errs := make([]error, 0, len(npList.Items))
+	for _, np := range npList.Items {
+		errs = append(errs, cl.Delete(req.Ctx, np.DeepCopy()))
+	}
+
+	if err = errors.Join(errs...); err != nil {
+		return fmt.Errorf("can't delete NetworkPolicies; %v", err)
+	}
+
+	return nil
+}
+
+const npVersionLabel = hcoutil.NPLabelPrefix + "version"
+
+var (
+	networkPolicySelector client.MatchingLabelsSelector
+	npSelectorOnce        = &sync.Once{}
+)
+
+func mustGetOldNetworkPolicySelector() client.MatchingLabelsSelector {
+	npSelectorOnce.Do(func() {
+		versionSelector, err := labels.Parse(fmt.Sprintf("%[1]s,%[1]s!=%[2]s", npVersionLabel, hcoutil.GetHcoKvIoVersion()))
+		if err != nil {
+			panic("should never happen " + err.Error())
+		}
+		networkPolicySelector = client.MatchingLabelsSelector{Selector: versionSelector}
+	})
+
+	return networkPolicySelector
 }

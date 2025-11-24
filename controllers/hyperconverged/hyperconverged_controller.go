@@ -1138,6 +1138,10 @@ func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (
 	removeOldQuickStartGuides(req, r.client, r.operandHandler.GetQuickStartNames())
 	removeOldImageStream(req, r.client, r.operandHandler.GetImageStreamNames())
 
+	if err = removeOldNetworkPolicies(req, r.client); err != nil {
+		return upgradePatched, err
+	}
+
 	return upgradePatched, nil
 }
 

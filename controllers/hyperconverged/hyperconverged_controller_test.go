@@ -19,6 +19,7 @@ import (
 	objectreferencesv1 "github.com/openshift/custom-resource-status/objectreferences/v1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -2313,6 +2314,71 @@ var _ = Describe("HyperconvergedController", func() {
 
 				})
 
+			})
+
+			Context("remove old NetworkPolicies", func() {
+				It("should drop old NetworkPolicies guide", func(ctx context.Context) {
+					upToDateNP1 := &v1.NetworkPolicy{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "up-to-date-1",
+							Namespace: namespace,
+							Labels: map[string]string{
+								npVersionLabel: version.Version,
+							},
+						},
+					}
+
+					upToDateNP2 := &v1.NetworkPolicy{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "up-to-date-2",
+							Namespace: namespace,
+							Labels: map[string]string{
+								npVersionLabel: version.Version,
+							},
+						},
+					}
+
+					nonOLMNP := &v1.NetworkPolicy{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "non-olm-np",
+							Namespace: namespace,
+						},
+					}
+
+					oldNP := &v1.NetworkPolicy{ // only this one should be removed
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "old-should-be-removed",
+							Namespace: namespace,
+							Labels: map[string]string{
+								npVersionLabel: oldVersion,
+							},
+						},
+					}
+
+					oldNPOtherNamespace := &v1.NetworkPolicy{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "old-other-ns-should-not-be-removed",
+							Namespace: "other-ns",
+							Labels: map[string]string{
+								npVersionLabel: version.Version,
+							},
+						},
+					}
+
+					UpdateVersion(&expected.hco.Status, hcoVersionName, oldVersion)
+
+					resources := append(expected.toArray(), upToDateNP1, upToDateNP2, nonOLMNP, oldNP, oldNPOtherNamespace)
+
+					cl := commontestutils.InitClient(resources)
+					doReconcile(cl, expected.hco, nil)
+
+					foundNPs := &v1.NetworkPolicyList{}
+					Expect(cl.List(ctx, foundNPs)).To(Succeed())
+
+					Expect(foundNPs.Items).To(HaveLen(4))
+					Expect(foundNPs.Items).To(ContainElements(*upToDateNP1, *upToDateNP2, *nonOLMNP, *oldNPOtherNamespace))
+					Expect(foundNPs.Items).ToNot(ContainElements(*oldNP))
+				})
 			})
 		})
 
