@@ -5,13 +5,13 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	"os/exec"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	routev1 "github.com/openshift/api/route/v1"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -27,7 +27,6 @@ var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, testNam
 		cli             client.Client
 		cliConfig       *rest.Config
 		httpClient      http.Client
-		portForwardCmd  *exec.Cmd
 		alertmanagerURL string
 	)
 
@@ -40,21 +39,10 @@ var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, testNam
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}}
 
-		if isAlertmanagerAccessible(httpClient, observability.AlertmanagerSvcHost, cliConfig.BearerToken) {
-			alertmanagerURL = observability.AlertmanagerSvcHost
-		} else {
-			var localPort int
-			var err error
-
-			portForwardCmd, localPort, err = setupPortForward()
-			Expect(err).ToNot(HaveOccurred())
-
-			alertmanagerURL = fmt.Sprintf("https://localhost:%d", localPort)
-		}
-	})
-
-	AfterEach(func(ctx context.Context) {
-		cleanupPortForward(portForwardCmd)
+		routeHost, err := getAlertmanagerRouteHost(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(routeHost).ToNot(BeEmpty())
+		alertmanagerURL = fmt.Sprintf("https://%s", routeHost)
 	})
 
 	Context("PodDisruptionBudgetAtLimit", func() {
@@ -95,44 +83,19 @@ var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, testNam
 	})
 })
 
-func isAlertmanagerAccessible(httpClient http.Client, svcHost string, bearerToken string) bool {
-	req, err := http.NewRequest("GET", svcHost+"/-/healthy", nil)
+func getAlertmanagerRouteHost(ctx context.Context, cli client.Client) (string, error) {
+	route := &routev1.Route{}
+	err := cli.Get(ctx, types.NamespacedName{
+		Name:      "alertmanager-main",
+		Namespace: "openshift-monitoring",
+	}, route)
 	if err != nil {
-		return false
+		return "", err
 	}
 
-	if bearerToken != "" {
-		req.Header.Add("Authorization", "Bearer "+bearerToken)
+	if len(route.Status.Ingress) > 0 {
+		return route.Status.Ingress[0].Host, nil
 	}
 
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return false
-	}
-	defer resp.Body.Close()
-
-	return resp.StatusCode == 200
-}
-
-func setupPortForward() (*exec.Cmd, int, error) {
-	serviceName := "alertmanager-main"
-	localPort := 9094
-
-	portForwardCmd := exec.Command("oc", "port-forward", "-n", "openshift-monitoring", fmt.Sprintf("service/%s", serviceName), fmt.Sprintf("%d:9094", localPort))
-
-	if err := portForwardCmd.Start(); err != nil {
-		return nil, 0, fmt.Errorf("failed to start port-forward to service %s: %w", serviceName, err)
-	}
-
-	// Wait a bit for port-forward to establish
-	time.Sleep(3 * time.Second)
-
-	return portForwardCmd, localPort, nil
-}
-
-func cleanupPortForward(cmd *exec.Cmd) {
-	if cmd != nil && cmd.Process != nil {
-		_ = cmd.Process.Kill()
-		_ = cmd.Wait()
-	}
+	return "", fmt.Errorf("route has no ingress status")
 }
