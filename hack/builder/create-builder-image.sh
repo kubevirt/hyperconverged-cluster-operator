@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Load build arguments directly from go.mod
 
-source ./hack/architecture.sh
+export ARCHITECTURES="${ARCHITECTURES:-"amd64 arm64"}"
+
 . ./hack/cri-bin.sh && export CRI_BIN=${CRI_BIN}
 
 script_dir="$(cd "$(dirname "$0")" && pwd -P)"
