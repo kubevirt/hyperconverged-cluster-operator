@@ -31,7 +31,8 @@ type HyperConvergedTuningPolicy string
 // through annotation values.
 const (
 	HyperConvergedAnnotationTuningPolicy HyperConvergedTuningPolicy = "annotation"
-	HyperConvergedHighBurstProfile       HyperConvergedTuningPolicy = "highBurst"
+	// Deprecated: The highBurst profile is deprecated as of v1.16.0 ahead of removal in a future release
+	HyperConvergedHighBurstProfile HyperConvergedTuningPolicy = "highBurst"
 )
 
 // HyperConvergedSpec defines the desired state of HyperConverged

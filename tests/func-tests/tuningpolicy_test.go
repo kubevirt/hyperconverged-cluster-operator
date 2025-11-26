@@ -59,7 +59,7 @@ var _ = Describe("Check that the TuningPolicy annotation is configuring the KV o
 		hc := tests.GetHCO(ctx, cli)
 
 		delete(hc.Annotations, common.TuningPolicyAnnotationName)
-		hc.Spec.TuningPolicy = v1beta1.HyperConvergedHighBurstProfile
+		hc.Spec.TuningPolicy = v1beta1.HyperConvergedHighBurstProfile //nolint SA1019
 
 		tests.UpdateHCORetry(ctx, cli, hc)
 

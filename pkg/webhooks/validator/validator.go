@@ -161,6 +161,10 @@ func (wh *WebhookHandler) ValidateCreate(_ context.Context, dryrun bool, hc *v1b
 		return err
 	}
 
+	if err := wh.validateTuningPolicy(hc); err != nil {
+		return err
+	}
+
 	if err := wh.validateAffinity(hc); err != nil {
 		return err
 	}
@@ -229,6 +233,10 @@ func (wh *WebhookHandler) ValidateUpdate(ctx context.Context, dryrun bool, reque
 	}
 
 	if err := wh.validateFeatureGatesOnUpdate(requested, exists); err != nil {
+		return err
+	}
+
+	if err := wh.validateTuningPolicy(requested); err != nil {
 		return err
 	}
 
@@ -449,6 +457,13 @@ func (wh *WebhookHandler) validateMediatedDeviceTypes(hc *v1beta1.HyperConverged
 				return fmt.Errorf("mediatedDevicesTypes is deprecated, please use mediatedDeviceTypes instead")
 			}
 		}
+	}
+	return nil
+}
+
+func (wh *WebhookHandler) validateTuningPolicy(hc *v1beta1.HyperConverged) error {
+	if hc.Spec.TuningPolicy == v1beta1.HyperConvergedHighBurstProfile { //nolint SA1019
+		return newValidationWarning([]string{"spec.tuningPolicy: the highBurst profile is deprecated as of v1.16.0 and will be removed in a future release"})
 	}
 	return nil
 }
