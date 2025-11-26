@@ -5,9 +5,6 @@ import (
 
 	"github.com/go-logr/logr"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
-	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -95,7 +92,3 @@ func (ClusterInfoMock) GetTLSSecurityProfile(_ *openshiftconfigv1.TLSSecurityPro
 func (ClusterInfoMock) RefreshAPIServerCR(_ context.Context, _ client.Client) error {
 	return nil
 }
-
-func (ClusterInfoMock) GetPod() *corev1.Pod                          { return nil }
-func (c ClusterInfoMock) GetDeployment() *appsv1.Deployment          { return nil }
-func (c ClusterInfoMock) GetCSV() *csvv1alpha1.ClusterServiceVersion { return nil }
