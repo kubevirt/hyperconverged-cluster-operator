@@ -29,7 +29,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -47,6 +46,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 // Name and Namespace of our primary resource
@@ -232,68 +232,14 @@ func (matcher *RepresentConditionMatcher) NegatedFailureMessage(actual interface
 }
 
 const (
-	RSName     = "hco-operator"
-	podName    = RSName + "-12345"
 	BaseDomain = "basedomain"
-)
-
-var ( // own resources
-	csv = &csvv1alpha1.ClusterServiceVersion{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "ClusterServiceVersion",
-			APIVersion: "operators.coreos.com/v1alpha1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      RSName,
-			Namespace: Namespace,
-			Annotations: map[string]string{
-				components.DisableOperandDeletionAnnotation: "true",
-			},
-		},
-	}
-
-	deployment = &appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Deployment",
-			APIVersion: "apps/v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      RSName,
-			Namespace: Namespace,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: "operators.coreos.com/v1alpha1",
-					Kind:       csvv1alpha1.ClusterServiceVersionKind,
-					Name:       RSName,
-					Controller: ptr.To(true),
-				},
-			},
-			UID: "1234567890",
-		},
-	}
-
-	pod = &corev1.Pod{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pod",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      podName,
-			Namespace: Namespace,
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: "apps/v1",
-					Kind:       "ReplicaSet",
-					Name:       RSName,
-					Controller: ptr.To(true),
-				},
-			},
-		},
-	}
 )
 
 // ClusterInfoMock mocks regular Openshift
 type ClusterInfoMock struct{}
+
+// make sure ClusterInfoMock implements hcoutil.ClusterInfo
+var _ hcoutil.ClusterInfo = &ClusterInfoMock{}
 
 func (ClusterInfoMock) Init(_ context.Context, _ client.Client, _ logr.Logger) error {
 	return nil
@@ -328,20 +274,11 @@ func (c ClusterInfoMock) IsDeschedulerCRDDeployed(_ context.Context, _ client.Cl
 func (c ClusterInfoMock) IsSingleStackIPv6() bool {
 	return true
 }
+
 func (c ClusterInfoMock) IsHyperShiftManaged() bool {
 	return false
 }
-func (c ClusterInfoMock) GetPod() *corev1.Pod {
-	return pod
-}
 
-func (c ClusterInfoMock) GetDeployment() *appsv1.Deployment {
-	return deployment
-}
-
-func (c ClusterInfoMock) GetCSV() *csvv1alpha1.ClusterServiceVersion {
-	return csv
-}
 func (ClusterInfoMock) GetTLSSecurityProfile(_ *openshiftconfigv1.TLSSecurityProfile) *openshiftconfigv1.TLSSecurityProfile {
 	return &openshiftconfigv1.TLSSecurityProfile{
 		Type:         openshiftconfigv1.TLSProfileIntermediateType,

@@ -39,6 +39,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operandhandler"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
+	fakeownresources "github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources/fake"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/version"
 )
@@ -312,7 +313,7 @@ func getBasicDeployment() *BasicExpected {
 	}
 	res.hcoCRD = hcoCrd
 
-	csv := hcoutil.GetClusterInfo().GetCSV()
+	csv := fakeownresources.GetCSV()
 	res.csv = csv
 
 	return res
