@@ -12,7 +12,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
 )
 
 const disableOperandDeletionPatch = `[{"op": "replace", "path": "/metadata/annotations/console.openshift.io~1disable-operand-delete", "value": "%t"}]`
@@ -24,10 +24,16 @@ type csvHandler struct {
 	csvKey client.ObjectKey
 }
 
-func NewCsvHandler(cli client.Client, ci hcoutil.ClusterInfo) operands.Operand {
+func NewCsvHandler(cli client.Client) operands.Operand {
+	csvRef := ownresources.GetCSVRef()
+	csvKey := client.ObjectKey{
+		Name:      csvRef.Name,
+		Namespace: csvRef.Namespace,
+	}
+
 	return &csvHandler{
 		client: cli,
-		csvKey: client.ObjectKeyFromObject(ci.GetCSV()),
+		csvKey: csvKey,
 	}
 }
 

@@ -54,7 +54,7 @@ var _ = Describe("Test OwnResources", func() {
 	testScheme := scheme.Scheme
 	_ = csvv1alpha1.AddToScheme(testScheme)
 
-	It("should update pod and csv if they are found", func() {
+	It("should update pod and ownerRef if they are found", func() {
 		csv := &csvv1alpha1.ClusterServiceVersion{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      rsName,

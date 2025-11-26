@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -24,6 +23,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/rules"
+	fakeownresources "github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources/fake"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -39,11 +39,15 @@ var _ = Describe("alert tests", func() {
 		ns            *corev1.Namespace
 		req           *common.HcoRequest
 		currentMetric float64
+		deploymentRef metav1.OwnerReference
 	)
 
 	BeforeEach(func() {
 		origNS, nsVarExists := os.LookupEnv(hcoutil.OperatorNamespaceEnv)
 		Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
+
+		fakeownresources.OLMV0OwnResourcesMock()
+		deploymentRef = fakeownresources.GetFakeDeploymentRef()
 
 		ee.Reset()
 		ns = &corev1.Namespace{
@@ -55,6 +59,8 @@ var _ = Describe("alert tests", func() {
 		req = commontestutils.NewReq(nil)
 
 		DeferCleanup(func() {
+			fakeownresources.ResetOwnResources()
+
 			if nsVarExists {
 				Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNS)).To(Succeed())
 			} else {
@@ -194,8 +200,7 @@ var _ = Describe("alert tests", func() {
 		}
 
 		It("should update the labels if modified", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, owner)
+			existRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, deploymentRef)
 			Expect(err).ToNot(HaveOccurred())
 			existRule.Labels = map[string]string{
 				"wrongKey1": "wrongValue1",
@@ -216,8 +221,7 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should add the labels if it's missing", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, owner)
+			existRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, deploymentRef)
 			Expect(err).ToNot(HaveOccurred())
 			existRule.Labels = nil
 
@@ -251,13 +255,8 @@ var _ = Describe("alert tests", func() {
 			pr := &monitoringv1.PrometheusRule{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: ruleName}, pr)).To(Succeed())
 
-			deployment := ci.GetDeployment()
-
 			Expect(pr.OwnerReferences).To(HaveLen(1))
-			Expect(pr.OwnerReferences[0].Name).To(Equal(deployment.Name))
-			Expect(pr.OwnerReferences[0].Kind).To(Equal("Deployment"))
-			Expect(pr.OwnerReferences[0].APIVersion).To(Equal(appsv1.GroupName + "/v1"))
-			Expect(pr.OwnerReferences[0].UID).To(Equal(deployment.UID))
+			Expect(pr.OwnerReferences[0]).To(Equal(deploymentRef))
 
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount(monitoringv1.PrometheusRuleKind, ruleName)).To(BeEquivalentTo(currentMetric))
@@ -283,13 +282,8 @@ var _ = Describe("alert tests", func() {
 			pr := &monitoringv1.PrometheusRule{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: ruleName}, pr)).To(Succeed())
 
-			deployment := ci.GetDeployment()
-
 			Expect(pr.OwnerReferences).To(HaveLen(1))
-			Expect(pr.OwnerReferences[0].Name).To(Equal(deployment.Name))
-			Expect(pr.OwnerReferences[0].Kind).To(Equal("Deployment"))
-			Expect(pr.OwnerReferences[0].APIVersion).To(Equal(appsv1.GroupName + "/v1"))
-			Expect(pr.OwnerReferences[0].UID).To(Equal(deployment.UID))
+			Expect(pr.OwnerReferences[0]).To(Equal(deploymentRef))
 
 			overrideExpectedEvents := []commontestutils.MockEvent{
 				{
@@ -315,21 +309,15 @@ var _ = Describe("alert tests", func() {
 			pr := &monitoringv1.PrometheusRule{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: ruleName}, pr)).To(Succeed())
 
-			deployment := ci.GetDeployment()
-
 			Expect(pr.OwnerReferences).To(HaveLen(1))
-			Expect(pr.OwnerReferences[0].Name).To(Equal(deployment.Name))
-			Expect(pr.OwnerReferences[0].Kind).To(Equal("Deployment"))
-			Expect(pr.OwnerReferences[0].APIVersion).To(Equal(appsv1.GroupName + "/v1"))
-			Expect(pr.OwnerReferences[0].UID).To(Equal(deployment.UID))
+			Expect(pr.OwnerReferences[0]).To(Equal(deploymentRef))
 
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount(monitoringv1.PrometheusRuleKind, ruleName)).To(BeEquivalentTo(currentMetric))
 		})
 
 		It("should update the spec if modified", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, owner)
+			existRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, deploymentRef)
 			Expect(err).ToNot(HaveOccurred())
 
 			existRule.Spec.Groups[1].Rules = []monitoringv1.Rule{
@@ -346,7 +334,7 @@ var _ = Describe("alert tests", func() {
 			Expect(r.Reconcile(req, false)).To(Succeed())
 			pr := &monitoringv1.PrometheusRule{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: ruleName}, pr)).To(Succeed())
-			newRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, owner)
+			newRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, deploymentRef)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(pr.Spec).To(Equal(newRule.Spec))
 
@@ -355,8 +343,7 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should update the spec if it's missing", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, owner)
+			existRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, deploymentRef)
 			Expect(err).ToNot(HaveOccurred())
 
 			existRule.Spec = monitoringv1.PrometheusRuleSpec{}
@@ -367,7 +354,7 @@ var _ = Describe("alert tests", func() {
 			Expect(r.Reconcile(req, false)).To(Succeed())
 			pr := &monitoringv1.PrometheusRule{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: ruleName}, pr)).To(Succeed())
-			newRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, owner)
+			newRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, deploymentRef)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(pr.Spec).To(Equal(newRule.Spec))
 
@@ -376,8 +363,7 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should use the default runbook URL template when no ENV Variable is set", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			promRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, owner)
+			promRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, deploymentRef)
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, group := range promRule.Spec.Groups {
@@ -398,8 +384,7 @@ var _ = Describe("alert tests", func() {
 			err := rules.SetupRules()
 			Expect(err).ToNot(HaveOccurred())
 
-			owner := getDeploymentReference(ci.GetDeployment())
-			promRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, owner)
+			promRule, err := rules.BuildPrometheusRule(commontestutils.Namespace, deploymentRef)
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, group := range promRule.Spec.Groups {
@@ -462,8 +447,7 @@ var _ = Describe("alert tests", func() {
 		}
 
 		It("should update the labels if modified", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existRole := newRole(owner, commontestutils.Namespace)
+			existRole := newRole(deploymentRef, commontestutils.Namespace)
 			existRole.Labels = map[string]string{
 				"wrongKey1": "wrongValue1",
 				"wrongKey2": "wrongValue2",
@@ -483,8 +467,7 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should update the labels if it's missing", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existRole := newRole(owner, commontestutils.Namespace)
+			existRole := newRole(deploymentRef, commontestutils.Namespace)
 			existRole.Labels = nil
 
 			cl := commontestutils.InitClient([]client.Object{ns, existRole})
@@ -516,13 +499,8 @@ var _ = Describe("alert tests", func() {
 			role := &rbacv1.Role{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: roleName}, role)).To(Succeed())
 
-			deployment := ci.GetDeployment()
-
 			Expect(role.OwnerReferences).To(HaveLen(1))
-			Expect(role.OwnerReferences[0].Name).To(Equal(deployment.Name))
-			Expect(role.OwnerReferences[0].Kind).To(Equal("Deployment"))
-			Expect(role.OwnerReferences[0].APIVersion).To(Equal(appsv1.GroupName + "/v1"))
-			Expect(role.OwnerReferences[0].UID).To(Equal(deployment.UID))
+			Expect(role.OwnerReferences[0]).To(Equal(deploymentRef))
 
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount("Role", roleName)).To(BeEquivalentTo(currentMetric))
@@ -547,13 +525,8 @@ var _ = Describe("alert tests", func() {
 			role := &rbacv1.Role{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: roleName}, role)).To(Succeed())
 
-			deployment := ci.GetDeployment()
-
 			Expect(role.OwnerReferences).To(HaveLen(1))
-			Expect(role.OwnerReferences[0].Name).To(Equal(deployment.Name))
-			Expect(role.OwnerReferences[0].Kind).To(Equal("Deployment"))
-			Expect(role.OwnerReferences[0].APIVersion).To(Equal(appsv1.GroupName + "/v1"))
-			Expect(role.OwnerReferences[0].UID).To(Equal(deployment.UID))
+			Expect(role.OwnerReferences[0]).To(Equal(deploymentRef))
 
 			overrideExpectedEvents := []commontestutils.MockEvent{
 				{
@@ -578,21 +551,15 @@ var _ = Describe("alert tests", func() {
 			role := &rbacv1.Role{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: roleName}, role)).To(Succeed())
 
-			deployment := ci.GetDeployment()
-
 			Expect(role.OwnerReferences).To(HaveLen(1))
-			Expect(role.OwnerReferences[0].Name).To(Equal(deployment.Name))
-			Expect(role.OwnerReferences[0].Kind).To(Equal("Deployment"))
-			Expect(role.OwnerReferences[0].APIVersion).To(Equal(appsv1.GroupName + "/v1"))
-			Expect(role.OwnerReferences[0].UID).To(Equal(deployment.UID))
+			Expect(role.OwnerReferences[0]).To(Equal(deploymentRef))
 
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount("Role", roleName)).To(BeEquivalentTo(currentMetric))
 		})
 
 		It("should update the Rules if modified", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existRole := newRole(owner, commontestutils.Namespace)
+			existRole := newRole(deploymentRef, commontestutils.Namespace)
 
 			existRole.Rules = []rbacv1.PolicyRule{
 				{
@@ -622,8 +589,7 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should update the Rules if it's missing", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existRole := newRole(owner, commontestutils.Namespace)
+			existRole := newRole(deploymentRef, commontestutils.Namespace)
 
 			existRole.Rules = nil
 
@@ -657,8 +623,7 @@ var _ = Describe("alert tests", func() {
 		}
 
 		It("should update the labels if modified", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existRB := newRoleBinding(owner, commontestutils.Namespace, ci)
+			existRB := newRoleBinding(deploymentRef, commontestutils.Namespace, ci)
 			existRB.Labels = map[string]string{
 				"wrongKey1": "wrongValue1",
 				"wrongKey2": "wrongValue2",
@@ -678,8 +643,7 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should update the labels if it's missing", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existRB := newRoleBinding(owner, commontestutils.Namespace, ci)
+			existRB := newRoleBinding(deploymentRef, commontestutils.Namespace, ci)
 			existRB.Labels = nil
 
 			cl := commontestutils.InitClient([]client.Object{ns, existRB})
@@ -711,13 +675,8 @@ var _ = Describe("alert tests", func() {
 			rb := &rbacv1.RoleBinding{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: roleName}, rb)).To(Succeed())
 
-			deployment := ci.GetDeployment()
-
 			Expect(rb.OwnerReferences).To(HaveLen(1))
-			Expect(rb.OwnerReferences[0].Name).To(Equal(deployment.Name))
-			Expect(rb.OwnerReferences[0].Kind).To(Equal("Deployment"))
-			Expect(rb.OwnerReferences[0].APIVersion).To(Equal(appsv1.GroupName + "/v1"))
-			Expect(rb.OwnerReferences[0].UID).To(Equal(deployment.UID))
+			Expect(rb.OwnerReferences[0]).To(Equal(deploymentRef))
 
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount("RoleBinding", roleName)).To(BeEquivalentTo(currentMetric))
@@ -742,13 +701,8 @@ var _ = Describe("alert tests", func() {
 			rb := &rbacv1.RoleBinding{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: roleName}, rb)).To(Succeed())
 
-			deployment := ci.GetDeployment()
-
 			Expect(rb.OwnerReferences).To(HaveLen(1))
-			Expect(rb.OwnerReferences[0].Name).To(Equal(deployment.Name))
-			Expect(rb.OwnerReferences[0].Kind).To(Equal("Deployment"))
-			Expect(rb.OwnerReferences[0].APIVersion).To(Equal(appsv1.GroupName + "/v1"))
-			Expect(rb.OwnerReferences[0].UID).To(Equal(deployment.UID))
+			Expect(rb.OwnerReferences[0]).To(Equal(deploymentRef))
 
 			overrideExpectedEvents := []commontestutils.MockEvent{
 				{
@@ -773,21 +727,15 @@ var _ = Describe("alert tests", func() {
 			rb := &rbacv1.RoleBinding{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: roleName}, rb)).To(Succeed())
 
-			deployment := ci.GetDeployment()
-
 			Expect(rb.OwnerReferences).To(HaveLen(1))
-			Expect(rb.OwnerReferences[0].Name).To(Equal(deployment.Name))
-			Expect(rb.OwnerReferences[0].Kind).To(Equal("Deployment"))
-			Expect(rb.OwnerReferences[0].APIVersion).To(Equal(appsv1.GroupName + "/v1"))
-			Expect(rb.OwnerReferences[0].UID).To(Equal(deployment.UID))
+			Expect(rb.OwnerReferences[0]).To(Equal(deploymentRef))
 
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount("RoleBinding", roleName)).To(BeEquivalentTo(currentMetric))
 		})
 
 		It("should update the RoleRef if modified", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existRB := newRoleBinding(owner, commontestutils.Namespace, ci)
+			existRB := newRoleBinding(deploymentRef, commontestutils.Namespace, ci)
 
 			existRB.RoleRef = rbacv1.RoleRef{
 				APIGroup: "wrongAPIGroup",
@@ -810,8 +758,7 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should update the RoleRef if it's missing", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existRB := newRoleBinding(owner, commontestutils.Namespace, ci)
+			existRB := newRoleBinding(deploymentRef, commontestutils.Namespace, ci)
 
 			existRB.RoleRef = rbacv1.RoleRef{}
 
@@ -830,8 +777,7 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should update the Subjects if modified", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existRB := newRoleBinding(owner, commontestutils.Namespace, ci)
+			existRB := newRoleBinding(deploymentRef, commontestutils.Namespace, ci)
 
 			existRB.Subjects = []rbacv1.Subject{
 				{
@@ -862,8 +808,7 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should update the Subjects if it's missing", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existRB := newRoleBinding(owner, commontestutils.Namespace, ci)
+			existRB := newRoleBinding(deploymentRef, commontestutils.Namespace, ci)
 
 			existRB.Subjects = nil
 
@@ -898,8 +843,7 @@ var _ = Describe("alert tests", func() {
 		}
 
 		It("should update the labels if modified", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existSM := NewMetricsService(commontestutils.Namespace, owner)
+			existSM := NewMetricsService(commontestutils.Namespace, deploymentRef)
 			existSM.Labels = map[string]string{
 				"wrongKey1": "wrongValue1",
 				"wrongKey2": "wrongValue2",
@@ -919,8 +863,7 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should update the labels if it's missing", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existSM := NewMetricsService(commontestutils.Namespace, owner)
+			existSM := NewMetricsService(commontestutils.Namespace, deploymentRef)
 			existSM.Labels = nil
 
 			cl := commontestutils.InitClient([]client.Object{ns, existSM})
@@ -952,13 +895,8 @@ var _ = Describe("alert tests", func() {
 			svc := &corev1.Service{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: serviceName}, svc)).To(Succeed())
 
-			deployment := ci.GetDeployment()
-
 			Expect(svc.OwnerReferences).To(HaveLen(1))
-			Expect(svc.OwnerReferences[0].Name).To(Equal(deployment.Name))
-			Expect(svc.OwnerReferences[0].Kind).To(Equal("Deployment"))
-			Expect(svc.OwnerReferences[0].APIVersion).To(Equal(appsv1.GroupName + "/v1"))
-			Expect(svc.OwnerReferences[0].UID).To(Equal(deployment.UID))
+			Expect(svc.OwnerReferences[0]).To(Equal(deploymentRef))
 
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount("Service", serviceName)).To(BeEquivalentTo(currentMetric))
@@ -983,13 +921,8 @@ var _ = Describe("alert tests", func() {
 			svc := &corev1.Service{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: serviceName}, svc)).To(Succeed())
 
-			deployment := ci.GetDeployment()
-
 			Expect(svc.OwnerReferences).To(HaveLen(1))
-			Expect(svc.OwnerReferences[0].Name).To(Equal(deployment.Name))
-			Expect(svc.OwnerReferences[0].Kind).To(Equal("Deployment"))
-			Expect(svc.OwnerReferences[0].APIVersion).To(Equal(appsv1.GroupName + "/v1"))
-			Expect(svc.OwnerReferences[0].UID).To(Equal(deployment.UID))
+			Expect(svc.OwnerReferences[0]).To(Equal(deploymentRef))
 
 			overrideExpectedEvents := []commontestutils.MockEvent{
 				{
@@ -1014,21 +947,15 @@ var _ = Describe("alert tests", func() {
 			svc := &corev1.Service{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: serviceName}, svc)).To(Succeed())
 
-			deployment := ci.GetDeployment()
-
 			Expect(svc.OwnerReferences).To(HaveLen(1))
-			Expect(svc.OwnerReferences[0].Name).To(Equal(deployment.Name))
-			Expect(svc.OwnerReferences[0].Kind).To(Equal("Deployment"))
-			Expect(svc.OwnerReferences[0].APIVersion).To(Equal(appsv1.GroupName + "/v1"))
-			Expect(svc.OwnerReferences[0].UID).To(Equal(deployment.UID))
+			Expect(svc.OwnerReferences[0]).To(Equal(deploymentRef))
 
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount("Service", serviceName)).To(BeEquivalentTo(currentMetric))
 		})
 
 		It("should update the Spec if modified", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existSM := NewMetricsService(commontestutils.Namespace, owner)
+			existSM := NewMetricsService(commontestutils.Namespace, deploymentRef)
 
 			existSM.Spec = corev1.ServiceSpec{
 				Ports: []corev1.ServicePort{
@@ -1065,8 +992,7 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should update the Spec if it's missing", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existSM := NewMetricsService(commontestutils.Namespace, owner)
+			existSM := NewMetricsService(commontestutils.Namespace, deploymentRef)
 
 			existSM.Spec = corev1.ServiceSpec{}
 
@@ -1101,8 +1027,7 @@ var _ = Describe("alert tests", func() {
 		}
 
 		It("should update the labels if modified", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existSM := NewServiceMonitor(commontestutils.Namespace, owner)
+			existSM := NewServiceMonitor(commontestutils.Namespace, deploymentRef)
 			existSM.Labels = map[string]string{
 				"wrongKey1": "wrongValue1",
 				"wrongKey2": "wrongValue2",
@@ -1122,8 +1047,7 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should update the labels if it's missing", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existSM := NewServiceMonitor(commontestutils.Namespace, owner)
+			existSM := NewServiceMonitor(commontestutils.Namespace, deploymentRef)
 			existSM.Labels = nil
 
 			cl := commontestutils.InitClient([]client.Object{ns, existSM})
@@ -1155,13 +1079,8 @@ var _ = Describe("alert tests", func() {
 			sm := &monitoringv1.ServiceMonitor{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: serviceName}, sm)).To(Succeed())
 
-			deployment := ci.GetDeployment()
-
 			Expect(sm.OwnerReferences).To(HaveLen(1))
-			Expect(sm.OwnerReferences[0].Name).To(Equal(deployment.Name))
-			Expect(sm.OwnerReferences[0].Kind).To(Equal("Deployment"))
-			Expect(sm.OwnerReferences[0].APIVersion).To(Equal(appsv1.GroupName + "/v1"))
-			Expect(sm.OwnerReferences[0].UID).To(Equal(deployment.UID))
+			Expect(sm.OwnerReferences[0]).To(Equal(deploymentRef))
 
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount("ServiceMonitor", serviceName)).To(BeEquivalentTo(currentMetric))
@@ -1186,13 +1105,8 @@ var _ = Describe("alert tests", func() {
 			sm := &monitoringv1.ServiceMonitor{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: serviceName}, sm)).To(Succeed())
 
-			deployment := ci.GetDeployment()
-
 			Expect(sm.OwnerReferences).To(HaveLen(1))
-			Expect(sm.OwnerReferences[0].Name).To(Equal(deployment.Name))
-			Expect(sm.OwnerReferences[0].Kind).To(Equal("Deployment"))
-			Expect(sm.OwnerReferences[0].APIVersion).To(Equal(appsv1.GroupName + "/v1"))
-			Expect(sm.OwnerReferences[0].UID).To(Equal(deployment.UID))
+			Expect(sm.OwnerReferences[0]).To(Equal(deploymentRef))
 
 			overrideExpectedEvents := []commontestutils.MockEvent{
 				{
@@ -1217,21 +1131,15 @@ var _ = Describe("alert tests", func() {
 			sm := &monitoringv1.ServiceMonitor{}
 			Expect(cl.Get(context.Background(), client.ObjectKey{Namespace: r.namespace, Name: serviceName}, sm)).To(Succeed())
 
-			deployment := ci.GetDeployment()
-
 			Expect(sm.OwnerReferences).To(HaveLen(1))
-			Expect(sm.OwnerReferences[0].Name).To(Equal(deployment.Name))
-			Expect(sm.OwnerReferences[0].Kind).To(Equal("Deployment"))
-			Expect(sm.OwnerReferences[0].APIVersion).To(Equal(appsv1.GroupName + "/v1"))
-			Expect(sm.OwnerReferences[0].UID).To(Equal(deployment.UID))
+			Expect(sm.OwnerReferences[0]).To(Equal(deploymentRef))
 
 			Expect(ee.CheckEvents(expectedEvents)).To(BeTrue())
 			Expect(metrics.GetOverwrittenModificationsCount("ServiceMonitor", serviceName)).To(BeEquivalentTo(currentMetric))
 		})
 
 		It("should update the Spec if modified", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existSM := NewServiceMonitor(commontestutils.Namespace, owner)
+			existSM := NewServiceMonitor(commontestutils.Namespace, deploymentRef)
 
 			existSM.Spec = monitoringv1.ServiceMonitorSpec{
 				Selector: metav1.LabelSelector{
@@ -1257,8 +1165,7 @@ var _ = Describe("alert tests", func() {
 		})
 
 		It("should update the Spec if it's missing", func() {
-			owner := getDeploymentReference(ci.GetDeployment())
-			existSM := NewServiceMonitor(commontestutils.Namespace, owner)
+			existSM := NewServiceMonitor(commontestutils.Namespace, deploymentRef)
 
 			existSM.Spec = monitoringv1.ServiceMonitorSpec{}
 

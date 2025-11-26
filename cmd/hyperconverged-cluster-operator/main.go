@@ -68,6 +68,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/collectors"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/upgradepatch"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -135,8 +136,8 @@ func main() {
 	cmdHelper.ExitOnError(err, "Cannot create a new API client")
 
 	// Detect OpenShift version
-	ctx := context.TODO()
-	err = ci.Init(ctx, apiClient, logger)
+	ctx := context.Background()
+	err = cmdcommon.ClusterInitializations(ctx, apiClient, scheme, logger)
 	cmdHelper.ExitOnError(err, "Cannot detect cluster type")
 
 	_, err = nodeinfo.HandleNodeChanges(ctx, apiClient, nil, logger)
@@ -154,7 +155,7 @@ func main() {
 	logger.Info("Registering Components.")
 
 	eventEmitter := hcoutil.GetEventEmitter()
-	eventEmitter.Init(ci.GetPod(), ci.GetCSV(), mgr.GetEventRecorderFor(hcoutil.HyperConvergedName))
+	eventEmitter.Init(ownresources.GetPod(), ownresources.GetCSVRef(), mgr.GetEventRecorderFor(hcoutil.HyperConvergedName))
 
 	err = mgr.AddHealthzCheck("ping", healthz.Ping)
 	cmdHelper.ExitOnError(err, "unable to add health check")
@@ -223,7 +224,7 @@ func main() {
 	}
 
 	if ci.IsOpenshift() {
-		if err = observability.SetupWithManager(mgr, ci.GetDeployment()); err != nil {
+		if err = observability.SetupWithManager(mgr, ownresources.GetDeploymentRef()); err != nil {
 			logger.Error(err, "unable to create controller", "controller", "Observability")
 			os.Exit(1)
 		}

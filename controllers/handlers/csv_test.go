@@ -13,25 +13,28 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	fakeownresources "github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources/fake"
 )
 
 var _ = Describe("CSV Operand", func() {
 	var (
 		hco *hcov1beta1.HyperConverged
 		req *common.HcoRequest
-		ci  *commontestutils.ClusterInfoMock
 	)
 
 	BeforeEach(func() {
+		fakeownresources.OLMV0OwnResourcesMock()
 		hco = commontestutils.NewHco()
 		req = commontestutils.NewReq(hco)
-		ci = &commontestutils.ClusterInfoMock{}
+
+		DeferCleanup(func() {
+			fakeownresources.ResetOwnResources()
+		})
 	})
 
 	Context("UninstallStrategy is missing", func() {
 		It("should set console.openshift.io/disable-operand-delete to true", func() {
-			foundResource := ensure(req, hco, ci)
+			foundResource := ensure(req, hco)
 			Expect(foundResource.Annotations).To(HaveKeyWithValue(components.DisableOperandDeletionAnnotation, "true"))
 		})
 	})
@@ -39,17 +42,17 @@ var _ = Describe("CSV Operand", func() {
 	Context("UninstallStrategy is BlockUninstallIfWorkloadsExist", func() {
 		It("should set console.openshift.io/disable-operand-delete to true", func() {
 			hco.Spec.UninstallStrategy = hcov1beta1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
-			foundResource := ensure(req, hco, ci)
+			foundResource := ensure(req, hco)
 			Expect(foundResource.Annotations).To(HaveKeyWithValue(components.DisableOperandDeletionAnnotation, "true"))
 		})
 
 		It("should set console.openshift.io/disable-operand-delete to true on changing from RemoveWorkloads", func() {
 			hco.Spec.UninstallStrategy = hcov1beta1.HyperConvergedUninstallStrategyRemoveWorkloads
-			foundResource := ensure(req, hco, ci)
+			foundResource := ensure(req, hco)
 			Expect(foundResource.Annotations).To(HaveKeyWithValue(components.DisableOperandDeletionAnnotation, "false"))
 
 			hco.Spec.UninstallStrategy = hcov1beta1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
-			foundResource = ensure(req, hco, ci)
+			foundResource = ensure(req, hco)
 			Expect(foundResource.Annotations).To(HaveKeyWithValue(components.DisableOperandDeletionAnnotation, "true"))
 		})
 	})
@@ -57,25 +60,29 @@ var _ = Describe("CSV Operand", func() {
 	Context("UninstallStrategy is RemoveWorkloads", func() {
 		It("should set console.openshift.io/disable-operand-delete to false", func() {
 			hco.Spec.UninstallStrategy = hcov1beta1.HyperConvergedUninstallStrategyRemoveWorkloads
-			foundResource := ensure(req, hco, ci)
+			foundResource := ensure(req, hco)
 			Expect(foundResource.Annotations).To(HaveKeyWithValue(components.DisableOperandDeletionAnnotation, "false"))
 		})
 
 		It("should set console.openshift.io/disable-operand-delete to false on changing from BlockUninstallIfWorkloadsExist", func() {
 			hco.Spec.UninstallStrategy = hcov1beta1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
-			foundResource := ensure(req, hco, ci)
+			foundResource := ensure(req, hco)
 			Expect(foundResource.Annotations).To(HaveKeyWithValue(components.DisableOperandDeletionAnnotation, "true"))
 
 			hco.Spec.UninstallStrategy = hcov1beta1.HyperConvergedUninstallStrategyRemoveWorkloads
-			foundResource = ensure(req, hco, ci)
+			foundResource = ensure(req, hco)
 			Expect(foundResource.Annotations).To(HaveKeyWithValue(components.DisableOperandDeletionAnnotation, "false"))
 		})
 	})
 })
 
-func ensure(req *common.HcoRequest, hco *hcov1beta1.HyperConverged, ci hcoutil.ClusterInfo) *csvv1alpha1.ClusterServiceVersion {
-	cl := commontestutils.InitClient([]client.Object{hco, ci.GetCSV()})
-	handler := NewCsvHandler(cl, ci)
+func ensure(req *common.HcoRequest, hco *hcov1beta1.HyperConverged) *csvv1alpha1.ClusterServiceVersion {
+	GinkgoHelper()
+
+	csv := commontestutils.GetCSV()
+
+	cl := commontestutils.InitClient([]client.Object{hco, csv})
+	handler := NewCsvHandler(cl)
 	res := handler.Ensure(req)
 	Expect(res.UpgradeDone).To(BeTrue())
 	Expect(res.Err).ToNot(HaveOccurred())
@@ -83,7 +90,7 @@ func ensure(req *common.HcoRequest, hco *hcov1beta1.HyperConverged, ci hcoutil.C
 	foundResource := &csvv1alpha1.ClusterServiceVersion{}
 	Expect(
 		cl.Get(context.TODO(),
-			types.NamespacedName{Name: ci.GetCSV().Name, Namespace: ci.GetCSV().Namespace},
+			types.NamespacedName{Name: csv.Name, Namespace: csv.Namespace},
 			foundResource),
 	).To(Succeed())
 	return foundResource

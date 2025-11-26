@@ -59,7 +59,7 @@ func buildObservabilityRule() *promv1.PrometheusRule {
 	err := observabilityRules.SetupRules()
 	checkErrorAndExit(err)
 
-	rule, err := observabilityRules.BuildPrometheusRule("default", &metav1.OwnerReference{})
+	rule, err := observabilityRules.BuildPrometheusRule("default", metav1.OwnerReference{})
 	checkErrorAndExit(err)
 
 	return rule

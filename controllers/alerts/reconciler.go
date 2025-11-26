@@ -6,17 +6,16 @@ import (
 	"reflect"
 
 	"github.com/go-logr/logr"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -47,14 +46,9 @@ func NewMonitoringReconciler(ci hcoutil.ClusterInfo, cl client.Client, ee hcouti
 }
 
 func CreateMonitoringReconciler(ci hcoutil.ClusterInfo, cl client.Client, ee hcoutil.EventEmitter, scheme *runtime.Scheme, shouldReconcileNS bool, getReconcilersFn GetReconcilersFunc) *MonitoringReconciler {
-	deployment := ci.GetDeployment()
-
-	var owner metav1.OwnerReference
+	owner := ownresources.GetDeploymentRef()
 
 	namespace := hcoutil.GetOperatorNamespaceFromEnv()
-	if deployment != nil {
-		owner = getDeploymentReference(deployment)
-	}
 
 	r := &MonitoringReconciler{
 		reconcilers:  getReconcilersFn(ci, namespace, owner),
@@ -203,17 +197,6 @@ func (r *MonitoringReconciler) UpdateRelatedObjects(req *common.HcoRequest) erro
 	}
 
 	return nil
-}
-
-func getDeploymentReference(deployment *appsv1.Deployment) metav1.OwnerReference {
-	return metav1.OwnerReference{
-		APIVersion:         appsv1.SchemeGroupVersion.String(),
-		Kind:               "Deployment",
-		Name:               deployment.GetName(),
-		UID:                deployment.GetUID(),
-		BlockOwnerDeletion: ptr.To(false),
-		Controller:         ptr.To(false),
-	}
 }
 
 // update the labels and the ownerReferences in a metric resource
