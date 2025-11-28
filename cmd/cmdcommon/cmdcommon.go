@@ -15,10 +15,12 @@ import (
 	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/spf13/pflag"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/validator"
 )
@@ -189,4 +191,15 @@ func MutateTLSConfig(cfg *tls.Config) {
 		cfg.MinVersion = crypto.TLSVersionOrDie(string(minTypedTLSVersion))
 		return cfg, nil
 	}
+}
+
+func ClusterInitializations(ctx context.Context, cl client.Client, logger logr.Logger) error {
+	err := hcoutil.GetClusterInfo().Init(ctx, cl, logger)
+	if err != nil {
+		return nil
+	}
+
+	ownresources.Init(ctx, cl, logger)
+
+	return nil
 }
