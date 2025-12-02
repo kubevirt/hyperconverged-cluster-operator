@@ -79,6 +79,7 @@ func NewPasstBindingCNISA(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount 
 // NewPasstBindingCNIDaemonSet creates a DaemonSet for the passt binding CNI
 func NewPasstBindingCNIDaemonSet(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet {
 	maxUnavailable := intstr.FromString("10%")
+	maxSurge := intstr.FromInt32(0)
 
 	isOpenShift := hcoutil.GetClusterInfo().IsOpenshift()
 
@@ -97,6 +98,7 @@ func NewPasstBindingCNIDaemonSet(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSe
 			Type: appsv1.RollingUpdateDaemonSetStrategyType,
 			RollingUpdate: &appsv1.RollingUpdateDaemonSet{
 				MaxUnavailable: &maxUnavailable,
+				MaxSurge:       &maxSurge,
 			},
 		},
 		Template: corev1.PodTemplateSpec{
@@ -135,6 +137,8 @@ sleep 2147483647`,
 						SecurityContext: &corev1.SecurityContext{
 							Privileged: ptr.To(true),
 						},
+						TerminationMessagePath:   corev1.TerminationMessagePathDefault,
+						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 						VolumeMounts: []corev1.VolumeMount{
 							{
 								Name:      "cnibin",
@@ -150,6 +154,7 @@ sleep 2147483647`,
 						VolumeSource: corev1.VolumeSource{
 							HostPath: &corev1.HostPathVolumeSource{
 								Path: hostpath,
+								Type: ptr.To(corev1.HostPathUnset),
 							},
 						},
 					},

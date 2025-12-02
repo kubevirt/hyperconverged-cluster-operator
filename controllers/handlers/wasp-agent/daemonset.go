@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -73,6 +74,8 @@ func newWaspAgentDaemonSet(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet {
 		SecurityContext: &corev1.SecurityContext{
 			Privileged: ptr.To(true),
 		},
+		TerminationMessagePath:   corev1.TerminationMessagePathDefault,
+		TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 		VolumeMounts: []corev1.VolumeMount{
 			{
 				Name:      "host",
@@ -92,6 +95,13 @@ func newWaspAgentDaemonSet(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet {
 				"name": AppComponentWaspAgent,
 			},
 		},
+		UpdateStrategy: appsv1.DaemonSetUpdateStrategy{
+			Type: appsv1.RollingUpdateDaemonSetStrategyType,
+			RollingUpdate: &appsv1.RollingUpdateDaemonSet{
+				MaxUnavailable: ptr.To(intstr.FromInt32(1)),
+				MaxSurge:       ptr.To(intstr.FromInt32(0)),
+			},
+		},
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{
 				Labels: podLabels,
@@ -102,12 +112,14 @@ func newWaspAgentDaemonSet(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet {
 				HostUsers:                     ptr.To(true),
 				TerminationGracePeriodSeconds: ptr.To[int64](5),
 				Containers:                    []corev1.Container{container},
+
 				Volumes: []corev1.Volume{
 					{
 						Name: "host",
 						VolumeSource: corev1.VolumeSource{
 							HostPath: &corev1.HostPathVolumeSource{
 								Path: "/",
+								Type: ptr.To(corev1.HostPathUnset),
 							},
 						},
 					},
@@ -116,6 +128,7 @@ func newWaspAgentDaemonSet(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet {
 						VolumeSource: corev1.VolumeSource{
 							HostPath: &corev1.HostPathVolumeSource{
 								Path: "/",
+								Type: ptr.To(corev1.HostPathUnset),
 							},
 						},
 					},
@@ -159,7 +172,8 @@ func createDaemonSetEnvVar() []corev1.EnvVar {
 			Name: "NODE_NAME",
 			ValueFrom: &corev1.EnvVarSource{
 				FieldRef: &corev1.ObjectFieldSelector{
-					FieldPath: "spec.nodeName",
+					FieldPath:  "spec.nodeName",
+					APIVersion: "v1",
 				},
 			},
 		},
