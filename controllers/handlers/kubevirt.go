@@ -44,13 +44,16 @@ const (
 	machineTypeEnvName      = "MACHINETYPE"
 	amd64MachineTypeEnvName = "AMD64_MACHINETYPE"
 	arm64MachineTypeEnvName = "ARM64_MACHINETYPE"
+	s390xMachineTypeEnvName = "S390X_MACHINETYPE"
 )
 
 const (
 	DefaultAMD64OVMFPath         = "/usr/share/OVMF"
 	DefaultARM64OVMFPath         = "/usr/share/AAVMF"
+	DefaultS390xOVMFPath         = ""
 	DefaultAMD64EmulatedMachines = "q35*,pc-q35*"
 	DefaultARM64EmulatedMachines = "virt*"
+	DefaultS390XEmulatedMachines = "s390-ccw-virtio*"
 )
 
 const (
@@ -452,6 +455,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 		KSMConfiguration:             hc.Spec.KSMConfiguration,
 		VMRolloutStrategy:            ptr.To(kubevirtcorev1.VMRolloutStrategyLiveUpdate),
 		LiveUpdateConfiguration:      hc.Spec.LiveUpdateConfiguration,
+		ArchitectureConfiguration:    getArchConfiguration(),
 	}
 
 	if smbiosConfig, ok := os.LookupEnv(smbiosEnvName); ok {
@@ -460,35 +464,6 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 			err := yaml.NewYAMLOrJSONDecoder(strings.NewReader(smbiosConfig), 1024).Decode(config.SMBIOSConfig)
 			if err != nil {
 				return nil, err
-			}
-		}
-	}
-
-	amd64MachineType := cmp.Or(
-		strings.TrimSpace(os.Getenv(machineTypeEnvName)),
-		strings.TrimSpace(os.Getenv(amd64MachineTypeEnvName)),
-	)
-
-	if amd64MachineType != "" {
-		if config.ArchitectureConfiguration == nil {
-			config.ArchitectureConfiguration = &kubevirtcorev1.ArchConfiguration{}
-		}
-		config.ArchitectureConfiguration.Amd64 = &kubevirtcorev1.ArchSpecificConfiguration{
-			MachineType:      amd64MachineType,
-			OVMFPath:         DefaultAMD64OVMFPath,
-			EmulatedMachines: strings.Split(DefaultAMD64EmulatedMachines, ","),
-		}
-	}
-
-	if armMachineType, ok := os.LookupEnv(arm64MachineTypeEnvName); ok {
-		if armMachineType = strings.TrimSpace(armMachineType); armMachineType != "" {
-			if config.ArchitectureConfiguration == nil {
-				config.ArchitectureConfiguration = &kubevirtcorev1.ArchConfiguration{}
-			}
-			config.ArchitectureConfiguration.Arm64 = &kubevirtcorev1.ArchSpecificConfiguration{
-				MachineType:      armMachineType,
-				OVMFPath:         DefaultARM64OVMFPath,
-				EmulatedMachines: strings.Split(DefaultARM64EmulatedMachines, ","),
 			}
 		}
 	}
@@ -530,6 +505,53 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 	}
 
 	return config, nil
+}
+
+func getArchConfiguration() *kubevirtcorev1.ArchConfiguration {
+	var architectureConfiguration *kubevirtcorev1.ArchConfiguration
+
+	amd64MachineType := cmp.Or(
+		strings.TrimSpace(os.Getenv(machineTypeEnvName)),
+		strings.TrimSpace(os.Getenv(amd64MachineTypeEnvName)),
+	)
+
+	if amd64MachineType != "" {
+		architectureConfiguration = &kubevirtcorev1.ArchConfiguration{}
+		architectureConfiguration.Amd64 = &kubevirtcorev1.ArchSpecificConfiguration{
+			MachineType:      amd64MachineType,
+			OVMFPath:         DefaultAMD64OVMFPath,
+			EmulatedMachines: strings.Split(DefaultAMD64EmulatedMachines, ","),
+		}
+	}
+
+	if armMachineType, ok := os.LookupEnv(arm64MachineTypeEnvName); ok {
+		if armMachineType = strings.TrimSpace(armMachineType); armMachineType != "" {
+			if architectureConfiguration == nil {
+				architectureConfiguration = &kubevirtcorev1.ArchConfiguration{}
+			}
+			architectureConfiguration.Arm64 = &kubevirtcorev1.ArchSpecificConfiguration{
+				MachineType:      armMachineType,
+				OVMFPath:         DefaultARM64OVMFPath,
+				EmulatedMachines: strings.Split(DefaultARM64EmulatedMachines, ","),
+			}
+		}
+	}
+
+	if s390xMachineType, ok := os.LookupEnv(s390xMachineTypeEnvName); ok {
+		if s390xMachineType = strings.TrimSpace(s390xMachineType); s390xMachineType != "" {
+			if architectureConfiguration == nil {
+				architectureConfiguration = &kubevirtcorev1.ArchConfiguration{}
+			}
+			architectureConfiguration.S390x = &kubevirtcorev1.ArchSpecificConfiguration{
+				MachineType:      s390xMachineType,
+				OVMFPath:         DefaultS390xOVMFPath,
+				EmulatedMachines: []string{DefaultS390XEmulatedMachines},
+			}
+		}
+	}
+
+	return architectureConfiguration
+
 }
 
 func getNetworkBindings(hcoNetworkBindings map[string]kubevirtcorev1.InterfaceBindingPlugin,
