@@ -66,6 +66,7 @@ type DeploymentOperatorParams struct {
 	Machinetype            string
 	Amd64MachineType       string
 	Arm64MachineType       string
+	S390xMachineType       string
 	HcoKvIoVersion         string
 	KubevirtVersion        string
 	KvVirtLancherOsVersion string
@@ -249,6 +250,10 @@ func buildEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 		{
 			Name:  "ARM64_MACHINETYPE",
 			Value: params.Arm64MachineType,
+		},
+		{
+			Name:  "S390X_MACHINETYPE",
+			Value: params.S390xMachineType,
 		},
 		{
 			Name:  util.HcoKvIoVersionName,

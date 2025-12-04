@@ -70,6 +70,7 @@ CRD_EXT="crd.yaml"
 
 readonly amd64_machinetype=q35
 readonly arm64_machinetype=virt
+readonly s390x_machinetype=s390-ccw-virtio
 
 function gen_csv() {
   # Handle arguments
@@ -289,6 +290,7 @@ ${TOOLS}/manifest-templator \
   --smbios="${SMBIOS}" \
   --amd64-machinetype="${amd64_machinetype}" \
   --arm64-machinetype="${arm64_machinetype}" \
+  --s390x-machinetype="${s390x_machinetype}" \
   --hco-kv-io-version="${CSV_VERSION}" \
   --kubevirt-version="${KUBEVIRT_VERSION}" \
   --cdi-version="${CDI_VERSION}" \
@@ -341,6 +343,7 @@ ${TOOLS}/csv-merger \
   --smbios="${SMBIOS}" \
   --amd64-machinetype="${amd64_machinetype}" \
   --arm64-machinetype="${arm64_machinetype}" \
+  --s390x-machinetype="${s390x_machinetype}" \
   --csv-overrides-file="${csvOverrides}" \
   --enable-unique-version=${ENABLE_UNIQUE} \
   --kubevirt-version="${KUBEVIRT_VERSION}" \

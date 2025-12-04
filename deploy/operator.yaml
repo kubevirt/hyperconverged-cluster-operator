@@ -54,6 +54,8 @@ spec:
           value: q35
         - name: ARM64_MACHINETYPE
           value: virt
+        - name: S390X_MACHINETYPE
+          value: s390-ccw-virtio
         - name: HCO_KV_IO_VERSION
           value: 1.17.0
         - name: KUBEVIRT_VERSION

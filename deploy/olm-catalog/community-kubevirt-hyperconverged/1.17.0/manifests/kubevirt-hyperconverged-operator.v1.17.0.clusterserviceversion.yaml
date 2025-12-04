@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.17.0-unstable
-    createdAt: "2025-12-04 05:06:49"
+    createdAt: "2025-12-04 12:26:22"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -3188,6 +3188,8 @@ spec:
                   value: q35
                 - name: ARM64_MACHINETYPE
                   value: virt
+                - name: S390X_MACHINETYPE
+                  value: s390-ccw-virtio
                 - name: HCO_KV_IO_VERSION
                   value: 1.17.0
                 - name: KUBEVIRT_VERSION

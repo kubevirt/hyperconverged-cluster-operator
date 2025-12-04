@@ -95,6 +95,7 @@ var (
 	machinetype         = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap (Deprecated, use amd64-machinetype)")
 	amd64MachineType    = flag.String("amd64-machinetype", "", "Custom AMD64_MACHINETYPE string for KubeVirt ConfigMap")
 	arm64MachineType    = flag.String("arm64-machinetype", "", "Custom ARM64_MACHINETYPE string for KubeVirt ConfigMap")
+	s390xMachineType    = flag.String("s390x-machinetype", "", "Custom S390X_MACHINETYPE string for KubeVirt ConfigMap")
 	csvVersion          = flag.String("csv-version", "", "CSV version")
 	replacesCsvVersion  = flag.String("replaces-csv-version", "", "CSV version to replace")
 	metadataDescription = flag.String("metadata-description", "", "One-Liner Description")
@@ -395,6 +396,7 @@ func getDeploymentParams() *components.DeploymentOperatorParams {
 		Machinetype:            *machinetype,
 		Amd64MachineType:       *amd64MachineType,
 		Arm64MachineType:       *arm64MachineType,
+		S390xMachineType:       *s390xMachineType,
 		HcoKvIoVersion:         *hcoKvIoVersion,
 		KubevirtVersion:        *kubevirtVersion,
 		KvVirtLancherOsVersion: *kvVirtLauncherOSVersion,
