@@ -173,7 +173,7 @@ func main() {
 	err = bearertokencontroller.RegisterReconciler(mgr, ci, eventEmitter)
 	cmdHelper.ExitOnError(err, "Cannot register the Bearer Token reconciler")
 
-	if err = webhooks.SetupWebhookWithManager(ctx, mgr, ci.IsOpenshift(), hcoTLSSecurityProfile); err != nil {
+	if err = webhooks.SetupWebhookWithManager(mgr, ci.IsOpenshift(), hcoTLSSecurityProfile); err != nil {
 		logger.Error(err, "unable to create webhook", "webhook", "HyperConverged")
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to create webhook")
 		os.Exit(1)
