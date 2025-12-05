@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.17.0-unstable
-    createdAt: "2025-12-04 12:26:22"
+    createdAt: "2025-12-05 05:06:42"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -3919,9 +3919,9 @@ spec:
                 - name: OPERATOR_IMAGE
                   value: quay.io/kubevirt/hostpath-provisioner-operator@sha256:ac1f1e63e984c69933f9627a1374957cf6c352dd66fda3b881e3c5453c99a143
                 - name: PROVISIONER_IMAGE
-                  value: quay.io/kubevirt/hostpath-provisioner@sha256:bcd397fe2edfdbfa8378ec29a4cd5fe5e9d86fd8b689dcae2a2383ae6af993ad
+                  value: quay.io/kubevirt/hostpath-provisioner@sha256:b2d752a6ffb3ae91a5c13bf8e6f00a4e8c0c28ceb7656d0deabbf23410b6375e
                 - name: CSI_PROVISIONER_IMAGE
-                  value: quay.io/kubevirt/hostpath-csi-driver@sha256:669911b1b4d30f68f5752a1502bb674d9fabe30ed2e0f46bf96908827f8c20cd
+                  value: quay.io/kubevirt/hostpath-csi-driver@sha256:66be0f1cdedb3b7d0a86b472410accc129b4f62da4e1cf0e4a724ffc79bca62f
                 - name: NODE_DRIVER_REG_IMAGE
                   value: registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:11f199f6bec47403b03cb49c79a41f445884b213b382582a60710b8c6fdc316a
                 - name: LIVENESS_PROBE_IMAGE
@@ -4850,9 +4850,9 @@ spec:
     name: csi-provisioner
   - image: registry.k8s.io/sig-storage/csi-snapshotter@sha256:c7e0a3718832b6197ce8b29fefb3fed3d84f4fbcdf08f4606140dbec2566501d
     name: csi-snapshotter
-  - image: quay.io/kubevirt/hostpath-csi-driver@sha256:669911b1b4d30f68f5752a1502bb674d9fabe30ed2e0f46bf96908827f8c20cd
+  - image: quay.io/kubevirt/hostpath-csi-driver@sha256:66be0f1cdedb3b7d0a86b472410accc129b4f62da4e1cf0e4a724ffc79bca62f
     name: hostpath-csi-driver
-  - image: quay.io/kubevirt/hostpath-provisioner@sha256:bcd397fe2edfdbfa8378ec29a4cd5fe5e9d86fd8b689dcae2a2383ae6af993ad
+  - image: quay.io/kubevirt/hostpath-provisioner@sha256:b2d752a6ffb3ae91a5c13bf8e6f00a4e8c0c28ceb7656d0deabbf23410b6375e
     name: hostpath-provisioner
   - image: quay.io/kubevirt/hostpath-provisioner-operator@sha256:ac1f1e63e984c69933f9627a1374957cf6c352dd66fda3b881e3c5453c99a143
     name: hostpath-provisioner-operator
