@@ -7,8 +7,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	appsv1 "k8s.io/api/apps/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -16,6 +14,7 @@ import (
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/observability/rules"
+	fakeownreferences "github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources/fake"
 )
 
 const testNamespace = "observability_test"
@@ -36,27 +35,23 @@ var _ = Describe("Observability Controller", func() {
 	})
 
 	It("Should successfully setup the controller", func() {
-		err := SetupWithManager(mgr, &appsv1.Deployment{})
+		err := SetupWithManager(mgr, fakeownreferences.GetFakeDeploymentRef())
 		Expect(err).ToNot(HaveOccurred())
 		Expect(rules.ListAlerts()).ToNot(BeEmpty())
 	})
 
 	It("Should successfully reconcile observability", func() {
-		ownerDeployment := &appsv1.Deployment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "test-deployment",
-			},
-		}
-
-		reconciler := NewReconciler(mgr, testNamespace, ownerDeployment)
-		Expect(reconciler.owner.Name).To(Equal(ownerDeployment.Name))
+		deployRef := fakeownreferences.GetFakeDeploymentRef()
+		reconciler := NewReconciler(mgr, testNamespace, deployRef)
+		Expect(reconciler.owner.Name).To(Equal(deployRef.Name))
 		Expect(reconciler.namespace).To(Equal(testNamespace))
 		Expect(reconciler.config).To(Equal(mgr.GetConfig()))
 		Expect(reconciler.Client).To(Equal(mgr.GetClient()))
 	})
 
 	It("Should receive periodic events in reconciler events channel", func() {
-		reconciler := NewReconciler(mgr, testNamespace, &appsv1.Deployment{})
+		deployRef := fakeownreferences.GetFakeDeploymentRef()
+		reconciler := NewReconciler(mgr, testNamespace, deployRef)
 		reconciler.startEventLoop()
 
 		Eventually(reconciler.events).

@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -32,7 +30,7 @@ type Reconciler struct {
 	namespace string
 	config    *rest.Config
 	events    chan event.GenericEvent
-	owner     *metav1.OwnerReference
+	owner     metav1.OwnerReference
 
 	amApi *alertmanager.Api
 }
@@ -59,17 +57,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, _ ctrl.Request) (ctrl.Result
 	return ctrl.Result{}, nil
 }
 
-func NewReconciler(mgr ctrl.Manager, namespace string, ownerDeployment *appsv1.Deployment) *Reconciler {
+func NewReconciler(mgr ctrl.Manager, namespace string, ownerRef metav1.OwnerReference) *Reconciler {
 	return &Reconciler{
 		Client:    mgr.GetClient(),
 		namespace: namespace,
 		config:    mgr.GetConfig(),
 		events:    make(chan event.GenericEvent, 1),
-		owner:     buildOwnerReference(ownerDeployment),
+		owner:     ownerRef,
 	}
 }
 
-func SetupWithManager(mgr ctrl.Manager, ownerDeployment *appsv1.Deployment) error {
+func SetupWithManager(mgr ctrl.Manager, ownerRef metav1.OwnerReference) error {
 	log.Info("Setting up controller")
 
 	namespace := util.GetOperatorNamespaceFromEnv()
@@ -79,7 +77,7 @@ func SetupWithManager(mgr ctrl.Manager, ownerDeployment *appsv1.Deployment) erro
 		return fmt.Errorf("failed to setup Prometheus rules: %v", err)
 	}
 
-	r := NewReconciler(mgr, namespace, ownerDeployment)
+	r := NewReconciler(mgr, namespace, ownerRef)
 	r.startEventLoop()
 
 	return ctrl.NewControllerManagedBy(mgr).
@@ -105,19 +103,4 @@ func (r *Reconciler) startEventLoop() {
 			}
 		}
 	}()
-}
-
-func buildOwnerReference(ownerDeployment *appsv1.Deployment) *metav1.OwnerReference {
-	if ownerDeployment == nil {
-		return nil
-	}
-
-	return &metav1.OwnerReference{
-		APIVersion:         appsv1.SchemeGroupVersion.String(),
-		Kind:               "Deployment",
-		Name:               ownerDeployment.GetName(),
-		UID:                ownerDeployment.GetUID(),
-		BlockOwnerDeletion: ptr.To(false),
-		Controller:         ptr.To(false),
-	}
 }

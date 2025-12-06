@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	fakeownresources "github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources/fake"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -32,9 +33,15 @@ var _ = Describe("Controller setup and reconcile", func() {
 		ci hcoutil.ClusterInfo
 		ee hcoutil.EventEmitter
 	)
+
 	BeforeEach(func() {
 		ci = commontestutils.ClusterInfoMock{}
 		ee = commontestutils.NewEventEmitterMock()
+		fakeownresources.OLMV0OwnerReferenceMock()
+
+		DeferCleanup(func() {
+			fakeownresources.ResetOwnReference()
+		})
 	})
 
 	Describe("RegisterReconciler", func() {
