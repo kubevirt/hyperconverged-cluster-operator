@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -276,6 +277,8 @@ Version: 1.2.3`)).To(Succeed())
 			Expect(os.Setenv(s390xMachineTypeEnvName, "s390-ccw-virtio")).To(Succeed())
 			Expect(os.Setenv(kvmEmulationEnvName, "false")).To(Succeed())
 
+			restArchConfig()
+
 			DeferCleanup(func() {
 				Expect(os.Unsetenv(smbiosEnvName)).To(Succeed())
 				Expect(os.Unsetenv(machineTypeEnvName)).To(Succeed())
@@ -283,6 +286,8 @@ Version: 1.2.3`)).To(Succeed())
 				Expect(os.Unsetenv(arm64MachineTypeEnvName)).To(Succeed())
 				Expect(os.Unsetenv(s390xMachineTypeEnvName)).To(Succeed())
 				Expect(os.Unsetenv(kvmEmulationEnvName)).To(Succeed())
+
+				restArchConfig()
 			})
 		})
 
@@ -330,6 +335,7 @@ Version: 1.2.3`)).To(Succeed())
 			Expect(*foundResource.Spec.Configuration.DeveloperConfiguration.DiskVerification.MemoryLimit).To(Equal(kvDiskVerificationMemoryLimit))
 
 			Expect(foundResource.Spec.Configuration.MachineType).To(BeEmpty())
+			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration).ToNot(BeNil())
 			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Amd64.MachineType).To(Equal("q35"))
 			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Amd64.OVMFPath).To(Equal(DefaultAMD64OVMFPath))
 			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Arm64.MachineType).To(Equal("virt"))
@@ -472,9 +478,11 @@ Product: smbios product
 Manufacturer: smbios manufacturer
 Sku: 1.2.3
 Version: 1.2.3`)
-			os.Setenv(amd64MachineTypeEnvName, "q35")
-			os.Setenv(arm64MachineTypeEnvName, "virt")
-			os.Setenv(s390xMachineTypeEnvName, "s390-ccw-virtio")
+			Expect(os.Setenv(amd64MachineTypeEnvName, "q35")).To(Succeed())
+			Expect(os.Setenv(arm64MachineTypeEnvName, "virt")).To(Succeed())
+			Expect(os.Setenv(s390xMachineTypeEnvName, "s390-ccw-virtio")).To(Succeed())
+
+			restArchConfig()
 
 			existKv, err := NewKubeVirt(hco, commontestutils.Namespace)
 			Expect(err).ToNot(HaveOccurred())
@@ -577,10 +585,11 @@ Version: 1.2.3`)
 		})
 
 		It("should use legacy MACHINETYPE env if provided", func() {
-			os.Setenv(machineTypeEnvName, "legacy")
-			os.Setenv(amd64MachineTypeEnvName, "q35")
-			os.Unsetenv(arm64MachineTypeEnvName)
-			os.Unsetenv(s390xMachineTypeEnvName)
+			Expect(os.Setenv(machineTypeEnvName, "legacy")).To(Succeed())
+			Expect(os.Setenv(amd64MachineTypeEnvName, "q35")).To(Succeed())
+			Expect(os.Unsetenv(arm64MachineTypeEnvName)).To(Succeed())
+			Expect(os.Unsetenv(s390xMachineTypeEnvName)).To(Succeed())
+			restArchConfig()
 
 			kv, err := NewKubeVirt(hco, commontestutils.Namespace)
 			Expect(err).ToNot(HaveOccurred())
@@ -593,10 +602,11 @@ Version: 1.2.3`)
 		})
 
 		It("should not use legacy MACHINETYPE env if empty", func() {
-			os.Setenv(machineTypeEnvName, "")
-			os.Setenv(amd64MachineTypeEnvName, "q35")
-			os.Unsetenv(arm64MachineTypeEnvName)
-			os.Unsetenv(s390xMachineTypeEnvName)
+			Expect(os.Setenv(machineTypeEnvName, "")).To(Succeed())
+			Expect(os.Setenv(amd64MachineTypeEnvName, "q35")).To(Succeed())
+			Expect(os.Unsetenv(arm64MachineTypeEnvName)).To(Succeed())
+			Expect(os.Unsetenv(s390xMachineTypeEnvName)).To(Succeed())
+			restArchConfig()
 
 			kv, err := NewKubeVirt(hco, commontestutils.Namespace)
 			Expect(err).ToNot(HaveOccurred())
@@ -4588,3 +4598,8 @@ Version: 1.2.3`)
 		})
 	})
 })
+
+func restArchConfig() {
+	archConfigOnce = &sync.Once{}
+	getArchConfiguration()
+}
