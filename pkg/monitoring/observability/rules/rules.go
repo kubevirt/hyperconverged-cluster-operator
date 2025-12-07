@@ -19,7 +19,7 @@ func SetupRules() error {
 	return alerts.Register(operatorRegistry)
 }
 
-func BuildPrometheusRule(namespace string, owner *metav1.OwnerReference) (*promv1.PrometheusRule, error) {
+func BuildPrometheusRule(namespace string, owner metav1.OwnerReference) (*promv1.PrometheusRule, error) {
 	rules, err := operatorRegistry.BuildPrometheusRule(
 		prometheusRuleName,
 		namespace,
@@ -29,7 +29,7 @@ func BuildPrometheusRule(namespace string, owner *metav1.OwnerReference) (*promv
 		return nil, fmt.Errorf("failed to build PrometheusRule: %v", err)
 	}
 
-	rules.OwnerReferences = []metav1.OwnerReference{*owner}
+	rules.OwnerReferences = []metav1.OwnerReference{owner}
 
 	return rules, nil
 }

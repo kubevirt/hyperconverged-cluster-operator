@@ -40,6 +40,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
+	fakeownresources "github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources/fake"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/version"
 )
@@ -63,6 +64,7 @@ var _ = Describe("HyperconvergedController", func() {
 		hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
 			return commontestutils.ClusterInfoMock{}
 		}
+		fakeownresources.OLMV0OwnResourcesMock()
 
 		Expect(os.Setenv(hcoutil.OperatorConditionNameEnvVar, "OPERATOR_CONDITION")).To(Succeed())
 		Expect(os.Setenv("VIRTIOWIN_CONTAINER", commontestutils.VirtioWinImage)).To(Succeed())
@@ -73,6 +75,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 		DeferCleanup(func() {
 			hcoutil.GetClusterInfo = getClusterInfo
+			fakeownresources.ResetOwnResources()
 
 			Expect(os.Setenv(hcoutil.OperatorConditionNameEnvVar, origOperatorCondVarName)).To(Succeed())
 			Expect(os.Setenv("VIRTIOWIN_CONTAINER", origVirtIOWinContainer)).To(Succeed())
@@ -149,7 +152,7 @@ var _ = Describe("HyperconvergedController", func() {
 				}
 
 				ci := hcoutil.GetClusterInfo()
-				cl := commontestutils.InitClient([]client.Object{hcoNamespace, hco, ci.GetCSV()})
+				cl := commontestutils.InitClient([]client.Object{hcoNamespace, hco, commontestutils.GetCSV()})
 				monitoringReconciler := alerts.NewMonitoringReconciler(ci, cl, commontestutils.NewEventEmitterMock(), commontestutils.GetScheme())
 
 				r := initReconciler(cl, nil)
@@ -967,14 +970,13 @@ var _ = Describe("HyperconvergedController", func() {
 
 		Context("APIServer CR", func() {
 
-			externalClusterInfo := hcoutil.GetClusterInfo
-
 			BeforeEach(func() {
+				externalClusterInfo := hcoutil.GetClusterInfo
 				hcoutil.GetClusterInfo = getClusterInfo
-			})
 
-			AfterEach(func() {
-				hcoutil.GetClusterInfo = externalClusterInfo
+				DeferCleanup(func() {
+					hcoutil.GetClusterInfo = externalClusterInfo
+				})
 			})
 
 			It("Should refresh cached APIServer if the reconciliation is caused by a change there", func() {
@@ -1053,7 +1055,8 @@ var _ = Describe("HyperconvergedController", func() {
 				expected := getBasicDeployment()
 				Expect(expected.hco.Spec.TLSSecurityProfile).To(BeNil())
 
-				expected.csv = commontestutils.ClusterInfoMock{}.GetCSV()
+				expected.csv = commontestutils.GetCSV()
+
 				resources := expected.toArray()
 				resources = append(resources, clusterVersion, infrastructure, ingress, apiServer, dns, ipv4network)
 				cl := commontestutils.InitClient(resources)

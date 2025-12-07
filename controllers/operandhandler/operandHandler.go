@@ -78,7 +78,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 	}
 
 	if ci.IsManagedByOLM() {
-		operandList = append(operandList, handlers.NewCsvHandler(client, ci))
+		operandList = append(operandList, handlers.NewCsvHandler(client))
 	}
 
 	return &OperandHandler{

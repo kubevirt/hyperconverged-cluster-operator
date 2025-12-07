@@ -3,12 +3,13 @@ package util
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 )
 
 var _ = Describe("", func() {
@@ -25,8 +26,8 @@ var _ = Describe("", func() {
 		})
 
 		ee := eventEmitter{
-			pod: nil,
-			csv: nil,
+			pod:      nil,
+			ownerRef: nil,
 		}
 
 		It("should not update pod if the pod not found", func() {
@@ -37,7 +38,7 @@ var _ = Describe("", func() {
 
 			ee.Init(nil, nil, recorder)
 			Expect(ee.pod).To(BeNil())
-			Expect(ee.csv).To(BeNil())
+			Expect(ee.ownerRef).To(BeNil())
 
 			By("should emit event for all three resources", func() {
 				// we'll use the replica set as object, because we just need one. Originally we would use the HyperConverged
@@ -64,35 +65,14 @@ var _ = Describe("", func() {
 			})
 		})
 
-		It("should update pod and csv if they are found", func() {
-			csv := &csvv1alpha1.ClusterServiceVersion{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "ClusterServiceVersion",
-					APIVersion: "operators.coreos.com/v1alpha1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      rsName,
-					Namespace: namespace,
-				},
-			}
-
-			rs := &appsv1.ReplicaSet{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "ReplicaSet",
-					APIVersion: "apps/v1",
-				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      rsName,
-					Namespace: namespace,
-					OwnerReferences: []metav1.OwnerReference{
-						{
-							APIVersion: "apps/v1",
-							Kind:       "Deployment",
-							Name:       rsName,
-							Controller: ptr.To(true),
-						},
-					},
-				},
+		It("should update pod and ownerRef if they are found", func() {
+			csvRef := &corev1.ObjectReference{
+				Kind:            "ClusterServiceVersion",
+				Namespace:       namespace,
+				Name:            rsName,
+				UID:             "0266392e-0153-519e-ce97-4eb5b90020e8",
+				APIVersion:      "operators.coreos.com/v1alpha1",
+				ResourceVersion: "",
 			}
 
 			pod := &corev1.Pod{
@@ -114,38 +94,44 @@ var _ = Describe("", func() {
 				},
 			}
 
-			ee.Init(pod, csv, recorder)
+			ee.Init(pod, csvRef, recorder)
 
 			Expect(ee.pod).ToNot(BeNil())
-			Expect(ee.csv).ToNot(BeNil())
+			Expect(ee.ownerRef).ToNot(BeNil())
 
-			By("should emit event for all three resources", func() {
-				// we'll use the replica set as object, because we just need one. Originally we would use the HyperConverged
-				// resource, but this is not accessible (cyclic import)
-				expectedEvent := eventMock{
-					eventType: corev1.EventTypeNormal,
-					reason:    "justTesting",
-					message:   "this is a test message",
-				}
+			By("should emit event for all three resources")
+			// we'll use the replica set as object, because we just need one. Originally we would use the HyperConverged
+			// resource, but this is not accessible (cyclic import)
+			expectedEvent := eventMock{
+				eventType: corev1.EventTypeNormal,
+				reason:    "justTesting",
+				message:   "this is a test message",
+			}
 
-				ee.EmitEvent(rs, corev1.EventTypeNormal, "justTesting", "this is a test message")
-				mock := ee.recorder.(*EventRecorderMock)
+			hc := &v1beta1.HyperConverged{
+				TypeMeta: metav1.TypeMeta{Kind: "HyperConverged", APIVersion: "v1"},
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      HyperConvergedName,
+					Namespace: namespace,
+				},
+			}
 
-				Expect(mock.events).To(HaveLen(3))
+			ee.EmitEvent(hc, corev1.EventTypeNormal, "justTesting", "this is a test message")
+			mock := ee.recorder.(*EventRecorderMock)
 
-				rsEvent, found := mock.events["ReplicaSet"]
-				Expect(found).To(BeTrue())
-				Expect(rsEvent).To(Equal(expectedEvent))
+			Expect(mock.events).To(HaveLen(3))
 
-				rsEvent, found = mock.events["Pod"]
-				Expect(found).To(BeTrue())
-				Expect(rsEvent).To(Equal(expectedEvent))
+			rsEvent, found := mock.events["HyperConverged"]
+			Expect(found).To(BeTrue())
+			Expect(rsEvent).To(Equal(expectedEvent))
 
-				rsEvent, found = mock.events["ClusterServiceVersion"]
-				Expect(found).To(BeTrue())
-				Expect(rsEvent).To(Equal(expectedEvent))
-			})
+			rsEvent, found = mock.events["Pod"]
+			Expect(found).To(BeTrue())
+			Expect(rsEvent).To(Equal(expectedEvent))
 
+			rsEvent, found = mock.events["ClusterServiceVersion"]
+			Expect(found).To(BeTrue())
+			Expect(rsEvent).To(Equal(expectedEvent))
 		})
 
 		It("should not update resource if it's nil", func() {

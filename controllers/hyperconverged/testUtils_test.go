@@ -312,8 +312,7 @@ func getBasicDeployment() *BasicExpected {
 	}
 	res.hcoCRD = hcoCrd
 
-	csv := hcoutil.GetClusterInfo().GetCSV()
-	res.csv = csv
+	res.csv = commontestutils.GetCSV()
 
 	return res
 }

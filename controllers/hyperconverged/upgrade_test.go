@@ -29,6 +29,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
+	fakeownresources "github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources/fake"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/version"
 )
@@ -46,6 +47,7 @@ var _ = Describe("Upgrade Mode", func() {
 
 	BeforeEach(func() {
 		getClusterInfo := hcoutil.GetClusterInfo
+		fakeownresources.OLMV0OwnResourcesMock()
 
 		origOperatorCondVarName := os.Getenv(hcoutil.OperatorConditionNameEnvVar)
 		origVirtIOWinContainer := os.Getenv("VIRTIOWIN_CONTAINER")
@@ -101,6 +103,7 @@ var _ = Describe("Upgrade Mode", func() {
 
 		DeferCleanup(func() {
 			hcoutil.GetClusterInfo = getClusterInfo
+			fakeownresources.ResetOwnResources()
 
 			Expect(os.Setenv(hcoutil.OperatorConditionNameEnvVar, origOperatorCondVarName)).To(Succeed())
 			Expect(os.Setenv("VIRTIOWIN_CONTAINER", origVirtIOWinContainer)).To(Succeed())
