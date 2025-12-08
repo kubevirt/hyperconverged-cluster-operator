@@ -48,12 +48,13 @@ const (
 )
 
 const (
-	DefaultAMD64OVMFPath         = "/usr/share/OVMF"
-	DefaultARM64OVMFPath         = "/usr/share/AAVMF"
-	DefaultS390xOVMFPath         = ""
-	DefaultAMD64EmulatedMachines = "q35*,pc-q35*"
-	DefaultARM64EmulatedMachines = "virt*"
-	DefaultS390XEmulatedMachines = "s390-ccw-virtio*"
+	DefaultAMD64OVMFPath             = "/usr/share/OVMF"
+	DefaultARM64OVMFPath             = "/usr/share/AAVMF"
+	DefaultS390xOVMFPath             = ""
+	DefaultAMD64EmulatedQ35Machine   = "q35*"
+	DefaultAMD64EmulatedPCQ35Machine = "pc-q35*"
+	DefaultARM64EmulatedMachines     = "virt*"
+	DefaultS390XEmulatedMachines     = "s390-ccw-virtio*"
 )
 
 const (
@@ -461,7 +462,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 	if smbiosConfig, ok := os.LookupEnv(smbiosEnvName); ok {
 		if smbiosConfig = strings.TrimSpace(smbiosConfig); smbiosConfig != "" {
 			config.SMBIOSConfig = &kubevirtcorev1.SMBiosConfiguration{}
-			err := yaml.NewYAMLOrJSONDecoder(strings.NewReader(smbiosConfig), 1024).Decode(config.SMBIOSConfig)
+			err = yaml.NewYAMLOrJSONDecoder(strings.NewReader(smbiosConfig), 1024).Decode(config.SMBIOSConfig)
 			if err != nil {
 				return nil, err
 			}
@@ -507,51 +508,74 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 	return config, nil
 }
 
-func getArchConfiguration() *kubevirtcorev1.ArchConfiguration {
-	var architectureConfiguration *kubevirtcorev1.ArchConfiguration
+var (
+	archConfigOnce            = &sync.Once{}
+	architectureConfiguration *kubevirtcorev1.ArchConfiguration
+)
 
+func getArchConfiguration() *kubevirtcorev1.ArchConfiguration {
+	archConfigOnce.Do(func() {
+		amd64Comfig := getAMD64ArchConfig()
+		arm64Config := getARM64ArchConfig()
+		s390xConfig := getS390xArchConfig()
+		if amd64Comfig == nil && arm64Config == nil && s390xConfig == nil {
+			return
+		}
+
+		architectureConfiguration = &kubevirtcorev1.ArchConfiguration{
+			Amd64: amd64Comfig,
+			Arm64: arm64Config,
+			S390x: s390xConfig,
+		}
+	})
+
+	return architectureConfiguration
+}
+
+func getAMD64ArchConfig() *kubevirtcorev1.ArchSpecificConfiguration {
 	amd64MachineType := cmp.Or(
 		strings.TrimSpace(os.Getenv(machineTypeEnvName)),
 		strings.TrimSpace(os.Getenv(amd64MachineTypeEnvName)),
 	)
 
-	if amd64MachineType != "" {
-		architectureConfiguration = &kubevirtcorev1.ArchConfiguration{}
-		architectureConfiguration.Amd64 = &kubevirtcorev1.ArchSpecificConfiguration{
-			MachineType:      amd64MachineType,
-			OVMFPath:         DefaultAMD64OVMFPath,
-			EmulatedMachines: strings.Split(DefaultAMD64EmulatedMachines, ","),
-		}
+	if amd64MachineType == "" {
+		return nil
 	}
 
-	if armMachineType, ok := os.LookupEnv(arm64MachineTypeEnvName); ok {
-		if armMachineType = strings.TrimSpace(armMachineType); armMachineType != "" {
-			if architectureConfiguration == nil {
-				architectureConfiguration = &kubevirtcorev1.ArchConfiguration{}
-			}
-			architectureConfiguration.Arm64 = &kubevirtcorev1.ArchSpecificConfiguration{
-				MachineType:      armMachineType,
-				OVMFPath:         DefaultARM64OVMFPath,
-				EmulatedMachines: strings.Split(DefaultARM64EmulatedMachines, ","),
-			}
-		}
+	return &kubevirtcorev1.ArchSpecificConfiguration{
+		MachineType: amd64MachineType,
+		OVMFPath:    DefaultAMD64OVMFPath,
+		EmulatedMachines: []string{
+			DefaultAMD64EmulatedQ35Machine,
+			DefaultAMD64EmulatedPCQ35Machine,
+		},
+	}
+}
+
+func getARM64ArchConfig() *kubevirtcorev1.ArchSpecificConfiguration {
+	armMachineType := strings.TrimSpace(os.Getenv(arm64MachineTypeEnvName))
+	if armMachineType == "" {
+		return nil
 	}
 
-	if s390xMachineType, ok := os.LookupEnv(s390xMachineTypeEnvName); ok {
-		if s390xMachineType = strings.TrimSpace(s390xMachineType); s390xMachineType != "" {
-			if architectureConfiguration == nil {
-				architectureConfiguration = &kubevirtcorev1.ArchConfiguration{}
-			}
-			architectureConfiguration.S390x = &kubevirtcorev1.ArchSpecificConfiguration{
-				MachineType:      s390xMachineType,
-				OVMFPath:         DefaultS390xOVMFPath,
-				EmulatedMachines: []string{DefaultS390XEmulatedMachines},
-			}
-		}
+	return &kubevirtcorev1.ArchSpecificConfiguration{
+		MachineType:      armMachineType,
+		OVMFPath:         DefaultARM64OVMFPath,
+		EmulatedMachines: []string{DefaultARM64EmulatedMachines},
+	}
+}
+
+func getS390xArchConfig() *kubevirtcorev1.ArchSpecificConfiguration {
+	s390xMachineType := strings.TrimSpace(os.Getenv(s390xMachineTypeEnvName))
+	if s390xMachineType == "" {
+		return nil
 	}
 
-	return architectureConfiguration
-
+	return &kubevirtcorev1.ArchSpecificConfiguration{
+		MachineType:      s390xMachineType,
+		OVMFPath:         DefaultS390xOVMFPath,
+		EmulatedMachines: []string{DefaultS390XEmulatedMachines},
+	}
 }
 
 func getNetworkBindings(hcoNetworkBindings map[string]kubevirtcorev1.InterfaceBindingPlugin,
