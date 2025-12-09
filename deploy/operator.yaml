@@ -977,6 +977,105 @@ spec:
       - key: CriticalAddonsOnly
         operator: Exists
 ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/component: migration
+    app.kubernetes.io/part-of: hyperconverged-cluster
+    app.kubernetes.io/version: 1.17.0
+    name: kubevirt-migration-operator
+  name: kubevirt-migration-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: kubevirt-migration-operator
+      operator.migrations.kubevirt.io: ""
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        openshift.io/required-scc: restricted-v2
+      labels:
+        app.kubernetes.io/component: migration
+        app.kubernetes.io/part-of: hyperconverged-cluster
+        app.kubernetes.io/version: 1.17.0
+        name: kubevirt-migration-operator
+        operator.migrations.kubevirt.io: ""
+    spec:
+      affinity:
+        podAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: migrations.kubevirt.io
+                  operator: In
+                  values:
+                  - kubevirt-migration-operator
+              topologyKey: kubernetes.io/hostname
+            weight: 1
+      containers:
+      - env:
+        - name: DEPLOY_CLUSTER_RESOURCES
+          value: "true"
+        - name: OPERATOR_VERSION
+          value: v0.0.5
+        - name: CONTROLLER_IMAGE
+          value: quay.io/kubevirt/kubevirt-migration-controller@sha256:e862c0f22ab6ffadfbb58f94137393a8443af550c561ea9028a54d3d5062a442
+        - name: VERBOSITY
+          value: "1"
+        - name: PULL_POLICY
+          value: IfNotPresent
+        - name: MONITORING_NAMESPACE
+        - name: OPERATOR_IMAGE
+          value: quay.io/kubevirt/kubevirt-migration-operator@sha256:6dbafab76425f1ff16757bb29ca57f1c69168df197852a3b5b7ffc21b2ed2a79
+        image: quay.io/kubevirt/kubevirt-migration-operator@sha256:6dbafab76425f1ff16757bb29ca57f1c69168df197852a3b5b7ffc21b2ed2a79
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 15
+          timeoutSeconds: 20
+        name: operator
+        ports:
+        - containerPort: 8443
+          name: metrics
+          protocol: TCP
+        - containerPort: 8081
+          name: health
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+            scheme: HTTP
+          initialDelaySeconds: 5
+          timeoutSeconds: 10
+        resources:
+          requests:
+            cpu: 100m
+            memory: 150Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: FallbackToLogsOnError
+      nodeSelector:
+        kubernetes.io/os: linux
+      priorityClassName: kubevirt-cluster-critical
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: kubevirt-migration-operator
+---
 apiVersion: v1
 kind: Service
 metadata:
