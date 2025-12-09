@@ -120,6 +120,7 @@ var (
 	sspVersion                    = flag.String("ssp-version", "", "SSP operator version")
 	hppoVersion                   = flag.String("hppo-version", "", "HPP operator version")
 	aaqVersion                    = flag.String("aaq-version", "", "AAQ operator version")
+	migrationOperatorVersion      = flag.String("migration-operator-version", "", "Migration operator version")
 	enableUniqueSemver            = flag.Bool("enable-unique-version", false, "Insert a skipRange annotation to support unique semver in the CSV")
 	skipsList                     = flag.String("skips-list", "",
 		"Comma separated list of CSVs that can be skipped (read replaced) by this version")
@@ -268,6 +269,9 @@ func processCsvs(componentsWithCsvs []util.CsvWithComponent, installStrategyBase
 
 func processOneCsv(c util.CsvWithComponent, installStrategyBase *csvv1alpha1.StrategyDetailsDeployment, csvBase *csvv1alpha1.ClusterServiceVersion, ris *[]csvv1alpha1.RelatedImage) {
 	if c.Csv == "" {
+		if c.Name == "MigrationOperator" {
+			return // ignore migration operator csv
+		}
 		log.Panicf("ERROR: the %s CSV was empty", c.Name)
 	}
 	csvBytes := []byte(c.Csv)
@@ -384,32 +388,33 @@ func getCsvBaseParams(version semver.Version) *components.CSVBaseParams {
 
 func getDeploymentParams() *components.DeploymentOperatorParams {
 	return &components.DeploymentOperatorParams{
-		Namespace:              *namespace,
-		Image:                  *operatorImage,
-		WebhookImage:           *webhookImage,
-		CliDownloadsImage:      *cliDownloadsImage,
-		KVUIPluginImage:        *kvUIPluginImage,
-		KVUIProxyImage:         *kvUIProxyImage,
-		ImagePullPolicy:        "IfNotPresent",
-		VirtIOWinContainer:     *kvVirtIOWinImage,
-		Smbios:                 *smbios,
-		Machinetype:            *machinetype,
-		Amd64MachineType:       *amd64MachineType,
-		Arm64MachineType:       *arm64MachineType,
-		S390xMachineType:       *s390xMachineType,
-		HcoKvIoVersion:         *hcoKvIoVersion,
-		KubevirtVersion:        *kubevirtVersion,
-		KvVirtLancherOsVersion: *kvVirtLauncherOSVersion,
-		CdiVersion:             *cdiVersion,
-		CnaoVersion:            *cnaoVersion,
-		SspVersion:             *sspVersion,
-		HppoVersion:            *hppoVersion,
-		AaqVersion:             *aaqVersion,
-		PasstImage:             *passtImage,
-		PasstCNIImage:          *passtCNIImage,
-		WaspAgentImage:         *waspAgentImage,
-		Env:                    envVars,
-		AddNetworkPolicyLabels: *dumpNetworkPolicies,
+		Namespace:                *namespace,
+		Image:                    *operatorImage,
+		WebhookImage:             *webhookImage,
+		CliDownloadsImage:        *cliDownloadsImage,
+		KVUIPluginImage:          *kvUIPluginImage,
+		KVUIProxyImage:           *kvUIProxyImage,
+		ImagePullPolicy:          "IfNotPresent",
+		VirtIOWinContainer:       *kvVirtIOWinImage,
+		Smbios:                   *smbios,
+		Machinetype:              *machinetype,
+		Amd64MachineType:         *amd64MachineType,
+		Arm64MachineType:         *arm64MachineType,
+		S390xMachineType:         *s390xMachineType,
+		HcoKvIoVersion:           *hcoKvIoVersion,
+		KubevirtVersion:          *kubevirtVersion,
+		KvVirtLancherOsVersion:   *kvVirtLauncherOSVersion,
+		CdiVersion:               *cdiVersion,
+		CnaoVersion:              *cnaoVersion,
+		SspVersion:               *sspVersion,
+		HppoVersion:              *hppoVersion,
+		AaqVersion:               *aaqVersion,
+		MigrationOperatorVersion: *migrationOperatorVersion,
+		PasstImage:               *passtImage,
+		PasstCNIImage:            *passtCNIImage,
+		WaspAgentImage:           *waspAgentImage,
+		Env:                      envVars,
+		AddNetworkPolicyLabels:   *dumpNetworkPolicies,
 	}
 }
 
