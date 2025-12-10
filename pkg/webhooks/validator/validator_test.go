@@ -172,24 +172,8 @@ var _ = Describe("webhooks validator", func() {
 			Expect(res.Result.Message).To(Equal("unknown operation request \"MALFORMED\""))
 		})
 
-		It("should correctly handle operation errors", func() {
-			cr.Namespace = ResourceInvalidNamespace
-			req := newRequest(admissionv1.Create, cr, v1beta1Codec, false)
-
-			res := wh.Handle(ctx, req)
-			Expect(res.Allowed).To(BeFalse())
-			Expect(res.Result.Code).To(Equal(int32(403)))
-			Expect(res.Result.Reason).To(Equal(metav1.StatusReasonForbidden))
-			Expect(res.Result.Message).To(Equal("invalid namespace for v1beta1.HyperConverged - please use the kubevirt-hyperconverged namespace"))
-		})
-
 		It("should accept creation of a resource with a valid namespace", func() {
 			Expect(wh.ValidateCreate(ctx, dryRun, cr)).To(Succeed())
-		})
-
-		It("should reject creation of a resource with an arbitrary namespace", func() {
-			cr.Namespace = ResourceInvalidNamespace
-			Expect(wh.ValidateCreate(ctx, dryRun, cr)).ToNot(Succeed())
 		})
 
 		DescribeTable("Validate annotations", func(annotations map[string]string, assertion types.GomegaMatcher) {
@@ -1828,6 +1812,17 @@ var _ = Describe("webhooks validator", func() {
 				Expect(hcoTLSConfigCache).To(Equal(&initialTLSSecurityProfile))
 				cr.Spec.TLSSecurityProfile = &modernTLSSecurityProfile
 				cr.Namespace = ResourceInvalidNamespace
+
+				cr.Spec.DataImportCronTemplates = []v1beta1.DataImportCronTemplate{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{
+								util.DataImportCronEnabledAnnotation: "a-non-boolean-value",
+							},
+						},
+					},
+				}
+
 				Expect(wh.ValidateCreate(ctx, false, cr)).ToNot(Succeed())
 				Expect(hcoTLSConfigCache).To(Equal(&initialTLSSecurityProfile))
 			})
