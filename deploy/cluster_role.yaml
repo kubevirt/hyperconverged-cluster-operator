@@ -3079,9 +3079,28 @@ rules:
   - update
   - delete
 - apiGroups:
+  - admissionregistration.k8s.io
+  resourceNames:
+  - cdi-api-dataimportcron-mutate
+  resources:
+  - mutatingwebhookconfigurations
+  verbs:
+  - delete
+- apiGroups:
   - apiregistration.k8s.io
   resources:
   - apiservices
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+- apiGroups:
+  - populator.storage.k8s.io
+  resources:
+  - volumepopulators
   verbs:
   - get
   - list
@@ -3199,6 +3218,9 @@ rules:
   verbs:
   - create
   - patch
+  - get
+  - list
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -3239,6 +3261,14 @@ rules:
   - watch
   - create
   - delete
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -3332,6 +3362,12 @@ rules:
   - virtualmachines/finalizers
   verbs:
   - update
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
 - apiGroups:
   - ""
   resources:
