@@ -113,4 +113,5 @@ const (
 	AppComponentUIProxy    AppComponent = "kubevirt-apiserver-proxy"
 	AppComponentUIConfig   AppComponent = "kubevirt-ui-config"
 	AppComponentQuotaMngt  AppComponent = "quota-management"
+	AppComponentMigration  AppComponent = "migration"
 )

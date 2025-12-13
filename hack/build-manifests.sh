@@ -212,6 +212,20 @@ function create_aaq_csv() {
   echo "${operatorName}"
 }
 
+function create_migration_operator_csv() {
+  local operatorName="migration-operator"
+  local dumpCRDsArg="--dump-crds"
+  local operatorArgs=" \
+    --csv-version=${CSV_VERSION} \
+    --namespace=${OPERATOR_NAMESPACE} \
+    --operator-version=${MIGRATION_OPERATOR_VERSION} \
+    --controller-image=${MIGRATION_CONTROLLER_IMAGE} \
+    --operator-image=${MIGRATION_OPERATOR_IMAGE} \
+    --pull-policy=IfNotPresent \
+  "
+  gen_csv ${DEFAULT_CSV_GENERATOR} ${operatorName} "${MIGRATION_OPERATOR_IMAGE}" ${dumpCRDsArg} ${operatorArgs}
+  echo "${operatorName}"
+}
 # Write HCO CRDs
 hco_crds=${PROJECT_ROOT}/config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml
 ${TOOLS}/crd-creator --output-file=${hco_crds}
@@ -232,6 +246,8 @@ hppFile=$(create_hpp_csv)
 hppCsv="${TEMPDIR}/${hppFile}.${CSV_EXT}"
 aaqFile=$(create_aaq_csv)
 aaqCsv="${TEMPDIR}/${aaqFile}.${CSV_EXT}"
+migrationOperatorFile=$(create_migration_operator_csv)
+migrationOperatorCsv="${TEMPDIR}/${migrationOperatorFile}.${CSV_EXT}"
 csvOverrides="${TEMPDIR}/csv_overrides.${CSV_EXT}"
 keywords="  keywords:
   - KubeVirt
@@ -271,7 +287,7 @@ EOM
 )
 
 # validate CSVs. Make sure each one of them contain an image (and so, also not empty):
-csvs=("${cnaCsv}" "${virtCsv}" "${sspCsv}" "${cdiCsv}" "${hppCsv}" "${aaqCsv}")
+csvs=("${cnaCsv}" "${virtCsv}" "${sspCsv}" "${cdiCsv}" "${hppCsv}" "${aaqCsv}" "${migrationOperatorCsv}")
 for csv in "${csvs[@]}"; do
   grep -E "^ *image: [_a-zA-Z0-9/\.:@\-]+$" ${csv}
 done
@@ -285,6 +301,7 @@ ${TOOLS}/manifest-templator \
   --cdi-csv-file="${cdiCsv}" \
   --hpp-csv-file="${hppCsv}" \
   --aaq-csv-file="${aaqCsv}" \
+  --migration-operator-csv-file="${migrationOperatorCsv}" \
   --kv-virtiowin-image-name="${KUBEVIRT_VIRTIO_IMAGE}" \
   --operator-namespace="${OPERATOR_NAMESPACE}" \
   --smbios="${SMBIOS}" \
@@ -298,12 +315,13 @@ ${TOOLS}/manifest-templator \
   --ssp-version="${SSP_VERSION}" \
   --hppo-version="${HPPO_VERSION}" \
   --aaq-version="${AAQ_VERSION}" \
+  --migration-operator-version="${MIGRATION_OPERATOR_VERSION}" \
   --operator-image="${HCO_OPERATOR_IMAGE}" \
   --webhook-image="${HCO_WEBHOOK_IMAGE}" \
   --network-passt-binding-image-name="${NETWORK_PASST_BINDING_IMAGE}" \
   --network-passt-binding-cni-image-name="${NETWORK_PASST_BINDING_CNI_IMAGE}" \
   --cli-downloads-image="${HCO_DOWNLOADS_IMAGE}" \
-  --wasp-agent-image-name="${WASP_AGENT_IMAGE}"
+  --wasp-agent-image-name="${WASP_AGENT_IMAGE}" 
 
 if [[ "${UNIQUE}" == "true"  ]]; then
   CSV_VERSION_PARAM=${CSV_VERSION}-${CSV_TIMESTAMP}
@@ -331,6 +349,7 @@ ${TOOLS}/csv-merger \
   --cdi-csv-file="${cdiCsv}" \
   --hpp-csv-file="${hppCsv}" \
   --aaq-csv-file="${aaqCsv}" \
+  --migration-operator-csv-file="${migrationOperatorCsv}" \
   --kv-virtiowin-image-name="${KUBEVIRT_VIRTIO_IMAGE}" \
   --csv-version=${CSV_VERSION_PARAM} \
   --replaces-csv-version=${REPLACES_CSV_VERSION} \
@@ -352,6 +371,7 @@ ${TOOLS}/csv-merger \
   --ssp-version="${SSP_VERSION}" \
   --hppo-version="${HPPO_VERSION}" \
   --aaq-version="${AAQ_VERSION}" \
+  --migration-operator-version="${MIGRATION_OPERATOR_VERSION}" \
   --related-images-list="${DIGEST_LIST}" \
   --operator-image-name="${HCO_OPERATOR_IMAGE}" \
   --webhook-image-name="${HCO_WEBHOOK_IMAGE}" \
