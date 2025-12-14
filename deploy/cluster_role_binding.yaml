@@ -96,6 +96,22 @@ subjects:
   namespace: kubevirt-hyperconverged
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    name: kubevirt-migration-operator
+  name: kubevirt-migration-operator
+  namespace: kubevirt-hyperconverged
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kubevirt-migration-operator
+subjects:
+- kind: ServiceAccount
+  name: kubevirt-migration-operator
+  namespace: kubevirt-hyperconverged
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
@@ -198,4 +214,19 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: aaq-operator
+  namespace: kubevirt-hyperconverged
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    name: kubevirt-migration-operator
+  name: kubevirt-migration-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubevirt-migration-operator
+subjects:
+- kind: ServiceAccount
+  name: kubevirt-migration-operator
   namespace: kubevirt-hyperconverged

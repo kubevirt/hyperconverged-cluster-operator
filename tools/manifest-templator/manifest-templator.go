@@ -49,30 +49,31 @@ var (
 
 // flags for the command line arguments we accept
 var (
-	deployDir               = flag.String("deploy-dir", "deploy", "Directory where manifests should be written")
-	operatorNamespace       = flag.String("operator-namespace", "kubevirt-hyperconverged", "Name of the Operator")
-	operatorImage           = flag.String("operator-image", "", "HyperConverged Cluster Operator image")
-	webhookImage            = flag.String("webhook-image", "", "HyperConverged Cluster Webhook image")
-	cliDownloadsImage       = flag.String("cli-downloads-image", "", "Downloads Server image")
-	kvVirtIOWinImage        = flag.String("kv-virtiowin-image-name", "", "KubeVirt VirtIO Win image")
-	waspAgentImage          = flag.String("wasp-agent-image-name", "", "wasp-agent image")
-	smbios                  = flag.String("smbios", "", "Custom SMBIOS string for KubeVirt ConfigMap")
-	machinetype             = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap (Deprecated, use amd64-machinetype)")
-	amd64MachineType        = flag.String("amd64-machinetype", "", "Custom AMD64_MACHINETYPE string for KubeVirt ConfigMap")
-	arm64MachineType        = flag.String("arm64-machinetype", "", "Custom ARM64_MACHINETYPE string for KubeVirt ConfigMap")
-	s390xMachineType        = flag.String("s390x-machinetype", "", "Custom S390X_MACHINETYPE string for KubeVirt ConfigMap")
-	hcoKvIoVersion          = flag.String("hco-kv-io-version", "", "KubeVirt version")
-	kubevirtVersion         = flag.String("kubevirt-version", "", "Kubevirt operator version")
-	kvVirtLauncherOSVersion = flag.String("virt-launcher-os-version", "", "Virt launcher OS version")
-	cdiVersion              = flag.String("cdi-version", "", "CDI operator version")
-	cnaoVersion             = flag.String("cnao-version", "", "CNA operator version")
-	sspVersion              = flag.String("ssp-version", "", "SSP operator version")
-	hppoVersion             = flag.String("hppo-version", "", "HPP operator version")
-	aaqVersion              = flag.String("aaq-version", "", "AAQ operator version")
-	passtImage              = flag.String("network-passt-binding-image-name", "", "Passt binding image")
-	passtCNIImage           = flag.String("network-passt-binding-cni-image-name", "", "Passt binding cni image")
-	_                       = flag.String("primary-udn-binding-image-name", "", "deprecated. This flag is ignored")
-	_                       = flag.String("api-sources", "", "ignored")
+	deployDir                = flag.String("deploy-dir", "deploy", "Directory where manifests should be written")
+	operatorNamespace        = flag.String("operator-namespace", "kubevirt-hyperconverged", "Name of the Operator")
+	operatorImage            = flag.String("operator-image", "", "HyperConverged Cluster Operator image")
+	webhookImage             = flag.String("webhook-image", "", "HyperConverged Cluster Webhook image")
+	cliDownloadsImage        = flag.String("cli-downloads-image", "", "Downloads Server image")
+	kvVirtIOWinImage         = flag.String("kv-virtiowin-image-name", "", "KubeVirt VirtIO Win image")
+	waspAgentImage           = flag.String("wasp-agent-image-name", "", "wasp-agent image")
+	smbios                   = flag.String("smbios", "", "Custom SMBIOS string for KubeVirt ConfigMap")
+	machinetype              = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap (Deprecated, use amd64-machinetype)")
+	amd64MachineType         = flag.String("amd64-machinetype", "", "Custom AMD64_MACHINETYPE string for KubeVirt ConfigMap")
+	arm64MachineType         = flag.String("arm64-machinetype", "", "Custom ARM64_MACHINETYPE string for KubeVirt ConfigMap")
+	s390xMachineType         = flag.String("s390x-machinetype", "", "Custom S390X_MACHINETYPE string for KubeVirt ConfigMap")
+	hcoKvIoVersion           = flag.String("hco-kv-io-version", "", "KubeVirt version")
+	kubevirtVersion          = flag.String("kubevirt-version", "", "Kubevirt operator version")
+	kvVirtLauncherOSVersion  = flag.String("virt-launcher-os-version", "", "Virt launcher OS version")
+	cdiVersion               = flag.String("cdi-version", "", "CDI operator version")
+	cnaoVersion              = flag.String("cnao-version", "", "CNA operator version")
+	sspVersion               = flag.String("ssp-version", "", "SSP operator version")
+	hppoVersion              = flag.String("hppo-version", "", "HPP operator version")
+	aaqVersion               = flag.String("aaq-version", "", "AAQ operator version")
+	migrationOperatorVersion = flag.String("migration-operator-version", "", "Migration operator version")
+	passtImage               = flag.String("network-passt-binding-image-name", "", "Passt binding image")
+	passtCNIImage            = flag.String("network-passt-binding-cni-image-name", "", "Passt binding cni image")
+	_                        = flag.String("primary-udn-binding-image-name", "", "deprecated. This flag is ignored")
+	_                        = flag.String("api-sources", "", "ignored")
 )
 
 // check handles errors
@@ -367,29 +368,30 @@ func createService(webhook csvv1alpha1.WebhookDescription, csvStruct *csvv1alpha
 
 func getOperatorParameters() *components.DeploymentOperatorParams {
 	params := &components.DeploymentOperatorParams{
-		Namespace:              *operatorNamespace,
-		Image:                  *operatorImage,
-		WebhookImage:           *webhookImage,
-		CliDownloadsImage:      *cliDownloadsImage,
-		ImagePullPolicy:        "IfNotPresent",
-		VirtIOWinContainer:     *kvVirtIOWinImage,
-		WaspAgentImage:         *waspAgentImage,
-		Smbios:                 *smbios,
-		Machinetype:            *machinetype,
-		Amd64MachineType:       *amd64MachineType,
-		Arm64MachineType:       *arm64MachineType,
-		S390xMachineType:       *s390xMachineType,
-		HcoKvIoVersion:         *hcoKvIoVersion,
-		KubevirtVersion:        *kubevirtVersion,
-		KvVirtLancherOsVersion: *kvVirtLauncherOSVersion,
-		CdiVersion:             *cdiVersion,
-		CnaoVersion:            *cnaoVersion,
-		SspVersion:             *sspVersion,
-		HppoVersion:            *hppoVersion,
-		AaqVersion:             *aaqVersion,
-		PasstImage:             *passtImage,
-		PasstCNIImage:          *passtCNIImage,
-		Env:                    []corev1.EnvVar{},
+		Namespace:                *operatorNamespace,
+		Image:                    *operatorImage,
+		WebhookImage:             *webhookImage,
+		CliDownloadsImage:        *cliDownloadsImage,
+		ImagePullPolicy:          "IfNotPresent",
+		VirtIOWinContainer:       *kvVirtIOWinImage,
+		WaspAgentImage:           *waspAgentImage,
+		Smbios:                   *smbios,
+		Machinetype:              *machinetype,
+		Amd64MachineType:         *amd64MachineType,
+		Arm64MachineType:         *arm64MachineType,
+		S390xMachineType:         *s390xMachineType,
+		HcoKvIoVersion:           *hcoKvIoVersion,
+		KubevirtVersion:          *kubevirtVersion,
+		KvVirtLancherOsVersion:   *kvVirtLauncherOSVersion,
+		CdiVersion:               *cdiVersion,
+		CnaoVersion:              *cnaoVersion,
+		SspVersion:               *sspVersion,
+		HppoVersion:              *hppoVersion,
+		AaqVersion:               *aaqVersion,
+		MigrationOperatorVersion: *migrationOperatorVersion,
+		PasstImage:               *passtImage,
+		PasstCNIImage:            *passtCNIImage,
+		Env:                      []corev1.EnvVar{},
 	}
 	return params
 }
