@@ -75,7 +75,7 @@ build-manifest-splitter:
 build-webhook: $(SOURCES) ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-webhook ./cmd/hyperconverged-cluster-webhook
 
-build-manifests: build-crd-creator build-csv-merger build-manifest-splitter build-manifest-templator
+build-manifests: gogenerate-crd-creator build-crd-creator build-csv-merger build-manifest-splitter build-manifest-templator
 	DUMP_NETWORK_POLICIES=$(DUMP_NETWORK_POLICIES) ./hack/build-manifests.sh
 
 build-manifests-prev:
