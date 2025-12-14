@@ -18,6 +18,6 @@ rsa==4.9
 six==1.16.0
 typing-extensions==4.11.0
 typing-inspect==0.9.0
-urllib3==2.5.0
+urllib3==2.6.0
 websocket-client==1.8.0
 graphviz==0.21
