@@ -144,80 +144,92 @@
 <!-- olm&#45;&gt;deployment/cdi&#45;operator -->
 <g id="edge9" class="edge">
 <title>olm&#45;&gt;deployment/cdi&#45;operator</title>
-<path fill="none" stroke="black" d="M373.62,-624.48C502.03,-667.02 717.03,-738.23 854.05,-783.62"/>
-<polygon fill="black" stroke="black" points="873.27,-789.98 851.45,-792.24 863.78,-786.84 854.28,-783.7 854.28,-783.7 854.28,-783.7 863.78,-786.84 857.11,-775.15 873.27,-789.98 873.27,-789.98"/>
+<path fill="none" stroke="black" d="M351.13,-625.09C433.03,-659.2 561.14,-710.47 675,-747 717.59,-760.66 764.07,-773.61 807.69,-784.92"/>
+<polygon fill="black" stroke="black" points="827.17,-789.92 805.56,-793.67 817.48,-787.44 807.8,-784.95 807.8,-784.95 807.8,-784.95 817.48,-787.44 810.03,-776.23 827.17,-789.92 827.17,-789.92"/>
 </g>
 <!-- deployment/cluster&#45;network&#45;addons&#45;operator -->
 <g id="node14" class="node">
 <title>deployment/cluster&#45;network&#45;addons&#45;operator</title>
-<path fill="none" stroke="black" d="M1254.5,-704C1254.5,-704 711.5,-704 711.5,-704 705.5,-704 699.5,-698 699.5,-692 699.5,-692 699.5,-644 699.5,-644 699.5,-638 705.5,-632 711.5,-632 711.5,-632 1254.5,-632 1254.5,-632 1260.5,-632 1266.5,-638 1266.5,-644 1266.5,-644 1266.5,-692 1266.5,-692 1266.5,-698 1260.5,-704 1254.5,-704"/>
-<text text-anchor="middle" x="983" y="-661.8" font-family="Courier-Bold" font-size="24.00">deployment/cluster&#45;network&#45;addons&#45;operator</text>
+<path fill="none" stroke="black" d="M1254.5,-744C1254.5,-744 711.5,-744 711.5,-744 705.5,-744 699.5,-738 699.5,-732 699.5,-732 699.5,-684 699.5,-684 699.5,-678 705.5,-672 711.5,-672 711.5,-672 1254.5,-672 1254.5,-672 1260.5,-672 1266.5,-678 1266.5,-684 1266.5,-684 1266.5,-732 1266.5,-732 1266.5,-738 1260.5,-744 1254.5,-744"/>
+<text text-anchor="middle" x="983" y="-701.8" font-family="Courier-Bold" font-size="24.00">deployment/cluster&#45;network&#45;addons&#45;operator</text>
 </g>
 <!-- olm&#45;&gt;deployment/cluster&#45;network&#45;addons&#45;operator -->
 <g id="edge11" class="edge">
 <title>olm&#45;&gt;deployment/cluster&#45;network&#45;addons&#45;operator</title>
-<path fill="none" stroke="black" d="M373.62,-600.83C454.73,-609.78 570.37,-622.55 679.1,-634.56"/>
-<polygon fill="black" stroke="black" points="699.31,-636.79 678.44,-643.54 689.37,-635.69 679.43,-634.59 679.43,-634.59 679.43,-634.59 689.37,-635.69 680.42,-625.65 699.31,-636.79 699.31,-636.79"/>
+<path fill="none" stroke="black" d="M373.69,-611.6C455.9,-628.48 572.32,-651.4 675,-668 676.67,-668.27 678.35,-668.54 680.03,-668.81"/>
+<polygon fill="black" stroke="black" points="700.02,-671.94 678.86,-677.74 690.14,-670.39 680.26,-668.84 680.26,-668.84 680.26,-668.84 690.14,-670.39 681.65,-659.95 700.02,-671.94 700.02,-671.94"/>
 </g>
 <!-- deployment/hco&#45;webhook -->
 <g id="node15" class="node">
 <title>deployment/hco&#45;webhook</title>
-<path fill="none" stroke="black" d="M1136,-625C1136,-625 830,-625 830,-625 824,-625 818,-619 818,-613 818,-613 818,-565 818,-565 818,-559 824,-553 830,-553 830,-553 1136,-553 1136,-553 1142,-553 1148,-559 1148,-565 1148,-565 1148,-613 1148,-613 1148,-619 1142,-625 1136,-625"/>
-<text text-anchor="middle" x="983" y="-582.8" font-family="Courier-Bold" font-size="24.00">deployment/hco&#45;webhook</text>
+<path fill="none" stroke="black" d="M1136,-665C1136,-665 830,-665 830,-665 824,-665 818,-659 818,-653 818,-653 818,-605 818,-605 818,-599 824,-593 830,-593 830,-593 1136,-593 1136,-593 1142,-593 1148,-599 1148,-605 1148,-605 1148,-653 1148,-653 1148,-659 1142,-665 1136,-665"/>
+<text text-anchor="middle" x="983" y="-622.8" font-family="Courier-Bold" font-size="24.00">deployment/hco&#45;webhook</text>
 </g>
 <!-- olm&#45;&gt;deployment/hco&#45;webhook -->
 <g id="edge13" class="edge">
 <title>olm&#45;&gt;deployment/hco&#45;webhook</title>
-<path fill="none" stroke="black" d="M373.62,-589C485.51,-589 663.14,-589 797.64,-589"/>
-<polygon fill="black" stroke="black" points="817.99,-589 797.99,-598 807.99,-589 797.99,-589 797.99,-589 797.99,-589 807.99,-589 797.99,-580 817.99,-589 817.99,-589"/>
+<path fill="none" stroke="black" d="M373.62,-594.99C485.51,-601.24 663.14,-611.17 797.64,-618.69"/>
+<polygon fill="black" stroke="black" points="817.99,-619.83 797.52,-627.7 808.01,-619.27 798.03,-618.71 798.03,-618.71 798.03,-618.71 808.01,-619.27 798.53,-609.73 817.99,-619.83 817.99,-619.83"/>
 </g>
 <!-- deployment/hostpath&#45;provisioner&#45;operator -->
 <g id="node16" class="node">
 <title>deployment/hostpath&#45;provisioner&#45;operator</title>
-<path fill="none" stroke="black" d="M1236.5,-546C1236.5,-546 729.5,-546 729.5,-546 723.5,-546 717.5,-540 717.5,-534 717.5,-534 717.5,-486 717.5,-486 717.5,-480 723.5,-474 729.5,-474 729.5,-474 1236.5,-474 1236.5,-474 1242.5,-474 1248.5,-480 1248.5,-486 1248.5,-486 1248.5,-534 1248.5,-534 1248.5,-540 1242.5,-546 1236.5,-546"/>
-<text text-anchor="middle" x="983" y="-503.8" font-family="Courier-Bold" font-size="24.00">deployment/hostpath&#45;provisioner&#45;operator</text>
+<path fill="none" stroke="black" d="M1236.5,-586C1236.5,-586 729.5,-586 729.5,-586 723.5,-586 717.5,-580 717.5,-574 717.5,-574 717.5,-526 717.5,-526 717.5,-520 723.5,-514 729.5,-514 729.5,-514 1236.5,-514 1236.5,-514 1242.5,-514 1248.5,-520 1248.5,-526 1248.5,-526 1248.5,-574 1248.5,-574 1248.5,-580 1242.5,-586 1236.5,-586"/>
+<text text-anchor="middle" x="983" y="-543.8" font-family="Courier-Bold" font-size="24.00">deployment/hostpath&#45;provisioner&#45;operator</text>
 </g>
 <!-- olm&#45;&gt;deployment/hostpath&#45;provisioner&#45;operator -->
 <g id="edge14" class="edge">
 <title>olm&#45;&gt;deployment/hostpath&#45;provisioner&#45;operator</title>
-<path fill="none" stroke="black" d="M373.62,-577.17C459.3,-567.71 583.54,-554 697.43,-541.42"/>
-<polygon fill="black" stroke="black" points="717.46,-539.21 698.57,-550.35 707.52,-540.31 697.58,-541.4 697.58,-541.4 697.58,-541.4 707.52,-540.31 696.59,-532.46 717.46,-539.21 717.46,-539.21"/>
+<path fill="none" stroke="black" d="M373.62,-583.16C459.3,-578.49 583.54,-571.72 697.43,-565.51"/>
+<polygon fill="black" stroke="black" points="717.46,-564.42 697.98,-574.49 707.47,-564.96 697.49,-565.51 697.49,-565.51 697.49,-565.51 707.47,-564.96 697,-556.52 717.46,-564.42 717.46,-564.42"/>
 </g>
 <!-- deployment/hyperconverged&#45;cluster&#45;cli&#45;download -->
 <g id="node17" class="node">
 <title>deployment/hyperconverged&#45;cluster&#45;cli&#45;download</title>
-<path fill="none" stroke="black" d="M1279,-467C1279,-467 687,-467 687,-467 681,-467 675,-461 675,-455 675,-455 675,-407 675,-407 675,-401 681,-395 687,-395 687,-395 1279,-395 1279,-395 1285,-395 1291,-401 1291,-407 1291,-407 1291,-455 1291,-455 1291,-461 1285,-467 1279,-467"/>
-<text text-anchor="middle" x="983" y="-424.8" font-family="Courier-Bold" font-size="24.00">deployment/hyperconverged&#45;cluster&#45;cli&#45;download</text>
+<path fill="none" stroke="black" d="M1279,-507C1279,-507 687,-507 687,-507 681,-507 675,-501 675,-495 675,-495 675,-447 675,-447 675,-441 681,-435 687,-435 687,-435 1279,-435 1279,-435 1285,-435 1291,-441 1291,-447 1291,-447 1291,-495 1291,-495 1291,-501 1285,-507 1279,-507"/>
+<text text-anchor="middle" x="983" y="-464.8" font-family="Courier-Bold" font-size="24.00">deployment/hyperconverged&#45;cluster&#45;cli&#45;download</text>
 </g>
 <!-- olm&#45;&gt;deployment/hyperconverged&#45;cluster&#45;cli&#45;download -->
 <g id="edge15" class="edge">
 <title>olm&#45;&gt;deployment/hyperconverged&#45;cluster&#45;cli&#45;download</title>
-<path fill="none" stroke="black" d="M373.7,-581.29C422.6,-575.63 480.69,-565.85 531,-549 594.22,-527.82 604.34,-498.8 668.65,-473.81"/>
-<polygon fill="black" stroke="black" points="687.79,-467.04 671.93,-482.19 678.36,-470.37 668.93,-473.71 668.93,-473.71 668.93,-473.71 678.36,-470.37 665.93,-465.22 687.79,-467.04 687.79,-467.04"/>
+<path fill="none" stroke="black" d="M373.78,-575.46C422.05,-568.67 479.61,-559.63 531,-549 595.82,-535.59 610.05,-523.75 675,-511 675.32,-510.94 675.64,-510.87 675.96,-510.81"/>
+<polygon fill="black" stroke="black" points="695.83,-507.06 677.84,-519.62 686,-508.92 676.17,-510.77 676.17,-510.77 676.17,-510.77 686,-508.92 674.51,-501.93 695.83,-507.06 695.83,-507.06"/>
+</g>
+<!-- deployment/kubevirt&#45;migration&#45;operator -->
+<g id="node23" class="node">
+<title>deployment/kubevirt&#45;migration&#45;operator</title>
+<path fill="none" stroke="black" d="M1224,-428C1224,-428 742,-428 742,-428 736,-428 730,-422 730,-416 730,-416 730,-368 730,-368 730,-362 736,-356 742,-356 742,-356 1224,-356 1224,-356 1230,-356 1236,-362 1236,-368 1236,-368 1236,-416 1236,-416 1236,-422 1230,-428 1224,-428"/>
+<text text-anchor="middle" x="983" y="-385.8" font-family="Courier-Bold" font-size="24.00">deployment/kubevirt&#45;migration&#45;operator</text>
+</g>
+<!-- olm&#45;&gt;deployment/kubevirt&#45;migration&#45;operator -->
+<g id="edge21" class="edge">
+<title>olm&#45;&gt;deployment/kubevirt&#45;migration&#45;operator</title>
+<path fill="none" stroke="black" d="M373.73,-585.68C423.31,-580.95 481.94,-570.69 531,-549 606.42,-515.66 599.24,-464.56 675,-432 686.42,-427.09 698.29,-422.74 710.42,-418.89"/>
+<polygon fill="black" stroke="black" points="729.69,-413.24 713.03,-427.51 720.09,-416.06 710.5,-418.87 710.5,-418.87 710.5,-418.87 720.09,-416.06 707.96,-410.23 729.69,-413.24 729.69,-413.24"/>
 </g>
 <!-- deployment/ssp&#45;operator -->
-<g id="node23" class="node">
+<g id="node24" class="node">
 <title>deployment/ssp&#45;operator</title>
-<path fill="none" stroke="black" d="M1132.5,-388C1132.5,-388 833.5,-388 833.5,-388 827.5,-388 821.5,-382 821.5,-376 821.5,-376 821.5,-328 821.5,-328 821.5,-322 827.5,-316 833.5,-316 833.5,-316 1132.5,-316 1132.5,-316 1138.5,-316 1144.5,-322 1144.5,-328 1144.5,-328 1144.5,-376 1144.5,-376 1144.5,-382 1138.5,-388 1132.5,-388"/>
-<text text-anchor="middle" x="983" y="-345.8" font-family="Courier-Bold" font-size="24.00">deployment/ssp&#45;operator</text>
+<path fill="none" stroke="black" d="M1132.5,-349C1132.5,-349 833.5,-349 833.5,-349 827.5,-349 821.5,-343 821.5,-337 821.5,-337 821.5,-289 821.5,-289 821.5,-283 827.5,-277 833.5,-277 833.5,-277 1132.5,-277 1132.5,-277 1138.5,-277 1144.5,-283 1144.5,-289 1144.5,-289 1144.5,-337 1144.5,-337 1144.5,-343 1138.5,-349 1132.5,-349"/>
+<text text-anchor="middle" x="983" y="-306.8" font-family="Courier-Bold" font-size="24.00">deployment/ssp&#45;operator</text>
 </g>
 <!-- olm&#45;&gt;deployment/ssp&#45;operator -->
-<g id="edge21" class="edge">
+<g id="edge22" class="edge">
 <title>olm&#45;&gt;deployment/ssp&#45;operator</title>
-<path fill="none" stroke="black" d="M373.66,-588.99C423.92,-585.05 483.14,-574.49 531,-549 614.57,-504.5 590.98,-435.64 675,-392 713.48,-372.01 758.21,-360.65 801.41,-354.46"/>
-<polygon fill="black" stroke="black" points="821.46,-351.93 802.74,-363.36 811.54,-353.18 801.61,-354.43 801.61,-354.43 801.61,-354.43 811.54,-353.18 800.49,-345.5 821.46,-351.93 821.46,-351.93"/>
+<path fill="none" stroke="black" d="M373.65,-591.35C424.49,-588.01 484.2,-577.29 531,-549 623.51,-493.09 581.92,-407.96 675,-353 712.83,-330.66 757.8,-318.51 801.49,-312.32"/>
+<polygon fill="black" stroke="black" points="821.44,-309.88 802.68,-321.24 811.51,-311.09 801.59,-312.31 801.59,-312.31 801.59,-312.31 811.51,-311.09 800.5,-303.38 821.44,-309.88 821.44,-309.88"/>
 </g>
 <!-- deployment/virt&#45;operator -->
-<g id="node25" class="node">
+<g id="node26" class="node">
 <title>deployment/virt&#45;operator</title>
 <path fill="none" stroke="black" d="M1132.5,-230C1132.5,-230 833.5,-230 833.5,-230 827.5,-230 821.5,-224 821.5,-218 821.5,-218 821.5,-170 821.5,-170 821.5,-164 827.5,-158 833.5,-158 833.5,-158 1132.5,-158 1132.5,-158 1138.5,-158 1144.5,-164 1144.5,-170 1144.5,-170 1144.5,-218 1144.5,-218 1144.5,-224 1138.5,-230 1132.5,-230"/>
 <text text-anchor="middle" x="983" y="-187.8" font-family="Courier-Bold" font-size="24.00">deployment/virt&#45;operator</text>
 </g>
 <!-- olm&#45;&gt;deployment/virt&#45;operator -->
-<g id="edge25" class="edge">
+<g id="edge26" class="edge">
 <title>olm&#45;&gt;deployment/virt&#45;operator</title>
-<path fill="none" stroke="black" d="M373.8,-593.18C425.12,-590.34 485.19,-579.5 531,-549 633.59,-480.69 580.41,-391.01 675,-312 714.56,-278.96 764.39,-254.55 812.33,-236.79"/>
-<polygon fill="black" stroke="black" points="831.29,-230.06 815.45,-245.23 821.87,-233.4 812.44,-236.75 812.44,-236.75 812.44,-236.75 821.87,-233.4 809.44,-228.26 831.29,-230.06 831.29,-230.06"/>
+<path fill="none" stroke="black" d="M373.7,-594.5C425.45,-592.06 485.93,-581.18 531,-549 643.61,-468.61 566.63,-359.01 675,-273 711.32,-244.17 756.98,-225.77 801.9,-214.04"/>
+<polygon fill="black" stroke="black" points="821.42,-209.34 804.09,-222.77 811.7,-211.68 801.98,-214.02 801.98,-214.02 801.98,-214.02 811.7,-211.68 799.87,-205.27 821.42,-209.34 821.42,-209.34"/>
 </g>
 <!-- deployment/cdi&#45;apiserver -->
 <g id="node11" class="node">
@@ -258,8 +270,8 @@
 <!-- deployment/cluster&#45;network&#45;addons&#45;operator&#45;&gt;deployment/kubemacpool&#45;cert&#45;manager -->
 <g id="edge16" class="edge">
 <title>deployment/cluster&#45;network&#45;addons&#45;operator&#45;&gt;deployment/kubemacpool&#45;cert&#45;manager</title>
-<path fill="none" stroke="black" d="M1266.51,-697.14C1335.68,-704.27 1409.57,-711.89 1478.22,-718.97"/>
-<polygon fill="black" stroke="black" points="1498.39,-721.05 1477.58,-727.95 1488.45,-720.03 1478.5,-719 1478.5,-719 1478.5,-719 1488.45,-720.03 1479.42,-710.05 1498.39,-721.05 1498.39,-721.05"/>
+<path fill="none" stroke="black" d="M1266.51,-722.38C1335.68,-725.91 1409.57,-729.67 1478.22,-733.16"/>
+<polygon fill="black" stroke="black" points="1498.39,-734.19 1477.96,-742.16 1488.41,-733.68 1478.42,-733.17 1478.42,-733.17 1478.42,-733.17 1488.41,-733.68 1478.88,-724.18 1498.39,-734.19 1498.39,-734.19"/>
 </g>
 <!-- deployment/kubemacpool&#45;mac&#45;controller&#45;manager -->
 <g id="node19" class="node">
@@ -270,8 +282,8 @@
 <!-- deployment/cluster&#45;network&#45;addons&#45;operator&#45;&gt;deployment/kubemacpool&#45;mac&#45;controller&#45;manager -->
 <g id="edge17" class="edge">
 <title>deployment/cluster&#45;network&#45;addons&#45;operator&#45;&gt;deployment/kubemacpool&#45;mac&#45;controller&#45;manager</title>
-<path fill="none" stroke="black" d="M1266.51,-668C1314.77,-668 1365.33,-668 1414.8,-668"/>
-<polygon fill="black" stroke="black" points="1434.81,-668 1414.81,-677 1424.81,-668 1414.81,-668 1414.81,-668 1414.81,-668 1424.81,-668 1414.81,-659 1434.81,-668 1434.81,-668"/>
+<path fill="none" stroke="black" d="M1266.51,-693.25C1314.77,-690.73 1365.33,-688.09 1414.8,-685.5"/>
+<polygon fill="black" stroke="black" points="1434.81,-684.46 1415.3,-694.49 1424.82,-684.98 1414.83,-685.5 1414.83,-685.5 1414.83,-685.5 1424.82,-684.98 1414.36,-676.51 1434.81,-684.46 1434.81,-684.46"/>
 </g>
 <!-- deployment/kubevirt&#45;ipam&#45;controller&#45;manager -->
 <g id="node22" class="node">
@@ -282,89 +294,89 @@
 <!-- deployment/cluster&#45;network&#45;addons&#45;operator&#45;&gt;deployment/kubevirt&#45;ipam&#45;controller&#45;manager -->
 <g id="edge20" class="edge">
 <title>deployment/cluster&#45;network&#45;addons&#45;operator&#45;&gt;deployment/kubevirt&#45;ipam&#45;controller&#45;manager</title>
-<path fill="none" stroke="black" d="M1266.51,-638.86C1323.75,-632.96 1384.22,-626.72 1442.28,-620.74"/>
-<polygon fill="black" stroke="black" points="1462.28,-618.67 1443.31,-629.68 1452.34,-619.7 1442.39,-620.72 1442.39,-620.72 1442.39,-620.72 1452.34,-619.7 1441.47,-611.77 1462.28,-618.67 1462.28,-618.67"/>
+<path fill="none" stroke="black" d="M1266.53,-672.67C1274.79,-671.16 1282.96,-669.6 1291,-668 1356.02,-655.02 1369.96,-641.87 1435,-629 1437.37,-628.53 1439.75,-628.07 1442.14,-627.61"/>
+<polygon fill="black" stroke="black" points="1462.19,-623.89 1444.16,-636.38 1452.35,-625.71 1442.52,-627.54 1442.52,-627.54 1442.52,-627.54 1452.35,-625.71 1440.88,-618.69 1462.19,-623.89 1462.19,-623.89"/>
 </g>
 <!-- daemonset/bridge&#45;marker -->
-<g id="node29" class="node">
+<g id="node30" class="node">
 <title>daemonset/bridge&#45;marker</title>
 <path fill="none" stroke="black" d="M1905,-546C1905,-546 1597,-546 1597,-546 1591,-546 1585,-540 1585,-534 1585,-534 1585,-486 1585,-486 1585,-480 1591,-474 1597,-474 1597,-474 1905,-474 1905,-474 1911,-474 1917,-480 1917,-486 1917,-486 1917,-534 1917,-534 1917,-540 1911,-546 1905,-546"/>
 <text text-anchor="middle" x="1751" y="-503.8" font-family="Courier-Bold" font-size="24.00">daemonset/bridge&#45;marker</text>
 </g>
 <!-- deployment/cluster&#45;network&#45;addons&#45;operator&#45;&gt;daemonset/bridge&#45;marker -->
-<g id="edge27" class="edge">
+<g id="edge28" class="edge">
 <title>deployment/cluster&#45;network&#45;addons&#45;operator&#45;&gt;daemonset/bridge&#45;marker</title>
-<path fill="none" stroke="black" d="M1266.77,-635.21C1274.98,-632.97 1283.07,-630.57 1291,-628 1360.25,-605.59 1365.71,-572.3 1435,-550 1476.09,-536.78 1521.52,-527.9 1564.78,-521.95"/>
-<polygon fill="black" stroke="black" points="1584.81,-519.37 1566.12,-530.85 1574.89,-520.65 1564.97,-521.92 1564.97,-521.92 1564.97,-521.92 1574.89,-520.65 1563.83,-513 1584.81,-519.37 1584.81,-519.37"/>
+<path fill="none" stroke="black" d="M1266.74,-677.45C1275,-674.55 1283.11,-671.41 1291,-668 1366.95,-635.17 1359,-582.71 1435,-550 1475.29,-532.66 1520.96,-522.24 1564.78,-516.1"/>
+<polygon fill="black" stroke="black" points="1584.76,-513.58 1566.04,-525.02 1574.84,-514.83 1564.92,-516.09 1564.92,-516.09 1564.92,-516.09 1574.84,-514.83 1563.79,-507.16 1584.76,-513.58 1584.76,-513.58"/>
 </g>
 <!-- daemonset/kube&#45;cni&#45;linux&#45;bridge&#45;plugin -->
-<g id="node30" class="node">
+<g id="node31" class="node">
 <title>daemonset/kube&#45;cni&#45;linux&#45;bridge&#45;plugin</title>
 <path fill="none" stroke="black" d="M1988,-467C1988,-467 1514,-467 1514,-467 1508,-467 1502,-461 1502,-455 1502,-455 1502,-407 1502,-407 1502,-401 1508,-395 1514,-395 1514,-395 1988,-395 1988,-395 1994,-395 2000,-401 2000,-407 2000,-407 2000,-455 2000,-455 2000,-461 1994,-467 1988,-467"/>
 <text text-anchor="middle" x="1751" y="-424.8" font-family="Courier-Bold" font-size="24.00">daemonset/kube&#45;cni&#45;linux&#45;bridge&#45;plugin</text>
 </g>
 <!-- deployment/cluster&#45;network&#45;addons&#45;operator&#45;&gt;daemonset/kube&#45;cni&#45;linux&#45;bridge&#45;plugin -->
-<g id="edge28" class="edge">
+<g id="edge29" class="edge">
 <title>deployment/cluster&#45;network&#45;addons&#45;operator&#45;&gt;daemonset/kube&#45;cni&#45;linux&#45;bridge&#45;plugin</title>
-<path fill="none" stroke="black" d="M1266.67,-639.21C1275,-635.82 1283.13,-632.09 1291,-628 1375.02,-584.36 1350.9,-514.51 1435,-471 1450.13,-463.17 1466.19,-456.66 1482.74,-451.24"/>
-<polygon fill="black" stroke="black" points="1501.99,-445.48 1485.41,-459.84 1492.41,-448.35 1482.83,-451.21 1482.83,-451.21 1482.83,-451.21 1492.41,-448.35 1480.25,-442.59 1501.99,-445.48 1501.99,-445.48"/>
+<path fill="none" stroke="black" d="M1266.56,-680.68C1274.97,-676.87 1283.14,-672.66 1291,-668 1384.32,-612.75 1341.59,-526.1 1435,-471 1450.01,-462.15 1466.11,-454.87 1482.81,-448.92"/>
+<polygon fill="black" stroke="black" points="1501.89,-442.74 1485.63,-457.46 1492.37,-445.82 1482.86,-448.9 1482.86,-448.9 1482.86,-448.9 1492.37,-445.82 1480.09,-440.34 1501.89,-442.74 1501.89,-442.74"/>
 </g>
 <!-- deployment/virt&#45;template&#45;validator -->
-<g id="node28" class="node">
+<g id="node29" class="node">
 <title>deployment/virt&#45;template&#45;validator</title>
 <path fill="none" stroke="black" d="M1960.5,-388C1960.5,-388 1541.5,-388 1541.5,-388 1535.5,-388 1529.5,-382 1529.5,-376 1529.5,-376 1529.5,-328 1529.5,-328 1529.5,-322 1535.5,-316 1541.5,-316 1541.5,-316 1960.5,-316 1960.5,-316 1966.5,-316 1972.5,-322 1972.5,-328 1972.5,-328 1972.5,-376 1972.5,-376 1972.5,-382 1966.5,-388 1960.5,-388"/>
 <text text-anchor="middle" x="1751" y="-345.8" font-family="Courier-Bold" font-size="24.00">deployment/virt&#45;template&#45;validator</text>
 </g>
 <!-- deployment/ssp&#45;operator&#45;&gt;deployment/virt&#45;template&#45;validator -->
-<g id="edge26" class="edge">
+<g id="edge27" class="edge">
 <title>deployment/ssp&#45;operator&#45;&gt;deployment/virt&#45;template&#45;validator</title>
-<path fill="none" stroke="black" d="M1144.58,-352C1250.23,-352 1390.44,-352 1509.32,-352"/>
-<polygon fill="black" stroke="black" points="1529.35,-352 1509.35,-361 1519.35,-352 1509.35,-352 1509.35,-352 1509.35,-352 1519.35,-352 1509.35,-343 1529.35,-352 1529.35,-352"/>
+<path fill="none" stroke="black" d="M1144.58,-321.18C1250.23,-326.55 1390.44,-333.69 1509.32,-339.75"/>
+<polygon fill="black" stroke="black" points="1529.35,-340.77 1508.92,-348.74 1519.36,-340.26 1509.38,-339.75 1509.38,-339.75 1509.38,-339.75 1519.36,-340.26 1509.83,-330.76 1529.35,-340.77 1529.35,-340.77"/>
 </g>
 <!-- deployment/virt&#45;api -->
-<g id="node24" class="node">
+<g id="node25" class="node">
 <title>deployment/virt&#45;api</title>
 <path fill="none" stroke="black" d="M1866.5,-309C1866.5,-309 1635.5,-309 1635.5,-309 1629.5,-309 1623.5,-303 1623.5,-297 1623.5,-297 1623.5,-249 1623.5,-249 1623.5,-243 1629.5,-237 1635.5,-237 1635.5,-237 1866.5,-237 1866.5,-237 1872.5,-237 1878.5,-243 1878.5,-249 1878.5,-249 1878.5,-297 1878.5,-297 1878.5,-303 1872.5,-309 1866.5,-309"/>
 <text text-anchor="middle" x="1751" y="-266.8" font-family="Courier-Bold" font-size="24.00">deployment/virt&#45;api</text>
 </g>
 <!-- deployment/virt&#45;operator&#45;&gt;deployment/virt&#45;api -->
-<g id="edge22" class="edge">
+<g id="edge23" class="edge">
 <title>deployment/virt&#45;operator&#45;&gt;deployment/virt&#45;api</title>
 <path fill="none" stroke="black" d="M1144.58,-210.56C1279.95,-224.52 1472.06,-244.33 1603.34,-257.87"/>
 <polygon fill="black" stroke="black" points="1623.47,-259.95 1602.65,-266.85 1613.52,-258.92 1603.57,-257.9 1603.57,-257.9 1603.57,-257.9 1613.52,-258.92 1604.5,-248.95 1623.47,-259.95 1623.47,-259.95"/>
 </g>
 <!-- deployment/virt&#45;controller -->
-<g id="node26" class="node">
+<g id="node27" class="node">
 <title>deployment/virt&#45;controller</title>
 <path fill="none" stroke="black" d="M1906,-230C1906,-230 1596,-230 1596,-230 1590,-230 1584,-224 1584,-218 1584,-218 1584,-170 1584,-170 1584,-164 1590,-158 1596,-158 1596,-158 1906,-158 1906,-158 1912,-158 1918,-164 1918,-170 1918,-170 1918,-218 1918,-218 1918,-224 1912,-230 1906,-230"/>
 <text text-anchor="middle" x="1751" y="-187.8" font-family="Courier-Bold" font-size="24.00">deployment/virt&#45;controller</text>
 </g>
 <!-- deployment/virt&#45;operator&#45;&gt;deployment/virt&#45;controller -->
-<g id="edge23" class="edge">
+<g id="edge24" class="edge">
 <title>deployment/virt&#45;operator&#45;&gt;deployment/virt&#45;controller</title>
 <path fill="none" stroke="black" d="M1144.58,-194C1266.8,-194 1435.26,-194 1563.46,-194"/>
 <polygon fill="black" stroke="black" points="1583.68,-194 1563.68,-203 1573.68,-194 1563.68,-194 1563.68,-194 1563.68,-194 1573.68,-194 1563.68,-185 1583.68,-194 1583.68,-194"/>
 </g>
 <!-- deployment/virt&#45;exportproxy -->
-<g id="node27" class="node">
+<g id="node28" class="node">
 <title>deployment/virt&#45;exportproxy</title>
 <path fill="none" stroke="black" d="M1920.5,-151C1920.5,-151 1581.5,-151 1581.5,-151 1575.5,-151 1569.5,-145 1569.5,-139 1569.5,-139 1569.5,-91 1569.5,-91 1569.5,-85 1575.5,-79 1581.5,-79 1581.5,-79 1920.5,-79 1920.5,-79 1926.5,-79 1932.5,-85 1932.5,-91 1932.5,-91 1932.5,-139 1932.5,-139 1932.5,-145 1926.5,-151 1920.5,-151"/>
 <text text-anchor="middle" x="1751" y="-108.8" font-family="Courier-Bold" font-size="24.00">deployment/virt&#45;exportproxy</text>
 </g>
 <!-- deployment/virt&#45;operator&#45;&gt;deployment/virt&#45;exportproxy -->
-<g id="edge24" class="edge">
+<g id="edge25" class="edge">
 <title>deployment/virt&#45;operator&#45;&gt;deployment/virt&#45;exportproxy</title>
 <path fill="none" stroke="black" d="M1144.58,-177.44C1262.32,-165.3 1422.99,-148.73 1549.22,-135.71"/>
 <polygon fill="black" stroke="black" points="1569.17,-133.65 1550.2,-144.65 1559.22,-134.68 1549.27,-135.7 1549.27,-135.7 1549.27,-135.7 1559.22,-134.68 1548.35,-126.75 1569.17,-133.65 1569.17,-133.65"/>
 </g>
 <!-- daemonset/virt&#45;handler -->
-<g id="node31" class="node">
+<g id="node32" class="node">
 <title>daemonset/virt&#45;handler</title>
 <path fill="none" stroke="black" d="M1890,-72C1890,-72 1612,-72 1612,-72 1606,-72 1600,-66 1600,-60 1600,-60 1600,-12 1600,-12 1600,-6 1606,0 1612,0 1612,0 1890,0 1890,0 1896,0 1902,-6 1902,-12 1902,-12 1902,-60 1902,-60 1902,-66 1896,-72 1890,-72"/>
 <text text-anchor="middle" x="1751" y="-29.8" font-family="Courier-Bold" font-size="24.00">daemonset/virt&#45;handler</text>
 </g>
 <!-- deployment/virt&#45;operator&#45;&gt;daemonset/virt&#45;handler -->
-<g id="edge29" class="edge">
+<g id="edge30" class="edge">
 <title>deployment/virt&#45;operator&#45;&gt;daemonset/virt&#45;handler</title>
 <path fill="none" stroke="black" d="M1104.57,-157.9C1194.85,-131.99 1321.77,-97.91 1435,-76 1481.77,-66.95 1532.85,-59.46 1580.01,-53.49"/>
 <polygon fill="black" stroke="black" points="1599.95,-51.03 1581.2,-62.41 1590.03,-52.26 1580.1,-53.48 1580.1,-53.48 1580.1,-53.48 1590.03,-52.26 1579,-44.55 1599.95,-51.03 1599.95,-51.03"/>
