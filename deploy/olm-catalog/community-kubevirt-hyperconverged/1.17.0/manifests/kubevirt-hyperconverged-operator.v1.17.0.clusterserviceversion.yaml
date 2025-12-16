@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.17.0-unstable
-    createdAt: "2025-12-13 05:05:59"
+    createdAt: "2025-12-16 21:39:02"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -276,6 +276,19 @@ spec:
           resources:
           - aaqs
           - aaqs/finalizers
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
+          - patch
+        - apiGroups:
+          - migrations.kubevirt.io
+          resources:
+          - migcontrollers
+          - migcontrollers/finalizers
           verbs:
           - get
           - list
@@ -3508,6 +3521,8 @@ spec:
                   value: v0.24.0
                 - name: AAQ_VERSION
                   value: v1.6.0
+                - name: MIGRATION_OPERATOR_VERSION
+                  value: v0.0.5
                 - name: KV_CONSOLE_PLUGIN_IMAGE
                   value: quay.io/kubevirt-ui/kubevirt-plugin@sha256:0b751cf8e97cbe453f00e139f32c0878065ccb08b286bb4719dc417f414eb4b7
                 - name: KV_CONSOLE_PROXY_IMAGE

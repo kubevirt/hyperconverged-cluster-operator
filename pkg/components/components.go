@@ -24,6 +24,7 @@ import (
 	kvapi "kubevirt.io/api/core"
 	aaqapi "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core"
 	cdiapi "kubevirt.io/containerized-data-importer-api/pkg/apis/core"
+	migrationapi "kubevirt.io/kubevirt-migration-operator/api/v1alpha1"
 	sspapi "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
@@ -285,6 +286,10 @@ func buildEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 			Value: params.AaqVersion,
 		},
 		{
+			Name:  util.MigrationOperatorVersionEnvV,
+			Value: params.MigrationOperatorVersion,
+		},
+		{
 			Name:  util.KVUIPluginImageEnvV,
 			Value: params.KVUIPluginImage,
 		},
@@ -540,6 +545,7 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		roleWithAllPermissions(sspapi.GroupVersion.Group, stringListToSlice("ssps", "ssps/finalizers")),
 		roleWithAllPermissions(cnaoapi.GroupVersion.Group, stringListToSlice("networkaddonsconfigs", "networkaddonsconfigs/finalizers")),
 		roleWithAllPermissions(aaqapi.GroupName, stringListToSlice("aaqs", "aaqs/finalizers")),
+		roleWithAllPermissions(migrationapi.GroupVersion.Group, stringListToSlice("migcontrollers", "migcontrollers/finalizers")),
 		roleWithAllPermissions("", stringListToSlice("configmaps")),
 		{
 			APIGroups: emptyAPIGroup,
