@@ -53,6 +53,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		handlers.NewCdiHandler(client, scheme),
 		handlers.NewCnaHandler(client, scheme),
 		handlers.NewAAQHandler(client, scheme),
+		handlers.NewMigControllerHandler(client, scheme),
 		passt.NewPasstDaemonSetHandler(client, scheme),
 		passt.NewPasstNetworkAttachmentDefinitionHandler(client, scheme),
 	}
@@ -236,6 +237,7 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		handlers.NewSSPWithNameOnly(req.Instance),
 		handlers.NewConsoleCLIDownload(req.Instance),
 		handlers.NewAAQWithNameOnly(req.Instance),
+		handlers.NewMigControllerWithNameOnly(req.Instance),
 		passt.NewPasstBindingCNINetworkAttachmentDefinition(req.Instance),
 		passt.NewPasstBindingCNISecurityContextConstraints(req.Instance),
 		waspagent.NewWaspAgentSCCWithNameOnly(req.Instance),

@@ -29,6 +29,7 @@ import (
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
+	migrationv1alpha1 "kubevirt.io/kubevirt-migration-operator/api/v1alpha1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
@@ -122,6 +123,7 @@ type BasicExpected struct {
 	cdi                  *cdiv1beta1.CDI
 	cna                  *networkaddonsv1.NetworkAddonsConfig
 	ssp                  *sspv1beta3.SSP
+	migController        *migrationv1alpha1.MigController
 	mService             *corev1.Service
 	serviceMonitor       *monitoringv1.ServiceMonitor
 	cliDownload          *consolev1.ConsoleCLIDownload
@@ -149,6 +151,7 @@ func (be BasicExpected) toArray() []client.Object {
 		be.cdi,
 		be.cna,
 		be.ssp,
+		be.migController,
 		be.mService,
 		be.serviceMonitor,
 		be.cliDownload,
@@ -259,6 +262,11 @@ func getBasicDeployment() *BasicExpected {
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	expectedSSP.Status.Conditions = getGenericCompletedConditions()
 	res.ssp = expectedSSP
+
+	expectedMigController, err := handlers.NewMigController(hco)
+	ExpectWithOffset(1, err).ToNot(HaveOccurred())
+	expectedMigController.Status.Conditions = getGenericCompletedConditions()
+	res.migController = expectedMigController
 
 	expectedCliDownload := handlers.NewConsoleCLIDownload(hco)
 	res.cliDownload = expectedCliDownload

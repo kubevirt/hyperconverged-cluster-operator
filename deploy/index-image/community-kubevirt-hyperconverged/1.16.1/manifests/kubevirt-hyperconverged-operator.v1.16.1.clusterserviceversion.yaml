@@ -285,6 +285,19 @@ spec:
           - delete
           - patch
         - apiGroups:
+          - migrations.kubevirt.io
+          resources:
+          - migcontrollers
+          - migcontrollers/finalizers
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
+          - patch
+        - apiGroups:
           - ""
           resources:
           - configmaps
@@ -3494,6 +3507,8 @@ spec:
                   value: v0.22.0
                 - name: AAQ_VERSION
                   value: v1.6.0
+                - name: MIGRATION_OPERATOR_VERSION
+                  value: v0.0.5
                 - name: KV_CONSOLE_PLUGIN_IMAGE
                   value: quay.io/kubevirt-ui/kubevirt-plugin@sha256:89269df1481bed69cac7095c8d8d875acbfa238e4b5735ab802cda90c9375a1b
                 - name: KV_CONSOLE_PROXY_IMAGE
