@@ -4240,6 +4240,37 @@ Version: 1.2.3`)
 				Entry("not pass to KubeVirt when nil", hcov1beta1.HyperConvergedSpec{}, nil),
 			)
 		})
+
+		Context("validate bug fixes", func() {
+
+			It("Removing HCO machine type annotation does not restore default in KubeVirt ", func() {
+				restArchConfig()
+
+				By("validate the default machine type")
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(kv.Spec.Configuration.ArchitectureConfiguration.Amd64.MachineType).To(Equal("q35"))
+
+				By("use json annotation to modify the machine type")
+				if hco.Annotations == nil {
+					hco.Annotations = map[string]string{}
+				}
+				hco.Annotations[common.JSONPatchKVAnnotationName] = `[{"op": "add", "path": "/spec/configuration/architectureConfiguration", "value": {"amd64": {"machineType": "something-else"}}}]`
+
+				kv, err = NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(kv.Spec.Configuration.ArchitectureConfiguration.Amd64.MachineType).To(Equal("something-else"))
+
+				By("Remove the json annotation; expect default machine type")
+				delete(hco.Annotations, common.JSONPatchKVAnnotationName)
+
+				kv, err = NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(kv.Spec.Configuration.ArchitectureConfiguration.Amd64.MachineType).To(Equal("q35"))
+
+				restArchConfig()
+			})
+		})
 	})
 
 	Context("Test hcLiveMigrationToKv", func() {
