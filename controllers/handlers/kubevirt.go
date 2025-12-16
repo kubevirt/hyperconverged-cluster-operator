@@ -529,7 +529,7 @@ func getArchConfiguration() *kubevirtcorev1.ArchConfiguration {
 		}
 	})
 
-	return architectureConfiguration
+	return architectureConfiguration.DeepCopy()
 }
 
 func getAMD64ArchConfig() *kubevirtcorev1.ArchSpecificConfiguration {
