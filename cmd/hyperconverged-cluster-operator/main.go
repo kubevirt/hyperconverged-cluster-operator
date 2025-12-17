@@ -51,6 +51,7 @@ import (
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
+	migrationv1alpha1 "kubevirt.io/kubevirt-migration-operator/api/v1alpha1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api"
@@ -107,6 +108,7 @@ var (
 		operatorsapiv2.AddToScheme,
 		imagev1.Install,
 		aaqv1alpha1.AddToScheme,
+		migrationv1alpha1.AddToScheme,
 		deschedulerv1.AddToScheme,
 		netattdefv1.AddToScheme,
 		networkingv1.AddToScheme,
@@ -314,6 +316,8 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 			&cdiv1beta1.CDI{}:                      {},
 			&networkaddonsv1.NetworkAddonsConfig{}: {},
 			&sspv1beta3.SSP{}:                      {},
+			&aaqv1alpha1.AAQ{}:                     {},
+			&migrationv1alpha1.MigController{}:     {},
 			&schedulingv1.PriorityClass{}: {
 				Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
 			},

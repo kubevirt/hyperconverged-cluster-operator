@@ -97,6 +97,9 @@ var _ = Describe("Upgrade Mode", func() {
 		_ = os.Setenv(hcoutil.SspVersionEnvV, newComponentVersion)
 		expected.ssp.Status.ObservedVersion = newComponentVersion
 
+		expected.migController.Status.ObservedVersion = newComponentVersion
+		_ = os.Setenv(hcoutil.MigrationOperatorVersionEnvV, newComponentVersion)
+
 		_ = os.Setenv(hcoutil.AaqVersionEnvV, newComponentVersion)
 
 		expected.hco.Status.Conditions = origConditions

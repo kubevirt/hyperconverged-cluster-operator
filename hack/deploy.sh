@@ -167,6 +167,7 @@ sleep 20
 OPERATORS=(
     "cdi-operator"
     "cluster-network-addons-operator"
+    "kubevirt-migration-operator"
 )
 
 if [ "$IS_OPENSHIFT" = "true" ]; then

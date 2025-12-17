@@ -70,6 +70,8 @@ spec:
           value: v0.24.0
         - name: AAQ_VERSION
           value: v1.6.0
+        - name: MIGRATION_OPERATOR_VERSION
+          value: v0.0.5
         - name: KV_CONSOLE_PLUGIN_IMAGE
         - name: KV_CONSOLE_PROXY_IMAGE
         - name: PASST_SIDECAR_IMAGE
