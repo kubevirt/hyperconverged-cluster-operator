@@ -36,16 +36,15 @@ func NewHyperConvergedMutator(cli client.Client, decoder admission.Decoder) *Hyp
 	}
 }
 
-func (hcm *HyperConvergedMutator) Handle(ctx context.Context, req admission.Request) admission.Response {
+func (hcm *HyperConvergedMutator) Handle(_ context.Context, req admission.Request) admission.Response {
 	hcMutatorLogger.Info("reaching HyperConvergedMutator.Handle")
 
 	if req.Operation == admissionv1.Update || req.Operation == admissionv1.Create {
-		return hcm.mutateHyperConverged(ctx, req)
+		return hcm.mutateHyperConverged(req)
 	}
 
 	// ignoring other operations
 	return admission.Allowed(ignoreOperationMessage)
-
 }
 
 const (
@@ -53,7 +52,7 @@ const (
 	dictAnnotationPathTemplate = annotationPathTemplate + "/cdi.kubevirt.io~1storage.bind.immediate.requested"
 )
 
-func (hcm *HyperConvergedMutator) mutateHyperConverged(_ context.Context, req admission.Request) admission.Response {
+func (hcm *HyperConvergedMutator) mutateHyperConverged(req admission.Request) admission.Response {
 	hc := &hcov1beta1.HyperConverged{}
 	err := hcm.decoder.Decode(req, hc)
 	if err != nil {
@@ -61,6 +60,24 @@ func (hcm *HyperConvergedMutator) mutateHyperConverged(_ context.Context, req ad
 		return admission.Errored(http.StatusBadRequest, fmt.Errorf("failed to parse the HyperConverged"))
 	}
 
+	patches := getMutatePatches(hc)
+
+	if req.Operation == admissionv1.Create && hc.Spec.KSMConfiguration == nil {
+		patches = append(patches, jsonpatch.JsonPatchOperation{
+			Operation: "add",
+			Path:      "/spec/ksmConfiguration",
+			Value:     kubevirtcorev1.KSMConfiguration{},
+		})
+	}
+
+	if len(patches) > 0 {
+		return admission.Patched("mutated", patches...)
+	}
+
+	return admission.Allowed("")
+}
+
+func getMutatePatches(hc *hcov1beta1.HyperConverged) []jsonpatch.JsonPatchOperation {
 	var patches []jsonpatch.JsonPatchOperation
 	for index, dict := range hc.Spec.DataImportCronTemplates {
 		if dict.Annotations == nil {
@@ -99,11 +116,7 @@ func (hcm *HyperConvergedMutator) mutateHyperConverged(_ context.Context, req ad
 		}
 	}
 
-	if len(patches) > 0 {
-		return admission.Patched("mutated", patches...)
-	}
-
-	return admission.Allowed("")
+	return patches
 }
 
 func mutateEvictionStrategy(hc *hcov1beta1.HyperConverged, patches []jsonpatch.JsonPatchOperation) []jsonpatch.JsonPatchOperation {
