@@ -4,28 +4,19 @@ import (
 	"context"
 	"errors"
 	"os"
-	"testing"
-
-	admissionv1 "k8s.io/api/admission/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	admissionv1 "k8s.io/api/admission/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	kubevirtcorev1 "kubevirt.io/api/core/v1"
-	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
-	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 const (
@@ -37,28 +28,7 @@ var (
 	ErrFakeHcoError = errors.New("fake HyperConverged error")
 )
 
-func TestMutatorWebhook(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Mutator Webhooks Suite")
-}
-
 var _ = Describe("webhooks mutator", func() {
-	s := scheme.Scheme
-
-	for _, f := range []func(*runtime.Scheme) error{
-		v1beta1.AddToScheme,
-		cdiv1beta1.AddToScheme,
-		kubevirtcorev1.AddToScheme,
-		networkaddonsv1.AddToScheme,
-		sspv1beta3.AddToScheme,
-		corev1.AddToScheme,
-	} {
-		Expect(f(s)).To(Succeed())
-	}
-
-	codecFactory := serializer.NewCodecFactory(s)
-	corev1Codec := codecFactory.LegacyCodec(corev1.SchemeGroupVersion)
-
 	Context("Check mutating webhook for hcoNamespace deletion", func() {
 		BeforeEach(func() {
 			Expect(os.Setenv("OPERATOR_NAMESPACE", HcoValidNamespace)).To(Succeed())
@@ -81,8 +51,8 @@ var _ = Describe("webhooks mutator", func() {
 
 		It("should allow the delete of the hcoNamespace if Hyperconverged CR doesn't exist", func() {
 			cli := commontestutils.InitClient(nil)
-			nsMutator := initMutator(s, cli)
-			req := admission.Request{AdmissionRequest: newRequest(admissionv1.Delete, ns, corev1Codec)}
+			nsMutator := initMutator(mutatorScheme, cli)
+			req := admission.Request{AdmissionRequest: newRequest(admissionv1.Delete, ns, testCodec)}
 
 			res := nsMutator.Handle(context.TODO(), req)
 			Expect(res.Allowed).To(BeTrue())
@@ -90,8 +60,8 @@ var _ = Describe("webhooks mutator", func() {
 
 		It("should not allow the delete of the hcoNamespace if Hyperconverged CR exists", func() {
 			cli := commontestutils.InitClient([]client.Object{cr})
-			nsMutator := initMutator(s, cli)
-			req := admission.Request{AdmissionRequest: newRequest(admissionv1.Delete, ns, corev1Codec)}
+			nsMutator := initMutator(mutatorScheme, cli)
+			req := admission.Request{AdmissionRequest: newRequest(admissionv1.Delete, ns, testCodec)}
 
 			res := nsMutator.Handle(context.TODO(), req)
 			Expect(res.Allowed).To(BeFalse())
@@ -99,7 +69,7 @@ var _ = Describe("webhooks mutator", func() {
 
 		It("should not allow when the request is not valid", func() {
 			cli := commontestutils.InitClient([]client.Object{cr})
-			nsMutator := initMutator(s, cli)
+			nsMutator := initMutator(mutatorScheme, cli)
 			req := admission.Request{AdmissionRequest: admissionv1.AdmissionRequest{Operation: admissionv1.Delete}}
 
 			res := nsMutator.Handle(context.TODO(), req)
@@ -116,8 +86,8 @@ var _ = Describe("webhooks mutator", func() {
 				return nil
 			})
 
-			nsMutator := initMutator(s, cli)
-			req := admission.Request{AdmissionRequest: newRequest(admissionv1.Delete, ns, corev1Codec)}
+			nsMutator := initMutator(mutatorScheme, cli)
+			req := admission.Request{AdmissionRequest: newRequest(admissionv1.Delete, ns, testCodec)}
 
 			res := nsMutator.Handle(context.TODO(), req)
 			Expect(res.Allowed).To(BeFalse())
@@ -131,8 +101,8 @@ var _ = Describe("webhooks mutator", func() {
 				},
 			}
 
-			nsMutator := initMutator(s, cli)
-			req := admission.Request{AdmissionRequest: newRequest(admissionv1.Delete, otherNs, corev1Codec)}
+			nsMutator := initMutator(mutatorScheme, cli)
+			req := admission.Request{AdmissionRequest: newRequest(admissionv1.Delete, otherNs, testCodec)}
 
 			res := nsMutator.Handle(context.TODO(), req)
 			Expect(res.Allowed).To(BeTrue())
@@ -140,8 +110,8 @@ var _ = Describe("webhooks mutator", func() {
 
 		It("should allow other operations", func() {
 			cli := commontestutils.InitClient([]client.Object{cr})
-			nsMutator := initMutator(s, cli)
-			req := admission.Request{AdmissionRequest: newRequest(admissionv1.Update, ns, corev1Codec)}
+			nsMutator := initMutator(mutatorScheme, cli)
+			req := admission.Request{AdmissionRequest: newRequest(admissionv1.Update, ns, testCodec)}
 
 			res := nsMutator.Handle(context.TODO(), req)
 			Expect(res.Allowed).To(BeTrue())
