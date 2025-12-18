@@ -63,6 +63,9 @@ digraph "managed-by" {
 	"deployment/kubevirt-ipam-controller-manager" [label="deployment/kubevirt-ipam-controller-manager"]
 	"deployment/cluster-network-addons-operator" [label="deployment/cluster-network-addons-operator"]
 	"deployment/cluster-network-addons-operator" -> "deployment/kubevirt-ipam-controller-manager"
+	"deployment/kubevirt-migration-controller" [label="deployment/kubevirt-migration-controller"]
+	"kubevirt-migration-operator" [label="kubevirt-migration-operator"]
+	"kubevirt-migration-operator" -> "deployment/kubevirt-migration-controller"
 	"deployment/kubevirt-migration-operator" [label="deployment/kubevirt-migration-operator"]
 	olm [label=olm]
 	olm -> "deployment/kubevirt-migration-operator"
