@@ -5163,6 +5163,51 @@ spec:
                     items:
                       type: string
                     type: array
+                  recommendedCpuModels:
+                    description: RecommendedCpuModels is a list of recommended CPU
+                      models for the cluster based on available nodes
+                    items:
+                      description: CpuModelInfo contains information about a CPU model
+                        and its availability in the cluster
+                      properties:
+                        benchmark:
+                          description: Benchmark is the CPU performance score for
+                            this model
+                          type: integer
+                        cpu:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: CPU is the total CPU cores available across
+                            all nodes supporting this model
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        memory:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          description: Memory is the total memory available across
+                            all nodes supporting this model
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        name:
+                          description: Name is the CPU model name
+                          type: string
+                        nodes:
+                          description: Nodes is the number of nodes that support this
+                            CPU model
+                          type: integer
+                      required:
+                      - benchmark
+                      - cpu
+                      - memory
+                      - name
+                      - nodes
+                      type: object
+                    type: array
+                    x-kubernetes-list-map-keys:
+                    - name
+                    x-kubernetes-list-type: map
                   workloadsArchitectures:
                     description: WorkloadsArchitectures is a distinct list of the
                       CPU architectures of the workloads nodes in the cluster.
