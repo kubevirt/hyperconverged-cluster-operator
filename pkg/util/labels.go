@@ -1,8 +1,10 @@
 package util
 
 import (
+	"encoding/json"
 	"maps"
 
+	"gomodules.xyz/jsonpatch/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -19,13 +21,35 @@ func MergeLabels(src, tgt *metav1.ObjectMeta) {
 	maps.Copy(tgt.Labels, src.Labels)
 }
 
+// MergeLabelsJSONPatch merges src labels into tgt ones.
+func MergeLabelsJSONPatch(src, tgt *metav1.ObjectMeta) ([]byte, error) {
+	if CompareLabels(src, tgt) {
+		return nil, nil
+	}
+
+	op := "replace"
+	if tgt.Labels == nil {
+		op = "add"
+	}
+
+	tgt = tgt.DeepCopy()
+	MergeLabels(src, tgt)
+
+	patch := []jsonpatch.Operation{jsonpatch.NewOperation(op, "/metadata/labels", tgt.Labels)}
+
+	return json.Marshal(patch)
+}
+
 // CompareLabels reports whether src labels are contained into tgt ones; extra labels on tgt are ignored.
 // It returns true if the src labels map is a subset of the tgt one.
 func CompareLabels(src, tgt metav1.Object) bool {
-	targetLabels := tgt.GetLabels()
-	for key, val := range src.GetLabels() {
-		tgt_v, ok := targetLabels[key]
-		if !ok || tgt_v != val {
+	return compareLabels(src.GetLabels(), tgt.GetLabels())
+}
+
+func compareLabels(src, tgt map[string]string) bool {
+	for srcKey, srcVal := range src {
+		tgtVal, ok := tgt[srcKey]
+		if !ok || tgtVal != srcVal {
 			return false
 		}
 	}
