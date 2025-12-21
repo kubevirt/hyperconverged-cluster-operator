@@ -28,6 +28,7 @@ import (
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -75,24 +76,28 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	srcs := []source.Source{
 		source.Kind[*appsv1.Deployment](
-			mgr.GetCache(), &appsv1.Deployment{},
+			mgr.GetCache(),
+			&appsv1.Deployment{},
 			&handler.TypedEnqueueRequestForObject[*appsv1.Deployment]{},
-			newPredicate[*appsv1.Deployment](),
+			newPredicate[*appsv1.Deployment](), getDeployPredicate(),
 		),
 		source.Kind[*corev1.Service](
-			mgr.GetCache(), &corev1.Service{},
+			mgr.GetCache(),
+			&corev1.Service{},
 			&handler.TypedEnqueueRequestForObject[*corev1.Service]{},
-			newPredicate[*corev1.Service](),
+			newPredicate[*corev1.Service](), servicePredicate,
+		),
+		source.Kind[*corev1.Secret](
+			mgr.GetCache(),
+			&corev1.Secret{},
+			&handler.TypedEnqueueRequestForObject[*corev1.Secret]{},
+			newPredicate[*corev1.Secret](), secretPredicate,
 		),
 		source.Kind[*promv1.ServiceMonitor](
-			mgr.GetCache(), &promv1.ServiceMonitor{},
+			mgr.GetCache(),
+			&promv1.ServiceMonitor{},
 			&handler.TypedEnqueueRequestForObject[*promv1.ServiceMonitor]{},
-			newPredicate[*promv1.ServiceMonitor](),
-		),
-		source.Kind[*promv1.ServiceMonitor](
-			mgr.GetCache(), &promv1.ServiceMonitor{},
-			&handler.TypedEnqueueRequestForObject[*promv1.ServiceMonitor]{},
-			newPredicate[*promv1.ServiceMonitor](),
+			newPredicate[*promv1.ServiceMonitor](), smPredicate,
 		),
 	}
 
@@ -145,4 +150,26 @@ func getLogger(ctx context.Context, request reconcile.Request) logr.Logger {
 	}
 
 	return l
+}
+
+var (
+	servicePredicate = predicate.NewTypedPredicateFuncs[*corev1.Service](func(service *corev1.Service) bool {
+		return service.Name == serviceName
+	})
+
+	secretPredicate = predicate.NewTypedPredicateFuncs[*corev1.Secret](func(secret *corev1.Secret) bool {
+		return secret.Name == secretName
+	})
+
+	smPredicate = predicate.NewTypedPredicateFuncs[*promv1.ServiceMonitor](func(sm *promv1.ServiceMonitor) bool {
+		return sm.Name == serviceName
+	})
+)
+
+func getDeployPredicate() predicate.TypedPredicate[*appsv1.Deployment] {
+	depRef := ownresources.GetDeploymentRef()
+
+	return predicate.NewTypedPredicateFuncs[*appsv1.Deployment](func(deploy *appsv1.Deployment) bool {
+		return deploy.Name == depRef.Name
+	})
 }
