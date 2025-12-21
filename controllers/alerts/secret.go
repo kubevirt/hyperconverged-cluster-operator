@@ -2,12 +2,14 @@ package alerts
 
 import (
 	"context"
+	"maps"
 	"sync"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/authorization"
@@ -58,14 +60,9 @@ func (r *SecretReconciler) GetFullResource() client.Object {
 	return r.theSecret.DeepCopy()
 }
 
-func (r *SecretReconciler) refreshToken() error {
+func (r *SecretReconciler) refreshToken(token string) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-
-	token, err := authorization.CreateToken()
-	if err != nil {
-		return err
-	}
 
 	r.theSecret = r.createSecret(r.theSecret.Namespace, r.theSecret.OwnerReferences[0], token)
 
@@ -85,6 +82,8 @@ func (r *SecretReconciler) EmptyObject() client.Object {
 func (r *SecretReconciler) UpdateExistingResource(ctx context.Context, cl client.Client, resource client.Object, logger logr.Logger) (client.Object, bool, error) {
 	found := resource.(*corev1.Secret)
 
+	origLabels := maps.Clone(found.GetLabels())
+
 	token, err := authorization.CreateToken()
 	if err != nil {
 		return nil, false, err
@@ -92,7 +91,7 @@ func (r *SecretReconciler) UpdateExistingResource(ctx context.Context, cl client
 
 	// Check if the secret has the correct token
 	if string(found.Data["token"]) == token {
-		return nil, false, nil
+		return r.onlyReconcileLabels(ctx, cl, found, logger)
 	}
 
 	// If the token is incorrect, delete the old secret and create a new one
@@ -104,12 +103,20 @@ func (r *SecretReconciler) UpdateExistingResource(ctx context.Context, cl client
 		}
 	}
 
-	if err = r.refreshToken(); err != nil {
+	if err = r.refreshToken(token); err != nil {
 		logger.Error(err, "failed to refresh token")
 		return nil, false, err
 	}
 
 	sec := r.GetFullResource()
+	// restore custom labels
+	labels := sec.GetLabels()
+	for origKey, origVal := range origLabels {
+		if _, ok := labels[origKey]; !ok {
+			labels[origKey] = origVal
+		}
+	}
+
 	if err = cl.Create(ctx, sec); err != nil {
 		logger.Error(err, "failed to create new secret")
 		return nil, false, err
@@ -118,6 +125,25 @@ func (r *SecretReconciler) UpdateExistingResource(ctx context.Context, cl client
 	logger.Info("successfully created the new secret", "namespace", sec.GetNamespace(), "name", sec.GetName())
 
 	return sec, true, nil
+}
+
+func (r *SecretReconciler) onlyReconcileLabels(ctx context.Context, cl client.Client, found *corev1.Secret, logger logr.Logger) (client.Object, bool, error) {
+	patch, err := hcoutil.MergeLabelsJSONPatch(&r.theSecret.ObjectMeta, &found.ObjectMeta)
+	if err != nil {
+		return nil, false, err
+	}
+
+	if patch == nil {
+		return found, false, nil
+	}
+
+	logger.Info("the secret's labels were modified. Updating them...", "secret name", secretName)
+	err = cl.Patch(ctx, found, client.RawPatch(types.JSONPatchType, patch))
+	if err != nil {
+		return nil, false, err
+	}
+
+	return found, true, nil
 }
 
 func newSecret(namespace string, owner metav1.OwnerReference, token string) *corev1.Secret {
