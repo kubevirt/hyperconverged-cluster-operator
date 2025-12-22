@@ -91,7 +91,7 @@ func (r *SecretReconciler) UpdateExistingResource(ctx context.Context, cl client
 
 	// Check if the secret has the correct token
 	if string(found.Data["token"]) == token {
-		return r.onlyReconcileLabels(ctx, cl, found)
+		return r.onlyReconcileLabels(ctx, cl, found, logger)
 	}
 
 	// If the token is incorrect, delete the old secret and create a new one
@@ -127,7 +127,7 @@ func (r *SecretReconciler) UpdateExistingResource(ctx context.Context, cl client
 	return sec, true, nil
 }
 
-func (r *SecretReconciler) onlyReconcileLabels(ctx context.Context, cl client.Client, found *corev1.Secret) (client.Object, bool, error) {
+func (r *SecretReconciler) onlyReconcileLabels(ctx context.Context, cl client.Client, found *corev1.Secret, logger logr.Logger) (client.Object, bool, error) {
 	patch, err := hcoutil.MergeLabelsJSONPatch(&r.theSecret.ObjectMeta, &found.ObjectMeta)
 	if err != nil {
 		return nil, false, err
@@ -137,6 +137,7 @@ func (r *SecretReconciler) onlyReconcileLabels(ctx context.Context, cl client.Cl
 		return found, false, nil
 	}
 
+	logger.Info("the secret's labels were modified. Updating them...", "secret name", secretName)
 	err = cl.Patch(ctx, found, client.RawPatch(types.JSONPatchType, patch))
 	if err != nil {
 		return nil, false, err

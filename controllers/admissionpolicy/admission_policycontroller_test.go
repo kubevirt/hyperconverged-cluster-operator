@@ -9,16 +9,27 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
 	fakeownresources "github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources/fake"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
+
+var ref = &metav1.OwnerReference{
+	APIVersion:         apiextensionsv1.SchemeGroupVersion.String(),
+	Kind:               "CustomResourceDefinition",
+	Name:               crdName,
+	UID:                types.UID("12345678"),
+	Controller:         ptr.To(false),
+	BlockOwnerDeletion: ptr.To(true),
+}
 
 func TestAdmissionPolicyController(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -53,17 +64,18 @@ var _ = Describe("AdmissionPolicyController", func() {
 
 			r := &ReconcileAdmissionPolicy{
 				Client: cli,
+				owner:  ref,
 			}
 			res, err := r.Reconcile(ctx, startupReq)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.IsZero()).To(BeTrue())
 
-			policy := getRequiredPolicy()
+			policy := getRequiredPolicy(ref)
 			foundPolicy := &admissionv1.ValidatingAdmissionPolicy{}
 			Expect(cli.Get(ctx, client.ObjectKeyFromObject(policy), foundPolicy)).To(Succeed())
 			Expect(foundPolicy.Spec).To(Equal(policy.Spec))
 
-			binding := getRequiredBinding()
+			binding := getRequiredBinding(ref)
 			foundBinding := &admissionv1.ValidatingAdmissionPolicyBinding{}
 			Expect(cli.Get(ctx, client.ObjectKeyFromObject(binding), foundBinding)).To(Succeed())
 			Expect(foundBinding.Spec).To(Equal(binding.Spec))
@@ -75,6 +87,7 @@ var _ = Describe("AdmissionPolicyController", func() {
 
 			r := &ReconcileAdmissionPolicy{
 				Client: cli,
+				owner:  ref,
 			}
 
 			req := reconcile.Request{
@@ -87,12 +100,12 @@ var _ = Describe("AdmissionPolicyController", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.IsZero()).To(BeTrue())
 
-			policy := getRequiredPolicy()
+			policy := getRequiredPolicy(ref)
 			foundPolicy := &admissionv1.ValidatingAdmissionPolicy{}
 			Expect(cli.Get(ctx, client.ObjectKeyFromObject(policy), foundPolicy)).To(Succeed())
 			Expect(foundPolicy.Spec).To(Equal(policy.Spec))
 
-			binding := getRequiredBinding()
+			binding := getRequiredBinding(ref)
 			foundBinding := &admissionv1.ValidatingAdmissionPolicyBinding{}
 			Expect(cli.Get(ctx, client.ObjectKeyFromObject(binding), foundBinding)).To(MatchError(k8serrors.IsNotFound, "expected to not be found"))
 		})
@@ -103,6 +116,7 @@ var _ = Describe("AdmissionPolicyController", func() {
 
 			r := &ReconcileAdmissionPolicy{
 				Client: cli,
+				owner:  ref,
 			}
 
 			req := reconcile.Request{
@@ -115,11 +129,11 @@ var _ = Describe("AdmissionPolicyController", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.IsZero()).To(BeTrue())
 
-			policy := getRequiredPolicy()
+			policy := getRequiredPolicy(ref)
 			foundPolicy := &admissionv1.ValidatingAdmissionPolicy{}
 			Expect(cli.Get(ctx, client.ObjectKeyFromObject(policy), foundPolicy)).To(MatchError(k8serrors.IsNotFound, "expected to not be found"))
 
-			binding := getRequiredBinding()
+			binding := getRequiredBinding(ref)
 			foundBinding := &admissionv1.ValidatingAdmissionPolicyBinding{}
 			Expect(cli.Get(ctx, client.ObjectKeyFromObject(binding), foundBinding)).To(Succeed())
 			Expect(foundBinding.Spec).To(Equal(binding.Spec))
@@ -134,14 +148,17 @@ var _ = Describe("AdmissionPolicyController", func() {
 		const (
 			wrongExpr       = "wrong expression"
 			wrongPolicyName = "wrongPolicyName"
+			wrongUID        = types.UID("87654321")
 		)
 
 		BeforeEach(func() {
-			modifiedPolicy := getRequiredPolicy()
+			modifiedPolicy := getRequiredPolicy(ref)
 			modifiedPolicy.Spec.Validations[0].Expression = wrongExpr
+			modifiedPolicy.OwnerReferences[0].UID = wrongUID
 
-			modifiedPolicyBinding := getRequiredBinding()
+			modifiedPolicyBinding := getRequiredBinding(ref)
 			modifiedPolicyBinding.Spec.PolicyName = wrongPolicyName
+			modifiedPolicyBinding.OwnerReferences[0].UID = wrongUID
 
 			resources := []client.Object{modifiedPolicy, modifiedPolicyBinding}
 
@@ -151,30 +168,32 @@ var _ = Describe("AdmissionPolicyController", func() {
 		It("Should update the AdmissionPolicy and the binding on startup", func(ctx context.Context) {
 			r := &ReconcileAdmissionPolicy{
 				Client: cli,
+				owner:  ref,
 			}
 
 			res, err := r.Reconcile(ctx, startupReq)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.IsZero()).To(BeTrue())
 
-			policy := getRequiredPolicy()
+			policy := getRequiredPolicy(ref)
 			foundPolicy := &admissionv1.ValidatingAdmissionPolicy{}
 			Expect(cli.Get(ctx, client.ObjectKeyFromObject(policy), foundPolicy)).To(Succeed())
 			Expect(foundPolicy.Spec).To(Equal(policy.Spec))
 			Expect(foundPolicy.OwnerReferences).To(HaveLen(1))
-			Expect(foundPolicy.OwnerReferences[0]).To(Equal(ownresources.GetDeploymentRef()))
+			Expect(foundPolicy.OwnerReferences[0]).To(Equal(*ref))
 
-			binding := getRequiredBinding()
+			binding := getRequiredBinding(ref)
 			foundBinding := &admissionv1.ValidatingAdmissionPolicyBinding{}
 			Expect(cli.Get(ctx, client.ObjectKeyFromObject(binding), foundBinding)).To(Succeed())
 			Expect(foundBinding.Spec).To(Equal(binding.Spec))
 			Expect(foundBinding.OwnerReferences).To(HaveLen(1))
-			Expect(foundBinding.OwnerReferences[0]).To(Equal(ownresources.GetDeploymentRef()))
+			Expect(foundBinding.OwnerReferences[0]).To(Equal(*ref))
 		})
 
 		It("Should only update the AdmissionPolicy if was modified", func(ctx context.Context) {
 			r := &ReconcileAdmissionPolicy{
 				Client: cli,
+				owner:  ref,
 			}
 
 			req := reconcile.Request{
@@ -187,20 +206,23 @@ var _ = Describe("AdmissionPolicyController", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.IsZero()).To(BeTrue())
 
-			policy := getRequiredPolicy()
+			policy := getRequiredPolicy(ref)
 			foundPolicy := &admissionv1.ValidatingAdmissionPolicy{}
 			Expect(cli.Get(ctx, client.ObjectKeyFromObject(policy), foundPolicy)).To(Succeed())
 			Expect(foundPolicy.Spec).To(Equal(policy.Spec))
 
-			binding := getRequiredBinding()
+			binding := getRequiredBinding(ref)
 			foundBinding := &admissionv1.ValidatingAdmissionPolicyBinding{}
 			Expect(cli.Get(ctx, client.ObjectKeyFromObject(binding), foundBinding)).To(Succeed())
 			Expect(foundBinding.Spec.PolicyName).To(Equal(wrongPolicyName))
+			Expect(foundBinding.OwnerReferences).To(HaveLen(1))
+			Expect(foundBinding.OwnerReferences[0].UID).To(Equal(wrongUID))
 		})
 
 		It("Should only update the Binding if it was changed", func(ctx context.Context) {
 			r := &ReconcileAdmissionPolicy{
 				Client: cli,
+				owner:  ref,
 			}
 
 			req := reconcile.Request{
@@ -213,17 +235,18 @@ var _ = Describe("AdmissionPolicyController", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.IsZero()).To(BeTrue())
 
-			policy := getRequiredPolicy()
+			policy := getRequiredPolicy(ref)
 			foundPolicy := &admissionv1.ValidatingAdmissionPolicy{}
 			Expect(cli.Get(ctx, client.ObjectKeyFromObject(policy), foundPolicy)).To(Succeed())
 			Expect(foundPolicy.Spec.Validations[0].Expression).To(Equal(wrongExpr))
+			Expect(foundPolicy.OwnerReferences).To(HaveLen(1))
+			Expect(foundPolicy.OwnerReferences[0].UID).To(Equal(wrongUID))
 
-			binding := getRequiredBinding()
+			binding := getRequiredBinding(ref)
 			foundBinding := &admissionv1.ValidatingAdmissionPolicyBinding{}
 			Expect(cli.Get(ctx, client.ObjectKeyFromObject(binding), foundBinding)).To(Succeed())
 			Expect(foundBinding.Spec).To(Equal(binding.Spec))
 		})
-
 	})
 })
 

@@ -41,10 +41,13 @@ for i in  $(seq $num_cont); do
   ind=$((i-1))
   ${CMD} patch deployment -n kubevirt-hyperconverged ${deployment_name} --type=json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/'${ind}'/imagePullPolicy", "value": "Always"}]'
 done
+
 # rebuild the image and replace it in the registry
 make container-build-${component_name} container-push-${component_name}
 # restarting the pod, to force taking the new image
 ${CMD} scale deployment -n kubevirt-hyperconverged ${deployment_name} --replicas=0
+IMAGE_NAME="${REGISTRY}/${REGISTRY_NAMESPACE}/hyperconverged-cluster-${component_name}:latest"
+${CMD} patch deployment -n kubevirt-hyperconverged ${deployment_name} --type=json --patch '[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value": "'${IMAGE_NAME}'"}]'
 ${CMD} scale deployment -n kubevirt-hyperconverged ${deployment_name} --replicas=${replicas}
 # make sure the new deployment is ready
 ${CMD} wait deployment -n kubevirt-hyperconverged ${deployment_name} --for=condition=Available

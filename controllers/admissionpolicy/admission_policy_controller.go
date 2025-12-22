@@ -5,12 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 
 	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	operatorhandler "github.com/operator-framework/operator-lib/handler"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -39,11 +41,16 @@ var (
 )
 
 // RegisterReconciler creates a new Nodes Reconciler and registers it into manager.
-func RegisterReconciler(mgr manager.Manager) error {
+func RegisterReconciler(ctx context.Context, mgr manager.Manager) error {
 	startupEvent := make(chan event.GenericEvent, 1)
 	defer close(startupEvent)
 
-	r := newReconciler(mgr, startupEvent)
+	ownerRef, err := getCRDRef(ctx, mgr.GetAPIReader())
+	if err != nil {
+		return err
+	}
+
+	r := newReconciler(mgr, startupEvent, ownerRef)
 
 	startupEvent <- event.GenericEvent{}
 
@@ -51,11 +58,12 @@ func RegisterReconciler(mgr manager.Manager) error {
 }
 
 // newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager, startupEvent <-chan event.GenericEvent) *ReconcileAdmissionPolicy {
+func newReconciler(mgr manager.Manager, startupEvent <-chan event.GenericEvent, ownerRef *metav1.OwnerReference) *ReconcileAdmissionPolicy {
 	initLogger.Info("Initializing the admission policy controller")
 
 	r := &ReconcileAdmissionPolicy{
 		Client:       mgr.GetClient(),
+		owner:        ownerRef,
 		startupEvent: startupEvent,
 	}
 
@@ -106,6 +114,7 @@ func add(mgr manager.Manager, r *ReconcileAdmissionPolicy) error {
 // ReconcileAdmissionPolicy reconciles the ValidatingAdmissionPolicy and ValidatingAdmissionPolicyBinding
 type ReconcileAdmissionPolicy struct {
 	client.Client
+	owner        *metav1.OwnerReference
 	startupEvent <-chan event.GenericEvent
 }
 
@@ -138,7 +147,7 @@ func (r *ReconcileAdmissionPolicy) Reconcile(ctx context.Context, req reconcile.
 }
 
 func (r *ReconcileAdmissionPolicy) reconcilePolicy(ctx context.Context, logger logr.Logger) error {
-	policy := getRequiredPolicy()
+	policy := getRequiredPolicy(r.owner)
 	key := client.ObjectKeyFromObject(policy)
 	foundPolicy := &admissionv1.ValidatingAdmissionPolicy{}
 
@@ -157,6 +166,11 @@ func (r *ReconcileAdmissionPolicy) reconcilePolicy(ctx context.Context, logger l
 		changed = true
 	}
 
+	if !reflect.DeepEqual(foundPolicy.OwnerReferences, policy.OwnerReferences) {
+		foundPolicy.OwnerReferences = slices.Clone(policy.OwnerReferences)
+		changed = true
+	}
+
 	if !hcoutil.CompareLabels(policy, foundPolicy) {
 		hcoutil.MergeLabels(&policy.ObjectMeta, &foundPolicy.ObjectMeta)
 		changed = true
@@ -171,7 +185,7 @@ func (r *ReconcileAdmissionPolicy) reconcilePolicy(ctx context.Context, logger l
 }
 
 func (r *ReconcileAdmissionPolicy) reconcileBinding(ctx context.Context, logger logr.Logger) error {
-	binding := getRequiredBinding()
+	binding := getRequiredBinding(r.owner)
 
 	key := client.ObjectKeyFromObject(binding)
 	foundBinding := &admissionv1.ValidatingAdmissionPolicyBinding{}
@@ -188,6 +202,11 @@ func (r *ReconcileAdmissionPolicy) reconcileBinding(ctx context.Context, logger 
 	changed := false
 	if !reflect.DeepEqual(foundBinding.Spec, binding.Spec) {
 		binding.Spec.DeepCopyInto(&foundBinding.Spec)
+		changed = true
+	}
+
+	if !reflect.DeepEqual(foundBinding.OwnerReferences, binding.OwnerReferences) {
+		foundBinding.OwnerReferences = slices.Clone(binding.OwnerReferences)
 		changed = true
 	}
 

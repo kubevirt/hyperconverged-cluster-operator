@@ -1,16 +1,19 @@
 package admissionpolicy
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
 	admissionv1 "k8s.io/api/admissionregistration/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -27,22 +30,22 @@ var (
 	bindingOnce = &sync.Once{}
 
 	policyPredicate = predicate.NewTypedPredicateFuncs[*admissionv1.ValidatingAdmissionPolicy](func(policy *admissionv1.ValidatingAdmissionPolicy) bool {
-		return policy.Name == policyName && policy.DeletionTimestamp == nil
+		return policy.Name == policyName
 	})
 
 	bindingPredicate = predicate.NewTypedPredicateFuncs[*admissionv1.ValidatingAdmissionPolicyBinding](func(binding *admissionv1.ValidatingAdmissionPolicyBinding) bool {
-		return binding.Name == policyBindingName && binding.DeletionTimestamp == nil
+		return binding.Name == policyBindingName
 	})
 )
 
-func getRequiredPolicy() *admissionv1.ValidatingAdmissionPolicy {
+func getRequiredPolicy(owner *metav1.OwnerReference) *admissionv1.ValidatingAdmissionPolicy {
 	policyOnce.Do(func() {
 		namespace := hcoutil.GetOperatorNamespaceFromEnv()
 		requiredPolicy = &admissionv1.ValidatingAdmissionPolicy{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            policyName,
 				Labels:          hcoutil.GetLabels(hcov1beta1.HyperConvergedName, hcoutil.AppComponentDeployment),
-				OwnerReferences: []metav1.OwnerReference{ownresources.GetDeploymentRef()},
+				OwnerReferences: []metav1.OwnerReference{*owner},
 			},
 			Spec: admissionv1.ValidatingAdmissionPolicySpec{
 				FailurePolicy: ptr.To(admissionv1.Fail),
@@ -77,13 +80,13 @@ func getRequiredPolicy() *admissionv1.ValidatingAdmissionPolicy {
 	return requiredPolicy.DeepCopy()
 }
 
-func getRequiredBinding() *admissionv1.ValidatingAdmissionPolicyBinding {
+func getRequiredBinding(owner *metav1.OwnerReference) *admissionv1.ValidatingAdmissionPolicyBinding {
 	bindingOnce.Do(func() {
 		requiredBinding = &admissionv1.ValidatingAdmissionPolicyBinding{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:            policyBindingName,
 				Labels:          hcoutil.GetLabels(hcov1beta1.HyperConvergedName, hcoutil.AppComponentDeployment),
-				OwnerReferences: []metav1.OwnerReference{ownresources.GetDeploymentRef()},
+				OwnerReferences: []metav1.OwnerReference{*owner},
 			},
 			Spec: admissionv1.ValidatingAdmissionPolicyBindingSpec{
 				PolicyName:        policyName,
@@ -93,4 +96,25 @@ func getRequiredBinding() *admissionv1.ValidatingAdmissionPolicyBinding {
 	})
 
 	return requiredBinding.DeepCopy()
+}
+
+const crdName = "hyperconvergeds.hco.kubevirt.io"
+
+func getCRDRef(ctx context.Context, cl client.Reader) (*metav1.OwnerReference, error) {
+	crd := &apiextensionsv1.CustomResourceDefinition{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: crdName,
+		},
+	}
+
+	err := cl.Get(ctx, client.ObjectKeyFromObject(crd), crd)
+	if err != nil {
+		return nil, err
+	}
+	gvk := schema.GroupVersionKind{
+		Group:   apiextensionsv1.SchemeGroupVersion.Group,
+		Version: apiextensionsv1.SchemeGroupVersion.Version,
+		Kind:    "CustomResourceDefinition",
+	}
+	return metav1.NewControllerRef(crd, gvk), nil
 }
