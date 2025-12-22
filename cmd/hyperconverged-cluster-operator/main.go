@@ -257,7 +257,7 @@ func main() {
 		}
 	}
 
-	if err = admissionpolicy.RegisterReconciler(mgr); err != nil {
+	if err = admissionpolicy.RegisterReconciler(ctx, mgr); err != nil {
 		logger.Error(err, "failed to register the admission policy controller")
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register admission policy controller; "+err.Error())
 		os.Exit(1)
