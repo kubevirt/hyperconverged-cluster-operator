@@ -3,9 +3,9 @@ ARG TARGETOS
 ARG TARGETARCH
 RUN dnf install -y make jq git curl rsync rsync-daemon && \
     dnf clean all && \
-    curl -L -O "https://go.dev/dl/go1.24.7.linux-${TARGETARCH}.tar.gz" && \
-    tar -C /usr/local -xzf "go1.24.7.linux-${TARGETARCH}.tar.gz" && \
-    rm -f "go1.24.7.linux-${TARGETARCH}.tar.gz" && \
+    curl -L -O "https://go.dev/dl/go1.25.5.linux-${TARGETARCH}.tar.gz" && \
+    tar -C /usr/local -xzf "go1.25.5.linux-${TARGETARCH}.tar.gz" && \
+    rm -f "go1.25.5.linux-${TARGETARCH}.tar.gz" && \
     mkdir -p /go
 COPY rsyncd.conf /etc/rsyncd.conf
 ADD entrypoint.sh /usr/bin/entrypoint.sh
