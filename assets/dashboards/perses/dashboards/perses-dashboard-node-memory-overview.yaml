@@ -1,0 +1,2014 @@
+apiVersion: perses.dev/v1alpha1
+kind: PersesDashboard
+metadata:
+  labels:
+    app.kubernetes.io/name: perses-dashboard
+    app.kubernetes.io/instance: perses-dashboard-node-memory-overview
+    app.kubernetes.io/part-of: perses-operator
+  name: perses-dashboard-node-memory-overview
+spec:
+  display:
+    name: Node Memory Overview
+  panels:
+    ClusterPressure:
+      kind: Panel
+      spec:
+        display:
+          name: Cluster - Memory Pressure
+          description: The pressure is indicating if workloads are waiting for memory.
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              position: bottom
+            thresholds:
+              steps:
+                - value: 0.1
+                - color: "#FF9F1C"
+                  value: 0.25
+                - color: "#EA4747"
+                  value: 0.5
+            yAxis:
+              format:
+                shortValues: true
+                unit: decimal
+              label: ""
+              max: 1
+              show: true
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: sum(rate(node_pressure_memory_waiting_seconds_total{instance=~"$node"}[1m]))
+                  seriesNameFormat: Waiting
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: sum(rate(node_pressure_memory_stalled_seconds_total{instance=~"$node"}[1m]))
+                  seriesNameFormat: Stalled
+    ClusterUtilizationHistory:
+      kind: Panel
+      spec:
+        display:
+          name: Physical memory utilization & requests
+          description: This is showing the total system utilization (split between virt
+            and non virt workloads). In addition the current plan (requests) are
+            shown in order to to show how much available memory the scheduler is
+            seeing.
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              position: bottom
+            querySettings:
+              - colorMode: fixed
+                colorValue: "#8f8fff"
+                queryIndex: 0
+              - colorMode: fixed
+                colorValue: "#EE6C6C"
+                queryIndex: 1
+              - colorMode: fixed
+                colorValue: "#643535"
+                queryIndex: 2
+              - colorMode: fixed
+                colorValue: "#FFCC00"
+                queryIndex: 3
+            yAxis:
+              format:
+                unit: bytes
+              label: ""
+              min: 0
+              show: true
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    sum((
+
+                    kube_node_status_capacity{resource="memory", node=~"$node"}
+                    * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    )
+                  seriesNameFormat: Node memory capacity
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    sum((
+
+                    label_replace(
+                      (node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}),
+                      "node", "$1",
+                      "instance", "(.+)"
+                    ) * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+
+                    )
+                  seriesNameFormat: Utilization - Node memory utilization (with virt)
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    sum((
+
+                    label_replace(
+                      (node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}),
+                      "node", "$1",
+                      "instance", "(.+)"
+                    ) * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+
+                    ) - sum(kubevirt_vmi_memory_used_bytes{node=~"$node"})
+                  seriesNameFormat: Utilization - Node memory utilization (without virt)
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    (
+
+                    sum((
+
+                    kube_node_status_capacity{resource="memory", node=~"$node"}
+                    * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    ) - sum((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+
+                    )
+
+
+                    +
+
+                    sum(kube_pod_resource_request{resource="memory",
+                    node=~"$node"})
+                  seriesNameFormat: Plan - Memory requests
+    ClusterUtilizationHistorySummary:
+      kind: Panel
+      spec:
+        display:
+          name: Cluster Utilization
+          description: The virtual memory assignment is showing the worst-case scenario if
+            all virtual memory was used right now. The assigned virtual memory
+            is shown on top of the non virtualization related memory
+            utilization. The current utiliztaion plus worst-case virtual memory
+            utilization is indiacting the worst case memor overcommittment.
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              position: bottom
+            querySettings:
+              - colorMode: fixed
+                colorValue: "#59CC8D"
+                queryIndex: 1
+              - colorMode: fixed
+                colorValue: "#FFCC00"
+                queryIndex: 2
+              - colorMode: fixed
+                colorValue: "#EE6C6C"
+                queryIndex: 3
+              - colorMode: fixed
+                colorValue: "#196b3e"
+                queryIndex: 0
+            thresholds:
+              steps: []
+            visual:
+              areaOpacity: 0
+              connectNulls: false
+              display: line
+              lineWidth: 1.25
+              pointRadius: 2.75
+            yAxis:
+              format:
+                unit: bytes
+              label: ""
+              min: 0
+              show: true
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: |-
+                    sum((
+                    kube_node_status_allocatable{resource="memory", node=~"$node"} * on (node) kube_node_role{role="$role", node=~"$node"}
+                    )
+                    ) + sum(label_replace(node_memory_SwapTotal_bytes{instance=~".+"}, "node", "$1", "instance", "(.+)"))
+                  seriesNameFormat: Cluster allocatable memory + swap capacity
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  minStep: ""
+                  query: >-
+                    sum((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+                  seriesNameFormat: Cluster allocatable memory capacity
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    # all used - system reserved + plan vm
+
+                    sum((
+
+                    label_replace(
+                      (node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}),
+                      "node", "$1",
+                      "instance", "(.+)"
+                    ) * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+
+                    )
+
+                    -
+
+                    (
+
+                    sum((
+
+                    kube_node_status_capacity{resource="memory", node=~"$node"}
+                    * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    ) - sum((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+
+                    )
+
+
+
+                    -
+
+                    sum(kubevirt_vmi_memory_used_bytes{node=~"$node"})
+
+
+                    +
+
+                    sum(kubevirt_vmi_memory_domain_bytes{node=~"$node"})
+                  seriesNameFormat: Plan - VM assigned virtual memory
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >
+                    sum((
+
+                    label_replace(
+                      (node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}),
+                      "node", "$1",
+                      "instance", "(.+)"
+                    ) * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    )
+
+                    -
+
+                    (
+
+                    sum((
+
+                    kube_node_status_capacity{resource="memory", node=~"$node"}
+                    * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    ) - sum((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+
+                    )
+                  seriesNameFormat: Utilization - Cluster memory utilization
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    (kubevirt_hco_memory_overcommit_percentage / 100)
+
+
+                    *
+
+
+                    sum((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+                  seriesNameFormat: Plan - Maximum VM assigned virtual memory
+    ClusterUtilizationNow:
+      kind: Panel
+      spec:
+        display:
+          name: Cluster Utilization
+          description: >-
+            This panel is providing the aggregated memory utilization of all
+            nodes of the cluster. This value is more helpful, the more balanced
+            the memory utilization of all nodes is.
+
+            Keep it green.
+        plugin:
+          kind: GaugeChart
+          spec:
+            calculation: last-number
+            format:
+              unit: percent-decimal
+            thresholds:
+              steps:
+                - value: 0.7
+                - color: "#FFB249"
+                  value: 0.8
+                - color: "#EE6C6C"
+                  value: 0.9
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    (
+
+                    sum((
+
+                    label_replace(
+                      (node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}),
+                      "node", "$1",
+                      "instance", "(.+)"
+                    ) * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    )
+
+                    -
+
+                    (
+
+                    sum((
+
+                    kube_node_status_capacity{resource="memory", node=~"$node"}
+                    * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    ) - sum((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+
+                    )
+
+
+                    )
+
+
+                    /
+
+
+                    (
+
+                    sum((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+
+                    )
+                  seriesNameFormat: Physical Memory utilization
+    ClusterVirtualCommitedHistory:
+      kind: Panel
+      spec:
+        display:
+          name: Virtual Memory assignment
+          description: The virtual memory assignment is showing the worst-case scenario if
+            all virtual memory was used right now. The assigned virtual memory
+            is shown on top of the non virtualization related memory
+            utilization. The current utiliztaion plus worst-case virtual memory
+            utilization is indiacting the worst case memor overcommittment.
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              position: bottom
+            querySettings:
+              - colorMode: fixed
+                colorValue: "#8f8fff"
+                queryIndex: 0
+              - colorMode: fixed
+                colorValue: "#FFCC00"
+                queryIndex: 1
+              - colorMode: fixed
+                colorValue: "#7c6400"
+                queryIndex: 2
+            thresholds:
+              mode: percent
+              steps: []
+            visual:
+              areaOpacity: 0
+              connectNulls: false
+              display: line
+              lineWidth: 1.25
+              pointRadius: 2.75
+            yAxis:
+              format:
+                unit: bytes
+              label: ""
+              min: 0
+              show: true
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  minStep: ""
+                  query: >-
+                    sum((
+
+                    kube_node_status_capacity{resource="memory", node=~"$node"}
+                    * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    )
+                  seriesNameFormat: Node capacity
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    sum((
+
+                    label_replace(
+                      (node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}),
+                      "node", "$1",
+                      "instance", "(.+)"
+                    ) * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    )
+
+                    -
+
+                    (
+
+                    sum((
+
+                    kube_node_status_capacity{resource="memory", node=~"$node"}
+                    * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    ) - sum((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+
+                    )
+
+
+                    +
+
+                    sum(kubevirt_vmi_memory_domain_bytes{node=~"$node"})
+                  seriesNameFormat: Plan - VM assigned virtual memory
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    sum((
+
+                    label_replace(
+                      (node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}),
+                      "node", "$1",
+                      "instance", "(.+)"
+                    ) * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    )
+
+                    -
+
+                    sum(kubevirt_vmi_memory_used_bytes{node=~"$node"})
+                  seriesNameFormat: Utilization - Node memory utilization (without virt)
+    ClusterVirtualCommitedNow:
+      kind: Panel
+      spec:
+        display:
+          name: Cluster Virtual Commited
+          description: This panel shows the amount of committed virtual memory as a
+            percentage of the allocatable physical memory. Overcommit occurs
+            whenever the values goes beyond 100%.
+        plugin:
+          kind: GaugeChart
+          spec:
+            calculation: last-number
+            format:
+              unit: percent-decimal
+            max: 2
+            thresholds:
+              steps:
+                - value: 1.2
+                - color: "#EA4747"
+                  value: 1.5
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    (
+
+                    sum((
+
+                    label_replace(
+                      (node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}),
+                      "node", "$1",
+                      "instance", "(.+)"
+                    ) * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    )
+
+                    -
+
+                    (
+
+                    sum((
+
+                    kube_node_status_capacity{resource="memory", node=~"$node"}
+                    * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    ) - sum((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+
+                    )
+
+
+                    +
+
+                    sum(kubevirt_vmi_memory_domain_bytes{node=~"$node"})
+
+                    )
+
+
+                    /
+
+
+                    (
+
+                    sum((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+
+                    )
+                  seriesNameFormat: Virtual Memory committment
+    NodePressureHistory:
+      kind: Panel
+      spec:
+        display:
+          name: Node - Pressure
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              position: bottom
+            yAxis:
+              format:
+                shortValues: true
+                unit: decimal
+              label: ""
+              max: 2
+              min: 0
+              show: true
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: sum by (instance)
+                    (rate(node_pressure_memory_waiting_seconds_total{instance=~"$node"}[1m]))
+                  seriesNameFormat: "{{instance}}"
+    NodePressureMaxNow:
+      kind: Panel
+      spec:
+        display:
+          name: Node PSI - max
+          description: Memory PSI (pressure Stall Informations)
+        plugin:
+          kind: GaugeChart
+          spec:
+            calculation: last-number
+            format:
+              decimalPlaces: 3
+              unit: decimal
+            max: 1
+            thresholds:
+              steps:
+                - value: 0.1
+                - value: 0.25
+                - color: "#EE6C6C"
+                  value: 0.5
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: topk(1, (sum by (instance)
+                    (rate(node_pressure_memory_waiting_seconds_total{instance=~"$node"}[1m]@end()))))
+                  seriesNameFormat: "{{instance}}"
+        links:
+          - name: Red Hat Customer Portal Article
+            url: https://access.redhat.com/solutions/6987181
+            targetBlank: true
+          - name: Upstream Linux Kernel PSI Documentation
+            url: https://www.kernel.org/doc/html/latest/accounting/psi.html
+    NodeRequestsHistory:
+      kind: Panel
+      spec:
+        display:
+          name: Plan - Pod requests per Node
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              position: bottom
+            thresholds:
+              steps:
+                - color: "#FFB249"
+                  value: 0.8
+                - color: "#EE6C6C"
+                  value: 0.9
+            yAxis:
+              format:
+                unit: percent-decimal
+              label: ""
+              show: true
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    sum by (node) (kube_pod_resource_request{resource="memory",
+                    node=~"$node"})
+
+
+                    / on (node)
+
+
+                    (
+
+                    (kube_node_status_allocatable{resource="memory"} * on (node)
+                    kube_node_role{role="worker"})
+
+                    )
+                  seriesNameFormat: "{{node}}"
+    NodeRequestsMinmaxNow:
+      kind: Panel
+      spec:
+        display:
+          name: Node requests - min/max
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last-number
+            format:
+              unit: percent-decimal
+            sparkline: {}
+            thresholds:
+              steps:
+                - color: "#FF9F1C"
+                  value: 0.8
+                - color: "#EA4747"
+                  value: 0.9
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    min(
+
+                    sum by (node) (kube_pod_resource_request{resource="memory",
+                    node=~"$node"})
+
+
+                    / on (node)
+
+
+                    (
+
+                    (kube_node_status_allocatable{resource="memory"} * on (node)
+                    kube_node_role{role="worker"})
+
+                    )
+
+                    )
+                  seriesNameFormat: Min
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    max(
+
+                    sum by (node) (kube_pod_resource_request{resource="memory",
+                    node=~"$node"})
+
+
+                    / on (node)
+
+
+                    (
+
+                    (kube_node_status_allocatable{resource="memory"} * on (node)
+                    kube_node_role{role="worker"})
+
+                    )
+
+                    )
+                  seriesNameFormat: Max
+    NodeSystemExceedsReservationAlertNow:
+      kind: Panel
+      spec:
+        display:
+          name: System exceeding reservation
+          description: This panel provides the precentage of nodes where core system
+            (hypervisor) components are utilizing more than reserved memory.
+            This should not happen, and is specifically critical for clusters
+            under load. Keep it green.
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last-number
+            format:
+              unit: percent-decimal
+            thresholds:
+              steps:
+                - color: "#EE6C6C"
+                  value: 1
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    count(ALERTS{alertname="SystemMemoryExceedsReservation"}) OR
+                    vector(0)
+
+                    /
+
+                    count(ALERTS{alertname="Watchdog"})
+                  seriesNameFormat: "{{alertname}}"
+        links:
+          - name: Red Hat Customer Portal Article
+            url: https://access.redhat.com/solutions/5788171
+            targetBlank: true
+          - name: Upstream OpenShift Alert Runbook
+            url: https://github.com/openshift/runbooks/blob/master/alerts/machine-config-operator/SystemMemoryExceedsReservation.md
+            tooltip: Runbook
+    NodeSystemReservedMinmaxHistory:
+      kind: Panel
+      spec:
+        display:
+          name: Utilization - min/max
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            querySettings: []
+            thresholds:
+              steps:
+                - color: "#EE6C6C"
+                  value: 0.9
+            yAxis:
+              format:
+                unit: percent-decimal
+              label: ""
+              show: true
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    min (
+
+                    (
+
+                    sum by (node) (container_memory_rss{id="/system.slice"})
+
+
+                    / on (node)
+
+
+                    (
+
+                    sum by (node) ((
+
+                    kube_node_status_capacity{resource="memory", node=~"$node"}
+                    * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    )
+
+                    -
+
+                    sum by (node) ((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+
+                    )
+
+                    )
+
+                    )
+                  seriesNameFormat: min {{node}}
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    max(
+
+                    sum by (node) (container_memory_rss{id="/system.slice"})
+
+
+                    / on (node)
+
+
+                    (
+
+                    sum by (node) ((
+
+                    kube_node_status_capacity{resource="memory", node=~"$node"}
+                    * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    )
+
+                    -
+
+                    sum by (node) ((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+
+                    )
+
+
+                    )
+                  seriesNameFormat: max {{node}}
+    NodeSystemReservedUtilizationHistory:
+      kind: Panel
+      spec:
+        display:
+          name: Utilization - Utilization of reserved system memory
+          description: This graph is showing the utilization of the hypervisor system
+            reserved memory. The utilization must stay below 100%, otherwise the
+            hypervisor is using more memory for system processes then what was
+            reserved. This is putting system processes at risk.
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              position: bottom
+            thresholds:
+              steps:
+                - value: 0.9
+                - color: "#EE6C6C"
+                  value: 1
+            yAxis:
+              format:
+                unit: percent-decimal
+              label: ""
+              show: true
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  minStep: ""
+                  query: >-
+                    topk(5, (
+
+                    sum by (node) (container_memory_rss{id="/system.slice"})
+
+
+                    / on (node)
+
+
+                    (
+
+                    sum by (node) ((
+
+                    kube_node_status_capacity{resource="memory", node=~"$node"}
+                    * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    )
+
+                    -
+
+                    sum by (node) ((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+
+                    )
+
+                    ))
+                  seriesNameFormat: "{{node}}"
+    NodeUtilizationHistory:
+      kind: Panel
+      spec:
+        display:
+          name: Utilization - Actual overcommit level
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              position: bottom
+            thresholds:
+              steps:
+                - color: "#FFB249"
+                  value: 0.8
+                - color: "#EE6C6C"
+                  value: 0.9
+            yAxis:
+              format:
+                unit: percent-decimal
+              label: ""
+              show: true
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    (
+
+                    label_replace((
+
+                    (
+
+                    label_replace(
+                      (node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}),
+                      "node", "$1",
+                      "instance", "(.+)"
+                    ) * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+
+                    ), "node", "$1", "instance", "(.+)")
+
+                    - on (node)
+
+                    (
+
+                    sum by (node) ((
+
+                    kube_node_status_capacity{resource="memory", node=~"$node"}
+                    * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    )
+
+                    -
+
+                    sum by (node) ((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+
+                    )
+
+                    )
+
+
+                    / on (node)
+
+
+                    (
+
+                    (kube_node_status_allocatable{resource="memory"} * on (node)
+                    kube_node_role{role="worker"})
+
+                    )
+                  seriesNameFormat: "{{node}}"
+    NodeUtilizationMaxNow:
+      kind: Panel
+      spec:
+        display:
+          name: Node Utilization - max
+        plugin:
+          kind: GaugeChart
+          spec:
+            calculation: last-number
+            format:
+              unit: percent-decimal
+            thresholds:
+              steps:
+                - value: 0.7
+                - value: 0.8
+                - color: "#EE6C6C"
+                  value: 0.9
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    (max by () ((
+
+                    label_replace((
+
+                    (
+
+                    label_replace(
+                      (node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}),
+                      "node", "$1",
+                      "instance", "(.+)"
+                    ) * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+
+                    ), "node", "$1", "instance", "(.+)")
+
+                    - on (node)
+
+                    (
+
+                    sum by (node) ((
+
+                    kube_node_status_capacity{resource="memory", node=~"$node"}
+                    * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    )
+
+                    -
+
+                    sum by (node) ((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+
+                    )
+
+                    )
+
+
+                    / on (node)
+
+
+                    (
+
+                    (kube_node_status_allocatable{resource="memory"} * on (node)
+                    kube_node_role{role="worker"})
+
+                    )
+
+                    ))
+                  seriesNameFormat: Max
+    NodeUtilizationMinNow:
+      kind: Panel
+      spec:
+        display:
+          name: Node Utilization - min
+          description: This panel is showing the node memory utilization of the node with
+            the lowest memory utilization in the cluster.
+        plugin:
+          kind: GaugeChart
+          spec:
+            calculation: last-number
+            format:
+              unit: percent-decimal
+            thresholds:
+              steps:
+                - value: 0.7
+                - value: 0.8
+                - color: "#EE6C6C"
+                  value: 0.9
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    (min by () ((
+
+                    label_replace((
+
+                    (
+
+                    label_replace(
+                      (node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}),
+                      "node", "$1",
+                      "instance", "(.+)"
+                    ) * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+
+                    ), "node", "$1", "instance", "(.+)")
+
+                    - on (node)
+
+                    (
+
+                    sum by (node) ((
+
+                    kube_node_status_capacity{resource="memory", node=~"$node"}
+                    * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    )
+
+                    -
+
+                    sum by (node) ((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+
+                    )
+
+                    )
+
+
+                    / on (node)
+
+
+                    (
+
+                    (kube_node_status_allocatable{resource="memory"} * on (node)
+                    kube_node_role{role="worker"})
+
+                    )
+
+                    ))
+                  seriesNameFormat: Min
+    NumberofrunningVMs:
+      kind: Panel
+      spec:
+        display:
+          name: Number of running VMs
+        plugin:
+          kind: TimeSeriesChart
+          spec: {}
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: count(kubevirt_vmi_memory_domain_bytes)
+    PlanMinmax:
+      kind: Panel
+      spec:
+        display:
+          name: Node virtual - min/max
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last-number
+            format:
+              unit: percent-decimal
+            sparkline: {}
+            thresholds:
+              steps:
+                - value: 1.2
+                - color: "#FF9F1C"
+                  value: 1.5
+                - color: "#EA4747"
+                  value: 2
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    (min by () ((
+
+
+                    (
+
+                    (
+
+                    label_replace((
+
+                    (
+
+                    label_replace(
+                      (node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}),
+                      "node", "$1",
+                      "instance", "(.+)"
+                    ) * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+
+                    ), "node", "$1", "instance", "(.+)")
+
+                    - on (node)
+
+                    (
+
+                    sum by (node) ((
+
+                    kube_node_status_capacity{resource="memory", node=~"$node"}
+                    * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    )
+
+                    -
+
+                    sum by (node) ((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+
+                    )
+
+                    )
+
+                    +
+
+                    sum by (node) (kubevirt_vmi_memory_domain_bytes)
+
+                    )
+
+
+
+                    /
+
+
+                    (kube_node_status_allocatable{resource="memory"} * on (node)
+                    kube_node_role{role="worker"})
+
+
+                    )))
+                  seriesNameFormat: "{{node}}"
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    (max by () ((
+
+
+                    (
+
+                    (
+
+                    label_replace((
+
+                    (
+
+                    label_replace(
+                      (node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}),
+                      "node", "$1",
+                      "instance", "(.+)"
+                    ) * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+
+                    ), "node", "$1", "instance", "(.+)")
+
+                    - on (node)
+
+                    (
+
+                    sum by (node) ((
+
+                    kube_node_status_capacity{resource="memory", node=~"$node"}
+                    * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    )
+
+                    -
+
+                    sum by (node) ((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+
+                    )
+
+                    )
+
+                    +
+
+                    sum by (node) (kubevirt_vmi_memory_domain_bytes)
+
+                    )
+
+
+
+                    /
+
+
+                    (kube_node_status_allocatable{resource="memory"} * on (node)
+                    kube_node_role{role="worker"})
+
+
+                    )))
+                  seriesNameFormat: "{{node}}"
+    Swap:
+      kind: Panel
+      spec:
+        display:
+          name: Cluster - Aggregated Swap
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              position: bottom
+            querySettings:
+              - colorMode: fixed
+                colorValue: "#59CC8D"
+                queryIndex: 0
+              - colorMode: fixed
+                colorValue: "#FFB249"
+                queryIndex: 1
+            yAxis:
+              format:
+                unit: bytes
+              label: ""
+              show: true
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: |-
+                    sum((
+                    label_replace(
+                      (node_memory_SwapTotal_bytes{instance=~"$node"}),
+                      "node", "$1",
+                      "instance", "(.+)"
+                    ) * on (node) kube_node_role{role="$role", node=~"$node"}
+                    )
+                    )
+                  seriesNameFormat: Available
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    sum((
+
+                    label_replace(
+                      (node_memory_SwapTotal_bytes{instance=~"$node"} - node_memory_SwapFree_bytes{instance=~"$node"}),
+                      "node", "$1",
+                      "instance", "(.+)"
+                    ) * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    )
+                  seriesNameFormat: Used
+    UtilizationDsitribution:
+      kind: Panel
+      spec:
+        display:
+          name: Plan - Virtual memory commit level
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              position: bottom
+            thresholds:
+              steps:
+                - value: 1.2
+                - color: "#FF9F1C"
+                  value: 1.5
+                - color: "#EA4747"
+                  value: 2
+            yAxis:
+              format:
+                unit: percent-decimal
+              label: ""
+              show: true
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    (
+
+                    (
+
+                    label_replace((
+
+                    (
+
+                    label_replace(
+                      (node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}),
+                      "node", "$1",
+                      "instance", "(.+)"
+                    ) * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+
+                    ), "node", "$1", "instance", "(.+)")
+
+                    - on (node)
+
+                    (
+
+                    sum by (node) ((
+
+                    kube_node_status_capacity{resource="memory", node=~"$node"}
+                    * on (node) kube_node_role{role="$role", node=~"$node"}
+
+                    )
+
+                    )
+
+                    -
+
+                    sum by (node) ((
+
+                    kube_node_status_allocatable{resource="memory",
+                    node=~"$node"} * on (node) kube_node_role{role="$role",
+                    node=~"$node"}
+
+                    )
+
+                    )
+
+                    )
+
+                    )
+
+                    +
+
+                    sum by (node) (kubevirt_vmi_memory_domain_bytes)
+
+                    )
+
+
+
+                    /
+
+
+                    (kube_node_status_allocatable{resource="memory"} * on (node)
+                    kube_node_role{role="worker"})
+                  seriesNameFormat: "{{node}}"
+    VMs:
+      kind: Panel
+      spec:
+        display:
+          name: VM overcommit ratio
+          description: Any value larger than 1 shows that the VM is using more memory than
+            it requested
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              position: bottom
+            thresholds:
+              steps:
+                - value: 1
+            yAxis:
+              format:
+                unit: percent-decimal
+              label: ""
+              show: true
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: |-
+                    #kubevirt_vmi_memory_domain_bytes{kubernetes_vmi_label_vm_kubevirt_io_name!=""}
+                    (label_replace(kubevirt_vmi_memory_domain_bytes, "label_vm_kubevirt_io_name", "$1", "name", "(.+)"))
+
+                    / on (namespace, label_vm_kubevirt_io_name) group_left()
+
+                    max by (namespace, label_vm_kubevirt_io_name) (
+                      kube_pod_resource_request{resource="memory"}
+                      * on(namespace, pod) group_left(label_vm_kubevirt_io_name)
+                      group by(namespace, pod, label_vm_kubevirt_io_name) (
+                        kube_pod_labels{label_vm_kubevirt_io_name!=""}
+                      )
+                    )
+                  seriesNameFormat: "{{namespace}}/{{label_vm_kubevirt_io_name}}"
+    VMvirtualmemoryutiliztaionhostvmurilization:
+      kind: Panel
+      spec:
+        display:
+          name: VM virtual memory utiliztaion vs host vm urilization
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              position: bottom
+            thresholds:
+              steps:
+                - value: 1
+            visual:
+              areaOpacity: 0
+              connectNulls: false
+              display: line
+              lineWidth: 1.25
+              pointRadius: 2.75
+            yAxis:
+              format:
+                unit: decimal
+              label: ""
+              min: 0
+              show: true
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  minStep: ""
+                  query: |-
+                    #kubevirt_vmi_memory_domain_bytes{kubernetes_vmi_label_vm_kubevirt_io_name!=""}
+                    topk(10, (label_replace(kubevirt_vmi_memory_used_bytes@end(), "label_vm_kubevirt_io_name", "$1", "name", "(.+)"))
+
+                    / on (namespace, label_vm_kubevirt_io_name) group_left()
+
+                    sum by (namespace, label_vm_kubevirt_io_name) (
+                      container_memory_usage_bytes
+                      * on(namespace, pod) group_left(label_vm_kubevirt_io_name)
+                      group by(namespace, pod, label_vm_kubevirt_io_name) (
+                        kube_pod_labels{label_vm_kubevirt_io_name!=""}
+                      )
+                    )
+                    )
+                  seriesNameFormat: "{{namespace}}/{{label_vm_kubevirt_io_name}}"
+    VmVirtualCommitedNow:
+      kind: Panel
+      spec:
+        display:
+          name: VM Virtual commited
+        plugin:
+          kind: GaugeChart
+          spec:
+            calculation: last-number
+            format:
+              unit: percent-decimal
+            max: 2
+            thresholds:
+              steps:
+                - value: 1.5
+                - color: "#EE6C6C"
+                  value: 1.75
+        queries:
+          - kind: TimeSeriesQuery
+            spec:
+              plugin:
+                kind: PrometheusTimeSeriesQuery
+                spec:
+                  query: >-
+                    avg(
+
+                    (
+
+                    (label_replace(kubevirt_vmi_memory_domain_bytes,
+                    "label_vm_kubevirt_io_name", "$1", "name", "(.+)"))
+
+                    + on(name, namespace) group_left()
+                    kubevirt_vmi_launcher_memory_overhead_bytes
+
+                    )
+
+
+                    / on (namespace, label_vm_kubevirt_io_name) group_left()
+
+
+                    avg by (namespace, label_vm_kubevirt_io_name) (
+                      kube_pod_resource_request{resource="memory"}
+                      * on(namespace, pod) group_left(label_vm_kubevirt_io_name)
+                      group by(namespace, pod, label_vm_kubevirt_io_name) (
+                        kube_pod_labels{label_vm_kubevirt_io_name!=""}
+                      )
+                    )
+
+
+                    )
+                  seriesNameFormat: Average VM overcommit ratio
+  layouts:
+    - kind: Grid
+      spec:
+        display:
+          title: Summary
+          collapse:
+            open: true
+        items:
+          - x: 0
+            "y": 0
+            width: 10
+            height: 7
+            content:
+              $ref: "#/spec/panels/ClusterUtilizationNow"
+          - x: 10
+            "y": 0
+            width: 6
+            height: 7
+            content:
+              $ref: "#/spec/panels/ClusterVirtualCommitedNow"
+          - x: 16
+            "y": 0
+            width: 6
+            height: 7
+            content:
+              $ref: "#/spec/panels/VmVirtualCommitedNow"
+          - x: 0
+            "y": 14
+            width: 5
+            height: 7
+            content:
+              $ref: "#/spec/panels/NodeUtilizationMinNow"
+          - x: 5
+            "y": 14
+            width: 5
+            height: 7
+            content:
+              $ref: "#/spec/panels/NodeUtilizationMaxNow"
+          - x: 15
+            "y": 14
+            width: 7
+            height: 4
+            content:
+              $ref: "#/spec/panels/NodeSystemExceedsReservationAlertNow"
+          - x: 10
+            "y": 14
+            width: 5
+            height: 7
+            content:
+              $ref: "#/spec/panels/NodePressureMaxNow"
+          - x: 0
+            "y": 7
+            width: 22
+            height: 7
+            content:
+              $ref: "#/spec/panels/ClusterUtilizationHistorySummary"
+    - kind: Grid
+      spec:
+        display:
+          title: Cluster
+          collapse:
+            open: false
+        items:
+          - x: 0
+            "y": 0
+            width: 15
+            height: 7
+            content:
+              $ref: "#/spec/panels/ClusterUtilizationHistory"
+          - x: 15
+            "y": 0
+            width: 7
+            height: 7
+            content:
+              $ref: "#/spec/panels/ClusterUtilizationNow"
+          - x: 0
+            "y": 7
+            width: 15
+            height: 7
+            content:
+              $ref: "#/spec/panels/ClusterVirtualCommitedHistory"
+          - x: 15
+            "y": 7
+            width: 7
+            height: 7
+            content:
+              $ref: "#/spec/panels/ClusterVirtualCommitedNow"
+          - x: 0
+            "y": 14
+            width: 15
+            height: 5
+            content:
+              $ref: "#/spec/panels/ClusterPressure"
+          - x: 0
+            "y": 19
+            width: 15
+            height: 6
+            content:
+              $ref: "#/spec/panels/Swap"
+    - kind: Grid
+      spec:
+        display:
+          title: Nodes
+          collapse:
+            open: false
+        items:
+          - x: 0
+            "y": 0
+            width: 15
+            height: 8
+            content:
+              $ref: "#/spec/panels/NodeUtilizationHistory"
+          - x: 15
+            "y": 0
+            width: 7
+            height: 8
+            content:
+              $ref: "#/spec/panels/NodeUtilizationMinNow"
+          - x: 0
+            "y": 8
+            width: 15
+            height: 8
+            content:
+              $ref: "#/spec/panels/NodeRequestsHistory"
+          - x: 15
+            "y": 16
+            width: 7
+            height: 8
+            content:
+              $ref: "#/spec/panels/PlanMinmax"
+          - x: 15
+            "y": 8
+            width: 7
+            height: 8
+            content:
+              $ref: "#/spec/panels/NodeRequestsMinmaxNow"
+          - x: 0
+            "y": 16
+            width: 15
+            height: 8
+            content:
+              $ref: "#/spec/panels/UtilizationDsitribution"
+          - x: 0
+            "y": 24
+            width: 15
+            height: 6
+            content:
+              $ref: "#/spec/panels/NodePressureHistory"
+          - x: 15
+            "y": 24
+            width: 7
+            height: 6
+            content:
+              $ref: "#/spec/panels/NodePressureMaxNow"
+    - kind: Grid
+      spec:
+        display:
+          title: System Reserved
+          collapse:
+            open: false
+        items:
+          - x: 0
+            "y": 0
+            width: 14
+            height: 8
+            content:
+              $ref: "#/spec/panels/NodeSystemReservedUtilizationHistory"
+          - x: 21
+            "y": 0
+            width: 2
+            height: 8
+            content:
+              $ref: "#/spec/panels/NodeSystemExceedsReservationAlertNow"
+          - x: 14
+            "y": 0
+            width: 7
+            height: 8
+            content:
+              $ref: "#/spec/panels/NodeSystemReservedMinmaxHistory"
+    - kind: Grid
+      spec:
+        display:
+          title: Workloads
+          collapse:
+            open: false
+        items:
+          - x: 0
+            "y": 0
+            width: 14
+            height: 6
+            content:
+              $ref: "#/spec/panels/VMs"
+          - x: 14
+            "y": 6
+            width: 7
+            height: 6
+            content:
+              $ref: "#/spec/panels/NumberofrunningVMs"
+          - x: 0
+            "y": 6
+            width: 14
+            height: 6
+            content:
+              $ref: "#/spec/panels/VMvirtualmemoryutiliztaionhostvmurilization"
+          - x: 14
+            "y": 0
+            width: 7
+            height: 6
+            content:
+              $ref: "#/spec/panels/VmVirtualCommitedNow"
+  variables:
+    - kind: ListVariable
+      spec:
+        display:
+          name: Node
+          hidden: false
+        defaultValue: $__all
+        allowAllValue: true
+        allowMultiple: false
+        customAllValue: .*
+        sort: alphabetical-ci-asc
+        plugin:
+          kind: PrometheusLabelValuesVariable
+          spec:
+            datasource:
+              kind: PrometheusDatasource
+              name: perses-thanos-datasource
+            labelName: node
+        name: node
+    - kind: ListVariable
+      spec:
+        display:
+          name: role
+          hidden: false
+        defaultValue: worker
+        allowAllValue: false
+        allowMultiple: false
+        plugin:
+          kind: PrometheusPromQLVariable
+          spec:
+            expr: kube_node_role
+            labelName: role
+        name: role
+  duration: 1h
+  refreshInterval: 0s

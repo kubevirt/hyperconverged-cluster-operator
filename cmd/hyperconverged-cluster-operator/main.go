@@ -231,6 +231,11 @@ func main() {
 			logger.Error(err, "unable to create controller", "controller", "Observability")
 			os.Exit(1)
 		}
+		// Register Perses controller separately for clear separation of concerns
+		if err = observability.SetupPersesWithManager(mgr, ownresources.GetDeploymentRef()); err != nil {
+			logger.Error(err, "unable to create controller", "controller", "ObservabilityPerses")
+			os.Exit(1)
+		}
 	}
 
 	if ci.IsDeschedulerAvailable() {
