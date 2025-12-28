@@ -5,11 +5,11 @@ name: Sanity Checks
 # Controls when the action will run.
 on:
   push:
-    branches: [main]
+    branches: [release-1.17]
     paths-ignore:
       - "renovate.json"
   pull_request:
-    branches: [main]
+    branches: [release-1.17]
     paths-ignore:
       - "renovate.json"
 
