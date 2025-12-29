@@ -21,18 +21,20 @@ var (
 	log = logf.Log.WithName("controller_crd")
 )
 
-// RegisterReconciler creates a new Descheduler Reconciler and registers it into manager.
-func RegisterReconciler(mgr manager.Manager, restartCh chan<- struct{}) error {
-	return add(mgr, newReconciler(mgr, restartCh))
+// RegisterReconciler creates a new CRD Reconciler and registers it into manager.
+// persesAvailableOnBoot should be computed by main at startup.
+func RegisterReconciler(mgr manager.Manager, restartCh chan<- struct{}, persesAvailableOnBoot bool) error {
+	return add(mgr, newReconciler(mgr, restartCh, persesAvailableOnBoot))
 }
 
 // newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager, restartCh chan<- struct{}) reconcile.Reconciler {
+func newReconciler(mgr manager.Manager, restartCh chan<- struct{}, persesAvailableOnBoot bool) reconcile.Reconciler {
 
 	r := &ReconcileCRD{
-		client:       mgr.GetClient(),
-		restartCh:    restartCh,
-		eventEmitter: hcoutil.GetEventEmitter(),
+		client:                mgr.GetClient(),
+		restartCh:             restartCh,
+		eventEmitter:          hcoutil.GetEventEmitter(),
+		persesAvailableOnBoot: persesAvailableOnBoot,
 	}
 
 	return r
@@ -48,14 +50,14 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	// Watch for changes to selected (by name) CRDs
-	// look only at descheduler CRD for now
+	// look at descheduler and perses CRDs
 	err = c.Watch(
 		source.Kind(
 			mgr.GetCache(), client.Object(&apiextensionsv1.CustomResourceDefinition{}),
 			&operatorhandler.InstrumentedEnqueueRequestForObject[client.Object]{},
 			predicate.NewPredicateFuncs(func(object client.Object) bool {
 				switch object.GetName() {
-				case hcoutil.DeschedulerCRDName:
+				case hcoutil.DeschedulerCRDName, hcoutil.PersesDashboardsCRDName, hcoutil.PersesDatasourcesCRDName:
 					return true
 				}
 				return false
@@ -72,9 +74,10 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 type ReconcileCRD struct {
 	// This client, initialized using mgr.Client() above, is a split client
 	// that reads objects from the cache and writes to the apiserver
-	client       client.Client
-	eventEmitter hcoutil.EventEmitter
-	restartCh    chan<- struct{}
+	client                client.Client
+	eventEmitter          hcoutil.EventEmitter
+	restartCh             chan<- struct{}
+	persesAvailableOnBoot bool
 }
 
 // operatorRestart triggers a restart of the operator:
@@ -97,6 +100,13 @@ func (r *ReconcileCRD) Reconcile(ctx context.Context, req reconcile.Request) (re
 			r.eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "KubeDescheduler CRD got deployed, restarting the operator to reconfigure the operator for the new kind", "Restarting the operator to be able to read KubeDescheduler CRs ")
 			r.operatorRestart()
 		}
+	}
+
+	// If Perses CRDs became available after boot, restart once to register Perses controller and cache the new GVKs.
+	if !r.persesAvailableOnBoot && hcoutil.IsPersesAvailable(ctx, r.client) {
+		log.Info("Perses CRDs detected, restarting the operator to register the Perses controller")
+		r.eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Perses CRDs detected", "Restarting the operator to register the Perses controller")
+		r.operatorRestart()
 	}
 
 	return reconcile.Result{}, nil

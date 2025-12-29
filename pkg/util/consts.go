@@ -36,6 +36,8 @@ const (
 	PrometheusRuleCRDName              = "prometheusrules.monitoring.coreos.com"
 	ServiceMonitorCRDName              = "servicemonitors.monitoring.coreos.com"
 	DeschedulerCRDName                 = "kubedeschedulers.operator.openshift.io"
+	PersesDashboardsCRDName            = "persesdashboards.perses.dev"
+	PersesDatasourcesCRDName           = "persesdatasources.perses.dev"
 	NetworkAttachmentDefinitionCRDName = "network-attachment-definitions.k8s.cni.cncf.io"
 	HcoMutatingWebhookHyperConverged   = "mutate-hyperconverged-hco.kubevirt.io"
 	AppLabel                           = "app"

@@ -660,6 +660,18 @@ spec:
           - create
           - update
           - delete
+        - apiGroups:
+          - perses.dev
+          resources:
+          - persesdashboards
+          - persesdatasources
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
         serviceAccountName: hyperconverged-cluster-operator
       - rules: []
         serviceAccountName: hyperconverged-cluster-cli-download

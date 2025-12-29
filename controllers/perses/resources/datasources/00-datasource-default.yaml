@@ -1,0 +1,27 @@
+apiVersion: perses.dev/v1alpha1
+kind: PersesDatasource
+metadata:
+  name: perses-thanos-datasource
+spec:
+  config:
+    display:
+      name: "OpenShift Monitoring (Thanos Querier)"
+    default: true
+    plugin:
+      kind: "PrometheusDatasource"
+      spec:
+        proxy:
+          kind: HTTPProxy
+          spec:
+            # In-cluster Thanos Querier service
+            url: https://thanos-querier.openshift-monitoring.svc.cluster.local:9091
+            # Secret created automatically by Perses operator when client.tls is set
+            secret: perses-thanos-datasource-secret
+  client:
+    tls:
+      enable: true
+      caCert:
+        type: file
+        certPath: /ca/service-ca.crt
+
+
