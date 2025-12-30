@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -47,6 +48,13 @@ var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, testNam
 
 	Context("PodDisruptionBudgetAtLimit", func() {
 		It("should be silenced", func(ctx context.Context) {
+			start := time.Now()
+			before := start.Add(-10 * time.Minute)
+			tests.DumpHCOPodLogs(ctx, "before observability controller test", tests.LogCaptureOptions{Since: &before})
+			DeferCleanup(func(ctx context.Context) {
+				tests.DumpHCOPodLogs(ctx, "after observability controller test", tests.LogCaptureOptions{Since: &start, IncludePrevious: true})
+			})
+
 			amAPI := alertmanager.NewAPI(httpClient, alertmanagerURL, cliConfig.BearerToken)
 
 			amSilences, err := amAPI.ListSilences()

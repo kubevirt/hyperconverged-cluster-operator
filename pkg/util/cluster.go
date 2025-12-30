@@ -3,6 +3,7 @@ package util
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"slices"
 
@@ -228,8 +229,10 @@ func isNADExists(ctx context.Context, cl client.Client, logger logr.Logger) bool
 // IsPersesAvailable returns true when the Perses CRDs are installed in the cluster.
 func IsPersesAvailable(ctx context.Context, cl client.Client) bool {
 	logger := logr.FromContextOrDiscard(ctx)
-	return isCRDExists(ctx, cl, PersesDashboardsCRDName, logger) &&
-		isCRDExists(ctx, cl, PersesDatasourcesCRDName, logger)
+	dashboardsAvailable := isCRDExists(ctx, cl, PersesDashboardsCRDName, logger)
+	datasourcesAvailable := isCRDExists(ctx, cl, PersesDatasourcesCRDName, logger)
+	logger.Info("Perses CRD availability check", "dashboards", dashboardsAvailable, "datasources", datasourcesAvailable)
+	return dashboardsAvailable && datasourcesAvailable
 }
 
 func isCRDExists(ctx context.Context, cl client.Client, crdName string, logger logr.Logger) bool {
@@ -237,15 +240,24 @@ func isCRDExists(ctx context.Context, cl client.Client, crdName string, logger l
 	key := client.ObjectKey{Name: crdName}
 	err := cl.Get(ctx, key, found)
 	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			logger.Error(err, "cannot find CRD", "CRD", crdName)
+		if apierrors.IsNotFound(err) || meta.IsNoMatchError(err) {
+			logger.Info("CRD not found", "CRD", crdName, "notFound", apierrors.IsNotFound(err), "noMatch", meta.IsNoMatchError(err))
 		} else {
-			logger.Info("CRD not found", "CRD", crdName)
+			logger.Error(err, "cannot find CRD", "CRD", crdName)
 		}
 	} else {
-		logger.Info("CRD found", "CRD", crdName)
+		logger.Info("CRD found", "CRD", crdName, "resourceVersion", found.ResourceVersion, "conditions", summarizeCRDConditions(found))
 	}
 	return err == nil
+}
+
+func summarizeCRDConditions(crd *apiextensionsv1.CustomResourceDefinition) []string {
+	summary := make([]string, 0, len(crd.Status.Conditions))
+	for _, cond := range crd.Status.Conditions {
+		entry := fmt.Sprintf("%s=%s(%s)", cond.Type, cond.Status, cond.Reason)
+		summary = append(summary, entry)
+	}
+	return summary
 }
 
 func init() {

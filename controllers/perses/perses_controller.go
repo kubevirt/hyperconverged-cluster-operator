@@ -82,14 +82,16 @@ func (r *PersesReconciler) Reconcile(ctx context.Context, req reconcile.Request)
 	return reconcile.Result{}, err
 }
 
-func SetupPersesWithManager(mgr manager.Manager, ownerRef metav1.OwnerReference) error {
+func SetupPersesWithManager(ctx context.Context, mgr manager.Manager, ownerRef metav1.OwnerReference) error {
 	persesLog.Info("Setting up Perses controller")
 
 	// Skip registration cleanly when Perses CRDs are not installed (e.g., unit/CI envs)
-	if !checkPersesAvailable(context.Background(), mgr.GetClient()) {
+	available := checkPersesAvailable(ctx, mgr.GetClient())
+	if !available {
 		persesLog.Info("Perses CRDs not found; skipping Perses controller registration")
 		return nil
 	}
+	persesLog.Info("Perses CRDs detected; registering Perses controller")
 
 	namespace := hcoutil.GetOperatorNamespaceFromEnv()
 	dashboards, err := initDashboards(namespace, persesLog)
