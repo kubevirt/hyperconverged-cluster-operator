@@ -61,6 +61,9 @@ type DeploymentOperatorParams struct {
 	CliDownloadsImage      string
 	KVUIPluginImage        string
 	KVUIProxyImage         string
+	PasstImage             string
+	PasstCNIImage          string
+	WaspAgentImage         string
 	ImagePullPolicy        string
 	ConversionContainer    string
 	VmwareContainer        string
@@ -620,6 +623,11 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			APIGroups: stringListToSlice("monitoring.coreos.com"),
 			Resources: stringListToSlice("alertmanagers", "alertmanagers/api"),
 			Verbs:     stringListToSlice("get", "list", "create", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice(admissionregistrationv1.GroupName),
+			Resources: stringListToSlice("validatingadmissionpolicies", "validatingadmissionpolicybindings"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
 	}
 }

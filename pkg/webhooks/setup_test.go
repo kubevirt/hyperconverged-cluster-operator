@@ -1,7 +1,6 @@
 package webhooks
 
 import (
-	"context"
 	"os"
 	"path"
 	"strings"
@@ -72,7 +71,7 @@ var _ = Describe("Hyperconverged API: Webhook", func() {
 			mgr, err := commontestutils.NewManagerMock(&rest.Config{}, manager.Options{WebhookServer: ws, Scheme: s}, cl, logger)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(SetupWebhookWithManager(context.TODO(), mgr, true, nil)).To(Succeed())
+			Expect(SetupWebhookWithManager(mgr, true, nil)).To(Succeed())
 		})
 
 	})
