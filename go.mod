@@ -1,6 +1,6 @@
 module github.com/kubevirt/hyperconverged-cluster-operator
 
-go 1.22.11
+go 1.22.9
 
 require (
 	dario.cat/mergo v1.0.1
@@ -41,7 +41,7 @@ require (
 	k8s.io/kube-openapi v0.31.0
 	k8s.io/utils v0.0.0-20240821151609-f90d01438635
 	kubevirt.io/api v1.4.1
-	kubevirt.io/application-aware-quota v1.3.1
+	kubevirt.io/application-aware-quota v1.3.0
 	kubevirt.io/containerized-data-importer-api v1.61.5
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4
 	kubevirt.io/ssp-operator/api v0.22.3
