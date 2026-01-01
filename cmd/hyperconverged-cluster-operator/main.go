@@ -53,6 +53,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/api"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/admissionpolicy"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/crd"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/descheduler"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/hyperconverged"
@@ -212,6 +213,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = admissionpolicy.RegisterReconciler(mgr); err != nil {
+		logger.Error(err, "failed to register the admission policy controller")
+		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register admission policy controller; "+err.Error())
+		os.Exit(1)
+	}
+
 	err = createPriorityClass(ctx, mgr)
 	cmdHelper.ExitOnError(err, "Failed creating PriorityClass")
 
@@ -285,6 +292,12 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 				Field: namespaceSelector,
 			},
 			&apiextensionsv1.CustomResourceDefinition{}: {},
+			&admissionregistrationv1.ValidatingAdmissionPolicy{}: {
+				Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
+			},
+			&admissionregistrationv1.ValidatingAdmissionPolicyBinding{}: {
+				Label: labels.SelectorFromSet(labels.Set{hcoutil.AppLabel: hcoutil.HyperConvergedName}),
+			},
 		},
 	}
 
