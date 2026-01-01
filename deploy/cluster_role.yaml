@@ -1047,6 +1047,7 @@ rules:
   - apiextensions.k8s.io
   resources:
   - customresourcedefinitions/status
+  - customresourcedefinitions/finalizers
   verbs:
   - get
   - list
