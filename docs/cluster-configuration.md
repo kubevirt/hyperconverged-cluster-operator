@@ -708,7 +708,7 @@ spec:
 ```
 
 ## Default CPU model configuration
-User can specify a cluster-wide default CPU model: default CPU model is set when vmi doesn't have any cpu model.
+The user can specify a cluster-wide default CPU model: default CPU model is set when vmi doesn't have any cpu model.
 When vmi has cpu model set, then vmi's cpu model is preferred. When default cpu model is not set and vmi's cpu model is not set too, host-model will be set.
 Default cpu model can be changed when kubevirt is running.
 ```yaml
@@ -719,6 +719,43 @@ metadata:
 spec:
   defaultCPUModel: "EPYC"
 ```
+
+In heterogeneous clusters with multiple CPU vendors and generations,
+choosing the best CPU model for VMs is challenging:
+- Using a newer CPU model limits VM placement to a subset of nodes
+- Using an older model impacts guest performance unnecessarily
+
+HCO collects and analyzes CPU model information from cluster nodes to provide
+recommendations for defaultCPUModel. The recommendations are based on a
+benchmark of each model (higher is better) and the availability of the model in
+the cluster (a model available on more and bigger nodes is better).
+```yaml
+status:
+  nodeInfo:
+    recommendedCpuModels:
+    - name: "Skylake"
+      benchmark: 8900
+      nodes: 3
+      cpu: "12"
+      memory: "24Gi"
+    - name: "Haswell"
+      benchmark: 7200
+      nodes: 2
+      cpu: "8"
+      memory: "16Gi"
+```
+
+An administrator can apply this recommendation with
+```bash
+RECOMMENDED=$(oc get hyperconverged kubevirt-hyperconverged -n openshift-cnv -o json | jq -r '.status.nodeInfo.recommendedCpuModels[0].name')
+
+oc patch hyperconverged kubevirt-hyperconverged \
+  -n openshift-cnv \
+  --type=merge \
+  -p='{"spec":{"defaultCPUModel":"'$RECOMMENDED'"}}'
+```
+Note that the recommendations are based on a heuristic that is likely to change
+without notice in the future.
 
 ## Default RuntimeClass
 User can specify a cluster-wide default RuntimeClass for VMIs pods: default RuntimeClass is set when vmi doesn't have any specific RuntimeClass.
