@@ -114,10 +114,6 @@ func (wh *WebhookHandler) ValidateCreate(_ context.Context, dryrun bool, hc *v1b
 		return err
 	}
 
-	if hc.Namespace != wh.namespace {
-		return fmt.Errorf("invalid namespace for v1beta1.HyperConverged - please use the %s namespace", wh.namespace)
-	}
-
 	if err := wh.validateDataImportCronTemplates(hc); err != nil {
 		return err
 	}

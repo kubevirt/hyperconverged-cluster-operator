@@ -526,7 +526,7 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		},
 		{
 			APIGroups: stringListToSlice("apiextensions.k8s.io"),
-			Resources: stringListToSlice("customresourcedefinitions/status"),
+			Resources: stringListToSlice("customresourcedefinitions/status", "customresourcedefinitions/finalizers"),
 			Verbs:     stringListToSlice("get", "list", "watch", "patch", "update"),
 		},
 		roleWithAllPermissions("monitoring.coreos.com", stringListToSlice("servicemonitors", "prometheusrules")),
@@ -584,6 +584,11 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			APIGroups: stringListToSlice("monitoring.coreos.com"),
 			Resources: stringListToSlice("alertmanagers", "alertmanagers/api"),
 			Verbs:     stringListToSlice("get", "list", "create", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice(admissionregistrationv1.GroupName),
+			Resources: stringListToSlice("validatingadmissionpolicies", "validatingadmissionpolicybindings"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
 	}
 }
