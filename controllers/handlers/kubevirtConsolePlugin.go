@@ -71,6 +71,36 @@ func NewKvUIProxyDeploymentHandler(_ log.Logger, Client client.Client, Scheme *r
 	return operands.NewDeploymentHandler(Client, Scheme, NewKvUIProxyDeployment, hc), nil
 }
 
+// **** Kubevirt UI Plugin ServiceAccount Handler ****
+func NewKvUIPluginSAHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
+	return operands.NewServiceAccountHandler(Client, Scheme, NewKvUIPluginSA), nil
+}
+
+// **** Kubevirt UI Proxy ServiceAccount Handler ****
+func NewKvUIProxySAHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
+	return operands.NewServiceAccountHandler(Client, Scheme, NewKvUIProxySA), nil
+}
+
+func NewKvUIPluginSA(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount {
+	return &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      kvUIPluginDeploymentName,
+			Namespace: hc.Namespace,
+			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
+		},
+	}
+}
+
+func NewKvUIProxySA(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount {
+	return &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      kvUIProxyDeploymentName,
+			Namespace: hc.Namespace,
+			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIProxy),
+		},
+	}
+}
+
 // **** nginx config map Handler ****
 func NewKvUINginxCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
 	return operands.NewCmHandler(Client, Scheme, NewKVUINginxCM(hc)), nil
@@ -169,7 +199,7 @@ func getKvUIDeployment(hc *hcov1beta1.HyperConverged, deploymentName string, ima
 					},
 				},
 				Spec: corev1.PodSpec{
-					ServiceAccountName: "default",
+					ServiceAccountName: deploymentName,
 					SecurityContext:    components.GetStdPodSecurityContext(),
 					Containers: []corev1.Container{
 						{
