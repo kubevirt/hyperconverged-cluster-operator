@@ -3516,7 +3516,7 @@ spec:
                 - name: CDI_VERSION
                   value: v1.64.0
                 - name: NETWORK_ADDONS_VERSION
-                  value: v0.101.0-rc-0
+                  value: v0.101.1
                 - name: SSP_VERSION
                   value: v0.24.1
                 - name: HPPO_VERSION
@@ -3746,15 +3746,15 @@ spec:
                 app.kubernetes.io/managed-by: olm
                 app.kubernetes.io/part-of: hyperconverged-cluster
                 app.kubernetes.io/version: 1.17.0
-                hco.kubevirt.io/allow-access-cluster-services: ""
-                hco.kubevirt.io/allow-prometheus-access: ""
                 name: cluster-network-addons-operator
+                np.kubevirt.io/allow-access-cluster-services: ""
+                np.kubevirt.io/allow-prometheus-access: ""
                 prometheus.cnao.io: "true"
             spec:
               containers:
               - env:
                 - name: MULTUS_IMAGE
-                  value: ghcr.io/k8snetworkplumbingwg/multus-cni@sha256:a60a21ee1d00c9f215b0b2fa03b3d5e384ab7ddb9ea0d231d36aef220e95a69c
+                  value: ghcr.io/k8snetworkplumbingwg/multus-cni@sha256:e93af9e533cc16ca7847aeec3b516c9b1e8891c2b95c727991e94c9b59c4970e
                 - name: MULTUS_DYNAMIC_NETWORKS_CONTROLLER_IMAGE
                   value: ghcr.io/k8snetworkplumbingwg/multus-dynamic-networks-controller@sha256:2a2bb32c0ea8b232b3dbe81c0323a107e8b05f8cad06704fca2efd0d993a87be
                 - name: LINUX_BRIDGE_IMAGE
@@ -3764,7 +3764,7 @@ spec:
                 - name: OVS_CNI_IMAGE
                   value: ghcr.io/k8snetworkplumbingwg/ovs-cni-plugin@sha256:435f374b434b3bc70a5cfaba0011fdcf5f433d96b98b06d29306cbd8db3a8c21
                 - name: KUBEMACPOOL_IMAGE
-                  value: quay.io/kubevirt/kubemacpool@sha256:2d72fb8d9d58e7adbd91df8da9f5db6bcb992779840e7293d321b1a9d9465ccf
+                  value: quay.io/kubevirt/kubemacpool@sha256:07ec3a546ae0c965f122f002260d4a215ab9d580134a9f58c078a4b2a553019b
                 - name: MACVTAP_CNI_IMAGE
                   value: quay.io/kubevirt/macvtap-cni@sha256:af31faae20c0128a469dd4c1aa866d6bf78d1d2f5972127adf4c9438dcde10f4
                 - name: KUBE_RBAC_PROXY_IMAGE
@@ -3774,13 +3774,13 @@ spec:
                 - name: CORE_DNS_IMAGE
                   value: registry.k8s.io/coredns/coredns@sha256:a0ead06651cf580044aeb0a0feba63591858fb2e43ade8c9dea45a6a89ae7e5e
                 - name: KUBEVIRT_IPAM_CONTROLLER_IMAGE
-                  value: ghcr.io/kubevirt/ipam-controller@sha256:802dde86e2cd8ea3609d1d7b98c856fa4324901ae52efba421fe5ebc5bf519d4
+                  value: ghcr.io/kubevirt/ipam-controller@sha256:69b25271d1ad2521f38f5fa8b9623973ad7c74f33f88d17c0ebc9882ef9c2c5e
                 - name: OPERATOR_IMAGE
-                  value: quay.io/kubevirt/cluster-network-addons-operator@sha256:088f694943fee574ef92b65d0ed62fd0799fb67023b6368259663236da76a6b5
+                  value: quay.io/kubevirt/cluster-network-addons-operator@sha256:831174b59af8de376df781f944821349cced44dc9bb9442f5a22cc8cfe675546
                 - name: OPERATOR_NAME
                   value: cluster-network-addons-operator
                 - name: OPERATOR_VERSION
-                  value: v0.101.0-rc-0
+                  value: v0.101.1
                 - name: OPERATOR_NAMESPACE
                   valueFrom:
                     fieldRef:
@@ -3800,7 +3800,9 @@ spec:
                   value: prometheus-k8s
                 - name: RUNBOOK_URL_TEMPLATE
                   value: https://kubevirt.io/monitoring/runbooks/%s
-                image: quay.io/kubevirt/cluster-network-addons-operator@sha256:088f694943fee574ef92b65d0ed62fd0799fb67023b6368259663236da76a6b5
+                - name: CNAO_LOG_LEVEL
+                  value: "0"
+                image: quay.io/kubevirt/cluster-network-addons-operator@sha256:831174b59af8de376df781f944821349cced44dc9bb9442f5a22cc8cfe675546
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -5336,7 +5338,7 @@ spec:
     name: cdi-uploadproxy
   - image: quay.io/kubevirt/cdi-uploadserver@sha256:79420a4e2769ef3cba123ae989c23faba7ebfe61a3b16c5509c5348cde8410fd
     name: cdi-uploadserver
-  - image: quay.io/kubevirt/cluster-network-addons-operator@sha256:088f694943fee574ef92b65d0ed62fd0799fb67023b6368259663236da76a6b5
+  - image: quay.io/kubevirt/cluster-network-addons-operator@sha256:831174b59af8de376df781f944821349cced44dc9bb9442f5a22cc8cfe675546
     name: cluster-network-addons-operator
   - image: quay.io/kubevirt/cni-default-plugins@sha256:976a24392c2a096c38c2663d234b2d3131f5c24558889196d30b9ac1b6716788
     name: cni-default-plugins
@@ -5358,9 +5360,9 @@ spec:
     name: hyperconverged-cluster-operator
   - image: +WEBHOOK_IMAGE_TO_REPLACE+
     name: hyperconverged-cluster-webhook
-  - image: ghcr.io/kubevirt/ipam-controller@sha256:802dde86e2cd8ea3609d1d7b98c856fa4324901ae52efba421fe5ebc5bf519d4
+  - image: ghcr.io/kubevirt/ipam-controller@sha256:69b25271d1ad2521f38f5fa8b9623973ad7c74f33f88d17c0ebc9882ef9c2c5e
     name: ipam-controller
-  - image: quay.io/kubevirt/kubemacpool@sha256:2d72fb8d9d58e7adbd91df8da9f5db6bcb992779840e7293d321b1a9d9465ccf
+  - image: quay.io/kubevirt/kubemacpool@sha256:07ec3a546ae0c965f122f002260d4a215ab9d580134a9f58c078a4b2a553019b
     name: kubemacpool
   - image: ghcr.io/kubevirt/kubesecondarydns@sha256:f5fe9c98fb6d7e5e57a6df23fe82e43e65db5953d76af44adda9ab40c46ad0bf
     name: kubesecondarydns
@@ -5380,7 +5382,7 @@ spec:
     name: livenessprobe
   - image: quay.io/kubevirt/macvtap-cni@sha256:af31faae20c0128a469dd4c1aa866d6bf78d1d2f5972127adf4c9438dcde10f4
     name: macvtap-cni
-  - image: ghcr.io/k8snetworkplumbingwg/multus-cni@sha256:a60a21ee1d00c9f215b0b2fa03b3d5e384ab7ddb9ea0d231d36aef220e95a69c
+  - image: ghcr.io/k8snetworkplumbingwg/multus-cni@sha256:e93af9e533cc16ca7847aeec3b516c9b1e8891c2b95c727991e94c9b59c4970e
     name: multus-cni
   - image: ghcr.io/k8snetworkplumbingwg/multus-dynamic-networks-controller@sha256:2a2bb32c0ea8b232b3dbe81c0323a107e8b05f8cad06704fca2efd0d993a87be
     name: multus-dynamic-networks-controller
