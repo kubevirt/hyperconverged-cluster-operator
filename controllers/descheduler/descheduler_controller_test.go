@@ -91,7 +91,7 @@ var _ = Describe("DeschedulerController", func() {
 					},
 					BeTrue(),
 				),
-				Entry("should set the metric to false for the KubeDescheduler with a valid configuration - LifecycleAndUtilization",
+				Entry("should set the metric to false for the KubeDescheduler with a valid configuration - LongLifecycle",
 					[]client.Object{
 						&deschedulerv1.KubeDescheduler{
 							ObjectMeta: metav1.ObjectMeta{
@@ -100,7 +100,7 @@ var _ = Describe("DeschedulerController", func() {
 							},
 							Spec: deschedulerv1.KubeDeschedulerSpec{
 								Profiles: []deschedulerv1.DeschedulerProfile{
-									deschedulerv1.LifecycleAndUtilization,
+									deschedulerv1.LongLifecycle,
 								},
 							},
 						},

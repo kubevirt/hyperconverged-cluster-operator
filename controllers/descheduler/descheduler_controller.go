@@ -103,7 +103,7 @@ func (r *ReconcileDescheduler) isDeschedulerMisconfigured(ctx context.Context) (
 
 	return !slices.ContainsFunc(instance.Spec.Profiles, func(profile deschedulerv1.DeschedulerProfile) bool {
 		switch profile {
-		case deschedulerv1.KubeVirtRelieveAndMigrate, deschedulerv1.DevKubeVirtRelieveAndMigrate, deschedulerv1.LifecycleAndUtilization:
+		case deschedulerv1.KubeVirtRelieveAndMigrate, deschedulerv1.DevKubeVirtRelieveAndMigrate, deschedulerv1.LongLifecycle:
 			return true
 		}
 		return false
