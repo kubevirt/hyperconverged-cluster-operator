@@ -11,7 +11,8 @@ API_VERSIONS=(v1 v1beta1)
 
 go install \
 	k8s.io/code-generator/cmd/deepcopy-gen@${K8S_VER} \
-	k8s.io/code-generator/cmd/defaulter-gen@${K8S_VER}
+	k8s.io/code-generator/cmd/defaulter-gen@${K8S_VER} \
+	k8s.io/code-generator/cmd/conversion-gen@${K8S_VER}
 
 go install \
 	k8s.io/kube-openapi/cmd/openapi-gen@${KUBEOPENAPI_VER}
@@ -38,3 +39,8 @@ for API_VERSION in ${API_VERSIONS[@]}; do
   go fmt ${API_FOLDER}/${API_VERSION}/zz_generated.defaults.go
   go fmt ${API_FOLDER}/${API_VERSION}/zz_generated.openapi.go
 done
+
+# generate auto conversion file
+conversion-gen --output-file=zz_generated.conversion.go \
+               --go-header-file=./hack/boilerplate.go.txt \
+               ./api/v1beta1
