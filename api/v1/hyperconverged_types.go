@@ -956,7 +956,3 @@ type HyperConvergedList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []HyperConverged `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&HyperConverged{}, &HyperConvergedList{})
-}
