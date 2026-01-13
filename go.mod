@@ -27,7 +27,7 @@ require (
 	github.com/prometheus/client_golang v1.22.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.65.0
-	github.com/rhobs/operator-observability-toolkit v0.0.29
+	github.com/rhobs/operator-observability-toolkit v0.0.30
 	github.com/rhobs/perses-operator v0.1.10-0.20250612173146-78eb619430df
 	github.com/samber/lo v1.51.0
 	github.com/spf13/pflag v1.0.7
