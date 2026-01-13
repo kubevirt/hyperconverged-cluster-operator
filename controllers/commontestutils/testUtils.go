@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/go-logr/logr"
+	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gstruct"
@@ -32,8 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
@@ -71,6 +70,23 @@ func NewHco() *hcov1beta1.HyperConverged {
 	hco := components.GetOperatorCR()
 	hco.Namespace = Namespace
 	return hco
+}
+
+func NewV1Beta1HCO() *hcov1beta1.HyperConverged {
+	defaultScheme := runtime.NewScheme()
+	_ = hcov1beta1.AddToScheme(defaultScheme)
+	_ = hcov1beta1.RegisterDefaults(defaultScheme)
+	defaultHco := &hcov1beta1.HyperConverged{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: hcov1beta1.APIVersion,
+			Kind:       hcoutil.HyperConvergedKind,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: hcoutil.HyperConvergedName,
+		}}
+	defaultScheme.Default(defaultHco)
+
+	return defaultHco
 }
 
 func NewHcoNamespace() *corev1.Namespace {

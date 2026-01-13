@@ -667,7 +667,17 @@ func Convert_v1_HyperConvergedFeatureGates_To_v1beta1_HyperConvergedFeatureGates
 
 func autoConvert_v1beta1_HyperConvergedList_To_v1_HyperConvergedList(in *HyperConvergedList, out *v1.HyperConvergedList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]v1.HyperConverged)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]v1.HyperConverged, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta1_HyperConverged_To_v1_HyperConverged(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -678,7 +688,17 @@ func Convert_v1beta1_HyperConvergedList_To_v1_HyperConvergedList(in *HyperConver
 
 func autoConvert_v1_HyperConvergedList_To_v1beta1_HyperConvergedList(in *v1.HyperConvergedList, out *HyperConvergedList, s conversion.Scope) error {
 	out.ListMeta = in.ListMeta
-	out.Items = *(*[]HyperConverged)(unsafe.Pointer(&in.Items))
+	if in.Items != nil {
+		in, out := &in.Items, &out.Items
+		*out = make([]HyperConverged, len(*in))
+		for i := range *in {
+			if err := Convert_v1_HyperConverged_To_v1beta1_HyperConverged(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.Items = nil
+	}
 	return nil
 }
 
@@ -688,7 +708,7 @@ func Convert_v1_HyperConvergedList_To_v1beta1_HyperConvergedList(in *v1.HyperCon
 }
 
 func autoConvert_v1beta1_HyperConvergedObsoleteCPUs_To_v1_HyperConvergedObsoleteCPUs(in *HyperConvergedObsoleteCPUs, out *v1.HyperConvergedObsoleteCPUs, s conversion.Scope) error {
-	out.MinCPUModel = in.MinCPUModel
+	// INFO: in.MinCPUModel opted out of conversion generation
 	out.CPUModels = *(*[]string)(unsafe.Pointer(&in.CPUModels))
 	return nil
 }
@@ -699,7 +719,6 @@ func Convert_v1beta1_HyperConvergedObsoleteCPUs_To_v1_HyperConvergedObsoleteCPUs
 }
 
 func autoConvert_v1_HyperConvergedObsoleteCPUs_To_v1beta1_HyperConvergedObsoleteCPUs(in *v1.HyperConvergedObsoleteCPUs, out *HyperConvergedObsoleteCPUs, s conversion.Scope) error {
-	out.MinCPUModel = in.MinCPUModel
 	out.CPUModels = *(*[]string)(unsafe.Pointer(&in.CPUModels))
 	return nil
 }
@@ -710,7 +729,7 @@ func Convert_v1_HyperConvergedObsoleteCPUs_To_v1beta1_HyperConvergedObsoleteCPUs
 }
 
 func autoConvert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(in *HyperConvergedSpec, out *v1.HyperConvergedSpec, s conversion.Scope) error {
-	out.LocalStorageClassName = in.LocalStorageClassName
+	// INFO: in.LocalStorageClassName opted out of conversion generation
 	out.TuningPolicy = v1.HyperConvergedTuningPolicy(in.TuningPolicy)
 	if err := Convert_v1beta1_HyperConvergedConfig_To_v1_HyperConvergedConfig(&in.Infra, &out.Infra, s); err != nil {
 		return err
@@ -725,16 +744,32 @@ func autoConvert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(in *HyperCo
 		return err
 	}
 	out.PermittedHostDevices = (*v1.PermittedHostDevices)(unsafe.Pointer(in.PermittedHostDevices))
-	out.MediatedDevicesConfiguration = (*v1.MediatedDevicesConfiguration)(unsafe.Pointer(in.MediatedDevicesConfiguration))
+	if in.MediatedDevicesConfiguration != nil {
+		in, out := &in.MediatedDevicesConfiguration, &out.MediatedDevicesConfiguration
+		*out = new(v1.MediatedDevicesConfiguration)
+		if err := Convert_v1beta1_MediatedDevicesConfiguration_To_v1_MediatedDevicesConfiguration(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.MediatedDevicesConfiguration = nil
+	}
 	if err := Convert_v1beta1_HyperConvergedCertConfig_To_v1_HyperConvergedCertConfig(&in.CertConfig, &out.CertConfig, s); err != nil {
 		return err
 	}
 	out.ResourceRequirements = (*v1.OperandResourceRequirements)(unsafe.Pointer(in.ResourceRequirements))
 	out.ScratchSpaceStorageClass = (*string)(unsafe.Pointer(in.ScratchSpaceStorageClass))
-	out.VddkInitImage = (*string)(unsafe.Pointer(in.VddkInitImage))
+	// INFO: in.VddkInitImage opted out of conversion generation
 	out.DefaultCPUModel = (*string)(unsafe.Pointer(in.DefaultCPUModel))
 	out.DefaultRuntimeClass = (*string)(unsafe.Pointer(in.DefaultRuntimeClass))
-	out.ObsoleteCPUs = (*v1.HyperConvergedObsoleteCPUs)(unsafe.Pointer(in.ObsoleteCPUs))
+	if in.ObsoleteCPUs != nil {
+		in, out := &in.ObsoleteCPUs, &out.ObsoleteCPUs
+		*out = new(v1.HyperConvergedObsoleteCPUs)
+		if err := Convert_v1beta1_HyperConvergedObsoleteCPUs_To_v1_HyperConvergedObsoleteCPUs(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ObsoleteCPUs = nil
+	}
 	out.CommonTemplatesNamespace = (*string)(unsafe.Pointer(in.CommonTemplatesNamespace))
 	out.StorageImport = (*v1.StorageImportConfig)(unsafe.Pointer(in.StorageImport))
 	if err := Convert_v1beta1_HyperConvergedWorkloadUpdateStrategy_To_v1_HyperConvergedWorkloadUpdateStrategy(&in.WorkloadUpdateStrategy, &out.WorkloadUpdateStrategy, s); err != nil {
@@ -745,8 +780,8 @@ func autoConvert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(in *HyperCo
 	out.UninstallStrategy = v1.HyperConvergedUninstallStrategy(in.UninstallStrategy)
 	out.LogVerbosityConfig = (*v1.LogVerbosityConfiguration)(unsafe.Pointer(in.LogVerbosityConfig))
 	out.TLSSecurityProfile = (*configv1.TLSSecurityProfile)(unsafe.Pointer(in.TLSSecurityProfile))
-	out.TektonPipelinesNamespace = (*string)(unsafe.Pointer(in.TektonPipelinesNamespace))
-	out.TektonTasksNamespace = (*string)(unsafe.Pointer(in.TektonTasksNamespace))
+	// INFO: in.TektonPipelinesNamespace opted out of conversion generation
+	// INFO: in.TektonTasksNamespace opted out of conversion generation
 	out.KubeSecondaryDNSNameServerIP = (*string)(unsafe.Pointer(in.KubeSecondaryDNSNameServerIP))
 	out.KubeMacPoolConfiguration = (*v1.KubeMacPoolConfig)(unsafe.Pointer(in.KubeMacPoolConfiguration))
 	out.EvictionStrategy = (*corev1.EvictionStrategy)(unsafe.Pointer(in.EvictionStrategy))
@@ -772,7 +807,6 @@ func Convert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(in *HyperConver
 }
 
 func autoConvert_v1_HyperConvergedSpec_To_v1beta1_HyperConvergedSpec(in *v1.HyperConvergedSpec, out *HyperConvergedSpec, s conversion.Scope) error {
-	out.LocalStorageClassName = in.LocalStorageClassName
 	out.TuningPolicy = HyperConvergedTuningPolicy(in.TuningPolicy)
 	if err := Convert_v1_HyperConvergedConfig_To_v1beta1_HyperConvergedConfig(&in.Infra, &out.Infra, s); err != nil {
 		return err
@@ -787,16 +821,31 @@ func autoConvert_v1_HyperConvergedSpec_To_v1beta1_HyperConvergedSpec(in *v1.Hype
 		return err
 	}
 	out.PermittedHostDevices = (*PermittedHostDevices)(unsafe.Pointer(in.PermittedHostDevices))
-	out.MediatedDevicesConfiguration = (*MediatedDevicesConfiguration)(unsafe.Pointer(in.MediatedDevicesConfiguration))
+	if in.MediatedDevicesConfiguration != nil {
+		in, out := &in.MediatedDevicesConfiguration, &out.MediatedDevicesConfiguration
+		*out = new(MediatedDevicesConfiguration)
+		if err := Convert_v1_MediatedDevicesConfiguration_To_v1beta1_MediatedDevicesConfiguration(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.MediatedDevicesConfiguration = nil
+	}
 	if err := Convert_v1_HyperConvergedCertConfig_To_v1beta1_HyperConvergedCertConfig(&in.CertConfig, &out.CertConfig, s); err != nil {
 		return err
 	}
 	out.ResourceRequirements = (*OperandResourceRequirements)(unsafe.Pointer(in.ResourceRequirements))
 	out.ScratchSpaceStorageClass = (*string)(unsafe.Pointer(in.ScratchSpaceStorageClass))
-	out.VddkInitImage = (*string)(unsafe.Pointer(in.VddkInitImage))
 	out.DefaultCPUModel = (*string)(unsafe.Pointer(in.DefaultCPUModel))
 	out.DefaultRuntimeClass = (*string)(unsafe.Pointer(in.DefaultRuntimeClass))
-	out.ObsoleteCPUs = (*HyperConvergedObsoleteCPUs)(unsafe.Pointer(in.ObsoleteCPUs))
+	if in.ObsoleteCPUs != nil {
+		in, out := &in.ObsoleteCPUs, &out.ObsoleteCPUs
+		*out = new(HyperConvergedObsoleteCPUs)
+		if err := Convert_v1_HyperConvergedObsoleteCPUs_To_v1beta1_HyperConvergedObsoleteCPUs(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ObsoleteCPUs = nil
+	}
 	out.CommonTemplatesNamespace = (*string)(unsafe.Pointer(in.CommonTemplatesNamespace))
 	out.StorageImport = (*StorageImportConfig)(unsafe.Pointer(in.StorageImport))
 	if err := Convert_v1_HyperConvergedWorkloadUpdateStrategy_To_v1beta1_HyperConvergedWorkloadUpdateStrategy(&in.WorkloadUpdateStrategy, &out.WorkloadUpdateStrategy, s); err != nil {
@@ -807,8 +856,6 @@ func autoConvert_v1_HyperConvergedSpec_To_v1beta1_HyperConvergedSpec(in *v1.Hype
 	out.UninstallStrategy = HyperConvergedUninstallStrategy(in.UninstallStrategy)
 	out.LogVerbosityConfig = (*LogVerbosityConfiguration)(unsafe.Pointer(in.LogVerbosityConfig))
 	out.TLSSecurityProfile = (*configv1.TLSSecurityProfile)(unsafe.Pointer(in.TLSSecurityProfile))
-	out.TektonPipelinesNamespace = (*string)(unsafe.Pointer(in.TektonPipelinesNamespace))
-	out.TektonTasksNamespace = (*string)(unsafe.Pointer(in.TektonTasksNamespace))
 	out.KubeSecondaryDNSNameServerIP = (*string)(unsafe.Pointer(in.KubeSecondaryDNSNameServerIP))
 	out.KubeMacPoolConfiguration = (*KubeMacPoolConfig)(unsafe.Pointer(in.KubeMacPoolConfiguration))
 	out.EvictionStrategy = (*corev1.EvictionStrategy)(unsafe.Pointer(in.EvictionStrategy))
@@ -977,8 +1024,18 @@ func Convert_v1_LogVerbosityConfiguration_To_v1beta1_LogVerbosityConfiguration(i
 
 func autoConvert_v1beta1_MediatedDevicesConfiguration_To_v1_MediatedDevicesConfiguration(in *MediatedDevicesConfiguration, out *v1.MediatedDevicesConfiguration, s conversion.Scope) error {
 	out.MediatedDeviceTypes = *(*[]string)(unsafe.Pointer(&in.MediatedDeviceTypes))
-	out.MediatedDevicesTypes = *(*[]string)(unsafe.Pointer(&in.MediatedDevicesTypes))
-	out.NodeMediatedDeviceTypes = *(*[]v1.NodeMediatedDeviceTypesConfig)(unsafe.Pointer(&in.NodeMediatedDeviceTypes))
+	// INFO: in.MediatedDevicesTypes opted out of conversion generation
+	if in.NodeMediatedDeviceTypes != nil {
+		in, out := &in.NodeMediatedDeviceTypes, &out.NodeMediatedDeviceTypes
+		*out = make([]v1.NodeMediatedDeviceTypesConfig, len(*in))
+		for i := range *in {
+			if err := Convert_v1beta1_NodeMediatedDeviceTypesConfig_To_v1_NodeMediatedDeviceTypesConfig(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.NodeMediatedDeviceTypes = nil
+	}
 	return nil
 }
 
@@ -989,8 +1046,17 @@ func Convert_v1beta1_MediatedDevicesConfiguration_To_v1_MediatedDevicesConfigura
 
 func autoConvert_v1_MediatedDevicesConfiguration_To_v1beta1_MediatedDevicesConfiguration(in *v1.MediatedDevicesConfiguration, out *MediatedDevicesConfiguration, s conversion.Scope) error {
 	out.MediatedDeviceTypes = *(*[]string)(unsafe.Pointer(&in.MediatedDeviceTypes))
-	out.MediatedDevicesTypes = *(*[]string)(unsafe.Pointer(&in.MediatedDevicesTypes))
-	out.NodeMediatedDeviceTypes = *(*[]NodeMediatedDeviceTypesConfig)(unsafe.Pointer(&in.NodeMediatedDeviceTypes))
+	if in.NodeMediatedDeviceTypes != nil {
+		in, out := &in.NodeMediatedDeviceTypes, &out.NodeMediatedDeviceTypes
+		*out = make([]NodeMediatedDeviceTypesConfig, len(*in))
+		for i := range *in {
+			if err := Convert_v1_NodeMediatedDeviceTypesConfig_To_v1beta1_NodeMediatedDeviceTypesConfig(&(*in)[i], &(*out)[i], s); err != nil {
+				return err
+			}
+		}
+	} else {
+		out.NodeMediatedDeviceTypes = nil
+	}
 	return nil
 }
 
@@ -1050,7 +1116,7 @@ func Convert_v1_NodeInfoStatus_To_v1beta1_NodeInfoStatus(in *v1.NodeInfoStatus, 
 func autoConvert_v1beta1_NodeMediatedDeviceTypesConfig_To_v1_NodeMediatedDeviceTypesConfig(in *NodeMediatedDeviceTypesConfig, out *v1.NodeMediatedDeviceTypesConfig, s conversion.Scope) error {
 	out.NodeSelector = *(*map[string]string)(unsafe.Pointer(&in.NodeSelector))
 	out.MediatedDeviceTypes = *(*[]string)(unsafe.Pointer(&in.MediatedDeviceTypes))
-	out.MediatedDevicesTypes = *(*[]string)(unsafe.Pointer(&in.MediatedDevicesTypes))
+	// INFO: in.MediatedDevicesTypes opted out of conversion generation
 	return nil
 }
 
@@ -1062,7 +1128,6 @@ func Convert_v1beta1_NodeMediatedDeviceTypesConfig_To_v1_NodeMediatedDeviceTypes
 func autoConvert_v1_NodeMediatedDeviceTypesConfig_To_v1beta1_NodeMediatedDeviceTypesConfig(in *v1.NodeMediatedDeviceTypesConfig, out *NodeMediatedDeviceTypesConfig, s conversion.Scope) error {
 	out.NodeSelector = *(*map[string]string)(unsafe.Pointer(&in.NodeSelector))
 	out.MediatedDeviceTypes = *(*[]string)(unsafe.Pointer(&in.MediatedDeviceTypes))
-	out.MediatedDevicesTypes = *(*[]string)(unsafe.Pointer(&in.MediatedDevicesTypes))
 	return nil
 }
 

@@ -395,13 +395,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedObsole
 				Description: "HyperConvergedObsoleteCPUs allows avoiding scheduling of VMs for obsolete CPU models",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"minCPUModel": {
-						SchemaProps: spec.SchemaProps{
-							Description: "MinCPUModel is not in use Deprecated: This field is not in use and is ignored.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"cpuModels": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -435,13 +428,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 				Description: "HyperConvergedSpec defines the desired state of HyperConverged",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"localStorageClassName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: LocalStorageClassName the name of the local storage class.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"tuningPolicy": {
 						SchemaProps: spec.SchemaProps{
 							Description: "TuningPolicy allows to configure the mode in which the RateLimits of kubevirt are set. If TuningPolicy is not present the default kubevirt values are used. It can be set to `annotation` for fine-tuning the kubevirt queryPerSeconds (qps) and burst values. Qps and burst values are taken from the annotation hco.kubevirt.io/tuningPolicy",
@@ -505,13 +491,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 					"scratchSpaceStorageClass": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Override the storage class used for scratch space during transfer operations. The scratch space storage class is determined in the following order: value of scratchSpaceStorageClass, if that doesn't exist, use the default storage class, if there is no default storage class, use the storage class of the DataVolume, if no storage class specified, use no storage class for scratch space",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"vddkInitImage": {
-						SchemaProps: spec.SchemaProps{
-							Description: "VDDK Init Image eventually used to import VMs from external providers\n\nDeprecated: please use the Migration Toolkit for Virtualization",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -599,20 +578,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 						SchemaProps: spec.SchemaProps{
 							Description: "TLSSecurityProfile specifies the settings for TLS connections to be propagated to all kubevirt-hyperconverged components. If unset, the hyperconverged cluster operator will consume the value set on the APIServer CR on OCP/OKD or Intermediate if on vanilla k8s. Note that only Old, Intermediate and Custom profiles are currently supported, and the maximum available MinTLSVersions is VersionTLS12.",
 							Ref:         ref("github.com/openshift/api/config/v1.TLSSecurityProfile"),
-						},
-					},
-					"tektonPipelinesNamespace": {
-						SchemaProps: spec.SchemaProps{
-							Description: "TektonPipelinesNamespace defines namespace in which example pipelines will be deployed. If unset, then the default value is the operator namespace. Deprecated: This field is ignored.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"tektonTasksNamespace": {
-						SchemaProps: spec.SchemaProps{
-							Description: "TektonTasksNamespace defines namespace in which tekton tasks will be deployed. If unset, then the default value is the operator namespace. Deprecated: This field is ignored.",
-							Type:        []string{"string"},
-							Format:      "",
 						},
 					},
 					"kubeSecondaryDNSNameServerIP": {
@@ -1071,26 +1036,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_MediatedDevicesConfi
 							},
 						},
 					},
-					"mediatedDevicesTypes": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: please use mediatedDeviceTypes instead.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
 					"nodeMediatedDeviceTypes": {
 						VendorExtensible: spec.VendorExtensible{
 							Extensions: spec.Extensions{
@@ -1192,26 +1137,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_NodeMediatedDeviceTy
 						},
 						SchemaProps: spec.SchemaProps{
 							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"mediatedDevicesTypes": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: please use mediatedDeviceTypes instead.",
-							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{

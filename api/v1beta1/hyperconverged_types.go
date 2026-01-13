@@ -43,6 +43,7 @@ type HyperConvergedSpec struct {
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 
 	// Deprecated: LocalStorageClassName the name of the local storage class.
+	// +k8s:conversion-gen=false
 	LocalStorageClassName string `json:"localStorageClassName,omitempty"`
 
 	// TuningPolicy allows to configure the mode in which the RateLimits of kubevirt are set.
@@ -108,6 +109,7 @@ type HyperConvergedSpec struct {
 	//
 	// Deprecated: please use the Migration Toolkit for Virtualization
 	// +optional
+	// +k8s:conversion-gen=false
 	VddkInitImage *string `json:"vddkInitImage,omitempty"`
 
 	// DefaultCPUModel defines a cluster default for CPU model: default CPU model is set when VMI doesn't have any CPU model.
@@ -180,6 +182,7 @@ type HyperConvergedSpec struct {
 	// +optional
 	// +kubebuilder:deprecatedversion:warning="tektonPipelinesNamespace field is ignored"
 	// Deprecated: This field is ignored.
+	// +k8s:conversion-gen=false
 	TektonPipelinesNamespace *string `json:"tektonPipelinesNamespace,omitempty"`
 
 	// TektonTasksNamespace defines namespace in which tekton tasks will be deployed.
@@ -187,6 +190,7 @@ type HyperConvergedSpec struct {
 	// +optional
 	// +kubebuilder:deprecatedversion:warning="tektonTasksNamespace field is ignored"
 	// Deprecated: This field is ignored.
+	// +k8s:conversion-gen=false
 	TektonTasksNamespace *string `json:"tektonTasksNamespace,omitempty"`
 
 	// KubeSecondaryDNSNameServerIP defines name server IP used by KubeSecondaryDNS
@@ -633,6 +637,7 @@ type MediatedDevicesConfiguration struct {
 	// Deprecated: please use mediatedDeviceTypes instead.
 	// +optional
 	// +listType=atomic
+	// +k8s:conversion-gen=false
 	MediatedDevicesTypes []string `json:"mediatedDevicesTypes,omitempty"`
 
 	// +optional
@@ -657,6 +662,7 @@ type NodeMediatedDeviceTypesConfig struct {
 	// Deprecated: please use mediatedDeviceTypes instead.
 	// +listType=atomic
 	// +optional
+	// +k8s:conversion-gen=false
 	MediatedDevicesTypes []string `json:"mediatedDevicesTypes"`
 }
 
@@ -697,6 +703,7 @@ type OperandResourceRequirements struct {
 type HyperConvergedObsoleteCPUs struct {
 	// MinCPUModel is not in use
 	// Deprecated: This field is not in use and is ignored.
+	// +k8s:conversion-gen=false
 	MinCPUModel string `json:"minCPUModel,omitempty"`
 	// CPUModels is a list of obsolete CPU models. When the node-labeller obtains the list of obsolete CPU models, it
 	// eliminates those CPU models and creates labels for valid CPU models.

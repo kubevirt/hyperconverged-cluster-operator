@@ -2441,10 +2441,6 @@ spec:
                     format: int32
                     type: integer
                 type: object
-              localStorageClassName:
-                description: 'Deprecated: LocalStorageClassName the name of the local
-                  storage class.'
-                type: string
               logVerbosityConfig:
                 description: |-
                   LogVerbosityConfig configures the verbosity level of Kubevirt's different components. The higher
@@ -2489,12 +2485,6 @@ spec:
                       type: string
                     type: array
                     x-kubernetes-list-type: atomic
-                  mediatedDevicesTypes:
-                    description: 'Deprecated: please use mediatedDeviceTypes instead.'
-                    items:
-                      type: string
-                    type: array
-                    x-kubernetes-list-type: atomic
                   nodeMediatedDeviceTypes:
                     items:
                       description: NodeMediatedDeviceTypesConfig holds information
@@ -2502,13 +2492,6 @@ spec:
                         the NodeSelector field.
                       properties:
                         mediatedDeviceTypes:
-                          items:
-                            type: string
-                          type: array
-                          x-kubernetes-list-type: atomic
-                        mediatedDevicesTypes:
-                          description: 'Deprecated: please use mediatedDeviceTypes
-                            instead.'
                           items:
                             type: string
                           type: array
@@ -2524,19 +2507,9 @@ spec:
                       required:
                       - nodeSelector
                       type: object
-                      x-kubernetes-validations:
-                      - message: for nodeMediatedDeviceTypes a non-empty mediatedDeviceTypes
-                          or mediatedDevicesTypes(deprecated) is required
-                        rule: (has(self.mediatedDeviceTypes) && size(self.mediatedDeviceTypes)>0)
-                          || (has(self.mediatedDevicesTypes) && size(self.mediatedDevicesTypes)>0)
                     type: array
                     x-kubernetes-list-type: atomic
                 type: object
-                x-kubernetes-validations:
-                - message: for mediatedDevicesConfiguration a non-empty mediatedDeviceTypes
-                    or mediatedDevicesTypes(deprecated) is required
-                  rule: (has(self.mediatedDeviceTypes) && size(self.mediatedDeviceTypes)>0)
-                    || (has(self.mediatedDevicesTypes) && size(self.mediatedDevicesTypes)>0)
               networkBinding:
                 additionalProperties:
                   properties:
@@ -2626,11 +2599,6 @@ spec:
                       type: string
                     type: array
                     x-kubernetes-list-type: set
-                  minCPUModel:
-                    description: |-
-                      MinCPUModel is not in use
-                      Deprecated: This field is not in use and is ignored.
-                    type: string
                 type: object
               permittedHostDevices:
                 description: PermittedHostDevices holds information about devices
@@ -2897,18 +2865,6 @@ spec:
                     type: array
                     x-kubernetes-list-type: set
                 type: object
-              tektonPipelinesNamespace:
-                description: |-
-                  TektonPipelinesNamespace defines namespace in which example pipelines will be deployed.
-                  If unset, then the default value is the operator namespace.
-                  Deprecated: This field is ignored.
-                type: string
-              tektonTasksNamespace:
-                description: |-
-                  TektonTasksNamespace defines namespace in which tekton tasks will be deployed.
-                  If unset, then the default value is the operator namespace.
-                  Deprecated: This field is ignored.
-                type: string
               tlsSecurityProfile:
                 description: |-
                   TLSSecurityProfile specifies the settings for TLS connections to be propagated to all kubevirt-hyperconverged components.
@@ -3132,12 +3088,6 @@ spec:
                 enum:
                 - RemoveWorkloads
                 - BlockUninstallIfWorkloadsExist
-                type: string
-              vddkInitImage:
-                description: |-
-                  VDDK Init Image eventually used to import VMs from external providers
-
-                  Deprecated: please use the Migration Toolkit for Virtualization
                 type: string
               virtualMachineOptions:
                 default:
