@@ -854,7 +854,7 @@ func GetCSVBase(params *CSVBaseParams) *csvv1alpha1.ClusterServiceVersion {
 				},
 				Rule: admissionregistrationv1.Rule{
 					APIGroups:   stringListToSlice(util.APIVersionGroup),
-					APIVersions: stringListToSlice(util.APIVersionBeta),
+					APIVersions: stringListToSlice(util.APIVersionV1, util.APIVersionBeta),
 					Resources:   stringListToSlice("hyperconvergeds"),
 				},
 			},
