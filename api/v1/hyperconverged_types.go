@@ -42,9 +42,6 @@ type HyperConvergedSpec struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 
-	// Deprecated: LocalStorageClassName the name of the local storage class.
-	LocalStorageClassName string `json:"localStorageClassName,omitempty"`
-
 	// TuningPolicy allows to configure the mode in which the RateLimits of kubevirt are set.
 	// If TuningPolicy is not present the default kubevirt values are used.
 	// It can be set to `annotation` for fine-tuning the kubevirt queryPerSeconds (qps) and burst values.
@@ -103,12 +100,6 @@ type HyperConvergedSpec struct {
 	// scratch space
 	// +optional
 	ScratchSpaceStorageClass *string `json:"scratchSpaceStorageClass,omitempty"`
-
-	// VDDK Init Image eventually used to import VMs from external providers
-	//
-	// Deprecated: please use the Migration Toolkit for Virtualization
-	// +optional
-	VddkInitImage *string `json:"vddkInitImage,omitempty"`
 
 	// DefaultCPUModel defines a cluster default for CPU model: default CPU model is set when VMI doesn't have any CPU model.
 	// When VMI has CPU model set, then VMI's CPU model is preferred.
@@ -174,20 +165,6 @@ type HyperConvergedSpec struct {
 	// MinTLSVersions is VersionTLS12.
 	// +optional
 	TLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile `json:"tlsSecurityProfile,omitempty"`
-
-	// TektonPipelinesNamespace defines namespace in which example pipelines will be deployed.
-	// If unset, then the default value is the operator namespace.
-	// +optional
-	// +kubebuilder:deprecatedversion:warning="tektonPipelinesNamespace field is ignored"
-	// Deprecated: This field is ignored.
-	TektonPipelinesNamespace *string `json:"tektonPipelinesNamespace,omitempty"`
-
-	// TektonTasksNamespace defines namespace in which tekton tasks will be deployed.
-	// If unset, then the default value is the operator namespace.
-	// +optional
-	// +kubebuilder:deprecatedversion:warning="tektonTasksNamespace field is ignored"
-	// Deprecated: This field is ignored.
-	TektonTasksNamespace *string `json:"tektonTasksNamespace,omitempty"`
 
 	// KubeSecondaryDNSNameServerIP defines name server IP used by KubeSecondaryDNS
 	// +optional
@@ -624,16 +601,10 @@ type MediatedHostDevice struct {
 
 // MediatedDevicesConfiguration holds information about MDEV types to be defined, if available
 // +k8s:openapi-gen=true
-// +kubebuilder:validation:XValidation:rule="(has(self.mediatedDeviceTypes) && size(self.mediatedDeviceTypes)>0) || (has(self.mediatedDevicesTypes) && size(self.mediatedDevicesTypes)>0)",message="for mediatedDevicesConfiguration a non-empty mediatedDeviceTypes or mediatedDevicesTypes(deprecated) is required"
 type MediatedDevicesConfiguration struct {
 	// +optional
 	// +listType=atomic
 	MediatedDeviceTypes []string `json:"mediatedDeviceTypes"`
-
-	// Deprecated: please use mediatedDeviceTypes instead.
-	// +optional
-	// +listType=atomic
-	MediatedDevicesTypes []string `json:"mediatedDevicesTypes,omitempty"`
 
 	// +optional
 	// +listType=atomic
@@ -642,7 +613,6 @@ type MediatedDevicesConfiguration struct {
 
 // NodeMediatedDeviceTypesConfig holds information about MDEV types to be defined in a specific node that matches the NodeSelector field.
 // +k8s:openapi-gen=true
-// +kubebuilder:validation:XValidation:rule="(has(self.mediatedDeviceTypes) && size(self.mediatedDeviceTypes)>0) || (has(self.mediatedDevicesTypes) && size(self.mediatedDevicesTypes)>0)",message="for nodeMediatedDeviceTypes a non-empty mediatedDeviceTypes or mediatedDevicesTypes(deprecated) is required"
 type NodeMediatedDeviceTypesConfig struct {
 
 	// NodeSelector is a selector which must be true for the vmi to fit on a node.
@@ -653,11 +623,6 @@ type NodeMediatedDeviceTypesConfig struct {
 	// +listType=atomic
 	// +optional
 	MediatedDeviceTypes []string `json:"mediatedDeviceTypes"`
-
-	// Deprecated: please use mediatedDeviceTypes instead.
-	// +listType=atomic
-	// +optional
-	MediatedDevicesTypes []string `json:"mediatedDevicesTypes"`
 }
 
 // OperandResourceRequirements is a list of resource requirements for the operand workloads pods
@@ -695,9 +660,6 @@ type OperandResourceRequirements struct {
 // HyperConvergedObsoleteCPUs allows avoiding scheduling of VMs for obsolete CPU models
 // +k8s:openapi-gen=true
 type HyperConvergedObsoleteCPUs struct {
-	// MinCPUModel is not in use
-	// Deprecated: This field is not in use and is ignored.
-	MinCPUModel string `json:"minCPUModel,omitempty"`
 	// CPUModels is a list of obsolete CPU models. When the node-labeller obtains the list of obsolete CPU models, it
 	// eliminates those CPU models and creates labels for valid CPU models.
 	// The default values for this field is nil, however, HCO uses opinionated values, and adding values to this list
