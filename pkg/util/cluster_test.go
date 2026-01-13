@@ -264,7 +264,7 @@ var _ = Describe("test clusterInfo", func() {
 				},
 				Spec: deschedulerv1.KubeDeschedulerSpec{
 					Profiles: []deschedulerv1.DeschedulerProfile{
-						deschedulerv1.LifecycleAndUtilization,
+						deschedulerv1.LongLifecycle,
 					},
 					ProfileCustomizations: &deschedulerv1.ProfileCustomizations{
 						DevEnableEvictionsInBackground: true,
