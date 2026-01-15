@@ -116,6 +116,8 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 
 	if ci.IsConsolePluginImageProvided() {
 		getHandlerFuncs = append(getHandlerFuncs,
+			handlers.NewKvUIPluginSAHandler,
+			handlers.NewKvUIProxySAHandler,
 			handlers.NewKvUIPluginDeploymentHandler,
 			handlers.NewKvUIProxyDeploymentHandler,
 			handlers.NewKvUINginxCMHandler,
