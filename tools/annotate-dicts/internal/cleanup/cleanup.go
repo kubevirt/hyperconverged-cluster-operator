@@ -10,7 +10,7 @@ import (
 var (
 	statusRegex    = regexp.MustCompile(`^\s*status:\s+\{}$`)
 	timestampRegex = regexp.MustCompile(`^\s*creationTimestamp:\s+null$`)
-	metadataRegex  = regexp.MustCompile(`^\s*metadata:$`)
+	metadataRegex  = regexp.MustCompile(`^\s*metadata:\s*(\{\}|null)?$`)
 	cronRegex      = regexp.MustCompile(`^(\s*schedule:\s+)(.*)$`)
 )
 

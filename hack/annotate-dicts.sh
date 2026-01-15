@@ -19,4 +19,8 @@ if [[ -d "${IS_DIR}" ]]; then
   IS_PARAM="--image-stream-dir=${IS_DIR}"
 fi
 
-${ANNOTATE_DICT_BIN} -i --dict-dir="${DICTS_DIR}" ${IS_PARAM}
+if [[ -n "${IMPORTS_TO_KEEP}" ]]; then
+  IMPORTS_TO_KEEP_PARAM="--imports-to-keep=${IMPORTS_TO_KEEP}"
+fi
+
+${ANNOTATE_DICT_BIN} -i --dict-dir="${DICTS_DIR}" ${IS_PARAM} ${IMPORTS_TO_KEEP_PARAM}

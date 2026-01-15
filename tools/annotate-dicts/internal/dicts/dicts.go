@@ -12,6 +12,7 @@ import (
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tools/annotate-dicts/internal/cleanup"
+	"github.com/kubevirt/hyperconverged-cluster-operator/tools/annotate-dicts/internal/config"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tools/annotate-dicts/internal/images"
 )
 
@@ -51,11 +52,24 @@ func (d *Dicts) Run(ctx context.Context, isMap map[string]string) (bool, error) 
 		d.handleOneDict(ctx, i, isMap)
 	}
 
+	if importsToKeep := config.ImportsToKeep(); importsToKeep >= 0 {
+		for i := range d.items {
+			d.setImportsToKeep(i, int32(importsToKeep))
+		}
+	}
+
 	if err := d.group.Wait(); err != nil {
 		return false, err
 	}
 
 	return d.changed, nil
+}
+
+func (d *Dicts) setImportsToKeep(i int, value int32) {
+	if d.items[i].Spec.ImportsToKeep == nil || *d.items[i].Spec.ImportsToKeep != value {
+		d.items[i].Spec.ImportsToKeep = &value
+		d.changed = true
+	}
 }
 
 func (d *Dicts) handleOneDict(ctx context.Context, i int, isMap map[string]string) {

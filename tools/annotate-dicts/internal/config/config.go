@@ -10,51 +10,61 @@ import (
 )
 
 var (
-	cfg config
+	cfg Config
 )
 
-type config struct {
-	imageStreamDir string
-	dictDir        string
-	shouldUpdate   bool
-	outputFileName string
-	timeout        time.Duration
+type Config struct {
+	ImageStreamDir string
+	DictDir        string
+	ShouldUpdate   bool
+	OutputFileName string
+	Timeout        time.Duration
+	ImportsToKeep  int
+}
+
+func GetConfig() *Config {
+	return &cfg
 }
 
 func ImageStreamDir() string {
-	return cfg.imageStreamDir
+	return cfg.ImageStreamDir
 }
 
 func DictDir() string {
-	return cfg.dictDir
+	return cfg.DictDir
 }
 
 func ShouldUpdate() bool {
-	return cfg.shouldUpdate
+	return cfg.ShouldUpdate
 }
 
 func OutputFileName() string {
-	return cfg.outputFileName
+	return cfg.OutputFileName
 }
 
 func Timeout() time.Duration {
-	return cfg.timeout
+	return cfg.Timeout
 }
 
-func init() {
-	flag.StringVar(&cfg.imageStreamDir, "image-stream-dir", "", "Directory containing image stream files")
-	flag.StringVar(&cfg.dictDir, "dict-dir", "", "Directory containing DataImportCronTemplate files (required)")
-	flag.StringVar(&cfg.outputFileName, "output", "", "path to output file. Can't be used with the -i flag")
-	flag.DurationVar(&cfg.timeout, "timeout", 5*time.Minute, "Timeout for the operation")
-	flag.BoolFunc("i", "Update the DataImportCronTemplate files with the updated architectures. Can't be used with the --output flag", parseBoolFlag(&cfg.shouldUpdate))
+func ImportsToKeep() int {
+	return cfg.ImportsToKeep
+}
+
+func InitFlags() {
+	flag.StringVar(&cfg.ImageStreamDir, "image-stream-dir", "", "Directory containing image stream files")
+	flag.StringVar(&cfg.DictDir, "dict-dir", "", "Directory containing DataImportCronTemplate files (required)")
+	flag.StringVar(&cfg.OutputFileName, "output", "", "path to output file. Can't be used with the -i flag")
+	flag.DurationVar(&cfg.Timeout, "timeout", 5*time.Minute, "Timeout for the operation")
+	flag.BoolFunc("i", "Update the DataImportCronTemplate files with the updated architectures. Can't be used with the --output flag", parseBoolFlag(&cfg.ShouldUpdate))
+	flag.IntVar(&cfg.ImportsToKeep, "imports-to-keep", 1, "Value to set for spec.importsToKeep in all DataImportCronTemplate objects")
 
 	flag.Parse()
 
-	if cfg.dictDir == "" {
+	if cfg.DictDir == "" {
 		printUsageAndErrorAndExit("the --dict-dir parameter is required")
 	}
 
-	if cfg.shouldUpdate && cfg.outputFileName != "" {
+	if cfg.ShouldUpdate && cfg.OutputFileName != "" {
 		printUsageAndErrorAndExit("can't use the --output parameter with the -i parameter")
 	}
 }
