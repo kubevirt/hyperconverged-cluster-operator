@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.18.0-unstable
-    createdAt: "2026-01-24 09:03:04"
+    createdAt: "2026-01-25 22:21:48"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -87,7 +87,7 @@ spec:
         path: version
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:hidden
-      version: v1
+      version: v1beta1
     - description: Cluster Network Addons
       displayName: Cluster Network Addons
       kind: NetworkAddonsConfig
@@ -5455,6 +5455,7 @@ spec:
     deploymentName: hco-webhook
     failurePolicy: Fail
     generateName: validate-hco.kubevirt.io
+    matchPolicy: Exact
     rules:
     - apiGroups:
       - hco.kubevirt.io
@@ -5477,6 +5478,7 @@ spec:
     deploymentName: hco-webhook
     failurePolicy: Fail
     generateName: validate-hco-v1beta1.kubevirt.io
+    matchPolicy: Exact
     rules:
     - apiGroups:
       - hco.kubevirt.io
@@ -5522,6 +5524,7 @@ spec:
     deploymentName: hco-webhook
     failurePolicy: Fail
     generateName: mutate-hyperconverged-hco.kubevirt.io
+    matchPolicy: Exact
     rules:
     - apiGroups:
       - hco.kubevirt.io
@@ -5543,6 +5546,7 @@ spec:
     deploymentName: hco-webhook
     failurePolicy: Fail
     generateName: mutate-hyperconverged-hco-v1beta1.kubevirt.io
+    matchPolicy: Exact
     rules:
     - apiGroups:
       - hco.kubevirt.io

@@ -756,7 +756,7 @@ func GetOperatorCR() *hcov1beta1.HyperConverged {
 	_ = hcov1beta1.RegisterDefaults(defaultScheme)
 	defaultHco := &hcov1beta1.HyperConverged{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: util.APIVersion,
+			APIVersion: hcov1beta1.APIVersion,
 			Kind:       util.HyperConvergedKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -817,7 +817,7 @@ type CSVBaseParams struct {
 func GetCSVBase(params *CSVBaseParams) *csvv1alpha1.ClusterServiceVersion {
 	almExamples, _ := json.Marshal(
 		map[string]interface{}{
-			"apiVersion": util.APIVersion,
+			"apiVersion": hcov1beta1.APIVersion,
 			"kind":       util.HyperConvergedKind,
 			"metadata": map[string]interface{}{
 				"name":      packageName,
