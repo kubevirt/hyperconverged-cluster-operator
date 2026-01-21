@@ -6,14 +6,13 @@ import (
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/mutator"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/validator"
-
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/mutator"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/validator"
 )
 
 const (
@@ -30,14 +29,18 @@ func SetupWebhookWithManager(mgr ctrl.Manager, isOpenshift bool, hcoTLSSecurityP
 	decoder := admission.NewDecoder(mgr.GetScheme())
 
 	whHandler := validator.NewWebhookHandler(logger, mgr.GetClient(), decoder, operatorNsEnv, isOpenshift, hcoTLSSecurityProfile)
+	whV1Beta1Handler := validator.NewV1Beta1WebhookHandler(logger, mgr.GetClient(), decoder, operatorNsEnv, isOpenshift, hcoTLSSecurityProfile)
 	nsMutator := mutator.NewNsMutator(mgr.GetClient(), decoder, operatorNsEnv)
 	hyperConvergedMutator := mutator.NewHyperConvergedMutator(mgr.GetClient(), decoder)
+	hyperConvergedV1Beta1Mutator := mutator.NewHyperConvergedV1Beta1Mutator(mgr.GetClient(), decoder)
 
 	srv := mgr.GetWebhookServer()
 
 	srv.Register(hcoutil.HCONSWebhookPath, &webhook.Admission{Handler: nsMutator})
 	srv.Register(hcoutil.HCOMutatingWebhookPath, &webhook.Admission{Handler: hyperConvergedMutator})
+	srv.Register(hcoutil.HCOV1Beta1MutatingWebhookPath, &webhook.Admission{Handler: hyperConvergedV1Beta1Mutator})
 	srv.Register(hcoutil.HCOWebhookPath, &webhook.Admission{Handler: whHandler})
+	srv.Register(hcoutil.HCOWebhookV1Beta1Path, &webhook.Admission{Handler: whV1Beta1Handler})
 
 	return nil
 }

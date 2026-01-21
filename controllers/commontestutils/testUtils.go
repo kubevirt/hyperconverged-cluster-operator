@@ -43,6 +43,7 @@ import (
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
@@ -72,13 +73,13 @@ func NewHco() *hcov1beta1.HyperConverged {
 	return hco
 }
 
-func NewV1Beta1HCO() *hcov1beta1.HyperConverged {
+func NewV1HCO() *hcov1.HyperConverged {
 	defaultScheme := runtime.NewScheme()
-	_ = hcov1beta1.AddToScheme(defaultScheme)
-	_ = hcov1beta1.RegisterDefaults(defaultScheme)
-	defaultHco := &hcov1beta1.HyperConverged{
+	_ = hcov1.AddToScheme(defaultScheme)
+	_ = hcov1.RegisterDefaults(defaultScheme)
+	defaultHco := &hcov1.HyperConverged{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: hcov1beta1.APIVersion,
+			APIVersion: hcov1.APIVersion,
 			Kind:       hcoutil.HyperConvergedKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{

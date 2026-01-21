@@ -14,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -34,12 +34,12 @@ var _ = Describe("webhooks mutator", func() {
 			Expect(os.Setenv("OPERATOR_NAMESPACE", HcoValidNamespace)).To(Succeed())
 		})
 
-		cr := &v1beta1.HyperConverged{
+		cr := &hcov1.HyperConverged{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      util.HyperConvergedName,
 				Namespace: HcoValidNamespace,
 			},
-			Spec: v1beta1.HyperConvergedSpec{},
+			Spec: hcov1.HyperConvergedSpec{},
 		}
 
 		var ns runtime.Object = &corev1.Namespace{
