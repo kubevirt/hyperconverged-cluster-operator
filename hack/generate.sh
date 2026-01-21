@@ -17,6 +17,18 @@ go install \
 go install \
 	k8s.io/kube-openapi/cmd/openapi-gen@${KUBEOPENAPI_VER}
 
+deepcopy-gen \
+      --output-file zz_generated.deepcopy.go \
+      --go-header-file "${PROJECT_ROOT}/hack/boilerplate.go.txt" \
+      "${PACKAGE}/${API_FOLDER}/v1/featuregates"
+
+openapi-gen \
+    --output-file zz_generated.openapi.go \
+    --go-header-file "${PROJECT_ROOT}/hack/boilerplate.go.txt" \
+    --output-dir ${API_FOLDER}/v1/featuregates/ \
+    --output-pkg github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates \
+    "${PACKAGE}/${API_FOLDER}/v1/featuregates"
+
 for API_VERSION in ${API_VERSIONS[@]}; do
   deepcopy-gen \
     --output-file zz_generated.deepcopy.go \
