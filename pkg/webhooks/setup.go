@@ -10,6 +10,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/mutator"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/validator"
@@ -33,6 +34,11 @@ func SetupWebhookWithManager(mgr ctrl.Manager, isOpenshift bool, hcoTLSSecurityP
 	nsMutator := mutator.NewNsMutator(mgr.GetClient(), decoder, operatorNsEnv)
 	hyperConvergedMutator := mutator.NewHyperConvergedMutator(mgr.GetClient(), decoder)
 	hyperConvergedV1Beta1Mutator := mutator.NewHyperConvergedV1Beta1Mutator(mgr.GetClient(), decoder)
+
+	// add the conversion webhook
+	if err := ctrl.NewWebhookManagedBy(mgr).For(&hcov1beta1.HyperConverged{}).Complete(); err != nil {
+		return err
+	}
 
 	srv := mgr.GetWebhookServer()
 

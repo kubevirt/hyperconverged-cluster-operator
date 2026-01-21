@@ -407,6 +407,8 @@ spec:
           verbs:
           - get
           - list
+          - update
+          - patch
           - watch
           - delete
         - apiGroups:
