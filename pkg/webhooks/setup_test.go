@@ -1,6 +1,7 @@
 package webhooks
 
 import (
+	"net/http"
 	"os"
 	"path"
 	"strings"
@@ -71,6 +72,32 @@ var _ = Describe("Hyperconverged API: Webhook", func() {
 			Expect(SetupWebhookWithManager(mgr, true, nil)).To(Succeed())
 		})
 
+	})
+
+	Context("test conversion", func() {
+		var (
+			cl  client.Client
+			mgr manager.Manager
+		)
+
+		BeforeEach(func() {
+			cl = commontestutils.InitClient([]client.Object{})
+			var err error
+			opt := manager.Options{
+				Scheme: cl.Scheme(),
+				Logger: GinkgoLogr,
+				WebhookServer: webhook.NewServer(webhook.Options{
+					Port:       8443,
+					WebhookMux: &http.ServeMux{},
+				}),
+			}
+			mgr, err = commontestutils.NewManagerMock(&rest.Config{}, opt, cl, logger)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should add conversion webhook", func() {
+			Expect(SetupWebhookWithManager(mgr, false, nil)).To(Succeed())
+		})
 	})
 })
 
