@@ -580,7 +580,7 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 		{
 			APIGroups: stringListToSlice("apiextensions.k8s.io"),
 			Resources: stringListToSlice("customresourcedefinitions"),
-			Verbs:     stringListToSlice("get", "list", "watch", "delete"),
+			Verbs:     stringListToSlice("get", "list", "update", "patch", "watch", "delete"),
 		},
 		{
 			APIGroups: stringListToSlice("apiextensions.k8s.io"),
