@@ -756,7 +756,7 @@ func GetOperatorCR() *hcov1beta1.HyperConverged {
 	_ = hcov1beta1.RegisterDefaults(defaultScheme)
 	defaultHco := &hcov1beta1.HyperConverged{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: util.APIVersion,
+			APIVersion: hcov1beta1.APIVersion,
 			Kind:       util.HyperConvergedKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -817,7 +817,7 @@ type CSVBaseParams struct {
 func GetCSVBase(params *CSVBaseParams) *csvv1alpha1.ClusterServiceVersion {
 	almExamples, _ := json.Marshal(
 		map[string]interface{}{
-			"apiVersion": util.APIVersion,
+			"apiVersion": hcov1beta1.APIVersion,
 			"kind":       util.HyperConvergedKind,
 			"metadata": map[string]interface{}{
 				"name":      packageName,
@@ -836,83 +836,11 @@ func GetCSVBase(params *CSVBaseParams) *csvv1alpha1.ClusterServiceVersion {
 	// ValidatingWebhookConfiguration object first (eventually bypassing the OLM if needed).
 	// so failurePolicy = admissionregistrationv1.Fail
 
-	validatingWebhook := csvv1alpha1.WebhookDescription{
-		GenerateName:            util.HcoValidatingWebhook,
-		Type:                    csvv1alpha1.ValidatingAdmissionWebhook,
-		DeploymentName:          hcoWhDeploymentName,
-		ContainerPort:           util.WebhookPort,
-		AdmissionReviewVersions: stringListToSlice("v1beta1", "v1"),
-		SideEffects:             ptr.To(admissionregistrationv1.SideEffectClassNone),
-		FailurePolicy:           ptr.To(admissionregistrationv1.Fail),
-		TimeoutSeconds:          ptr.To[int32](10),
-		Rules: []admissionregistrationv1.RuleWithOperations{
-			{
-				Operations: []admissionregistrationv1.OperationType{
-					admissionregistrationv1.Create,
-					admissionregistrationv1.Delete,
-					admissionregistrationv1.Update,
-				},
-				Rule: admissionregistrationv1.Rule{
-					APIGroups:   stringListToSlice(util.APIVersionGroup),
-					APIVersions: stringListToSlice(util.APIVersionBeta),
-					Resources:   stringListToSlice("hyperconvergeds"),
-				},
-			},
-		},
-		WebhookPath: ptr.To(util.HCOWebhookPath),
-	}
-
-	mutatingNamespaceWebhook := csvv1alpha1.WebhookDescription{
-		GenerateName:            util.HcoMutatingWebhookNS,
-		Type:                    csvv1alpha1.MutatingAdmissionWebhook,
-		DeploymentName:          hcoWhDeploymentName,
-		ContainerPort:           util.WebhookPort,
-		AdmissionReviewVersions: stringListToSlice("v1beta1", "v1"),
-		SideEffects:             ptr.To(admissionregistrationv1.SideEffectClassNoneOnDryRun),
-		FailurePolicy:           ptr.To(admissionregistrationv1.Fail),
-		TimeoutSeconds:          ptr.To[int32](10),
-		ObjectSelector: &metav1.LabelSelector{
-			MatchLabels: map[string]string{util.KubernetesMetadataName: params.Namespace},
-		},
-		Rules: []admissionregistrationv1.RuleWithOperations{
-			{
-				Operations: []admissionregistrationv1.OperationType{
-					admissionregistrationv1.Delete,
-				},
-				Rule: admissionregistrationv1.Rule{
-					APIGroups:   []string{""},
-					APIVersions: stringListToSlice("v1"),
-					Resources:   stringListToSlice("namespaces"),
-				},
-			},
-		},
-		WebhookPath: ptr.To(util.HCONSWebhookPath),
-	}
-
-	mutatingHyperConvergedWebhook := csvv1alpha1.WebhookDescription{
-		GenerateName:            util.HcoMutatingWebhookHyperConverged,
-		Type:                    csvv1alpha1.MutatingAdmissionWebhook,
-		DeploymentName:          hcoWhDeploymentName,
-		ContainerPort:           util.WebhookPort,
-		AdmissionReviewVersions: stringListToSlice("v1beta1", "v1"),
-		SideEffects:             ptr.To(admissionregistrationv1.SideEffectClassNoneOnDryRun),
-		FailurePolicy:           ptr.To(admissionregistrationv1.Fail),
-		TimeoutSeconds:          ptr.To[int32](10),
-		Rules: []admissionregistrationv1.RuleWithOperations{
-			{
-				Operations: []admissionregistrationv1.OperationType{
-					admissionregistrationv1.Create,
-					admissionregistrationv1.Update,
-				},
-				Rule: admissionregistrationv1.Rule{
-					APIGroups:   stringListToSlice(util.APIVersionGroup),
-					APIVersions: stringListToSlice(util.APIVersionBeta),
-					Resources:   stringListToSlice("hyperconvergeds"),
-				},
-			},
-		},
-		WebhookPath: ptr.To(util.HCOMutatingWebhookPath),
-	}
+	validatingWebhook := createHCValidatingWebhook(util.HcoValidatingWebhook, util.APIVersionV1, util.HCOWebhookPath)
+	v1Beta1ValidatingWebhook := createHCValidatingWebhook(util.HcoV1Beta1ValidatingWebhook, util.APIVersionBeta, util.HCOWebhookV1Beta1Path)
+	mutatingNamespaceWebhook := createMutatingNSWebhook(params)
+	mutatingHyperConvergedWebhook := createMutatingHCWebhook(util.HcoMutatingWebhookHyperConverged, util.APIVersionV1, util.HCOMutatingWebhookPath)
+	v1Beta1MutatingHyperConvergedWebhook := createMutatingHCWebhook(util.HcoV1Beta1MutatingWebhookHyperConverged, util.APIVersionBeta, util.HCOV1Beta1MutatingWebhookPath)
 
 	return &csvv1alpha1.ClusterServiceVersion{
 		TypeMeta: metav1.TypeMeta{
@@ -1015,8 +943,10 @@ func GetCSVBase(params *CSVBaseParams) *csvv1alpha1.ClusterServiceVersion {
 			InstallStrategy: csvv1alpha1.NamedInstallStrategy{},
 			WebhookDefinitions: []csvv1alpha1.WebhookDescription{
 				validatingWebhook,
+				v1Beta1ValidatingWebhook,
 				mutatingNamespaceWebhook,
 				mutatingHyperConvergedWebhook,
+				v1Beta1MutatingHyperConvergedWebhook,
 			},
 			CustomResourceDefinitions: csvv1alpha1.CustomResourceDefinitions{
 				Owned: []csvv1alpha1.CRDDescription{
@@ -1092,6 +1022,92 @@ func GetCSVBase(params *CSVBaseParams) *csvv1alpha1.ClusterServiceVersion {
 				Required: []csvv1alpha1.CRDDescription{},
 			},
 		},
+	}
+}
+
+func createMutatingHCWebhook(name, apiVersion, path string) csvv1alpha1.WebhookDescription {
+	return csvv1alpha1.WebhookDescription{
+		GenerateName:            name,
+		Type:                    csvv1alpha1.MutatingAdmissionWebhook,
+		DeploymentName:          hcoWhDeploymentName,
+		ContainerPort:           util.WebhookPort,
+		AdmissionReviewVersions: stringListToSlice("v1beta1", "v1"),
+		SideEffects:             ptr.To(admissionregistrationv1.SideEffectClassNoneOnDryRun),
+		FailurePolicy:           ptr.To(admissionregistrationv1.Fail),
+		MatchPolicy:             ptr.To(admissionregistrationv1.Exact),
+		TimeoutSeconds:          ptr.To[int32](10),
+		Rules: []admissionregistrationv1.RuleWithOperations{
+			{
+				Operations: []admissionregistrationv1.OperationType{
+					admissionregistrationv1.Create,
+					admissionregistrationv1.Update,
+				},
+				Rule: admissionregistrationv1.Rule{
+					APIGroups:   stringListToSlice(util.APIVersionGroup),
+					APIVersions: stringListToSlice(apiVersion),
+					Resources:   stringListToSlice("hyperconvergeds"),
+				},
+			},
+		},
+		WebhookPath: &path,
+	}
+}
+
+func createMutatingNSWebhook(params *CSVBaseParams) csvv1alpha1.WebhookDescription {
+	return csvv1alpha1.WebhookDescription{
+		GenerateName:            util.HcoMutatingWebhookNS,
+		Type:                    csvv1alpha1.MutatingAdmissionWebhook,
+		DeploymentName:          hcoWhDeploymentName,
+		ContainerPort:           util.WebhookPort,
+		AdmissionReviewVersions: stringListToSlice("v1beta1", "v1"),
+		SideEffects:             ptr.To(admissionregistrationv1.SideEffectClassNoneOnDryRun),
+		FailurePolicy:           ptr.To(admissionregistrationv1.Fail),
+		TimeoutSeconds:          ptr.To[int32](10),
+		ObjectSelector: &metav1.LabelSelector{
+			MatchLabels: map[string]string{util.KubernetesMetadataName: params.Namespace},
+		},
+		Rules: []admissionregistrationv1.RuleWithOperations{
+			{
+				Operations: []admissionregistrationv1.OperationType{
+					admissionregistrationv1.Delete,
+				},
+				Rule: admissionregistrationv1.Rule{
+					APIGroups:   []string{""},
+					APIVersions: stringListToSlice("v1"),
+					Resources:   stringListToSlice("namespaces"),
+				},
+			},
+		},
+		WebhookPath: ptr.To(util.HCONSWebhookPath),
+	}
+}
+
+func createHCValidatingWebhook(name, apiVersion, path string) csvv1alpha1.WebhookDescription {
+	return csvv1alpha1.WebhookDescription{
+		GenerateName:            name,
+		Type:                    csvv1alpha1.ValidatingAdmissionWebhook,
+		DeploymentName:          hcoWhDeploymentName,
+		ContainerPort:           util.WebhookPort,
+		AdmissionReviewVersions: stringListToSlice("v1beta1", "v1"),
+		SideEffects:             ptr.To(admissionregistrationv1.SideEffectClassNone),
+		FailurePolicy:           ptr.To(admissionregistrationv1.Fail),
+		MatchPolicy:             ptr.To(admissionregistrationv1.Exact),
+		TimeoutSeconds:          ptr.To[int32](10),
+		Rules: []admissionregistrationv1.RuleWithOperations{
+			{
+				Operations: []admissionregistrationv1.OperationType{
+					admissionregistrationv1.Create,
+					admissionregistrationv1.Delete,
+					admissionregistrationv1.Update,
+				},
+				Rule: admissionregistrationv1.Rule{
+					APIGroups:   stringListToSlice(util.APIVersionGroup),
+					APIVersions: stringListToSlice(apiVersion),
+					Resources:   stringListToSlice("hyperconvergeds"),
+				},
+			},
+		},
+		WebhookPath: ptr.To(path),
 	}
 }
 

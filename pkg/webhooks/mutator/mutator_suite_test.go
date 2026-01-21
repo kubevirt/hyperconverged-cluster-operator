@@ -15,6 +15,7 @@ import (
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 )
 
@@ -29,6 +30,7 @@ func TestMutatorWebhook(t *testing.T) {
 
 	BeforeSuite(func() {
 		for _, f := range []func(*runtime.Scheme) error{
+			hcov1.AddToScheme,
 			hcov1beta1.AddToScheme,
 			cdiv1beta1.AddToScheme,
 			kubevirtcorev1.AddToScheme,
@@ -40,7 +42,7 @@ func TestMutatorWebhook(t *testing.T) {
 		}
 
 		codecFactory = serializer.NewCodecFactory(mutatorScheme)
-		testCodec = codecFactory.LegacyCodec(corev1.SchemeGroupVersion, hcov1beta1.SchemeGroupVersion)
+		testCodec = codecFactory.LegacyCodec(corev1.SchemeGroupVersion, hcov1.SchemeGroupVersion, hcov1beta1.SchemeGroupVersion)
 	})
 
 	RunSpecs(t, "Mutator Webhooks Suite")

@@ -18,7 +18,6 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/component-helpers/scheduling/corev1/nodeaffinity"
-	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -27,7 +26,8 @@ import (
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -63,7 +63,12 @@ type WebhookHandler struct {
 	decoder     admission.Decoder
 }
 
-var hcoTLSConfigCache *openshiftconfigv1.TLSSecurityProfile
+const decodeErrorMsg = "failed to decode the request"
+
+var (
+	hcoTLSConfigCache *openshiftconfigv1.TLSSecurityProfile
+	errDecode         = errors.New(decodeErrorMsg)
+)
 
 func NewWebhookHandler(logger logr.Logger, cli client.Client, decoder admission.Decoder, namespace string, isOpenshift bool, hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile) *WebhookHandler {
 	hcoTLSConfigCache = hcoTLSSecurityProfile
@@ -79,26 +84,50 @@ func NewWebhookHandler(logger logr.Logger, cli client.Client, decoder admission.
 func (wh *WebhookHandler) Handle(ctx context.Context, req admission.Request) admission.Response {
 
 	ctx = admission.NewContextWithRequest(ctx, req)
+	logger := logr.FromContextOrDiscard(ctx)
 
 	// Get the object in the request
-	obj := &v1beta1.HyperConverged{}
+	obj := &hcov1beta1.HyperConverged{}
 
 	dryRun := req.DryRun != nil && *req.DryRun
 
 	var err error
 	switch req.Operation {
 	case admissionv1.Create:
-		if err := wh.decoder.Decode(req, obj); err != nil {
+		v1obj := &hcov1.HyperConverged{}
+		if err = wh.decoder.Decode(req, v1obj); err != nil {
+			logger.Error(err, decodeErrorMsg)
+			return admission.Errored(http.StatusBadRequest, errDecode)
+		}
+
+		if err = obj.ConvertFrom(v1obj); err != nil {
+			logger.Error(err, decodeErrorMsg)
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 
 		err = wh.ValidateCreate(ctx, dryRun, obj)
 	case admissionv1.Update:
-		oldObj := &v1beta1.HyperConverged{}
-		if err := wh.decoder.DecodeRaw(req.Object, obj); err != nil {
+		v1obj := &hcov1.HyperConverged{}
+		if err = wh.decoder.DecodeRaw(req.Object, v1obj); err != nil {
+			logger.Error(err, decodeErrorMsg)
+			return admission.Errored(http.StatusBadRequest, errDecode)
+		}
+
+		if err = obj.ConvertFrom(v1obj); err != nil {
+			logger.Error(err, decodeErrorMsg)
 			return admission.Errored(http.StatusBadRequest, err)
 		}
-		if err := wh.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
+
+		oldObj := &hcov1beta1.HyperConverged{}
+		v1OldObj := &hcov1.HyperConverged{}
+
+		if err = wh.decoder.DecodeRaw(req.OldObject, v1OldObj); err != nil {
+			logger.Error(err, decodeErrorMsg)
+			return admission.Errored(http.StatusBadRequest, errDecode)
+		}
+
+		if err = oldObj.ConvertFrom(v1OldObj); err != nil {
+			logger.Error(err, decodeErrorMsg)
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 
@@ -106,7 +135,16 @@ func (wh *WebhookHandler) Handle(ctx context.Context, req admission.Request) adm
 	case admissionv1.Delete:
 		// In reference to PR: https://github.com/kubernetes/kubernetes/pull/76346
 		// OldObject contains the object being deleted
-		if err := wh.decoder.DecodeRaw(req.OldObject, obj); err != nil {
+
+		v1obj := &hcov1.HyperConverged{}
+
+		if err = wh.decoder.DecodeRaw(req.OldObject, v1obj); err != nil {
+			logger.Error(err, decodeErrorMsg)
+			return admission.Errored(http.StatusBadRequest, errDecode)
+		}
+
+		if err = obj.ConvertFrom(v1obj); err != nil {
+			logger.Error(err, decodeErrorMsg)
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 
@@ -116,25 +154,27 @@ func (wh *WebhookHandler) Handle(ctx context.Context, req admission.Request) adm
 	}
 
 	// Check the error message first.
-	if err != nil {
-		var apiStatus apierrors.APIStatus
-		if errors.As(err, &apiStatus) {
-			return validationResponseFromStatus(false, apiStatus.Status())
-		}
-
-		var vw *ValidationWarning
-		if errors.As(err, &vw) {
-			return admission.Allowed("").WithWarnings(vw.Warnings()...)
-		}
-
-		return admission.Denied(err.Error())
-	}
-
-	// Return allowed if everything succeeded.
-	return admission.Allowed("")
+	return getAdmissionResponse(err)
 }
 
-func (wh *WebhookHandler) ValidateCreate(_ context.Context, dryrun bool, hc *v1beta1.HyperConverged) error {
+func getAdmissionResponse(err error) admission.Response {
+	if err == nil {
+		return admission.Allowed("")
+	}
+	var apiStatus apierrors.APIStatus
+	if errors.As(err, &apiStatus) {
+		return validationResponseFromStatus(false, apiStatus.Status())
+	}
+
+	var vw *ValidationWarning
+	if errors.As(err, &vw) {
+		return admission.Allowed("").WithWarnings(vw.Warnings()...)
+	}
+
+	return admission.Denied(err.Error())
+}
+
+func (wh *WebhookHandler) ValidateCreate(_ context.Context, dryrun bool, hc *hcov1beta1.HyperConverged) error {
 	wh.logger.Info("Validating create", "name", hc.Name, "namespace:", hc.Namespace)
 
 	if err := wh.validateCertConfig(hc); err != nil {
@@ -146,14 +186,6 @@ func (wh *WebhookHandler) ValidateCreate(_ context.Context, dryrun bool, hc *v1b
 	}
 
 	if err := wh.validateTLSSecurityProfiles(hc); err != nil {
-		return err
-	}
-
-	if err := wh.validateMediatedDeviceTypes(hc); err != nil {
-		return err
-	}
-
-	if err := wh.validateFeatureGatesOnCreate(hc); err != nil {
 		return err
 	}
 
@@ -188,7 +220,7 @@ func (wh *WebhookHandler) ValidateCreate(_ context.Context, dryrun bool, hc *v1b
 	return nil
 }
 
-func (wh *WebhookHandler) getOperands(requested *v1beta1.HyperConverged) (*kubevirtcorev1.KubeVirt, *cdiv1beta1.CDI, *networkaddonsv1.NetworkAddonsConfig, error) {
+func (wh *WebhookHandler) getOperands(requested *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirt, *cdiv1beta1.CDI, *networkaddonsv1.NetworkAddonsConfig, error) {
 	if err := wh.validateCertConfig(requested); err != nil {
 		return nil, nil, nil, err
 	}
@@ -213,7 +245,7 @@ func (wh *WebhookHandler) getOperands(requested *v1beta1.HyperConverged) (*kubev
 
 // ValidateUpdate is the ValidateUpdate webhook implementation. It calls all the resources in parallel, to dry-run the
 // upgrade.
-func (wh *WebhookHandler) ValidateUpdate(ctx context.Context, dryrun bool, requested *v1beta1.HyperConverged, exists *v1beta1.HyperConverged) error {
+func (wh *WebhookHandler) ValidateUpdate(ctx context.Context, dryrun bool, requested *hcov1beta1.HyperConverged, exists *hcov1beta1.HyperConverged) error {
 	wh.logger.Info("Validating update", "name", requested.Name)
 
 	if err := wh.validateDataImportCronTemplates(requested); err != nil {
@@ -221,14 +253,6 @@ func (wh *WebhookHandler) ValidateUpdate(ctx context.Context, dryrun bool, reque
 	}
 
 	if err := wh.validateTLSSecurityProfiles(requested); err != nil {
-		return err
-	}
-
-	if err := wh.validateMediatedDeviceTypes(requested); err != nil {
-		return err
-	}
-
-	if err := wh.validateFeatureGatesOnUpdate(requested, exists); err != nil {
 		return err
 	}
 
@@ -305,7 +329,7 @@ func (wh *WebhookHandler) ValidateUpdate(ctx context.Context, dryrun bool, reque
 	return nil
 }
 
-func (wh *WebhookHandler) updateOperatorCr(ctx context.Context, hc *v1beta1.HyperConverged, exists client.Object, opts *client.UpdateOptions) error {
+func (wh *WebhookHandler) updateOperatorCr(ctx context.Context, hc *hcov1beta1.HyperConverged, exists client.Object, opts *client.UpdateOptions) error {
 	err := hcoutil.GetRuntimeObject(ctx, wh.cli, exists)
 	if err != nil {
 		wh.logger.Error(err, "failed to get object from kubernetes", "kind", exists.GetObjectKind())
@@ -351,7 +375,7 @@ func (wh *WebhookHandler) updateOperatorCr(ctx context.Context, hc *v1beta1.Hype
 	return nil
 }
 
-func (wh *WebhookHandler) ValidateDelete(ctx context.Context, dryrun bool, hc *v1beta1.HyperConverged) error {
+func (wh *WebhookHandler) ValidateDelete(ctx context.Context, dryrun bool, hc *hcov1beta1.HyperConverged) error {
 	wh.logger.Info("Validating delete", "name", hc.Name, "namespace", hc.Namespace)
 
 	kv := handlers.NewKubeVirtWithNameOnly(hc)
@@ -373,7 +397,7 @@ func (wh *WebhookHandler) ValidateDelete(ctx context.Context, dryrun bool, hc *v
 	return nil
 }
 
-func (wh *WebhookHandler) validateCertConfig(hc *v1beta1.HyperConverged) error {
+func (wh *WebhookHandler) validateCertConfig(hc *hcov1beta1.HyperConverged) error {
 	minimalDuration := metav1.Duration{Duration: 10 * time.Minute}
 
 	ccValues := make(map[string]time.Duration)
@@ -403,7 +427,7 @@ func (wh *WebhookHandler) validateCertConfig(hc *v1beta1.HyperConverged) error {
 	return nil
 }
 
-func (wh *WebhookHandler) validateDataImportCronTemplates(hc *v1beta1.HyperConverged) error {
+func (wh *WebhookHandler) validateDataImportCronTemplates(hc *hcov1beta1.HyperConverged) error {
 
 	for _, dict := range hc.Spec.DataImportCronTemplates {
 		val, ok := dict.Annotations[hcoutil.DataImportCronEnabledAnnotation]
@@ -422,7 +446,7 @@ func (wh *WebhookHandler) validateDataImportCronTemplates(hc *v1beta1.HyperConve
 	return nil
 }
 
-func (wh *WebhookHandler) validateTLSSecurityProfiles(hc *v1beta1.HyperConverged) error {
+func (wh *WebhookHandler) validateTLSSecurityProfiles(hc *hcov1beta1.HyperConverged) error {
 	tlsSP := hc.Spec.TLSSecurityProfile
 
 	if tlsSP == nil || tlsSP.Custom == nil {
@@ -442,82 +466,14 @@ func (wh *WebhookHandler) validateTLSSecurityProfiles(hc *v1beta1.HyperConverged
 	return nil
 }
 
-func (wh *WebhookHandler) validateMediatedDeviceTypes(hc *v1beta1.HyperConverged) error {
-	mdc := hc.Spec.MediatedDevicesConfiguration
-	if mdc != nil {
-		if len(mdc.MediatedDevicesTypes) > 0 && len(mdc.MediatedDeviceTypes) > 0 && !slices.Equal(mdc.MediatedDevicesTypes, mdc.MediatedDeviceTypes) { //nolint SA1019
-			return fmt.Errorf("mediatedDevicesTypes is deprecated, please use mediatedDeviceTypes instead")
-		}
-		for _, nmdc := range mdc.NodeMediatedDeviceTypes {
-			if len(nmdc.MediatedDevicesTypes) > 0 && len(nmdc.MediatedDeviceTypes) > 0 && !slices.Equal(nmdc.MediatedDevicesTypes, nmdc.MediatedDeviceTypes) { //nolint SA1019
-				return fmt.Errorf("mediatedDevicesTypes is deprecated, please use mediatedDeviceTypes instead")
-			}
-		}
-	}
-	return nil
-}
-
-func (wh *WebhookHandler) validateTuningPolicy(hc *v1beta1.HyperConverged) error {
-	if hc.Spec.TuningPolicy == v1beta1.HyperConvergedHighBurstProfile { //nolint SA1019
+func (wh *WebhookHandler) validateTuningPolicy(hc *hcov1beta1.HyperConverged) error {
+	if hc.Spec.TuningPolicy == hcov1beta1.HyperConvergedHighBurstProfile { //nolint SA1019
 		return newValidationWarning([]string{"spec.tuningPolicy: the highBurst profile is deprecated as of v1.16.0 and will be removed in a future release"})
 	}
 	return nil
 }
 
-const (
-	fgMovedWarning       = "spec.featureGates.%[1]s is deprecated and ignored. It will removed in a future version; use spec.%[1]s instead"
-	fgDeprecationWarning = "spec.featureGates.%s is deprecated and ignored. It will be removed in a future version;"
-)
-
-func (wh *WebhookHandler) validateFeatureGatesOnCreate(hc *v1beta1.HyperConverged) error {
-	warnings := wh.validateDeprecatedFeatureGates(hc)
-	warnings = validateOldFGOnCreate(warnings, hc)
-
-	if len(warnings) > 0 {
-		return newValidationWarning(warnings)
-	}
-
-	return nil
-}
-
-func (wh *WebhookHandler) validateFeatureGatesOnUpdate(requested, exists *v1beta1.HyperConverged) error {
-	warnings := wh.validateDeprecatedFeatureGates(requested)
-	warnings = validateOldFGOnUpdate(warnings, requested, exists)
-
-	if len(warnings) > 0 {
-		return newValidationWarning(warnings)
-	}
-
-	return nil
-}
-
-func (wh *WebhookHandler) validateDeprecatedFeatureGates(hc *v1beta1.HyperConverged) []string {
-	var warnings []string
-
-	//nolint:staticcheck
-	if hc.Spec.FeatureGates.WithHostPassthroughCPU != nil {
-		warnings = append(warnings, fmt.Sprintf(fgDeprecationWarning, "withHostPassthroughCPU"))
-	}
-
-	//nolint:staticcheck
-	if hc.Spec.FeatureGates.DeployTektonTaskResources != nil {
-		warnings = append(warnings, fmt.Sprintf(fgDeprecationWarning, "deployTektonTaskResources"))
-	}
-
-	//nolint:staticcheck
-	if hc.Spec.FeatureGates.NonRoot != nil {
-		warnings = append(warnings, fmt.Sprintf(fgDeprecationWarning, "nonRoot"))
-	}
-
-	//nolint:staticcheck
-	if hc.Spec.FeatureGates.EnableManagedTenantQuota != nil {
-		warnings = append(warnings, fmt.Sprintf(fgDeprecationWarning, "enableManagedTenantQuota"))
-	}
-
-	return warnings
-}
-
-func (wh *WebhookHandler) validateAffinity(hc *v1beta1.HyperConverged) error {
+func (wh *WebhookHandler) validateAffinity(hc *hcov1beta1.HyperConverged) error {
 	if hc.Spec.Workloads.NodePlacement != nil {
 		if err := validateAffinity(hc.Spec.Workloads.NodePlacement.Affinity); err != nil {
 			return fmt.Errorf("invalid workloads node placement affinity: %v", err.Error())
@@ -541,48 +497,6 @@ func validateAffinity(affinity *corev1.Affinity) error {
 	_, err := nodeaffinity.NewNodeSelector(affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution)
 
 	return err
-}
-
-func validateOldFGOnCreate(warnings []string, hc *v1beta1.HyperConverged) []string {
-	//nolint:staticcheck
-	if hc.Spec.FeatureGates.EnableApplicationAwareQuota != nil {
-		warnings = append(warnings, fmt.Sprintf(fgMovedWarning, "enableApplicationAwareQuota"))
-	}
-
-	//nolint:staticcheck
-	if hc.Spec.FeatureGates.EnableCommonBootImageImport != nil {
-		warnings = append(warnings, fmt.Sprintf(fgMovedWarning, "enableCommonBootImageImport"))
-	}
-
-	//nolint:staticcheck
-	if hc.Spec.FeatureGates.DeployVMConsoleProxy != nil {
-		warnings = append(warnings, fmt.Sprintf(fgMovedWarning, "deployVmConsoleProxy"))
-	}
-
-	return warnings
-}
-
-func validateOldFGOnUpdate(warnings []string, hc, prevHC *v1beta1.HyperConverged) []string {
-	//nolint:staticcheck
-	if oldFGChanged(hc.Spec.FeatureGates.EnableApplicationAwareQuota, prevHC.Spec.FeatureGates.EnableApplicationAwareQuota) {
-		warnings = append(warnings, fmt.Sprintf(fgMovedWarning, "enableApplicationAwareQuota"))
-	}
-
-	//nolint:staticcheck
-	if oldFGChanged(hc.Spec.FeatureGates.EnableCommonBootImageImport, prevHC.Spec.FeatureGates.EnableCommonBootImageImport) {
-		warnings = append(warnings, fmt.Sprintf(fgMovedWarning, "enableCommonBootImageImport"))
-	}
-
-	//nolint:staticcheck
-	if oldFGChanged(hc.Spec.FeatureGates.DeployVMConsoleProxy, prevHC.Spec.FeatureGates.DeployVMConsoleProxy) {
-		warnings = append(warnings, fmt.Sprintf(fgMovedWarning, "deployVmConsoleProxy"))
-	}
-
-	return warnings
-}
-
-func oldFGChanged(newFG, prevFG *bool) bool {
-	return newFG != nil && (prevFG == nil || *newFG != *prevFG)
 }
 
 func hasRequiredHTTP2Ciphers(ciphers []string) bool {

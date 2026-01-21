@@ -5542,6 +5542,30 @@ spec:
     deploymentName: hco-webhook
     failurePolicy: Fail
     generateName: validate-hco.kubevirt.io
+    matchPolicy: Exact
+    rules:
+    - apiGroups:
+      - hco.kubevirt.io
+      apiVersions:
+      - v1
+      operations:
+      - CREATE
+      - DELETE
+      - UPDATE
+      resources:
+      - hyperconvergeds
+    sideEffects: None
+    timeoutSeconds: 10
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-hco-kubevirt-io-v1-hyperconverged
+  - admissionReviewVersions:
+    - v1beta1
+    - v1
+    containerPort: 4343
+    deploymentName: hco-webhook
+    failurePolicy: Fail
+    generateName: validate-hco-v1beta1.kubevirt.io
+    matchPolicy: Exact
     rules:
     - apiGroups:
       - hco.kubevirt.io
@@ -5587,6 +5611,29 @@ spec:
     deploymentName: hco-webhook
     failurePolicy: Fail
     generateName: mutate-hyperconverged-hco.kubevirt.io
+    matchPolicy: Exact
+    rules:
+    - apiGroups:
+      - hco.kubevirt.io
+      apiVersions:
+      - v1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - hyperconvergeds
+    sideEffects: NoneOnDryRun
+    timeoutSeconds: 10
+    type: MutatingAdmissionWebhook
+    webhookPath: /mutate-hco-kubevirt-io-v1-hyperconverged
+  - admissionReviewVersions:
+    - v1beta1
+    - v1
+    containerPort: 4343
+    deploymentName: hco-webhook
+    failurePolicy: Fail
+    generateName: mutate-hyperconverged-hco-v1beta1.kubevirt.io
+    matchPolicy: Exact
     rules:
     - apiGroups:
       - hco.kubevirt.io
