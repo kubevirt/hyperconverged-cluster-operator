@@ -1148,3 +1148,29 @@ tests:
     - eval_time: 9m
       alertname: HCOMultiArchGoldenImagesDisabled
       exp_alerts: [ ]
+
+# Test for DeprecatedMachineType alert
+- interval: 1m
+  input_series:
+    - series: 'kubevirt_vm_info{name="deprecated-vm", namespace="default", machine_type="pc-q35-rhel7.6.0", status_group="running"}'
+      values: '1+0x10'
+    - series: 'kubevirt_node_deprecated_machine_types{machine_type="pc-q35-rhel7.6.0"}'
+      values: '1+0x10'
+
+  alert_rule_test:
+    - eval_time: 6m
+      alertname: DeprecatedMachineType
+      exp_alerts:
+        - exp_annotations:
+            summary: "Virtual Machine 'deprecated-vm' in namespace 'default' is using a deprecated machine type."
+            description: "Virtual Machine 'deprecated-vm' in namespace 'default' is using machine type 'pc-q35-rhel7.6.0', which is deprecated. Current status: 'running'."
+            runbook_url: "https://kubevirt.io/monitoring/runbooks/DeprecatedMachineType"
+          exp_labels:
+            severity: "warning"
+            operator_health_impact: "none"
+            namespace: "default"
+            name: "deprecated-vm"
+            machine_type: "pc-q35-rhel7.6.0"
+            kubernetes_operator_part_of: "kubevirt"
+            kubernetes_operator_component: "hyperconverged-cluster-operator"
+            status_group: "running"
