@@ -10,7 +10,9 @@ import (
 	. "github.com/onsi/gomega"
 	routev1 "github.com/openshift/api/route/v1"
 
+	authenticationv1 "k8s.io/api/authentication/v1"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -43,6 +45,13 @@ var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, testNam
 		Expect(err).ToNot(HaveOccurred())
 		Expect(routeHost).ToNot(BeEmpty())
 		alertmanagerURL = fmt.Sprintf("https://%s", routeHost)
+
+		// Ensure we have a valid bearer token for authentication
+		if cliConfig.BearerToken == "" {
+			token, err := getServiceAccountToken(ctx)
+			Expect(err).ToNot(HaveOccurred())
+			cliConfig.BearerToken = token
+		}
 	})
 
 	Context("PodDisruptionBudgetAtLimit", func() {
@@ -103,4 +112,32 @@ func getAlertmanagerRouteHost(ctx context.Context, cli client.Client) (string, e
 	}
 
 	return "", fmt.Errorf("route has no ingress status")
+}
+
+// getServiceAccountToken uses the prometheus-k8s service account from openshift-monitoring
+// to get a token that can be used to access the Alertmanager API
+// This follows the same pattern as the monitoring_test.go
+func getServiceAccountToken(ctx context.Context) (string, error) {
+	k8sClientSet := tests.GetK8sClientSet()
+
+	treq, err := k8sClientSet.CoreV1().ServiceAccounts("openshift-monitoring").CreateToken(
+		ctx,
+		"prometheus-k8s",
+		&authenticationv1.TokenRequest{
+			Spec: authenticationv1.TokenRequestSpec{
+				// Avoid specifying any audiences so that the token will be
+				// issued for the default audience of the issuer.
+			},
+		},
+		metav1.CreateOptions{},
+	)
+	if err != nil {
+		return "", fmt.Errorf("failed to create token: %w", err)
+	}
+
+	if treq.Status.Token == "" {
+		return "", fmt.Errorf("received empty token from TokenRequest")
+	}
+
+	return treq.Status.Token, nil
 }
