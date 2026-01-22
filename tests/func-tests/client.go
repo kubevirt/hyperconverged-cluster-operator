@@ -24,7 +24,7 @@ import (
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcoapi "github.com/kubevirt/hyperconverged-cluster-operator/api"
 )
 
 var (
@@ -74,7 +74,7 @@ func setScheme(cli client.Client) {
 		funcs := []func(scheme2 *runtime.Scheme) error{
 			corev1.AddToScheme,
 			appsv1.AddToScheme,
-			hcov1beta1.AddToScheme,
+			hcoapi.AddToScheme,
 			kvv1.AddToScheme,
 			aaqv1alpha1.AddToScheme,
 			consolev1.AddToScheme,
