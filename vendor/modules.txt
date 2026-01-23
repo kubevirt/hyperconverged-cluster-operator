@@ -363,7 +363,7 @@ github.com/openshift/cluster-kube-descheduler-operator/pkg/apis/descheduler/v1
 ## explicit; go 1.12
 github.com/openshift/custom-resource-status/conditions/v1
 github.com/openshift/custom-resource-status/objectreferences/v1
-# github.com/openshift/library-go v0.0.0-20250725103737-7f9bc3eb865a
+# github.com/openshift/library-go v0.0.0-20251201053823-da1abba45a1c
 ## explicit; go 1.24.0
 github.com/openshift/library-go/pkg/crypto
 # github.com/operator-framework/api v0.32.0
@@ -717,7 +717,7 @@ k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
 k8s.io/api/storagemigration/v1alpha1
-# k8s.io/apiextensions-apiserver v0.34.1 => k8s.io/apiextensions-apiserver v0.34.1
+# k8s.io/apiextensions-apiserver v0.34.3 => k8s.io/apiextensions-apiserver v0.34.1
 ## explicit; go 1.24.0
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions
 k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
@@ -790,7 +790,7 @@ k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/netutil
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/apiserver v0.34.1 => k8s.io/apiserver v0.34.1
+# k8s.io/apiserver v0.34.3 => k8s.io/apiserver v0.34.1
 ## explicit; go 1.24.0
 k8s.io/apiserver/pkg/admission/plugin/webhook/errors
 k8s.io/apiserver/pkg/authentication/user
@@ -1076,7 +1076,7 @@ k8s.io/client-go/util/homedir
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 k8s.io/client-go/util/workqueue
-# k8s.io/component-helpers v0.34.1
+# k8s.io/component-helpers v0.34.3
 ## explicit; go 1.24.0
 k8s.io/component-helpers/scheduling/corev1/nodeaffinity
 # k8s.io/klog/v2 v2.130.1
@@ -1115,8 +1115,8 @@ k8s.io/utils/trace
 ## explicit; go 1.24.0
 kubevirt.io/api/core
 kubevirt.io/api/core/v1
-# kubevirt.io/application-aware-quota v1.6.0
-## explicit; go 1.22.11
+# kubevirt.io/application-aware-quota v1.7.0
+## explicit; go 1.24.0
 kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core
 kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1
 # kubevirt.io/containerized-data-importer-api v1.64.0
