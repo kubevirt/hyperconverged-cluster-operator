@@ -439,6 +439,7 @@ type VirtualMachineOptions struct {
 // HyperConvergedFeatureGates is a set of optional feature gates to enable or disable new features that are not enabled
 // by default yet.
 // +k8s:openapi-gen=true
+// +k8s:conversion-gen=false
 type HyperConvergedFeatureGates struct {
 	// Allow to expose a limited set of host metrics to guests.
 	// +optional
