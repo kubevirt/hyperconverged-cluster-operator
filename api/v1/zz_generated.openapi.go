@@ -36,7 +36,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.CertRotateConfigServer":               schema_kubevirt_hyperconverged_cluster_operator_api_v1_CertRotateConfigServer(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConverged":                       schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConverged(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedCertConfig":             schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedCertConfig(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedFeatureGates":           schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedFeatureGates(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedObsoleteCPUs":           schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedObsoleteCPUs(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedSpec":                   schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedStatus":                 schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedStatus(ref),
@@ -225,169 +224,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedCertCo
 	}
 }
 
-func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedFeatureGates(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "HyperConvergedFeatureGates is a set of optional feature gates to enable or disable new features that are not enabled by default yet.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"downwardMetrics": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Allow to expose a limited set of host metrics to guests.",
-							Default:     false,
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"withHostPassthroughCPU": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: there is no such FG in KubeVirt. This field is ignored",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"enableCommonBootImageImport": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: This field is ignored. Use spec.enableCommonBootImageImport instead",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"deployTektonTaskResources": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: This field is ignored and will be removed on the next version of the API.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"deployVmConsoleProxy": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: This field is ignored and will be removed on the next version of the API. Use spec.deployVmConsoleProxy instead",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"deployKubeSecondaryDNS": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deploy KubeSecondaryDNS by CNAO",
-							Default:     false,
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"deployKubevirtIpamController": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: this field is ignored and will be removed in the next version of the API.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"nonRoot": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: // Deprecated: This field is ignored and will be removed on the next version of the API.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"disableMDevConfiguration": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Disable mediated devices handling on KubeVirt",
-							Default:     false,
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"persistentReservation": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Enable persistent reservation of a LUN through the SCSI Persistent Reserve commands on Kubevirt. In order to issue privileged SCSI ioctls, the VM requires activation of the persistent reservation flag. Once this feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod.",
-							Default:     false,
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"enableManagedTenantQuota": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: This field is ignored and will be removed on the next version of the API.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"autoResourceLimits": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: this field is ignored and will be removed in the next version of the API.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"alignCPUs": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Enable KubeVirt to request up to two additional dedicated CPUs in order to complete the total CPU count to an even parity when using emulator thread isolation. Note: this feature is in Developer Preview.",
-							Default:     false,
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"enableApplicationAwareQuota": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: This field is ignored and will be removed on the next version of the API. Use spec.enableApplicationAwareQuota instead",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"primaryUserDefinedNetworkBinding": {
-						SchemaProps: spec.SchemaProps{
-							Description: "primaryUserDefinedNetworkBinding deploys the needed configurations for kubevirt users to be able to bind their VM to a UDN network on the VM's primary interface. Deprecated: this field is ignored and will be removed in the next version of the API.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"enableMultiArchBootImageImport": {
-						SchemaProps: spec.SchemaProps{
-							Description: "EnableMultiArchBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures. Setting this field to true will allow the HCO to create Golden Images for different CPU architectures.\n\nThis feature is in Developer Preview.",
-							Default:     false,
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"decentralizedLiveMigration": {
-						SchemaProps: spec.SchemaProps{
-							Description: "DecentralizedLiveMigration enables the decentralized live migration (cross-cluster migration) feature. This feature allows live migration of VirtualMachineInstances between different clusters. This feature is in Developer Preview.",
-							Default:     false,
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"declarativeHotplugVolumes": {
-						SchemaProps: spec.SchemaProps{
-							Description: "DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt. When set to true, the \"DeclarativeHotplugVolumes\" feature gate is enabled instead of \"HotplugVolumes\". When set to false or nil, the \"HotplugVolumes\" feature gate is enabled (default behavior). This feature is in Developer Preview.",
-							Default:     false,
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"videoConfig": {
-						SchemaProps: spec.SchemaProps{
-							Description: "EnableVideoDeviceConfiguration allows users to configure video device types for their virtual machines. This can be useful for workloads that require specific video capabilities or architectures. Note: This feature is in Tech Preview.",
-							Default:     true,
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"objectGraph": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking. Note: This feature is in Developer Preview.",
-							Default:     false,
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
 func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedObsoleteCPUs(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -452,8 +288,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 					"featureGates": {
 						SchemaProps: spec.SchemaProps{
 							Description: "featureGates is a map of feature gate flags. Setting a flag to `true` will enable the feature. Setting `false` or removing the feature gate, disables the feature.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedFeatureGates"),
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Ref: ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate"),
+									},
+								},
+							},
 						},
 					},
 					"liveMigrationConfig": {
@@ -701,7 +543,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HigherWorkloadDensityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedCertConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedFeatureGates", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedObsoleteCPUs", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedWorkloadUpdateStrategy", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LiveMigrationConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.MediatedDevicesConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.OperandResourceRequirements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PermittedHostDevices", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageImportConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualMachineOptions", "github.com/openshift/api/config/v1.TLSSecurityProfile", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin", "kubevirt.io/api/core/v1.KSMConfiguration", "kubevirt.io/api/core/v1.LiveUpdateConfiguration", "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1.FilesystemOverhead"},
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HigherWorkloadDensityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedCertConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedObsoleteCPUs", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedWorkloadUpdateStrategy", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LiveMigrationConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.MediatedDevicesConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.OperandResourceRequirements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PermittedHostDevices", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageImportConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualMachineOptions", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate", "github.com/openshift/api/config/v1.TLSSecurityProfile", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin", "kubevirt.io/api/core/v1.KSMConfiguration", "kubevirt.io/api/core/v1.LiveUpdateConfiguration", "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1.FilesystemOverhead"},
 	}
 }
 

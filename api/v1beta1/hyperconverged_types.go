@@ -70,6 +70,7 @@ type HyperConvergedSpec struct {
 	// the feature. Setting `false` or removing the feature gate, disables the feature.
 	// +kubebuilder:default={"downwardMetrics": false, "deployKubeSecondaryDNS": false, "disableMDevConfiguration": false, "persistentReservation": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": false, "declarativeHotplugVolumes": false, "videoConfig": true, "objectGraph": false}
 	// +optional
+	// +k8s:conversion-gen=false
 	FeatureGates HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 
 	// Live migration limits and timeouts are applied so that migration processes do not
