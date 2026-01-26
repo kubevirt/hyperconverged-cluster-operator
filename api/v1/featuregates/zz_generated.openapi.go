@@ -50,9 +50,9 @@ func schema_hyperconverged_cluster_operator_api_v1_featuregates_FeatureGate(ref 
 							Format:      "",
 						},
 					},
-					"enabled": {
+					"state": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Enabled determines if the feature gate is enabled (\"True\"), or disabled (\"False\"). The default value is \"True\".",
+							Description: "State determines if the feature gate is enabled (\"Enabled\"), or disabled (\"False\"). The default value is \"Disabled\".",
 							Type:        []string{"string"},
 							Format:      "",
 						},

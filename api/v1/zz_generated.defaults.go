@@ -40,46 +40,6 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 }
 
 func SetObjectDefaults_HyperConverged(in *HyperConverged) {
-	if in.Spec.FeatureGates.DownwardMetrics == nil {
-		var ptrVar1 bool = false
-		in.Spec.FeatureGates.DownwardMetrics = &ptrVar1
-	}
-	if in.Spec.FeatureGates.DeployKubeSecondaryDNS == nil {
-		var ptrVar1 bool = false
-		in.Spec.FeatureGates.DeployKubeSecondaryDNS = &ptrVar1
-	}
-	if in.Spec.FeatureGates.DisableMDevConfiguration == nil {
-		var ptrVar1 bool = false
-		in.Spec.FeatureGates.DisableMDevConfiguration = &ptrVar1
-	}
-	if in.Spec.FeatureGates.PersistentReservation == nil {
-		var ptrVar1 bool = false
-		in.Spec.FeatureGates.PersistentReservation = &ptrVar1
-	}
-	if in.Spec.FeatureGates.AlignCPUs == nil {
-		var ptrVar1 bool = false
-		in.Spec.FeatureGates.AlignCPUs = &ptrVar1
-	}
-	if in.Spec.FeatureGates.EnableMultiArchBootImageImport == nil {
-		var ptrVar1 bool = false
-		in.Spec.FeatureGates.EnableMultiArchBootImageImport = &ptrVar1
-	}
-	if in.Spec.FeatureGates.DecentralizedLiveMigration == nil {
-		var ptrVar1 bool = false
-		in.Spec.FeatureGates.DecentralizedLiveMigration = &ptrVar1
-	}
-	if in.Spec.FeatureGates.DeclarativeHotplugVolumes == nil {
-		var ptrVar1 bool = false
-		in.Spec.FeatureGates.DeclarativeHotplugVolumes = &ptrVar1
-	}
-	if in.Spec.FeatureGates.VideoConfig == nil {
-		var ptrVar1 bool = true
-		in.Spec.FeatureGates.VideoConfig = &ptrVar1
-	}
-	if in.Spec.FeatureGates.ObjectGraph == nil {
-		var ptrVar1 bool = false
-		in.Spec.FeatureGates.ObjectGraph = &ptrVar1
-	}
 	if in.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster == nil {
 		var ptrVar1 uint32 = 5
 		in.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster = &ptrVar1

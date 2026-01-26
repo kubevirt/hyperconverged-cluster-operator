@@ -59,16 +59,6 @@ spec:
               deployVmConsoleProxy: false
               enableApplicationAwareQuota: false
               enableCommonBootImageImport: true
-              featureGates:
-                decentralizedLiveMigration: false
-                declarativeHotplugVolumes: false
-                deployKubeSecondaryDNS: false
-                disableMDevConfiguration: false
-                downwardMetrics: false
-                enableMultiArchBootImageImport: false
-                objectGraph: false
-                persistentReservation: false
-                videoConfig: true
               liveMigrationConfig:
                 allowAutoConverge: false
                 allowPostCopy: false
@@ -1086,130 +1076,29 @@ spec:
                 - External
                 type: string
               featureGates:
-                default:
-                  decentralizedLiveMigration: false
-                  declarativeHotplugVolumes: false
-                  deployKubeSecondaryDNS: false
-                  disableMDevConfiguration: false
-                  downwardMetrics: false
-                  enableMultiArchBootImageImport: false
-                  objectGraph: false
-                  persistentReservation: false
-                  videoConfig: true
                 description: |-
-                  featureGates is a map of feature gate flags. Setting a flag to `true` will enable
-                  the feature. Setting `false` or removing the feature gate, disables the feature.
-                properties:
-                  alignCPUs:
-                    default: false
-                    description: |-
-                      Enable KubeVirt to request up to two additional dedicated CPUs
-                      in order to complete the total CPU count to an even parity when using emulator thread isolation.
-                      Note: this feature is in Developer Preview.
-                    type: boolean
-                  autoResourceLimits:
-                    description: 'Deprecated: this field is ignored and will be removed
-                      in the next version of the API.'
-                    type: boolean
-                  decentralizedLiveMigration:
-                    default: false
-                    description: |-
-                      DecentralizedLiveMigration enables the decentralized live migration (cross-cluster migration) feature.
-                      This feature allows live migration of VirtualMachineInstances between different clusters.
-                      This feature is in Developer Preview.
-                    type: boolean
-                  declarativeHotplugVolumes:
-                    default: false
-                    description: |-
-                      DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt.
-                      When set to true, the "DeclarativeHotplugVolumes" feature gate is enabled instead of "HotplugVolumes".
-                      When set to false or nil, the "HotplugVolumes" feature gate is enabled (default behavior).
-                      This feature is in Developer Preview.
-                    type: boolean
-                  deployKubeSecondaryDNS:
-                    default: false
-                    description: Deploy KubeSecondaryDNS by CNAO
-                    type: boolean
-                  deployKubevirtIpamController:
-                    description: 'Deprecated: this field is ignored and will be removed
-                      in the next version of the API.'
-                    type: boolean
-                  deployTektonTaskResources:
-                    description: 'Deprecated: This field is ignored and will be removed
-                      on the next version of the API.'
-                    type: boolean
-                  deployVmConsoleProxy:
-                    description: |-
-                      Deprecated: This field is ignored and will be removed on the next version of the API.
-                      Use spec.deployVmConsoleProxy instead
-                    type: boolean
-                  disableMDevConfiguration:
-                    default: false
-                    description: Disable mediated devices handling on KubeVirt
-                    type: boolean
-                  downwardMetrics:
-                    default: false
-                    description: Allow to expose a limited set of host metrics to
-                      guests.
-                    type: boolean
-                  enableApplicationAwareQuota:
-                    description: |-
-                      Deprecated: This field is ignored and will be removed on the next version of the API.
-                      Use spec.enableApplicationAwareQuota instead
-                    type: boolean
-                  enableCommonBootImageImport:
-                    description: 'Deprecated: This field is ignored. Use spec.enableCommonBootImageImport
-                      instead'
-                    type: boolean
-                  enableManagedTenantQuota:
-                    description: 'Deprecated: This field is ignored and will be removed
-                      on the next version of the API.'
-                    type: boolean
-                  enableMultiArchBootImageImport:
-                    default: false
-                    description: |-
-                      EnableMultiArchBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures.
-                      Setting this field to true will allow the HCO to create Golden Images for different CPU architectures.
-
-                      This feature is in Developer Preview.
-                    type: boolean
-                  nonRoot:
-                    description: 'Deprecated: // Deprecated: This field is ignored
-                      and will be removed on the next version of the API.'
-                    type: boolean
-                  objectGraph:
-                    default: false
-                    description: |-
-                      ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt.
-                      This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking.
-                      Note: This feature is in Developer Preview.
-                    type: boolean
-                  persistentReservation:
-                    default: false
-                    description: |-
-                      Enable persistent reservation of a LUN through the SCSI Persistent Reserve commands on Kubevirt.
-                      In order to issue privileged SCSI ioctls, the VM requires activation of the persistent reservation flag.
-                      Once this feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod.
-                      Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod.
-                    type: boolean
-                  primaryUserDefinedNetworkBinding:
-                    description: |-
-                      primaryUserDefinedNetworkBinding deploys the needed configurations for kubevirt users to
-                      be able to bind their VM to a UDN network on the VM's primary interface.
-                      Deprecated: this field is ignored and will be removed in the next version of the API.
-                    type: boolean
-                  videoConfig:
-                    default: true
-                    description: |-
-                      EnableVideoDeviceConfiguration allows users to configure video device types for their virtual machines.
-                      This can be useful for workloads that require specific video capabilities or architectures.
-                      Note: This feature is in Tech Preview.
-                    type: boolean
-                  withHostPassthroughCPU:
-                    description: 'Deprecated: there is no such FG in KubeVirt. This
-                      field is ignored'
-                    type: boolean
-                type: object
+                  FeatureGates is a set of optional feature gates to enable or disable new features that are not
+                  generally available yet.
+                  Add a new FeatureGate Object to this set, to enable a feature that is disabled by default, or to
+                  disable a feature that is enabled by default.
+                items:
+                  description: FeatureGate is an optional feature gate to enable or
+                    disable a new feature that is not generally available yet.
+                  properties:
+                    name:
+                      description: Name is the feature gate name
+                      type: string
+                    state:
+                      description: State determines if the feature gate is enabled
+                        ("Enabled"), or disabled ("False"). The default value is "Disabled".
+                      enum:
+                      - Enabled
+                      - Disabled
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
               filesystemOverhead:
                 description: |-
                   FilesystemOverhead describes the space reserved for overhead when using Filesystem volumes.
