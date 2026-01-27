@@ -68,7 +68,7 @@ var _ = Describe("Hyperconverged API: Webhook", func() {
 			mgr, err := commontestutils.NewManagerMock(&rest.Config{}, manager.Options{WebhookServer: ws, Scheme: cl.Scheme()}, cl, logger)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(SetupWebhookWithManager(mgr, true, nil)).To(Succeed())
+			Expect(SetupWebhookWithManager(mgr, true)).To(Succeed())
 		})
 
 	})

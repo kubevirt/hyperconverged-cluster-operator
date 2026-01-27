@@ -14,7 +14,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
@@ -36,12 +35,12 @@ import (
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
 	whapiservercontrollers "github.com/kubevirt/hyperconverged-cluster-operator/controllers/webhooks/apiserver-controller"
 	bearertokencontroller "github.com/kubevirt/hyperconverged-cluster-operator/controllers/webhooks/bearer-token-controller"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/authorization"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks"
 )
@@ -116,7 +115,7 @@ func main() {
 			KeyName:        hcoutil.WebhookKeyName,
 			BindAddress:    fmt.Sprintf("%s:%d", hcoutil.MetricsHost, hcoutil.MetricsPort),
 			FilterProvider: authorization.HttpWithBearerToken,
-			TLSOpts:        []func(*tls.Config){cmdcommon.MutateTLSConfig},
+			TLSOpts:        []func(*tls.Config){tlssecprofile.MutateTLSConfig},
 		},
 		HealthProbeBindAddress:     fmt.Sprintf("%s:%d", hcoutil.HealthProbeHost, hcoutil.HealthProbePort),
 		ReadinessEndpointName:      hcoutil.ReadinessEndpointName,
@@ -131,7 +130,7 @@ func main() {
 			CertName: hcoutil.WebhookCertName,
 			KeyName:  hcoutil.WebhookKeyName,
 			Port:     hcoutil.WebhookPort,
-			TLSOpts:  []func(*tls.Config){cmdcommon.MutateTLSConfig},
+			TLSOpts:  []func(*tls.Config){tlssecprofile.MutateTLSConfig},
 		}),
 		Cache: getCacheOption(operatorNamespace, hcoutil.GetClusterInfo()),
 	})
@@ -153,16 +152,14 @@ func main() {
 	err = mgr.AddReadyzCheck("ready", healthz.Ping)
 	cmdHelper.ExitOnError(err, "unable to add ready check")
 
-	hcoCR := &hcov1beta1.HyperConverged{}
-	hcoCR.Name = hcoutil.HyperConvergedName
-	hcoCR.Namespace = operatorNamespace
+	err = cmdcommon.SetHyperConvergedTLSProfile(ctx, operatorNamespace, apiClient)
+	cmdHelper.ExitOnError(err, "Cannot read existing HCO CR")
 
-	var hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile
-	err = apiClient.Get(ctx, client.ObjectKeyFromObject(hcoCR), hcoCR)
-	if err != nil && !apierrors.IsNotFound(err) {
-		cmdHelper.ExitOnError(err, "Cannot read existing HCO CR")
-	} else {
-		hcoTLSSecurityProfile = hcoCR.Spec.TLSSecurityProfile
+	if ci.IsOpenshift() {
+		_, err = tlssecprofile.Refresh(ctx, apiClient)
+		if err != nil {
+			logger.Error(err, "Cannot refresh TLS profile from the APIServer CR")
+		}
 	}
 
 	logger.Info("Registering the APIServer reconciler")
@@ -173,7 +170,7 @@ func main() {
 	err = bearertokencontroller.RegisterReconciler(mgr, ci, eventEmitter)
 	cmdHelper.ExitOnError(err, "Cannot register the Bearer Token reconciler")
 
-	if err = webhooks.SetupWebhookWithManager(mgr, ci.IsOpenshift(), hcoTLSSecurityProfile); err != nil {
+	if err = webhooks.SetupWebhookWithManager(mgr, ci.IsOpenshift()); err != nil {
 		logger.Error(err, "unable to create webhook", "webhook", "HyperConverged")
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to create webhook")
 		os.Exit(1)

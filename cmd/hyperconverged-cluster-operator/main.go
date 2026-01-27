@@ -73,6 +73,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/upgradepatch"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -145,6 +146,9 @@ func main() {
 	ctx := context.Background()
 	err = cmdcommon.ClusterInitializations(ctx, apiClient, scheme, logger)
 	cmdHelper.ExitOnError(err, "Cannot detect cluster type")
+
+	err = cmdcommon.SetHyperConvergedTLSProfile(ctx, operatorNamespace, apiClient)
+	cmdHelper.ExitOnError(err, "Cannot read existing HCO CR")
 
 	_, err = nodeinfo.HandleNodeChanges(ctx, apiClient, nil, logger)
 	cmdHelper.ExitOnError(err, "Failed to read cluster nodes")
@@ -470,7 +474,7 @@ func getManagerOptions(operatorNamespace string, needLeaderElection bool, ci hco
 			SecureServing:  true,
 			BindAddress:    fmt.Sprintf("%s:%d", hcoutil.MetricsHost, hcoutil.MetricsPort),
 			FilterProvider: authorization.HttpWithBearerToken,
-			TLSOpts:        []func(*tls.Config){cmdcommon.MutateTLSConfig},
+			TLSOpts:        []func(*tls.Config){tlssecprofile.MutateTLSConfig},
 		},
 		HealthProbeBindAddress: fmt.Sprintf("%s:%d", hcoutil.HealthProbeHost, hcoutil.HealthProbePort),
 		ReadinessEndpointName:  hcoutil.ReadinessEndpointName,

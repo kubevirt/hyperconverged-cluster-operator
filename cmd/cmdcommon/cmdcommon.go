@@ -2,7 +2,6 @@ package cmdcommon
 
 import (
 	"context"
-	"crypto/tls"
 	"flag"
 	"fmt"
 	"net/http"
@@ -12,17 +11,19 @@ import (
 	"slices"
 
 	"github.com/go-logr/logr"
-	"github.com/openshift/library-go/pkg/crypto"
 	"github.com/spf13/pflag"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/validator"
 )
 
 // list of namespace allowed for HCO installations (for tests)
@@ -180,17 +181,26 @@ func getOperatorNamespaceFromEnv() (string, error) {
 	return namespace, nil
 }
 
-func MutateTLSConfig(cfg *tls.Config) {
-	// This callback executes on each client call returning a new config to be used
-	// please be aware that the APIServer is using http keepalive so this is going to
-	// be executed only after a while for fresh connections and not on existing ones
-	cfg.GetConfigForClient = func(_ *tls.ClientHelloInfo) (*tls.Config, error) {
-		cipherNames, minTypedTLSVersion := validator.SelectCipherSuitesAndMinTLSVersion()
-
-		cfg.CipherSuites = crypto.CipherSuitesOrDie(crypto.OpenSSLToIANACipherSuites(cipherNames))
-		cfg.MinVersion = crypto.TLSVersionOrDie(string(minTypedTLSVersion))
-		return cfg, nil
+func SetHyperConvergedTLSProfile(ctx context.Context, operatorNamespace string, apiClient client.Client) error {
+	hcoCR := &hcov1beta1.HyperConverged{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      hcoutil.HyperConvergedName,
+			Namespace: operatorNamespace,
+		},
 	}
+
+	err := apiClient.Get(ctx, client.ObjectKeyFromObject(hcoCR), hcoCR)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			tlssecprofile.SetHyperConvergedTLSSecurityProfile(nil)
+			return nil
+		}
+		return err
+	}
+
+	tlssecprofile.SetHyperConvergedTLSSecurityProfile(hcoCR.Spec.TLSSecurityProfile)
+
+	return nil
 }
 
 func ClusterInitializations(ctx context.Context, cl client.Client, scheme *apiruntime.Scheme, logger logr.Logger) error {
