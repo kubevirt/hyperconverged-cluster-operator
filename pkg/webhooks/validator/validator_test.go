@@ -451,6 +451,15 @@ var _ = Describe("webhooks validator", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("invalid value for spec.tlsSecurityProfile.custom.minTLSVersion"))
 			})
+
+			It("should fail when type is Custom but custom field is nil", func() {
+				cr.Spec.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+					Type:   openshiftconfigv1.TLSProfileCustomType,
+					Custom: nil,
+				}
+
+				Expect(wh.ValidateCreate(ctx, dryRun, cr)).To(MatchError(ContainSubstring("missing required field spec.tlsSecurityProfile.custom when type is Custom")))
+			})
 		})
 
 		Context("validate deprecated FGs", func() {
@@ -1399,6 +1408,20 @@ var _ = Describe("webhooks validator", func() {
 				err := updateTLSSecurityProfile("invalidProtocolVersion", []string{"TLS_AES_128_GCM_SHA256", "TLS_CHACHA20_POLY1305_SHA256"})
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("invalid value for spec.tlsSecurityProfile.custom.minTLSVersion"))
+			})
+
+			It("should fail when type is Custom but custom field is nil", func() {
+				cli := getFakeClient(hco)
+
+				wh := NewWebhookHandler(logger, cli, decoder, HcoValidNamespace, true, nil)
+
+				newHco := hco.DeepCopy()
+				newHco.Spec.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+					Type:   openshiftconfigv1.TLSProfileCustomType,
+					Custom: nil,
+				}
+
+				Expect(wh.ValidateUpdate(ctx, dryRun, newHco, hco)).To(MatchError(ContainSubstring("missing required field spec.tlsSecurityProfile.custom when type is Custom")))
 			})
 		})
 

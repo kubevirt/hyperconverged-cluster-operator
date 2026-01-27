@@ -425,7 +425,14 @@ func (wh *WebhookHandler) validateDataImportCronTemplates(hc *v1beta1.HyperConve
 func (wh *WebhookHandler) validateTLSSecurityProfiles(hc *v1beta1.HyperConverged) error {
 	tlsSP := hc.Spec.TLSSecurityProfile
 
-	if tlsSP == nil || tlsSP.Custom == nil {
+	if tlsSP == nil {
+		return nil
+	}
+
+	if tlsSP.Custom == nil {
+		if tlsSP.Type == openshiftconfigv1.TLSProfileCustomType {
+			return fmt.Errorf("missing required field spec.tlsSecurityProfile.custom when type is Custom")
+		}
 		return nil
 	}
 
