@@ -1077,10 +1077,117 @@ spec:
                 type: string
               featureGates:
                 description: |-
-                  FeatureGates is a set of optional feature gates to enable or disable new features that are not
-                  generally available yet.
-                  Add a new FeatureGate Object to this set, to enable a feature that is disabled by default, or to
-                  disable a feature that is enabled by default.
+                  FeatureGates is a set of optional feature gates to enable or disable new
+                  features that are not generally available yet.
+                  Add a new FeatureGate Object to this set, to enable a feature that is
+                  disabled by default, or to disable a feature that is enabled by default.
+
+                  A feature gate may be in the following phases:
+                  * Alpha: the feature is in dev-preview. It is disabled by default, but can
+                    be enabled.
+                  * Beta: the feature gate is in tech-preview. It is enabled by default, but
+                    can be disabled.
+                  * GA: the feature is graduated and is always enabled. There is no way to
+                    disable it.
+                  * Deprecated: the feature is no longer supported. There is no way to enable
+                    it
+
+                  Feature-Gate list:
+                  * alignCPUs:
+                    Enable KubeVirt to request up to two additional dedicated CPUs in order to
+                    complete the total CPU count to an even parity when using emulator thread
+                    isolation.
+                    Note: this feature is in Developer Preview.
+                    Phase: Alpha
+
+                  * decentralizedLiveMigration:
+                    enables the decentralized live migration (cross-cluster migration) feature.
+                    This feature allows live migration of VirtualMachineInstances between
+                    different clusters.
+                    Note: This feature is in Developer Preview.
+                    Phase: Alpha
+
+                  * declarativeHotplugVolumes:
+                    enables the use of the declarative volume hotplug feature in KubeVirt.
+                    When enabled, the "DeclarativeHotplugVolumes" feature gate is enabled in
+                    the KubeVirt CR, instead of the "HotplugVolumes" feature gate.
+                    When disabled, the "HotplugVolumes" feature gate is enabled (default
+                    behavior).
+                    Phase: Alpha
+
+                  * deployKubeSecondaryDNS:
+                    Deploy KubeSecondaryDNS by CNAO
+                    Phase: Alpha
+
+                  * disableMDevConfiguration:
+                    Disable mediated devices handling on KubeVirt
+                    Phase: Alpha
+
+                  * downwardMetrics:
+                    Allow to expose a limited set of host metrics to guests.
+                    Phase: Alpha
+
+                  * enableMultiArchBootImageImport:
+                    allows the HCO to run on heterogeneous clusters with different CPU
+                    architectures.
+                    Enabling this feature gate will allow the HCO to create Golden Images for
+                    different CPU architectures.
+                    Phase: Alpha
+
+                  * objectGraph:
+                    enables the ObjectGraph VM and VMI subresource in KubeVirt.
+                    This subresource returns a structured list of k8s objects that are related
+                    to the specified VM or VMI, enabling better dependency tracking.
+                    Phase: Alpha
+
+                  * persistentReservation:
+                    Enable persistent reservation of a LUN through the SCSI Persistent Reserve
+                    commands on Kubevirt.
+                    In order to issue privileged SCSI ioctls, the VM requires activation of the
+                    persistent reservation flag.
+                    Once this feature gate is enabled, then the additional container with the
+                    qemu-pr-helper is deployed inside the virt-handler pod.
+                    Enabling (or removing) the feature gate causes the redeployment of the
+                    virt-handler pod.
+                    Phase: Alpha
+
+                  * videoConfig:
+                    allows users to configure video device types for their virtual machines.
+                    This can be useful for workloads that require specific video capabilities
+                    or architectures.
+                    Phase: Beta
+
+                  * autoResourceLimits:
+                    Phase: Deprecated
+
+                  * deployKubevirtIpamController:
+                    Phase: Deprecated
+
+                  * deployTektonTaskResources:
+                    Phase: Deprecated
+
+                  * deployVmConsoleProxy:
+                    Phase: Deprecated
+
+                  * enableApplicationAwareQuota:
+                    This feature gate is ignored. Use spec.enableApplicationAwareQuota field instead
+                    Phase: Deprecated
+
+                  * enableCommonBootImageImport:
+                    This feature gate is ignored. Use spec.enableCommonBootImageImport field instead
+                    Phase: Deprecated
+
+                  * enableManagedTenantQuota:
+                    Phase: Deprecated
+
+                  * nonRoot:
+                    Phase: Deprecated
+
+                  * primaryUserDefinedNetworkBinding:
+                    Phase: Deprecated
+
+                  * withHostPassthroughCPU:
+                    Phase: Deprecated
                 items:
                   description: FeatureGate is an optional feature gate to enable or
                     disable a new feature that is not generally available yet.

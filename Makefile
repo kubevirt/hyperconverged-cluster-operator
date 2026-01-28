@@ -244,7 +244,10 @@ gogenerate-crd-creator: generate
 	go generate ./tools/csv-merger
 	go generate ./tools/manifest-templator
 
-generate:
+generate-featuregate-comment:
+	go run ./tools/feature-gate-doc/
+
+generate: generate-featuregate-comment
 	./hack/generate.sh
 
 generate-doc: build-docgen
@@ -367,6 +370,7 @@ push-builder-image: retag-builder-image
 		deploy_fake_kubedescheduler \
 		build-docgen \
 		gogenerate \
+		generate-featuregate-comment \
 		generate \
 		generate-doc \
 		validate-no-offensive-lang \
