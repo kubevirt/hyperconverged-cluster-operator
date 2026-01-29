@@ -7,12 +7,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-func getHcoObject(ctx context.Context, cli client.Client, namespace string) (*v1beta1.HyperConverged, error) {
-	hco := &v1beta1.HyperConverged{
+func getHcoObject(ctx context.Context, cli client.Client, namespace string) (*hcov1.HyperConverged, error) {
+	hco := &hcov1.HyperConverged{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      hcoutil.HyperConvergedName,
 			Namespace: namespace,

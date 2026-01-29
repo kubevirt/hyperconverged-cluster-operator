@@ -13,31 +13,31 @@ import (
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
-	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	goldenimages "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/golden-images"
 )
 
 var (
-	hcMutatorLogger = logf.Log.WithName("hyperConverged mutator")
+	hcV1Beta1MutatorLogger = logf.Log.WithName("hyperConverged v1beta1 mutator")
 
-	_ admission.Handler = &HyperConvergedMutator{}
+	_ admission.Handler = &HyperConvergedV1Beta1Mutator{}
 )
 
-// HyperConvergedMutator mutates HyperConverged requests
-type HyperConvergedMutator struct {
+// HyperConvergedV1Beta1Mutator mutates HyperConverged v1beta1 requests
+type HyperConvergedV1Beta1Mutator struct {
 	decoder admission.Decoder
 	cli     client.Client
 }
 
-func NewHyperConvergedMutator(cli client.Client, decoder admission.Decoder) *HyperConvergedMutator {
-	return &HyperConvergedMutator{
+func NewHyperConvergedV1Beta1Mutator(cli client.Client, decoder admission.Decoder) *HyperConvergedV1Beta1Mutator {
+	return &HyperConvergedV1Beta1Mutator{
 		cli:     cli,
 		decoder: decoder,
 	}
 }
 
-func (hcm *HyperConvergedMutator) Handle(_ context.Context, req admission.Request) admission.Response {
-	hcMutatorLogger.Info("reaching HyperConvergedMutator.Handle")
+func (hcm *HyperConvergedV1Beta1Mutator) Handle(_ context.Context, req admission.Request) admission.Response {
+	hcV1Beta1MutatorLogger.Info("reaching HyperConvergedMutator.Handle")
 
 	if req.Operation == admissionv1.Update || req.Operation == admissionv1.Create {
 		return hcm.mutateHyperConverged(req)
@@ -47,20 +47,15 @@ func (hcm *HyperConvergedMutator) Handle(_ context.Context, req admission.Reques
 	return admission.Allowed(ignoreOperationMessage)
 }
 
-const (
-	annotationPathTemplate     = "/spec/dataImportCronTemplates/%d/metadata/annotations"
-	dictAnnotationPathTemplate = annotationPathTemplate + "/cdi.kubevirt.io~1storage.bind.immediate.requested"
-)
-
-func (hcm *HyperConvergedMutator) mutateHyperConverged(req admission.Request) admission.Response {
-	hc := &hcov1.HyperConverged{}
+func (hcm *HyperConvergedV1Beta1Mutator) mutateHyperConverged(req admission.Request) admission.Response {
+	hc := &hcov1beta1.HyperConverged{}
 	err := hcm.decoder.Decode(req, hc)
 	if err != nil {
-		hcMutatorLogger.Error(err, "failed to read the HyperConverged custom resource")
+		hcV1Beta1MutatorLogger.Error(err, "failed to read the HyperConverged custom resource")
 		return admission.Errored(http.StatusBadRequest, fmt.Errorf("failed to parse the HyperConverged"))
 	}
 
-	patches := getMutatePatches(hc)
+	patches := getV1Beta1MutatePatches(hc)
 
 	if req.Operation == admissionv1.Create && hc.Spec.KSMConfiguration == nil {
 		patches = append(patches, jsonpatch.JsonPatchOperation{
@@ -77,7 +72,7 @@ func (hcm *HyperConvergedMutator) mutateHyperConverged(req admission.Request) ad
 	return admission.Allowed("")
 }
 
-func getMutatePatches(hc *hcov1.HyperConverged) []jsonpatch.JsonPatchOperation {
+func getV1Beta1MutatePatches(hc *hcov1beta1.HyperConverged) []jsonpatch.JsonPatchOperation {
 	var patches []jsonpatch.JsonPatchOperation
 	for index, dict := range hc.Spec.DataImportCronTemplates {
 		if dict.Annotations == nil {
@@ -95,12 +90,31 @@ func getMutatePatches(hc *hcov1.HyperConverged) []jsonpatch.JsonPatchOperation {
 		}
 	}
 
-	patches = mutateEvictionStrategy(hc, patches)
+	patches = mutateV1Beta1EvictionStrategy(hc, patches)
+
+	if hc.Spec.MediatedDevicesConfiguration != nil {
+		if len(hc.Spec.MediatedDevicesConfiguration.MediatedDevicesTypes) > 0 && len(hc.Spec.MediatedDevicesConfiguration.MediatedDeviceTypes) == 0 { //nolint SA1019
+			patches = append(patches, jsonpatch.JsonPatchOperation{
+				Operation: "add",
+				Path:      "/spec/mediatedDevicesConfiguration/mediatedDeviceTypes",
+				Value:     hc.Spec.MediatedDevicesConfiguration.MediatedDevicesTypes, //nolint SA1019
+			})
+		}
+		for i, hcoNodeMdevTypeConf := range hc.Spec.MediatedDevicesConfiguration.NodeMediatedDeviceTypes {
+			if len(hcoNodeMdevTypeConf.MediatedDevicesTypes) > 0 && len(hcoNodeMdevTypeConf.MediatedDeviceTypes) == 0 { //nolint SA1019
+				patches = append(patches, jsonpatch.JsonPatchOperation{
+					Operation: "add",
+					Path:      fmt.Sprintf("/spec/mediatedDevicesConfiguration/nodeMediatedDeviceTypes/%d/mediatedDeviceTypes", i),
+					Value:     hcoNodeMdevTypeConf.MediatedDevicesTypes, //nolint SA1019
+				})
+			}
+		}
+	}
 
 	return patches
 }
 
-func mutateEvictionStrategy(hc *hcov1.HyperConverged, patches []jsonpatch.JsonPatchOperation) []jsonpatch.JsonPatchOperation {
+func mutateV1Beta1EvictionStrategy(hc *hcov1beta1.HyperConverged, patches []jsonpatch.JsonPatchOperation) []jsonpatch.JsonPatchOperation {
 	if hc.Status.InfrastructureHighlyAvailable == nil || hc.Spec.EvictionStrategy != nil { // New HyperConverged CR
 		return patches
 	}
