@@ -75,6 +75,8 @@ func processNodeInfo(nodes []corev1.Node, hc *v1beta1.HyperConverged) bool {
 	changed = workloadArchitectures.set(workloadArchs) || changed
 	changed = controlPlaneArchitectures.set(cpArchs) || changed
 
+	changed = processCpuModels(nodes) || changed
+
 	return changed
 }
 
