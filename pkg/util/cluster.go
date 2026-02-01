@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"os"
-	"slices"
 
 	"github.com/go-logr/logr"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
@@ -32,8 +31,6 @@ type ClusterInfo interface {
 	IsDeschedulerCRDDeployed(ctx context.Context, cl client.Client) bool
 	IsSingleStackIPv6() bool
 	IsHyperShiftManaged() bool
-	GetTLSSecurityProfile(hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile) *openshiftconfigv1.TLSSecurityProfile
-	RefreshAPIServerCR(ctx context.Context, c client.Client) error
 }
 
 type ClusterInfoImp struct {
@@ -54,8 +51,6 @@ type ClusterInfoImp struct {
 var _ ClusterInfo = &ClusterInfoImp{}
 
 var clusterInfo ClusterInfo
-
-var validatedAPIServerTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile
 
 var GetClusterInfo = func() ClusterInfo {
 	return clusterInfo
@@ -97,11 +92,6 @@ func (c *ClusterInfoImp) Init(ctx context.Context, cl client.Client, logger logr
 		"kubeDescheduler", c.deschedulerAvailable,
 		"networkAttachmentDefinition", c.nadAvailable,
 	)
-
-	err = c.RefreshAPIServerCR(ctx, cl)
-	if err != nil {
-		return err
-	}
 
 	return nil
 }
@@ -281,68 +271,4 @@ func (c *ClusterInfoImp) queryCluster(ctx context.Context, cl client.Client) err
 		}
 	}
 	return nil
-}
-
-func (c *ClusterInfoImp) GetTLSSecurityProfile(hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile) *openshiftconfigv1.TLSSecurityProfile {
-	if hcoTLSSecurityProfile != nil {
-		return hcoTLSSecurityProfile
-	} else if validatedAPIServerTLSSecurityProfile != nil {
-		return validatedAPIServerTLSSecurityProfile
-	}
-	return &openshiftconfigv1.TLSSecurityProfile{
-		Type:         openshiftconfigv1.TLSProfileIntermediateType,
-		Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
-	}
-}
-
-func (c *ClusterInfoImp) RefreshAPIServerCR(ctx context.Context, cl client.Client) error {
-	if c.IsOpenshift() {
-		instance := &openshiftconfigv1.APIServer{}
-
-		key := client.ObjectKey{Namespace: UndefinedNamespace, Name: APIServerCRName}
-		err := cl.Get(ctx, key, instance)
-		if err != nil {
-			return err
-		}
-		validatedAPIServerTLSSecurityProfile = c.validateAPIServerTLSSecurityProfile(instance.Spec.TLSSecurityProfile)
-		return nil
-	}
-	validatedAPIServerTLSSecurityProfile = nil
-
-	return nil
-}
-
-func (c *ClusterInfoImp) validateAPIServerTLSSecurityProfile(apiServerTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile) *openshiftconfigv1.TLSSecurityProfile {
-	if apiServerTLSSecurityProfile == nil || apiServerTLSSecurityProfile.Type != openshiftconfigv1.TLSProfileCustomType {
-		return apiServerTLSSecurityProfile
-	}
-	validatedAPIServerTLSSecurityProfile := &openshiftconfigv1.TLSSecurityProfile{
-		Type: openshiftconfigv1.TLSProfileCustomType,
-		Custom: &openshiftconfigv1.CustomTLSProfile{
-			TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
-				Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
-				MinTLSVersion: openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].MinTLSVersion,
-			},
-		},
-	}
-	if apiServerTLSSecurityProfile.Custom != nil {
-		validatedAPIServerTLSSecurityProfile.Custom.MinTLSVersion = apiServerTLSSecurityProfile.Custom.MinTLSVersion
-		validatedAPIServerTLSSecurityProfile.Custom.Ciphers = nil
-		for _, cipher := range apiServerTLSSecurityProfile.Custom.Ciphers {
-			if isValidCipherName(cipher) {
-				validatedAPIServerTLSSecurityProfile.Custom.Ciphers = append(validatedAPIServerTLSSecurityProfile.Custom.Ciphers, cipher)
-			} else {
-				c.logger.Error(nil, "invalid cipher name on the APIServer CR, ignoring it", "cipher", cipher)
-			}
-		}
-	} else {
-		c.logger.Error(nil, "invalid custom configuration for TLSSecurityProfile on the APIServer CR, taking default values", "apiServerTLSSecurityProfile", apiServerTLSSecurityProfile)
-	}
-	return validatedAPIServerTLSSecurityProfile
-}
-
-func isValidCipherName(str string) bool {
-	return slices.Contains(openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileOldType].Ciphers, str) ||
-		slices.Contains(openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers, str) ||
-		slices.Contains(openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileModernType].Ciphers, str)
 }

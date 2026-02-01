@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -83,12 +82,4 @@ func (ClusterInfoMock) IsDeschedulerCRDDeployed(ctx context.Context, cl client.C
 
 func (ClusterInfoMock) IsSingleStackIPv6() bool {
 	return true
-}
-
-func (ClusterInfoMock) GetTLSSecurityProfile(_ *openshiftconfigv1.TLSSecurityProfile) *openshiftconfigv1.TLSSecurityProfile {
-	return nil
-}
-
-func (ClusterInfoMock) RefreshAPIServerCR(_ context.Context, _ client.Client) error {
-	return nil
 }

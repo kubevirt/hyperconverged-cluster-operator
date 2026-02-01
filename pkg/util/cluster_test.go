@@ -65,18 +65,6 @@ var _ = Describe("test clusterInfo", func() {
 			},
 		}
 
-		apiServer = &openshiftconfigv1.APIServer{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "cluster",
-			},
-			Spec: openshiftconfigv1.APIServerSpec{
-				TLSSecurityProfile: &openshiftconfigv1.TLSSecurityProfile{
-					Type:   openshiftconfigv1.TLSProfileModernType,
-					Modern: &openshiftconfigv1.ModernTLSProfile{},
-				},
-			},
-		}
-
 		dns = &openshiftconfigv1.DNS{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "cluster",
@@ -202,8 +190,8 @@ var _ = Describe("test clusterInfo", func() {
 	It("check Init on openshift, with KubeDescheduler CRD without any CR for it", func() {
 		cl := fake.NewClientBuilder().
 			WithScheme(testScheme).
-			WithObjects(clusterVersion, infrastructure, ingress, apiServer, dns, ipv4network, deschedulerCRD).
-			WithStatusSubresource(clusterVersion, infrastructure, ingress, apiServer, dns, ipv4network, deschedulerCRD).
+			WithObjects(clusterVersion, infrastructure, ingress, dns, ipv4network, deschedulerCRD).
+			WithStatusSubresource(clusterVersion, infrastructure, ingress, dns, ipv4network, deschedulerCRD).
 			Build()
 		Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
 
@@ -217,8 +205,8 @@ var _ = Describe("test clusterInfo", func() {
 		func(deschedulerCR *deschedulerv1.KubeDescheduler) {
 			cl := fake.NewClientBuilder().
 				WithScheme(testScheme).
-				WithObjects(clusterVersion, infrastructure, ingress, apiServer, dns, ipv4network, deschedulerCRD, deschedulerNamespace, deschedulerCR).
-				WithStatusSubresource(clusterVersion, infrastructure, ingress, apiServer, dns, ipv4network, deschedulerCRD, deschedulerNamespace, deschedulerCR).
+				WithObjects(clusterVersion, infrastructure, ingress, dns, ipv4network, deschedulerCRD, deschedulerNamespace, deschedulerCR).
+				WithStatusSubresource(clusterVersion, infrastructure, ingress, dns, ipv4network, deschedulerCRD, deschedulerNamespace, deschedulerCR).
 				Build()
 			Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
 
@@ -354,8 +342,8 @@ var _ = Describe("test clusterInfo", func() {
 		Expect(os.Setenv(OperatorConditionNameEnvVar, "aValue")).To(Succeed())
 		cl := fake.NewClientBuilder().
 			WithScheme(testScheme).
-			WithObjects(clusterVersion, infrastructure, ingress, apiServer, dns, ipv4network).
-			WithStatusSubresource(clusterVersion, infrastructure, ingress, apiServer, dns, ipv4network).
+			WithObjects(clusterVersion, infrastructure, ingress, dns, ipv4network).
+			WithStatusSubresource(clusterVersion, infrastructure, ingress, dns, ipv4network).
 			Build()
 		Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
 
@@ -372,8 +360,8 @@ var _ = Describe("test clusterInfo", func() {
 
 		cl := fake.NewClientBuilder().
 			WithScheme(testScheme).
-			WithObjects(clusterVersion, infrastructure, ingress, apiServer, dns, ipv4network).
-			WithStatusSubresource(clusterVersion, infrastructure, ingress, apiServer, dns, ipv4network).
+			WithObjects(clusterVersion, infrastructure, ingress, dns, ipv4network).
+			WithStatusSubresource(clusterVersion, infrastructure, ingress, dns, ipv4network).
 			Build()
 		Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
 
@@ -384,8 +372,8 @@ var _ = Describe("test clusterInfo", func() {
 	It("check init on OpenShift, with single-stack IPv6 network", func() {
 		cl := fake.NewClientBuilder().
 			WithScheme(testScheme).
-			WithObjects(clusterVersion, infrastructure, ingress, apiServer, dns, ipv6network).
-			WithStatusSubresource(clusterVersion, infrastructure, ingress, apiServer, dns, ipv6network).
+			WithObjects(clusterVersion, infrastructure, ingress, dns, ipv6network).
+			WithStatusSubresource(clusterVersion, infrastructure, ingress, dns, ipv6network).
 			Build()
 		Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
 
@@ -396,8 +384,8 @@ var _ = Describe("test clusterInfo", func() {
 	It("checks init on OpenShift with dual stack ipv4/ipv6 network configuration", func() {
 		cl := fake.NewClientBuilder().
 			WithScheme(testScheme).
-			WithObjects(clusterVersion, infrastructure, ingress, apiServer, dns, dualStackNetwork).
-			WithStatusSubresource(clusterVersion, infrastructure, ingress, apiServer, dns, dualStackNetwork).
+			WithObjects(clusterVersion, infrastructure, ingress, dns, dualStackNetwork).
+			WithStatusSubresource(clusterVersion, infrastructure, ingress, dns, dualStackNetwork).
 			Build()
 		Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
 
@@ -425,8 +413,8 @@ var _ = Describe("test clusterInfo", func() {
 
 			cl := fake.NewClientBuilder().
 				WithScheme(testScheme).
-				WithObjects(clusterVersion, hypershiftInfrastructure, ingress, apiServer, dns, ipv4network).
-				WithStatusSubresource(clusterVersion, hypershiftInfrastructure, ingress, apiServer, dns, ipv4network).
+				WithObjects(clusterVersion, hypershiftInfrastructure, ingress, dns, ipv4network).
+				WithStatusSubresource(clusterVersion, hypershiftInfrastructure, ingress, dns, ipv4network).
 				Build()
 
 			Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
@@ -451,8 +439,8 @@ var _ = Describe("test clusterInfo", func() {
 
 			cl := fake.NewClientBuilder().
 				WithScheme(testScheme).
-				WithObjects(clusterVersion, externalCPInfrastructure, ingress, apiServer, dns, ipv4network).
-				WithStatusSubresource(clusterVersion, externalCPInfrastructure, ingress, apiServer, dns, ipv4network).
+				WithObjects(clusterVersion, externalCPInfrastructure, ingress, dns, ipv4network).
+				WithStatusSubresource(clusterVersion, externalCPInfrastructure, ingress, dns, ipv4network).
 				Build()
 
 			Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
@@ -479,8 +467,8 @@ var _ = Describe("test clusterInfo", func() {
 
 			cl := fake.NewClientBuilder().
 				WithScheme(testScheme).
-				WithObjects(clusterVersion, hypershiftLabeledInfrastructure, ingress, apiServer, dns, ipv4network).
-				WithStatusSubresource(clusterVersion, hypershiftLabeledInfrastructure, ingress, apiServer, dns, ipv4network).
+				WithObjects(clusterVersion, hypershiftLabeledInfrastructure, ingress, dns, ipv4network).
+				WithStatusSubresource(clusterVersion, hypershiftLabeledInfrastructure, ingress, dns, ipv4network).
 				Build()
 
 			Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
@@ -507,8 +495,8 @@ var _ = Describe("test clusterInfo", func() {
 
 			cl := fake.NewClientBuilder().
 				WithScheme(testScheme).
-				WithObjects(clusterVersion, wrongLabelValueInfrastructure, ingress, apiServer, dns, ipv4network).
-				WithStatusSubresource(clusterVersion, wrongLabelValueInfrastructure, ingress, apiServer, dns, ipv4network).
+				WithObjects(clusterVersion, wrongLabelValueInfrastructure, ingress, dns, ipv4network).
+				WithStatusSubresource(clusterVersion, wrongLabelValueInfrastructure, ingress, dns, ipv4network).
 				Build()
 
 			Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
@@ -571,9 +559,9 @@ var _ = Describe("test clusterInfo", func() {
 			Expect(os.Setenv(OperatorConditionNameEnvVar, "aValue")).To(Succeed())
 			cl := fake.NewClientBuilder().
 				WithScheme(testScheme).
-				WithObjects(clusterVersion, testInfrastructure, ingress, apiServer, dns, ipv4network).
+				WithObjects(clusterVersion, testInfrastructure, ingress, dns, ipv4network).
 				WithObjects(nodesArray...).
-				WithStatusSubresource(clusterVersion, testInfrastructure, ingress, apiServer, dns, ipv4network).
+				WithStatusSubresource(clusterVersion, testInfrastructure, ingress, dns, ipv4network).
 				Build()
 			Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
 
@@ -617,249 +605,4 @@ var _ = Describe("test clusterInfo", func() {
 			false,
 		),
 	)
-
-	Context("TLSSecurityProfile", func() {
-
-		DescribeTable(
-			"check TLSSecurityProfile on different configurations ...",
-			func(isOnOpenshift bool, clusterTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile, hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile, expectedTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile) {
-
-				testAPIServer := &openshiftconfigv1.APIServer{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cluster",
-					},
-					Spec: openshiftconfigv1.APIServerSpec{
-						TLSSecurityProfile: clusterTLSSecurityProfile,
-					},
-				}
-
-				cl := fake.NewClientBuilder().
-					WithScheme(testScheme).
-					WithRuntimeObjects().
-					Build()
-				if isOnOpenshift {
-					Expect(os.Setenv(OperatorConditionNameEnvVar, "aValue")).To(Succeed())
-					cl = fake.NewClientBuilder().
-						WithScheme(testScheme).
-						WithRuntimeObjects(clusterVersion, infrastructure, ingress, testAPIServer, dns, ipv4network).
-						Build()
-				}
-				Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
-
-				Expect(GetClusterInfo().IsOpenshift()).To(Equal(isOnOpenshift), "should return true for IsOpenshift()")
-				Expect(GetClusterInfo().GetTLSSecurityProfile(hcoTLSSecurityProfile)).To(Equal(expectedTLSSecurityProfile), "should return the expected TLSSecurityProfile")
-
-			},
-			Entry(
-				"on Openshift, TLSSecurityProfile unset on HCO, should return cluster wide TLSSecurityProfile",
-				true,
-				&openshiftconfigv1.TLSSecurityProfile{
-					Type:   openshiftconfigv1.TLSProfileModernType,
-					Modern: &openshiftconfigv1.ModernTLSProfile{},
-				},
-				nil,
-				&openshiftconfigv1.TLSSecurityProfile{
-					Type:   openshiftconfigv1.TLSProfileModernType,
-					Modern: &openshiftconfigv1.ModernTLSProfile{},
-				},
-			),
-			Entry(
-				"on Openshift with wrong values, TLSSecurityProfile unset on HCO, should return sanitized cluster wide TLSSecurityProfile - 1",
-				true,
-				&openshiftconfigv1.TLSSecurityProfile{
-					Type:   openshiftconfigv1.TLSProfileCustomType,
-					Modern: &openshiftconfigv1.ModernTLSProfile{},
-				},
-				nil,
-				&openshiftconfigv1.TLSSecurityProfile{
-					Type: openshiftconfigv1.TLSProfileCustomType,
-					Custom: &openshiftconfigv1.CustomTLSProfile{
-						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
-							Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
-							MinTLSVersion: openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].MinTLSVersion,
-						},
-					},
-				},
-			),
-			Entry(
-				"on Openshift with wrong values, TLSSecurityProfile unset on HCO, should return sanitized cluster wide TLSSecurityProfile - 2",
-				true,
-				&openshiftconfigv1.TLSSecurityProfile{
-					Type: openshiftconfigv1.TLSProfileCustomType,
-				},
-				nil,
-				&openshiftconfigv1.TLSSecurityProfile{
-					Type: openshiftconfigv1.TLSProfileCustomType,
-					Custom: &openshiftconfigv1.CustomTLSProfile{
-						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
-							Ciphers:       openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].Ciphers,
-							MinTLSVersion: openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].MinTLSVersion,
-						},
-					},
-				},
-			),
-			Entry(
-				"on Openshift with wrong values, TLSSecurityProfile unset on HCO, should return sanitized cluster wide TLSSecurityProfile - 3",
-				true,
-				&openshiftconfigv1.TLSSecurityProfile{
-					Type: openshiftconfigv1.TLSProfileCustomType,
-					Custom: &openshiftconfigv1.CustomTLSProfile{
-						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
-							Ciphers: []string{
-								"wrongname1",
-								"TLS_AES_128_GCM_SHA256",
-								"TLS_AES_256_GCM_SHA384",
-								"TLS_CHACHA20_POLY1305_SHA256",
-								"ECDHE-ECDSA-AES128-GCM-SHA256",
-								"ECDHE-RSA-AES128-GCM-SHA256",
-								"ECDHE-ECDSA-AES256-GCM-SHA384",
-								"ECDHE-RSA-AES256-GCM-SHA384",
-								"ECDHE-ECDSA-CHACHA20-POLY1305",
-								"ECDHE-RSA-CHACHA20-POLY1305",
-								"wrongname2",
-								"DHE-RSA-AES128-GCM-SHA256",
-								"DHE-RSA-AES256-GCM-SHA384",
-								"wrongname3",
-							},
-							MinTLSVersion: openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].MinTLSVersion,
-						},
-					},
-				},
-				nil,
-				&openshiftconfigv1.TLSSecurityProfile{
-					Type: openshiftconfigv1.TLSProfileCustomType,
-					Custom: &openshiftconfigv1.CustomTLSProfile{
-						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
-							Ciphers: []string{
-								"TLS_AES_128_GCM_SHA256",
-								"TLS_AES_256_GCM_SHA384",
-								"TLS_CHACHA20_POLY1305_SHA256",
-								"ECDHE-ECDSA-AES128-GCM-SHA256",
-								"ECDHE-RSA-AES128-GCM-SHA256",
-								"ECDHE-ECDSA-AES256-GCM-SHA384",
-								"ECDHE-RSA-AES256-GCM-SHA384",
-								"ECDHE-ECDSA-CHACHA20-POLY1305",
-								"ECDHE-RSA-CHACHA20-POLY1305",
-								"DHE-RSA-AES128-GCM-SHA256",
-								"DHE-RSA-AES256-GCM-SHA384",
-							},
-							MinTLSVersion: openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].MinTLSVersion,
-						},
-					},
-				},
-			),
-			Entry(
-				"on Openshift, TLSSecurityProfile set on HCO, should return HCO specific TLSSecurityProfile",
-				true,
-				&openshiftconfigv1.TLSSecurityProfile{
-					Type:   openshiftconfigv1.TLSProfileModernType,
-					Modern: &openshiftconfigv1.ModernTLSProfile{},
-				},
-				&openshiftconfigv1.TLSSecurityProfile{
-					Type: openshiftconfigv1.TLSProfileOldType,
-					Old:  &openshiftconfigv1.OldTLSProfile{},
-				},
-				&openshiftconfigv1.TLSSecurityProfile{
-					Type: openshiftconfigv1.TLSProfileOldType,
-					Old:  &openshiftconfigv1.OldTLSProfile{},
-				},
-			),
-			Entry(
-				"on k8s, TLSSecurityProfile unset on HCO, should return a default value (Intermediate TLSSecurityProfile)",
-				false,
-				nil,
-				nil,
-				&openshiftconfigv1.TLSSecurityProfile{
-					Type:         openshiftconfigv1.TLSProfileIntermediateType,
-					Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
-				},
-			),
-			Entry(
-				"on k8s, TLSSecurityProfile unset on HCO, should return HCO specific TLSSecurityProfile)",
-				false,
-				nil,
-				&openshiftconfigv1.TLSSecurityProfile{
-					Type:   openshiftconfigv1.TLSProfileModernType,
-					Modern: &openshiftconfigv1.ModernTLSProfile{},
-				},
-				&openshiftconfigv1.TLSSecurityProfile{
-					Type:   openshiftconfigv1.TLSProfileModernType,
-					Modern: &openshiftconfigv1.ModernTLSProfile{},
-				},
-			),
-		)
-
-		It("should refresh ApiServer on changes", func() {
-			Expect(os.Setenv(OperatorConditionNameEnvVar, "aValue")).To(Succeed())
-
-			initialTLSSecurityProfile := &openshiftconfigv1.TLSSecurityProfile{
-				Type:         openshiftconfigv1.TLSProfileIntermediateType,
-				Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
-			}
-			updatedTLSSecurityProfile := &openshiftconfigv1.TLSSecurityProfile{
-				Type:   openshiftconfigv1.TLSProfileModernType,
-				Modern: &openshiftconfigv1.ModernTLSProfile{},
-			}
-
-			testAPIServer := &openshiftconfigv1.APIServer{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "cluster",
-				},
-				Spec: openshiftconfigv1.APIServerSpec{
-					TLSSecurityProfile: initialTLSSecurityProfile,
-				},
-			}
-
-			cl := fake.NewClientBuilder().
-				WithScheme(testScheme).
-				WithRuntimeObjects(clusterVersion, infrastructure, ingress, testAPIServer, dns, ipv4network).
-				Build()
-			Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
-
-			Expect(GetClusterInfo().IsOpenshift()).To(BeTrue(), "should return true for IsOpenshift()")
-			Expect(GetClusterInfo().IsManagedByOLM()).To(BeTrue(), "should return true for IsManagedByOLM()")
-
-			Expect(GetClusterInfo().GetTLSSecurityProfile(nil)).To(Equal(initialTLSSecurityProfile), "should return the initial value")
-
-			testAPIServer.Spec.TLSSecurityProfile = updatedTLSSecurityProfile
-			Expect(cl.Update(context.TODO(), testAPIServer)).To(Succeed())
-			Expect(GetClusterInfo().GetTLSSecurityProfile(nil)).To(Equal(initialTLSSecurityProfile), "should still return the cached value (initial value)")
-
-			Expect(GetClusterInfo().RefreshAPIServerCR(context.TODO(), cl)).To(Succeed())
-
-			Expect(GetClusterInfo().GetTLSSecurityProfile(nil)).To(Equal(updatedTLSSecurityProfile), "should return the updated value")
-		})
-
-		It("should detect that KubeDescheduler CRD got deployed if initially unavailable", func() {
-			Expect(os.Setenv(OperatorConditionNameEnvVar, "aValue")).To(Succeed())
-
-			testAPIServer := &openshiftconfigv1.APIServer{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "cluster",
-				},
-				Spec: openshiftconfigv1.APIServerSpec{},
-			}
-
-			cl := fake.NewClientBuilder().
-				WithScheme(testScheme).
-				WithRuntimeObjects(clusterVersion, infrastructure, ingress, testAPIServer, dns, ipv4network).
-				Build()
-			Expect(GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
-
-			Expect(GetClusterInfo().IsOpenshift()).To(BeTrue(), "should return true for IsOpenshift()")
-			Expect(GetClusterInfo().IsManagedByOLM()).To(BeTrue(), "should return true for IsManagedByOLM()")
-			Expect(GetClusterInfo().IsDeschedulerAvailable()).To(BeFalse(), "should initially return false for IsDeschedulerAvailable()")
-			Expect(GetClusterInfo().IsDeschedulerCRDDeployed(context.TODO(), cl)).To(BeFalse(), "should initially return false for IsDeschedulerCRDDeployed(...)")
-
-			deschedulerCRD = &apiextensionsv1.CustomResourceDefinition{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: DeschedulerCRDName,
-				},
-			}
-
-			Expect(cl.Create(context.TODO(), deschedulerCRD)).To(Succeed())
-			Expect(GetClusterInfo().IsDeschedulerAvailable()).To(BeFalse(), "should still return false for IsDeschedulerAvailable() (until the operator will restart)")
-			Expect(GetClusterInfo().IsDeschedulerCRDDeployed(context.TODO(), cl)).To(BeTrue(), "should now return true for IsDeschedulerCRDDeployed(...)")
-		})
-	})
 })
