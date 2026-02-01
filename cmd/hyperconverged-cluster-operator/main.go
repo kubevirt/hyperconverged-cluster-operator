@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"time"
 
 	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
@@ -37,6 +38,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -59,6 +61,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/admissionpolicy"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/apiserver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/crd"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/descheduler"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
@@ -217,8 +220,11 @@ func main() {
 	nodeEventChannel := make(chan event.GenericEvent, 10)
 	defer close(nodeEventChannel)
 
+	apiServerEventCh := make(chan event.GenericEvent, 10)
+	defer close(apiServerEventCh)
+
 	// Create a new reconciler
-	if err = hyperconverged.RegisterReconciler(mgr, ci, upgradeableCondition, ingressEventCh, nodeEventChannel); err != nil {
+	if err = hyperconverged.RegisterReconciler(mgr, ci, upgradeableCondition, ingressEventCh, nodeEventChannel, apiServerEventCh); err != nil {
 		logger.Error(err, "failed to register the HyperConverged controller")
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register HyperConverged controller; "+err.Error())
 		os.Exit(1)
@@ -248,6 +254,23 @@ func main() {
 				os.Exit(1)
 			}
 		}
+
+		if err = ingresscluster.RegisterReconciler(mgr, ingressEventCh); err != nil {
+			logger.Error(err, "failed to register the IngressCluster controller")
+			eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register Ingress controller; "+err.Error())
+			os.Exit(1)
+		}
+
+		_, err = tlssecprofile.Refresh(ctx, apiClient)
+		if err != nil {
+			logger.Error(err, "Cannot refresh TLS profile from the APIServer CR")
+		}
+
+		if err = apiserver.RegisterReconciler(mgr, apiServerEventCh); err != nil {
+			logger.Error(err, "failed to register the APIServer controller")
+			eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register API Server; "+err.Error())
+			os.Exit(1)
+		}
 	}
 
 	if ci.IsDeschedulerAvailable() {
@@ -264,14 +287,6 @@ func main() {
 		logger.Error(err, "failed to register the Nodes controller")
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register Nodes controller; "+err.Error())
 		os.Exit(1)
-	}
-
-	if ci.IsOpenshift() {
-		if err = ingresscluster.RegisterReconciler(mgr, ingressEventCh); err != nil {
-			logger.Error(err, "failed to register the IngressCluster controller")
-			eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to register Ingress controller; "+err.Error())
-			os.Exit(1)
-		}
 	}
 
 	if err = admissionpolicy.RegisterReconciler(ctx, mgr); err != nil {
@@ -430,7 +445,9 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo, persesAvai
 		&imagev1.ImageStream{}: {
 			Label: labelSelector,
 		},
-		&openshiftconfigv1.APIServer{}: {},
+		&openshiftconfigv1.APIServer{}: {
+			SyncPeriod: ptr.To(5 * time.Minute),
+		},
 		&consolev1.ConsoleCLIDownload{}: {
 			Label: labelSelector,
 		},
