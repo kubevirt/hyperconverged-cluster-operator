@@ -30,6 +30,8 @@ HCO_RESOURCE_NAME="kubevirt-hyperconverged"
 HCO_CRD_NAME="hyperconvergeds.hco.kubevirt.io"
 IS_OPENSHIFT=${IS_OPENSHIFT:-false}
 
+ARTIFACTS=${ARTIFACTS:-/logs/artifacts}
+
 if ${CMD}  api-resources |grep clusterversions |grep config.openshift.io; then
   IS_OPENSHIFT="true"
 fi
@@ -81,18 +83,36 @@ else
 fi
 
 function status(){
+  if [[ -d ${ARTIFACTS} ]]; then
+    "${CMD}" get hco "${HCO_RESOURCE_NAME}" -n "${HCO_NAMESPACE}" -o yaml > ${ARTIFACTS}/hyperconverged.yaml || true
+    "${CMD}" get pods -n "${HCO_NAMESPACE}" -o json > ${ARTIFACTS}/pods.json || true
+
+    PODS=$(${CMD} get pod -n "${HCO_NAMESPACE}" -o custom-columns=NAME:.metadata.name --no-headers)
+    mkdir ${ARTIFACTS}/pods
+    for pod in ${PODS}; do
+      ${CMD} describe pod -n ${HCO_NAMESPACE} ${pod} > ${ARTIFACTS}/pods/${pod}.txt|| true
+      ${CMD} logs -n ${HCO_NAMESPACE} ${pod} --all-containers=true > ${ARTIFACTS}/pods/${pod}.log || true
+    done
+  else
     "${CMD}" get hco -n "${HCO_NAMESPACE}" -o yaml || true
     "${CMD}" get pods -n "${HCO_NAMESPACE}" || true
     "${CMD}" get hco "${HCO_RESOURCE_NAME}" -n "${HCO_NAMESPACE}" -o=jsonpath='{range .status.conditions[*]}{.type}{"\t"}{.status}{"\t"}{.message}{"\n"}{end}' || true
+
     # Get logs of all the pods
-    for PNAME in $( ${CMD} get pods -n ${HCO_NAMESPACE} --field-selector=status.phase!=Running -o custom-columns=:metadata.name )
+    FAILED_PODS=$( ${CMD} get pods -n ${HCO_NAMESPACE} -o json | jq -r '.items[] | select(((.status.conditions // []) | map(select(.type == "Ready")) | .[0].status) != "True") | .metadata.name')
+    for PNAME in ${FAILED_PODS}
     do
       echo -e "\n--- ${PNAME} ---"
       ${CMD} describe pod -n ${HCO_NAMESPACE} ${PNAME} || true
       ${CMD} logs -n ${HCO_NAMESPACE} ${PNAME} --all-containers=true || true
     done
-    HCO_POD=$( ${CMD} get pods -l "name=hyperconverged-cluster-operator" -o name)
-    ${CMD} logs "${HCO_POD}"
+
+    HCO_POD=$( ${CMD} get pods -n ${HCO_NAMESPACE} -l "name=hyperconverged-cluster-operator" -o custom-columns=:metadata.name --no-headers)
+    HCO_WH_POD=$( ${CMD} get pods -n ${HCO_NAMESPACE} -l "name=hyperconverged-cluster-webhook" -o custom-columns=:metadata.name --no-headers)
+
+    ${CMD} logs -n ${HCO_NAMESPACE} "${HCO_POD}"
+    ${CMD} logs -n ${HCO_NAMESPACE} "${HCO_WH_POD}"
+  fi
 }
 
 trap status EXIT
@@ -157,8 +177,8 @@ fi
 # Wait for the HCO to be ready
 sleep 20
 
-"${CMD}" wait deployment/hyperconverged-cluster-operator --for=condition=Available --timeout="1080s" || CONTAINER_ERRORED+="hyperconverged-cluster-operator "
-"${CMD}" wait deployment/hyperconverged-cluster-webhook --for=condition=Available --timeout="1080s" || CONTAINER_ERRORED+="hyperconverged-cluster-webhook "
+"${CMD}" wait deployment/hyperconverged-cluster-operator --for=condition=Available --timeout="600s" || CONTAINER_ERRORED+="hyperconverged-cluster-operator "
+"${CMD}" wait deployment/hyperconverged-cluster-webhook --for=condition=Available --timeout="300s" || CONTAINER_ERRORED+="hyperconverged-cluster-webhook "
 
 # Gather a list of operators to wait for.
 # Avoid checking the availability of virt-operator here because it will become available only when
