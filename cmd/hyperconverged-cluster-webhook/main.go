@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -19,6 +20,7 @@ import (
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -155,16 +157,16 @@ func main() {
 	err = cmdcommon.SetHyperConvergedTLSProfile(ctx, operatorNamespace, apiClient)
 	cmdHelper.ExitOnError(err, "Cannot read existing HCO CR")
 
+	logger.Info("Registering the APIServer reconciler")
 	if ci.IsOpenshift() {
 		_, err = tlssecprofile.Refresh(ctx, apiClient)
 		if err != nil {
 			logger.Error(err, "Cannot refresh TLS profile from the APIServer CR")
 		}
-	}
 
-	logger.Info("Registering the APIServer reconciler")
-	err = whapiservercontrollers.RegisterReconciler(mgr, ci)
-	cmdHelper.ExitOnError(err, "Cannot register APIServer reconciler")
+		err = whapiservercontrollers.RegisterReconciler(mgr)
+		cmdHelper.ExitOnError(err, "Cannot register APIServer reconciler")
+	}
 
 	logger.Info("Registering the Bearer Token reconciler")
 	err = bearertokencontroller.RegisterReconciler(mgr, ci, eventEmitter)
@@ -187,33 +189,43 @@ func main() {
 }
 
 func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Options {
-	if !ci.IsMonitoringAvailable() {
+	if !ci.IsMonitoringAvailable() && !ci.IsOpenshift() {
 		return cache.Options{}
 	}
 
-	namespaceSelector := fields.Set{"metadata.namespace": operatorNamespace}.AsSelector()
-	labelSelector := labels.Set{hcoutil.AppLabel: hcoutil.HCOWebhookName}.AsSelector()
+	objMap := map[client.Object]cache.ByObject{}
+	if ci.IsMonitoringAvailable() {
+		namespaceSelector := fields.Set{"metadata.namespace": operatorNamespace}.AsSelector()
+		labelSelector := labels.Set{hcoutil.AppLabel: hcoutil.HCOWebhookName}.AsSelector()
 
-	cacheOptions := cache.Options{
-		ByObject: map[client.Object]cache.ByObject{
-			&appsv1.Deployment{}: {
-				Label: labels.Set{"name": hcoutil.HCOWebhookName}.AsSelector(),
-				Field: namespaceSelector,
-			},
-			&corev1.Service{}: {
-				Label: labelSelector,
-				Field: namespaceSelector,
-			},
-			&corev1.Secret{}: {
-				Label: labelSelector,
-				Field: namespaceSelector,
-			},
-			&monitoringv1.ServiceMonitor{}: {
-				Label: labelSelector,
-				Field: namespaceSelector,
-			},
-		},
+		objMap[&appsv1.Deployment{}] = cache.ByObject{
+			Label: labels.Set{"name": hcoutil.HCOWebhookName}.AsSelector(),
+			Field: namespaceSelector,
+		}
+
+		objMap[&corev1.Service{}] = cache.ByObject{
+			Label: labelSelector,
+			Field: namespaceSelector,
+		}
+
+		objMap[&corev1.Secret{}] = cache.ByObject{
+			Label: labelSelector,
+			Field: namespaceSelector,
+		}
+
+		objMap[&monitoringv1.ServiceMonitor{}] = cache.ByObject{
+			Label: labelSelector,
+			Field: namespaceSelector,
+		}
 	}
 
-	return cacheOptions
+	if ci.IsOpenshift() {
+		objMap[&openshiftconfigv1.APIServer{}] = cache.ByObject{
+			SyncPeriod: ptr.To(5 * time.Minute),
+		}
+	}
+
+	return cache.Options{
+		ByObject: objMap,
+	}
 }

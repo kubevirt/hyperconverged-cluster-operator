@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/go-logr/logr"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
@@ -14,45 +15,45 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 )
+
+const controllerName = "webhook-apiServer-controller"
 
 // ReconcileAPIServer reconciles APIServer to consume uptodate TLSSecurityProfile
 type ReconcileAPIServer struct {
 	client client.Client
-	ci     hcoutil.ClusterInfo
 }
 
 var (
-	logger = logf.Log.WithName("webhooks-controller")
+	logger = logf.Log.WithName(controllerName)
 )
 
 // Implement reconcile.Reconciler so the controller can reconcile objects
 var _ reconcile.Reconciler = &ReconcileAPIServer{}
 
-func (r *ReconcileAPIServer) Reconcile(ctx context.Context, _ reconcile.Request) (reconcile.Result, error) {
-	err := r.ci.RefreshAPIServerCR(ctx, r.client)
-	// TODO: once https://github.com/kubernetes-sigs/controller-runtime/issues/2032
-	// is properly addressed, avoid polling on the APIServer CR
+func (r *ReconcileAPIServer) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
+	logger := logr.FromContextOrDiscard(ctx).WithName("ReconcileAPIServer").WithValues("Request.Name", req.Name)
+	logger.Info("Reconciling APIServer")
+
+	_, err := tlssecprofile.Refresh(ctx, r.client)
+
 	if err != nil {
-		return reconcile.Result{Requeue: true}, err
+		return reconcile.Result{RequeueAfter: 60 * time.Second}, err
 	}
-	return reconcile.Result{RequeueAfter: 1 * time.Minute}, nil
+
+	return reconcile.Result{}, nil
 }
 
 // RegisterReconciler creates a new HyperConverged Reconciler and registers it into manager.
-func RegisterReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo) error {
-	if ci.IsOpenshift() {
-		return add(mgr, newReconciler(mgr, ci))
-	}
-	return nil
+func RegisterReconciler(mgr manager.Manager) error {
+	return add(mgr, newReconciler(mgr))
 }
 
 // newReconciler returns a new reconcile.Reconciler
-func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo) reconcile.Reconciler {
+func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	r := &ReconcileAPIServer{
 		client: mgr.GetClient(),
-		ci:     ci,
 	}
 	return r
 }
@@ -62,7 +63,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 
 	// Setup a new controller to reconcile APIServer
 	logger.Info("Setting up APIServer controller")
-	c, err := controller.New("hco-webhook-apiserver-controller", mgr, controller.Options{
+	c, err := controller.New(controllerName, mgr, controller.Options{
 		Reconciler: r,
 	})
 	if err != nil {
