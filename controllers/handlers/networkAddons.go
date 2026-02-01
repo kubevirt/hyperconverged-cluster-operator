@@ -22,6 +22,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -173,7 +174,7 @@ func NewNetworkAddons(hc *hcov1beta1.HyperConverged) (*networkaddonsv1.NetworkAd
 	}
 	cnaoSpec.SelfSignConfiguration = hcoCertConfig2CnaoSelfSignedConfig(&hc.Spec.CertConfig)
 
-	cnaoSpec.TLSSecurityProfile = util.GetClusterInfo().GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile)
+	cnaoSpec.TLSSecurityProfile = tlssecprofile.GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile)
 
 	cna := NewNetworkAddonsWithNameOnly(hc)
 	cna.Spec = cnaoSpec

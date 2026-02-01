@@ -16,6 +16,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -109,7 +110,7 @@ func NewCDI(hc *hcov1beta1.HyperConverged, opts ...string) (*cdiv1beta1.CDI, err
 		UninstallStrategy: &uninstallStrategy,
 		Config: &cdiv1beta1.CDIConfigSpec{
 			FeatureGates:       getDefaultFeatureGates(),
-			TLSSecurityProfile: openshift2CdiSecProfile(util.GetClusterInfo().GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile)),
+			TLSSecurityProfile: openshift2CdiSecProfile(tlssecprofile.GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile)),
 		},
 		CertConfig: &cdiv1beta1.CDICertConfig{
 			CA: &cdiv1beta1.CertConfig{

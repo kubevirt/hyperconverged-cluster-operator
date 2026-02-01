@@ -34,6 +34,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/patch"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -445,7 +446,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 		PermittedHostDevices:         toKvPermittedHostDevices(hc.Spec.PermittedHostDevices),
 		MediatedDevicesConfiguration: toKvMediatedDevicesConfiguration(hc.Spec.MediatedDevicesConfiguration),
 		ObsoleteCPUModels:            obsoleteCPUs,
-		TLSConfiguration:             hcTLSSecurityProfileToKv(hcoutil.GetClusterInfo().GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile)),
+		TLSConfiguration:             hcTLSSecurityProfileToKv(tlssecprofile.GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile)),
 		APIConfiguration:             rateLimiter,
 		WebhookConfiguration:         rateLimiter,
 		ControllerConfiguration:      rateLimiter,
