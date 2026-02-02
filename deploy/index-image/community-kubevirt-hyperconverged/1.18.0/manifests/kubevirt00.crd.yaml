@@ -786,8 +786,16 @@ spec:
                           UnsafeMigrationOverride allows live migrations to occur even if the compatibility check
                           indicates the migration will be unsafe to the guest. Defaults to false
                         type: boolean
+                      utilityVolumesTimeout:
+                        description: |-
+                          UtilityVolumesTimeout is the maximum number of seconds a migration can wait in Pending state
+                          for utility volumes to be detached. If utility volumes are still present after this timeout,
+                          the migration will be marked as Failed. Defaults to 150
+                        format: int64
+                        type: integer
                     type: object
                   minCPUModel:
+                    description: deprecated
                     type: string
                   network:
                     description: NetworkConfiguration holds network options
@@ -1805,8 +1813,8 @@ spec:
                                   most preferred is the one with the greatest sum of weights, i.e.
                                   for each node that meets all of the scheduling requirements (resource
                                   request, requiredDuringScheduling anti-affinity expressions, etc.),
-                                  compute a sum by iterating through the elements of this field and adding
-                                  "weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the
+                                  compute a sum by iterating through the elements of this field and subtracting
+                                  "weight" from the sum if the node has pods which matches the corresponding podAffinityTerm; the
                                   node(s) with the highest sum are the most preferred.
                                 items:
                                   description: The weights of all of the matched WeightedPodAffinityTerm
@@ -2878,8 +2886,8 @@ spec:
                                   most preferred is the one with the greatest sum of weights, i.e.
                                   for each node that meets all of the scheduling requirements (resource
                                   request, requiredDuringScheduling anti-affinity expressions, etc.),
-                                  compute a sum by iterating through the elements of this field and adding
-                                  "weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the
+                                  compute a sum by iterating through the elements of this field and subtracting
+                                  "weight" from the sum if the node has pods which matches the corresponding podAffinityTerm; the
                                   node(s) with the highest sum are the most preferred.
                                 items:
                                   description: The weights of all of the matched WeightedPodAffinityTerm
@@ -4166,8 +4174,16 @@ spec:
                           UnsafeMigrationOverride allows live migrations to occur even if the compatibility check
                           indicates the migration will be unsafe to the guest. Defaults to false
                         type: boolean
+                      utilityVolumesTimeout:
+                        description: |-
+                          UtilityVolumesTimeout is the maximum number of seconds a migration can wait in Pending state
+                          for utility volumes to be detached. If utility volumes are still present after this timeout,
+                          the migration will be marked as Failed. Defaults to 150
+                        format: int64
+                        type: integer
                     type: object
                   minCPUModel:
+                    description: deprecated
                     type: string
                   network:
                     description: NetworkConfiguration holds network options
@@ -5185,8 +5201,8 @@ spec:
                                   most preferred is the one with the greatest sum of weights, i.e.
                                   for each node that meets all of the scheduling requirements (resource
                                   request, requiredDuringScheduling anti-affinity expressions, etc.),
-                                  compute a sum by iterating through the elements of this field and adding
-                                  "weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the
+                                  compute a sum by iterating through the elements of this field and subtracting
+                                  "weight" from the sum if the node has pods which matches the corresponding podAffinityTerm; the
                                   node(s) with the highest sum are the most preferred.
                                 items:
                                   description: The weights of all of the matched WeightedPodAffinityTerm
@@ -6258,8 +6274,8 @@ spec:
                                   most preferred is the one with the greatest sum of weights, i.e.
                                   for each node that meets all of the scheduling requirements (resource
                                   request, requiredDuringScheduling anti-affinity expressions, etc.),
-                                  compute a sum by iterating through the elements of this field and adding
-                                  "weight" to the sum if the node has pods which matches the corresponding podAffinityTerm; the
+                                  compute a sum by iterating through the elements of this field and subtracting
+                                  "weight" from the sum if the node has pods which matches the corresponding podAffinityTerm; the
                                   node(s) with the highest sum are the most preferred.
                                 items:
                                   description: The weights of all of the matched WeightedPodAffinityTerm

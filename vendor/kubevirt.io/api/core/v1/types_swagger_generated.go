@@ -40,6 +40,7 @@ func (VirtualMachineInstanceSpec) SwaggerDoc() map[string]string {
 		"accessCredentials":             "Specifies a set of public keys to inject into the vm guest\n+listType=atomic\n+optional\n+kubebuilder:validation:MaxItems:=256",
 		"architecture":                  "Specifies the architecture of the vm guest you are attempting to run. Defaults to the compiled architecture of the KubeVirt components",
 		"resourceClaims":                "ResourceClaims define which ResourceClaims must be allocated\nand reserved before the VMI, hence virt-launcher pod is allowed to start. The resources\nwill be made available to the domain which consumes them\nby name.\n\nThis is an alpha field and requires enabling the\nDynamicResourceAllocation feature gate in kubernetes\n https://kubernetes.io/docs/concepts/scheduling-eviction/dynamic-resource-allocation/\nThis field should only be configured if one of the feature-gates GPUsWithDRA or HostDevicesWithDRA is enabled.\nThis feature is in alpha.\n\n+listType=map\n+listMapKey=name\n+optional",
+		"utilityVolumes":                "List of utility volumes that can be mounted to the vmi virt-launcher pod\nwithout having a matching disk in the domain.\nUsed to collect data for various operational workflows.\n+kubebuilder:validation:MaxItems:=256\n+listType=map\n+listMapKey=name\n+optional",
 	}
 }
 
@@ -465,7 +466,7 @@ func (VirtualMachineSpec) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"":                      "VirtualMachineSpec describes how the proper VirtualMachine\nshould look like",
 		"running":               "Running controls whether the associatied VirtualMachineInstance is created or not\nMutually exclusive with RunStrategy\nDeprecated: VirtualMachineInstance field \"Running\" is now deprecated, please use RunStrategy instead.",
-		"runStrategy":           "Running state indicates the requested running state of the VirtualMachineInstance\nmutually exclusive with Running",
+		"runStrategy":           "Running state indicates the requested running state of the VirtualMachineInstance\nmutually exclusive with Running\nFollowing are allowed values:\n- \"Always\": VMI should always be running.\n- \"Halted\": VMI should never be running.\n- \"Manual\": VMI can be started/stopped using API endpoints.\n- \"RerunOnFailure\": VMI will initially be running and restarted if a failure occurs, but will not be restarted upon successful completion.\n- \"Once\": VMI will run once and not be restarted upon completion regardless if the completion is of phase Failure or Success.",
 		"instancetype":          "InstancetypeMatcher references a instancetype that is used to fill fields in Template",
 		"preference":            "PreferenceMatcher references a set of preference that is used to fill fields in Template",
 		"template":              "Template is the direct specification of VirtualMachineInstance",
@@ -520,10 +521,23 @@ func (InstancetypeStatusRef) SwaggerDoc() map[string]string {
 	}
 }
 
+func (VirtualMachineInstanceBackupStatus) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":               "VirtualMachineInstanceBackupStatus tracks the information of the executed backup\n+k8s:openapi-gen=true",
+		"backupName":     "BackupName is the name of the executed backup",
+		"startTimestamp": "StartTimestamp is the timestamp when the backup started",
+		"endTimestamp":   "EndTimestamp is the timestamp when the backup ended",
+		"completed":      "Completed indicates the backup completed",
+		"backupMsg":      "BackupMsg resturns any relevant information like failure reason\nunfreeze failed etc...\n+optional",
+		"checkpointName": "CheckpointName is the name of the checkpoint created for the backup\n+optional",
+	}
+}
+
 func (ChangedBlockTrackingStatus) SwaggerDoc() map[string]string {
 	return map[string]string{
-		"":      "ChangedBlockTrackingStatus represents the status of ChangedBlockTracking for a VM\n+k8s:openapi-gen=true",
-		"state": "State represents the current CBT state",
+		"":             "ChangedBlockTrackingStatus represents the status of ChangedBlockTracking for a VM\n+k8s:openapi-gen=true",
+		"state":        "State represents the current CBT state",
+		"backupStatus": "BackupStatus represents the status of vmi backup\n+nullable\n+optional",
 	}
 }
 
@@ -893,6 +907,7 @@ func (KubeVirtConfiguration) SwaggerDoc() map[string]string {
 		"additionalGuestMemoryOverheadRatio": "AdditionalGuestMemoryOverheadRatio can be used to increase the virtualization infrastructure\noverhead. This is useful, since the calculation of this overhead is not accurate and cannot\nbe entirely known in advance. The ratio that is being set determines by which factor to increase\nthe overhead calculated by Kubevirt. A higher ratio means that the VMs would be less compromised\nby node pressures, but would mean that fewer VMs could be scheduled to a node.\nIf not set, the default is 1.",
 		"supportContainerResources":          "+listType=map\n+listMapKey=type\nSupportContainerResources specifies the resource requirements for various types of supporting containers such as container disks/virtiofs/sidecars and hotplug attachment pods. If omitted a sensible default will be supplied.",
 		"supportedGuestAgentVersions":        "deprecated",
+		"minCPUModel":                        "deprecated",
 		"vmStateStorageClass":                "VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM.",
 		"ksmConfiguration":                   "KSMConfiguration holds the information regarding the enabling the KSM in the nodes (if available).",
 		"autoCPULimitNamespaceLabelSelector": "When set, AutoCPULimitNamespaceLabelSelector will set a CPU limit on virt-launcher for VMIs running inside\nnamespaces that match the label selector.\nThe CPU limit will equal the number of requested vCPUs.\nThis setting does not apply to VMIs with dedicated CPUs.",
@@ -996,6 +1011,7 @@ func (MigrationConfiguration) SwaggerDoc() map[string]string {
 		"bandwidthPerMigration":             "BandwidthPerMigration limits the amount of network bandwidth live migrations are allowed to use.\nThe value is in quantity per second. Defaults to 0 (no limit)",
 		"completionTimeoutPerGiB":           "CompletionTimeoutPerGiB is the maximum number of seconds per GiB a migration is allowed to take.\nIf the timeout is reached, the migration will be either paused, switched\nto post-copy or cancelled depending on other settings. Defaults to 150",
 		"progressTimeout":                   "ProgressTimeout is the maximum number of seconds a live migration is allowed to make no progress.\nHitting this timeout means a migration transferred 0 data for that many seconds. The migration is\nthen considered stuck and therefore cancelled. Defaults to 150",
+		"utilityVolumesTimeout":             "UtilityVolumesTimeout is the maximum number of seconds a migration can wait in Pending state\nfor utility volumes to be detached. If utility volumes are still present after this timeout,\nthe migration will be marked as Failed. Defaults to 150",
 		"unsafeMigrationOverride":           "UnsafeMigrationOverride allows live migrations to occur even if the compatibility check\nindicates the migration will be unsafe to the guest. Defaults to false",
 		"allowPostCopy":                     "AllowPostCopy enables post-copy live migrations. Such migrations allow even the busiest VMIs\nto successfully live-migrate. However, events like a network failure can cause a VMI crash.\nIf set to true, migrations will still start in pre-copy, but switch to post-copy when\nCompletionTimeoutPerGiB triggers. Defaults to false",
 		"allowWorkloadDisruption":           "AllowWorkloadDisruption indicates that the migration shouldn't be\ncanceled after acceptableCompletionTime is exceeded. Instead, if\npermitted, migration will be switched to post-copy or the VMI will be\npaused to allow the migration to complete",

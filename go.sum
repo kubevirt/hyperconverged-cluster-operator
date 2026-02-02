@@ -396,8 +396,9 @@ github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
-github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
+github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
+github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 github.com/tidwall/gjson v1.18.0 h1:FIDeeyB800efLX89e5a8Y0BNH+LOngJyGrIWxG2FKQY=
 github.com/tidwall/gjson v1.18.0/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
 github.com/tidwall/match v1.1.1 h1:+Ho715JplO36QYgwN9PGYNhgZvoUSc9X2c80KVTi+GA=
@@ -787,8 +788,8 @@ k8s.io/utils v0.0.0-20240711033017-18e509b52bc8/go.mod h1:OLgZIPagt7ERELqWJFomSt
 k8s.io/utils v0.0.0-20250604170112-4c0f3b243397/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
 k8s.io/utils v0.0.0-20251002143259-bc988d571ff4 h1:SjGebBtkBqHFOli+05xYbK8YF1Dzkbzn+gDM4X9T4Ck=
 k8s.io/utils v0.0.0-20251002143259-bc988d571ff4/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
-kubevirt.io/api v1.7.0 h1:Kxmtk6HtFkKpZA7UcTRHWoxFKnwJaUmPzTXQVmvP5Bc=
-kubevirt.io/api v1.7.0/go.mod h1:i9ptPTe87h5qun3mjAfcaIH1e8/W5c0LwqSBeNr/TRQ=
+kubevirt.io/api v1.8.0-alpha.0 h1:5GAhXatWdkwpz8EWTsHtT3NXWN3D1BlVWWR3RnTFrUE=
+kubevirt.io/api v1.8.0-alpha.0/go.mod h1:J2HiSOLVhKj2UXoe14V6rpr3ZO/W/QBxcN+QK/S0Xkc=
 kubevirt.io/application-aware-quota v1.7.0 h1:mWF/XelnI01e9vYPaFciZxupwtm/CP7Lq8BGgE8+uUk=
 kubevirt.io/application-aware-quota v1.7.0/go.mod h1:BBpGqyvKJVL/Bxufz7l3Lqbyojrty8F1PCAygHW16H0=
 kubevirt.io/containerized-data-importer-api v1.64.0 h1:yBLY6qEogUp8F+XSJvabIkx9uEEDeToYDfRr0mbUxJc=
