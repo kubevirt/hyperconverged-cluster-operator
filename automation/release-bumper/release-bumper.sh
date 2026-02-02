@@ -45,6 +45,10 @@ function main {
 
   echo INFO: Executing "go mod vendor"
   go mod vendor
+  # if new files added to the vendor/ directory, add them to git
+  if [[ -n $(git ls-files --others --exclude-standard --deleted vendor) ]]; then
+    git add vendor/
+  fi
 
   echo INFO: Executing "build-manifests.sh"...
   make build-manifests
@@ -111,7 +115,7 @@ function get_updated_versions {
   )
 
   IMPORT_REPOS=(
-    ["KUBEVIRT"]="kubevirt.io/api,kubevirt.io/client-go,kubevirt.io/kubevirt"
+    ["KUBEVIRT"]="kubevirt.io/api"
     ["CDI"]="kubevirt.io/containerized-data-importer-api"
     ["NETWORK_ADDONS"]="kubevirt/cluster-network-addons-operator"
     ["SSP"]="kubevirt.io/ssp-operator/api"
@@ -256,7 +260,7 @@ function update_go_mod() {
     MODULE_PATH_LIST=${IMPORT_REPOS[$UPDATED_COMPONENT]}
     for MODULE_PATH in $(echo "${MODULE_PATH_LIST}" | tr "," "\n")
     do
-      sed -E -i "s|(${MODULE_PATH}.*)v.+|\1${UPDATED_VERSION}|" go.mod
+      go mod edit -require="${MODULE_PATH}@${UPDATED_VERSION}"
     done
   else
     echo "No need to update go.mod for ${UPDATED_COMPONENT}"
