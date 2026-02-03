@@ -3321,6 +3321,13 @@ spec:
         - apiGroups:
           - ""
           resources:
+          - namespaces
+          verbs:
+          - list
+          - watch
+        - apiGroups:
+          - ""
+          resources:
           - pods
           verbs:
           - list
@@ -3478,7 +3485,9 @@ spec:
           - migrations.kubevirt.io
           resources:
           - virtualmachinestoragemigrations/finalizers
+          - virtualmachinestoragemigrationplans/finalizers
           - multinamespacevirtualmachinestoragemigrations/finalizers
+          - multinamespacevirtualmachinestoragemigrationplans/finalizers
           verbs:
           - update
         - apiGroups:
@@ -3492,6 +3501,21 @@ spec:
           - get
           - patch
           - update
+        - apiGroups:
+          - route.openshift.io
+          resourceNames:
+          - prometheus-k8s
+          resources:
+          - routes
+          verbs:
+          - list
+          - watch
+        - apiGroups:
+          - config.openshift.io
+          resources:
+          - clusterversions
+          verbs:
+          - get
         - apiGroups:
           - authentication.k8s.io
           resources:
@@ -3625,7 +3649,7 @@ spec:
                 - name: AAQ_VERSION
                   value: v1.7.0
                 - name: MIGRATION_OPERATOR_VERSION
-                  value: v0.0.14
+                  value: v0.1.0
                 - name: KV_CONSOLE_PLUGIN_IMAGE
                   value: quay.io/kubevirt-ui/kubevirt-plugin@sha256:a9273d9e69662320fc6677f51ee1b05f4c62528b8a83895f8f56849de3b8b9f2
                 - name: KV_CONSOLE_PROXY_IMAGE
@@ -4553,7 +4577,7 @@ spec:
                 - name: DEPLOY_CLUSTER_RESOURCES
                   value: "true"
                 - name: OPERATOR_VERSION
-                  value: v0.0.14
+                  value: v0.1.0
                 - name: CONTROLLER_IMAGE
                   value: quay.io/kubevirt/kubevirt-migration-controller@sha256:e72e34ac501d6a0ba73905c94bdaf2273ffa91220833431b3f23a71e149eb952
                 - name: VERBOSITY
@@ -4562,8 +4586,8 @@ spec:
                   value: IfNotPresent
                 - name: MONITORING_NAMESPACE
                 - name: OPERATOR_IMAGE
-                  value: quay.io/kubevirt/kubevirt-migration-operator@sha256:4fb6478872f8a0cdfdc74e49d61d340580199d00ee6aca68442e06ed89a47929
-                image: quay.io/kubevirt/kubevirt-migration-operator@sha256:4fb6478872f8a0cdfdc74e49d61d340580199d00ee6aca68442e06ed89a47929
+                  value: quay.io/kubevirt/kubevirt-migration-operator@sha256:712918a76c1f44a1afb50dbb78a253d8c649d77c4d484fed435e892bc893543f
+                image: quay.io/kubevirt/kubevirt-migration-operator@sha256:712918a76c1f44a1afb50dbb78a253d8c649d77c4d484fed435e892bc893543f
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -5476,7 +5500,7 @@ spec:
     name: kubevirt-apiserver-proxy
   - image: quay.io/kubevirt/kubevirt-migration-controller@sha256:e72e34ac501d6a0ba73905c94bdaf2273ffa91220833431b3f23a71e149eb952
     name: kubevirt-migration-controller
-  - image: quay.io/kubevirt/kubevirt-migration-operator@sha256:4fb6478872f8a0cdfdc74e49d61d340580199d00ee6aca68442e06ed89a47929
+  - image: quay.io/kubevirt/kubevirt-migration-operator@sha256:712918a76c1f44a1afb50dbb78a253d8c649d77c4d484fed435e892bc893543f
     name: kubevirt-migration-operator
   - image: quay.io/kubevirt-ui/kubevirt-plugin@sha256:a9273d9e69662320fc6677f51ee1b05f4c62528b8a83895f8f56849de3b8b9f2
     name: kubevirt-plugin

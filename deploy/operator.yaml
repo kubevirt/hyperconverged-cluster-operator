@@ -71,7 +71,7 @@ spec:
         - name: AAQ_VERSION
           value: v1.7.0
         - name: MIGRATION_OPERATOR_VERSION
-          value: v0.0.14
+          value: v0.1.0
         - name: KV_CONSOLE_PLUGIN_IMAGE
         - name: KV_CONSOLE_PROXY_IMAGE
         - name: PASST_SIDECAR_IMAGE
@@ -1045,7 +1045,7 @@ spec:
         - name: DEPLOY_CLUSTER_RESOURCES
           value: "true"
         - name: OPERATOR_VERSION
-          value: v0.0.14
+          value: v0.1.0
         - name: CONTROLLER_IMAGE
           value: quay.io/kubevirt/kubevirt-migration-controller@sha256:e72e34ac501d6a0ba73905c94bdaf2273ffa91220833431b3f23a71e149eb952
         - name: VERBOSITY
@@ -1054,8 +1054,8 @@ spec:
           value: IfNotPresent
         - name: MONITORING_NAMESPACE
         - name: OPERATOR_IMAGE
-          value: quay.io/kubevirt/kubevirt-migration-operator@sha256:4fb6478872f8a0cdfdc74e49d61d340580199d00ee6aca68442e06ed89a47929
-        image: quay.io/kubevirt/kubevirt-migration-operator@sha256:4fb6478872f8a0cdfdc74e49d61d340580199d00ee6aca68442e06ed89a47929
+          value: quay.io/kubevirt/kubevirt-migration-operator@sha256:712918a76c1f44a1afb50dbb78a253d8c649d77c4d484fed435e892bc893543f
+        image: quay.io/kubevirt/kubevirt-migration-operator@sha256:712918a76c1f44a1afb50dbb78a253d8c649d77c4d484fed435e892bc893543f
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
