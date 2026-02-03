@@ -2,8 +2,11 @@ package handlers
 
 import (
 	"context"
+	"crypto/tls"
 	"maps"
 	"reflect"
+	"slices"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,6 +31,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -934,6 +938,75 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Entry("plugin deployment", hcoutil.AppComponentUIPlugin, NewKvUIPluginDeployment, NewKvUIPluginDeploymentHandler),
 				Entry("proxy deployment", hcoutil.AppComponentUIProxy, NewKvUIProxyDeployment, NewKvUIProxyDeploymentHandler),
 			)
+		})
+
+		Context("TLS Security Profile", func() {
+			BeforeEach(func() {
+				originalGetCipherSuitesFunc := tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat
+				DeferCleanup(func() {
+					tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat = originalGetCipherSuitesFunc
+				})
+			})
+
+			It("should add TLS cipher suites and min TLS version args when both are set", func() {
+				tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) ([]uint16, uint16) {
+					return []uint16{
+						tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+						tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+					}, tls.VersionTLS12
+				}
+
+				deployment := NewKvUIProxyDeployment(hco)
+
+				Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1))
+				args := deployment.Spec.Template.Spec.Containers[0].Args
+
+				Expect(args).To(ContainElement("--tls-cipher-suites=49195,49199"))
+				Expect(args).To(ContainElement("--tls-min-version=771"))
+			})
+
+			It("should add only min TLS version arg when no ciphers are returned (TLS 1.3)", func() {
+				tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) ([]uint16, uint16) {
+					return []uint16{}, tls.VersionTLS13
+				}
+
+				deployment := NewKvUIProxyDeployment(hco)
+
+				Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1))
+				args := deployment.Spec.Template.Spec.Containers[0].Args
+
+				hasCipherArg := slices.ContainsFunc(args, func(arg string) bool {
+					return strings.HasPrefix(arg, "--tls-cipher-suites=")
+				})
+				Expect(hasCipherArg).To(BeFalseBecause("should not have cipher suites arg when no ciphers are returned"))
+				Expect(args).To(ContainElement("--tls-min-version=772"))
+			})
+
+			It("should add only --tls-min-version=0 arg when both ciphers and min version are zero values", func() {
+				tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) ([]uint16, uint16) {
+					return nil, 0
+				}
+
+				deployment := NewKvUIProxyDeployment(hco)
+
+				Expect(deployment.Spec.Template.Spec.Containers).To(HaveLen(1))
+				args := deployment.Spec.Template.Spec.Containers[0].Args
+
+				Expect(args).To(HaveLen(1))
+				Expect(args[0]).ToNot(HavePrefix("--tls-cipher-suites="))
+				Expect(args[0]).To(HavePrefix("--tls-min-version=0"))
+			})
+
+			It("should handle single cipher correctly", func() {
+				tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat = func(_ *openshiftconfigv1.TLSSecurityProfile) ([]uint16, uint16) {
+					return []uint16{tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384}, tls.VersionTLS12
+				}
+
+				deployment := NewKvUIProxyDeployment(hco)
+
+				args := deployment.Spec.Template.Spec.Containers[0].Args
+				Expect(args).To(ContainElement("--tls-cipher-suites=49196"))
+			})
 		})
 	})
 

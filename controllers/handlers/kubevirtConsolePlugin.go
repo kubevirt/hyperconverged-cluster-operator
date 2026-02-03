@@ -9,6 +9,7 @@ import (
 	"os"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -166,6 +167,25 @@ func NewKvUIProxyDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
 	kvUIProxyImage, _ := os.LookupEnv(hcoutil.KVUIProxyImageEnvV)
 	deployment := getKvUIDeployment(hc, kvUIProxyDeploymentName, kvUIProxyImage, kvUIProxyServingCertName,
 		kvUIProxyServingCertPath, hcoutil.UIProxyServerPort, hcoutil.AppComponentUIProxy)
+
+	ciphers, minTLSVersion := tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat(hc.Spec.TLSSecurityProfile)
+
+	var args []string
+	if len(ciphers) > 0 {
+		cipherStrs := make([]string, len(ciphers))
+		for i := range ciphers {
+			cipherStrs[i] = strconv.Itoa(int(ciphers[i]))
+		}
+
+		cipherSuiteStr := strings.Join(cipherStrs, ",")
+		arg := fmt.Sprintf("--tls-cipher-suites=%s", cipherSuiteStr)
+		args = append(args, arg)
+	}
+
+	arg := fmt.Sprintf("--tls-min-version=%d", minTLSVersion)
+	args = append(args, arg)
+
+	deployment.Spec.Template.Spec.Containers[0].Args = append(deployment.Spec.Template.Spec.Containers[0].Args, args...)
 
 	return deployment
 }
