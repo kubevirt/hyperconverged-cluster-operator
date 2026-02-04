@@ -157,7 +157,6 @@ const (
 	kvAlignCPUs                  = "AlignCPUs"
 	kvPasstIPStackMigration      = "PasstIPStackMigration"
 	kvDecentralizedLiveMigration = "DecentralizedLiveMigration"
-	kvMultiArchitecture          = "MultiArchitecture"
 	kvVideoConfig                = "VideoConfig"
 	kvObjectGraph                = "ObjectGraph"
 )
@@ -915,10 +914,6 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, a
 
 	if ptr.Deref(featureGates.DecentralizedLiveMigration, false) {
 		fgs = append(fgs, kvDecentralizedLiveMigration)
-	}
-
-	if ptr.Deref(featureGates.EnableMultiArchBootImageImport, false) {
-		fgs = append(fgs, kvMultiArchitecture)
 	}
 
 	// Add the appropriate volume hotplug featuregate based on DeclarativeHotplugVolumes setting
