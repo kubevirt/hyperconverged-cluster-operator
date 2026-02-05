@@ -30,6 +30,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -63,10 +64,7 @@ type WebhookHandler struct {
 	decoder     admission.Decoder
 }
 
-var hcoTLSConfigCache *openshiftconfigv1.TLSSecurityProfile
-
-func NewWebhookHandler(logger logr.Logger, cli client.Client, decoder admission.Decoder, namespace string, isOpenshift bool, hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile) *WebhookHandler {
-	hcoTLSConfigCache = hcoTLSSecurityProfile
+func NewWebhookHandler(logger logr.Logger, cli client.Client, decoder admission.Decoder, namespace string, isOpenshift bool) *WebhookHandler {
 	return &WebhookHandler{
 		logger:      logger,
 		cli:         cli,
@@ -134,8 +132,13 @@ func (wh *WebhookHandler) Handle(ctx context.Context, req admission.Request) adm
 	return admission.Allowed("")
 }
 
-func (wh *WebhookHandler) ValidateCreate(_ context.Context, dryrun bool, hc *v1beta1.HyperConverged) error {
-	wh.logger.Info("Validating create", "name", hc.Name, "namespace:", hc.Namespace)
+func (wh *WebhookHandler) ValidateCreate(ctx context.Context, dryrun bool, hc *v1beta1.HyperConverged) error {
+	logger, err := logr.FromContext(ctx)
+	if err != nil {
+		logger = wh.logger
+	}
+
+	logger.Info("Validating create", "name", hc.Name, "namespace:", hc.Namespace)
 
 	if err := wh.validateCertConfig(hc); err != nil {
 		return err
@@ -182,7 +185,7 @@ func (wh *WebhookHandler) ValidateCreate(_ context.Context, dryrun bool, hc *v1b
 	}
 
 	if !dryrun {
-		hcoTLSConfigCache = hc.Spec.TLSSecurityProfile
+		tlssecprofile.SetHyperConvergedTLSSecurityProfile(hc.Spec.TLSSecurityProfile)
 	}
 
 	return nil
@@ -214,7 +217,12 @@ func (wh *WebhookHandler) getOperands(requested *v1beta1.HyperConverged) (*kubev
 // ValidateUpdate is the ValidateUpdate webhook implementation. It calls all the resources in parallel, to dry-run the
 // upgrade.
 func (wh *WebhookHandler) ValidateUpdate(ctx context.Context, dryrun bool, requested *v1beta1.HyperConverged, exists *v1beta1.HyperConverged) error {
-	wh.logger.Info("Validating update", "name", requested.Name)
+	logger, err := logr.FromContext(ctx)
+	if err != nil {
+		logger = wh.logger
+	}
+
+	logger.Info("Validating update", "name", requested.Name)
 
 	if err := wh.validateDataImportCronTemplates(requested); err != nil {
 		return err
@@ -288,7 +296,7 @@ func (wh *WebhookHandler) ValidateUpdate(ctx context.Context, dryrun bool, reque
 	for _, obj := range resources {
 		func(o client.Object) {
 			eg.Go(func() error {
-				return wh.updateOperatorCr(egCtx, requested, o, opts)
+				return wh.updateOperatorCr(egCtx, logger, requested, o, opts)
 			})
 		}(obj)
 	}
@@ -299,16 +307,16 @@ func (wh *WebhookHandler) ValidateUpdate(ctx context.Context, dryrun bool, reque
 	}
 
 	if !dryrun {
-		hcoTLSConfigCache = requested.Spec.TLSSecurityProfile
+		tlssecprofile.SetHyperConvergedTLSSecurityProfile(requested.Spec.TLSSecurityProfile)
 	}
 
 	return nil
 }
 
-func (wh *WebhookHandler) updateOperatorCr(ctx context.Context, hc *v1beta1.HyperConverged, exists client.Object, opts *client.UpdateOptions) error {
+func (wh *WebhookHandler) updateOperatorCr(ctx context.Context, logger logr.Logger, hc *v1beta1.HyperConverged, exists client.Object, opts *client.UpdateOptions) error {
 	err := hcoutil.GetRuntimeObject(ctx, wh.cli, exists)
 	if err != nil {
-		wh.logger.Error(err, "failed to get object from kubernetes", "kind", exists.GetObjectKind())
+		logger.Error(err, "failed to get object from kubernetes", "kind", exists.GetObjectKind())
 		return err
 	}
 
@@ -343,16 +351,21 @@ func (wh *WebhookHandler) updateOperatorCr(ctx context.Context, hc *v1beta1.Hype
 	}
 
 	if err = wh.cli.Update(ctx, exists, opts); err != nil {
-		wh.logger.Error(err, "failed to dry-run update the object", "kind", exists.GetObjectKind())
+		logger.Error(err, "failed to dry-run update the object", "kind", exists.GetObjectKind())
 		return err
 	}
 
-	wh.logger.Info("dry-run update the object passed", "kind", exists.GetObjectKind())
+	logger.Info("dry-run update the object passed", "kind", exists.GetObjectKind())
 	return nil
 }
 
 func (wh *WebhookHandler) ValidateDelete(ctx context.Context, dryrun bool, hc *v1beta1.HyperConverged) error {
-	wh.logger.Info("Validating delete", "name", hc.Name, "namespace", hc.Namespace)
+	logger, err := logr.FromContext(ctx)
+	if err != nil {
+		logger = wh.logger
+	}
+
+	logger.Info("Validating delete", "name", hc.Name, "namespace", hc.Namespace)
 
 	kv := handlers.NewKubeVirtWithNameOnly(hc)
 	cdi := handlers.NewCDIWithNameOnly(hc)
@@ -361,14 +374,14 @@ func (wh *WebhookHandler) ValidateDelete(ctx context.Context, dryrun bool, hc *v
 		kv,
 		cdi,
 	} {
-		_, err := hcoutil.EnsureDeleted(ctx, wh.cli, obj, hc.Name, wh.logger, true, false, true)
+		_, err := hcoutil.EnsureDeleted(ctx, wh.cli, obj, hc.Name, logger, true, false, true)
 		if err != nil {
-			wh.logger.Error(err, "Delete validation failed", "GVK", obj.GetObjectKind().GroupVersionKind())
+			logger.Error(err, "Delete validation failed", "GVK", obj.GetObjectKind().GroupVersionKind())
 			return err
 		}
 	}
 	if !dryrun {
-		hcoTLSConfigCache = nil
+		tlssecprofile.SetHyperConvergedTLSSecurityProfile(nil)
 	}
 	return nil
 }
@@ -425,7 +438,14 @@ func (wh *WebhookHandler) validateDataImportCronTemplates(hc *v1beta1.HyperConve
 func (wh *WebhookHandler) validateTLSSecurityProfiles(hc *v1beta1.HyperConverged) error {
 	tlsSP := hc.Spec.TLSSecurityProfile
 
-	if tlsSP == nil || tlsSP.Custom == nil {
+	if tlsSP == nil {
+		return nil
+	}
+
+	if tlsSP.Custom == nil {
+		if tlsSP.Type == openshiftconfigv1.TLSProfileCustomType {
+			return fmt.Errorf("missing required field spec.tlsSecurityProfile.custom when type is Custom")
+		}
 		return nil
 	}
 
@@ -604,17 +624,6 @@ func validationResponseFromStatus(allowed bool, status metav1.Status) admission.
 		},
 	}
 	return resp
-}
-
-func SelectCipherSuitesAndMinTLSVersion() ([]string, openshiftconfigv1.TLSProtocolVersion) {
-	ci := hcoutil.GetClusterInfo()
-	profile := ci.GetTLSSecurityProfile(hcoTLSConfigCache)
-
-	if profile.Custom != nil {
-		return profile.Custom.Ciphers, profile.Custom.MinTLSVersion
-	}
-
-	return openshiftconfigv1.TLSProfiles[profile.Type].Ciphers, openshiftconfigv1.TLSProfiles[profile.Type].MinTLSVersion
 }
 
 func isValidTLSProtocolVersion(pv openshiftconfigv1.TLSProtocolVersion) bool {

@@ -26,7 +26,6 @@ import (
 	"k8s.io/client-go/tools/reference"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
@@ -41,6 +40,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	fakeownresources "github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources/fake"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/version"
 )
@@ -968,7 +968,7 @@ var _ = Describe("HyperconvergedController", func() {
 			})
 		})
 
-		Context("APIServer CR", func() {
+		Context("TLS Security Profile", func() {
 
 			BeforeEach(func() {
 				externalClusterInfo := hcoutil.GetClusterInfo
@@ -979,7 +979,7 @@ var _ = Describe("HyperconvergedController", func() {
 				})
 			})
 
-			It("Should refresh cached APIServer if the reconciliation is caused by a change there", func() {
+			It("Should refresh use the APIServer if the TLSSecurityProfile is not set in the HyperConverged CR", func(ctx context.Context) {
 
 				initialTLSSecurityProfile := &openshiftconfigv1.TLSSecurityProfile{
 					Type:         openshiftconfigv1.TLSProfileIntermediateType,
@@ -988,37 +988,6 @@ var _ = Describe("HyperconvergedController", func() {
 				customTLSSecurityProfile := &openshiftconfigv1.TLSSecurityProfile{
 					Type:   openshiftconfigv1.TLSProfileModernType,
 					Modern: &openshiftconfigv1.ModernTLSProfile{},
-				}
-
-				clusterVersion := &openshiftconfigv1.ClusterVersion{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "version",
-					},
-					Spec: openshiftconfigv1.ClusterVersionSpec{
-						ClusterID: "clusterId",
-					},
-				}
-
-				infrastructure := &openshiftconfigv1.Infrastructure{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cluster",
-					},
-					Status: openshiftconfigv1.InfrastructureStatus{
-						ControlPlaneTopology:   openshiftconfigv1.HighlyAvailableTopologyMode,
-						InfrastructureTopology: openshiftconfigv1.HighlyAvailableTopologyMode,
-						PlatformStatus: &openshiftconfigv1.PlatformStatus{
-							Type: "mocked",
-						},
-					},
-				}
-
-				ingress := &openshiftconfigv1.Ingress{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cluster",
-					},
-					Spec: openshiftconfigv1.IngressSpec{
-						Domain: "domain",
-					},
 				}
 
 				apiServer := &openshiftconfigv1.APIServer{
@@ -1030,181 +999,305 @@ var _ = Describe("HyperconvergedController", func() {
 					},
 				}
 
-				dns := &openshiftconfigv1.DNS{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "cluster",
-					},
-					Spec: openshiftconfigv1.DNSSpec{
-						BaseDomain: commontestutils.BaseDomain,
-					},
+				expected := getBasicDeployment()
+				Expect(expected.hco.Spec.TLSSecurityProfile).To(BeNil())
+
+				resources := expected.toArray()
+				resources = append(resources, apiServer)
+				cl := commontestutils.InitClient(resources)
+
+				_, err := tlssecprofile.Refresh(ctx, cl)
+				Expect(err).ToNot(HaveOccurred())
+				r := initReconciler(cl, nil)
+
+				// Reconcile to get all related objects under HCO's status
+				res, err := r.Reconcile(ctx, request)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res).To(Equal(reconcile.Result{}))
+
+				foundResource := &hcov1beta1.HyperConverged{}
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
+						foundResource),
+				).ToNot(HaveOccurred())
+				checkAvailability(foundResource, metav1.ConditionTrue)
+				Expect(foundResource.Spec.TLSSecurityProfile).To(BeNil(), "TLSSecurityProfile on HCO CR should still be nil")
+
+				By("Verify that Kubevirt was properly configured with initialTLSSecurityProfile")
+				kv := handlers.NewKubeVirtWithNameOnly(foundResource)
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},
+						kv),
+				).To(Succeed())
+
+				Expect(kv.Spec.Configuration.TLSConfiguration.MinTLSVersion).To(Equal(kubevirtcorev1.VersionTLS12))
+				Expect(kv.Spec.Configuration.TLSConfiguration.Ciphers).To(Equal([]string{
+					"TLS_AES_128_GCM_SHA256",
+					"TLS_AES_256_GCM_SHA384",
+					"TLS_CHACHA20_POLY1305_SHA256",
+					"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+					"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+					"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+					"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+					"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+					"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+				}))
+
+				By("Verify that CDI was properly configured with initialTLSSecurityProfile")
+				cdi := handlers.NewCDIWithNameOnly(foundResource)
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},
+						cdi),
+				).To(Succeed())
+
+				Expect(cdi.Spec.Config.TLSSecurityProfile).To(Equal(openshift2CdiSecProfile(initialTLSSecurityProfile)))
+
+				By("Verify that CNA was properly configured with initialTLSSecurityProfile")
+				cna := handlers.NewNetworkAddonsWithNameOnly(foundResource)
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},
+						cna),
+				).To(Succeed())
+
+				Expect(cna.Spec.TLSSecurityProfile).To(Equal(initialTLSSecurityProfile))
+
+				By("Verify that SSP was properly configured with initialTLSSecurityProfile")
+				ssp := handlers.NewSSPWithNameOnly(foundResource)
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
+						ssp),
+				).To(Succeed())
+
+				Expect(ssp.Spec.TLSSecurityProfile).To(Equal(initialTLSSecurityProfile))
+
+				// Update ApiServer CR
+				apiServer.Spec.TLSSecurityProfile = customTLSSecurityProfile
+				Expect(cl.Update(ctx, apiServer)).To(Succeed())
+				Expect(tlssecprofile.GetTLSSecurityProfile(expected.hco.Spec.TLSSecurityProfile)).To(Equal(initialTLSSecurityProfile), "should still return the cached value (initial value)")
+
+				// this is done in the apiserver controller
+				modified, err := tlssecprofile.Refresh(ctx, cl)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(modified).To(BeTrue())
+				// mock a reconciliation triggered by a change in the APIServer controller
+				rq := reqresolver.GetAPIServerCRRequest()
+
+				// Reconcile again to make sure all the CRs get updated with the new TLS security profile
+				res, err = r.Reconcile(ctx, rq)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res).To(Equal(reconcile.Result{}))
+
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
+						foundResource),
+				).ToNot(HaveOccurred())
+				checkAvailability(foundResource, metav1.ConditionTrue)
+				Expect(foundResource.Spec.TLSSecurityProfile).To(BeNil(), "TLSSecurityProfile on HCO CR should still be nil")
+
+				Expect(tlssecprofile.GetTLSSecurityProfile(expected.hco.Spec.TLSSecurityProfile)).To(Equal(customTLSSecurityProfile), "should return the up-to-date value")
+
+				By("Verify that Kubevirt was properly updated with customTLSSecurityProfile")
+				kv = handlers.NewKubeVirtWithNameOnly(foundResource)
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},
+						kv),
+				).To(Succeed())
+
+				Expect(kv.Spec.Configuration.TLSConfiguration.MinTLSVersion).To(Equal(kubevirtcorev1.VersionTLS13))
+				Expect(kv.Spec.Configuration.TLSConfiguration.Ciphers).To(BeEmpty())
+
+				By("Verify that CDI was properly updated with customTLSSecurityProfile")
+				cdi = handlers.NewCDIWithNameOnly(foundResource)
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},
+						cdi),
+				).To(Succeed())
+
+				Expect(cdi.Spec.Config.TLSSecurityProfile).To(Equal(openshift2CdiSecProfile(customTLSSecurityProfile)))
+
+				By("Verify that CNA was properly updated with customTLSSecurityProfile")
+				cna = handlers.NewNetworkAddonsWithNameOnly(foundResource)
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},
+						cna),
+				).To(Succeed())
+
+				Expect(cna.Spec.TLSSecurityProfile).To(Equal(customTLSSecurityProfile))
+
+				By("Verify that SSP was properly updated with customTLSSecurityProfile")
+				ssp = handlers.NewSSPWithNameOnly(foundResource)
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
+						ssp),
+				).To(Succeed())
+
+				Expect(ssp.Spec.TLSSecurityProfile).To(Equal(customTLSSecurityProfile))
+			})
+
+			It("Should use the TLSSecurityProfile from the HyperConverged CR, if it set", func(ctx context.Context) {
+
+				initialTLSSecurityProfile := &openshiftconfigv1.TLSSecurityProfile{
+					Type:         openshiftconfigv1.TLSProfileIntermediateType,
+					Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
+				}
+				customTLSSecurityProfile := &openshiftconfigv1.TLSSecurityProfile{
+					Type:   openshiftconfigv1.TLSProfileModernType,
+					Modern: &openshiftconfigv1.ModernTLSProfile{},
 				}
 
-				ipv4network := &openshiftconfigv1.Network{
+				apiServer := &openshiftconfigv1.APIServer{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "cluster",
 					},
-					Status: openshiftconfigv1.NetworkStatus{
-						ClusterNetwork: []openshiftconfigv1.ClusterNetworkEntry{
-							{
-								CIDR: "10.128.0.0/14",
-							},
-						},
+					Spec: openshiftconfigv1.APIServerSpec{
+						TLSSecurityProfile: initialTLSSecurityProfile,
 					},
 				}
 
 				expected := getBasicDeployment()
 				Expect(expected.hco.Spec.TLSSecurityProfile).To(BeNil())
 
-				expected.csv = commontestutils.GetCSV()
-
 				resources := expected.toArray()
-				resources = append(resources, clusterVersion, infrastructure, ingress, apiServer, dns, ipv4network)
+				resources = append(resources, apiServer)
 				cl := commontestutils.InitClient(resources)
 
-				logger := zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("hyperconverged_controller_test")
-				Expect(hcoutil.GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
-
-				Expect(initialTLSSecurityProfile).ToNot(Equal(customTLSSecurityProfile), "customTLSSecurityProfile should be a different value")
-
+				_, err := tlssecprofile.Refresh(ctx, cl)
+				Expect(err).ToNot(HaveOccurred())
 				r := initReconciler(cl, nil)
 
 				// Reconcile to get all related objects under HCO's status
-				res, err := r.Reconcile(context.TODO(), request)
+				res, err := r.Reconcile(ctx, request)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res).To(Equal(reconcile.Result{}))
 
-				foundResource := &hcov1beta1.HyperConverged{}
+				foundHCO := &hcov1beta1.HyperConverged{}
 				Expect(
-					cl.Get(context.TODO(),
+					cl.Get(ctx,
 						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
-						foundResource),
+						foundHCO),
 				).ToNot(HaveOccurred())
-				checkAvailability(foundResource, metav1.ConditionTrue)
-				Expect(foundResource.Spec.TLSSecurityProfile).To(BeNil(), "TLSSecurityProfile on HCO CR should still be nil")
 
-				By("Verify that Kubevirt was properly configured with initialTLSSecurityProfile", func() {
-					kv := handlers.NewKubeVirtWithNameOnly(foundResource)
-					Expect(
-						cl.Get(context.TODO(),
-							types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},
-							kv),
-					).To(Succeed())
+				Expect(foundHCO.Spec.TLSSecurityProfile).To(BeNil(), "TLSSecurityProfile on HCO CR should still be nil")
 
-					Expect(kv.Spec.Configuration.TLSConfiguration.MinTLSVersion).To(Equal(kubevirtcorev1.VersionTLS12))
-					Expect(kv.Spec.Configuration.TLSConfiguration.Ciphers).To(Equal([]string{
-						"TLS_AES_128_GCM_SHA256",
-						"TLS_AES_256_GCM_SHA384",
-						"TLS_CHACHA20_POLY1305_SHA256",
-						"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
-						"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
-						"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
-						"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
-						"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
-						"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
-					}))
-				})
-				By("Verify that CDI was properly configured with initialTLSSecurityProfile", func() {
-					cdi := handlers.NewCDIWithNameOnly(foundResource)
-					Expect(
-						cl.Get(context.TODO(),
-							types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},
-							cdi),
-					).To(Succeed())
+				By("Verify that Kubevirt was properly configured with initialTLSSecurityProfile")
+				kv := handlers.NewKubeVirtWithNameOnly(foundHCO)
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},
+						kv),
+				).To(Succeed())
 
-					Expect(cdi.Spec.Config.TLSSecurityProfile).To(Equal(openshift2CdiSecProfile(initialTLSSecurityProfile)))
+				Expect(kv.Spec.Configuration.TLSConfiguration.MinTLSVersion).To(Equal(kubevirtcorev1.VersionTLS12))
+				Expect(kv.Spec.Configuration.TLSConfiguration.Ciphers).To(Equal([]string{
+					"TLS_AES_128_GCM_SHA256",
+					"TLS_AES_256_GCM_SHA384",
+					"TLS_CHACHA20_POLY1305_SHA256",
+					"TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256",
+					"TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
+					"TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384",
+					"TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384",
+					"TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256",
+					"TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256",
+				}))
 
-				})
-				By("Verify that CNA was properly configured with initialTLSSecurityProfile", func() {
-					cna := handlers.NewNetworkAddonsWithNameOnly(foundResource)
-					Expect(
-						cl.Get(context.TODO(),
-							types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},
-							cna),
-					).To(Succeed())
+				By("Verify that CDI was properly configured with initialTLSSecurityProfile")
+				cdi := handlers.NewCDIWithNameOnly(foundHCO)
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},
+						cdi),
+				).To(Succeed())
 
-					Expect(cna.Spec.TLSSecurityProfile).To(Equal(initialTLSSecurityProfile))
-				})
-				By("Verify that SSP was properly configured with initialTLSSecurityProfile", func() {
-					ssp := handlers.NewSSPWithNameOnly(foundResource)
-					Expect(
-						cl.Get(context.TODO(),
-							types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
-							ssp),
-					).To(Succeed())
+				Expect(cdi.Spec.Config.TLSSecurityProfile).To(Equal(openshift2CdiSecProfile(initialTLSSecurityProfile)))
 
-					Expect(ssp.Spec.TLSSecurityProfile).To(Equal(initialTLSSecurityProfile))
-				})
+				By("Verify that CNA was properly configured with initialTLSSecurityProfile")
+				cna := handlers.NewNetworkAddonsWithNameOnly(foundHCO)
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},
+						cna),
+				).To(Succeed())
 
-				// Update ApiServer CR
-				apiServer.Spec.TLSSecurityProfile = customTLSSecurityProfile
-				Expect(cl.Update(context.TODO(), apiServer)).To(Succeed())
-				Expect(hcoutil.GetClusterInfo().GetTLSSecurityProfile(expected.hco.Spec.TLSSecurityProfile)).To(Equal(initialTLSSecurityProfile), "should still return the cached value (initial value)")
+				Expect(cna.Spec.TLSSecurityProfile).To(Equal(initialTLSSecurityProfile))
 
-				// mock a reconciliation triggered by a change in the APIServer CR
-				rq := reqresolver.GetAPIServerCRRequest()
+				By("Verify that SSP was properly configured with initialTLSSecurityProfile")
+				ssp := handlers.NewSSPWithNameOnly(foundHCO)
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
+						ssp),
+				).To(Succeed())
 
-				// Reconcile again to refresh ApiServer CR in memory
-				res, err = r.Reconcile(context.TODO(), rq)
+				Expect(ssp.Spec.TLSSecurityProfile).To(Equal(initialTLSSecurityProfile))
+
+				By("Update HyperConverged CR with customTLSSecurityProfile")
+				foundHCO.Spec.TLSSecurityProfile = customTLSSecurityProfile
+				Expect(cl.Update(ctx, foundHCO)).To(Succeed())
+
+				// Reconcile again to make sure all the CRs get updated with the new TLS security profile
+				res, err = r.Reconcile(ctx, request)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res).To(Equal(reconcile.Result{}))
 
 				Expect(
-					cl.Get(context.TODO(),
+					cl.Get(ctx,
 						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
-						foundResource),
+						foundHCO),
 				).ToNot(HaveOccurred())
-				checkAvailability(foundResource, metav1.ConditionTrue)
-				Expect(foundResource.Spec.TLSSecurityProfile).To(BeNil(), "TLSSecurityProfile on HCO CR should still be nil")
+				checkAvailability(foundHCO, metav1.ConditionTrue)
+				Expect(foundHCO.Spec.TLSSecurityProfile).To(Equal(customTLSSecurityProfile), "TLSSecurityProfile on HCO CR should be updated")
 
-				Expect(hcoutil.GetClusterInfo().GetTLSSecurityProfile(expected.hco.Spec.TLSSecurityProfile)).To(Equal(customTLSSecurityProfile), "should return the up-to-date value")
+				By("Verify that Kubevirt was properly updated with customTLSSecurityProfile")
+				kv = handlers.NewKubeVirtWithNameOnly(foundHCO)
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},
+						kv),
+				).To(Succeed())
 
-				By("Verify that Kubevirt was properly updated with customTLSSecurityProfile", func() {
-					kv := handlers.NewKubeVirtWithNameOnly(foundResource)
-					Expect(
-						cl.Get(context.TODO(),
-							types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},
-							kv),
-					).To(Succeed())
+				Expect(kv.Spec.Configuration.TLSConfiguration.MinTLSVersion).To(Equal(kubevirtcorev1.VersionTLS13))
+				Expect(kv.Spec.Configuration.TLSConfiguration.Ciphers).To(BeEmpty())
 
-					Expect(kv.Spec.Configuration.TLSConfiguration.MinTLSVersion).To(Equal(kubevirtcorev1.VersionTLS13))
-					// it's not possible to specify ciphers when minTLSVersion is 1.3
-					Expect(kv.Spec.Configuration.TLSConfiguration.Ciphers).To(BeNil())
+				By("Verify that CDI was properly updated with customTLSSecurityProfile")
+				cdi = handlers.NewCDIWithNameOnly(foundHCO)
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},
+						cdi),
+				).To(Succeed())
 
-				})
-				By("Verify that CDI was properly updated with customTLSSecurityProfile", func() {
-					cdi := handlers.NewCDIWithNameOnly(foundResource)
-					Expect(
-						cl.Get(context.TODO(),
-							types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},
-							cdi),
-					).To(Succeed())
+				Expect(cdi.Spec.Config.TLSSecurityProfile).To(Equal(openshift2CdiSecProfile(customTLSSecurityProfile)))
 
-					Expect(cdi.Spec.Config.TLSSecurityProfile).To(Equal(openshift2CdiSecProfile(customTLSSecurityProfile)))
+				By("Verify that CNA was properly updated with customTLSSecurityProfile")
+				cna = handlers.NewNetworkAddonsWithNameOnly(foundHCO)
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},
+						cna),
+				).To(Succeed())
 
-				})
-				By("Verify that CNA was properly updated with customTLSSecurityProfile", func() {
-					cna := handlers.NewNetworkAddonsWithNameOnly(foundResource)
-					Expect(
-						cl.Get(context.TODO(),
-							types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},
-							cna),
-					).To(Succeed())
+				Expect(cna.Spec.TLSSecurityProfile).To(Equal(customTLSSecurityProfile))
 
-					Expect(cna.Spec.TLSSecurityProfile).To(Equal(customTLSSecurityProfile))
-				})
-				By("Verify that SSP was properly updated with customTLSSecurityProfile", func() {
-					ssp := handlers.NewSSPWithNameOnly(foundResource)
-					Expect(
-						cl.Get(context.TODO(),
-							types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
-							ssp),
-					).To(Succeed())
+				By("Verify that SSP was properly updated with customTLSSecurityProfile")
+				ssp = handlers.NewSSPWithNameOnly(foundHCO)
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
+						ssp),
+				).To(Succeed())
 
-					Expect(ssp.Spec.TLSSecurityProfile).To(Equal(customTLSSecurityProfile))
-				})
-
+				Expect(ssp.Spec.TLSSecurityProfile).To(Equal(customTLSSecurityProfile))
 			})
-
 		})
 
 		Context("Validate OLM required fields", func() {

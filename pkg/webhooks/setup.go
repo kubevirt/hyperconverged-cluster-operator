@@ -3,17 +3,14 @@ package webhooks
 import (
 	"os"
 
-	openshiftconfigv1 "github.com/openshift/api/config/v1"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/mutator"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/validator"
-
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/mutator"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks/validator"
 )
 
 const (
@@ -24,12 +21,12 @@ var (
 	logger = logf.Log.WithName("webhook-setup")
 )
 
-func SetupWebhookWithManager(mgr ctrl.Manager, isOpenshift bool, hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile) error {
+func SetupWebhookWithManager(mgr ctrl.Manager, isOpenshift bool) error {
 	operatorNsEnv := hcoutil.GetOperatorNamespaceFromEnv()
 
 	decoder := admission.NewDecoder(mgr.GetScheme())
 
-	whHandler := validator.NewWebhookHandler(logger, mgr.GetClient(), decoder, operatorNsEnv, isOpenshift, hcoTLSSecurityProfile)
+	whHandler := validator.NewWebhookHandler(logger, mgr.GetClient(), decoder, operatorNsEnv, isOpenshift)
 	nsMutator := mutator.NewNsMutator(mgr.GetClient(), decoder, operatorNsEnv)
 	hyperConvergedMutator := mutator.NewHyperConvergedMutator(mgr.GetClient(), decoder)
 

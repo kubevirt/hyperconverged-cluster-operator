@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -14,12 +15,12 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -36,12 +37,12 @@ import (
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
 	whapiservercontrollers "github.com/kubevirt/hyperconverged-cluster-operator/controllers/webhooks/apiserver-controller"
 	bearertokencontroller "github.com/kubevirt/hyperconverged-cluster-operator/controllers/webhooks/bearer-token-controller"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/authorization"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/webhooks"
 )
@@ -116,7 +117,7 @@ func main() {
 			KeyName:        hcoutil.WebhookKeyName,
 			BindAddress:    fmt.Sprintf("%s:%d", hcoutil.MetricsHost, hcoutil.MetricsPort),
 			FilterProvider: authorization.HttpWithBearerToken,
-			TLSOpts:        []func(*tls.Config){cmdcommon.MutateTLSConfig},
+			TLSOpts:        []func(*tls.Config){tlssecprofile.MutateTLSConfig},
 		},
 		HealthProbeBindAddress:     fmt.Sprintf("%s:%d", hcoutil.HealthProbeHost, hcoutil.HealthProbePort),
 		ReadinessEndpointName:      hcoutil.ReadinessEndpointName,
@@ -131,7 +132,7 @@ func main() {
 			CertName: hcoutil.WebhookCertName,
 			KeyName:  hcoutil.WebhookKeyName,
 			Port:     hcoutil.WebhookPort,
-			TLSOpts:  []func(*tls.Config){cmdcommon.MutateTLSConfig},
+			TLSOpts:  []func(*tls.Config){tlssecprofile.MutateTLSConfig},
 		}),
 		Cache: getCacheOption(operatorNamespace, hcoutil.GetClusterInfo()),
 	})
@@ -153,27 +154,25 @@ func main() {
 	err = mgr.AddReadyzCheck("ready", healthz.Ping)
 	cmdHelper.ExitOnError(err, "unable to add ready check")
 
-	hcoCR := &hcov1beta1.HyperConverged{}
-	hcoCR.Name = hcoutil.HyperConvergedName
-	hcoCR.Namespace = operatorNamespace
-
-	var hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile
-	err = apiClient.Get(ctx, client.ObjectKeyFromObject(hcoCR), hcoCR)
-	if err != nil && !apierrors.IsNotFound(err) {
-		cmdHelper.ExitOnError(err, "Cannot read existing HCO CR")
-	} else {
-		hcoTLSSecurityProfile = hcoCR.Spec.TLSSecurityProfile
-	}
+	err = cmdcommon.SetHyperConvergedTLSProfile(ctx, operatorNamespace, apiClient)
+	cmdHelper.ExitOnError(err, "Cannot read existing HCO CR")
 
 	logger.Info("Registering the APIServer reconciler")
-	err = whapiservercontrollers.RegisterReconciler(mgr, ci)
-	cmdHelper.ExitOnError(err, "Cannot register APIServer reconciler")
+	if ci.IsOpenshift() {
+		_, err = tlssecprofile.Refresh(ctx, apiClient)
+		if err != nil {
+			logger.Error(err, "Cannot refresh TLS profile from the APIServer CR")
+		}
+
+		err = whapiservercontrollers.RegisterReconciler(mgr)
+		cmdHelper.ExitOnError(err, "Cannot register APIServer reconciler")
+	}
 
 	logger.Info("Registering the Bearer Token reconciler")
 	err = bearertokencontroller.RegisterReconciler(mgr, ci, eventEmitter)
 	cmdHelper.ExitOnError(err, "Cannot register the Bearer Token reconciler")
 
-	if err = webhooks.SetupWebhookWithManager(mgr, ci.IsOpenshift(), hcoTLSSecurityProfile); err != nil {
+	if err = webhooks.SetupWebhookWithManager(mgr, ci.IsOpenshift()); err != nil {
 		logger.Error(err, "unable to create webhook", "webhook", "HyperConverged")
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to create webhook")
 		os.Exit(1)
@@ -190,33 +189,43 @@ func main() {
 }
 
 func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Options {
-	if !ci.IsMonitoringAvailable() {
+	if !ci.IsMonitoringAvailable() && !ci.IsOpenshift() {
 		return cache.Options{}
 	}
 
-	namespaceSelector := fields.Set{"metadata.namespace": operatorNamespace}.AsSelector()
-	labelSelector := labels.Set{hcoutil.AppLabel: hcoutil.HCOWebhookName}.AsSelector()
+	objMap := map[client.Object]cache.ByObject{}
+	if ci.IsMonitoringAvailable() {
+		namespaceSelector := fields.Set{"metadata.namespace": operatorNamespace}.AsSelector()
+		labelSelector := labels.Set{hcoutil.AppLabel: hcoutil.HCOWebhookName}.AsSelector()
 
-	cacheOptions := cache.Options{
-		ByObject: map[client.Object]cache.ByObject{
-			&appsv1.Deployment{}: {
-				Label: labels.Set{"name": hcoutil.HCOWebhookName}.AsSelector(),
-				Field: namespaceSelector,
-			},
-			&corev1.Service{}: {
-				Label: labelSelector,
-				Field: namespaceSelector,
-			},
-			&corev1.Secret{}: {
-				Label: labelSelector,
-				Field: namespaceSelector,
-			},
-			&monitoringv1.ServiceMonitor{}: {
-				Label: labelSelector,
-				Field: namespaceSelector,
-			},
-		},
+		objMap[&appsv1.Deployment{}] = cache.ByObject{
+			Label: labels.Set{"name": hcoutil.HCOWebhookName}.AsSelector(),
+			Field: namespaceSelector,
+		}
+
+		objMap[&corev1.Service{}] = cache.ByObject{
+			Label: labelSelector,
+			Field: namespaceSelector,
+		}
+
+		objMap[&corev1.Secret{}] = cache.ByObject{
+			Label: labelSelector,
+			Field: namespaceSelector,
+		}
+
+		objMap[&monitoringv1.ServiceMonitor{}] = cache.ByObject{
+			Label: labelSelector,
+			Field: namespaceSelector,
+		}
 	}
 
-	return cacheOptions
+	if ci.IsOpenshift() {
+		objMap[&openshiftconfigv1.APIServer{}] = cache.ByObject{
+			SyncPeriod: ptr.To(5 * time.Minute),
+		}
+	}
+
+	return cache.Options{
+		ByObject: objMap,
+	}
 }

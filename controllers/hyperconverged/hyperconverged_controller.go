@@ -12,9 +12,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	jsonpatch "github.com/evanphx/json-patch/v5"
-	"github.com/go-logr/logr"
 	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
-	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -58,6 +56,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/upgradepatch"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/version"
@@ -109,9 +108,10 @@ func RegisterReconciler(mgr manager.Manager,
 	ci hcoutil.ClusterInfo,
 	upgradeableCond hcoutil.Condition,
 	ingressEventCh <-chan event.GenericEvent,
-	nodeEventChannel <-chan event.GenericEvent) error {
+	nodeEventChannel <-chan event.GenericEvent,
+	apiServerEventCh <-chan event.GenericEvent) error {
 
-	return add(mgr, newReconciler(mgr, ci, upgradeableCond), ci, ingressEventCh, nodeEventChannel)
+	return add(mgr, newReconciler(mgr, ci, upgradeableCond), ci, ingressEventCh, nodeEventChannel, apiServerEventCh)
 }
 
 // newReconciler returns a new reconcile.Reconciler
@@ -147,7 +147,7 @@ func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond 
 }
 
 // newCRDremover returns a new CRDRemover
-func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, ingressEventCh <-chan event.GenericEvent, nodeEventChannel <-chan event.GenericEvent) error {
+func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, ingressEventCh, nodeEventChannel, apiServerEventCh <-chan event.GenericEvent) error {
 	// Create a new controller
 	c, err := controller.New("hyperconverged-controller", mgr, controller.Options{Reconciler: r})
 	if err != nil {
@@ -237,9 +237,8 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 
 	if ci.IsOpenshift() {
 		err = c.Watch(
-			source.Kind(
-				mgr.GetCache(),
-				client.Object(&openshiftconfigv1.APIServer{}),
+			source.Channel(
+				apiServerEventCh,
 				handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, a client.Object) []reconcile.Request {
 					// enqueue using a placeholder to signal that the change is not
 					// directly on HCO CR but on the APIServer CR that we want to reload
@@ -317,10 +316,6 @@ type ReconcileHyperConverged struct {
 // Result.Requeue is true, otherwise upon completion it will remove the work from the queue.
 func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
 	logger := log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
-	err := r.refreshAPIServerCR(ctx, logger, request)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
 
 	resolvedRequest, hcoTriggered := reqresolver.ResolveReconcileRequest(logger, request)
 	hcoRequest := common.NewHcoRequest(ctx, resolvedRequest, logger, r.upgradeMode, hcoTriggered)
@@ -329,7 +324,7 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 		r.operandHandler.Reset()
 	}
 
-	err = r.monitoringReconciler.Reconcile(hcoRequest, r.firstLoop)
+	err := r.monitoringReconciler.Reconcile(hcoRequest, r.firstLoop)
 	if err != nil {
 		return reconcile.Result{}, err
 	}
@@ -354,6 +349,10 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 		r.firstLoopInitialization(hcoRequest)
 	}
 
+	// update the HyperConverged's TLS Security Profile cache, to be used in the
+	// server's TLS configurations.
+	tlssecprofile.SetHyperConvergedTLSSecurityProfile(instance.Spec.TLSSecurityProfile)
+
 	if err = r.monitoringReconciler.UpdateRelatedObjects(hcoRequest); err != nil {
 		logger.Error(err, "Failed to update the PrometheusRule as a related object")
 		return reconcile.Result{}, err
@@ -375,16 +374,6 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 	}
 
 	return result, err
-}
-
-// refreshAPIServerCR refreshes the APIServer cR, if the request is triggered by this CR.
-func (r *ReconcileHyperConverged) refreshAPIServerCR(ctx context.Context, logger logr.Logger, originalRequest reconcile.Request) error {
-	if reqresolver.IsTriggeredByAPIServerCR(originalRequest) {
-		logger.Info("Refreshing the ApiServer CR")
-		return hcoutil.GetClusterInfo().RefreshAPIServerCR(ctx, r.client)
-	}
-
-	return nil
 }
 
 func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile.Result, error) {

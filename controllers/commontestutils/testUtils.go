@@ -281,16 +281,6 @@ func (c ClusterInfoMock) IsHyperShiftManaged() bool {
 	return false
 }
 
-func (ClusterInfoMock) GetTLSSecurityProfile(_ *openshiftconfigv1.TLSSecurityProfile) *openshiftconfigv1.TLSSecurityProfile {
-	return &openshiftconfigv1.TLSSecurityProfile{
-		Type:         openshiftconfigv1.TLSProfileIntermediateType,
-		Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
-	}
-}
-func (ClusterInfoMock) RefreshAPIServerCR(_ context.Context, _ client.Client) error {
-	return nil
-}
-
 func KeysFromSSMap(ssmap map[string]string) gstruct.Keys {
 	keys := gstruct.Keys{}
 	for k, v := range ssmap {
