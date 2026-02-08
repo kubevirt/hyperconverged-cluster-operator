@@ -153,7 +153,6 @@ var (
 // KubeVirt feature gates that are exposed in HCO API
 const (
 	kvDownwardMetrics            = "DownwardMetrics"
-	kvDisableMDevConfig          = "DisableMDEVConfiguration"
 	kvPersistentReservation      = "PersistentReservation"
 	kvAlignCPUs                  = "AlignCPUs"
 	kvPasstIPStackMigration      = "PasstIPStackMigration"
@@ -444,7 +443,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 		},
 		MigrationConfiguration:       kvLiveMigration,
 		PermittedHostDevices:         toKvPermittedHostDevices(hc.Spec.PermittedHostDevices),
-		MediatedDevicesConfiguration: toKvMediatedDevicesConfiguration(hc.Spec.MediatedDevicesConfiguration),
+		MediatedDevicesConfiguration: toKvMediatedDevicesConfiguration(hc),
 		ObsoleteCPUModels:            obsoleteCPUs,
 		TLSConfiguration:             hcTLSSecurityProfileToKv(tlssecprofile.GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile)),
 		APIConfiguration:             rateLimiter,
@@ -609,22 +608,33 @@ func getObsoleteCPUConfig(hcObsoleteCPUConf *hcov1beta1.HyperConvergedObsoleteCP
 	return obsoleteCPUModels
 }
 
-func toKvMediatedDevicesConfiguration(mdevsConfig *hcov1beta1.MediatedDevicesConfiguration) *kubevirtcorev1.MediatedDevicesConfiguration {
-	if mdevsConfig == nil {
+func toKvMediatedDevicesConfiguration(hc *hcov1beta1.HyperConverged) *kubevirtcorev1.MediatedDevicesConfiguration {
+	mdevsConfig := hc.Spec.MediatedDevicesConfiguration
+	disabled := ptr.Deref(hc.Spec.FeatureGates.DisableMDevConfiguration, false)
+
+	if mdevsConfig == nil && !disabled {
 		return nil
 	}
 
-	var mediatedDeviceTypes []string
-	if len(mdevsConfig.MediatedDeviceTypes) > 0 {
-		mediatedDeviceTypes = mdevsConfig.MediatedDeviceTypes
-	} else if len(mdevsConfig.MediatedDevicesTypes) > 0 { //nolint SA1019
-		mediatedDeviceTypes = mdevsConfig.MediatedDevicesTypes //nolint SA1019
+	kvMdev := &kubevirtcorev1.MediatedDevicesConfiguration{}
+
+	if mdevsConfig != nil {
+		var mediatedDeviceTypes []string
+		if len(mdevsConfig.MediatedDeviceTypes) > 0 {
+			mediatedDeviceTypes = mdevsConfig.MediatedDeviceTypes
+		} else if len(mdevsConfig.MediatedDevicesTypes) > 0 { //nolint SA1019
+			mediatedDeviceTypes = mdevsConfig.MediatedDevicesTypes //nolint SA1019
+		}
+
+		kvMdev.MediatedDeviceTypes = mediatedDeviceTypes
+		kvMdev.NodeMediatedDeviceTypes = toKvNodeMediatedDevicesConfiguration(mdevsConfig.NodeMediatedDeviceTypes)
 	}
 
-	return &kubevirtcorev1.MediatedDevicesConfiguration{
-		MediatedDeviceTypes:     mediatedDeviceTypes,
-		NodeMediatedDeviceTypes: toKvNodeMediatedDevicesConfiguration(mdevsConfig.NodeMediatedDeviceTypes),
+	if disabled {
+		kvMdev.Enabled = ptr.To(false)
 	}
+
+	return kvMdev
 }
 
 func toKvNodeMediatedDevicesConfiguration(hcoNodeMdevTypesConf []hcov1beta1.NodeMediatedDeviceTypesConfig) []kubevirtcorev1.NodeMediatedDeviceTypesConfig {
@@ -895,9 +905,6 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, a
 
 	if ptr.Deref(featureGates.DownwardMetrics, false) {
 		fgs = append(fgs, kvDownwardMetrics)
-	}
-	if ptr.Deref(featureGates.DisableMDevConfiguration, false) {
-		fgs = append(fgs, kvDisableMDevConfig)
 	}
 	if ptr.Deref(featureGates.PersistentReservation, false) {
 		fgs = append(fgs, kvPersistentReservation)

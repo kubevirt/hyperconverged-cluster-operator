@@ -789,6 +789,26 @@ Version: 1.2.3`)
 		})
 
 		Context("test mediated device configuration", func() {
+			It("should not propagate the mediated devices configuration, if not set in HCO", func() {
+				hco.Spec.MediatedDevicesConfiguration = nil
+
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration).To(BeNil())
+			})
+
+			It("should propagate the mediated devices configuration, only with the Enabled field, if not set in HCO, and the FG is true", func() {
+				hco.Spec.MediatedDevicesConfiguration = nil
+				hco.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
+
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration).ToNot(BeNil())
+				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeFalse()))
+			})
+
 			It("should propagate the mediated devices configuration from the HC with deprecated APIs", func() {
 				existKv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
@@ -1059,6 +1079,45 @@ Version: 1.2.3`)
 				Expect(mdc).ToNot(BeNil())
 				Expect(mdc.MediatedDeviceTypes).To(HaveLen(3))
 				Expect(mdc.MediatedDeviceTypes).To(ContainElements("nvidia-181", "nvidia-191", "nvidia-224"))
+			})
+
+			It("should set the enabled field to false, if the DisableMDevConfiguration FG is enabled", func() {
+				hco.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
+				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
+				}
+
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration).ToNot(BeNil())
+				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeFalse()))
+			})
+
+			It("should not set the enabled field, if the DisableMDevConfiguration FG is disabled", func() {
+				hco.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(false)
+				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
+				}
+
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration).ToNot(BeNil())
+				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration.Enabled).To(BeNil())
+			})
+
+			It("should not set the enabled field, if the DisableMDevConfiguration FG is nil", func() {
+				hco.Spec.FeatureGates.DisableMDevConfiguration = nil
+				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
+				}
+
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration).ToNot(BeNil())
+				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration.Enabled).To(BeNil())
 			})
 		})
 
@@ -2013,31 +2072,6 @@ Version: 1.2.3`)
 						},
 						Not(ContainElement(kvDownwardMetrics)),
 					),
-					// DisableMDEVConfiguration
-					Entry("should add the DisableMDEVConfiguration feature gate if DownwardMetrics is true in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								DisableMDevConfiguration: ptr.To(true),
-							}
-						},
-						ContainElement(kvDisableMDevConfig),
-					),
-					Entry("should not add the DisableMDEVConfiguration feature gate if DownwardMetrics is not set in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								DisableMDevConfiguration: nil,
-							}
-						},
-						Not(ContainElement(kvDisableMDevConfig)),
-					),
-					Entry("should not add the DisableMDEVConfiguration feature gate if DownwardMetrics is false in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								DisableMDevConfiguration: ptr.To(false),
-							}
-						},
-						Not(ContainElement(kvDisableMDevConfig)),
-					),
 					// DecentralizedLiveMigration
 					Entry("should add the DecentralizedLiveMigration feature gate if DownwardMetrics is true in HyperConverged CR",
 						func(hc *hcov1beta1.HyperConverged) {
@@ -2256,8 +2290,8 @@ Version: 1.2.3`)
 					Expect(err).ToNot(HaveOccurred())
 
 					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						WithHostPassthroughCPU:   ptr.To(false),
-						DisableMDevConfiguration: ptr.To(false),
+						WithHostPassthroughCPU: ptr.To(false),
+						ObjectGraph:            ptr.To(false),
 					}
 
 					cl := commontestutils.InitClient([]client.Object{hco, existingResource})
