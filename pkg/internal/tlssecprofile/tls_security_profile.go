@@ -67,9 +67,10 @@ func MutateTLSConfig(cfg *tls.Config) {
 	// please be aware that the APIServer is using http keepalive so this is going to
 	// be executed only after a while for fresh connections and not on existing ones
 	cfg.GetConfigForClient = func(_ *tls.ClientHelloInfo) (*tls.Config, error) {
-		cfg.CipherSuites, cfg.MinVersion = GetCipherSuitesAndMinTLSVersionInGolangFormat(getHyperConvergedProfile())
+		config := cfg.Clone()
+		config.CipherSuites, config.MinVersion = GetCipherSuitesAndMinTLSVersionInGolangFormat(getHyperConvergedProfile())
 
-		return cfg, nil
+		return config, nil
 	}
 }
 
