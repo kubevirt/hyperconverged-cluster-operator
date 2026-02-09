@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"maps"
 	"os"
@@ -491,7 +490,7 @@ func getManagerOptions(operatorNamespace string, needLeaderElection bool, ci hco
 			SecureServing:  true,
 			BindAddress:    fmt.Sprintf("%s:%d", hcoutil.MetricsHost, hcoutil.MetricsPort),
 			FilterProvider: authorization.HttpWithBearerToken,
-			TLSOpts:        []func(*tls.Config){tlssecprofile.MutateTLSConfig},
+			TLSOpts:        tlssecprofile.MutateTLSConfig(),
 		},
 		HealthProbeBindAddress: fmt.Sprintf("%s:%d", hcoutil.HealthProbeHost, hcoutil.HealthProbePort),
 		ReadinessEndpointName:  hcoutil.ReadinessEndpointName,

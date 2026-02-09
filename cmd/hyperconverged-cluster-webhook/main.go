@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -117,7 +116,7 @@ func main() {
 			KeyName:        hcoutil.WebhookKeyName,
 			BindAddress:    fmt.Sprintf("%s:%d", hcoutil.MetricsHost, hcoutil.MetricsPort),
 			FilterProvider: authorization.HttpWithBearerToken,
-			TLSOpts:        []func(*tls.Config){tlssecprofile.MutateTLSConfig},
+			TLSOpts:        tlssecprofile.MutateTLSConfig(),
 		},
 		HealthProbeBindAddress:     fmt.Sprintf("%s:%d", hcoutil.HealthProbeHost, hcoutil.HealthProbePort),
 		ReadinessEndpointName:      hcoutil.ReadinessEndpointName,
@@ -132,7 +131,7 @@ func main() {
 			CertName: hcoutil.WebhookCertName,
 			KeyName:  hcoutil.WebhookKeyName,
 			Port:     hcoutil.WebhookPort,
-			TLSOpts:  []func(*tls.Config){tlssecprofile.MutateTLSConfig},
+			TLSOpts:  tlssecprofile.MutateTLSConfig(),
 		}),
 		Cache: getCacheOption(operatorNamespace, hcoutil.GetClusterInfo()),
 	})

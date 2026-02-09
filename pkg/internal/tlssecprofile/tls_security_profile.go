@@ -62,14 +62,21 @@ func SetHyperConvergedTLSSecurityProfile(fromHC *openshiftconfigv1.TLSSecurityPr
 	setHyperConvergedProfile(fromHC)
 }
 
-func MutateTLSConfig(cfg *tls.Config) {
-	// This callback executes on each client call returning a new config to be used
-	// please be aware that the APIServer is using http keepalive so this is going to
-	// be executed only after a while for fresh connections and not on existing ones
-	cfg.GetConfigForClient = func(_ *tls.ClientHelloInfo) (*tls.Config, error) {
-		cfg.CipherSuites, cfg.MinVersion = GetCipherSuitesAndMinTLSVersionInGolangFormat(getHyperConvergedProfile())
-
-		return cfg, nil
+func MutateTLSConfig() []func(cfg *tls.Config) {
+	return []func(cfg *tls.Config){
+		func(cfg *tls.Config) {
+			cfg.CipherSuites, cfg.MinVersion = GetCipherSuitesAndMinTLSVersionInGolangFormat(getHyperConvergedProfile())
+		},
+		func(cfg *tls.Config) {
+			// This callback executes on each client call returning a new config to be used
+			// please be aware that the APIServer is using http keepalive so this is going to
+			// be executed only after a while for fresh connections and not on existing ones
+			cfg.GetConfigForClient = func(info *tls.ClientHelloInfo) (*tls.Config, error) {
+				config := cfg.Clone()
+				config.CipherSuites, config.MinVersion = GetCipherSuitesAndMinTLSVersionInGolangFormat(getHyperConvergedProfile())
+				return config, nil
+			}
+		},
 	}
 }
 

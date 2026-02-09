@@ -468,7 +468,7 @@ var _ = Describe("TLS Security Profile", func() {
 
 			tlsConfig := &tls.Config{}
 
-			MutateTLSConfig(tlsConfig)
+			applyTLSConfigChanges(tlsConfig)
 
 			config, err := tlsConfig.GetConfigForClient(nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -506,7 +506,7 @@ var _ = Describe("TLS Security Profile", func() {
 
 			tlsConfig := &tls.Config{}
 
-			MutateTLSConfig(tlsConfig)
+			applyTLSConfigChanges(tlsConfig)
 
 			config, err := tlsConfig.GetConfigForClient(nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -526,7 +526,7 @@ var _ = Describe("TLS Security Profile", func() {
 
 			tlsConfig := &tls.Config{}
 
-			MutateTLSConfig(tlsConfig)
+			applyTLSConfigChanges(tlsConfig)
 
 			config, err := tlsConfig.GetConfigForClient(nil)
 			Expect(err).ToNot(HaveOccurred())
@@ -547,3 +547,9 @@ var _ = Describe("TLS Security Profile", func() {
 		})
 	})
 })
+
+func applyTLSConfigChanges(cfg *tls.Config) {
+	for _, op := range MutateTLSConfig() {
+		op(cfg)
+	}
+}
