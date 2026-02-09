@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -506,6 +507,85 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Entry("user settings config", hcoutil.AppComponentUIConfig, NewKvUIUserSettingsCM, NewKvUIUserSettingsCMHandler),
 				Entry("UI features config", hcoutil.AppComponentUIConfig, NewKvUIFeaturesCM, NewKvUIFeaturesCMHandler),
 			)
+		})
+
+		Context("KubeVirt UI Nginx ConfigMap (NewKVUINginxCM)", func() {
+			It("should create nginx ConfigMap with default TLS when TLSSecurityProfile is nil", func() {
+				hco := commontestutils.NewHco()
+				Expect(hco.Spec.TLSSecurityProfile).To(BeNil())
+				cm, err := NewKVUINginxCM(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cm).ToNot(BeNil())
+				Expect(cm.Data).To(HaveKey("nginx.conf"))
+				nginxConf := cm.Data["nginx.conf"]
+				Expect(nginxConf).To(ContainSubstring("listen"))
+				Expect(nginxConf).To(ContainSubstring("ssl_protocols"))
+				Expect(nginxConf).To(ContainSubstring("ssl_ciphers"))
+				Expect(nginxConf).NotTo(ContainSubstring("ssl_protocols ;"))
+				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
+			})
+
+			It("should create nginx ConfigMap with Modern TLS profile", func() {
+				hco := commontestutils.NewHco()
+				hco.Spec.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+					Type: openshiftconfigv1.TLSProfileModernType,
+				}
+				cm, err := NewKVUINginxCM(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cm).ToNot(BeNil())
+				Expect(cm.Data).To(HaveKey("nginx.conf"))
+				nginxConf := cm.Data["nginx.conf"]
+				Expect(nginxConf).To(ContainSubstring("TLSv1.3"))
+				Expect(nginxConf).NotTo(ContainSubstring("ssl_protocols ;"))
+				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
+			})
+
+			It("should create nginx ConfigMap with Intermediate TLS profile", func() {
+				hco := commontestutils.NewHco()
+				hco.Spec.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+					Type: openshiftconfigv1.TLSProfileIntermediateType,
+				}
+				cm, err := NewKVUINginxCM(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cm).ToNot(BeNil())
+				Expect(cm.Data).To(HaveKey("nginx.conf"))
+				nginxConf := cm.Data["nginx.conf"]
+				Expect(nginxConf).To(ContainSubstring("ssl_protocols"))
+				Expect(nginxConf).To(ContainSubstring("ssl_ciphers"))
+				Expect(nginxConf).NotTo(ContainSubstring("ssl_protocols ;"))
+				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
+			})
+
+			It("should create nginx ConfigMap with Custom TLS profile", func() {
+				hco := commontestutils.NewHco()
+				hco.Spec.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+					Type: openshiftconfigv1.TLSProfileCustomType,
+					Custom: &openshiftconfigv1.CustomTLSProfile{
+						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
+							MinTLSVersion: openshiftconfigv1.VersionTLS13,
+							Ciphers:       []string{"TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384"},
+						},
+					},
+				}
+				cm, err := NewKVUINginxCM(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cm).ToNot(BeNil())
+				Expect(cm.Data).To(HaveKey("nginx.conf"))
+				nginxConf := cm.Data["nginx.conf"]
+				Expect(nginxConf).To(ContainSubstring("TLSv1.3"))
+				Expect(nginxConf).To(ContainSubstring("TLS_AES_128_GCM_SHA256"))
+				Expect(nginxConf).NotTo(ContainSubstring("ssl_protocols ;"))
+				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
+			})
+
+			It("should not emit empty ssl_protocols or ssl_ciphers directives", func() {
+				hco := commontestutils.NewHco()
+				cm, err := NewKVUINginxCM(hco)
+				Expect(err).ToNot(HaveOccurred())
+				nginxConf := cm.Data["nginx.conf"]
+				Expect(nginxConf).NotTo(ContainSubstring("ssl_protocols ;"))
+				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
+			})
 		})
 
 		Context("Node Placement", func() {

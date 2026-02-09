@@ -1,14 +1,19 @@
 package handlers
 
 import (
+	"bytes"
+	_ "embed"
 	"errors"
 	"fmt"
 	"maps"
 	"os"
 	"reflect"
 	"slices"
+	"strings"
+	"text/template"
 
 	log "github.com/go-logr/logr"
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -27,6 +32,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -102,8 +108,8 @@ func NewKvUIProxySA(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount {
 }
 
 // **** nginx config map Handler ****
-func NewKvUINginxCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewCmHandler(Client, Scheme, NewKVUINginxCM(hc)), nil
+func NewKvUINginxCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, _ *hcov1beta1.HyperConverged) (operands.Operand, error) {
+	return operands.NewDynamicCmHandler(Client, Scheme, NewKVUINginxCM), nil
 }
 
 // **** UI user settings config map Handler ****
@@ -328,38 +334,54 @@ func NewKvUIProxySvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
 	}
 }
 
-var nginxConfig = fmt.Sprintf(`error_log /dev/stdout info;
-events {}
-http {
-	access_log         /dev/stdout;
-	include            /etc/nginx/mime.types;
-	default_type       application/octet-stream;
-	keepalive_timeout  65;
-	add_header X-Content-Type-Options nosniff;
-		server {
-			listen              %[1]d ssl;
-			listen              [::]:%[1]d ssl;
-			ssl_certificate     /var/serving-cert/tls.crt;
-			ssl_certificate_key /var/serving-cert/tls.key;
-			root                /usr/share/nginx/html;
+//go:embed templates/nginx.conf.tmpl
+var nginxConfTemplate string
 
-			# Prevent caching for plugin-manifest.json and plugin-entry.js
-			# to avoid "Unexpected end of JSON input" error
-			location = /plugin-manifest.json {
-			  add_header Cache-Control 'no-cache, no-store, must-revalidate, proxy-revalidate, max-age=0';
-			  add_header Pragma 'no-cache';
-			  add_header Expires '0';
-			}
-			location = /plugin-entry.js {
-			  add_header Cache-Control 'no-cache, no-store, must-revalidate, proxy-revalidate, max-age=0';
-			  add_header Pragma 'no-cache';
-			  add_header Expires '0';
-			}
-        }
+var nginxConfTmpl = template.Must(template.New("nginx.conf").Parse(nginxConfTemplate))
+
+func nginxSSLProtocolsFromMinTLS(minTLS openshiftconfigv1.TLSProtocolVersion) string {
+	switch minTLS {
+	case openshiftconfigv1.VersionTLS10:
+		return "TLSv1 TLSv1.1 TLSv1.2 TLSv1.3"
+	case openshiftconfigv1.VersionTLS11:
+		return "TLSv1.1 TLSv1.2 TLSv1.3"
+	case openshiftconfigv1.VersionTLS12:
+		return "TLSv1.2 TLSv1.3"
+	case openshiftconfigv1.VersionTLS13:
+		return "TLSv1.3"
+	default:
+		return "TLSv1.2 TLSv1.3"
 	}
-`, hcoutil.UIPluginServerPort)
+}
 
-func NewKVUINginxCM(hc *hcov1beta1.HyperConverged) *corev1.ConfigMap {
+type nginxConfTemplateData struct {
+	Port         int32
+	SSLProtocols string
+	SSLCiphers   string
+}
+
+func getNginxConfig(hc *hcov1beta1.HyperConverged) (string, error) {
+	ciphers, minTLS := tlssecprofile.GetCipherSuitesAndMinTLSVersion(hc.Spec.TLSSecurityProfile)
+	data := nginxConfTemplateData{
+		Port:         hcoutil.UIPluginServerPort,
+		SSLProtocols: nginxSSLProtocolsFromMinTLS(minTLS),
+		SSLCiphers:   strings.Join(ciphers, ":"),
+	}
+
+	var out bytes.Buffer
+	if err := nginxConfTmpl.Execute(&out, data); err != nil {
+		return "", fmt.Errorf("failed rendering embedded nginx.conf template: %w", err)
+	}
+
+	return out.String(), nil
+}
+
+func NewKVUINginxCM(hc *hcov1beta1.HyperConverged) (*corev1.ConfigMap, error) {
+	nginxConf, err := getNginxConfig(hc)
+	if err != nil {
+		return nil, err
+	}
+
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nginxConfigMapName,
@@ -367,9 +389,9 @@ func NewKVUINginxCM(hc *hcov1beta1.HyperConverged) *corev1.ConfigMap {
 			Namespace: hc.Namespace,
 		},
 		Data: map[string]string{
-			"nginx.conf": nginxConfig,
+			"nginx.conf": nginxConf,
 		},
-	}
+	}, nil
 }
 
 func NewKvUIUserSettingsCM(hc *hcov1beta1.HyperConverged) *corev1.ConfigMap {
