@@ -1117,6 +1117,13 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_MediatedDevices
 							},
 						},
 					},
+					"enabled": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Enable the creation and removal of mediated devices by virt-handler Replaces the deprecated DisableMDEVConfiguration feature gate Defaults to true",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

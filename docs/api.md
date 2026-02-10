@@ -330,6 +330,7 @@ MediatedDevicesConfiguration holds information about MDEV types to be defined, i
 | mediatedDeviceTypes |  | []string |  | true |
 | mediatedDevicesTypes | Deprecated: please use mediatedDeviceTypes instead. | []string |  | false |
 | nodeMediatedDeviceTypes |  | [][NodeMediatedDeviceTypesConfig](#nodemediateddevicetypesconfig) |  | false |
+| enabled | Enable the creation and removal of mediated devices by virt-handler Replaces the deprecated DisableMDEVConfiguration feature gate Defaults to true | *bool |  | false |
 
 [Back to TOC](#table-of-contents)
 
