@@ -60,7 +60,7 @@ spec:
               enableApplicationAwareQuota: false
               enableCommonBootImageImport: true
               featureGates:
-                decentralizedLiveMigration: false
+                decentralizedLiveMigration: true
                 declarativeHotplugVolumes: false
                 deployKubeSecondaryDNS: false
                 disableMDevConfiguration: false
@@ -1087,7 +1087,7 @@ spec:
                 type: string
               featureGates:
                 default:
-                  decentralizedLiveMigration: false
+                  decentralizedLiveMigration: true
                   declarativeHotplugVolumes: false
                   deployKubeSecondaryDNS: false
                   disableMDevConfiguration: false
@@ -1112,7 +1112,7 @@ spec:
                       in the next version of the API.'
                     type: boolean
                   decentralizedLiveMigration:
-                    default: false
+                    default: true
                     description: |-
                       DecentralizedLiveMigration enables the decentralized live migration (cross-cluster migration) feature.
                       This feature allows live migration of VirtualMachineInstances between different clusters.

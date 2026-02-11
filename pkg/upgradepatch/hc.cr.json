@@ -14,7 +14,7 @@
       "persistentReservation": false,
       "alignCPUs": false,
       "enableMultiArchBootImageImport": false,
-      "decentralizedLiveMigration": false,
+      "decentralizedLiveMigration": true,
       "declarativeHotplugVolumes": false,
       "videoConfig": true,
       "objectGraph": false

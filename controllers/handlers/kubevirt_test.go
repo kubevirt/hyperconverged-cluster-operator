@@ -35,8 +35,8 @@ import (
 var _ = Describe("KubeVirt Operand", func() {
 
 	const (
-		// Number of conditional featuregates always added by getFeatureGateChecks (volume hotplug is always added)
-		conditionalFeatureGatesCount = 2
+		// Number of conditional featuregates always added by getFeatureGateChecks (volume hotplug, VideoConfig, DecentralizedLiveMigration defaults)
+		conditionalFeatureGatesCount = 3
 	)
 
 	var (
@@ -2073,7 +2073,7 @@ Version: 1.2.3`)
 						Not(ContainElement(kvDownwardMetrics)),
 					),
 					// DecentralizedLiveMigration
-					Entry("should add the DecentralizedLiveMigration feature gate if DownwardMetrics is true in HyperConverged CR",
+					Entry("should add the DecentralizedLiveMigration feature gate if DecentralizedLiveMigration is true in HyperConverged CR",
 						func(hc *hcov1beta1.HyperConverged) {
 							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
 								DecentralizedLiveMigration: ptr.To(true),
@@ -2081,15 +2081,15 @@ Version: 1.2.3`)
 						},
 						ContainElement(kvDecentralizedLiveMigration),
 					),
-					Entry("should not add the DecentralizedLiveMigration feature gate if DownwardMetrics is not set in HyperConverged CR",
+					Entry("should add the DecentralizedLiveMigration feature gate if DecentralizedLiveMigration is not set in HyperConverged CR (default true)",
 						func(hc *hcov1beta1.HyperConverged) {
 							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
 								DecentralizedLiveMigration: nil,
 							}
 						},
-						Not(ContainElement(kvDecentralizedLiveMigration)),
+						ContainElement(kvDecentralizedLiveMigration),
 					),
-					Entry("should not add the DecentralizedLiveMigration feature gate if DownwardMetrics is false in HyperConverged CR",
+					Entry("should not add the DecentralizedLiveMigration feature gate if DecentralizedLiveMigration is false in HyperConverged CR",
 						func(hc *hcov1beta1.HyperConverged) {
 							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
 								DecentralizedLiveMigration: ptr.To(false),
@@ -2320,10 +2320,9 @@ Version: 1.2.3`)
 				})
 
 				It("should not add feature gates if they are not exist", func() {
+					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{}
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
-
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{}
 
 					cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 					handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
