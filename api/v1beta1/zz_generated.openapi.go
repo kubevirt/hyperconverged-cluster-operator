@@ -353,7 +353,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					"decentralizedLiveMigration": {
 						SchemaProps: spec.SchemaProps{
 							Description: "DecentralizedLiveMigration enables the decentralized live migration (cross-cluster migration) feature. This feature allows live migration of VirtualMachineInstances between different clusters. This feature is in Developer Preview.",
-							Default:     false,
+							Default:     true,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

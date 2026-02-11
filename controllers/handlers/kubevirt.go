@@ -920,7 +920,7 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, a
 		fgs = append(fgs, kvObjectGraph)
 	}
 
-	if ptr.Deref(featureGates.DecentralizedLiveMigration, false) {
+	if ptr.Deref(featureGates.DecentralizedLiveMigration, true) {
 		fgs = append(fgs, kvDecentralizedLiveMigration)
 	}
 

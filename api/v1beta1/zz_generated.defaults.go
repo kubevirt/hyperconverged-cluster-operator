@@ -65,7 +65,7 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		in.Spec.FeatureGates.EnableMultiArchBootImageImport = &ptrVar1
 	}
 	if in.Spec.FeatureGates.DecentralizedLiveMigration == nil {
-		var ptrVar1 bool = false
+		var ptrVar1 bool = true
 		in.Spec.FeatureGates.DecentralizedLiveMigration = &ptrVar1
 	}
 	if in.Spec.FeatureGates.DeclarativeHotplugVolumes == nil {

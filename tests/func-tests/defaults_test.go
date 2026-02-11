@@ -72,7 +72,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			PersistentReservation:          ptr.To(false),
 			AlignCPUs:                      ptr.To(false),
 			EnableMultiArchBootImageImport: ptr.To(false),
-			DecentralizedLiveMigration:     ptr.To(false),
+			DecentralizedLiveMigration:     ptr.To(true),
 			DeclarativeHotplugVolumes:      ptr.To(false),
 			VideoConfig:                    ptr.To(true),
 			ObjectGraph:                    ptr.To(false),
