@@ -35,6 +35,7 @@ func getNodes(ctx context.Context, cl client.Client) ([]corev1.Node, error) {
 func processNodeInfo(nodes []corev1.Node, hc *v1beta1.HyperConverged) bool {
 	workerNodeCount := 0
 	cpNodeCount := 0
+	arbiterNodeCount := 0
 
 	workloadArchs := sets.New[string]()
 	cpArchs := sets.New[string]()
@@ -57,13 +58,17 @@ func processNodeInfo(nodes []corev1.Node, hc *v1beta1.HyperConverged) bool {
 			cpNodeCount++
 			cpArchs.Insert(arch)
 		}
+
+		if _, arbiterLabelExists := node.Labels[LabelNodeRoleArbiter]; arbiterLabelExists {
+			arbiterNodeCount++
+		}
 	}
 
 	// remove empty architectures
 	workloadArchs.Delete("")
 	cpArchs.Delete("")
 
-	newValue := cpNodeCount >= 3
+	newValue := cpNodeCount >= 3 || (cpNodeCount >= 2 && arbiterNodeCount >= 1)
 	changed := controlPlaneHighlyAvailable.Swap(newValue) != newValue
 
 	newValue = cpNodeCount >= 1
