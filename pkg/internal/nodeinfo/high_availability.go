@@ -11,6 +11,8 @@ const (
 	LabelNodeRoleMaster = "node-role.kubernetes.io/master"
 	// LabelNodeRoleWorker is the label used to identify worker nodes
 	LabelNodeRoleWorker = "node-role.kubernetes.io/worker"
+	// LabelNodeRoleArbiter is the label used to identify arbiter nodes
+	LabelNodeRoleArbiter = "node-role.kubernetes.io/arbiter"
 )
 
 var (
