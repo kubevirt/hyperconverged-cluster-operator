@@ -66,6 +66,7 @@ spec:
                 disableMDevConfiguration: false
                 downwardMetrics: false
                 enableMultiArchBootImageImport: false
+                incrementalBackup: false
                 objectGraph: false
                 persistentReservation: false
                 videoConfig: true
@@ -1093,6 +1094,7 @@ spec:
                   disableMDevConfiguration: false
                   downwardMetrics: false
                   enableMultiArchBootImageImport: false
+                  incrementalBackup: false
                   objectGraph: false
                   persistentReservation: false
                   videoConfig: true
@@ -1172,6 +1174,13 @@ spec:
                       Setting this field to true will allow the HCO to create Golden Images for different CPU architectures.
 
                       This feature is in Developer Preview.
+                    type: boolean
+                  incrementalBackup:
+                    default: false
+                    description: |-
+                      IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt.
+                      When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR.
+                      Note: This feature is in Tech Preview.
                     type: boolean
                   nonRoot:
                     description: 'Deprecated: // Deprecated: This field is ignored
