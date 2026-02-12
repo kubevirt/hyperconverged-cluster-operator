@@ -66,8 +66,10 @@ spec:
                 disableMDevConfiguration: false
                 downwardMetrics: false
                 enableMultiArchBootImageImport: false
+                incrementalBackup: false
                 objectGraph: false
                 persistentReservation: false
+                utilityVolumes: false
                 videoConfig: true
               liveMigrationConfig:
                 allowAutoConverge: false
@@ -1093,8 +1095,10 @@ spec:
                   disableMDevConfiguration: false
                   downwardMetrics: false
                   enableMultiArchBootImageImport: false
+                  incrementalBackup: false
                   objectGraph: false
                   persistentReservation: false
+                  utilityVolumes: false
                   videoConfig: true
                 description: |-
                   featureGates is a map of feature gate flags. Setting a flag to `true` will enable
@@ -1173,6 +1177,12 @@ spec:
 
                       This feature is in Developer Preview.
                     type: boolean
+                  incrementalBackup:
+                    default: false
+                    description: |-
+                      IncrementalBackup enables to perform changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt.
+                      Note: This feature is in Tech Preview.
+                    type: boolean
                   nonRoot:
                     description: 'Deprecated: // Deprecated: This field is ignored
                       and will be removed on the next version of the API.'
@@ -1197,6 +1207,12 @@ spec:
                       primaryUserDefinedNetworkBinding deploys the needed configurations for kubevirt users to
                       be able to bind their VM to a UDN network on the VM's primary interface.
                       Deprecated: this field is ignored and will be removed in the next version of the API.
+                    type: boolean
+                  utilityVolumes:
+                    default: false
+                    description: |-
+                      UtilityVolumes enables the use of utility volumes in KubeVirt.
+                      Note: This feature is in Tech Preview.
                     type: boolean
                   videoConfig:
                     default: true

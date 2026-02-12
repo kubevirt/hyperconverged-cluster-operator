@@ -360,6 +360,16 @@ func (in *HyperConvergedFeatureGates) DeepCopyInto(out *HyperConvergedFeatureGat
 		*out = new(bool)
 		**out = **in
 	}
+	if in.UtilityVolumes != nil {
+		in, out := &in.UtilityVolumes, &out.UtilityVolumes
+		*out = new(bool)
+		**out = **in
+	}
+	if in.IncrementalBackup != nil {
+		in, out := &in.IncrementalBackup, &out.IncrementalBackup
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

@@ -17,7 +17,9 @@
       "decentralizedLiveMigration": false,
       "declarativeHotplugVolumes": false,
       "videoConfig": true,
-      "objectGraph": false
+      "objectGraph": false,
+      "utilityVolumes": false,
+      "incrementalBackup": false
     },
     "liveMigrationConfig": {
       "parallelMigrationsPerCluster": 5,
