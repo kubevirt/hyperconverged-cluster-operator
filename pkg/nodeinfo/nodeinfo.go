@@ -11,6 +11,8 @@ const (
 	LabelNodeRoleMaster = internal.LabelNodeRoleMaster
 	// LabelNodeRoleWorker is the label used to identify worker nodes
 	LabelNodeRoleWorker = internal.LabelNodeRoleWorker
+	// LabelNodeRoleArbiter is the label used to identify arbiter nodes
+	LabelNodeRoleArbiter = internal.LabelNodeRoleArbiter
 )
 
 var (
