@@ -42,12 +42,14 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedStatus":                 schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedStatus(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedWorkloadUpdateStrategy": schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedWorkloadUpdateStrategy(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.KubeMacPoolConfig":                    schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_KubeMacPoolConfig(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LauncherPodMutatorConfig":             schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_LauncherPodMutatorConfig(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LiveMigrationConfigurations":          schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_LiveMigrationConfigurations(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LogVerbosityConfiguration":            schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_LogVerbosityConfiguration(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.MediatedDevicesConfiguration":         schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_MediatedDevicesConfiguration(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.MediatedHostDevice":                   schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_MediatedHostDevice(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.NodeMediatedDeviceTypesConfig":        schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_NodeMediatedDeviceTypesConfig(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.OperandResourceRequirements":          schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_OperandResourceRequirements(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.OptionalWebhooks":                     schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_OptionalWebhooks(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.PciHostDevice":                        schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_PciHostDevice(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.PermittedHostDevices":                 schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_PermittedHostDevices(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.StorageImportConfig":                  schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_StorageImportConfig(ref),
@@ -732,11 +734,17 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 							Ref:         ref("kubevirt.io/api/core/v1.LiveUpdateConfiguration"),
 						},
 					},
+					"optionalWebhooks": {
+						SchemaProps: spec.SchemaProps{
+							Description: "OptionalWebhooks holds configuration for optional webhooks that operate on HCO-managed workloads. These webhooks are opt-in and disabled by default.",
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.OptionalWebhooks"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HigherWorkloadDensityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedCertConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedFeatureGates", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedObsoleteCPUs", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedWorkloadUpdateStrategy", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LiveMigrationConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.MediatedDevicesConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.OperandResourceRequirements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.PermittedHostDevices", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.StorageImportConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.VirtualMachineOptions", "github.com/openshift/api/config/v1.TLSSecurityProfile", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin", "kubevirt.io/api/core/v1.KSMConfiguration", "kubevirt.io/api/core/v1.LiveUpdateConfiguration", "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1.FilesystemOverhead"},
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HigherWorkloadDensityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedCertConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedFeatureGates", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedObsoleteCPUs", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedWorkloadUpdateStrategy", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LiveMigrationConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.MediatedDevicesConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.OperandResourceRequirements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.OptionalWebhooks", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.PermittedHostDevices", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.StorageImportConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.VirtualMachineOptions", "github.com/openshift/api/config/v1.TLSSecurityProfile", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin", "kubevirt.io/api/core/v1.KSMConfiguration", "kubevirt.io/api/core/v1.LiveUpdateConfiguration", "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1.FilesystemOverhead"},
 	}
 }
 
@@ -937,6 +945,17 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_KubeMacPoolConf
 						},
 					},
 				},
+			},
+		},
+	}
+}
+
+func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_LauncherPodMutatorConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "LauncherPodMutatorConfig configures the launcher pod mutating webhook. Currently this is an empty struct that acts as an enable flag. Future versions may add configuration options.",
+				Type:        []string{"object"},
 			},
 		},
 	}
@@ -1262,6 +1281,27 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_OperandResource
 		},
 		Dependencies: []string{
 			"k8s.io/api/core/v1.ResourceRequirements", "k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"},
+	}
+}
+
+func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_OptionalWebhooks(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "OptionalWebhooks holds configuration for optional webhooks that operate on HCO-managed workloads. These webhooks are opt-in and disabled by default.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"launcherPodMutator": {
+						SchemaProps: spec.SchemaProps{
+							Description: "LauncherPodMutator enables the launcher pod mutating webhook for KubeVirt workloads. When enabled, this webhook removes Velero backup hook annotations from KubeVirt launcher pods to prevent backup/restore issues.",
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LauncherPodMutatorConfig"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LauncherPodMutatorConfig"},
 	}
 }
 

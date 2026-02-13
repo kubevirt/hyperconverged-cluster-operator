@@ -281,6 +281,11 @@ type HyperConvergedSpec struct {
 	// max guest memory and max hotplug ratio. This setting can affect VM CPU and memory settings.
 	// +optional
 	LiveUpdateConfiguration *v1.LiveUpdateConfiguration `json:"liveUpdateConfiguration,omitempty"`
+
+	// OptionalWebhooks holds configuration for optional webhooks that operate on HCO-managed workloads.
+	// These webhooks are opt-in and disabled by default.
+	// +optional
+	OptionalWebhooks *OptionalWebhooks `json:"optionalWebhooks,omitempty"`
 }
 
 // CertRotateConfigCA contains the tunables for TLS certificates.
@@ -902,6 +907,23 @@ type KubeMacPoolConfig struct {
 	// +kubebuilder:validation:Pattern=`^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$`
 	RangeEnd *string `json:"rangeEnd,omitempty"`
 }
+
+// OptionalWebhooks holds configuration for optional webhooks that operate on HCO-managed workloads.
+// These webhooks are opt-in and disabled by default.
+// +k8s:openapi-gen=true
+type OptionalWebhooks struct {
+	// LauncherPodMutator enables the launcher pod mutating webhook for KubeVirt workloads.
+	// When enabled, this webhook removes Velero backup hook annotations from KubeVirt launcher pods
+	// to prevent backup/restore issues.
+	// +optional
+	LauncherPodMutator *LauncherPodMutatorConfig `json:"launcherPodMutator,omitempty"`
+}
+
+// LauncherPodMutatorConfig configures the launcher pod mutating webhook.
+// Currently this is an empty struct that acts as an enable flag.
+// Future versions may add configuration options.
+// +k8s:openapi-gen=true
+type LauncherPodMutatorConfig struct{}
 
 const (
 	ConditionAvailable = "Available"

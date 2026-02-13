@@ -29,12 +29,14 @@ func SetupWebhookWithManager(mgr ctrl.Manager, isOpenshift bool) error {
 	whHandler := validator.NewWebhookHandler(logger, mgr.GetClient(), decoder, operatorNsEnv, isOpenshift)
 	nsMutator := mutator.NewNsMutator(mgr.GetClient(), decoder, operatorNsEnv)
 	hyperConvergedMutator := mutator.NewHyperConvergedMutator(mgr.GetClient(), decoder)
+	launcherPodMutator := mutator.NewLauncherPodMutator(mgr.GetClient(), decoder, operatorNsEnv)
 
 	srv := mgr.GetWebhookServer()
 
 	srv.Register(hcoutil.HCONSWebhookPath, &webhook.Admission{Handler: nsMutator})
 	srv.Register(hcoutil.HCOMutatingWebhookPath, &webhook.Admission{Handler: hyperConvergedMutator})
 	srv.Register(hcoutil.HCOWebhookPath, &webhook.Admission{Handler: whHandler})
+	srv.Register(hcoutil.HCOLauncherPodWebhookPath, &webhook.Admission{Handler: launcherPodMutator})
 
 	return nil
 }

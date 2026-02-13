@@ -2632,6 +2632,18 @@ spec:
                       Deprecated: This field is not in use and is ignored.
                     type: string
                 type: object
+              optionalWebhooks:
+                description: |-
+                  OptionalWebhooks holds configuration for optional webhooks that operate on HCO-managed workloads.
+                  These webhooks are opt-in and disabled by default.
+                properties:
+                  launcherPodMutator:
+                    description: |-
+                      LauncherPodMutator enables the launcher pod mutating webhook for KubeVirt workloads.
+                      When enabled, this webhook removes Velero backup hook annotations from KubeVirt launcher pods
+                      to prevent backup/restore issues.
+                    type: object
+                type: object
               permittedHostDevices:
                 description: PermittedHostDevices holds information about devices
                   allowed for passthrough

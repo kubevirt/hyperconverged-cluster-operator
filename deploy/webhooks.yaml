@@ -305,3 +305,31 @@ webhooks:
     scope: '*'
   sideEffects: NoneOnDryRun
   timeoutSeconds: 30
+- name: mutate-launcher-pod-hco.kubevirt.io
+  admissionReviewVersions:
+  - v1beta1
+  - v1
+  clientConfig:
+    # caBundle: WILL BE INJECTED BY CERT-MANAGER BECAUSE OF THE ANNOTATION
+    service:
+      name: hyperconverged-cluster-webhook-service
+      namespace: kubevirt-hyperconverged
+      path: /mutate-launcher-pod-hco-kubevirt-io
+      port: 4343
+  failurePolicy: Ignore
+  matchPolicy: Equivalent
+  objectSelector:
+    matchLabels:
+      kubevirt.io: virt-launcher
+  rules:
+  - apiGroups:
+    - ""
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    resources:
+    - pods
+    scope: Namespaced
+  sideEffects: None
+  timeoutSeconds: 10

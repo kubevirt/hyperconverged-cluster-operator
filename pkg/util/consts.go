@@ -77,6 +77,7 @@ const (
 	HCOWebhookPath               = "/validate-hco-kubevirt-io-v1beta1-hyperconverged"
 	HCOMutatingWebhookPath       = "/mutate-hco-kubevirt-io-v1beta1-hyperconverged"
 	HCONSWebhookPath             = "/mutate-ns-hco-kubevirt-io"
+	HCOLauncherPodWebhookPath    = "/mutate-launcher-pod-hco-kubevirt-io"
 	WebhookPort                  = 4343
 	WebhookPortName              = "webhook"
 
