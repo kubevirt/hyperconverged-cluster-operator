@@ -76,7 +76,7 @@ var (
 	dictWithSupportedArchitectures = operatormetrics.NewGaugeVec(
 		operatormetrics.MetricOpts{
 			Name: "kubevirt_hco_dataimportcrontemplate_with_supported_architectures",
-			Help: "Indicates whether the DataImportCronTemplate has supported architectures (0) or not (1)",
+			Help: "Indicates whether the DataImportCronTemplate has supported architectures (1) or not (0)",
 		},
 		[]string{counterLabelDICTName, counterLabelDSName},
 	)
@@ -84,7 +84,7 @@ var (
 	dictWithArchitectureAnnotation = operatormetrics.NewGaugeVec(
 		operatormetrics.MetricOpts{
 			Name: "kubevirt_hco_dataimportcrontemplate_with_architecture_annotation",
-			Help: "Indicates whether the DataImportCronTemplate has the ssp.kubevirt.io/dict.architectures annotation (0) or not (1)",
+			Help: "Indicates whether the DataImportCronTemplate has the ssp.kubevirt.io/dict.architectures annotation (1) or not (0)",
 		},
 		[]string{counterLabelDICTName, counterLabelDSName},
 	)

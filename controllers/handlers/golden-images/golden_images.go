@@ -84,9 +84,8 @@ func validateMultiArchDict(dict *hcov1beta1.DataImportCronTemplateStatus) bool {
 	if dict.Status.OriginalSupportedArchitectures == "" {
 		metrics.SetDICTWithNoArchitectureAnnotation(dict.Name, dict.Spec.ManagedDataSource)
 		return false
-	} else {
-		metrics.SetDICTWithArchitectureAnnotation(dict.Name, dict.Spec.ManagedDataSource)
 	}
+	metrics.SetDICTWithArchitectureAnnotation(dict.Name, dict.Spec.ManagedDataSource)
 
 	if meta.IsStatusConditionFalse(dict.Status.Conditions, DictConditionDeployedType) {
 		metrics.SetDICTWithNoSupportedArchitectures(dict.Name, dict.Spec.ManagedDataSource)
