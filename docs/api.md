@@ -8,6 +8,7 @@ This Document documents the types introduced by the hyperconverged-cluster-opera
 * [ApplicationAwareConfigurations](#applicationawareconfigurations)
 * [CertRotateConfigCA](#certrotateconfigca)
 * [CertRotateConfigServer](#certrotateconfigserver)
+* [CpuModelInfo](#cpumodelinfo)
 * [DataImportCronStatus](#dataimportcronstatus)
 * [DataImportCronTemplate](#dataimportcrontemplate)
 * [DataImportCronTemplateStatus](#dataimportcrontemplatestatus)
@@ -68,6 +69,20 @@ CertRotateConfigServer contains the tunables for TLS certificates.
 | ----- | ----------- | ------ | -------- |-------- |
 | duration | The requested 'duration' (i.e. lifetime) of the Certificate. This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration) | *metav1.Duration | "24h0m0s" | false |
 | renewBefore | The amount of time before the currently issued certificate's `notAfter` time that we will begin to attempt to renew the certificate. This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration) | *metav1.Duration | "12h0m0s" | false |
+
+[Back to TOC](#table-of-contents)
+
+## CpuModelInfo
+
+CpuModelInfo contains information about a CPU model and its availability in the cluster
+
+| Field | Description | Scheme | Default | Required |
+| ----- | ----------- | ------ | -------- |-------- |
+| name | Name is the CPU model name | string |  | true |
+| benchmark | Benchmark is the CPU performance score for this model | int |  | true |
+| nodes | Nodes is the number of nodes that support this CPU model | int |  | true |
+| cpu | CPU is the total CPU cores available across all nodes supporting this model | *resource.Quantity |  | true |
+| memory | Memory is the total memory available across all nodes supporting this model | *resource.Quantity |  | true |
 
 [Back to TOC](#table-of-contents)
 
@@ -353,6 +368,7 @@ NodeInfoStatus holds information about the cluster nodes
 | ----- | ----------- | ------ | -------- |-------- |
 | workloadsArchitectures | WorkloadsArchitectures is a distinct list of the CPU architectures of the workloads nodes in the cluster. | []string |  | false |
 | controlPlaneArchitectures | ControlPlaneArchitectures is a distinct list of the CPU architecture of the control-plane nodes. | []string |  | false |
+| recommendedCpuModels | RecommendedCpuModels is a list of recommended CPU models for the cluster based on available nodes | [][CpuModelInfo](#cpumodelinfo) |  | false |
 
 [Back to TOC](#table-of-contents)
 
