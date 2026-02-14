@@ -22,8 +22,10 @@ spec:
     disableMDevConfiguration: false
     downwardMetrics: false
     enableMultiArchBootImageImport: false
+    incrementalBackup: false
     objectGraph: false
     persistentReservation: false
+    utilityVolumes: false
     videoConfig: true
   higherWorkloadDensity:
     memoryOvercommitPercentage: 100

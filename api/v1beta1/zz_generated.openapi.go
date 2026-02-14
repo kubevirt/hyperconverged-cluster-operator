@@ -382,6 +382,22 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 							Format:      "",
 						},
 					},
+					"utilityVolumes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "UtilityVolumes enables the use of utility volumes in KubeVirt. Note: This feature is in Tech Preview.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"incrementalBackup": {
+						SchemaProps: spec.SchemaProps{
+							Description: "IncrementalBackup enables to perform changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt. Note: This feature is in Tech Preview.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

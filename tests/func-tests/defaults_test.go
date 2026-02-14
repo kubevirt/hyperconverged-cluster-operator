@@ -76,6 +76,8 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			DeclarativeHotplugVolumes:      ptr.To(false),
 			VideoConfig:                    ptr.To(true),
 			ObjectGraph:                    ptr.To(false),
+			UtilityVolumes:                 ptr.To(false),
+			IncrementalBackup:              ptr.To(false),
 		}
 
 		DescribeTable("Check that featureGates defaults are behaving as expected", func(ctx context.Context, path string) {
@@ -98,6 +100,8 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			Entry("when removing /spec/featureGates/declarativeHotplugVolumes", "/spec/featureGates/declarativeHotplugVolumes"),
 			Entry("when removing /spec/featureGates/videoConfig", "/spec/featureGates/videoConfig"),
 			Entry("when removing /spec/featureGates/objectGraph", "/spec/featureGates/objectGraph"),
+			Entry("when removing /spec/featureGates/utilityVolumes", "/spec/featureGates/utilityVolumes"),
+			Entry("when removing /spec/featureGates/incrementalBackup", "/spec/featureGates/incrementalBackup"),
 			Entry("when removing /spec/featureGates", "/spec/featureGates"),
 			Entry("when removing /spec", "/spec"),
 		)

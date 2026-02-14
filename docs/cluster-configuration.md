@@ -255,6 +255,24 @@ Set the `objectGraph` feature gate to true in order to enable the ObjectGraph VM
 
 **Graduation Status**: Alpha
 
+### Utility Volumes Feature Gate
+Set the `utilityVolumes` feature gate to true in order to enable the use of utility volumes in KubeVirt. Utility volumes can be mounted to the VMI virt-launcher pod without having a matching disk in the domain, and are used to collect data for various operational workflows (for example, memory dump and backup). Enabling this feature gate is required when you want to perform VM backups with push mode.
+
+**Note**: This feature is in Tech Preview.
+
+**Default**: `false`
+
+**Graduation Status**: Alpha
+
+### Incremental Backup Feature Gate
+Set the `incrementalBackup` feature gate to true in order to enable changed block tracking and incremental backups using QEMU capabilities in KubeVirt. Enabling changed block tracking is mandatory for performing storage-agnostic backups and incremental backups.
+
+**Note**: This feature is in Tech Preview.
+
+**Default**: `false`
+
+**Graduation Status**: Alpha
+
 ### The hco.kubevirt.io/deployPasstNetworkBinding annotation
 Set the `hco.kubevirt.io/deployPasstNetworkBinding` HyperConverged CR annotation to `true`, to deploy the needed
 configurations for kubevirt users, so they can bind their VM using a Passt Network binding.
