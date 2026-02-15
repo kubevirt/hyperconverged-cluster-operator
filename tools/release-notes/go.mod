@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/Masterminds/semver v1.5.0
-	github.com/go-git/go-git/v5 v5.16.3
+	github.com/go-git/go-git/v5 v5.16.5
 	github.com/golang/glog v1.2.5
 	github.com/google/go-github/v76 v76.0.0
 	github.com/joho/godotenv v1.5.1
