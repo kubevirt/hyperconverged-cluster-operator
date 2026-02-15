@@ -7,10 +7,10 @@ Sum of CPU core requests for all running virt-launcher VMIs across the entire Ku
 Monitors resources for potential problems. Type: Gauge.
 
 ### kubevirt_hco_dataimportcrontemplate_with_architecture_annotation
-Indicates whether the DataImportCronTemplate has the ssp.kubevirt.io/dict.architectures annotation (0) or not (1). Type: Gauge.
+Indicates whether the DataImportCronTemplate has the ssp.kubevirt.io/dict.architectures annotation (1) or not (0). Type: Gauge.
 
 ### kubevirt_hco_dataimportcrontemplate_with_supported_architectures
-Indicates whether the DataImportCronTemplate has supported architectures (0) or not (1). Type: Gauge.
+Indicates whether the DataImportCronTemplate has supported architectures (1) or not (0). Type: Gauge.
 
 ### kubevirt_hco_hyperconverged_cr_exists
 Indicates whether the HyperConverged custom resource exists (1) or not (0). Type: Gauge.
