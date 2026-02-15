@@ -843,7 +843,7 @@ tests:
       alertname: HCOGoldenImageWithNoSupportedArchitecture
       exp_alerts: [ ]
 
-    # dict1 metric value of 1 must trigger an alert
+    # dict1 metric value of 0 must trigger an alert
     - eval_time: 2m
       alertname: HCOGoldenImageWithNoSupportedArchitecture
       exp_alerts:
@@ -859,7 +859,7 @@ tests:
             data_import_cron_name: "dict1"
             managed_data_source_name: "ds1"
 
-    # dict1 and dict2 metric values of 1 must trigger alerts
+    # dict1 and dict2 metric values of 0 must trigger alerts
     - eval_time: 3m
       alertname: HCOGoldenImageWithNoSupportedArchitecture
       exp_alerts:
@@ -886,7 +886,7 @@ tests:
             data_import_cron_name: "dict2"
             managed_data_source_name: "ds2"
 
-    # dict1 and dict2 metric values of 1 must trigger alerts
+    # dict1 and dict2 metric values of 0 must trigger alerts
     - eval_time: 4m
       alertname: HCOGoldenImageWithNoSupportedArchitecture
       exp_alerts:
@@ -913,7 +913,7 @@ tests:
             data_import_cron_name: "dict2"
             managed_data_source_name: "ds2"
 
-    # dict2 metric value of 1 must trigger an alert
+    # dict2 metric value of 0 must trigger an alert
     - eval_time: 6m
       alertname: HCOGoldenImageWithNoSupportedArchitecture
       exp_alerts:
@@ -934,7 +934,7 @@ tests:
       alertname: HCOGoldenImageWithNoSupportedArchitecture
       exp_alerts: [ ]
 
-    # dict1 metric value of 1 must trigger an alert
+    # dict1 metric value of 0 must trigger an alert
     - eval_time: 8m
       alertname: HCOGoldenImageWithNoSupportedArchitecture
       exp_alerts:
@@ -966,7 +966,7 @@ tests:
       alertname: HCOGoldenImageWithNoArchitectureAnnotation
       exp_alerts: [ ]
 
-    # dict1 metric value of 1 must trigger an alert
+    # dict1 metric value of 0 must trigger an alert
     - eval_time: 2m
       alertname: HCOGoldenImageWithNoArchitectureAnnotation
       exp_alerts:
@@ -982,7 +982,7 @@ tests:
             data_import_cron_name: "dict1"
             managed_data_source_name: "ds1"
 
-    # dict1 and dict2 metric values of 1 must trigger alerts
+    # dict1 and dict2 metric values of 0 must trigger alerts
     - eval_time: 3m
       alertname: HCOGoldenImageWithNoArchitectureAnnotation
       exp_alerts:
@@ -1009,7 +1009,7 @@ tests:
             data_import_cron_name: "dict2"
             managed_data_source_name: "ds2"
 
-    # dict1 and dict2 metric values of 1 must trigger alerts
+    # dict1 and dict2 metric values of 0 must trigger alerts
     - eval_time: 4m
       alertname: HCOGoldenImageWithNoArchitectureAnnotation
       exp_alerts:
@@ -1036,7 +1036,7 @@ tests:
             data_import_cron_name: "dict2"
             managed_data_source_name: "ds2"
 
-    # dict2 metric value of 1 must trigger an alert
+    # dict2 metric value of 0 must trigger an alert
     - eval_time: 6m
       alertname: HCOGoldenImageWithNoArchitectureAnnotation
       exp_alerts:
@@ -1057,7 +1057,7 @@ tests:
       alertname: HCOGoldenImageWithNoArchitectureAnnotation
       exp_alerts: [ ]
 
-    # dict1 metric value of 1 must trigger an alert
+    # dict1 metric value of 0 must trigger an alert
     - eval_time: 8m
       alertname: HCOGoldenImageWithNoArchitectureAnnotation
       exp_alerts:
