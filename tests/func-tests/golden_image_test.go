@@ -459,6 +459,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 				customDictArchs := append(archs, "someOtherArch1", "someOtherArch2")
 				hcCustomDict.Annotations[goldenimages.MultiArchDICTAnnotation] = strings.Join(customDictArchs, ",")
+				hcCustomDict.Spec.RetentionPolicy = ptr.To(cdiv1beta1.DataImportCronRetainNone)
 
 				hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
 
@@ -521,6 +522,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				customDictArchs := append(archs, "someOtherArch1", "someOtherArch2")
 				testAnnotation := strings.Join(customDictArchs, ",")
 				hcCustomDict.Annotations[goldenimages.MultiArchDICTAnnotation] = testAnnotation
+				hcCustomDict.Spec.RetentionPolicy = ptr.To(cdiv1beta1.DataImportCronRetainNone)
 				expectedArches = getExpectedArchs(testAnnotation, archs)
 
 				hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
@@ -593,6 +595,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					hcCustomDict.Name = "custom-dict"
 					hcCustomDict.Spec.ManagedDataSource = "custom-source"
 					delete(hcCustomDict.Annotations, goldenimages.MultiArchDICTAnnotation)
+					hcCustomDict.Spec.RetentionPolicy = ptr.To(cdiv1beta1.DataImportCronRetainNone)
 
 					hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
 
@@ -658,6 +661,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					}
 
 					hcCustomDict.Annotations[goldenimages.MultiArchDICTAnnotation] = "someOtherArch1,someOtherArch2"
+					hcCustomDict.Spec.RetentionPolicy = ptr.To(cdiv1beta1.DataImportCronRetainNone)
 
 					hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
 
@@ -728,6 +732,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					hcCustomDict.Spec.Template.Spec.Source.Registry = nextDICT.Spec.Template.Spec.Source.Registry.DeepCopy()
 
 					hcCustomDict.Annotations[goldenimages.MultiArchDICTAnnotation] = "someOtherArch1,someOtherArch2"
+					hcCustomDict.Spec.RetentionPolicy = ptr.To(cdiv1beta1.DataImportCronRetainNone)
 
 					hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
 
@@ -796,6 +801,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 					originalSupportedArchitectures = hc.Status.DataImportCronTemplates[0].Status.OriginalSupportedArchitectures
 					hcCustomDict.Annotations[goldenimages.MultiArchDICTAnnotation] = "someOtherArch1,someOtherArch2"
+					hcCustomDict.Spec.RetentionPolicy = ptr.To(cdiv1beta1.DataImportCronRetainNone)
 
 					hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
 
