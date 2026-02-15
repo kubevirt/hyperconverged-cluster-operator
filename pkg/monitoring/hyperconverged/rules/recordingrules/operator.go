@@ -20,6 +20,14 @@ var operatorRecordingRules = []operatorrules.RecordingRule{
 	{
 		MetricsOpts: operatormetrics.MetricOpts{
 			Name: "kubevirt_hyperconverged_operator_health_status",
+			Help: "[Deprecated] Indicates whether HCO and its secondary resources health status is healthy (0), warning (1) or critical (2), based both on the firing alerts that impact the operator health, and on kubevirt_hco_system_health_status metric",
+		},
+		MetricType: operatormetrics.GaugeType,
+		Expr:       buildOperatorHealthStatusExpr(),
+	},
+	{
+		MetricsOpts: operatormetrics.MetricOpts{
+			Name: "cluster:kubevirt_hco_operator_health_status:count",
 			Help: "Indicates whether HCO and its secondary resources health status is healthy (0), warning (1) or critical (2), based both on the firing alerts that impact the operator health, and on kubevirt_hco_system_health_status metric",
 		},
 		MetricType: operatormetrics.GaugeType,
@@ -28,7 +36,15 @@ var operatorRecordingRules = []operatorrules.RecordingRule{
 	{
 		MetricsOpts: operatormetrics.MetricOpts{
 			Name: "cluster:vmi_request_cpu_cores:sum",
-			Help: "Sum of CPU core requests for all running virt-launcher VMIs across the entire Kubevirt cluster",
+			Help: "[Deprecated] Sum of CPU core requests for all running virt-launcher VMIs across the entire KubeVirt cluster",
+		},
+		MetricType: operatormetrics.GaugeType,
+		Expr:       intstr.FromString(`sum(kube_pod_container_resource_requests{resource="cpu"} and on (pod) kube_pod_status_phase{phase="Running"} * on (pod) group_left kube_pod_labels{ label_kubevirt_io="virt-launcher"} > 0)`),
+	},
+	{
+		MetricsOpts: operatormetrics.MetricOpts{
+			Name: "cluster:kubevirt_hco_vmi_request_cpu_cores:sum",
+			Help: "Sum of CPU core requests for all running virt-launcher VMIs across the entire KubeVirt cluster",
 		},
 		MetricType: operatormetrics.GaugeType,
 		Expr:       intstr.FromString(`sum(kube_pod_container_resource_requests{resource="cpu"} and on (pod) kube_pod_status_phase{phase="Running"} * on (pod) group_left kube_pod_labels{ label_kubevirt_io="virt-launcher"} > 0)`),

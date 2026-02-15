@@ -581,31 +581,31 @@ tests:
     # time:  0     1     2     3 4 5
     values: "stale stale stale 1 0 1"
   promql_expr_test:
-  - expr: 'cluster:vmi_request_cpu_cores:sum'
+  - expr: 'cluster:kubevirt_hco_vmi_request_cpu_cores:sum'
     eval_time: 1m
     exp_samples:
-    - labels: 'cluster:vmi_request_cpu_cores:sum{}'
+    - labels: 'cluster:kubevirt_hco_vmi_request_cpu_cores:sum{}'
       value: 2
   # update for new pods
-  - expr: 'cluster:vmi_request_cpu_cores:sum'
+  - expr: 'cluster:kubevirt_hco_vmi_request_cpu_cores:sum'
     eval_time: 3m
     exp_samples:
-    - labels: 'cluster:vmi_request_cpu_cores:sum{}'
+    - labels: 'cluster:kubevirt_hco_vmi_request_cpu_cores:sum{}'
       value: 3
   # virt-launcher-new is not running at 4m. must exclude it
-  - expr: 'cluster:vmi_request_cpu_cores:sum'
+  - expr: 'cluster:kubevirt_hco_vmi_request_cpu_cores:sum'
     eval_time: 4m
     exp_samples:
-    - labels: 'cluster:vmi_request_cpu_cores:sum{}'
+    - labels: 'cluster:kubevirt_hco_vmi_request_cpu_cores:sum{}'
       value: 2
   # virt-launcher-new is back at 5m. must include it
-  - expr: 'cluster:vmi_request_cpu_cores:sum'
+  - expr: 'cluster:kubevirt_hco_vmi_request_cpu_cores:sum'
     eval_time: 5m
     exp_samples:
-    - labels: 'cluster:vmi_request_cpu_cores:sum{}'
+    - labels: 'cluster:kubevirt_hco_vmi_request_cpu_cores:sum{}'
       value: 3
 
-# Test kubevirt_hyperconverged_operator_health_status recording rule
+# Test cluster:kubevirt_hco_operator_health_status:count recording rule
 - interval: 1m
   input_series:
   - series: 'kubevirt_hco_system_health_status'
@@ -619,76 +619,76 @@ tests:
     values: "1   stale   1   stale   1   stale   1   stale   1   stale    1    stale"
   promql_expr_test:
   # kubevirt_hco_system_health_status = 0 and both warning and critical alerts are firing at 0m
-  - expr: 'kubevirt_hyperconverged_operator_health_status'
+  - expr: 'cluster:kubevirt_hco_operator_health_status:count'
     eval_time: 0m
     exp_samples:
-    - labels: 'kubevirt_hyperconverged_operator_health_status{name="kubevirt-hyperconverged"}'
+    - labels: 'cluster:kubevirt_hco_operator_health_status:count{name="kubevirt-hyperconverged"}'
       value: 2
   # kubevirt_hco_system_health_status = 0 and only a warning alert is firing at 1m
-  - expr: 'kubevirt_hyperconverged_operator_health_status'
+  - expr: 'cluster:kubevirt_hco_operator_health_status:count'
     eval_time: 1m
     exp_samples:
-      - labels: 'kubevirt_hyperconverged_operator_health_status{name="kubevirt-hyperconverged"}'
+      - labels: 'cluster:kubevirt_hco_operator_health_status:count{name="kubevirt-hyperconverged"}'
         value: 1
   # kubevirt_hco_system_health_status = 0 and a critical alert is firing at 2m
-  - expr: 'kubevirt_hyperconverged_operator_health_status'
+  - expr: 'cluster:kubevirt_hco_operator_health_status:count'
     eval_time: 2m
     exp_samples:
-      - labels: 'kubevirt_hyperconverged_operator_health_status{name="kubevirt-hyperconverged"}'
+      - labels: 'cluster:kubevirt_hco_operator_health_status:count{name="kubevirt-hyperconverged"}'
         value: 2
   # kubevirt_hco_system_health_status = 0 and no alerts are firing at 3m
-  - expr: 'kubevirt_hyperconverged_operator_health_status'
+  - expr: 'cluster:kubevirt_hco_operator_health_status:count'
     eval_time: 3m
     exp_samples:
-      - labels: 'kubevirt_hyperconverged_operator_health_status{name="kubevirt-hyperconverged"}'
+      - labels: 'cluster:kubevirt_hco_operator_health_status:count{name="kubevirt-hyperconverged"}'
         value: 0
   # kubevirt_hco_system_health_status = 1 and both warning and critical alerts are firing at 4m
-  - expr: 'kubevirt_hyperconverged_operator_health_status'
+  - expr: 'cluster:kubevirt_hco_operator_health_status:count'
     eval_time: 4m
     exp_samples:
-      - labels: 'kubevirt_hyperconverged_operator_health_status{name="kubevirt-hyperconverged"}'
+      - labels: 'cluster:kubevirt_hco_operator_health_status:count{name="kubevirt-hyperconverged"}'
         value: 2
   # kubevirt_hco_system_health_status = 1 and only a warning alert is firing at 5m
-  - expr: 'kubevirt_hyperconverged_operator_health_status'
+  - expr: 'cluster:kubevirt_hco_operator_health_status:count'
     eval_time: 5m
     exp_samples:
-      - labels: 'kubevirt_hyperconverged_operator_health_status{name="kubevirt-hyperconverged"}'
+      - labels: 'cluster:kubevirt_hco_operator_health_status:count{name="kubevirt-hyperconverged"}'
         value: 1
   # kubevirt_hco_system_health_status = 1 and a critical alert is firing at 6m
-  - expr: 'kubevirt_hyperconverged_operator_health_status'
+  - expr: 'cluster:kubevirt_hco_operator_health_status:count'
     eval_time: 6m
     exp_samples:
-      - labels: 'kubevirt_hyperconverged_operator_health_status{name="kubevirt-hyperconverged"}'
+      - labels: 'cluster:kubevirt_hco_operator_health_status:count{name="kubevirt-hyperconverged"}'
         value: 2
   # kubevirt_hco_system_health_status = 1 and no alerts are firing at 7m
-  - expr: 'kubevirt_hyperconverged_operator_health_status'
+  - expr: 'cluster:kubevirt_hco_operator_health_status:count'
     eval_time: 7m
     exp_samples:
-      - labels: 'kubevirt_hyperconverged_operator_health_status{name="kubevirt-hyperconverged"}'
+      - labels: 'cluster:kubevirt_hco_operator_health_status:count{name="kubevirt-hyperconverged"}'
         value: 1
   # kubevirt_hco_system_health_status = 2 and both warning and critical alerts are firing at 8m
-  - expr: 'kubevirt_hyperconverged_operator_health_status'
+  - expr: 'cluster:kubevirt_hco_operator_health_status:count'
     eval_time: 8m
     exp_samples:
-      - labels: 'kubevirt_hyperconverged_operator_health_status{name="kubevirt-hyperconverged"}'
+      - labels: 'cluster:kubevirt_hco_operator_health_status:count{name="kubevirt-hyperconverged"}'
         value: 2
   # kubevirt_hco_system_health_status = 2 and only a warning alert is firing at 9m
-  - expr: 'kubevirt_hyperconverged_operator_health_status'
+  - expr: 'cluster:kubevirt_hco_operator_health_status:count'
     eval_time: 9m
     exp_samples:
-      - labels: 'kubevirt_hyperconverged_operator_health_status{name="kubevirt-hyperconverged"}'
+      - labels: 'cluster:kubevirt_hco_operator_health_status:count{name="kubevirt-hyperconverged"}'
         value: 2
   # kubevirt_hco_system_health_status = 2 and a critical alert is firing at 10m
-  - expr: 'kubevirt_hyperconverged_operator_health_status'
+  - expr: 'cluster:kubevirt_hco_operator_health_status:count'
     eval_time: 10m
     exp_samples:
-      - labels: 'kubevirt_hyperconverged_operator_health_status{name="kubevirt-hyperconverged"}'
+      - labels: 'cluster:kubevirt_hco_operator_health_status:count{name="kubevirt-hyperconverged"}'
         value: 2
   # kubevirt_hco_system_health_status = 2 and no alerts are firing at 11m
-  - expr: 'kubevirt_hyperconverged_operator_health_status'
+  - expr: 'cluster:kubevirt_hco_operator_health_status:count'
     eval_time: 11m
     exp_samples:
-      - labels: 'kubevirt_hyperconverged_operator_health_status{name="kubevirt-hyperconverged"}'
+      - labels: 'cluster:kubevirt_hco_operator_health_status:count{name="kubevirt-hyperconverged"}'
         value: 2
 
 # Test kubevirt_hco_misconfigured_descheduler
