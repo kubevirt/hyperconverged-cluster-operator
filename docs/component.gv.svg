@@ -11,7 +11,7 @@
 <polygon fill="white" stroke="transparent" points="-4,4 -4,-702 6051,-702 6051,4 -4,4"/>
 <g id="clust1" class="cluster">
 <title>cluster_compute</title>
-<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="8,-98 8,-690 562,-690 562,-98 8,-98"/>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="8,-8 8,-690 562,-690 562,-8 8,-8"/>
 <text text-anchor="middle" x="285" y="-652.4" font-family="Courier-Bold" font-size="42.00">compute</text>
 </g>
 <g id="clust2" class="cluster">
@@ -71,7 +71,7 @@
 <text text-anchor="middle" x="285" y="-585.8" font-family="Courier-Bold" font-size="24.00">KubeVirt/kubevirt&#45;kubevirt&#45;hyperconverged</text>
 </g>
 <!-- deployment/hco&#45;operator -->
-<g id="node7" class="node">
+<g id="node8" class="node">
 <title>deployment/hco&#45;operator</title>
 <path fill="none" stroke="black" d="M1049,-628C1049,-628 747,-628 747,-628 741,-628 735,-622 735,-616 735,-616 735,-568 735,-568 735,-562 741,-556 747,-556 747,-556 1049,-556 1049,-556 1055,-556 1061,-562 1061,-568 1061,-568 1061,-616 1061,-616 1061,-622 1055,-628 1049,-628"/>
 <text text-anchor="middle" x="898" y="-585.8" font-family="Courier-Bold" font-size="24.00">deployment/hco&#45;operator</text>
@@ -107,160 +107,166 @@
 <path fill="none" stroke="black" d="M434.5,-178C434.5,-178 135.5,-178 135.5,-178 129.5,-178 123.5,-172 123.5,-166 123.5,-166 123.5,-118 123.5,-118 123.5,-112 129.5,-106 135.5,-106 135.5,-106 434.5,-106 434.5,-106 440.5,-106 446.5,-112 446.5,-118 446.5,-118 446.5,-166 446.5,-166 446.5,-172 440.5,-178 434.5,-178"/>
 <text text-anchor="middle" x="285" y="-135.8" font-family="Courier-Bold" font-size="24.00">deployment/virt&#45;operator</text>
 </g>
+<!-- deployment/virt&#45;synchronization&#45;controller -->
+<g id="node7" class="node">
+<title>deployment/virt&#45;synchronization&#45;controller</title>
+<path fill="none" stroke="black" d="M539.5,-88C539.5,-88 30.5,-88 30.5,-88 24.5,-88 18.5,-82 18.5,-76 18.5,-76 18.5,-28 18.5,-28 18.5,-22 24.5,-16 30.5,-16 30.5,-16 539.5,-16 539.5,-16 545.5,-16 551.5,-22 551.5,-28 551.5,-28 551.5,-76 551.5,-76 551.5,-82 545.5,-88 539.5,-88"/>
+<text text-anchor="middle" x="285" y="-45.8" font-family="Courier-Bold" font-size="24.00">deployment/virt&#45;synchronization&#45;controller</text>
+</g>
 <!-- deployment/kubevirt&#45;apiserver&#45;proxy -->
-<g id="node10" class="node">
+<g id="node11" class="node">
 <title>deployment/kubevirt&#45;apiserver&#45;proxy</title>
 <path fill="none" stroke="black" d="M1719,-628C1719,-628 1279,-628 1279,-628 1273,-628 1267,-622 1267,-616 1267,-616 1267,-568 1267,-568 1267,-562 1273,-556 1279,-556 1279,-556 1719,-556 1719,-556 1725,-556 1731,-562 1731,-568 1731,-568 1731,-616 1731,-616 1731,-622 1725,-628 1719,-628"/>
 <text text-anchor="middle" x="1499" y="-585.8" font-family="Courier-Bold" font-size="24.00">deployment/kubevirt&#45;apiserver&#45;proxy</text>
 </g>
 <!-- deployment/hco&#45;operator&#45;&gt;deployment/kubevirt&#45;apiserver&#45;proxy -->
 <!-- deployment/hco&#45;webhook -->
-<g id="node8" class="node">
+<g id="node9" class="node">
 <title>deployment/hco&#45;webhook</title>
 <path fill="none" stroke="black" d="M1051,-538C1051,-538 745,-538 745,-538 739,-538 733,-532 733,-526 733,-526 733,-478 733,-478 733,-472 739,-466 745,-466 745,-466 1051,-466 1051,-466 1057,-466 1063,-472 1063,-478 1063,-478 1063,-526 1063,-526 1063,-532 1057,-538 1051,-538"/>
 <text text-anchor="middle" x="898" y="-495.8" font-family="Courier-Bold" font-size="24.00">deployment/hco&#45;webhook</text>
 </g>
 <!-- deployment/hyperconverged&#45;cluster&#45;cli&#45;download -->
-<g id="node9" class="node">
+<g id="node10" class="node">
 <title>deployment/hyperconverged&#45;cluster&#45;cli&#45;download</title>
 <path fill="none" stroke="black" d="M1194,-448C1194,-448 602,-448 602,-448 596,-448 590,-442 590,-436 590,-436 590,-388 590,-388 590,-382 596,-376 602,-376 602,-376 1194,-376 1194,-376 1200,-376 1206,-382 1206,-388 1206,-388 1206,-436 1206,-436 1206,-442 1200,-448 1194,-448"/>
 <text text-anchor="middle" x="898" y="-405.8" font-family="Courier-Bold" font-size="24.00">deployment/hyperconverged&#45;cluster&#45;cli&#45;download</text>
 </g>
 <!-- deployment/kubevirt&#45;console&#45;plugin -->
-<g id="node11" class="node">
+<g id="node12" class="node">
 <title>deployment/kubevirt&#45;console&#45;plugin</title>
 <path fill="none" stroke="black" d="M2252,-628C2252,-628 1824,-628 1824,-628 1818,-628 1812,-622 1812,-616 1812,-616 1812,-568 1812,-568 1812,-562 1818,-556 1824,-556 1824,-556 2252,-556 2252,-556 2258,-556 2264,-562 2264,-568 2264,-568 2264,-616 2264,-616 2264,-622 2258,-628 2252,-628"/>
 <text text-anchor="middle" x="2038" y="-585.8" font-family="Courier-Bold" font-size="24.00">deployment/kubevirt&#45;console&#45;plugin</text>
 </g>
 <!-- deployment/kubevirt&#45;apiserver&#45;proxy&#45;&gt;deployment/kubevirt&#45;console&#45;plugin -->
 <!-- deployment/kubevirt&#45;migration&#45;controller -->
-<g id="node12" class="node">
+<g id="node13" class="node">
 <title>deployment/kubevirt&#45;migration&#45;controller</title>
 <path fill="none" stroke="black" d="M2827,-628C2827,-628 2333,-628 2333,-628 2327,-628 2321,-622 2321,-616 2321,-616 2321,-568 2321,-568 2321,-562 2327,-556 2333,-556 2333,-556 2827,-556 2827,-556 2833,-556 2839,-562 2839,-568 2839,-568 2839,-616 2839,-616 2839,-622 2833,-628 2827,-628"/>
 <text text-anchor="middle" x="2580" y="-585.8" font-family="Courier-Bold" font-size="24.00">deployment/kubevirt&#45;migration&#45;controller</text>
 </g>
 <!-- deployment/kubevirt&#45;console&#45;plugin&#45;&gt;deployment/kubevirt&#45;migration&#45;controller -->
 <!-- NetworkAddonsConfig/cluster -->
-<g id="node14" class="node">
+<g id="node15" class="node">
 <title>NetworkAddonsConfig/cluster</title>
 <path fill="none" stroke="black" d="M3366,-628C3366,-628 3016,-628 3016,-628 3010,-628 3004,-622 3004,-616 3004,-616 3004,-568 3004,-568 3004,-562 3010,-556 3016,-556 3016,-556 3366,-556 3366,-556 3372,-556 3378,-562 3378,-568 3378,-568 3378,-616 3378,-616 3378,-622 3372,-628 3366,-628"/>
 <text text-anchor="middle" x="3191" y="-585.8" font-family="Courier-Bold" font-size="24.00">NetworkAddonsConfig/cluster</text>
 </g>
 <!-- deployment/kubevirt&#45;migration&#45;controller&#45;&gt;NetworkAddonsConfig/cluster -->
 <!-- deployment/kubevirt&#45;migration&#45;operator -->
-<g id="node13" class="node">
+<g id="node14" class="node">
 <title>deployment/kubevirt&#45;migration&#45;operator</title>
 <path fill="none" stroke="black" d="M2821,-538C2821,-538 2339,-538 2339,-538 2333,-538 2327,-532 2327,-526 2327,-526 2327,-478 2327,-478 2327,-472 2333,-466 2339,-466 2339,-466 2821,-466 2821,-466 2827,-466 2833,-472 2833,-478 2833,-478 2833,-526 2833,-526 2833,-532 2827,-538 2821,-538"/>
 <text text-anchor="middle" x="2580" y="-495.8" font-family="Courier-Bold" font-size="24.00">deployment/kubevirt&#45;migration&#45;operator</text>
 </g>
 <!-- deployment/aaq&#45;operator -->
-<g id="node21" class="node">
+<g id="node22" class="node">
 <title>deployment/aaq&#45;operator</title>
 <path fill="none" stroke="black" d="M3903,-628C3903,-628 3600,-628 3600,-628 3594,-628 3588,-622 3588,-616 3588,-616 3588,-568 3588,-568 3588,-562 3594,-556 3600,-556 3600,-556 3903,-556 3903,-556 3909,-556 3915,-562 3915,-568 3915,-568 3915,-616 3915,-616 3915,-622 3909,-628 3903,-628"/>
 <text text-anchor="middle" x="3751.5" y="-585.8" font-family="Courier-Bold" font-size="24.00">deployment/aaq&#45;operator</text>
 </g>
 <!-- NetworkAddonsConfig/cluster&#45;&gt;deployment/aaq&#45;operator -->
 <!-- daemonset/bridge&#45;marker -->
-<g id="node15" class="node">
+<g id="node16" class="node">
 <title>daemonset/bridge&#45;marker</title>
 <path fill="none" stroke="black" d="M3345,-538C3345,-538 3037,-538 3037,-538 3031,-538 3025,-532 3025,-526 3025,-526 3025,-478 3025,-478 3025,-472 3031,-466 3037,-466 3037,-466 3345,-466 3345,-466 3351,-466 3357,-472 3357,-478 3357,-478 3357,-526 3357,-526 3357,-532 3351,-538 3345,-538"/>
 <text text-anchor="middle" x="3191" y="-495.8" font-family="Courier-Bold" font-size="24.00">daemonset/bridge&#45;marker</text>
 </g>
 <!-- daemonset/kube&#45;cni&#45;linux&#45;bridge&#45;plugin -->
-<g id="node16" class="node">
+<g id="node17" class="node">
 <title>daemonset/kube&#45;cni&#45;linux&#45;bridge&#45;plugin</title>
 <path fill="none" stroke="black" d="M3428,-448C3428,-448 2954,-448 2954,-448 2948,-448 2942,-442 2942,-436 2942,-436 2942,-388 2942,-388 2942,-382 2948,-376 2954,-376 2954,-376 3428,-376 3428,-376 3434,-376 3440,-382 3440,-388 3440,-388 3440,-436 3440,-436 3440,-442 3434,-448 3428,-448"/>
 <text text-anchor="middle" x="3191" y="-405.8" font-family="Courier-Bold" font-size="24.00">daemonset/kube&#45;cni&#45;linux&#45;bridge&#45;plugin</text>
 </g>
 <!-- deployment/cluster&#45;network&#45;addons&#45;operator -->
-<g id="node17" class="node">
+<g id="node18" class="node">
 <title>deployment/cluster&#45;network&#45;addons&#45;operator</title>
 <path fill="none" stroke="black" d="M3462.5,-358C3462.5,-358 2919.5,-358 2919.5,-358 2913.5,-358 2907.5,-352 2907.5,-346 2907.5,-346 2907.5,-298 2907.5,-298 2907.5,-292 2913.5,-286 2919.5,-286 2919.5,-286 3462.5,-286 3462.5,-286 3468.5,-286 3474.5,-292 3474.5,-298 3474.5,-298 3474.5,-346 3474.5,-346 3474.5,-352 3468.5,-358 3462.5,-358"/>
 <text text-anchor="middle" x="3191" y="-315.8" font-family="Courier-Bold" font-size="24.00">deployment/cluster&#45;network&#45;addons&#45;operator</text>
 </g>
 <!-- deployment/kubemacpool&#45;cert&#45;manager -->
-<g id="node18" class="node">
+<g id="node19" class="node">
 <title>deployment/kubemacpool&#45;cert&#45;manager</title>
 <path fill="none" stroke="black" d="M3431.5,-268C3431.5,-268 2950.5,-268 2950.5,-268 2944.5,-268 2938.5,-262 2938.5,-256 2938.5,-256 2938.5,-208 2938.5,-208 2938.5,-202 2944.5,-196 2950.5,-196 2950.5,-196 3431.5,-196 3431.5,-196 3437.5,-196 3443.5,-202 3443.5,-208 3443.5,-208 3443.5,-256 3443.5,-256 3443.5,-262 3437.5,-268 3431.5,-268"/>
 <text text-anchor="middle" x="3191" y="-225.8" font-family="Courier-Bold" font-size="24.00">deployment/kubemacpool&#45;cert&#45;manager</text>
 </g>
 <!-- deployment/kubemacpool&#45;mac&#45;controller&#45;manager -->
-<g id="node19" class="node">
+<g id="node20" class="node">
 <title>deployment/kubemacpool&#45;mac&#45;controller&#45;manager</title>
 <path fill="none" stroke="black" d="M3495,-178C3495,-178 2887,-178 2887,-178 2881,-178 2875,-172 2875,-166 2875,-166 2875,-118 2875,-118 2875,-112 2881,-106 2887,-106 2887,-106 3495,-106 3495,-106 3501,-106 3507,-112 3507,-118 3507,-118 3507,-166 3507,-166 3507,-172 3501,-178 3495,-178"/>
 <text text-anchor="middle" x="3191" y="-135.8" font-family="Courier-Bold" font-size="24.00">deployment/kubemacpool&#45;mac&#45;controller&#45;manager</text>
 </g>
 <!-- deployment/kubevirt&#45;ipam&#45;controller&#45;manager -->
-<g id="node20" class="node">
+<g id="node21" class="node">
 <title>deployment/kubevirt&#45;ipam&#45;controller&#45;manager</title>
 <path fill="none" stroke="black" d="M3467.5,-88C3467.5,-88 2914.5,-88 2914.5,-88 2908.5,-88 2902.5,-82 2902.5,-76 2902.5,-76 2902.5,-28 2902.5,-28 2902.5,-22 2908.5,-16 2914.5,-16 2914.5,-16 3467.5,-16 3467.5,-16 3473.5,-16 3479.5,-22 3479.5,-28 3479.5,-28 3479.5,-76 3479.5,-76 3479.5,-82 3473.5,-88 3467.5,-88"/>
 <text text-anchor="middle" x="3191" y="-45.8" font-family="Courier-Bold" font-size="24.00">deployment/kubevirt&#45;ipam&#45;controller&#45;manager</text>
 </g>
 <!-- SSP/ssp&#45;kubevirt&#45;hyperconverged -->
-<g id="node22" class="node">
+<g id="node23" class="node">
 <title>SSP/ssp&#45;kubevirt&#45;hyperconverged</title>
 <path fill="none" stroke="black" d="M4406,-628C4406,-628 4008,-628 4008,-628 4002,-628 3996,-622 3996,-616 3996,-616 3996,-568 3996,-568 3996,-562 4002,-556 4008,-556 4008,-556 4406,-556 4406,-556 4412,-556 4418,-562 4418,-568 4418,-568 4418,-616 4418,-616 4418,-622 4412,-628 4406,-628"/>
 <text text-anchor="middle" x="4207" y="-585.8" font-family="Courier-Bold" font-size="24.00">SSP/ssp&#45;kubevirt&#45;hyperconverged</text>
 </g>
 <!-- deployment/aaq&#45;operator&#45;&gt;SSP/ssp&#45;kubevirt&#45;hyperconverged -->
 <!-- CDI/cdi&#45;kubevirt&#45;hyperconverged -->
-<g id="node24" class="node">
+<g id="node25" class="node">
 <title>CDI/cdi&#45;kubevirt&#45;hyperconverged</title>
 <path fill="none" stroke="black" d="M4915,-628C4915,-628 4524,-628 4524,-628 4518,-628 4512,-622 4512,-616 4512,-616 4512,-568 4512,-568 4512,-562 4518,-556 4524,-556 4524,-556 4915,-556 4915,-556 4921,-556 4927,-562 4927,-568 4927,-568 4927,-616 4927,-616 4927,-622 4921,-628 4915,-628"/>
 <text text-anchor="middle" x="4719.5" y="-585.8" font-family="Courier-Bold" font-size="24.00">CDI/cdi&#45;kubevirt&#45;hyperconverged</text>
 </g>
 <!-- SSP/ssp&#45;kubevirt&#45;hyperconverged&#45;&gt;CDI/cdi&#45;kubevirt&#45;hyperconverged -->
 <!-- deployment/ssp&#45;operator -->
-<g id="node23" class="node">
+<g id="node24" class="node">
 <title>deployment/ssp&#45;operator</title>
 <path fill="none" stroke="black" d="M4356.5,-538C4356.5,-538 4057.5,-538 4057.5,-538 4051.5,-538 4045.5,-532 4045.5,-526 4045.5,-526 4045.5,-478 4045.5,-478 4045.5,-472 4051.5,-466 4057.5,-466 4057.5,-466 4356.5,-466 4356.5,-466 4362.5,-466 4368.5,-472 4368.5,-478 4368.5,-478 4368.5,-526 4368.5,-526 4368.5,-532 4362.5,-538 4356.5,-538"/>
 <text text-anchor="middle" x="4207" y="-495.8" font-family="Courier-Bold" font-size="24.00">deployment/ssp&#45;operator</text>
 </g>
 <!-- deployment/virt&#45;template&#45;validator -->
-<g id="node31" class="node">
+<g id="node32" class="node">
 <title>deployment/virt&#45;template&#45;validator</title>
 <path fill="none" stroke="black" d="M5452,-628C5452,-628 5033,-628 5033,-628 5027,-628 5021,-622 5021,-616 5021,-616 5021,-568 5021,-568 5021,-562 5027,-556 5033,-556 5033,-556 5452,-556 5452,-556 5458,-556 5464,-562 5464,-568 5464,-568 5464,-616 5464,-616 5464,-622 5458,-628 5452,-628"/>
 <text text-anchor="middle" x="5242.5" y="-585.8" font-family="Courier-Bold" font-size="24.00">deployment/virt&#45;template&#45;validator</text>
 </g>
 <!-- CDI/cdi&#45;kubevirt&#45;hyperconverged&#45;&gt;deployment/virt&#45;template&#45;validator -->
 <!-- CDIConfig/config -->
-<g id="node25" class="node">
+<g id="node26" class="node">
 <title>CDIConfig/config</title>
 <path fill="none" stroke="black" d="M4816,-538C4816,-538 4623,-538 4623,-538 4617,-538 4611,-532 4611,-526 4611,-526 4611,-478 4611,-478 4611,-472 4617,-466 4623,-466 4623,-466 4816,-466 4816,-466 4822,-466 4828,-472 4828,-478 4828,-478 4828,-526 4828,-526 4828,-532 4822,-538 4816,-538"/>
 <text text-anchor="middle" x="4719.5" y="-495.8" font-family="Courier-Bold" font-size="24.00">CDIConfig/config</text>
 </g>
 <!-- deployment/cdi&#45;apiserver -->
-<g id="node26" class="node">
+<g id="node27" class="node">
 <title>deployment/cdi&#45;apiserver</title>
 <path fill="none" stroke="black" d="M4870.5,-448C4870.5,-448 4568.5,-448 4568.5,-448 4562.5,-448 4556.5,-442 4556.5,-436 4556.5,-436 4556.5,-388 4556.5,-388 4556.5,-382 4562.5,-376 4568.5,-376 4568.5,-376 4870.5,-376 4870.5,-376 4876.5,-376 4882.5,-382 4882.5,-388 4882.5,-388 4882.5,-436 4882.5,-436 4882.5,-442 4876.5,-448 4870.5,-448"/>
 <text text-anchor="middle" x="4719.5" y="-405.8" font-family="Courier-Bold" font-size="24.00">deployment/cdi&#45;apiserver</text>
 </g>
 <!-- deployment/cdi&#45;deployment -->
-<g id="node27" class="node">
+<g id="node28" class="node">
 <title>deployment/cdi&#45;deployment</title>
 <path fill="none" stroke="black" d="M4886,-358C4886,-358 4553,-358 4553,-358 4547,-358 4541,-352 4541,-346 4541,-346 4541,-298 4541,-298 4541,-292 4547,-286 4553,-286 4553,-286 4886,-286 4886,-286 4892,-286 4898,-292 4898,-298 4898,-298 4898,-346 4898,-346 4898,-352 4892,-358 4886,-358"/>
 <text text-anchor="middle" x="4719.5" y="-315.8" font-family="Courier-Bold" font-size="24.00">deployment/cdi&#45;deployment</text>
 </g>
 <!-- deployment/cdi&#45;operator -->
-<g id="node28" class="node">
+<g id="node29" class="node">
 <title>deployment/cdi&#45;operator</title>
 <path fill="none" stroke="black" d="M4866,-268C4866,-268 4573,-268 4573,-268 4567,-268 4561,-262 4561,-256 4561,-256 4561,-208 4561,-208 4561,-202 4567,-196 4573,-196 4573,-196 4866,-196 4866,-196 4872,-196 4878,-202 4878,-208 4878,-208 4878,-256 4878,-256 4878,-262 4872,-268 4866,-268"/>
 <text text-anchor="middle" x="4719.5" y="-225.8" font-family="Courier-Bold" font-size="24.00">deployment/cdi&#45;operator</text>
 </g>
 <!-- deployment/cdi&#45;uploadproxy -->
-<g id="node29" class="node">
+<g id="node30" class="node">
 <title>deployment/cdi&#45;uploadproxy</title>
 <path fill="none" stroke="black" d="M4888.5,-178C4888.5,-178 4550.5,-178 4550.5,-178 4544.5,-178 4538.5,-172 4538.5,-166 4538.5,-166 4538.5,-118 4538.5,-118 4538.5,-112 4544.5,-106 4550.5,-106 4550.5,-106 4888.5,-106 4888.5,-106 4894.5,-106 4900.5,-112 4900.5,-118 4900.5,-118 4900.5,-166 4900.5,-166 4900.5,-172 4894.5,-178 4888.5,-178"/>
 <text text-anchor="middle" x="4719.5" y="-135.8" font-family="Courier-Bold" font-size="24.00">deployment/cdi&#45;uploadproxy</text>
 </g>
 <!-- deployment/hostpath&#45;provisioner&#45;operator -->
-<g id="node30" class="node">
+<g id="node31" class="node">
 <title>deployment/hostpath&#45;provisioner&#45;operator</title>
 <path fill="none" stroke="black" d="M4973,-88C4973,-88 4466,-88 4466,-88 4460,-88 4454,-82 4454,-76 4454,-76 4454,-28 4454,-28 4454,-22 4460,-16 4466,-16 4466,-16 4973,-16 4973,-16 4979,-16 4985,-22 4985,-28 4985,-28 4985,-76 4985,-76 4985,-82 4979,-88 4973,-88"/>
 <text text-anchor="middle" x="4719.5" y="-45.8" font-family="Courier-Bold" font-size="24.00">deployment/hostpath&#45;provisioner&#45;operator</text>
 </g>
 <!-- HyperConverged/kubevirt&#45;hyperconverged -->
-<g id="node32" class="node">
+<g id="node33" class="node">
 <title>HyperConverged/kubevirt&#45;hyperconverged</title>
 <path fill="none" stroke="black" d="M6019,-628C6019,-628 5512,-628 5512,-628 5506,-628 5500,-622 5500,-616 5500,-616 5500,-568 5500,-568 5500,-562 5506,-556 5512,-556 5512,-556 6019,-556 6019,-556 6025,-556 6031,-562 6031,-568 6031,-568 6031,-616 6031,-616 6031,-622 6025,-628 6019,-628"/>
 <text text-anchor="middle" x="5765.5" y="-585.8" font-family="Courier-Bold" font-size="24.00">HyperConverged/kubevirt&#45;hyperconverged</text>

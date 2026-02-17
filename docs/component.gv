@@ -9,6 +9,7 @@ digraph component {
 		"deployment/virt-controller" [label="deployment/virt-controller"]
 		"deployment/virt-exportproxy" [label="deployment/virt-exportproxy"]
 		"deployment/virt-operator" [label="deployment/virt-operator"]
+		"deployment/virt-synchronization-controller" [label="deployment/virt-synchronization-controller"]
 	}
 	subgraph cluster_deployment {
 		fontname="Courier-Bold" fontsize=42 group=deployment label=deployment rank=same style=dashed
