@@ -27,13 +27,7 @@ import (
 	"sort"
 	"strconv"
 
-	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-
 	"github.com/ghodss/yaml"
-
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
-	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
-
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -41,6 +35,10 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
 )
 
 var (
@@ -51,12 +49,6 @@ var (
 var (
 	cwd, _            = os.Getwd()
 	deployDir         = flag.String("deploy-dir", "deploy", "Directory where manifests should be written")
-	cnaCsv            = flag.String("cna-csv", "", "Cluster Network Addons CSV string")
-	virtCsv           = flag.String("virt-csv", "", "KubeVirt CSV string")
-	sspCsv            = flag.String("ssp-csv", "", "Scheduling Scale Performance CSV string")
-	ttoCsv            = flag.String("tto-csv", "", "Tekton tasks operator CSV string")
-	cdiCsv            = flag.String("cdi-csv", "", "Containerized Data Importer CSV String")
-	hppCsv            = flag.String("hpp-csv", "", "HostPath Provisioner Operator CSV String")
 	operatorNamespace = flag.String("operator-namespace", "kubevirt-hyperconverged", "Name of the Operator")
 	operatorImage     = flag.String("operator-image", "", "HyperConverged Cluster Operator image")
 	webhookImage      = flag.String("webhook-image", "", "HyperConverged Cluster Webhook image")
@@ -96,7 +88,8 @@ func processCommandlineParams() {
 
 func main() {
 	// the CSVs we expect to handle
-	componentsWithCSVs := getCsvWithComponent()
+	componentsWithCSVs, err := util.GetInitialCsvList()
+	check(err)
 
 	operatorParams := getOperatorParameters()
 
@@ -366,36 +359,6 @@ func createService(webhook csvv1alpha1.WebhookDescription, csvStruct *csvv1alpha
 			Type: corev1.ServiceTypeClusterIP,
 		},
 	}
-}
-
-func getCsvWithComponent() []util.CsvWithComponent {
-	componentsWithCsvs := []util.CsvWithComponent{
-		{
-			Csv:       *cnaCsv,
-			Component: hcoutil.AppComponentNetwork,
-		},
-		{
-			Csv:       *virtCsv,
-			Component: hcoutil.AppComponentCompute,
-		},
-		{
-			Csv:       *sspCsv,
-			Component: hcoutil.AppComponentSchedule,
-		},
-		{
-			Csv:       *ttoCsv,
-			Component: hcoutil.AppComponentTekton,
-		},
-		{
-			Csv:       *cdiCsv,
-			Component: hcoutil.AppComponentStorage,
-		},
-		{
-			Csv:       *hppCsv,
-			Component: hcoutil.AppComponentStorage,
-		},
-	}
-	return componentsWithCsvs
 }
 
 func getOperatorParameters() *components.DeploymentOperatorParams {
