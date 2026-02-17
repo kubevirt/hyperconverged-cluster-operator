@@ -22,6 +22,7 @@ spec:
     disableMDevConfiguration: false
     downwardMetrics: false
     enableMultiArchBootImageImport: false
+    incrementalBackup: false
     objectGraph: false
     persistentReservation: false
     videoConfig: true

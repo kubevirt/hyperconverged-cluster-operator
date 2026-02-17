@@ -2216,6 +2216,30 @@ Version: 1.2.3`)
 						},
 						Not(ContainElement(kvObjectGraph)),
 					),
+					Entry("should add both IncrementalBackup and UtilityVolumes feature gates if IncrementalBackup is true in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								IncrementalBackup: ptr.To(true),
+							}
+						},
+						ContainElements(kvIncrementalBackup, kvUtilityVolumes),
+					),
+					Entry("should not add IncrementalBackup or UtilityVolumes feature gates if IncrementalBackup is false in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								IncrementalBackup: ptr.To(false),
+							}
+						},
+						And(Not(ContainElement(kvIncrementalBackup)), Not(ContainElement(kvUtilityVolumes))),
+					),
+					Entry("should not add IncrementalBackup or UtilityVolumes feature gates if IncrementalBackup is not set in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								IncrementalBackup: nil,
+							}
+						},
+						And(Not(ContainElement(kvIncrementalBackup)), Not(ContainElement(kvUtilityVolumes))),
+					),
 				)
 
 				It("should add the VideoConfig if feature gate VideoConfig is true in HyperConverged CR", func() {

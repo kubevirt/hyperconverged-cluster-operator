@@ -159,6 +159,8 @@ const (
 	kvDecentralizedLiveMigration = "DecentralizedLiveMigration"
 	kvVideoConfig                = "VideoConfig"
 	kvObjectGraph                = "ObjectGraph"
+	kvUtilityVolumes             = "UtilityVolumes"
+	kvIncrementalBackup          = "IncrementalBackup"
 )
 
 // CPU Plugin default values
@@ -938,6 +940,11 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, a
 
 	if slices.Contains(nodeinfo.GetWorkloadsArchitectures(), nodeinfo.S390X) {
 		fgs = append(fgs, kvSecureExecution)
+	}
+
+	if ptr.Deref(featureGates.IncrementalBackup, false) {
+		fgs = append(fgs, kvIncrementalBackup)
+		fgs = append(fgs, kvUtilityVolumes)
 	}
 
 	return fgs

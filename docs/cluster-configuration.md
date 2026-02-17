@@ -255,6 +255,16 @@ Set the `objectGraph` feature gate to true in order to enable the ObjectGraph VM
 
 **Graduation Status**: Alpha
 
+### Incremental Backup Feature Gate
+Set the `incrementalBackup` feature gate to true in order to enable changed block tracking and incremental backups using QEMU capabilities in KubeVirt. Enabling changed block tracking is mandatory for performing storage-agnostic backups and incremental backups.
+When enabled, this also enables the `UtilityVolumes` feature gate in the KubeVirt CR, which allows utility volumes to be mounted to the VMI virt-launcher pod without having a matching disk in the domain. This is required to collect the backup output or to store changes performed during the backup operation, depending on the backup mode.
+
+**Note**: This feature is in Tech Preview.
+
+**Default**: `false`
+
+**Graduation Status**: Alpha
+
 ### The hco.kubevirt.io/deployPasstNetworkBinding annotation
 Set the `hco.kubevirt.io/deployPasstNetworkBinding` HyperConverged CR annotation to `true`, to deploy the needed
 configurations for kubevirt users, so they can bind their VM using a Passt Network binding.
