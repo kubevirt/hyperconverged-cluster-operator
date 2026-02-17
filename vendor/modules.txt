@@ -193,8 +193,8 @@ github.com/json-iterator/go
 ## explicit; go 1.21
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io
 github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1
-# github.com/kubevirt/cluster-network-addons-operator v0.101.1
-## explicit; go 1.24.3
+# github.com/kubevirt/cluster-network-addons-operator v0.101.2
+## explicit; go 1.24.11
 github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/shared
 github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1
 github.com/kubevirt/cluster-network-addons-operator/pkg/names
