@@ -3960,6 +3960,13 @@ rules:
   - clusterresourcequotas
   verbs:
   - create
+- apiGroups:
+  - aaq.kubevirt.io
+  resources:
+  - aaqs
+  verbs:
+  - list
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole

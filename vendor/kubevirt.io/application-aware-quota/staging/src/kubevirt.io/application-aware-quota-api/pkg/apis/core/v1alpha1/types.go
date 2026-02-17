@@ -149,6 +149,8 @@ type AAQSpec struct {
 	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
 	// holds aaq configurations.
 	Configuration AAQConfiguration `json:"configuration,omitempty"`
+	// TLSSecurityProfile is used by operators to apply cluster-wide TLS security settings to operands.
+	TLSSecurityProfile *TLSSecurityProfile `json:"tlsSecurityProfile,omitempty"`
 }
 
 // AAQConfiguration holds all AAQ configurations
