@@ -36,14 +36,6 @@ var operatorRecordingRules = []operatorrules.RecordingRule{
 	{
 		MetricsOpts: operatormetrics.MetricOpts{
 			Name: "cluster:vmi_request_cpu_cores:sum",
-			Help: "[Deprecated] Sum of CPU core requests for all running virt-launcher VMIs across the entire KubeVirt cluster",
-		},
-		MetricType: operatormetrics.GaugeType,
-		Expr:       intstr.FromString(`sum(kube_pod_container_resource_requests{resource="cpu"} and on (pod) kube_pod_status_phase{phase="Running"} * on (pod) group_left kube_pod_labels{ label_kubevirt_io="virt-launcher"} > 0)`),
-	},
-	{
-		MetricsOpts: operatormetrics.MetricOpts{
-			Name: "cluster:kubevirt_hco_vmi_request_cpu_cores:sum",
 			Help: "Sum of CPU core requests for all running virt-launcher VMIs across the entire KubeVirt cluster",
 		},
 		MetricType: operatormetrics.GaugeType,

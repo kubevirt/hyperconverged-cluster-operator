@@ -12,8 +12,7 @@
 | kubevirt_hco_system_health_status | Metric | Gauge | Indicates whether the system health status is healthy (0), warning (1), or error (2), by aggregating the conditions of HCO and its secondary resources |
 | kubevirt_hco_unsafe_modifications | Metric | Gauge | Count of unsafe modifications in the HyperConverged annotations |
 | cluster:kubevirt_hco_operator_health_status:count | Recording rule | Gauge | Indicates whether HCO and its secondary resources health status is healthy (0), warning (1) or critical (2), based both on the firing alerts that impact the operator health, and on kubevirt_hco_system_health_status metric |
-| cluster:kubevirt_hco_vmi_request_cpu_cores:sum | Recording rule | Gauge | Sum of CPU core requests for all running virt-launcher VMIs across the entire KubeVirt cluster |
-| cluster:vmi_request_cpu_cores:sum | Recording rule | Gauge | [Deprecated] Sum of CPU core requests for all running virt-launcher VMIs across the entire KubeVirt cluster |
+| cluster:vmi_request_cpu_cores:sum | Recording rule | Gauge | Sum of CPU core requests for all running virt-launcher VMIs across the entire KubeVirt cluster |
 | cnv_abnormal | Recording rule | Gauge | Monitors resources for potential problems |
 | kubevirt_hyperconverged_operator_health_status | Recording rule | Gauge | [Deprecated] Indicates whether HCO and its secondary resources health status is healthy (0), warning (1) or critical (2), based both on the firing alerts that impact the operator health, and on kubevirt_hco_system_health_status metric |
 
