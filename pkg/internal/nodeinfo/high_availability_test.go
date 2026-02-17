@@ -42,6 +42,13 @@ var _ = Describe("HighAvailability", func() {
 		Entry("one control plane and one master", genNodeList(1, 1, 0), BeTrue(), BeFalse(), BeFalse()),
 		Entry("two control planes and one master", genNodeList(2, 1, 0), BeTrue(), BeTrue(), BeFalse()),
 
+		Entry("two control plane nodes and one arbiter", genNodeListWithArbiters(2, 0, 0), BeTrue(), BeTrue(), BeFalse()),
+		Entry("one control plane, one master, and one arbiter", genNodeListWithArbiters(1, 1, 0), BeTrue(), BeTrue(), BeFalse()),
+		Entry("two masters and one arbiter", genNodeListWithArbiters(0, 2, 0), BeTrue(), BeTrue(), BeFalse()),
+		Entry("one control plane node and one arbiter", genNodeListWithArbiters(1, 0, 0), BeTrue(), BeFalse(), BeFalse()),
+		Entry("two control plane nodes, one arbiter, and two workers", genNodeListWithArbiters(2, 0, 2), BeTrue(), BeTrue(), BeTrue()),
+		Entry("one arbiter only", genNodeListWithArbiters(0, 0, 0), BeFalse(), BeFalse(), BeFalse()),
+
 		Entry("one control plane and one worker node", genNodeList(1, 0, 1), BeTrue(), BeFalse(), BeFalse()),
 		Entry("one control plane and two worker nodes", genNodeList(1, 0, 2), BeTrue(), BeFalse(), BeTrue()),
 		Entry("three control plane and three worker nodes", genNodeList(3, 0, 3), BeTrue(), BeTrue(), BeTrue()),
@@ -150,6 +157,49 @@ var _ = Describe("HighAvailability", func() {
 			Expect(nodeinfo.IsInfrastructureHighlyAvailable()).To(BeTrue())
 		})
 
+		It("should not changed if control plane HA via arbiter is unchanged", func() {
+			By("first setting up 2 control plane + 1 arbiter")
+			nodes := genNodeListWithArbiters(2, 0, 3)
+			cli := fake.NewClientBuilder().WithScheme(scheme).WithObjects(nodes...).Build()
+
+			_, err := nodeinfo.HandleNodeChanges(context.TODO(), cli, nil, GinkgoLogr)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(nodeinfo.IsControlPlaneNodeExists()).To(BeTrue())
+			Expect(nodeinfo.IsControlPlaneHighlyAvailable()).To(BeTrue())
+			Expect(nodeinfo.IsInfrastructureHighlyAvailable()).To(BeTrue())
+
+			By("calling again with same node list - should not change")
+			cli = fake.NewClientBuilder().WithScheme(scheme).WithObjects(nodes...).Build()
+
+			changed, err := nodeinfo.HandleNodeChanges(context.TODO(), cli, nil, GinkgoLogr)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(changed).To(BeFalse())
+			Expect(nodeinfo.IsControlPlaneNodeExists()).To(BeTrue())
+			Expect(nodeinfo.IsControlPlaneHighlyAvailable()).To(BeTrue())
+			Expect(nodeinfo.IsInfrastructureHighlyAvailable()).To(BeTrue())
+		})
+
+		It("should changed if arbiter is removed from 2 CP + arbiter setup", func() {
+			By("first setting up 2 control plane + 1 arbiter")
+			nodes := genNodeListWithArbiters(2, 0, 3)
+			cli := fake.NewClientBuilder().WithScheme(scheme).WithObjects(nodes...).Build()
+
+			_, err := nodeinfo.HandleNodeChanges(context.TODO(), cli, nil, GinkgoLogr)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(nodeinfo.IsControlPlaneHighlyAvailable()).To(BeTrue())
+
+			By("removing the arbiter - should change to non-HA")
+			nodes = genNodeList(2, 0, 3)
+			cli = fake.NewClientBuilder().WithScheme(scheme).WithObjects(nodes...).Build()
+
+			changed, err := nodeinfo.HandleNodeChanges(context.TODO(), cli, nil, GinkgoLogr)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(changed).To(BeTrue())
+			Expect(nodeinfo.IsControlPlaneNodeExists()).To(BeTrue())
+			Expect(nodeinfo.IsControlPlaneHighlyAvailable()).To(BeFalse())
+			Expect(nodeinfo.IsInfrastructureHighlyAvailable()).To(BeTrue())
+		})
+
 		It("should changed if workloads became not HA", func() {
 			nodes := genNodeList(3, 0, 1)
 
@@ -204,6 +254,22 @@ func genNodeList(controlPlanes, masters, workers int) []client.Object {
 		}
 		nodesArray = append(nodesArray, workerNode)
 	}
+
+	return nodesArray
+}
+
+func genNodeListWithArbiters(controlPlanes, masters, workers int) []client.Object {
+	nodesArray := genNodeList(controlPlanes, masters, workers)
+
+	arbiterNode := &corev1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "arbiter-0",
+			Labels: map[string]string{
+				nodeinfo.LabelNodeRoleArbiter: "",
+			},
+		},
+	}
+	nodesArray = append(nodesArray, arbiterNode)
 
 	return nodesArray
 }
