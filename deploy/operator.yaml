@@ -63,7 +63,7 @@ spec:
         - name: CDI_VERSION
           value: v1.64.0
         - name: NETWORK_ADDONS_VERSION
-          value: v0.101.1
+          value: v0.101.2
         - name: SSP_VERSION
           value: v0.24.1
         - name: HPPO_VERSION
@@ -324,11 +324,11 @@ spec:
         - name: LINUX_BRIDGE_IMAGE
           value: quay.io/kubevirt/cni-default-plugins@sha256:976a24392c2a096c38c2663d234b2d3131f5c24558889196d30b9ac1b6716788
         - name: LINUX_BRIDGE_MARKER_IMAGE
-          value: quay.io/kubevirt/bridge-marker@sha256:bf269af61e618857e7b14439cfc003aac2d65db9ee633147a73f5d9648dab377
+          value: quay.io/kubevirt/bridge-marker@sha256:f9611ec10bb4aec44b0ec19f9b9d748a36255c089a1f59bc76e5fc37acc0fed2
         - name: OVS_CNI_IMAGE
           value: ghcr.io/k8snetworkplumbingwg/ovs-cni-plugin@sha256:435f374b434b3bc70a5cfaba0011fdcf5f433d96b98b06d29306cbd8db3a8c21
         - name: KUBEMACPOOL_IMAGE
-          value: quay.io/kubevirt/kubemacpool@sha256:07ec3a546ae0c965f122f002260d4a215ab9d580134a9f58c078a4b2a553019b
+          value: quay.io/kubevirt/kubemacpool@sha256:e06a2a0c642ee648097d2fff58098c99799c26d1a6f7ca5272a0ff0e474af9fb
         - name: MACVTAP_CNI_IMAGE
           value: quay.io/kubevirt/macvtap-cni@sha256:af31faae20c0128a469dd4c1aa866d6bf78d1d2f5972127adf4c9438dcde10f4
         - name: KUBE_RBAC_PROXY_IMAGE
@@ -340,11 +340,11 @@ spec:
         - name: KUBEVIRT_IPAM_CONTROLLER_IMAGE
           value: ghcr.io/kubevirt/ipam-controller@sha256:69b25271d1ad2521f38f5fa8b9623973ad7c74f33f88d17c0ebc9882ef9c2c5e
         - name: OPERATOR_IMAGE
-          value: quay.io/kubevirt/cluster-network-addons-operator@sha256:831174b59af8de376df781f944821349cced44dc9bb9442f5a22cc8cfe675546
+          value: quay.io/kubevirt/cluster-network-addons-operator@sha256:3eab9642125d5b37de3283d40ae69f81b1ac89079332e36a2ac1296015bc429e
         - name: OPERATOR_NAME
           value: cluster-network-addons-operator
         - name: OPERATOR_VERSION
-          value: v0.101.1
+          value: v0.101.2
         - name: OPERATOR_NAMESPACE
           valueFrom:
             fieldRef:
@@ -366,7 +366,7 @@ spec:
           value: https://kubevirt.io/monitoring/runbooks/%s
         - name: CNAO_LOG_LEVEL
           value: "0"
-        image: quay.io/kubevirt/cluster-network-addons-operator@sha256:831174b59af8de376df781f944821349cced44dc9bb9442f5a22cc8cfe675546
+        image: quay.io/kubevirt/cluster-network-addons-operator@sha256:3eab9642125d5b37de3283d40ae69f81b1ac89079332e36a2ac1296015bc429e
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
