@@ -117,7 +117,7 @@ function get_updated_versions {
   IMPORT_REPOS=(
     ["KUBEVIRT"]="kubevirt.io/api"
     ["CDI"]="kubevirt.io/containerized-data-importer-api"
-    ["NETWORK_ADDONS"]="kubevirt/cluster-network-addons-operator"
+    ["NETWORK_ADDONS"]="github.com/kubevirt/cluster-network-addons-operator"
     ["SSP"]="kubevirt.io/ssp-operator/api"
     ["AAQ"]="kubevirt.io/application-aware-quota"
     ["MIGRATION_OPERATOR"]="kubevirt.io/kubevirt-migration-operator"
