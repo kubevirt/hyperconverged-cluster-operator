@@ -581,28 +581,28 @@ tests:
     # time:  0     1     2     3 4 5
     values: "stale stale stale 1 0 1"
   promql_expr_test:
-  - expr: 'cluster:kubevirt_hco_vmi_request_cpu_cores:sum'
+  - expr: 'cluster:vmi_request_cpu_cores:sum'
     eval_time: 1m
     exp_samples:
-    - labels: 'cluster:kubevirt_hco_vmi_request_cpu_cores:sum{}'
+    - labels: 'cluster:vmi_request_cpu_cores:sum{}'
       value: 2
   # update for new pods
-  - expr: 'cluster:kubevirt_hco_vmi_request_cpu_cores:sum'
+  - expr: 'cluster:vmi_request_cpu_cores:sum'
     eval_time: 3m
     exp_samples:
-    - labels: 'cluster:kubevirt_hco_vmi_request_cpu_cores:sum{}'
+    - labels: 'cluster:vmi_request_cpu_cores:sum{}'
       value: 3
   # virt-launcher-new is not running at 4m. must exclude it
-  - expr: 'cluster:kubevirt_hco_vmi_request_cpu_cores:sum'
+  - expr: 'cluster:vmi_request_cpu_cores:sum'
     eval_time: 4m
     exp_samples:
-    - labels: 'cluster:kubevirt_hco_vmi_request_cpu_cores:sum{}'
+    - labels: 'cluster:vmi_request_cpu_cores:sum{}'
       value: 2
   # virt-launcher-new is back at 5m. must include it
-  - expr: 'cluster:kubevirt_hco_vmi_request_cpu_cores:sum'
+  - expr: 'cluster:vmi_request_cpu_cores:sum'
     eval_time: 5m
     exp_samples:
-    - labels: 'cluster:kubevirt_hco_vmi_request_cpu_cores:sum{}'
+    - labels: 'cluster:vmi_request_cpu_cores:sum{}'
       value: 3
 
 # Test cluster:kubevirt_hco_operator_health_status:count recording rule
