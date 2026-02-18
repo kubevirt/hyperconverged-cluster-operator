@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -162,6 +163,80 @@ var _ = Describe("AAQ tests", func() {
 			Expect(aaq.Spec.CertConfig.Server.Duration).ToNot(BeNil())
 			Expect(aaq.Spec.CertConfig.Server.Duration.Duration.String()).To(Equal("36h0m0s"))
 			Expect(aaq.Spec.CertConfig.Server.RenewBefore.Duration.String()).To(Equal("18h0m0s"))
+		})
+
+		Context("TLSSecurityProfile", func() {
+
+			intermediateTLSSecurityProfile := &openshiftconfigv1.TLSSecurityProfile{
+				Type:         openshiftconfigv1.TLSProfileIntermediateType,
+				Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
+			}
+			modernTLSSecurityProfile := &openshiftconfigv1.TLSSecurityProfile{
+				Type:   openshiftconfigv1.TLSProfileModernType,
+				Modern: &openshiftconfigv1.ModernTLSProfile{},
+			}
+
+			It("should modify TLSSecurityProfile on AAQ CR according to ApiServer or HCO CR", func(ctx context.Context) {
+				existingResource, err := NewAAQ(hco)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(existingResource.Spec.TLSSecurityProfile).To(Equal(openshift2AAQSecProfile(intermediateTLSSecurityProfile)))
+
+				// now, modify HCO's TLSSecurityProfile
+				hco.Spec.TLSSecurityProfile = modernTLSSecurityProfile
+				hco.Spec.EnableApplicationAwareQuota = ptr.To(true)
+
+				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+				handler := NewAAQHandler(cl, commontestutils.GetScheme())
+				res := handler.Ensure(req)
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Updated).To(BeTrue())
+				Expect(res.Err).ToNot(HaveOccurred())
+
+				foundResource := &aaqv1alpha1.AAQ{}
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+						foundResource),
+				).ToNot(HaveOccurred())
+
+				Expect(foundResource.Spec.TLSSecurityProfile).To(Equal(openshift2AAQSecProfile(modernTLSSecurityProfile)))
+
+				Expect(req.Conditions).To(BeEmpty())
+			})
+
+			It("should overwrite TLSSecurityProfile if directly set on AAQ CR", func(ctx context.Context) {
+				hco.Spec.TLSSecurityProfile = intermediateTLSSecurityProfile
+				existingResource, err := NewAAQ(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				// mock a reconciliation triggered by a change in AAQ CR
+				req.HCOTriggered = false
+
+				// now, modify AAQ node placement
+				existingResource.Spec.TLSSecurityProfile = openshift2AAQSecProfile(modernTLSSecurityProfile)
+
+				hco.Spec.EnableApplicationAwareQuota = ptr.To(true)
+
+				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+				handler := NewAAQHandler(cl, commontestutils.GetScheme())
+				res := handler.Ensure(req)
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Updated).To(BeTrue())
+				Expect(res.Overwritten).To(BeTrue())
+				Expect(res.Err).ToNot(HaveOccurred())
+
+				foundResource := &aaqv1alpha1.AAQ{}
+				Expect(
+					cl.Get(ctx,
+						types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+						foundResource),
+				).ToNot(HaveOccurred())
+
+				Expect(foundResource.Spec.TLSSecurityProfile).To(Equal(openshift2AAQSecProfile(hco.Spec.TLSSecurityProfile)))
+				Expect(foundResource.Spec.TLSSecurityProfile).ToNot(Equal(existingResource.Spec.TLSSecurityProfile))
+
+				Expect(req.Conditions).To(BeEmpty())
+			})
 		})
 	})
 

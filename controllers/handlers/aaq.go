@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"sync"
 
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -17,6 +18,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -110,6 +112,7 @@ func NewAAQ(hc *hcov1beta1.HyperConverged) (*aaqv1alpha1.AAQ, error) {
 				RenewBefore: hc.Spec.CertConfig.Server.RenewBefore,
 			},
 		},
+		TLSSecurityProfile: openshift2AAQSecProfile(tlssecprofile.GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile)),
 	}
 
 	if hc.Spec.Infra.NodePlacement != nil {
@@ -145,5 +148,25 @@ func NewAAQWithNameOnly(hc *hcov1beta1.HyperConverged) *aaqv1alpha1.AAQ {
 			Name:   "aaq-" + hc.Name,
 			Labels: operands.GetLabels(hc, hcoutil.AppComponentQuotaMngt),
 		},
+	}
+}
+
+func openshift2AAQSecProfile(hcProfile *openshiftconfigv1.TLSSecurityProfile) *aaqv1alpha1.TLSSecurityProfile {
+	var custom *aaqv1alpha1.CustomTLSProfile
+	if hcProfile.Custom != nil {
+		custom = &aaqv1alpha1.CustomTLSProfile{
+			TLSProfileSpec: aaqv1alpha1.TLSProfileSpec{
+				Ciphers:       hcProfile.Custom.Ciphers,
+				MinTLSVersion: aaqv1alpha1.TLSProtocolVersion(hcProfile.Custom.MinTLSVersion),
+			},
+		}
+	}
+
+	return &aaqv1alpha1.TLSSecurityProfile{
+		Type:         aaqv1alpha1.TLSProfileType(hcProfile.Type),
+		Old:          (*aaqv1alpha1.OldTLSProfile)(hcProfile.Old),
+		Intermediate: (*aaqv1alpha1.IntermediateTLSProfile)(hcProfile.Intermediate),
+		Modern:       (*aaqv1alpha1.ModernTLSProfile)(hcProfile.Modern),
+		Custom:       custom,
 	}
 }
