@@ -7,11 +7,6 @@ import (
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:object:root=true
-// +kubebuilder:resource:path=kubeschedulers,scope=Cluster,categories=coreoperators
-// +kubebuilder:subresource:status
-// +openshift:api-approved.openshift.io=https://github.com/openshift/api/pull/475
-// +openshift:file-pattern=cvoRunLevel=0000_25,operatorName=kube-scheduler,operatorOrdering=01
 
 // KubeScheduler provides information to configure an operator to manage scheduler.
 //
@@ -25,6 +20,7 @@ type KubeScheduler struct {
 	metav1.ObjectMeta `json:"metadata"`
 
 	// spec is the specification of the desired behavior of the Kubernetes Scheduler
+	// +kubebuilder:validation:Required
 	// +required
 	Spec KubeSchedulerSpec `json:"spec"`
 
@@ -54,6 +50,6 @@ type KubeSchedulerList struct {
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	metav1.ListMeta `json:"metadata"`
 
-	// items contains the items
+	// Items contains the items
 	Items []KubeScheduler `json:"items"`
 }

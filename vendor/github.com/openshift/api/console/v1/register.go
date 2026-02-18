@@ -31,22 +31,20 @@ func Resource(resource string) schema.GroupResource {
 // addKnownTypes adds types to API group
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(GroupVersion,
-		&ConsoleCLIDownload{},
-		&ConsoleCLIDownloadList{},
-		&ConsoleExternalLogLink{},
-		&ConsoleExternalLogLinkList{},
 		&ConsoleLink{},
 		&ConsoleLinkList{},
+		&ConsoleCLIDownload{},
+		&ConsoleCLIDownloadList{},
 		&ConsoleNotification{},
 		&ConsoleNotificationList{},
-		&ConsolePlugin{},
-		&ConsolePluginList{},
-		&ConsoleQuickStart{},
-		&ConsoleQuickStartList{},
-		&ConsoleSample{},
-		&ConsoleSampleList{},
+		&ConsoleExternalLogLink{},
+		&ConsoleExternalLogLinkList{},
 		&ConsoleYAMLSample{},
 		&ConsoleYAMLSampleList{},
+		&ConsoleQuickStart{},
+		&ConsoleQuickStartList{},
+		&ConsolePlugin{},
+		&ConsolePluginList{},
 	)
 	metav1.AddToGroupVersion(scheme, GroupVersion)
 	return nil

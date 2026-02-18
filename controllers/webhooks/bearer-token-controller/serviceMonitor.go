@@ -2,9 +2,7 @@ package bearer_token_controller
 
 import (
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 )
@@ -20,23 +18,7 @@ func newServiceMonitor(namespace string, owner metav1.OwnerReference) *monitorin
 			MatchLabels: smLabels,
 		},
 		Endpoints: []monitoringv1.Endpoint{
-			{
-				Port:   alerts.OperatorPortName,
-				Scheme: "https",
-				Authorization: &monitoringv1.SafeAuthorization{
-					Credentials: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: "token",
-					},
-				},
-				TLSConfig: &monitoringv1.TLSConfig{
-					SafeTLSConfig: monitoringv1.SafeTLSConfig{
-						InsecureSkipVerify: ptr.To(true),
-					},
-				},
-			},
+			alerts.CreateEndpoint(secretName),
 		},
 	}
 

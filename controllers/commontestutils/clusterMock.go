@@ -8,11 +8,14 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/events"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/cluster"
 )
+
+var _ cluster.Cluster = &clusterMock{}
 
 type clusterMock struct {
 	// config is the rest.config used to talk to the apiserver.  Required.
@@ -75,6 +78,10 @@ func (cm *clusterMock) GetCache() cache.Cache {
 }
 
 func (cm *clusterMock) GetEventRecorderFor(_ string) record.EventRecorder {
+	return nil
+}
+
+func (cm *clusterMock) GetEventRecorder(_ string) events.EventRecorder {
 	return nil
 }
 

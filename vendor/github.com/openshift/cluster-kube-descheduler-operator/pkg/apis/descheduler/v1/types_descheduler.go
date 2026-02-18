@@ -12,6 +12,7 @@ import (
 // +genclient
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
+// +kubebuilder:validation:XValidation:rule="self.metadata.name == 'cluster'",message="kubedescheduler is a singleton, .metadata.name must be 'cluster'",fieldPath=".metadata"
 type KubeDescheduler struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -28,11 +29,33 @@ type KubeDescheduler struct {
 type KubeDeschedulerSpec struct {
 	operatorv1.OperatorSpec `json:",inline"`
 
+	// DevPreviewLongLifecycle is deprecated in 4.17, remove in 4.19+
+	// DevKubeVirtRelieveAndMigrate is deprecated in 4.20, remove in 4.22+
+
 	// Profiles sets which descheduler strategy profiles are enabled
+	// +kubebuilder:validation:MaxItems=11
+	// +kubebuilder:validation:XValidation:rule="self.all(p, self.filter(x, x == p).size() == 1)",message="duplicate profiles are not allowed"
+	// +kubebuilder:validation:XValidation:rule="!(self.exists(p, p == 'DevPreviewLongLifecycle') && self.exists(p, p == 'LifecycleAndUtilization'))",message="cannot declare DevPreviewLongLifecycle and LifecycleAndUtilization profiles simultaneously"
+	// +kubebuilder:validation:XValidation:rule="!(self.exists(p, p == 'LongLifecycle') && self.exists(p, p == 'LifecycleAndUtilization'))",message="cannot declare LongLifecycle and LifecycleAndUtilization profiles simultaneously"
+	// +kubebuilder:validation:XValidation:rule="!(self.exists(p, p == 'DevPreviewLongLifecycle') && self.exists(p, p == 'DevKubeVirtRelieveAndMigrate'))",message="cannot declare DevPreviewLongLifecycle and DevKubeVirtRelieveAndMigrate profiles simultaneously"
+	// +kubebuilder:validation:XValidation:rule="!(self.exists(p, p == 'LongLifecycle') && self.exists(p, p == 'DevKubeVirtRelieveAndMigrate'))",message="cannot declare LongLifecycle and DevKubeVirtRelieveAndMigrate profiles simultaneously"
+	// +kubebuilder:validation:XValidation:rule="!(self.exists(p, p == 'LifecycleAndUtilization') && self.exists(p, p == 'DevKubeVirtRelieveAndMigrate'))",message="cannot declare LifecycleAndUtilization and DevKubeVirtRelieveAndMigrate profiles simultaneously"
+	// +kubebuilder:validation:XValidation:rule="!(self.exists(p, p == 'KubeVirtRelieveAndMigrate') && self.exists(p, p == 'DevKubeVirtRelieveAndMigrate'))",message="cannot declare KubeVirtRelieveAndMigrate and DevKubeVirtRelieveAndMigrate profiles simultaneously"
+	// +kubebuilder:validation:XValidation:rule="!(self.exists(p, p == 'DevPreviewLongLifecycle') && self.exists(p, p == 'KubeVirtRelieveAndMigrate'))",message="cannot declare DevPreviewLongLifecycle and KubeVirtRelieveAndMigrate profiles simultaneously"
+	// +kubebuilder:validation:XValidation:rule="!(self.exists(p, p == 'LongLifecycle') && self.exists(p, p == 'KubeVirtRelieveAndMigrate'))",message="cannot declare LongLifecycle and KubeVirtRelieveAndMigrate profiles simultaneously"
+	// +kubebuilder:validation:XValidation:rule="!(self.exists(p, p == 'LifecycleAndUtilization') && self.exists(p, p == 'KubeVirtRelieveAndMigrate'))",message="cannot declare LifecycleAndUtilization and KubeVirtRelieveAndMigrate profiles simultaneously"
+	// +kubebuilder:validation:XValidation:rule="!(self.exists(p, p == 'SoftTopologyAndDuplicates') && self.exists(p, p == 'TopologyAndDuplicates'))",message="cannot declare SoftTopologyAndDuplicates and TopologyAndDuplicates profiles simultaneously"
+	// +kubebuilder:validation:XValidation:rule="!(self.exists(p, p == 'CompactAndScale') && self.exists(p, p == 'LifecycleAndUtilization'))",message="cannot declare CompactAndScale and LifecycleAndUtilization profiles simultaneously"
+	// +kubebuilder:validation:XValidation:rule="!(self.exists(p, p == 'CompactAndScale') && self.exists(p, p == 'LongLifecycle'))",message="cannot declare CompactAndScale and LongLifecycle profiles simultaneously"
+	// +kubebuilder:validation:XValidation:rule="!(self.exists(p, p == 'CompactAndScale') && self.exists(p, p == 'DevPreviewLongLifecycle'))",message="cannot declare CompactAndScale and DevPreviewLongLifecycle profiles simultaneously"
+	// +kubebuilder:validation:XValidation:rule="!(self.exists(p, p == 'CompactAndScale') && self.exists(p, p == 'DevKubeVirtRelieveAndMigrate'))",message="cannot declare CompactAndScale and DevKubeVirtRelieveAndMigrate profiles simultaneously"
+	// +kubebuilder:validation:XValidation:rule="!(self.exists(p, p == 'CompactAndScale') && self.exists(p, p == 'KubeVirtRelieveAndMigrate'))",message="cannot declare CompactAndScale and KubeVirtRelieveAndMigrate profiles simultaneously"
+	// +kubebuilder:validation:XValidation:rule="!(self.exists(p, p == 'CompactAndScale') && self.exists(p, p == 'TopologyAndDuplicates'))",message="cannot declare CompactAndScale and TopologyAndDuplicates profiles simultaneously"
 	Profiles []DeschedulerProfile `json:"profiles"`
 
 	// DeschedulingIntervalSeconds is the number of seconds between descheduler runs
 	// +optional
+	// +kubebuilder:validation:Minimum=1
 	DeschedulingIntervalSeconds *int32 `json:"deschedulingIntervalSeconds,omitempty"`
 
 	// evictionLimits restrict the number of evictions during each descheduling run
@@ -72,11 +95,11 @@ type ProfileCustomizations struct {
 
 	// Namespaces overrides included and excluded namespaces while keeping
 	// the default exclusion of all openshift-*, kube-system and hypershift namespaces
-	Namespaces Namespaces `json:"namespaces"`
+	Namespaces Namespaces `json:"namespaces,omitempty"`
 
 	// DevLowNodeUtilizationThresholds enumerates predefined experimental thresholds
 	// +kubebuilder:validation:Enum=Low;Medium;High;""
-	DevLowNodeUtilizationThresholds *LowNodeUtilizationThresholdsType `json:"devLowNodeUtilizationThresholds"`
+	DevLowNodeUtilizationThresholds *LowNodeUtilizationThresholdsType `json:"devLowNodeUtilizationThresholds,omitempty"`
 
 	// DevEnableSoftTainter enables SoftTainter alpha feature.
 	// The EnableSoftTainter alpha feature is a subject to change.
@@ -94,7 +117,7 @@ type ProfileCustomizations struct {
 	// The threshold values are subject to change.
 	// Currently provided as an experimental feature.
 	// +kubebuilder:validation:Enum=Minimal;Modest;Moderate;""
-	DevHighNodeUtilizationThresholds *HighNodeUtilizationThresholdsType `json:"devHighNodeUtilizationThresholds"`
+	DevHighNodeUtilizationThresholds *HighNodeUtilizationThresholdsType `json:"devHighNodeUtilizationThresholds,omitempty"`
 
 	// devActualUtilizationProfile enables integration with metrics.
 	// LowNodeUtilization plugin can consume the metrics for now.
@@ -185,13 +208,15 @@ const (
 	PrometheusIOPSIPressureProfile ActualUtilizationProfile = "PrometheusIOPSIPressure"
 	// PrometheusCPUCombinedProfile uses a combination of CPU utilization and CPU pressure based on a recording rule
 	PrometheusCPUCombinedProfile ActualUtilizationProfile = "PrometheusCPUCombined"
+	// PrometheusCPUMemoryCombinedProfile uses a multidimensional combination of CPU (utilization and pressure) and memory (utilization and pressure) based on a recording rule
+	PrometheusCPUMemoryCombinedProfile ActualUtilizationProfile = "PrometheusCPUMemoryCombinedProfile"
 )
 
 // Namespaces overrides included and excluded namespaces while keeping
 // the default exclusion of all openshift-*, kube-system and hypershift namespaces
 type Namespaces struct {
-	Included []string `json:"included"`
-	Excluded []string `json:"excluded"`
+	Included []string `json:"included,omitempty"`
+	Excluded []string `json:"excluded,omitempty"`
 }
 
 // DeschedulerProfile allows configuring the enabled strategy profiles for the descheduler

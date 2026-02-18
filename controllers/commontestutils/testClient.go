@@ -144,6 +144,8 @@ func (c *HcoTestClient) RESTMapper() meta.RESTMapper {
 	return c.client.RESTMapper()
 }
 
+var _ client.StatusWriter = &HcoTestStatusWriter{}
+
 type HcoTestStatusWriter struct {
 	client client.SubResourceWriter
 	errors TestErrors
@@ -168,6 +170,10 @@ func (sw *HcoTestStatusWriter) Patch(ctx context.Context, obj client.Object, pat
 		return err
 	}
 	return sw.client.Patch(ctx, obj, patch, opts...)
+}
+
+func (sw *HcoTestStatusWriter) Apply(ctx context.Context, obj runtime.ApplyConfiguration, opts ...client.SubResourceApplyOption) error {
+	return sw.client.Apply(ctx, obj, opts...)
 }
 
 func (sw *HcoTestStatusWriter) InitiateErrors(errs ...error) {

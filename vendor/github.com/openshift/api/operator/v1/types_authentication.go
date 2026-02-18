@@ -7,12 +7,6 @@ import (
 // +genclient
 // +genclient:nonNamespaced
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-// +kubebuilder:object:root=true
-// +kubebuilder:resource:path=authentications,scope=Cluster
-// +kubebuilder:subresource:status
-// +openshift:api-approved.openshift.io=https://github.com/openshift/api/pull/475
-// +openshift:file-pattern=cvoRunLevel=0000_50,operatorName=authentication,operatorOrdering=01
-// +kubebuilder:metadata:annotations=include.release.openshift.io/self-managed-high-availability=true
 
 // Authentication provides information to configure an operator to manage authentication.
 //
@@ -25,6 +19,7 @@ type Authentication struct {
 	// More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
+	// +kubebuilder:validation:Required
 	// +required
 	Spec AuthenticationSpec `json:"spec,omitempty"`
 	// +optional
@@ -36,7 +31,7 @@ type AuthenticationSpec struct {
 }
 
 type AuthenticationStatus struct {
-	// oauthAPIServer holds status specific only to oauth-apiserver
+	// OAuthAPIServer holds status specific only to oauth-apiserver
 	// +optional
 	OAuthAPIServer OAuthAPIServerStatus `json:"oauthAPIServer,omitempty"`
 
@@ -44,7 +39,7 @@ type AuthenticationStatus struct {
 }
 
 type OAuthAPIServerStatus struct {
-	// latestAvailableRevision is the latest revision used as suffix of revisioned
+	// LatestAvailableRevision is the latest revision used as suffix of revisioned
 	// secrets like encryption-config. A new revision causes a new deployment of pods.
 	// +optional
 	// +kubebuilder:validation:Minimum=0
