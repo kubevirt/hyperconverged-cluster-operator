@@ -67,7 +67,7 @@ type HyperConvergedSpec struct {
 
 	// featureGates is a map of feature gate flags. Setting a flag to `true` will enable
 	// the feature. Setting `false` or removing the feature gate, disables the feature.
-	// +kubebuilder:default={"downwardMetrics": false, "deployKubeSecondaryDNS": false, "disableMDevConfiguration": false, "persistentReservation": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": false, "videoConfig": true, "objectGraph": false, "incrementalBackup": false}
+	// +kubebuilder:default={"downwardMetrics": false, "deployKubeSecondaryDNS": false, "disableMDevConfiguration": false, "persistentReservation": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": false, "videoConfig": true, "objectGraph": false, "incrementalBackup": false, "deployAIEWebhook": false}
 	// +optional
 	FeatureGates HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 
@@ -281,6 +281,12 @@ type HyperConvergedSpec struct {
 	// max guest memory and max hotplug ratio. This setting can affect VM CPU and memory settings.
 	// +optional
 	LiveUpdateConfiguration *v1.LiveUpdateConfiguration `json:"liveUpdateConfiguration,omitempty"`
+
+	// AIEWebhookConfig holds configuration for the AIE (Accelerated Infrastructure Enablement) webhook that replaces
+	// virt-launcher images with alternative builds based on device or label selectors.
+	// Only used when featureGates.deployAIEWebhook is true.
+	// +optional
+	AIEWebhookConfig *AIEWebhookConfiguration `json:"aieWebhookConfig,omitempty"`
 }
 
 // CertRotateConfigCA contains the tunables for TLS certificates.
@@ -558,6 +564,14 @@ type HyperConvergedFeatureGates struct {
 	// +kubebuilder:default=false
 	// +default=false
 	IncrementalBackup *bool `json:"incrementalBackup,omitempty"`
+	// DeployAIEWebhook enables the AIE (Accelerated Infrastructure Enablement) webhook that intercepts virt-launcher Pod creation
+	// and conditionally replaces the compute container image with an alternative launcher image
+	// (e.g., GPU-optimized builds) based on configurable rules.
+	// Note: This feature is in Developer Preview.
+	// +optional
+	// +kubebuilder:default=false
+	// +default=false
+	DeployAIEWebhook *bool `json:"deployAIEWebhook,omitempty"`
 }
 
 // PermittedHostDevices holds information about devices allowed for passthrough
@@ -895,6 +909,49 @@ type HigherWorkloadDensityConfiguration struct {
 	MemoryOvercommitPercentage int `json:"memoryOvercommitPercentage,omitempty"`
 }
 
+// AIEWebhookConfiguration holds configuration for the AIE webhook launcher rules.
+// +k8s:openapi-gen=true
+type AIEWebhookConfiguration struct {
+	// Rules defines the ordered list of launcher replacement rules.
+	// Each rule maps a selector (device names and/or VM labels) to an alternative launcher image.
+	// Rules are evaluated in order; the first match wins.
+	// +optional
+	// +listType=atomic
+	Rules []AIELauncherRule `json:"rules,omitempty"`
+}
+
+// AIELauncherRule maps a selector to an alternative launcher image.
+// +k8s:openapi-gen=true
+type AIELauncherRule struct {
+	// Name is an identifier for this rule.
+	Name string `json:"name"`
+	// Image is the alternative launcher container image to use when this rule matches.
+	Image string `json:"image"`
+	// Selector defines the criteria for matching a VirtualMachineInstance.
+	Selector AIESelector `json:"selector"`
+}
+
+// AIESelector defines the criteria for matching a VirtualMachineInstance.
+// DeviceNames and VMLabels are OR'd: if either matches, the rule applies.
+// +k8s:openapi-gen=true
+type AIESelector struct {
+	// DeviceNames is a list of device names (GPUs/HostDevices) to match against the VMI's devices.
+	// +optional
+	// +listType=atomic
+	DeviceNames []string `json:"deviceNames,omitempty"`
+	// VMLabels matches VMIs by label selectors.
+	// +optional
+	VMLabels *AIEVMLabels `json:"vmLabels,omitempty"`
+}
+
+// AIEVMLabels matches VMIs by label selectors.
+// +k8s:openapi-gen=true
+type AIEVMLabels struct {
+	// MatchLabels is a map of key-value pairs. All specified labels must be present on the VMI for a match.
+	// +optional
+	MatchLabels map[string]string `json:"matchLabels,omitempty"`
+}
+
 // KubeMacPoolConfig defines kubemacpool MAC address range configuration
 // +k8s:openapi-gen=true
 // +kubebuilder:validation:XValidation:rule="(has(self.rangeStart) && has(self.rangeEnd)) || (!has(self.rangeStart) && !has(self.rangeEnd))",message="both rangeStart and rangeEnd must be configured together, or both omitted"
@@ -951,7 +1008,7 @@ type HyperConverged struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}},"featureGates": {"downwardMetrics": false, "deployKubeSecondaryDNS": false, "disableMDevConfiguration": false, "persistentReservation": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": false, "videoConfig": true, "objectGraph": false, "incrementalBackup": false}, "liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "resourceRequirements": {"vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
+	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}},"featureGates": {"downwardMetrics": false, "deployKubeSecondaryDNS": false, "disableMDevConfiguration": false, "persistentReservation": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": false, "videoConfig": true, "objectGraph": false, "incrementalBackup": false, "deployAIEWebhook": false}, "liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "resourceRequirements": {"vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
 	// +optional
 	Spec   HyperConvergedSpec   `json:"spec,omitempty"`
 	Status HyperConvergedStatus `json:"status,omitempty"`

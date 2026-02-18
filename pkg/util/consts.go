@@ -30,6 +30,7 @@ const (
 	PasstImageEnvV                     = "PASST_SIDECAR_IMAGE"
 	PasstCNIImageEnvV                  = "PASST_CNI_IMAGE"
 	WaspAgentImageEnvV                 = "WASP_AGENT_IMAGE"
+	AIEWebhookImageEnvV                = "AIE_WEBHOOK_IMAGE"
 	DeployNetworkPoliciesEnvV          = "DEPLOY_NETWORK_POLICIES"
 	HcoValidatingWebhook               = "validate-hco.kubevirt.io"
 	HcoMutatingWebhookNS               = "mutate-ns-hco.kubevirt.io"
@@ -117,4 +118,5 @@ const (
 	AppComponentUIConfig   AppComponent = "kubevirt-ui-config"
 	AppComponentQuotaMngt  AppComponent = "quota-management"
 	AppComponentMigration  AppComponent = "migration"
+	AppComponentAIEWebhook AppComponent = "aie-webhook"
 )
