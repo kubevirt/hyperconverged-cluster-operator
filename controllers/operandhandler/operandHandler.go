@@ -16,6 +16,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
+	aiewebhook "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie-webhook"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
 	waspagent "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/wasp-agent"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
@@ -72,6 +73,14 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		}...)
 	}
 
+	operandList = append(operandList, []operands.Operand{
+		aiewebhook.NewAIEWebhookServiceAccountHandler(client, scheme),
+		aiewebhook.NewAIEWebhookConfigMapHandler(client, scheme),
+		aiewebhook.NewAIEWebhookServiceHandler(client, scheme),
+		aiewebhook.NewAIEWebhookIssuerHandler(client, scheme),
+		aiewebhook.NewAIEWebhookCertificateHandler(client, scheme),
+	}...)
+
 	if ci.IsOpenshift() && ci.IsConsolePluginImageProvided() {
 		operandList = append(operandList, handlers.NewConsoleHandler(client))
 		operandList = append(operandList, operands.NewServiceHandler(client, scheme, handlers.NewKvUIPluginSvc))
@@ -94,6 +103,16 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 // Initial operations that need to read/write from the cluster can only be done when the client is already working.
 func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.ClusterInfo, hc *hcov1beta1.HyperConverged, pwdFS fs.FS) {
 	h.objects = make([]client.Object, 0)
+
+	for _, fn := range []operands.GetHandler{
+		aiewebhook.NewAIEWebhookClusterRoleHandler,
+		aiewebhook.NewAIEWebhookClusterRoleBindingHandler,
+		aiewebhook.NewAIEWebhookDeploymentHandler,
+		aiewebhook.NewAIEWebhookMutatingWebhookConfigurationHandler,
+	} {
+		h.addOperand(scheme, hc, fn)
+	}
+
 	if !ci.IsOpenshift() {
 		return
 	}
@@ -243,6 +262,9 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		passt.NewPasstBindingCNINetworkAttachmentDefinition(req.Instance),
 		passt.NewPasstBindingCNISecurityContextConstraints(req.Instance),
 		waspagent.NewWaspAgentSCCWithNameOnly(req.Instance),
+		aiewebhook.NewAIEWebhookClusterRoleWithNameOnly(req.Instance),
+		aiewebhook.NewAIEWebhookClusterRoleBindingWithNameOnly(req.Instance),
+		aiewebhook.NewAIEWebhookMutatingWebhookConfigurationWithNameOnly(req.Instance),
 	}
 
 	resources = append(resources, h.objects...)

@@ -315,6 +315,9 @@ func main() {
 		cmdHelper.ExitOnError(err, "failed to retrieve wasp agent image env var")
 	}
 
+	err = checkAIEWebhookImageEnvExists()
+	cmdHelper.ExitOnError(err, "failed to retrieve AIE webhook image env var")
+
 	logger.Info("Starting the Cmd.")
 	eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Init", "Starting the HyperConverged Pod")
 
@@ -463,6 +466,12 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo, persesAvai
 		},
 	}
 
+	cacheOptionsByObjectForAIEWebhook := map[client.Object]cache.ByObject{
+		&admissionregistrationv1.MutatingWebhookConfiguration{}: {
+			Label: labelSelector,
+		},
+	}
+
 	cacheOptionsByObjectForNetwork := map[client.Object]cache.ByObject{
 		&netattdefv1.NetworkAttachmentDefinition{}: {
 			Label: labelSelector,
@@ -478,6 +487,8 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo, persesAvai
 	if ci.IsOpenshift() {
 		maps.Copy(cacheOptions.ByObject, cacheOptionsByObjectForOpenshift)
 	}
+
+	maps.Copy(cacheOptions.ByObject, cacheOptionsByObjectForAIEWebhook)
 
 	if ci.IsNADAvailable() {
 		maps.Copy(cacheOptions.ByObject, cacheOptionsByObjectForNetwork)
@@ -529,6 +540,14 @@ func createPriorityClass(ctx context.Context, mgr manager.Manager) error {
 func checkWaspAgentImageEnvExists() error {
 	if _, exists := os.LookupEnv(hcoutil.WaspAgentImageEnvV); !exists {
 		return fmt.Errorf("%s env var not found", hcoutil.WaspAgentImageEnvV)
+	}
+
+	return nil
+}
+
+func checkAIEWebhookImageEnvExists() error {
+	if _, exists := os.LookupEnv(hcoutil.AIEWebhookImageEnvV); !exists {
+		return fmt.Errorf("%s env var not found", hcoutil.AIEWebhookImageEnvV)
 	}
 
 	return nil
