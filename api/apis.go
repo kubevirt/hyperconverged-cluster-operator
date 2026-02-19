@@ -9,8 +9,8 @@ import (
 
 // AddToSchemes may be used to add all resources defined in the project to a Scheme
 var AddToSchemes = runtime.SchemeBuilder{
-	hcov1beta1.SchemeBuilder.AddToScheme,
-	hcov1.SchemeBuilder.AddToScheme,
+	hcov1beta1.AddToScheme,
+	hcov1.AddToScheme,
 }
 
 // AddToScheme adds all Resources to the Scheme

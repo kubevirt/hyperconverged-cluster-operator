@@ -7,24 +7,34 @@
 package v1beta1
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
 const (
-	APIVersionBeta    = "v1beta1"
-	CurrentAPIVersion = APIVersionBeta
-	APIVersionGroup   = "hco.kubevirt.io"
-	APIVersion        = APIVersionGroup + "/" + CurrentAPIVersion
+	APIVersionBeta  = "v1beta1"
+	APIVersionGroup = "hco.kubevirt.io"
 )
 
 var (
 	// SchemeGroupVersion is group version used to register these objects
 	SchemeGroupVersion = schema.GroupVersion{Group: APIVersionGroup, Version: APIVersionBeta}
 
-	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
-	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
+	APIVersion = SchemeGroupVersion.String()
+
+	// schemeBuilder is used to add go types to the GroupVersionKind scheme
+	schemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
+
+	// localSchemeBuilder is used for type conversions.
+	localSchemeBuilder = &schemeBuilder
 
 	// AddToScheme tbd
-	AddToScheme = SchemeBuilder.AddToScheme
+	AddToScheme = schemeBuilder.AddToScheme
 )
+
+func addKnownTypes(scheme *runtime.Scheme) error {
+	scheme.AddKnownTypes(SchemeGroupVersion, &HyperConverged{}, &HyperConvergedList{})
+	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
+	return nil
+}
