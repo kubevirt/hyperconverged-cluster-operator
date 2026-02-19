@@ -85,23 +85,7 @@ func NewServiceMonitor(namespace string, owner metav1.OwnerReference) *monitorin
 			MatchLabels: labels,
 		},
 		Endpoints: []monitoringv1.Endpoint{
-			{
-				Port:   OperatorPortName,
-				Scheme: "https",
-				Authorization: &monitoringv1.SafeAuthorization{
-					Credentials: &corev1.SecretKeySelector{
-						LocalObjectReference: corev1.LocalObjectReference{
-							Name: secretName,
-						},
-						Key: "token",
-					},
-				},
-				TLSConfig: &monitoringv1.TLSConfig{
-					SafeTLSConfig: monitoringv1.SafeTLSConfig{
-						InsecureSkipVerify: ptr.To(true),
-					},
-				},
-			},
+			CreateEndpoint(secretName),
 		},
 	}
 
@@ -117,5 +101,32 @@ func NewServiceMonitor(namespace string, owner metav1.OwnerReference) *monitorin
 			OwnerReferences: []metav1.OwnerReference{owner},
 		},
 		Spec: spec,
+	}
+}
+
+func CreateEndpoint(bearerTokenSecretName string) monitoringv1.Endpoint {
+
+	return monitoringv1.Endpoint{
+		Port:   OperatorPortName,
+		Scheme: ptr.To[monitoringv1.Scheme]("https"),
+		HTTPConfigWithProxyAndTLSFiles: monitoringv1.HTTPConfigWithProxyAndTLSFiles{
+			HTTPConfigWithTLSFiles: monitoringv1.HTTPConfigWithTLSFiles{
+				HTTPConfigWithoutTLS: monitoringv1.HTTPConfigWithoutTLS{
+					Authorization: &monitoringv1.SafeAuthorization{
+						Credentials: &corev1.SecretKeySelector{
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: bearerTokenSecretName,
+							},
+							Key: "token",
+						},
+					},
+				},
+				TLSConfig: &monitoringv1.TLSConfig{
+					SafeTLSConfig: monitoringv1.SafeTLSConfig{
+						InsecureSkipVerify: ptr.To(true),
+					},
+				},
+			},
+		},
 	}
 }
