@@ -104,6 +104,7 @@ func (mm *ManagerMock) GetCache() cache.Cache {
 }
 
 func (mm *ManagerMock) GetEventRecorderFor(name string) record.EventRecorder {
+	//nolint:staticcheck
 	return mm.cluster.GetEventRecorderFor(name)
 }
 

@@ -171,6 +171,7 @@ func main() {
 	logger.Info("Registering Components.")
 
 	eventEmitter := hcoutil.GetEventEmitter()
+	//nolint:staticcheck
 	eventEmitter.Init(ownresources.GetPod(), ownresources.GetCSVRef(), mgr.GetEventRecorderFor(hcoutil.HyperConvergedName))
 
 	err = mgr.AddHealthzCheck("ping", healthz.Ping)
