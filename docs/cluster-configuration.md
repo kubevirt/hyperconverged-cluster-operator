@@ -269,11 +269,11 @@ When enabled, this also enables the `UtilityVolumes` feature gate in the KubeVir
 Set the `hco.kubevirt.io/deployPasstNetworkBinding` HyperConverged CR annotation to `true`, to deploy the needed
 configurations for kubevirt users, so they can bind their VM using a Passt Network binding.
 
-**Note**: this feature is in Developer Preview.
+**Note**: this feature is in Tech Preview.
 
 **Default**: `false` (annotation doesn't exist by default)
 
-**Graduation Status**: Alpha
+**Graduation Status**: Beta
 
 ### Feature Gates Example
 
