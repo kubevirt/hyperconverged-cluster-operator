@@ -37,6 +37,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/utils/ptr"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -114,9 +115,9 @@ func main() {
 	// service accounts are represented as a map to prevent us from generating the
 	// same service account multiple times.
 	deployments := []appsv1.Deployment{
-		components.GetDeploymentOperator(operatorParams),
-		components.GetDeploymentWebhook(operatorParams),
-		components.GetDeploymentCliDownloads(operatorParams),
+		getDeploymentOperator(operatorParams),
+		getDeploymentWebhook(operatorParams),
+		getDeploymentCliDownloads(operatorParams),
 	}
 	// hco-operator and hco-webhook
 	for i := range deployments {
@@ -124,20 +125,20 @@ func main() {
 	}
 
 	services := []corev1.Service{
-		components.GetServiceWebhook(),
+		getServiceWebhook(),
 	}
 
 	serviceAccounts := map[string]corev1.ServiceAccount{
-		"hyperconverged-cluster-operator":     components.GetServiceAccount(*operatorNamespace),
-		"hyperconverged-cluster-cli-download": components.GetCLIDownloadServiceAccount(*operatorNamespace),
+		"hyperconverged-cluster-operator":     getOperatorServiceAccount(*operatorNamespace),
+		"hyperconverged-cluster-cli-download": getCLIDownloadServiceAccount(*operatorNamespace),
 	}
 	permissions := make([]rbacv1.Role, 0)
 	roleBindings := make([]rbacv1.RoleBinding, 0)
 	clusterPermissions := []rbacv1.ClusterRole{
-		components.GetClusterRole(),
+		getClusterRole(),
 	}
 	clusterRoleBindings := []rbacv1.ClusterRoleBinding{
-		components.GetClusterRoleBinding(*operatorNamespace),
+		getClusterRoleBinding(*operatorNamespace),
 	}
 
 	for _, csvStr := range componentsWithCSVs {
@@ -178,7 +179,7 @@ func main() {
 		// Same as permissions except ClusterRole instead of Role and
 		// ClusterRoleBinding instead of RoleBinding.
 		for _, clusterPermission := range strategySpec.ClusterPermissions {
-			serviceAccounts[clusterPermission.ServiceAccountName] = createServiceAccount(clusterPermission)
+			serviceAccounts[clusterPermission.ServiceAccountName] = createServiceAccountForComponent(clusterPermission)
 			clusterPermissions = append(clusterPermissions, createClusterRole(clusterPermission))
 			clusterRoleBindings = append(clusterRoleBindings, createClusterRoleBinding(clusterPermission))
 		}
@@ -195,6 +196,79 @@ func main() {
 	writeServiceAccounts(serviceAccounts)
 	writeClusterRoleBindings(roleBindings, clusterRoleBindings)
 	writeClusterRoles(permissions, clusterPermissions)
+}
+
+var deploymentType = metav1.TypeMeta{
+	APIVersion: "apps/v1",
+	Kind:       "Deployment",
+}
+
+func getDeploymentOperator(params *components.DeploymentOperatorParams) appsv1.Deployment {
+	return appsv1.Deployment{
+		TypeMeta: deploymentType,
+		ObjectMeta: metav1.ObjectMeta{
+			Name: hcoutil.HCOOperatorName,
+			Labels: map[string]string{
+				"name": hcoutil.HCOOperatorName,
+			},
+		},
+		Spec: components.GetDeploymentSpecOperator(params),
+	}
+}
+
+func getDeploymentWebhook(params *components.DeploymentOperatorParams) appsv1.Deployment {
+	deploy := appsv1.Deployment{
+		TypeMeta: deploymentType,
+		ObjectMeta: metav1.ObjectMeta{
+			Name: hcoutil.HCOWebhookName,
+			Labels: map[string]string{
+				"name": hcoutil.HCOWebhookName,
+			},
+		},
+		Spec: components.GetDeploymentSpecWebhook(params),
+	}
+
+	injectVolumesForWebHookCerts(&deploy)
+	return deploy
+}
+
+func getDeploymentCliDownloads(params *components.DeploymentOperatorParams) appsv1.Deployment {
+	return appsv1.Deployment{
+		TypeMeta: deploymentType,
+		ObjectMeta: metav1.ObjectMeta{
+			Name: hcoutil.CLIDownloadsName,
+			Labels: map[string]string{
+				"name": hcoutil.CLIDownloadsName,
+			},
+		},
+		Spec: components.GetDeploymentSpecCliDownloads(params),
+	}
+}
+
+func getServiceWebhook() corev1.Service {
+	return corev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Service",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: hcoutil.HCOWebhookName + "-service",
+		},
+		Spec: corev1.ServiceSpec{
+			Selector: map[string]string{
+				"name": hcoutil.HCOWebhookName,
+			},
+			Ports: []corev1.ServicePort{
+				{
+					Name:       strconv.Itoa(hcoutil.WebhookPort),
+					Port:       hcoutil.WebhookPort,
+					Protocol:   corev1.ProtocolTCP,
+					TargetPort: intstr.FromInt32(hcoutil.WebhookPort),
+				},
+			},
+			Type: corev1.ServiceTypeClusterIP,
+		},
+	}
 }
 
 func getServices(csvStruct *csvv1alpha1.ClusterServiceVersion, services []corev1.Service) []corev1.Service {
@@ -217,7 +291,7 @@ func createClusterRoleBinding(clusterPermission csvv1alpha1.StrategyDeploymentPe
 			},
 		},
 		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
+			APIGroup: rbacv1.GroupName,
 			Kind:     "ClusterRole",
 			Name:     clusterPermission.ServiceAccountName,
 		},
@@ -247,20 +321,8 @@ func createClusterRole(clusterPermission csvv1alpha1.StrategyDeploymentPermissio
 	}
 }
 
-func createServiceAccount(clusterPermission csvv1alpha1.StrategyDeploymentPermissions) corev1.ServiceAccount {
-	return corev1.ServiceAccount{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "ServiceAccount",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      clusterPermission.ServiceAccountName,
-			Namespace: *operatorNamespace,
-			Labels: map[string]string{
-				"name": clusterPermission.ServiceAccountName,
-			},
-		},
-	}
+func createServiceAccountForComponent(clusterPermission csvv1alpha1.StrategyDeploymentPermissions) corev1.ServiceAccount {
+	return createServiceAccount(*operatorNamespace, clusterPermission.ServiceAccountName)
 }
 
 func getRoleBinding(permission csvv1alpha1.StrategyDeploymentPermissions) rbacv1.RoleBinding {
@@ -277,7 +339,7 @@ func getRoleBinding(permission csvv1alpha1.StrategyDeploymentPermissions) rbacv1
 			},
 		},
 		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
+			APIGroup: rbacv1.GroupName,
 			Kind:     "Role",
 			Name:     permission.ServiceAccountName,
 		},
@@ -490,7 +552,7 @@ func getSelectorOfWebhookDeployment(deployment string, specs []csvv1alpha1.Strat
 func injectWebhookMounts(webhookDefs []csvv1alpha1.WebhookDescription, deploy *appsv1.Deployment) {
 	for _, webhook := range webhookDefs {
 		if webhook.DeploymentName == deploy.Name {
-			components.InjectVolumesForWebHookCerts(deploy)
+			injectVolumesForWebHookCerts(deploy)
 		}
 	}
 }
@@ -511,4 +573,111 @@ func overwriteWithStandardLabels(labels map[string]string, version string, compo
 	labels[hcoutil.AppLabelVersion] = version
 	labels[hcoutil.AppLabelPartOf] = hcoutil.HyperConvergedCluster
 	labels[hcoutil.AppLabelComponent] = string(component)
+}
+
+func getClusterRoleBinding(namespace string) rbacv1.ClusterRoleBinding {
+	return rbacv1.ClusterRoleBinding{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: rbacv1.SchemeGroupVersion.String(),
+			Kind:       "ClusterRoleBinding",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: hcoutil.HCOOperatorName,
+			Labels: map[string]string{
+				"name": hcoutil.HCOOperatorName,
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: rbacv1.GroupName,
+			Kind:     "ClusterRole",
+			Name:     hcoutil.HCOOperatorName,
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      hcoutil.HCOOperatorName,
+				Namespace: namespace,
+			},
+		},
+	}
+}
+
+func getClusterRole() rbacv1.ClusterRole {
+	return rbacv1.ClusterRole{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: rbacv1.SchemeGroupVersion.String(),
+			Kind:       "ClusterRole",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: hcoutil.HCOOperatorName,
+			Labels: map[string]string{
+				"name": hcoutil.HCOOperatorName,
+			},
+		},
+		Rules: components.GetClusterPermissions(),
+	}
+}
+
+func injectVolumesForWebHookCerts(deploy *appsv1.Deployment) {
+	const certVolume = "apiservice-cert"
+
+	// check if there is already a volume for api certificates
+	for _, vol := range deploy.Spec.Template.Spec.Volumes {
+		if vol.Name == certVolume {
+			return
+		}
+	}
+
+	volume := corev1.Volume{
+		Name: certVolume,
+		VolumeSource: corev1.VolumeSource{
+			Secret: &corev1.SecretVolumeSource{
+				SecretName:  deploy.Name + "-service-cert",
+				DefaultMode: ptr.To[int32](420),
+				Items: []corev1.KeyToPath{
+					{
+						Key:  "tls.crt",
+						Path: hcoutil.WebhookCertName,
+					},
+					{
+						Key:  "tls.key",
+						Path: hcoutil.WebhookKeyName,
+					},
+				},
+			},
+		},
+	}
+	deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, volume)
+
+	for index, container := range deploy.Spec.Template.Spec.Containers {
+		deploy.Spec.Template.Spec.Containers[index].VolumeMounts = append(container.VolumeMounts,
+			corev1.VolumeMount{
+				Name:      certVolume,
+				MountPath: hcoutil.DefaultWebhookCertDir,
+			})
+	}
+}
+
+func getOperatorServiceAccount(namespace string) corev1.ServiceAccount {
+	return createServiceAccount(namespace, hcoutil.HCOOperatorName)
+}
+
+func getCLIDownloadServiceAccount(namespace string) corev1.ServiceAccount {
+	return createServiceAccount(namespace, hcoutil.CLIDownloadsName)
+}
+
+func createServiceAccount(namespace, name string) corev1.ServiceAccount {
+	return corev1.ServiceAccount{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "ServiceAccount",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+			Labels: map[string]string{
+				"name": name,
+			},
+		},
+	}
 }

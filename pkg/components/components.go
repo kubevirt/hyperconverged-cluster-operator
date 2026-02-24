@@ -1,14 +1,6 @@
 package components
 
 import (
-	"encoding/json"
-	"fmt"
-	"strconv"
-	"time"
-
-	"github.com/blang/semver/v4"
-	csvVersion "github.com/operator-framework/api/pkg/lib/version"
-	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	persesv1alpha1 "github.com/rhobs/perses-operator/api/v1alpha1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -35,20 +27,8 @@ import (
 const DisableOperandDeletionAnnotation = "console.openshift.io/disable-operand-delete"
 
 const (
-	crName              = util.HyperConvergedName
-	packageName         = util.HyperConvergedName
-	hcoDeploymentName   = "hco-operator"
-	hcoWhDeploymentName = "hco-webhook"
-	certVolume          = "apiservice-cert"
-
-	kubevirtProjectName = "KubeVirt project"
-	rbacVersionV1       = "rbac.authorization.k8s.io/v1"
+	crName = util.HyperConvergedName
 )
-
-var deploymentType = metav1.TypeMeta{
-	APIVersion: "apps/v1",
-	Kind:       "Deployment",
-}
 
 type DeploymentOperatorParams struct {
 	Namespace                string
@@ -81,74 +61,6 @@ type DeploymentOperatorParams struct {
 	MigrationOperatorVersion string
 	Env                      []corev1.EnvVar
 	AddNetworkPolicyLabels   bool
-}
-
-func GetDeploymentOperator(params *DeploymentOperatorParams) appsv1.Deployment {
-	return appsv1.Deployment{
-		TypeMeta: deploymentType,
-		ObjectMeta: metav1.ObjectMeta{
-			Name: util.HCOOperatorName,
-			Labels: map[string]string{
-				"name": util.HCOOperatorName,
-			},
-		},
-		Spec: GetDeploymentSpecOperator(params),
-	}
-}
-
-func GetDeploymentWebhook(params *DeploymentOperatorParams) appsv1.Deployment {
-	deploy := appsv1.Deployment{
-		TypeMeta: deploymentType,
-		ObjectMeta: metav1.ObjectMeta{
-			Name: util.HCOWebhookName,
-			Labels: map[string]string{
-				"name": util.HCOWebhookName,
-			},
-		},
-		Spec: GetDeploymentSpecWebhook(params),
-	}
-
-	InjectVolumesForWebHookCerts(&deploy)
-	return deploy
-}
-
-func GetDeploymentCliDownloads(params *DeploymentOperatorParams) appsv1.Deployment {
-	return appsv1.Deployment{
-		TypeMeta: deploymentType,
-		ObjectMeta: metav1.ObjectMeta{
-			Name: util.CLIDownloadsName,
-			Labels: map[string]string{
-				"name": util.CLIDownloadsName,
-			},
-		},
-		Spec: GetDeploymentSpecCliDownloads(params),
-	}
-}
-
-func GetServiceWebhook() corev1.Service {
-	return corev1.Service{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Service",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: util.HCOWebhookName + "-service",
-		},
-		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{
-				"name": util.HCOWebhookName,
-			},
-			Ports: []corev1.ServicePort{
-				{
-					Name:       strconv.Itoa(util.WebhookPort),
-					Port:       util.WebhookPort,
-					Protocol:   corev1.ProtocolTCP,
-					TargetPort: intstr.FromInt32(util.WebhookPort),
-				},
-			},
-			Type: corev1.ServiceTypeClusterIP,
-		},
-	}
 }
 
 func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.DeploymentSpec {
@@ -342,7 +254,7 @@ func GetDeploymentSpecCliDownloads(params *DeploymentOperatorParams) appsv1.Depl
 		},
 		Template: corev1.PodTemplateSpec{
 			ObjectMeta: metav1.ObjectMeta{
-				Labels: getLabels(util.CLIDownloadsName, params.HcoKvIoVersion),
+				Labels: GetLabels(util.CLIDownloadsName, params.HcoKvIoVersion),
 			},
 			Spec: corev1.PodSpec{
 				ServiceAccountName:           util.CLIDownloadsName,
@@ -377,7 +289,7 @@ func GetDeploymentSpecCliDownloads(params *DeploymentOperatorParams) appsv1.Depl
 	}
 }
 
-func getLabels(name, hcoKvIoVersion string) map[string]string {
+func GetLabels(name, hcoKvIoVersion string) map[string]string {
 	return map[string]string{
 		"name":                 name,
 		util.AppLabelVersion:   hcoKvIoVersion,
@@ -387,7 +299,7 @@ func getLabels(name, hcoKvIoVersion string) map[string]string {
 }
 
 func getLabelsWithNetworkPolicies(deploymentName string, params *DeploymentOperatorParams) map[string]string {
-	labels := getLabels(deploymentName, params.HcoKvIoVersion)
+	labels := GetLabels(deploymentName, params.HcoKvIoVersion)
 	if params.AddNetworkPolicyLabels {
 		labels[util.AllowEgressToDNSAndAPIServerLabel] = "true"
 		labels[util.AllowIngressToMetricsEndpointLabel] = "true"
@@ -504,22 +416,6 @@ func GetDeploymentSpecWebhook(params *DeploymentOperatorParams) appsv1.Deploymen
 				PriorityClassName: "system-node-critical",
 			},
 		},
-	}
-}
-
-func GetClusterRole() rbacv1.ClusterRole {
-	return rbacv1.ClusterRole{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: rbacVersionV1,
-			Kind:       "ClusterRole",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: util.HCOOperatorName,
-			Labels: map[string]string{
-				"name": util.HCOOperatorName,
-			},
-		},
-		Rules: GetClusterPermissions(),
 	}
 }
 
@@ -699,57 +595,6 @@ func roleWithAllPermissions(apiGroup string, resources []string) rbacv1.PolicyRu
 	}
 }
 
-func GetServiceAccount(namespace string) corev1.ServiceAccount {
-	return createServiceAccount(namespace, util.HCOOperatorName)
-}
-
-func GetCLIDownloadServiceAccount(namespace string) corev1.ServiceAccount {
-	return createServiceAccount(namespace, util.CLIDownloadsName)
-}
-
-func createServiceAccount(namespace, name string) corev1.ServiceAccount {
-	return corev1.ServiceAccount{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "ServiceAccount",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
-			Namespace: namespace,
-			Labels: map[string]string{
-				"name": name,
-			},
-		},
-	}
-}
-
-func GetClusterRoleBinding(namespace string) rbacv1.ClusterRoleBinding {
-	return rbacv1.ClusterRoleBinding{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: rbacVersionV1,
-			Kind:       "ClusterRoleBinding",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: util.HCOOperatorName,
-			Labels: map[string]string{
-				"name": util.HCOOperatorName,
-			},
-		},
-		RoleRef: rbacv1.RoleRef{
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "ClusterRole",
-			Name:     util.HCOOperatorName,
-		},
-		Subjects: []rbacv1.Subject{
-			{
-				Kind:      "ServiceAccount",
-				Name:      util.HCOOperatorName,
-				Namespace: namespace,
-			},
-		},
-	}
-}
-
 func GetOperatorCR() *hcov1beta1.HyperConverged {
 	defaultScheme := runtime.NewScheme()
 	_ = hcov1beta1.AddToScheme(defaultScheme)
@@ -764,373 +609,6 @@ func GetOperatorCR() *hcov1beta1.HyperConverged {
 		}}
 	defaultScheme.Default(defaultHco)
 	return defaultHco
-}
-
-// GetInstallStrategyBase returns the basics of an HCO InstallStrategy
-func GetInstallStrategyBase(params *DeploymentOperatorParams) *csvv1alpha1.StrategyDetailsDeployment {
-	return &csvv1alpha1.StrategyDetailsDeployment{
-
-		DeploymentSpecs: []csvv1alpha1.StrategyDeploymentSpec{
-			{
-				Name:  hcoDeploymentName,
-				Spec:  GetDeploymentSpecOperator(params),
-				Label: getLabels(util.HCOOperatorName, params.HcoKvIoVersion),
-			},
-			{
-				Name:  hcoWhDeploymentName,
-				Spec:  GetDeploymentSpecWebhook(params),
-				Label: getLabels(util.HCOWebhookName, params.HcoKvIoVersion),
-			},
-			{
-				Name:  util.CLIDownloadsName,
-				Spec:  GetDeploymentSpecCliDownloads(params),
-				Label: getLabels(util.CLIDownloadsName, params.HcoKvIoVersion),
-			},
-		},
-		Permissions: []csvv1alpha1.StrategyDeploymentPermissions{},
-		ClusterPermissions: []csvv1alpha1.StrategyDeploymentPermissions{
-			{
-				ServiceAccountName: util.HCOOperatorName,
-				Rules:              GetClusterPermissions(),
-			},
-			{
-				ServiceAccountName: util.CLIDownloadsName,
-				Rules:              []rbacv1.PolicyRule{},
-			},
-		},
-	}
-}
-
-type CSVBaseParams struct {
-	Name            string
-	Namespace       string
-	DisplayName     string
-	MetaDescription string
-	Description     string
-	Image           string
-	Version         semver.Version
-	CrdDisplay      string
-	Icon            string
-}
-
-// GetCSVBase returns a base HCO CSV without an InstallStrategy
-func GetCSVBase(params *CSVBaseParams) *csvv1alpha1.ClusterServiceVersion {
-	almExamples, _ := json.Marshal(
-		map[string]interface{}{
-			"apiVersion": util.APIVersion,
-			"kind":       util.HyperConvergedKind,
-			"metadata": map[string]interface{}{
-				"name":      packageName,
-				"namespace": params.Namespace,
-				"annotations": map[string]string{
-					"deployOVS": "false",
-				},
-			},
-			"spec": map[string]interface{}{},
-		})
-
-	// Explicitly fail on unvalidated (for any reason) requests:
-	// this can make removing HCO CR harder if HCO webhook is not able
-	// to really validate the requests.
-	// In that case the user can only directly remove the
-	// ValidatingWebhookConfiguration object first (eventually bypassing the OLM if needed).
-	// so failurePolicy = admissionregistrationv1.Fail
-
-	validatingWebhook := csvv1alpha1.WebhookDescription{
-		GenerateName:            util.HcoValidatingWebhook,
-		Type:                    csvv1alpha1.ValidatingAdmissionWebhook,
-		DeploymentName:          hcoWhDeploymentName,
-		ContainerPort:           util.WebhookPort,
-		AdmissionReviewVersions: stringListToSlice("v1beta1", "v1"),
-		SideEffects:             ptr.To(admissionregistrationv1.SideEffectClassNone),
-		FailurePolicy:           ptr.To(admissionregistrationv1.Fail),
-		TimeoutSeconds:          ptr.To[int32](10),
-		Rules: []admissionregistrationv1.RuleWithOperations{
-			{
-				Operations: []admissionregistrationv1.OperationType{
-					admissionregistrationv1.Create,
-					admissionregistrationv1.Delete,
-					admissionregistrationv1.Update,
-				},
-				Rule: admissionregistrationv1.Rule{
-					APIGroups:   stringListToSlice(util.APIVersionGroup),
-					APIVersions: stringListToSlice(util.APIVersionBeta),
-					Resources:   stringListToSlice("hyperconvergeds"),
-				},
-			},
-		},
-		WebhookPath: ptr.To(util.HCOWebhookPath),
-	}
-
-	mutatingNamespaceWebhook := csvv1alpha1.WebhookDescription{
-		GenerateName:            util.HcoMutatingWebhookNS,
-		Type:                    csvv1alpha1.MutatingAdmissionWebhook,
-		DeploymentName:          hcoWhDeploymentName,
-		ContainerPort:           util.WebhookPort,
-		AdmissionReviewVersions: stringListToSlice("v1beta1", "v1"),
-		SideEffects:             ptr.To(admissionregistrationv1.SideEffectClassNoneOnDryRun),
-		FailurePolicy:           ptr.To(admissionregistrationv1.Fail),
-		TimeoutSeconds:          ptr.To[int32](10),
-		ObjectSelector: &metav1.LabelSelector{
-			MatchLabels: map[string]string{util.KubernetesMetadataName: params.Namespace},
-		},
-		Rules: []admissionregistrationv1.RuleWithOperations{
-			{
-				Operations: []admissionregistrationv1.OperationType{
-					admissionregistrationv1.Delete,
-				},
-				Rule: admissionregistrationv1.Rule{
-					APIGroups:   []string{""},
-					APIVersions: stringListToSlice("v1"),
-					Resources:   stringListToSlice("namespaces"),
-				},
-			},
-		},
-		WebhookPath: ptr.To(util.HCONSWebhookPath),
-	}
-
-	mutatingHyperConvergedWebhook := csvv1alpha1.WebhookDescription{
-		GenerateName:            util.HcoMutatingWebhookHyperConverged,
-		Type:                    csvv1alpha1.MutatingAdmissionWebhook,
-		DeploymentName:          hcoWhDeploymentName,
-		ContainerPort:           util.WebhookPort,
-		AdmissionReviewVersions: stringListToSlice("v1beta1", "v1"),
-		SideEffects:             ptr.To(admissionregistrationv1.SideEffectClassNoneOnDryRun),
-		FailurePolicy:           ptr.To(admissionregistrationv1.Fail),
-		TimeoutSeconds:          ptr.To[int32](10),
-		Rules: []admissionregistrationv1.RuleWithOperations{
-			{
-				Operations: []admissionregistrationv1.OperationType{
-					admissionregistrationv1.Create,
-					admissionregistrationv1.Update,
-				},
-				Rule: admissionregistrationv1.Rule{
-					APIGroups:   stringListToSlice(util.APIVersionGroup),
-					APIVersions: stringListToSlice(util.APIVersionBeta),
-					Resources:   stringListToSlice("hyperconvergeds"),
-				},
-			},
-		},
-		WebhookPath: ptr.To(util.HCOMutatingWebhookPath),
-	}
-
-	return &csvv1alpha1.ClusterServiceVersion{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "operators.coreos.com/v1alpha1",
-			Kind:       "ClusterServiceVersion",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%v.v%v", params.Name, params.Version.String()),
-			Namespace: params.Namespace,
-			Annotations: map[string]string{
-				"alm-examples":                   string(almExamples),
-				"capabilities":                   "Deep Insights",
-				"certified":                      "false",
-				"categories":                     "OpenShift Optional",
-				"containerImage":                 params.Image,
-				DisableOperandDeletionAnnotation: "true",
-				"createdAt":                      time.Now().Format("2006-01-02 15:04:05"),
-				"description":                    params.MetaDescription,
-				"repository":                     "https://github.com/kubevirt/hyperconverged-cluster-operator",
-				"support":                        "false",
-				"operatorframework.io/suggested-namespace":         params.Namespace,
-				"operatorframework.io/initialization-resource":     string(almExamples),
-				"operators.openshift.io/infrastructure-features":   `["disconnected","proxy-aware"]`, // TODO: deprecated, remove once all the tools support "features.operators.openshift.io/*"
-				"features.operators.openshift.io/disconnected":     "true",
-				"features.operators.openshift.io/fips-compliant":   "false",
-				"features.operators.openshift.io/proxy-aware":      "true",
-				"features.operators.openshift.io/cnf":              "false",
-				"features.operators.openshift.io/cni":              "true",
-				"features.operators.openshift.io/csi":              "true",
-				"features.operators.openshift.io/tls-profiles":     "true",
-				"features.operators.openshift.io/token-auth-aws":   "false",
-				"features.operators.openshift.io/token-auth-azure": "false",
-				"features.operators.openshift.io/token-auth-gcp":   "false",
-				"openshift.io/required-scc":                        "restricted-v2",
-			},
-		},
-		Spec: csvv1alpha1.ClusterServiceVersionSpec{
-			DisplayName: params.DisplayName,
-			Description: params.Description,
-			Keywords:    stringListToSlice("KubeVirt", "Virtualization"),
-			Version:     csvVersion.OperatorVersion{Version: params.Version},
-			Maintainers: []csvv1alpha1.Maintainer{
-				{
-					Name:  kubevirtProjectName,
-					Email: "kubevirt-dev@googlegroups.com",
-				},
-			},
-			Maturity: "alpha",
-			Provider: csvv1alpha1.AppLink{
-				Name: kubevirtProjectName,
-				// https://github.com/operator-framework/operator-courier/issues/173
-				// URL:  "https://kubevirt.io",
-			},
-			Links: []csvv1alpha1.AppLink{
-				{
-					Name: kubevirtProjectName,
-					URL:  "https://kubevirt.io",
-				},
-				{
-					Name: "Source Code",
-					URL:  "https://github.com/kubevirt/hyperconverged-cluster-operator",
-				},
-			},
-			Icon: []csvv1alpha1.Icon{
-				{
-					MediaType: "image/svg+xml",
-					Data:      params.Icon,
-				},
-			},
-			Labels: map[string]string{
-				"alm-owner-kubevirt": packageName,
-				"operated-by":        packageName,
-			},
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"alm-owner-kubevirt": packageName,
-					"operated-by":        packageName,
-				},
-			},
-			InstallModes: []csvv1alpha1.InstallMode{
-				{
-					Type:      csvv1alpha1.InstallModeTypeOwnNamespace,
-					Supported: false,
-				},
-				{
-					Type:      csvv1alpha1.InstallModeTypeSingleNamespace,
-					Supported: false,
-				},
-				{
-					Type:      csvv1alpha1.InstallModeTypeMultiNamespace,
-					Supported: false,
-				},
-				{
-					Type:      csvv1alpha1.InstallModeTypeAllNamespaces,
-					Supported: true,
-				},
-			},
-			// Skip this in favor of having a separate function to get
-			// the actual StrategyDetailsDeployment when merging CSVs
-			InstallStrategy: csvv1alpha1.NamedInstallStrategy{},
-			WebhookDefinitions: []csvv1alpha1.WebhookDescription{
-				validatingWebhook,
-				mutatingNamespaceWebhook,
-				mutatingHyperConvergedWebhook,
-			},
-			CustomResourceDefinitions: csvv1alpha1.CustomResourceDefinitions{
-				Owned: []csvv1alpha1.CRDDescription{
-					{
-						Name:        "hyperconvergeds.hco.kubevirt.io",
-						Version:     util.CurrentAPIVersion,
-						Kind:        util.HyperConvergedKind,
-						DisplayName: params.CrdDisplay + " Deployment",
-						Description: "Represents the deployment of " + params.CrdDisplay,
-						// TODO: move this to annotations on hyperconverged_types.go once kubebuilder
-						// properly supports SpecDescriptors as the operator-sdk already does
-						SpecDescriptors: []csvv1alpha1.SpecDescriptor{
-							{
-								DisplayName: "Infra components node affinity",
-								Description: "nodeAffinity describes node affinity scheduling rules for the infra pods.",
-								Path:        "infra.nodePlacement.affinity.nodeAffinity",
-								XDescriptors: stringListToSlice(
-									"urn:alm:descriptor:com.tectonic.ui:nodeAffinity",
-								),
-							},
-							{
-								DisplayName: "Infra components pod affinity",
-								Description: "podAffinity describes pod affinity scheduling rules for the infra pods.",
-								Path:        "infra.nodePlacement.affinity.podAffinity",
-								XDescriptors: stringListToSlice(
-									"urn:alm:descriptor:com.tectonic.ui:podAffinity",
-								),
-							},
-							{
-								DisplayName: "Infra components pod anti-affinity",
-								Description: "podAntiAffinity describes pod anti affinity scheduling rules for the infra pods.",
-								Path:        "infra.nodePlacement.affinity.podAntiAffinity",
-								XDescriptors: stringListToSlice(
-									"urn:alm:descriptor:com.tectonic.ui:podAntiAffinity",
-								),
-							},
-							{
-								DisplayName: "Workloads components node affinity",
-								Description: "nodeAffinity describes node affinity scheduling rules for the workloads pods.",
-								Path:        "workloads.nodePlacement.affinity.nodeAffinity",
-								XDescriptors: stringListToSlice(
-									"urn:alm:descriptor:com.tectonic.ui:nodeAffinity",
-								),
-							},
-							{
-								DisplayName: "Workloads components pod affinity",
-								Description: "podAffinity describes pod affinity scheduling rules for the workloads pods.",
-								Path:        "workloads.nodePlacement.affinity.podAffinity",
-								XDescriptors: stringListToSlice(
-									"urn:alm:descriptor:com.tectonic.ui:podAffinity",
-								),
-							},
-							{
-								DisplayName: "Workloads components pod anti-affinity",
-								Description: "podAntiAffinity describes pod anti affinity scheduling rules for the workloads pods.",
-								Path:        "workloads.nodePlacement.affinity.podAntiAffinity",
-								XDescriptors: stringListToSlice(
-									"urn:alm:descriptor:com.tectonic.ui:podAntiAffinity",
-								),
-							},
-							{
-								DisplayName: "HIDDEN FIELDS - operator version",
-								Description: "HIDDEN FIELDS - operator version.",
-								Path:        "version",
-								XDescriptors: stringListToSlice(
-									"urn:alm:descriptor:com.tectonic.ui:hidden",
-								),
-							},
-						},
-						StatusDescriptors: []csvv1alpha1.StatusDescriptor{},
-					},
-				},
-				Required: []csvv1alpha1.CRDDescription{},
-			},
-		},
-	}
-}
-
-func InjectVolumesForWebHookCerts(deploy *appsv1.Deployment) {
-	// check if there is already a volume for api certificates
-	for _, vol := range deploy.Spec.Template.Spec.Volumes {
-		if vol.Name == certVolume {
-			return
-		}
-	}
-
-	volume := corev1.Volume{
-		Name: certVolume,
-		VolumeSource: corev1.VolumeSource{
-			Secret: &corev1.SecretVolumeSource{
-				SecretName:  deploy.Name + "-service-cert",
-				DefaultMode: ptr.To[int32](420),
-				Items: []corev1.KeyToPath{
-					{
-						Key:  "tls.crt",
-						Path: util.WebhookCertName,
-					},
-					{
-						Key:  "tls.key",
-						Path: util.WebhookKeyName,
-					},
-				},
-			},
-		},
-	}
-	deploy.Spec.Template.Spec.Volumes = append(deploy.Spec.Template.Spec.Volumes, volume)
-
-	for index, container := range deploy.Spec.Template.Spec.Containers {
-		deploy.Spec.Template.Spec.Containers[index].VolumeMounts = append(container.VolumeMounts,
-			corev1.VolumeMount{
-				Name:      certVolume,
-				MountPath: util.DefaultWebhookCertDir,
-			})
-	}
 }
 
 func getReadinessProbe(endpoint string, port int32) *corev1.Probe {
