@@ -48,7 +48,7 @@ echo "HCO_NEW_IMAGE=${HCO_NEW_IMAGE}"
 PODS=$( ${CMD} get -n "${HCO_NAMESPACE}" pod -l "name=hyperconverged-cluster-operator" --field-selector=status.phase=Running -o name)
 echo "running HCO pods: ${PODS}"
 for pod in $PODS; do
-  POD_IMAGE=$( ${CMD} get -n "${HCO_NAMESPACE}" "${pod}" -o jsonpath="{ .status.containerStatuses[?(@.name=='hyperconverged-cluster-operator')].image}")
+  POD_IMAGE=$( ${CMD} get -n "${HCO_NAMESPACE}" "${pod}" -o jsonpath="{ .spec.containers[?(@.name=='hyperconverged-cluster-operator')].image}")
   if [[ "${HCO_NEW_IMAGE}" == "${POD_IMAGE}" ]]; then
     echo "${pod} is a running upgraded HCO pod"
     exit 0
