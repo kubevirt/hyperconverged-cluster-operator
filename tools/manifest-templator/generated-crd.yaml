@@ -1113,6 +1113,12 @@ spec:
                     description: 'Deprecated: this field is ignored and will be removed
                       in the next version of the API.'
                     type: boolean
+                  containerPathVolumes:
+                    default: false
+                    description: |-
+                      ContainerPathVolumes enables the use of container paths as volumes in KubeVirt.
+                      This allows VMs to access files and directories from the virt-launcher pod's filesystem via virtiofs.
+                    type: boolean
                   decentralizedLiveMigration:
                     default: true
                     description: |-

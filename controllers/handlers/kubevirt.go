@@ -161,6 +161,7 @@ const (
 	kvObjectGraph                = "ObjectGraph"
 	kvUtilityVolumes             = "UtilityVolumes"
 	kvIncrementalBackup          = "IncrementalBackup"
+	kvContainerPathVolumes       = "ContainerPathVolumes"
 )
 
 // CPU Plugin default values
@@ -945,6 +946,10 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, a
 	if ptr.Deref(featureGates.IncrementalBackup, false) {
 		fgs = append(fgs, kvIncrementalBackup)
 		fgs = append(fgs, kvUtilityVolumes)
+	}
+
+	if ptr.Deref(featureGates.ContainerPathVolumes, false) {
+		fgs = append(fgs, kvContainerPathVolumes)
 	}
 
 	return fgs
