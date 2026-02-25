@@ -68,7 +68,6 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		defaultFeatureGates := v1beta1.HyperConvergedFeatureGates{
 			DownwardMetrics:                ptr.To(false),
 			DeployKubeSecondaryDNS:         ptr.To(false),
-			DisableMDevConfiguration:       ptr.To(false),
 			PersistentReservation:          ptr.To(false),
 			AlignCPUs:                      ptr.To(false),
 			EnableMultiArchBootImageImport: ptr.To(false),
