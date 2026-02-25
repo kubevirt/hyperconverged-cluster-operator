@@ -558,6 +558,13 @@ type HyperConvergedFeatureGates struct {
 	// +kubebuilder:default=false
 	// +default=false
 	IncrementalBackup *bool `json:"incrementalBackup,omitempty"`
+
+	// ContainerPathVolumes enables the use of container paths as volumes in KubeVirt.
+	// This allows VMs to access files and directories from the virt-launcher pod's filesystem via virtiofs.
+	// +optional
+	// +kubebuilder:default=false
+	// +default=false
+	ContainerPathVolumes *bool `json:"containerPathVolumes,omitempty"`
 }
 
 // PermittedHostDevices holds information about devices allowed for passthrough
