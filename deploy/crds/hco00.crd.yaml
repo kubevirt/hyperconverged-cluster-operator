@@ -1113,6 +1113,12 @@ spec:
                     isolation. Note: this feature is in Developer Preview.
                     Phase: alpha
 
+                  * containerPathVolumes:
+                    ContainerPathVolumes enables the use of container paths as volumes in
+                    KubeVirt. This allows VMs to access files and directories from the
+                    virt-launcher pod's filesystem via virtiofs.
+                    Phase: alpha
+
                   * declarativeHotplugVolumes:
                     DeclarativeHotplugVolumes enables the use of the declarative volume
                     hotplug feature in KubeVirt. When set to true, the
@@ -5287,6 +5293,7 @@ spec:
               enableApplicationAwareQuota: false
               enableCommonBootImageImport: true
               featureGates:
+                containerPathVolumes: false
                 decentralizedLiveMigration: true
                 declarativeHotplugVolumes: false
                 deployKubeSecondaryDNS: false
@@ -6316,6 +6323,7 @@ spec:
                 type: string
               featureGates:
                 default:
+                  containerPathVolumes: false
                   decentralizedLiveMigration: true
                   declarativeHotplugVolumes: false
                   deployKubeSecondaryDNS: false
@@ -6339,6 +6347,12 @@ spec:
                     type: boolean
                   autoResourceLimits:
                     description: 'Deprecated: this feature gate is ignored.'
+                    type: boolean
+                  containerPathVolumes:
+                    default: false
+                    description: |-
+                      ContainerPathVolumes enables the use of container paths as volumes in KubeVirt.
+                      This allows VMs to access files and directories from the virt-launcher pod's filesystem via virtiofs.
                     type: boolean
                   decentralizedLiveMigration:
                     default: true

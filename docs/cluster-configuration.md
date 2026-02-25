@@ -265,6 +265,13 @@ When enabled, this also enables the `UtilityVolumes` feature gate in the KubeVir
 
 **Graduation Status**: Alpha
 
+### containerPathVolumes Feature Gate
+Set the `containerPathVolumes` feature gate to true in order to enable the use of container paths as volumes in KubeVirt. This allows VMs to access files and directories from the virt-launcher pod's filesystem via virtiofs. This is useful for exposing data dynamically injected into pods by Kubernetes or platform-specific mechanisms, such as projected service account tokens for workload identity.
+
+**Default**: `false`
+
+**Graduation Status**: Alpha
+
 ### The hco.kubevirt.io/deployPasstNetworkBinding annotation
 Set the `hco.kubevirt.io/deployPasstNetworkBinding` HyperConverged CR annotation to `true`, to deploy the needed
 configurations for kubevirt users, so they can bind their VM using a Passt Network binding.

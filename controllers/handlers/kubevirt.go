@@ -163,6 +163,7 @@ const (
 	kvPasstBinding               = "PasstBinding"
 	kvConfigurableHypervisor     = "ConfigurableHypervisor"
 	kvOptOutRoleAggregation      = "OptOutRoleAggregation"
+	kvContainerPathVolumes       = "ContainerPathVolumes"
 )
 
 // CPU Plugin default values
@@ -962,6 +963,10 @@ func getFeatureGateChecks(spec hcov1beta1.HyperConvergedSpec, annotations map[st
 
 	if spec.RoleAggregationStrategy != nil {
 		fgs = append(fgs, kvOptOutRoleAggregation)
+	}
+
+	if ptr.Deref(featureGates.ContainerPathVolumes, false) {
+		fgs = append(fgs, kvContainerPathVolumes)
 	}
 
 	return fgs

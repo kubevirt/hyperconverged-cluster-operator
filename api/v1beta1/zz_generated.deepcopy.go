@@ -365,6 +365,11 @@ func (in *HyperConvergedFeatureGates) DeepCopyInto(out *HyperConvergedFeatureGat
 		*out = new(bool)
 		**out = **in
 	}
+	if in.ContainerPathVolumes != nil {
+		in, out := &in.ContainerPathVolumes, &out.ContainerPathVolumes
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
