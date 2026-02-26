@@ -155,12 +155,12 @@ const (
 	kvDownwardMetrics            = "DownwardMetrics"
 	kvPersistentReservation      = "PersistentReservation"
 	kvAlignCPUs                  = "AlignCPUs"
-	kvPasstIPStackMigration      = "PasstIPStackMigration"
 	kvDecentralizedLiveMigration = "DecentralizedLiveMigration"
 	kvVideoConfig                = "VideoConfig"
 	kvObjectGraph                = "ObjectGraph"
 	kvUtilityVolumes             = "UtilityVolumes"
 	kvIncrementalBackup          = "IncrementalBackup"
+	kvPasstBinding               = "PasstBinding"
 )
 
 // CPU Plugin default values
@@ -935,7 +935,7 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, a
 	}
 
 	if annotations[passt.DeployPasstNetworkBindingAnnotation] == "true" {
-		fgs = append(fgs, kvPasstIPStackMigration)
+		fgs = append(fgs, kvPasstBinding)
 	}
 
 	if slices.Contains(nodeinfo.GetWorkloadsArchitectures(), nodeinfo.S390X) {

@@ -2132,12 +2132,12 @@ Version: 1.2.3`)
 						},
 					),
 					// PasstIPStackMigration
-					Entry("should add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is true in HyperConverged CR",
+					Entry("should add the PasstBinding FG to Kubevirt CR if PasstNetworkBinding is true in HyperConverged CR",
 						func(hc *hcov1beta1.HyperConverged) {
 							hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "true"
 							hco.Spec.NetworkBinding = nil
 						},
-						ContainElement(kvPasstIPStackMigration),
+						ContainElement(kvPasstBinding),
 						func(kv *kubevirtcorev1.KubeVirt) {
 							Expect(kv.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
 							Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).NotTo(BeNil())
@@ -2151,7 +2151,7 @@ Version: 1.2.3`)
 							hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "false"
 							hco.Spec.NetworkBinding = nil
 						},
-						Not(ContainElement(kvPasstIPStackMigration)),
+						Not(ContainElement(kvPasstBinding)),
 						func(kv *kubevirtcorev1.KubeVirt) {
 							Expect(kv.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
 							Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).ToNot(HaveKey(passt.BindingName))
@@ -2162,7 +2162,7 @@ Version: 1.2.3`)
 							delete(hco.Annotations, passt.DeployPasstNetworkBindingAnnotation)
 							hco.Spec.NetworkBinding = nil
 						},
-						Not(ContainElement(kvPasstIPStackMigration)),
+						Not(ContainElement(kvPasstBinding)),
 						func(kv *kubevirtcorev1.KubeVirt) {
 							Expect(kv.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
 							Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).ToNot(HaveKey(passt.BindingName))
