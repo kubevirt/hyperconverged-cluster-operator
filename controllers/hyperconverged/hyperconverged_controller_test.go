@@ -860,6 +860,33 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(foundResource.Finalizers).To(Equal([]string{FinalizerName}))
 			})
 
+			It("should migrate mediatedDevicesConfiguration.enabled from deprecated disableMDevConfiguration on reconcile", func() {
+				expected := getBasicDeployment()
+				//nolint:staticcheck // Intentionally set deprecated FG to test controller-driven migration.
+				expected.hco.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
+				expected.hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+					Enabled:             nil, // missing; controller should set to false
+				}
+				cl := expected.initClient()
+				foundResource, _, _ := doReconcile(cl, expected.hco, nil)
+				Expect(foundResource.Spec.MediatedDevicesConfiguration).ToNot(BeNil())
+				Expect(foundResource.Spec.MediatedDevicesConfiguration.Enabled).ToNot(BeNil())
+				Expect(*foundResource.Spec.MediatedDevicesConfiguration.Enabled).To(BeFalse())
+			})
+
+			It("should create mediatedDevicesConfiguration with enabled=false when FG is true and MDC is nil", func() {
+				expected := getBasicDeployment()
+				//nolint:staticcheck // Intentionally set deprecated FG to test controller-driven migration.
+				expected.hco.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
+				expected.hco.Spec.MediatedDevicesConfiguration = nil
+				cl := expected.initClient()
+				foundResource, _, _ := doReconcile(cl, expected.hco, nil)
+				Expect(foundResource.Spec.MediatedDevicesConfiguration).ToNot(BeNil())
+				Expect(foundResource.Spec.MediatedDevicesConfiguration.Enabled).ToNot(BeNil())
+				Expect(*foundResource.Spec.MediatedDevicesConfiguration.Enabled).To(BeFalse())
+			})
+
 			It("Should not be ready if one of the operands is returns error, on create", func() {
 				hco := commontestutils.NewHco()
 				cl := commontestutils.InitClient([]client.Object{hcoNamespace, hco})

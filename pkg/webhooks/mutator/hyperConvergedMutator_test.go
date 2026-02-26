@@ -422,6 +422,68 @@ var _ = Describe("test HyperConverged mutator", func() {
 			),
 		)
 
+		It("should add enabled=false when deprecated disableMDevConfiguration is true and mediatedDevicesConfiguration has no enabled", func() {
+			cr.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true) //nolint:staticcheck // Testing migration from deprecated field.
+			cr.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
+				MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
+			}
+
+			req := admission.Request{AdmissionRequest: newCreateRequest(cr, testCodec)}
+
+			res := mutator.Handle(context.TODO(), req)
+			Expect(res.Allowed).To(BeTrue())
+
+			Expect(res.Patches).To(ContainElement(jsonpatch.JsonPatchOperation{
+				Operation: "add",
+				Path:      "/spec/mediatedDevicesConfiguration/enabled",
+				Value:     false,
+			}))
+			Expect(res.Patches).To(ContainElement(ksmPatch))
+		})
+
+		It("should not add enabled patch when disableMDevConfiguration is true but mediatedDevicesConfiguration is nil", func() {
+			cr.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true) //nolint:staticcheck // Testing migration from deprecated field.
+			cr.Spec.MediatedDevicesConfiguration = nil
+
+			req := admission.Request{AdmissionRequest: newCreateRequest(cr, testCodec)}
+
+			res := mutator.Handle(context.TODO(), req)
+			Expect(res.Allowed).To(BeTrue())
+
+			Expect(res.Patches).NotTo(ContainElement(HaveField("Path", Equal("/spec/mediatedDevicesConfiguration/enabled"))))
+		})
+
+		It("should not add enabled patch when disableMDevConfiguration is true but enabled is already set", func() {
+			cr.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true) //nolint:staticcheck // Testing migration from deprecated field.
+			cr.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
+				MediatedDeviceTypes: []string{"nvidia-222"},
+				Enabled:             ptr.To(true),
+			}
+
+			req := admission.Request{AdmissionRequest: newCreateRequest(cr, testCodec)}
+
+			res := mutator.Handle(context.TODO(), req)
+			Expect(res.Allowed).To(BeTrue())
+
+			Expect(res.Patches).NotTo(ContainElement(HaveField("Path", Equal("/spec/mediatedDevicesConfiguration/enabled"))))
+		})
+
+		It("should not add enabled patch when disableMDevConfiguration is nil", func() {
+			//nolint:staticcheck // Set deprecated field for test.
+			cr.Spec.FeatureGates.DisableMDevConfiguration = nil
+			cr.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
+				MediatedDeviceTypes: []string{"nvidia-222"},
+				Enabled:             nil,
+			}
+
+			req := admission.Request{AdmissionRequest: newCreateRequest(cr, testCodec)}
+
+			res := mutator.Handle(context.TODO(), req)
+			Expect(res.Allowed).To(BeTrue())
+
+			Expect(res.Patches).NotTo(ContainElement(HaveField("Path", Equal("/spec/mediatedDevicesConfiguration/enabled"))))
+		})
+
 		It("should enable KSM by default", func() {
 			req := admission.Request{AdmissionRequest: newCreateRequest(cr, testCodec)}
 
@@ -678,6 +740,95 @@ var _ = Describe("test HyperConverged mutator", func() {
 					nil,
 				),
 			)
+		})
+
+		Context("MDev feature gate and enabled sync on update", func() {
+			It("should set FG to !enabled when only enabled changed", func() {
+				origCR := cr.DeepCopy()
+				origCR.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true) //nolint:staticcheck
+				origCR.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+					Enabled:             ptr.To(false),
+				}
+				cr.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true) //nolint:staticcheck
+				cr.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+					Enabled:             ptr.To(true), // only enabled changed
+				}
+
+				req := admission.Request{AdmissionRequest: newUpdateRequest(origCR, cr, testCodec)}
+				res := mutator.Handle(context.TODO(), req)
+				Expect(res.Allowed).To(BeTrue())
+				Expect(res.Patches).To(ContainElement(jsonpatch.JsonPatchOperation{
+					Operation: "replace",
+					Path:      "/spec/featureGates/disableMDevConfiguration",
+					Value:     false,
+				}))
+			})
+			It("should set enabled to false when only FG changed to true", func() {
+				origCR := cr.DeepCopy()
+				origCR.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(false) //nolint:staticcheck
+				origCR.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+					Enabled:             nil,
+				}
+				cr.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true) //nolint:staticcheck
+				cr.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+					Enabled:             nil,
+				}
+
+				req := admission.Request{AdmissionRequest: newUpdateRequest(origCR, cr, testCodec)}
+				res := mutator.Handle(context.TODO(), req)
+				Expect(res.Allowed).To(BeTrue())
+				Expect(res.Patches).To(ContainElement(jsonpatch.JsonPatchOperation{
+					Operation: "add",
+					Path:      "/spec/mediatedDevicesConfiguration/enabled",
+					Value:     false,
+				}))
+			})
+			It("should set enabled to nil when only FG changed to false and enabled was set", func() {
+				origCR := cr.DeepCopy()
+				origCR.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true) //nolint:staticcheck
+				origCR.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+					Enabled:             ptr.To(false),
+				}
+				cr.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(false) //nolint:staticcheck
+				cr.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+					Enabled:             ptr.To(false), // unchanged; mutator will set to nil to match FG false
+				}
+
+				req := admission.Request{AdmissionRequest: newUpdateRequest(origCR, cr, testCodec)}
+				res := mutator.Handle(context.TODO(), req)
+				Expect(res.Allowed).To(BeTrue())
+				Expect(res.Patches).To(ContainElement(jsonpatch.JsonPatchOperation{
+					Operation: "replace",
+					Path:      "/spec/mediatedDevicesConfiguration/enabled",
+					Value:     nil,
+				}))
+			})
+			It("should add enabled=false on update when FG is true and enabled is nil (upgrade)", func() {
+				origCR := cr.DeepCopy()
+				origCR.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true) //nolint:staticcheck
+				origCR.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+				}
+				cr.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true) //nolint:staticcheck
+				cr.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+				}
+
+				req := admission.Request{AdmissionRequest: newUpdateRequest(origCR, cr, testCodec)}
+				res := mutator.Handle(context.TODO(), req)
+				Expect(res.Allowed).To(BeTrue())
+				Expect(res.Patches).To(ContainElement(jsonpatch.JsonPatchOperation{
+					Operation: "add",
+					Path:      "/spec/mediatedDevicesConfiguration/enabled",
+					Value:     false,
+				}))
+			})
 		})
 
 		DescribeTable("Check mediatedDevicesTypes -> mediatedDeviceTypes transition", func(initialMDConfiguration *v1beta1.MediatedDevicesConfiguration, patches []jsonpatch.JsonPatchOperation) {
