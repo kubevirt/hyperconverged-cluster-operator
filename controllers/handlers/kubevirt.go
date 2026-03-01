@@ -97,9 +97,6 @@ const (
 	// Allow assigning host devices to virtual machines
 	kvHostDevicesGate = "HostDevices"
 
-	// Expand disks to the largest size
-	kvExpandDisksGate = "ExpandDisks"
-
 	// Export VMs to outside of the cluster
 	kvVMExportGate = "VMExport"
 
@@ -123,7 +120,6 @@ var (
 	hardCodeKvFgs = []string{
 		kvCPUManagerGate,
 		kvSnapshotGate,
-		kvExpandDisksGate,
 		kvHostDevicesGate,
 		kvVMExportGate,
 		kvKubevirtSeccompProfile,
