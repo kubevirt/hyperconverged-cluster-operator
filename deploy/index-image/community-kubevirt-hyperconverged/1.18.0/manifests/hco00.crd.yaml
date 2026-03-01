@@ -63,7 +63,6 @@ spec:
                 decentralizedLiveMigration: true
                 declarativeHotplugVolumes: false
                 deployKubeSecondaryDNS: false
-                disableMDevConfiguration: false
                 downwardMetrics: false
                 enableMultiArchBootImageImport: false
                 incrementalBackup: false
@@ -1091,7 +1090,6 @@ spec:
                   decentralizedLiveMigration: true
                   declarativeHotplugVolumes: false
                   deployKubeSecondaryDNS: false
-                  disableMDevConfiguration: false
                   downwardMetrics: false
                   enableMultiArchBootImageImport: false
                   incrementalBackup: false
@@ -1146,8 +1144,8 @@ spec:
                       Use spec.deployVmConsoleProxy instead
                     type: boolean
                   disableMDevConfiguration:
-                    default: false
-                    description: Disable mediated devices handling on KubeVirt
+                    description: 'Deprecated: This field is ignored and use mediatedDevicesConfiguration.Enabled
+                      instead , it will be removed in the next version of the API.'
                     type: boolean
                   downwardMetrics:
                     default: false
@@ -2494,6 +2492,12 @@ spec:
                 description: MediatedDevicesConfiguration holds information about
                   MDEV types to be defined on nodes, if available
                 properties:
+                  enabled:
+                    description: |-
+                      Enable the creation and removal of mediated devices by virt-handler
+                      Replaces the deprecated DisableMDEVConfiguration feature gate
+                      Defaults to true
+                    type: boolean
                   mediatedDeviceTypes:
                     items:
                       type: string

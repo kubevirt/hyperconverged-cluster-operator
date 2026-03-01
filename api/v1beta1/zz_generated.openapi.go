@@ -292,8 +292,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"disableMDevConfiguration": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Disable mediated devices handling on KubeVirt",
-							Default:     false,
+							Description: "Deprecated: This field is ignored and use mediatedDevicesConfiguration.Enabled instead , it will be removed in the next version of the API.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -1115,6 +1114,13 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_MediatedDevices
 									},
 								},
 							},
+						},
+					},
+					"enabled": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Enable the creation and removal of mediated devices by virt-handler Replaces the deprecated DisableMDEVConfiguration feature gate Defaults to true",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},

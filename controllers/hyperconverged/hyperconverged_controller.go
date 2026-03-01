@@ -383,6 +383,13 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 		return reconcile.Result{}, nil
 	}
 
+	// Controller-driven upgrade: if deprecated disableMDevConfiguration is true and
+	// mediatedDevicesConfiguration.enabled is missing, set enabled=false so the CR
+	// is migrated without requiring a user edit. updateHyperConverged will persist it.
+	if r.migrateMDevConfigurationIfNeeded(req) {
+		req.Logger.Info("Migrated HCO spec: set mediatedDevicesConfiguration.enabled from deprecated disableMDevConfiguration")
+	}
+
 	// Add conditions if there are none
 	init := req.Instance.Status.Conditions == nil
 	if init {
@@ -1118,6 +1125,32 @@ func (r *ReconcileHyperConverged) setOperatorUpgradeableStatus(request *common.H
 	}
 
 	return nil
+}
+
+// migrateMDevConfigurationIfNeeded performs a controller-driven upgrade: when the deprecated
+// spec.featureGates.disableMDevConfiguration is true and spec.mediatedDevicesConfiguration.enabled
+// is missing, it sets enabled=false so the CR is migrated without requiring a user edit.
+// Returns true if the spec was modified (caller should set req.Dirty and requeue).
+func (r *ReconcileHyperConverged) migrateMDevConfigurationIfNeeded(req *common.HcoRequest) bool {
+	//nolint:staticcheck // Read deprecated field to migrate existing CRs.
+	if req.Instance.Spec.FeatureGates.DisableMDevConfiguration == nil ||
+		!*req.Instance.Spec.FeatureGates.DisableMDevConfiguration {
+		return false
+	}
+	mdc := req.Instance.Spec.MediatedDevicesConfiguration
+	if mdc == nil {
+		req.Instance.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
+			Enabled: ptr.To(false),
+		}
+		req.Dirty = true
+		return true
+	}
+	if mdc.Enabled != nil {
+		return false
+	}
+	mdc.Enabled = ptr.To(false)
+	req.Dirty = true
+	return true
 }
 
 func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (bool, error) {
