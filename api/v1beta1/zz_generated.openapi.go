@@ -31,6 +31,10 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.AIELauncherRule":                      schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_AIELauncherRule(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.AIESelector":                          schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_AIESelector(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.AIEVMLabels":                          schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_AIEVMLabels(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.AIEWebhookConfiguration":              schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_AIEWebhookConfiguration(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.ApplicationAwareConfigurations":       schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_ApplicationAwareConfigurations(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.CertRotateConfigCA":                   schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_CertRotateConfigCA(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.CertRotateConfigServer":               schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_CertRotateConfigServer(ref),
@@ -53,6 +57,149 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.StorageImportConfig":                  schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_StorageImportConfig(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.USBHostDevice":                        schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_USBHostDevice(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.USBSelector":                          schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_USBSelector(ref),
+	}
+}
+
+func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_AIELauncherRule(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AIELauncherRule maps a selector to an alternative launcher image.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Name is an identifier for this rule.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"image": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Image is the alternative launcher container image to use when this rule matches.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"selector": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Selector defines the criteria for matching a VirtualMachineInstance.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.AIESelector"),
+						},
+					},
+				},
+				Required: []string{"name", "image", "selector"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.AIESelector"},
+	}
+}
+
+func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_AIESelector(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AIESelector defines the criteria for matching a VirtualMachineInstance. DeviceNames and VMLabels are OR'd: if either matches, the rule applies.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"deviceNames": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "DeviceNames is a list of device names (GPUs/HostDevices) to match against the VMI's devices.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"vmLabels": {
+						SchemaProps: spec.SchemaProps{
+							Description: "VMLabels matches VMIs by label selectors.",
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.AIEVMLabels"),
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.AIEVMLabels"},
+	}
+}
+
+func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_AIEVMLabels(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AIEVMLabels matches VMIs by label selectors.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"matchLabels": {
+						SchemaProps: spec.SchemaProps{
+							Description: "MatchLabels is a map of key-value pairs. All specified labels must be present on the VMI for a match.",
+							Type:        []string{"object"},
+							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_AIEWebhookConfiguration(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AIEWebhookConfiguration holds configuration for the AIE webhook launcher rules.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"rules": {
+						VendorExtensible: spec.VendorExtensible{
+							Extensions: spec.Extensions{
+								"x-kubernetes-list-type": "atomic",
+							},
+						},
+						SchemaProps: spec.SchemaProps{
+							Description: "Rules defines the ordered list of launcher replacement rules. Each rule maps a selector (device names and/or VM labels) to an alternative launcher image. Rules are evaluated in order; the first match wins.",
+							Type:        []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: map[string]interface{}{},
+										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.AIELauncherRule"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.AIELauncherRule"},
 	}
 }
 
@@ -385,6 +532,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					"incrementalBackup": {
 						SchemaProps: spec.SchemaProps{
 							Description: "IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt. When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This feature is in Tech Preview.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"deployAIEWebhook": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DeployAIEWebhook enables the AIE (Accelerated Infrastructure Enablement) webhook that intercepts virt-launcher Pod creation and conditionally replaces the compute container image with an alternative launcher image (e.g., GPU-optimized builds) based on configurable rules. Note: This feature is in Developer Preview.",
 							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",
@@ -740,11 +895,17 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 							Ref:         ref("kubevirt.io/api/core/v1.LiveUpdateConfiguration"),
 						},
 					},
+					"aieWebhookConfig": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AIEWebhookConfig holds configuration for the AIE (Accelerated Infrastructure Enablement) webhook that replaces virt-launcher images with alternative builds based on device or label selectors. Only used when featureGates.deployAIEWebhook is true.",
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.AIEWebhookConfiguration"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HigherWorkloadDensityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedCertConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedFeatureGates", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedObsoleteCPUs", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedWorkloadUpdateStrategy", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LiveMigrationConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.MediatedDevicesConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.OperandResourceRequirements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.PermittedHostDevices", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.StorageImportConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.VirtualMachineOptions", "github.com/openshift/api/config/v1.TLSSecurityProfile", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin", "kubevirt.io/api/core/v1.KSMConfiguration", "kubevirt.io/api/core/v1.LiveUpdateConfiguration", "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1.FilesystemOverhead"},
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.AIEWebhookConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HigherWorkloadDensityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedCertConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedFeatureGates", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedObsoleteCPUs", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedWorkloadUpdateStrategy", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LiveMigrationConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.MediatedDevicesConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.OperandResourceRequirements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.PermittedHostDevices", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.StorageImportConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.VirtualMachineOptions", "github.com/openshift/api/config/v1.TLSSecurityProfile", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin", "kubevirt.io/api/core/v1.KSMConfiguration", "kubevirt.io/api/core/v1.LiveUpdateConfiguration", "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1.FilesystemOverhead"},
 	}
 }
 

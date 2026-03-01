@@ -867,6 +867,14 @@ rules:
   - delete
   - patch
 - apiGroups:
+  - kubevirt.io
+  resources:
+  - virtualmachineinstances
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - cdi.kubevirt.io
   resources:
   - cdis
@@ -1097,6 +1105,29 @@ rules:
   - watch
   - update
   - patch
+- apiGroups:
+  - admissionregistration.k8s.io
+  resources:
+  - mutatingwebhookconfigurations
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
+- apiGroups:
+  - cert-manager.io
+  resources:
+  - issuers
+  - certificates
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - delete
 - apiGroups:
   - console.openshift.io
   resources:

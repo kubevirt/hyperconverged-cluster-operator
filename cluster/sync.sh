@@ -34,6 +34,7 @@ function update_manifests() {
     # Sed from quay.io to local registry
     sed -r -i 's|: quay.io/kubevirt/hyperconverged-cluster-operator(@sha256)?:.*$|: '"$REGISTRY/$REGISTRY_NAMESPACE"'/hyperconverged-cluster-operator:latest|g' _out/operator.yaml
     sed -r -i 's|: quay.io/kubevirt/hyperconverged-cluster-webhook(@sha256)?:.*$|: '"$REGISTRY/$REGISTRY_NAMESPACE"'/hyperconverged-cluster-webhook:latest|g' _out/operator.yaml
+    sed -r -i 's|: quay.io/kubevirt/kubevirt-aie-webhook(:.*)?$|: '"$REGISTRY/$REGISTRY_NAMESPACE"'/kubevirt-aie-webhook:latest|g' _out/operator.yaml
 }
 
 function cluster_clean() {

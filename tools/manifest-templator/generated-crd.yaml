@@ -62,6 +62,7 @@ spec:
               featureGates:
                 decentralizedLiveMigration: true
                 declarativeHotplugVolumes: false
+                deployAIEWebhook: false
                 deployKubeSecondaryDNS: false
                 disableMDevConfiguration: false
                 downwardMetrics: false
@@ -94,6 +95,59 @@ spec:
                       resources, defaults to True.
                     nullable: true
                     type: boolean
+                type: object
+              aieWebhookConfig:
+                description: |-
+                  AIEWebhookConfig holds configuration for the AIE (Accelerated Infrastructure Enablement) webhook that replaces
+                  virt-launcher images with alternative builds based on device or label selectors.
+                  Only used when featureGates.deployAIEWebhook is true.
+                properties:
+                  rules:
+                    description: |-
+                      Rules defines the ordered list of launcher replacement rules.
+                      Each rule maps a selector (device names and/or VM labels) to an alternative launcher image.
+                      Rules are evaluated in order; the first match wins.
+                    items:
+                      description: AIELauncherRule maps a selector to an alternative
+                        launcher image.
+                      properties:
+                        image:
+                          description: Image is the alternative launcher container
+                            image to use when this rule matches.
+                          type: string
+                        name:
+                          description: Name is an identifier for this rule.
+                          type: string
+                        selector:
+                          description: Selector defines the criteria for matching
+                            a VirtualMachineInstance.
+                          properties:
+                            deviceNames:
+                              description: DeviceNames is a list of device names (GPUs/HostDevices)
+                                to match against the VMI's devices.
+                              items:
+                                type: string
+                              type: array
+                              x-kubernetes-list-type: atomic
+                            vmLabels:
+                              description: VMLabels matches VMIs by label selectors.
+                              properties:
+                                matchLabels:
+                                  additionalProperties:
+                                    type: string
+                                  description: MatchLabels is a map of key-value pairs.
+                                    All specified labels must be present on the VMI
+                                    for a match.
+                                  type: object
+                              type: object
+                          type: object
+                      required:
+                      - image
+                      - name
+                      - selector
+                      type: object
+                    type: array
+                    x-kubernetes-list-type: atomic
                 type: object
               applicationAwareConfig:
                 description: ApplicationAwareConfig set the AAQ configurations
@@ -1090,6 +1144,7 @@ spec:
                 default:
                   decentralizedLiveMigration: true
                   declarativeHotplugVolumes: false
+                  deployAIEWebhook: false
                   deployKubeSecondaryDNS: false
                   disableMDevConfiguration: false
                   downwardMetrics: false
@@ -1127,6 +1182,14 @@ spec:
                       When set to true, the "DeclarativeHotplugVolumes" feature gate is enabled instead of "HotplugVolumes".
                       When set to false or nil, the "HotplugVolumes" feature gate is enabled (default behavior).
                       This feature is in Developer Preview.
+                    type: boolean
+                  deployAIEWebhook:
+                    default: false
+                    description: |-
+                      DeployAIEWebhook enables the AIE (Accelerated Infrastructure Enablement) webhook that intercepts virt-launcher Pod creation
+                      and conditionally replaces the compute container image with an alternative launcher image
+                      (e.g., GPU-optimized builds) based on configurable rules.
+                      Note: This feature is in Developer Preview.
                     type: boolean
                   deployKubeSecondaryDNS:
                     default: false
