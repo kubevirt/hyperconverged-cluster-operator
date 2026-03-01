@@ -9,6 +9,7 @@ import (
 	imagev1 "github.com/openshift/api/image/v1"
 	deschedulerv1 "github.com/openshift/cluster-kube-descheduler-operator/pkg/apis/descheduler/v1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	persesv1alpha1 "github.com/rhobs/perses-operator/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -84,6 +85,7 @@ func setScheme(cli client.Client) {
 			monitoringv1.AddToScheme,
 			deschedulerv1.AddToScheme,
 			apiextensionsv1.AddToScheme,
+			persesv1alpha1.AddToScheme,
 		}
 
 		for _, f := range funcs {

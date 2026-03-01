@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-logr/logr"
 	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
@@ -147,6 +148,7 @@ func main() {
 
 	// Detect OpenShift version
 	ctx := context.Background()
+	ctx = logr.NewContext(ctx, logger)
 	err = cmdcommon.ClusterInitializations(ctx, apiClient, scheme, logger)
 	cmdHelper.ExitOnError(err, "Cannot detect cluster type")
 
@@ -160,6 +162,7 @@ func main() {
 
 	// Determine Perses availability before creating the manager so we can shape the cache accordingly
 	persesAvailable := hcoutil.IsPersesAvailable(ctx, apiClient)
+	logger.Info("Perses CRD availability at startup", "available", persesAvailable)
 
 	// Create a new Cmd to provide shared dependencies and start components
 	mgr, err := manager.New(cfg, getManagerOptions(operatorNamespace, needLeaderElection, ci, scheme, persesAvailable))
@@ -248,12 +251,9 @@ func main() {
 			logger.Error(err, "unable to create controller", "controller", "Observability")
 			os.Exit(1)
 		}
-		// Register Perses controller only if CRDs are available; otherwise avoid watching unknown types.
-		if persesAvailable {
-			if err = perses.SetupPersesWithManager(mgr, ownresources.GetDeploymentRef()); err != nil {
-				logger.Error(err, "unable to create controller", "controller", "ObservabilityPerses")
-				os.Exit(1)
-			}
+		if err = perses.SetupPersesWithManager(ctx, mgr, ownresources.GetDeploymentRef()); err != nil {
+			logger.Error(err, "unable to create controller", "controller", "ObservabilityPerses")
+			os.Exit(1)
 		}
 
 		if err = ingresscluster.RegisterReconciler(mgr, ingressEventCh); err != nil {
