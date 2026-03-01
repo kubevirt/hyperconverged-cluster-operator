@@ -3,6 +3,7 @@ package v1beta1
 import (
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1 "kubevirt.io/api/core/v1"
@@ -864,6 +865,44 @@ type NodeInfoStatus struct {
 	WorkloadsArchitectures []string `json:"workloadsArchitectures,omitempty"`
 	// ControlPlaneArchitectures is a distinct list of the CPU architecture of the control-plane nodes.
 	ControlPlaneArchitectures []string `json:"controlPlaneArchitectures,omitempty"`
+	// RecommendedCpuModels is a list of recommended CPU models for the cluster based on available nodes
+	// +listType=map
+	// +listMapKey=name
+	RecommendedCpuModels []CpuModelInfo `json:"recommendedCpuModels,omitempty"`
+}
+
+// CpuModelInfo contains information about a CPU model and its availability in the cluster
+type CpuModelInfo struct {
+	// Name is the CPU model name
+	Name string `json:"name"`
+	// Benchmark is the CPU performance score for this model
+	Benchmark int `json:"benchmark"`
+	// Nodes is the number of nodes that support this CPU model
+	Nodes int `json:"nodes"`
+	// CPU is the total CPU cores available across all nodes supporting this model
+	CPU *resource.Quantity `json:"cpu"`
+	// Memory is the total memory available across all nodes supporting this model
+	Memory *resource.Quantity `json:"memory"`
+}
+
+// Equal returns true if the two CpuModelInfo objects are equal
+func (c CpuModelInfo) Equal(other CpuModelInfo) bool {
+	if c.Name != other.Name || c.Benchmark != other.Benchmark || c.Nodes != other.Nodes {
+		return false
+	}
+	if (c.CPU == nil) != (other.CPU == nil) {
+		return false
+	}
+	if c.CPU != nil && !c.CPU.Equal(*other.CPU) {
+		return false
+	}
+	if (c.Memory == nil) != (other.Memory == nil) {
+		return false
+	}
+	if c.Memory != nil && !c.Memory.Equal(*other.Memory) {
+		return false
+	}
+	return true
 }
 
 // ApplicationAwareConfigurations holds the AAQ configurations
