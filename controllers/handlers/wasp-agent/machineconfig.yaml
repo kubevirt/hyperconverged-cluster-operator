@@ -1,0 +1,41 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: 90-worker-swap-online
+spec:
+  config:
+    ignition:
+      version: 3.5.0
+    systemd:
+      units:
+        - contents: |
+            [Unit]
+            Description=Enable swap
+            ConditionFirstBoot=no
+            ConditionPathExists=/dev/disk/by-partlabel/OCPSWAP
+            
+            [Service]
+            Type=oneshot
+            ExecStart=/bin/sh -c "sudo swapon --priority 100 /dev/disk/by-partlabel/OCPSWAP"
+            
+            [Install]
+            RequiredBy=kubelet-dependencies.target
+          enabled: true
+          name: swap-disk-enable.service
+        - contents: |
+            [Unit]
+            Description=Enable OCP file swap
+            ConditionFirstBoot=no
+            ConditionPathExists=/var/tmp/ocpswap.file
+            
+            [Service]
+            Type=oneshot
+            ExecStart=/bin/sh -c "sudo swapon --priority 10 /var/tmp/ocpswap.file"
+            
+            [Install]
+            RequiredBy=kubelet-dependencies.target
+          enabled: true
+          name: ocpswap-file-enable.service
+
