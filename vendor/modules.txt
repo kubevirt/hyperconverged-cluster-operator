@@ -373,8 +373,8 @@ github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runtime-spec v1.2.1
 ## explicit
 github.com/opencontainers/runtime-spec/specs-go
-# github.com/openshift/api v0.0.1
-## explicit; go 1.20
+# github.com/openshift/api v0.0.1 => github.com/openshift/api v0.0.0-20250409155250-8fcc4e71758a
+## explicit; go 1.23.0
 github.com/openshift/api/config/v1
 github.com/openshift/api/console/v1
 github.com/openshift/api/image/docker10
@@ -1265,3 +1265,4 @@ sigs.k8s.io/yaml
 # k8s.io/sample-controller => k8s.io/sample-controller v0.35.1
 # vbom.ml/util => github.com/fvbommel/util v0.0.0-20180919145318-efcd4e0f9787
 # bitbucket.org/ww/goautoneg => github.com/munnerz/goautoneg v0.0.0-20120707110453-a547fc61f48d
+# github.com/openshift/api => github.com/openshift/api v0.0.0-20250409155250-8fcc4e71758a

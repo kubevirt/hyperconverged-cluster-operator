@@ -381,8 +381,8 @@ github.com/opencontainers/image-spec v1.1.1 h1:y0fUlFfIZhPF1W537XOLg0/fcx6zcHCJw
 github.com/opencontainers/image-spec v1.1.1/go.mod h1:qpqAh3Dmcf36wStyyWU+kCeDgrGnAve2nCC8+7h8Q0M=
 github.com/opencontainers/runtime-spec v1.2.1 h1:S4k4ryNgEpxW1dzyqffOmhI1BHYcjzU8lpJfSlR0xww=
 github.com/opencontainers/runtime-spec v1.2.1/go.mod h1:jwyrGlmzljRJv/Fgzds9SsS/C5hL+LL3ko9hs6T5lQ0=
-github.com/openshift/api v0.0.1 h1:i8SdJ41c7gqwssxxr7/V3x1vGDBzulkLZVewfCH6z6I=
-github.com/openshift/api v0.0.1/go.mod h1:yimSGmjsI+XF1mr+AKBs2//fSXIOhhetHGbMlBEfXbs=
+github.com/openshift/api v0.0.0-20250409155250-8fcc4e71758a h1:d2WEiysc+Gx51E5pQUvB5CHuXiUTsuZdKZNPHkGAZZg=
+github.com/openshift/api v0.0.0-20250409155250-8fcc4e71758a/go.mod h1:yk60tHAmHhtVpJQo3TwVYq2zpuP70iJIFDCmeKMIzPw=
 github.com/openshift/cluster-kube-descheduler-operator v0.0.0-20260214173033-e860b7975c2c h1:IPKeP7BIM1If8vgEASIYm3y/XwAEmp+TKPRzXvHD/v4=
 github.com/openshift/cluster-kube-descheduler-operator v0.0.0-20260214173033-e860b7975c2c/go.mod h1:+WmDeAZ6gVLdAuaMr4Lq8B49Xo3TB8EEizbhLTDO8OY=
 github.com/openshift/custom-resource-status v1.1.2 h1:C3DL44LEbvlbItfd8mT5jWrqPfHnSOQoQf/sypqA6A4=
