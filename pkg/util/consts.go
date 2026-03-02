@@ -44,9 +44,8 @@ const (
 	UndefinedNamespace                 = ""
 	OpenshiftNamespace                 = "openshift"
 	APIVersionBeta                     = v1beta1.APIVersionBeta
-	CurrentAPIVersion                  = v1beta1.CurrentAPIVersion
+	CurrentAPIVersion                  = v1beta1.APIVersionBeta
 	APIVersionGroup                    = v1beta1.APIVersionGroup
-	APIVersion                         = v1beta1.APIVersion
 	HyperConvergedKind                 = "HyperConverged"
 	// Recommended labels by Kubernetes. See
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
@@ -101,6 +100,10 @@ const (
 	AllowEgressToDNSAndAPIServerLabel = NPLabelPrefix + "allow-access-cluster-services"
 	// AllowIngressToMetricsEndpointLabel if this label is set, the network policy will allow ingress to the metrics endpoint
 	AllowIngressToMetricsEndpointLabel = NPLabelPrefix + "allow-prometheus-access"
+)
+
+var (
+	APIVersion = v1beta1.APIVersion
 )
 
 type AppComponent string

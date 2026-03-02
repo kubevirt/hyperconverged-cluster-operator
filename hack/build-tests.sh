@@ -6,15 +6,14 @@ export PATH=$PATH:$HOME/gopath/bin
 JOB_TYPE="${JOB_TYPE:-}"
 
 if [ "${JOB_TYPE}" == "travis" ]; then
-    go get -v -t ./...
-    go install github.com/mattn/goveralls@latest
-    go mod vendor
-    PACKAGES=($(go list ./pkg/... ./controllers/... | grep -v 'controllers/commontestutils'))
-    COVERPKG="$(echo ${PACKAGES[@]}|sed 's| |,|g')"
-    mkdir -p coverprofiles
-    # Workaround - run tests on webhooks first to prevent failure when running all the test in the following line.
-    go test -v -outputdir=./coverprofiles -coverpkg="${COVERPKG}" -coverprofile=cover.coverprofile ${PACKAGES[@]}
-
+  mkdir -p coverprofiles
+  go test -v -outputdir=./coverprofiles \
+     -coverpkg=./api/v1beta1,./pkg/...,./controllers/... \
+     -coverprofile=cover.coverprofile.temp \
+     ./api/v1beta1 ./pkg/... ./controllers/...
+  # don't compute coverage of auto generated code
+  grep -v zz_generated ./coverprofiles/cover.coverprofile.temp > ./coverprofiles/cover.coverprofile
+  rm ./coverprofiles/cover.coverprofile.temp
 else
     set +u
     test_path="./tests/func-tests"

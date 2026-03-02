@@ -140,7 +140,7 @@ hack/deploy-cert-manager.sh
 "${CMD}" apply $LABEL_SELECTOR_ARG -f _out/cluster_role.yaml
 "${CMD}" apply $LABEL_SELECTOR_ARG -f _out/service_account.yaml
 "${CMD}" apply $LABEL_SELECTOR_ARG -f _out/cluster_role_binding.yaml
-"${CMD}" apply $LABEL_SELECTOR_ARG -f _out/crds/
+"${CMD}" apply $LABEL_SELECTOR_ARG --server-side -f _out/crds/
 
 sleep 20
 if [[ "$(${CMD} get crd ${HCO_CRD_NAME} -o=jsonpath='{.status.conditions[?(@.type=="NonStructuralSchema")].status}')" == "True" ]];

@@ -1,4 +1,4 @@
-package v1beta1
+package v1
 
 import (
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
@@ -10,10 +10,6 @@ import (
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 )
-
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 
 // HyperConvergedName is the name of the HyperConverged resource that will be reconciled
 const HyperConvergedName = "kubevirt-hyperconverged"
@@ -943,7 +939,6 @@ const (
 
 // HyperConverged is the Schema for the hyperconvergeds API
 // +k8s:openapi-gen=true
-// +kubebuilder:storageversion
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +kubebuilder:resource:scope=Namespaced,categories={all},shortName={hco,hcos}
 // +kubebuilder:subresource:status
