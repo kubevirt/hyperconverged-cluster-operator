@@ -18,7 +18,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -88,7 +88,7 @@ func (c *cacheIsOpenShift) IsOpenShift(ctx context.Context, cli client.Client) (
 		return c.isOpenShift, nil
 	}
 
-	err := openshiftconfigv1.AddToScheme(cli.Scheme())
+	err := openshiftconfigv1.Install(cli.Scheme())
 	if err != nil {
 		panic("can't register scheme; " + err.Error())
 	}
@@ -123,12 +123,12 @@ func IsOpenShift(ctx context.Context, cli client.Client) (bool, error) {
 }
 
 // GetHCO reads the HCO CR from the APIServer with a DynamicClient
-func GetHCO(ctx context.Context, cli client.Client) *v1beta1.HyperConverged {
+func GetHCO(ctx context.Context, cli client.Client) *hcov1beta1.HyperConverged {
 	ginkgo.GinkgoHelper()
 
-	Expect(v1beta1.AddToScheme(cli.Scheme())).To(Succeed())
+	Expect(hcov1beta1.AddToScheme(cli.Scheme())).To(Succeed())
 
-	hco := &v1beta1.HyperConverged{
+	hco := &hcov1beta1.HyperConverged{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      hcoutil.HyperConvergedName,
 			Namespace: InstallNamespace,
@@ -146,8 +146,8 @@ func GetHCO(ctx context.Context, cli client.Client) *v1beta1.HyperConverged {
 // input object.
 // UpdateHCORetry should be preferred over UpdateHCO_old to reduce test flakiness due to
 // inevitable concurrency conflicts
-func UpdateHCORetry(ctx context.Context, cli client.Client, input *v1beta1.HyperConverged) *v1beta1.HyperConverged {
-	var output *v1beta1.HyperConverged
+func UpdateHCORetry(ctx context.Context, cli client.Client, input *hcov1beta1.HyperConverged) *hcov1beta1.HyperConverged {
+	var output *hcov1beta1.HyperConverged
 	var err error
 
 	Eventually(func(ctx context.Context) error {
@@ -165,8 +165,8 @@ func UpdateHCORetry(ctx context.Context, cli client.Client, input *v1beta1.Hyper
 }
 
 // UpdateHCO updates the HCO CR using a DynamicClient, it can return errors on failures
-func UpdateHCO(ctx context.Context, cli client.Client, input *v1beta1.HyperConverged) (*v1beta1.HyperConverged, error) {
-	err := v1beta1.AddToScheme(cli.Scheme())
+func UpdateHCO(ctx context.Context, cli client.Client, input *hcov1beta1.HyperConverged) (*hcov1beta1.HyperConverged, error) {
+	err := hcov1beta1.AddToScheme(cli.Scheme())
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func UpdateHCO(ctx context.Context, cli client.Client, input *v1beta1.HyperConve
 	hco.Annotations = input.Annotations
 	hco.Finalizers = input.Finalizers
 	hco.Labels = input.Labels
-	hco.Status = v1beta1.HyperConvergedStatus{} // to silence warning about unknown fields.
+	hco.Status = hcov1beta1.HyperConvergedStatus{} // to silence warning about unknown fields.
 
 	err = cli.Update(ctx, hco)
 	if err != nil {
@@ -190,7 +190,7 @@ func UpdateHCO(ctx context.Context, cli client.Client, input *v1beta1.HyperConve
 // PatchHCO updates the HCO CR using a DynamicClient, it can return errors on failures
 func PatchHCO(ctx context.Context, cli client.Client, patchBytes []byte) error {
 	patch := client.RawPatch(types.JSONPatchType, patchBytes)
-	hco := &v1beta1.HyperConverged{
+	hco := &hcov1beta1.HyperConverged{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      hcoutil.HyperConvergedName,
 			Namespace: InstallNamespace,
@@ -203,7 +203,7 @@ func PatchHCO(ctx context.Context, cli client.Client, patchBytes []byte) error {
 // PatchMergeHCO patches the HCO CR using a DynamicClient, it can return errors on failures
 func PatchMergeHCO(ctx context.Context, cli client.Client, patchBytes []byte) error {
 	patch := client.RawPatch(types.MergePatchType, patchBytes)
-	hco := &v1beta1.HyperConverged{
+	hco := &hcov1beta1.HyperConverged{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      hcoutil.HyperConvergedName,
 			Namespace: InstallNamespace,
