@@ -34,6 +34,7 @@ const (
 	HcoValidatingWebhook                    = "validate-hco.kubevirt.io"
 	HcoV1Beta1ValidatingWebhook             = "validate-hco-v1beta1.kubevirt.io"
 	HcoMutatingWebhookNS                    = "mutate-ns-hco.kubevirt.io"
+	HyperConvergedCRDName                   = "hyperconvergeds.hco.kubevirt.io"
 	PrometheusRuleCRDName                   = "prometheusrules.monitoring.coreos.com"
 	ServiceMonitorCRDName                   = "servicemonitors.monitoring.coreos.com"
 	DeschedulerCRDName                      = "kubedeschedulers.operator.openshift.io"
@@ -80,6 +81,7 @@ const (
 	HCOV1Beta1MutatingWebhookPath       = "/mutate-hco-kubevirt-io-v1beta1-hyperconverged"
 	HCOV1MutatingWebhookPath            = "/mutate-hco-kubevirt-io-v1-hyperconverged"
 	HCONSWebhookPath                    = "/mutate-ns-hco-kubevirt-io"
+	HCOConversionWebhookPath            = "/convert"
 	WebhookPort                         = 4343
 	WebhookPortName                     = "webhook"
 

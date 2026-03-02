@@ -40,6 +40,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
 	whapiservercontrollers "github.com/kubevirt/hyperconverged-cluster-operator/controllers/webhooks/apiserver-controller"
 	bearertokencontroller "github.com/kubevirt/hyperconverged-cluster-operator/controllers/webhooks/bearer-token-controller"
+	conversionwebhookcontroller "github.com/kubevirt/hyperconverged-cluster-operator/controllers/webhooks/conversion-webhook-controller"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/authorization"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
@@ -173,6 +174,10 @@ func main() {
 	err = bearertokencontroller.RegisterReconciler(mgr, ci, eventEmitter)
 	cmdHelper.ExitOnError(err, "Cannot register the Bearer Token reconciler")
 
+	logger.Info("Registering the Conversion Webhook reconciler")
+	err = conversionwebhookcontroller.RegisterReconciler(mgr)
+	cmdHelper.ExitOnError(err, "Cannot register the Conversion Webhook reconciler")
+
 	if err = webhooks.SetupWebhookWithManager(mgr, ci.IsOpenshift()); err != nil {
 		logger.Error(err, "unable to create webhook", "webhook", "HyperConverged")
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "InitError", "Unable to create webhook")
@@ -210,13 +215,17 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo) cache.Opti
 		}
 
 		objMap[&corev1.Secret{}] = cache.ByObject{
-			Label: labelSelector,
 			Field: namespaceSelector,
 		}
 
 		objMap[&monitoringv1.ServiceMonitor{}] = cache.ByObject{
 			Label: labelSelector,
 			Field: namespaceSelector,
+		}
+
+		objMap[&apiextensionsv1.CustomResourceDefinition{}] = cache.ByObject{
+			SyncPeriod: ptr.To(time.Minute * 5),
+			Field:      fields.Set{"metadata.name": hcoutil.HyperConvergedCRDName}.AsSelector(),
 		}
 	}
 
