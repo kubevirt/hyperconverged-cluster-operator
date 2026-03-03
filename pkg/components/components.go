@@ -59,6 +59,7 @@ type DeploymentOperatorParams struct {
 	MtqVersion               string
 	AaqVersion               string
 	MigrationOperatorVersion string
+	AutopilotVersion         string
 	Env                      []corev1.EnvVar
 	AddNetworkPolicyLabels   bool
 }
@@ -201,6 +202,10 @@ func buildEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 		{
 			Name:  util.MigrationOperatorVersionEnvV,
 			Value: params.MigrationOperatorVersion,
+		},
+		{
+			Name:  util.AutopilotVersionEnvV,
+			Value: params.AutopilotVersion,
 		},
 		{
 			Name:  util.KVUIPluginImageEnvV,

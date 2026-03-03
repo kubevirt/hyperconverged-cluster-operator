@@ -230,3 +230,18 @@ subjects:
 - kind: ServiceAccount
   name: kubevirt-migration-operator
   namespace: kubevirt-hyperconverged
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    name: virt-platform-autopilot
+  name: virt-platform-autopilot
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: virt-platform-autopilot
+subjects:
+- kind: ServiceAccount
+  name: virt-platform-autopilot
+  namespace: kubevirt-hyperconverged

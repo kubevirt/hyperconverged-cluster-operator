@@ -226,6 +226,21 @@ function create_migration_operator_csv() {
   gen_csv ${DEFAULT_CSV_GENERATOR} ${operatorName} "${MIGRATION_OPERATOR_IMAGE}" ${dumpCRDsArg} ${operatorArgs}
   echo "${operatorName}"
 }
+
+create_autopilot_csv() {
+  local operatorName="virt-platform-autopilot"
+  local dumpCRDsArg="--dump-crds"
+  local operatorArgs=" \
+    --csv-version=${CSV_VERSION} \
+    --namespace=${OPERATOR_NAMESPACE} \
+    --operator-version=${AUTOPILOT_VERSION} \
+    --operator-image=${AUTOPILOT_IMAGE} \
+    --pull-policy=IfNotPresent \
+  "
+  gen_csv ${DEFAULT_CSV_GENERATOR} ${operatorName} "${AUTOPILOT_IMAGE}" ${dumpCRDsArg} ${operatorArgs}
+  echo "${operatorName}"
+}
+
 # Write HCO CRDs
 hco_crds=${PROJECT_ROOT}/config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml
 ${TOOLS}/crd-creator --output-file=${hco_crds}
@@ -248,6 +263,8 @@ aaqFile=$(create_aaq_csv)
 aaqCsv="${TEMPDIR}/${aaqFile}.${CSV_EXT}"
 migrationOperatorFile=$(create_migration_operator_csv)
 migrationOperatorCsv="${TEMPDIR}/${migrationOperatorFile}.${CSV_EXT}"
+autopilotFile=$(create_autopilot_csv)
+autopilotCsv="${TEMPDIR}/${autopilotFile}.${CSV_EXT}"
 csvOverrides="${TEMPDIR}/csv_overrides.${CSV_EXT}"
 keywords="  keywords:
   - KubeVirt
@@ -287,7 +304,7 @@ EOM
 )
 
 # validate CSVs. Make sure each one of them contain an image (and so, also not empty):
-csvs=("${cnaCsv}" "${virtCsv}" "${sspCsv}" "${cdiCsv}" "${hppCsv}" "${aaqCsv}" "${migrationOperatorCsv}")
+csvs=("${cnaCsv}" "${virtCsv}" "${sspCsv}" "${cdiCsv}" "${hppCsv}" "${aaqCsv}" "${migrationOperatorCsv}" "${autopilotCsv}" )
 for csv in "${csvs[@]}"; do
   grep -E "^ *image: [_a-zA-Z0-9/\.:@\-]+$" ${csv}
 done
@@ -302,6 +319,7 @@ ${TOOLS}/manifest-templator \
   --hpp-csv-file="${hppCsv}" \
   --aaq-csv-file="${aaqCsv}" \
   --migration-operator-csv-file="${migrationOperatorCsv}" \
+  --autopilot-csv-file="${autopilotCsv}" \
   --kv-virtiowin-image-name="${KUBEVIRT_VIRTIO_IMAGE}" \
   --operator-namespace="${OPERATOR_NAMESPACE}" \
   --smbios="${SMBIOS}" \
@@ -316,6 +334,7 @@ ${TOOLS}/manifest-templator \
   --hppo-version="${HPPO_VERSION}" \
   --aaq-version="${AAQ_VERSION}" \
   --migration-operator-version="${MIGRATION_OPERATOR_VERSION}" \
+  --autopilot-version="${AUTOPILOT_VERSION}" \
   --operator-image="${HCO_OPERATOR_IMAGE}" \
   --webhook-image="${HCO_WEBHOOK_IMAGE}" \
   --network-passt-binding-image-name="${NETWORK_PASST_BINDING_IMAGE}" \
@@ -350,6 +369,7 @@ ${TOOLS}/csv-merger \
   --hpp-csv-file="${hppCsv}" \
   --aaq-csv-file="${aaqCsv}" \
   --migration-operator-csv-file="${migrationOperatorCsv}" \
+  --autopilot-csv-file="${autopilotCsv}" \
   --kv-virtiowin-image-name="${KUBEVIRT_VIRTIO_IMAGE}" \
   --csv-version=${CSV_VERSION_PARAM} \
   --replaces-csv-version=${REPLACES_CSV_VERSION} \
@@ -372,6 +392,7 @@ ${TOOLS}/csv-merger \
   --hppo-version="${HPPO_VERSION}" \
   --aaq-version="${AAQ_VERSION}" \
   --migration-operator-version="${MIGRATION_OPERATOR_VERSION}" \
+  --autopilot-version="${AUTOPILOT_VERSION}" \
   --related-images-list="${DIGEST_LIST}" \
   --operator-image-name="${HCO_OPERATOR_IMAGE}" \
   --webhook-image-name="${HCO_WEBHOOK_IMAGE}" \
