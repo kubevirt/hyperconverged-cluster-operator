@@ -10,8 +10,7 @@ import (
 
 // Implement the conversion.Convertible interface, to be used in the conversion webhook.
 
-//nolint:revive
-func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error {
+func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error { //revive:disable:receiver-naming
 	dst := dstRaw.(*hcov1.HyperConverged)
 
 	if err := Convert_v1beta1_HyperConverged_To_v1_HyperConverged(src, dst, nil); err != nil {
@@ -23,8 +22,7 @@ func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error {
 	return nil
 }
 
-//nolint:revive
-func (dst *HyperConverged) ConvertFrom(srcRaw conversion.Hub) error {
+func (dst *HyperConverged) ConvertFrom(srcRaw conversion.Hub) error { //revive:disable:receiver-naming
 	src := srcRaw.(*hcov1.HyperConverged)
 
 	if err := Convert_v1_HyperConverged_To_v1beta1_HyperConverged(src, dst, nil); err != nil {
