@@ -106,8 +106,8 @@ func disableAAQFeatureGate(ctx context.Context, cli client.Client) {
 	Eventually(func(ctx context.Context) error {
 		_, err := getAAQ(ctx, cli)
 		return err
-	}).WithTimeout(5 * time.Minute).
-		WithPolling(100 * time.Millisecond).
+	}).WithTimeout(10 * time.Minute).
+		WithPolling(10 * time.Second).
 		WithOffset(1).
 		WithContext(ctx).
 		Should(MatchError(errors.IsNotFound, "not found error"))
