@@ -2,22 +2,27 @@ package bearer_token_controller
 
 import (
 	"context"
+	"maps"
 	"os"
 	"time"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/authorization"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -32,6 +37,7 @@ var _ = Describe("Controller setup and reconcile", func() {
 		ci hcoutil.ClusterInfo
 		ee hcoutil.EventEmitter
 	)
+
 	BeforeEach(func() {
 		ci = commontestutils.ClusterInfoMock{}
 		ee = commontestutils.NewEventEmitterMock()
@@ -60,21 +66,29 @@ var _ = Describe("Controller setup and reconcile", func() {
 	})
 
 	Describe("Reconcile", func() {
+		const nsName = "wb-bearer-token-test-ns"
+
 		var (
-			nsName  = "wb-bearer-token-test-ns"
-			ns      *corev1.Namespace
-			cl      *commontestutils.HcoTestClient
-			mgrIntf manager.Manager
-			r       reconcile.Reconciler
-			request reconcile.Request
+			secret    *corev1.Secret
+			resources []client.Object
+			cl        *commontestutils.HcoTestClient
+			mgrIntf   manager.Manager
+			r         reconcile.Reconciler
+			request   reconcile.Request
 		)
 
-		BeforeEach(func() {
+		JustBeforeEach(func() {
 			origNS, hadEnvVar := os.LookupEnv(hcoutil.OperatorNamespaceEnv)
 			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, nsName)).To(Succeed())
 
-			ns = &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}}
-			cl = commontestutils.InitClient([]client.Object{ns})
+			resources = []client.Object{
+				&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}},
+			}
+			if secret != nil {
+				resources = append(resources, secret)
+			}
+			cl = commontestutils.InitClient(resources)
+
 			var err error
 			mgrIntf, err = commontestutils.NewManagerMock(&rest.Config{}, manager.Options{Scheme: commontestutils.GetScheme()}, cl, commontestutils.TestLogger)
 			Expect(err).ToNot(HaveOccurred())
@@ -91,6 +105,7 @@ var _ = Describe("Controller setup and reconcile", func() {
 		})
 
 		It("creates Service, Secret, and ServiceMonitor and requeues in 5 minutes", func(ctx context.Context) {
+			ctx = logr.NewContext(ctx, GinkgoLogr)
 			res, err := r.Reconcile(ctx, request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.RequeueAfter).To(Equal(5 * time.Minute))
@@ -111,6 +126,7 @@ var _ = Describe("Controller setup and reconcile", func() {
 		})
 
 		It("propagates error from underlying metric reconciler and requeues quickly", func(ctx context.Context) {
+			ctx = logr.NewContext(ctx, GinkgoLogr)
 			// cause a create-error for Service to bubble up
 			cl.InitiateCreateErrors(func(obj client.Object) error {
 				if obj.GetObjectKind().GroupVersionKind().Kind == "Service" {
@@ -126,6 +142,7 @@ var _ = Describe("Controller setup and reconcile", func() {
 		})
 
 		It("should recreate Secret, and delete the ServiceMonitor, if token is changed", func(ctx context.Context) {
+			ctx = logr.NewContext(ctx, GinkgoLogr)
 			res, err := r.Reconcile(ctx, request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.RequeueAfter).To(Equal(5 * time.Minute))
@@ -161,6 +178,252 @@ var _ = Describe("Controller setup and reconcile", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.RequeueAfter).To(Equal(5 * time.Minute))
 			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: serviceName}, newSM)).To(Succeed())
+		})
+
+		Context("secret labels", func() {
+			ownerRef := metav1.OwnerReference{
+				APIVersion:         appsv1.SchemeGroupVersion.String(),
+				Kind:               "Deployment",
+				Name:               hcoutil.HyperConvergedName,
+				UID:                "12345678",
+				BlockOwnerDeletion: ptr.To(false),
+				Controller:         ptr.To(false),
+			}
+
+			When("token was not changed", func() {
+				BeforeEach(func() {
+					token, err := authorization.CreateToken()
+					Expect(err).ToNot(HaveOccurred())
+
+					secret = newSecret(nsName, ownerRef, token)
+					secret.Data = map[string][]byte{"token": []byte(token)}
+				})
+
+				When("the secret labels were modified", func() {
+					BeforeEach(func() {
+						secret.Labels[hcoutil.AppLabelManagedBy] = "something else"
+					})
+
+					It("should reconcile secret's labels", func(ctx context.Context) {
+						ctx = logr.NewContext(ctx, GinkgoLogr)
+						res, err := r.Reconcile(ctx, request)
+
+						Expect(err).ToNot(HaveOccurred())
+						Expect(res.RequeueAfter).To(Equal(requeueDurationForNextRequest))
+
+						found := &corev1.Secret{}
+						Expect(cl.Get(ctx, client.ObjectKeyFromObject(secret), found)).To(Succeed())
+						Expect(found.Labels).To(HaveKeyWithValue(hcoutil.AppLabelManagedBy, hcoutil.OperatorName))
+					})
+				})
+
+				When("the secret label was removed", func() {
+					BeforeEach(func() {
+						delete(secret.Labels, hcoutil.AppLabelManagedBy)
+					})
+
+					It("should reconcile secret's labels", func(ctx context.Context) {
+						ctx = logr.NewContext(ctx, GinkgoLogr)
+						res, err := r.Reconcile(ctx, request)
+
+						Expect(err).ToNot(HaveOccurred())
+						Expect(res.RequeueAfter).To(Equal(requeueDurationForNextRequest))
+
+						found := &corev1.Secret{}
+						Expect(cl.Get(ctx, client.ObjectKeyFromObject(secret), found)).To(Succeed())
+						Expect(found.Labels).To(HaveKeyWithValue(hcoutil.AppLabelManagedBy, hcoutil.OperatorName))
+					})
+				})
+
+				When("the secret has no labels", func() {
+					var origLabels map[string]string
+					BeforeEach(func() {
+						origLabels = maps.Clone(secret.Labels)
+						secret.Labels = nil
+					})
+
+					It("should reconcile secret's labels", func(ctx context.Context) {
+						ctx = logr.NewContext(ctx, GinkgoLogr)
+						res, err := r.Reconcile(ctx, request)
+
+						Expect(err).ToNot(HaveOccurred())
+						Expect(res.RequeueAfter).To(Equal(requeueDurationForNextRequest))
+
+						found := &corev1.Secret{}
+						Expect(cl.Get(ctx, client.ObjectKeyFromObject(secret), found)).To(Succeed())
+						Expect(found.Labels).To(Equal(origLabels))
+					})
+				})
+
+				When("the secret has custom labels", func() {
+					var origLabels map[string]string
+					BeforeEach(func() {
+						origLabels = maps.Clone(secret.Labels)
+						secret.Labels["custom-label1"] = "custom-label1"
+						secret.Labels["custom-label2"] = "custom-label2"
+					})
+
+					It("should reconcile secret's labels", func(ctx context.Context) {
+						ctx = logr.NewContext(ctx, GinkgoLogr)
+						res, err := r.Reconcile(ctx, request)
+
+						Expect(err).ToNot(HaveOccurred())
+						Expect(res.RequeueAfter).To(Equal(requeueDurationForNextRequest))
+
+						found := &corev1.Secret{}
+						Expect(cl.Get(ctx, client.ObjectKeyFromObject(secret), found)).To(Succeed())
+						for k, v := range origLabels {
+							Expect(found.Labels).To(HaveKeyWithValue(k, v))
+						}
+						Expect(found.Labels).To(HaveKeyWithValue("custom-label1", "custom-label1"))
+						Expect(found.Labels).To(HaveKeyWithValue("custom-label2", "custom-label2"))
+					})
+				})
+
+				When("the secret has both modified and custom labels", func() {
+					BeforeEach(func() {
+						secret.Labels[hcoutil.AppLabelManagedBy] = "something else"
+						secret.Labels["custom-label1"] = "custom-label1"
+						secret.Labels["custom-label2"] = "custom-label2"
+					})
+
+					It("should reconcile secret's labels", func(ctx context.Context) {
+						ctx = logr.NewContext(ctx, GinkgoLogr)
+						res, err := r.Reconcile(ctx, request)
+
+						Expect(err).ToNot(HaveOccurred())
+						Expect(res.RequeueAfter).To(Equal(requeueDurationForNextRequest))
+
+						found := &corev1.Secret{}
+						Expect(cl.Get(ctx, client.ObjectKeyFromObject(secret), found)).To(Succeed())
+						Expect(found.Labels).To(HaveKeyWithValue(hcoutil.AppLabelManagedBy, hcoutil.OperatorName))
+						Expect(found.Labels).To(HaveKeyWithValue("custom-label1", "custom-label1"))
+						Expect(found.Labels).To(HaveKeyWithValue("custom-label2", "custom-label2"))
+					})
+				})
+			})
+
+			When("token was changed", func() {
+				var token string
+
+				BeforeEach(func() {
+					var err error
+					token, err = authorization.CreateToken()
+					Expect(err).ToNot(HaveOccurred())
+
+					secret = newSecret(nsName, ownerRef, "something-else")
+					secret.Data = map[string][]byte{"token": []byte("something-else")}
+				})
+
+				When("the secret labels were modified", func() {
+					BeforeEach(func() {
+						secret.Labels[hcoutil.AppLabelManagedBy] = "something else"
+					})
+
+					It("should reconcile secret's labels", func(ctx context.Context) {
+						ctx = logr.NewContext(ctx, GinkgoLogr)
+						res, err := r.Reconcile(ctx, request)
+
+						Expect(err).ToNot(HaveOccurred())
+						Expect(res.RequeueAfter).To(Equal(requeueDurationForNextRequest))
+
+						found := &corev1.Secret{}
+						Expect(cl.Get(ctx, client.ObjectKeyFromObject(secret), found)).To(Succeed())
+						Expect(found.StringData).To(HaveKeyWithValue("token", token))
+						Expect(found.Labels).To(HaveKeyWithValue(hcoutil.AppLabelManagedBy, hcoutil.OperatorName))
+					})
+				})
+
+				When("a secret label was removed", func() {
+					BeforeEach(func() {
+						delete(secret.Labels, hcoutil.AppLabelManagedBy)
+					})
+
+					It("should reconcile secret's labels", func(ctx context.Context) {
+						ctx = logr.NewContext(ctx, GinkgoLogr)
+						res, err := r.Reconcile(ctx, request)
+
+						Expect(err).ToNot(HaveOccurred())
+						Expect(res.RequeueAfter).To(Equal(requeueDurationForNextRequest))
+
+						found := &corev1.Secret{}
+						Expect(cl.Get(ctx, client.ObjectKeyFromObject(secret), found)).To(Succeed())
+						Expect(found.StringData).To(HaveKeyWithValue("token", token))
+						Expect(found.Labels).To(HaveKeyWithValue(hcoutil.AppLabelManagedBy, hcoutil.OperatorName))
+					})
+				})
+
+				When("the secret has no labels", func() {
+					var origLabels map[string]string
+					BeforeEach(func() {
+						origLabels = maps.Clone(secret.Labels)
+						secret.Labels = nil
+					})
+
+					It("should reconcile secret's labels", func(ctx context.Context) {
+						ctx = logr.NewContext(ctx, GinkgoLogr)
+						res, err := r.Reconcile(ctx, request)
+
+						Expect(err).ToNot(HaveOccurred())
+						Expect(res.RequeueAfter).To(Equal(requeueDurationForNextRequest))
+
+						found := &corev1.Secret{}
+						Expect(cl.Get(ctx, client.ObjectKeyFromObject(secret), found)).To(Succeed())
+						Expect(found.StringData).To(HaveKeyWithValue("token", token))
+						Expect(found.Labels).To(Equal(origLabels))
+					})
+				})
+
+				When("the secret has custom labels", func() {
+					var origLabels map[string]string
+					BeforeEach(func() {
+						origLabels = maps.Clone(secret.Labels)
+						secret.Labels["custom-label1"] = "custom-label1"
+						secret.Labels["custom-label2"] = "custom-label2"
+					})
+
+					It("should reconcile secret's labels", func(ctx context.Context) {
+						ctx = logr.NewContext(ctx, GinkgoLogr)
+						res, err := r.Reconcile(ctx, request)
+
+						Expect(err).ToNot(HaveOccurred())
+						Expect(res.RequeueAfter).To(Equal(requeueDurationForNextRequest))
+
+						found := &corev1.Secret{}
+						Expect(cl.Get(ctx, client.ObjectKeyFromObject(secret), found)).To(Succeed())
+						Expect(found.StringData).To(HaveKeyWithValue("token", token))
+						for k, v := range origLabels {
+							Expect(found.Labels).To(HaveKeyWithValue(k, v))
+						}
+						Expect(found.Labels).To(HaveKeyWithValue("custom-label1", "custom-label1"))
+						Expect(found.Labels).To(HaveKeyWithValue("custom-label2", "custom-label2"))
+					})
+				})
+
+				When("the secret has both modified and custom labels", func() {
+					BeforeEach(func() {
+						secret.Labels[hcoutil.AppLabelManagedBy] = "something else"
+						secret.Labels["custom-label1"] = "custom-label1"
+						secret.Labels["custom-label2"] = "custom-label2"
+					})
+
+					It("should reconcile secret's labels", func(ctx context.Context) {
+						ctx = logr.NewContext(ctx, GinkgoLogr)
+						res, err := r.Reconcile(ctx, request)
+
+						Expect(err).ToNot(HaveOccurred())
+						Expect(res.RequeueAfter).To(Equal(requeueDurationForNextRequest))
+
+						found := &corev1.Secret{}
+						Expect(cl.Get(ctx, client.ObjectKeyFromObject(secret), found)).To(Succeed())
+						Expect(found.StringData).To(HaveKeyWithValue("token", token))
+
+						Expect(found.Labels).To(HaveKeyWithValue(hcoutil.AppLabelManagedBy, hcoutil.OperatorName))
+						Expect(found.Labels).To(HaveKeyWithValue("custom-label1", "custom-label1"))
+						Expect(found.Labels).To(HaveKeyWithValue("custom-label2", "custom-label2"))
+					})
+				})
+			})
 		})
 	})
 })
