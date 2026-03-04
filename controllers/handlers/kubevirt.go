@@ -161,6 +161,7 @@ const (
 	kvUtilityVolumes             = "UtilityVolumes"
 	kvIncrementalBackup          = "IncrementalBackup"
 	kvPasstBinding               = "PasstBinding"
+	kvLiveUpdateNADRef           = "LiveUpdateNADRef"
 )
 
 // CPU Plugin default values
@@ -945,6 +946,10 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, a
 	if ptr.Deref(featureGates.IncrementalBackup, false) {
 		fgs = append(fgs, kvIncrementalBackup)
 		fgs = append(fgs, kvUtilityVolumes)
+	}
+
+	if annotations["hco.kubevirt.io/"+kvLiveUpdateNADRef] == "true" {
+		fgs = append(fgs, kvLiveUpdateNADRef)
 	}
 
 	return fgs

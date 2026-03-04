@@ -2240,6 +2240,24 @@ Version: 1.2.3`)
 						},
 						And(Not(ContainElement(kvIncrementalBackup)), Not(ContainElement(kvUtilityVolumes))),
 					),
+					Entry("should add the LiveUpdateNADRef FG to Kubevirt CR if LiveUpdateNADRef is true in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hco.Annotations["hco.kubevirt.io/"+kvLiveUpdateNADRef] = "true"
+						},
+						ContainElement(kvLiveUpdateNADRef),
+					),
+					Entry("should not add the LiveUpdateNADRef to Kubevirt CR if LiveUpdateNADRef is false in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hco.Annotations["hco.kubevirt.io/"+kvLiveUpdateNADRef] = "false"
+						},
+						Not(ContainElement(kvLiveUpdateNADRef)),
+					),
+					Entry("should not add the LiveUpdateNADRef to Kubevirt CR if LiveUpdateNADRef is not set in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							delete(hco.Annotations, "hco.kubevirt.io/"+kvLiveUpdateNADRef)
+						},
+						Not(ContainElement(kvLiveUpdateNADRef)),
+					),
 				)
 
 				It("should add the VideoConfig if feature gate VideoConfig is true in HyperConverged CR", func() {
