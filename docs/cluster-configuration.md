@@ -265,6 +265,20 @@ When enabled, this also enables the `UtilityVolumes` feature gate in the KubeVir
 
 **Graduation Status**: Alpha
 
+### The hco.kubevirt.io/deployAIEWebhook annotation
+Set the `hco.kubevirt.io/deployAIEWebhook` HyperConverged CR annotation to `true` to deploy the AIE
+(Accelerated Infrastructure Enablement) webhook. The AIE webhook intercepts virt-launcher Pod creation
+and conditionally replaces the compute container image with an alternative launcher image (e.g.
+GPU-optimized builds) based on configurable rules.
+
+When enabled, HCO deploys a Deployment, Service, MutatingWebhookConfiguration, and supporting RBAC
+resources for the webhook. See [AIE Webhook Configuration](#aie-webhook-configuration) for details on
+configuring replacement rules.
+
+**Note**: This feature is in Developer Preview.
+
+**Default**: `false` (annotation doesn't exist by default)
+
 ### The hco.kubevirt.io/deployPasstNetworkBinding annotation
 Set the `hco.kubevirt.io/deployPasstNetworkBinding` HyperConverged CR annotation to `true`, to deploy the needed
 configurations for kubevirt users, so they can bind their VM using a Passt Network binding.
@@ -1773,4 +1787,71 @@ spec:
     maxHotplugRatio: 3
     maxCpuSockets: 2
     maxGuest: 2Gi
+```
+
+## AIE Webhook Configuration
+
+The AIE (Accelerated Infrastructure Enablement) webhook allows replacing the default virt-launcher compute
+container image with alternative launcher images based on configurable rules. This is useful for deploying
+GPU-optimized or otherwise specialized launcher builds for specific virtual machines.
+
+The webhook is enabled by the `hco.kubevirt.io/deployAIEWebhook` [annotation](#the-hcokubevirtiodeployaiewebhook-annotation). Once enabled,
+HCO creates a ConfigMap named `kubevirt-aie-launcher-config` with an empty set of rules. Users configure
+replacement rules by editing this ConfigMap directly. HCO will not overwrite user edits to the ConfigMap data.
+
+### Rules
+
+The `rules` array in the ConfigMap's `config.yaml` key defines an ordered list of launcher replacement rules.
+Each rule maps a selector to an alternative launcher image. Rules are evaluated in order; the first matching
+rule wins.
+
+Each rule contains the following fields:
+* `name` - an identifier for the rule.
+* `image` - the alternative launcher container image to use when this rule matches.
+* `selector` - defines the criteria for matching a VirtualMachineInstance. The selector contains:
+  * `deviceNames` - a list of device resource names (GPUs or host devices) to match against the VMI's devices.
+  * `vmLabels` - matches VMIs by label selectors, with a `matchLabels` map of key-value pairs.
+
+  `deviceNames` and `vmLabels` are OR'd: if either matches, the rule applies.
+* `nodeSelector` (optional) - when set, the webhook injects a required node affinity term so that matched
+  pods are only scheduled onto nodes carrying the specified labels. Contains a `matchLabels` map of key-value pairs.
+
+### AIE Webhook Configuration Example
+
+First enable the webhook by setting the annotation:
+
+```bash
+kubectl annotate hco kubevirt-hyperconverged -n kubevirt-hyperconverged \
+  hco.kubevirt.io/deployAIEWebhook=true
+```
+
+Then edit the ConfigMap to add rules:
+
+```bash
+kubectl edit cm kubevirt-aie-launcher-config -n kubevirt-hyperconverged
+```
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubevirt-aie-launcher-config
+data:
+  config.yaml: |
+    rules:
+    - name: "gpu-optimized-launcher"
+      image: "quay.io/my-org/virt-launcher-gpu:latest"
+      selector:
+        deviceNames:
+        - "nvidia.com/GV100GL_Tesla_V100"
+        - "nvidia.com/TU104GL_Tesla_T4"
+      nodeSelector:
+        matchLabels:
+          nvidia.com/gpu.present: "true"
+    - name: "labeled-vms"
+      image: "quay.io/my-org/virt-launcher-custom:latest"
+      selector:
+        vmLabels:
+          matchLabels:
+            my-org.io/use-custom-launcher: "true"
 ```
