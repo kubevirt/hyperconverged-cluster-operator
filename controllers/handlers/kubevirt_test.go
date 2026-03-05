@@ -798,9 +798,19 @@ Version: 1.2.3`)
 				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration).To(BeNil())
 			})
 
-			It("should propagate the mediated devices configuration, only with the Enabled field, if not set in HCO, and the FG is true", func() {
+			It("should not propagate the mediated devices configuration is empty", func() {
 				hco.Spec.MediatedDevicesConfiguration = nil
-				hco.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
+
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration).To(BeNil())
+			})
+
+			It("should propagate the mediated devices configuration, only with the Enabled field, if enabled set to false in HCO", func() {
+				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
+					Enabled: ptr.To(false),
+				}
 
 				kv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
@@ -1081,10 +1091,10 @@ Version: 1.2.3`)
 				Expect(mdc.MediatedDeviceTypes).To(ContainElements("nvidia-181", "nvidia-191", "nvidia-224"))
 			})
 
-			It("should set the enabled field to false, if the DisableMDevConfiguration FG is enabled", func() {
-				hco.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
+			It("should set the enabled field to false, if enabled set to false in HCO", func() {
 				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
 					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
+					Enabled:             ptr.To(false),
 				}
 
 				kv, err := NewKubeVirt(hco)
@@ -1095,7 +1105,7 @@ Version: 1.2.3`)
 			})
 
 			It("should not set the enabled field, if the DisableMDevConfiguration FG is disabled", func() {
-				hco.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(false)
+				hco.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(false) //nolint:staticcheck // Testing deprecated FG behavior.
 				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
 					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
 				}
@@ -1108,7 +1118,7 @@ Version: 1.2.3`)
 			})
 
 			It("should not set the enabled field, if the DisableMDevConfiguration FG is nil", func() {
-				hco.Spec.FeatureGates.DisableMDevConfiguration = nil
+				hco.Spec.FeatureGates.DisableMDevConfiguration = nil //nolint:staticcheck // Testing deprecated FG behavior.
 				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
 					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
 				}

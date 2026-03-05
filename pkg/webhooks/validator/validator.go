@@ -490,6 +490,10 @@ const (
 )
 
 func (wh *WebhookHandler) validateFeatureGatesOnCreate(hc *v1beta1.HyperConverged) error {
+	if err := validateMDevFeatureGateVsEnabledOnCreate(hc); err != nil {
+		return err
+	}
+
 	warnings := wh.validateDeprecatedFeatureGates(hc)
 	warnings = validateOldFGOnCreate(warnings, hc)
 
@@ -501,6 +505,10 @@ func (wh *WebhookHandler) validateFeatureGatesOnCreate(hc *v1beta1.HyperConverge
 }
 
 func (wh *WebhookHandler) validateFeatureGatesOnUpdate(requested, exists *v1beta1.HyperConverged) error {
+	if err := validateMDevFeatureGateVsEnabledOnUpdate(requested, exists); err != nil {
+		return err
+	}
+
 	warnings := wh.validateDeprecatedFeatureGates(requested)
 	warnings = validateOldFGOnUpdate(warnings, requested, exists)
 
@@ -508,6 +516,68 @@ func (wh *WebhookHandler) validateFeatureGatesOnUpdate(requested, exists *v1beta
 		return newValidationWarning(warnings)
 	}
 
+	return nil
+}
+
+// effectiveMDevEnabled returns the effective enabled value for mediated devices (default true when nil).
+func effectiveMDevEnabled(hc *v1beta1.HyperConverged) bool {
+	if hc.Spec.MediatedDevicesConfiguration == nil || hc.Spec.MediatedDevicesConfiguration.Enabled == nil {
+		return true
+	}
+	return *hc.Spec.MediatedDevicesConfiguration.Enabled
+}
+
+const mDevFGDeprecationWarning = "spec.featureGates.disableMDevConfiguration is deprecated. Use spec.mediatedDevicesConfiguration.enabled instead; it will be removed in a future version."
+
+//nolint:staticcheck // Read deprecated DisableMDevConfiguration for validation during transition.
+func validateMDevFeatureGateVsEnabledOnCreate(hc *v1beta1.HyperConverged) error {
+	// When FG is nil, ignore it and rely on enabled and its default.
+	if hc.Spec.FeatureGates.DisableMDevConfiguration == nil {
+		return nil
+	}
+	fgDisable := *hc.Spec.FeatureGates.DisableMDevConfiguration
+	enabled := effectiveMDevEnabled(hc)
+	// FG true means "disable MDev" => enabled must be false. FG false means "don't disable" => enabled must be true.
+	if fgDisable && enabled {
+		return fmt.Errorf("spec.featureGates.disableMDevConfiguration is true but spec.mediatedDevicesConfiguration.enabled is true; they must match (disableMDevConfiguration equals !enabled)")
+	}
+	if !fgDisable && !enabled {
+		return fmt.Errorf("spec.featureGates.disableMDevConfiguration is false but spec.mediatedDevicesConfiguration.enabled is false; they must match (disableMDevConfiguration equals !enabled)")
+	}
+	return nil
+}
+
+func mDevEnabledChanged(oldHC, newHC *v1beta1.HyperConverged) bool {
+	oldEnabled := true
+	if oldHC.Spec.MediatedDevicesConfiguration != nil && oldHC.Spec.MediatedDevicesConfiguration.Enabled != nil {
+		oldEnabled = *oldHC.Spec.MediatedDevicesConfiguration.Enabled
+	}
+	newEnabled := true
+	if newHC.Spec.MediatedDevicesConfiguration != nil && newHC.Spec.MediatedDevicesConfiguration.Enabled != nil {
+		newEnabled = *newHC.Spec.MediatedDevicesConfiguration.Enabled
+	}
+	return oldEnabled != newEnabled
+}
+
+func validateMDevFeatureGateVsEnabledOnUpdate(requested, exists *v1beta1.HyperConverged) error {
+	//nolint:staticcheck // Read deprecated field for validation during transition.
+	newFG := requested.Spec.FeatureGates.DisableMDevConfiguration
+	//nolint:staticcheck // Read deprecated field for validation during transition.
+	oldFG := exists.Spec.FeatureGates.DisableMDevConfiguration
+	fgChanged := (newFG == nil) != (oldFG == nil) || (newFG != nil && oldFG != nil && *newFG != *oldFG)
+	enabledChanged := mDevEnabledChanged(exists, requested)
+
+	if !fgChanged || !enabledChanged {
+		return nil
+	}
+	// Both FG and enabled changed: require consistency (FG == !enabled).
+	if newFG == nil {
+		return nil
+	}
+	effectiveEnabled := effectiveMDevEnabled(requested)
+	if *newFG != !effectiveEnabled {
+		return fmt.Errorf("spec.featureGates.disableMDevConfiguration and spec.mediatedDevicesConfiguration.enabled were both changed and must match (disableMDevConfiguration equals !enabled)")
+	}
 	return nil
 }
 
@@ -532,6 +602,11 @@ func (wh *WebhookHandler) validateDeprecatedFeatureGates(hc *v1beta1.HyperConver
 	//nolint:staticcheck
 	if hc.Spec.FeatureGates.EnableManagedTenantQuota != nil {
 		warnings = append(warnings, fmt.Sprintf(fgDeprecationWarning, "enableManagedTenantQuota"))
+	}
+
+	//nolint:staticcheck
+	if hc.Spec.FeatureGates.DisableMDevConfiguration != nil {
+		warnings = append(warnings, mDevFGDeprecationWarning)
 	}
 
 	return warnings

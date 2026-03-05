@@ -513,6 +513,52 @@ var _ = Describe("webhooks validator", func() {
 						DeployKubeSecondaryDNS:      ptr.To(false),
 					}, "enableManagedTenantQuota", "nonRoot", "enableApplicationAwareQuota", "enableCommonBootImageImport", "deployVmConsoleProxy"),
 			)
+
+			It("should return warning when disableMDevConfiguration is set", func() {
+				//nolint:staticcheck // Testing deprecated FG warning.
+				cr.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
+				cr.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+					Enabled:             ptr.To(false),
+				}
+				err := wh.ValidateCreate(ctx, dryRun, cr)
+				Expect(err).To(HaveOccurred())
+				var vw *ValidationWarning
+				Expect(errors.As(err, &vw)).To(BeTrue())
+				Expect(vw.Warnings()).To(ContainElement(ContainSubstring("disableMDevConfiguration")))
+			})
+		})
+
+		Context("validate MDev feature gate and enabled", func() {
+			DescribeTable("create: reject when FG and enabled are inconsistent",
+				func(fg *bool, enabled *bool, expectReject bool) {
+					//nolint:staticcheck // Testing deprecated FG validation.
+					cr.Spec.FeatureGates.DisableMDevConfiguration = fg
+					cr.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
+						MediatedDeviceTypes: []string{"nvidia-222"},
+						Enabled:             enabled,
+					}
+					err := wh.ValidateCreate(ctx, dryRun, cr)
+					if expectReject {
+						Expect(err).To(HaveOccurred())
+						Expect(err.Error()).To(ContainSubstring("disableMDevConfiguration"))
+						Expect(err.Error()).To(ContainSubstring("enabled"))
+					} else {
+						// Success or deprecation warning (ValidationWarning) are both allowed
+						if err != nil {
+							var vw *ValidationWarning
+							Expect(errors.As(err, &vw)).To(BeTrue())
+						}
+					}
+				},
+				Entry("reject FG true and enabled true", ptr.To(true), ptr.To(true), true),
+				Entry("reject FG false and enabled false", ptr.To(false), ptr.To(false), true),
+				Entry("allow FG nil (ignore FG)", nil, ptr.To(true), false),
+				Entry("allow FG nil and enabled nil", nil, nil, false),
+				Entry("allow FG true and enabled false", ptr.To(true), ptr.To(false), false),
+				Entry("allow FG false and enabled true", ptr.To(false), ptr.To(true), false),
+				Entry("allow FG false and enabled nil (default true)", ptr.To(false), nil, false),
+			)
 		})
 
 		Context("validate affinity", func() {
@@ -848,6 +894,65 @@ var _ = Describe("webhooks validator", func() {
 			Expect(res.Allowed).To(BeFalse())
 			Expect(res.Result.Code).To(Equal(int32(400)))
 			Expect(res.Result.Message).To(Equal("there is no content to decode"))
+		})
+
+		Context("validate MDev feature gate and enabled on update", func() {
+			It("reject when both FG and enabled changed and are inconsistent", func() {
+				exists := commontestutils.NewHco()
+				//nolint:staticcheck // Testing deprecated FG.
+				exists.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(false)
+				exists.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+					Enabled:             ptr.To(false),
+				}
+				requested := exists.DeepCopy()
+				//nolint:staticcheck // Testing deprecated FG.
+				requested.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
+				// Use a new MediatedDevicesConfiguration so we don't share the pointer with exists
+				requested.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+					Enabled:             ptr.To(true), // both changed; inconsistent: FG true but enabled true
+				}
+				err := wh.ValidateUpdate(ctx, dryRun, requested, exists)
+				Expect(err).To(HaveOccurred())
+				Expect(err).NotTo(BeAssignableToTypeOf(&ValidationWarning{}))
+				Expect(err.Error()).To(ContainSubstring("both changed"))
+				Expect(err.Error()).To(ContainSubstring("disableMDevConfiguration"))
+			})
+			It("allow when only enabled changed (mutator will sync FG)", func() {
+				exists := commontestutils.NewHco()
+				//nolint:staticcheck // Testing deprecated FG.
+				exists.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
+				exists.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+					Enabled:             ptr.To(false),
+				}
+				requested := exists.DeepCopy()
+				requested.Spec.MediatedDevicesConfiguration.Enabled = ptr.To(true) // only enabled changed; mutator will set FG = false
+				err := wh.ValidateUpdate(ctx, dryRun, requested, exists)
+				if err != nil {
+					var vw *ValidationWarning
+					Expect(errors.As(err, &vw)).To(BeTrue())
+				}
+			})
+			It("allow when only FG changed", func() {
+				exists := commontestutils.NewHco()
+				//nolint:staticcheck // Testing deprecated FG.
+				exists.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
+				exists.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+					Enabled:             ptr.To(false),
+				}
+				requested := exists.DeepCopy()
+				//nolint:staticcheck // Testing deprecated FG.
+				requested.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(false)
+				// enabled stays false; mutator will set it to nil. Validator: only FG changed so we don't reject.
+				err := wh.ValidateUpdate(ctx, dryRun, requested, exists)
+				if err != nil {
+					var vw *ValidationWarning
+					Expect(errors.As(err, &vw)).To(BeTrue())
+				}
+			})
 		})
 
 		It("should return error if KV CR is missing", func() {
