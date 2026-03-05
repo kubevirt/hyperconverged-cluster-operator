@@ -5,7 +5,8 @@ COPY . .
 ARG TARGETOS
 ARG TARGETARCH
 
-RUN GOOS=${TARGETOS} GOARCH=${TARGETARCH} make build-operator build-csv-merger
+RUN dnf install -y jq && \
+    GOOS=${TARGETOS} GOARCH=${TARGETARCH} make build-operator build-csv-merger
 
 FROM --platform=${TARGETPLATFORM} registry.access.redhat.com/ubi9/ubi-minimal
 ARG TARGETPLATFORM

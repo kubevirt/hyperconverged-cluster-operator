@@ -57,7 +57,7 @@ lint:
 
 build: build-operator build-csv-merger build-webhook
 
-build-operator: $(SOURCES) ## Build binary from source
+build-operator: generate $(SOURCES) ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-operator ./cmd/hyperconverged-cluster-operator
 
 build-csv-merger: ## Build binary from source
@@ -66,13 +66,19 @@ build-csv-merger: ## Build binary from source
 build-manifest-templator: ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/manifest-templator ./tools/manifest-templator
 
+generate-feature-gates:
+	cd pkg/featuregatedetails && go generate .
+	cd api/v1beta1 && go generate .
+	go build -o _out/fg-v1-comments ./tools/fg-v1-comments
+	./_out/fg-v1-comments
+
 build-crd-creator: generate
 	go build -ldflags="${LDFLAGS}" -o _out/crd-creator ./tools/crd-creator
 
 build-manifest-splitter:
 	go build -ldflags="${LDFLAGS}" -o _out/manifest-splitter ./tools/manifest-splitter
 
-build-webhook: $(SOURCES) ## Build binary from source
+build-webhook: generate $(SOURCES) ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-webhook ./cmd/hyperconverged-cluster-webhook
 
 build-manifests: gogenerate-crd-creator build-crd-creator build-csv-merger build-manifest-splitter build-manifest-templator
@@ -244,7 +250,7 @@ gogenerate-crd-creator: generate
 	go generate ./tools/csv-merger
 	go generate ./tools/manifest-templator
 
-generate:
+generate: generate-feature-gates
 	./hack/generate.sh
 
 generate-doc: build-docgen
@@ -325,6 +331,7 @@ push-builder-image: retag-builder-image
 		build-operator \
 		build-csv-merger \
 		build-manifest-templator \
+		generate-feature-gates \
 		build-crd-creator \
 		build-manifest-splitter \
 		build-webhook \
