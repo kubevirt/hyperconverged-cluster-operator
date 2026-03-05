@@ -70,6 +70,7 @@ type HyperConvergedSpec struct {
 	// the feature. Setting `false` or removing the feature gate, disables the feature.
 	// +kubebuilder:default={"downwardMetrics": false, "deployKubeSecondaryDNS": false, "disableMDevConfiguration": false, "persistentReservation": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": false, "videoConfig": true, "objectGraph": false, "incrementalBackup": false}
 	// +optional
+	// +k8s:conversion-gen=false
 	FeatureGates HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 
 	// Live migration limits and timeouts are applied so that migration processes do not
@@ -445,16 +446,16 @@ type HyperConvergedFeatureGates struct {
 	// +default=false
 	DownwardMetrics *bool `json:"downwardMetrics,omitempty"`
 
-	// Deprecated: there is no such FG in KubeVirt. This field is ignored
+	// Deprecated: This feature gate is ignored
 	WithHostPassthroughCPU *bool `json:"withHostPassthroughCPU,omitempty"`
 
-	// Deprecated: This field is ignored. Use spec.enableCommonBootImageImport instead
+	// Deprecated: This feature gate is ignored. Use spec.enableCommonBootImageImport instead
 	EnableCommonBootImageImport *bool `json:"enableCommonBootImageImport,omitempty"`
 
-	// Deprecated: This field is ignored and will be removed on the next version of the API.
+	// Deprecated: This feature gate is ignored.
 	DeployTektonTaskResources *bool `json:"deployTektonTaskResources,omitempty"`
 
-	// Deprecated: This field is ignored and will be removed on the next version of the API.
+	// Deprecated: This feature gate is ignored.
 	// Use spec.deployVmConsoleProxy instead
 	DeployVMConsoleProxy *bool `json:"deployVmConsoleProxy,omitempty"`
 
@@ -464,10 +465,10 @@ type HyperConvergedFeatureGates struct {
 	// +default=false
 	DeployKubeSecondaryDNS *bool `json:"deployKubeSecondaryDNS,omitempty"`
 
-	// Deprecated: this field is ignored and will be removed in the next version of the API.
+	// Deprecated: this feature gate is ignored.
 	DeployKubevirtIpamController *bool `json:"deployKubevirtIpamController,omitempty"`
 
-	// Deprecated: // Deprecated: This field is ignored and will be removed on the next version of the API.
+	// Deprecated: This feature gate is ignored.
 	NonRoot *bool `json:"nonRoot,omitempty"`
 
 	// Disable mediated devices handling on KubeVirt
@@ -485,12 +486,12 @@ type HyperConvergedFeatureGates struct {
 	// +default=false
 	PersistentReservation *bool `json:"persistentReservation,omitempty"`
 
-	// Deprecated: This field is ignored and will be removed on the next version of the API.
+	// Deprecated: This feature gate is ignored.
 	EnableManagedTenantQuota *bool `json:"enableManagedTenantQuota,omitempty"`
 
 	// TODO update description to also include cpu limits as well, after 4.14
 
-	// Deprecated: this field is ignored and will be removed in the next version of the API.
+	// Deprecated: this feature gate is ignored.
 	AutoResourceLimits *bool `json:"autoResourceLimits,omitempty"`
 
 	// Enable KubeVirt to request up to two additional dedicated CPUs
@@ -505,9 +506,7 @@ type HyperConvergedFeatureGates struct {
 	// Use spec.enableApplicationAwareQuota instead
 	EnableApplicationAwareQuota *bool `json:"enableApplicationAwareQuota,omitempty"`
 
-	// primaryUserDefinedNetworkBinding deploys the needed configurations for kubevirt users to
-	// be able to bind their VM to a UDN network on the VM's primary interface.
-	// Deprecated: this field is ignored and will be removed in the next version of the API.
+	// Deprecated: this feature gate is ignored.
 	PrimaryUserDefinedNetworkBinding *bool `json:"primaryUserDefinedNetworkBinding,omitempty"`
 
 	// EnableMultiArchBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures.
@@ -539,7 +538,7 @@ type HyperConvergedFeatureGates struct {
 	// +default=false
 	DeclarativeHotplugVolumes *bool `json:"declarativeHotplugVolumes,omitempty"`
 
-	// EnableVideoDeviceConfiguration allows users to configure video device types for their virtual machines.
+	// VideoConfig allows users to configure video device types for their virtual machines.
 	// This can be useful for workloads that require specific video capabilities or architectures.
 	// Note: This feature is in Tech Preview.
 	// +optional
