@@ -242,28 +242,28 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"withHostPassthroughCPU": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: there is no such FG in KubeVirt. This field is ignored",
+							Description: "Deprecated: This feature gate is ignored",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
 					"enableCommonBootImageImport": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: This field is ignored. Use spec.enableCommonBootImageImport instead",
+							Description: "Deprecated: This feature gate is ignored. Use spec.enableCommonBootImageImport instead",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
 					"deployTektonTaskResources": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: This field is ignored and will be removed on the next version of the API.",
+							Description: "Deprecated: This feature gate is ignored.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
 					"deployVmConsoleProxy": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: This field is ignored and will be removed on the next version of the API. Use spec.deployVmConsoleProxy instead",
+							Description: "Deprecated: This feature gate is ignored. Use spec.deployVmConsoleProxy instead",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -278,14 +278,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"deployKubevirtIpamController": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: this field is ignored and will be removed in the next version of the API.",
+							Description: "Deprecated: this feature gate is ignored.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
 					"nonRoot": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: // Deprecated: This field is ignored and will be removed on the next version of the API.",
+							Description: "Deprecated: This feature gate is ignored.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -308,14 +308,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"enableManagedTenantQuota": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: This field is ignored and will be removed on the next version of the API.",
+							Description: "Deprecated: This feature gate is ignored.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
 					"autoResourceLimits": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Deprecated: this field is ignored and will be removed in the next version of the API.",
+							Description: "Deprecated: this feature gate is ignored.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -337,7 +337,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"primaryUserDefinedNetworkBinding": {
 						SchemaProps: spec.SchemaProps{
-							Description: "primaryUserDefinedNetworkBinding deploys the needed configurations for kubevirt users to be able to bind their VM to a UDN network on the VM's primary interface. Deprecated: this field is ignored and will be removed in the next version of the API.",
+							Description: "Deprecated: this feature gate is ignored.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
@@ -368,7 +368,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"videoConfig": {
 						SchemaProps: spec.SchemaProps{
-							Description: "EnableVideoDeviceConfiguration allows users to configure video device types for their virtual machines. This can be useful for workloads that require specific video capabilities or architectures. Note: This feature is in Tech Preview.",
+							Description: "VideoConfig allows users to configure video device types for their virtual machines. This can be useful for workloads that require specific video capabilities or architectures. Note: This feature is in Tech Preview.",
 							Default:     true,
 							Type:        []string{"boolean"},
 							Format:      "",
