@@ -40,6 +40,7 @@ TOOLS=${PROJECT_ROOT}/_out
 "${PROJECT_ROOT}"/automation/digester/update_images.sh
 source "${PROJECT_ROOT}"/deploy/images.env
 
+AIE_WEBHOOK_IMAGE=${AIE_WEBHOOK_IMAGE:-quay.io/kubevirt/kubevirt-aie-webhook:latest}
 HCO_OPERATOR_IMAGE=${HCO_OPERATOR_IMAGE:-quay.io/kubevirt/hyperconverged-cluster-operator:${CSV_VERSION}-unstable}
 HCO_WEBHOOK_IMAGE=${HCO_WEBHOOK_IMAGE:-quay.io/kubevirt/hyperconverged-cluster-webhook:${CSV_VERSION}-unstable}
 HCO_DOWNLOADS_IMAGE=${HCO_DOWNLOADS_IMAGE:-quay.io/kubevirt/virt-artifacts-server:${CSV_VERSION}-unstable}
@@ -321,7 +322,8 @@ ${TOOLS}/manifest-templator \
   --network-passt-binding-image-name="${NETWORK_PASST_BINDING_IMAGE}" \
   --network-passt-binding-cni-image-name="${NETWORK_PASST_BINDING_CNI_IMAGE}" \
   --cli-downloads-image="${HCO_DOWNLOADS_IMAGE}" \
-  --wasp-agent-image-name="${WASP_AGENT_IMAGE}" 
+  --wasp-agent-image-name="${WASP_AGENT_IMAGE}" \
+  --aie-webhook-image-name="${AIE_WEBHOOK_IMAGE}"
 
 if [[ "${UNIQUE}" == "true"  ]]; then
   CSV_VERSION_PARAM=${CSV_VERSION}-${CSV_TIMESTAMP}
@@ -381,6 +383,7 @@ ${TOOLS}/csv-merger \
   --wasp-agent-image-name="${WASP_AGENT_IMAGE}" \
   --network-passt-binding-image-name="${NETWORK_PASST_BINDING_IMAGE}" \
   --network-passt-binding-cni-image-name="${NETWORK_PASST_BINDING_CNI_IMAGE}" \
+  --aie-webhook-image-name="${AIE_WEBHOOK_IMAGE}" \
   ${NETWORK_POLICIES_PARAMS} \
   > temp_manifests.yaml
 

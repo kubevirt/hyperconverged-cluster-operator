@@ -554,6 +554,15 @@ type HyperConvergedFeatureGates struct {
 	// +kubebuilder:default=false
 	// +default=false
 	IncrementalBackup *bool `json:"incrementalBackup,omitempty"`
+
+	// DeployAIEWebhook enables the AIE (Accelerated Infrastructure Enablement) webhook that intercepts virt-launcher Pod creation
+	// and conditionally replaces the compute container image with an alternative launcher image
+	// (e.g., GPU-optimized builds) based on configurable rules.
+	// Note: This feature is in Developer Preview.
+	// +optional
+	// +kubebuilder:default=false
+	// +default=false
+	DeployAIEWebhook *bool `json:"deployAIEWebhook,omitempty"`
 }
 
 // PermittedHostDevices holds information about devices allowed for passthrough
