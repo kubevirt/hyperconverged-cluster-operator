@@ -48,18 +48,17 @@ webhooks:
     service:
       name: hyperconverged-cluster-webhook-service
       namespace: kubevirt-hyperconverged
-      path: /validate-hco-kubevirt-io-v1beta1-hyperconverged
+      path: /validate-hco-kubevirt-io-v1-hyperconverged
       port: 4343
   failurePolicy: Fail
-  matchPolicy: Equivalent
+  matchPolicy: Exact
   name: validate-hco.kubevirt.io
   objectSelector: {}
   rules:
   - apiGroups:
     - hco.kubevirt.io
     apiVersions:
-    - v1alpha1
-    - v1beta1
+    - v1
     operations:
     - CREATE
     - DELETE
@@ -70,58 +69,33 @@ webhooks:
   sideEffects: None
   timeoutSeconds: 30
 - admissionReviewVersions:
-    - v1beta1
-    - v1
+  - v1beta1
+  - v1
   clientConfig:
     # caBundle: WILL BE INJECTED BY CERT-MANAGER BECAUSE OF THE ANNOTATION
     service:
       name: hyperconverged-cluster-webhook-service
       namespace: kubevirt-hyperconverged
-      path: /mutate-ns-hco-kubevirt-io
+      path: /validate-hco-kubevirt-io-v1beta1-hyperconverged
       port: 4343
   failurePolicy: Fail
-  name: mutate-ns-hco.kubevirt.io
-  objectSelector:
-    matchLabels:
-      kubernetes.io/metadata.name: kubevirt-hyperconverged
+  matchPolicy: Exact
+  name: validate-hco-v1beta1.kubevirt.io
+  objectSelector: {}
   rules:
-    - apiGroups:
-        - ""
-      apiVersions:
-        - v1
-      operations:
-        - DELETE
-      resources:
-        - namespaces
-  sideEffects: NoneOnDryRun
-  timeoutSeconds: 10
-  #type: MutatingAdmissionWebhook
-- admissionReviewVersions:
+  - apiGroups:
+    - hco.kubevirt.io
+    apiVersions:
     - v1beta1
-    - v1
-  clientConfig:
-    # caBundle: WILL BE INJECTED BY CERT-MANAGER BECAUSE OF THE ANNOTATION
-    service:
-      name: hyperconverged-cluster-webhook-service
-      namespace: kubevirt-hyperconverged
-      path: /mutate-hco-kubevirt-io-v1beta1-hyperconverged
-      port: 4343
-  failurePolicy: Fail
-  name: mutate-hyperconverged-hco.kubevirt.io
-  rules:
-    - apiGroups:
-        - hco.kubevirt.io
-      apiVersions:
-        - v1alpha1
-        - v1beta1
-      operations:
-        - CREATE
-        - UPDATE
-      resources:
-        - hyperconvergeds
-  sideEffects: NoneOnDryRun
-  timeoutSeconds: 10
-  #type: MutatingAdmissionWebhook
+    operations:
+    - CREATE
+    - DELETE
+    - UPDATE
+    resources:
+    - hyperconvergeds
+    scope: '*'
+  sideEffects: None
+  timeoutSeconds: 30
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -279,29 +253,81 @@ metadata:
   labels:
     name: hyperconverged-cluster-webhook
 webhooks:
-- name: mutate-hyperconverged-hco.kubevirt.io
-  admissionReviewVersions:
-  - v1beta1
-  - v1
-  clientConfig:
-    # caBundle: WILL BE INJECTED BY CERT-MANAGER BECAUSE OF THE ANNOTATION
-    service:
-      name: hyperconverged-cluster-webhook-service
-      namespace: kubevirt-hyperconverged
-      path: /mutate-hco-kubevirt-io-v1beta1-hyperconverged
-      port: 4343
-  failurePolicy: Fail
-  matchPolicy: Equivalent
-  rules:
-  - apiGroups:
-    - "hco.kubevirt.io"
-    apiVersions:
-    - "v1beta1"
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - hyperconvergeds
-    scope: '*'
-  sideEffects: NoneOnDryRun
-  timeoutSeconds: 30
+  - admissionReviewVersions:
+      - v1beta1
+      - v1
+    clientConfig:
+      # caBundle: WILL BE INJECTED BY CERT-MANAGER BECAUSE OF THE ANNOTATION
+      service:
+        name: hyperconverged-cluster-webhook-service
+        namespace: kubevirt-hyperconverged
+        path: /mutate-ns-hco-kubevirt-io
+        port: 4343
+    failurePolicy: Fail
+    name: mutate-ns-hco.kubevirt.io
+    objectSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: kubevirt-hyperconverged
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - DELETE
+        resources:
+          - namespaces
+    sideEffects: NoneOnDryRun
+    timeoutSeconds: 10
+    #type: MutatingAdmissionWebhook
+  - admissionReviewVersions:
+      - v1beta1
+      - v1
+    clientConfig:
+      # caBundle: WILL BE INJECTED BY CERT-MANAGER BECAUSE OF THE ANNOTATION
+      service:
+        name: hyperconverged-cluster-webhook-service
+        namespace: kubevirt-hyperconverged
+        path: /mutate-hco-kubevirt-io-v1-hyperconverged
+        port: 4343
+    failurePolicy: Fail
+    matchPolicy: Exact
+    name: mutate-hyperconverged-hco.kubevirt.io
+    rules:
+      - apiGroups:
+          - hco.kubevirt.io
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - hyperconvergeds
+    sideEffects: NoneOnDryRun
+    timeoutSeconds: 10
+  - admissionReviewVersions:
+      - v1beta1
+      - v1
+    clientConfig:
+      # caBundle: WILL BE INJECTED BY CERT-MANAGER BECAUSE OF THE ANNOTATION
+      service:
+        name: hyperconverged-cluster-webhook-service
+        namespace: kubevirt-hyperconverged
+        path: /mutate-hco-kubevirt-io-v1beta1-hyperconverged
+        port: 4343
+    failurePolicy: Fail
+    matchPolicy: Exact
+    name: mutate-hyperconverged-hco-v1beta1.kubevirt.io
+    rules:
+      - apiGroups:
+          - hco.kubevirt.io
+        apiVersions:
+          - v1beta1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - hyperconvergeds
+    sideEffects: NoneOnDryRun
+    timeoutSeconds: 10
+    #type: MutatingAdmissionWebhook

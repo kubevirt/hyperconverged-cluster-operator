@@ -43,6 +43,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
@@ -69,6 +71,8 @@ const (
 var (
 	supportedArches = []string{"arch.amd64"}
 	supportedOS     = []string{"os.linux"}
+
+	admissionReviewVersions = []string{"v1beta1", "v1"}
 )
 
 type EnvVarFlags []corev1.EnvVar
@@ -316,7 +320,6 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 			"spec": map[string]interface{}{},
 		})
 
-	var admissionReviewVersions = []string{"v1beta1", "v1"}
 	// Explicitly fail on unvalidated (for any reason) requests:
 	// this can make removing HCO CR harder if HCO webhook is not able
 	// to really validate the requests.
@@ -324,31 +327,16 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 	// ValidatingWebhookConfiguration object first (eventually bypassing the OLM if needed).
 	// so failurePolicy = admissionregistrationv1.Fail
 
-	validatingWebhook := csvv1alpha1.WebhookDescription{
-		GenerateName:            hcoutil.HcoValidatingWebhook,
-		Type:                    csvv1alpha1.ValidatingAdmissionWebhook,
-		DeploymentName:          hcoWhDeploymentName,
-		ContainerPort:           hcoutil.WebhookPort,
-		AdmissionReviewVersions: admissionReviewVersions,
-		SideEffects:             ptr.To(admissionregistrationv1.SideEffectClassNone),
-		FailurePolicy:           ptr.To(admissionregistrationv1.Fail),
-		TimeoutSeconds:          ptr.To[int32](10),
-		Rules: []admissionregistrationv1.RuleWithOperations{
-			{
-				Operations: []admissionregistrationv1.OperationType{
-					admissionregistrationv1.Create,
-					admissionregistrationv1.Delete,
-					admissionregistrationv1.Update,
-				},
-				Rule: admissionregistrationv1.Rule{
-					APIGroups:   []string{hcoutil.APIVersionGroup},
-					APIVersions: []string{hcoutil.APIVersionBeta},
-					Resources:   []string{"hyperconvergeds"},
-				},
-			},
-		},
-		WebhookPath: ptr.To(hcoutil.HCOWebhookPath),
-	}
+	v1Beta1ValidatingWebhook := createHCValidatingWebhook(
+		hcoutil.HcoV1Beta1ValidatingWebhook,
+		hcov1beta1.APIVersionBeta,
+		hcoutil.HCOV1Beta1WebhookPath,
+	)
+	v1ValidatingWebhook := createHCValidatingWebhook(
+		hcoutil.HcoValidatingWebhook,
+		hcov1.APIVersionV1,
+		hcoutil.HCOV1WebhookPath,
+	)
 
 	mutatingNamespaceWebhook := csvv1alpha1.WebhookDescription{
 		GenerateName:            hcoutil.HcoMutatingWebhookNS,
@@ -377,30 +365,17 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 		WebhookPath: ptr.To(hcoutil.HCONSWebhookPath),
 	}
 
-	mutatingHyperConvergedWebhook := csvv1alpha1.WebhookDescription{
-		GenerateName:            hcoutil.HcoMutatingWebhookHyperConverged,
-		Type:                    csvv1alpha1.MutatingAdmissionWebhook,
-		DeploymentName:          hcoWhDeploymentName,
-		ContainerPort:           hcoutil.WebhookPort,
-		AdmissionReviewVersions: admissionReviewVersions,
-		SideEffects:             ptr.To(admissionregistrationv1.SideEffectClassNoneOnDryRun),
-		FailurePolicy:           ptr.To(admissionregistrationv1.Fail),
-		TimeoutSeconds:          ptr.To[int32](10),
-		Rules: []admissionregistrationv1.RuleWithOperations{
-			{
-				Operations: []admissionregistrationv1.OperationType{
-					admissionregistrationv1.Create,
-					admissionregistrationv1.Update,
-				},
-				Rule: admissionregistrationv1.Rule{
-					APIGroups:   []string{hcoutil.APIVersionGroup},
-					APIVersions: []string{hcoutil.APIVersionBeta},
-					Resources:   []string{"hyperconvergeds"},
-				},
-			},
-		},
-		WebhookPath: ptr.To(hcoutil.HCOMutatingWebhookPath),
-	}
+	v1Beta1MutatingHyperConvergedWebhook := createHCMutatingWebhook(
+		hcoutil.HcoV1Beta1MutatingWebhookHyperConverged,
+		hcov1beta1.APIVersionBeta,
+		hcoutil.HCOV1Beta1MutatingWebhookPath,
+	)
+
+	v1MutatingHyperConvergedWebhook := createHCMutatingWebhook(
+		hcoutil.HcoMutatingWebhookHyperConverged,
+		hcov1.APIVersionV1,
+		hcoutil.HCOV1MutatingWebhookPath,
+	)
 
 	return &csvv1alpha1.ClusterServiceVersion{
 		TypeMeta: metav1.TypeMeta{
@@ -502,9 +477,11 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 			// the actual StrategyDetailsDeployment when merging CSVs
 			InstallStrategy: csvv1alpha1.NamedInstallStrategy{},
 			WebhookDefinitions: []csvv1alpha1.WebhookDescription{
-				validatingWebhook,
+				v1Beta1ValidatingWebhook,
+				v1ValidatingWebhook,
 				mutatingNamespaceWebhook,
-				mutatingHyperConvergedWebhook,
+				v1Beta1MutatingHyperConvergedWebhook,
+				v1MutatingHyperConvergedWebhook,
 			},
 			CustomResourceDefinitions: csvv1alpha1.CustomResourceDefinitions{
 				Owned: []csvv1alpha1.CRDDescription{
@@ -578,6 +555,63 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 					},
 				},
 				Required: []csvv1alpha1.CRDDescription{},
+			},
+		},
+	}
+}
+
+func createHCMutatingWebhook(name, apiVersion, path string) csvv1alpha1.WebhookDescription {
+	wh := createCommonHCWebhook(
+		csvv1alpha1.MutatingAdmissionWebhook,
+		admissionregistrationv1.SideEffectClassNoneOnDryRun,
+		[]admissionregistrationv1.OperationType{
+			admissionregistrationv1.Create,
+			admissionregistrationv1.Update,
+		},
+	)
+
+	wh.GenerateName = name
+	wh.Rules[0].APIVersions = []string{apiVersion}
+	wh.WebhookPath = &path
+
+	return wh
+}
+
+func createHCValidatingWebhook(name, apiVersion, path string) csvv1alpha1.WebhookDescription {
+	wh := createCommonHCWebhook(
+		csvv1alpha1.ValidatingAdmissionWebhook,
+		admissionregistrationv1.SideEffectClassNone,
+		[]admissionregistrationv1.OperationType{
+			admissionregistrationv1.Create,
+			admissionregistrationv1.Delete,
+			admissionregistrationv1.Update,
+		},
+	)
+
+	wh.GenerateName = name
+	wh.Rules[0].APIVersions = []string{apiVersion}
+	wh.WebhookPath = &path
+
+	return wh
+}
+
+func createCommonHCWebhook(whType csvv1alpha1.WebhookAdmissionType, sideEffect admissionregistrationv1.SideEffectClass, ops []admissionregistrationv1.OperationType) csvv1alpha1.WebhookDescription {
+	return csvv1alpha1.WebhookDescription{
+		Type:                    whType,
+		DeploymentName:          hcoWhDeploymentName,
+		ContainerPort:           hcoutil.WebhookPort,
+		AdmissionReviewVersions: admissionReviewVersions,
+		SideEffects:             &sideEffect,
+		FailurePolicy:           ptr.To(admissionregistrationv1.Fail),
+		MatchPolicy:             ptr.To(admissionregistrationv1.Exact),
+		TimeoutSeconds:          ptr.To[int32](10),
+		Rules: []admissionregistrationv1.RuleWithOperations{
+			{
+				Operations: ops,
+				Rule: admissionregistrationv1.Rule{
+					APIGroups: []string{hcoutil.APIVersionGroup},
+					Resources: []string{"hyperconvergeds"},
+				},
 			},
 		},
 	}

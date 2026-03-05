@@ -17,35 +17,35 @@ import (
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
-	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	goldenimages "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/golden-images"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-var _ = Describe("test HyperConverged v1 mutator", func() {
+var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 	var (
-		cr      *hcov1.HyperConverged
+		cr      *v1beta1.HyperConverged
 		cli     client.Client
-		mutator *HyperConvergedMutator
+		mutator *HyperConvergedV1Beta1Mutator
 	)
 
 	mutatorScheme = scheme.Scheme
-	Expect(hcov1.AddToScheme(mutatorScheme)).To(Succeed())
+	Expect(v1beta1.AddToScheme(mutatorScheme)).To(Succeed())
 	BeforeEach(func() {
 		Expect(os.Setenv("OPERATOR_NAMESPACE", HcoValidNamespace)).To(Succeed())
-		cr = &hcov1.HyperConverged{
+		cr = &v1beta1.HyperConverged{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      util.HyperConvergedName,
 				Namespace: HcoValidNamespace,
 			},
-			Spec: hcov1.HyperConvergedSpec{
+			Spec: v1beta1.HyperConvergedSpec{
 				EvictionStrategy: ptr.To(kubevirtcorev1.EvictionStrategyLiveMigrate),
 			},
 		}
 
 		cli = commontestutils.InitClient(nil)
-		mutator = initHCMutator(mutatorScheme, cli)
+		mutator = initHCV1Beta1Mutator(mutatorScheme, cli)
 	})
 
 	Context("Check mutating webhook for create operation", func() {
@@ -59,7 +59,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 		)
 
 		DescribeTable("check dict annotation on create", func(ctx context.Context, annotations map[string]string, expectedPatches *jsonpatch.JsonPatchOperation) {
-			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
+			cr.Spec.DataImportCronTemplates = []v1beta1.DataImportCronTemplate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "dictName",
@@ -97,7 +97,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 		)
 
 		It("should handle multiple DICTs", func(ctx context.Context) {
-			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
+			cr.Spec.DataImportCronTemplates = []v1beta1.DataImportCronTemplate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "no-annotation",
@@ -145,7 +145,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 		})
 
 		It("should handle multiple DICTs and mediatedDevicesTypes -> mediatedDeviceTypes at the same time", func(ctx context.Context) {
-			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
+			cr.Spec.DataImportCronTemplates = []v1beta1.DataImportCronTemplate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "no-annotation",
@@ -171,9 +171,9 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				},
 			}
 
-			cr.Spec.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
+			cr.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
 				MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"}, //nolint SA1019
-				NodeMediatedDeviceTypes: []hcov1.NodeMediatedDeviceTypesConfig{
+				NodeMediatedDeviceTypes: []v1beta1.NodeMediatedDeviceTypesConfig{
 					{
 						NodeSelector: map[string]string{
 							"testLabel1": "true",
@@ -298,7 +298,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 			)
 		})
 
-		DescribeTable("Check mediatedDevicesTypes -> mediatedDeviceTypes transition", func(ctx context.Context, initialMDConfiguration *hcov1.MediatedDevicesConfiguration, patches []jsonpatch.JsonPatchOperation) {
+		DescribeTable("Check mediatedDevicesTypes -> mediatedDeviceTypes transition", func(ctx context.Context, initialMDConfiguration *v1beta1.MediatedDevicesConfiguration, patches []jsonpatch.JsonPatchOperation) {
 			cr.Spec.MediatedDevicesConfiguration = initialMDConfiguration
 
 			req := admission.Request{AdmissionRequest: newCreateRequest(cr, testCodec)}
@@ -314,9 +314,9 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				nil,
 			),
 			Entry("should do nothing if already using mediatedDeviceTypes",
-				&hcov1.MediatedDevicesConfiguration{
+				&v1beta1.MediatedDevicesConfiguration{
 					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
-					NodeMediatedDeviceTypes: []hcov1.NodeMediatedDeviceTypesConfig{
+					NodeMediatedDeviceTypes: []v1beta1.NodeMediatedDeviceTypesConfig{
 						{
 							NodeSelector: map[string]string{
 								"testLabel1": "true",
@@ -338,9 +338,9 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				nil,
 			),
 			Entry("should set the mediatedDeviceTypes if using only deprecated ones",
-				&hcov1.MediatedDevicesConfiguration{
+				&v1beta1.MediatedDevicesConfiguration{
 					MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"},
-					NodeMediatedDeviceTypes: []hcov1.NodeMediatedDeviceTypesConfig{
+					NodeMediatedDeviceTypes: []v1beta1.NodeMediatedDeviceTypesConfig{
 						{
 							NodeSelector: map[string]string{
 								"testLabel1": "true",
@@ -378,9 +378,9 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				},
 			),
 			Entry("should set the mediatedDeviceTypes only when needed if using a mix of the two",
-				&hcov1.MediatedDevicesConfiguration{
+				&v1beta1.MediatedDevicesConfiguration{
 					MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"},
-					NodeMediatedDeviceTypes: []hcov1.NodeMediatedDeviceTypesConfig{
+					NodeMediatedDeviceTypes: []v1beta1.NodeMediatedDeviceTypesConfig{
 						{
 							NodeSelector: map[string]string{
 								"testLabel1": "true",
@@ -446,7 +446,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 	Context("Check mutating webhook for update operation", func() {
 		DescribeTable("check dict annotation on update", func(ctx context.Context, annotations map[string]string, expectedPatches *jsonpatch.JsonPatchOperation) {
 			origCR := cr.DeepCopy()
-			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
+			cr.Spec.DataImportCronTemplates = []v1beta1.DataImportCronTemplate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "dictName",
@@ -484,7 +484,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 		It("should handle multiple DICTs on update", func(ctx context.Context) {
 			origCR := cr.DeepCopy()
 
-			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
+			cr.Spec.DataImportCronTemplates = []v1beta1.DataImportCronTemplate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "no-annotation",
@@ -530,7 +530,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 
 		It("should handle multiple DICTs and mediatedDevicesTypes -> mediatedDeviceTypes at the same time", func(ctx context.Context) {
 			origCR := cr.DeepCopy()
-			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
+			cr.Spec.DataImportCronTemplates = []v1beta1.DataImportCronTemplate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "no-annotation",
@@ -556,9 +556,9 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				},
 			}
 
-			cr.Spec.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
+			cr.Spec.MediatedDevicesConfiguration = &v1beta1.MediatedDevicesConfiguration{
 				MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"}, //nolint SA1019
-				NodeMediatedDeviceTypes: []hcov1.NodeMediatedDeviceTypesConfig{
+				NodeMediatedDeviceTypes: []v1beta1.NodeMediatedDeviceTypesConfig{
 					{
 						NodeSelector: map[string]string{
 							"testLabel1": "true",
@@ -680,7 +680,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 			)
 		})
 
-		DescribeTable("Check mediatedDevicesTypes -> mediatedDeviceTypes transition", func(ctx context.Context, initialMDConfiguration *hcov1.MediatedDevicesConfiguration, patches []jsonpatch.JsonPatchOperation) {
+		DescribeTable("Check mediatedDevicesTypes -> mediatedDeviceTypes transition", func(ctx context.Context, initialMDConfiguration *v1beta1.MediatedDevicesConfiguration, patches []jsonpatch.JsonPatchOperation) {
 			origCR := cr.DeepCopy()
 			cr.Spec.MediatedDevicesConfiguration = initialMDConfiguration
 
@@ -696,9 +696,9 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				nil,
 			),
 			Entry("should do nothing if already using mediatedDeviceTypes",
-				&hcov1.MediatedDevicesConfiguration{
+				&v1beta1.MediatedDevicesConfiguration{
 					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
-					NodeMediatedDeviceTypes: []hcov1.NodeMediatedDeviceTypesConfig{
+					NodeMediatedDeviceTypes: []v1beta1.NodeMediatedDeviceTypesConfig{
 						{
 							NodeSelector: map[string]string{
 								"testLabel1": "true",
@@ -720,9 +720,9 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				nil,
 			),
 			Entry("should set the mediatedDeviceTypes if using only deprecated ones",
-				&hcov1.MediatedDevicesConfiguration{
+				&v1beta1.MediatedDevicesConfiguration{
 					MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"},
-					NodeMediatedDeviceTypes: []hcov1.NodeMediatedDeviceTypesConfig{
+					NodeMediatedDeviceTypes: []v1beta1.NodeMediatedDeviceTypesConfig{
 						{
 							NodeSelector: map[string]string{
 								"testLabel1": "true",
@@ -760,9 +760,9 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				},
 			),
 			Entry("should set the mediatedDeviceTypes only when needed if using a mix of the two",
-				&hcov1.MediatedDevicesConfiguration{
+				&v1beta1.MediatedDevicesConfiguration{
 					MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"},
-					NodeMediatedDeviceTypes: []hcov1.NodeMediatedDeviceTypesConfig{
+					NodeMediatedDeviceTypes: []v1beta1.NodeMediatedDeviceTypesConfig{
 						{
 							NodeSelector: map[string]string{
 								"testLabel1": "true",
@@ -807,9 +807,9 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 	})
 })
 
-func initHCMutator(s *runtime.Scheme, testClient client.Client) *HyperConvergedMutator {
+func initHCV1Beta1Mutator(s *runtime.Scheme, testClient client.Client) *HyperConvergedV1Beta1Mutator {
 	decoder := admission.NewDecoder(s)
-	mutator := NewHyperConvergedMutator(testClient, decoder)
+	mutator := NewHyperConvergedV1Beta1Mutator(testClient, decoder)
 
 	return mutator
 }

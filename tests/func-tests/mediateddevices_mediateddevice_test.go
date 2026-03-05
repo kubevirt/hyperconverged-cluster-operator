@@ -302,7 +302,7 @@ var _ = Describe("MediatedDevicesTypes -> MediatedDeviceTypes", Label("MediatedD
 	DescribeTable("should correctly handle validate MediatedDevicesTypes -> MediatedDeviceTypes transition",
 		func(ctx context.Context, mediatedDevicesConfiguration *v1beta1.MediatedDevicesConfiguration) {
 			apiServerError := apiservererrors.ToStatusErr(
-				util.HcoValidatingWebhook,
+				util.HcoV1Beta1ValidatingWebhook,
 				&metav1.Status{
 					Message: "mediatedDevicesTypes is deprecated, please use mediatedDeviceTypes instead",
 					Reason:  metav1.StatusReasonForbidden,

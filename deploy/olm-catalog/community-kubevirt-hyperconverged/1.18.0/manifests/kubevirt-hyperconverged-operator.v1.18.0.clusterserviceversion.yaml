@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.18.0-unstable
-    createdAt: "2026-02-20 05:26:24"
+    createdAt: "2026-03-02 18:52:55"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -407,6 +407,8 @@ spec:
           verbs:
           - get
           - list
+          - update
+          - patch
           - watch
           - delete
         - apiGroups:
@@ -5563,7 +5565,8 @@ spec:
     containerPort: 4343
     deploymentName: hco-webhook
     failurePolicy: Fail
-    generateName: validate-hco.kubevirt.io
+    generateName: validate-hco-v1beta1.kubevirt.io
+    matchPolicy: Exact
     rules:
     - apiGroups:
       - hco.kubevirt.io
@@ -5579,6 +5582,29 @@ spec:
     timeoutSeconds: 10
     type: ValidatingAdmissionWebhook
     webhookPath: /validate-hco-kubevirt-io-v1beta1-hyperconverged
+  - admissionReviewVersions:
+    - v1beta1
+    - v1
+    containerPort: 4343
+    deploymentName: hco-webhook
+    failurePolicy: Fail
+    generateName: validate-hco.kubevirt.io
+    matchPolicy: Exact
+    rules:
+    - apiGroups:
+      - hco.kubevirt.io
+      apiVersions:
+      - v1
+      operations:
+      - CREATE
+      - DELETE
+      - UPDATE
+      resources:
+      - hyperconvergeds
+    sideEffects: None
+    timeoutSeconds: 10
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-hco-kubevirt-io-v1-hyperconverged
   - admissionReviewVersions:
     - v1beta1
     - v1
@@ -5608,7 +5634,8 @@ spec:
     containerPort: 4343
     deploymentName: hco-webhook
     failurePolicy: Fail
-    generateName: mutate-hyperconverged-hco.kubevirt.io
+    generateName: mutate-hyperconverged-hco-v1beta1.kubevirt.io
+    matchPolicy: Exact
     rules:
     - apiGroups:
       - hco.kubevirt.io
@@ -5623,6 +5650,28 @@ spec:
     timeoutSeconds: 10
     type: MutatingAdmissionWebhook
     webhookPath: /mutate-hco-kubevirt-io-v1beta1-hyperconverged
+  - admissionReviewVersions:
+    - v1beta1
+    - v1
+    containerPort: 4343
+    deploymentName: hco-webhook
+    failurePolicy: Fail
+    generateName: mutate-hyperconverged-hco.kubevirt.io
+    matchPolicy: Exact
+    rules:
+    - apiGroups:
+      - hco.kubevirt.io
+      apiVersions:
+      - v1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - hyperconvergeds
+    sideEffects: NoneOnDryRun
+    timeoutSeconds: 10
+    type: MutatingAdmissionWebhook
+    webhookPath: /mutate-hco-kubevirt-io-v1-hyperconverged
   - admissionReviewVersions:
     - v1
     containerPort: 9443
