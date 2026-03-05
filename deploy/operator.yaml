@@ -80,6 +80,8 @@ spec:
           value: quay.io/kubevirt/network-passt-binding-cni@sha256:6a8153ca73e55e0df59e6ca4625547e88ba6569bb6dad5dd8b76bb6bea34eafc
         - name: WASP_AGENT_IMAGE
           value: quay.io/openshift-virtualization/wasp-agent@sha256:eabfa6a425213f520f7a9e5b81b43e8b6430779d42c5c8b1bfd48a4f1730447a
+        - name: AIE_WEBHOOK_IMAGE
+          value: quay.io/kubevirt/kubevirt-aie-webhook:latest
         image: quay.io/kubevirt/hyperconverged-cluster-operator:1.18.0-unstable
         imagePullPolicy: Always
         livenessProbe:

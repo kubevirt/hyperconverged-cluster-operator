@@ -1128,6 +1128,14 @@ spec:
                       When set to false or nil, the "HotplugVolumes" feature gate is enabled (default behavior).
                       This feature is in Developer Preview.
                     type: boolean
+                  deployAIEWebhook:
+                    default: false
+                    description: |-
+                      DeployAIEWebhook enables the AIE (Accelerated Infrastructure Enablement) webhook that intercepts virt-launcher Pod creation
+                      and conditionally replaces the compute container image with an alternative launcher image
+                      (e.g., GPU-optimized builds) based on configurable rules.
+                      Note: This feature is in Developer Preview.
+                    type: boolean
                   deployKubeSecondaryDNS:
                     default: false
                     description: Deploy KubeSecondaryDNS by CNAO
@@ -5307,6 +5315,7 @@ spec:
               featureGates:
                 decentralizedLiveMigration: true
                 declarativeHotplugVolumes: false
+                deployAIEWebhook: false
                 deployKubeSecondaryDNS: false
                 disableMDevConfiguration: false
                 downwardMetrics: false
@@ -6335,6 +6344,7 @@ spec:
                 default:
                   decentralizedLiveMigration: true
                   declarativeHotplugVolumes: false
+                  deployAIEWebhook: false
                   deployKubeSecondaryDNS: false
                   disableMDevConfiguration: false
                   downwardMetrics: false
@@ -6372,6 +6382,14 @@ spec:
                       When set to true, the "DeclarativeHotplugVolumes" feature gate is enabled instead of "HotplugVolumes".
                       When set to false or nil, the "HotplugVolumes" feature gate is enabled (default behavior).
                       This feature is in Developer Preview.
+                    type: boolean
+                  deployAIEWebhook:
+                    default: false
+                    description: |-
+                      DeployAIEWebhook enables the AIE (Accelerated Infrastructure Enablement) webhook that intercepts virt-launcher Pod creation
+                      and conditionally replaces the compute container image with an alternative launcher image
+                      (e.g., GPU-optimized builds) based on configurable rules.
+                      Note: This feature is in Developer Preview.
                     type: boolean
                   deployKubeSecondaryDNS:
                     default: false
