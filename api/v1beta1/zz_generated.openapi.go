@@ -390,6 +390,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 							Format:      "",
 						},
 					},
+					"enableOpenShiftSwap": {
+						SchemaProps: spec.SchemaProps{
+							Description: "EnableOpenShiftSwap enables the deployment of MachineConfig resources for OpenShift swap support. When enabled, HCO will deploy the machine configs that are necessary for swap functionality. Note: This feature is in Developer Preview.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

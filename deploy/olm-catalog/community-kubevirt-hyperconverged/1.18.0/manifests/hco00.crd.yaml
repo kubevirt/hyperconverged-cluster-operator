@@ -66,6 +66,7 @@ spec:
                 disableMDevConfiguration: false
                 downwardMetrics: false
                 enableMultiArchBootImageImport: false
+                enableOpenShiftSwap: false
                 incrementalBackup: false
                 objectGraph: false
                 persistentReservation: false
@@ -1094,6 +1095,7 @@ spec:
                   disableMDevConfiguration: false
                   downwardMetrics: false
                   enableMultiArchBootImageImport: false
+                  enableOpenShiftSwap: false
                   incrementalBackup: false
                   objectGraph: false
                   persistentReservation: false
@@ -1174,6 +1176,14 @@ spec:
                       Setting this field to true will allow the HCO to create Golden Images for different CPU architectures.
 
                       This feature is in Developer Preview.
+                    type: boolean
+                  enableOpenShiftSwap:
+                    default: false
+                    description: |-
+                      EnableOpenShiftSwap enables the deployment of MachineConfig resources for
+                      OpenShift swap support. When enabled, HCO will deploy the machine configs
+                      that are necessary for swap functionality.
+                      Note: This feature is in Developer Preview.
                     type: boolean
                   incrementalBackup:
                     default: false
@@ -5311,6 +5321,7 @@ spec:
                 disableMDevConfiguration: false
                 downwardMetrics: false
                 enableMultiArchBootImageImport: false
+                enableOpenShiftSwap: false
                 incrementalBackup: false
                 objectGraph: false
                 persistentReservation: false
@@ -6339,6 +6350,7 @@ spec:
                   disableMDevConfiguration: false
                   downwardMetrics: false
                   enableMultiArchBootImageImport: false
+                  enableOpenShiftSwap: false
                   incrementalBackup: false
                   objectGraph: false
                   persistentReservation: false
@@ -6419,6 +6431,14 @@ spec:
                       Setting this field to true will allow the HCO to create Golden Images for different CPU architectures.
 
                       This feature is in Developer Preview.
+                    type: boolean
+                  enableOpenShiftSwap:
+                    default: false
+                    description: |-
+                      EnableOpenShiftSwap enables the deployment of MachineConfig resources for
+                      OpenShift swap support. When enabled, HCO will deploy the machine configs
+                      that are necessary for swap functionality.
+                      Note: This feature is in Developer Preview.
                     type: boolean
                   incrementalBackup:
                     default: false

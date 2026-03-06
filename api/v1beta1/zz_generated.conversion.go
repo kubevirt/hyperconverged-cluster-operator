@@ -629,6 +629,7 @@ func autoConvert_v1beta1_HyperConvergedFeatureGates_To_v1_HyperConvergedFeatureG
 	out.VideoConfig = (*bool)(unsafe.Pointer(in.VideoConfig))
 	out.ObjectGraph = (*bool)(unsafe.Pointer(in.ObjectGraph))
 	out.IncrementalBackup = (*bool)(unsafe.Pointer(in.IncrementalBackup))
+	out.EnableOpenShiftSwap = (*bool)(unsafe.Pointer(in.EnableOpenShiftSwap))
 	return nil
 }
 
@@ -659,6 +660,7 @@ func autoConvert_v1_HyperConvergedFeatureGates_To_v1beta1_HyperConvergedFeatureG
 	out.VideoConfig = (*bool)(unsafe.Pointer(in.VideoConfig))
 	out.ObjectGraph = (*bool)(unsafe.Pointer(in.ObjectGraph))
 	out.IncrementalBackup = (*bool)(unsafe.Pointer(in.IncrementalBackup))
+	out.EnableOpenShiftSwap = (*bool)(unsafe.Pointer(in.EnableOpenShiftSwap))
 	return nil
 }
 
