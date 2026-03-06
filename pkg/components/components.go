@@ -1,6 +1,7 @@
 package components
 
 import (
+	mcfgv1 "github.com/openshift/api/machineconfiguration/v1"
 	persesv1alpha1 "github.com/rhobs/perses-operator/api/v1alpha1"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -568,6 +569,11 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			APIGroups: stringListToSlice("security.openshift.io"),
 			Resources: stringListToSlice("securitycontextconstraints"),
 			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice(mcfgv1.GroupName),
+			Resources: stringListToSlice("machineconfigs"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "patch", "delete"),
 		},
 		{
 			APIGroups: stringListToSlice(networkingv1.GroupName),
