@@ -69,6 +69,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 			waspagent.NewWaspAgentServiceAccountHandler(client, scheme),
 			waspagent.NewWaspAgentSCCHandler(client, scheme),
 			waspagent.NewWaspAgentDaemonSetHandler(client, scheme),
+			waspagent.NewWaspAgentMachineConfigHandler(client, scheme),
 		}...)
 	}
 
