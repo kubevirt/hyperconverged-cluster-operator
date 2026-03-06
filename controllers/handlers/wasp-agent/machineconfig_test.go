@@ -2,7 +2,9 @@ package wasp_agent
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -20,9 +22,21 @@ type ignitionConfig struct {
 	Ignition struct {
 		Version string `json:"version"`
 	} `json:"ignition"`
+	Storage struct {
+		Files []ignitionFile `json:"files"`
+	} `json:"storage"`
 	Systemd struct {
 		Units []ignitionSystemdUnit `json:"units"`
 	} `json:"systemd"`
+}
+
+type ignitionFile struct {
+	Path      string `json:"path"`
+	Overwrite *bool  `json:"overwrite,omitempty"`
+	Contents  struct {
+		Source string `json:"source"`
+	} `json:"contents"`
+	Mode *int `json:"mode,omitempty"`
 }
 
 type ignitionSystemdUnit struct {
@@ -332,6 +346,50 @@ var _ = Describe("Wasp Agent MachineConfig", func() {
 			Expect(unit.Contents).To(ContainSubstring("swapon --priority 10 /var/tmp/ocpswap.file"))
 			Expect(unit.Contents).To(ContainSubstring("RequiredBy=kubelet-dependencies.target"))
 		})
+
+		It("should have the kubelet swap drop-in file at the correct path", func() {
+			file := findStorageFile(ic, "/etc/openshift/kubelet.conf.d/90-swap.conf")
+			Expect(file).ToNot(BeNil(), "kubelet swap drop-in file should exist at /etc/openshift/kubelet.conf.d/90-swap.conf")
+		})
+
+		It("should have the kubelet swap drop-in file with overwrite enabled", func() {
+			file := findStorageFile(ic, "/etc/openshift/kubelet.conf.d/90-swap.conf")
+			Expect(file).ToNot(BeNil())
+			Expect(file.Overwrite).ToNot(BeNil())
+			Expect(*file.Overwrite).To(BeTrue())
+		})
+
+		It("should have the kubelet swap drop-in file with correct mode 420 (0644)", func() {
+			file := findStorageFile(ic, "/etc/openshift/kubelet.conf.d/90-swap.conf")
+			Expect(file).ToNot(BeNil())
+			Expect(file.Mode).ToNot(BeNil())
+			Expect(*file.Mode).To(Equal(420))
+		})
+
+		It("should have the kubelet swap drop-in file with base64 data URI source", func() {
+			file := findStorageFile(ic, "/etc/openshift/kubelet.conf.d/90-swap.conf")
+			Expect(file).ToNot(BeNil())
+			Expect(file.Contents.Source).To(HavePrefix("data:text/plain;charset=utf-8;base64,"))
+		})
+
+		It("should have the kubelet swap drop-in file with correct KubeletConfiguration content", func() {
+			file := findStorageFile(ic, "/etc/openshift/kubelet.conf.d/90-swap.conf")
+			Expect(file).ToNot(BeNil())
+
+			// Extract the base64 part after the data URI prefix
+			const dataURIPrefix = "data:text/plain;charset=utf-8;base64,"
+			Expect(file.Contents.Source).To(HavePrefix(dataURIPrefix))
+			b64Data := strings.TrimPrefix(file.Contents.Source, dataURIPrefix)
+
+			decoded, err := base64.StdEncoding.DecodeString(b64Data)
+			Expect(err).ToNot(HaveOccurred())
+
+			content := string(decoded)
+			Expect(content).To(ContainSubstring("apiVersion: kubelet.config.k8s.io/v1beta1"))
+			Expect(content).To(ContainSubstring("kind: KubeletConfiguration"))
+			Expect(content).To(ContainSubstring("failSwapOn: false"))
+			Expect(content).To(ContainSubstring("swapBehavior: LimitedSwap"))
+		})
 	})
 
 	Context("shouldDeployOpenShiftSwap condition", func() {
@@ -393,6 +451,15 @@ func findSystemdUnit(ic *ignitionConfig, name string) *ignitionSystemdUnit {
 	for i := range ic.Systemd.Units {
 		if ic.Systemd.Units[i].Name == name {
 			return &ic.Systemd.Units[i]
+		}
+	}
+	return nil
+}
+
+func findStorageFile(ic *ignitionConfig, path string) *ignitionFile {
+	for i := range ic.Storage.Files {
+		if ic.Storage.Files[i].Path == path {
+			return &ic.Storage.Files[i]
 		}
 	}
 	return nil
