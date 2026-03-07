@@ -25,6 +25,7 @@ const (
 	HppoVersionEnvV                         = "HPPO_VERSION"
 	AaqVersionEnvV                          = "AAQ_VERSION"
 	MigrationOperatorVersionEnvV            = "MIGRATION_OPERATOR_VERSION"
+	AutopilotVersionEnvV                    = "AUTOPILOT_VERSION"
 	KVUIPluginImageEnvV                     = "KV_CONSOLE_PLUGIN_IMAGE"
 	KVUIProxyImageEnvV                      = "KV_CONSOLE_PROXY_IMAGE"
 	PasstImageEnvV                          = "PASST_SIDECAR_IMAGE"
@@ -126,4 +127,5 @@ const (
 	AppComponentUIConfig   AppComponent = "kubevirt-ui-config"
 	AppComponentQuotaMngt  AppComponent = "quota-management"
 	AppComponentMigration  AppComponent = "migration"
+	AppComponentAutopilot  AppComponent = "autopilot"
 )

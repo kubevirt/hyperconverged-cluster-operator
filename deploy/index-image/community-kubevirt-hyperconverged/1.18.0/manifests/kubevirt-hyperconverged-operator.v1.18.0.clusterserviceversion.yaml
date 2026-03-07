@@ -3577,6 +3577,139 @@ spec:
           verbs:
           - get
         serviceAccountName: kubevirt-migration-operator
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - nodes
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+          - patch
+        - apiGroups:
+          - events.k8s.io
+          resources:
+          - events
+          verbs:
+          - create
+          - patch
+        - apiGroups:
+          - coordination.k8s.io
+          resources:
+          - leases
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - apiextensions.k8s.io
+          resources:
+          - customresourcedefinitions
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - forklift.konveyor.io
+          resources:
+          - forkliftcontrollers
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - hco.kubevirt.io
+          resources:
+          - hyperconvergeds
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - machineconfiguration.openshift.io
+          resources:
+          - kubeletconfigs
+          - machineconfigs
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - metallb.io
+          resources:
+          - metallbs
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - monitoring.coreos.com
+          resources:
+          - prometheusrules
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - observability.openshift.io
+          resources:
+          - uiplugins
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - operator.openshift.io
+          resources:
+          - kubedeschedulers
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - remediation.medik8s.io
+          resources:
+          - nodehealthchecks
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        serviceAccountName: virt-platform-autopilot
       deployments:
       - label:
           app.kubernetes.io/component: deployment
@@ -3650,6 +3783,8 @@ spec:
                   value: v1.8.0-alpha.0
                 - name: MIGRATION_OPERATOR_VERSION
                   value: v0.1.0
+                - name: AUTOPILOT_VERSION
+                  value: v0.0.4
                 - name: KV_CONSOLE_PLUGIN_IMAGE
                   value: quay.io/kubevirt-ui/kubevirt-plugin@sha256:a9273d9e69662320fc6677f51ee1b05f4c62528b8a83895f8f56849de3b8b9f2
                 - name: KV_CONSOLE_PROXY_IMAGE
@@ -4631,6 +4766,68 @@ spec:
               securityContext:
                 runAsNonRoot: true
               serviceAccountName: kubevirt-migration-operator
+      - label:
+          app: virt-platform-autopilot
+          app.kubernetes.io/component: autopilot
+          app.kubernetes.io/managed-by: olm
+          app.kubernetes.io/part-of: hyperconverged-cluster
+          app.kubernetes.io/version: 1.18.0
+          control-plane: controller-manager
+        name: virt-platform-autopilot
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: virt-platform-autopilot
+              control-plane: controller-manager
+          strategy: {}
+          template:
+            metadata:
+              labels:
+                app: virt-platform-autopilot
+                app.kubernetes.io/component: autopilot
+                app.kubernetes.io/managed-by: olm
+                app.kubernetes.io/part-of: hyperconverged-cluster
+                app.kubernetes.io/version: 1.18.0
+                control-plane: controller-manager
+            spec:
+              containers:
+              - args:
+                - --leader-elect
+                - --namespace=kubevirt-hyperconverged
+                command:
+                - /manager
+                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:cdb613f4ceddd10b58cce9bd38e0819291db916328e5a063ee701b7c27a0cedc
+                imagePullPolicy: IfNotPresent
+                livenessProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 8082
+                  initialDelaySeconds: 15
+                  periodSeconds: 20
+                name: manager
+                readinessProbe:
+                  httpGet:
+                    path: /readyz
+                    port: 8082
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                resources:
+                  limits:
+                    cpu: 500m
+                    memory: 512Mi
+                  requests:
+                    cpu: 100m
+                    memory: 128Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+              securityContext:
+                runAsNonRoot: true
+              serviceAccountName: virt-platform-autopilot
+              terminationGracePeriodSeconds: 10
       permissions:
       - rules:
         - apiGroups:
@@ -5546,6 +5743,8 @@ spec:
     name: virt-launcher
   - image: quay.io/kubevirt/virt-operator@sha256:1d913461d97997dcc7693f5aebb95c1d295cc8c44bb23b52b00eadd914812f54
     name: virt-operator
+  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:cdb613f4ceddd10b58cce9bd38e0819291db916328e5a063ee701b7c27a0cedc
+    name: virt-platform-autopilot
   - image: quay.io/kubevirt/virt-synchronization-controller@sha256:9f4fabb9e553fc0c86221483349e0765d67766883e3b07f4dca408bf136d2de3
     name: virt-synchronization-controller
   - image: quay.io/kubevirt/virtio-container-disk@sha256:6b823946eb7493347a93d6daa16b4101a68e16a0ee1766e01ac3adf82e4b5838

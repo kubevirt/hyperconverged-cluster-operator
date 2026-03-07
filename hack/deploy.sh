@@ -193,6 +193,7 @@ OPERATORS=(
 if [ "$IS_OPENSHIFT" = "true" ]; then
     OPERATORS+=("ssp-operator")
     OPERATORS+=("hyperconverged-cluster-cli-download")
+    OPERATORS+=("virt-platform-autopilot")
 fi
 
 for op in "${OPERATORS[@]}"; do

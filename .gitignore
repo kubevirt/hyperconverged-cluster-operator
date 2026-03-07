@@ -6,6 +6,7 @@ _ci-configs/*
 _local/
 _kubevirtci/
 .vscode/
+bin/
 hack/cloud-init.sh
 hack/test_ssh*
 tools/release-notes/vendor/
