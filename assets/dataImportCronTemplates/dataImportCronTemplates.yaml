@@ -7,6 +7,7 @@
     garbageCollect: Outdated
     managedDataSource: centos-stream9
     schedule: "0 */12 * * *"
+    importsToKeep: 1
     template:
       spec:
         source:
@@ -25,6 +26,7 @@
     garbageCollect: Outdated
     managedDataSource: centos-stream10
     schedule: "0 */12 * * *"
+    importsToKeep: 1
     template:
       spec:
         source:
@@ -43,6 +45,7 @@
     garbageCollect: Outdated
     managedDataSource: fedora
     schedule: "0 */12 * * *"
+    importsToKeep: 1
     template:
       spec:
         source:
