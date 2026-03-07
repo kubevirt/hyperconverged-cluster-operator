@@ -93,7 +93,7 @@ func (r *ReconcileCRD) operatorRestart() {
 // Reconcile refreshes KubeDesheduler view on ClusterInfo singleton
 func (r *ReconcileCRD) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
 
-	log.Info("Triggered by a CRD")
+	log.Info("Triggered by a CRD", "CRD", req.Name)
 	if !hcoutil.GetClusterInfo().IsDeschedulerAvailable() {
 		if hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(ctx, r.client) {
 			log.Info("KubeDescheduler CRD got deployed, restarting the operator to reconfigure the operator for the new kind")
@@ -103,10 +103,14 @@ func (r *ReconcileCRD) Reconcile(ctx context.Context, req reconcile.Request) (re
 	}
 
 	// If Perses CRDs became available after boot, restart once to register Perses controller and cache the new GVKs.
-	if !r.persesAvailableOnBoot && hcoutil.IsPersesAvailable(ctx, r.client) {
-		log.Info("Perses CRDs detected, restarting the operator to register the Perses controller")
-		r.eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Perses CRDs detected", "Restarting the operator to register the Perses controller")
-		r.operatorRestart()
+	if !r.persesAvailableOnBoot {
+		available := hcoutil.IsPersesAvailable(ctx, r.client)
+		log.Info("Perses CRDs availability after boot", "available", available, "CRD", req.Name)
+		if available {
+			log.Info("Perses CRDs detected, restarting the operator to register the Perses controller")
+			r.eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Perses CRDs detected", "Restarting the operator to register the Perses controller")
+			r.operatorRestart()
+		}
 	}
 
 	return reconcile.Result{}, nil
