@@ -365,6 +365,11 @@ func (in *HyperConvergedFeatureGates) DeepCopyInto(out *HyperConvergedFeatureGat
 		*out = new(bool)
 		**out = **in
 	}
+	if in.DeployAIEWebhook != nil {
+		in, out := &in.DeployAIEWebhook, &out.DeployAIEWebhook
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

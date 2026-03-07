@@ -49,8 +49,9 @@ func (h cmHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists r
 		util.MergeLabels(&h.required.ObjectMeta, &found.ObjectMeta)
 	}
 
-	// Don't reconcile contents of UI settings config maps
-	if label, exist := found.Labels[util.AppLabelComponent]; exist && label == string(util.AppComponentUIConfig) {
+	// Don't reconcile contents of UI settings or AIE webhook config maps
+	if label, exist := found.Labels[util.AppLabelComponent]; exist &&
+		(label == string(util.AppComponentUIConfig) || label == string(util.AppComponentAIEWebhook)) {
 		if labelChanged {
 			err := Client.Update(req.Ctx, found)
 			if err != nil {

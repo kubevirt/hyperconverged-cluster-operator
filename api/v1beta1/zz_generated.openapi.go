@@ -390,6 +390,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 							Format:      "",
 						},
 					},
+					"deployAIEWebhook": {
+						SchemaProps: spec.SchemaProps{
+							Description: "DeployAIEWebhook enables the AIE (Accelerated Infrastructure Enablement) webhook that intercepts virt-launcher Pod creation and conditionally replaces the compute container image with an alternative launcher image (e.g., GPU-optimized builds) based on configurable rules. Note: This feature is in Developer Preview.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},
