@@ -365,6 +365,11 @@ func (in *HyperConvergedFeatureGates) DeepCopyInto(out *HyperConvergedFeatureGat
 		*out = new(bool)
 		**out = **in
 	}
+	if in.EnableOpenShiftSwap != nil {
+		in, out := &in.EnableOpenShiftSwap, &out.EnableOpenShiftSwap
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

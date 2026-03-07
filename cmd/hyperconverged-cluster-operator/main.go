@@ -12,6 +12,7 @@ import (
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	imagev1 "github.com/openshift/api/image/v1"
+	mcfgv1 "github.com/openshift/api/machineconfiguration/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
 	openshiftroutev1 "github.com/openshift/api/route/v1"
 	securityv1 "github.com/openshift/api/security/v1"
@@ -107,6 +108,7 @@ var (
 		openshiftconfigv1.Install,
 		openshiftroutev1.Install,
 		securityv1.Install,
+		mcfgv1.Install,
 		monitoringv1.AddToScheme,
 		apiextensionsv1.AddToScheme,
 		kubevirtcorev1.AddToScheme,

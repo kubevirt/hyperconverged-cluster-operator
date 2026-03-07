@@ -1276,6 +1276,18 @@ rules:
   - update
   - delete
 - apiGroups:
+  - machineconfiguration.openshift.io
+  resources:
+  - machineconfigs
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
   - networking.k8s.io
   resources:
   - networkpolicies
