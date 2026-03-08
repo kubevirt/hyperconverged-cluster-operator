@@ -40,8 +40,14 @@ type ignitionFile struct {
 }
 
 type ignitionSystemdUnit struct {
+	Name     string               `json:"name"`
+	Enabled  *bool                `json:"enabled,omitempty"`
+	Contents string               `json:"contents,omitempty"`
+	Dropins  []ignitionUnitDropin `json:"dropins,omitempty"`
+}
+
+type ignitionUnitDropin struct {
 	Name     string `json:"name"`
-	Enabled  *bool  `json:"enabled,omitempty"`
 	Contents string `json:"contents,omitempty"`
 }
 
@@ -315,6 +321,10 @@ var _ = Describe("Wasp Agent MachineConfig", func() {
 			expectedUnitNames := []string{
 				"swap-disk-enable.service",
 				"ocpswap-file-enable.service",
+				"kubevirt-tune-watermarks.service",
+				"kubevirt-io-latency-setup.service",
+				"system.slice",
+				"kubepods.slice",
 			}
 
 			unitNames := make([]string, len(ic.Systemd.Units))
@@ -345,6 +355,37 @@ var _ = Describe("Wasp Agent MachineConfig", func() {
 			Expect(unit.Contents).To(ContainSubstring("ConditionPathExists=/var/tmp/ocpswap.file"))
 			Expect(unit.Contents).To(ContainSubstring("swapon --priority 10 /var/tmp/ocpswap.file"))
 			Expect(unit.Contents).To(ContainSubstring("RequiredBy=kubelet-dependencies.target"))
+		})
+
+		It("should have kubevirt-tune-watermarks.service with correct configuration", func() {
+			unit := findSystemdUnit(ic, "kubevirt-tune-watermarks.service")
+			Expect(unit).ToNot(BeNil(), "kubevirt-tune-watermarks.service should exist")
+			Expect(unit.Enabled).ToNot(BeNil())
+			Expect(*unit.Enabled).To(BeTrue())
+			Expect(unit.Contents).To(ContainSubstring("Description=KubeVirt adaptive watermark tuning for swap optimization"))
+			Expect(unit.Contents).To(ContainSubstring("After=kubelet.service"))
+			Expect(unit.Contents).To(ContainSubstring("Type=oneshot"))
+			Expect(unit.Contents).To(ContainSubstring("ExecStart=/usr/local/bin/kubevirt-tune-watermarks.py"))
+			Expect(unit.Contents).To(ContainSubstring("RemainAfterExit=true"))
+			Expect(unit.Contents).To(ContainSubstring("StandardOutput=journal"))
+			Expect(unit.Contents).To(ContainSubstring("StandardError=journal"))
+			Expect(unit.Contents).To(ContainSubstring("WantedBy=multi-user.target"))
+		})
+
+		It("should have kubevirt-io-latency-setup.service with correct configuration", func() {
+			unit := findSystemdUnit(ic, "kubevirt-io-latency-setup.service")
+			Expect(unit).ToNot(BeNil(), "kubevirt-io-latency-setup.service should exist")
+			Expect(unit.Enabled).ToNot(BeNil())
+			Expect(*unit.Enabled).To(BeTrue())
+			Expect(unit.Contents).To(ContainSubstring("Description=KubeVirt IO latency protection for swap devices"))
+			Expect(unit.Contents).To(ContainSubstring("After=local-fs.target swap.target"))
+			Expect(unit.Contents).To(ContainSubstring("Wants=swap.target"))
+			Expect(unit.Contents).To(ContainSubstring("Type=oneshot"))
+			Expect(unit.Contents).To(ContainSubstring("ExecStart=/usr/local/bin/kubevirt-io-latency-setup.py"))
+			Expect(unit.Contents).To(ContainSubstring("RemainAfterExit=true"))
+			Expect(unit.Contents).To(ContainSubstring("StandardOutput=journal"))
+			Expect(unit.Contents).To(ContainSubstring("StandardError=journal"))
+			Expect(unit.Contents).To(ContainSubstring("WantedBy=multi-user.target"))
 		})
 
 		It("should have the kubelet swap drop-in file at the correct path", func() {
@@ -389,6 +430,46 @@ var _ = Describe("Wasp Agent MachineConfig", func() {
 			Expect(content).To(ContainSubstring("kind: KubeletConfiguration"))
 			Expect(content).To(ContainSubstring("failSwapOn: false"))
 			Expect(content).To(ContainSubstring("swapBehavior: LimitedSwap"))
+		})
+
+		It("should have the kubevirt-tune-watermarks.py file at the correct path", func() {
+			file := findStorageFile(ic, "/usr/local/bin/kubevirt-tune-watermarks.py")
+			Expect(file).ToNot(BeNil(), "kubevirt-tune-watermarks.py should exist at /usr/local/bin/kubevirt-tune-watermarks.py")
+			Expect(file.Overwrite).ToNot(BeNil())
+			Expect(*file.Overwrite).To(BeTrue())
+			Expect(file.Mode).ToNot(BeNil())
+			Expect(*file.Mode).To(Equal(493))
+			Expect(file.Contents.Source).ToNot(BeEmpty())
+		})
+
+		It("should have the kubevirt-io-latency-setup.py file at the correct path", func() {
+			file := findStorageFile(ic, "/usr/local/bin/kubevirt-io-latency-setup.py")
+			Expect(file).ToNot(BeNil(), "kubevirt-io-latency-setup.py should exist at /usr/local/bin/kubevirt-io-latency-setup.py")
+			Expect(file.Overwrite).ToNot(BeNil())
+			Expect(*file.Overwrite).To(BeTrue())
+			Expect(file.Mode).ToNot(BeNil())
+			Expect(*file.Mode).To(Equal(493))
+			Expect(file.Contents.Source).ToNot(BeEmpty())
+		})
+
+		It("should have system.slice unit with 10-kubevirt-protect.conf dropin", func() {
+			unit := findSystemdUnit(ic, "system.slice")
+			Expect(unit).ToNot(BeNil(), "system.slice unit should exist")
+			Expect(unit.Dropins).To(HaveLen(1))
+			Expect(unit.Dropins[0].Name).To(Equal("10-kubevirt-protect.conf"))
+			Expect(unit.Dropins[0].Contents).To(ContainSubstring("[Slice]"))
+			Expect(unit.Dropins[0].Contents).To(ContainSubstring("MemorySwapMax=0"))
+			Expect(unit.Dropins[0].Contents).To(ContainSubstring("IOWeight=800"))
+			Expect(unit.Dropins[0].Contents).To(ContainSubstring("CPUWeight=800"))
+		})
+
+		It("should have kubepods.slice unit with 10-kubevirt-io-priority.conf dropin", func() {
+			unit := findSystemdUnit(ic, "kubepods.slice")
+			Expect(unit).ToNot(BeNil(), "kubepods.slice unit should exist")
+			Expect(unit.Dropins).To(HaveLen(1))
+			Expect(unit.Dropins[0].Name).To(Equal("10-kubevirt-io-priority.conf"))
+			Expect(unit.Dropins[0].Contents).To(ContainSubstring("[Slice]"))
+			Expect(unit.Dropins[0].Contents).To(ContainSubstring("IOWeight=100"))
 		})
 	})
 
