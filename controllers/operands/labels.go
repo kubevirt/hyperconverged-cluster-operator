@@ -6,11 +6,15 @@ import (
 )
 
 func GetLabels(hc *hcov1beta1.HyperConverged, component hcoutil.AppComponent) map[string]string {
-	hcoName := hcov1beta1.HyperConvergedName
+	hcoName := hcoutil.HyperConvergedName
 
 	if hc.Name != "" {
 		hcoName = hc.Name
 	}
 
 	return hcoutil.GetLabels(hcoName, component)
+}
+
+func GetStaticLabels(component hcoutil.AppComponent) map[string]string {
+	return hcoutil.GetLabels(hcoutil.HyperConvergedName, component)
 }

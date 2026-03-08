@@ -1,0 +1,107 @@
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: 90-worker-swap-online
+spec:
+  config:
+    ignition:
+      version: 3.5.0
+    storage:
+      files:
+      - path: /etc/openshift/kubelet.conf.d/90-swap.conf
+        overwrite: true
+        contents:
+          source: data:text/plain;charset=utf-8;base64,YXBpVmVyc2lvbjoga3ViZWxldC5jb25maWcuazhzLmlvL3YxYmV0YTEKa2luZDogS3ViZWxldENvbmZpZ3VyYXRpb24KZmFpbFN3YXBPbjogZmFsc2UKbWVtb3J5U3dhcDoKICBzd2FwQmVoYXZpb3I6IExpbWl0ZWRTd2FwCg==
+        mode: 420
+      - contents:
+          compression: gzip
+          source: data:;base64,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
+        mode: 493
+        overwrite: true
+        path: /usr/local/bin/kubevirt-tune-watermarks.py
+      - contents:
+          compression: gzip
+          source: data:;base64,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
+        mode: 493
+        overwrite: true
+        path: /usr/local/bin/kubevirt-io-latency-setup.py
+    systemd:
+      units:
+      - contents: |
+          [Unit]
+          Description=Enable swap
+          ConditionFirstBoot=no
+          ConditionPathExists=/dev/disk/by-partlabel/OCPSWAP
+          
+          [Service]
+          Type=oneshot
+          ExecStart=/bin/sh -c "sudo swapon --priority 100 /dev/disk/by-partlabel/OCPSWAP"
+          
+          [Install]
+          RequiredBy=kubelet-dependencies.target
+        enabled: true
+        name: swap-disk-enable.service
+      - contents: |
+          [Unit]
+          Description=Enable OCP file swap
+          ConditionFirstBoot=no
+          ConditionPathExists=/var/tmp/ocpswap.file
+          
+          [Service]
+          Type=oneshot
+          ExecStart=/bin/sh -c "sudo swapon --priority 10 /var/tmp/ocpswap.file"
+          
+          [Install]
+          RequiredBy=kubelet-dependencies.target
+        enabled: true
+        name: ocpswap-file-enable.service
+      - contents: |
+          [Unit]
+          Description=KubeVirt adaptive watermark tuning for swap optimization
+          After=kubelet.service
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/local/bin/kubevirt-tune-watermarks.py
+          RemainAfterExit=true
+          StandardOutput=journal
+          StandardError=journal
+
+          [Install]
+          WantedBy=multi-user.target
+        enabled: true
+        name: kubevirt-tune-watermarks.service
+      - contents: |
+          [Unit]
+          Description=KubeVirt IO latency protection for swap devices
+          After=local-fs.target swap.target
+          Wants=swap.target
+
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/local/bin/kubevirt-io-latency-setup.py
+          RemainAfterExit=true
+          StandardOutput=journal
+          StandardError=journal
+
+          [Install]
+          WantedBy=multi-user.target
+        enabled: true
+        name: kubevirt-io-latency-setup.service
+      - dropins:
+          - contents: |
+              [Slice]
+              MemorySwapMax=0
+              IOWeight=800
+              CPUWeight=800
+            name: 10-kubevirt-protect.conf
+        name: system.slice
+      - dropins:
+          - contents: |
+              [Slice]
+              IOWeight=100
+            name: 10-kubevirt-io-priority.conf
+        name: kubepods.slice
+
