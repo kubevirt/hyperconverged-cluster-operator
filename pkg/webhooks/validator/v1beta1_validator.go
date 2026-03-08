@@ -169,22 +169,25 @@ func (wh *WebhookV1Beta1Handler) ValidateCreate(ctx context.Context, logger logr
 	return nil
 }
 
-func (wh *WebhookV1Beta1Handler) getOperands(requested *v1beta1.HyperConverged) (*kubevirtcorev1.KubeVirt, *cdiv1beta1.CDI, *networkaddonsv1.NetworkAddonsConfig, error) {
+func (wh *WebhookV1Beta1Handler) getOperands(ctx context.Context, requested *v1beta1.HyperConverged) (*kubevirtcorev1.KubeVirt, *cdiv1beta1.CDI, *networkaddonsv1.NetworkAddonsConfig, error) {
 	if err := wh.validateCertConfig(requested); err != nil {
 		return nil, nil, nil, err
 	}
 
-	kv, err := handlers.NewKubeVirt(requested)
+	kv := handlers.NewKubeVirtWithNameOnly(requested)
+	err := wh.cli.Get(ctx, client.ObjectKeyFromObject(kv), kv)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	cdi, err := handlers.NewCDI(requested)
+	cdi := handlers.NewCDIWithNameOnly(requested)
+	err = wh.cli.Get(ctx, client.ObjectKeyFromObject(cdi), cdi)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	cna, err := handlers.NewNetworkAddons(requested)
+	cna := handlers.NewNetworkAddonsWithNameOnly(requested)
+	err = wh.cli.Get(ctx, client.ObjectKeyFromObject(cna), cna)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -227,7 +230,7 @@ func (wh *WebhookV1Beta1Handler) ValidateUpdate(ctx context.Context, logger logr
 		return nil
 	}
 
-	kv, cdi, cna, err := wh.getOperands(requested)
+	kv, cdi, cna, err := wh.getOperands(ctx, requested)
 	if err != nil {
 		return err
 	}
