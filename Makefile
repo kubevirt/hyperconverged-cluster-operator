@@ -249,6 +249,7 @@ generate:
 
 generate-doc: build-docgen
 	_out/docgen ./api/v1beta1/hyperconverged_types.go > docs/api.md
+	_out/docgen ./api/v1/hyperconverged_types.go > docs/api-v1.md
 	_out/metricsdocs > docs/metrics.md
 
 build-docgen:
