@@ -2336,7 +2336,7 @@ Version: 1.2.3`)
 					By("KV CR should contain the HC enabled managed feature gates", func() {
 						mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
 						Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-						fgList := getKvFeatureGateList(&hco.Spec.FeatureGates, nil)
+						fgList := getKvFeatureGateList(hco.Spec, nil)
 						Expect(fgList).To(HaveLen(basicNumFgOnOpenshift))
 						Expect(fgList).To(ContainElements(hardCodeKvFgs))
 						Expect(fgList).To(ContainElements(sspConditionKvFgs))
@@ -2366,8 +2366,8 @@ Version: 1.2.3`)
 					By("KV CR should contain the HC enabled managed feature gates", func() {
 						mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
 						Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-						fgList := getKvFeatureGateList(&hco.Spec.FeatureGates, nil)
-						Expect(fgList).To(HaveLen(len(getKvFeatureGateList(&hco.Spec.FeatureGates, nil))))
+						fgList := getKvFeatureGateList(hco.Spec, nil)
+						Expect(fgList).To(HaveLen(len(getKvFeatureGateList(hco.Spec, nil))))
 						Expect(fgList).To(ContainElements(hardCodeKvFgs))
 						Expect(fgList).To(ContainElements(sspConditionKvFgs))
 					})
@@ -2382,7 +2382,7 @@ Version: 1.2.3`)
 					}
 
 					// Get the expected featuregates for this configuration
-					fgs := getKvFeatureGateList(&hco.Spec.FeatureGates, nil)
+					fgs := getKvFeatureGateList(hco.Spec, nil)
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
 					existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates = fgs
@@ -2436,7 +2436,7 @@ Version: 1.2.3`)
 					).ToNot(HaveOccurred())
 
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(len(getKvFeatureGateList(&hco.Spec.FeatureGates, nil))))
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(len(getKvFeatureGateList(hco.Spec, nil))))
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(sspConditionKvFgs))
 				})
@@ -2467,7 +2467,7 @@ Version: 1.2.3`)
 					).ToNot(HaveOccurred())
 
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(len(getKvFeatureGateList(&hco.Spec.FeatureGates, nil))))
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(len(getKvFeatureGateList(hco.Spec, nil))))
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(sspConditionKvFgs))
 				})
@@ -2510,7 +2510,7 @@ Version: 1.2.3`)
 					DeferCleanup(func() {
 						commontestutils.ResetNodeInfoMocks()
 					})
-					fgList := getKvFeatureGateList(&hco.Spec.FeatureGates, nil)
+					fgList := getKvFeatureGateList(hco.Spec, nil)
 
 					Expect(fgList).To(ContainElement(kvSecureExecution))
 				})
@@ -2520,8 +2520,9 @@ Version: 1.2.3`)
 				DescribeTable("Should return featureGate slice",
 					func(isKVMEmulation bool, fgs *hcov1beta1.HyperConvergedFeatureGates, expectedLength int, expectedFgs [][]string) {
 						mandatoryKvFeatureGates = getMandatoryKvFeatureGates(isKVMEmulation)
-						fgList := getKvFeatureGateList(fgs, nil)
-						Expect(getKvFeatureGateList(fgs, nil)).To(HaveLen(expectedLength))
+						spec := hcov1beta1.HyperConvergedSpec{FeatureGates: *fgs}
+						fgList := getKvFeatureGateList(spec, nil)
+						Expect(fgList).To(HaveLen(expectedLength))
 						for _, expected := range expectedFgs {
 							Expect(fgList).To(ContainElements(expected))
 						}
@@ -3290,6 +3291,35 @@ Version: 1.2.3`)
 			})
 		})
 
+		Context("RoleAggregationStrategy", func() {
+			It("should propagate Manual to KubeVirt CR and add OptOutRoleAggregation feature gate", func() {
+				hco.Spec.RoleAggregationStrategy = ptr.To(kubevirtcorev1.RoleAggregationStrategyManual)
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.RoleAggregationStrategy).To(HaveValue(Equal(kubevirtcorev1.RoleAggregationStrategyManual)))
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvOptOutRoleAggregation))
+			})
+
+			It("should propagate AggregateToDefault to KubeVirt CR and add OptOutRoleAggregation feature gate", func() {
+				hco.Spec.RoleAggregationStrategy = ptr.To(kubevirtcorev1.RoleAggregationStrategyAggregateToDefault)
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.RoleAggregationStrategy).To(HaveValue(Equal(kubevirtcorev1.RoleAggregationStrategyAggregateToDefault)))
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvOptOutRoleAggregation))
+			})
+
+			It("should not set RoleAggregationStrategy or OptOutRoleAggregation FG when not set in HCO", func() {
+				hco.Spec.RoleAggregationStrategy = nil
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.RoleAggregationStrategy).To(BeNil())
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvOptOutRoleAggregation))
+			})
+		})
+
 		Context("VM state storage class", func() {
 			It("should modify storage class according to HCO CR", func() {
 				existingResource, err := NewKubeVirt(hco)
@@ -4006,7 +4036,7 @@ Version: 1.2.3`)
 				).ToNot(HaveOccurred())
 
 				Expect(kv.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(len(getKvFeatureGateList(&hco.Spec.FeatureGates, nil))))
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(len(getKvFeatureGateList(hco.Spec, nil))))
 				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
 				Expect(kv.Spec.Configuration.CPURequest).To(BeNil())
 
