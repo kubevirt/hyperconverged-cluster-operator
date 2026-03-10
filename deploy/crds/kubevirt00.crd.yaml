@@ -418,6 +418,14 @@ spec:
                           https://kubevirt.io/user-guide/operations/node_overcommit/#node-cpu-allocation-ratio
                           Defaults to 10
                         type: integer
+                      disabledFeatureGates:
+                        description: |-
+                          DisabledFeatureGates specifies a list of experimental feature gates to disable.
+                          A feature gate must not appear in both FeatureGates and DisabledFeatureGates.
+                        items:
+                          type: string
+                        type: array
+                        x-kubernetes-list-type: atomic
                       diskVerification:
                         description: DiskVerification holds container disks verification
                           limits
@@ -432,11 +440,13 @@ spec:
                         - memoryLimit
                         type: object
                       featureGates:
-                        description: FeatureGates is the list of experimental features
-                          to enable. Defaults to none
+                        description: |-
+                          FeatureGates specifies a list of experimental feature gates to enable. Defaults to none.
+                          A feature gate must not appear in both FeatureGates and DisabledFeatureGates.
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: atomic
                       logVerbosity:
                         description: LogVerbosity sets log verbosity level of  various
                           components
@@ -993,6 +1003,22 @@ spec:
                         type: array
                         x-kubernetes-list-type: atomic
                     type: object
+                  roleAggregationStrategy:
+                    allOf:
+                    - enum:
+                      - AggregateToDefault
+                      - Manual
+                    - enum:
+                      - AggregateToDefault
+                      - Manual
+                    description: |-
+                      RoleAggregationStrategy controls whether RBAC cluster roles should be aggregated
+                      to the default Kubernetes roles (admin, edit, view).
+                      When set to "AggregateToDefault" (default) or not specified, the aggregate-to-* labels are added to the cluster roles.
+                      When set to "Manual", the labels are not added, and roles will not be aggregated to the default roles.
+                      Setting this field to "Manual" requires the OptOutRoleAggregation feature gate to be enabled.
+                      This is an Alpha feature and subject to change.
+                    type: string
                   seccompConfiguration:
                     description: SeccompConfiguration holds Seccomp configuration
                       for Kubevirt components
@@ -1106,6 +1132,17 @@ spec:
                         - VersionTLS12
                         - VersionTLS13
                         type: string
+                    type: object
+                  virtTemplateDeployment:
+                    description: VirtTemplateDeployment controls the deployment of
+                      virt-template components
+                    nullable: true
+                    properties:
+                      enabled:
+                        description: Enabled controls the deployment of virt-template
+                          resources, defaults to True when feature gate is enabled.
+                        nullable: true
+                        type: boolean
                     type: object
                   virtualMachineInstancesPerNode:
                     type: integer
@@ -3831,6 +3868,14 @@ spec:
                           https://kubevirt.io/user-guide/operations/node_overcommit/#node-cpu-allocation-ratio
                           Defaults to 10
                         type: integer
+                      disabledFeatureGates:
+                        description: |-
+                          DisabledFeatureGates specifies a list of experimental feature gates to disable.
+                          A feature gate must not appear in both FeatureGates and DisabledFeatureGates.
+                        items:
+                          type: string
+                        type: array
+                        x-kubernetes-list-type: atomic
                       diskVerification:
                         description: DiskVerification holds container disks verification
                           limits
@@ -3845,11 +3890,13 @@ spec:
                         - memoryLimit
                         type: object
                       featureGates:
-                        description: FeatureGates is the list of experimental features
-                          to enable. Defaults to none
+                        description: |-
+                          FeatureGates specifies a list of experimental feature gates to enable. Defaults to none.
+                          A feature gate must not appear in both FeatureGates and DisabledFeatureGates.
                         items:
                           type: string
                         type: array
+                        x-kubernetes-list-type: atomic
                       logVerbosity:
                         description: LogVerbosity sets log verbosity level of  various
                           components
@@ -4406,6 +4453,22 @@ spec:
                         type: array
                         x-kubernetes-list-type: atomic
                     type: object
+                  roleAggregationStrategy:
+                    allOf:
+                    - enum:
+                      - AggregateToDefault
+                      - Manual
+                    - enum:
+                      - AggregateToDefault
+                      - Manual
+                    description: |-
+                      RoleAggregationStrategy controls whether RBAC cluster roles should be aggregated
+                      to the default Kubernetes roles (admin, edit, view).
+                      When set to "AggregateToDefault" (default) or not specified, the aggregate-to-* labels are added to the cluster roles.
+                      When set to "Manual", the labels are not added, and roles will not be aggregated to the default roles.
+                      Setting this field to "Manual" requires the OptOutRoleAggregation feature gate to be enabled.
+                      This is an Alpha feature and subject to change.
+                    type: string
                   seccompConfiguration:
                     description: SeccompConfiguration holds Seccomp configuration
                       for Kubevirt components
@@ -4519,6 +4582,17 @@ spec:
                         - VersionTLS12
                         - VersionTLS13
                         type: string
+                    type: object
+                  virtTemplateDeployment:
+                    description: VirtTemplateDeployment controls the deployment of
+                      virt-template components
+                    nullable: true
+                    properties:
+                      enabled:
+                        description: Enabled controls the deployment of virt-template
+                          resources, defaults to True when feature gate is enabled.
+                        nullable: true
+                        type: boolean
                     type: object
                   virtualMachineInstancesPerNode:
                     type: integer

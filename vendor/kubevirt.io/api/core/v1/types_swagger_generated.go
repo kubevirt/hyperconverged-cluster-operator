@@ -85,40 +85,7 @@ func (VirtualMachineInstanceStatus) SwaggerDoc() map[string]string {
 		"currentCPUTopology":            "CurrentCPUTopology specifies the current CPU topology used by the VM workload.\nCurrent topology may differ from the desired topology in the spec while CPU hotplug\ntakes place.",
 		"memory":                        "Memory shows various informations about the VirtualMachine memory.\n+optional",
 		"migratedVolumes":               "MigratedVolumes lists the source and destination volumes during the volume migration\n+listType=atomic\n+optional",
-		"deviceStatus":                  "DeviceStatus reflects the state of devices requested in spec.domain.devices. This is an optional field available\nonly when DRA feature gate is enabled\nThis field will only be populated if one of the feature-gates GPUsWithDRA or HostDevicesWithDRA is enabled.\nThis feature is in alpha.\n+optional",
 		"changedBlockTracking":          "ChangedBlockTracking represents the status of the changedBlockTracking\n+nullable\n+optional",
-	}
-}
-
-func (DeviceStatus) SwaggerDoc() map[string]string {
-	return map[string]string{
-		"":                   "DeviceStatus has the information of all devices allocated spec.domain.devices\n+k8s:openapi-gen=true",
-		"gpuStatuses":        "GPUStatuses reflects the state of GPUs requested in spec.domain.devices.gpus\n+listType=atomic\n+optional",
-		"hostDeviceStatuses": "HostDeviceStatuses reflects the state of GPUs requested in spec.domain.devices.hostDevices\nDRA\n+listType=atomic\n+optional",
-	}
-}
-
-func (DeviceStatusInfo) SwaggerDoc() map[string]string {
-	return map[string]string{
-		"name":                      "Name of the device as specified in spec.domain.devices.gpus.name or spec.domain.devices.hostDevices.name",
-		"deviceResourceClaimStatus": "DeviceResourceClaimStatus reflects the DRA related information for the device",
-	}
-}
-
-func (DeviceResourceClaimStatus) SwaggerDoc() map[string]string {
-	return map[string]string{
-		"":                  "DeviceResourceClaimStatus has to be before SyncVMI call from virt-handler to virt-launcher",
-		"name":              "Name is the name of actual device on the host provisioned by the driver as reflected in resourceclaim.status\n+optional",
-		"resourceClaimName": "ResourceClaimName is the name of the resource claims object used to provision this resource\n+optional",
-		"attributes":        "Attributes are properties of the device that could be used by kubevirt and other copmonents to learn more\nabout the device, like pciAddress or mdevUUID\n+optional",
-	}
-}
-
-func (DeviceAttribute) SwaggerDoc() map[string]string {
-	return map[string]string{
-		"":           "DeviceAttribute must have exactly one field set.",
-		"pciAddress": "PCIAddress is the PCIe bus address of the allocated device\n+optional",
-		"mDevUUID":   "MDevUUID is the mediated device uuid of the allocated device\n+optional",
 	}
 }
 
@@ -311,6 +278,7 @@ func (VirtualMachineInstanceMigrationState) SwaggerDoc() map[string]string {
 		"sourceState":                    "SourceState contains migration state managed by the source virt handler",
 		"targetState":                    "TargetState contains migration state managed by the target virt handler",
 		"migrationNetworkType":           "The type of migration network, either 'pod' or 'migration'",
+		"targetMemoryOverhead":           "TargetMemoryOverhead is the memory overhead of the target virt-launcher pod\n+optional",
 	}
 }
 
@@ -528,8 +496,10 @@ func (VirtualMachineInstanceBackupStatus) SwaggerDoc() map[string]string {
 		"startTimestamp": "StartTimestamp is the timestamp when the backup started",
 		"endTimestamp":   "EndTimestamp is the timestamp when the backup ended",
 		"completed":      "Completed indicates the backup completed",
+		"failed":         "Failed indicates that the backup failed",
 		"backupMsg":      "BackupMsg resturns any relevant information like failure reason\nunfreeze failed etc...\n+optional",
 		"checkpointName": "CheckpointName is the name of the checkpoint created for the backup\n+optional",
+		"volumes":        "Volumes lists the volumes included in the backup\n+optional\n+listType=atomic",
 	}
 }
 
@@ -914,9 +884,11 @@ func (KubeVirtConfiguration) SwaggerDoc() map[string]string {
 		"liveUpdateConfiguration":            "LiveUpdateConfiguration holds defaults for live update features",
 		"vmRolloutStrategy":                  "VMRolloutStrategy defines how live-updatable fields, like CPU sockets, memory,\ntolerations, and affinity, are propagated from a VM to its VMI.\n+nullable\n+kubebuilder:validation:Enum=Stage;LiveUpdate",
 		"commonInstancetypesDeployment":      "CommonInstancetypesDeployment controls the deployment of common-instancetypes resources\n+nullable",
+		"virtTemplateDeployment":             "VirtTemplateDeployment controls the deployment of virt-template components\n+nullable",
 		"instancetype":                       "Instancetype configuration\n+nullable",
 		"hypervisors":                        "Hypervisors holds information regarding the hypervisor configurations supported on this cluster.\n+listType=atomic\n+kubebuilder:validation:MaxItems:=1",
 		"changedBlockTrackingLabelSelectors": "ChangedBlockTrackingLabelSelectors defines label selectors. VMs matching these selectors will have changed block tracking enabled.\nEnabling changedBlockTracking is mandatory for performing storage-agnostic backups and incremental backups.\n+nullable",
+		"roleAggregationStrategy":            "RoleAggregationStrategy controls whether RBAC cluster roles should be aggregated\nto the default Kubernetes roles (admin, edit, view).\nWhen set to \"AggregateToDefault\" (default) or not specified, the aggregate-to-* labels are added to the cluster roles.\nWhen set to \"Manual\", the labels are not added, and roles will not be aggregated to the default roles.\nSetting this field to \"Manual\" requires the OptOutRoleAggregation feature gate to be enabled.\nThis is an Alpha feature and subject to change.\n+optional\n+kubebuilder:validation:Enum=AggregateToDefault;Manual",
 	}
 }
 
@@ -943,6 +915,12 @@ func (InstancetypeConfiguration) SwaggerDoc() map[string]string {
 func (CommonInstancetypesDeployment) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"enabled": "Enabled controls the deployment of common-instancetypes resources, defaults to True.\n+nullable",
+	}
+}
+
+func (VirtTemplateDeployment) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"enabled": "Enabled controls the deployment of virt-template resources, defaults to True when feature gate is enabled.\n+nullable",
 	}
 }
 
@@ -1038,7 +1016,8 @@ func (DiskVerification) SwaggerDoc() map[string]string {
 func (DeveloperConfiguration) SwaggerDoc() map[string]string {
 	return map[string]string{
 		"":                                "DeveloperConfiguration holds developer options",
-		"featureGates":                    "FeatureGates is the list of experimental features to enable. Defaults to none",
+		"featureGates":                    "FeatureGates specifies a list of experimental feature gates to enable. Defaults to none.\nA feature gate must not appear in both FeatureGates and DisabledFeatureGates.\n+optional\n+listType=atomic",
+		"disabledFeatureGates":            "DisabledFeatureGates specifies a list of experimental feature gates to disable.\nA feature gate must not appear in both FeatureGates and DisabledFeatureGates.\n+optional\n+listType=atomic",
 		"pvcTolerateLessSpaceUpToPercent": "LessPVCSpaceToleration determines how much smaller, in percentage, disk PVCs are\nallowed to be compared to the requested size (to account for various overheads).\nDefaults to 10",
 		"minimumReservePVCBytes":          "MinimumReservePVCBytes is the amount of space, in bytes, to leave unused on disks.\nDefaults to 131072 (128KiB)",
 		"memoryOvercommit":                "MemoryOvercommit is the percentage of memory we want to give VMIs compared to the amount\ngiven to its parent pod (virt-launcher). For example, a value of 102 means the VMI will\n\"see\" 2% more memory than its parent pod. Values under 100 are effectively \"undercommits\".\nOvercommits can lead to memory exhaustion, which in turn can lead to crashes. Use carefully.\nDefaults to 100\n+kubebuilder:validation:Minimum:=10",

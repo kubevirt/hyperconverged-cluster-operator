@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
+	backupv1 "kubevirt.io/api/backup/v1alpha1"
 	cdiv1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 )
 
@@ -324,62 +325,11 @@ type VirtualMachineInstanceStatus struct {
 	// +listType=atomic
 	// +optional
 	MigratedVolumes []StorageMigratedVolumeInfo `json:"migratedVolumes,omitempty"`
-	// DeviceStatus reflects the state of devices requested in spec.domain.devices. This is an optional field available
-	// only when DRA feature gate is enabled
-	// This field will only be populated if one of the feature-gates GPUsWithDRA or HostDevicesWithDRA is enabled.
-	// This feature is in alpha.
-	// +optional
-	DeviceStatus *DeviceStatus `json:"deviceStatus,omitempty"`
 
 	// ChangedBlockTracking represents the status of the changedBlockTracking
 	// +nullable
 	// +optional
 	ChangedBlockTracking *ChangedBlockTrackingStatus `json:"changedBlockTracking,omitempty" optional:"true"`
-}
-
-// DeviceStatus has the information of all devices allocated spec.domain.devices
-// +k8s:openapi-gen=true
-type DeviceStatus struct {
-	// GPUStatuses reflects the state of GPUs requested in spec.domain.devices.gpus
-	// +listType=atomic
-	// +optional
-	GPUStatuses []DeviceStatusInfo `json:"gpuStatuses,omitempty"`
-	// HostDeviceStatuses reflects the state of GPUs requested in spec.domain.devices.hostDevices
-	// DRA
-	// +listType=atomic
-	// +optional
-	HostDeviceStatuses []DeviceStatusInfo `json:"hostDeviceStatuses,omitempty"`
-}
-
-type DeviceStatusInfo struct {
-	// Name of the device as specified in spec.domain.devices.gpus.name or spec.domain.devices.hostDevices.name
-	Name string `json:"name"`
-	// DeviceResourceClaimStatus reflects the DRA related information for the device
-	DeviceResourceClaimStatus *DeviceResourceClaimStatus `json:"deviceResourceClaimStatus,omitempty"`
-}
-
-// DeviceResourceClaimStatus has to be before SyncVMI call from virt-handler to virt-launcher
-type DeviceResourceClaimStatus struct {
-	// Name is the name of actual device on the host provisioned by the driver as reflected in resourceclaim.status
-	// +optional
-	Name *string `json:"name,omitempty"`
-	// ResourceClaimName is the name of the resource claims object used to provision this resource
-	// +optional
-	ResourceClaimName *string `json:"resourceClaimName,omitempty"`
-	// Attributes are properties of the device that could be used by kubevirt and other copmonents to learn more
-	// about the device, like pciAddress or mdevUUID
-	// +optional
-	Attributes *DeviceAttribute `json:"attributes,omitempty"`
-}
-
-// DeviceAttribute must have exactly one field set.
-type DeviceAttribute struct {
-	// PCIAddress is the PCIe bus address of the allocated device
-	// +optional
-	PCIAddress *string `json:"pciAddress,omitempty"`
-	//MDevUUID is the mediated device uuid of the allocated device
-	// +optional
-	MDevUUID *string `json:"mDevUUID,omitempty"`
 }
 
 // StorageMigratedVolumeInfo tracks the information about the source and destination volumes during the volume migration
@@ -802,6 +752,11 @@ const (
 
 	// GuestNotRunningReason indicates on the Ready condition on the VMI if the underlying guest VM is not running
 	GuestNotRunningReason = "GuestNotRunning"
+
+	// ContainerPathVolumesDisabledReason indicates that the VMI has ContainerPath volumes but the feature gate is disabled
+	ContainerPathVolumesDisabledReason = "ContainerPathVolumesDisabled"
+	// MissingVirtiofsContainersReason indicates that expected virtiofs containers for ContainerPath volumes are missing from the pod
+	MissingVirtiofsContainersReason = "MissingVirtiofsContainers"
 )
 
 type VirtualMachineInstanceMigrationConditionType string
@@ -1047,6 +1002,9 @@ type VirtualMachineInstanceMigrationState struct {
 	TargetState *VirtualMachineInstanceMigrationTargetState `json:"targetState,omitempty"`
 	// The type of migration network, either 'pod' or 'migration'
 	MigrationNetworkType MigrationNetworkType `json:"migrationNetworkType,omitempty"`
+	// TargetMemoryOverhead is the memory overhead of the target virt-launcher pod
+	// +optional
+	TargetMemoryOverhead *resource.Quantity `json:"targetMemoryOverhead,omitempty"`
 }
 
 type MigrationAbortStatus string
@@ -1220,6 +1178,8 @@ const (
 	EphemeralBackupObject = "kubevirt.io/ephemeral-backup-object"
 	// This annotation represents that the annotated object is for temporary use during pod/volume provisioning
 	EphemeralProvisioningObject string = "kubevirt.io/ephemeral-provisioning"
+	// This annotation stores the memory overhead calculated for the virt-launcher pod
+	MemoryOverheadAnnotationBytes string = "kubevirt.io/memory-overhead-bytes"
 	// This annotation indicates the VMI contains an ephemeral hotplug volume
 	EphemeralHotplugAnnotation string = "kubevirt.io/ephemeral-hotplug-volumes"
 
@@ -1394,6 +1354,8 @@ const (
 	// The label is used to store this value when memory hotplug is requested as it may change
 	// between the creation of the target pod and when the evaluation of `MemoryHotplugReadyLabel`
 	// happens.
+	// TODO: Remove this label and related code once VmiMemoryOverheadReport feature gate is GA
+	// and we are sure that all VMIs include the MemoryOverhead status field
 	MemoryHotplugOverheadRatioLabel string = "kubevirt.io/memory-hotplug-overhead-ratio"
 
 	// AutoMemoryLimitsRatioLabel allows to use a custom ratio for auto memory limits calculation.
@@ -2199,6 +2161,8 @@ type VirtualMachineInstanceBackupStatus struct {
 	EndTimestamp *metav1.Time `json:"endTimestamp,omitempty"`
 	// Completed indicates the backup completed
 	Completed bool `json:"completed,omitempty"`
+	// Failed indicates that the backup failed
+	Failed bool `json:"failed,omitempty"`
 	// BackupMsg resturns any relevant information like failure reason
 	// unfreeze failed etc...
 	// +optional
@@ -2206,6 +2170,10 @@ type VirtualMachineInstanceBackupStatus struct {
 	// CheckpointName is the name of the checkpoint created for the backup
 	// +optional
 	CheckpointName *string `json:"checkpointName,omitempty"`
+	// Volumes lists the volumes included in the backup
+	// +optional
+	// +listType=atomic
+	Volumes []backupv1.BackupVolumeInfo `json:"volumes,omitempty"`
 }
 
 // ChangedBlockTrackingStatus represents the status of ChangedBlockTracking for a VM
@@ -3092,6 +3060,10 @@ type KubeVirtConfiguration struct {
 	// +nullable
 	CommonInstancetypesDeployment *CommonInstancetypesDeployment `json:"commonInstancetypesDeployment,omitempty"`
 
+	// VirtTemplateDeployment controls the deployment of virt-template components
+	// +nullable
+	VirtTemplateDeployment *VirtTemplateDeployment `json:"virtTemplateDeployment,omitempty"`
+
 	// Instancetype configuration
 	// +nullable
 	Instancetype *InstancetypeConfiguration `json:"instancetype,omitempty"`
@@ -3105,6 +3077,16 @@ type KubeVirtConfiguration struct {
 	// Enabling changedBlockTracking is mandatory for performing storage-agnostic backups and incremental backups.
 	// +nullable
 	ChangedBlockTrackingLabelSelectors *ChangedBlockTrackingSelectors `json:"changedBlockTrackingLabelSelectors,omitempty"`
+
+	// RoleAggregationStrategy controls whether RBAC cluster roles should be aggregated
+	// to the default Kubernetes roles (admin, edit, view).
+	// When set to "AggregateToDefault" (default) or not specified, the aggregate-to-* labels are added to the cluster roles.
+	// When set to "Manual", the labels are not added, and roles will not be aggregated to the default roles.
+	// Setting this field to "Manual" requires the OptOutRoleAggregation feature gate to be enabled.
+	// This is an Alpha feature and subject to change.
+	// +optional
+	// +kubebuilder:validation:Enum=AggregateToDefault;Manual
+	RoleAggregationStrategy *RoleAggregationStrategy `json:"roleAggregationStrategy,omitempty"`
 }
 
 const (
@@ -3158,6 +3140,23 @@ type CommonInstancetypesDeployment struct {
 	// +nullable
 	Enabled *bool `json:"enabled,omitempty"`
 }
+
+type VirtTemplateDeployment struct {
+	// Enabled controls the deployment of virt-template resources, defaults to True when feature gate is enabled.
+	// +nullable
+	Enabled *bool `json:"enabled,omitempty"`
+}
+
+// RoleAggregationStrategy represents the strategy for RBAC role aggregation
+// +kubebuilder:validation:Enum=AggregateToDefault;Manual
+type RoleAggregationStrategy string
+
+const (
+	// RoleAggregationStrategyAggregateToDefault enables aggregation of KubeVirt ClusterRoles to default Kubernetes roles
+	RoleAggregationStrategyAggregateToDefault RoleAggregationStrategy = "AggregateToDefault"
+	// RoleAggregationStrategyManual disables aggregation, requiring manual RBAC assignments for KubeVirt resources
+	RoleAggregationStrategyManual RoleAggregationStrategy = "Manual"
+)
 
 type VMRolloutStrategy string
 
@@ -3342,8 +3341,16 @@ type DiskVerification struct {
 
 // DeveloperConfiguration holds developer options
 type DeveloperConfiguration struct {
-	// FeatureGates is the list of experimental features to enable. Defaults to none
+	// FeatureGates specifies a list of experimental feature gates to enable. Defaults to none.
+	// A feature gate must not appear in both FeatureGates and DisabledFeatureGates.
+	// +optional
+	// +listType=atomic
 	FeatureGates []string `json:"featureGates,omitempty"`
+	// DisabledFeatureGates specifies a list of experimental feature gates to disable.
+	// A feature gate must not appear in both FeatureGates and DisabledFeatureGates.
+	// +optional
+	// +listType=atomic
+	DisabledFeatureGates []string `json:"disabledFeatureGates,omitempty"`
 	// LessPVCSpaceToleration determines how much smaller, in percentage, disk PVCs are
 	// allowed to be compared to the requested size (to account for various overheads).
 	// Defaults to 10
