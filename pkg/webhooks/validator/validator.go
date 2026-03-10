@@ -18,12 +18,16 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/component-helpers/scheduling/corev1/nodeaffinity"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	hcov1fg "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregatedetails"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -419,8 +423,9 @@ func (wh *WebhookHandler) validateTuningPolicy(hc *hcov1.HyperConverged) error {
 }
 
 func (wh *WebhookHandler) validateFeatureGatesOnCreate(hc *hcov1.HyperConverged) error {
-	warnings := wh.validateDeprecatedFeatureGates(hc)
-	warnings = validateOldV1FGOnCreate(warnings, hc)
+	fgMap := v1FGsToMap(hc.Spec.FeatureGates)
+
+	warnings := wh.validateDeprecatedFeatureGates(fgMap, nil)
 
 	if len(warnings) > 0 {
 		return newValidationWarning(warnings)
@@ -430,8 +435,10 @@ func (wh *WebhookHandler) validateFeatureGatesOnCreate(hc *hcov1.HyperConverged)
 }
 
 func (wh *WebhookHandler) validateFeatureGatesOnUpdate(requested, exists *hcov1.HyperConverged) error {
-	warnings := wh.validateDeprecatedFeatureGates(requested)
-	warnings = validateOldV1FGOnUpdate(warnings, requested, exists)
+	reqFGMap := v1FGsToMap(requested.Spec.FeatureGates)
+	oldFGMap := v1FGsToMap(exists.Spec.FeatureGates)
+
+	warnings := wh.validateDeprecatedFeatureGates(reqFGMap, oldFGMap)
 
 	if len(warnings) > 0 {
 		return newValidationWarning(warnings)
@@ -456,65 +463,39 @@ func (wh *WebhookHandler) validateAffinity(hc *hcov1.HyperConverged) error {
 	return nil
 }
 
-func validateOldV1FGOnCreate(warnings []string, hc *hcov1.HyperConverged) []string {
-	//nolint:staticcheck
-	if hc.Spec.FeatureGates.EnableApplicationAwareQuota != nil {
-		warnings = append(warnings, fmt.Sprintf(fgMovedWarning, "enableApplicationAwareQuota"))
-	}
+const (
+	fgv1Unknown            = "the %s featureGate is unknown and ignored."
+	fgv1MovedWarning       = "the %s featureGate is deprecated and ignored. use %s field instead"
+	fgv1DeprecationWarning = "the %s featureGate deprecated and ignored."
+)
 
-	//nolint:staticcheck
-	if hc.Spec.FeatureGates.EnableCommonBootImageImport != nil {
-		warnings = append(warnings, fmt.Sprintf(fgMovedWarning, "enableCommonBootImageImport"))
-	}
-
-	//nolint:staticcheck
-	if hc.Spec.FeatureGates.DeployVMConsoleProxy != nil {
-		warnings = append(warnings, fmt.Sprintf(fgMovedWarning, "deployVmConsoleProxy"))
-	}
-
-	return warnings
+var movedFGs = map[string]string{
+	"enableApplicationAwareQuota": "spec.enableApplicationAwareQuota",
+	"enableCommonBootImageImport": "spec.enableCommonBootImageImport",
+	"deployVmConsoleProxy":        "spec.deployVmConsoleProxy",
 }
 
-func validateOldV1FGOnUpdate(warnings []string, hc, prevHC *hcov1.HyperConverged) []string {
-	//nolint:staticcheck
-	if oldFGChanged(hc.Spec.FeatureGates.EnableApplicationAwareQuota, prevHC.Spec.FeatureGates.EnableApplicationAwareQuota) {
-		warnings = append(warnings, fmt.Sprintf(fgMovedWarning, "enableApplicationAwareQuota"))
-	}
-
-	//nolint:staticcheck
-	if oldFGChanged(hc.Spec.FeatureGates.EnableCommonBootImageImport, prevHC.Spec.FeatureGates.EnableCommonBootImageImport) {
-		warnings = append(warnings, fmt.Sprintf(fgMovedWarning, "enableCommonBootImageImport"))
-	}
-
-	//nolint:staticcheck
-	if oldFGChanged(hc.Spec.FeatureGates.DeployVMConsoleProxy, prevHC.Spec.FeatureGates.DeployVMConsoleProxy) {
-		warnings = append(warnings, fmt.Sprintf(fgMovedWarning, "deployVmConsoleProxy"))
-	}
-
-	return warnings
-}
-
-func (wh *WebhookHandler) validateDeprecatedFeatureGates(hc *hcov1.HyperConverged) []string {
+func (wh *WebhookHandler) validateDeprecatedFeatureGates(fgMap, oldFgMap map[string]bool) []string {
 	var warnings []string
 
-	//nolint:staticcheck
-	if hc.Spec.FeatureGates.WithHostPassthroughCPU != nil {
-		warnings = append(warnings, fmt.Sprintf(fgDeprecationWarning, "withHostPassthroughCPU"))
-	}
+	for fgName, enabled := range fgMap {
+		phase, exists := featuregatedetails.GetFeatureGatePhase(fgName)
+		if !exists {
+			warnings = append(warnings, fmt.Sprintf(fgv1Unknown, fgName))
+			continue
+		}
 
-	//nolint:staticcheck
-	if hc.Spec.FeatureGates.DeployTektonTaskResources != nil {
-		warnings = append(warnings, fmt.Sprintf(fgDeprecationWarning, "deployTektonTaskResources"))
-	}
+		if phase != featuregates.PhaseDeprecated {
+			continue
+		}
 
-	//nolint:staticcheck
-	if hc.Spec.FeatureGates.NonRoot != nil {
-		warnings = append(warnings, fmt.Sprintf(fgDeprecationWarning, "nonRoot"))
-	}
-
-	//nolint:staticcheck
-	if hc.Spec.FeatureGates.EnableManagedTenantQuota != nil {
-		warnings = append(warnings, fmt.Sprintf(fgDeprecationWarning, "enableManagedTenantQuota"))
+		if newFiled, ok := movedFGs[fgName]; ok {
+			if oldEnabled, oldExists := oldFgMap[fgName]; !oldExists || enabled != oldEnabled {
+				warnings = append(warnings, fmt.Sprintf(fgv1MovedWarning, fgName, newFiled))
+			}
+		} else {
+			warnings = append(warnings, fmt.Sprintf(fgv1DeprecationWarning, fgName))
+		}
 	}
 
 	return warnings
@@ -580,4 +561,13 @@ func errToResponse(err error) admission.Response {
 
 	// Return allowed if everything succeeded.
 	return admission.Allowed("")
+}
+
+func v1FGsToMap(fgs hcov1fg.HyperConvergedFeatureGates) map[string]bool {
+	m := map[string]bool{}
+	for _, fg := range fgs {
+		m[fg.Name] = ptr.Deref(fg.State, hcov1fg.Enabled) == hcov1fg.Enabled
+	}
+
+	return m
 }
