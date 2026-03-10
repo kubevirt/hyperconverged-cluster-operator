@@ -3326,6 +3326,35 @@ Version: 1.2.3`)
 			})
 		})
 
+		Context("RoleAggregationStrategy", func() {
+			It("should propagate Manual to KubeVirt CR and add OptOutRoleAggregation feature gate", func() {
+				hco.Spec.RoleAggregationStrategy = ptr.To(kubevirtcorev1.RoleAggregationStrategyManual)
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.RoleAggregationStrategy).To(HaveValue(Equal(kubevirtcorev1.RoleAggregationStrategyManual)))
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvOptOutRoleAggregation))
+			})
+
+			It("should propagate AggregateToDefault to KubeVirt CR and add OptOutRoleAggregation feature gate", func() {
+				hco.Spec.RoleAggregationStrategy = ptr.To(kubevirtcorev1.RoleAggregationStrategyAggregateToDefault)
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.RoleAggregationStrategy).To(HaveValue(Equal(kubevirtcorev1.RoleAggregationStrategyAggregateToDefault)))
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvOptOutRoleAggregation))
+			})
+
+			It("should not set RoleAggregationStrategy or OptOutRoleAggregation FG when not set in HCO", func() {
+				hco.Spec.RoleAggregationStrategy = nil
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.RoleAggregationStrategy).To(BeNil())
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvOptOutRoleAggregation))
+			})
+		})
+
 		Context("VM state storage class", func() {
 			It("should modify storage class according to HCO CR", func() {
 				existingResource, err := NewKubeVirt(hco)
