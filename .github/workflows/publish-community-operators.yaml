@@ -23,8 +23,8 @@ jobs:
           GIT_TAG=${{ github.ref }}
           TAGGED_VERSION=${GIT_TAG##*/v}
           TAGGED_MINOR_VERSION=${TAGGED_VERSION%.*}
-          REPO_BRANCHES=$(curl https://api.github.com/repos/kubevirt/hyperconverged-cluster-operator/branches | jq .[].name)
-          if [[ "${REPO_BRANCHES[@]}" =~ "release-${TAGGED_MINOR_VERSION}" ]]
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://api.github.com/repos/kubevirt/hyperconverged-cluster-operator/branches/release-${TAGGED_MINOR_VERSION})
+          if [[ "${HTTP_CODE}" == "200" ]]
           then
             TARGET_BRANCH=release-${TAGGED_MINOR_VERSION}
           else
