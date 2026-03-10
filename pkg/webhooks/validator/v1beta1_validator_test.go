@@ -97,6 +97,22 @@ const (
 )
 
 var _ = Describe("v1beta1 webhooks validator", func() {
+	getFakeClient := func(hco *v1beta1.HyperConverged) *commontestutils.HcoTestClient {
+		kv, err := handlers.NewKubeVirt(hco)
+		Expect(err).ToNot(HaveOccurred())
+
+		cdi, err := handlers.NewCDI(hco)
+		Expect(err).ToNot(HaveOccurred())
+
+		cna, err := handlers.NewNetworkAddons(hco)
+		Expect(err).ToNot(HaveOccurred())
+
+		ssp, _, err := handlers.NewSSP(hco)
+		Expect(err).ToNot(HaveOccurred())
+
+		return commontestutils.InitClient([]client.Object{hco, kv, cdi, cna, ssp})
+	}
+
 	s := scheme.Scheme
 	for _, f := range []func(*runtime.Scheme) error{
 		v1beta1.AddToScheme,
@@ -2135,7 +2151,6 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 		)
 
 	})
-
 })
 
 func newHyperConvergedConfig() *sdkapi.NodePlacement {
@@ -2167,22 +2182,6 @@ func newHyperConvergedConfig() *sdkapi.NodePlacement {
 			{Key: "key2", Operator: "In", Value: "value2", Effect: "effect2", TolerationSeconds: ptr.To[int64](2)},
 		},
 	}
-}
-
-func getFakeClient(hco *v1beta1.HyperConverged) *commontestutils.HcoTestClient {
-	kv, err := handlers.NewKubeVirt(hco)
-	Expect(err).ToNot(HaveOccurred())
-
-	cdi, err := handlers.NewCDI(hco)
-	Expect(err).ToNot(HaveOccurred())
-
-	cna, err := handlers.NewNetworkAddons(hco)
-	Expect(err).ToNot(HaveOccurred())
-
-	ssp, _, err := handlers.NewSSP(hco)
-	Expect(err).ToNot(HaveOccurred())
-
-	return commontestutils.InitClient([]client.Object{hco, kv, cdi, cna, ssp})
 }
 
 type fakeFailure int

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/go-logr/logr"
+	"gomodules.xyz/jsonpatch/v2"
 	admissionv1 "k8s.io/api/admission/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -19,7 +20,7 @@ const (
 )
 
 var (
-	_ admission.Handler = &NsMutator{}
+	_ admission.Handler = &HyperConvergedV1Beta1Mutator{}
 )
 
 // HyperConvergedV1Beta1Mutator mutates v1beta1 HyperConverged requests
@@ -37,7 +38,7 @@ func NewHyperConvergedV1Beta1Mutator(cli client.Client, decoder admission.Decode
 
 func (hcm *HyperConvergedV1Beta1Mutator) Handle(ctx context.Context, req admission.Request) admission.Response {
 	log := logr.FromContextOrDiscard(ctx).WithName(mutatorV1Beta1Name)
-	log.Info("reaching HyperConvergedMutator.Handle")
+	log.Info("reaching HyperConvergedV1Beta1Mutator.Handle")
 
 	if req.Operation == admissionv1.Update || req.Operation == admissionv1.Create {
 		return hcm.mutateHyperConverged(req, log)
@@ -63,6 +64,26 @@ func (hcm *HyperConvergedV1Beta1Mutator) mutateHyperConverged(req admission.Requ
 	}
 
 	patches := getMutatePatches(v1hc)
+
+	if hc.Spec.MediatedDevicesConfiguration != nil {
+		if len(hc.Spec.MediatedDevicesConfiguration.MediatedDevicesTypes) > 0 && len(hc.Spec.MediatedDevicesConfiguration.MediatedDeviceTypes) == 0 { //nolint SA1019
+			patches = append(patches, jsonpatch.JsonPatchOperation{
+				Operation: "add",
+				Path:      "/spec/mediatedDevicesConfiguration/mediatedDeviceTypes",
+				Value:     hc.Spec.MediatedDevicesConfiguration.MediatedDevicesTypes, //nolint SA1019
+			})
+		}
+		for i, hcoNodeMdevTypeConf := range hc.Spec.MediatedDevicesConfiguration.NodeMediatedDeviceTypes {
+			if len(hcoNodeMdevTypeConf.MediatedDevicesTypes) > 0 && len(hcoNodeMdevTypeConf.MediatedDeviceTypes) == 0 { //nolint SA1019
+				patches = append(patches, jsonpatch.JsonPatchOperation{
+					Operation: "add",
+					Path:      fmt.Sprintf("/spec/mediatedDevicesConfiguration/nodeMediatedDeviceTypes/%d/mediatedDeviceTypes", i),
+					Value:     hcoNodeMdevTypeConf.MediatedDevicesTypes, //nolint SA1019
+				})
+			}
+		}
+	}
+
 	if req.Operation == admissionv1.Create {
 		patches = getMutatePatchesOnCreate(v1hc, patches)
 	}

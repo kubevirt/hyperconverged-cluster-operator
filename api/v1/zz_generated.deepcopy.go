@@ -460,11 +460,6 @@ func (in *HyperConvergedSpec) DeepCopyInto(out *HyperConvergedSpec) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.VddkInitImage != nil {
-		in, out := &in.VddkInitImage, &out.VddkInitImage
-		*out = new(string)
-		**out = **in
-	}
 	if in.DefaultCPUModel != nil {
 		in, out := &in.DefaultCPUModel, &out.DefaultCPUModel
 		*out = new(string)
@@ -512,16 +507,6 @@ func (in *HyperConvergedSpec) DeepCopyInto(out *HyperConvergedSpec) {
 		in, out := &in.TLSSecurityProfile, &out.TLSSecurityProfile
 		*out = new(configv1.TLSSecurityProfile)
 		(*in).DeepCopyInto(*out)
-	}
-	if in.TektonPipelinesNamespace != nil {
-		in, out := &in.TektonPipelinesNamespace, &out.TektonPipelinesNamespace
-		*out = new(string)
-		**out = **in
-	}
-	if in.TektonTasksNamespace != nil {
-		in, out := &in.TektonTasksNamespace, &out.TektonTasksNamespace
-		*out = new(string)
-		**out = **in
 	}
 	if in.KubeSecondaryDNSNameServerIP != nil {
 		in, out := &in.KubeSecondaryDNSNameServerIP, &out.KubeSecondaryDNSNameServerIP
@@ -811,11 +796,6 @@ func (in *MediatedDevicesConfiguration) DeepCopyInto(out *MediatedDevicesConfigu
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.MediatedDevicesTypes != nil {
-		in, out := &in.MediatedDevicesTypes, &out.MediatedDevicesTypes
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
 	if in.NodeMediatedDeviceTypes != nil {
 		in, out := &in.NodeMediatedDeviceTypes, &out.NodeMediatedDeviceTypes
 		*out = make([]NodeMediatedDeviceTypesConfig, len(*in))
@@ -890,11 +870,6 @@ func (in *NodeMediatedDeviceTypesConfig) DeepCopyInto(out *NodeMediatedDeviceTyp
 	}
 	if in.MediatedDeviceTypes != nil {
 		in, out := &in.MediatedDeviceTypes, &out.MediatedDeviceTypes
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
-	if in.MediatedDevicesTypes != nil {
-		in, out := &in.MediatedDevicesTypes, &out.MediatedDevicesTypes
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
