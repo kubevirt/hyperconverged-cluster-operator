@@ -162,6 +162,7 @@ const (
 	kvIncrementalBackup          = "IncrementalBackup"
 	kvPasstBinding               = "PasstBinding"
 	kvConfigurableHypervisor     = "ConfigurableHypervisor"
+	kvOptOutRoleAggregation      = "OptOutRoleAggregation"
 )
 
 // CPU Plugin default values
@@ -510,6 +511,8 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 	for _, hv := range hc.Spec.Hypervisors {
 		config.Hypervisors = append(config.Hypervisors, *hv.DeepCopy())
 	}
+
+	config.RoleAggregationStrategy = hc.Spec.RoleAggregationStrategy
 
 	return config, nil
 }
@@ -955,6 +958,10 @@ func getFeatureGateChecks(spec hcov1beta1.HyperConvergedSpec, annotations map[st
 
 	if len(spec.Hypervisors) > 0 {
 		fgs = append(fgs, kvConfigurableHypervisor)
+	}
+
+	if spec.RoleAggregationStrategy != nil {
+		fgs = append(fgs, kvOptOutRoleAggregation)
 	}
 
 	return fgs

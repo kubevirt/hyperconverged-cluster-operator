@@ -610,6 +610,11 @@ func (in *HyperConvergedSpec) DeepCopyInto(out *HyperConvergedSpec) {
 		*out = make([]corev1.HypervisorConfiguration, len(*in))
 		copy(*out, *in)
 	}
+	if in.RoleAggregationStrategy != nil {
+		in, out := &in.RoleAggregationStrategy, &out.RoleAggregationStrategy
+		*out = new(corev1.RoleAggregationStrategy)
+		**out = **in
+	}
 	return
 }
 
