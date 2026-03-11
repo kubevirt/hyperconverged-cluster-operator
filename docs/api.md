@@ -157,24 +157,24 @@ HyperConvergedFeatureGates is a set of optional feature gates to enable or disab
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | -------- |-------- |
 | downwardMetrics | Allow to expose a limited set of host metrics to guests. | *bool | false | false |
-| withHostPassthroughCPU | Deprecated: there is no such FG in KubeVirt. This field is ignored | *bool |  | false |
-| enableCommonBootImageImport | Deprecated: This field is ignored. Use spec.enableCommonBootImageImport instead | *bool |  | false |
-| deployTektonTaskResources | Deprecated: This field is ignored and will be removed on the next version of the API. | *bool |  | false |
-| deployVmConsoleProxy | Deprecated: This field is ignored and will be removed on the next version of the API. Use spec.deployVmConsoleProxy instead | *bool |  | false |
+| withHostPassthroughCPU | Deprecated: This feature gate is ignored | *bool |  | false |
+| enableCommonBootImageImport | Deprecated: This feature gate is ignored. Use spec.enableCommonBootImageImport instead | *bool |  | false |
+| deployTektonTaskResources | Deprecated: This feature gate is ignored. | *bool |  | false |
+| deployVmConsoleProxy | Deprecated: This feature gate is ignored. Use spec.deployVmConsoleProxy instead | *bool |  | false |
 | deployKubeSecondaryDNS | Deploy KubeSecondaryDNS by CNAO | *bool | false | false |
-| deployKubevirtIpamController | Deprecated: this field is ignored and will be removed in the next version of the API. | *bool |  | false |
-| nonRoot | Deprecated: // Deprecated: This field is ignored and will be removed on the next version of the API. | *bool |  | false |
+| deployKubevirtIpamController | Deprecated: this feature gate is ignored. | *bool |  | false |
+| nonRoot | Deprecated: This feature gate is ignored. | *bool |  | false |
 | disableMDevConfiguration | Disable mediated devices handling on KubeVirt | *bool | false | false |
 | persistentReservation | Enable persistent reservation of a LUN through the SCSI Persistent Reserve commands on Kubevirt. In order to issue privileged SCSI ioctls, the VM requires activation of the persistent reservation flag. Once this feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod. | *bool | false | false |
-| enableManagedTenantQuota | Deprecated: This field is ignored and will be removed on the next version of the API. | *bool |  | false |
-| autoResourceLimits | Deprecated: this field is ignored and will be removed in the next version of the API. | *bool |  | false |
+| enableManagedTenantQuota | Deprecated: This feature gate is ignored. | *bool |  | false |
+| autoResourceLimits | Deprecated: this feature gate is ignored. | *bool |  | false |
 | alignCPUs | Enable KubeVirt to request up to two additional dedicated CPUs in order to complete the total CPU count to an even parity when using emulator thread isolation. Note: this feature is in Developer Preview. | *bool | false | false |
 | enableApplicationAwareQuota | Deprecated: This field is ignored and will be removed on the next version of the API. Use spec.enableApplicationAwareQuota instead | *bool |  | false |
-| primaryUserDefinedNetworkBinding | primaryUserDefinedNetworkBinding deploys the needed configurations for kubevirt users to be able to bind their VM to a UDN network on the VM's primary interface. Deprecated: this field is ignored and will be removed in the next version of the API. | *bool |  | false |
+| primaryUserDefinedNetworkBinding | Deprecated: this feature gate is ignored. | *bool |  | false |
 | enableMultiArchBootImageImport | EnableMultiArchBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures. Setting this field to true will allow the HCO to create Golden Images for different CPU architectures.\n\nThis feature is in Developer Preview. | *bool | false | false |
 | decentralizedLiveMigration | DecentralizedLiveMigration enables the decentralized live migration (cross-cluster migration) feature. This feature allows live migration of VirtualMachineInstances between different clusters. This feature is in Developer Preview. | *bool | true | false |
 | declarativeHotplugVolumes | DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt. When set to true, the \"DeclarativeHotplugVolumes\" feature gate is enabled instead of \"HotplugVolumes\". When set to false or nil, the \"HotplugVolumes\" feature gate is enabled (default behavior). This feature is in Developer Preview. | *bool | false | false |
-| videoConfig | EnableVideoDeviceConfiguration allows users to configure video device types for their virtual machines. This can be useful for workloads that require specific video capabilities or architectures. Note: This feature is in Tech Preview. | *bool | true | false |
+| videoConfig | VideoConfig allows users to configure video device types for their virtual machines. This can be useful for workloads that require specific video capabilities or architectures. Note: This feature is in Tech Preview. | *bool | true | false |
 | objectGraph | ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking. Note: This feature is in Developer Preview. | *bool | false | false |
 | incrementalBackup | IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt. When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This feature is in Tech Preview. | *bool | false | false |
 
