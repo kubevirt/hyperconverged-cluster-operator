@@ -271,18 +271,10 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 							Format:      "",
 						},
 					},
-					"infra": {
+					"nodePlacements": {
 						SchemaProps: spec.SchemaProps{
-							Description: "infra HyperConvergedConfig influences the pod configuration (currently only placement) for all the infra components needed on the virtualization enabled cluster but not necessarily directly on each node running VMs/VMIs.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedConfig"),
-						},
-					},
-					"workloads": {
-						SchemaProps: spec.SchemaProps{
-							Description: "workloads HyperConvergedConfig influences the pod configuration (currently only placement) of components which need to be running on a node where virtualization workloads should be able to run. Changes to Workloads HyperConvergedConfig can be applied only without existing workload.",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedConfig"),
+							Description: "NodePlacements defines the node scheduling configuration for infrastructure or workload entities",
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodePlacements"),
 						},
 					},
 					"featureGates": {
@@ -569,7 +561,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HigherWorkloadDensityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedCertConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedObsoleteCPUs", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedWorkloadUpdateStrategy", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LiveMigrationConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.MediatedDevicesConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.OperandResourceRequirements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PermittedHostDevices", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageImportConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualMachineOptions", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate", "github.com/openshift/api/config/v1.TLSSecurityProfile", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.HypervisorConfiguration", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin", "kubevirt.io/api/core/v1.KSMConfiguration", "kubevirt.io/api/core/v1.LiveUpdateConfiguration", "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1.FilesystemOverhead"},
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HigherWorkloadDensityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedCertConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedObsoleteCPUs", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedWorkloadUpdateStrategy", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LiveMigrationConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.MediatedDevicesConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodePlacements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.OperandResourceRequirements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PermittedHostDevices", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageImportConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualMachineOptions", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate", "github.com/openshift/api/config/v1.TLSSecurityProfile", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.HypervisorConfiguration", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin", "kubevirt.io/api/core/v1.KSMConfiguration", "kubevirt.io/api/core/v1.LiveUpdateConfiguration", "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1.FilesystemOverhead"},
 	}
 }
 
