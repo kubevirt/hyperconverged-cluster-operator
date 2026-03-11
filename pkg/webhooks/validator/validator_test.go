@@ -471,40 +471,37 @@ var _ = Describe("v1 webhooks validator", func() {
 		})
 
 		Context("validate affinity", func() {
-			It("should allow empty affinity", func(ctx context.Context) {
-				cr.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{
-					Affinity: nil,
-				}
-				cr.Spec.Workloads.NodePlacement = &sdkapi.NodePlacement{
-					Affinity: nil,
-				}
-
+			It("should allow empty nodePlacements", func(ctx context.Context) {
+				cr.Spec.NodePlacements = &hcov1.NodePlacements{}
 				checkAcceptedRequest(wh.validateCreate(GinkgoLogr, dryRun, cr))
 			})
 
 			It("should allow empty affinity", func(ctx context.Context) {
-				cr.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{
-					Affinity: &corev1.Affinity{},
+				cr.Spec.NodePlacements = &hcov1.NodePlacements{
+					Infra: &sdkapi.NodePlacement{
+						Affinity: &corev1.Affinity{},
+					},
+					Workload: &sdkapi.NodePlacement{
+						Affinity: &corev1.Affinity{},
+					},
 				}
-				cr.Spec.Workloads.NodePlacement = &sdkapi.NodePlacement{
-					Affinity: &corev1.Affinity{},
-				}
-
 				checkAcceptedRequest(wh.validateCreate(GinkgoLogr, dryRun, cr))
 			})
 
 			It("should allow valid affinity", func(ctx context.Context) {
-				cr.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{
-					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{
-												Key:      "kubernetes.io/os",
-												Operator: corev1.NodeSelectorOpIn,
-												Values:   []string{"linux"},
+				cr.Spec.NodePlacements = &hcov1.NodePlacements{
+					Infra: &sdkapi.NodePlacement{
+						Affinity: &corev1.Affinity{
+							NodeAffinity: &corev1.NodeAffinity{
+								RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+									NodeSelectorTerms: []corev1.NodeSelectorTerm{
+										{
+											MatchExpressions: []corev1.NodeSelectorRequirement{
+												{
+													Key:      "kubernetes.io/os",
+													Operator: corev1.NodeSelectorOpIn,
+													Values:   []string{"linux"},
+												},
 											},
 										},
 									},
@@ -512,19 +509,18 @@ var _ = Describe("v1 webhooks validator", func() {
 							},
 						},
 					},
-				}
-
-				cr.Spec.Workloads.NodePlacement = &sdkapi.NodePlacement{
-					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{
-												Key:      "kubernetes.io/os",
-												Operator: corev1.NodeSelectorOpIn,
-												Values:   []string{"linux"},
+					Workload: &sdkapi.NodePlacement{
+						Affinity: &corev1.Affinity{
+							NodeAffinity: &corev1.NodeAffinity{
+								RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+									NodeSelectorTerms: []corev1.NodeSelectorTerm{
+										{
+											MatchExpressions: []corev1.NodeSelectorRequirement{
+												{
+													Key:      "kubernetes.io/os",
+													Operator: corev1.NodeSelectorOpIn,
+													Values:   []string{"linux"},
+												},
 											},
 										},
 									},
@@ -538,17 +534,19 @@ var _ = Describe("v1 webhooks validator", func() {
 			})
 
 			It("should reject invalid workloads affinity: unknown operator", func(ctx context.Context) {
-				cr.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{
-					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{
-												Key:      "kubernetes.io/os",
-												Operator: corev1.NodeSelectorOpIn,
-												Values:   []string{"linux"},
+				cr.Spec.NodePlacements = &hcov1.NodePlacements{
+					Infra: &sdkapi.NodePlacement{
+						Affinity: &corev1.Affinity{
+							NodeAffinity: &corev1.NodeAffinity{
+								RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+									NodeSelectorTerms: []corev1.NodeSelectorTerm{
+										{
+											MatchExpressions: []corev1.NodeSelectorRequirement{
+												{
+													Key:      "kubernetes.io/os",
+													Operator: corev1.NodeSelectorOpIn,
+													Values:   []string{"linux"},
+												},
 											},
 										},
 									},
@@ -556,19 +554,18 @@ var _ = Describe("v1 webhooks validator", func() {
 							},
 						},
 					},
-				}
-
-				cr.Spec.Workloads.NodePlacement = &sdkapi.NodePlacement{
-					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{
-												Key:      "kubernetes.io/os",
-												Operator: "WrongOperator",
-												Values:   []string{"linux"},
+					Workload: &sdkapi.NodePlacement{
+						Affinity: &corev1.Affinity{
+							NodeAffinity: &corev1.NodeAffinity{
+								RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+									NodeSelectorTerms: []corev1.NodeSelectorTerm{
+										{
+											MatchExpressions: []corev1.NodeSelectorRequirement{
+												{
+													Key:      "kubernetes.io/os",
+													Operator: "WrongOperator",
+													Values:   []string{"linux"},
+												},
 											},
 										},
 									},
@@ -586,17 +583,19 @@ var _ = Describe("v1 webhooks validator", func() {
 			})
 
 			It("should reject invalid workloads affinity: more than one value in matchFields", func(ctx context.Context) {
-				cr.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{
-					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{
-												Key:      "kubernetes.io/os",
-												Operator: corev1.NodeSelectorOpIn,
-												Values:   []string{"linux"},
+				cr.Spec.NodePlacements = &hcov1.NodePlacements{
+					Infra: &sdkapi.NodePlacement{
+						Affinity: &corev1.Affinity{
+							NodeAffinity: &corev1.NodeAffinity{
+								RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+									NodeSelectorTerms: []corev1.NodeSelectorTerm{
+										{
+											MatchExpressions: []corev1.NodeSelectorRequirement{
+												{
+													Key:      "kubernetes.io/os",
+													Operator: corev1.NodeSelectorOpIn,
+													Values:   []string{"linux"},
+												},
 											},
 										},
 									},
@@ -604,19 +603,18 @@ var _ = Describe("v1 webhooks validator", func() {
 							},
 						},
 					},
-				}
-
-				cr.Spec.Workloads.NodePlacement = &sdkapi.NodePlacement{
-					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchFields: []corev1.NodeSelectorRequirement{
-											{
-												Key:      "kubernetes.io/os",
-												Operator: corev1.NodeSelectorOpIn,
-												Values:   []string{"linux", "windows"},
+					Workload: &sdkapi.NodePlacement{
+						Affinity: &corev1.Affinity{
+							NodeAffinity: &corev1.NodeAffinity{
+								RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+									NodeSelectorTerms: []corev1.NodeSelectorTerm{
+										{
+											MatchFields: []corev1.NodeSelectorRequirement{
+												{
+													Key:      "kubernetes.io/os",
+													Operator: corev1.NodeSelectorOpIn,
+													Values:   []string{"linux", "windows"},
+												},
 											},
 										},
 									},
@@ -634,17 +632,19 @@ var _ = Describe("v1 webhooks validator", func() {
 			})
 
 			It("should reject invalid infra affinity: unknown operator", func(ctx context.Context) {
-				cr.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{
-					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{
-												Key:      "kubernetes.io/os",
-												Operator: "WrongOperator",
-												Values:   []string{"linux"},
+				cr.Spec.NodePlacements = &hcov1.NodePlacements{
+					Infra: &sdkapi.NodePlacement{
+						Affinity: &corev1.Affinity{
+							NodeAffinity: &corev1.NodeAffinity{
+								RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+									NodeSelectorTerms: []corev1.NodeSelectorTerm{
+										{
+											MatchExpressions: []corev1.NodeSelectorRequirement{
+												{
+													Key:      "kubernetes.io/os",
+													Operator: "WrongOperator",
+													Values:   []string{"linux"},
+												},
 											},
 										},
 									},
@@ -652,19 +652,18 @@ var _ = Describe("v1 webhooks validator", func() {
 							},
 						},
 					},
-				}
-
-				cr.Spec.Workloads.NodePlacement = &sdkapi.NodePlacement{
-					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{
-												Key:      "kubernetes.io/os",
-												Operator: corev1.NodeSelectorOpIn,
-												Values:   []string{"linux"},
+					Workload: &sdkapi.NodePlacement{
+						Affinity: &corev1.Affinity{
+							NodeAffinity: &corev1.NodeAffinity{
+								RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+									NodeSelectorTerms: []corev1.NodeSelectorTerm{
+										{
+											MatchExpressions: []corev1.NodeSelectorRequirement{
+												{
+													Key:      "kubernetes.io/os",
+													Operator: corev1.NodeSelectorOpIn,
+													Values:   []string{"linux"},
+												},
 											},
 										},
 									},
@@ -683,17 +682,19 @@ var _ = Describe("v1 webhooks validator", func() {
 			})
 
 			It("should reject invalid infra affinity: more than one value in fieldSelector", func(ctx context.Context) {
-				cr.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{
-					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchFields: []corev1.NodeSelectorRequirement{
-											{
-												Key:      "kubernetes.io/os",
-												Operator: corev1.NodeSelectorOpIn,
-												Values:   []string{"linux", "windows"},
+				cr.Spec.NodePlacements = &hcov1.NodePlacements{
+					Infra: &sdkapi.NodePlacement{
+						Affinity: &corev1.Affinity{
+							NodeAffinity: &corev1.NodeAffinity{
+								RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+									NodeSelectorTerms: []corev1.NodeSelectorTerm{
+										{
+											MatchFields: []corev1.NodeSelectorRequirement{
+												{
+													Key:      "kubernetes.io/os",
+													Operator: corev1.NodeSelectorOpIn,
+													Values:   []string{"linux", "windows"},
+												},
 											},
 										},
 									},
@@ -701,19 +702,18 @@ var _ = Describe("v1 webhooks validator", func() {
 							},
 						},
 					},
-				}
-
-				cr.Spec.Workloads.NodePlacement = &sdkapi.NodePlacement{
-					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{
-												Key:      "kubernetes.io/os",
-												Operator: corev1.NodeSelectorOpIn,
-												Values:   []string{"linux"},
+					Workload: &sdkapi.NodePlacement{
+						Affinity: &corev1.Affinity{
+							NodeAffinity: &corev1.NodeAffinity{
+								RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+									NodeSelectorTerms: []corev1.NodeSelectorTerm{
+										{
+											MatchExpressions: []corev1.NodeSelectorRequirement{
+												{
+													Key:      "kubernetes.io/os",
+													Operator: corev1.NodeSelectorOpIn,
+													Values:   []string{"linux"},
+												},
 											},
 										},
 									},
@@ -750,11 +750,9 @@ var _ = Describe("v1 webhooks validator", func() {
 		var v1beta1CR *hcov1beta1.HyperConverged
 
 		BeforeEach(func() {
-			cr.Spec.Infra = hcov1.HyperConvergedConfig{
-				NodePlacement: newHyperConvergedConfig(),
-			}
-			cr.Spec.Workloads = hcov1.HyperConvergedConfig{
-				NodePlacement: newHyperConvergedConfig(),
+			cr.Spec.NodePlacements = &hcov1.NodePlacements{
+				Infra:    newHyperConvergedConfig(),
+				Workload: newHyperConvergedConfig(),
 			}
 
 			v1beta1CR = &hcov1beta1.HyperConverged{}
@@ -806,7 +804,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// just do some change to force update
-			newHco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "value3"
+			newHco.Spec.NodePlacements.Infra.NodeSelector["key3"] = "value3"
 
 			checkRejectedRequest(
 				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
@@ -822,7 +820,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// change something in workloads to trigger dry-run update
-			newHco.Spec.Workloads.NodePlacement.NodeSelector["a change"] = "Something else"
+			newHco.Spec.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
 
 			checkRejectedRequest(
 				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
@@ -840,7 +838,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// just do some change to force update
-			newHco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "value3"
+			newHco.Spec.NodePlacements.Infra.NodeSelector["key3"] = "value3"
 
 			checkRejectedRequest(
 				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
@@ -854,7 +852,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// change something in workloads to trigger dry-run update
-			newHco.Spec.Workloads.NodePlacement.NodeSelector["a change"] = "Something else"
+			newHco.Spec.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
 
 			checkRejectedRequest(
 				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
@@ -868,7 +866,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// change something in workloads to trigger dry-run update
-			newHco.Spec.Workloads.NodePlacement.NodeSelector["a change"] = "Something else"
+			newHco.Spec.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
 
 			checkAcceptedRequest(wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr))
 		})
@@ -881,7 +879,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// just do some change to force update
-			newHco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "value3"
+			newHco.Spec.NodePlacements.Infra.NodeSelector["key3"] = "value3"
 
 			checkRejectedRequest(
 				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
@@ -895,7 +893,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// change something in workloads to trigger dry-run update
-			newHco.Spec.Workloads.NodePlacement.NodeSelector["a change"] = "Something else"
+			newHco.Spec.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
 
 			resp := wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr)
 			Expect(resp.String()).To(ContainSubstring(ErrFakeNetworkError.Error()))
@@ -907,7 +905,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// just do some change to force update
-			newHco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "value3"
+			newHco.Spec.NodePlacements.Infra.NodeSelector["key3"] = "value3"
 
 			checkRejectedRequest(
 				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
@@ -921,7 +919,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// change something in workloads to trigger dry-run update
-			newHco.Spec.Workloads.NodePlacement.NodeSelector["a change"] = "Something else"
+			newHco.Spec.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
 
 			resp := wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr)
 			Expect(resp.String()).To(ContainSubstring(ErrFakeSspError.Error()))
@@ -933,7 +931,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// change something in workloads to trigger dry-run update
-			newHco.Spec.Workloads.NodePlacement.NodeSelector["a change"] = "Something else"
+			newHco.Spec.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
 
 			resp := wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr)
 			Expect(resp.String()).To(ContainSubstring(context.DeadlineExceeded.Error()))
