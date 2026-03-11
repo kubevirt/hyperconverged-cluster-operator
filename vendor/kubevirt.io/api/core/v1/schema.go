@@ -57,6 +57,18 @@ const (
 	Pvpanic PanicDeviceModel = "pvpanic"
 )
 
+// RebootPolicy specifies how the domain should behave when a guest reboot is triggered.
+// +kubebuilder:validation:Enum=Reboot;Terminate
+type RebootPolicy string
+
+const (
+	// RebootPolicyReboot allows the guest to silently reboot without notifying KubeVirt (default behavior).
+	RebootPolicyReboot RebootPolicy = "Reboot"
+	// RebootPolicyTerminate terminates the VMI on guest reboot, allowing the VMI to be recreated
+	// by the controllers (e.g., to pick up new configuration from VM).
+	RebootPolicyTerminate RebootPolicy = "Terminate"
+)
+
 /*
  ATTENTION: Rerun code generators when comments on structs or fields are modified.
 */
@@ -121,6 +133,24 @@ type ServiceAccountVolumeSource struct {
 	// Name of the service account in the pod's namespace to use.
 	// More info: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+}
+
+// ContainerPathVolumeSource represents a path from the virt-launcher container
+// to be exposed to the VM via virtiofs. The path must correspond to an existing
+// volumeMount in the virt-launcher pod's compute container.
+type ContainerPathVolumeSource struct {
+	// Path is the absolute path within the virt-launcher container to expose to the VM.
+	// The path must correspond to an existing volumeMount in the compute container.
+	// +kubebuilder:validation:MaxLength=4096
+	// +kubebuilder:validation:XValidation:rule="self.startsWith('/')",message="path must be absolute (start with '/')"
+	// +kubebuilder:validation:XValidation:rule="!self.contains('..')",message="path must not contain '..'"
+	Path string `json:"path"`
+	// ReadOnly controls whether the volume is exposed as read-only to the VM.
+	// Defaults to true. Write access is not currently supported.
+	// +optional
+	// +kubebuilder:default:=true
+	// +kubebuilder:validation:XValidation:rule="self == true",message="readOnly must be true, write access is not supported"
+	ReadOnly *bool `json:"readOnly,omitempty"`
 }
 
 // DownwardMetricsVolumeSource adds a very small disk to VMIs which contains a limited view of host and guest
@@ -221,6 +251,13 @@ type DomainSpec struct {
 	// Launch Security setting of the vmi.
 	// +optional
 	LaunchSecurity *LaunchSecurity `json:"launchSecurity,omitempty"`
+	// RebootPolicy specifies how the guest should behave on reboot.
+	// Reboot (default): The guest is allowed to reboot silently.
+	// Terminate: The VMI will be terminated on guest reboot, allowing
+	// higher level controllers (such as the VM controller) to recreate
+	// the VMI with any updated configuration such as boot order changes.
+	// +optional
+	RebootPolicy *RebootPolicy `json:"rebootPolicy,omitempty"`
 }
 
 // Chassis specifies the chassis info passed to the domain.
@@ -401,6 +438,10 @@ type Memory struct {
 	// MaxGuest allows to specify the maximum amount of memory which is visible inside the Guest OS.
 	// The delta between MaxGuest and Guest is the amount of memory that can be hot(un)plugged.
 	MaxGuest *resource.Quantity `json:"maxGuest,omitempty"`
+	// ReservedOverhead configures the memory overhead applied to a VM
+	// and its characteristics.
+	// +optional
+	ReservedOverhead *ReservedOverhead `json:"reservedOverhead,omitempty"`
 }
 
 type MemoryStatus struct {
@@ -413,6 +454,10 @@ type MemoryStatus struct {
 	// GuestRequested specifies how much memory was requested (hotplug) for the VirtualMachine.
 	// +optional
 	GuestRequested *resource.Quantity `json:"guestRequested,omitempty"`
+	// MemoryOverhead specifies the memory overhead added by the virtualization infrastructure
+	// for the virt-launcher pod.
+	// +optional
+	MemoryOverhead *resource.Quantity `json:"memoryOverhead,omitempty"`
 }
 
 // Hugepages allow to use hugepages for the VirtualMachineInstance instead of regular memory.
@@ -420,6 +465,36 @@ type Hugepages struct {
 	// PageSize specifies the hugepage size, for x86_64 architecture valid values are 1Gi and 2Mi.
 	PageSize string `json:"pageSize,omitempty"`
 }
+
+type ReservedOverhead struct {
+	// AddedOverhead determines the memory overhead that will be reserved
+	// for the VM. It increases the virt-launcher pod memory limit.
+	// +optional
+	AddedOverhead *resource.Quantity `json:"addedOverhead,omitempty"`
+	// RequiresLock determines whether the VM's and its overhead memory
+	// need to be locked or not. It is a common practice to enable this
+	// if vDPA, VFIO or any other specialized hardware that depends on
+	// DMA is being used by the VM.
+	// False - (Default) memory lock RLimits are not modified.
+	// True - Memory lock RLimits will be updated to consider VM memory
+	//        size and memory overhead
+	// +optional
+	// +kubebuilder:validation:Enum=NotRequired;Required
+	MemLock *MemLockRequirement `json:"memLock,omitempty"`
+}
+
+// MemLockRequirement describes whether the VM memory and its overhead
+// needs to be locked or not.
+type MemLockRequirement string
+
+const (
+	// MemLockRequired means that the VM memory and its overhead
+	// could be locked by a device or any other condition.
+	MemLockRequired = "Required"
+	// MemLockNotRequired means that the VM memory and its overhead
+	// is not going to be locked.
+	MemLockNotRequired = "NotRequired"
+)
 
 type Machine struct {
 	// QEMU machine type is the actual chipset of the VirtualMachineInstance.
@@ -922,6 +997,10 @@ type VolumeSource struct {
 	DownwardMetrics *DownwardMetricsVolumeSource `json:"downwardMetrics,omitempty"`
 	// MemoryDump is attached to the virt launcher and is populated with a memory dump of the vmi
 	MemoryDump *MemoryDumpVolumeSource `json:"memoryDump,omitempty"`
+	// ContainerPath exposes a path from the virt-launcher container to the VM via virtiofs.
+	// The path must correspond to an existing volumeMount in the compute container.
+	// +optional
+	ContainerPath *ContainerPathVolumeSource `json:"containerPath,omitempty"`
 }
 
 // HotplugVolumeSource Represents the source of a volume to mount which are capable
@@ -1480,6 +1559,7 @@ type InterfaceBindingMethod struct {
 	// Deprecated: Removed in v1.3
 	// +optional
 	DeprecatedPasst *DeprecatedInterfacePasst `json:"passt,omitempty"`
+	PasstBinding    *InterfacePasstBinding    `json:"passtBinding,omitempty"`
 }
 
 // InterfaceBridge connects to a given network via a linux bridge.
@@ -1504,6 +1584,9 @@ type DeprecatedInterfaceMacvtap struct{}
 // DeprecatedInterfacePasst is an alias to the deprecated InterfacePasst
 // Deprecated: Removed in v1.3
 type DeprecatedInterfacePasst struct{}
+
+// InterfacePasstBinding connects to a given network using passt usermode networking.
+type InterfacePasstBinding struct{}
 
 // PluginBinding represents a binding implemented in a plugin.
 type PluginBinding struct {

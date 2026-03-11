@@ -136,6 +136,9 @@ rules:
   - kubevirt-exportproxy-certs
   - kubevirt-synchronization-controller-certs
   - kubevirt-synchronization-controller-server-certs
+  - kubevirt-virt-template-api-certs
+  - kubevirt-virt-template-webhook-certs
+  - kubevirt-virt-template-controller-metrics-certs
   resources:
   - secrets
   verbs:
@@ -1753,6 +1756,45 @@ rules:
   - watch
   - patch
 - apiGroups:
+  - template.kubevirt.io
+  resources:
+  - virtualmachinetemplates
+  - virtualmachinetemplaterequests
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - template.kubevirt.io
+  resources:
+  - virtualmachinetemplates/status
+  - virtualmachinetemplaterequests/status
+  verbs:
+  - get
+  - patch
+- apiGroups:
+  - template.kubevirt.io
+  resources:
+  - virtualmachinetemplates/finalizers
+  - virtualmachinetemplaterequests/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - template.kubevirt.io
+  resources:
+  - virtualmachinetemplaterequests/source
+  verbs:
+  - create
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
+- apiGroups:
   - ""
   resources:
   - pods
@@ -2110,6 +2152,7 @@ rules:
   - virtualmachineinstances/addvolume
   - virtualmachineinstances/removevolume
   - virtualmachineinstances/backup
+  - virtualmachineinstances/redefine-checkpoint
   - virtualmachineinstances/freeze
   - virtualmachineinstances/unfreeze
   - virtualmachineinstances/reset
@@ -2124,12 +2167,6 @@ rules:
   - '*'
   verbs:
   - '*'
-- apiGroups:
-  - k8s.cni.cncf.io
-  resources:
-  - network-attachment-definitions
-  verbs:
-  - get
 - apiGroups:
   - apiextensions.k8s.io
   resources:
@@ -2234,6 +2271,12 @@ rules:
   - watch
   - get
 - apiGroups:
+  - k8s.cni.cncf.io
+  resources:
+  - network-attachment-definitions
+  verbs:
+  - get
+- apiGroups:
   - kubevirt.io
   resources:
   - virtualmachineinstances
@@ -2289,6 +2332,15 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - backup.kubevirt.io
+  resources:
+  - virtualmachinebackuptrackers
+  - virtualmachinebackuptrackers/status
+  verbs:
+  - list
+  - watch
+  - patch
 - apiGroups:
   - export.kubevirt.io
   resources:
