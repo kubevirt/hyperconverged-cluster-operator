@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.18.0-unstable
-    createdAt: "2026-03-05 16:14:44"
+    createdAt: "2026-03-11 05:24:27"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -3621,6 +3621,14 @@ spec:
           - list
           - watch
         - apiGroups:
+          - config.openshift.io
+          resources:
+          - infrastructures
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
           - forklift.konveyor.io
           resources:
           - forkliftcontrollers
@@ -3784,7 +3792,7 @@ spec:
                 - name: MIGRATION_OPERATOR_VERSION
                   value: v0.1.0
                 - name: AUTOPILOT_VERSION
-                  value: v0.0.4
+                  value: v0.0.6
                 - name: KV_CONSOLE_PLUGIN_IMAGE
                   value: quay.io/kubevirt-ui/kubevirt-plugin@sha256:a9273d9e69662320fc6677f51ee1b05f4c62528b8a83895f8f56849de3b8b9f2
                 - name: KV_CONSOLE_PROXY_IMAGE
@@ -4797,7 +4805,7 @@ spec:
                 - --namespace=kubevirt-hyperconverged
                 command:
                 - /manager
-                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:cdb613f4ceddd10b58cce9bd38e0819291db916328e5a063ee701b7c27a0cedc
+                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:3acbec5d0ee7c4c475e3517f1120d40aecca67dccb785f1e56689283678abfbc
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -5743,7 +5751,7 @@ spec:
     name: virt-launcher
   - image: quay.io/kubevirt/virt-operator@sha256:1d913461d97997dcc7693f5aebb95c1d295cc8c44bb23b52b00eadd914812f54
     name: virt-operator
-  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:cdb613f4ceddd10b58cce9bd38e0819291db916328e5a063ee701b7c27a0cedc
+  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:3acbec5d0ee7c4c475e3517f1120d40aecca67dccb785f1e56689283678abfbc
     name: virt-platform-autopilot
   - image: quay.io/kubevirt/virt-synchronization-controller@sha256:9f4fabb9e553fc0c86221483349e0765d67766883e3b07f4dca408bf136d2de3
     name: virt-synchronization-controller
