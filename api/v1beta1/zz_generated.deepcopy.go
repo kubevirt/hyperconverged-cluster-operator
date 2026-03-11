@@ -365,6 +365,11 @@ func (in *HyperConvergedFeatureGates) DeepCopyInto(out *HyperConvergedFeatureGat
 		*out = new(bool)
 		**out = **in
 	}
+	if in.ConfigurableHypervisor != nil {
+		in, out := &in.ConfigurableHypervisor, &out.ConfigurableHypervisor
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

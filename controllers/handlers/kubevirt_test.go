@@ -2240,6 +2240,30 @@ Version: 1.2.3`)
 						},
 						And(Not(ContainElement(kvIncrementalBackup)), Not(ContainElement(kvUtilityVolumes))),
 					),
+					Entry("should add the ConfigurableHypervisor feature gate if ConfigurableHypervisor is true in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								ConfigurableHypervisor: ptr.To(true),
+							}
+						},
+						ContainElement(kvConfigurableHypervisorGate),
+					),
+					Entry("should not add the ConfigurableHypervisor feature gate if ConfigurableHypervisor is false in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								ConfigurableHypervisor: ptr.To(false),
+							}
+						},
+						Not(ContainElement(kvConfigurableHypervisorGate)),
+					),
+					Entry("should not add the ConfigurableHypervisor feature gate if ConfigurableHypervisor is not set in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+								ConfigurableHypervisor: nil,
+							}
+						},
+						Not(ContainElement(kvConfigurableHypervisorGate)),
+					),
 				)
 
 				It("should add the VideoConfig if feature gate VideoConfig is true in HyperConverged CR", func() {

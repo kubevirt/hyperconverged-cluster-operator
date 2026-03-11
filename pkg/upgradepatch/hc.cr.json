@@ -18,7 +18,8 @@
       "declarativeHotplugVolumes": false,
       "videoConfig": true,
       "objectGraph": false,
-      "incrementalBackup": false
+      "incrementalBackup": false,
+      "configurableHypervisor": false
     },
     "liveMigrationConfig": {
       "parallelMigrationsPerCluster": 5,

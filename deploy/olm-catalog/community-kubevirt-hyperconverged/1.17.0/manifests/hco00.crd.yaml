@@ -60,6 +60,7 @@ spec:
               enableApplicationAwareQuota: false
               enableCommonBootImageImport: true
               featureGates:
+                configurableHypervisor: false
                 decentralizedLiveMigration: false
                 declarativeHotplugVolumes: false
                 deployKubeSecondaryDNS: false
@@ -1087,6 +1088,7 @@ spec:
                 type: string
               featureGates:
                 default:
+                  configurableHypervisor: false
                   decentralizedLiveMigration: false
                   declarativeHotplugVolumes: false
                   deployKubeSecondaryDNS: false
@@ -1110,6 +1112,13 @@ spec:
                   autoResourceLimits:
                     description: 'Deprecated: this field is ignored and will be removed
                       in the next version of the API.'
+                    type: boolean
+                  configurableHypervisor:
+                    default: false
+                    description: |-
+                      ConfigurableHypervisor enables the configurable hypervisor feature in KubeVirt.
+                      When set to true, the "ConfigurableHypervisor" feature gate is enabled in the KubeVirt CR.
+                      This feature is in Developer Preview.
                     type: boolean
                   decentralizedLiveMigration:
                     default: false

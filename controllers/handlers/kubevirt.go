@@ -94,6 +94,9 @@ const (
 	// Allow attaching a data volume to a running VMI using declarative API
 	kvDeclarativeHotplugVolumesGate = "DeclarativeHotplugVolumes"
 
+	// Allow configurable hypervisor settings
+	kvConfigurableHypervisorGate = "ConfigurableHypervisor"
+
 	// Allow assigning host devices to virtual machines
 	kvHostDevicesGate = "HostDevices"
 
@@ -945,6 +948,10 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, a
 	if ptr.Deref(featureGates.IncrementalBackup, false) {
 		fgs = append(fgs, kvIncrementalBackup)
 		fgs = append(fgs, kvUtilityVolumes)
+	}
+
+	if ptr.Deref(featureGates.ConfigurableHypervisor, false) {
+		fgs = append(fgs, kvConfigurableHypervisorGate)
 	}
 
 	return fgs

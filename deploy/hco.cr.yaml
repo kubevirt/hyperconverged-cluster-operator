@@ -18,6 +18,7 @@ spec:
     alignCPUs: false
     decentralizedLiveMigration: true
     declarativeHotplugVolumes: false
+    configurableHypervisor: false
     deployKubeSecondaryDNS: false
     disableMDevConfiguration: false
     downwardMetrics: false

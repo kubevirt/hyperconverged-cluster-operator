@@ -390,6 +390,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedFeatur
 							Format:      "",
 						},
 					},
+					"configurableHypervisor": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ConfigurableHypervisor enables the configurable hypervisor feature in KubeVirt. When set to true, the \"ConfigurableHypervisor\" feature gate is enabled in the KubeVirt CR. This feature is in Developer Preview.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

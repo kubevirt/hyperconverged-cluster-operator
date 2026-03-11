@@ -265,6 +265,15 @@ When enabled, this also enables the `UtilityVolumes` feature gate in the KubeVir
 
 **Graduation Status**: Alpha
 
+### configurableHypervisor Feature Gate
+Set the `configurableHypervisor` feature gate to true to enable the configurable hypervisor feature in KubeVirt. When enabled, the "ConfigurableHypervisor" feature gate is set in the KubeVirt CR.
+
+**Note**: This feature is in Developer Preview.
+
+**Default**: `false`
+
+**Graduation Status**: Alpha
+
 ### The hco.kubevirt.io/deployPasstNetworkBinding annotation
 Set the `hco.kubevirt.io/deployPasstNetworkBinding` HyperConverged CR annotation to `true`, to deploy the needed
 configurations for kubevirt users, so they can bind their VM using a Passt Network binding.
