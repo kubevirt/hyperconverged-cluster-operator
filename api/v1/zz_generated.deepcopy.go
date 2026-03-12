@@ -590,6 +590,11 @@ func (in *HyperConvergedSpec) DeepCopyInto(out *HyperConvergedSpec) {
 		*out = new(corev1.LiveUpdateConfiguration)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Hypervisors != nil {
+		in, out := &in.Hypervisors, &out.Hypervisors
+		*out = make([]corev1.HypervisorConfiguration, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

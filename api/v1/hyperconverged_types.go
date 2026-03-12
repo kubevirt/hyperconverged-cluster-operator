@@ -254,6 +254,13 @@ type HyperConvergedSpec struct {
 	// max guest memory and max hotplug ratio. This setting can affect VM CPU and memory settings.
 	// +optional
 	LiveUpdateConfiguration *v1.LiveUpdateConfiguration `json:"liveUpdateConfiguration,omitempty"`
+
+	// Hypervisors holds information regarding the hypervisor configurations supported on this cluster.
+	// +listType=atomic
+	// +kubebuilder:validation:MaxItems:=1
+	// +optional
+	// TODO: move this field to the virtualization section in HyperConverged API v1.
+	Hypervisors []v1.HypervisorConfiguration `json:"hypervisors,omitempty"`
 }
 
 // CertRotateConfigCA contains the tunables for TLS certificates.
