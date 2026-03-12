@@ -73,7 +73,7 @@ spec:
         - name: MIGRATION_OPERATOR_VERSION
           value: v0.1.0
         - name: AUTOPILOT_VERSION
-          value: v0.0.4
+          value: v0.0.6
         - name: KV_CONSOLE_PLUGIN_IMAGE
         - name: KV_CONSOLE_PROXY_IMAGE
         - name: PASST_SIDECAR_IMAGE
@@ -1133,7 +1133,7 @@ spec:
         - --namespace=kubevirt-hyperconverged
         command:
         - /manager
-        image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:cdb613f4ceddd10b58cce9bd38e0819291db916328e5a063ee701b7c27a0cedc
+        image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:3acbec5d0ee7c4c475e3517f1120d40aecca67dccb785f1e56689283678abfbc
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
