@@ -106,6 +106,8 @@ function create_virt_csv() {
     --virt-export-proxy-image="${KUBEVIRT_EXPORTPROXY_IMAGE}" \
     --virt-export-server-image="${KUBEVIRT_EXPORSERVER_IMAGE}" \
     --virt-synchronization-controller-image="${KUBEVIRT_SYNC_CONTROLLER_IMAGE}" \
+    --virt-template-apiserver-image="${KUBEVIRT_TEMPLATE_APISERVER_IMAGE}" \
+    --virt-template-controller-image="${KUBEVIRT_TEMPLATE_CONTROLLER_IMAGE}" \
     --gs-image="${KUBEVIRT_LIBGUESTFS_TOOLS_IMAGE}" \
     --sidecar-shim-image="${KUBEVIRT_SIDECAR_SHIM}" \
     --pr-helper-image="${KUBEVIRT_PR_HELPER}" \
