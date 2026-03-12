@@ -21,7 +21,9 @@ package main
 import (
 	"bytes"
 	"embed"
+	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -35,6 +37,8 @@ import (
 
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/semver"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregates"
 )
 
 var (
@@ -61,24 +65,46 @@ const (
 	kubebuilderDefaultPrefix = "// +kubebuilder:default="
 )
 
+type config struct {
+	inputFiles      string
+	featureGateFile string
+}
+
 func main() {
+	cfg := getConfig()
+	if cfg.inputFiles == "" {
+		fmt.Fprintln(os.Stderr, "the '--in' parameter is missing: input file is required")
+		os.Exit(1)
+	}
+
 	err := setK8sLinks()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	types, err := parseFiles(os.Args[1:])
+	types, err := parseFiles(strings.Split(cfg.inputFiles, ","))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
-	err = printAPIDocs(os.Stdout, types)
+	err = printAPIDocs(os.Stdout, types, cfg.featureGateFile)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+func getConfig() config {
+	cfg := config{}
+
+	flag.StringVar(&cfg.inputFiles, "in", "", "comma separated list of input files")
+	flag.StringVar(&cfg.featureGateFile, "feature-gates", "", "feature gate file")
+
+	flag.Parse()
+
+	return cfg
 }
 
 func parseFiles(paths []string) ([]KubeTypes, error) {
@@ -110,6 +136,11 @@ type typeInfo struct {
 
 // KubeTypes is an array to represent all available types in a parsed file. [0] is for the type itself
 type KubeTypes []typeInfo
+
+type DocInfo struct {
+	KubeTypes    []KubeTypes
+	FeatureGates featuregates.FeatureGates
+}
 
 type initialInfo struct {
 	name   string
@@ -380,7 +411,7 @@ func setK8sLinks() error {
 //go:embed api.md.gotemplate
 var templateFile embed.FS
 
-func printAPIDocs(w io.Writer, types []KubeTypes) error {
+func printAPIDocs(w io.Writer, types []KubeTypes, featureGateFile string) error {
 	funcMap := template.FuncMap{
 		"ToLower": strings.ToLower,
 		"FirstItem": func(kubeTypes KubeTypes) typeInfo {
@@ -396,10 +427,57 @@ func printAPIDocs(w io.Writer, types []KubeTypes) error {
 		return err
 	}
 
-	err = tmplt.Execute(w, types)
+	docInfo := DocInfo{
+		KubeTypes: types,
+	}
+
+	if featureGateFile != "" {
+		err2 := handleFeatureGates(featureGateFile, types, &docInfo)
+		if err2 != nil {
+			return err2
+		}
+	}
+
+	err = tmplt.Execute(w, docInfo)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func handleFeatureGates(featureGateFile string, types []KubeTypes, docInfo *DocInfo) error {
+	fgs, err := featureGateTable(featureGateFile)
+	if err != nil {
+		return err
+	}
+
+	for i, kt := range types {
+		idx := slices.IndexFunc(kt, func(ti typeInfo) bool {
+			return ti.Name == "featureGates"
+		})
+
+		if idx >= 0 {
+			types[i][idx].Doc = "For feature gate details, see [here](#hco-feature-gates)"
+			break
+		}
+	}
+
+	docInfo.FeatureGates = fgs
+	return nil
+}
+
+func featureGateTable(fgFile string) (featuregates.FeatureGates, error) {
+	fgData, err := os.ReadFile(fgFile)
+	if err != nil {
+		return nil, err
+	}
+
+	var fgs featuregates.FeatureGates
+	err = json.Unmarshal(fgData, &fgs)
+	if err != nil {
+		return nil, err
+	}
+
+	return fgs, nil
 }
