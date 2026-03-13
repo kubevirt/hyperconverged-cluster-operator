@@ -17,7 +17,7 @@ func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error { //revive:dis
 		return fmt.Errorf("failed to convert HyperConverged from v1beta1 to v1; %w", err)
 	}
 
-	// TODO: Add manual/custom conversion logic here
+	convert_v1beta1_FeatureGates_To_v1(&src.Spec.FeatureGates, &dst.Spec.FeatureGates)
 
 	return nil
 }
@@ -29,7 +29,7 @@ func (dst *HyperConverged) ConvertFrom(srcRaw conversion.Hub) error { //revive:d
 		return fmt.Errorf("failed to convert HyperConverged from v1 to v1beta1; %w", err)
 	}
 
-	// TODO: Add manual/custom conversion logic here
+	convert_v1_FeatureGates_To_v1beta1(src.Spec.FeatureGates, &dst.Spec.FeatureGates)
 
 	return nil
 }
