@@ -476,6 +476,11 @@ func (in *HyperConvergedSpec) DeepCopyInto(out *HyperConvergedSpec) {
 		*out = new(corev1.LiveUpdateConfiguration)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.RoleAggregationStrategy != nil {
+		in, out := &in.RoleAggregationStrategy, &out.RoleAggregationStrategy
+		*out = new(corev1.RoleAggregationStrategy)
+		**out = **in
+	}
 	return
 }
 

@@ -286,6 +286,14 @@ type HyperConvergedSpec struct {
 	// max guest memory and max hotplug ratio. This setting can affect VM CPU and memory settings.
 	// +optional
 	LiveUpdateConfiguration *v1.LiveUpdateConfiguration `json:"liveUpdateConfiguration,omitempty"`
+
+	// RoleAggregationStrategy controls whether KubeVirt RBAC cluster roles should be aggregated
+	// to the default Kubernetes roles (admin, edit, view).
+	// When set to "AggregateToDefault" or not specified, the aggregate-to-* labels are added to the cluster roles.
+	// When set to "Manual", the labels are not added, and roles will not be aggregated to the default roles.
+	// +optional
+	// +kubebuilder:validation:Enum=AggregateToDefault;Manual
+	RoleAggregationStrategy *v1.RoleAggregationStrategy `json:"roleAggregationStrategy,omitempty"`
 }
 
 // CertRotateConfigCA contains the tunables for TLS certificates.

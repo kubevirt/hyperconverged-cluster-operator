@@ -728,6 +728,7 @@ func autoConvert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(in *HyperCo
 	out.DeployVMConsoleProxy = (*bool)(unsafe.Pointer(in.DeployVMConsoleProxy))
 	out.EnableApplicationAwareQuota = (*bool)(unsafe.Pointer(in.EnableApplicationAwareQuota))
 	out.LiveUpdateConfiguration = (*corev1.LiveUpdateConfiguration)(unsafe.Pointer(in.LiveUpdateConfiguration))
+	out.RoleAggregationStrategy = (*corev1.RoleAggregationStrategy)(unsafe.Pointer(in.RoleAggregationStrategy))
 	return nil
 }
 
@@ -800,6 +801,7 @@ func autoConvert_v1_HyperConvergedSpec_To_v1beta1_HyperConvergedSpec(in *v1.Hype
 	out.DeployVMConsoleProxy = (*bool)(unsafe.Pointer(in.DeployVMConsoleProxy))
 	out.EnableApplicationAwareQuota = (*bool)(unsafe.Pointer(in.EnableApplicationAwareQuota))
 	out.LiveUpdateConfiguration = (*corev1.LiveUpdateConfiguration)(unsafe.Pointer(in.LiveUpdateConfiguration))
+	out.RoleAggregationStrategy = (*corev1.RoleAggregationStrategy)(unsafe.Pointer(in.RoleAggregationStrategy))
 	return nil
 }
 

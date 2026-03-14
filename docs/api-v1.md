@@ -213,6 +213,7 @@ HyperConvergedSpec defines the desired state of HyperConverged
 | deployVmConsoleProxy | deploy VM console proxy resources in SSP operator | *bool | false | false |
 | enableApplicationAwareQuota | EnableApplicationAwareQuota if true, enables the Application Aware Quota feature | *bool | false | false |
 | liveUpdateConfiguration | LiveUpdateConfiguration holds the cluster configuration for live update of virtual machines - max cpu sockets, max guest memory and max hotplug ratio. This setting can affect VM CPU and memory settings. | *v1.LiveUpdateConfiguration |  | false |
+| roleAggregationStrategy | RoleAggregationStrategy controls whether KubeVirt RBAC cluster roles should be aggregated to the default Kubernetes roles (admin, edit, view). When set to \"AggregateToDefault\" or not specified, the aggregate-to-* labels are added to the cluster roles. When set to \"Manual\", the labels are not added, and roles will not be aggregated to the default roles. | *v1.RoleAggregationStrategy |  | false |
 
 [Back to TOC](#table-of-contents)
 
