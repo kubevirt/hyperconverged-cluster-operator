@@ -1,6 +1,10 @@
 digraph component {
 	graph [rankdir=LR]
 	node [fontname="Courier-Bold" fontsize=24 height=1 shape=box style=rounded width=3]
+	subgraph cluster_autopilot {
+		fontname="Courier-Bold" fontsize=42 group=autopilot label=autopilot rank=same style=dashed
+		"deployment/virt-platform-autopilot" [label="deployment/virt-platform-autopilot"]
+	}
 	subgraph cluster_compute {
 		fontname="Courier-Bold" fontsize=42 group=compute label=compute rank=same style=dashed
 		"KubeVirt/kubevirt-kubevirt-hyperconverged" [label="KubeVirt/kubevirt-kubevirt-hyperconverged"]
@@ -68,6 +72,7 @@ digraph component {
 		"HyperConverged/kubevirt-hyperconverged" [label="HyperConverged/kubevirt-hyperconverged"]
 	}
 	edge [style=invis]
+	"deployment/virt-platform-autopilot" -> "KubeVirt/kubevirt-kubevirt-hyperconverged"
 	"KubeVirt/kubevirt-kubevirt-hyperconverged" -> "deployment/hco-operator"
 	"deployment/hco-operator" -> "deployment/kubevirt-apiserver-proxy"
 	"deployment/kubevirt-apiserver-proxy" -> "deployment/kubevirt-console-plugin"

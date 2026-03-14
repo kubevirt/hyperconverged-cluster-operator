@@ -84,6 +84,9 @@ digraph "managed-by" {
 	"deployment/virt-operator" [label="deployment/virt-operator"]
 	olm [label=olm]
 	olm -> "deployment/virt-operator"
+	"deployment/virt-platform-autopilot" [label="deployment/virt-platform-autopilot"]
+	olm [label=olm]
+	olm -> "deployment/virt-platform-autopilot"
 	"deployment/virt-synchronization-controller" [label="deployment/virt-synchronization-controller"]
 	"deployment/virt-operator" [label="deployment/virt-operator"]
 	"deployment/virt-operator" -> "deployment/virt-synchronization-controller"
