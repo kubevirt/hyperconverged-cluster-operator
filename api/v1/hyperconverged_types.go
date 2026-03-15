@@ -394,11 +394,12 @@ type HyperConvergedSpec struct {
 	// +optional
 	LiveUpdateConfiguration *v1.LiveUpdateConfiguration `json:"liveUpdateConfiguration,omitempty"`
 
-	// Hypervisors holds information regarding the hypervisor configurations supported on this cluster.
+	// Hypervisors specifies which hypervisor the cluster uses to run virtual machines.
+	// If empty or not set, KubeVirt defaults to KVM. Currently, only a single entry is supported.
+	// Allowed values for the hypervisor name are "kvm" and "hyperv-direct".
 	// +listType=atomic
 	// +kubebuilder:validation:MaxItems:=1
 	// +optional
-	// TODO: move this field to the virtualization section in HyperConverged API v1.
 	Hypervisors []v1.HypervisorConfiguration `json:"hypervisors,omitempty"`
 }
 

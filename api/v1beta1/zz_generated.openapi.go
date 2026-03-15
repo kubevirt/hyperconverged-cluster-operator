@@ -747,7 +747,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 							},
 						},
 						SchemaProps: spec.SchemaProps{
-							Description: "Hypervisors holds information regarding the hypervisor configurations supported on this cluster.",
+							Description: "Hypervisors specifies which hypervisor the cluster uses to run virtual machines. If empty or not set, KubeVirt defaults to KVM. Currently, only a single entry is supported. Allowed values for the hypervisor name are \"kvm\" and \"hyperv-direct\".",
 							Type:        []string{"array"},
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
