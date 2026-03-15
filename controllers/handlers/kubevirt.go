@@ -507,7 +507,9 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 		config.CommonInstancetypesDeployment = hc.Spec.CommonInstancetypesDeployment.DeepCopy()
 	}
 
-	config.Hypervisors = hc.Spec.Hypervisors
+	for _, hv := range hc.Spec.Hypervisors {
+		config.Hypervisors = append(config.Hypervisors, *hv.DeepCopy())
+	}
 
 	return config, nil
 }
