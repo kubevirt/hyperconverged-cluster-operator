@@ -35,13 +35,15 @@ This Document documents the types introduced by the hyperconverged-cluster-opera
 * [USBSelector](#usbselector)
 * [Version](#version)
 * [VirtualMachineOptions](#virtualmachineoptions)
+* [HCO Feature Gates](#hco-feature-gates)
+
 
 ## ApplicationAwareConfigurations
 
 ApplicationAwareConfigurations holds the AAQ configurations
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | vmiCalcConfigName | VmiCalcConfigName determine how resource allocation will be done with ApplicationsResourceQuota. allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources or IgnoreVmiCalculator | *aaqv1alpha1.VmiCalcConfigName | DedicatedVirtualResources | false |
 | namespaceSelector | NamespaceSelector determines in which namespaces scheduling gate will be added to pods.. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#labelselector-v1-meta) |  | false |
 | allowApplicationAwareClusterResourceQuota | AllowApplicationAwareClusterResourceQuota if set to true, allows creation and management of ClusterAppsResourceQuota | bool | false | false |
@@ -53,7 +55,7 @@ ApplicationAwareConfigurations holds the AAQ configurations
 CertRotateConfigCA contains the tunables for TLS certificates.
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | duration | The requested 'duration' (i.e. lifetime) of the Certificate. This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration) | *metav1.Duration | "48h0m0s" | false |
 | renewBefore | The amount of time before the currently issued certificate's `notAfter` time that we will begin to attempt to renew the certificate. This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration) | *metav1.Duration | "24h0m0s" | false |
 
@@ -64,7 +66,7 @@ CertRotateConfigCA contains the tunables for TLS certificates.
 CertRotateConfigServer contains the tunables for TLS certificates.
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | duration | The requested 'duration' (i.e. lifetime) of the Certificate. This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration) | *metav1.Duration | "24h0m0s" | false |
 | renewBefore | The amount of time before the currently issued certificate's `notAfter` time that we will begin to attempt to renew the certificate. This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration) | *metav1.Duration | "12h0m0s" | false |
 
@@ -75,7 +77,7 @@ CertRotateConfigServer contains the tunables for TLS certificates.
 DataImportCronStatus is the status field of the DIC template
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | conditions | Conditions is a list of conditions that describe the state of the DataImportCronTemplate. | []metav1.Condition |  | false |
 | commonTemplate | CommonTemplate indicates whether this is a common template (true), or a custom one (false) | bool |  | false |
 | modified | Modified indicates if a common template was customized. Always false for custom templates. | bool |  | false |
@@ -88,7 +90,7 @@ DataImportCronStatus is the status field of the DIC template
 DataImportCronTemplate defines the template type for DataImportCrons. It requires metadata.name to be specified while leaving namespace as optional.
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#objectmeta-v1-meta) |  | false |
 | spec |  | *cdiv1beta1.DataImportCronSpec |  | false |
 
@@ -99,7 +101,7 @@ DataImportCronTemplate defines the template type for DataImportCrons. It require
 DataImportCronTemplateStatus is a copy of a dataImportCronTemplate as defined in the spec, or in the HCO image.
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#objectmeta-v1-meta) |  | false |
 | spec |  | *cdiv1beta1.DataImportCronSpec |  | false |
 | status |  | [DataImportCronStatus](#dataimportcronstatus) |  | false |
@@ -111,7 +113,7 @@ DataImportCronTemplateStatus is a copy of a dataImportCronTemplate as defined in
 HigherWorkloadDensity holds configuration aimed to increase virtual machine density
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | memoryOvercommitPercentage | MemoryOvercommitPercentage is the percentage of memory we want to give VMIs compared to the amount given to its parent pod (virt-launcher). For example, a value of 102 means the VMI will \"see\" 2% more memory than its parent pod. Values under 100 are effectively \"undercommits\". Overcommits can lead to memory exhaustion, which in turn can lead to crashes. Use carefully. | int | 100 | false |
 
 [Back to TOC](#table-of-contents)
@@ -121,7 +123,7 @@ HigherWorkloadDensity holds configuration aimed to increase virtual machine dens
 HyperConverged is the Schema for the hyperconvergeds API
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#objectmeta-v1-meta) |  | false |
 | spec |  | [HyperConvergedSpec](#hyperconvergedspec) | {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}, "liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "resourceRequirements": {"vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false} | false |
 | status |  | [HyperConvergedStatus](#hyperconvergedstatus) |  | false |
@@ -133,7 +135,7 @@ HyperConverged is the Schema for the hyperconvergeds API
 HyperConvergedCertConfig holds the CertConfig entries for the HCO operands
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | ca | CA configuration - CA certs are kept in the CA bundle as long as they are valid | [CertRotateConfigCA](#certrotateconfigca) | {"duration": "48h0m0s", "renewBefore": "24h0m0s"} | false |
 | server | Server configuration - Certs are rotated and discarded | [CertRotateConfigServer](#certrotateconfigserver) | {"duration": "24h0m0s", "renewBefore": "12h0m0s"} | false |
 
@@ -144,7 +146,7 @@ HyperConvergedCertConfig holds the CertConfig entries for the HCO operands
 HyperConvergedConfig defines a set of configurations to pass to components
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | nodePlacement | NodePlacement describes node scheduling configuration. | *[sdkapi.NodePlacement](https://github.com/kubevirt/controller-lifecycle-operator-sdk/blob/bbf16167410b7a781c7b08a3f088fc39551c7a00/pkg/sdk/api/types.go#L49) |  | false |
 
 [Back to TOC](#table-of-contents)
@@ -154,7 +156,7 @@ HyperConvergedConfig defines a set of configurations to pass to components
 HyperConvergedList contains a list of HyperConverged
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#listmeta-v1-meta) |  | false |
 | items |  | [][HyperConverged](#hyperconverged) |  | true |
 
@@ -165,7 +167,7 @@ HyperConvergedList contains a list of HyperConverged
 HyperConvergedObsoleteCPUs allows avoiding scheduling of VMs for obsolete CPU models
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | cpuModels | CPUModels is a list of obsolete CPU models. When the node-labeller obtains the list of obsolete CPU models, it eliminates those CPU models and creates labels for valid CPU models. The default values for this field is nil, however, HCO uses opinionated values, and adding values to this list will add them to the opinionated values. | []string |  | false |
 
 [Back to TOC](#table-of-contents)
@@ -175,11 +177,11 @@ HyperConvergedObsoleteCPUs allows avoiding scheduling of VMs for obsolete CPU mo
 HyperConvergedSpec defines the desired state of HyperConverged
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | tuningPolicy | TuningPolicy allows to configure the mode in which the RateLimits of kubevirt are set. If TuningPolicy is not present the default kubevirt values are used. It can be set to `annotation` for fine-tuning the kubevirt queryPerSeconds (qps) and burst values. Qps and burst values are taken from the annotation hco.kubevirt.io/tuningPolicy | HyperConvergedTuningPolicy |  | false |
 | infra | infra HyperConvergedConfig influences the pod configuration (currently only placement) for all the infra components needed on the virtualization enabled cluster but not necessarily directly on each node running VMs/VMIs. | [HyperConvergedConfig](#hyperconvergedconfig) |  | false |
 | workloads | workloads HyperConvergedConfig influences the pod configuration (currently only placement) of components which need to be running on a node where virtualization workloads should be able to run. Changes to Workloads HyperConvergedConfig can be applied only without existing workload. | [HyperConvergedConfig](#hyperconvergedconfig) |  | false |
-| featureGates | FeatureGates is a set of optional feature gates to enable or disable new features that are not generally available yet. Add a new FeatureGate Object to this set, to enable a feature that is disabled by default, or to disable a feature that is enabled by default.\n\nA feature gate may be in the following phases: * alpha: the feature is in dev-preview. It is disabled by default, but can\n  be enabled.\n* beta: the feature gate is in tech-preview. It is enabled by default, but\n  can be disabled.\n* GA: the feature is graduated and is always enabled. There is no way to\n  disable it.\n* deprecated: the feature is no longer supported. There is no way to enable\n  it\n\nFeature-Gate list: * decentralizedLiveMigration:\n  DecentralizedLiveMigration enables the decentralized live migration\n  (cross-cluster migration) feature. This feature allows live migration of\n  VirtualMachineInstances between different clusters. This feature is in\n  Developer Preview.\n  Phase: beta\n\n* videoConfig:\n  VideoConfig allows users to configure video device types for their virtual\n  machines. This can be useful for workloads that require specific video\n  capabilities or architectures. Note: This feature is in Tech Preview.\n  Phase: beta\n\n* alignCPUs:\n  Enable KubeVirt to request up to two additional dedicated CPUs in order to\n  complete the total CPU count to an even parity when using emulator thread\n  isolation. Note: this feature is in Developer Preview.\n  Phase: alpha\n\n* declarativeHotplugVolumes:\n  DeclarativeHotplugVolumes enables the use of the declarative volume\n  hotplug feature in KubeVirt. When set to true, the\n  \"DeclarativeHotplugVolumes\" feature gate is enabled instead of\n  \"HotplugVolumes\". When set to false or nil, the \"HotplugVolumes\" feature\n  gate is enabled (default behavior). This feature is in Developer Preview.\n  Phase: alpha\n\n* deployKubeSecondaryDNS:\n  Deploy KubeSecondaryDNS by CNAO\n  Phase: alpha\n\n* disableMDevConfiguration:\n  Disable mediated devices handling on KubeVirt\n  Phase: alpha\n\n* downwardMetrics:\n  Allow to expose a limited set of host metrics to guests.\n  Phase: alpha\n\n* enableMultiArchBootImageImport:\n  EnableMultiArchBootImageImport allows the HCO to run on heterogeneous\n  clusters with different CPU architectures. Setting this field to true will\n  allow the HCO to create Golden Images for different CPU architectures.\n  This feature is in Developer Preview.\n  Phase: alpha\n\n* incrementalBackup:\n  IncrementalBackup enables changed block tracking backups and incremental\n  backups using QEMU capabilities in KubeVirt. When enabled, this also\n  enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This\n  feature is in Tech Preview.\n  Phase: alpha\n\n* objectGraph:\n  ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt.\n  This subresource returns a structured list of k8s objects that are related\n  to the specified VM or VMI, enabling better dependency tracking. Note:\n  This feature is in Developer Preview.\n  Phase: alpha\n\n* persistentReservation:\n  Enable persistent reservation of a LUN through the SCSI Persistent Reserve\n  commands on Kubevirt. In order to issue privileged SCSI ioctls, the VM\n  requires activation of the persistent reservation flag. Once this feature\n  gate is enabled, then the additional container with the qemu-pr-helper is\n  deployed inside the virt-handler pod. Enabling (or removing) the feature\n  gate causes the redeployment of the virt-handler pod.\n  Phase: alpha\n\n* autoResourceLimits:\n  Deprecated: this feature gate is ignored.\n  Phase: deprecated\n\n* deployKubevirtIpamController:\n  Deprecated: this feature gate is ignored.\n  Phase: deprecated\n\n* deployTektonTaskResources:\n  Deprecated: This feature gate is ignored.\n  Phase: deprecated\n\n* deployVmConsoleProxy:\n  Deprecated: This feature gate is ignored. Use spec.deployVmConsoleProxy\n  instead\n  Phase: deprecated\n\n* enableApplicationAwareQuota:\n  Deprecated: This field is ignored and will be removed on the next version\n  of the API. Use spec.enableApplicationAwareQuota instead\n  Phase: deprecated\n\n* enableCommonBootImageImport:\n  Deprecated: This feature gate is ignored. Use\n  spec.enableCommonBootImageImport instead\n  Phase: deprecated\n\n* enableManagedTenantQuota:\n  Deprecated: This feature gate is ignored.\n  Phase: deprecated\n\n* nonRoot:\n  Deprecated: This feature gate is ignored.\n  Phase: deprecated\n\n* primaryUserDefinedNetworkBinding:\n  Deprecated: this feature gate is ignored.\n  Phase: deprecated\n\n* withHostPassthroughCPU:\n  Deprecated: This feature gate is ignored\n  Phase: deprecated | featuregates.HyperConvergedFeatureGates |  | false |
+| featureGates | For feature gate details, see [here](#hco-feature-gates) | featuregates.HyperConvergedFeatureGates |  | false |
 | liveMigrationConfig | Live migration limits and timeouts are applied so that migration processes do not overwhelm the cluster. | [LiveMigrationConfigurations](#livemigrationconfigurations) | {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false} | false |
 | permittedHostDevices | PermittedHostDevices holds information about devices allowed for passthrough | *[PermittedHostDevices](#permittedhostdevices) |  | false |
 | mediatedDevicesConfiguration | MediatedDevicesConfiguration holds information about MDEV types to be defined on nodes, if available | *[MediatedDevicesConfiguration](#mediateddevicesconfiguration) |  | false |
@@ -221,7 +223,7 @@ HyperConvergedSpec defines the desired state of HyperConverged
 HyperConvergedStatus defines the observed state of HyperConverged
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | conditions | Conditions describes the state of the HyperConverged resource. | []metav1.Condition |  | false |
 | relatedObjects | RelatedObjects is a list of objects created and maintained by this operator. Object references will be added to this list after they have been created AND found in the cluster. | []corev1.ObjectReference |  | false |
 | versions | Versions is a list of HCO component versions, as name/version pairs. The version with a name of \"operator\" is the HCO version itself, as described here: https://github.com/openshift/cluster-version-operator/blob/master/docs/dev/clusteroperator.md#version | [][Version](#version) |  | false |
@@ -239,7 +241,7 @@ HyperConvergedStatus defines the observed state of HyperConverged
 HyperConvergedWorkloadUpdateStrategy defines options related to updating a KubeVirt install
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | workloadUpdateMethods | WorkloadUpdateMethods defines the methods that can be used to disrupt workloads during automated workload updates. When multiple methods are present, the least disruptive method takes precedence over more disruptive methods. For example if both LiveMigrate and Evict methods are listed, only VMs which are not live migratable will be restarted/shutdown. An empty list defaults to no automated workload updating. | []string | {"LiveMigrate"} | true |
 | batchEvictionSize | BatchEvictionSize Represents the number of VMIs that can be forced updated per the BatchShutdownInterval interval | *int | 10 | false |
 | batchEvictionInterval | BatchEvictionInterval Represents the interval to wait before issuing the next batch of shutdowns | *metav1.Duration | "1m0s" | false |
@@ -251,7 +253,7 @@ HyperConvergedWorkloadUpdateStrategy defines options related to updating a KubeV
 KubeMacPoolConfig defines kubemacpool MAC address range configuration
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | rangeStart | RangeStart defines the first MAC address in the kubemacpool range. The MAC address format should be AA:BB:CC:DD:EE:FF. | *string |  | false |
 | rangeEnd | RangeEnd defines the last MAC address in the kubemacpool range. The MAC address format should be AA:BB:CC:DD:EE:FF. | *string |  | false |
 
@@ -262,7 +264,7 @@ KubeMacPoolConfig defines kubemacpool MAC address range configuration
 LiveMigrationConfigurations - Live migration limits and timeouts are applied so that migration processes do not overwhelm the cluster.
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | parallelMigrationsPerCluster | Number of migrations running in parallel in the cluster. | *uint32 | 5 | false |
 | parallelOutboundMigrationsPerNode | Maximum number of outbound migrations per node. | *uint32 | 2 | false |
 | bandwidthPerMigration | Bandwidth limit of each migration, the value is quantity of bytes per second (e.g. 2048Mi = 2048MiB/sec) | *string |  | false |
@@ -279,7 +281,7 @@ LiveMigrationConfigurations - Live migration limits and timeouts are applied so 
 LogVerbosityConfiguration configures log verbosity for different components
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | kubevirt | Kubevirt is a struct that allows specifying the log verbosity level that controls the amount of information logged for each Kubevirt component. | *v1.LogVerbosity |  | false |
 | cdi | CDI indicates the log verbosity level that controls the amount of information logged for CDI components. | *int32 |  | false |
 
@@ -290,7 +292,7 @@ LogVerbosityConfiguration configures log verbosity for different components
 MediatedDevicesConfiguration holds information about MDEV types to be defined, if available
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | mediatedDeviceTypes |  | []string |  | true |
 | nodeMediatedDeviceTypes |  | [][NodeMediatedDeviceTypesConfig](#nodemediateddevicetypesconfig) |  | false |
 
@@ -301,7 +303,7 @@ MediatedDevicesConfiguration holds information about MDEV types to be defined, i
 MediatedHostDevice represents a host mediated device allowed for passthrough
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | mdevNameSelector | name of a mediated device type required to identify a mediated device on a host | string |  | true |
 | resourceName | name by which a device is advertised and being requested | string |  | true |
 | externalResourceProvider | indicates that this resource is being provided by an external device plugin | bool |  | false |
@@ -314,7 +316,7 @@ MediatedHostDevice represents a host mediated device allowed for passthrough
 NodeInfoStatus holds information about the cluster nodes
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | workloadsArchitectures | WorkloadsArchitectures is a distinct list of the CPU architectures of the workloads nodes in the cluster. | []string |  | false |
 | controlPlaneArchitectures | ControlPlaneArchitectures is a distinct list of the CPU architecture of the control-plane nodes. | []string |  | false |
 
@@ -325,7 +327,7 @@ NodeInfoStatus holds information about the cluster nodes
 NodeMediatedDeviceTypesConfig holds information about MDEV types to be defined in a specific node that matches the NodeSelector field.
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | nodeSelector | NodeSelector is a selector which must be true for the vmi to fit on a node. Selector which must match a node's labels for the vmi to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ | map[string]string |  | true |
 | mediatedDeviceTypes |  | []string |  | true |
 
@@ -336,7 +338,7 @@ NodeMediatedDeviceTypesConfig holds information about MDEV types to be defined i
 OperandResourceRequirements is a list of resource requirements for the operand workloads pods
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | storageWorkloads | StorageWorkloads defines the resources requirements for storage workloads. It will propagate to the CDI custom resource | *corev1.ResourceRequirements |  | false |
 | vmiCPUAllocationRatio | VmiCPUAllocationRatio defines, for each requested virtual CPU, how much physical CPU to request per VMI from the hosting node. The value is in fraction of a CPU thread (or core on non-hyperthreaded nodes). VMI POD CPU request = number of vCPUs * 1/vmiCPUAllocationRatio For example, a value of 1 means 1 physical CPU thread per VMI CPU thread. A value of 100 would be 1% of a physical thread allocated for each requested VMI thread. This option has no effect on VMIs that request dedicated CPUs. Defaults to 10 | *int | 10 | false |
 | autoCPULimitNamespaceLabelSelector | When set, AutoCPULimitNamespaceLabelSelector will set a CPU limit on virt-launcher for VMIs running inside namespaces that match the label selector. The CPU limit will equal the number of requested vCPUs. This setting does not apply to VMIs with dedicated CPUs. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#labelselector-v1-meta) |  | false |
@@ -348,7 +350,7 @@ OperandResourceRequirements is a list of resource requirements for the operand w
 PciHostDevice represents a host PCI device allowed for passthrough
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | pciDeviceSelector | a combination of a vendor_id:product_id required to identify a PCI device on a host. | string |  | true |
 | resourceName | name by which a device is advertised and being requested | string |  | true |
 | externalResourceProvider | indicates that this resource is being provided by an external device plugin | bool |  | false |
@@ -361,7 +363,7 @@ PciHostDevice represents a host PCI device allowed for passthrough
 PermittedHostDevices holds information about devices allowed for passthrough
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | pciHostDevices |  | [][PciHostDevice](#pcihostdevice) |  | false |
 | usbHostDevices |  | [][USBHostDevice](#usbhostdevice) |  | false |
 | mediatedDevices |  | [][MediatedHostDevice](#mediatedhostdevice) |  | false |
@@ -373,7 +375,7 @@ PermittedHostDevices holds information about devices allowed for passthrough
 StorageImportConfig contains configuration for importing containerized data
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | insecureRegistries | InsecureRegistries is a list of image registries URLs that are not secured. Setting an insecure registry URL in this list allows pulling images from this registry. | []string |  | false |
 
 [Back to TOC](#table-of-contents)
@@ -383,7 +385,7 @@ StorageImportConfig contains configuration for importing containerized data
 USBHostDevice represents a host USB device allowed for passthrough
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | resourceName | Identifies the list of USB host devices. e.g: kubevirt.io/storage, kubevirt.io/bootable-usb, etc | string |  | true |
 | selectors |  | [][USBSelector](#usbselector) |  | false |
 | externalResourceProvider | If true, KubeVirt will leave the allocation and monitoring to an external device plugin | bool |  | false |
@@ -396,7 +398,7 @@ USBHostDevice represents a host USB device allowed for passthrough
 USBSelector represents a selector for a USB device allowed for passthrough
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | vendor |  | string |  | true |
 | product |  | string |  | true |
 
@@ -407,7 +409,7 @@ USBSelector represents a selector for a USB device allowed for passthrough
 
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | name |  | string |  | false |
 | version |  | string |  | false |
 
@@ -418,8 +420,49 @@ USBSelector represents a selector for a USB device allowed for passthrough
 VirtualMachineOptions holds the cluster level information regarding the virtual machine.
 
 | Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | -------- |-------- |
+| ----- | ----------- | ------ | ------- | -------- |
 | disableFreePageReporting | DisableFreePageReporting disable the free page reporting of memory balloon device https://libvirt.org/formatdomain.html#memory-balloon-device. This will have effect only if AutoattachMemBalloon is not false and the vmi is not requesting any high performance feature (dedicatedCPU/realtime/hugePages), in which free page reporting is always disabled. | *bool | false | false |
 | disableSerialConsoleLog | DisableSerialConsoleLog disables logging the auto-attached default serial console. If not set, serial console logs will be written to a file and then streamed from a container named `guest-console-log`. The value can be individually overridden for each VM, not relevant if AutoattachSerialConsole is disabled for the VM. | *bool | false | false |
 
 [Back to TOC](#table-of-contents)
+## HCO Feature Gates
+FeatureGates is a set of optional feature gates to enable or disable new
+features that are not generally available yet. Add a new FeatureGate Object
+to this set, to enable a feature that is disabled by default, or to disable a
+feature that is enabled by default.
+
+A feature gate may be in the following phases:
+* `alpha`: the feature is in dev-preview. It is disabled by default, but can be
+  enabled
+* `beta`: the feature gate is in tech-preview. It is enabled by default, but
+  can be disabled.
+* `GA`: the feature is graduated and is always enabled. There is no way to
+  disable it.
+* `deprecated`: the feature is no longer supported. There is no way to enable it
+
+| Name | Description | Phase |
+| ---- | ----------- | ----- |
+| decentralizedLiveMigration | DecentralizedLiveMigration enables the decentralized live migration (cross-cluster migration) feature. This feature allows live migration of VirtualMachineInstances between different clusters. This feature is in Developer Preview. | beta |
+| videoConfig | VideoConfig allows users to configure video device types for their virtual machines. This can be useful for workloads that require specific video capabilities or architectures. Note: This feature is in Tech Preview. | beta |
+| alignCPUs | Enable KubeVirt to request up to two additional dedicated CPUs in order to complete the total CPU count to an even parity when using emulator thread isolation. Note: this feature is in Developer Preview. | alpha |
+| declarativeHotplugVolumes | DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt. When set to true, the "DeclarativeHotplugVolumes" feature gate is enabled instead of "HotplugVolumes". When set to false or nil, the "HotplugVolumes" feature gate is enabled (default behavior). This feature is in Developer Preview. | alpha |
+| deployKubeSecondaryDNS | Deploy KubeSecondaryDNS by CNAO | alpha |
+| disableMDevConfiguration | Disable mediated devices handling on KubeVirt | alpha |
+| downwardMetrics | Allow to expose a limited set of host metrics to guests. | alpha |
+| enableMultiArchBootImageImport | EnableMultiArchBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures. Setting this field to true will allow the HCO to create Golden Images for different CPU architectures. This feature is in Developer Preview. | alpha |
+| incrementalBackup | IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt. When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This feature is in Tech Preview. | alpha |
+| objectGraph | ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking. Note: This feature is in Developer Preview. | alpha |
+| persistentReservation | Enable persistent reservation of a LUN through the SCSI Persistent Reserve commands on Kubevirt. In order to issue privileged SCSI ioctls, the VM requires activation of the persistent reservation flag. Once this feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod. | alpha |
+| autoResourceLimits | Deprecated: this feature gate is ignored. | deprecated |
+| deployKubevirtIpamController | Deprecated: this feature gate is ignored. | deprecated |
+| deployTektonTaskResources | Deprecated: This feature gate is ignored. | deprecated |
+| deployVmConsoleProxy | Deprecated: This feature gate is ignored. Use spec.deployVmConsoleProxy instead | deprecated |
+| enableApplicationAwareQuota | Deprecated: This field is ignored and will be removed on the next version of the API. Use spec.enableApplicationAwareQuota instead | deprecated |
+| enableCommonBootImageImport | Deprecated: This feature gate is ignored. Use spec.enableCommonBootImageImport instead | deprecated |
+| enableManagedTenantQuota | Deprecated: This feature gate is ignored. | deprecated |
+| nonRoot | Deprecated: This feature gate is ignored. | deprecated |
+| primaryUserDefinedNetworkBinding | Deprecated: this feature gate is ignored. | deprecated |
+| withHostPassthroughCPU | Deprecated: This feature gate is ignored | deprecated |
+
+[Back to TOC](#table-of-contents)
+
