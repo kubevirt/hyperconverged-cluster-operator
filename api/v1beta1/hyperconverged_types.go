@@ -884,8 +884,8 @@ type NodeInfoStatus struct {
 // +k8s:openapi-gen=true
 type ApplicationAwareConfigurations struct {
 	// VmiCalcConfigName determine how resource allocation will be done with ApplicationsResourceQuota.
-	// allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources or IgnoreVmiCalculator
-	// +kubebuilder:validation:Enum=VmiPodUsage;VirtualResources;DedicatedVirtualResources;IgnoreVmiCalculator
+	// allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources, IgnoreVmiCalculator or GuestEffectiveResources
+	// +kubebuilder:validation:Enum=VmiPodUsage;VirtualResources;DedicatedVirtualResources;IgnoreVmiCalculator;GuestEffectiveResources
 	// +kubebuilder:default=DedicatedVirtualResources
 	VmiCalcConfigName *aaqv1alpha1.VmiCalcConfigName `json:"vmiCalcConfigName,omitempty"`
 
