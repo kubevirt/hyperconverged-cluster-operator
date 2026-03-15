@@ -57,7 +57,7 @@ lint:
 
 build: build-operator build-csv-merger build-webhook
 
-build-operator: generate $(SOURCES) ## Build binary from source
+build-operator: $(SOURCES) ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-operator ./cmd/hyperconverged-cluster-operator
 
 build-csv-merger: ## Build binary from source
@@ -78,7 +78,7 @@ build-crd-creator: generate
 build-manifest-splitter:
 	go build -ldflags="${LDFLAGS}" -o _out/manifest-splitter ./tools/manifest-splitter
 
-build-webhook: generate $(SOURCES) ## Build binary from source
+build-webhook: $(SOURCES) ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-webhook ./cmd/hyperconverged-cluster-webhook
 
 build-manifests: gogenerate-crd-creator build-crd-creator build-csv-merger build-manifest-splitter build-manifest-templator
