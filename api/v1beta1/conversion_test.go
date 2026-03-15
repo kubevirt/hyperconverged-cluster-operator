@@ -3,6 +3,7 @@ package v1beta1
 import (
 	"slices"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -12,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	kubevirtv1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
@@ -1546,6 +1548,224 @@ var _ = Describe("api/v1beta1", func() {
 				Expect(result.ScratchSpaceStorageClass).To(HaveValue(Equal("scratch-class")))
 				Expect(result.StorageImport).ToNot(BeNil())
 				Expect(result.StorageImport.InsecureRegistries).To(Equal([]string{"registry.example.com"}))
+			})
+		})
+	})
+
+	Context("Security conversion", func() {
+		Context("v1 ==> v1beta1", func() {
+			It("should convert CertConfig", func() {
+				v1Security := hcov1.SecurityConfig{
+					CertConfig: hcov1.HyperConvergedCertConfig{
+						CA: hcov1.CertRotateConfigCA{
+							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+						},
+						Server: hcov1.CertRotateConfigServer{
+							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+						},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertSecurityV1ToV1beta1(v1Security, &v1beta1Spec)
+
+				Expect(v1beta1Spec.CertConfig.CA.Duration).To(HaveValue(Equal(metav1.Duration{Duration: 48 * time.Hour})))
+				Expect(v1beta1Spec.CertConfig.CA.RenewBefore).To(HaveValue(Equal(metav1.Duration{Duration: 24 * time.Hour})))
+				Expect(v1beta1Spec.CertConfig.Server.Duration).To(HaveValue(Equal(metav1.Duration{Duration: 24 * time.Hour})))
+				Expect(v1beta1Spec.CertConfig.Server.RenewBefore).To(HaveValue(Equal(metav1.Duration{Duration: 12 * time.Hour})))
+			})
+
+			It("should convert TLSSecurityProfile", func() {
+				v1Security := hcov1.SecurityConfig{
+					TLSSecurityProfile: &openshiftconfigv1.TLSSecurityProfile{
+						Type:         openshiftconfigv1.TLSProfileIntermediateType,
+						Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertSecurityV1ToV1beta1(v1Security, &v1beta1Spec)
+
+				Expect(v1beta1Spec.TLSSecurityProfile).ToNot(BeNil())
+				Expect(v1beta1Spec.TLSSecurityProfile.Type).To(Equal(openshiftconfigv1.TLSProfileIntermediateType))
+			})
+
+			It("should not convert TLSSecurityProfile when nil", func() {
+				v1Security := hcov1.SecurityConfig{}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertSecurityV1ToV1beta1(v1Security, &v1beta1Spec)
+
+				Expect(v1beta1Spec.TLSSecurityProfile).To(BeNil())
+			})
+
+			It("should convert all fields together", func() {
+				v1Security := hcov1.SecurityConfig{
+					CertConfig: hcov1.HyperConvergedCertConfig{
+						CA: hcov1.CertRotateConfigCA{
+							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+						},
+						Server: hcov1.CertRotateConfigServer{
+							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+						},
+					},
+					TLSSecurityProfile: &openshiftconfigv1.TLSSecurityProfile{
+						Type: openshiftconfigv1.TLSProfileOldType,
+						Old:  &openshiftconfigv1.OldTLSProfile{},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertSecurityV1ToV1beta1(v1Security, &v1beta1Spec)
+
+				Expect(v1beta1Spec.CertConfig.CA.Duration).To(HaveValue(Equal(metav1.Duration{Duration: 48 * time.Hour})))
+				Expect(v1beta1Spec.TLSSecurityProfile).ToNot(BeNil())
+				Expect(v1beta1Spec.TLSSecurityProfile.Type).To(Equal(openshiftconfigv1.TLSProfileOldType))
+			})
+		})
+
+		Context("v1beta1 ==> v1", func() {
+			It("should convert CertConfig", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					CertConfig: hcov1.HyperConvergedCertConfig{
+						CA: hcov1.CertRotateConfigCA{
+							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+						},
+						Server: hcov1.CertRotateConfigServer{
+							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+						},
+					},
+				}
+
+				var v1Security hcov1.SecurityConfig
+				convertSecurityV1beta1ToV1(v1beta1Spec, &v1Security)
+
+				Expect(v1Security.CertConfig.CA.Duration).To(HaveValue(Equal(metav1.Duration{Duration: 48 * time.Hour})))
+				Expect(v1Security.CertConfig.CA.RenewBefore).To(HaveValue(Equal(metav1.Duration{Duration: 24 * time.Hour})))
+				Expect(v1Security.CertConfig.Server.Duration).To(HaveValue(Equal(metav1.Duration{Duration: 24 * time.Hour})))
+				Expect(v1Security.CertConfig.Server.RenewBefore).To(HaveValue(Equal(metav1.Duration{Duration: 12 * time.Hour})))
+			})
+
+			It("should convert TLSSecurityProfile", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					TLSSecurityProfile: &openshiftconfigv1.TLSSecurityProfile{
+						Type:         openshiftconfigv1.TLSProfileIntermediateType,
+						Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
+					},
+				}
+
+				var v1Security hcov1.SecurityConfig
+				convertSecurityV1beta1ToV1(v1beta1Spec, &v1Security)
+
+				Expect(v1Security.TLSSecurityProfile).ToNot(BeNil())
+				Expect(v1Security.TLSSecurityProfile.Type).To(Equal(openshiftconfigv1.TLSProfileIntermediateType))
+			})
+
+			It("should not convert TLSSecurityProfile when nil", func() {
+				v1beta1Spec := HyperConvergedSpec{}
+
+				var v1Security hcov1.SecurityConfig
+				convertSecurityV1beta1ToV1(v1beta1Spec, &v1Security)
+
+				Expect(v1Security.TLSSecurityProfile).To(BeNil())
+			})
+
+			It("should convert all fields together", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					CertConfig: hcov1.HyperConvergedCertConfig{
+						CA: hcov1.CertRotateConfigCA{
+							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+						},
+						Server: hcov1.CertRotateConfigServer{
+							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+						},
+					},
+					TLSSecurityProfile: &openshiftconfigv1.TLSSecurityProfile{
+						Type: openshiftconfigv1.TLSProfileOldType,
+						Old:  &openshiftconfigv1.OldTLSProfile{},
+					},
+				}
+
+				var v1Security hcov1.SecurityConfig
+				convertSecurityV1beta1ToV1(v1beta1Spec, &v1Security)
+
+				Expect(v1Security.CertConfig.CA.Duration).To(HaveValue(Equal(metav1.Duration{Duration: 48 * time.Hour})))
+				Expect(v1Security.TLSSecurityProfile).ToNot(BeNil())
+				Expect(v1Security.TLSSecurityProfile.Type).To(Equal(openshiftconfigv1.TLSProfileOldType))
+			})
+		})
+
+		Context("round-trip", func() {
+			It("should preserve security config through v1beta1 => v1 => v1beta1", func() {
+				original := HyperConvergedSpec{
+					CertConfig: hcov1.HyperConvergedCertConfig{
+						CA: hcov1.CertRotateConfigCA{
+							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+						},
+						Server: hcov1.CertRotateConfigServer{
+							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+						},
+					},
+					TLSSecurityProfile: &openshiftconfigv1.TLSSecurityProfile{
+						Type:         openshiftconfigv1.TLSProfileIntermediateType,
+						Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
+					},
+				}
+
+				var v1Security hcov1.SecurityConfig
+				convertSecurityV1beta1ToV1(original, &v1Security)
+
+				var result HyperConvergedSpec
+				convertSecurityV1ToV1beta1(v1Security, &result)
+
+				Expect(result.CertConfig.CA.Duration).To(Equal(original.CertConfig.CA.Duration))
+				Expect(result.CertConfig.CA.RenewBefore).To(Equal(original.CertConfig.CA.RenewBefore))
+				Expect(result.CertConfig.Server.Duration).To(Equal(original.CertConfig.Server.Duration))
+				Expect(result.CertConfig.Server.RenewBefore).To(Equal(original.CertConfig.Server.RenewBefore))
+				Expect(result.TLSSecurityProfile).ToNot(BeNil())
+				Expect(result.TLSSecurityProfile.Type).To(Equal(original.TLSSecurityProfile.Type))
+			})
+
+			It("should preserve security config through v1 => v1beta1 => v1", func() {
+				original := hcov1.SecurityConfig{
+					CertConfig: hcov1.HyperConvergedCertConfig{
+						CA: hcov1.CertRotateConfigCA{
+							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+						},
+						Server: hcov1.CertRotateConfigServer{
+							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+						},
+					},
+					TLSSecurityProfile: &openshiftconfigv1.TLSSecurityProfile{
+						Type: openshiftconfigv1.TLSProfileOldType,
+						Old:  &openshiftconfigv1.OldTLSProfile{},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertSecurityV1ToV1beta1(original, &v1beta1Spec)
+
+				var result hcov1.SecurityConfig
+				convertSecurityV1beta1ToV1(v1beta1Spec, &result)
+
+				Expect(result.CertConfig.CA.Duration).To(Equal(original.CertConfig.CA.Duration))
+				Expect(result.CertConfig.CA.RenewBefore).To(Equal(original.CertConfig.CA.RenewBefore))
+				Expect(result.CertConfig.Server.Duration).To(Equal(original.CertConfig.Server.Duration))
+				Expect(result.CertConfig.Server.RenewBefore).To(Equal(original.CertConfig.Server.RenewBefore))
+				Expect(result.TLSSecurityProfile).ToNot(BeNil())
+				Expect(result.TLSSecurityProfile.Type).To(Equal(original.TLSSecurityProfile.Type))
 			})
 		})
 	})

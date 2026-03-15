@@ -3,8 +3,10 @@ package v1beta1
 import (
 	"math/rand/v2"
 	"testing"
+	"time"
 
 	. "github.com/onsi/gomega"
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kubevirtv1 "kubevirt.io/api/core/v1"
@@ -191,6 +193,24 @@ func randomV1beta1HC(r *rand.Rand) *HyperConverged {
 		}
 	}
 
+	hc.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+		CA: hcov1.CertRotateConfigCA{
+			Duration:    randPtr(r, metav1.Duration{Duration: time.Duration(r.IntN(100)+1) * time.Hour}),
+			RenewBefore: randPtr(r, metav1.Duration{Duration: time.Duration(r.IntN(50)+1) * time.Hour}),
+		},
+		Server: hcov1.CertRotateConfigServer{
+			Duration:    randPtr(r, metav1.Duration{Duration: time.Duration(r.IntN(48)+1) * time.Hour}),
+			RenewBefore: randPtr(r, metav1.Duration{Duration: time.Duration(r.IntN(24)+1) * time.Hour}),
+		},
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+			Type:         openshiftconfigv1.TLSProfileIntermediateType,
+			Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
+		}
+	}
+
 	return hc
 }
 
@@ -304,6 +324,24 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 			hc.Spec.Storage.StorageImport = &hcov1.StorageImportConfig{
 				InsecureRegistries: randStringSlice(r),
 			}
+		}
+	}
+
+	hc.Spec.Security.CertConfig = hcov1.HyperConvergedCertConfig{
+		CA: hcov1.CertRotateConfigCA{
+			Duration:    randPtr(r, metav1.Duration{Duration: time.Duration(r.IntN(100)+1) * time.Hour}),
+			RenewBefore: randPtr(r, metav1.Duration{Duration: time.Duration(r.IntN(50)+1) * time.Hour}),
+		},
+		Server: hcov1.CertRotateConfigServer{
+			Duration:    randPtr(r, metav1.Duration{Duration: time.Duration(r.IntN(48)+1) * time.Hour}),
+			RenewBefore: randPtr(r, metav1.Duration{Duration: time.Duration(r.IntN(24)+1) * time.Hour}),
+		},
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+			Type:         openshiftconfigv1.TLSProfileIntermediateType,
+			Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
 		}
 	}
 

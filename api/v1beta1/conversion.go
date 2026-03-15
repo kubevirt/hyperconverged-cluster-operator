@@ -33,6 +33,8 @@ func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error { //revive:dis
 
 	dst.Spec.Storage = convertStorageV1beta1ToV1(src.Spec)
 
+	convertSecurityV1beta1ToV1(src.Spec, &dst.Spec.Security)
+
 	return nil
 }
 
@@ -52,6 +54,8 @@ func (dst *HyperConverged) ConvertFrom(srcRaw conversion.Hub) error { //revive:d
 	}
 
 	convertStorageV1ToV1beta1(src.Spec.Storage, &dst.Spec)
+
+	convertSecurityV1ToV1beta1(src.Spec.Security, &dst.Spec)
 
 	return nil
 }
@@ -305,6 +309,22 @@ func areV1beta1StorageFieldsEmpty(v1beta1Spec HyperConvergedSpec) bool {
 		(v1beta1Spec.StorageImport == nil || len(v1beta1Spec.StorageImport.InsecureRegistries) == 0) &&
 		v1beta1Spec.FilesystemOverhead == nil &&
 		(v1beta1Spec.ResourceRequirements == nil || v1beta1Spec.ResourceRequirements.StorageWorkloads == nil)
+}
+
+func convertSecurityV1ToV1beta1(v1SecurityConfig hcov1.SecurityConfig, v1beta1Spec *HyperConvergedSpec) {
+	v1SecurityConfig.CertConfig.DeepCopyInto(&v1beta1Spec.CertConfig)
+
+	if v1SecurityConfig.TLSSecurityProfile != nil {
+		v1beta1Spec.TLSSecurityProfile = v1SecurityConfig.TLSSecurityProfile.DeepCopy()
+	}
+}
+
+func convertSecurityV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1SecurityConfig *hcov1.SecurityConfig) {
+	v1beta1Spec.CertConfig.DeepCopyInto(&v1SecurityConfig.CertConfig)
+
+	if v1beta1Spec.TLSSecurityProfile != nil {
+		v1SecurityConfig.TLSSecurityProfile = v1beta1Spec.TLSSecurityProfile.DeepCopy()
+	}
 }
 
 var converter *conversion2.Converter

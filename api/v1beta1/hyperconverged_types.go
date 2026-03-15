@@ -97,7 +97,8 @@ type HyperConvergedSpec struct {
 	// certConfig holds the rotation policy for internal, self-signed certificates
 	// +kubebuilder:default={"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}
 	// +optional
-	CertConfig HyperConvergedCertConfig `json:"certConfig,omitempty"`
+	// +k8s:conversion-gen=false
+	CertConfig hcov1.HyperConvergedCertConfig `json:"certConfig,omitempty"`
 
 	// ResourceRequirements describes the resource requirements for the operand workloads.
 	// +kubebuilder:default={"vmiCPUAllocationRatio": 10}
@@ -191,6 +192,7 @@ type HyperConvergedSpec struct {
 	// Note that only Old, Intermediate and Custom profiles are currently supported, and the maximum available
 	// MinTLSVersions is VersionTLS12.
 	// +optional
+	// +k8s:conversion-gen=false
 	TLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile `json:"tlsSecurityProfile,omitempty"`
 
 	// TektonPipelinesNamespace defines namespace in which example pipelines will be deployed.
@@ -325,60 +327,6 @@ type HyperConvergedSpec struct {
 	// +kubebuilder:validation:Enum=AggregateToDefault;Manual
 	// +k8s:conversion-gen=false
 	RoleAggregationStrategy *v1.RoleAggregationStrategy `json:"roleAggregationStrategy,omitempty"`
-}
-
-// CertRotateConfigCA contains the tunables for TLS certificates.
-// +k8s:openapi-gen=true
-type CertRotateConfigCA struct {
-	// The requested 'duration' (i.e. lifetime) of the Certificate.
-	// This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration)
-	// +kubebuilder:default="48h0m0s"
-	// +default="48h0m0s"
-	// +optional
-	Duration *metav1.Duration `json:"duration,omitempty"`
-
-	// The amount of time before the currently issued certificate's `notAfter`
-	// time that we will begin to attempt to renew the certificate.
-	// This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration)
-	// +kubebuilder:default="24h0m0s"
-	// +default="24h0m0s"
-	// +optional
-	RenewBefore *metav1.Duration `json:"renewBefore,omitempty"`
-}
-
-// CertRotateConfigServer contains the tunables for TLS certificates.
-// +k8s:openapi-gen=true
-type CertRotateConfigServer struct {
-	// The requested 'duration' (i.e. lifetime) of the Certificate.
-	// This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration)
-	// +kubebuilder:default="24h0m0s"
-	// +default="24h0m0s"
-	// +optional
-	Duration *metav1.Duration `json:"duration,omitempty"`
-
-	// The amount of time before the currently issued certificate's `notAfter`
-	// time that we will begin to attempt to renew the certificate.
-	// This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration)
-	// +kubebuilder:default="12h0m0s"
-	// +default="12h0m0s"
-	// +optional
-	RenewBefore *metav1.Duration `json:"renewBefore,omitempty"`
-}
-
-// HyperConvergedCertConfig holds the CertConfig entries for the HCO operands
-// +k8s:openapi-gen=true
-type HyperConvergedCertConfig struct {
-	// CA configuration -
-	// CA certs are kept in the CA bundle as long as they are valid
-	// +kubebuilder:default={"duration": "48h0m0s", "renewBefore": "24h0m0s"}
-	// +optional
-	CA CertRotateConfigCA `json:"ca,omitempty"`
-
-	// Server configuration -
-	// Certs are rotated and discarded
-	// +kubebuilder:default={"duration": "24h0m0s", "renewBefore": "12h0m0s"}
-	// +optional
-	Server CertRotateConfigServer `json:"server,omitempty"`
 }
 
 // HyperConvergedConfig defines a set of configurations to pass to components
