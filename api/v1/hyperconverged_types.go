@@ -36,10 +36,6 @@ const (
 // HyperConvergedSpec defines the desired state of HyperConverged
 // +k8s:openapi-gen=true
 type HyperConvergedSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-
 	// TuningPolicy allows to configure the mode in which the RateLimits of kubevirt are set.
 	// If TuningPolicy is not present the default kubevirt values are used.
 	// It can be set to `annotation` for fine-tuning the kubevirt queryPerSeconds (qps) and burst values.
@@ -212,10 +208,11 @@ type HyperConvergedSpec struct {
 	// +k8s:conversion-gen=false
 	Storage *StorageConfig `json:"storage,omitempty"`
 
-	// certConfig holds the rotation policy for internal, self-signed certificates
-	// +kubebuilder:default={"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}
+	// Security contains all the security configurations
+	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}
 	// +optional
-	CertConfig HyperConvergedCertConfig `json:"certConfig,omitempty"`
+	// +k8s:conversion-gen=false
+	Security SecurityConfig `json:"security,omitempty"`
 
 	// CommonTemplatesNamespace defines namespace in which common templates will
 	// be deployed. It overrides the default openshift namespace.
@@ -244,13 +241,6 @@ type HyperConvergedSpec struct {
 	// the value - the higher the log verbosity.
 	// +optional
 	LogVerbosityConfig *LogVerbosityConfiguration `json:"logVerbosityConfig,omitempty"`
-
-	// TLSSecurityProfile specifies the settings for TLS connections to be propagated to all kubevirt-hyperconverged components.
-	// If unset, the hyperconverged cluster operator will consume the value set on the APIServer CR on OCP/OKD or Intermediate if on vanilla k8s.
-	// Note that only Old, Intermediate and Custom profiles are currently supported, and the maximum available
-	// MinTLSVersions is VersionTLS12.
-	// +optional
-	TLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile `json:"tlsSecurityProfile,omitempty"`
 
 	// KubeSecondaryDNSNameServerIP defines name server IP used by KubeSecondaryDNS
 	// +optional
@@ -437,6 +427,22 @@ type StorageConfig struct {
 	// resource
 	// +optional
 	StorageWorkloads *corev1.ResourceRequirements `json:"storageWorkloads,omitempty"`
+}
+
+// SecurityConfig contains all the security configurations
+type SecurityConfig struct {
+	// certConfig holds the rotation policy for internal, self-signed certificates
+	// +kubebuilder:default={"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}
+	// +optional
+	// +k8s:conversion-gen=false
+	CertConfig HyperConvergedCertConfig `json:"certConfig,omitempty"`
+
+	// TLSSecurityProfile specifies the settings for TLS connections to be propagated to all kubevirt-hyperconverged components.
+	// If unset, the hyperconverged cluster operator will consume the value set on the APIServer CR on OCP/OKD or Intermediate if on vanilla k8s.
+	// Note that only Old, Intermediate and Custom profiles are currently supported, and the maximum available
+	// MinTLSVersions is VersionTLS12.
+	// +optional
+	TLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile `json:"tlsSecurityProfile,omitempty"`
 }
 
 // CertRotateConfigCA contains the tunables for TLS certificates.
@@ -936,7 +942,7 @@ type HyperConverged struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
+	// +kubebuilder:default={"security": {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
 	// +optional
 	Spec   HyperConvergedSpec   `json:"spec,omitempty"`
 	Status HyperConvergedStatus `json:"status,omitempty"`

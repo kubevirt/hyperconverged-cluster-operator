@@ -107,23 +107,23 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		var ptrVar1 int = 10
 		in.Spec.Virtualization.VmiCPUAllocationRatio = &ptrVar1
 	}
-	if in.Spec.CertConfig.CA.Duration == nil {
-		if err := json.Unmarshal([]byte(`"48h0m0s"`), &in.Spec.CertConfig.CA.Duration); err != nil {
+	if in.Spec.Security.CertConfig.CA.Duration == nil {
+		if err := json.Unmarshal([]byte(`"48h0m0s"`), &in.Spec.Security.CertConfig.CA.Duration); err != nil {
 			panic(err)
 		}
 	}
-	if in.Spec.CertConfig.CA.RenewBefore == nil {
-		if err := json.Unmarshal([]byte(`"24h0m0s"`), &in.Spec.CertConfig.CA.RenewBefore); err != nil {
+	if in.Spec.Security.CertConfig.CA.RenewBefore == nil {
+		if err := json.Unmarshal([]byte(`"24h0m0s"`), &in.Spec.Security.CertConfig.CA.RenewBefore); err != nil {
 			panic(err)
 		}
 	}
-	if in.Spec.CertConfig.Server.Duration == nil {
-		if err := json.Unmarshal([]byte(`"24h0m0s"`), &in.Spec.CertConfig.Server.Duration); err != nil {
+	if in.Spec.Security.CertConfig.Server.Duration == nil {
+		if err := json.Unmarshal([]byte(`"24h0m0s"`), &in.Spec.Security.CertConfig.Server.Duration); err != nil {
 			panic(err)
 		}
 	}
-	if in.Spec.CertConfig.Server.RenewBefore == nil {
-		if err := json.Unmarshal([]byte(`"12h0m0s"`), &in.Spec.CertConfig.Server.RenewBefore); err != nil {
+	if in.Spec.Security.CertConfig.Server.RenewBefore == nil {
+		if err := json.Unmarshal([]byte(`"12h0m0s"`), &in.Spec.Security.CertConfig.Server.RenewBefore); err != nil {
 			panic(err)
 		}
 	}

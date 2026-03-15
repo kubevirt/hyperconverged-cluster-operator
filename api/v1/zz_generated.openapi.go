@@ -268,11 +268,11 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig"),
 						},
 					},
-					"certConfig": {
+					"security": {
 						SchemaProps: spec.SchemaProps{
-							Description: "certConfig holds the rotation policy for internal, self-signed certificates",
+							Description: "Security contains all the security configurations",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedCertConfig"),
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.SecurityConfig"),
 						},
 					},
 					"commonTemplatesNamespace": {
@@ -313,12 +313,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 						SchemaProps: spec.SchemaProps{
 							Description: "LogVerbosityConfig configures the verbosity level of Kubevirt's different components. The higher the value - the higher the log verbosity.",
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration"),
-						},
-					},
-					"tlsSecurityProfile": {
-						SchemaProps: spec.SchemaProps{
-							Description: "TLSSecurityProfile specifies the settings for TLS connections to be propagated to all kubevirt-hyperconverged components. If unset, the hyperconverged cluster operator will consume the value set on the APIServer CR on OCP/OKD or Intermediate if on vanilla k8s. Note that only Old, Intermediate and Custom profiles are currently supported, and the maximum available MinTLSVersions is VersionTLS12.",
-							Ref:         ref("github.com/openshift/api/config/v1.TLSSecurityProfile"),
 						},
 					},
 					"kubeSecondaryDNSNameServerIP": {
@@ -402,7 +396,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedCertConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodePlacements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate", "github.com/openshift/api/config/v1.TLSSecurityProfile", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin"},
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodePlacements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.SecurityConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin"},
 	}
 }
 
