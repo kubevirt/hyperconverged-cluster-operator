@@ -25,6 +25,13 @@ if [[ "0" != "${DIFF}" ]]; then
   exit 1
 fi
 
+CURRENT_BRANCH=$(git branch --show-current)
+
+if [[ "${CURRENT_BRANCH}" != "main" && ! "${CURRENT_BRANCH}" =~ release-[0-9]\.[0-9]+ ]]; then
+  echo "may only run from main or from a release-* branches"
+  exit 1
+fi
+
 source ./hack/config
 
 CURRENT_VERSION=${CSV_VERSION}
@@ -34,8 +41,8 @@ echo "Bumping hyperconverged-cluster-operator to v${NEXT_VERSION}"
 
 UPSTREAM=$(date "+%Y-%m-%dT%H-%M-upstream")
 git remote add "${UPSTREAM}" https://github.com/kubevirt/hyperconverged-cluster-operator.git
-git fetch "${UPSTREAM}" main
-git checkout -b "bump_hco_to_v${NEXT_VERSION}" "${UPSTREAM}/main"
+git fetch "${UPSTREAM}" "${CURRENT_BRANCH}"
+git checkout -b "bump_hco_to_v${NEXT_VERSION}" "${UPSTREAM}/${CURRENT_BRANCH}"
 git remote remove "${UPSTREAM}"
 
 echo "modify files..."
