@@ -208,41 +208,24 @@ type HyperConvergedSpec struct {
 	// +k8s:conversion-gen=false
 	Virtualization VirtualizationConfig `json:"virtualization,omitempty"`
 
+	// Storage contains all the configurations for storage
+	// +k8s:conversion-gen=false
+	Storage *StorageConfig `json:"storage,omitempty"`
+
 	// certConfig holds the rotation policy for internal, self-signed certificates
 	// +kubebuilder:default={"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}
 	// +optional
 	CertConfig HyperConvergedCertConfig `json:"certConfig,omitempty"`
-
-	// ResourceRequirements describes the resource requirements for the operand workloads.
-	// +optional
-	ResourceRequirements *OperandResourceRequirements `json:"resourceRequirements,omitempty"`
-
-	// Override the storage class used for scratch space during transfer operations. The scratch space storage class
-	// is determined in the following order:
-	// value of scratchSpaceStorageClass, if that doesn't exist, use the default storage class, if there is no default
-	// storage class, use the storage class of the DataVolume, if no storage class specified, use no storage class for
-	// scratch space
-	// +optional
-	ScratchSpaceStorageClass *string `json:"scratchSpaceStorageClass,omitempty"`
 
 	// CommonTemplatesNamespace defines namespace in which common templates will
 	// be deployed. It overrides the default openshift namespace.
 	// +optional
 	CommonTemplatesNamespace *string `json:"commonTemplatesNamespace,omitempty"`
 
-	// StorageImport contains configuration for importing containerized data
-	// +optional
-	StorageImport *StorageImportConfig `json:"storageImport,omitempty"`
-
 	// DataImportCronTemplates holds list of data import cron templates (golden images)
 	// +optional
 	// +listType=atomic
 	DataImportCronTemplates []DataImportCronTemplate `json:"dataImportCronTemplates,omitempty"`
-
-	// FilesystemOverhead describes the space reserved for overhead when using Filesystem volumes.
-	// A value is between 0 and 1, if not defined it is 0.055 (5.5 percent overhead)
-	// +optional
-	FilesystemOverhead *cdiv1beta1.FilesystemOverhead `json:"filesystemOverhead,omitempty"`
 
 	// UninstallStrategy defines how to proceed on uninstall when workloads (VirtualMachines, DataVolumes) still exist.
 	// BlockUninstallIfWorkloadsExist will prevent the CR from being removed when workloads still exist.
@@ -276,10 +259,6 @@ type HyperConvergedSpec struct {
 	// KubeMacPoolConfiguration holds kubemacpool MAC address range configuration.
 	// +optional
 	KubeMacPoolConfiguration *KubeMacPoolConfig `json:"kubeMacPoolConfiguration,omitempty"`
-
-	// VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM.
-	// +optional
-	VMStateStorageClass *string `json:"vmStateStorageClass,omitempty"`
 
 	// CommonBootImageNamespace override the default namespace of the common boot images, in order to hide them.
 	//
@@ -429,6 +408,35 @@ type VirtualizationConfig struct {
 	// This setting does not apply to VMIs with dedicated CPUs.
 	// +optional
 	AutoCPULimitNamespaceLabelSelector *metav1.LabelSelector `json:"autoCPULimitNamespaceLabelSelector,omitempty"`
+}
+
+// StorageConfig contains all the storage configurations
+type StorageConfig struct {
+	// VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM.
+	// +optional
+	VMStateStorageClass *string `json:"vmStateStorageClass,omitempty"`
+
+	// Override the storage class used for scratch space during transfer operations. The scratch space storage class
+	// is determined in the following order:
+	// value of scratchSpaceStorageClass, if that doesn't exist, use the default storage class, if there is no default
+	// storage class, use the storage class of the DataVolume, if no storage class specified, use no storage class for
+	// scratch space
+	// +optional
+	ScratchSpaceStorageClass *string `json:"scratchSpaceStorageClass,omitempty"`
+
+	// StorageImport contains configuration for importing containerized data
+	// +optional
+	StorageImport *StorageImportConfig `json:"storageImport,omitempty"`
+
+	// FilesystemOverhead describes the space reserved for overhead when using Filesystem volumes.
+	// A value is between 0 and 1, if not defined it is 0.055 (5.5 percent overhead)
+	// +optional
+	FilesystemOverhead *cdiv1beta1.FilesystemOverhead `json:"filesystemOverhead,omitempty"`
+
+	// StorageWorkloads defines the resources requirements for storage workloads. It will propagate to the CDI custom
+	// resource
+	// +optional
+	StorageWorkloads *corev1.ResourceRequirements `json:"storageWorkloads,omitempty"`
 }
 
 // CertRotateConfigCA contains the tunables for TLS certificates.
@@ -691,15 +699,6 @@ type NodeMediatedDeviceTypesConfig struct {
 	// +listType=atomic
 	// +optional
 	MediatedDeviceTypes []string `json:"mediatedDeviceTypes"`
-}
-
-// OperandResourceRequirements is a list of resource requirements for the operand workloads pods
-// +k8s:openapi-gen=true
-type OperandResourceRequirements struct {
-	// StorageWorkloads defines the resources requirements for storage workloads. It will propagate to the CDI custom
-	// resource
-	// +optional
-	StorageWorkloads *corev1.ResourceRequirements `json:"storageWorkloads,omitempty"`
 }
 
 // StorageImportConfig contains configuration for importing containerized data

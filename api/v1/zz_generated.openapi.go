@@ -45,7 +45,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.MediatedDevicesConfiguration":         schema_kubevirt_hyperconverged_cluster_operator_api_v1_MediatedDevicesConfiguration(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.MediatedHostDevice":                   schema_kubevirt_hyperconverged_cluster_operator_api_v1_MediatedHostDevice(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodeMediatedDeviceTypesConfig":        schema_kubevirt_hyperconverged_cluster_operator_api_v1_NodeMediatedDeviceTypesConfig(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.OperandResourceRequirements":          schema_kubevirt_hyperconverged_cluster_operator_api_v1_OperandResourceRequirements(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PciHostDevice":                        schema_kubevirt_hyperconverged_cluster_operator_api_v1_PciHostDevice(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PermittedHostDevices":                 schema_kubevirt_hyperconverged_cluster_operator_api_v1_PermittedHostDevices(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageImportConfig":                  schema_kubevirt_hyperconverged_cluster_operator_api_v1_StorageImportConfig(ref),
@@ -263,6 +262,12 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig"),
 						},
 					},
+					"storage": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Storage contains all the configurations for storage",
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig"),
+						},
+					},
 					"certConfig": {
 						SchemaProps: spec.SchemaProps{
 							Description: "certConfig holds the rotation policy for internal, self-signed certificates",
@@ -270,30 +275,11 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedCertConfig"),
 						},
 					},
-					"resourceRequirements": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ResourceRequirements describes the resource requirements for the operand workloads.",
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.OperandResourceRequirements"),
-						},
-					},
-					"scratchSpaceStorageClass": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Override the storage class used for scratch space during transfer operations. The scratch space storage class is determined in the following order: value of scratchSpaceStorageClass, if that doesn't exist, use the default storage class, if there is no default storage class, use the storage class of the DataVolume, if no storage class specified, use no storage class for scratch space",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"commonTemplatesNamespace": {
 						SchemaProps: spec.SchemaProps{
 							Description: "CommonTemplatesNamespace defines namespace in which common templates will be deployed. It overrides the default openshift namespace.",
 							Type:        []string{"string"},
 							Format:      "",
-						},
-					},
-					"storageImport": {
-						SchemaProps: spec.SchemaProps{
-							Description: "StorageImport contains configuration for importing containerized data",
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageImportConfig"),
 						},
 					},
 					"dataImportCronTemplates": {
@@ -313,12 +299,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 									},
 								},
 							},
-						},
-					},
-					"filesystemOverhead": {
-						SchemaProps: spec.SchemaProps{
-							Description: "FilesystemOverhead describes the space reserved for overhead when using Filesystem volumes. A value is between 0 and 1, if not defined it is 0.055 (5.5 percent overhead)",
-							Ref:         ref("kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1.FilesystemOverhead"),
 						},
 					},
 					"uninstallStrategy": {
@@ -352,13 +332,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 						SchemaProps: spec.SchemaProps{
 							Description: "KubeMacPoolConfiguration holds kubemacpool MAC address range configuration.",
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.KubeMacPoolConfig"),
-						},
-					},
-					"vmStateStorageClass": {
-						SchemaProps: spec.SchemaProps{
-							Description: "VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM.",
-							Type:        []string{"string"},
-							Format:      "",
 						},
 					},
 					"commonBootImageNamespace": {
@@ -429,7 +402,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedCertConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodePlacements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.OperandResourceRequirements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageImportConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate", "github.com/openshift/api/config/v1.TLSSecurityProfile", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin", "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1.FilesystemOverhead"},
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedCertConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodePlacements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate", "github.com/openshift/api/config/v1.TLSSecurityProfile", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin"},
 	}
 }
 
@@ -880,27 +853,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_NodeMediatedDeviceTy
 				Required: []string{"nodeSelector"},
 			},
 		},
-	}
-}
-
-func schema_kubevirt_hyperconverged_cluster_operator_api_v1_OperandResourceRequirements(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "OperandResourceRequirements is a list of resource requirements for the operand workloads pods",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"storageWorkloads": {
-						SchemaProps: spec.SchemaProps{
-							Description: "StorageWorkloads defines the resources requirements for storage workloads. It will propagate to the CDI custom resource",
-							Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/api/core/v1.ResourceRequirements"},
 	}
 }
 
