@@ -153,12 +153,13 @@ spec:
                     default: DedicatedVirtualResources
                     description: |-
                       VmiCalcConfigName determine how resource allocation will be done with ApplicationsResourceQuota.
-                      allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources or IgnoreVmiCalculator
+                      allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources, IgnoreVmiCalculator or GuestEffectiveResources
                     enum:
                     - VmiPodUsage
                     - VirtualResources
                     - DedicatedVirtualResources
                     - IgnoreVmiCalculator
+                    - GuestEffectiveResources
                     type: string
                 type: object
               certConfig:
