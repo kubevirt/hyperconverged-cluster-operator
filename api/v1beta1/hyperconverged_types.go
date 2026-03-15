@@ -112,6 +112,7 @@ type HyperConvergedSpec struct {
 	// storage class, use the storage class of the DataVolume, if no storage class specified, use no storage class for
 	// scratch space
 	// +optional
+	// +k8s:conversion-gen=false
 	ScratchSpaceStorageClass *string `json:"scratchSpaceStorageClass,omitempty"`
 
 	// VDDK Init Image eventually used to import VMs from external providers
@@ -148,7 +149,8 @@ type HyperConvergedSpec struct {
 
 	// StorageImport contains configuration for importing containerized data
 	// +optional
-	StorageImport *StorageImportConfig `json:"storageImport,omitempty"`
+	// +k8s:conversion-gen=false
+	StorageImport *hcov1.StorageImportConfig `json:"storageImport,omitempty"`
 
 	// WorkloadUpdateStrategy defines at the cluster level how to handle automated workload updates
 	// +kubebuilder:default={"workloadUpdateMethods": {"LiveMigrate"}, "batchEvictionSize": 10, "batchEvictionInterval": "1m0s"}
@@ -163,6 +165,7 @@ type HyperConvergedSpec struct {
 	// FilesystemOverhead describes the space reserved for overhead when using Filesystem volumes.
 	// A value is between 0 and 1, if not defined it is 0.055 (5.5 percent overhead)
 	// +optional
+	// +k8s:conversion-gen=false
 	FilesystemOverhead *cdiv1beta1.FilesystemOverhead `json:"filesystemOverhead,omitempty"`
 
 	// UninstallStrategy defines how to proceed on uninstall when workloads (VirtualMachines, DataVolumes) still exist.
@@ -230,6 +233,7 @@ type HyperConvergedSpec struct {
 
 	// VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM.
 	// +optional
+	// +k8s:conversion-gen=false
 	VMStateStorageClass *string `json:"vmStateStorageClass,omitempty"`
 
 	// VirtualMachineOptions holds the cluster level information regarding the virtual machine.
@@ -582,6 +586,7 @@ type NodeMediatedDeviceTypesConfig struct {
 
 // OperandResourceRequirements is a list of resource requirements for the operand workloads pods
 // +k8s:openapi-gen=true
+// +k8s:conversion-gen=false
 type OperandResourceRequirements struct {
 	// StorageWorkloads defines the resources requirements for storage workloads. It will propagate to the CDI custom
 	// resource
@@ -602,7 +607,6 @@ type OperandResourceRequirements struct {
 	// +kubebuilder:validation:Minimum=1
 	// +default=10
 	// +optional
-	// +k8s:conversion-gen=false
 	VmiCPUAllocationRatio *int `json:"vmiCPUAllocationRatio,omitempty"`
 
 	// When set, AutoCPULimitNamespaceLabelSelector will set a CPU limit on virt-launcher for VMIs running inside
@@ -610,7 +614,6 @@ type OperandResourceRequirements struct {
 	// The CPU limit will equal the number of requested vCPUs.
 	// This setting does not apply to VMIs with dedicated CPUs.
 	// +optional
-	// +k8s:conversion-gen=false
 	AutoCPULimitNamespaceLabelSelector *metav1.LabelSelector `json:"autoCPULimitNamespaceLabelSelector,omitempty"`
 }
 
@@ -628,16 +631,6 @@ type HyperConvergedObsoleteCPUs struct {
 	// +listType=set
 	// +optional
 	CPUModels []string `json:"cpuModels,omitempty"`
-}
-
-// StorageImportConfig contains configuration for importing containerized data
-// +k8s:openapi-gen=true
-type StorageImportConfig struct {
-	// InsecureRegistries is a list of image registries URLs that are not secured. Setting an insecure registry URL
-	// in this list allows pulling images from this registry.
-	// +listType=set
-	// +optional
-	InsecureRegistries []string `json:"insecureRegistries,omitempty"`
 }
 
 // HyperConvergedStatus defines the observed state of HyperConverged

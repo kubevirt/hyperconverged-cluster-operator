@@ -7,11 +7,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 
 	kubevirtv1 "kubevirt.io/api/core/v1"
+	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
@@ -1210,6 +1212,340 @@ var _ = Describe("api/v1beta1", func() {
 
 				Expect(v1VirtConfig.VmiCPUAllocationRatio).To(BeNil())
 				Expect(v1VirtConfig.AutoCPULimitNamespaceLabelSelector).To(BeNil())
+			})
+		})
+	})
+
+	Context("Storage conversion", func() {
+		Context("v1 ==> v1beta1", func() {
+			It("should convert VMStateStorageClass", func() {
+				v1Storage := &hcov1.StorageConfig{
+					VMStateStorageClass: ptr.To("my-storage-class"),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.VMStateStorageClass).To(HaveValue(Equal("my-storage-class")))
+			})
+
+			It("should convert ScratchSpaceStorageClass", func() {
+				v1Storage := &hcov1.StorageConfig{
+					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.ScratchSpaceStorageClass).To(HaveValue(Equal("scratch-class")))
+			})
+
+			It("should convert StorageImport with InsecureRegistries", func() {
+				v1Storage := &hcov1.StorageConfig{
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{"registry1.example.com", "registry2.example.com"},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.StorageImport).ToNot(BeNil())
+				Expect(v1beta1Spec.StorageImport.InsecureRegistries).To(Equal([]string{"registry1.example.com", "registry2.example.com"}))
+			})
+
+			It("should not convert StorageImport when nil", func() {
+				v1Storage := &hcov1.StorageConfig{}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.StorageImport).To(BeNil())
+			})
+
+			It("should convert StorageImport when InsecureRegistries is empty", func() {
+				v1Storage := &hcov1.StorageConfig{
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.StorageImport).ToNot(BeNil())
+				Expect(v1beta1Spec.StorageImport.InsecureRegistries).To(BeEmpty())
+			})
+
+			It("should convert FilesystemOverhead", func() {
+				v1Storage := &hcov1.StorageConfig{
+					FilesystemOverhead: &cdiv1beta1.FilesystemOverhead{
+						Global: cdiv1beta1.Percent("0.5"),
+						StorageClass: map[string]cdiv1beta1.Percent{
+							"class-1": cdiv1beta1.Percent("0.3"),
+							"class-2": cdiv1beta1.Percent("0.2"),
+						},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.FilesystemOverhead).ToNot(BeNil())
+				Expect(v1beta1Spec.FilesystemOverhead.Global).To(Equal(cdiv1beta1.Percent("0.5")))
+				Expect(v1beta1Spec.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-1", cdiv1beta1.Percent("0.3")))
+				Expect(v1beta1Spec.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-2", cdiv1beta1.Percent("0.2")))
+			})
+
+			It("should not convert FilesystemOverhead when nil", func() {
+				v1Storage := &hcov1.StorageConfig{}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.FilesystemOverhead).To(BeNil())
+			})
+
+			It("should convert StorageWorkloads", func() {
+				v1Storage := &hcov1.StorageConfig{
+					StorageWorkloads: &corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("100m"),
+						},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.ResourceRequirements).ToNot(BeNil())
+				Expect(v1beta1Spec.ResourceRequirements.StorageWorkloads).ToNot(BeNil())
+				Expect(v1beta1Spec.ResourceRequirements.StorageWorkloads.Limits).To(HaveLen(1))
+				Expect(v1beta1Spec.ResourceRequirements.StorageWorkloads.Limits).To(HaveKeyWithValue(corev1.ResourceCPU, resource.MustParse("100m")))
+			})
+
+			It("should convert all fields together", func() {
+				v1Storage := &hcov1.StorageConfig{
+					VMStateStorageClass:      ptr.To("vm-state-class"),
+					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{"registry.example.com"},
+					},
+					FilesystemOverhead: &cdiv1beta1.FilesystemOverhead{
+						Global: "0.5",
+						StorageClass: map[string]cdiv1beta1.Percent{
+							"class-1": "0.3",
+							"class-2": "0.2",
+						},
+					},
+					StorageWorkloads: &corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("100m"),
+						},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.VMStateStorageClass).To(HaveValue(Equal("vm-state-class")))
+				Expect(v1beta1Spec.ScratchSpaceStorageClass).To(HaveValue(Equal("scratch-class")))
+
+				Expect(v1beta1Spec.StorageImport).ToNot(BeNil())
+				Expect(v1beta1Spec.StorageImport.InsecureRegistries).To(Equal([]string{"registry.example.com"}))
+
+				Expect(v1beta1Spec.FilesystemOverhead).ToNot(BeNil())
+				Expect(v1beta1Spec.FilesystemOverhead.Global).To(Equal(cdiv1beta1.Percent("0.5")))
+				Expect(v1beta1Spec.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-1", cdiv1beta1.Percent("0.3")))
+				Expect(v1beta1Spec.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-2", cdiv1beta1.Percent("0.2")))
+
+				Expect(v1beta1Spec.ResourceRequirements).ToNot(BeNil())
+				Expect(v1beta1Spec.ResourceRequirements.StorageWorkloads).ToNot(BeNil())
+				Expect(v1beta1Spec.ResourceRequirements.StorageWorkloads.Limits).To(HaveLen(1))
+				Expect(v1beta1Spec.ResourceRequirements.StorageWorkloads.Limits).To(HaveKeyWithValue(corev1.ResourceCPU, resource.MustParse("100m")))
+			})
+		})
+
+		Context("v1beta1 ==> v1", func() {
+			It("should convert VMStateStorageClass", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					VMStateStorageClass: ptr.To("my-storage-class"),
+				}
+
+				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(v1Storage).ToNot(BeNil())
+				Expect(v1Storage.VMStateStorageClass).To(HaveValue(Equal("my-storage-class")))
+			})
+
+			It("should convert ScratchSpaceStorageClass", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+				}
+
+				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(v1Storage).ToNot(BeNil())
+				Expect(v1Storage.ScratchSpaceStorageClass).To(HaveValue(Equal("scratch-class")))
+			})
+
+			It("should convert StorageImport with InsecureRegistries", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{"registry1.example.com", "registry2.example.com"},
+					},
+				}
+
+				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(v1Storage).ToNot(BeNil())
+				Expect(v1Storage.StorageImport).ToNot(BeNil())
+				Expect(v1Storage.StorageImport.InsecureRegistries).To(Equal([]string{"registry1.example.com", "registry2.example.com"}))
+			})
+
+			It("should return nil when all storage fields are empty", func() {
+				v1beta1Spec := HyperConvergedSpec{}
+
+				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(v1Storage).To(BeNil())
+			})
+
+			It("should return nil when StorageImport has empty InsecureRegistries", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{},
+					},
+				}
+
+				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(v1Storage).To(BeNil())
+			})
+
+			It("should convert FilesystemOverhead", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					FilesystemOverhead: &cdiv1beta1.FilesystemOverhead{
+						Global: "0.5",
+						StorageClass: map[string]cdiv1beta1.Percent{
+							"class-1": "0.3",
+							"class-2": "0.2",
+						},
+					},
+				}
+
+				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(v1Storage.FilesystemOverhead).ToNot(BeNil())
+				Expect(v1Storage.FilesystemOverhead.Global).To(Equal(cdiv1beta1.Percent("0.5")))
+				Expect(v1Storage.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-1", cdiv1beta1.Percent("0.3")))
+				Expect(v1Storage.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-2", cdiv1beta1.Percent("0.2")))
+			})
+
+			It("should convert StorageWorkloads", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					ResourceRequirements: &OperandResourceRequirements{
+						StorageWorkloads: &corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU: resource.MustParse("100m"),
+							},
+						},
+					},
+				}
+
+				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(v1Storage).ToNot(BeNil())
+				Expect(v1Storage.StorageWorkloads).ToNot(BeNil())
+				Expect(v1Storage.StorageWorkloads.Limits).To(HaveLen(1))
+				Expect(v1Storage.StorageWorkloads.Limits).To(HaveKeyWithValue(corev1.ResourceCPU, resource.MustParse("100m")))
+			})
+
+			It("should convert all fields together", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					VMStateStorageClass:      ptr.To("vm-state-class"),
+					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{"registry.example.com"},
+					},
+					FilesystemOverhead: &cdiv1beta1.FilesystemOverhead{
+						Global: "0.5",
+						StorageClass: map[string]cdiv1beta1.Percent{
+							"class-1": "0.3",
+							"class-2": "0.2",
+						},
+					},
+					ResourceRequirements: &OperandResourceRequirements{
+						StorageWorkloads: &corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU: resource.MustParse("100m"),
+							},
+						},
+					},
+				}
+
+				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(v1Storage).ToNot(BeNil())
+
+				Expect(v1Storage.VMStateStorageClass).To(HaveValue(Equal("vm-state-class")))
+
+				Expect(v1Storage.ScratchSpaceStorageClass).To(HaveValue(Equal("scratch-class")))
+
+				Expect(v1Storage.StorageImport).ToNot(BeNil())
+				Expect(v1Storage.StorageImport.InsecureRegistries).To(Equal([]string{"registry.example.com"}))
+
+				Expect(v1Storage.FilesystemOverhead).ToNot(BeNil())
+				Expect(v1Storage.FilesystemOverhead.Global).To(Equal(cdiv1beta1.Percent("0.5")))
+				Expect(v1Storage.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-1", cdiv1beta1.Percent("0.3")))
+				Expect(v1Storage.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-2", cdiv1beta1.Percent("0.2")))
+
+				Expect(v1Storage.StorageWorkloads).ToNot(BeNil())
+				Expect(v1Storage.StorageWorkloads.Limits).To(HaveLen(1))
+				Expect(v1Storage.StorageWorkloads.Limits).To(HaveKeyWithValue(corev1.ResourceCPU, resource.MustParse("100m")))
+			})
+		})
+
+		Context("round-trip", func() {
+			It("should preserve storage config through v1beta1 => v1 => v1beta1", func() {
+				original := HyperConvergedSpec{
+					VMStateStorageClass:      ptr.To("vm-state-class"),
+					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{"registry1.example.com", "registry2.example.com"},
+					},
+				}
+
+				v1Storage := convertStorageV1beta1ToV1(original)
+
+				var result HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &result)
+
+				Expect(result.VMStateStorageClass).To(HaveValue(Equal("vm-state-class")))
+				Expect(result.ScratchSpaceStorageClass).To(HaveValue(Equal("scratch-class")))
+				Expect(result.StorageImport).ToNot(BeNil())
+				Expect(result.StorageImport.InsecureRegistries).To(Equal([]string{"registry1.example.com", "registry2.example.com"}))
+			})
+
+			It("should preserve storage config through v1 => v1beta1 => v1", func() {
+				original := &hcov1.StorageConfig{
+					VMStateStorageClass:      ptr.To("vm-state-class"),
+					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{"registry.example.com"},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(original, &v1beta1Spec)
+
+				result := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(result).ToNot(BeNil())
+				Expect(result.VMStateStorageClass).To(HaveValue(Equal("vm-state-class")))
+				Expect(result.ScratchSpaceStorageClass).To(HaveValue(Equal("scratch-class")))
+				Expect(result.StorageImport).ToNot(BeNil())
+				Expect(result.StorageImport.InsecureRegistries).To(Equal([]string{"registry.example.com"}))
 			})
 		})
 	})

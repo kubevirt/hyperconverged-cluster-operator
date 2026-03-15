@@ -31,6 +31,8 @@ func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error { //revive:dis
 		return fmt.Errorf("failed to convert HyperConverged's spec.virtualization from v1beta1 to v1; %w", err)
 	}
 
+	dst.Spec.Storage = convertStorageV1beta1ToV1(src.Spec)
+
 	return nil
 }
 
@@ -48,6 +50,8 @@ func (dst *HyperConverged) ConvertFrom(srcRaw conversion.Hub) error { //revive:d
 	if err := convertVirtualizationV1ToV1beta1(src.Spec.Virtualization, &dst.Spec); err != nil {
 		return fmt.Errorf("failed to convert HyperConverged's spec.virtualization from v1 to v1beta1; %w", err)
 	}
+
+	convertStorageV1ToV1beta1(src.Spec.Storage, &dst.Spec)
 
 	return nil
 }
@@ -241,6 +245,66 @@ func convertVMOptionsV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1VirtConfig *h
 		v1VirtConfig.VirtualMachineOptions.DisableFreePageReporting = setPtr(v1beta1Spec.VirtualMachineOptions.DisableFreePageReporting)
 		v1VirtConfig.VirtualMachineOptions.DisableSerialConsoleLog = setPtr(v1beta1Spec.VirtualMachineOptions.DisableSerialConsoleLog)
 	}
+}
+
+func convertStorageV1ToV1beta1(v1StorageConfig *hcov1.StorageConfig, v1beta1Spec *HyperConvergedSpec) {
+	if v1StorageConfig == nil {
+		return
+	}
+
+	v1beta1Spec.VMStateStorageClass = setPtr(v1StorageConfig.VMStateStorageClass)
+	v1beta1Spec.ScratchSpaceStorageClass = setPtr(v1StorageConfig.ScratchSpaceStorageClass)
+
+	if v1StorageConfig.StorageImport != nil {
+		v1beta1Spec.StorageImport = v1StorageConfig.StorageImport.DeepCopy()
+	}
+	if v1StorageConfig.FilesystemOverhead != nil {
+		v1beta1Spec.FilesystemOverhead = v1StorageConfig.FilesystemOverhead.DeepCopy()
+	}
+
+	if v1StorageConfig.StorageWorkloads != nil {
+		if v1beta1Spec.ResourceRequirements == nil {
+			v1beta1Spec.ResourceRequirements = &OperandResourceRequirements{}
+		}
+
+		if v1StorageConfig.StorageWorkloads != nil {
+			v1beta1Spec.ResourceRequirements.StorageWorkloads = v1StorageConfig.StorageWorkloads.DeepCopy()
+		}
+	}
+}
+
+func convertStorageV1beta1ToV1(v1beta1Spec HyperConvergedSpec) *hcov1.StorageConfig {
+
+	if areV1beta1StorageFieldsEmpty(v1beta1Spec) {
+		return nil
+	}
+
+	v1StorageConfig := &hcov1.StorageConfig{}
+
+	v1StorageConfig.VMStateStorageClass = setPtr(v1beta1Spec.VMStateStorageClass)
+	v1StorageConfig.ScratchSpaceStorageClass = setPtr(v1beta1Spec.ScratchSpaceStorageClass)
+
+	if v1beta1Spec.StorageImport != nil {
+		v1StorageConfig.StorageImport = v1beta1Spec.StorageImport.DeepCopy()
+	}
+
+	if v1beta1Spec.FilesystemOverhead != nil {
+		v1StorageConfig.FilesystemOverhead = v1beta1Spec.FilesystemOverhead.DeepCopy()
+	}
+
+	if v1beta1Spec.ResourceRequirements != nil && v1beta1Spec.ResourceRequirements.StorageWorkloads != nil {
+		v1StorageConfig.StorageWorkloads = v1beta1Spec.ResourceRequirements.StorageWorkloads.DeepCopy()
+	}
+
+	return v1StorageConfig
+}
+
+func areV1beta1StorageFieldsEmpty(v1beta1Spec HyperConvergedSpec) bool {
+	return v1beta1Spec.VMStateStorageClass == nil &&
+		v1beta1Spec.ScratchSpaceStorageClass == nil &&
+		(v1beta1Spec.StorageImport == nil || len(v1beta1Spec.StorageImport.InsecureRegistries) == 0) &&
+		v1beta1Spec.FilesystemOverhead == nil &&
+		(v1beta1Spec.ResourceRequirements == nil || v1beta1Spec.ResourceRequirements.StorageWorkloads == nil)
 }
 
 var converter *conversion2.Converter

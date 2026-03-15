@@ -182,6 +182,15 @@ func randomV1beta1HC(r *rand.Rand) *HyperConverged {
 		}
 	}
 
+	hc.Spec.VMStateStorageClass = randPtr(r, randString(r))
+	hc.Spec.ScratchSpaceStorageClass = randPtr(r, randString(r))
+
+	if r.IntN(2) == 1 {
+		hc.Spec.StorageImport = &hcov1.StorageImportConfig{
+			InsecureRegistries: randStringSlice(r),
+		}
+	}
+
 	return hc
 }
 
@@ -283,6 +292,18 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 		}
 		if r.IntN(2) == 1 {
 			hc.Spec.FeatureGates.Disable("decentralizedLiveMigration")
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.Storage = &hcov1.StorageConfig{
+			VMStateStorageClass:      randPtr(r, randString(r)),
+			ScratchSpaceStorageClass: randPtr(r, randString(r)),
+		}
+		if r.IntN(2) == 1 {
+			hc.Spec.Storage.StorageImport = &hcov1.StorageImportConfig{
+				InsecureRegistries: randStringSlice(r),
+			}
 		}
 	}
 

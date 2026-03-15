@@ -205,26 +205,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*OperandResourceRequirements)(nil), (*v1.OperandResourceRequirements)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_OperandResourceRequirements_To_v1_OperandResourceRequirements(a.(*OperandResourceRequirements), b.(*v1.OperandResourceRequirements), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.OperandResourceRequirements)(nil), (*OperandResourceRequirements)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_OperandResourceRequirements_To_v1beta1_OperandResourceRequirements(a.(*v1.OperandResourceRequirements), b.(*OperandResourceRequirements), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*StorageImportConfig)(nil), (*v1.StorageImportConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_StorageImportConfig_To_v1_StorageImportConfig(a.(*StorageImportConfig), b.(*v1.StorageImportConfig), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.StorageImportConfig)(nil), (*StorageImportConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_StorageImportConfig_To_v1beta1_StorageImportConfig(a.(*v1.StorageImportConfig), b.(*StorageImportConfig), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*Version)(nil), (*v1.Version)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta1_Version_To_v1_Version(a.(*Version), b.(*v1.Version), scope)
 	}); err != nil {
@@ -501,16 +481,16 @@ func autoConvert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(in *HyperCo
 		return err
 	}
 	// INFO: in.ResourceRequirements opted out of conversion generation
-	out.ScratchSpaceStorageClass = (*string)(unsafe.Pointer(in.ScratchSpaceStorageClass))
+	// INFO: in.ScratchSpaceStorageClass opted out of conversion generation
 	// INFO: in.VddkInitImage opted out of conversion generation
 	// INFO: in.DefaultCPUModel opted out of conversion generation
 	// INFO: in.DefaultRuntimeClass opted out of conversion generation
 	// INFO: in.ObsoleteCPUs opted out of conversion generation
 	out.CommonTemplatesNamespace = (*string)(unsafe.Pointer(in.CommonTemplatesNamespace))
-	out.StorageImport = (*v1.StorageImportConfig)(unsafe.Pointer(in.StorageImport))
+	// INFO: in.StorageImport opted out of conversion generation
 	// INFO: in.WorkloadUpdateStrategy opted out of conversion generation
 	out.DataImportCronTemplates = *(*[]v1.DataImportCronTemplate)(unsafe.Pointer(&in.DataImportCronTemplates))
-	out.FilesystemOverhead = (*corev1beta1.FilesystemOverhead)(unsafe.Pointer(in.FilesystemOverhead))
+	// INFO: in.FilesystemOverhead opted out of conversion generation
 	out.UninstallStrategy = v1.HyperConvergedUninstallStrategy(in.UninstallStrategy)
 	out.LogVerbosityConfig = (*v1.LogVerbosityConfiguration)(unsafe.Pointer(in.LogVerbosityConfig))
 	out.TLSSecurityProfile = (*configv1.TLSSecurityProfile)(unsafe.Pointer(in.TLSSecurityProfile))
@@ -519,7 +499,7 @@ func autoConvert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(in *HyperCo
 	out.KubeSecondaryDNSNameServerIP = (*string)(unsafe.Pointer(in.KubeSecondaryDNSNameServerIP))
 	out.KubeMacPoolConfiguration = (*v1.KubeMacPoolConfig)(unsafe.Pointer(in.KubeMacPoolConfiguration))
 	// INFO: in.EvictionStrategy opted out of conversion generation
-	out.VMStateStorageClass = (*string)(unsafe.Pointer(in.VMStateStorageClass))
+	// INFO: in.VMStateStorageClass opted out of conversion generation
 	// INFO: in.VirtualMachineOptions opted out of conversion generation
 	out.CommonBootImageNamespace = (*string)(unsafe.Pointer(in.CommonBootImageNamespace))
 	// INFO: in.KSMConfiguration opted out of conversion generation
@@ -547,29 +527,17 @@ func autoConvert_v1_HyperConvergedSpec_To_v1beta1_HyperConvergedSpec(in *v1.Hype
 	// INFO: in.NodePlacements opted out of conversion generation
 	// INFO: in.FeatureGates opted out of conversion generation
 	// INFO: in.Virtualization opted out of conversion generation
+	// INFO: in.Storage opted out of conversion generation
 	if err := Convert_v1_HyperConvergedCertConfig_To_v1beta1_HyperConvergedCertConfig(&in.CertConfig, &out.CertConfig, s); err != nil {
 		return err
 	}
-	if in.ResourceRequirements != nil {
-		in, out := &in.ResourceRequirements, &out.ResourceRequirements
-		*out = new(OperandResourceRequirements)
-		if err := Convert_v1_OperandResourceRequirements_To_v1beta1_OperandResourceRequirements(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.ResourceRequirements = nil
-	}
-	out.ScratchSpaceStorageClass = (*string)(unsafe.Pointer(in.ScratchSpaceStorageClass))
 	out.CommonTemplatesNamespace = (*string)(unsafe.Pointer(in.CommonTemplatesNamespace))
-	out.StorageImport = (*StorageImportConfig)(unsafe.Pointer(in.StorageImport))
 	out.DataImportCronTemplates = *(*[]DataImportCronTemplate)(unsafe.Pointer(&in.DataImportCronTemplates))
-	out.FilesystemOverhead = (*corev1beta1.FilesystemOverhead)(unsafe.Pointer(in.FilesystemOverhead))
 	out.UninstallStrategy = HyperConvergedUninstallStrategy(in.UninstallStrategy)
 	out.LogVerbosityConfig = (*LogVerbosityConfiguration)(unsafe.Pointer(in.LogVerbosityConfig))
 	out.TLSSecurityProfile = (*configv1.TLSSecurityProfile)(unsafe.Pointer(in.TLSSecurityProfile))
 	out.KubeSecondaryDNSNameServerIP = (*string)(unsafe.Pointer(in.KubeSecondaryDNSNameServerIP))
 	out.KubeMacPoolConfiguration = (*KubeMacPoolConfig)(unsafe.Pointer(in.KubeMacPoolConfiguration))
-	out.VMStateStorageClass = (*string)(unsafe.Pointer(in.VMStateStorageClass))
 	out.CommonBootImageNamespace = (*string)(unsafe.Pointer(in.CommonBootImageNamespace))
 	out.NetworkBinding = *(*map[string]corev1.InterfaceBindingPlugin)(unsafe.Pointer(&in.NetworkBinding))
 	out.ApplicationAwareConfig = (*ApplicationAwareConfigurations)(unsafe.Pointer(in.ApplicationAwareConfig))
@@ -756,48 +724,6 @@ func autoConvert_v1_NodeMediatedDeviceTypesConfig_To_v1beta1_NodeMediatedDeviceT
 // Convert_v1_NodeMediatedDeviceTypesConfig_To_v1beta1_NodeMediatedDeviceTypesConfig is an autogenerated conversion function.
 func Convert_v1_NodeMediatedDeviceTypesConfig_To_v1beta1_NodeMediatedDeviceTypesConfig(in *v1.NodeMediatedDeviceTypesConfig, out *NodeMediatedDeviceTypesConfig, s conversion.Scope) error {
 	return autoConvert_v1_NodeMediatedDeviceTypesConfig_To_v1beta1_NodeMediatedDeviceTypesConfig(in, out, s)
-}
-
-func autoConvert_v1beta1_OperandResourceRequirements_To_v1_OperandResourceRequirements(in *OperandResourceRequirements, out *v1.OperandResourceRequirements, s conversion.Scope) error {
-	out.StorageWorkloads = (*apicorev1.ResourceRequirements)(unsafe.Pointer(in.StorageWorkloads))
-	// INFO: in.VmiCPUAllocationRatio opted out of conversion generation
-	// INFO: in.AutoCPULimitNamespaceLabelSelector opted out of conversion generation
-	return nil
-}
-
-// Convert_v1beta1_OperandResourceRequirements_To_v1_OperandResourceRequirements is an autogenerated conversion function.
-func Convert_v1beta1_OperandResourceRequirements_To_v1_OperandResourceRequirements(in *OperandResourceRequirements, out *v1.OperandResourceRequirements, s conversion.Scope) error {
-	return autoConvert_v1beta1_OperandResourceRequirements_To_v1_OperandResourceRequirements(in, out, s)
-}
-
-func autoConvert_v1_OperandResourceRequirements_To_v1beta1_OperandResourceRequirements(in *v1.OperandResourceRequirements, out *OperandResourceRequirements, s conversion.Scope) error {
-	out.StorageWorkloads = (*apicorev1.ResourceRequirements)(unsafe.Pointer(in.StorageWorkloads))
-	return nil
-}
-
-// Convert_v1_OperandResourceRequirements_To_v1beta1_OperandResourceRequirements is an autogenerated conversion function.
-func Convert_v1_OperandResourceRequirements_To_v1beta1_OperandResourceRequirements(in *v1.OperandResourceRequirements, out *OperandResourceRequirements, s conversion.Scope) error {
-	return autoConvert_v1_OperandResourceRequirements_To_v1beta1_OperandResourceRequirements(in, out, s)
-}
-
-func autoConvert_v1beta1_StorageImportConfig_To_v1_StorageImportConfig(in *StorageImportConfig, out *v1.StorageImportConfig, s conversion.Scope) error {
-	out.InsecureRegistries = *(*[]string)(unsafe.Pointer(&in.InsecureRegistries))
-	return nil
-}
-
-// Convert_v1beta1_StorageImportConfig_To_v1_StorageImportConfig is an autogenerated conversion function.
-func Convert_v1beta1_StorageImportConfig_To_v1_StorageImportConfig(in *StorageImportConfig, out *v1.StorageImportConfig, s conversion.Scope) error {
-	return autoConvert_v1beta1_StorageImportConfig_To_v1_StorageImportConfig(in, out, s)
-}
-
-func autoConvert_v1_StorageImportConfig_To_v1beta1_StorageImportConfig(in *v1.StorageImportConfig, out *StorageImportConfig, s conversion.Scope) error {
-	out.InsecureRegistries = *(*[]string)(unsafe.Pointer(&in.InsecureRegistries))
-	return nil
-}
-
-// Convert_v1_StorageImportConfig_To_v1beta1_StorageImportConfig is an autogenerated conversion function.
-func Convert_v1_StorageImportConfig_To_v1beta1_StorageImportConfig(in *v1.StorageImportConfig, out *StorageImportConfig, s conversion.Scope) error {
-	return autoConvert_v1_StorageImportConfig_To_v1beta1_StorageImportConfig(in, out, s)
 }
 
 func autoConvert_v1beta1_Version_To_v1_Version(in *Version, out *v1.Version, s conversion.Scope) error {
