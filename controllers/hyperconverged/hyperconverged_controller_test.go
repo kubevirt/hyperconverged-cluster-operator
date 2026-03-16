@@ -32,6 +32,7 @@ import (
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
@@ -950,7 +951,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 			It("Should update memory overcommit metrics according to the CR", func() {
 				expected := getBasicDeployment()
-				expected.hco.Spec.HigherWorkloadDensity = &hcov1beta1.HigherWorkloadDensityConfiguration{
+				expected.hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 					MemoryOvercommitPercentage: 42,
 				}
 

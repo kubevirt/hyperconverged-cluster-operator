@@ -24,6 +24,7 @@ import (
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
@@ -1126,8 +1127,8 @@ Version: 1.2.3`)
 				existKv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.PermittedHostDevices = &hcov1beta1.PermittedHostDevices{
-					PciHostDevices: []hcov1beta1.PciHostDevice{
+				hco.Spec.PermittedHostDevices = &hcov1.PermittedHostDevices{
+					PciHostDevices: []hcov1.PciHostDevice{
 						{
 							PCIDeviceSelector:        "vendor1",
 							ResourceName:             "resourceName1",
@@ -1151,7 +1152,7 @@ Version: 1.2.3`)
 							Disabled:                 true,
 						},
 					},
-					MediatedDevices: []hcov1beta1.MediatedHostDevice{
+					MediatedDevices: []hcov1.MediatedHostDevice{
 						{
 							MDEVNameSelector:         "selector1",
 							ResourceName:             "resource1",
@@ -1180,10 +1181,10 @@ Version: 1.2.3`)
 							Disabled:                 true,
 						},
 					},
-					USBHostDevices: []hcov1beta1.USBHostDevice{
+					USBHostDevices: []hcov1.USBHostDevice{
 						{
 							ResourceName: "kubevirt.io/usbstorage",
-							Selectors: []hcov1beta1.USBSelector{
+							Selectors: []hcov1.USBSelector{
 								{
 									Vendor:  "46f4",
 									Product: "0001",
@@ -1193,7 +1194,7 @@ Version: 1.2.3`)
 						},
 						{
 							ResourceName: "kubevirt.io/usbstorageerp",
-							Selectors: []hcov1beta1.USBSelector{
+							Selectors: []hcov1.USBSelector{
 								{
 									Vendor:  "46f4",
 									Product: "0002",
@@ -1203,7 +1204,7 @@ Version: 1.2.3`)
 						},
 						{
 							ResourceName: "kubevirt.io/peripherals",
-							Selectors: []hcov1beta1.USBSelector{
+							Selectors: []hcov1.USBSelector{
 								{
 									Vendor:  "045e",
 									Product: "07a5",
@@ -1225,7 +1226,7 @@ Version: 1.2.3`)
 						},
 						{
 							ResourceName: "kubevirt.io/usbstoragedisabled",
-							Selectors: []hcov1beta1.USBSelector{
+							Selectors: []hcov1.USBSelector{
 								{
 									Vendor:  "46f4",
 									Product: "0003",
@@ -1409,8 +1410,8 @@ Version: 1.2.3`)
 					},
 				}
 
-				hco.Spec.PermittedHostDevices = &hcov1beta1.PermittedHostDevices{
-					PciHostDevices: []hcov1beta1.PciHostDevice{
+				hco.Spec.PermittedHostDevices = &hcov1.PermittedHostDevices{
+					PciHostDevices: []hcov1.PciHostDevice{
 						{
 							PCIDeviceSelector:        "vendor1",
 							ResourceName:             "resourceName1",
@@ -1434,7 +1435,7 @@ Version: 1.2.3`)
 							Disabled:                 true,
 						},
 					},
-					MediatedDevices: []hcov1beta1.MediatedHostDevice{
+					MediatedDevices: []hcov1.MediatedHostDevice{
 						{
 							MDEVNameSelector:         "selector1",
 							ResourceName:             "resource1",
@@ -1463,10 +1464,10 @@ Version: 1.2.3`)
 							Disabled:                 true,
 						},
 					},
-					USBHostDevices: []hcov1beta1.USBHostDevice{
+					USBHostDevices: []hcov1.USBHostDevice{
 						{
 							ResourceName: "kubevirt.io/usbstorage",
-							Selectors: []hcov1beta1.USBSelector{
+							Selectors: []hcov1.USBSelector{
 								{
 									Vendor:  "46f4",
 									Product: "0001",
@@ -1476,7 +1477,7 @@ Version: 1.2.3`)
 						},
 						{
 							ResourceName: "kubevirt.io/usbstorageerp",
-							Selectors: []hcov1beta1.USBSelector{
+							Selectors: []hcov1.USBSelector{
 								{
 									Vendor:  "46f4",
 									Product: "0002",
@@ -1486,7 +1487,7 @@ Version: 1.2.3`)
 						},
 						{
 							ResourceName: "kubevirt.io/peripherals",
-							Selectors: []hcov1beta1.USBSelector{
+							Selectors: []hcov1.USBSelector{
 								{
 									Vendor:  "045e",
 									Product: "07a5",
@@ -1508,7 +1509,7 @@ Version: 1.2.3`)
 						},
 						{
 							ResourceName: "kubevirt.io/usbstoragedisabled",
-							Selectors: []hcov1beta1.USBSelector{
+							Selectors: []hcov1.USBSelector{
 								{
 									Vendor:  "46f4",
 									Product: "0003",
@@ -2929,7 +2930,7 @@ Version: 1.2.3`)
 				existingResource, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.WorkloadUpdateStrategy = hcov1beta1.HyperConvergedWorkloadUpdateStrategy{
+				hco.Spec.WorkloadUpdateStrategy = hcov1.HyperConvergedWorkloadUpdateStrategy{
 					WorkloadUpdateMethods: []string{"aaa", "bbb"},
 					BatchEvictionInterval: &metav1.Duration{Duration: time.Minute * 1},
 					BatchEvictionSize:     ptr.To(defaultBatchEvictionSize),
@@ -3032,7 +3033,7 @@ Version: 1.2.3`)
 					hcoModifiedBatchEvictionSize = 5
 					kvModifiedBatchEvictionSize  = 7
 				)
-				hco.Spec.WorkloadUpdateStrategy = hcov1beta1.HyperConvergedWorkloadUpdateStrategy{
+				hco.Spec.WorkloadUpdateStrategy = hcov1.HyperConvergedWorkloadUpdateStrategy{
 					WorkloadUpdateMethods: []string{"LiveMigrate"},
 					BatchEvictionInterval: &metav1.Duration{Duration: time.Minute * 5},
 					BatchEvictionSize:     ptr.To(hcoModifiedBatchEvictionSize),
@@ -4278,7 +4279,7 @@ Version: 1.2.3`)
 			It("should convert ratio to corresponding percentage when overcommit ratio is set", func() {
 				const expectedPercentage int = 125
 
-				hco.Spec.HigherWorkloadDensity = &hcov1beta1.HigherWorkloadDensityConfiguration{
+				hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 					MemoryOvercommitPercentage: expectedPercentage,
 				}
 				devConfig := getKVDevConfig(hco)
@@ -4406,7 +4407,7 @@ Version: 1.2.3`)
 			network                           = "testNetwork"
 		)
 		It("should create valid KV LM config from a valid HC LM config", func() {
-			lmc := hcov1beta1.LiveMigrationConfigurations{
+			lmc := hcov1.LiveMigrationConfigurations{
 				BandwidthPerMigration:             ptr.To(bandwidthPerMigration),
 				CompletionTimeoutPerGiB:           ptr.To(completionTimeoutPerGiB),
 				ParallelMigrationsPerCluster:      ptr.To(parallelMigrationsPerCluster),
@@ -4430,7 +4431,7 @@ Version: 1.2.3`)
 		})
 
 		It("should create valid empty KV LM config from a valid empty HC LM config", func() {
-			lmc := hcov1beta1.LiveMigrationConfigurations{}
+			lmc := hcov1.LiveMigrationConfigurations{}
 			mc, err := hcLiveMigrationToKv(lmc)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -4445,7 +4446,7 @@ Version: 1.2.3`)
 		})
 
 		It("should return error if the value of the BandwidthPerMigration field is not valid", func() {
-			lmc := hcov1beta1.LiveMigrationConfigurations{
+			lmc := hcov1.LiveMigrationConfigurations{
 				BandwidthPerMigration:             ptr.To("Wrong BandwidthPerMigration"),
 				CompletionTimeoutPerGiB:           ptr.To(completionTimeoutPerGiB),
 				ParallelMigrationsPerCluster:      ptr.To(parallelMigrationsPerCluster),
@@ -4467,15 +4468,15 @@ Version: 1.2.3`)
 		})
 
 		It("should return an empty lists if the input is empty", func() {
-			kvCopy := toKvPermittedHostDevices(&hcov1beta1.PermittedHostDevices{})
+			kvCopy := toKvPermittedHostDevices(&hcov1.PermittedHostDevices{})
 			Expect(kvCopy).ToNot(BeNil())
 			Expect(kvCopy.PciHostDevices).To(BeEmpty())
 			Expect(kvCopy.MediatedDevices).To(BeEmpty())
 		})
 
 		It("should copy all the values", func() {
-			hcoCopy := &hcov1beta1.PermittedHostDevices{
-				PciHostDevices: []hcov1beta1.PciHostDevice{
+			hcoCopy := &hcov1.PermittedHostDevices{
+				PciHostDevices: []hcov1.PciHostDevice{
 					{
 						PCIDeviceSelector:        "vendor1",
 						ResourceName:             "resourceName1",
@@ -4499,7 +4500,7 @@ Version: 1.2.3`)
 						Disabled:                 true,
 					},
 				},
-				MediatedDevices: []hcov1beta1.MediatedHostDevice{
+				MediatedDevices: []hcov1.MediatedHostDevice{
 					{
 						MDEVNameSelector:         "selector1",
 						ResourceName:             "resource1",

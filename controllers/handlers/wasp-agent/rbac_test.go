@@ -10,6 +10,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
@@ -47,7 +48,7 @@ var _ = Describe("Wasp agent Cluster Role", func() {
 
 	Context("Cluster role deployment", func() {
 		It("should not create if overcommit percent is less or equal to 100", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1beta1.HigherWorkloadDensityConfiguration{
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 100,
 			}
 			cr := newWaspAgentClusterRole(hco)
@@ -70,7 +71,7 @@ var _ = Describe("Wasp agent Cluster Role", func() {
 			Expect(foundCRs.Items).To(BeEmpty())
 		})
 		It("should delete cluster role when percentage is set to 100 and below", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1beta1.HigherWorkloadDensityConfiguration{
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 100,
 			}
 			cr := newWaspAgentClusterRole(hco)
@@ -93,7 +94,7 @@ var _ = Describe("Wasp agent Cluster Role", func() {
 			Expect(foundCRs.Items).To(BeEmpty())
 		})
 		It("should create cluster role when percentage is set to higher than 100", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1beta1.HigherWorkloadDensityConfiguration{
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
 
@@ -115,7 +116,7 @@ var _ = Describe("Wasp agent Cluster Role", func() {
 	})
 	Context("Wasp agent cluster role update", func() {
 		It("should reconcile labels if they are missing while preserving user labels", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1beta1.HigherWorkloadDensityConfiguration{
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
 			cr := newWaspAgentClusterRole(hco)
@@ -171,7 +172,7 @@ var _ = Describe("Wasp agent Cluster Role Binding", func() {
 	})
 	Context("Cluster role binding deployment", func() {
 		It("should not create if overcommit percent is less or equal to 100", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1beta1.HigherWorkloadDensityConfiguration{
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 100,
 			}
 			crb := newWaspAgentClusterRoleBinding(hco)
@@ -194,7 +195,7 @@ var _ = Describe("Wasp agent Cluster Role Binding", func() {
 			Expect(foundCRBs.Items).To(BeEmpty())
 		})
 		It("should delete cluster role binding when percentage is set to 100 and below", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1beta1.HigherWorkloadDensityConfiguration{
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 100,
 			}
 			crb := newWaspAgentClusterRoleBinding(hco)
@@ -217,7 +218,7 @@ var _ = Describe("Wasp agent Cluster Role Binding", func() {
 			Expect(foundCRBs.Items).To(BeEmpty())
 		})
 		It("should create cluster role binding when percentage is set to higher than 100", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1beta1.HigherWorkloadDensityConfiguration{
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
 
@@ -239,7 +240,7 @@ var _ = Describe("Wasp agent Cluster Role Binding", func() {
 	})
 	Context("Wasp agent cluster role binding update", func() {
 		It("should reconcile labels if they are missing while preserving user labels", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1beta1.HigherWorkloadDensityConfiguration{
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
 			crb := newWaspAgentClusterRoleBinding(hco)
