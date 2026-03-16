@@ -20,6 +20,7 @@ import (
 
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
@@ -694,7 +695,7 @@ var _ = Describe("CDI Operand", func() {
 			It("should add InsecureRegistries if exists in HC and missing in CDI", func() {
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
-				hco.Spec.StorageImport = &hcov1beta1.StorageImportConfig{
+				hco.Spec.StorageImport = &hcov1.StorageImportConfig{
 					InsecureRegistries: []string{"first:5000", "second:5000", "third:5000"},
 				}
 
@@ -748,7 +749,7 @@ var _ = Describe("CDI Operand", func() {
 				Expect(err).ToNot(HaveOccurred())
 				existingCDI.Spec.Config.InsecureRegistries = []string{"first:5000", "second:5000", "third:5000"}
 
-				hco.Spec.StorageImport = &hcov1beta1.StorageImportConfig{
+				hco.Spec.StorageImport = &hcov1.StorageImportConfig{
 					InsecureRegistries: []string{"other1:5000", "other2:5000"},
 				}
 
