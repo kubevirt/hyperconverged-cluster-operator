@@ -2879,6 +2879,20 @@ spec:
                 - message: vmiCPUAllocationRatio must be greater than 0
                   rule: '!has(self.vmiCPUAllocationRatio) || self.vmiCPUAllocationRatio
                     > 0'
+              roleAggregationStrategy:
+                allOf:
+                - enum:
+                  - AggregateToDefault
+                  - Manual
+                - enum:
+                  - AggregateToDefault
+                  - Manual
+                description: |-
+                  RoleAggregationStrategy controls whether KubeVirt RBAC cluster roles should be aggregated
+                  to the default Kubernetes roles (admin, edit, view).
+                  When set to "AggregateToDefault" or not specified, the aggregate-to-* labels are added to the cluster roles.
+                  When set to "Manual", the labels are not added, and roles will not be aggregated to the default roles.
+                type: string
               scratchSpaceStorageClass:
                 description: |-
                   Override the storage class used for scratch space during transfer operations. The scratch space storage class
@@ -8119,6 +8133,20 @@ spec:
                 - message: vmiCPUAllocationRatio must be greater than 0
                   rule: '!has(self.vmiCPUAllocationRatio) || self.vmiCPUAllocationRatio
                     > 0'
+              roleAggregationStrategy:
+                allOf:
+                - enum:
+                  - AggregateToDefault
+                  - Manual
+                - enum:
+                  - AggregateToDefault
+                  - Manual
+                description: |-
+                  RoleAggregationStrategy controls whether KubeVirt RBAC cluster roles should be aggregated
+                  to the default Kubernetes roles (admin, edit, view).
+                  When set to "AggregateToDefault" or not specified, the aggregate-to-* labels are added to the cluster roles.
+                  When set to "Manual", the labels are not added, and roles will not be aggregated to the default roles.
+                type: string
               scratchSpaceStorageClass:
                 description: |-
                   Override the storage class used for scratch space during transfer operations. The scratch space storage class

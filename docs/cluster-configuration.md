@@ -1801,3 +1801,32 @@ spec:
 **Note**: this feature is in Developer Preview.
 
 **Graduation Status**: Alpha
+## Role Aggregation Strategy
+
+By default, KubeVirt aggregates its RBAC ClusterRoles (`kubevirt.io:admin`, `kubevirt.io:edit`, `kubevirt.io:view`) into the corresponding Kubernetes default roles (`admin`, `edit`, `view`). This means that any user with the Kubernetes `admin` role automatically gets permissions to manage KubeVirt resources.
+
+The optional `spec.roleAggregationStrategy` field allows cluster administrators to disable this aggregation. When set to `Manual`, the `aggregate-to-*` labels on KubeVirt ClusterRoles are being set to `false`, and administrators must explicitly create RoleBindings to grant access to KubeVirt resources. When set to `AggregateToDefault` or left unset, the default aggregation behavior is preserved. Changes to this field can be made at any time and are propagated to the KubeVirt CR at runtime.
+
+This feature requires the `OptOutRoleAggregation` feature gate, which is automatically added to the KubeVirt CR when the `roleAggregationStrategy` field is set in the HyperConverged custom resource.
+
+The following example disables RBAC role aggregation:
+
+```yaml
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  roleAggregationStrategy: Manual
+```
+
+To re-enable aggregation, set the field to `AggregateToDefault` or remove it entirely:
+
+```yaml
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  roleAggregationStrategy: AggregateToDefault
+```
