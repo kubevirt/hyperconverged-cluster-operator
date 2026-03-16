@@ -228,6 +228,26 @@ func randomV1beta1HC(r *rand.Rand) *HyperConverged {
 		}
 	}
 
+	hc.Spec.CommonTemplatesNamespace = randPtr(r, randString(r))
+	hc.Spec.CommonBootImageNamespace = randPtr(r, randString(r))
+	hc.Spec.EnableCommonBootImageImport = randPtr(r, r.IntN(2) == 1)
+
+	if r.IntN(2) == 1 {
+		hc.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
+			{ObjectMeta: metav1.ObjectMeta{Name: randString(r)}},
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.InstancetypeConfig = &kubevirtv1.InstancetypeConfiguration{}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.CommonInstancetypesDeployment = &kubevirtv1.CommonInstancetypesDeployment{
+			Enabled: randPtr(r, r.IntN(2) == 1),
+		}
+	}
+
 	return hc
 }
 
@@ -387,6 +407,26 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 
 		hc.Spec.Networking.NetworkBinding = map[string]kubevirtv1.InterfaceBindingPlugin{
 			randString(r): {SidecarImage: randString(r)},
+		}
+	}
+
+	hc.Spec.WorkloadSources.CommonTemplatesNamespace = randPtr(r, randString(r))
+	hc.Spec.WorkloadSources.CommonBootImageNamespace = randPtr(r, randString(r))
+	hc.Spec.WorkloadSources.EnableCommonBootImageImport = randPtr(r, r.IntN(2) == 1)
+
+	if r.IntN(2) == 1 {
+		hc.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
+			{ObjectMeta: metav1.ObjectMeta{Name: randString(r)}},
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.WorkloadSources.InstancetypeConfig = &kubevirtv1.InstancetypeConfiguration{}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.WorkloadSources.CommonInstancetypesDeployment = &kubevirtv1.CommonInstancetypesDeployment{
+			Enabled: randPtr(r, r.IntN(2) == 1),
 		}
 	}
 

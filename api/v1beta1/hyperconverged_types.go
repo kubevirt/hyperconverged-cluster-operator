@@ -146,6 +146,7 @@ type HyperConvergedSpec struct {
 	// CommonTemplatesNamespace defines namespace in which common templates will
 	// be deployed. It overrides the default openshift namespace.
 	// +optional
+	// +k8s:conversion-gen=false
 	CommonTemplatesNamespace *string `json:"commonTemplatesNamespace,omitempty"`
 
 	// StorageImport contains configuration for importing containerized data
@@ -161,7 +162,8 @@ type HyperConvergedSpec struct {
 	// DataImportCronTemplates holds list of data import cron templates (golden images)
 	// +optional
 	// +listType=atomic
-	DataImportCronTemplates []DataImportCronTemplate `json:"dataImportCronTemplates,omitempty"`
+	// +k8s:conversion-gen=false
+	DataImportCronTemplates []hcov1.DataImportCronTemplate `json:"dataImportCronTemplates,omitempty"`
 
 	// FilesystemOverhead describes the space reserved for overhead when using Filesystem volumes.
 	// A value is between 0 and 1, if not defined it is 0.055 (5.5 percent overhead)
@@ -253,6 +255,7 @@ type HyperConvergedSpec struct {
 	// DataImportCronTemplates and the common image streams, with this namespace. This field is not set by default.
 	//
 	// +optional
+	// +k8s:conversion-gen=false
 	CommonBootImageNamespace *string `json:"commonBootImageNamespace,omitempty"`
 
 	// KSMConfiguration holds the information regarding
@@ -285,14 +288,17 @@ type HyperConvergedSpec struct {
 	// +optional
 	// +kubebuilder:default=true
 	// +default=true
+	// +k8s:conversion-gen=false
 	EnableCommonBootImageImport *bool `json:"enableCommonBootImageImport,omitempty"`
 
 	// InstancetypeConfig holds the configuration of instance type related functionality within KubeVirt.
 	// +optional
+	// +k8s:conversion-gen=false
 	InstancetypeConfig *v1.InstancetypeConfiguration `json:"instancetypeConfig,omitempty"`
 
 	// CommonInstancetypesDeployment holds the configuration of common-instancetypes deployment within KubeVirt.
 	// +optional
+	// +k8s:conversion-gen=false
 	CommonInstancetypesDeployment *v1.CommonInstancetypesDeployment `json:"CommonInstancetypesDeployment,omitempty"`
 
 	// deploy VM console proxy resources in SSP operator
@@ -669,17 +675,9 @@ type DataImportCronStatus struct {
 	OriginalSupportedArchitectures string `json:"originalSupportedArchitectures,omitempty"`
 }
 
-// DataImportCronTemplate defines the template type for DataImportCrons.
-// It requires metadata.name to be specified while leaving namespace as optional.
-type DataImportCronTemplate struct {
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec *cdiv1beta1.DataImportCronSpec `json:"spec,omitempty"`
-}
-
 // DataImportCronTemplateStatus is a copy of a dataImportCronTemplate as defined in the spec, or in the HCO image.
 type DataImportCronTemplateStatus struct {
-	DataImportCronTemplate `json:",inline"`
+	hcov1.DataImportCronTemplate `json:",inline"`
 
 	Status DataImportCronStatus `json:"status,omitempty"`
 }

@@ -1790,6 +1790,302 @@ var _ = Describe("api/v1beta1", func() {
 		})
 	})
 
+	Context("WorkloadSources conversion", func() {
+		Context("v1 ==> v1beta1", func() {
+			It("should convert CommonTemplatesNamespace", func() {
+				v1Config := hcov1.WorkloadSourcesConfig{
+					CommonTemplatesNamespace: ptr.To("my-ns"),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &v1beta1Spec)
+
+				Expect(v1beta1Spec.CommonTemplatesNamespace).To(HaveValue(Equal("my-ns")))
+				Expect(v1beta1Spec.CommonBootImageNamespace).To(BeNil())
+				Expect(v1beta1Spec.EnableCommonBootImageImport).To(BeNil())
+				Expect(v1beta1Spec.DataImportCronTemplates).To(BeEmpty())
+				Expect(v1beta1Spec.InstancetypeConfig).To(BeNil())
+				Expect(v1beta1Spec.CommonInstancetypesDeployment).To(BeNil())
+			})
+
+			It("should convert CommonBootImageNamespace", func() {
+				v1Config := hcov1.WorkloadSourcesConfig{
+					CommonBootImageNamespace: ptr.To("boot-ns"),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &v1beta1Spec)
+
+				Expect(v1beta1Spec.CommonBootImageNamespace).To(HaveValue(Equal("boot-ns")))
+				Expect(v1beta1Spec.CommonTemplatesNamespace).To(BeNil())
+			})
+
+			It("should convert EnableCommonBootImageImport", func() {
+				v1Config := hcov1.WorkloadSourcesConfig{
+					EnableCommonBootImageImport: ptr.To(true),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &v1beta1Spec)
+
+				Expect(v1beta1Spec.EnableCommonBootImageImport).To(HaveValue(BeTrue()))
+			})
+
+			It("should convert DataImportCronTemplates", func() {
+				v1Config := hcov1.WorkloadSourcesConfig{
+					DataImportCronTemplates: []hcov1.DataImportCronTemplate{
+						{ObjectMeta: metav1.ObjectMeta{Name: "template1"}},
+						{ObjectMeta: metav1.ObjectMeta{Name: "template2"}},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &v1beta1Spec)
+
+				Expect(v1beta1Spec.DataImportCronTemplates).To(HaveLen(2))
+				Expect(v1beta1Spec.DataImportCronTemplates[0].Name).To(Equal("template1"))
+				Expect(v1beta1Spec.DataImportCronTemplates[1].Name).To(Equal("template2"))
+			})
+
+			It("should not convert DataImportCronTemplates when empty", func() {
+				v1Config := hcov1.WorkloadSourcesConfig{}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &v1beta1Spec)
+
+				Expect(v1beta1Spec.DataImportCronTemplates).To(BeEmpty())
+			})
+
+			It("should convert InstancetypeConfig", func() {
+				v1Config := hcov1.WorkloadSourcesConfig{
+					InstancetypeConfig: &kubevirtv1.InstancetypeConfiguration{},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &v1beta1Spec)
+
+				Expect(v1beta1Spec.InstancetypeConfig).ToNot(BeNil())
+			})
+
+			It("should convert CommonInstancetypesDeployment", func() {
+				v1Config := hcov1.WorkloadSourcesConfig{
+					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
+						Enabled: ptr.To(true),
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &v1beta1Spec)
+
+				Expect(v1beta1Spec.CommonInstancetypesDeployment).ToNot(BeNil())
+				Expect(v1beta1Spec.CommonInstancetypesDeployment.Enabled).To(HaveValue(BeTrue()))
+			})
+
+			It("should convert all fields together", func() {
+				v1Config := hcov1.WorkloadSourcesConfig{
+					CommonTemplatesNamespace:    ptr.To("templates-ns"),
+					CommonBootImageNamespace:    ptr.To("boot-ns"),
+					EnableCommonBootImageImport: ptr.To(false),
+					DataImportCronTemplates: []hcov1.DataImportCronTemplate{
+						{ObjectMeta: metav1.ObjectMeta{Name: "tmpl1"}},
+					},
+					InstancetypeConfig: &kubevirtv1.InstancetypeConfiguration{},
+					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
+						Enabled: ptr.To(true),
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &v1beta1Spec)
+
+				Expect(v1beta1Spec.CommonTemplatesNamespace).To(HaveValue(Equal("templates-ns")))
+				Expect(v1beta1Spec.CommonBootImageNamespace).To(HaveValue(Equal("boot-ns")))
+				Expect(v1beta1Spec.EnableCommonBootImageImport).To(HaveValue(BeFalse()))
+				Expect(v1beta1Spec.DataImportCronTemplates).To(HaveLen(1))
+				Expect(v1beta1Spec.DataImportCronTemplates[0].Name).To(Equal("tmpl1"))
+				Expect(v1beta1Spec.InstancetypeConfig).ToNot(BeNil())
+				Expect(v1beta1Spec.CommonInstancetypesDeployment).ToNot(BeNil())
+			})
+		})
+
+		Context("v1beta1 ==> v1", func() {
+			It("should convert CommonTemplatesNamespace", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					CommonTemplatesNamespace: ptr.To("my-ns"),
+				}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &v1Config)
+
+				Expect(v1Config.CommonTemplatesNamespace).To(HaveValue(Equal("my-ns")))
+				Expect(v1Config.CommonBootImageNamespace).To(BeNil())
+				Expect(v1Config.EnableCommonBootImageImport).To(BeNil())
+				Expect(v1Config.DataImportCronTemplates).To(BeEmpty())
+				Expect(v1Config.InstancetypeConfig).To(BeNil())
+				Expect(v1Config.CommonInstancetypesDeployment).To(BeNil())
+			})
+
+			It("should convert CommonBootImageNamespace", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					CommonBootImageNamespace: ptr.To("boot-ns"),
+				}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &v1Config)
+
+				Expect(v1Config.CommonBootImageNamespace).To(HaveValue(Equal("boot-ns")))
+				Expect(v1Config.CommonTemplatesNamespace).To(BeNil())
+			})
+
+			It("should convert EnableCommonBootImageImport", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					EnableCommonBootImageImport: ptr.To(true),
+				}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &v1Config)
+
+				Expect(v1Config.EnableCommonBootImageImport).To(HaveValue(BeTrue()))
+			})
+
+			It("should convert DataImportCronTemplates", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					DataImportCronTemplates: []hcov1.DataImportCronTemplate{
+						{ObjectMeta: metav1.ObjectMeta{Name: "template1"}},
+						{ObjectMeta: metav1.ObjectMeta{Name: "template2"}},
+					},
+				}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &v1Config)
+
+				Expect(v1Config.DataImportCronTemplates).To(HaveLen(2))
+				Expect(v1Config.DataImportCronTemplates[0].Name).To(Equal("template1"))
+				Expect(v1Config.DataImportCronTemplates[1].Name).To(Equal("template2"))
+			})
+
+			It("should not convert DataImportCronTemplates when empty", func() {
+				v1beta1Spec := HyperConvergedSpec{}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &v1Config)
+
+				Expect(v1Config.DataImportCronTemplates).To(BeEmpty())
+			})
+
+			It("should convert InstancetypeConfig", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					InstancetypeConfig: &kubevirtv1.InstancetypeConfiguration{},
+				}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &v1Config)
+
+				Expect(v1Config.InstancetypeConfig).ToNot(BeNil())
+			})
+
+			It("should convert CommonInstancetypesDeployment", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
+						Enabled: ptr.To(true),
+					},
+				}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &v1Config)
+
+				Expect(v1Config.CommonInstancetypesDeployment).ToNot(BeNil())
+				Expect(v1Config.CommonInstancetypesDeployment.Enabled).To(HaveValue(BeTrue()))
+			})
+
+			It("should convert all fields together", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					CommonTemplatesNamespace:    ptr.To("templates-ns"),
+					CommonBootImageNamespace:    ptr.To("boot-ns"),
+					EnableCommonBootImageImport: ptr.To(false),
+					DataImportCronTemplates: []hcov1.DataImportCronTemplate{
+						{ObjectMeta: metav1.ObjectMeta{Name: "tmpl1"}},
+					},
+					InstancetypeConfig: &kubevirtv1.InstancetypeConfiguration{},
+					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
+						Enabled: ptr.To(true),
+					},
+				}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &v1Config)
+
+				Expect(v1Config.CommonTemplatesNamespace).To(HaveValue(Equal("templates-ns")))
+				Expect(v1Config.CommonBootImageNamespace).To(HaveValue(Equal("boot-ns")))
+				Expect(v1Config.EnableCommonBootImageImport).To(HaveValue(BeFalse()))
+				Expect(v1Config.DataImportCronTemplates).To(HaveLen(1))
+				Expect(v1Config.DataImportCronTemplates[0].Name).To(Equal("tmpl1"))
+				Expect(v1Config.InstancetypeConfig).ToNot(BeNil())
+				Expect(v1Config.CommonInstancetypesDeployment).ToNot(BeNil())
+			})
+		})
+
+		Context("round-trip", func() {
+			It("should preserve workload sources config through v1beta1 => v1 => v1beta1", func() {
+				original := HyperConvergedSpec{
+					CommonTemplatesNamespace:    ptr.To("templates-ns"),
+					CommonBootImageNamespace:    ptr.To("boot-ns"),
+					EnableCommonBootImageImport: ptr.To(true),
+					DataImportCronTemplates: []hcov1.DataImportCronTemplate{
+						{ObjectMeta: metav1.ObjectMeta{Name: "tmpl1"}},
+					},
+					InstancetypeConfig: &kubevirtv1.InstancetypeConfiguration{},
+					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
+						Enabled: ptr.To(true),
+					},
+				}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(original, &v1Config)
+
+				var result HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &result)
+
+				Expect(result.CommonTemplatesNamespace).To(Equal(original.CommonTemplatesNamespace))
+				Expect(result.CommonBootImageNamespace).To(Equal(original.CommonBootImageNamespace))
+				Expect(result.EnableCommonBootImageImport).To(Equal(original.EnableCommonBootImageImport))
+				Expect(result.DataImportCronTemplates).To(HaveLen(1))
+				Expect(result.DataImportCronTemplates[0].Name).To(Equal("tmpl1"))
+				Expect(result.InstancetypeConfig).ToNot(BeNil())
+				Expect(result.CommonInstancetypesDeployment).ToNot(BeNil())
+			})
+
+			It("should preserve workload sources config through v1 => v1beta1 => v1", func() {
+				original := hcov1.WorkloadSourcesConfig{
+					CommonTemplatesNamespace:    ptr.To("templates-ns"),
+					CommonBootImageNamespace:    ptr.To("boot-ns"),
+					EnableCommonBootImageImport: ptr.To(true),
+					DataImportCronTemplates: []hcov1.DataImportCronTemplate{
+						{ObjectMeta: metav1.ObjectMeta{Name: "tmpl1"}},
+					},
+					InstancetypeConfig: &kubevirtv1.InstancetypeConfiguration{},
+					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
+						Enabled: ptr.To(true),
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(original, &v1beta1Spec)
+
+				var result hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &result)
+
+				Expect(result.CommonTemplatesNamespace).To(Equal(original.CommonTemplatesNamespace))
+				Expect(result.CommonBootImageNamespace).To(Equal(original.CommonBootImageNamespace))
+				Expect(result.EnableCommonBootImageImport).To(Equal(original.EnableCommonBootImageImport))
+				Expect(result.DataImportCronTemplates).To(HaveLen(1))
+				Expect(result.DataImportCronTemplates[0].Name).To(Equal("tmpl1"))
+				Expect(result.InstancetypeConfig).ToNot(BeNil())
+				Expect(result.CommonInstancetypesDeployment).ToNot(BeNil())
+			})
+		})
+	})
+
 	Context("Security conversion", func() {
 		Context("v1 ==> v1beta1", func() {
 			It("should convert CertConfig", func() {

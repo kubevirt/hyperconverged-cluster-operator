@@ -38,6 +38,8 @@ func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error { //revive:dis
 
 	dst.Spec.Networking = convertNetworkingV1beta1ToV1(src.Spec)
 
+	convertWorkloadSourcesV1beta1ToV1(src.Spec, &dst.Spec.WorkloadSources)
+
 	return nil
 }
 
@@ -61,6 +63,8 @@ func (dst *HyperConverged) ConvertFrom(srcRaw conversion.Hub) error { //revive:d
 	convertSecurityV1ToV1beta1(src.Spec.Security, &dst.Spec)
 
 	convertNetworkingV1ToV1beta1(src.Spec.Networking, &dst.Spec)
+
+	convertWorkloadSourcesV1ToV1beta1(src.Spec.WorkloadSources, &dst.Spec)
 
 	return nil
 }
@@ -367,6 +371,49 @@ func areV1beta1NetworkingFieldsEmpty(v1beta1Spec HyperConvergedSpec) bool {
 		v1beta1Spec.KubeSecondaryDNSNameServerIP == nil
 }
 
+func convertWorkloadSourcesV1ToV1beta1(v1Config hcov1.WorkloadSourcesConfig, v1beta1Spec *HyperConvergedSpec) {
+	v1beta1Spec.CommonTemplatesNamespace = setPtr(v1Config.CommonTemplatesNamespace)
+	v1beta1Spec.CommonBootImageNamespace = setPtr(v1Config.CommonBootImageNamespace)
+	v1beta1Spec.EnableCommonBootImageImport = setPtr(v1Config.EnableCommonBootImageImport)
+
+	if len(v1Config.DataImportCronTemplates) > 0 {
+		v1beta1Spec.DataImportCronTemplates = make([]hcov1.DataImportCronTemplate, len(v1Config.DataImportCronTemplates))
+
+		for i := range v1Config.DataImportCronTemplates {
+			v1Config.DataImportCronTemplates[i].DeepCopyInto(&v1beta1Spec.DataImportCronTemplates[i])
+		}
+	}
+
+	if v1Config.InstancetypeConfig != nil {
+		v1beta1Spec.InstancetypeConfig = v1Config.InstancetypeConfig.DeepCopy()
+	}
+
+	if v1Config.CommonInstancetypesDeployment != nil {
+		v1beta1Spec.CommonInstancetypesDeployment = v1Config.CommonInstancetypesDeployment.DeepCopy()
+	}
+}
+
+func convertWorkloadSourcesV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1Config *hcov1.WorkloadSourcesConfig) {
+	v1Config.CommonTemplatesNamespace = setPtr(v1beta1Spec.CommonTemplatesNamespace)
+	v1Config.CommonBootImageNamespace = setPtr(v1beta1Spec.CommonBootImageNamespace)
+	v1Config.EnableCommonBootImageImport = setPtr(v1beta1Spec.EnableCommonBootImageImport)
+
+	if len(v1beta1Spec.DataImportCronTemplates) > 0 {
+		v1Config.DataImportCronTemplates = make([]hcov1.DataImportCronTemplate, len(v1beta1Spec.DataImportCronTemplates))
+		for i := range v1beta1Spec.DataImportCronTemplates {
+			v1beta1Spec.DataImportCronTemplates[i].DeepCopyInto(&v1Config.DataImportCronTemplates[i])
+		}
+	}
+
+	if v1beta1Spec.InstancetypeConfig != nil {
+		v1Config.InstancetypeConfig = v1beta1Spec.InstancetypeConfig.DeepCopy()
+	}
+
+	if v1beta1Spec.CommonInstancetypesDeployment != nil {
+		v1Config.CommonInstancetypesDeployment = v1beta1Spec.CommonInstancetypesDeployment.DeepCopy()
+	}
+}
+
 var converter *conversion2.Converter
 
 func init() {
@@ -387,7 +434,6 @@ func init() {
 	if converter == nil {
 		panic("unable to register HyperConvergedScheme with runtime.Scheme")
 	}
-
 }
 
 func setPtr[T comparable](orig *T) *T {
