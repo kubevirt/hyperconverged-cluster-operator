@@ -14,7 +14,6 @@ This Document documents the types introduced by the hyperconverged-cluster-opera
 * [HigherWorkloadDensityConfiguration](#higherworkloaddensityconfiguration)
 * [HyperConverged](#hyperconverged)
 * [HyperConvergedCertConfig](#hyperconvergedcertconfig)
-* [HyperConvergedConfig](#hyperconvergedconfig)
 * [HyperConvergedList](#hyperconvergedlist)
 * [HyperConvergedObsoleteCPUs](#hyperconvergedobsoletecpus)
 * [HyperConvergedSpec](#hyperconvergedspec)
@@ -27,6 +26,7 @@ This Document documents the types introduced by the hyperconverged-cluster-opera
 * [MediatedHostDevice](#mediatedhostdevice)
 * [NodeInfoStatus](#nodeinfostatus)
 * [NodeMediatedDeviceTypesConfig](#nodemediateddevicetypesconfig)
+* [NodePlacements](#nodeplacements)
 * [OperandResourceRequirements](#operandresourcerequirements)
 * [PciHostDevice](#pcihostdevice)
 * [PermittedHostDevices](#permittedhostdevices)
@@ -110,7 +110,7 @@ DataImportCronTemplateStatus is a copy of a dataImportCronTemplate as defined in
 
 ## HigherWorkloadDensityConfiguration
 
-HigherWorkloadDensity holds configuration aimed to increase virtual machine density
+HigherWorkloadDensityConfiguration holds configuration aimed to increase virtual machine density
 
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
@@ -138,16 +138,6 @@ HyperConvergedCertConfig holds the CertConfig entries for the HCO operands
 | ----- | ----------- | ------ | ------- | -------- |
 | ca | CA configuration - CA certs are kept in the CA bundle as long as they are valid | [CertRotateConfigCA](#certrotateconfigca) | {"duration": "48h0m0s", "renewBefore": "24h0m0s"} | false |
 | server | Server configuration - Certs are rotated and discarded | [CertRotateConfigServer](#certrotateconfigserver) | {"duration": "24h0m0s", "renewBefore": "12h0m0s"} | false |
-
-[Back to TOC](#table-of-contents)
-
-## HyperConvergedConfig
-
-HyperConvergedConfig defines a set of configurations to pass to components
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| nodePlacement | NodePlacement describes node scheduling configuration. | *[sdkapi.NodePlacement](https://github.com/kubevirt/controller-lifecycle-operator-sdk/blob/bbf16167410b7a781c7b08a3f088fc39551c7a00/pkg/sdk/api/types.go#L49) |  | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -179,8 +169,7 @@ HyperConvergedSpec defines the desired state of HyperConverged
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
 | tuningPolicy | TuningPolicy allows to configure the mode in which the RateLimits of kubevirt are set. If TuningPolicy is not present the default kubevirt values are used. It can be set to `annotation` for fine-tuning the kubevirt queryPerSeconds (qps) and burst values. Qps and burst values are taken from the annotation hco.kubevirt.io/tuningPolicy | HyperConvergedTuningPolicy |  | false |
-| infra | infra HyperConvergedConfig influences the pod configuration (currently only placement) for all the infra components needed on the virtualization enabled cluster but not necessarily directly on each node running VMs/VMIs. | [HyperConvergedConfig](#hyperconvergedconfig) |  | false |
-| workloads | workloads HyperConvergedConfig influences the pod configuration (currently only placement) of components which need to be running on a node where virtualization workloads should be able to run. Changes to Workloads HyperConvergedConfig can be applied only without existing workload. | [HyperConvergedConfig](#hyperconvergedconfig) |  | false |
+| nodePlacements | NodePlacements defines the node scheduling configuration for infrastructure or workload entities | *[NodePlacements](#nodeplacements) |  | false |
 | featureGates | For feature gate details, see [here](#hco-feature-gates) | featuregates.HyperConvergedFeatureGates |  | false |
 | liveMigrationConfig | Live migration limits and timeouts are applied so that migration processes do not overwhelm the cluster. | [LiveMigrationConfigurations](#livemigrationconfigurations) | {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false} | false |
 | permittedHostDevices | PermittedHostDevices holds information about devices allowed for passthrough | *[PermittedHostDevices](#permittedhostdevices) |  | false |
@@ -332,6 +321,17 @@ NodeMediatedDeviceTypesConfig holds information about MDEV types to be defined i
 | ----- | ----------- | ------ | ------- | -------- |
 | nodeSelector | NodeSelector is a selector which must be true for the vmi to fit on a node. Selector which must match a node's labels for the vmi to be scheduled on that node. More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/ | map[string]string |  | true |
 | mediatedDeviceTypes |  | []string |  | true |
+
+[Back to TOC](#table-of-contents)
+
+## NodePlacements
+
+NodePlacements defines the node scheduling configuration for infrastructure or workload entities
+
+| Field | Description | Scheme | Default | Required |
+| ----- | ----------- | ------ | ------- | -------- |
+| infra | Infra describes node scheduling configuration for infrastructure entities | *[sdkapi.NodePlacement](https://github.com/kubevirt/controller-lifecycle-operator-sdk/blob/bbf16167410b7a781c7b08a3f088fc39551c7a00/pkg/sdk/api/types.go#L49) |  | false |
+| workload | Workload describes node scheduling configuration for workload entities | *[sdkapi.NodePlacement](https://github.com/kubevirt/controller-lifecycle-operator-sdk/blob/bbf16167410b7a781c7b08a3f088fc39551c7a00/pkg/sdk/api/types.go#L49) |  | false |
 
 [Back to TOC](#table-of-contents)
 
