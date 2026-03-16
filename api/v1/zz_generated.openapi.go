@@ -64,7 +64,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_ApplicationAwareConf
 				Properties: map[string]spec.Schema{
 					"vmiCalcConfigName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "VmiCalcConfigName determine how resource allocation will be done with ApplicationsResourceQuota. allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources or IgnoreVmiCalculator",
+							Description: "VmiCalcConfigName determine how resource allocation will be done with ApplicationsResourceQuota. allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources, IgnoreVmiCalculator or GuestEffectiveResources",
 							Type:        []string{"string"},
 							Format:      "",
 						},
