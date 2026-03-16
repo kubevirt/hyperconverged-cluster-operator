@@ -245,7 +245,7 @@ func hcoAnnotation2CnaoSpec(hcoAnnotations map[string]string) *networkaddonsshar
 	return nil
 }
 
-func hcoKubeMacPool2CnaoKubeMacPool(hcoKubeMacPool *hcov1beta1.KubeMacPoolConfig) *networkaddonsshared.KubeMacPool {
+func hcoKubeMacPool2CnaoKubeMacPool(hcoKubeMacPool *hcov1.KubeMacPoolConfig) *networkaddonsshared.KubeMacPool {
 	kubeMacPool := &networkaddonsshared.KubeMacPool{}
 
 	if hcoKubeMacPool != nil {

@@ -1029,7 +1029,7 @@ var _ = Describe("CNA Operand", func() {
 			})
 
 			It("should create KubeMacPool with empty config when KubeMacPoolConfiguration is empty", func() {
-				hco.Spec.KubeMacPoolConfiguration = &hcov1beta1.KubeMacPoolConfig{}
+				hco.Spec.KubeMacPoolConfiguration = &hcov1.KubeMacPoolConfig{}
 
 				expectedResource, err := NewNetworkAddons(hco)
 				Expect(err).ToNot(HaveOccurred())
@@ -1039,7 +1039,7 @@ var _ = Describe("CNA Operand", func() {
 			})
 
 			It("should create KubeMacPool with both RangeStart and RangeEnd when both are specified", func() {
-				hco.Spec.KubeMacPoolConfiguration = &hcov1beta1.KubeMacPoolConfig{
+				hco.Spec.KubeMacPoolConfiguration = &hcov1.KubeMacPoolConfig{
 					RangeStart: ptr.To("02:00:00:00:00:00"),
 					RangeEnd:   ptr.To("FD:FF:FF:FF:FF:FF"),
 				}
