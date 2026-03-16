@@ -105,16 +105,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*HigherWorkloadDensityConfiguration)(nil), (*v1.HigherWorkloadDensityConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_HigherWorkloadDensityConfiguration_To_v1_HigherWorkloadDensityConfiguration(a.(*HigherWorkloadDensityConfiguration), b.(*v1.HigherWorkloadDensityConfiguration), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.HigherWorkloadDensityConfiguration)(nil), (*HigherWorkloadDensityConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_HigherWorkloadDensityConfiguration_To_v1beta1_HigherWorkloadDensityConfiguration(a.(*v1.HigherWorkloadDensityConfiguration), b.(*HigherWorkloadDensityConfiguration), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*HyperConverged)(nil), (*v1.HyperConverged)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta1_HyperConverged_To_v1_HyperConverged(a.(*HyperConverged), b.(*v1.HyperConverged), scope)
 	}); err != nil {
@@ -145,16 +135,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*HyperConvergedObsoleteCPUs)(nil), (*v1.HyperConvergedObsoleteCPUs)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_HyperConvergedObsoleteCPUs_To_v1_HyperConvergedObsoleteCPUs(a.(*HyperConvergedObsoleteCPUs), b.(*v1.HyperConvergedObsoleteCPUs), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.HyperConvergedObsoleteCPUs)(nil), (*HyperConvergedObsoleteCPUs)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_HyperConvergedObsoleteCPUs_To_v1beta1_HyperConvergedObsoleteCPUs(a.(*v1.HyperConvergedObsoleteCPUs), b.(*HyperConvergedObsoleteCPUs), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*HyperConvergedSpec)(nil), (*v1.HyperConvergedSpec)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(a.(*HyperConvergedSpec), b.(*v1.HyperConvergedSpec), scope)
 	}); err != nil {
@@ -175,16 +155,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*HyperConvergedWorkloadUpdateStrategy)(nil), (*v1.HyperConvergedWorkloadUpdateStrategy)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_HyperConvergedWorkloadUpdateStrategy_To_v1_HyperConvergedWorkloadUpdateStrategy(a.(*HyperConvergedWorkloadUpdateStrategy), b.(*v1.HyperConvergedWorkloadUpdateStrategy), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.HyperConvergedWorkloadUpdateStrategy)(nil), (*HyperConvergedWorkloadUpdateStrategy)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_HyperConvergedWorkloadUpdateStrategy_To_v1beta1_HyperConvergedWorkloadUpdateStrategy(a.(*v1.HyperConvergedWorkloadUpdateStrategy), b.(*HyperConvergedWorkloadUpdateStrategy), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*KubeMacPoolConfig)(nil), (*v1.KubeMacPoolConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta1_KubeMacPoolConfig_To_v1_KubeMacPoolConfig(a.(*KubeMacPoolConfig), b.(*v1.KubeMacPoolConfig), scope)
 	}); err != nil {
@@ -192,16 +162,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*v1.KubeMacPoolConfig)(nil), (*KubeMacPoolConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1_KubeMacPoolConfig_To_v1beta1_KubeMacPoolConfig(a.(*v1.KubeMacPoolConfig), b.(*KubeMacPoolConfig), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*LiveMigrationConfigurations)(nil), (*v1.LiveMigrationConfigurations)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_LiveMigrationConfigurations_To_v1_LiveMigrationConfigurations(a.(*LiveMigrationConfigurations), b.(*v1.LiveMigrationConfigurations), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.LiveMigrationConfigurations)(nil), (*LiveMigrationConfigurations)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_LiveMigrationConfigurations_To_v1beta1_LiveMigrationConfigurations(a.(*v1.LiveMigrationConfigurations), b.(*LiveMigrationConfigurations), scope)
 	}); err != nil {
 		return err
 	}
@@ -222,16 +182,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*v1.MediatedDevicesConfiguration)(nil), (*MediatedDevicesConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1_MediatedDevicesConfiguration_To_v1beta1_MediatedDevicesConfiguration(a.(*v1.MediatedDevicesConfiguration), b.(*MediatedDevicesConfiguration), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*MediatedHostDevice)(nil), (*v1.MediatedHostDevice)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_MediatedHostDevice_To_v1_MediatedHostDevice(a.(*MediatedHostDevice), b.(*v1.MediatedHostDevice), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.MediatedHostDevice)(nil), (*MediatedHostDevice)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_MediatedHostDevice_To_v1beta1_MediatedHostDevice(a.(*v1.MediatedHostDevice), b.(*MediatedHostDevice), scope)
 	}); err != nil {
 		return err
 	}
@@ -265,26 +215,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*PciHostDevice)(nil), (*v1.PciHostDevice)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_PciHostDevice_To_v1_PciHostDevice(a.(*PciHostDevice), b.(*v1.PciHostDevice), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.PciHostDevice)(nil), (*PciHostDevice)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_PciHostDevice_To_v1beta1_PciHostDevice(a.(*v1.PciHostDevice), b.(*PciHostDevice), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*PermittedHostDevices)(nil), (*v1.PermittedHostDevices)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_PermittedHostDevices_To_v1_PermittedHostDevices(a.(*PermittedHostDevices), b.(*v1.PermittedHostDevices), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.PermittedHostDevices)(nil), (*PermittedHostDevices)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_PermittedHostDevices_To_v1beta1_PermittedHostDevices(a.(*v1.PermittedHostDevices), b.(*PermittedHostDevices), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*StorageImportConfig)(nil), (*v1.StorageImportConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta1_StorageImportConfig_To_v1_StorageImportConfig(a.(*StorageImportConfig), b.(*v1.StorageImportConfig), scope)
 	}); err != nil {
@@ -295,26 +225,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*USBHostDevice)(nil), (*v1.USBHostDevice)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_USBHostDevice_To_v1_USBHostDevice(a.(*USBHostDevice), b.(*v1.USBHostDevice), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.USBHostDevice)(nil), (*USBHostDevice)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_USBHostDevice_To_v1beta1_USBHostDevice(a.(*v1.USBHostDevice), b.(*USBHostDevice), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*USBSelector)(nil), (*v1.USBSelector)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_USBSelector_To_v1_USBSelector(a.(*USBSelector), b.(*v1.USBSelector), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.USBSelector)(nil), (*USBSelector)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_USBSelector_To_v1beta1_USBSelector(a.(*v1.USBSelector), b.(*USBSelector), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*Version)(nil), (*v1.Version)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta1_Version_To_v1_Version(a.(*Version), b.(*v1.Version), scope)
 	}); err != nil {
@@ -322,16 +232,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*v1.Version)(nil), (*Version)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1_Version_To_v1beta1_Version(a.(*v1.Version), b.(*Version), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*VirtualMachineOptions)(nil), (*v1.VirtualMachineOptions)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_VirtualMachineOptions_To_v1_VirtualMachineOptions(a.(*VirtualMachineOptions), b.(*v1.VirtualMachineOptions), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.VirtualMachineOptions)(nil), (*VirtualMachineOptions)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_VirtualMachineOptions_To_v1beta1_VirtualMachineOptions(a.(*v1.VirtualMachineOptions), b.(*VirtualMachineOptions), scope)
 	}); err != nil {
 		return err
 	}
@@ -484,26 +384,6 @@ func Convert_v1_DataImportCronTemplateStatus_To_v1beta1_DataImportCronTemplateSt
 	return autoConvert_v1_DataImportCronTemplateStatus_To_v1beta1_DataImportCronTemplateStatus(in, out, s)
 }
 
-func autoConvert_v1beta1_HigherWorkloadDensityConfiguration_To_v1_HigherWorkloadDensityConfiguration(in *HigherWorkloadDensityConfiguration, out *v1.HigherWorkloadDensityConfiguration, s conversion.Scope) error {
-	out.MemoryOvercommitPercentage = in.MemoryOvercommitPercentage
-	return nil
-}
-
-// Convert_v1beta1_HigherWorkloadDensityConfiguration_To_v1_HigherWorkloadDensityConfiguration is an autogenerated conversion function.
-func Convert_v1beta1_HigherWorkloadDensityConfiguration_To_v1_HigherWorkloadDensityConfiguration(in *HigherWorkloadDensityConfiguration, out *v1.HigherWorkloadDensityConfiguration, s conversion.Scope) error {
-	return autoConvert_v1beta1_HigherWorkloadDensityConfiguration_To_v1_HigherWorkloadDensityConfiguration(in, out, s)
-}
-
-func autoConvert_v1_HigherWorkloadDensityConfiguration_To_v1beta1_HigherWorkloadDensityConfiguration(in *v1.HigherWorkloadDensityConfiguration, out *HigherWorkloadDensityConfiguration, s conversion.Scope) error {
-	out.MemoryOvercommitPercentage = in.MemoryOvercommitPercentage
-	return nil
-}
-
-// Convert_v1_HigherWorkloadDensityConfiguration_To_v1beta1_HigherWorkloadDensityConfiguration is an autogenerated conversion function.
-func Convert_v1_HigherWorkloadDensityConfiguration_To_v1beta1_HigherWorkloadDensityConfiguration(in *v1.HigherWorkloadDensityConfiguration, out *HigherWorkloadDensityConfiguration, s conversion.Scope) error {
-	return autoConvert_v1_HigherWorkloadDensityConfiguration_To_v1beta1_HigherWorkloadDensityConfiguration(in, out, s)
-}
-
 func autoConvert_v1beta1_HyperConverged_To_v1_HyperConverged(in *HyperConverged, out *v1.HyperConverged, s conversion.Scope) error {
 	out.ObjectMeta = in.ObjectMeta
 	if err := Convert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(&in.Spec, &out.Spec, s); err != nil {
@@ -608,68 +488,27 @@ func Convert_v1_HyperConvergedList_To_v1beta1_HyperConvergedList(in *v1.HyperCon
 	return autoConvert_v1_HyperConvergedList_To_v1beta1_HyperConvergedList(in, out, s)
 }
 
-func autoConvert_v1beta1_HyperConvergedObsoleteCPUs_To_v1_HyperConvergedObsoleteCPUs(in *HyperConvergedObsoleteCPUs, out *v1.HyperConvergedObsoleteCPUs, s conversion.Scope) error {
-	// INFO: in.MinCPUModel opted out of conversion generation
-	out.CPUModels = *(*[]string)(unsafe.Pointer(&in.CPUModels))
-	return nil
-}
-
-// Convert_v1beta1_HyperConvergedObsoleteCPUs_To_v1_HyperConvergedObsoleteCPUs is an autogenerated conversion function.
-func Convert_v1beta1_HyperConvergedObsoleteCPUs_To_v1_HyperConvergedObsoleteCPUs(in *HyperConvergedObsoleteCPUs, out *v1.HyperConvergedObsoleteCPUs, s conversion.Scope) error {
-	return autoConvert_v1beta1_HyperConvergedObsoleteCPUs_To_v1_HyperConvergedObsoleteCPUs(in, out, s)
-}
-
-func autoConvert_v1_HyperConvergedObsoleteCPUs_To_v1beta1_HyperConvergedObsoleteCPUs(in *v1.HyperConvergedObsoleteCPUs, out *HyperConvergedObsoleteCPUs, s conversion.Scope) error {
-	out.CPUModels = *(*[]string)(unsafe.Pointer(&in.CPUModels))
-	return nil
-}
-
-// Convert_v1_HyperConvergedObsoleteCPUs_To_v1beta1_HyperConvergedObsoleteCPUs is an autogenerated conversion function.
-func Convert_v1_HyperConvergedObsoleteCPUs_To_v1beta1_HyperConvergedObsoleteCPUs(in *v1.HyperConvergedObsoleteCPUs, out *HyperConvergedObsoleteCPUs, s conversion.Scope) error {
-	return autoConvert_v1_HyperConvergedObsoleteCPUs_To_v1beta1_HyperConvergedObsoleteCPUs(in, out, s)
-}
-
 func autoConvert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(in *HyperConvergedSpec, out *v1.HyperConvergedSpec, s conversion.Scope) error {
 	// INFO: in.LocalStorageClassName opted out of conversion generation
 	out.TuningPolicy = v1.HyperConvergedTuningPolicy(in.TuningPolicy)
 	// INFO: in.Infra opted out of conversion generation
 	// INFO: in.Workloads opted out of conversion generation
 	// INFO: in.FeatureGates opted out of conversion generation
-	if err := Convert_v1beta1_LiveMigrationConfigurations_To_v1_LiveMigrationConfigurations(&in.LiveMigrationConfig, &out.LiveMigrationConfig, s); err != nil {
-		return err
-	}
-	out.PermittedHostDevices = (*v1.PermittedHostDevices)(unsafe.Pointer(in.PermittedHostDevices))
-	if in.MediatedDevicesConfiguration != nil {
-		in, out := &in.MediatedDevicesConfiguration, &out.MediatedDevicesConfiguration
-		*out = new(v1.MediatedDevicesConfiguration)
-		if err := Convert_v1beta1_MediatedDevicesConfiguration_To_v1_MediatedDevicesConfiguration(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.MediatedDevicesConfiguration = nil
-	}
+	// INFO: in.LiveMigrationConfig opted out of conversion generation
+	// INFO: in.PermittedHostDevices opted out of conversion generation
+	// INFO: in.MediatedDevicesConfiguration opted out of conversion generation
 	if err := Convert_v1beta1_HyperConvergedCertConfig_To_v1_HyperConvergedCertConfig(&in.CertConfig, &out.CertConfig, s); err != nil {
 		return err
 	}
-	out.ResourceRequirements = (*v1.OperandResourceRequirements)(unsafe.Pointer(in.ResourceRequirements))
+	// INFO: in.ResourceRequirements opted out of conversion generation
 	out.ScratchSpaceStorageClass = (*string)(unsafe.Pointer(in.ScratchSpaceStorageClass))
 	// INFO: in.VddkInitImage opted out of conversion generation
-	out.DefaultCPUModel = (*string)(unsafe.Pointer(in.DefaultCPUModel))
-	out.DefaultRuntimeClass = (*string)(unsafe.Pointer(in.DefaultRuntimeClass))
-	if in.ObsoleteCPUs != nil {
-		in, out := &in.ObsoleteCPUs, &out.ObsoleteCPUs
-		*out = new(v1.HyperConvergedObsoleteCPUs)
-		if err := Convert_v1beta1_HyperConvergedObsoleteCPUs_To_v1_HyperConvergedObsoleteCPUs(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.ObsoleteCPUs = nil
-	}
+	// INFO: in.DefaultCPUModel opted out of conversion generation
+	// INFO: in.DefaultRuntimeClass opted out of conversion generation
+	// INFO: in.ObsoleteCPUs opted out of conversion generation
 	out.CommonTemplatesNamespace = (*string)(unsafe.Pointer(in.CommonTemplatesNamespace))
 	out.StorageImport = (*v1.StorageImportConfig)(unsafe.Pointer(in.StorageImport))
-	if err := Convert_v1beta1_HyperConvergedWorkloadUpdateStrategy_To_v1_HyperConvergedWorkloadUpdateStrategy(&in.WorkloadUpdateStrategy, &out.WorkloadUpdateStrategy, s); err != nil {
-		return err
-	}
+	// INFO: in.WorkloadUpdateStrategy opted out of conversion generation
 	out.DataImportCronTemplates = *(*[]v1.DataImportCronTemplate)(unsafe.Pointer(&in.DataImportCronTemplates))
 	out.FilesystemOverhead = (*corev1beta1.FilesystemOverhead)(unsafe.Pointer(in.FilesystemOverhead))
 	out.UninstallStrategy = v1.HyperConvergedUninstallStrategy(in.UninstallStrategy)
@@ -679,22 +518,22 @@ func autoConvert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(in *HyperCo
 	// INFO: in.TektonTasksNamespace opted out of conversion generation
 	out.KubeSecondaryDNSNameServerIP = (*string)(unsafe.Pointer(in.KubeSecondaryDNSNameServerIP))
 	out.KubeMacPoolConfiguration = (*v1.KubeMacPoolConfig)(unsafe.Pointer(in.KubeMacPoolConfiguration))
-	out.EvictionStrategy = (*corev1.EvictionStrategy)(unsafe.Pointer(in.EvictionStrategy))
+	// INFO: in.EvictionStrategy opted out of conversion generation
 	out.VMStateStorageClass = (*string)(unsafe.Pointer(in.VMStateStorageClass))
-	out.VirtualMachineOptions = (*v1.VirtualMachineOptions)(unsafe.Pointer(in.VirtualMachineOptions))
+	// INFO: in.VirtualMachineOptions opted out of conversion generation
 	out.CommonBootImageNamespace = (*string)(unsafe.Pointer(in.CommonBootImageNamespace))
-	out.KSMConfiguration = (*corev1.KSMConfiguration)(unsafe.Pointer(in.KSMConfiguration))
+	// INFO: in.KSMConfiguration opted out of conversion generation
 	out.NetworkBinding = *(*map[string]corev1.InterfaceBindingPlugin)(unsafe.Pointer(&in.NetworkBinding))
 	out.ApplicationAwareConfig = (*v1.ApplicationAwareConfigurations)(unsafe.Pointer(in.ApplicationAwareConfig))
-	out.HigherWorkloadDensity = (*v1.HigherWorkloadDensityConfiguration)(unsafe.Pointer(in.HigherWorkloadDensity))
+	// INFO: in.HigherWorkloadDensity opted out of conversion generation
 	out.EnableCommonBootImageImport = (*bool)(unsafe.Pointer(in.EnableCommonBootImageImport))
 	out.InstancetypeConfig = (*corev1.InstancetypeConfiguration)(unsafe.Pointer(in.InstancetypeConfig))
 	out.CommonInstancetypesDeployment = (*corev1.CommonInstancetypesDeployment)(unsafe.Pointer(in.CommonInstancetypesDeployment))
 	out.DeployVMConsoleProxy = (*bool)(unsafe.Pointer(in.DeployVMConsoleProxy))
 	out.EnableApplicationAwareQuota = (*bool)(unsafe.Pointer(in.EnableApplicationAwareQuota))
-	out.LiveUpdateConfiguration = (*corev1.LiveUpdateConfiguration)(unsafe.Pointer(in.LiveUpdateConfiguration))
-	out.Hypervisors = *(*[]corev1.HypervisorConfiguration)(unsafe.Pointer(&in.Hypervisors))
-	out.RoleAggregationStrategy = (*corev1.RoleAggregationStrategy)(unsafe.Pointer(in.RoleAggregationStrategy))
+	// INFO: in.LiveUpdateConfiguration opted out of conversion generation
+	// INFO: in.Hypervisors opted out of conversion generation
+	// INFO: in.RoleAggregationStrategy opted out of conversion generation
 	return nil
 }
 
@@ -707,40 +546,22 @@ func autoConvert_v1_HyperConvergedSpec_To_v1beta1_HyperConvergedSpec(in *v1.Hype
 	out.TuningPolicy = HyperConvergedTuningPolicy(in.TuningPolicy)
 	// INFO: in.NodePlacements opted out of conversion generation
 	// INFO: in.FeatureGates opted out of conversion generation
-	if err := Convert_v1_LiveMigrationConfigurations_To_v1beta1_LiveMigrationConfigurations(&in.LiveMigrationConfig, &out.LiveMigrationConfig, s); err != nil {
-		return err
-	}
-	out.PermittedHostDevices = (*PermittedHostDevices)(unsafe.Pointer(in.PermittedHostDevices))
-	if in.MediatedDevicesConfiguration != nil {
-		in, out := &in.MediatedDevicesConfiguration, &out.MediatedDevicesConfiguration
-		*out = new(MediatedDevicesConfiguration)
-		if err := Convert_v1_MediatedDevicesConfiguration_To_v1beta1_MediatedDevicesConfiguration(*in, *out, s); err != nil {
-			return err
-		}
-	} else {
-		out.MediatedDevicesConfiguration = nil
-	}
+	// INFO: in.Virtualization opted out of conversion generation
 	if err := Convert_v1_HyperConvergedCertConfig_To_v1beta1_HyperConvergedCertConfig(&in.CertConfig, &out.CertConfig, s); err != nil {
 		return err
 	}
-	out.ResourceRequirements = (*OperandResourceRequirements)(unsafe.Pointer(in.ResourceRequirements))
-	out.ScratchSpaceStorageClass = (*string)(unsafe.Pointer(in.ScratchSpaceStorageClass))
-	out.DefaultCPUModel = (*string)(unsafe.Pointer(in.DefaultCPUModel))
-	out.DefaultRuntimeClass = (*string)(unsafe.Pointer(in.DefaultRuntimeClass))
-	if in.ObsoleteCPUs != nil {
-		in, out := &in.ObsoleteCPUs, &out.ObsoleteCPUs
-		*out = new(HyperConvergedObsoleteCPUs)
-		if err := Convert_v1_HyperConvergedObsoleteCPUs_To_v1beta1_HyperConvergedObsoleteCPUs(*in, *out, s); err != nil {
+	if in.ResourceRequirements != nil {
+		in, out := &in.ResourceRequirements, &out.ResourceRequirements
+		*out = new(OperandResourceRequirements)
+		if err := Convert_v1_OperandResourceRequirements_To_v1beta1_OperandResourceRequirements(*in, *out, s); err != nil {
 			return err
 		}
 	} else {
-		out.ObsoleteCPUs = nil
+		out.ResourceRequirements = nil
 	}
+	out.ScratchSpaceStorageClass = (*string)(unsafe.Pointer(in.ScratchSpaceStorageClass))
 	out.CommonTemplatesNamespace = (*string)(unsafe.Pointer(in.CommonTemplatesNamespace))
 	out.StorageImport = (*StorageImportConfig)(unsafe.Pointer(in.StorageImport))
-	if err := Convert_v1_HyperConvergedWorkloadUpdateStrategy_To_v1beta1_HyperConvergedWorkloadUpdateStrategy(&in.WorkloadUpdateStrategy, &out.WorkloadUpdateStrategy, s); err != nil {
-		return err
-	}
 	out.DataImportCronTemplates = *(*[]DataImportCronTemplate)(unsafe.Pointer(&in.DataImportCronTemplates))
 	out.FilesystemOverhead = (*corev1beta1.FilesystemOverhead)(unsafe.Pointer(in.FilesystemOverhead))
 	out.UninstallStrategy = HyperConvergedUninstallStrategy(in.UninstallStrategy)
@@ -748,22 +569,15 @@ func autoConvert_v1_HyperConvergedSpec_To_v1beta1_HyperConvergedSpec(in *v1.Hype
 	out.TLSSecurityProfile = (*configv1.TLSSecurityProfile)(unsafe.Pointer(in.TLSSecurityProfile))
 	out.KubeSecondaryDNSNameServerIP = (*string)(unsafe.Pointer(in.KubeSecondaryDNSNameServerIP))
 	out.KubeMacPoolConfiguration = (*KubeMacPoolConfig)(unsafe.Pointer(in.KubeMacPoolConfiguration))
-	out.EvictionStrategy = (*corev1.EvictionStrategy)(unsafe.Pointer(in.EvictionStrategy))
 	out.VMStateStorageClass = (*string)(unsafe.Pointer(in.VMStateStorageClass))
-	out.VirtualMachineOptions = (*VirtualMachineOptions)(unsafe.Pointer(in.VirtualMachineOptions))
 	out.CommonBootImageNamespace = (*string)(unsafe.Pointer(in.CommonBootImageNamespace))
-	out.KSMConfiguration = (*corev1.KSMConfiguration)(unsafe.Pointer(in.KSMConfiguration))
 	out.NetworkBinding = *(*map[string]corev1.InterfaceBindingPlugin)(unsafe.Pointer(&in.NetworkBinding))
 	out.ApplicationAwareConfig = (*ApplicationAwareConfigurations)(unsafe.Pointer(in.ApplicationAwareConfig))
-	out.HigherWorkloadDensity = (*HigherWorkloadDensityConfiguration)(unsafe.Pointer(in.HigherWorkloadDensity))
 	out.EnableCommonBootImageImport = (*bool)(unsafe.Pointer(in.EnableCommonBootImageImport))
 	out.InstancetypeConfig = (*corev1.InstancetypeConfiguration)(unsafe.Pointer(in.InstancetypeConfig))
 	out.CommonInstancetypesDeployment = (*corev1.CommonInstancetypesDeployment)(unsafe.Pointer(in.CommonInstancetypesDeployment))
 	out.DeployVMConsoleProxy = (*bool)(unsafe.Pointer(in.DeployVMConsoleProxy))
 	out.EnableApplicationAwareQuota = (*bool)(unsafe.Pointer(in.EnableApplicationAwareQuota))
-	out.LiveUpdateConfiguration = (*corev1.LiveUpdateConfiguration)(unsafe.Pointer(in.LiveUpdateConfiguration))
-	out.Hypervisors = *(*[]corev1.HypervisorConfiguration)(unsafe.Pointer(&in.Hypervisors))
-	out.RoleAggregationStrategy = (*corev1.RoleAggregationStrategy)(unsafe.Pointer(in.RoleAggregationStrategy))
 	return nil
 }
 
@@ -812,30 +626,6 @@ func Convert_v1_HyperConvergedStatus_To_v1beta1_HyperConvergedStatus(in *v1.Hype
 	return autoConvert_v1_HyperConvergedStatus_To_v1beta1_HyperConvergedStatus(in, out, s)
 }
 
-func autoConvert_v1beta1_HyperConvergedWorkloadUpdateStrategy_To_v1_HyperConvergedWorkloadUpdateStrategy(in *HyperConvergedWorkloadUpdateStrategy, out *v1.HyperConvergedWorkloadUpdateStrategy, s conversion.Scope) error {
-	out.WorkloadUpdateMethods = *(*[]string)(unsafe.Pointer(&in.WorkloadUpdateMethods))
-	out.BatchEvictionSize = (*int)(unsafe.Pointer(in.BatchEvictionSize))
-	out.BatchEvictionInterval = (*metav1.Duration)(unsafe.Pointer(in.BatchEvictionInterval))
-	return nil
-}
-
-// Convert_v1beta1_HyperConvergedWorkloadUpdateStrategy_To_v1_HyperConvergedWorkloadUpdateStrategy is an autogenerated conversion function.
-func Convert_v1beta1_HyperConvergedWorkloadUpdateStrategy_To_v1_HyperConvergedWorkloadUpdateStrategy(in *HyperConvergedWorkloadUpdateStrategy, out *v1.HyperConvergedWorkloadUpdateStrategy, s conversion.Scope) error {
-	return autoConvert_v1beta1_HyperConvergedWorkloadUpdateStrategy_To_v1_HyperConvergedWorkloadUpdateStrategy(in, out, s)
-}
-
-func autoConvert_v1_HyperConvergedWorkloadUpdateStrategy_To_v1beta1_HyperConvergedWorkloadUpdateStrategy(in *v1.HyperConvergedWorkloadUpdateStrategy, out *HyperConvergedWorkloadUpdateStrategy, s conversion.Scope) error {
-	out.WorkloadUpdateMethods = *(*[]string)(unsafe.Pointer(&in.WorkloadUpdateMethods))
-	out.BatchEvictionSize = (*int)(unsafe.Pointer(in.BatchEvictionSize))
-	out.BatchEvictionInterval = (*metav1.Duration)(unsafe.Pointer(in.BatchEvictionInterval))
-	return nil
-}
-
-// Convert_v1_HyperConvergedWorkloadUpdateStrategy_To_v1beta1_HyperConvergedWorkloadUpdateStrategy is an autogenerated conversion function.
-func Convert_v1_HyperConvergedWorkloadUpdateStrategy_To_v1beta1_HyperConvergedWorkloadUpdateStrategy(in *v1.HyperConvergedWorkloadUpdateStrategy, out *HyperConvergedWorkloadUpdateStrategy, s conversion.Scope) error {
-	return autoConvert_v1_HyperConvergedWorkloadUpdateStrategy_To_v1beta1_HyperConvergedWorkloadUpdateStrategy(in, out, s)
-}
-
 func autoConvert_v1beta1_KubeMacPoolConfig_To_v1_KubeMacPoolConfig(in *KubeMacPoolConfig, out *v1.KubeMacPoolConfig, s conversion.Scope) error {
 	out.RangeStart = (*string)(unsafe.Pointer(in.RangeStart))
 	out.RangeEnd = (*string)(unsafe.Pointer(in.RangeEnd))
@@ -856,40 +646,6 @@ func autoConvert_v1_KubeMacPoolConfig_To_v1beta1_KubeMacPoolConfig(in *v1.KubeMa
 // Convert_v1_KubeMacPoolConfig_To_v1beta1_KubeMacPoolConfig is an autogenerated conversion function.
 func Convert_v1_KubeMacPoolConfig_To_v1beta1_KubeMacPoolConfig(in *v1.KubeMacPoolConfig, out *KubeMacPoolConfig, s conversion.Scope) error {
 	return autoConvert_v1_KubeMacPoolConfig_To_v1beta1_KubeMacPoolConfig(in, out, s)
-}
-
-func autoConvert_v1beta1_LiveMigrationConfigurations_To_v1_LiveMigrationConfigurations(in *LiveMigrationConfigurations, out *v1.LiveMigrationConfigurations, s conversion.Scope) error {
-	out.ParallelMigrationsPerCluster = (*uint32)(unsafe.Pointer(in.ParallelMigrationsPerCluster))
-	out.ParallelOutboundMigrationsPerNode = (*uint32)(unsafe.Pointer(in.ParallelOutboundMigrationsPerNode))
-	out.BandwidthPerMigration = (*string)(unsafe.Pointer(in.BandwidthPerMigration))
-	out.CompletionTimeoutPerGiB = (*int64)(unsafe.Pointer(in.CompletionTimeoutPerGiB))
-	out.ProgressTimeout = (*int64)(unsafe.Pointer(in.ProgressTimeout))
-	out.Network = (*string)(unsafe.Pointer(in.Network))
-	out.AllowAutoConverge = (*bool)(unsafe.Pointer(in.AllowAutoConverge))
-	out.AllowPostCopy = (*bool)(unsafe.Pointer(in.AllowPostCopy))
-	return nil
-}
-
-// Convert_v1beta1_LiveMigrationConfigurations_To_v1_LiveMigrationConfigurations is an autogenerated conversion function.
-func Convert_v1beta1_LiveMigrationConfigurations_To_v1_LiveMigrationConfigurations(in *LiveMigrationConfigurations, out *v1.LiveMigrationConfigurations, s conversion.Scope) error {
-	return autoConvert_v1beta1_LiveMigrationConfigurations_To_v1_LiveMigrationConfigurations(in, out, s)
-}
-
-func autoConvert_v1_LiveMigrationConfigurations_To_v1beta1_LiveMigrationConfigurations(in *v1.LiveMigrationConfigurations, out *LiveMigrationConfigurations, s conversion.Scope) error {
-	out.ParallelMigrationsPerCluster = (*uint32)(unsafe.Pointer(in.ParallelMigrationsPerCluster))
-	out.ParallelOutboundMigrationsPerNode = (*uint32)(unsafe.Pointer(in.ParallelOutboundMigrationsPerNode))
-	out.BandwidthPerMigration = (*string)(unsafe.Pointer(in.BandwidthPerMigration))
-	out.CompletionTimeoutPerGiB = (*int64)(unsafe.Pointer(in.CompletionTimeoutPerGiB))
-	out.ProgressTimeout = (*int64)(unsafe.Pointer(in.ProgressTimeout))
-	out.Network = (*string)(unsafe.Pointer(in.Network))
-	out.AllowAutoConverge = (*bool)(unsafe.Pointer(in.AllowAutoConverge))
-	out.AllowPostCopy = (*bool)(unsafe.Pointer(in.AllowPostCopy))
-	return nil
-}
-
-// Convert_v1_LiveMigrationConfigurations_To_v1beta1_LiveMigrationConfigurations is an autogenerated conversion function.
-func Convert_v1_LiveMigrationConfigurations_To_v1beta1_LiveMigrationConfigurations(in *v1.LiveMigrationConfigurations, out *LiveMigrationConfigurations, s conversion.Scope) error {
-	return autoConvert_v1_LiveMigrationConfigurations_To_v1beta1_LiveMigrationConfigurations(in, out, s)
 }
 
 func autoConvert_v1beta1_LogVerbosityConfiguration_To_v1_LogVerbosityConfiguration(in *LogVerbosityConfiguration, out *v1.LogVerbosityConfiguration, s conversion.Scope) error {
@@ -957,32 +713,6 @@ func Convert_v1_MediatedDevicesConfiguration_To_v1beta1_MediatedDevicesConfigura
 	return autoConvert_v1_MediatedDevicesConfiguration_To_v1beta1_MediatedDevicesConfiguration(in, out, s)
 }
 
-func autoConvert_v1beta1_MediatedHostDevice_To_v1_MediatedHostDevice(in *MediatedHostDevice, out *v1.MediatedHostDevice, s conversion.Scope) error {
-	out.MDEVNameSelector = in.MDEVNameSelector
-	out.ResourceName = in.ResourceName
-	out.ExternalResourceProvider = in.ExternalResourceProvider
-	out.Disabled = in.Disabled
-	return nil
-}
-
-// Convert_v1beta1_MediatedHostDevice_To_v1_MediatedHostDevice is an autogenerated conversion function.
-func Convert_v1beta1_MediatedHostDevice_To_v1_MediatedHostDevice(in *MediatedHostDevice, out *v1.MediatedHostDevice, s conversion.Scope) error {
-	return autoConvert_v1beta1_MediatedHostDevice_To_v1_MediatedHostDevice(in, out, s)
-}
-
-func autoConvert_v1_MediatedHostDevice_To_v1beta1_MediatedHostDevice(in *v1.MediatedHostDevice, out *MediatedHostDevice, s conversion.Scope) error {
-	out.MDEVNameSelector = in.MDEVNameSelector
-	out.ResourceName = in.ResourceName
-	out.ExternalResourceProvider = in.ExternalResourceProvider
-	out.Disabled = in.Disabled
-	return nil
-}
-
-// Convert_v1_MediatedHostDevice_To_v1beta1_MediatedHostDevice is an autogenerated conversion function.
-func Convert_v1_MediatedHostDevice_To_v1beta1_MediatedHostDevice(in *v1.MediatedHostDevice, out *MediatedHostDevice, s conversion.Scope) error {
-	return autoConvert_v1_MediatedHostDevice_To_v1beta1_MediatedHostDevice(in, out, s)
-}
-
 func autoConvert_v1beta1_NodeInfoStatus_To_v1_NodeInfoStatus(in *NodeInfoStatus, out *v1.NodeInfoStatus, s conversion.Scope) error {
 	out.WorkloadsArchitectures = *(*[]string)(unsafe.Pointer(&in.WorkloadsArchitectures))
 	out.ControlPlaneArchitectures = *(*[]string)(unsafe.Pointer(&in.ControlPlaneArchitectures))
@@ -1030,8 +760,8 @@ func Convert_v1_NodeMediatedDeviceTypesConfig_To_v1beta1_NodeMediatedDeviceTypes
 
 func autoConvert_v1beta1_OperandResourceRequirements_To_v1_OperandResourceRequirements(in *OperandResourceRequirements, out *v1.OperandResourceRequirements, s conversion.Scope) error {
 	out.StorageWorkloads = (*apicorev1.ResourceRequirements)(unsafe.Pointer(in.StorageWorkloads))
-	out.VmiCPUAllocationRatio = (*int)(unsafe.Pointer(in.VmiCPUAllocationRatio))
-	out.AutoCPULimitNamespaceLabelSelector = (*metav1.LabelSelector)(unsafe.Pointer(in.AutoCPULimitNamespaceLabelSelector))
+	// INFO: in.VmiCPUAllocationRatio opted out of conversion generation
+	// INFO: in.AutoCPULimitNamespaceLabelSelector opted out of conversion generation
 	return nil
 }
 
@@ -1042,64 +772,12 @@ func Convert_v1beta1_OperandResourceRequirements_To_v1_OperandResourceRequiremen
 
 func autoConvert_v1_OperandResourceRequirements_To_v1beta1_OperandResourceRequirements(in *v1.OperandResourceRequirements, out *OperandResourceRequirements, s conversion.Scope) error {
 	out.StorageWorkloads = (*apicorev1.ResourceRequirements)(unsafe.Pointer(in.StorageWorkloads))
-	out.VmiCPUAllocationRatio = (*int)(unsafe.Pointer(in.VmiCPUAllocationRatio))
-	out.AutoCPULimitNamespaceLabelSelector = (*metav1.LabelSelector)(unsafe.Pointer(in.AutoCPULimitNamespaceLabelSelector))
 	return nil
 }
 
 // Convert_v1_OperandResourceRequirements_To_v1beta1_OperandResourceRequirements is an autogenerated conversion function.
 func Convert_v1_OperandResourceRequirements_To_v1beta1_OperandResourceRequirements(in *v1.OperandResourceRequirements, out *OperandResourceRequirements, s conversion.Scope) error {
 	return autoConvert_v1_OperandResourceRequirements_To_v1beta1_OperandResourceRequirements(in, out, s)
-}
-
-func autoConvert_v1beta1_PciHostDevice_To_v1_PciHostDevice(in *PciHostDevice, out *v1.PciHostDevice, s conversion.Scope) error {
-	out.PCIDeviceSelector = in.PCIDeviceSelector
-	out.ResourceName = in.ResourceName
-	out.ExternalResourceProvider = in.ExternalResourceProvider
-	out.Disabled = in.Disabled
-	return nil
-}
-
-// Convert_v1beta1_PciHostDevice_To_v1_PciHostDevice is an autogenerated conversion function.
-func Convert_v1beta1_PciHostDevice_To_v1_PciHostDevice(in *PciHostDevice, out *v1.PciHostDevice, s conversion.Scope) error {
-	return autoConvert_v1beta1_PciHostDevice_To_v1_PciHostDevice(in, out, s)
-}
-
-func autoConvert_v1_PciHostDevice_To_v1beta1_PciHostDevice(in *v1.PciHostDevice, out *PciHostDevice, s conversion.Scope) error {
-	out.PCIDeviceSelector = in.PCIDeviceSelector
-	out.ResourceName = in.ResourceName
-	out.ExternalResourceProvider = in.ExternalResourceProvider
-	out.Disabled = in.Disabled
-	return nil
-}
-
-// Convert_v1_PciHostDevice_To_v1beta1_PciHostDevice is an autogenerated conversion function.
-func Convert_v1_PciHostDevice_To_v1beta1_PciHostDevice(in *v1.PciHostDevice, out *PciHostDevice, s conversion.Scope) error {
-	return autoConvert_v1_PciHostDevice_To_v1beta1_PciHostDevice(in, out, s)
-}
-
-func autoConvert_v1beta1_PermittedHostDevices_To_v1_PermittedHostDevices(in *PermittedHostDevices, out *v1.PermittedHostDevices, s conversion.Scope) error {
-	out.PciHostDevices = *(*[]v1.PciHostDevice)(unsafe.Pointer(&in.PciHostDevices))
-	out.USBHostDevices = *(*[]v1.USBHostDevice)(unsafe.Pointer(&in.USBHostDevices))
-	out.MediatedDevices = *(*[]v1.MediatedHostDevice)(unsafe.Pointer(&in.MediatedDevices))
-	return nil
-}
-
-// Convert_v1beta1_PermittedHostDevices_To_v1_PermittedHostDevices is an autogenerated conversion function.
-func Convert_v1beta1_PermittedHostDevices_To_v1_PermittedHostDevices(in *PermittedHostDevices, out *v1.PermittedHostDevices, s conversion.Scope) error {
-	return autoConvert_v1beta1_PermittedHostDevices_To_v1_PermittedHostDevices(in, out, s)
-}
-
-func autoConvert_v1_PermittedHostDevices_To_v1beta1_PermittedHostDevices(in *v1.PermittedHostDevices, out *PermittedHostDevices, s conversion.Scope) error {
-	out.PciHostDevices = *(*[]PciHostDevice)(unsafe.Pointer(&in.PciHostDevices))
-	out.USBHostDevices = *(*[]USBHostDevice)(unsafe.Pointer(&in.USBHostDevices))
-	out.MediatedDevices = *(*[]MediatedHostDevice)(unsafe.Pointer(&in.MediatedDevices))
-	return nil
-}
-
-// Convert_v1_PermittedHostDevices_To_v1beta1_PermittedHostDevices is an autogenerated conversion function.
-func Convert_v1_PermittedHostDevices_To_v1beta1_PermittedHostDevices(in *v1.PermittedHostDevices, out *PermittedHostDevices, s conversion.Scope) error {
-	return autoConvert_v1_PermittedHostDevices_To_v1beta1_PermittedHostDevices(in, out, s)
 }
 
 func autoConvert_v1beta1_StorageImportConfig_To_v1_StorageImportConfig(in *StorageImportConfig, out *v1.StorageImportConfig, s conversion.Scope) error {
@@ -1122,54 +800,6 @@ func Convert_v1_StorageImportConfig_To_v1beta1_StorageImportConfig(in *v1.Storag
 	return autoConvert_v1_StorageImportConfig_To_v1beta1_StorageImportConfig(in, out, s)
 }
 
-func autoConvert_v1beta1_USBHostDevice_To_v1_USBHostDevice(in *USBHostDevice, out *v1.USBHostDevice, s conversion.Scope) error {
-	out.ResourceName = in.ResourceName
-	out.Selectors = *(*[]v1.USBSelector)(unsafe.Pointer(&in.Selectors))
-	out.ExternalResourceProvider = in.ExternalResourceProvider
-	out.Disabled = in.Disabled
-	return nil
-}
-
-// Convert_v1beta1_USBHostDevice_To_v1_USBHostDevice is an autogenerated conversion function.
-func Convert_v1beta1_USBHostDevice_To_v1_USBHostDevice(in *USBHostDevice, out *v1.USBHostDevice, s conversion.Scope) error {
-	return autoConvert_v1beta1_USBHostDevice_To_v1_USBHostDevice(in, out, s)
-}
-
-func autoConvert_v1_USBHostDevice_To_v1beta1_USBHostDevice(in *v1.USBHostDevice, out *USBHostDevice, s conversion.Scope) error {
-	out.ResourceName = in.ResourceName
-	out.Selectors = *(*[]USBSelector)(unsafe.Pointer(&in.Selectors))
-	out.ExternalResourceProvider = in.ExternalResourceProvider
-	out.Disabled = in.Disabled
-	return nil
-}
-
-// Convert_v1_USBHostDevice_To_v1beta1_USBHostDevice is an autogenerated conversion function.
-func Convert_v1_USBHostDevice_To_v1beta1_USBHostDevice(in *v1.USBHostDevice, out *USBHostDevice, s conversion.Scope) error {
-	return autoConvert_v1_USBHostDevice_To_v1beta1_USBHostDevice(in, out, s)
-}
-
-func autoConvert_v1beta1_USBSelector_To_v1_USBSelector(in *USBSelector, out *v1.USBSelector, s conversion.Scope) error {
-	out.Vendor = in.Vendor
-	out.Product = in.Product
-	return nil
-}
-
-// Convert_v1beta1_USBSelector_To_v1_USBSelector is an autogenerated conversion function.
-func Convert_v1beta1_USBSelector_To_v1_USBSelector(in *USBSelector, out *v1.USBSelector, s conversion.Scope) error {
-	return autoConvert_v1beta1_USBSelector_To_v1_USBSelector(in, out, s)
-}
-
-func autoConvert_v1_USBSelector_To_v1beta1_USBSelector(in *v1.USBSelector, out *USBSelector, s conversion.Scope) error {
-	out.Vendor = in.Vendor
-	out.Product = in.Product
-	return nil
-}
-
-// Convert_v1_USBSelector_To_v1beta1_USBSelector is an autogenerated conversion function.
-func Convert_v1_USBSelector_To_v1beta1_USBSelector(in *v1.USBSelector, out *USBSelector, s conversion.Scope) error {
-	return autoConvert_v1_USBSelector_To_v1beta1_USBSelector(in, out, s)
-}
-
 func autoConvert_v1beta1_Version_To_v1_Version(in *Version, out *v1.Version, s conversion.Scope) error {
 	out.Name = in.Name
 	out.Version = in.Version
@@ -1190,26 +820,4 @@ func autoConvert_v1_Version_To_v1beta1_Version(in *v1.Version, out *Version, s c
 // Convert_v1_Version_To_v1beta1_Version is an autogenerated conversion function.
 func Convert_v1_Version_To_v1beta1_Version(in *v1.Version, out *Version, s conversion.Scope) error {
 	return autoConvert_v1_Version_To_v1beta1_Version(in, out, s)
-}
-
-func autoConvert_v1beta1_VirtualMachineOptions_To_v1_VirtualMachineOptions(in *VirtualMachineOptions, out *v1.VirtualMachineOptions, s conversion.Scope) error {
-	out.DisableFreePageReporting = (*bool)(unsafe.Pointer(in.DisableFreePageReporting))
-	out.DisableSerialConsoleLog = (*bool)(unsafe.Pointer(in.DisableSerialConsoleLog))
-	return nil
-}
-
-// Convert_v1beta1_VirtualMachineOptions_To_v1_VirtualMachineOptions is an autogenerated conversion function.
-func Convert_v1beta1_VirtualMachineOptions_To_v1_VirtualMachineOptions(in *VirtualMachineOptions, out *v1.VirtualMachineOptions, s conversion.Scope) error {
-	return autoConvert_v1beta1_VirtualMachineOptions_To_v1_VirtualMachineOptions(in, out, s)
-}
-
-func autoConvert_v1_VirtualMachineOptions_To_v1beta1_VirtualMachineOptions(in *v1.VirtualMachineOptions, out *VirtualMachineOptions, s conversion.Scope) error {
-	out.DisableFreePageReporting = (*bool)(unsafe.Pointer(in.DisableFreePageReporting))
-	out.DisableSerialConsoleLog = (*bool)(unsafe.Pointer(in.DisableSerialConsoleLog))
-	return nil
-}
-
-// Convert_v1_VirtualMachineOptions_To_v1beta1_VirtualMachineOptions is an autogenerated conversion function.
-func Convert_v1_VirtualMachineOptions_To_v1beta1_VirtualMachineOptions(in *v1.VirtualMachineOptions, out *VirtualMachineOptions, s conversion.Scope) error {
-	return autoConvert_v1_VirtualMachineOptions_To_v1beta1_VirtualMachineOptions(in, out, s)
 }

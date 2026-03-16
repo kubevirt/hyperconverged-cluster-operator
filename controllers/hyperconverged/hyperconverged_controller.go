@@ -49,6 +49,7 @@ import (
 	migrationv1alpha1 "kubevirt.io/kubevirt-migration-operator/api/v1alpha1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
@@ -1069,7 +1070,7 @@ func getNumericalHealthStatus(status string) float64 {
 	return healthStatusCodes[status]
 }
 
-func getMemoryOvercommitPercentage(densityConfig *hcov1beta1.HigherWorkloadDensityConfiguration) float64 {
+func getMemoryOvercommitPercentage(densityConfig *hcov1.HigherWorkloadDensityConfiguration) float64 {
 	if densityConfig == nil {
 		return 0
 	}
