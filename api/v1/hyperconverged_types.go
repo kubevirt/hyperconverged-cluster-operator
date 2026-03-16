@@ -208,6 +208,10 @@ type HyperConvergedSpec struct {
 	// +k8s:conversion-gen=false
 	Storage *StorageConfig `json:"storage,omitempty"`
 
+	// Networking contains all the configurations for networking
+	// +k8s:conversion-gen=false
+	Networking *NetworkingConfig `json:"networking,omitempty"`
+
 	// Security contains all the security configurations
 	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}
 	// +optional
@@ -242,14 +246,6 @@ type HyperConvergedSpec struct {
 	// +optional
 	LogVerbosityConfig *LogVerbosityConfiguration `json:"logVerbosityConfig,omitempty"`
 
-	// KubeSecondaryDNSNameServerIP defines name server IP used by KubeSecondaryDNS
-	// +optional
-	KubeSecondaryDNSNameServerIP *string `json:"kubeSecondaryDNSNameServerIP,omitempty"`
-
-	// KubeMacPoolConfiguration holds kubemacpool MAC address range configuration.
-	// +optional
-	KubeMacPoolConfiguration *KubeMacPoolConfig `json:"kubeMacPoolConfiguration,omitempty"`
-
 	// CommonBootImageNamespace override the default namespace of the common boot images, in order to hide them.
 	//
 	// If not set, HCO won't set any namespace, letting SSP to use the default. If set, use the namespace to create the
@@ -257,11 +253,6 @@ type HyperConvergedSpec struct {
 	//
 	// +optional
 	CommonBootImageNamespace *string `json:"commonBootImageNamespace,omitempty"`
-
-	// NetworkBinding defines the network binding plugins.
-	// Those bindings can be used when defining virtual machine interfaces.
-	// +optional
-	NetworkBinding map[string]v1.InterfaceBindingPlugin `json:"networkBinding,omitempty"`
 
 	// ApplicationAwareConfig set the AAQ configurations
 	// +optional
@@ -427,6 +418,22 @@ type StorageConfig struct {
 	// resource
 	// +optional
 	StorageWorkloads *corev1.ResourceRequirements `json:"storageWorkloads,omitempty"`
+}
+
+// NetworkingConfig contains all the networking configurations
+type NetworkingConfig struct {
+	// KubeSecondaryDNSNameServerIP defines name server IP used by KubeSecondaryDNS
+	// +optional
+	KubeSecondaryDNSNameServerIP *string `json:"kubeSecondaryDNSNameServerIP,omitempty"`
+
+	// KubeMacPoolConfiguration holds kubemacpool MAC address range configuration.
+	// +optional
+	KubeMacPoolConfiguration *KubeMacPoolConfig `json:"kubeMacPoolConfiguration,omitempty"`
+
+	// NetworkBinding defines the network binding plugins.
+	// Those bindings can be used when defining virtual machine interfaces.
+	// +optional
+	NetworkBinding map[string]v1.InterfaceBindingPlugin `json:"networkBinding,omitempty"`
 }
 
 // SecurityConfig contains all the security configurations

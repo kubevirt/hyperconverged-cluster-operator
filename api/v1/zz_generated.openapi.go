@@ -268,6 +268,12 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig"),
 						},
 					},
+					"networking": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Networking contains all the configurations for networking",
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NetworkingConfig"),
+						},
+					},
 					"security": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Security contains all the security configurations",
@@ -315,39 +321,11 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration"),
 						},
 					},
-					"kubeSecondaryDNSNameServerIP": {
-						SchemaProps: spec.SchemaProps{
-							Description: "KubeSecondaryDNSNameServerIP defines name server IP used by KubeSecondaryDNS",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"kubeMacPoolConfiguration": {
-						SchemaProps: spec.SchemaProps{
-							Description: "KubeMacPoolConfiguration holds kubemacpool MAC address range configuration.",
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.KubeMacPoolConfig"),
-						},
-					},
 					"commonBootImageNamespace": {
 						SchemaProps: spec.SchemaProps{
 							Description: "CommonBootImageNamespace override the default namespace of the common boot images, in order to hide them.\n\nIf not set, HCO won't set any namespace, letting SSP to use the default. If set, use the namespace to create the DataImportCronTemplates and the common image streams, with this namespace. This field is not set by default.",
 							Type:        []string{"string"},
 							Format:      "",
-						},
-					},
-					"networkBinding": {
-						SchemaProps: spec.SchemaProps{
-							Description: "NetworkBinding defines the network binding plugins. Those bindings can be used when defining virtual machine interfaces.",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("kubevirt.io/api/core/v1.InterfaceBindingPlugin"),
-									},
-								},
-							},
 						},
 					},
 					"applicationAwareConfig": {
@@ -396,7 +374,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodePlacements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.SecurityConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin"},
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NetworkingConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodePlacements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.SecurityConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.InstancetypeConfiguration"},
 	}
 }
 
