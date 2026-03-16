@@ -178,7 +178,7 @@ var _ = Describe("v1 webhooks validator", func() {
 
 		Context("test permitted host devices validation", func() {
 			It("should allow unique PCI Host Device", func(ctx context.Context) {
-				cr.Spec.PermittedHostDevices = &hcov1.PermittedHostDevices{
+				cr.Spec.Virtualization.PermittedHostDevices = &hcov1.PermittedHostDevices{
 					PciHostDevices: []hcov1.PciHostDevice{
 						{
 							PCIDeviceSelector: "111",
@@ -198,7 +198,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			})
 
 			It("should allow unique Mediate Host Device", func(ctx context.Context) {
-				cr.Spec.PermittedHostDevices = &hcov1.PermittedHostDevices{
+				cr.Spec.Virtualization.PermittedHostDevices = &hcov1.PermittedHostDevices{
 					MediatedDevices: []hcov1.MediatedHostDevice{
 						{
 							MDEVNameSelector: "111",
@@ -950,7 +950,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			It("should allow unique PCI Host Device", func(ctx context.Context) {
 				newHco := &hcov1.HyperConverged{}
 				cr.DeepCopyInto(newHco)
-				newHco.Spec.PermittedHostDevices = &hcov1.PermittedHostDevices{
+				newHco.Spec.Virtualization.PermittedHostDevices = &hcov1.PermittedHostDevices{
 					PciHostDevices: []hcov1.PciHostDevice{
 						{
 							PCIDeviceSelector: "111",
@@ -972,7 +972,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			It("should allow unique Mediate Host Device", func(ctx context.Context) {
 				newHco := &hcov1.HyperConverged{}
 				cr.DeepCopyInto(newHco)
-				newHco.Spec.PermittedHostDevices = &hcov1.PermittedHostDevices{
+				newHco.Spec.Virtualization.PermittedHostDevices = &hcov1.PermittedHostDevices{
 					MediatedDevices: []hcov1.MediatedHostDevice{
 						{
 							MDEVNameSelector: "111",

@@ -28,6 +28,7 @@ import (
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
@@ -220,8 +221,8 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 
 		Context("test permitted host devices validation", func() {
 			It("should allow unique PCI Host Device", func(ctx context.Context) {
-				cr.Spec.PermittedHostDevices = &v1beta1.PermittedHostDevices{
-					PciHostDevices: []v1beta1.PciHostDevice{
+				cr.Spec.PermittedHostDevices = &hcov1.PermittedHostDevices{
+					PciHostDevices: []hcov1.PciHostDevice{
 						{
 							PCIDeviceSelector: "111",
 							ResourceName:      "name",
@@ -240,8 +241,8 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			})
 
 			It("should allow unique Mediate Host Device", func(ctx context.Context) {
-				cr.Spec.PermittedHostDevices = &v1beta1.PermittedHostDevices{
-					MediatedDevices: []v1beta1.MediatedHostDevice{
+				cr.Spec.PermittedHostDevices = &hcov1.PermittedHostDevices{
+					MediatedDevices: []hcov1.MediatedHostDevice{
 						{
 							MDEVNameSelector: "111",
 							ResourceName:     "name",
@@ -1024,8 +1025,8 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 
 				newHco := &v1beta1.HyperConverged{}
 				hco.DeepCopyInto(newHco)
-				newHco.Spec.PermittedHostDevices = &v1beta1.PermittedHostDevices{
-					PciHostDevices: []v1beta1.PciHostDevice{
+				newHco.Spec.PermittedHostDevices = &hcov1.PermittedHostDevices{
+					PciHostDevices: []hcov1.PciHostDevice{
 						{
 							PCIDeviceSelector: "111",
 							ResourceName:      "name",
@@ -1049,8 +1050,8 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 
 				newHco := &v1beta1.HyperConverged{}
 				hco.DeepCopyInto(newHco)
-				newHco.Spec.PermittedHostDevices = &v1beta1.PermittedHostDevices{
-					MediatedDevices: []v1beta1.MediatedHostDevice{
+				newHco.Spec.PermittedHostDevices = &hcov1.PermittedHostDevices{
+					MediatedDevices: []hcov1.MediatedHostDevice{
 						{
 							MDEVNameSelector: "111",
 							ResourceName:     "name",
