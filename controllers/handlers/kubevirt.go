@@ -1097,7 +1097,7 @@ func getKvFeatureGateList(spec hcov1beta1.HyperConvergedSpec, annotations map[st
 	return res
 }
 
-func hcoCertConfig2KvCertificateRotateStrategy(hcoCertConfig hcov1beta1.HyperConvergedCertConfig) *kubevirtcorev1.KubeVirtCertificateRotateStrategy {
+func hcoCertConfig2KvCertificateRotateStrategy(hcoCertConfig hcov1.HyperConvergedCertConfig) *kubevirtcorev1.KubeVirtCertificateRotateStrategy {
 	return &kubevirtcorev1.KubeVirtCertificateRotateStrategy{
 		SelfSigned: &kubevirtcorev1.KubeVirtSelfSignConfiguration{
 			CA: &kubevirtcorev1.CertConfig{

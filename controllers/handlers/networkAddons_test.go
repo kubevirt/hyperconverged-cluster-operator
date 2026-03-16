@@ -21,6 +21,7 @@ import (
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
@@ -346,12 +347,12 @@ var _ = Describe("CNA Operand", func() {
 			existingResource, err := NewNetworkAddons(hco)
 			Expect(err).ToNot(HaveOccurred())
 
-			hco.Spec.CertConfig = hcov1beta1.HyperConvergedCertConfig{
-				CA: hcov1beta1.CertRotateConfigCA{
+			hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+				CA: hcov1.CertRotateConfigCA{
 					Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 					RenewBefore: &metav1.Duration{Duration: 1 * time.Hour},
 				},
-				Server: hcov1beta1.CertRotateConfigServer{
+				Server: hcov1.CertRotateConfigServer{
 					Duration:    &metav1.Duration{Duration: 12 * time.Hour},
 					RenewBefore: &metav1.Duration{Duration: 30 * time.Minute},
 				},
@@ -412,12 +413,12 @@ var _ = Describe("CNA Operand", func() {
 
 		It("should modify self signed configuration according to HCO CR", func() {
 
-			hco.Spec.CertConfig = hcov1beta1.HyperConvergedCertConfig{
-				CA: hcov1beta1.CertRotateConfigCA{
+			hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+				CA: hcov1.CertRotateConfigCA{
 					Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 					RenewBefore: &metav1.Duration{Duration: 1 * time.Hour},
 				},
-				Server: hcov1beta1.CertRotateConfigServer{
+				Server: hcov1.CertRotateConfigServer{
 					Duration:    &metav1.Duration{Duration: 12 * time.Hour},
 					RenewBefore: &metav1.Duration{Duration: 30 * time.Minute},
 				},
@@ -464,12 +465,12 @@ var _ = Describe("CNA Operand", func() {
 
 		It("should overwrite self signed configuration if directly set on CNAO CR", func() {
 
-			hco.Spec.CertConfig = hcov1beta1.HyperConvergedCertConfig{
-				CA: hcov1beta1.CertRotateConfigCA{
+			hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+				CA: hcov1.CertRotateConfigCA{
 					Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 					RenewBefore: &metav1.Duration{Duration: 1 * time.Hour},
 				},
-				Server: hcov1beta1.CertRotateConfigServer{
+				Server: hcov1.CertRotateConfigServer{
 					Duration:    &metav1.Duration{Duration: 12 * time.Hour},
 					RenewBefore: &metav1.Duration{Duration: 30 * time.Minute},
 				},

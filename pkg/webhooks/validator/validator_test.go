@@ -357,7 +357,7 @@ var _ = Describe("v1 webhooks validator", func() {
 
 		Context("validate tlsSecurityProfiles", func() {
 			updateTLSSecurityProfile := func(minTLSVersion openshiftconfigv1.TLSProtocolVersion, ciphers []string) admission.Response {
-				cr.Spec.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+				cr.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
 					Custom: &openshiftconfigv1.CustomTLSProfile{
 						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
 							MinTLSVersion: minTLSVersion,
@@ -405,7 +405,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			})
 
 			It("should fail when type is Custom but custom field is nil", func(ctx context.Context) {
-				cr.Spec.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+				cr.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
 					Type:   openshiftconfigv1.TLSProfileCustomType,
 					Custom: nil,
 				}
@@ -1742,21 +1742,21 @@ var _ = Describe("v1 webhooks validator", func() {
 
 			It("should update hcoTLSConfigCache creating a resource not in dry run mode", func(ctx context.Context) {
 				Expect(hcoTLSConfigCache).To(Equal(&initialTLSSecurityProfile))
-				cr.Spec.TLSSecurityProfile = &modernTLSSecurityProfile
+				cr.Spec.Security.TLSSecurityProfile = &modernTLSSecurityProfile
 				checkAcceptedRequest(wh.validateCreate(GinkgoLogr, false, cr))
 				Expect(hcoTLSConfigCache).To(Equal(&modernTLSSecurityProfile))
 			})
 
 			It("should not update hcoTLSConfigCache creating a resource in dry run mode", func(ctx context.Context) {
 				Expect(hcoTLSConfigCache).To(Equal(&initialTLSSecurityProfile))
-				cr.Spec.TLSSecurityProfile = &modernTLSSecurityProfile
+				cr.Spec.Security.TLSSecurityProfile = &modernTLSSecurityProfile
 				checkAcceptedRequest(wh.validateCreate(GinkgoLogr, true, cr))
 				Expect(hcoTLSConfigCache).ToNot(Equal(&modernTLSSecurityProfile))
 			})
 
 			It("should not update hcoTLSConfigCache if the create request is refused", func(ctx context.Context) {
 				Expect(hcoTLSConfigCache).To(Equal(&initialTLSSecurityProfile))
-				cr.Spec.TLSSecurityProfile = &modernTLSSecurityProfile
+				cr.Spec.Security.TLSSecurityProfile = &modernTLSSecurityProfile
 				cr.Namespace = ResourceInvalidNamespace
 
 				cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
@@ -1784,7 +1784,7 @@ var _ = Describe("v1 webhooks validator", func() {
 
 				newCr := &hcov1.HyperConverged{}
 				cr.DeepCopyInto(newCr)
-				newCr.Spec.TLSSecurityProfile = &oldTLSSecurityProfile
+				newCr.Spec.Security.TLSSecurityProfile = &oldTLSSecurityProfile
 
 				checkAcceptedRequest(wh.validateUpdate(ctx, GinkgoLogr, false, newCr, cr))
 				Expect(hcoTLSConfigCache).To(Equal(&oldTLSSecurityProfile))
@@ -1798,7 +1798,7 @@ var _ = Describe("v1 webhooks validator", func() {
 
 				newCr := &hcov1.HyperConverged{}
 				cr.DeepCopyInto(newCr)
-				newCr.Spec.TLSSecurityProfile = &oldTLSSecurityProfile
+				newCr.Spec.Security.TLSSecurityProfile = &oldTLSSecurityProfile
 
 				checkAcceptedRequest(wh.validateUpdate(ctx, GinkgoLogr, true, newCr, cr))
 				Expect(hcoTLSConfigCache).To(Equal(&initialTLSSecurityProfile))
@@ -1810,7 +1810,7 @@ var _ = Describe("v1 webhooks validator", func() {
 				tlssecprofile.SetHyperConvergedTLSSecurityProfile(&initialTLSSecurityProfile)
 				newCr := &hcov1.HyperConverged{}
 				cr.DeepCopyInto(newCr)
-				newCr.Spec.TLSSecurityProfile = &oldTLSSecurityProfile
+				newCr.Spec.Security.TLSSecurityProfile = &oldTLSSecurityProfile
 
 				checkRejectedRequest(wh.validateUpdate(ctx, GinkgoLogr, false, newCr, cr))
 				Expect(hcoTLSConfigCache).To(Equal(&initialTLSSecurityProfile))

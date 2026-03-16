@@ -2743,12 +2743,12 @@ Version: 1.2.3`)
 				existingResource, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.CertConfig = hcov1beta1.HyperConvergedCertConfig{
-					CA: hcov1beta1.CertRotateConfigCA{
+				hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+					CA: hcov1.CertRotateConfigCA{
 						Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 						RenewBefore: &metav1.Duration{Duration: 1 * time.Hour},
 					},
-					Server: hcov1beta1.CertRotateConfigServer{
+					Server: hcov1.CertRotateConfigServer{
 						Duration:    &metav1.Duration{Duration: 12 * time.Hour},
 						RenewBefore: &metav1.Duration{Duration: 30 * time.Minute},
 					},
@@ -2809,12 +2809,12 @@ Version: 1.2.3`)
 
 			It("should modify certificate rotation strategy according to HCO CR", func() {
 
-				hco.Spec.CertConfig = hcov1beta1.HyperConvergedCertConfig{
-					CA: hcov1beta1.CertRotateConfigCA{
+				hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+					CA: hcov1.CertRotateConfigCA{
 						Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 						RenewBefore: &metav1.Duration{Duration: 1 * time.Hour},
 					},
-					Server: hcov1beta1.CertRotateConfigServer{
+					Server: hcov1.CertRotateConfigServer{
 						Duration:    &metav1.Duration{Duration: 12 * time.Hour},
 						RenewBefore: &metav1.Duration{Duration: 30 * time.Minute},
 					},
@@ -2861,12 +2861,12 @@ Version: 1.2.3`)
 
 			It("should overwrite certificate rotation strategy if directly set on KV CR", func() {
 
-				hco.Spec.CertConfig = hcov1beta1.HyperConvergedCertConfig{
-					CA: hcov1beta1.CertRotateConfigCA{
+				hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+					CA: hcov1.CertRotateConfigCA{
 						Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 						RenewBefore: &metav1.Duration{Duration: 1 * time.Hour},
 					},
-					Server: hcov1beta1.CertRotateConfigServer{
+					Server: hcov1.CertRotateConfigServer{
 						Duration:    &metav1.Duration{Duration: 12 * time.Hour},
 						RenewBefore: &metav1.Duration{Duration: 30 * time.Minute},
 					},
