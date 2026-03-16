@@ -1262,6 +1262,27 @@ spec:
                     minimum: 10
                     type: integer
                 type: object
+              hypervisors:
+                description: |-
+                  Hypervisors specifies which hypervisor the cluster uses to run virtual machines.
+                  If empty or not set, KubeVirt defaults to KVM. Currently, only a single entry is supported.
+                  Allowed values for the hypervisor name are "kvm" and "hyperv-direct".
+                items:
+                  description: HypervisorConfiguration holds information regarding
+                    the hypervisor present on cluster nodes.
+                  properties:
+                    name:
+                      description: |-
+                        Name is the name of the hypervisor.
+                        Supported values are: "kvm", "hyperv-direct".
+                      enum:
+                      - kvm
+                      - hyperv-direct
+                      type: string
+                  type: object
+                maxItems: 1
+                type: array
+                x-kubernetes-list-type: atomic
               infra:
                 description: |-
                   infra HyperConvergedConfig influences the pod configuration (currently only placement)
@@ -6448,6 +6469,27 @@ spec:
                     minimum: 10
                     type: integer
                 type: object
+              hypervisors:
+                description: |-
+                  Hypervisors specifies which hypervisor the cluster uses to run virtual machines.
+                  If empty or not set, KubeVirt defaults to KVM. Currently, only a single entry is supported.
+                  Allowed values for the hypervisor name are "kvm" and "hyperv-direct".
+                items:
+                  description: HypervisorConfiguration holds information regarding
+                    the hypervisor present on cluster nodes.
+                  properties:
+                    name:
+                      description: |-
+                        Name is the name of the hypervisor.
+                        Supported values are: "kvm", "hyperv-direct".
+                      enum:
+                      - kvm
+                      - hyperv-direct
+                      type: string
+                  type: object
+                maxItems: 1
+                type: array
+                x-kubernetes-list-type: atomic
               infra:
                 description: |-
                   infra HyperConvergedConfig influences the pod configuration (currently only placement)

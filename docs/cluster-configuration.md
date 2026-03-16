@@ -1774,3 +1774,30 @@ spec:
     maxCpuSockets: 2
     maxGuest: 2Gi
 ```
+
+## Hypervisor Configurations
+
+By default, KubeVirt uses KVM as its hypervisor. The `spec.hypervisors` field allows cluster administrators to specify
+an alternative hypervisor to use for running virtual machines. This is useful for environments where a different
+hypervisor is available on the cluster nodes, such as Hyper-V Direct.
+
+When `spec.hypervisors` is set, the HyperConverged operator automatically enables the `ConfigurableHypervisor` feature
+gate in the KubeVirt CR. If `spec.hypervisors` is empty or not set, the feature gate is not added and KubeVirt uses the
+default KVM hypervisor.
+
+Currently, only a single hypervisor configuration is supported per cluster. The allowed values for the hypervisor
+`name` are `kvm` and `hyperv-direct`.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  hypervisors:
+    - name: "kvm"
+```
+
+**Note**: this feature is in Developer Preview.
+
+**Graduation Status**: Alpha

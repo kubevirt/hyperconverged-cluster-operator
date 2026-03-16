@@ -161,6 +161,7 @@ const (
 	kvUtilityVolumes             = "UtilityVolumes"
 	kvIncrementalBackup          = "IncrementalBackup"
 	kvPasstBinding               = "PasstBinding"
+	kvConfigurableHypervisor     = "ConfigurableHypervisor"
 )
 
 // CPU Plugin default values
@@ -506,6 +507,10 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 		config.CommonInstancetypesDeployment = hc.Spec.CommonInstancetypesDeployment.DeepCopy()
 	}
 
+	for _, hv := range hc.Spec.Hypervisors {
+		config.Hypervisors = append(config.Hypervisors, *hv.DeepCopy())
+	}
+
 	return config, nil
 }
 
@@ -811,7 +816,7 @@ func getKVDevConfig(hc *hcov1beta1.HyperConverged) *kubevirtcorev1.DeveloperConf
 		devConf.MemoryOvercommit = hc.Spec.HigherWorkloadDensity.MemoryOvercommitPercentage
 	}
 
-	fgs := getKvFeatureGateList(&hc.Spec.FeatureGates, hc.Annotations)
+	fgs := getKvFeatureGateList(hc.Spec, hc.Annotations)
 	if len(fgs) > 0 {
 		devConf.FeatureGates = fgs
 	}
@@ -902,7 +907,8 @@ func hcoConfig2KvConfig(
 	return kvConfig
 }
 
-func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, annotations map[string]string) []string {
+func getFeatureGateChecks(spec hcov1beta1.HyperConvergedSpec, annotations map[string]string) []string {
+	featureGates := &spec.FeatureGates
 	fgs := make([]string, 0, 2)
 
 	if ptr.Deref(featureGates.DownwardMetrics, false) {
@@ -945,6 +951,10 @@ func getFeatureGateChecks(featureGates *hcov1beta1.HyperConvergedFeatureGates, a
 	if ptr.Deref(featureGates.IncrementalBackup, false) {
 		fgs = append(fgs, kvIncrementalBackup)
 		fgs = append(fgs, kvUtilityVolumes)
+	}
+
+	if len(spec.Hypervisors) > 0 {
+		fgs = append(fgs, kvConfigurableHypervisor)
 	}
 
 	return fgs
@@ -1065,8 +1075,8 @@ func getMandatoryKvFeatureGates(isKVMEmulation bool) []string {
 }
 
 // get list of feature gates or KV FG list
-func getKvFeatureGateList(fgs *hcov1beta1.HyperConvergedFeatureGates, annotations map[string]string) []string {
-	checks := getFeatureGateChecks(fgs, annotations)
+func getKvFeatureGateList(spec hcov1beta1.HyperConvergedSpec, annotations map[string]string) []string {
+	checks := getFeatureGateChecks(spec, annotations)
 	res := make([]string, 0, len(checks)+len(mandatoryKvFeatureGates))
 	res = append(res, mandatoryKvFeatureGates...)
 	res = append(res, checks...)

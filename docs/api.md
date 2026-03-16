@@ -250,6 +250,7 @@ HyperConvergedSpec defines the desired state of HyperConverged
 | deployVmConsoleProxy | deploy VM console proxy resources in SSP operator | *bool | false | false |
 | enableApplicationAwareQuota | EnableApplicationAwareQuota if true, enables the Application Aware Quota feature | *bool | false | false |
 | liveUpdateConfiguration | LiveUpdateConfiguration holds the cluster configuration for live update of virtual machines - max cpu sockets, max guest memory and max hotplug ratio. This setting can affect VM CPU and memory settings. | *v1.LiveUpdateConfiguration |  | false |
+| hypervisors | Hypervisors specifies which hypervisor the cluster uses to run virtual machines. If empty or not set, KubeVirt defaults to KVM. Currently, only a single entry is supported. Allowed values for the hypervisor name are \"kvm\" and \"hyperv-direct\". | []v1.HypervisorConfiguration |  | false |
 
 [Back to TOC](#table-of-contents)
 
