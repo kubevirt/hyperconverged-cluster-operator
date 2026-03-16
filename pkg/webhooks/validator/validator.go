@@ -371,7 +371,7 @@ func (wh *WebhookHandler) validateCertConfig(hc *hcov1.HyperConverged) error {
 
 func (wh *WebhookHandler) validateDataImportCronTemplates(hc *hcov1.HyperConverged) error {
 
-	for _, dict := range hc.Spec.DataImportCronTemplates {
+	for _, dict := range hc.Spec.WorkloadSources.DataImportCronTemplates {
 		val, ok := dict.Annotations[hcoutil.DataImportCronEnabledAnnotation]
 		val = strings.ToLower(val)
 		if ok && val != "false" && val != "true" {

@@ -24,6 +24,7 @@ import (
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	goldenimages "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/golden-images"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
@@ -318,7 +319,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc := tests.GetHCO(ctx, cli)
 
-				hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{
+				hc.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
 					getDICT(),
 				}
 
@@ -334,7 +335,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc := tests.GetHCO(ctx, cli)
 
-				hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{
+				hc.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
 					getDICT(),
 				}
 
@@ -446,7 +447,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		It("should have the architectures in a user-defined DICT the SSP CR", func(ctx context.Context) {
 			var (
 				hc           *hcov1beta1.HyperConverged
-				hcCustomDict hcov1beta1.DataImportCronTemplate
+				hcCustomDict hcov1.DataImportCronTemplate
 			)
 
 			By("adding a user define DICT to the HyperConverged CR, with some supported and some unsupported architectures")
@@ -466,7 +467,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				hcCustomDict.Annotations[goldenimages.MultiArchDICTAnnotation] = strings.Join(customDictArchs, ",")
 				hcCustomDict.Spec.RetentionPolicy = ptr.To(cdiv1beta1.DataImportCronRetainNone)
 
-				hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
+				hc.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{hcCustomDict}
 
 				var err error
 				_, err = tests.UpdateHCO(ctx, cli, hc)
@@ -506,7 +507,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 		It("should have the architectures in a customized common DICT the SSP CR", func(ctx context.Context) {
 			var (
-				hcCustomDict                   hcov1beta1.DataImportCronTemplate
+				hcCustomDict                   hcov1.DataImportCronTemplate
 				originalSupportedArchitectures string
 				expectedArches                 string
 				hc                             *hcov1beta1.HyperConverged
@@ -530,7 +531,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				hcCustomDict.Spec.RetentionPolicy = ptr.To(cdiv1beta1.DataImportCronRetainNone)
 				expectedArches = getExpectedArchs(testAnnotation, archs)
 
-				hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
+				hc.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{hcCustomDict}
 
 				var err error
 				_, err = tests.UpdateHCO(ctx, cli, hc)
@@ -586,7 +587,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		When("the multi-arch annotation is not set in the DICT", func() {
 			It("should not implement multi-arch changes for user defined DICT", func(ctx context.Context) {
 				var (
-					hcCustomDict hcov1beta1.DataImportCronTemplate
+					hcCustomDict hcov1.DataImportCronTemplate
 					hc           *hcov1beta1.HyperConverged
 				)
 
@@ -602,7 +603,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					delete(hcCustomDict.Annotations, goldenimages.MultiArchDICTAnnotation)
 					hcCustomDict.Spec.RetentionPolicy = ptr.To(cdiv1beta1.DataImportCronRetainNone)
 
-					hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
+					hc.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{hcCustomDict}
 
 					var err error
 					_, err = tests.UpdateHCO(ctx, cli, hc)
@@ -653,7 +654,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		When("there are no supported architectures", func() {
 			It("should not add a user-defined DICT to the SSP CR", func(ctx context.Context) {
 				var (
-					hcCustomDict hcov1beta1.DataImportCronTemplate
+					hcCustomDict hcov1.DataImportCronTemplate
 					hc           *hcov1beta1.HyperConverged
 				)
 
@@ -673,7 +674,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					hcCustomDict.Annotations[goldenimages.MultiArchDICTAnnotation] = "someOtherArch1,someOtherArch2"
 					hcCustomDict.Spec.RetentionPolicy = ptr.To(cdiv1beta1.DataImportCronRetainNone)
 
-					hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
+					hc.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{hcCustomDict}
 
 					var err error
 					_, err = tests.UpdateHCO(ctx, cli, hc)
@@ -721,7 +722,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 			It("when the image was changed, should not add a customized common DICT to the SSP CR", func(ctx context.Context) {
 				var (
-					hcCustomDict hcov1beta1.DataImportCronTemplate
+					hcCustomDict hcov1.DataImportCronTemplate
 					hc           *hcov1beta1.HyperConverged
 				)
 
@@ -744,7 +745,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					hcCustomDict.Annotations[goldenimages.MultiArchDICTAnnotation] = "someOtherArch1,someOtherArch2"
 					hcCustomDict.Spec.RetentionPolicy = ptr.To(cdiv1beta1.DataImportCronRetainNone)
 
-					hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
+					hc.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{hcCustomDict}
 
 					var err error
 					_, err = tests.UpdateHCO(ctx, cli, hc)
@@ -793,7 +794,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 			It("when the image not changed, should add a customized common DICT to the SSP CR", func(ctx context.Context) {
 				var (
-					hcCustomDict                   hcov1beta1.DataImportCronTemplate
+					hcCustomDict                   hcov1.DataImportCronTemplate
 					originalSupportedArchitectures string
 					hc                             *hcov1beta1.HyperConverged
 				)
@@ -813,7 +814,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					hcCustomDict.Annotations[goldenimages.MultiArchDICTAnnotation] = "someOtherArch1,someOtherArch2"
 					hcCustomDict.Spec.RetentionPolicy = ptr.To(cdiv1beta1.DataImportCronRetainNone)
 
-					hc.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{hcCustomDict}
+					hc.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{hcCustomDict}
 
 					var err error
 					_, err = tests.UpdateHCO(ctx, cli, hc)
@@ -931,8 +932,8 @@ func getArchs(ctx context.Context) ([]string, error) {
 	return a, nil
 }
 
-func getDICT() hcov1beta1.DataImportCronTemplate {
-	return hcov1beta1.DataImportCronTemplate{
+func getDICT() hcov1.DataImportCronTemplate {
+	return hcov1.DataImportCronTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "custom",
 		},

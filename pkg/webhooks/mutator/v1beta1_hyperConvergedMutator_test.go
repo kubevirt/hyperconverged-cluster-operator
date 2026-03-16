@@ -17,6 +17,7 @@ import (
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	goldenimages "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/golden-images"
@@ -59,7 +60,7 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 		)
 
 		DescribeTable("check dict annotation on create", func(ctx context.Context, annotations map[string]string, expectedPatches *jsonpatch.JsonPatchOperation) {
-			cr.Spec.DataImportCronTemplates = []v1beta1.DataImportCronTemplate{
+			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "dictName",
@@ -84,7 +85,7 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 		},
 			Entry("no annotations", nil, &jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(annotationPathTemplate, 0),
+				Path:      fmt.Sprintf(v1beta1AnnotationPathTemplate, 0),
 				Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 			}),
 			Entry("different annotations", map[string]string{"something/else": "value"}, &jsonpatch.JsonPatchOperation{
@@ -97,7 +98,7 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 		)
 
 		It("should handle multiple DICTs", func(ctx context.Context) {
-			cr.Spec.DataImportCronTemplates = []v1beta1.DataImportCronTemplate{
+			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "no-annotation",
@@ -132,7 +133,7 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 			Expect(res.Patches).To(Equal([]jsonpatch.JsonPatchOperation{
 				{
 					Operation: "add",
-					Path:      fmt.Sprintf(annotationPathTemplate, 0),
+					Path:      fmt.Sprintf(v1beta1AnnotationPathTemplate, 0),
 					Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 				},
 				{
@@ -145,7 +146,7 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 		})
 
 		It("should handle multiple DICTs and mediatedDevicesTypes -> mediatedDeviceTypes at the same time", func(ctx context.Context) {
-			cr.Spec.DataImportCronTemplates = []v1beta1.DataImportCronTemplate{
+			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "no-annotation",
@@ -210,7 +211,7 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 			Expect(res.Patches).To(Equal([]jsonpatch.JsonPatchOperation{
 				{
 					Operation: "add",
-					Path:      fmt.Sprintf(annotationPathTemplate, 0),
+					Path:      fmt.Sprintf(v1beta1AnnotationPathTemplate, 0),
 					Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 				},
 				{
@@ -446,7 +447,7 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 	Context("Check mutating webhook for update operation", func() {
 		DescribeTable("check dict annotation on update", func(ctx context.Context, annotations map[string]string, expectedPatches *jsonpatch.JsonPatchOperation) {
 			origCR := cr.DeepCopy()
-			cr.Spec.DataImportCronTemplates = []v1beta1.DataImportCronTemplate{
+			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "dictName",
@@ -469,7 +470,7 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 		},
 			Entry("no annotations", nil, &jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(annotationPathTemplate, 0),
+				Path:      fmt.Sprintf(v1beta1AnnotationPathTemplate, 0),
 				Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 			}),
 			Entry("different annotations", map[string]string{"something/else": "value"}, &jsonpatch.JsonPatchOperation{
@@ -484,7 +485,7 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 		It("should handle multiple DICTs on update", func(ctx context.Context) {
 			origCR := cr.DeepCopy()
 
-			cr.Spec.DataImportCronTemplates = []v1beta1.DataImportCronTemplate{
+			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "no-annotation",
@@ -518,7 +519,7 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 			Expect(res.Patches).To(HaveLen(2))
 			Expect(res.Patches[0]).To(Equal(jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(annotationPathTemplate, 0),
+				Path:      fmt.Sprintf(v1beta1AnnotationPathTemplate, 0),
 				Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 			}))
 			Expect(res.Patches[1]).To(Equal(jsonpatch.JsonPatchOperation{
@@ -530,7 +531,7 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 
 		It("should handle multiple DICTs and mediatedDevicesTypes -> mediatedDeviceTypes at the same time", func(ctx context.Context) {
 			origCR := cr.DeepCopy()
-			cr.Spec.DataImportCronTemplates = []v1beta1.DataImportCronTemplate{
+			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "no-annotation",
@@ -594,7 +595,7 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 			Expect(res.Patches).To(HaveLen(4))
 			Expect(res.Patches[0]).To(Equal(jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(annotationPathTemplate, 0),
+				Path:      fmt.Sprintf(v1beta1AnnotationPathTemplate, 0),
 				Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 			}))
 			Expect(res.Patches[1]).To(Equal(jsonpatch.JsonPatchOperation{

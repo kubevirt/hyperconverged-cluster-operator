@@ -13,12 +13,12 @@ import (
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
-	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 )
 
 const (
-	mutatorV1Beta1Name = "hyperConverged v1beta1 mutator"
+	mutatorV1Beta1Name            = "hyperConverged v1beta1 mutator"
+	v1beta1AnnotationPathTemplate = "/spec/dataImportCronTemplates/%d/metadata/annotations"
 )
 
 var (
@@ -58,14 +58,7 @@ func (hcm *HyperConvergedV1Beta1Mutator) mutateHyperConverged(req admission.Requ
 		return admission.Errored(http.StatusBadRequest, fmt.Errorf("failed to parse the HyperConverged"))
 	}
 
-	v1hc := &hcov1.HyperConverged{}
-	err = hc.ConvertTo(v1hc)
-	if err != nil {
-		logger.Error(err, "failed to convert the HyperConverged custom resource")
-		return admission.Errored(http.StatusInternalServerError, fmt.Errorf("failed to convert to HyperConverged v1"))
-	}
-
-	patches := getMutatePatches(v1hc)
+	patches := getDICTAnnotationPatches(hc.Spec.DataImportCronTemplates, v1beta1AnnotationPathTemplate)
 	patches = mutateV1beta1EvictionStrategy(hc, patches)
 
 	if hc.Spec.MediatedDevicesConfiguration != nil {

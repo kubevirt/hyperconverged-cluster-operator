@@ -51,7 +51,7 @@ func (hcm *HyperConvergedMutator) Handle(ctx context.Context, req admission.Requ
 }
 
 const (
-	annotationPathTemplate     = "/spec/dataImportCronTemplates/%d/metadata/annotations"
+	annotationPathTemplate     = "/spec/workloadSources/dataImportCronTemplates/%d/metadata/annotations"
 	dictAnnotationPathTemplate = annotationPathTemplate + "/cdi.kubevirt.io~1storage.bind.immediate.requested"
 )
 
@@ -63,7 +63,7 @@ func (hcm *HyperConvergedMutator) mutateHyperConverged(req admission.Request, lo
 		return admission.Errored(http.StatusBadRequest, fmt.Errorf("failed to parse the HyperConverged"))
 	}
 
-	patches := getMutatePatches(hc)
+	patches := getDICTAnnotationPatches(hc.Spec.WorkloadSources.DataImportCronTemplates, annotationPathTemplate)
 	patches = mutateEvictionStrategy(hc, patches)
 
 	if req.Operation == admissionv1.Create {
@@ -77,13 +77,13 @@ func (hcm *HyperConvergedMutator) mutateHyperConverged(req admission.Request, lo
 	return admission.Allowed("")
 }
 
-func getMutatePatches(hc *hcov1.HyperConverged) []jsonpatch.JsonPatchOperation {
+func getDICTAnnotationPatches(dicts []hcov1.DataImportCronTemplate, patchTemplate string) []jsonpatch.JsonPatchOperation {
 	var patches []jsonpatch.JsonPatchOperation
-	for index, dict := range hc.Spec.DataImportCronTemplates {
+	for index, dict := range dicts {
 		if dict.Annotations == nil {
 			patches = append(patches, jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(annotationPathTemplate, index),
+				Path:      fmt.Sprintf(patchTemplate, index),
 				Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 			})
 		} else if _, annotationFound := dict.Annotations[goldenimages.CDIImmediateBindAnnotation]; !annotationFound {

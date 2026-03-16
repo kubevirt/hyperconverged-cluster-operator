@@ -7,6 +7,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
@@ -37,14 +38,14 @@ var _ = Describe("HyperConverged Collectors", func() {
 				BeforeEach(func() {
 					hco.Status.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplateStatus{
 						{
-							DataImportCronTemplate: hcov1beta1.DataImportCronTemplate{
+							DataImportCronTemplate: hcov1.DataImportCronTemplate{
 								ObjectMeta: metav1.ObjectMeta{
 									Name: "image1",
 								},
 							},
 						},
 						{
-							DataImportCronTemplate: hcov1beta1.DataImportCronTemplate{
+							DataImportCronTemplate: hcov1.DataImportCronTemplate{
 								ObjectMeta: metav1.ObjectMeta{
 									Name: "image2",
 								},
@@ -117,14 +118,14 @@ var _ = Describe("HyperConverged Collectors", func() {
 				BeforeEach(func() {
 					hco.Status.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplateStatus{
 						{
-							DataImportCronTemplate: hcov1beta1.DataImportCronTemplate{
+							DataImportCronTemplate: hcov1.DataImportCronTemplate{
 								ObjectMeta: metav1.ObjectMeta{
 									Name: "image1",
 								},
 							},
 						},
 						{
-							DataImportCronTemplate: hcov1beta1.DataImportCronTemplate{
+							DataImportCronTemplate: hcov1.DataImportCronTemplate{
 								ObjectMeta: metav1.ObjectMeta{
 									Name: "image2",
 								},

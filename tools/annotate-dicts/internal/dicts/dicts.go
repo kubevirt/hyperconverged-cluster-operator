@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"sigs.k8s.io/yaml"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tools/annotate-dicts/internal/cleanup"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tools/annotate-dicts/internal/images"
 )
@@ -20,7 +20,7 @@ const (
 )
 
 type Dicts struct {
-	items   []hcov1beta1.DataImportCronTemplate
+	items   []hcov1.DataImportCronTemplate
 	lock    sync.Mutex
 	changed bool
 	group   *errgroup.Group
@@ -34,7 +34,7 @@ func NewDicts(group *errgroup.Group, filename string) (*Dicts, error) {
 		return nil, fmt.Errorf("error reading DataImportCronTemplate file %s: %v", filename, err)
 	}
 
-	var ds []hcov1beta1.DataImportCronTemplate
+	var ds []hcov1.DataImportCronTemplate
 	if err := yaml.Unmarshal(rawYaml, &ds); err != nil {
 		return nil, err
 	}
@@ -85,7 +85,7 @@ func (d *Dicts) handleOneDict(ctx context.Context, i int, isMap map[string]strin
 	d.group.Go(d.updateAnnotation(ctx, &dict, url))
 }
 
-func (d *Dicts) updateAnnotation(ctx context.Context, dict *hcov1beta1.DataImportCronTemplate, url string) func() error {
+func (d *Dicts) updateAnnotation(ctx context.Context, dict *hcov1.DataImportCronTemplate, url string) func() error {
 	return func() error {
 		log.Printf("Reading the manifest for DataImportCronTemplate object %s; image: %s", dict.Name, url)
 		arches, err := images.GetArches(ctx, url)

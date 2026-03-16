@@ -31,12 +31,12 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 	})
 
 	Context("certConfig defaults", func() {
-		defaultCertConfig := v1beta1.HyperConvergedCertConfig{
-			CA: v1beta1.CertRotateConfigCA{
+		defaultCertConfig := hcov1.HyperConvergedCertConfig{
+			CA: hcov1.CertRotateConfigCA{
 				Duration:    &metav1.Duration{Duration: time.Hour * 48},
 				RenewBefore: &metav1.Duration{Duration: time.Hour * 24},
 			},
-			Server: v1beta1.CertRotateConfigServer{
+			Server: hcov1.CertRotateConfigServer{
 				Duration:    &metav1.Duration{Duration: time.Hour * 24},
 				RenewBefore: &metav1.Duration{Duration: time.Hour * 12},
 			},
