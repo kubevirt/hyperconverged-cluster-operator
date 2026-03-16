@@ -58,12 +58,14 @@ type HyperConvergedSpec struct {
 	// for all the infra components needed on the virtualization enabled cluster
 	// but not necessarily directly on each node running VMs/VMIs.
 	// +optional
+	// +k8s:conversion-gen=false
 	Infra HyperConvergedConfig `json:"infra,omitempty"`
 
 	// workloads HyperConvergedConfig influences the pod configuration (currently only placement) of components
 	// which need to be running on a node where virtualization workloads should be able to run.
 	// Changes to Workloads HyperConvergedConfig can be applied only without existing workload.
 	// +optional
+	// +k8s:conversion-gen=false
 	Workloads HyperConvergedConfig `json:"workloads,omitempty"`
 
 	// featureGates is a map of feature gate flags. Setting a flag to `true` will enable
@@ -359,6 +361,7 @@ type HyperConvergedCertConfig struct {
 }
 
 // HyperConvergedConfig defines a set of configurations to pass to components
+// +k8s:conversion-gen=false
 type HyperConvergedConfig struct {
 	// NodePlacement describes node scheduling configuration.
 	// +optional

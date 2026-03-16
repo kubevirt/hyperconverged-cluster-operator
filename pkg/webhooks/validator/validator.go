@@ -448,14 +448,18 @@ func (wh *WebhookHandler) validateFeatureGatesOnUpdate(requested, exists *hcov1.
 }
 
 func (wh *WebhookHandler) validateAffinity(hc *hcov1.HyperConverged) error {
-	if hc.Spec.Workloads.NodePlacement != nil {
-		if err := validateAffinity(hc.Spec.Workloads.NodePlacement.Affinity); err != nil {
+	if hc.Spec.NodePlacements == nil {
+		return nil
+	}
+
+	if hc.Spec.NodePlacements.Workload != nil {
+		if err := validateAffinity(hc.Spec.NodePlacements.Workload.Affinity); err != nil {
 			return fmt.Errorf("invalid workloads node placement affinity: %v", err.Error())
 		}
 	}
 
-	if hc.Spec.Infra.NodePlacement != nil {
-		if err := validateAffinity(hc.Spec.Infra.NodePlacement.Affinity); err != nil {
+	if hc.Spec.NodePlacements.Infra != nil {
+		if err := validateAffinity(hc.Spec.NodePlacements.Infra.Affinity); err != nil {
 			return fmt.Errorf("invalid infra node placement affinity: %v", err.Error())
 		}
 	}

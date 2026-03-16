@@ -6,9 +6,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
+
+	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcofg "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
@@ -31,6 +34,265 @@ var _ = Describe("api/v1beta1", func() {
 			v1hco := getV1HC()
 
 			Expect((&HyperConverged{}).ConvertFrom(v1hco)).To(Succeed())
+		})
+	})
+
+	Context("NodePlacements conversion", func() {
+		var (
+			infraAffinity = &corev1.Affinity{
+				NodeAffinity: &corev1.NodeAffinity{
+					RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+						NodeSelectorTerms: []corev1.NodeSelectorTerm{
+							{
+								MatchExpressions: []corev1.NodeSelectorRequirement{
+									{
+										Key:      "infra-node",
+										Operator: corev1.NodeSelectorOpExists,
+									},
+								},
+							},
+						},
+					},
+				},
+				PodAntiAffinity: &corev1.PodAntiAffinity{
+					PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
+						{
+							Weight: 100,
+							PodAffinityTerm: corev1.PodAffinityTerm{
+								TopologyKey: "kubernetes.io/hostname",
+							},
+						},
+					},
+				},
+			}
+
+			workloadAffinity = &corev1.Affinity{
+				NodeAffinity: &corev1.NodeAffinity{
+					RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+						NodeSelectorTerms: []corev1.NodeSelectorTerm{
+							{
+								MatchExpressions: []corev1.NodeSelectorRequirement{
+									{
+										Key:      "workload-node",
+										Operator: corev1.NodeSelectorOpExists,
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+		)
+
+		Context("v1beta1 to v1", func() {
+			It("should convert both infra and workload node placements", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					Infra: HyperConvergedConfig{
+						NodePlacement: &sdkapi.NodePlacement{
+							NodeSelector: map[string]string{"infra-key": "infra-val"},
+						},
+					},
+					Workloads: HyperConvergedConfig{
+						NodePlacement: &sdkapi.NodePlacement{
+							NodeSelector: map[string]string{"workload-key": "workload-val"},
+						},
+					},
+				}
+				v1Spec := &hcov1.HyperConvergedSpec{}
+
+				convertNodePlacementsV1beta1ToV1(v1beta1Spec, v1Spec)
+
+				Expect(v1Spec.NodePlacements).ToNot(BeNil())
+				Expect(v1Spec.NodePlacements.Infra).ToNot(BeNil())
+				Expect(v1Spec.NodePlacements.Infra.NodeSelector).To(Equal(map[string]string{"infra-key": "infra-val"}))
+				Expect(v1Spec.NodePlacements.Workload).ToNot(BeNil())
+				Expect(v1Spec.NodePlacements.Workload.NodeSelector).To(Equal(map[string]string{"workload-key": "workload-val"}))
+			})
+
+			It("should convert only infra node placement when workload is nil", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					Infra: HyperConvergedConfig{
+						NodePlacement: &sdkapi.NodePlacement{
+							NodeSelector: map[string]string{"infra-key": "infra-val"},
+						},
+					},
+				}
+				v1Spec := &hcov1.HyperConvergedSpec{}
+
+				convertNodePlacementsV1beta1ToV1(v1beta1Spec, v1Spec)
+
+				Expect(v1Spec.NodePlacements).ToNot(BeNil())
+				Expect(v1Spec.NodePlacements.Infra).ToNot(BeNil())
+				Expect(v1Spec.NodePlacements.Workload).To(BeNil())
+			})
+
+			It("should convert only workload node placement when infra is nil", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					Workloads: HyperConvergedConfig{
+						NodePlacement: &sdkapi.NodePlacement{
+							NodeSelector: map[string]string{"workload-key": "workload-val"},
+						},
+					},
+				}
+				v1Spec := &hcov1.HyperConvergedSpec{}
+
+				convertNodePlacementsV1beta1ToV1(v1beta1Spec, v1Spec)
+
+				Expect(v1Spec.NodePlacements).ToNot(BeNil())
+				Expect(v1Spec.NodePlacements.Infra).To(BeNil())
+				Expect(v1Spec.NodePlacements.Workload).ToNot(BeNil())
+			})
+
+			It("should not set NodePlacements when both are nil", func() {
+				v1beta1Spec := HyperConvergedSpec{}
+				v1Spec := &hcov1.HyperConvergedSpec{}
+
+				convertNodePlacementsV1beta1ToV1(v1beta1Spec, v1Spec)
+
+				Expect(v1Spec.NodePlacements).To(BeNil())
+			})
+
+			It("should convert affinity and anti-affinity", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					Infra: HyperConvergedConfig{
+						NodePlacement: &sdkapi.NodePlacement{
+							Affinity: infraAffinity,
+						},
+					},
+					Workloads: HyperConvergedConfig{
+						NodePlacement: &sdkapi.NodePlacement{
+							Affinity: workloadAffinity,
+						},
+					},
+				}
+				v1Spec := &hcov1.HyperConvergedSpec{}
+
+				convertNodePlacementsV1beta1ToV1(v1beta1Spec, v1Spec)
+				Expect(v1Spec.NodePlacements).ToNot(BeNil())
+				Expect(v1Spec.NodePlacements.Infra).ToNot(BeNil())
+				Expect(v1Spec.NodePlacements.Infra.Affinity).To(Equal(infraAffinity))
+
+				Expect(v1Spec.NodePlacements.Workload).ToNot(BeNil())
+				Expect(v1Spec.NodePlacements.Workload.Affinity).To(Equal(workloadAffinity))
+			})
+		})
+
+		Context("v1 to v1beta1", func() {
+			It("should convert both infra and workload node placements", func() {
+				v1Spec := hcov1.HyperConvergedSpec{
+					NodePlacements: &hcov1.NodePlacements{
+						Infra: &sdkapi.NodePlacement{
+							NodeSelector: map[string]string{"infra-key": "infra-val"},
+						},
+						Workload: &sdkapi.NodePlacement{
+							NodeSelector: map[string]string{"workload-key": "workload-val"},
+						},
+					},
+				}
+				v1beta1Spec := &HyperConvergedSpec{}
+
+				convertNodePlacementsV1ToV1beta1(v1Spec, v1beta1Spec)
+
+				Expect(v1beta1Spec.Infra.NodePlacement).ToNot(BeNil())
+				Expect(v1beta1Spec.Infra.NodePlacement.NodeSelector).To(Equal(map[string]string{"infra-key": "infra-val"}))
+				Expect(v1beta1Spec.Workloads.NodePlacement).ToNot(BeNil())
+				Expect(v1beta1Spec.Workloads.NodePlacement.NodeSelector).To(Equal(map[string]string{"workload-key": "workload-val"}))
+			})
+
+			It("should convert only infra when workload is nil", func() {
+				v1Spec := hcov1.HyperConvergedSpec{
+					NodePlacements: &hcov1.NodePlacements{
+						Infra: &sdkapi.NodePlacement{
+							NodeSelector: map[string]string{"infra-key": "infra-val"},
+						},
+					},
+				}
+				v1beta1Spec := &HyperConvergedSpec{}
+
+				convertNodePlacementsV1ToV1beta1(v1Spec, v1beta1Spec)
+
+				Expect(v1beta1Spec.Infra.NodePlacement).ToNot(BeNil())
+				Expect(v1beta1Spec.Workloads.NodePlacement).To(BeNil())
+			})
+
+			It("should not modify v1beta1 when NodePlacements is nil", func() {
+				v1Spec := hcov1.HyperConvergedSpec{}
+				v1beta1Spec := &HyperConvergedSpec{}
+
+				convertNodePlacementsV1ToV1beta1(v1Spec, v1beta1Spec)
+
+				Expect(v1beta1Spec.Infra.NodePlacement).To(BeNil())
+				Expect(v1beta1Spec.Workloads.NodePlacement).To(BeNil())
+			})
+
+			It("should convert affinity and anti-affinity", func() {
+				v1Spec := hcov1.HyperConvergedSpec{
+					NodePlacements: &hcov1.NodePlacements{
+						Infra: &sdkapi.NodePlacement{
+							Affinity: infraAffinity,
+						},
+						Workload: &sdkapi.NodePlacement{
+							Affinity: workloadAffinity,
+						},
+					},
+				}
+				v1beta1Spec := &HyperConvergedSpec{}
+
+				convertNodePlacementsV1ToV1beta1(v1Spec, v1beta1Spec)
+
+				Expect(v1beta1Spec.Infra.NodePlacement).ToNot(BeNil())
+				Expect(v1beta1Spec.Infra.NodePlacement.Affinity).To(Equal(infraAffinity))
+				Expect(v1beta1Spec.Workloads.NodePlacement).ToNot(BeNil())
+				Expect(v1beta1Spec.Workloads.NodePlacement.Affinity).To(Equal(workloadAffinity))
+			})
+		})
+
+		Context("round-trip", func() {
+			It("should preserve node placements through v1beta1 => v1 => v1beta1", func() {
+				original := HyperConvergedSpec{
+					Infra: HyperConvergedConfig{
+						NodePlacement: &sdkapi.NodePlacement{
+							NodeSelector: map[string]string{"infra-key": "infra-val"},
+						},
+					},
+					Workloads: HyperConvergedConfig{
+						NodePlacement: &sdkapi.NodePlacement{
+							NodeSelector: map[string]string{"workload-key": "workload-val"},
+						},
+					},
+				}
+
+				v1Spec := &hcov1.HyperConvergedSpec{}
+				convertNodePlacementsV1beta1ToV1(original, v1Spec)
+
+				result := &HyperConvergedSpec{}
+				convertNodePlacementsV1ToV1beta1(*v1Spec, result)
+
+				Expect(result.Infra.NodePlacement.NodeSelector).To(Equal(original.Infra.NodePlacement.NodeSelector))
+				Expect(result.Workloads.NodePlacement.NodeSelector).To(Equal(original.Workloads.NodePlacement.NodeSelector))
+			})
+
+			It("should preserve node placements through v1 => v1beta1 => v1", func() {
+				original := hcov1.HyperConvergedSpec{
+					NodePlacements: &hcov1.NodePlacements{
+						Infra: &sdkapi.NodePlacement{
+							NodeSelector: map[string]string{"infra-key": "infra-val"},
+						},
+						Workload: &sdkapi.NodePlacement{
+							NodeSelector: map[string]string{"workload-key": "workload-val"},
+						},
+					},
+				}
+
+				v1beta1Spec := &HyperConvergedSpec{}
+				convertNodePlacementsV1ToV1beta1(original, v1beta1Spec)
+
+				result := &hcov1.HyperConvergedSpec{}
+				convertNodePlacementsV1beta1ToV1(*v1beta1Spec, result)
+
+				Expect(result.NodePlacements.Infra.NodeSelector).To(Equal(original.NodePlacements.Infra.NodeSelector))
+				Expect(result.NodePlacements.Workload.NodeSelector).To(Equal(original.NodePlacements.Workload.NodeSelector))
+			})
 		})
 	})
 
