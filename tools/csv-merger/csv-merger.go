@@ -138,6 +138,7 @@ var (
 	aaqVersion                    = flag.String("aaq-version", "", "AAQ operator version")
 	migrationOperatorVersion      = flag.String("migration-operator-version", "", "Migration operator version")
 	autopilotVersion              = flag.String("autopilot-version", "", "Autopilot version")
+	ifoVersion                    = flag.String("ifo-version", "", "InFlightOperations version")
 	enableUniqueSemver            = flag.Bool("enable-unique-version", false, "Insert a skipRange annotation to support unique semver in the CSV")
 	skipsList                     = flag.String("skips-list", "",
 		"Comma separated list of CSVs that can be skipped (read replaced) by this version")
@@ -788,6 +789,7 @@ func getDeploymentParams() *components.DeploymentOperatorParams {
 		AaqVersion:               *aaqVersion,
 		MigrationOperatorVersion: *migrationOperatorVersion,
 		AutopilotVersion:         *autopilotVersion,
+		IfoVersion:               *ifoVersion,
 		PasstImage:               *passtImage,
 		PasstCNIImage:            *passtCNIImage,
 		WaspAgentImage:           *waspAgentImage,

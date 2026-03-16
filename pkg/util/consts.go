@@ -26,6 +26,7 @@ const (
 	AaqVersionEnvV                          = "AAQ_VERSION"
 	MigrationOperatorVersionEnvV            = "MIGRATION_OPERATOR_VERSION"
 	AutopilotVersionEnvV                    = "AUTOPILOT_VERSION"
+	IfoVersionEnvV                          = "IFO_VERSION"
 	KVUIPluginImageEnvV                     = "KV_CONSOLE_PLUGIN_IMAGE"
 	KVUIProxyImageEnvV                      = "KV_CONSOLE_PROXY_IMAGE"
 	PasstImageEnvV                          = "PASST_SIDECAR_IMAGE"
@@ -52,6 +53,7 @@ const (
 	CurrentAPIVersion                       = v1beta1.APIVersionBeta
 	APIVersionGroup                         = v1beta1.APIVersionGroup
 	HyperConvergedKind                      = "HyperConverged"
+
 	// Recommended labels by Kubernetes. See
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	AppLabelPrefix    = "app.kubernetes.io"
@@ -130,4 +132,5 @@ const (
 	AppComponentMigration  AppComponent = "migration"
 	AppComponentAutopilot  AppComponent = "autopilot"
 	AppComponentAIEWebhook AppComponent = "aie-webhook"
+	AppComponentIFO        AppComponent = "inflightoperations"
 )

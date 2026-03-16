@@ -31,6 +31,8 @@ var (
 	migrationoperatorCsvFile = flag.String("migration-operator-csv-file", "", "KubeVirt Migration Operator CSV yaml file")
 	autopilotCsv             = flag.String("autopilot-csv", "", "Virt Platform Autopilot CSV string")
 	autopilotCsvFile         = flag.String("autopilot-csv-file", "", "Virt Platform Autopilot CSV yaml file")
+	ifoCsv                   = flag.String("ifo-csv", "", "InFlightOperations Operator CSV String")
+	ifoCsvFile               = flag.String("ifo-csv-file", "", "InFlightOperations Operator CSV yaml file")
 )
 
 func GetInitialCsvList() ([]CsvWithComponent, error) {
@@ -81,6 +83,14 @@ func GetInitialCsvList() ([]CsvWithComponent, error) {
 			Component: hcoutil.AppComponentMigration,
 		})
 	}
+	// Only add inflightoperations if CSV is not empty
+	if *ifoCsv != "" {
+		components = append(components, CsvWithComponent{
+			Name:      "InFlightOperations",
+			Csv:       *ifoCsv,
+			Component: hcoutil.AppComponentIFO,
+		})
+	}
 
 	// Only add autopilot if CSV is not empty
 	if *autopilotCsv != "" {
@@ -108,6 +118,7 @@ func getAllCSVs() error {
 		{str: aaqCsv, fileName: *aaqCsvFile, flagName: "aaq-csv"},
 		{str: migrationoperatorCsv, fileName: *migrationoperatorCsvFile, flagName: "migration-operator-csv"},
 		{str: autopilotCsv, fileName: *autopilotCsvFile, flagName: "autopilot-csv"},
+		{str: ifoCsv, fileName: *ifoCsvFile, flagName: "ifo-csv"},
 	} {
 		if err := fileOrString(f.str, f.fileName, f.flagName); err != nil {
 			return err

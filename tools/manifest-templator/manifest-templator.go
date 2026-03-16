@@ -73,6 +73,7 @@ var (
 	aaqVersion               = flag.String("aaq-version", "", "AAQ operator version")
 	migrationOperatorVersion = flag.String("migration-operator-version", "", "Migration operator version")
 	autopilotVersion         = flag.String("autopilot-version", "", "Autopilot version")
+	ifoVersion               = flag.String("ifo-version", "", "InFlightOperations version")
 	passtImage               = flag.String("network-passt-binding-image-name", "", "Passt binding image")
 	passtCNIImage            = flag.String("network-passt-binding-cni-image-name", "", "Passt binding cni image")
 	_                        = flag.String("primary-udn-binding-image-name", "", "deprecated. This flag is ignored")
@@ -455,6 +456,7 @@ func getOperatorParameters() *components.DeploymentOperatorParams {
 		AaqVersion:               *aaqVersion,
 		MigrationOperatorVersion: *migrationOperatorVersion,
 		AutopilotVersion:         *autopilotVersion,
+		IfoVersion:               *ifoVersion,
 		PasstImage:               *passtImage,
 		PasstCNIImage:            *passtCNIImage,
 		Env:                      []corev1.EnvVar{},
