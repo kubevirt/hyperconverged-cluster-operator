@@ -212,21 +212,15 @@ type HyperConvergedSpec struct {
 	// +k8s:conversion-gen=false
 	Networking *NetworkingConfig `json:"networking,omitempty"`
 
+	// WorkloadSources contains all the configurations for workload sources
+	// +k8s:conversion-gen=false
+	WorkloadSources WorkloadSourcesConfig `json:"workloadSources,omitempty"`
+
 	// Security contains all the security configurations
 	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}
 	// +optional
 	// +k8s:conversion-gen=false
 	Security SecurityConfig `json:"security,omitempty"`
-
-	// CommonTemplatesNamespace defines namespace in which common templates will
-	// be deployed. It overrides the default openshift namespace.
-	// +optional
-	CommonTemplatesNamespace *string `json:"commonTemplatesNamespace,omitempty"`
-
-	// DataImportCronTemplates holds list of data import cron templates (golden images)
-	// +optional
-	// +listType=atomic
-	DataImportCronTemplates []DataImportCronTemplate `json:"dataImportCronTemplates,omitempty"`
 
 	// UninstallStrategy defines how to proceed on uninstall when workloads (VirtualMachines, DataVolumes) still exist.
 	// BlockUninstallIfWorkloadsExist will prevent the CR from being removed when workloads still exist.
@@ -246,34 +240,9 @@ type HyperConvergedSpec struct {
 	// +optional
 	LogVerbosityConfig *LogVerbosityConfiguration `json:"logVerbosityConfig,omitempty"`
 
-	// CommonBootImageNamespace override the default namespace of the common boot images, in order to hide them.
-	//
-	// If not set, HCO won't set any namespace, letting SSP to use the default. If set, use the namespace to create the
-	// DataImportCronTemplates and the common image streams, with this namespace. This field is not set by default.
-	//
-	// +optional
-	CommonBootImageNamespace *string `json:"commonBootImageNamespace,omitempty"`
-
 	// ApplicationAwareConfig set the AAQ configurations
 	// +optional
 	ApplicationAwareConfig *ApplicationAwareConfigurations `json:"applicationAwareConfig,omitempty"`
-
-	// Opt-in to automatic delivery/updates of the common data import cron templates.
-	// There are two sources for the data import cron templates: hard coded list of common templates, and custom (user
-	// defined) templates that can be added to the dataImportCronTemplates field. This field only controls the common
-	// templates. It is possible to use custom templates by adding them to the dataImportCronTemplates field.
-	// +optional
-	// +kubebuilder:default=true
-	// +default=true
-	EnableCommonBootImageImport *bool `json:"enableCommonBootImageImport,omitempty"`
-
-	// InstancetypeConfig holds the configuration of instance type related functionality within KubeVirt.
-	// +optional
-	InstancetypeConfig *v1.InstancetypeConfiguration `json:"instancetypeConfig,omitempty"`
-
-	// CommonInstancetypesDeployment holds the configuration of common-instancetypes deployment within KubeVirt.
-	// +optional
-	CommonInstancetypesDeployment *v1.CommonInstancetypesDeployment `json:"CommonInstancetypesDeployment,omitempty"`
 
 	// deploy VM console proxy resources in SSP operator
 	// +optional
@@ -434,6 +403,44 @@ type NetworkingConfig struct {
 	// Those bindings can be used when defining virtual machine interfaces.
 	// +optional
 	NetworkBinding map[string]v1.InterfaceBindingPlugin `json:"networkBinding,omitempty"`
+}
+
+// WorkloadSourcesConfig contains all the configurations related to workloads resources
+type WorkloadSourcesConfig struct {
+	// CommonTemplatesNamespace defines namespace in which common templates will
+	// be deployed. It overrides the default openshift namespace.
+	// +optional
+	CommonTemplatesNamespace *string `json:"commonTemplatesNamespace,omitempty"`
+
+	// CommonBootImageNamespace override the default namespace of the common boot images, in order to hide them.
+	//
+	// If not set, HCO won't set any namespace, letting SSP to use the default. If set, use the namespace to create the
+	// DataImportCronTemplates and the common image streams, with this namespace. This field is not set by default.
+	//
+	// +optional
+	CommonBootImageNamespace *string `json:"commonBootImageNamespace,omitempty"`
+
+	// Opt-in to automatic delivery/updates of the common data import cron templates.
+	// There are two sources for the data import cron templates: hard coded list of common templates, and custom (user
+	// defined) templates that can be added to the dataImportCronTemplates field. This field only controls the common
+	// templates. It is possible to use custom templates by adding them to the dataImportCronTemplates field.
+	// +optional
+	// +kubebuilder:default=true
+	// +default=true
+	EnableCommonBootImageImport *bool `json:"enableCommonBootImageImport,omitempty"`
+
+	// DataImportCronTemplates holds list of data import cron templates (golden images)
+	// +optional
+	// +listType=atomic
+	DataImportCronTemplates []DataImportCronTemplate `json:"dataImportCronTemplates,omitempty"`
+
+	// InstancetypeConfig holds the configuration of instance type related functionality within KubeVirt.
+	// +optional
+	InstancetypeConfig *v1.InstancetypeConfiguration `json:"instancetypeConfig,omitempty"`
+
+	// CommonInstancetypesDeployment holds the configuration of common-instancetypes deployment within KubeVirt.
+	// +optional
+	CommonInstancetypesDeployment *v1.CommonInstancetypesDeployment `json:"commonInstancetypesDeployment,omitempty"`
 }
 
 // SecurityConfig contains all the security configurations
@@ -949,7 +956,7 @@ type HyperConverged struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// +kubebuilder:default={"security": {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
+	// +kubebuilder:default={"security": {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10},"workloadSources":{"enableCommonBootImageImport":true}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "enableApplicationAwareQuota": false, "deployVmConsoleProxy": false}
 	// +optional
 	Spec   HyperConvergedSpec   `json:"spec,omitempty"`
 	Status HyperConvergedStatus `json:"status,omitempty"`

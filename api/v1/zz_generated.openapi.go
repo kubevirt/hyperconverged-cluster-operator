@@ -274,37 +274,18 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NetworkingConfig"),
 						},
 					},
+					"workloadSources": {
+						SchemaProps: spec.SchemaProps{
+							Description: "WorkloadSources contains all the configurations for workload sources",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.WorkloadSourcesConfig"),
+						},
+					},
 					"security": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Security contains all the security configurations",
 							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.SecurityConfig"),
-						},
-					},
-					"commonTemplatesNamespace": {
-						SchemaProps: spec.SchemaProps{
-							Description: "CommonTemplatesNamespace defines namespace in which common templates will be deployed. It overrides the default openshift namespace.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"dataImportCronTemplates": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "DataImportCronTemplates holds list of data import cron templates (golden images)",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate"),
-									},
-								},
-							},
 						},
 					},
 					"uninstallStrategy": {
@@ -321,37 +302,10 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration"),
 						},
 					},
-					"commonBootImageNamespace": {
-						SchemaProps: spec.SchemaProps{
-							Description: "CommonBootImageNamespace override the default namespace of the common boot images, in order to hide them.\n\nIf not set, HCO won't set any namespace, letting SSP to use the default. If set, use the namespace to create the DataImportCronTemplates and the common image streams, with this namespace. This field is not set by default.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"applicationAwareConfig": {
 						SchemaProps: spec.SchemaProps{
 							Description: "ApplicationAwareConfig set the AAQ configurations",
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations"),
-						},
-					},
-					"enableCommonBootImageImport": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Opt-in to automatic delivery/updates of the common data import cron templates. There are two sources for the data import cron templates: hard coded list of common templates, and custom (user defined) templates that can be added to the dataImportCronTemplates field. This field only controls the common templates. It is possible to use custom templates by adding them to the dataImportCronTemplates field.",
-							Default:     true,
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"instancetypeConfig": {
-						SchemaProps: spec.SchemaProps{
-							Description: "InstancetypeConfig holds the configuration of instance type related functionality within KubeVirt.",
-							Ref:         ref("kubevirt.io/api/core/v1.InstancetypeConfiguration"),
-						},
-					},
-					"CommonInstancetypesDeployment": {
-						SchemaProps: spec.SchemaProps{
-							Description: "CommonInstancetypesDeployment holds the configuration of common-instancetypes deployment within KubeVirt.",
-							Ref:         ref("kubevirt.io/api/core/v1.CommonInstancetypesDeployment"),
 						},
 					},
 					"deployVmConsoleProxy": {
@@ -374,7 +328,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NetworkingConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodePlacements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.SecurityConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.InstancetypeConfiguration"},
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NetworkingConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodePlacements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.SecurityConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.WorkloadSourcesConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate"},
 	}
 }
 

@@ -27,10 +27,10 @@ package v1
 import (
 	featuregates "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	configv1 "github.com/openshift/api/config/v1"
-	apicorev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
-	corev1 "kubevirt.io/api/core/v1"
+	apicorev1 "kubevirt.io/api/core/v1"
 	v1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
 	v1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 )
@@ -297,47 +297,16 @@ func (in *HyperConvergedSpec) DeepCopyInto(out *HyperConvergedSpec) {
 		*out = new(NetworkingConfig)
 		(*in).DeepCopyInto(*out)
 	}
+	in.WorkloadSources.DeepCopyInto(&out.WorkloadSources)
 	in.Security.DeepCopyInto(&out.Security)
-	if in.CommonTemplatesNamespace != nil {
-		in, out := &in.CommonTemplatesNamespace, &out.CommonTemplatesNamespace
-		*out = new(string)
-		**out = **in
-	}
-	if in.DataImportCronTemplates != nil {
-		in, out := &in.DataImportCronTemplates, &out.DataImportCronTemplates
-		*out = make([]DataImportCronTemplate, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
-		}
-	}
 	if in.LogVerbosityConfig != nil {
 		in, out := &in.LogVerbosityConfig, &out.LogVerbosityConfig
 		*out = new(LogVerbosityConfiguration)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.CommonBootImageNamespace != nil {
-		in, out := &in.CommonBootImageNamespace, &out.CommonBootImageNamespace
-		*out = new(string)
-		**out = **in
-	}
 	if in.ApplicationAwareConfig != nil {
 		in, out := &in.ApplicationAwareConfig, &out.ApplicationAwareConfig
 		*out = new(ApplicationAwareConfigurations)
-		(*in).DeepCopyInto(*out)
-	}
-	if in.EnableCommonBootImageImport != nil {
-		in, out := &in.EnableCommonBootImageImport, &out.EnableCommonBootImageImport
-		*out = new(bool)
-		**out = **in
-	}
-	if in.InstancetypeConfig != nil {
-		in, out := &in.InstancetypeConfig, &out.InstancetypeConfig
-		*out = new(corev1.InstancetypeConfiguration)
-		(*in).DeepCopyInto(*out)
-	}
-	if in.CommonInstancetypesDeployment != nil {
-		in, out := &in.CommonInstancetypesDeployment, &out.CommonInstancetypesDeployment
-		*out = new(corev1.CommonInstancetypesDeployment)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.DeployVMConsoleProxy != nil {
@@ -375,7 +344,7 @@ func (in *HyperConvergedStatus) DeepCopyInto(out *HyperConvergedStatus) {
 	}
 	if in.RelatedObjects != nil {
 		in, out := &in.RelatedObjects, &out.RelatedObjects
-		*out = make([]apicorev1.ObjectReference, len(*in))
+		*out = make([]corev1.ObjectReference, len(*in))
 		copy(*out, *in)
 	}
 	if in.Versions != nil {
@@ -527,7 +496,7 @@ func (in *LogVerbosityConfiguration) DeepCopyInto(out *LogVerbosityConfiguration
 	*out = *in
 	if in.Kubevirt != nil {
 		in, out := &in.Kubevirt, &out.Kubevirt
-		*out = new(corev1.LogVerbosity)
+		*out = new(apicorev1.LogVerbosity)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.CDI != nil {
@@ -607,7 +576,7 @@ func (in *NetworkingConfig) DeepCopyInto(out *NetworkingConfig) {
 	}
 	if in.NetworkBinding != nil {
 		in, out := &in.NetworkBinding, &out.NetworkBinding
-		*out = make(map[string]corev1.InterfaceBindingPlugin, len(*in))
+		*out = make(map[string]apicorev1.InterfaceBindingPlugin, len(*in))
 		for key, val := range *in {
 			(*out)[key] = *val.DeepCopy()
 		}
@@ -799,7 +768,7 @@ func (in *StorageConfig) DeepCopyInto(out *StorageConfig) {
 	}
 	if in.StorageWorkloads != nil {
 		in, out := &in.StorageWorkloads, &out.StorageWorkloads
-		*out = new(apicorev1.ResourceRequirements)
+		*out = new(corev1.ResourceRequirements)
 		(*in).DeepCopyInto(*out)
 	}
 	return
@@ -947,7 +916,7 @@ func (in *VirtualizationConfig) DeepCopyInto(out *VirtualizationConfig) {
 	}
 	if in.EvictionStrategy != nil {
 		in, out := &in.EvictionStrategy, &out.EvictionStrategy
-		*out = new(corev1.EvictionStrategy)
+		*out = new(apicorev1.EvictionStrategy)
 		**out = **in
 	}
 	if in.VirtualMachineOptions != nil {
@@ -962,22 +931,22 @@ func (in *VirtualizationConfig) DeepCopyInto(out *VirtualizationConfig) {
 	}
 	if in.LiveUpdateConfiguration != nil {
 		in, out := &in.LiveUpdateConfiguration, &out.LiveUpdateConfiguration
-		*out = new(corev1.LiveUpdateConfiguration)
+		*out = new(apicorev1.LiveUpdateConfiguration)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.KSMConfiguration != nil {
 		in, out := &in.KSMConfiguration, &out.KSMConfiguration
-		*out = new(corev1.KSMConfiguration)
+		*out = new(apicorev1.KSMConfiguration)
 		(*in).DeepCopyInto(*out)
 	}
 	if in.Hypervisors != nil {
 		in, out := &in.Hypervisors, &out.Hypervisors
-		*out = make([]corev1.HypervisorConfiguration, len(*in))
+		*out = make([]apicorev1.HypervisorConfiguration, len(*in))
 		copy(*out, *in)
 	}
 	if in.RoleAggregationStrategy != nil {
 		in, out := &in.RoleAggregationStrategy, &out.RoleAggregationStrategy
-		*out = new(corev1.RoleAggregationStrategy)
+		*out = new(apicorev1.RoleAggregationStrategy)
 		**out = **in
 	}
 	if in.VmiCPUAllocationRatio != nil {
@@ -999,6 +968,54 @@ func (in *VirtualizationConfig) DeepCopy() *VirtualizationConfig {
 		return nil
 	}
 	out := new(VirtualizationConfig)
+	in.DeepCopyInto(out)
+	return out
+}
+
+// DeepCopyInto is an autogenerated deepcopy function, copying the receiver, writing into out. in must be non-nil.
+func (in *WorkloadSourcesConfig) DeepCopyInto(out *WorkloadSourcesConfig) {
+	*out = *in
+	if in.CommonTemplatesNamespace != nil {
+		in, out := &in.CommonTemplatesNamespace, &out.CommonTemplatesNamespace
+		*out = new(string)
+		**out = **in
+	}
+	if in.CommonBootImageNamespace != nil {
+		in, out := &in.CommonBootImageNamespace, &out.CommonBootImageNamespace
+		*out = new(string)
+		**out = **in
+	}
+	if in.EnableCommonBootImageImport != nil {
+		in, out := &in.EnableCommonBootImageImport, &out.EnableCommonBootImageImport
+		*out = new(bool)
+		**out = **in
+	}
+	if in.DataImportCronTemplates != nil {
+		in, out := &in.DataImportCronTemplates, &out.DataImportCronTemplates
+		*out = make([]DataImportCronTemplate, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
+	if in.InstancetypeConfig != nil {
+		in, out := &in.InstancetypeConfig, &out.InstancetypeConfig
+		*out = new(apicorev1.InstancetypeConfiguration)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.CommonInstancetypesDeployment != nil {
+		in, out := &in.CommonInstancetypesDeployment, &out.CommonInstancetypesDeployment
+		*out = new(apicorev1.CommonInstancetypesDeployment)
+		(*in).DeepCopyInto(*out)
+	}
+	return
+}
+
+// DeepCopy is an autogenerated deepcopy function, copying the receiver, creating a new WorkloadSourcesConfig.
+func (in *WorkloadSourcesConfig) DeepCopy() *WorkloadSourcesConfig {
+	if in == nil {
+		return nil
+	}
+	out := new(WorkloadSourcesConfig)
 	in.DeepCopyInto(out)
 	return out
 }

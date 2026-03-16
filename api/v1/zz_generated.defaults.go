@@ -107,6 +107,10 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		var ptrVar1 int = 10
 		in.Spec.Virtualization.VmiCPUAllocationRatio = &ptrVar1
 	}
+	if in.Spec.WorkloadSources.EnableCommonBootImageImport == nil {
+		var ptrVar1 bool = true
+		in.Spec.WorkloadSources.EnableCommonBootImageImport = &ptrVar1
+	}
 	if in.Spec.Security.CertConfig.CA.Duration == nil {
 		if err := json.Unmarshal([]byte(`"48h0m0s"`), &in.Spec.Security.CertConfig.CA.Duration); err != nil {
 			panic(err)
@@ -129,10 +133,6 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 	}
 	if in.Spec.UninstallStrategy == "" {
 		in.Spec.UninstallStrategy = "BlockUninstallIfWorkloadsExist"
-	}
-	if in.Spec.EnableCommonBootImageImport == nil {
-		var ptrVar1 bool = true
-		in.Spec.EnableCommonBootImageImport = &ptrVar1
 	}
 	if in.Spec.DeployVMConsoleProxy == nil {
 		var ptrVar1 bool = false
