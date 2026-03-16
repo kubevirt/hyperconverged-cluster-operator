@@ -40,7 +40,9 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				Namespace: HcoValidNamespace,
 			},
 			Spec: hcov1.HyperConvergedSpec{
-				EvictionStrategy: ptr.To(kubevirtcorev1.EvictionStrategyLiveMigrate),
+				Virtualization: hcov1.VirtualizationConfig{
+					EvictionStrategy: ptr.To(kubevirtcorev1.EvictionStrategyLiveMigrate),
+				},
 			},
 		}
 
@@ -48,12 +50,14 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 		mutator = initHCMutator(mutatorScheme, cli)
 	})
 
+	const v1EvictionStrategyPath = "/spec/virtualization/evictionStrategy"
+
 	Context("Check mutating webhook for create operation", func() {
 
 		var (
 			ksmPatch = jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      "/spec/ksmConfiguration",
+				Path:      "/spec/virtualization/ksmConfiguration",
 				Value:     kubevirtcorev1.KSMConfiguration{},
 			}
 		)
@@ -149,7 +153,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 			DescribeTable("check EvictionStrategy default", func(ctx context.Context, SNO bool, strategy *kubevirtcorev1.EvictionStrategy, patches []jsonpatch.JsonPatchOperation) {
 				cr.Status.InfrastructureHighlyAvailable = ptr.To(!SNO)
 
-				cr.Spec.EvictionStrategy = strategy
+				cr.Spec.Virtualization.EvictionStrategy = strategy
 
 				req := admission.Request{AdmissionRequest: newCreateRequest(cr, testCodec)}
 
@@ -164,7 +168,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 					nil,
 					[]jsonpatch.JsonPatchOperation{{
 						Operation: "replace",
-						Path:      "/spec/evictionStrategy",
+						Path:      v1EvictionStrategyPath,
 						Value:     kubevirtcorev1.EvictionStrategyNone,
 					}},
 				),
@@ -188,7 +192,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 					nil,
 					[]jsonpatch.JsonPatchOperation{{
 						Operation: "replace",
-						Path:      "/spec/evictionStrategy",
+						Path:      v1EvictionStrategyPath,
 						Value:     kubevirtcorev1.EvictionStrategyLiveMigrate,
 					}},
 				),
@@ -220,7 +224,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 		})
 
 		It("should not enable KSM, if already set", func(ctx context.Context) {
-			cr.Spec.KSMConfiguration = &kubevirtcorev1.KSMConfiguration{}
+			cr.Spec.Virtualization.KSMConfiguration = &kubevirtcorev1.KSMConfiguration{}
 			req := admission.Request{AdmissionRequest: newCreateRequest(cr, testCodec)}
 
 			res := mutator.Handle(ctx, req)
@@ -322,7 +326,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				origCR := cr.DeepCopy()
 				cr.Status.InfrastructureHighlyAvailable = ptr.To(!SNO)
 
-				cr.Spec.EvictionStrategy = strategy
+				cr.Spec.Virtualization.EvictionStrategy = strategy
 
 				req := admission.Request{AdmissionRequest: newUpdateRequest(origCR, cr, testCodec)}
 
@@ -336,7 +340,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 					nil,
 					[]jsonpatch.JsonPatchOperation{{
 						Operation: "replace",
-						Path:      "/spec/evictionStrategy",
+						Path:      v1EvictionStrategyPath,
 						Value:     kubevirtcorev1.EvictionStrategyNone,
 					}},
 				),
@@ -360,7 +364,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 					nil,
 					[]jsonpatch.JsonPatchOperation{{
 						Operation: "replace",
-						Path:      "/spec/evictionStrategy",
+						Path:      v1EvictionStrategyPath,
 						Value:     kubevirtcorev1.EvictionStrategyLiveMigrate,
 					}},
 				),
