@@ -213,11 +213,13 @@ type HyperConvergedSpec struct {
 
 	// KubeSecondaryDNSNameServerIP defines name server IP used by KubeSecondaryDNS
 	// +optional
+	// +k8s:conversion-gen=false
 	KubeSecondaryDNSNameServerIP *string `json:"kubeSecondaryDNSNameServerIP,omitempty"`
 
 	// KubeMacPoolConfiguration holds kubemacpool MAC address range configuration.
 	// +optional
-	KubeMacPoolConfiguration *KubeMacPoolConfig `json:"kubeMacPoolConfiguration,omitempty"`
+	// +k8s:conversion-gen=false
+	KubeMacPoolConfiguration *hcov1.KubeMacPoolConfig `json:"kubeMacPoolConfiguration,omitempty"`
 
 	// EvictionStrategy defines at the cluster level if the VirtualMachineInstance should be
 	// migrated instead of shut-off in case of a node drain. If the VirtualMachineInstance specific
@@ -262,6 +264,7 @@ type HyperConvergedSpec struct {
 	// NetworkBinding defines the network binding plugins.
 	// Those bindings can be used when defining virtual machine interfaces.
 	// +optional
+	// +k8s:conversion-gen=false
 	NetworkBinding map[string]v1.InterfaceBindingPlugin `json:"networkBinding,omitempty"`
 
 	// ApplicationAwareConfig set the AAQ configurations
@@ -704,22 +707,6 @@ type ApplicationAwareConfigurations struct {
 	// AllowApplicationAwareClusterResourceQuota if set to true, allows creation and management of ClusterAppsResourceQuota
 	// +kubebuilder:default=false
 	AllowApplicationAwareClusterResourceQuota bool `json:"allowApplicationAwareClusterResourceQuota,omitempty"`
-}
-
-// KubeMacPoolConfig defines kubemacpool MAC address range configuration
-// +k8s:openapi-gen=true
-// +kubebuilder:validation:XValidation:rule="(has(self.rangeStart) && has(self.rangeEnd)) || (!has(self.rangeStart) && !has(self.rangeEnd))",message="both rangeStart and rangeEnd must be configured together, or both omitted"
-type KubeMacPoolConfig struct {
-	// RangeStart defines the first MAC address in the kubemacpool range.
-	// The MAC address format should be AA:BB:CC:DD:EE:FF.
-	// +optional
-	// +kubebuilder:validation:Pattern=`^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$`
-	RangeStart *string `json:"rangeStart,omitempty"`
-	// RangeEnd defines the last MAC address in the kubemacpool range.
-	// The MAC address format should be AA:BB:CC:DD:EE:FF.
-	// +optional
-	// +kubebuilder:validation:Pattern=`^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$`
-	RangeEnd *string `json:"rangeEnd,omitempty"`
 }
 
 const (

@@ -7,13 +7,13 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 
-	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	kubevirtv1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
@@ -1548,6 +1548,244 @@ var _ = Describe("api/v1beta1", func() {
 				Expect(result.ScratchSpaceStorageClass).To(HaveValue(Equal("scratch-class")))
 				Expect(result.StorageImport).ToNot(BeNil())
 				Expect(result.StorageImport.InsecureRegistries).To(Equal([]string{"registry.example.com"}))
+			})
+		})
+	})
+
+	Context("Networking conversion", func() {
+		Context("v1 ==> v1beta1", func() {
+			It("should convert KubeSecondaryDNSNameServerIP", func() {
+				v1Networking := &hcov1.NetworkingConfig{
+					KubeSecondaryDNSNameServerIP: ptr.To("192.168.1.1"),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertNetworkingV1ToV1beta1(v1Networking, &v1beta1Spec)
+
+				Expect(v1beta1Spec.KubeSecondaryDNSNameServerIP).To(HaveValue(Equal("192.168.1.1")))
+				Expect(v1beta1Spec.KubeMacPoolConfiguration).To(BeNil())
+				Expect(v1beta1Spec.NetworkBinding).To(BeNil())
+			})
+
+			It("should convert KubeMacPoolConfiguration", func() {
+				v1Networking := &hcov1.NetworkingConfig{
+					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
+						RangeStart: ptr.To("02:00:00:00:00:00"),
+						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertNetworkingV1ToV1beta1(v1Networking, &v1beta1Spec)
+
+				Expect(v1beta1Spec.KubeMacPoolConfiguration).ToNot(BeNil())
+				Expect(v1beta1Spec.KubeMacPoolConfiguration.RangeStart).To(HaveValue(Equal("02:00:00:00:00:00")))
+				Expect(v1beta1Spec.KubeMacPoolConfiguration.RangeEnd).To(HaveValue(Equal("02:FF:FF:FF:FF:FF")))
+				Expect(v1beta1Spec.KubeSecondaryDNSNameServerIP).To(BeNil())
+				Expect(v1beta1Spec.NetworkBinding).To(BeNil())
+			})
+
+			It("should convert NetworkBinding", func() {
+				v1Networking := &hcov1.NetworkingConfig{
+					NetworkBinding: map[string]kubevirtv1.InterfaceBindingPlugin{
+						"test-binding": {
+							SidecarImage: "test-image:latest",
+						},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertNetworkingV1ToV1beta1(v1Networking, &v1beta1Spec)
+
+				Expect(v1beta1Spec.NetworkBinding).To(HaveLen(1))
+				Expect(v1beta1Spec.NetworkBinding).To(HaveKeyWithValue("test-binding", kubevirtv1.InterfaceBindingPlugin{
+					SidecarImage: "test-image:latest",
+				}))
+				Expect(v1beta1Spec.KubeSecondaryDNSNameServerIP).To(BeNil())
+				Expect(v1beta1Spec.KubeMacPoolConfiguration).To(BeNil())
+			})
+
+			It("should not convert when nil", func() {
+				var v1beta1Spec HyperConvergedSpec
+				convertNetworkingV1ToV1beta1(nil, &v1beta1Spec)
+
+				Expect(v1beta1Spec.KubeSecondaryDNSNameServerIP).To(BeNil())
+				Expect(v1beta1Spec.KubeMacPoolConfiguration).To(BeNil())
+				Expect(v1beta1Spec.NetworkBinding).To(BeNil())
+			})
+
+			It("should convert all fields together", func() {
+				v1Networking := &hcov1.NetworkingConfig{
+					KubeSecondaryDNSNameServerIP: ptr.To("10.0.0.1"),
+					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
+						RangeStart: ptr.To("02:00:00:00:00:00"),
+						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+					},
+					NetworkBinding: map[string]kubevirtv1.InterfaceBindingPlugin{
+						"binding1": {SidecarImage: "image1:v1"},
+						"binding2": {NetworkAttachmentDefinition: "ns/nad"},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertNetworkingV1ToV1beta1(v1Networking, &v1beta1Spec)
+
+				Expect(v1beta1Spec.KubeSecondaryDNSNameServerIP).To(HaveValue(Equal("10.0.0.1")))
+				Expect(v1beta1Spec.KubeMacPoolConfiguration.RangeStart).To(HaveValue(Equal("02:00:00:00:00:00")))
+				Expect(v1beta1Spec.KubeMacPoolConfiguration.RangeEnd).To(HaveValue(Equal("02:FF:FF:FF:FF:FF")))
+				Expect(v1beta1Spec.NetworkBinding).To(HaveLen(2))
+				Expect(v1beta1Spec.NetworkBinding).To(HaveKeyWithValue("binding1", kubevirtv1.InterfaceBindingPlugin{SidecarImage: "image1:v1"}))
+				Expect(v1beta1Spec.NetworkBinding).To(HaveKeyWithValue("binding2", kubevirtv1.InterfaceBindingPlugin{NetworkAttachmentDefinition: "ns/nad"}))
+			})
+		})
+
+		Context("v1beta1 ==> v1", func() {
+			It("should convert KubeSecondaryDNSNameServerIP", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					KubeSecondaryDNSNameServerIP: ptr.To("192.168.1.1"),
+				}
+
+				result := convertNetworkingV1beta1ToV1(v1beta1Spec)
+
+				Expect(result).ToNot(BeNil())
+				Expect(result.KubeSecondaryDNSNameServerIP).To(HaveValue(Equal("192.168.1.1")))
+				Expect(result.KubeMacPoolConfiguration).To(BeNil())
+				Expect(result.NetworkBinding).To(BeNil())
+			})
+
+			It("should convert KubeMacPoolConfiguration", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
+						RangeStart: ptr.To("02:00:00:00:00:00"),
+						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+					},
+				}
+
+				result := convertNetworkingV1beta1ToV1(v1beta1Spec)
+
+				Expect(result).ToNot(BeNil())
+				Expect(result.KubeMacPoolConfiguration).ToNot(BeNil())
+				Expect(result.KubeMacPoolConfiguration.RangeStart).To(HaveValue(Equal("02:00:00:00:00:00")))
+				Expect(result.KubeMacPoolConfiguration.RangeEnd).To(HaveValue(Equal("02:FF:FF:FF:FF:FF")))
+				Expect(result.KubeSecondaryDNSNameServerIP).To(BeNil())
+				Expect(result.NetworkBinding).To(BeNil())
+			})
+
+			It("should convert NetworkBinding", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					NetworkBinding: map[string]kubevirtv1.InterfaceBindingPlugin{
+						"test-binding": {
+							SidecarImage: "test-image:latest",
+						},
+					},
+				}
+
+				result := convertNetworkingV1beta1ToV1(v1beta1Spec)
+
+				Expect(result).ToNot(BeNil())
+				Expect(result.NetworkBinding).To(HaveLen(1))
+				Expect(result.NetworkBinding).To(HaveKeyWithValue("test-binding", kubevirtv1.InterfaceBindingPlugin{
+					SidecarImage: "test-image:latest",
+				}))
+				Expect(result.KubeSecondaryDNSNameServerIP).To(BeNil())
+				Expect(result.KubeMacPoolConfiguration).To(BeNil())
+			})
+
+			It("should return nil when all fields are nil", func() {
+				v1beta1Spec := HyperConvergedSpec{}
+
+				result := convertNetworkingV1beta1ToV1(v1beta1Spec)
+
+				Expect(result).To(BeNil())
+			})
+
+			It("should convert all fields together", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					KubeSecondaryDNSNameServerIP: ptr.To("10.0.0.1"),
+					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
+						RangeStart: ptr.To("02:00:00:00:00:00"),
+						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+					},
+					NetworkBinding: map[string]kubevirtv1.InterfaceBindingPlugin{
+						"binding1": {SidecarImage: "image1:v1"},
+						"binding2": {NetworkAttachmentDefinition: "ns/nad"},
+					},
+				}
+
+				result := convertNetworkingV1beta1ToV1(v1beta1Spec)
+
+				Expect(result).ToNot(BeNil())
+				Expect(result.KubeSecondaryDNSNameServerIP).To(HaveValue(Equal("10.0.0.1")))
+				Expect(result.KubeMacPoolConfiguration.RangeStart).To(HaveValue(Equal("02:00:00:00:00:00")))
+				Expect(result.KubeMacPoolConfiguration.RangeEnd).To(HaveValue(Equal("02:FF:FF:FF:FF:FF")))
+				Expect(result.NetworkBinding).To(HaveLen(2))
+				Expect(result.NetworkBinding).To(HaveKeyWithValue("binding1", kubevirtv1.InterfaceBindingPlugin{SidecarImage: "image1:v1"}))
+				Expect(result.NetworkBinding).To(HaveKeyWithValue("binding2", kubevirtv1.InterfaceBindingPlugin{NetworkAttachmentDefinition: "ns/nad"}))
+			})
+		})
+
+		Context("round-trip", func() {
+			It("should preserve networking config through v1beta1 => v1 => v1beta1", func() {
+				original := HyperConvergedSpec{
+					KubeSecondaryDNSNameServerIP: ptr.To("10.0.0.1"),
+					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
+						RangeStart: ptr.To("02:00:00:00:00:00"),
+						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+					},
+					NetworkBinding: map[string]kubevirtv1.InterfaceBindingPlugin{
+						"binding1": {SidecarImage: "image1:v1"},
+						"binding2": {NetworkAttachmentDefinition: "ns/nad"},
+					},
+				}
+
+				v1Networking := convertNetworkingV1beta1ToV1(original)
+
+				var result HyperConvergedSpec
+				convertNetworkingV1ToV1beta1(v1Networking, &result)
+
+				Expect(result.KubeSecondaryDNSNameServerIP).To(Equal(original.KubeSecondaryDNSNameServerIP))
+				Expect(result.KubeMacPoolConfiguration.RangeStart).To(Equal(original.KubeMacPoolConfiguration.RangeStart))
+				Expect(result.KubeMacPoolConfiguration.RangeEnd).To(Equal(original.KubeMacPoolConfiguration.RangeEnd))
+				Expect(result.NetworkBinding).To(Equal(original.NetworkBinding))
+			})
+
+			It("should preserve networking config through v1 => v1beta1 => v1", func() {
+				original := &hcov1.NetworkingConfig{
+					KubeSecondaryDNSNameServerIP: ptr.To("10.0.0.1"),
+					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
+						RangeStart: ptr.To("02:00:00:00:00:00"),
+						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+					},
+					NetworkBinding: map[string]kubevirtv1.InterfaceBindingPlugin{
+						"binding1": {SidecarImage: "image1:v1"},
+						"binding2": {NetworkAttachmentDefinition: "ns/nad"},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertNetworkingV1ToV1beta1(original, &v1beta1Spec)
+
+				result := convertNetworkingV1beta1ToV1(v1beta1Spec)
+
+				Expect(result).ToNot(BeNil())
+				Expect(result.KubeSecondaryDNSNameServerIP).To(Equal(original.KubeSecondaryDNSNameServerIP))
+				Expect(result.KubeMacPoolConfiguration.RangeStart).To(Equal(original.KubeMacPoolConfiguration.RangeStart))
+				Expect(result.KubeMacPoolConfiguration.RangeEnd).To(Equal(original.KubeMacPoolConfiguration.RangeEnd))
+				Expect(result.NetworkBinding).To(Equal(original.NetworkBinding))
+			})
+
+			It("should preserve nil networking through round-trip", func() {
+				original := HyperConvergedSpec{}
+
+				v1Networking := convertNetworkingV1beta1ToV1(original)
+				Expect(v1Networking).To(BeNil())
+
+				var result HyperConvergedSpec
+				convertNetworkingV1ToV1beta1(v1Networking, &result)
+
+				Expect(result.KubeSecondaryDNSNameServerIP).To(BeNil())
+				Expect(result.KubeMacPoolConfiguration).To(BeNil())
+				Expect(result.NetworkBinding).To(BeNil())
 			})
 		})
 	})

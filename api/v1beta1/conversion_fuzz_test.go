@@ -211,6 +211,23 @@ func randomV1beta1HC(r *rand.Rand) *HyperConverged {
 		}
 	}
 
+	if r.IntN(2) == 1 {
+		hc.Spec.KubeSecondaryDNSNameServerIP = randPtr(r, randString(r))
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.KubeMacPoolConfiguration = &hcov1.KubeMacPoolConfig{
+			RangeStart: randPtr(r, randString(r)),
+			RangeEnd:   randPtr(r, randString(r)),
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.NetworkBinding = map[string]kubevirtv1.InterfaceBindingPlugin{
+			randString(r): {SidecarImage: randString(r)},
+		}
+	}
+
 	return hc
 }
 
@@ -342,6 +359,34 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 		hc.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
 			Type:         openshiftconfigv1.TLSProfileIntermediateType,
 			Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		nsIP := randString(r)
+		hc.Spec.Networking = &hcov1.NetworkingConfig{
+			KubeSecondaryDNSNameServerIP: &nsIP,
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		if hc.Spec.Networking == nil {
+			hc.Spec.Networking = &hcov1.NetworkingConfig{}
+		}
+
+		hc.Spec.Networking.KubeMacPoolConfiguration = &hcov1.KubeMacPoolConfig{
+			RangeStart: randPtr(r, randString(r)),
+			RangeEnd:   randPtr(r, randString(r)),
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		if hc.Spec.Networking == nil {
+			hc.Spec.Networking = &hcov1.NetworkingConfig{}
+		}
+
+		hc.Spec.Networking.NetworkBinding = map[string]kubevirtv1.InterfaceBindingPlugin{
+			randString(r): {SidecarImage: randString(r)},
 		}
 	}
 

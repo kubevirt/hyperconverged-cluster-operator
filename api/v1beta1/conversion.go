@@ -2,6 +2,7 @@ package v1beta1
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"slices"
 
@@ -35,6 +36,8 @@ func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error { //revive:dis
 
 	convertSecurityV1beta1ToV1(src.Spec, &dst.Spec.Security)
 
+	dst.Spec.Networking = convertNetworkingV1beta1ToV1(src.Spec)
+
 	return nil
 }
 
@@ -56,6 +59,8 @@ func (dst *HyperConverged) ConvertFrom(srcRaw conversion.Hub) error { //revive:d
 	convertStorageV1ToV1beta1(src.Spec.Storage, &dst.Spec)
 
 	convertSecurityV1ToV1beta1(src.Spec.Security, &dst.Spec)
+
+	convertNetworkingV1ToV1beta1(src.Spec.Networking, &dst.Spec)
 
 	return nil
 }
@@ -325,6 +330,41 @@ func convertSecurityV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1SecurityConfig
 	if v1beta1Spec.TLSSecurityProfile != nil {
 		v1SecurityConfig.TLSSecurityProfile = v1beta1Spec.TLSSecurityProfile.DeepCopy()
 	}
+}
+
+func convertNetworkingV1ToV1beta1(v1Networking *hcov1.NetworkingConfig, v1beta1Spec *HyperConvergedSpec) {
+	if v1Networking == nil {
+		return
+	}
+
+	v1beta1Spec.NetworkBinding = maps.Clone(v1Networking.NetworkBinding)
+	if v1Networking.KubeMacPoolConfiguration != nil {
+		v1beta1Spec.KubeMacPoolConfiguration = v1Networking.KubeMacPoolConfiguration.DeepCopy()
+	}
+	v1beta1Spec.KubeSecondaryDNSNameServerIP = setPtr(v1Networking.KubeSecondaryDNSNameServerIP)
+}
+
+func convertNetworkingV1beta1ToV1(v1beta1Spec HyperConvergedSpec) *hcov1.NetworkingConfig {
+	if areV1beta1NetworkingFieldsEmpty(v1beta1Spec) {
+		return nil
+	}
+
+	var kubeMacPoolConfig *hcov1.KubeMacPoolConfig
+	if v1beta1Spec.KubeMacPoolConfiguration != nil {
+		kubeMacPoolConfig = v1beta1Spec.KubeMacPoolConfiguration.DeepCopy()
+	}
+
+	return &hcov1.NetworkingConfig{
+		NetworkBinding:               maps.Clone(v1beta1Spec.NetworkBinding),
+		KubeMacPoolConfiguration:     kubeMacPoolConfig,
+		KubeSecondaryDNSNameServerIP: setPtr(v1beta1Spec.KubeSecondaryDNSNameServerIP),
+	}
+}
+
+func areV1beta1NetworkingFieldsEmpty(v1beta1Spec HyperConvergedSpec) bool {
+	return v1beta1Spec.NetworkBinding == nil &&
+		v1beta1Spec.KubeMacPoolConfiguration == nil &&
+		v1beta1Spec.KubeSecondaryDNSNameServerIP == nil
 }
 
 var converter *conversion2.Converter
