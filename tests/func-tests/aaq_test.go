@@ -52,7 +52,7 @@ var _ = Describe("Test AAQ", Label("AAQ"), Serial, Ordered, func() {
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(aaq.Status.Conditions).ToNot(BeEmpty())
 				return conditionsv1.IsStatusConditionTrue(aaq.Status.Conditions, conditionsv1.ConditionAvailable)
-			}).WithTimeout(5 * time.Minute).WithPolling(time.Second).WithContext(ctx).ShouldNot(BeTrue())
+			}).WithTimeout(5 * time.Minute).WithPolling(time.Second).WithContext(ctx).Should(BeTrue())
 
 			By("check AAQ pods")
 			Eventually(func(g Gomega, ctx context.Context) {
