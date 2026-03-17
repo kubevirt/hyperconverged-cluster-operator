@@ -12,8 +12,8 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
@@ -108,7 +108,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 	})
 
 	Context("liveMigrationConfig defaults", func() {
-		defaultLiveMigrationConfig := v1beta1.LiveMigrationConfigurations{
+		defaultLiveMigrationConfig := hcov1.LiveMigrationConfigurations{
 			AllowAutoConverge:                 ptr.To(false),
 			AllowPostCopy:                     ptr.To(false),
 			CompletionTimeoutPerGiB:           ptr.To(int64(150)),
@@ -162,7 +162,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 	})
 
 	Context("workloadUpdateStrategy defaults", func() {
-		defaultWorkloadUpdateStrategy := v1beta1.HyperConvergedWorkloadUpdateStrategy{
+		defaultWorkloadUpdateStrategy := hcov1.HyperConvergedWorkloadUpdateStrategy{
 			BatchEvictionInterval: &metav1.Duration{Duration: time.Minute},
 			BatchEvictionSize:     ptr.To(10),
 			WorkloadUpdateMethods: []string{"LiveMigrate"},
@@ -231,7 +231,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 	})
 
 	Context("HigherWorkloadDensity defaults", func() {
-		defaultHigherWorkloadDensity := &v1beta1.HigherWorkloadDensityConfiguration{
+		defaultHigherWorkloadDensity := &hcov1.HigherWorkloadDensityConfiguration{
 			MemoryOvercommitPercentage: 100,
 		}
 
