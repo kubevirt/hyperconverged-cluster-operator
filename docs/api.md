@@ -178,6 +178,7 @@ HyperConvergedFeatureGates is a set of optional feature gates to enable or disab
 | videoConfig | VideoConfig allows users to configure video device types for their virtual machines. This can be useful for workloads that require specific video capabilities or architectures. Note: This feature is in Tech Preview. | *bool | true | false |
 | objectGraph | ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking. Note: This feature is in Developer Preview. | *bool | false | false |
 | incrementalBackup | IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt. When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This feature is in Tech Preview. | *bool | false | false |
+| inheritScratchSpaceStorageClass | InheritScratchSpaceStorageClass enables scratch space PVCs to inherit the storage class of the target owner PVC instead of using the default storage class. Note: This feature is in Tech Preview | *bool | false | false |
 
 [Back to TOC](#table-of-contents)
 

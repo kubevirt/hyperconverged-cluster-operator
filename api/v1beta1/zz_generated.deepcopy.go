@@ -365,6 +365,11 @@ func (in *HyperConvergedFeatureGates) DeepCopyInto(out *HyperConvergedFeatureGat
 		*out = new(bool)
 		**out = **in
 	}
+	if in.InheritScratchSpaceStorageClass != nil {
+		in, out := &in.InheritScratchSpaceStorageClass, &out.InheritScratchSpaceStorageClass
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
