@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	gomegatypes "github.com/onsi/gomega/types"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -909,6 +910,45 @@ var _ = Describe("CDI Operand", func() {
 			Expect(foundResource.Spec.Config.FeatureGates).To(ContainElements(defaultFeatureGates))
 			Expect(*foundResource.Spec.UninstallStrategy).To(Equal(cdiv1beta1.CDIUninstallStrategyBlockUninstallIfWorkloadsExist))
 		})
+
+		DescribeTable("Feature gates",
+			func(
+				modifyHC func(hc *hcov1beta1.HyperConverged),
+				matcher gomegatypes.GomegaMatcher,
+			) {
+				modifyHC(hco)
+				cdi, err := NewCDI(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(cdi.Spec.Config).ToNot(BeNil())
+				Expect(cdi.Spec.Config.FeatureGates).To(matcher)
+
+			},
+			Entry("should add InheritScratchSpaceStorageClass feature gate if enabled in Spec",
+				func(hc *hcov1beta1.HyperConverged) {
+					hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						InheritScratchSpaceStorageClass: ptr.To(true),
+					}
+				},
+				ContainElement(inheritScratchSpaceStorageClass),
+			),
+			Entry("should not InheritScratchSpaceStorageClass feature gate if disabled in Spec",
+				func(hc *hcov1beta1.HyperConverged) {
+					hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						InheritScratchSpaceStorageClass: ptr.To(false),
+					}
+				},
+				Not(ContainElement(inheritScratchSpaceStorageClass)),
+			),
+			Entry("should not InheritScratchSpaceStorageClass feature gate if nil in Spec",
+				func(hc *hcov1beta1.HyperConverged) {
+					hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
+						InheritScratchSpaceStorageClass: nil,
+					}
+				},
+				Not(ContainElement(inheritScratchSpaceStorageClass)),
+			),
+		)
 
 		It("should add cert configuration if missing in CDI", func() {
 			existingResource := NewCDIWithNameOnly(hco)
