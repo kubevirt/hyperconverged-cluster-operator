@@ -567,12 +567,15 @@ func (v *VirtualMachineInstance) IsBootloaderEFI() bool {
 		v.Spec.Domain.Firmware.Bootloader.EFI != nil
 }
 
-// WantsToHaveQOSGuaranteed checks if cpu and memoyr limits and requests are identical on the VMI.
+// WantsToHaveQOSGuaranteed checks if cpu and memory limits and requests are identical on the VMI.
 // This is the indicator that people want a VMI with QOS of guaranteed
+// If memory limit is set but not its corresponding request, we will eventually set request=limit
 func (v *VirtualMachineInstance) WantsToHaveQOSGuaranteed() bool {
 	resources := v.Spec.Domain.Resources
-	return !resources.Requests.Memory().IsZero() && resources.Requests.Memory().Cmp(*resources.Limits.Memory()) == 0 &&
-		!resources.Requests.Cpu().IsZero() && resources.Requests.Cpu().Cmp(*resources.Limits.Cpu()) == 0
+	memoryWantsIt := (resources.Requests.Memory().IsZero() && !resources.Limits.Memory().IsZero()) ||
+		(!resources.Requests.Memory().IsZero() && resources.Requests.Memory().Cmp(*resources.Limits.Memory()) == 0)
+	cpuWantsIt := !resources.Requests.Cpu().IsZero() && resources.Requests.Cpu().Cmp(*resources.Limits.Cpu()) == 0
+	return memoryWantsIt && cpuWantsIt
 }
 
 // ShouldStartPaused returns true if VMI should be started in paused state
@@ -815,6 +818,10 @@ func (m *VirtualMachineInstanceMigration) IsRunning() bool {
 	switch m.Status.Phase {
 	case MigrationFailed, MigrationPending, MigrationPhaseUnset, MigrationSucceeded, MigrationWaitingForSync, MigrationSynchronizing:
 		return false
+	case MigrationScheduling:
+		if m.IsDecentralizedSource() {
+			return false
+		}
 	}
 	return true
 }
@@ -1183,6 +1190,8 @@ const (
 	EphemeralBackupObject = "kubevirt.io/ephemeral-backup-object"
 	// This annotation represents that the annotated object is for temporary use during pod/volume provisioning
 	EphemeralProvisioningObject string = "kubevirt.io/ephemeral-provisioning"
+	// This annotation indicates the VMI contains an ephemeral hotplug volume
+	EphemeralHotplugAnnotation string = "kubevirt.io/ephemeral-hotplug-volumes"
 
 	// This label indicates the object is a part of the install strategy retrieval process.
 	InstallStrategyLabel = "kubevirt.io/install-strategy"
@@ -1200,6 +1209,22 @@ const (
 	// Used on VirtualMachineInstance.
 	IgnitionAnnotation           string = "kubevirt.io/ignitiondata"
 	PlacePCIDevicesOnRootComplex string = "kubevirt.io/placePCIDevicesOnRootComplex"
+
+	// PciTopologyVersionAnnotation documents which PCI topology scheme was used to
+	// define the domain. Used to preserve PCI device addresses across reboots and upgrades.
+	PciTopologyVersionAnnotation string = "kubevirt.io/pci-topology-version"
+	// PciInterfaceSlotCountAnnotation stores the frozen total of placeholder interfaces
+	// plus boot-time non-hotplug interfaces. Set by virt-handler on detected v2 VMs.
+	// On subsequent boots, the placeholder count is derived as
+	// max(0, slotTotal - currentInterfaceCount), absorbing interface additions/removals
+	// while stopped without shifting PCI addresses.
+	PciInterfaceSlotCountAnnotation string = "kubevirt.io/pci-interface-slot-count"
+	// PciTopologyVersionV2 indicates the VM was created with the v2 hotplug port formula
+	// from PR #14754, which is unstable across spec changes.
+	PciTopologyVersionV2 string = "v2"
+	// PciTopologyVersionV3 indicates the VM uses v1 placeholders (for address stability)
+	// plus direct pcie-root-port controllers (for hotplug capacity).
+	PciTopologyVersionV3 string = "v3"
 
 	// This label represents supported cpu features on the node
 	CPUFeatureLabel = "cpu-feature.node.kubevirt.io/"
@@ -3120,6 +3145,7 @@ type DeveloperConfiguration struct {
 	// "see" 2% more memory than its parent pod. Values under 100 are effectively "undercommits".
 	// Overcommits can lead to memory exhaustion, which in turn can lead to crashes. Use carefully.
 	// Defaults to 100
+	// +kubebuilder:validation:Minimum:=10
 	MemoryOvercommit int `json:"memoryOvercommit,omitempty"`
 	// NodeSelectors allows restricting VMI creation to nodes that match a set of labels.
 	// Defaults to none
