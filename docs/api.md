@@ -11,7 +11,6 @@ This Document documents the types introduced by the hyperconverged-cluster-opera
 * [DataImportCronStatus](#dataimportcronstatus)
 * [DataImportCronTemplate](#dataimportcrontemplate)
 * [DataImportCronTemplateStatus](#dataimportcrontemplatestatus)
-* [HigherWorkloadDensityConfiguration](#higherworkloaddensityconfiguration)
 * [HyperConverged](#hyperconverged)
 * [HyperConvergedCertConfig](#hyperconvergedcertconfig)
 * [HyperConvergedConfig](#hyperconvergedconfig)
@@ -20,20 +19,13 @@ This Document documents the types introduced by the hyperconverged-cluster-opera
 * [HyperConvergedObsoleteCPUs](#hyperconvergedobsoletecpus)
 * [HyperConvergedSpec](#hyperconvergedspec)
 * [HyperConvergedStatus](#hyperconvergedstatus)
-* [HyperConvergedWorkloadUpdateStrategy](#hyperconvergedworkloadupdatestrategy)
 * [KubeMacPoolConfig](#kubemacpoolconfig)
-* [LiveMigrationConfigurations](#livemigrationconfigurations)
 * [LogVerbosityConfiguration](#logverbosityconfiguration)
 * [MediatedDevicesConfiguration](#mediateddevicesconfiguration)
-* [MediatedHostDevice](#mediatedhostdevice)
 * [NodeInfoStatus](#nodeinfostatus)
 * [NodeMediatedDeviceTypesConfig](#nodemediateddevicetypesconfig)
 * [OperandResourceRequirements](#operandresourcerequirements)
-* [PciHostDevice](#pcihostdevice)
-* [PermittedHostDevices](#permittedhostdevices)
 * [StorageImportConfig](#storageimportconfig)
-* [USBHostDevice](#usbhostdevice)
-* [USBSelector](#usbselector)
 * [Version](#version)
 * [VirtualMachineOptions](#virtualmachineoptions)
 
@@ -105,16 +97,6 @@ DataImportCronTemplateStatus is a copy of a dataImportCronTemplate as defined in
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#objectmeta-v1-meta) |  | false |
 | spec |  | *cdiv1beta1.DataImportCronSpec |  | false |
 | status |  | [DataImportCronStatus](#dataimportcronstatus) |  | false |
-
-[Back to TOC](#table-of-contents)
-
-## HigherWorkloadDensityConfiguration
-
-HigherWorkloadDensity holds configuration aimed to increase virtual machine density
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| memoryOvercommitPercentage | MemoryOvercommitPercentage is the percentage of memory we want to give VMIs compared to the amount given to its parent pod (virt-launcher). For example, a value of 102 means the VMI will \"see\" 2% more memory than its parent pod. Values under 100 are effectively \"undercommits\". Overcommits can lead to memory exhaustion, which in turn can lead to crashes. Use carefully. | int | 100 | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -215,8 +197,8 @@ HyperConvergedSpec defines the desired state of HyperConverged
 | infra | infra HyperConvergedConfig influences the pod configuration (currently only placement) for all the infra components needed on the virtualization enabled cluster but not necessarily directly on each node running VMs/VMIs. | [HyperConvergedConfig](#hyperconvergedconfig) |  | false |
 | workloads | workloads HyperConvergedConfig influences the pod configuration (currently only placement) of components which need to be running on a node where virtualization workloads should be able to run. Changes to Workloads HyperConvergedConfig can be applied only without existing workload. | [HyperConvergedConfig](#hyperconvergedconfig) |  | false |
 | featureGates | featureGates is a map of feature gate flags. Setting a flag to `true` will enable the feature. Setting `false` or removing the feature gate, disables the feature. | [HyperConvergedFeatureGates](#hyperconvergedfeaturegates) | {"downwardMetrics": false, "deployKubeSecondaryDNS": false, "disableMDevConfiguration": false, "persistentReservation": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": false, "videoConfig": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false} | false |
-| liveMigrationConfig | Live migration limits and timeouts are applied so that migration processes do not overwhelm the cluster. | [LiveMigrationConfigurations](#livemigrationconfigurations) | {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false} | false |
-| permittedHostDevices | PermittedHostDevices holds information about devices allowed for passthrough | *[PermittedHostDevices](#permittedhostdevices) |  | false |
+| liveMigrationConfig | Live migration limits and timeouts are applied so that migration processes do not overwhelm the cluster. | hcov1.LiveMigrationConfigurations | {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false} | false |
+| permittedHostDevices | PermittedHostDevices holds information about devices allowed for passthrough | *hcov1.PermittedHostDevices |  | false |
 | mediatedDevicesConfiguration | MediatedDevicesConfiguration holds information about MDEV types to be defined on nodes, if available | *[MediatedDevicesConfiguration](#mediateddevicesconfiguration) |  | false |
 | certConfig | certConfig holds the rotation policy for internal, self-signed certificates | [HyperConvergedCertConfig](#hyperconvergedcertconfig) | {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}} | false |
 | resourceRequirements | ResourceRequirements describes the resource requirements for the operand workloads. | *[OperandResourceRequirements](#operandresourcerequirements) | {"vmiCPUAllocationRatio": 10} | false |
@@ -227,7 +209,7 @@ HyperConvergedSpec defines the desired state of HyperConverged
 | obsoleteCPUs | ObsoleteCPUs allows avoiding scheduling of VMs for obsolete CPU models | *[HyperConvergedObsoleteCPUs](#hyperconvergedobsoletecpus) |  | false |
 | commonTemplatesNamespace | CommonTemplatesNamespace defines namespace in which common templates will be deployed. It overrides the default openshift namespace. | *string |  | false |
 | storageImport | StorageImport contains configuration for importing containerized data | *[StorageImportConfig](#storageimportconfig) |  | false |
-| workloadUpdateStrategy | WorkloadUpdateStrategy defines at the cluster level how to handle automated workload updates | [HyperConvergedWorkloadUpdateStrategy](#hyperconvergedworkloadupdatestrategy) | {"workloadUpdateMethods": {"LiveMigrate"}, "batchEvictionSize": 10, "batchEvictionInterval": "1m0s"} | false |
+| workloadUpdateStrategy | WorkloadUpdateStrategy defines at the cluster level how to handle automated workload updates | hcov1.HyperConvergedWorkloadUpdateStrategy | {"workloadUpdateMethods": {"LiveMigrate"}, "batchEvictionSize": 10, "batchEvictionInterval": "1m0s"} | false |
 | dataImportCronTemplates | DataImportCronTemplates holds list of data import cron templates (golden images) | [][DataImportCronTemplate](#dataimportcrontemplate) |  | false |
 | filesystemOverhead | FilesystemOverhead describes the space reserved for overhead when using Filesystem volumes. A value is between 0 and 1, if not defined it is 0.055 (5.5 percent overhead) | *cdiv1beta1.FilesystemOverhead |  | false |
 | uninstallStrategy | UninstallStrategy defines how to proceed on uninstall when workloads (VirtualMachines, DataVolumes) still exist. BlockUninstallIfWorkloadsExist will prevent the CR from being removed when workloads still exist. BlockUninstallIfWorkloadsExist is the safest choice to protect your workloads from accidental data loss, so it's strongly advised. RemoveWorkloads will cause all the workloads to be cascading deleted on uninstallation. WARNING: please notice that RemoveWorkloads will cause your workloads to be deleted as soon as this CR will be, even accidentally, deleted. Please correctly consider the implications of this option before setting it. BlockUninstallIfWorkloadsExist is the default behaviour. | HyperConvergedUninstallStrategy | BlockUninstallIfWorkloadsExist | false |
@@ -244,7 +226,7 @@ HyperConvergedSpec defines the desired state of HyperConverged
 | ksmConfiguration | KSMConfiguration holds the information regarding the enabling the KSM in the nodes (if available). | *v1.KSMConfiguration |  | false |
 | networkBinding | NetworkBinding defines the network binding plugins. Those bindings can be used when defining virtual machine interfaces. | map[string]v1.InterfaceBindingPlugin |  | false |
 | applicationAwareConfig | ApplicationAwareConfig set the AAQ configurations | *[ApplicationAwareConfigurations](#applicationawareconfigurations) |  | false |
-| higherWorkloadDensity | HigherWorkloadDensity holds configuration aimed to increase virtual machine density | *[HigherWorkloadDensityConfiguration](#higherworkloaddensityconfiguration) | {"memoryOvercommitPercentage": 100} | false |
+| higherWorkloadDensity | HigherWorkloadDensity holds configuration aimed to increase virtual machine density | *hcov1.HigherWorkloadDensityConfiguration | {"memoryOvercommitPercentage": 100} | false |
 | enableCommonBootImageImport | Opt-in to automatic delivery/updates of the common data import cron templates. There are two sources for the data import cron templates: hard coded list of common templates, and custom (user defined) templates that can be added to the dataImportCronTemplates field. This field only controls the common templates. It is possible to use custom templates by adding them to the dataImportCronTemplates field. | *bool | true | false |
 | instancetypeConfig | InstancetypeConfig holds the configuration of instance type related functionality within KubeVirt. | *v1.InstancetypeConfiguration |  | false |
 | CommonInstancetypesDeployment | CommonInstancetypesDeployment holds the configuration of common-instancetypes deployment within KubeVirt. | *v1.CommonInstancetypesDeployment |  | false |
@@ -274,18 +256,6 @@ HyperConvergedStatus defines the observed state of HyperConverged
 
 [Back to TOC](#table-of-contents)
 
-## HyperConvergedWorkloadUpdateStrategy
-
-HyperConvergedWorkloadUpdateStrategy defines options related to updating a KubeVirt install
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| workloadUpdateMethods | WorkloadUpdateMethods defines the methods that can be used to disrupt workloads during automated workload updates. When multiple methods are present, the least disruptive method takes precedence over more disruptive methods. For example if both LiveMigrate and Evict methods are listed, only VMs which are not live migratable will be restarted/shutdown. An empty list defaults to no automated workload updating. | []string | {"LiveMigrate"} | true |
-| batchEvictionSize | BatchEvictionSize Represents the number of VMIs that can be forced updated per the BatchShutdownInterval interval | *int | 10 | false |
-| batchEvictionInterval | BatchEvictionInterval Represents the interval to wait before issuing the next batch of shutdowns | *metav1.Duration | "1m0s" | false |
-
-[Back to TOC](#table-of-contents)
-
 ## KubeMacPoolConfig
 
 KubeMacPoolConfig defines kubemacpool MAC address range configuration
@@ -294,23 +264,6 @@ KubeMacPoolConfig defines kubemacpool MAC address range configuration
 | ----- | ----------- | ------ | ------- | -------- |
 | rangeStart | RangeStart defines the first MAC address in the kubemacpool range. The MAC address format should be AA:BB:CC:DD:EE:FF. | *string |  | false |
 | rangeEnd | RangeEnd defines the last MAC address in the kubemacpool range. The MAC address format should be AA:BB:CC:DD:EE:FF. | *string |  | false |
-
-[Back to TOC](#table-of-contents)
-
-## LiveMigrationConfigurations
-
-LiveMigrationConfigurations - Live migration limits and timeouts are applied so that migration processes do not overwhelm the cluster.
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| parallelMigrationsPerCluster | Number of migrations running in parallel in the cluster. | *uint32 | 5 | false |
-| parallelOutboundMigrationsPerNode | Maximum number of outbound migrations per node. | *uint32 | 2 | false |
-| bandwidthPerMigration | Bandwidth limit of each migration, the value is quantity of bytes per second (e.g. 2048Mi = 2048MiB/sec) | *string |  | false |
-| completionTimeoutPerGiB | If a migrating VM is big and busy, while the connection to the destination node is slow, migration may never converge. The completion timeout is calculated based on completionTimeoutPerGiB times the size of the guest (both RAM and migrated disks, if any). For example, with completionTimeoutPerGiB set to 800, a virtual machine instance with 6GiB memory will timeout if it has not completed migration in 1h20m. Use a lower completionTimeoutPerGiB to induce quicker failure, so that another destination or post-copy is attempted. Use a higher completionTimeoutPerGiB to let workload with spikes in its memory dirty rate to converge. The format is a number. | *int64 | 150 | false |
-| progressTimeout | The migration will be canceled if memory copy fails to make progress in this time, in seconds. | *int64 | 150 | false |
-| network | The migrations will be performed over a dedicated multus network to minimize disruption to tenant workloads due to network saturation when VM live migrations are triggered. | *string |  | false |
-| allowAutoConverge | AllowAutoConverge allows the platform to compromise performance/availability of VMIs to guarantee successful VMI live migrations. Defaults to false | *bool | false | false |
-| allowPostCopy | When enabled, KubeVirt attempts to use post-copy live-migration in case it reaches its completion timeout while attempting pre-copy live-migration. Post-copy migrations allow even the busiest VMs to successfully live-migrate. However, events like a network failure or a failure in any of the source or destination nodes can cause the migrated VM to crash or reach inconsistency. Enable this option when evicting nodes is more important than keeping VMs alive. Defaults to false. | *bool | false | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -334,19 +287,6 @@ MediatedDevicesConfiguration holds information about MDEV types to be defined, i
 | mediatedDeviceTypes |  | []string |  | true |
 | mediatedDevicesTypes | Deprecated: please use mediatedDeviceTypes instead. | []string |  | false |
 | nodeMediatedDeviceTypes |  | [][NodeMediatedDeviceTypesConfig](#nodemediateddevicetypesconfig) |  | false |
-
-[Back to TOC](#table-of-contents)
-
-## MediatedHostDevice
-
-MediatedHostDevice represents a host mediated device allowed for passthrough
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| mdevNameSelector | name of a mediated device type required to identify a mediated device on a host | string |  | true |
-| resourceName | name by which a device is advertised and being requested | string |  | true |
-| externalResourceProvider | indicates that this resource is being provided by an external device plugin | bool |  | false |
-| disabled | HCO enforces the existence of several MediatedHostDevice objects. Set disabled field to true instead of remove these objects. | bool |  | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -385,31 +325,6 @@ OperandResourceRequirements is a list of resource requirements for the operand w
 
 [Back to TOC](#table-of-contents)
 
-## PciHostDevice
-
-PciHostDevice represents a host PCI device allowed for passthrough
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| pciDeviceSelector | a combination of a vendor_id:product_id required to identify a PCI device on a host. | string |  | true |
-| resourceName | name by which a device is advertised and being requested | string |  | true |
-| externalResourceProvider | indicates that this resource is being provided by an external device plugin | bool |  | false |
-| disabled | HCO enforces the existence of several PciHostDevice objects. Set disabled field to true instead of remove these objects. | bool |  | false |
-
-[Back to TOC](#table-of-contents)
-
-## PermittedHostDevices
-
-PermittedHostDevices holds information about devices allowed for passthrough
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| pciHostDevices |  | [][PciHostDevice](#pcihostdevice) |  | false |
-| usbHostDevices |  | [][USBHostDevice](#usbhostdevice) |  | false |
-| mediatedDevices |  | [][MediatedHostDevice](#mediatedhostdevice) |  | false |
-
-[Back to TOC](#table-of-contents)
-
 ## StorageImportConfig
 
 StorageImportConfig contains configuration for importing containerized data
@@ -417,30 +332,6 @@ StorageImportConfig contains configuration for importing containerized data
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
 | insecureRegistries | InsecureRegistries is a list of image registries URLs that are not secured. Setting an insecure registry URL in this list allows pulling images from this registry. | []string |  | false |
-
-[Back to TOC](#table-of-contents)
-
-## USBHostDevice
-
-USBHostDevice represents a host USB device allowed for passthrough
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| resourceName | Identifies the list of USB host devices. e.g: kubevirt.io/storage, kubevirt.io/bootable-usb, etc | string |  | true |
-| selectors |  | [][USBSelector](#usbselector) |  | false |
-| externalResourceProvider | If true, KubeVirt will leave the allocation and monitoring to an external device plugin | bool |  | false |
-| disabled | HCO enforces the existence of several USBHostDevice objects. Set disabled field to true instead of remove these objects. | bool |  | false |
-
-[Back to TOC](#table-of-contents)
-
-## USBSelector
-
-USBSelector represents a selector for a USB device allowed for passthrough
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| vendor |  | string |  | true |
-| product |  | string |  | true |
 
 [Back to TOC](#table-of-contents)
 
