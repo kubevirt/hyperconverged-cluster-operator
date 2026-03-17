@@ -3841,7 +3841,7 @@ spec:
                 - name: MIGRATION_OPERATOR_VERSION
                   value: v0.1.0
                 - name: AUTOPILOT_VERSION
-                  value: v0.0.6
+                  value: v0.0.8
                 - name: KV_CONSOLE_PLUGIN_IMAGE
                   value: quay.io/kubevirt-ui/kubevirt-plugin@sha256:a9273d9e69662320fc6677f51ee1b05f4c62528b8a83895f8f56849de3b8b9f2
                 - name: KV_CONSOLE_PROXY_IMAGE
@@ -4854,7 +4854,7 @@ spec:
                 - --namespace=kubevirt-hyperconverged
                 command:
                 - /manager
-                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:3acbec5d0ee7c4c475e3517f1120d40aecca67dccb785f1e56689283678abfbc
+                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:73fc7615ecde2cd1335011b7bcfb49856d8c686dccb161d82c245a4ac7d799cf
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -5803,7 +5803,7 @@ spec:
     name: virt-launcher
   - image: quay.io/kubevirt/virt-operator@sha256:af31685341e2bbe72e8f6e8f3f19e270ea042336e5f628261bc7474ff0de844e
     name: virt-operator
-  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:3acbec5d0ee7c4c475e3517f1120d40aecca67dccb785f1e56689283678abfbc
+  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:73fc7615ecde2cd1335011b7bcfb49856d8c686dccb161d82c245a4ac7d799cf
     name: virt-platform-autopilot
   - image: quay.io/kubevirt/virt-synchronization-controller@sha256:11bffcf99325ccfa047d826d68f5936da93a952109cd645b4544d087dab1e33a
     name: virt-synchronization-controller
