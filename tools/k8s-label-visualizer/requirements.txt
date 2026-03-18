@@ -8,7 +8,7 @@ marshmallow==3.26.2
 marshmallow-dataclass==8.6.1
 mypy-extensions==1.0.0
 oauthlib==3.2.2
-pyasn1==0.6.0
+pyasn1==0.6.3
 pyasn1-modules==0.4.0
 python-dateutil==2.9.0.post0
 PyYAML==6.0.1
