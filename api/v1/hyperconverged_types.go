@@ -99,6 +99,12 @@ type HyperConvergedSpec struct {
 	//   isolation. Note: this feature is in Developer Preview.
 	//   Phase: alpha
 	//
+	// * containerPathVolumes:
+	//   ContainerPathVolumes enables the use of container paths as volumes in
+	//   KubeVirt. This allows VMs to access files and directories from the
+	//   virt-launcher pod's filesystem via virtiofs.
+	//   Phase: alpha
+	//
 	// * declarativeHotplugVolumes:
 	//   DeclarativeHotplugVolumes enables the use of the declarative volume
 	//   hotplug feature in KubeVirt. When set to true, the
