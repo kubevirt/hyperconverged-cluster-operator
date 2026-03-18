@@ -55,6 +55,10 @@ func convert_v1beta1_FeatureGates_To_v1(in *HyperConvergedFeatureGates, out *hco
 	if ptr.Deref(in.IncrementalBackup, false) {
 		out.Enable("incrementalBackup")
 	}
+
+	if ptr.Deref(in.InheritScratchSpaceStorageClass, false) {
+		out.Enable("inheritScratchSpaceStorageClass")
+	}
 }
 
 func convert_v1_FeatureGates_To_v1beta1(in hcofg.HyperConvergedFeatureGates, out *HyperConvergedFeatureGates) {
@@ -69,4 +73,5 @@ func convert_v1_FeatureGates_To_v1beta1(in hcofg.HyperConvergedFeatureGates, out
 	out.VideoConfig = ptr.To(in.IsEnabled("videoConfig"))
 	out.ObjectGraph = ptr.To(in.IsEnabled("objectGraph"))
 	out.IncrementalBackup = ptr.To(in.IsEnabled("incrementalBackup"))
+	out.InheritScratchSpaceStorageClass = ptr.To(in.IsEnabled("inheritScratchSpaceStorageClass"))
 }

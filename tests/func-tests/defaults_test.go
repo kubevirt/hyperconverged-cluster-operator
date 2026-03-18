@@ -66,17 +66,18 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 	Context("feature gate defaults", func() {
 		defaultFeatureGates := v1beta1.HyperConvergedFeatureGates{
-			DownwardMetrics:                ptr.To(false),
-			DeployKubeSecondaryDNS:         ptr.To(false),
-			DisableMDevConfiguration:       ptr.To(false),
-			PersistentReservation:          ptr.To(false),
-			AlignCPUs:                      ptr.To(false),
-			EnableMultiArchBootImageImport: ptr.To(false),
-			DecentralizedLiveMigration:     ptr.To(true),
-			DeclarativeHotplugVolumes:      ptr.To(false),
-			VideoConfig:                    ptr.To(true),
-			ObjectGraph:                    ptr.To(false),
-			IncrementalBackup:              ptr.To(false),
+			DownwardMetrics:                 ptr.To(false),
+			DeployKubeSecondaryDNS:          ptr.To(false),
+			DisableMDevConfiguration:        ptr.To(false),
+			PersistentReservation:           ptr.To(false),
+			AlignCPUs:                       ptr.To(false),
+			EnableMultiArchBootImageImport:  ptr.To(false),
+			DecentralizedLiveMigration:      ptr.To(true),
+			DeclarativeHotplugVolumes:       ptr.To(false),
+			VideoConfig:                     ptr.To(true),
+			ObjectGraph:                     ptr.To(false),
+			IncrementalBackup:               ptr.To(false),
+			InheritScratchSpaceStorageClass: ptr.To(false),
 		}
 
 		DescribeTable("Check that featureGates defaults are behaving as expected", func(ctx context.Context, path string) {
@@ -100,6 +101,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			Entry("when removing /spec/featureGates/videoConfig", "/spec/featureGates/videoConfig"),
 			Entry("when removing /spec/featureGates/objectGraph", "/spec/featureGates/objectGraph"),
 			Entry("when removing /spec/featureGates/incrementalBackup", "/spec/featureGates/incrementalBackup"),
+			Entry("when removing /spec/featureGates/inheritScratchSpaceStorageClass", "/spec/featureGates/inheritScratchSpaceStorageClass"),
 			Entry("when removing /spec/featureGates", "/spec/featureGates"),
 			Entry("when removing /spec", "/spec"),
 		)

@@ -390,6 +390,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 							Format:      "",
 						},
 					},
+					"inheritScratchSpaceStorageClass": {
+						SchemaProps: spec.SchemaProps{
+							Description: "InheritScratchSpaceStorageClass enables scratch space PVCs to inherit the storage class of the target owner PVC instead of using the default storage class. Note: This feature is in Tech Preview",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

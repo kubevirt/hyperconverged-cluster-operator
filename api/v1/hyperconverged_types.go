@@ -133,6 +133,12 @@ type HyperConvergedSpec struct {
 	//   feature is in Tech Preview.
 	//   Phase: alpha
 	//
+	// * inheritScratchSpaceStorageClass:
+	//   InheritScratchSpaceStorageClass enables scratch space PVCs to inherit the
+	//   storage class of the target owner PVC instead of using the default storage
+	//   class. Note: This feature is in Tech Preview
+	//   Phase: alpha
+	//
 	// * objectGraph:
 	//   ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt.
 	//   This subresource returns a structured list of k8s objects that are related

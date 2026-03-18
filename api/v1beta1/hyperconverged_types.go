@@ -580,6 +580,14 @@ type HyperConvergedFeatureGates struct {
 	// +kubebuilder:default=false
 	// +default=false
 	IncrementalBackup *bool `json:"incrementalBackup,omitempty"`
+
+	// InheritScratchSpaceStorageClass enables scratch space PVCs to inherit the storage class of the target owner PVC
+	// instead of using the default storage class.
+	// Note: This feature is in Tech Preview
+	// +optional
+	// +kubebuilder:default=false
+	// +default=false
+	InheritScratchSpaceStorageClass *bool `json:"inheritScratchSpaceStorageClass,omitempty"`
 }
 
 // PermittedHostDevices holds information about devices allowed for passthrough

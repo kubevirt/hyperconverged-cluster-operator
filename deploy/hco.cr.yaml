@@ -23,6 +23,7 @@ spec:
     downwardMetrics: false
     enableMultiArchBootImageImport: false
     incrementalBackup: false
+    inheritScratchSpaceStorageClass: false
     objectGraph: false
     persistentReservation: false
     videoConfig: true

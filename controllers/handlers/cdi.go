@@ -8,6 +8,7 @@ import (
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
@@ -21,9 +22,10 @@ import (
 )
 
 const (
-	honorWaitForFirstConsumerGate = "HonorWaitForFirstConsumer"
-	dataVolumeClaimAdoptionGate   = "DataVolumeClaimAdoption"
-	webhookPvcRenderingGate       = "WebhookPvcRendering"
+	honorWaitForFirstConsumerGate   = "HonorWaitForFirstConsumer"
+	dataVolumeClaimAdoptionGate     = "DataVolumeClaimAdoption"
+	webhookPvcRenderingGate         = "WebhookPvcRendering"
+	inheritScratchSpaceStorageClass = "InheritScratchSpaceStorageClass"
 
 	cdiConfigAuthorityAnnotation = "cdi.kubevirt.io/configAuthority"
 )
@@ -96,8 +98,12 @@ func (*cdiHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists r
 	return false, false, nil
 }
 
-func getDefaultFeatureGates() []string {
-	return []string{honorWaitForFirstConsumerGate, dataVolumeClaimAdoptionGate, webhookPvcRenderingGate}
+func getFeatureGates(featureGates *hcov1beta1.HyperConvergedFeatureGates) []string {
+	defaultGates := []string{honorWaitForFirstConsumerGate, dataVolumeClaimAdoptionGate, webhookPvcRenderingGate}
+	if ptr.Deref(featureGates.InheritScratchSpaceStorageClass, false) {
+		defaultGates = append(defaultGates, inheritScratchSpaceStorageClass)
+	}
+	return defaultGates
 }
 
 func NewCDI(hc *hcov1beta1.HyperConverged, opts ...string) (*cdiv1beta1.CDI, error) {
@@ -109,7 +115,7 @@ func NewCDI(hc *hcov1beta1.HyperConverged, opts ...string) (*cdiv1beta1.CDI, err
 	spec := cdiv1beta1.CDISpec{
 		UninstallStrategy: &uninstallStrategy,
 		Config: &cdiv1beta1.CDIConfigSpec{
-			FeatureGates:       getDefaultFeatureGates(),
+			FeatureGates:       getFeatureGates(&hc.Spec.FeatureGates),
 			TLSSecurityProfile: openshift2CdiSecProfile(tlssecprofile.GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile)),
 		},
 		CertConfig: &cdiv1beta1.CDICertConfig{
