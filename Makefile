@@ -278,6 +278,10 @@ cp-json-patch:
 test-unit: gogenerate cp-json-patch gogenerate-crd-creator
 	JOB_TYPE="travis" ./hack/build-tests.sh
 
+test-fuzz-api-conversion: generate
+	go test -v ./api/v1beta1/ -run "FuzzV1beta1ToV1RoundTrip" -fuzz="FuzzV1beta1ToV1RoundTrip" -fuzztime=5s 2>&1
+	go test -v ./api/v1beta1/ -run "FuzzV1ToV1beta1RoundTrip" -fuzz="FuzzV1ToV1beta1RoundTrip" -fuzztime=5s 2>&1
+
 test: test-unit
 
 charts:
@@ -395,4 +399,5 @@ push-builder-image: retag-builder-image
 		cp-json-patch \
 		create-builder-image \
 		push-builder-image \
-		retag-builder-image
+		retag-builder-image \
+		test-fuzz-api-conversion

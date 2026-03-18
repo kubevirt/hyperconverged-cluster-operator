@@ -27,6 +27,7 @@ import (
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
@@ -397,7 +398,7 @@ func hcoTuning2Kv(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.ReloadableComp
 	return nil, nil
 }
 
-func hcWorkloadUpdateStrategyToKv(hcObject *hcov1beta1.HyperConvergedWorkloadUpdateStrategy) kubevirtcorev1.KubeVirtWorkloadUpdateStrategy {
+func hcWorkloadUpdateStrategyToKv(hcObject *hcov1.HyperConvergedWorkloadUpdateStrategy) kubevirtcorev1.KubeVirtWorkloadUpdateStrategy {
 	kvObject := kubevirtcorev1.KubeVirtWorkloadUpdateStrategy{}
 	if hcObject != nil {
 		if hcObject.BatchEvictionInterval != nil {
@@ -671,7 +672,7 @@ func toKvNodeMediatedDevicesConfiguration(hcoNodeMdevTypesConf []hcov1beta1.Node
 	return nil
 }
 
-func toKvPermittedHostDevices(permittedDevices *hcov1beta1.PermittedHostDevices) *kubevirtcorev1.PermittedHostDevices {
+func toKvPermittedHostDevices(permittedDevices *hcov1.PermittedHostDevices) *kubevirtcorev1.PermittedHostDevices {
 	if permittedDevices == nil {
 		return nil
 	}
@@ -683,7 +684,7 @@ func toKvPermittedHostDevices(permittedDevices *hcov1beta1.PermittedHostDevices)
 	}
 }
 
-func toKvPciHostDevices(hcoPciHostdevices []hcov1beta1.PciHostDevice) []kubevirtcorev1.PciHostDevice {
+func toKvPciHostDevices(hcoPciHostdevices []hcov1.PciHostDevice) []kubevirtcorev1.PciHostDevice {
 	if len(hcoPciHostdevices) > 0 {
 		pciHostDevices := make([]kubevirtcorev1.PciHostDevice, 0, len(hcoPciHostdevices))
 		for _, hcoPciHostDevice := range hcoPciHostdevices {
@@ -701,7 +702,7 @@ func toKvPciHostDevices(hcoPciHostdevices []hcov1beta1.PciHostDevice) []kubevirt
 	return nil
 }
 
-func toKvUSBHostDevices(hcoUSBHostdevices []hcov1beta1.USBHostDevice) []kubevirtcorev1.USBHostDevice {
+func toKvUSBHostDevices(hcoUSBHostdevices []hcov1.USBHostDevice) []kubevirtcorev1.USBHostDevice {
 	if len(hcoUSBHostdevices) > 0 {
 		usbHostDevices := make([]kubevirtcorev1.USBHostDevice, 0, len(hcoUSBHostdevices))
 		for _, hcoUSBHostDevice := range hcoUSBHostdevices {
@@ -726,7 +727,7 @@ func toKvUSBHostDevices(hcoUSBHostdevices []hcov1beta1.USBHostDevice) []kubevirt
 	return nil
 }
 
-func toKvMediatedDevices(hcoMediatedDevices []hcov1beta1.MediatedHostDevice) []kubevirtcorev1.MediatedHostDevice {
+func toKvMediatedDevices(hcoMediatedDevices []hcov1.MediatedHostDevice) []kubevirtcorev1.MediatedHostDevice {
 	if len(hcoMediatedDevices) > 0 {
 		mediatedDevices := make([]kubevirtcorev1.MediatedHostDevice, 0, len(hcoMediatedDevices))
 		for _, hcoMediatedHostDevice := range hcoMediatedDevices {
@@ -744,7 +745,7 @@ func toKvMediatedDevices(hcoMediatedDevices []hcov1beta1.MediatedHostDevice) []k
 	return nil
 }
 
-func hcLiveMigrationToKv(lm hcov1beta1.LiveMigrationConfigurations) (*kubevirtcorev1.MigrationConfiguration, error) {
+func hcLiveMigrationToKv(lm hcov1.LiveMigrationConfigurations) (*kubevirtcorev1.MigrationConfiguration, error) {
 	var bandwidthPerMigration *resource.Quantity
 	if lm.BandwidthPerMigration != nil {
 		bandwidthPerMigrationObject, err := resource.ParseQuantity(*lm.BandwidthPerMigration)

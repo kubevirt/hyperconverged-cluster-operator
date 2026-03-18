@@ -9,6 +9,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
@@ -40,7 +41,7 @@ var _ = Describe("Wasp Agent Service Account", func() {
 
 	Context("Wasp agent service account deployment", func() {
 		It("should not create if overcommit percent is less or equal to 100", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1beta1.HigherWorkloadDensityConfiguration{
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 100,
 			}
 			cl = commontestutils.InitClient([]client.Object{hco})
@@ -61,7 +62,7 @@ var _ = Describe("Wasp Agent Service Account", func() {
 		})
 
 		It("should delete service account when percentage is set to 100 and below", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1beta1.HigherWorkloadDensityConfiguration{
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 100,
 			}
 			sa := newWaspAgentServiceAccount(hco)
@@ -85,7 +86,7 @@ var _ = Describe("Wasp Agent Service Account", func() {
 		})
 
 		It("should create service account when percentage is set to higher than 100", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1beta1.HigherWorkloadDensityConfiguration{
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
 
@@ -106,7 +107,7 @@ var _ = Describe("Wasp Agent Service Account", func() {
 	})
 	Context("Wasp agent service account update", func() {
 		It("should reconcile labels if they are missing while preserving user labels", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1beta1.HigherWorkloadDensityConfiguration{
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
 			sa := newWaspAgentServiceAccount(hco)

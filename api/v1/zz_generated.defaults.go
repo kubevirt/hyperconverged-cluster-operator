@@ -40,29 +40,72 @@ func RegisterDefaults(scheme *runtime.Scheme) error {
 }
 
 func SetObjectDefaults_HyperConverged(in *HyperConverged) {
-	if in.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster == nil {
+	if in.Spec.Virtualization.LiveMigrationConfig.ParallelMigrationsPerCluster == nil {
 		var ptrVar1 uint32 = 5
-		in.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster = &ptrVar1
+		in.Spec.Virtualization.LiveMigrationConfig.ParallelMigrationsPerCluster = &ptrVar1
 	}
-	if in.Spec.LiveMigrationConfig.ParallelOutboundMigrationsPerNode == nil {
+	if in.Spec.Virtualization.LiveMigrationConfig.ParallelOutboundMigrationsPerNode == nil {
 		var ptrVar1 uint32 = 2
-		in.Spec.LiveMigrationConfig.ParallelOutboundMigrationsPerNode = &ptrVar1
+		in.Spec.Virtualization.LiveMigrationConfig.ParallelOutboundMigrationsPerNode = &ptrVar1
 	}
-	if in.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB == nil {
+	if in.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB == nil {
 		var ptrVar1 int64 = 150
-		in.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB = &ptrVar1
+		in.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB = &ptrVar1
 	}
-	if in.Spec.LiveMigrationConfig.ProgressTimeout == nil {
+	if in.Spec.Virtualization.LiveMigrationConfig.ProgressTimeout == nil {
 		var ptrVar1 int64 = 150
-		in.Spec.LiveMigrationConfig.ProgressTimeout = &ptrVar1
+		in.Spec.Virtualization.LiveMigrationConfig.ProgressTimeout = &ptrVar1
 	}
-	if in.Spec.LiveMigrationConfig.AllowAutoConverge == nil {
+	if in.Spec.Virtualization.LiveMigrationConfig.AllowAutoConverge == nil {
 		var ptrVar1 bool = false
-		in.Spec.LiveMigrationConfig.AllowAutoConverge = &ptrVar1
+		in.Spec.Virtualization.LiveMigrationConfig.AllowAutoConverge = &ptrVar1
 	}
-	if in.Spec.LiveMigrationConfig.AllowPostCopy == nil {
+	if in.Spec.Virtualization.LiveMigrationConfig.AllowPostCopy == nil {
 		var ptrVar1 bool = false
-		in.Spec.LiveMigrationConfig.AllowPostCopy = &ptrVar1
+		in.Spec.Virtualization.LiveMigrationConfig.AllowPostCopy = &ptrVar1
+	}
+	if in.Spec.Virtualization.WorkloadUpdateStrategy.WorkloadUpdateMethods == nil {
+		if err := json.Unmarshal([]byte(`["LiveMigrate"]`), &in.Spec.Virtualization.WorkloadUpdateStrategy.WorkloadUpdateMethods); err != nil {
+			panic(err)
+		}
+	}
+	if in.Spec.Virtualization.WorkloadUpdateStrategy.BatchEvictionSize == nil {
+		var ptrVar1 int = 10
+		in.Spec.Virtualization.WorkloadUpdateStrategy.BatchEvictionSize = &ptrVar1
+	}
+	if in.Spec.Virtualization.WorkloadUpdateStrategy.BatchEvictionInterval == nil {
+		if err := json.Unmarshal([]byte(`"1m0s"`), &in.Spec.Virtualization.WorkloadUpdateStrategy.BatchEvictionInterval); err != nil {
+			panic(err)
+		}
+	}
+	if in.Spec.Virtualization.VirtualMachineOptions == nil {
+		if err := json.Unmarshal([]byte(`{"disableFreePageReporting": false, "disableSerialConsoleLog": false}`), &in.Spec.Virtualization.VirtualMachineOptions); err != nil {
+			panic(err)
+		}
+	}
+	if in.Spec.Virtualization.VirtualMachineOptions != nil {
+		if in.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting == nil {
+			var ptrVar1 bool = false
+			in.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting = &ptrVar1
+		}
+		if in.Spec.Virtualization.VirtualMachineOptions.DisableSerialConsoleLog == nil {
+			var ptrVar1 bool = false
+			in.Spec.Virtualization.VirtualMachineOptions.DisableSerialConsoleLog = &ptrVar1
+		}
+	}
+	if in.Spec.Virtualization.HigherWorkloadDensity == nil {
+		if err := json.Unmarshal([]byte(`{"memoryOvercommitPercentage": 100}`), &in.Spec.Virtualization.HigherWorkloadDensity); err != nil {
+			panic(err)
+		}
+	}
+	if in.Spec.Virtualization.HigherWorkloadDensity != nil {
+		if in.Spec.Virtualization.HigherWorkloadDensity.MemoryOvercommitPercentage == 0 {
+			in.Spec.Virtualization.HigherWorkloadDensity.MemoryOvercommitPercentage = 100
+		}
+	}
+	if in.Spec.Virtualization.VmiCPUAllocationRatio == nil {
+		var ptrVar1 int = 10
+		in.Spec.Virtualization.VmiCPUAllocationRatio = &ptrVar1
 	}
 	if in.Spec.CertConfig.CA.Duration == nil {
 		if err := json.Unmarshal([]byte(`"48h0m0s"`), &in.Spec.CertConfig.CA.Duration); err != nil {
@@ -84,53 +127,8 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 			panic(err)
 		}
 	}
-	if in.Spec.ResourceRequirements != nil {
-		if in.Spec.ResourceRequirements.VmiCPUAllocationRatio == nil {
-			var ptrVar1 int = 10
-			in.Spec.ResourceRequirements.VmiCPUAllocationRatio = &ptrVar1
-		}
-	}
-	if in.Spec.WorkloadUpdateStrategy.WorkloadUpdateMethods == nil {
-		if err := json.Unmarshal([]byte(`["LiveMigrate"]`), &in.Spec.WorkloadUpdateStrategy.WorkloadUpdateMethods); err != nil {
-			panic(err)
-		}
-	}
-	if in.Spec.WorkloadUpdateStrategy.BatchEvictionSize == nil {
-		var ptrVar1 int = 10
-		in.Spec.WorkloadUpdateStrategy.BatchEvictionSize = &ptrVar1
-	}
-	if in.Spec.WorkloadUpdateStrategy.BatchEvictionInterval == nil {
-		if err := json.Unmarshal([]byte(`"1m0s"`), &in.Spec.WorkloadUpdateStrategy.BatchEvictionInterval); err != nil {
-			panic(err)
-		}
-	}
 	if in.Spec.UninstallStrategy == "" {
 		in.Spec.UninstallStrategy = "BlockUninstallIfWorkloadsExist"
-	}
-	if in.Spec.VirtualMachineOptions == nil {
-		if err := json.Unmarshal([]byte(`{"disableFreePageReporting": false, "disableSerialConsoleLog": false}`), &in.Spec.VirtualMachineOptions); err != nil {
-			panic(err)
-		}
-	}
-	if in.Spec.VirtualMachineOptions != nil {
-		if in.Spec.VirtualMachineOptions.DisableFreePageReporting == nil {
-			var ptrVar1 bool = false
-			in.Spec.VirtualMachineOptions.DisableFreePageReporting = &ptrVar1
-		}
-		if in.Spec.VirtualMachineOptions.DisableSerialConsoleLog == nil {
-			var ptrVar1 bool = false
-			in.Spec.VirtualMachineOptions.DisableSerialConsoleLog = &ptrVar1
-		}
-	}
-	if in.Spec.HigherWorkloadDensity == nil {
-		if err := json.Unmarshal([]byte(`{"memoryOvercommitPercentage": 100}`), &in.Spec.HigherWorkloadDensity); err != nil {
-			panic(err)
-		}
-	}
-	if in.Spec.HigherWorkloadDensity != nil {
-		if in.Spec.HigherWorkloadDensity.MemoryOvercommitPercentage == 0 {
-			in.Spec.HigherWorkloadDensity.MemoryOvercommitPercentage = 100
-		}
 	}
 	if in.Spec.EnableCommonBootImageImport == nil {
 		var ptrVar1 bool = true

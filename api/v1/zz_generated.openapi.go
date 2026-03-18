@@ -36,7 +36,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.CertRotateConfigServer":               schema_kubevirt_hyperconverged_cluster_operator_api_v1_CertRotateConfigServer(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConverged":                       schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConverged(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedCertConfig":             schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedCertConfig(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedObsoleteCPUs":           schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedObsoleteCPUs(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedSpec":                   schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedStatus":                 schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedStatus(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedWorkloadUpdateStrategy": schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedWorkloadUpdateStrategy(ref),
@@ -224,39 +223,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedCertCo
 	}
 }
 
-func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedObsoleteCPUs(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "HyperConvergedObsoleteCPUs allows avoiding scheduling of VMs for obsolete CPU models",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"cpuModels": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "set",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "CPUModels is a list of obsolete CPU models. When the node-labeller obtains the list of obsolete CPU models, it eliminates those CPU models and creates labels for valid CPU models. The default values for this field is nil, however, HCO uses opinionated values, and adding values to this list will add them to the opinionated values.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
 func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -290,23 +256,11 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 							},
 						},
 					},
-					"liveMigrationConfig": {
+					"virtualization": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Live migration limits and timeouts are applied so that migration processes do not overwhelm the cluster.",
+							Description: "Virtualization contains all the configurations for virtualization",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LiveMigrationConfigurations"),
-						},
-					},
-					"permittedHostDevices": {
-						SchemaProps: spec.SchemaProps{
-							Description: "PermittedHostDevices holds information about devices allowed for passthrough",
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PermittedHostDevices"),
-						},
-					},
-					"mediatedDevicesConfiguration": {
-						SchemaProps: spec.SchemaProps{
-							Description: "MediatedDevicesConfiguration holds information about MDEV types to be defined on nodes, if available",
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.MediatedDevicesConfiguration"),
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig"),
 						},
 					},
 					"certConfig": {
@@ -329,26 +283,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 							Format:      "",
 						},
 					},
-					"defaultCPUModel": {
-						SchemaProps: spec.SchemaProps{
-							Description: "DefaultCPUModel defines a cluster default for CPU model: default CPU model is set when VMI doesn't have any CPU model. When VMI has CPU model set, then VMI's CPU model is preferred. When default CPU model is not set and VMI's CPU model is not set too, host-model will be set. Default CPU model can be changed when kubevirt is running.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"defaultRuntimeClass": {
-						SchemaProps: spec.SchemaProps{
-							Description: "DefaultRuntimeClass defines a cluster default for the RuntimeClass to be used for VMIs pods if not set there. Default RuntimeClass can be changed when kubevirt is running, existing VMIs are not impacted till the next restart/live-migration when they are eventually going to consume the new default RuntimeClass.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"obsoleteCPUs": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ObsoleteCPUs allows avoiding scheduling of VMs for obsolete CPU models",
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedObsoleteCPUs"),
-						},
-					},
 					"commonTemplatesNamespace": {
 						SchemaProps: spec.SchemaProps{
 							Description: "CommonTemplatesNamespace defines namespace in which common templates will be deployed. It overrides the default openshift namespace.",
@@ -360,13 +294,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 						SchemaProps: spec.SchemaProps{
 							Description: "StorageImport contains configuration for importing containerized data",
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageImportConfig"),
-						},
-					},
-					"workloadUpdateStrategy": {
-						SchemaProps: spec.SchemaProps{
-							Description: "WorkloadUpdateStrategy defines at the cluster level how to handle automated workload updates",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedWorkloadUpdateStrategy"),
 						},
 					},
 					"dataImportCronTemplates": {
@@ -427,13 +354,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.KubeMacPoolConfig"),
 						},
 					},
-					"evictionStrategy": {
-						SchemaProps: spec.SchemaProps{
-							Description: "EvictionStrategy defines at the cluster level if the VirtualMachineInstance should be migrated instead of shut-off in case of a node drain. If the VirtualMachineInstance specific field is set it overrides the cluster level one. Allowed values: - `None` no eviction strategy at cluster level. - `LiveMigrate` migrate the VM on eviction; a not live migratable VM with no specific strategy will block the drain of the node util manually evicted. - `LiveMigrateIfPossible` migrate the VM on eviction if live migration is possible, otherwise directly evict. - `External` block the drain, track eviction and notify an external controller. Defaults to LiveMigrate with multiple worker nodes, None on single worker clusters.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"vmStateStorageClass": {
 						SchemaProps: spec.SchemaProps{
 							Description: "VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM.",
@@ -441,24 +361,11 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 							Format:      "",
 						},
 					},
-					"virtualMachineOptions": {
-						SchemaProps: spec.SchemaProps{
-							Description: "VirtualMachineOptions holds the cluster level information regarding the virtual machine.",
-							Default:     map[string]interface{}{"disableFreePageReporting": false, "disableSerialConsoleLog": false},
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualMachineOptions"),
-						},
-					},
 					"commonBootImageNamespace": {
 						SchemaProps: spec.SchemaProps{
 							Description: "CommonBootImageNamespace override the default namespace of the common boot images, in order to hide them.\n\nIf not set, HCO won't set any namespace, letting SSP to use the default. If set, use the namespace to create the DataImportCronTemplates and the common image streams, with this namespace. This field is not set by default.",
 							Type:        []string{"string"},
 							Format:      "",
-						},
-					},
-					"ksmConfiguration": {
-						SchemaProps: spec.SchemaProps{
-							Description: "KSMConfiguration holds the information regarding the enabling the KSM in the nodes (if available).",
-							Ref:         ref("kubevirt.io/api/core/v1.KSMConfiguration"),
 						},
 					},
 					"networkBinding": {
@@ -480,13 +387,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 						SchemaProps: spec.SchemaProps{
 							Description: "ApplicationAwareConfig set the AAQ configurations",
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations"),
-						},
-					},
-					"higherWorkloadDensity": {
-						SchemaProps: spec.SchemaProps{
-							Description: "HigherWorkloadDensity holds configuration aimed to increase virtual machine density",
-							Default:     map[string]interface{}{"memoryOvercommitPercentage": 100},
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HigherWorkloadDensityConfiguration"),
 						},
 					},
 					"enableCommonBootImageImport": {
@@ -525,43 +425,11 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 							Format:      "",
 						},
 					},
-					"liveUpdateConfiguration": {
-						SchemaProps: spec.SchemaProps{
-							Description: "LiveUpdateConfiguration holds the cluster configuration for live update of virtual machines - max cpu sockets, max guest memory and max hotplug ratio. This setting can affect VM CPU and memory settings.",
-							Ref:         ref("kubevirt.io/api/core/v1.LiveUpdateConfiguration"),
-						},
-					},
-					"hypervisors": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Hypervisors specifies which hypervisor the cluster uses to run virtual machines. If empty or not set, KubeVirt defaults to KVM. Currently, only a single entry is supported. Allowed values for the hypervisor name are \"kvm\" and \"hyperv-direct\".",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("kubevirt.io/api/core/v1.HypervisorConfiguration"),
-									},
-								},
-							},
-						},
-					},
-					"roleAggregationStrategy": {
-						SchemaProps: spec.SchemaProps{
-							Description: "RoleAggregationStrategy controls whether KubeVirt RBAC cluster roles should be aggregated to the default Kubernetes roles (admin, edit, view). When set to \"AggregateToDefault\" or not specified, the aggregate-to-* labels are added to the cluster roles. When set to \"Manual\", the labels are not added, and roles will not be aggregated to the default roles.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HigherWorkloadDensityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedCertConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedObsoleteCPUs", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedWorkloadUpdateStrategy", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LiveMigrationConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.MediatedDevicesConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodePlacements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.OperandResourceRequirements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PermittedHostDevices", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageImportConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualMachineOptions", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate", "github.com/openshift/api/config/v1.TLSSecurityProfile", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.HypervisorConfiguration", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin", "kubevirt.io/api/core/v1.KSMConfiguration", "kubevirt.io/api/core/v1.LiveUpdateConfiguration", "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1.FilesystemOverhead"},
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedCertConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodePlacements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.OperandResourceRequirements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageImportConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate", "github.com/openshift/api/config/v1.TLSSecurityProfile", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin", "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1.FilesystemOverhead"},
 	}
 }
 
@@ -1028,25 +896,11 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_OperandResourceRequi
 							Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
 						},
 					},
-					"vmiCPUAllocationRatio": {
-						SchemaProps: spec.SchemaProps{
-							Description: "VmiCPUAllocationRatio defines, for each requested virtual CPU, how much physical CPU to request per VMI from the hosting node. The value is in fraction of a CPU thread (or core on non-hyperthreaded nodes). VMI POD CPU request = number of vCPUs * 1/vmiCPUAllocationRatio For example, a value of 1 means 1 physical CPU thread per VMI CPU thread. A value of 100 would be 1% of a physical thread allocated for each requested VMI thread. This option has no effect on VMIs that request dedicated CPUs. Defaults to 10",
-							Default:     10,
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"autoCPULimitNamespaceLabelSelector": {
-						SchemaProps: spec.SchemaProps{
-							Description: "When set, AutoCPULimitNamespaceLabelSelector will set a CPU limit on virt-launcher for VMIs running inside namespaces that match the label selector. The CPU limit will equal the number of requested vCPUs. This setting does not apply to VMIs with dedicated CPUs.",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"),
-						},
-					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"k8s.io/api/core/v1.ResourceRequirements", "k8s.io/apimachinery/pkg/apis/meta/v1.LabelSelector"},
+			"k8s.io/api/core/v1.ResourceRequirements"},
 	}
 }
 

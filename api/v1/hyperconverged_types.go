@@ -202,19 +202,11 @@ type HyperConvergedSpec struct {
 	// +k8s:conversion-gen=false
 	FeatureGates featuregates.HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 
-	// Live migration limits and timeouts are applied so that migration processes do not
-	// overwhelm the cluster.
-	// +kubebuilder:default={"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}
-	// +optional
-	LiveMigrationConfig LiveMigrationConfigurations `json:"liveMigrationConfig,omitempty"`
-
-	// PermittedHostDevices holds information about devices allowed for passthrough
-	// +optional
-	PermittedHostDevices *PermittedHostDevices `json:"permittedHostDevices,omitempty"`
-
-	// MediatedDevicesConfiguration holds information about MDEV types to be defined on nodes, if available
-	// +optional
-	MediatedDevicesConfiguration *MediatedDevicesConfiguration `json:"mediatedDevicesConfiguration,omitempty"`
+	// Virtualization contains all the configurations for virtualization
+	// +kubebuilder:default={"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10}
+	// +kubebuilder:validation:XValidation:rule="!has(self.vmiCPUAllocationRatio) || self.vmiCPUAllocationRatio > 0",message="vmiCPUAllocationRatio must be greater than 0"
+	// +k8s:conversion-gen=false
+	Virtualization VirtualizationConfig `json:"virtualization,omitempty"`
 
 	// certConfig holds the rotation policy for internal, self-signed certificates
 	// +kubebuilder:default={"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}
@@ -222,8 +214,6 @@ type HyperConvergedSpec struct {
 	CertConfig HyperConvergedCertConfig `json:"certConfig,omitempty"`
 
 	// ResourceRequirements describes the resource requirements for the operand workloads.
-	// +kubebuilder:default={"vmiCPUAllocationRatio": 10}
-	// +kubebuilder:validation:XValidation:rule="!has(self.vmiCPUAllocationRatio) || self.vmiCPUAllocationRatio > 0",message="vmiCPUAllocationRatio must be greater than 0"
 	// +optional
 	ResourceRequirements *OperandResourceRequirements `json:"resourceRequirements,omitempty"`
 
@@ -235,23 +225,6 @@ type HyperConvergedSpec struct {
 	// +optional
 	ScratchSpaceStorageClass *string `json:"scratchSpaceStorageClass,omitempty"`
 
-	// DefaultCPUModel defines a cluster default for CPU model: default CPU model is set when VMI doesn't have any CPU model.
-	// When VMI has CPU model set, then VMI's CPU model is preferred.
-	// When default CPU model is not set and VMI's CPU model is not set too, host-model will be set.
-	// Default CPU model can be changed when kubevirt is running.
-	// +optional
-	DefaultCPUModel *string `json:"defaultCPUModel,omitempty"`
-
-	// DefaultRuntimeClass defines a cluster default for the RuntimeClass to be used for VMIs pods if not set there.
-	// Default RuntimeClass can be changed when kubevirt is running, existing VMIs are not impacted till
-	// the next restart/live-migration when they are eventually going to consume the new default RuntimeClass.
-	// +optional
-	DefaultRuntimeClass *string `json:"defaultRuntimeClass,omitempty"`
-
-	// ObsoleteCPUs allows avoiding scheduling of VMs for obsolete CPU models
-	// +optional
-	ObsoleteCPUs *HyperConvergedObsoleteCPUs `json:"obsoleteCPUs,omitempty"`
-
 	// CommonTemplatesNamespace defines namespace in which common templates will
 	// be deployed. It overrides the default openshift namespace.
 	// +optional
@@ -260,10 +233,6 @@ type HyperConvergedSpec struct {
 	// StorageImport contains configuration for importing containerized data
 	// +optional
 	StorageImport *StorageImportConfig `json:"storageImport,omitempty"`
-
-	// WorkloadUpdateStrategy defines at the cluster level how to handle automated workload updates
-	// +kubebuilder:default={"workloadUpdateMethods": {"LiveMigrate"}, "batchEvictionSize": 10, "batchEvictionInterval": "1m0s"}
-	WorkloadUpdateStrategy HyperConvergedWorkloadUpdateStrategy `json:"workloadUpdateStrategy,omitempty"`
 
 	// DataImportCronTemplates holds list of data import cron templates (golden images)
 	// +optional
@@ -308,28 +277,9 @@ type HyperConvergedSpec struct {
 	// +optional
 	KubeMacPoolConfiguration *KubeMacPoolConfig `json:"kubeMacPoolConfiguration,omitempty"`
 
-	// EvictionStrategy defines at the cluster level if the VirtualMachineInstance should be
-	// migrated instead of shut-off in case of a node drain. If the VirtualMachineInstance specific
-	// field is set it overrides the cluster level one.
-	// Allowed values:
-	// - `None` no eviction strategy at cluster level.
-	// - `LiveMigrate` migrate the VM on eviction; a not live migratable VM with no specific strategy will block the drain of the node util manually evicted.
-	// - `LiveMigrateIfPossible` migrate the VM on eviction if live migration is possible, otherwise directly evict.
-	// - `External` block the drain, track eviction and notify an external controller.
-	// Defaults to LiveMigrate with multiple worker nodes, None on single worker clusters.
-	// +kubebuilder:validation:Enum=None;LiveMigrate;LiveMigrateIfPossible;External
-	// +optional
-	EvictionStrategy *v1.EvictionStrategy `json:"evictionStrategy,omitempty"`
-
 	// VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM.
 	// +optional
 	VMStateStorageClass *string `json:"vmStateStorageClass,omitempty"`
-
-	// VirtualMachineOptions holds the cluster level information regarding the virtual machine.
-	// +kubebuilder:default={"disableFreePageReporting": false, "disableSerialConsoleLog": false}
-	// +default={"disableFreePageReporting": false, "disableSerialConsoleLog": false}
-	// +optional
-	VirtualMachineOptions *VirtualMachineOptions `json:"virtualMachineOptions,omitempty"`
 
 	// CommonBootImageNamespace override the default namespace of the common boot images, in order to hide them.
 	//
@@ -339,11 +289,6 @@ type HyperConvergedSpec struct {
 	// +optional
 	CommonBootImageNamespace *string `json:"commonBootImageNamespace,omitempty"`
 
-	// KSMConfiguration holds the information regarding
-	// the enabling the KSM in the nodes (if available).
-	// +optional
-	KSMConfiguration *v1.KSMConfiguration `json:"ksmConfiguration,omitempty"`
-
 	// NetworkBinding defines the network binding plugins.
 	// Those bindings can be used when defining virtual machine interfaces.
 	// +optional
@@ -352,12 +297,6 @@ type HyperConvergedSpec struct {
 	// ApplicationAwareConfig set the AAQ configurations
 	// +optional
 	ApplicationAwareConfig *ApplicationAwareConfigurations `json:"applicationAwareConfig,omitempty"`
-
-	// HigherWorkloadDensity holds configuration aimed to increase virtual machine density
-	// +kubebuilder:default={"memoryOvercommitPercentage": 100}
-	// +default={"memoryOvercommitPercentage": 100}
-	// +optional
-	HigherWorkloadDensity *HigherWorkloadDensityConfiguration `json:"higherWorkloadDensity,omitempty"`
 
 	// Opt-in to automatic delivery/updates of the common data import cron templates.
 	// There are two sources for the data import cron templates: hard coded list of common templates, and custom (user
@@ -387,11 +326,70 @@ type HyperConvergedSpec struct {
 	// +kubebuilder:default=false
 	// +default=false
 	EnableApplicationAwareQuota *bool `json:"enableApplicationAwareQuota,omitempty"`
+}
+
+// VirtualizationConfig contains all the virtualization configurations
+type VirtualizationConfig struct {
+	// Live migration limits and timeouts are applied so that migration processes do not
+	// overwhelm the cluster.
+	// +kubebuilder:default={"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}
+	// +optional
+	LiveMigrationConfig LiveMigrationConfigurations `json:"liveMigrationConfig,omitempty"`
+
+	// PermittedHostDevices holds information about devices allowed for passthrough
+	// +optional
+	PermittedHostDevices *PermittedHostDevices `json:"permittedHostDevices,omitempty"`
+
+	// MediatedDevicesConfiguration holds information about MDEV types to be defined on nodes, if available
+	// +optional
+	MediatedDevicesConfiguration *MediatedDevicesConfiguration `json:"mediatedDevicesConfiguration,omitempty"`
+
+	// WorkloadUpdateStrategy defines at the cluster level how to handle automated workload updates
+	// +kubebuilder:default={"workloadUpdateMethods": {"LiveMigrate"}, "batchEvictionSize": 10, "batchEvictionInterval": "1m0s"}
+	WorkloadUpdateStrategy HyperConvergedWorkloadUpdateStrategy `json:"workloadUpdateStrategy,omitempty"`
+
+	// ObsoleteCPUModels is a list of obsolete CPU models. When the node-labeller obtains the list of obsolete CPU
+	// models, it eliminates those CPU models and creates labels for valid CPU models.
+	// The default values for this field is nil, however, HCO uses opinionated values, and adding values to this list
+	// will add them to the opinionated values.
+	// +listType=set
+	// +optional
+	ObsoleteCPUModels []string `json:"obsoleteCPUModels,omitempty"`
+
+	// EvictionStrategy defines at the cluster level if the VirtualMachineInstance should be
+	// migrated instead of shut-off in case of a node drain. If the VirtualMachineInstance specific
+	// field is set it overrides the cluster level one.
+	// Allowed values:
+	// - `None` no eviction strategy at cluster level.
+	// - `LiveMigrate` migrate the VM on eviction; a not live migratable VM with no specific strategy will block the drain of the node util manually evicted.
+	// - `LiveMigrateIfPossible` migrate the VM on eviction if live migration is possible, otherwise directly evict.
+	// - `External` block the drain, track eviction and notify an external controller.
+	// Defaults to LiveMigrate with multiple worker nodes, None on single worker clusters.
+	// +kubebuilder:validation:Enum=None;LiveMigrate;LiveMigrateIfPossible;External
+	// +optional
+	EvictionStrategy *v1.EvictionStrategy `json:"evictionStrategy,omitempty"`
+
+	// VirtualMachineOptions holds the cluster level information regarding the virtual machine.
+	// +kubebuilder:default={"disableFreePageReporting": false, "disableSerialConsoleLog": false}
+	// +default={"disableFreePageReporting": false, "disableSerialConsoleLog": false}
+	// +optional
+	VirtualMachineOptions *VirtualMachineOptions `json:"virtualMachineOptions,omitempty"`
+
+	// HigherWorkloadDensity holds configuration aimed to increase virtual machine density
+	// +kubebuilder:default={"memoryOvercommitPercentage": 100}
+	// +default={"memoryOvercommitPercentage": 100}
+	// +optional
+	HigherWorkloadDensity *HigherWorkloadDensityConfiguration `json:"higherWorkloadDensity,omitempty"`
 
 	// LiveUpdateConfiguration holds the cluster configuration for live update of virtual machines - max cpu sockets,
 	// max guest memory and max hotplug ratio. This setting can affect VM CPU and memory settings.
 	// +optional
 	LiveUpdateConfiguration *v1.LiveUpdateConfiguration `json:"liveUpdateConfiguration,omitempty"`
+
+	// KSMConfiguration holds the information regarding
+	// the enabling the KSM in the nodes (if available).
+	// +optional
+	KSMConfiguration *v1.KSMConfiguration `json:"ksmConfiguration,omitempty"`
 
 	// Hypervisors specifies which hypervisor the cluster uses to run virtual machines.
 	// If empty or not set, KubeVirt defaults to KVM. Currently, only a single entry is supported.
@@ -407,8 +405,30 @@ type HyperConvergedSpec struct {
 	// When set to "Manual", the labels are not added, and roles will not be aggregated to the default roles.
 	// +optional
 	// +kubebuilder:validation:Enum=AggregateToDefault;Manual
-	// TODO: move this field to the virtualization section in API v1.
 	RoleAggregationStrategy *v1.RoleAggregationStrategy `json:"roleAggregationStrategy,omitempty"`
+
+	// VmiCPUAllocationRatio defines, for each requested virtual CPU,
+	// how much physical CPU to request per VMI from the
+	// hosting node. The value is in fraction of a CPU thread (or
+	// core on non-hyperthreaded nodes).
+	// VMI POD CPU request = number of vCPUs * 1/vmiCPUAllocationRatio
+	// For example, a value of 1 means 1 physical CPU thread per VMI CPU thread.
+	// A value of 100 would be 1% of a physical thread allocated for each
+	// requested VMI thread.
+	// This option has no effect on VMIs that request dedicated CPUs.
+	// Defaults to 10
+	// +kubebuilder:default=10
+	// +kubebuilder:validation:Minimum=1
+	// +default=10
+	// +optional
+	VmiCPUAllocationRatio *int `json:"vmiCPUAllocationRatio,omitempty"`
+
+	// When set, AutoCPULimitNamespaceLabelSelector will set a CPU limit on virt-launcher for VMIs running inside
+	// namespaces that match the label selector.
+	// The CPU limit will equal the number of requested vCPUs.
+	// This setting does not apply to VMIs with dedicated CPUs.
+	// +optional
+	AutoCPULimitNamespaceLabelSelector *metav1.LabelSelector `json:"autoCPULimitNamespaceLabelSelector,omitempty"`
 }
 
 // CertRotateConfigCA contains the tunables for TLS certificates.
@@ -544,6 +564,7 @@ type LiveMigrationConfigurations struct {
 }
 
 // VirtualMachineOptions holds the cluster level information regarding the virtual machine.
+// +k8s:conversion-gen=false
 type VirtualMachineOptions struct {
 	// DisableFreePageReporting disable the free page reporting of
 	// memory balloon device https://libvirt.org/formatdomain.html#memory-balloon-device.
@@ -561,6 +582,19 @@ type VirtualMachineOptions struct {
 	// +kubebuilder:default=false
 	// +default=false
 	DisableSerialConsoleLog *bool `json:"disableSerialConsoleLog,omitempty"`
+
+	// DefaultCPUModel defines a cluster default for CPU model: default CPU model is set when VMI doesn't have any CPU model.
+	// When VMI has CPU model set, then VMI's CPU model is preferred.
+	// When default CPU model is not set and VMI's CPU model is not set too, host-model will be set.
+	// Default CPU model can be changed when kubevirt is running.
+	// +optional
+	DefaultCPUModel *string `json:"defaultCPUModel,omitempty"`
+
+	// DefaultRuntimeClass defines a cluster default for the RuntimeClass to be used for VMIs pods if not set there.
+	// Default RuntimeClass can be changed when kubevirt is running, existing VMIs are not impacted till
+	// the next restart/live-migration when they are eventually going to consume the new default RuntimeClass.
+	// +optional
+	DefaultRuntimeClass *string `json:"defaultRuntimeClass,omitempty"`
 }
 
 // PermittedHostDevices holds information about devices allowed for passthrough
@@ -666,41 +700,6 @@ type OperandResourceRequirements struct {
 	// resource
 	// +optional
 	StorageWorkloads *corev1.ResourceRequirements `json:"storageWorkloads,omitempty"`
-
-	// VmiCPUAllocationRatio defines, for each requested virtual CPU,
-	// how much physical CPU to request per VMI from the
-	// hosting node. The value is in fraction of a CPU thread (or
-	// core on non-hyperthreaded nodes).
-	// VMI POD CPU request = number of vCPUs * 1/vmiCPUAllocationRatio
-	// For example, a value of 1 means 1 physical CPU thread per VMI CPU thread.
-	// A value of 100 would be 1% of a physical thread allocated for each
-	// requested VMI thread.
-	// This option has no effect on VMIs that request dedicated CPUs.
-	// Defaults to 10
-	// +kubebuilder:default=10
-	// +kubebuilder:validation:Minimum=1
-	// +default=10
-	// +optional
-	VmiCPUAllocationRatio *int `json:"vmiCPUAllocationRatio,omitempty"`
-
-	// When set, AutoCPULimitNamespaceLabelSelector will set a CPU limit on virt-launcher for VMIs running inside
-	// namespaces that match the label selector.
-	// The CPU limit will equal the number of requested vCPUs.
-	// This setting does not apply to VMIs with dedicated CPUs.
-	// +optional
-	AutoCPULimitNamespaceLabelSelector *metav1.LabelSelector `json:"autoCPULimitNamespaceLabelSelector,omitempty"`
-}
-
-// HyperConvergedObsoleteCPUs allows avoiding scheduling of VMs for obsolete CPU models
-// +k8s:openapi-gen=true
-type HyperConvergedObsoleteCPUs struct {
-	// CPUModels is a list of obsolete CPU models. When the node-labeller obtains the list of obsolete CPU models, it
-	// eliminates those CPU models and creates labels for valid CPU models.
-	// The default values for this field is nil, however, HCO uses opinionated values, and adding values to this list
-	// will add them to the opinionated values.
-	// +listType=set
-	// +optional
-	CPUModels []string `json:"cpuModels,omitempty"`
 }
 
 // StorageImportConfig contains configuration for importing containerized data
@@ -938,7 +937,7 @@ type HyperConverged struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}, "liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "resourceRequirements": {"vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
+	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
 	// +optional
 	Spec   HyperConvergedSpec   `json:"spec,omitempty"`
 	Status HyperConvergedStatus `json:"status,omitempty"`

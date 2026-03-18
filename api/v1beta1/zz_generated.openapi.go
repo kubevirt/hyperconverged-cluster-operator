@@ -31,28 +31,21 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.ApplicationAwareConfigurations":       schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_ApplicationAwareConfigurations(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.CertRotateConfigCA":                   schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_CertRotateConfigCA(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.CertRotateConfigServer":               schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_CertRotateConfigServer(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConverged":                       schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConverged(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedCertConfig":             schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedCertConfig(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedFeatureGates":           schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedFeatureGates(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedObsoleteCPUs":           schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedObsoleteCPUs(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedSpec":                   schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedSpec(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedStatus":                 schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedStatus(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedWorkloadUpdateStrategy": schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedWorkloadUpdateStrategy(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.KubeMacPoolConfig":                    schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_KubeMacPoolConfig(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LiveMigrationConfigurations":          schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_LiveMigrationConfigurations(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LogVerbosityConfiguration":            schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_LogVerbosityConfiguration(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.MediatedDevicesConfiguration":         schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_MediatedDevicesConfiguration(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.MediatedHostDevice":                   schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_MediatedHostDevice(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.NodeMediatedDeviceTypesConfig":        schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_NodeMediatedDeviceTypesConfig(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.OperandResourceRequirements":          schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_OperandResourceRequirements(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.PciHostDevice":                        schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_PciHostDevice(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.PermittedHostDevices":                 schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_PermittedHostDevices(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.StorageImportConfig":                  schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_StorageImportConfig(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.USBHostDevice":                        schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_USBHostDevice(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.USBSelector":                          schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_USBSelector(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.ApplicationAwareConfigurations": schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_ApplicationAwareConfigurations(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.CertRotateConfigCA":             schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_CertRotateConfigCA(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.CertRotateConfigServer":         schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_CertRotateConfigServer(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConverged":                 schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConverged(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedCertConfig":       schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedCertConfig(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedFeatureGates":     schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedFeatureGates(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedObsoleteCPUs":     schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedObsoleteCPUs(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedSpec":             schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedSpec(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedStatus":           schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedStatus(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.KubeMacPoolConfig":              schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_KubeMacPoolConfig(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LogVerbosityConfiguration":      schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_LogVerbosityConfiguration(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.MediatedDevicesConfiguration":   schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_MediatedDevicesConfiguration(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.NodeMediatedDeviceTypesConfig":  schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_NodeMediatedDeviceTypesConfig(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.OperandResourceRequirements":    schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_OperandResourceRequirements(ref),
+		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.StorageImportConfig":            schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_StorageImportConfig(ref),
 	}
 }
 
@@ -490,13 +483,13 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 						SchemaProps: spec.SchemaProps{
 							Description: "Live migration limits and timeouts are applied so that migration processes do not overwhelm the cluster.",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LiveMigrationConfigurations"),
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LiveMigrationConfigurations"),
 						},
 					},
 					"permittedHostDevices": {
 						SchemaProps: spec.SchemaProps{
 							Description: "PermittedHostDevices holds information about devices allowed for passthrough",
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.PermittedHostDevices"),
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PermittedHostDevices"),
 						},
 					},
 					"mediatedDevicesConfiguration": {
@@ -569,7 +562,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 						SchemaProps: spec.SchemaProps{
 							Description: "WorkloadUpdateStrategy defines at the cluster level how to handle automated workload updates",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedWorkloadUpdateStrategy"),
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedWorkloadUpdateStrategy"),
 						},
 					},
 					"dataImportCronTemplates": {
@@ -703,7 +696,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 						SchemaProps: spec.SchemaProps{
 							Description: "HigherWorkloadDensity holds configuration aimed to increase virtual machine density",
 							Default:     map[string]interface{}{"memoryOvercommitPercentage": 100},
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HigherWorkloadDensityConfiguration"),
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HigherWorkloadDensityConfiguration"),
 						},
 					},
 					"enableCommonBootImageImport": {
@@ -778,7 +771,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HigherWorkloadDensityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedCertConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedFeatureGates", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedObsoleteCPUs", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedWorkloadUpdateStrategy", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LiveMigrationConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.MediatedDevicesConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.OperandResourceRequirements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.PermittedHostDevices", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.StorageImportConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.VirtualMachineOptions", "github.com/openshift/api/config/v1.TLSSecurityProfile", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.HypervisorConfiguration", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin", "kubevirt.io/api/core/v1.KSMConfiguration", "kubevirt.io/api/core/v1.LiveUpdateConfiguration", "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1.FilesystemOverhead"},
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HigherWorkloadDensityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedWorkloadUpdateStrategy", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LiveMigrationConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PermittedHostDevices", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedCertConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedFeatureGates", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedObsoleteCPUs", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.MediatedDevicesConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.OperandResourceRequirements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.StorageImportConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.VirtualMachineOptions", "github.com/openshift/api/config/v1.TLSSecurityProfile", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.HypervisorConfiguration", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin", "kubevirt.io/api/core/v1.KSMConfiguration", "kubevirt.io/api/core/v1.LiveUpdateConfiguration", "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1.FilesystemOverhead"},
 	}
 }
 
@@ -905,58 +898,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 	}
 }
 
-func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedWorkloadUpdateStrategy(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "HyperConvergedWorkloadUpdateStrategy defines options related to updating a KubeVirt install",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"workloadUpdateMethods": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "WorkloadUpdateMethods defines the methods that can be used to disrupt workloads during automated workload updates. When multiple methods are present, the least disruptive method takes precedence over more disruptive methods. For example if both LiveMigrate and Evict methods are listed, only VMs which are not live migratable will be restarted/shutdown. An empty list defaults to no automated workload updating.",
-							Default:     []interface{}{"LiveMigrate"},
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
-									},
-								},
-							},
-						},
-					},
-					"batchEvictionSize": {
-						SchemaProps: spec.SchemaProps{
-							Description: "BatchEvictionSize Represents the number of VMIs that can be forced updated per the BatchShutdownInterval interval",
-							Default:     10,
-							Type:        []string{"integer"},
-							Format:      "int32",
-						},
-					},
-					"batchEvictionInterval": {
-						SchemaProps: spec.SchemaProps{
-							Description: "BatchEvictionInterval Represents the interval to wait before issuing the next batch of shutdowns",
-							Default:     "1m0s",
-							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
-						},
-					},
-				},
-				Required: []string{"workloadUpdateMethods"},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/apimachinery/pkg/apis/meta/v1.Duration"},
-	}
-}
-
 func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_KubeMacPoolConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -975,81 +916,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_KubeMacPoolConf
 						SchemaProps: spec.SchemaProps{
 							Description: "RangeEnd defines the last MAC address in the kubemacpool range. The MAC address format should be AA:BB:CC:DD:EE:FF.",
 							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-				},
-			},
-		},
-	}
-}
-
-func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_LiveMigrationConfigurations(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "LiveMigrationConfigurations - Live migration limits and timeouts are applied so that migration processes do not overwhelm the cluster.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"parallelMigrationsPerCluster": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Number of migrations running in parallel in the cluster.",
-							Default:     5,
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"parallelOutboundMigrationsPerNode": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Maximum number of outbound migrations per node.",
-							Default:     2,
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"bandwidthPerMigration": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Bandwidth limit of each migration, the value is quantity of bytes per second (e.g. 2048Mi = 2048MiB/sec)",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"completionTimeoutPerGiB": {
-						SchemaProps: spec.SchemaProps{
-							Description: "If a migrating VM is big and busy, while the connection to the destination node is slow, migration may never converge. The completion timeout is calculated based on completionTimeoutPerGiB times the size of the guest (both RAM and migrated disks, if any). For example, with completionTimeoutPerGiB set to 800, a virtual machine instance with 6GiB memory will timeout if it has not completed migration in 1h20m. Use a lower completionTimeoutPerGiB to induce quicker failure, so that another destination or post-copy is attempted. Use a higher completionTimeoutPerGiB to let workload with spikes in its memory dirty rate to converge. The format is a number.",
-							Default:     150,
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"progressTimeout": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The migration will be canceled if memory copy fails to make progress in this time, in seconds.",
-							Default:     150,
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"network": {
-						SchemaProps: spec.SchemaProps{
-							Description: "The migrations will be performed over a dedicated multus network to minimize disruption to tenant workloads due to network saturation when VM live migrations are triggered.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"allowAutoConverge": {
-						SchemaProps: spec.SchemaProps{
-							Description: "AllowAutoConverge allows the platform to compromise performance/availability of VMIs to guarantee successful VMI live migrations. Defaults to false",
-							Default:     false,
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"allowPostCopy": {
-						SchemaProps: spec.SchemaProps{
-							Description: "When enabled, KubeVirt attempts to use post-copy live-migration in case it reaches its completion timeout while attempting pre-copy live-migration. Post-copy migrations allow even the busiest VMs to successfully live-migrate. However, events like a network failure or a failure in any of the source or destination nodes can cause the migrated VM to crash or reach inconsistency. Enable this option when evicting nodes is more important than keeping VMs alive. Defaults to false.",
-							Default:     false,
-							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
@@ -1159,50 +1025,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_MediatedDevices
 	}
 }
 
-func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_MediatedHostDevice(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "MediatedHostDevice represents a host mediated device allowed for passthrough",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"mdevNameSelector": {
-						SchemaProps: spec.SchemaProps{
-							Description: "name of a mediated device type required to identify a mediated device on a host",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"resourceName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "name by which a device is advertised and being requested",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"externalResourceProvider": {
-						SchemaProps: spec.SchemaProps{
-							Description: "indicates that this resource is being provided by an external device plugin",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"disabled": {
-						SchemaProps: spec.SchemaProps{
-							Description: "HCO enforces the existence of several MediatedHostDevice objects. Set disabled field to true instead of remove these objects.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"mdevNameSelector", "resourceName"},
-			},
-		},
-	}
-}
-
 func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_NodeMediatedDeviceTypesConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1307,128 +1129,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_OperandResource
 	}
 }
 
-func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_PciHostDevice(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "PciHostDevice represents a host PCI device allowed for passthrough",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"pciDeviceSelector": {
-						SchemaProps: spec.SchemaProps{
-							Description: "a combination of a vendor_id:product_id required to identify a PCI device on a host.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"resourceName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "name by which a device is advertised and being requested",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"externalResourceProvider": {
-						SchemaProps: spec.SchemaProps{
-							Description: "indicates that this resource is being provided by an external device plugin",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"disabled": {
-						SchemaProps: spec.SchemaProps{
-							Description: "HCO enforces the existence of several PciHostDevice objects. Set disabled field to true instead of remove these objects.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"pciDeviceSelector", "resourceName"},
-			},
-		},
-	}
-}
-
-func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_PermittedHostDevices(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "PermittedHostDevices holds information about devices allowed for passthrough",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"pciHostDevices": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-map-keys": []interface{}{
-									"pciDeviceSelector",
-								},
-								"x-kubernetes-list-type": "map",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.PciHostDevice"),
-									},
-								},
-							},
-						},
-					},
-					"usbHostDevices": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-map-keys": []interface{}{
-									"resourceName",
-								},
-								"x-kubernetes-list-type": "map",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.USBHostDevice"),
-									},
-								},
-							},
-						},
-					},
-					"mediatedDevices": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-map-keys": []interface{}{
-									"mdevNameSelector",
-								},
-								"x-kubernetes-list-type": "map",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.MediatedHostDevice"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.MediatedHostDevice", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.PciHostDevice", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.USBHostDevice"},
-	}
-}
-
 func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_StorageImportConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -1457,90 +1157,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_StorageImportCo
 						},
 					},
 				},
-			},
-		},
-	}
-}
-
-func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_USBHostDevice(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "USBHostDevice represents a host USB device allowed for passthrough",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"resourceName": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Identifies the list of USB host devices. e.g: kubevirt.io/storage, kubevirt.io/bootable-usb, etc",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"selectors": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Type: []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.USBSelector"),
-									},
-								},
-							},
-						},
-					},
-					"externalResourceProvider": {
-						SchemaProps: spec.SchemaProps{
-							Description: "If true, KubeVirt will leave the allocation and monitoring to an external device plugin",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"disabled": {
-						SchemaProps: spec.SchemaProps{
-							Description: "HCO enforces the existence of several USBHostDevice objects. Set disabled field to true instead of remove these objects.",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-				},
-				Required: []string{"resourceName"},
-			},
-		},
-		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.USBSelector"},
-	}
-}
-
-func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_USBSelector(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "USBSelector represents a selector for a USB device allowed for passthrough",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"vendor": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-					"product": {
-						SchemaProps: spec.SchemaProps{
-							Default: "",
-							Type:    []string{"string"},
-							Format:  "",
-						},
-					},
-				},
-				Required: []string{"vendor", "product"},
 			},
 		},
 	}

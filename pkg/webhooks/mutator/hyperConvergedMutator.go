@@ -64,6 +64,8 @@ func (hcm *HyperConvergedMutator) mutateHyperConverged(req admission.Request, lo
 	}
 
 	patches := getMutatePatches(hc)
+	patches = mutateEvictionStrategy(hc, patches)
+
 	if req.Operation == admissionv1.Create {
 		patches = getMutatePatchesOnCreate(hc, patches)
 	}
@@ -93,16 +95,14 @@ func getMutatePatches(hc *hcov1.HyperConverged) []jsonpatch.JsonPatchOperation {
 		}
 	}
 
-	patches = mutateEvictionStrategy(hc, patches)
-
 	return patches
 }
 
 func getMutatePatchesOnCreate(hc *hcov1.HyperConverged, patches []jsonpatch.JsonPatchOperation) []jsonpatch.JsonPatchOperation {
-	if hc.Spec.KSMConfiguration == nil {
+	if hc.Spec.Virtualization.KSMConfiguration == nil {
 		patches = append(patches, jsonpatch.JsonPatchOperation{
 			Operation: "add",
-			Path:      "/spec/ksmConfiguration",
+			Path:      "/spec/virtualization/ksmConfiguration",
 			Value:     kubevirtcorev1.KSMConfiguration{},
 		})
 	}
@@ -111,7 +111,7 @@ func getMutatePatchesOnCreate(hc *hcov1.HyperConverged, patches []jsonpatch.Json
 }
 
 func mutateEvictionStrategy(hc *hcov1.HyperConverged, patches []jsonpatch.JsonPatchOperation) []jsonpatch.JsonPatchOperation {
-	if hc.Status.InfrastructureHighlyAvailable == nil || hc.Spec.EvictionStrategy != nil { // New HyperConverged CR
+	if hc.Status.InfrastructureHighlyAvailable == nil || hc.Spec.Virtualization.EvictionStrategy != nil { // New HyperConverged CR
 		return patches
 	}
 
@@ -122,7 +122,7 @@ func mutateEvictionStrategy(hc *hcov1.HyperConverged, patches []jsonpatch.JsonPa
 
 	patches = append(patches, jsonpatch.JsonPatchOperation{
 		Operation: "replace",
-		Path:      "/spec/evictionStrategy",
+		Path:      "/spec/virtualization/evictionStrategy",
 		Value:     value,
 	})
 
