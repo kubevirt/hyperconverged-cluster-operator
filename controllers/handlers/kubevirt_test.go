@@ -687,7 +687,7 @@ Version: 1.2.3`)
 			It("should set BlockUninstallIfWorkloadsExist if set on HCO CR", func() {
 				expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
 				Expect(err).ToNot(HaveOccurred())
-				uninstallStrategy := hcov1beta1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
+				uninstallStrategy := hcov1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
 				hco.Spec.UninstallStrategy = uninstallStrategy
 
 				cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
@@ -709,7 +709,7 @@ Version: 1.2.3`)
 			It("should set BlockUninstallIfRemoveWorkloads if set on HCO CR", func() {
 				expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
 				Expect(err).ToNot(HaveOccurred())
-				uninstallStrategy := hcov1beta1.HyperConvergedUninstallStrategyRemoveWorkloads
+				uninstallStrategy := hcov1.HyperConvergedUninstallStrategyRemoveWorkloads
 				hco.Spec.UninstallStrategy = uninstallStrategy
 
 				cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
@@ -4141,14 +4141,14 @@ Version: 1.2.3`)
 					VirtAPI:        456,
 					VirtController: 789,
 				}
-				hco.Spec.LogVerbosityConfig = &hcov1beta1.LogVerbosityConfiguration{Kubevirt: &logVerbosity}
+				hco.Spec.LogVerbosityConfig = &hcov1.LogVerbosityConfiguration{Kubevirt: &logVerbosity}
 				devConfig := getKVDevConfig(hco)
 
 				Expect(devConfig).ToNot(BeNil())
 				Expect(*devConfig.LogVerbosity).To(Equal(logVerbosity))
 			})
 
-			DescribeTable("Should not be defined for KubevirtCR if not defined in HCO CR", func(logConfig *hcov1beta1.LogVerbosityConfiguration) {
+			DescribeTable("Should not be defined for KubevirtCR if not defined in HCO CR", func(logConfig *hcov1.LogVerbosityConfiguration) {
 				hco.Spec.LogVerbosityConfig = logConfig
 				devConfig := getKVDevConfig(hco)
 
@@ -4156,7 +4156,7 @@ Version: 1.2.3`)
 				Expect(devConfig.LogVerbosity).To(BeNil())
 			},
 				Entry("nil LogVerbosityConfiguration", nil),
-				Entry("nil Kubevirt logs", &hcov1beta1.LogVerbosityConfiguration{Kubevirt: nil}),
+				Entry("nil Kubevirt logs", &hcov1.LogVerbosityConfiguration{Kubevirt: nil}),
 			)
 
 		})

@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
@@ -41,17 +42,17 @@ var _ = Describe("CSV Operand", func() {
 
 	Context("UninstallStrategy is BlockUninstallIfWorkloadsExist", func() {
 		It("should set console.openshift.io/disable-operand-delete to true", func() {
-			hco.Spec.UninstallStrategy = hcov1beta1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
+			hco.Spec.UninstallStrategy = hcov1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
 			foundResource := ensure(req, hco)
 			Expect(foundResource.Annotations).To(HaveKeyWithValue(components.DisableOperandDeletionAnnotation, "true"))
 		})
 
 		It("should set console.openshift.io/disable-operand-delete to true on changing from RemoveWorkloads", func() {
-			hco.Spec.UninstallStrategy = hcov1beta1.HyperConvergedUninstallStrategyRemoveWorkloads
+			hco.Spec.UninstallStrategy = hcov1.HyperConvergedUninstallStrategyRemoveWorkloads
 			foundResource := ensure(req, hco)
 			Expect(foundResource.Annotations).To(HaveKeyWithValue(components.DisableOperandDeletionAnnotation, "false"))
 
-			hco.Spec.UninstallStrategy = hcov1beta1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
+			hco.Spec.UninstallStrategy = hcov1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
 			foundResource = ensure(req, hco)
 			Expect(foundResource.Annotations).To(HaveKeyWithValue(components.DisableOperandDeletionAnnotation, "true"))
 		})
@@ -59,17 +60,17 @@ var _ = Describe("CSV Operand", func() {
 
 	Context("UninstallStrategy is RemoveWorkloads", func() {
 		It("should set console.openshift.io/disable-operand-delete to false", func() {
-			hco.Spec.UninstallStrategy = hcov1beta1.HyperConvergedUninstallStrategyRemoveWorkloads
+			hco.Spec.UninstallStrategy = hcov1.HyperConvergedUninstallStrategyRemoveWorkloads
 			foundResource := ensure(req, hco)
 			Expect(foundResource.Annotations).To(HaveKeyWithValue(components.DisableOperandDeletionAnnotation, "false"))
 		})
 
 		It("should set console.openshift.io/disable-operand-delete to false on changing from BlockUninstallIfWorkloadsExist", func() {
-			hco.Spec.UninstallStrategy = hcov1beta1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
+			hco.Spec.UninstallStrategy = hcov1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
 			foundResource := ensure(req, hco)
 			Expect(foundResource.Annotations).To(HaveKeyWithValue(components.DisableOperandDeletionAnnotation, "true"))
 
-			hco.Spec.UninstallStrategy = hcov1beta1.HyperConvergedUninstallStrategyRemoveWorkloads
+			hco.Spec.UninstallStrategy = hcov1.HyperConvergedUninstallStrategyRemoveWorkloads
 			foundResource = ensure(req, hco)
 			Expect(foundResource.Annotations).To(HaveKeyWithValue(components.DisableOperandDeletionAnnotation, "false"))
 		})

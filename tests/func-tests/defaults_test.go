@@ -198,7 +198,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc := tests.GetHCO(ctx, cli)
-				g.Expect(hc.Spec.UninstallStrategy).To(Equal(v1beta1.HyperConvergedUninstallStrategy(defaultUninstallStrategy)), "uninstallStrategy should be equal to default")
+				g.Expect(hc.Spec.UninstallStrategy).To(Equal(hcov1.HyperConvergedUninstallStrategy(defaultUninstallStrategy)), "uninstallStrategy should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(Succeed())
 		},
 			Entry("when removing /spec/uninstallStrategy", "/spec/uninstallStrategy"),

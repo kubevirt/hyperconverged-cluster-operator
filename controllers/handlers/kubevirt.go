@@ -295,7 +295,7 @@ func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtcorev1
 	infraHighlyAvailable := nodeinfo.IsInfrastructureHighlyAvailable()
 
 	uninstallStrategy := kubevirtcorev1.KubeVirtUninstallStrategyBlockUninstallIfWorkloadsExist
-	if hc.Spec.UninstallStrategy == hcov1beta1.HyperConvergedUninstallStrategyRemoveWorkloads {
+	if hc.Spec.UninstallStrategy == hcov1.HyperConvergedUninstallStrategyRemoveWorkloads {
 		uninstallStrategy = kubevirtcorev1.KubeVirtUninstallStrategyRemoveWorkloads
 	}
 

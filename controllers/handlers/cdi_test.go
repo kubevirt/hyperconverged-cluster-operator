@@ -580,7 +580,7 @@ var _ = Describe("CDI Operand", func() {
 		Context("Log verbosity", func() {
 
 			It("Should be defined for CDI CR if defined in HCO CR", func() {
-				hco.Spec.LogVerbosityConfig = &hcov1beta1.LogVerbosityConfiguration{CDI: ptr.To[int32](4)}
+				hco.Spec.LogVerbosityConfig = &hcov1.LogVerbosityConfiguration{CDI: ptr.To[int32](4)}
 				cdi, err := NewCDI(hco)
 
 				Expect(err).ToNot(HaveOccurred())
@@ -588,7 +588,7 @@ var _ = Describe("CDI Operand", func() {
 				Expect(cdi.Spec.Config.LogVerbosity).To(HaveValue(Equal(int32(4))))
 			})
 
-			DescribeTable("Should not be defined for CDI CR if not defined in HCO CR", func(logConfig *hcov1beta1.LogVerbosityConfiguration) {
+			DescribeTable("Should not be defined for CDI CR if not defined in HCO CR", func(logConfig *hcov1.LogVerbosityConfiguration) {
 				hco.Spec.LogVerbosityConfig = logConfig
 				cdi, err := NewCDI(hco)
 
@@ -597,7 +597,7 @@ var _ = Describe("CDI Operand", func() {
 				Expect(cdi.Spec.Config.LogVerbosity).To(BeNil())
 			},
 				Entry("nil LogVerbosityConfiguration", nil),
-				Entry("nil CDI logs", &hcov1beta1.LogVerbosityConfiguration{CDI: nil}),
+				Entry("nil CDI logs", &hcov1.LogVerbosityConfiguration{CDI: nil}),
 			)
 		})
 
@@ -799,7 +799,7 @@ var _ = Describe("CDI Operand", func() {
 			It("should set BlockUninstallIfWorkloadsExist if set on HCO CR", func() {
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
-				uninstallStrategy := hcov1beta1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
+				uninstallStrategy := hcov1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
 				hco.Spec.UninstallStrategy = uninstallStrategy
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
@@ -821,7 +821,7 @@ var _ = Describe("CDI Operand", func() {
 			It("should set BlockUninstallIfRemoveWorkloads if set on HCO CR", func() {
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
-				uninstallStrategy := hcov1beta1.HyperConvergedUninstallStrategyRemoveWorkloads
+				uninstallStrategy := hcov1.HyperConvergedUninstallStrategyRemoveWorkloads
 				hco.Spec.UninstallStrategy = uninstallStrategy
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
