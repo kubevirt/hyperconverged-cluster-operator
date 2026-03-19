@@ -6,26 +6,19 @@ This Document documents the types introduced by the hyperconverged-cluster-opera
 
 ## Table of Contents
 * [ApplicationAwareConfigurations](#applicationawareconfigurations)
-* [CertRotateConfigCA](#certrotateconfigca)
-* [CertRotateConfigServer](#certrotateconfigserver)
 * [DataImportCronStatus](#dataimportcronstatus)
-* [DataImportCronTemplate](#dataimportcrontemplate)
 * [DataImportCronTemplateStatus](#dataimportcrontemplatestatus)
 * [HyperConverged](#hyperconverged)
-* [HyperConvergedCertConfig](#hyperconvergedcertconfig)
 * [HyperConvergedConfig](#hyperconvergedconfig)
 * [HyperConvergedFeatureGates](#hyperconvergedfeaturegates)
 * [HyperConvergedList](#hyperconvergedlist)
 * [HyperConvergedObsoleteCPUs](#hyperconvergedobsoletecpus)
 * [HyperConvergedSpec](#hyperconvergedspec)
 * [HyperConvergedStatus](#hyperconvergedstatus)
-* [KubeMacPoolConfig](#kubemacpoolconfig)
-* [LogVerbosityConfiguration](#logverbosityconfiguration)
 * [MediatedDevicesConfiguration](#mediateddevicesconfiguration)
 * [NodeInfoStatus](#nodeinfostatus)
 * [NodeMediatedDeviceTypesConfig](#nodemediateddevicetypesconfig)
 * [OperandResourceRequirements](#operandresourcerequirements)
-* [StorageImportConfig](#storageimportconfig)
 * [Version](#version)
 * [VirtualMachineOptions](#virtualmachineoptions)
 
@@ -42,28 +35,6 @@ ApplicationAwareConfigurations holds the AAQ configurations
 
 [Back to TOC](#table-of-contents)
 
-## CertRotateConfigCA
-
-CertRotateConfigCA contains the tunables for TLS certificates.
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| duration | The requested 'duration' (i.e. lifetime) of the Certificate. This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration) | *metav1.Duration | "48h0m0s" | false |
-| renewBefore | The amount of time before the currently issued certificate's `notAfter` time that we will begin to attempt to renew the certificate. This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration) | *metav1.Duration | "24h0m0s" | false |
-
-[Back to TOC](#table-of-contents)
-
-## CertRotateConfigServer
-
-CertRotateConfigServer contains the tunables for TLS certificates.
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| duration | The requested 'duration' (i.e. lifetime) of the Certificate. This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration) | *metav1.Duration | "24h0m0s" | false |
-| renewBefore | The amount of time before the currently issued certificate's `notAfter` time that we will begin to attempt to renew the certificate. This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration) | *metav1.Duration | "12h0m0s" | false |
-
-[Back to TOC](#table-of-contents)
-
 ## DataImportCronStatus
 
 DataImportCronStatus is the status field of the DIC template
@@ -77,25 +48,12 @@ DataImportCronStatus is the status field of the DIC template
 
 [Back to TOC](#table-of-contents)
 
-## DataImportCronTemplate
-
-DataImportCronTemplate defines the template type for DataImportCrons. It requires metadata.name to be specified while leaving namespace as optional.
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#objectmeta-v1-meta) |  | false |
-| spec |  | *cdiv1beta1.DataImportCronSpec |  | false |
-
-[Back to TOC](#table-of-contents)
-
 ## DataImportCronTemplateStatus
 
 DataImportCronTemplateStatus is a copy of a dataImportCronTemplate as defined in the spec, or in the HCO image.
 
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
-| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#objectmeta-v1-meta) |  | false |
-| spec |  | *cdiv1beta1.DataImportCronSpec |  | false |
 | status |  | [DataImportCronStatus](#dataimportcronstatus) |  | false |
 
 [Back to TOC](#table-of-contents)
@@ -109,17 +67,6 @@ HyperConverged is the Schema for the hyperconvergeds API
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#objectmeta-v1-meta) |  | false |
 | spec |  | [HyperConvergedSpec](#hyperconvergedspec) | {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}},"featureGates": {"downwardMetrics": false, "deployKubeSecondaryDNS": false, "disableMDevConfiguration": false, "persistentReservation": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": false, "videoConfig": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false}, "liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "resourceRequirements": {"vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false} | false |
 | status |  | [HyperConvergedStatus](#hyperconvergedstatus) |  | false |
-
-[Back to TOC](#table-of-contents)
-
-## HyperConvergedCertConfig
-
-HyperConvergedCertConfig holds the CertConfig entries for the HCO operands
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| ca | CA configuration - CA certs are kept in the CA bundle as long as they are valid | [CertRotateConfigCA](#certrotateconfigca) | {"duration": "48h0m0s", "renewBefore": "24h0m0s"} | false |
-| server | Server configuration - Certs are rotated and discarded | [CertRotateConfigServer](#certrotateconfigserver) | {"duration": "24h0m0s", "renewBefore": "12h0m0s"} | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -200,7 +147,7 @@ HyperConvergedSpec defines the desired state of HyperConverged
 | liveMigrationConfig | Live migration limits and timeouts are applied so that migration processes do not overwhelm the cluster. | hcov1.LiveMigrationConfigurations | {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false} | false |
 | permittedHostDevices | PermittedHostDevices holds information about devices allowed for passthrough | *hcov1.PermittedHostDevices |  | false |
 | mediatedDevicesConfiguration | MediatedDevicesConfiguration holds information about MDEV types to be defined on nodes, if available | *[MediatedDevicesConfiguration](#mediateddevicesconfiguration) |  | false |
-| certConfig | certConfig holds the rotation policy for internal, self-signed certificates | [HyperConvergedCertConfig](#hyperconvergedcertconfig) | {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}} | false |
+| certConfig | certConfig holds the rotation policy for internal, self-signed certificates | hcov1.HyperConvergedCertConfig | {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}} | false |
 | resourceRequirements | ResourceRequirements describes the resource requirements for the operand workloads. | *[OperandResourceRequirements](#operandresourcerequirements) | {"vmiCPUAllocationRatio": 10} | false |
 | scratchSpaceStorageClass | Override the storage class used for scratch space during transfer operations. The scratch space storage class is determined in the following order: value of scratchSpaceStorageClass, if that doesn't exist, use the default storage class, if there is no default storage class, use the storage class of the DataVolume, if no storage class specified, use no storage class for scratch space | *string |  | false |
 | vddkInitImage | VDDK Init Image eventually used to import VMs from external providers\n\nDeprecated: please use the Migration Toolkit for Virtualization | *string |  | false |
@@ -208,17 +155,17 @@ HyperConvergedSpec defines the desired state of HyperConverged
 | defaultRuntimeClass | DefaultRuntimeClass defines a cluster default for the RuntimeClass to be used for VMIs pods if not set there. Default RuntimeClass can be changed when kubevirt is running, existing VMIs are not impacted till the next restart/live-migration when they are eventually going to consume the new default RuntimeClass. | *string |  | false |
 | obsoleteCPUs | ObsoleteCPUs allows avoiding scheduling of VMs for obsolete CPU models | *[HyperConvergedObsoleteCPUs](#hyperconvergedobsoletecpus) |  | false |
 | commonTemplatesNamespace | CommonTemplatesNamespace defines namespace in which common templates will be deployed. It overrides the default openshift namespace. | *string |  | false |
-| storageImport | StorageImport contains configuration for importing containerized data | *[StorageImportConfig](#storageimportconfig) |  | false |
+| storageImport | StorageImport contains configuration for importing containerized data | *hcov1.StorageImportConfig |  | false |
 | workloadUpdateStrategy | WorkloadUpdateStrategy defines at the cluster level how to handle automated workload updates | hcov1.HyperConvergedWorkloadUpdateStrategy | {"workloadUpdateMethods": {"LiveMigrate"}, "batchEvictionSize": 10, "batchEvictionInterval": "1m0s"} | false |
-| dataImportCronTemplates | DataImportCronTemplates holds list of data import cron templates (golden images) | [][DataImportCronTemplate](#dataimportcrontemplate) |  | false |
+| dataImportCronTemplates | DataImportCronTemplates holds list of data import cron templates (golden images) | []hcov1.DataImportCronTemplate |  | false |
 | filesystemOverhead | FilesystemOverhead describes the space reserved for overhead when using Filesystem volumes. A value is between 0 and 1, if not defined it is 0.055 (5.5 percent overhead) | *cdiv1beta1.FilesystemOverhead |  | false |
-| uninstallStrategy | UninstallStrategy defines how to proceed on uninstall when workloads (VirtualMachines, DataVolumes) still exist. BlockUninstallIfWorkloadsExist will prevent the CR from being removed when workloads still exist. BlockUninstallIfWorkloadsExist is the safest choice to protect your workloads from accidental data loss, so it's strongly advised. RemoveWorkloads will cause all the workloads to be cascading deleted on uninstallation. WARNING: please notice that RemoveWorkloads will cause your workloads to be deleted as soon as this CR will be, even accidentally, deleted. Please correctly consider the implications of this option before setting it. BlockUninstallIfWorkloadsExist is the default behaviour. | HyperConvergedUninstallStrategy | BlockUninstallIfWorkloadsExist | false |
-| logVerbosityConfig | LogVerbosityConfig configures the verbosity level of Kubevirt's different components. The higher the value - the higher the log verbosity. | *[LogVerbosityConfiguration](#logverbosityconfiguration) |  | false |
+| uninstallStrategy | UninstallStrategy defines how to proceed on uninstall when workloads (VirtualMachines, DataVolumes) still exist. BlockUninstallIfWorkloadsExist will prevent the CR from being removed when workloads still exist. BlockUninstallIfWorkloadsExist is the safest choice to protect your workloads from accidental data loss, so it's strongly advised. RemoveWorkloads will cause all the workloads to be cascading deleted on uninstallation. WARNING: please notice that RemoveWorkloads will cause your workloads to be deleted as soon as this CR will be, even accidentally, deleted. Please correctly consider the implications of this option before setting it. BlockUninstallIfWorkloadsExist is the default behaviour. | hcov1.HyperConvergedUninstallStrategy | BlockUninstallIfWorkloadsExist | false |
+| logVerbosityConfig | LogVerbosityConfig configures the verbosity level of Kubevirt's different components. The higher the value - the higher the log verbosity. | *hcov1.LogVerbosityConfiguration |  | false |
 | tlsSecurityProfile | TLSSecurityProfile specifies the settings for TLS connections to be propagated to all kubevirt-hyperconverged components. If unset, the hyperconverged cluster operator will consume the value set on the APIServer CR on OCP/OKD or Intermediate if on vanilla k8s. Note that only Old, Intermediate and Custom profiles are currently supported, and the maximum available MinTLSVersions is VersionTLS12. | *openshiftconfigv1.TLSSecurityProfile |  | false |
 | tektonPipelinesNamespace | TektonPipelinesNamespace defines namespace in which example pipelines will be deployed. If unset, then the default value is the operator namespace. Deprecated: This field is ignored. | *string |  | false |
 | tektonTasksNamespace | TektonTasksNamespace defines namespace in which tekton tasks will be deployed. If unset, then the default value is the operator namespace. Deprecated: This field is ignored. | *string |  | false |
 | kubeSecondaryDNSNameServerIP | KubeSecondaryDNSNameServerIP defines name server IP used by KubeSecondaryDNS | *string |  | false |
-| kubeMacPoolConfiguration | KubeMacPoolConfiguration holds kubemacpool MAC address range configuration. | *[KubeMacPoolConfig](#kubemacpoolconfig) |  | false |
+| kubeMacPoolConfiguration | KubeMacPoolConfiguration holds kubemacpool MAC address range configuration. | *hcov1.KubeMacPoolConfig |  | false |
 | evictionStrategy | EvictionStrategy defines at the cluster level if the VirtualMachineInstance should be migrated instead of shut-off in case of a node drain. If the VirtualMachineInstance specific field is set it overrides the cluster level one. Allowed values: - `None` no eviction strategy at cluster level. - `LiveMigrate` migrate the VM on eviction; a not live migratable VM with no specific strategy will block the drain of the node util manually evicted. - `LiveMigrateIfPossible` migrate the VM on eviction if live migration is possible, otherwise directly evict. - `External` block the drain, track eviction and notify an external controller. Defaults to LiveMigrate with multiple worker nodes, None on single worker clusters. | *v1.EvictionStrategy |  | false |
 | vmStateStorageClass | VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM. | *string |  | false |
 | virtualMachineOptions | VirtualMachineOptions holds the cluster level information regarding the virtual machine. | *[VirtualMachineOptions](#virtualmachineoptions) | {"disableFreePageReporting": false, "disableSerialConsoleLog": false} | false |
@@ -253,28 +200,6 @@ HyperConvergedStatus defines the observed state of HyperConverged
 | systemHealthStatus | SystemHealthStatus reflects the health of HCO and its secondary resources, based on the aggregated conditions. | string |  | false |
 | infrastructureHighlyAvailable | InfrastructureHighlyAvailable describes whether the cluster has only one worker node (false) or more (true). | *bool |  | false |
 | nodeInfo | NodeInfo holds information about the cluster nodes | [NodeInfoStatus](#nodeinfostatus) |  | false |
-
-[Back to TOC](#table-of-contents)
-
-## KubeMacPoolConfig
-
-KubeMacPoolConfig defines kubemacpool MAC address range configuration
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| rangeStart | RangeStart defines the first MAC address in the kubemacpool range. The MAC address format should be AA:BB:CC:DD:EE:FF. | *string |  | false |
-| rangeEnd | RangeEnd defines the last MAC address in the kubemacpool range. The MAC address format should be AA:BB:CC:DD:EE:FF. | *string |  | false |
-
-[Back to TOC](#table-of-contents)
-
-## LogVerbosityConfiguration
-
-LogVerbosityConfiguration configures log verbosity for different components
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| kubevirt | Kubevirt is a struct that allows specifying the log verbosity level that controls the amount of information logged for each Kubevirt component. | *v1.LogVerbosity |  | false |
-| cdi | CDI indicates the log verbosity level that controls the amount of information logged for CDI components. | *int32 |  | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -322,16 +247,6 @@ OperandResourceRequirements is a list of resource requirements for the operand w
 | storageWorkloads | StorageWorkloads defines the resources requirements for storage workloads. It will propagate to the CDI custom resource | *corev1.ResourceRequirements |  | false |
 | vmiCPUAllocationRatio | VmiCPUAllocationRatio defines, for each requested virtual CPU, how much physical CPU to request per VMI from the hosting node. The value is in fraction of a CPU thread (or core on non-hyperthreaded nodes). VMI POD CPU request = number of vCPUs * 1/vmiCPUAllocationRatio For example, a value of 1 means 1 physical CPU thread per VMI CPU thread. A value of 100 would be 1% of a physical thread allocated for each requested VMI thread. This option has no effect on VMIs that request dedicated CPUs. Defaults to 10 | *int | 10 | false |
 | autoCPULimitNamespaceLabelSelector | When set, AutoCPULimitNamespaceLabelSelector will set a CPU limit on virt-launcher for VMIs running inside namespaces that match the label selector. The CPU limit will equal the number of requested vCPUs. This setting does not apply to VMIs with dedicated CPUs. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#labelselector-v1-meta) |  | false |
-
-[Back to TOC](#table-of-contents)
-
-## StorageImportConfig
-
-StorageImportConfig contains configuration for importing containerized data
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| insecureRegistries | InsecureRegistries is a list of image registries URLs that are not secured. Setting an insecure registry URL in this list allows pulling images from this registry. | []string |  | false |
 
 [Back to TOC](#table-of-contents)
 
