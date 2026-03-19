@@ -20,13 +20,6 @@ import (
 // HyperConvergedName is the name of the HyperConverged resource that will be reconciled
 const HyperConvergedName = "kubevirt-hyperconverged"
 
-type HyperConvergedUninstallStrategy string
-
-const (
-	HyperConvergedUninstallStrategyRemoveWorkloads                HyperConvergedUninstallStrategy = "RemoveWorkloads"
-	HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist HyperConvergedUninstallStrategy = "BlockUninstallIfWorkloadsExist"
-)
-
 type HyperConvergedTuningPolicy string
 
 // HyperConvergedAnnotationTuningPolicy defines a static configuration of the kubevirt query per seconds (qps) and burst values
@@ -182,12 +175,14 @@ type HyperConvergedSpec struct {
 	// +default="BlockUninstallIfWorkloadsExist"
 	// +kubebuilder:validation:Enum=RemoveWorkloads;BlockUninstallIfWorkloadsExist
 	// +optional
-	UninstallStrategy HyperConvergedUninstallStrategy `json:"uninstallStrategy,omitempty"`
+	// +k8s:conversion-gen=false
+	UninstallStrategy hcov1.HyperConvergedUninstallStrategy `json:"uninstallStrategy,omitempty"`
 
 	// LogVerbosityConfig configures the verbosity level of Kubevirt's different components. The higher
 	// the value - the higher the log verbosity.
 	// +optional
-	LogVerbosityConfig *LogVerbosityConfiguration `json:"logVerbosityConfig,omitempty"`
+	// +k8s:conversion-gen=false
+	LogVerbosityConfig *hcov1.LogVerbosityConfiguration `json:"logVerbosityConfig,omitempty"`
 
 	// TLSSecurityProfile specifies the settings for TLS connections to be propagated to all kubevirt-hyperconverged components.
 	// If unset, the hyperconverged cluster operator will consume the value set on the APIServer CR on OCP/OKD or Intermediate if on vanilla k8s.
@@ -272,6 +267,7 @@ type HyperConvergedSpec struct {
 
 	// ApplicationAwareConfig set the AAQ configurations
 	// +optional
+	// +k8s:conversion-gen=false
 	ApplicationAwareConfig *ApplicationAwareConfigurations `json:"applicationAwareConfig,omitempty"`
 
 	// HigherWorkloadDensity holds configuration aimed to increase virtual machine density
@@ -305,12 +301,14 @@ type HyperConvergedSpec struct {
 	// +optional
 	// +kubebuilder:default=false
 	// +default=false
+	// +k8s:conversion-gen=false
 	DeployVMConsoleProxy *bool `json:"deployVmConsoleProxy,omitempty"`
 
 	// EnableApplicationAwareQuota if true, enables the Application Aware Quota feature
 	// +optional
 	// +kubebuilder:default=false
 	// +default=false
+	// +k8s:conversion-gen=false
 	EnableApplicationAwareQuota *bool `json:"enableApplicationAwareQuota,omitempty"`
 
 	// LiveUpdateConfiguration holds the cluster configuration for live update of virtual machines - max cpu sockets,
@@ -644,19 +642,6 @@ type HyperConvergedStatus struct {
 type Version struct {
 	Name    string `json:"name,omitempty"`
 	Version string `json:"version,omitempty"`
-}
-
-// LogVerbosityConfiguration configures log verbosity for different components
-// +k8s:openapi-gen=true
-type LogVerbosityConfiguration struct {
-	// Kubevirt is a struct that allows specifying the log verbosity level that controls the amount of information
-	// logged for each Kubevirt component.
-	// +optional
-	Kubevirt *v1.LogVerbosity `json:"kubevirt,omitempty"`
-
-	// CDI indicates the log verbosity level that controls the amount of information logged for CDI components.
-	// +optional
-	CDI *int32 `json:"cdi,omitempty"`
 }
 
 // DataImportCronStatus is the status field of the DIC template

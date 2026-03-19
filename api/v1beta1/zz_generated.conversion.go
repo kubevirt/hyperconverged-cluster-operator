@@ -32,7 +32,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
-	apicorev1 "kubevirt.io/api/core/v1"
 	v1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
 )
 
@@ -113,16 +112,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*LogVerbosityConfiguration)(nil), (*v1.LogVerbosityConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_LogVerbosityConfiguration_To_v1_LogVerbosityConfiguration(a.(*LogVerbosityConfiguration), b.(*v1.LogVerbosityConfiguration), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.LogVerbosityConfiguration)(nil), (*LogVerbosityConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_LogVerbosityConfiguration_To_v1beta1_LogVerbosityConfiguration(a.(*v1.LogVerbosityConfiguration), b.(*LogVerbosityConfiguration), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*MediatedDevicesConfiguration)(nil), (*v1.MediatedDevicesConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta1_MediatedDevicesConfiguration_To_v1_MediatedDevicesConfiguration(a.(*MediatedDevicesConfiguration), b.(*v1.MediatedDevicesConfiguration), scope)
 	}); err != nil {
@@ -179,6 +168,7 @@ func Convert_v1beta1_ApplicationAwareConfigurations_To_v1_ApplicationAwareConfig
 }
 
 func autoConvert_v1_ApplicationAwareConfigurations_To_v1beta1_ApplicationAwareConfigurations(in *v1.ApplicationAwareConfigurations, out *ApplicationAwareConfigurations, s conversion.Scope) error {
+	// INFO: in.Enable opted out of conversion generation
 	out.VmiCalcConfigName = (*v1alpha1.VmiCalcConfigName)(unsafe.Pointer(in.VmiCalcConfigName))
 	out.NamespaceSelector = (*metav1.LabelSelector)(unsafe.Pointer(in.NamespaceSelector))
 	out.AllowApplicationAwareClusterResourceQuota = in.AllowApplicationAwareClusterResourceQuota
@@ -337,8 +327,8 @@ func autoConvert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(in *HyperCo
 	// INFO: in.WorkloadUpdateStrategy opted out of conversion generation
 	// INFO: in.DataImportCronTemplates opted out of conversion generation
 	// INFO: in.FilesystemOverhead opted out of conversion generation
-	out.UninstallStrategy = v1.HyperConvergedUninstallStrategy(in.UninstallStrategy)
-	out.LogVerbosityConfig = (*v1.LogVerbosityConfiguration)(unsafe.Pointer(in.LogVerbosityConfig))
+	// INFO: in.UninstallStrategy opted out of conversion generation
+	// INFO: in.LogVerbosityConfig opted out of conversion generation
 	// INFO: in.TLSSecurityProfile opted out of conversion generation
 	// INFO: in.TektonPipelinesNamespace opted out of conversion generation
 	// INFO: in.TektonTasksNamespace opted out of conversion generation
@@ -350,13 +340,13 @@ func autoConvert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(in *HyperCo
 	// INFO: in.CommonBootImageNamespace opted out of conversion generation
 	// INFO: in.KSMConfiguration opted out of conversion generation
 	// INFO: in.NetworkBinding opted out of conversion generation
-	out.ApplicationAwareConfig = (*v1.ApplicationAwareConfigurations)(unsafe.Pointer(in.ApplicationAwareConfig))
+	// INFO: in.ApplicationAwareConfig opted out of conversion generation
 	// INFO: in.HigherWorkloadDensity opted out of conversion generation
 	// INFO: in.EnableCommonBootImageImport opted out of conversion generation
 	// INFO: in.InstancetypeConfig opted out of conversion generation
 	// INFO: in.CommonInstancetypesDeployment opted out of conversion generation
-	out.DeployVMConsoleProxy = (*bool)(unsafe.Pointer(in.DeployVMConsoleProxy))
-	out.EnableApplicationAwareQuota = (*bool)(unsafe.Pointer(in.EnableApplicationAwareQuota))
+	// INFO: in.DeployVMConsoleProxy opted out of conversion generation
+	// INFO: in.EnableApplicationAwareQuota opted out of conversion generation
 	// INFO: in.LiveUpdateConfiguration opted out of conversion generation
 	// INFO: in.Hypervisors opted out of conversion generation
 	// INFO: in.RoleAggregationStrategy opted out of conversion generation
@@ -377,11 +367,7 @@ func autoConvert_v1_HyperConvergedSpec_To_v1beta1_HyperConvergedSpec(in *v1.Hype
 	// INFO: in.Networking opted out of conversion generation
 	// INFO: in.WorkloadSources opted out of conversion generation
 	// INFO: in.Security opted out of conversion generation
-	out.UninstallStrategy = HyperConvergedUninstallStrategy(in.UninstallStrategy)
-	out.LogVerbosityConfig = (*LogVerbosityConfiguration)(unsafe.Pointer(in.LogVerbosityConfig))
-	out.ApplicationAwareConfig = (*ApplicationAwareConfigurations)(unsafe.Pointer(in.ApplicationAwareConfig))
-	out.DeployVMConsoleProxy = (*bool)(unsafe.Pointer(in.DeployVMConsoleProxy))
-	out.EnableApplicationAwareQuota = (*bool)(unsafe.Pointer(in.EnableApplicationAwareQuota))
+	// INFO: in.Deployment opted out of conversion generation
 	return nil
 }
 
@@ -428,28 +414,6 @@ func autoConvert_v1_HyperConvergedStatus_To_v1beta1_HyperConvergedStatus(in *v1.
 // Convert_v1_HyperConvergedStatus_To_v1beta1_HyperConvergedStatus is an autogenerated conversion function.
 func Convert_v1_HyperConvergedStatus_To_v1beta1_HyperConvergedStatus(in *v1.HyperConvergedStatus, out *HyperConvergedStatus, s conversion.Scope) error {
 	return autoConvert_v1_HyperConvergedStatus_To_v1beta1_HyperConvergedStatus(in, out, s)
-}
-
-func autoConvert_v1beta1_LogVerbosityConfiguration_To_v1_LogVerbosityConfiguration(in *LogVerbosityConfiguration, out *v1.LogVerbosityConfiguration, s conversion.Scope) error {
-	out.Kubevirt = (*apicorev1.LogVerbosity)(unsafe.Pointer(in.Kubevirt))
-	out.CDI = (*int32)(unsafe.Pointer(in.CDI))
-	return nil
-}
-
-// Convert_v1beta1_LogVerbosityConfiguration_To_v1_LogVerbosityConfiguration is an autogenerated conversion function.
-func Convert_v1beta1_LogVerbosityConfiguration_To_v1_LogVerbosityConfiguration(in *LogVerbosityConfiguration, out *v1.LogVerbosityConfiguration, s conversion.Scope) error {
-	return autoConvert_v1beta1_LogVerbosityConfiguration_To_v1_LogVerbosityConfiguration(in, out, s)
-}
-
-func autoConvert_v1_LogVerbosityConfiguration_To_v1beta1_LogVerbosityConfiguration(in *v1.LogVerbosityConfiguration, out *LogVerbosityConfiguration, s conversion.Scope) error {
-	out.Kubevirt = (*apicorev1.LogVerbosity)(unsafe.Pointer(in.Kubevirt))
-	out.CDI = (*int32)(unsafe.Pointer(in.CDI))
-	return nil
-}
-
-// Convert_v1_LogVerbosityConfiguration_To_v1beta1_LogVerbosityConfiguration is an autogenerated conversion function.
-func Convert_v1_LogVerbosityConfiguration_To_v1beta1_LogVerbosityConfiguration(in *v1.LogVerbosityConfiguration, out *LogVerbosityConfiguration, s conversion.Scope) error {
-	return autoConvert_v1_LogVerbosityConfiguration_To_v1beta1_LogVerbosityConfiguration(in, out, s)
 }
 
 func autoConvert_v1beta1_MediatedDevicesConfiguration_To_v1_MediatedDevicesConfiguration(in *MediatedDevicesConfiguration, out *v1.MediatedDevicesConfiguration, s conversion.Scope) error {

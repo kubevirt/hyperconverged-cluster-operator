@@ -2303,6 +2303,347 @@ var _ = Describe("api/v1beta1", func() {
 			})
 		})
 	})
+
+	Context("Deployment conversion", func() {
+		Context("v1 ==> v1beta1", func() {
+			It("should convert UninstallStrategy", func() {
+				v1Config := hcov1.DeploymentConfig{
+					UninstallStrategy: hcov1.HyperConvergedUninstallStrategyRemoveWorkloads,
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.UninstallStrategy).To(Equal(hcov1.HyperConvergedUninstallStrategyRemoveWorkloads))
+			})
+
+			It("should convert LogVerbosityConfig", func() {
+				v1Config := hcov1.DeploymentConfig{
+					LogVerbosityConfig: &hcov1.LogVerbosityConfiguration{
+						Kubevirt: &kubevirtv1.LogVerbosity{
+							VirtAPI:        3,
+							VirtController: 2,
+						},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.LogVerbosityConfig).ToNot(BeNil())
+				Expect(v1beta1Spec.LogVerbosityConfig.Kubevirt).ToNot(BeNil())
+				Expect(v1beta1Spec.LogVerbosityConfig.Kubevirt.VirtAPI).To(Equal(uint(3)))
+				Expect(v1beta1Spec.LogVerbosityConfig.Kubevirt.VirtController).To(Equal(uint(2)))
+			})
+
+			It("should not convert LogVerbosityConfig when nil", func() {
+				v1Config := hcov1.DeploymentConfig{}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.LogVerbosityConfig).To(BeNil())
+			})
+
+			It("should convert DeployVMConsoleProxy", func() {
+				v1Config := hcov1.DeploymentConfig{
+					DeployVMConsoleProxy: ptr.To(true),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.DeployVMConsoleProxy).To(HaveValue(BeTrue()))
+			})
+
+			It("should not convert DeployVMConsoleProxy when nil", func() {
+				v1Config := hcov1.DeploymentConfig{}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.DeployVMConsoleProxy).To(BeNil())
+			})
+
+			It("should convert ApplicationAwareConfig with Enable=true", func() {
+				v1Config := hcov1.DeploymentConfig{
+					ApplicationAwareConfig: &hcov1.ApplicationAwareConfigurations{
+						Enable: ptr.To(true),
+						AllowApplicationAwareClusterResourceQuota: true,
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1beta1Spec.ApplicationAwareConfig.AllowApplicationAwareClusterResourceQuota).To(BeTrue())
+				Expect(v1beta1Spec.EnableApplicationAwareQuota).To(HaveValue(BeTrue()))
+			})
+
+			It("should convert ApplicationAwareConfig with Enable=false", func() {
+				v1Config := hcov1.DeploymentConfig{
+					ApplicationAwareConfig: &hcov1.ApplicationAwareConfigurations{
+						Enable: ptr.To(false),
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1beta1Spec.EnableApplicationAwareQuota).To(HaveValue(BeFalse()))
+			})
+
+			It("should convert ApplicationAwareConfig with Enable=nil", func() {
+				v1Config := hcov1.DeploymentConfig{
+					ApplicationAwareConfig: &hcov1.ApplicationAwareConfigurations{},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1beta1Spec.EnableApplicationAwareQuota).To(BeNil())
+			})
+
+			It("should not convert ApplicationAwareConfig when nil", func() {
+				v1Config := hcov1.DeploymentConfig{}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.ApplicationAwareConfig).To(BeNil())
+				Expect(v1beta1Spec.EnableApplicationAwareQuota).To(BeNil())
+			})
+
+			It("should convert all fields together", func() {
+				v1Config := hcov1.DeploymentConfig{
+					UninstallStrategy: hcov1.HyperConvergedUninstallStrategyRemoveWorkloads,
+					LogVerbosityConfig: &hcov1.LogVerbosityConfiguration{
+						Kubevirt: &kubevirtv1.LogVerbosity{
+							VirtAPI: 5,
+						},
+					},
+					ApplicationAwareConfig: &hcov1.ApplicationAwareConfigurations{
+						Enable: ptr.To(true),
+					},
+					DeployVMConsoleProxy: ptr.To(true),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.UninstallStrategy).To(Equal(hcov1.HyperConvergedUninstallStrategyRemoveWorkloads))
+				Expect(v1beta1Spec.LogVerbosityConfig).ToNot(BeNil())
+				Expect(v1beta1Spec.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1beta1Spec.EnableApplicationAwareQuota).To(HaveValue(BeTrue()))
+				Expect(v1beta1Spec.DeployVMConsoleProxy).To(HaveValue(BeTrue()))
+			})
+		})
+
+		Context("v1beta1 ==> v1", func() {
+			It("should convert UninstallStrategy", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					UninstallStrategy: hcov1.HyperConvergedUninstallStrategyRemoveWorkloads,
+				}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.UninstallStrategy).To(Equal(hcov1.HyperConvergedUninstallStrategyRemoveWorkloads))
+			})
+
+			It("should convert LogVerbosityConfig", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					LogVerbosityConfig: &hcov1.LogVerbosityConfiguration{
+						Kubevirt: &kubevirtv1.LogVerbosity{
+							VirtAPI:        3,
+							VirtController: 2,
+						},
+					},
+				}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.LogVerbosityConfig).ToNot(BeNil())
+				Expect(v1Config.LogVerbosityConfig.Kubevirt).ToNot(BeNil())
+				Expect(v1Config.LogVerbosityConfig.Kubevirt.VirtAPI).To(Equal(uint(3)))
+				Expect(v1Config.LogVerbosityConfig.Kubevirt.VirtController).To(Equal(uint(2)))
+			})
+
+			It("should not convert LogVerbosityConfig when nil", func() {
+				v1beta1Spec := HyperConvergedSpec{}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.LogVerbosityConfig).To(BeNil())
+			})
+
+			It("should convert ApplicationAwareConfig", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					ApplicationAwareConfig: &ApplicationAwareConfigurations{
+						AllowApplicationAwareClusterResourceQuota: true,
+					},
+				}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1Config.ApplicationAwareConfig.AllowApplicationAwareClusterResourceQuota).To(BeTrue())
+			})
+
+			It("should not convert ApplicationAwareConfig when nil", func() {
+				v1beta1Spec := HyperConvergedSpec{}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.ApplicationAwareConfig).To(BeNil())
+			})
+
+			It("should set Enable=true when EnableApplicationAwareQuota is true and ApplicationAwareConfig is set", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					ApplicationAwareConfig:      &ApplicationAwareConfigurations{},
+					EnableApplicationAwareQuota: ptr.To(true),
+				}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1Config.ApplicationAwareConfig.Enable).To(HaveValue(BeTrue()))
+			})
+
+			It("should set Enable=true when EnableApplicationAwareQuota is true and ApplicationAwareConfig is nil", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					EnableApplicationAwareQuota: ptr.To(true),
+				}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1Config.ApplicationAwareConfig.Enable).To(HaveValue(BeTrue()))
+			})
+
+			It("should set Enable=false when EnableApplicationAwareQuota is false", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					EnableApplicationAwareQuota: ptr.To(false),
+				}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1Config.ApplicationAwareConfig.Enable).To(HaveValue(BeFalse()))
+			})
+
+			It("should not set ApplicationAwareConfig when both ApplicationAwareConfig and EnableApplicationAwareQuota are nil", func() {
+				v1beta1Spec := HyperConvergedSpec{}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.ApplicationAwareConfig).To(BeNil())
+			})
+
+			It("should convert all fields together", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					UninstallStrategy: hcov1.HyperConvergedUninstallStrategyRemoveWorkloads,
+					LogVerbosityConfig: &hcov1.LogVerbosityConfiguration{
+						Kubevirt: &kubevirtv1.LogVerbosity{
+							VirtAPI: 5,
+						},
+					},
+					ApplicationAwareConfig:      &ApplicationAwareConfigurations{},
+					EnableApplicationAwareQuota: ptr.To(true),
+				}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.UninstallStrategy).To(Equal(hcov1.HyperConvergedUninstallStrategyRemoveWorkloads))
+				Expect(v1Config.LogVerbosityConfig).ToNot(BeNil())
+				Expect(v1Config.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1Config.ApplicationAwareConfig.Enable).To(HaveValue(BeTrue()))
+			})
+		})
+
+		Context("round-trip", func() {
+			It("should preserve deployment config through v1beta1 => v1 => v1beta1", func() {
+				original := HyperConvergedSpec{
+					UninstallStrategy: hcov1.HyperConvergedUninstallStrategyRemoveWorkloads,
+					LogVerbosityConfig: &hcov1.LogVerbosityConfiguration{
+						Kubevirt: &kubevirtv1.LogVerbosity{
+							VirtAPI: 5,
+						},
+					},
+					ApplicationAwareConfig:      &ApplicationAwareConfigurations{},
+					EnableApplicationAwareQuota: ptr.To(true),
+				}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(original, &v1Config)).To(Succeed())
+
+				var result HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &result)).To(Succeed())
+
+				Expect(result.UninstallStrategy).To(Equal(original.UninstallStrategy))
+				Expect(result.LogVerbosityConfig).ToNot(BeNil())
+				Expect(result.LogVerbosityConfig.Kubevirt.VirtAPI).To(Equal(original.LogVerbosityConfig.Kubevirt.VirtAPI))
+				Expect(result.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(result.EnableApplicationAwareQuota).To(HaveValue(BeTrue()))
+			})
+
+			It("should preserve deployment config through v1 => v1beta1 => v1", func() {
+				original := hcov1.DeploymentConfig{
+					UninstallStrategy: hcov1.HyperConvergedUninstallStrategyRemoveWorkloads,
+					LogVerbosityConfig: &hcov1.LogVerbosityConfiguration{
+						Kubevirt: &kubevirtv1.LogVerbosity{
+							VirtAPI: 5,
+						},
+					},
+					ApplicationAwareConfig: &hcov1.ApplicationAwareConfigurations{
+						Enable: ptr.To(true),
+						AllowApplicationAwareClusterResourceQuota: true,
+					},
+					DeployVMConsoleProxy: ptr.To(true),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(original, &v1beta1Spec)).To(Succeed())
+
+				var result hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &result)).To(Succeed())
+
+				Expect(result.UninstallStrategy).To(Equal(original.UninstallStrategy))
+				Expect(result.LogVerbosityConfig).ToNot(BeNil())
+				Expect(result.LogVerbosityConfig.Kubevirt.VirtAPI).To(Equal(original.LogVerbosityConfig.Kubevirt.VirtAPI))
+				Expect(result.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(result.ApplicationAwareConfig.Enable).To(HaveValue(BeTrue()))
+				Expect(result.ApplicationAwareConfig.AllowApplicationAwareClusterResourceQuota).To(BeTrue())
+			})
+
+			It("should preserve nil fields through round-trip", func() {
+				original := HyperConvergedSpec{}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(original, &v1Config)).To(Succeed())
+
+				var result HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &result)).To(Succeed())
+
+				Expect(result.LogVerbosityConfig).To(BeNil())
+				Expect(result.ApplicationAwareConfig).To(BeNil())
+				Expect(result.EnableApplicationAwareQuota).To(BeNil())
+				Expect(result.DeployVMConsoleProxy).To(BeNil())
+			})
+		})
+	})
 })
 
 func getV1HC() *hcov1.HyperConverged {

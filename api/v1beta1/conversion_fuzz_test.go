@@ -248,6 +248,27 @@ func randomV1beta1HC(r *rand.Rand) *HyperConverged {
 		}
 	}
 
+	if r.IntN(2) == 1 {
+		hc.Spec.UninstallStrategy = hcov1.HyperConvergedUninstallStrategyRemoveWorkloads
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.LogVerbosityConfig = &hcov1.LogVerbosityConfiguration{
+			Kubevirt: &kubevirtv1.LogVerbosity{
+				VirtAPI: uint(r.IntN(10)),
+			},
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.ApplicationAwareConfig = &ApplicationAwareConfigurations{
+			AllowApplicationAwareClusterResourceQuota: r.IntN(2) == 1,
+		}
+	}
+
+	hc.Spec.EnableApplicationAwareQuota = randPtr(r, r.IntN(2) == 1)
+	hc.Spec.DeployVMConsoleProxy = randPtr(r, r.IntN(2) == 1)
+
 	return hc
 }
 
@@ -429,6 +450,27 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 			Enabled: randPtr(r, r.IntN(2) == 1),
 		}
 	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.Deployment.UninstallStrategy = hcov1.HyperConvergedUninstallStrategyRemoveWorkloads
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.Deployment.LogVerbosityConfig = &hcov1.LogVerbosityConfiguration{
+			Kubevirt: &kubevirtv1.LogVerbosity{
+				VirtAPI: uint(r.IntN(10)),
+			},
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{
+			Enable: randPtr(r, r.IntN(2) == 1),
+			AllowApplicationAwareClusterResourceQuota: r.IntN(2) == 1,
+		}
+	}
+
+	hc.Spec.Deployment.DeployVMConsoleProxy = randPtr(r, r.IntN(2) == 1)
 
 	return hc
 }

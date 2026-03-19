@@ -40,6 +40,10 @@ func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error { //revive:dis
 
 	convertWorkloadSourcesV1beta1ToV1(src.Spec, &dst.Spec.WorkloadSources)
 
+	if err := convertDeploymentV1beta1ToV1(src.Spec, &dst.Spec.Deployment); err != nil {
+		return fmt.Errorf("failed to convert HyperConverged's spec.deployment from v1beta1 to v1; %w", err)
+	}
+
 	return nil
 }
 
@@ -65,6 +69,10 @@ func (dst *HyperConverged) ConvertFrom(srcRaw conversion.Hub) error { //revive:d
 	convertNetworkingV1ToV1beta1(src.Spec.Networking, &dst.Spec)
 
 	convertWorkloadSourcesV1ToV1beta1(src.Spec.WorkloadSources, &dst.Spec)
+
+	if err := convertDeploymentV1ToV1beta1(src.Spec.Deployment, &dst.Spec); err != nil {
+		return fmt.Errorf("failed to convert HyperConverged's spec.deployment from v1 to v1beta1; %w", err)
+	}
 
 	return nil
 }
@@ -412,6 +420,70 @@ func convertWorkloadSourcesV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1Config 
 	if v1beta1Spec.CommonInstancetypesDeployment != nil {
 		v1Config.CommonInstancetypesDeployment = v1beta1Spec.CommonInstancetypesDeployment.DeepCopy()
 	}
+}
+
+func convertDeploymentV1ToV1beta1(v1Config hcov1.DeploymentConfig, v1beta1Spec *HyperConvergedSpec) error {
+	if err := convertAAQConfigV1ToV1beta1(v1Config, v1beta1Spec); err != nil {
+		return err
+	}
+
+	v1beta1Spec.UninstallStrategy = v1Config.UninstallStrategy
+
+	if v1Config.LogVerbosityConfig != nil {
+		v1beta1Spec.LogVerbosityConfig = v1Config.LogVerbosityConfig.DeepCopy()
+	}
+
+	v1beta1Spec.DeployVMConsoleProxy = setPtr(v1Config.DeployVMConsoleProxy)
+
+	return nil
+}
+
+func convertAAQConfigV1ToV1beta1(v1Config hcov1.DeploymentConfig, v1beta1Spec *HyperConvergedSpec) error {
+	if v1Config.ApplicationAwareConfig == nil {
+		return nil
+	}
+
+	v1beta1Spec.ApplicationAwareConfig = &ApplicationAwareConfigurations{}
+	if err := converter.Convert(v1Config.ApplicationAwareConfig, v1beta1Spec.ApplicationAwareConfig, nil); err != nil {
+		return err
+	}
+
+	v1beta1Spec.EnableApplicationAwareQuota = setPtr(v1Config.ApplicationAwareConfig.Enable)
+
+	return nil
+}
+
+func convertDeploymentV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1Config *hcov1.DeploymentConfig) error {
+	if err := convertAAQConfigV1beta1ToV1(v1beta1Spec, v1Config); err != nil {
+		return err
+	}
+
+	v1Config.UninstallStrategy = v1beta1Spec.UninstallStrategy
+
+	if v1beta1Spec.LogVerbosityConfig != nil {
+		v1Config.LogVerbosityConfig = v1beta1Spec.LogVerbosityConfig.DeepCopy()
+	}
+
+	v1Config.DeployVMConsoleProxy = setPtr(v1beta1Spec.DeployVMConsoleProxy)
+
+	return nil
+}
+
+func convertAAQConfigV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1Config *hcov1.DeploymentConfig) error {
+	if v1beta1Spec.ApplicationAwareConfig == nil && v1beta1Spec.EnableApplicationAwareQuota == nil {
+		return nil
+	}
+
+	v1Config.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{}
+	if v1beta1Spec.ApplicationAwareConfig != nil {
+		if err := converter.Convert(v1beta1Spec.ApplicationAwareConfig, v1Config.ApplicationAwareConfig, nil); err != nil {
+			return err
+		}
+	}
+
+	v1Config.ApplicationAwareConfig.Enable = setPtr(v1beta1Spec.EnableApplicationAwareQuota)
+
+	return nil
 }
 
 var converter *conversion2.Converter
