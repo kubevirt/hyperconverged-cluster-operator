@@ -222,39 +222,10 @@ type HyperConvergedSpec struct {
 	// +k8s:conversion-gen=false
 	Security SecurityConfig `json:"security,omitempty"`
 
-	// UninstallStrategy defines how to proceed on uninstall when workloads (VirtualMachines, DataVolumes) still exist.
-	// BlockUninstallIfWorkloadsExist will prevent the CR from being removed when workloads still exist.
-	// BlockUninstallIfWorkloadsExist is the safest choice to protect your workloads from accidental data loss, so it's strongly advised.
-	// RemoveWorkloads will cause all the workloads to be cascading deleted on uninstallation.
-	// WARNING: please notice that RemoveWorkloads will cause your workloads to be deleted as soon as this CR will be, even accidentally, deleted.
-	// Please correctly consider the implications of this option before setting it.
-	// BlockUninstallIfWorkloadsExist is the default behaviour.
-	// +kubebuilder:default=BlockUninstallIfWorkloadsExist
-	// +default="BlockUninstallIfWorkloadsExist"
-	// +kubebuilder:validation:Enum=RemoveWorkloads;BlockUninstallIfWorkloadsExist
-	// +optional
-	UninstallStrategy HyperConvergedUninstallStrategy `json:"uninstallStrategy,omitempty"`
-
-	// LogVerbosityConfig configures the verbosity level of Kubevirt's different components. The higher
-	// the value - the higher the log verbosity.
-	// +optional
-	LogVerbosityConfig *LogVerbosityConfiguration `json:"logVerbosityConfig,omitempty"`
-
-	// ApplicationAwareConfig set the AAQ configurations
-	// +optional
-	ApplicationAwareConfig *ApplicationAwareConfigurations `json:"applicationAwareConfig,omitempty"`
-
-	// deploy VM console proxy resources in SSP operator
-	// +optional
-	// +kubebuilder:default=false
-	// +default=false
-	DeployVMConsoleProxy *bool `json:"deployVmConsoleProxy,omitempty"`
-
-	// EnableApplicationAwareQuota if true, enables the Application Aware Quota feature
-	// +optional
-	// +kubebuilder:default=false
-	// +default=false
-	EnableApplicationAwareQuota *bool `json:"enableApplicationAwareQuota,omitempty"`
+	// Deployment contains all the configurations related to deployment of KubeVirt components
+	// +kubebuilder:default={"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "applicationAwareConfig": {"enable": false}}
+	// +k8s:conversion-gen=false
+	Deployment DeploymentConfig `json:"deployment"`
 }
 
 // VirtualizationConfig contains all the virtualization configurations
@@ -457,6 +428,36 @@ type SecurityConfig struct {
 	// MinTLSVersions is VersionTLS12.
 	// +optional
 	TLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile `json:"tlsSecurityProfile,omitempty"`
+}
+
+type DeploymentConfig struct {
+	// UninstallStrategy defines how to proceed on uninstall when workloads (VirtualMachines, DataVolumes) still exist.
+	// BlockUninstallIfWorkloadsExist will prevent the CR from being removed when workloads still exist.
+	// BlockUninstallIfWorkloadsExist is the safest choice to protect your workloads from accidental data loss, so it's strongly advised.
+	// RemoveWorkloads will cause all the workloads to be cascading deleted on uninstallation.
+	// WARNING: please notice that RemoveWorkloads will cause your workloads to be deleted as soon as this CR will be, even accidentally, deleted.
+	// Please correctly consider the implications of this option before setting it.
+	// BlockUninstallIfWorkloadsExist is the default behavior.
+	// +kubebuilder:default=BlockUninstallIfWorkloadsExist
+	// +default="BlockUninstallIfWorkloadsExist"
+	// +kubebuilder:validation:Enum=RemoveWorkloads;BlockUninstallIfWorkloadsExist
+	// +optional
+	UninstallStrategy HyperConvergedUninstallStrategy `json:"uninstallStrategy,omitempty"`
+
+	// LogVerbosityConfig configures the verbosity level of Kubevirt's different components. The higher
+	// the value - the higher the log verbosity.
+	// +optional
+	LogVerbosityConfig *LogVerbosityConfiguration `json:"logVerbosityConfig,omitempty"`
+
+	// ApplicationAwareConfig set the AAQ configurations
+	// +optional
+	ApplicationAwareConfig *ApplicationAwareConfigurations `json:"applicationAwareConfig,omitempty"`
+
+	// deploy VM console proxy resources in SSP operator
+	// +optional
+	// +kubebuilder:default=false
+	// +default=false
+	DeployVMConsoleProxy *bool `json:"deployVmConsoleProxy,omitempty"`
 }
 
 // CertRotateConfigCA contains the tunables for TLS certificates.
@@ -875,6 +876,13 @@ type NodeInfoStatus struct {
 // ApplicationAwareConfigurations holds the AAQ configurations
 // +k8s:openapi-gen=true
 type ApplicationAwareConfigurations struct {
+	// Enable if true, enables the Application Aware Quota feature
+	// +optional
+	// +kubebuilder:default=false
+	// +default=false
+	// +k8s:conversion-gen=false
+	Enable *bool `json:"enable,omitempty"`
+
 	// VmiCalcConfigName determine how resource allocation will be done with ApplicationsResourceQuota.
 	// allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources, IgnoreVmiCalculator or GuestEffectiveResources
 	// +kubebuilder:validation:Enum=VmiPodUsage;VirtualResources;DedicatedVirtualResources;IgnoreVmiCalculator;GuestEffectiveResources
@@ -956,7 +964,7 @@ type HyperConverged struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// +kubebuilder:default={"security": {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10},"workloadSources":{"enableCommonBootImageImport":true}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "enableApplicationAwareQuota": false, "deployVmConsoleProxy": false}
+	// +kubebuilder:default={"security": {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10},"workloadSources":{"enableCommonBootImageImport":true}, "deployment": {"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "applicationAwareConfig": {"enable": false}}}
 	// +optional
 	Spec   HyperConvergedSpec   `json:"spec,omitempty"`
 	Status HyperConvergedStatus `json:"status,omitempty"`

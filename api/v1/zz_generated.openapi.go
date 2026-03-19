@@ -60,6 +60,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_ApplicationAwareConf
 				Description: "ApplicationAwareConfigurations holds the AAQ configurations",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"enable": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Enable if true, enables the Application Aware Quota feature",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"vmiCalcConfigName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "VmiCalcConfigName determine how resource allocation will be done with ApplicationsResourceQuota. allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources, IgnoreVmiCalculator or GuestEffectiveResources",
@@ -288,47 +296,19 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.SecurityConfig"),
 						},
 					},
-					"uninstallStrategy": {
+					"deployment": {
 						SchemaProps: spec.SchemaProps{
-							Description: "UninstallStrategy defines how to proceed on uninstall when workloads (VirtualMachines, DataVolumes) still exist. BlockUninstallIfWorkloadsExist will prevent the CR from being removed when workloads still exist. BlockUninstallIfWorkloadsExist is the safest choice to protect your workloads from accidental data loss, so it's strongly advised. RemoveWorkloads will cause all the workloads to be cascading deleted on uninstallation. WARNING: please notice that RemoveWorkloads will cause your workloads to be deleted as soon as this CR will be, even accidentally, deleted. Please correctly consider the implications of this option before setting it. BlockUninstallIfWorkloadsExist is the default behaviour.",
-							Default:     "BlockUninstallIfWorkloadsExist",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"logVerbosityConfig": {
-						SchemaProps: spec.SchemaProps{
-							Description: "LogVerbosityConfig configures the verbosity level of Kubevirt's different components. The higher the value - the higher the log verbosity.",
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration"),
-						},
-					},
-					"applicationAwareConfig": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ApplicationAwareConfig set the AAQ configurations",
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations"),
-						},
-					},
-					"deployVmConsoleProxy": {
-						SchemaProps: spec.SchemaProps{
-							Description: "deploy VM console proxy resources in SSP operator",
-							Default:     false,
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"enableApplicationAwareQuota": {
-						SchemaProps: spec.SchemaProps{
-							Description: "EnableApplicationAwareQuota if true, enables the Application Aware Quota feature",
-							Default:     false,
-							Type:        []string{"boolean"},
-							Format:      "",
+							Description: "Deployment contains all the configurations related to deployment of KubeVirt components",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DeploymentConfig"),
 						},
 					},
 				},
+				Required: []string{"deployment"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NetworkingConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodePlacements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.SecurityConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.WorkloadSourcesConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate"},
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DeploymentConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NetworkingConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodePlacements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.SecurityConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.WorkloadSourcesConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate"},
 	}
 }
 

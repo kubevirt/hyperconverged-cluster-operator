@@ -131,16 +131,18 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 			panic(err)
 		}
 	}
-	if in.Spec.UninstallStrategy == "" {
-		in.Spec.UninstallStrategy = "BlockUninstallIfWorkloadsExist"
+	if in.Spec.Deployment.UninstallStrategy == "" {
+		in.Spec.Deployment.UninstallStrategy = "BlockUninstallIfWorkloadsExist"
 	}
-	if in.Spec.DeployVMConsoleProxy == nil {
-		var ptrVar1 bool = false
-		in.Spec.DeployVMConsoleProxy = &ptrVar1
+	if in.Spec.Deployment.ApplicationAwareConfig != nil {
+		if in.Spec.Deployment.ApplicationAwareConfig.Enable == nil {
+			var ptrVar1 bool = false
+			in.Spec.Deployment.ApplicationAwareConfig.Enable = &ptrVar1
+		}
 	}
-	if in.Spec.EnableApplicationAwareQuota == nil {
+	if in.Spec.Deployment.DeployVMConsoleProxy == nil {
 		var ptrVar1 bool = false
-		in.Spec.EnableApplicationAwareQuota = &ptrVar1
+		in.Spec.Deployment.DeployVMConsoleProxy = &ptrVar1
 	}
 }
 
