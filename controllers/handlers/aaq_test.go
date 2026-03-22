@@ -17,6 +17,7 @@ import (
 	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
 	"kubevirt.io/controller-lifecycle-operator-sdk/api"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
@@ -140,12 +141,12 @@ var _ = Describe("AAQ tests", func() {
 
 		It("should get certification configurations from the HyperConverged CR", func() {
 
-			hco.Spec.CertConfig = v1beta1.HyperConvergedCertConfig{
-				CA: v1beta1.CertRotateConfigCA{
+			hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+				CA: hcov1.CertRotateConfigCA{
 					Duration:    &metav1.Duration{Duration: time.Hour * 72},
 					RenewBefore: &metav1.Duration{Duration: time.Hour * 56},
 				},
-				Server: v1beta1.CertRotateConfigServer{
+				Server: hcov1.CertRotateConfigServer{
 					Duration:    &metav1.Duration{Duration: time.Hour * 36},
 					RenewBefore: &metav1.Duration{Duration: time.Hour * 18},
 				},

@@ -20,6 +20,7 @@ import (
 
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
@@ -579,7 +580,7 @@ var _ = Describe("CDI Operand", func() {
 		Context("Log verbosity", func() {
 
 			It("Should be defined for CDI CR if defined in HCO CR", func() {
-				hco.Spec.LogVerbosityConfig = &hcov1beta1.LogVerbosityConfiguration{CDI: ptr.To[int32](4)}
+				hco.Spec.LogVerbosityConfig = &hcov1.LogVerbosityConfiguration{CDI: ptr.To[int32](4)}
 				cdi, err := NewCDI(hco)
 
 				Expect(err).ToNot(HaveOccurred())
@@ -587,7 +588,7 @@ var _ = Describe("CDI Operand", func() {
 				Expect(cdi.Spec.Config.LogVerbosity).To(HaveValue(Equal(int32(4))))
 			})
 
-			DescribeTable("Should not be defined for CDI CR if not defined in HCO CR", func(logConfig *hcov1beta1.LogVerbosityConfiguration) {
+			DescribeTable("Should not be defined for CDI CR if not defined in HCO CR", func(logConfig *hcov1.LogVerbosityConfiguration) {
 				hco.Spec.LogVerbosityConfig = logConfig
 				cdi, err := NewCDI(hco)
 
@@ -596,7 +597,7 @@ var _ = Describe("CDI Operand", func() {
 				Expect(cdi.Spec.Config.LogVerbosity).To(BeNil())
 			},
 				Entry("nil LogVerbosityConfiguration", nil),
-				Entry("nil CDI logs", &hcov1beta1.LogVerbosityConfiguration{CDI: nil}),
+				Entry("nil CDI logs", &hcov1.LogVerbosityConfiguration{CDI: nil}),
 			)
 		})
 
@@ -694,7 +695,7 @@ var _ = Describe("CDI Operand", func() {
 			It("should add InsecureRegistries if exists in HC and missing in CDI", func() {
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
-				hco.Spec.StorageImport = &hcov1beta1.StorageImportConfig{
+				hco.Spec.StorageImport = &hcov1.StorageImportConfig{
 					InsecureRegistries: []string{"first:5000", "second:5000", "third:5000"},
 				}
 
@@ -748,7 +749,7 @@ var _ = Describe("CDI Operand", func() {
 				Expect(err).ToNot(HaveOccurred())
 				existingCDI.Spec.Config.InsecureRegistries = []string{"first:5000", "second:5000", "third:5000"}
 
-				hco.Spec.StorageImport = &hcov1beta1.StorageImportConfig{
+				hco.Spec.StorageImport = &hcov1.StorageImportConfig{
 					InsecureRegistries: []string{"other1:5000", "other2:5000"},
 				}
 
@@ -798,7 +799,7 @@ var _ = Describe("CDI Operand", func() {
 			It("should set BlockUninstallIfWorkloadsExist if set on HCO CR", func() {
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
-				uninstallStrategy := hcov1beta1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
+				uninstallStrategy := hcov1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
 				hco.Spec.UninstallStrategy = uninstallStrategy
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
@@ -820,7 +821,7 @@ var _ = Describe("CDI Operand", func() {
 			It("should set BlockUninstallIfRemoveWorkloads if set on HCO CR", func() {
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
-				uninstallStrategy := hcov1beta1.HyperConvergedUninstallStrategyRemoveWorkloads
+				uninstallStrategy := hcov1.HyperConvergedUninstallStrategyRemoveWorkloads
 				hco.Spec.UninstallStrategy = uninstallStrategy
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
@@ -973,12 +974,12 @@ var _ = Describe("CDI Operand", func() {
 			existingResource, err := NewCDI(hcoCertConfig)
 			Expect(err).ToNot(HaveOccurred())
 
-			hco.Spec.CertConfig = hcov1beta1.HyperConvergedCertConfig{
-				CA: hcov1beta1.CertRotateConfigCA{
+			hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+				CA: hcov1.CertRotateConfigCA{
 					Duration:    &metav1.Duration{Duration: 5 * time.Hour},
 					RenewBefore: &metav1.Duration{Duration: 6 * time.Hour},
 				},
-				Server: hcov1beta1.CertRotateConfigServer{
+				Server: hcov1.CertRotateConfigServer{
 					Duration:    &metav1.Duration{Duration: 7 * time.Hour},
 					RenewBefore: &metav1.Duration{Duration: 8 * time.Hour},
 				},

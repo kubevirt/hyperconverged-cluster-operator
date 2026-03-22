@@ -31,12 +31,12 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 	})
 
 	Context("certConfig defaults", func() {
-		defaultCertConfig := v1beta1.HyperConvergedCertConfig{
-			CA: v1beta1.CertRotateConfigCA{
+		defaultCertConfig := hcov1.HyperConvergedCertConfig{
+			CA: hcov1.CertRotateConfigCA{
 				Duration:    &metav1.Duration{Duration: time.Hour * 48},
 				RenewBefore: &metav1.Duration{Duration: time.Hour * 24},
 			},
-			Server: v1beta1.CertRotateConfigServer{
+			Server: hcov1.CertRotateConfigServer{
 				Duration:    &metav1.Duration{Duration: time.Hour * 24},
 				RenewBefore: &metav1.Duration{Duration: time.Hour * 12},
 			},
@@ -198,7 +198,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc := tests.GetHCO(ctx, cli)
-				g.Expect(hc.Spec.UninstallStrategy).To(Equal(v1beta1.HyperConvergedUninstallStrategy(defaultUninstallStrategy)), "uninstallStrategy should be equal to default")
+				g.Expect(hc.Spec.UninstallStrategy).To(Equal(hcov1.HyperConvergedUninstallStrategy(defaultUninstallStrategy)), "uninstallStrategy should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(Succeed())
 		},
 			Entry("when removing /spec/uninstallStrategy", "/spec/uninstallStrategy"),

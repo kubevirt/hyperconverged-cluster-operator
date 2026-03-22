@@ -3,15 +3,19 @@ package v1beta1
 import (
 	"slices"
 	"testing"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/ptr"
 
 	kubevirtv1 "kubevirt.io/api/core/v1"
+	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
@@ -1210,6 +1214,1433 @@ var _ = Describe("api/v1beta1", func() {
 
 				Expect(v1VirtConfig.VmiCPUAllocationRatio).To(BeNil())
 				Expect(v1VirtConfig.AutoCPULimitNamespaceLabelSelector).To(BeNil())
+			})
+		})
+	})
+
+	Context("Storage conversion", func() {
+		Context("v1 ==> v1beta1", func() {
+			It("should convert VMStateStorageClass", func() {
+				v1Storage := &hcov1.StorageConfig{
+					VMStateStorageClass: ptr.To("my-storage-class"),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.VMStateStorageClass).To(HaveValue(Equal("my-storage-class")))
+			})
+
+			It("should convert ScratchSpaceStorageClass", func() {
+				v1Storage := &hcov1.StorageConfig{
+					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.ScratchSpaceStorageClass).To(HaveValue(Equal("scratch-class")))
+			})
+
+			It("should convert StorageImport with InsecureRegistries", func() {
+				v1Storage := &hcov1.StorageConfig{
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{"registry1.example.com", "registry2.example.com"},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.StorageImport).ToNot(BeNil())
+				Expect(v1beta1Spec.StorageImport.InsecureRegistries).To(Equal([]string{"registry1.example.com", "registry2.example.com"}))
+			})
+
+			It("should not convert StorageImport when nil", func() {
+				v1Storage := &hcov1.StorageConfig{}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.StorageImport).To(BeNil())
+			})
+
+			It("should convert StorageImport when InsecureRegistries is empty", func() {
+				v1Storage := &hcov1.StorageConfig{
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.StorageImport).ToNot(BeNil())
+				Expect(v1beta1Spec.StorageImport.InsecureRegistries).To(BeEmpty())
+			})
+
+			It("should convert FilesystemOverhead", func() {
+				v1Storage := &hcov1.StorageConfig{
+					FilesystemOverhead: &cdiv1beta1.FilesystemOverhead{
+						Global: cdiv1beta1.Percent("0.5"),
+						StorageClass: map[string]cdiv1beta1.Percent{
+							"class-1": cdiv1beta1.Percent("0.3"),
+							"class-2": cdiv1beta1.Percent("0.2"),
+						},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.FilesystemOverhead).ToNot(BeNil())
+				Expect(v1beta1Spec.FilesystemOverhead.Global).To(Equal(cdiv1beta1.Percent("0.5")))
+				Expect(v1beta1Spec.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-1", cdiv1beta1.Percent("0.3")))
+				Expect(v1beta1Spec.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-2", cdiv1beta1.Percent("0.2")))
+			})
+
+			It("should not convert FilesystemOverhead when nil", func() {
+				v1Storage := &hcov1.StorageConfig{}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.FilesystemOverhead).To(BeNil())
+			})
+
+			It("should convert StorageWorkloads", func() {
+				v1Storage := &hcov1.StorageConfig{
+					StorageWorkloads: &corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("100m"),
+						},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.ResourceRequirements).ToNot(BeNil())
+				Expect(v1beta1Spec.ResourceRequirements.StorageWorkloads).ToNot(BeNil())
+				Expect(v1beta1Spec.ResourceRequirements.StorageWorkloads.Limits).To(HaveLen(1))
+				Expect(v1beta1Spec.ResourceRequirements.StorageWorkloads.Limits).To(HaveKeyWithValue(corev1.ResourceCPU, resource.MustParse("100m")))
+			})
+
+			It("should convert all fields together", func() {
+				v1Storage := &hcov1.StorageConfig{
+					VMStateStorageClass:      ptr.To("vm-state-class"),
+					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{"registry.example.com"},
+					},
+					FilesystemOverhead: &cdiv1beta1.FilesystemOverhead{
+						Global: "0.5",
+						StorageClass: map[string]cdiv1beta1.Percent{
+							"class-1": "0.3",
+							"class-2": "0.2",
+						},
+					},
+					StorageWorkloads: &corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("100m"),
+						},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &v1beta1Spec)
+
+				Expect(v1beta1Spec.VMStateStorageClass).To(HaveValue(Equal("vm-state-class")))
+				Expect(v1beta1Spec.ScratchSpaceStorageClass).To(HaveValue(Equal("scratch-class")))
+
+				Expect(v1beta1Spec.StorageImport).ToNot(BeNil())
+				Expect(v1beta1Spec.StorageImport.InsecureRegistries).To(Equal([]string{"registry.example.com"}))
+
+				Expect(v1beta1Spec.FilesystemOverhead).ToNot(BeNil())
+				Expect(v1beta1Spec.FilesystemOverhead.Global).To(Equal(cdiv1beta1.Percent("0.5")))
+				Expect(v1beta1Spec.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-1", cdiv1beta1.Percent("0.3")))
+				Expect(v1beta1Spec.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-2", cdiv1beta1.Percent("0.2")))
+
+				Expect(v1beta1Spec.ResourceRequirements).ToNot(BeNil())
+				Expect(v1beta1Spec.ResourceRequirements.StorageWorkloads).ToNot(BeNil())
+				Expect(v1beta1Spec.ResourceRequirements.StorageWorkloads.Limits).To(HaveLen(1))
+				Expect(v1beta1Spec.ResourceRequirements.StorageWorkloads.Limits).To(HaveKeyWithValue(corev1.ResourceCPU, resource.MustParse("100m")))
+			})
+		})
+
+		Context("v1beta1 ==> v1", func() {
+			It("should convert VMStateStorageClass", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					VMStateStorageClass: ptr.To("my-storage-class"),
+				}
+
+				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(v1Storage).ToNot(BeNil())
+				Expect(v1Storage.VMStateStorageClass).To(HaveValue(Equal("my-storage-class")))
+			})
+
+			It("should convert ScratchSpaceStorageClass", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+				}
+
+				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(v1Storage).ToNot(BeNil())
+				Expect(v1Storage.ScratchSpaceStorageClass).To(HaveValue(Equal("scratch-class")))
+			})
+
+			It("should convert StorageImport with InsecureRegistries", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{"registry1.example.com", "registry2.example.com"},
+					},
+				}
+
+				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(v1Storage).ToNot(BeNil())
+				Expect(v1Storage.StorageImport).ToNot(BeNil())
+				Expect(v1Storage.StorageImport.InsecureRegistries).To(Equal([]string{"registry1.example.com", "registry2.example.com"}))
+			})
+
+			It("should return nil when all storage fields are empty", func() {
+				v1beta1Spec := HyperConvergedSpec{}
+
+				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(v1Storage).To(BeNil())
+			})
+
+			It("should return nil when StorageImport has empty InsecureRegistries", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{},
+					},
+				}
+
+				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(v1Storage).To(BeNil())
+			})
+
+			It("should convert FilesystemOverhead", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					FilesystemOverhead: &cdiv1beta1.FilesystemOverhead{
+						Global: "0.5",
+						StorageClass: map[string]cdiv1beta1.Percent{
+							"class-1": "0.3",
+							"class-2": "0.2",
+						},
+					},
+				}
+
+				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(v1Storage.FilesystemOverhead).ToNot(BeNil())
+				Expect(v1Storage.FilesystemOverhead.Global).To(Equal(cdiv1beta1.Percent("0.5")))
+				Expect(v1Storage.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-1", cdiv1beta1.Percent("0.3")))
+				Expect(v1Storage.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-2", cdiv1beta1.Percent("0.2")))
+			})
+
+			It("should convert StorageWorkloads", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					ResourceRequirements: &OperandResourceRequirements{
+						StorageWorkloads: &corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU: resource.MustParse("100m"),
+							},
+						},
+					},
+				}
+
+				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(v1Storage).ToNot(BeNil())
+				Expect(v1Storage.StorageWorkloads).ToNot(BeNil())
+				Expect(v1Storage.StorageWorkloads.Limits).To(HaveLen(1))
+				Expect(v1Storage.StorageWorkloads.Limits).To(HaveKeyWithValue(corev1.ResourceCPU, resource.MustParse("100m")))
+			})
+
+			It("should convert all fields together", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					VMStateStorageClass:      ptr.To("vm-state-class"),
+					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{"registry.example.com"},
+					},
+					FilesystemOverhead: &cdiv1beta1.FilesystemOverhead{
+						Global: "0.5",
+						StorageClass: map[string]cdiv1beta1.Percent{
+							"class-1": "0.3",
+							"class-2": "0.2",
+						},
+					},
+					ResourceRequirements: &OperandResourceRequirements{
+						StorageWorkloads: &corev1.ResourceRequirements{
+							Limits: corev1.ResourceList{
+								corev1.ResourceCPU: resource.MustParse("100m"),
+							},
+						},
+					},
+				}
+
+				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(v1Storage).ToNot(BeNil())
+
+				Expect(v1Storage.VMStateStorageClass).To(HaveValue(Equal("vm-state-class")))
+
+				Expect(v1Storage.ScratchSpaceStorageClass).To(HaveValue(Equal("scratch-class")))
+
+				Expect(v1Storage.StorageImport).ToNot(BeNil())
+				Expect(v1Storage.StorageImport.InsecureRegistries).To(Equal([]string{"registry.example.com"}))
+
+				Expect(v1Storage.FilesystemOverhead).ToNot(BeNil())
+				Expect(v1Storage.FilesystemOverhead.Global).To(Equal(cdiv1beta1.Percent("0.5")))
+				Expect(v1Storage.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-1", cdiv1beta1.Percent("0.3")))
+				Expect(v1Storage.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-2", cdiv1beta1.Percent("0.2")))
+
+				Expect(v1Storage.StorageWorkloads).ToNot(BeNil())
+				Expect(v1Storage.StorageWorkloads.Limits).To(HaveLen(1))
+				Expect(v1Storage.StorageWorkloads.Limits).To(HaveKeyWithValue(corev1.ResourceCPU, resource.MustParse("100m")))
+			})
+		})
+
+		Context("round-trip", func() {
+			It("should preserve storage config through v1beta1 => v1 => v1beta1", func() {
+				original := HyperConvergedSpec{
+					VMStateStorageClass:      ptr.To("vm-state-class"),
+					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{"registry1.example.com", "registry2.example.com"},
+					},
+				}
+
+				v1Storage := convertStorageV1beta1ToV1(original)
+
+				var result HyperConvergedSpec
+				convertStorageV1ToV1beta1(v1Storage, &result)
+
+				Expect(result.VMStateStorageClass).To(HaveValue(Equal("vm-state-class")))
+				Expect(result.ScratchSpaceStorageClass).To(HaveValue(Equal("scratch-class")))
+				Expect(result.StorageImport).ToNot(BeNil())
+				Expect(result.StorageImport.InsecureRegistries).To(Equal([]string{"registry1.example.com", "registry2.example.com"}))
+			})
+
+			It("should preserve storage config through v1 => v1beta1 => v1", func() {
+				original := &hcov1.StorageConfig{
+					VMStateStorageClass:      ptr.To("vm-state-class"),
+					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{"registry.example.com"},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertStorageV1ToV1beta1(original, &v1beta1Spec)
+
+				result := convertStorageV1beta1ToV1(v1beta1Spec)
+
+				Expect(result).ToNot(BeNil())
+				Expect(result.VMStateStorageClass).To(HaveValue(Equal("vm-state-class")))
+				Expect(result.ScratchSpaceStorageClass).To(HaveValue(Equal("scratch-class")))
+				Expect(result.StorageImport).ToNot(BeNil())
+				Expect(result.StorageImport.InsecureRegistries).To(Equal([]string{"registry.example.com"}))
+			})
+		})
+	})
+
+	Context("Networking conversion", func() {
+		Context("v1 ==> v1beta1", func() {
+			It("should convert KubeSecondaryDNSNameServerIP", func() {
+				v1Networking := &hcov1.NetworkingConfig{
+					KubeSecondaryDNSNameServerIP: ptr.To("192.168.1.1"),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertNetworkingV1ToV1beta1(v1Networking, &v1beta1Spec)
+
+				Expect(v1beta1Spec.KubeSecondaryDNSNameServerIP).To(HaveValue(Equal("192.168.1.1")))
+				Expect(v1beta1Spec.KubeMacPoolConfiguration).To(BeNil())
+				Expect(v1beta1Spec.NetworkBinding).To(BeNil())
+			})
+
+			It("should convert KubeMacPoolConfiguration", func() {
+				v1Networking := &hcov1.NetworkingConfig{
+					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
+						RangeStart: ptr.To("02:00:00:00:00:00"),
+						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertNetworkingV1ToV1beta1(v1Networking, &v1beta1Spec)
+
+				Expect(v1beta1Spec.KubeMacPoolConfiguration).ToNot(BeNil())
+				Expect(v1beta1Spec.KubeMacPoolConfiguration.RangeStart).To(HaveValue(Equal("02:00:00:00:00:00")))
+				Expect(v1beta1Spec.KubeMacPoolConfiguration.RangeEnd).To(HaveValue(Equal("02:FF:FF:FF:FF:FF")))
+				Expect(v1beta1Spec.KubeSecondaryDNSNameServerIP).To(BeNil())
+				Expect(v1beta1Spec.NetworkBinding).To(BeNil())
+			})
+
+			It("should convert NetworkBinding", func() {
+				v1Networking := &hcov1.NetworkingConfig{
+					NetworkBinding: map[string]kubevirtv1.InterfaceBindingPlugin{
+						"test-binding": {
+							SidecarImage: "test-image:latest",
+						},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertNetworkingV1ToV1beta1(v1Networking, &v1beta1Spec)
+
+				Expect(v1beta1Spec.NetworkBinding).To(HaveLen(1))
+				Expect(v1beta1Spec.NetworkBinding).To(HaveKeyWithValue("test-binding", kubevirtv1.InterfaceBindingPlugin{
+					SidecarImage: "test-image:latest",
+				}))
+				Expect(v1beta1Spec.KubeSecondaryDNSNameServerIP).To(BeNil())
+				Expect(v1beta1Spec.KubeMacPoolConfiguration).To(BeNil())
+			})
+
+			It("should not convert when nil", func() {
+				var v1beta1Spec HyperConvergedSpec
+				convertNetworkingV1ToV1beta1(nil, &v1beta1Spec)
+
+				Expect(v1beta1Spec.KubeSecondaryDNSNameServerIP).To(BeNil())
+				Expect(v1beta1Spec.KubeMacPoolConfiguration).To(BeNil())
+				Expect(v1beta1Spec.NetworkBinding).To(BeNil())
+			})
+
+			It("should convert all fields together", func() {
+				v1Networking := &hcov1.NetworkingConfig{
+					KubeSecondaryDNSNameServerIP: ptr.To("10.0.0.1"),
+					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
+						RangeStart: ptr.To("02:00:00:00:00:00"),
+						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+					},
+					NetworkBinding: map[string]kubevirtv1.InterfaceBindingPlugin{
+						"binding1": {SidecarImage: "image1:v1"},
+						"binding2": {NetworkAttachmentDefinition: "ns/nad"},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertNetworkingV1ToV1beta1(v1Networking, &v1beta1Spec)
+
+				Expect(v1beta1Spec.KubeSecondaryDNSNameServerIP).To(HaveValue(Equal("10.0.0.1")))
+				Expect(v1beta1Spec.KubeMacPoolConfiguration.RangeStart).To(HaveValue(Equal("02:00:00:00:00:00")))
+				Expect(v1beta1Spec.KubeMacPoolConfiguration.RangeEnd).To(HaveValue(Equal("02:FF:FF:FF:FF:FF")))
+				Expect(v1beta1Spec.NetworkBinding).To(HaveLen(2))
+				Expect(v1beta1Spec.NetworkBinding).To(HaveKeyWithValue("binding1", kubevirtv1.InterfaceBindingPlugin{SidecarImage: "image1:v1"}))
+				Expect(v1beta1Spec.NetworkBinding).To(HaveKeyWithValue("binding2", kubevirtv1.InterfaceBindingPlugin{NetworkAttachmentDefinition: "ns/nad"}))
+			})
+		})
+
+		Context("v1beta1 ==> v1", func() {
+			It("should convert KubeSecondaryDNSNameServerIP", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					KubeSecondaryDNSNameServerIP: ptr.To("192.168.1.1"),
+				}
+
+				result := convertNetworkingV1beta1ToV1(v1beta1Spec)
+
+				Expect(result).ToNot(BeNil())
+				Expect(result.KubeSecondaryDNSNameServerIP).To(HaveValue(Equal("192.168.1.1")))
+				Expect(result.KubeMacPoolConfiguration).To(BeNil())
+				Expect(result.NetworkBinding).To(BeNil())
+			})
+
+			It("should convert KubeMacPoolConfiguration", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
+						RangeStart: ptr.To("02:00:00:00:00:00"),
+						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+					},
+				}
+
+				result := convertNetworkingV1beta1ToV1(v1beta1Spec)
+
+				Expect(result).ToNot(BeNil())
+				Expect(result.KubeMacPoolConfiguration).ToNot(BeNil())
+				Expect(result.KubeMacPoolConfiguration.RangeStart).To(HaveValue(Equal("02:00:00:00:00:00")))
+				Expect(result.KubeMacPoolConfiguration.RangeEnd).To(HaveValue(Equal("02:FF:FF:FF:FF:FF")))
+				Expect(result.KubeSecondaryDNSNameServerIP).To(BeNil())
+				Expect(result.NetworkBinding).To(BeNil())
+			})
+
+			It("should convert NetworkBinding", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					NetworkBinding: map[string]kubevirtv1.InterfaceBindingPlugin{
+						"test-binding": {
+							SidecarImage: "test-image:latest",
+						},
+					},
+				}
+
+				result := convertNetworkingV1beta1ToV1(v1beta1Spec)
+
+				Expect(result).ToNot(BeNil())
+				Expect(result.NetworkBinding).To(HaveLen(1))
+				Expect(result.NetworkBinding).To(HaveKeyWithValue("test-binding", kubevirtv1.InterfaceBindingPlugin{
+					SidecarImage: "test-image:latest",
+				}))
+				Expect(result.KubeSecondaryDNSNameServerIP).To(BeNil())
+				Expect(result.KubeMacPoolConfiguration).To(BeNil())
+			})
+
+			It("should return nil when all fields are nil", func() {
+				v1beta1Spec := HyperConvergedSpec{}
+
+				result := convertNetworkingV1beta1ToV1(v1beta1Spec)
+
+				Expect(result).To(BeNil())
+			})
+
+			It("should convert all fields together", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					KubeSecondaryDNSNameServerIP: ptr.To("10.0.0.1"),
+					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
+						RangeStart: ptr.To("02:00:00:00:00:00"),
+						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+					},
+					NetworkBinding: map[string]kubevirtv1.InterfaceBindingPlugin{
+						"binding1": {SidecarImage: "image1:v1"},
+						"binding2": {NetworkAttachmentDefinition: "ns/nad"},
+					},
+				}
+
+				result := convertNetworkingV1beta1ToV1(v1beta1Spec)
+
+				Expect(result).ToNot(BeNil())
+				Expect(result.KubeSecondaryDNSNameServerIP).To(HaveValue(Equal("10.0.0.1")))
+				Expect(result.KubeMacPoolConfiguration.RangeStart).To(HaveValue(Equal("02:00:00:00:00:00")))
+				Expect(result.KubeMacPoolConfiguration.RangeEnd).To(HaveValue(Equal("02:FF:FF:FF:FF:FF")))
+				Expect(result.NetworkBinding).To(HaveLen(2))
+				Expect(result.NetworkBinding).To(HaveKeyWithValue("binding1", kubevirtv1.InterfaceBindingPlugin{SidecarImage: "image1:v1"}))
+				Expect(result.NetworkBinding).To(HaveKeyWithValue("binding2", kubevirtv1.InterfaceBindingPlugin{NetworkAttachmentDefinition: "ns/nad"}))
+			})
+		})
+
+		Context("round-trip", func() {
+			It("should preserve networking config through v1beta1 => v1 => v1beta1", func() {
+				original := HyperConvergedSpec{
+					KubeSecondaryDNSNameServerIP: ptr.To("10.0.0.1"),
+					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
+						RangeStart: ptr.To("02:00:00:00:00:00"),
+						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+					},
+					NetworkBinding: map[string]kubevirtv1.InterfaceBindingPlugin{
+						"binding1": {SidecarImage: "image1:v1"},
+						"binding2": {NetworkAttachmentDefinition: "ns/nad"},
+					},
+				}
+
+				v1Networking := convertNetworkingV1beta1ToV1(original)
+
+				var result HyperConvergedSpec
+				convertNetworkingV1ToV1beta1(v1Networking, &result)
+
+				Expect(result.KubeSecondaryDNSNameServerIP).To(Equal(original.KubeSecondaryDNSNameServerIP))
+				Expect(result.KubeMacPoolConfiguration.RangeStart).To(Equal(original.KubeMacPoolConfiguration.RangeStart))
+				Expect(result.KubeMacPoolConfiguration.RangeEnd).To(Equal(original.KubeMacPoolConfiguration.RangeEnd))
+				Expect(result.NetworkBinding).To(Equal(original.NetworkBinding))
+			})
+
+			It("should preserve networking config through v1 => v1beta1 => v1", func() {
+				original := &hcov1.NetworkingConfig{
+					KubeSecondaryDNSNameServerIP: ptr.To("10.0.0.1"),
+					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
+						RangeStart: ptr.To("02:00:00:00:00:00"),
+						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+					},
+					NetworkBinding: map[string]kubevirtv1.InterfaceBindingPlugin{
+						"binding1": {SidecarImage: "image1:v1"},
+						"binding2": {NetworkAttachmentDefinition: "ns/nad"},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertNetworkingV1ToV1beta1(original, &v1beta1Spec)
+
+				result := convertNetworkingV1beta1ToV1(v1beta1Spec)
+
+				Expect(result).ToNot(BeNil())
+				Expect(result.KubeSecondaryDNSNameServerIP).To(Equal(original.KubeSecondaryDNSNameServerIP))
+				Expect(result.KubeMacPoolConfiguration.RangeStart).To(Equal(original.KubeMacPoolConfiguration.RangeStart))
+				Expect(result.KubeMacPoolConfiguration.RangeEnd).To(Equal(original.KubeMacPoolConfiguration.RangeEnd))
+				Expect(result.NetworkBinding).To(Equal(original.NetworkBinding))
+			})
+
+			It("should preserve nil networking through round-trip", func() {
+				original := HyperConvergedSpec{}
+
+				v1Networking := convertNetworkingV1beta1ToV1(original)
+				Expect(v1Networking).To(BeNil())
+
+				var result HyperConvergedSpec
+				convertNetworkingV1ToV1beta1(v1Networking, &result)
+
+				Expect(result.KubeSecondaryDNSNameServerIP).To(BeNil())
+				Expect(result.KubeMacPoolConfiguration).To(BeNil())
+				Expect(result.NetworkBinding).To(BeNil())
+			})
+		})
+	})
+
+	Context("WorkloadSources conversion", func() {
+		Context("v1 ==> v1beta1", func() {
+			It("should convert CommonTemplatesNamespace", func() {
+				v1Config := hcov1.WorkloadSourcesConfig{
+					CommonTemplatesNamespace: ptr.To("my-ns"),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &v1beta1Spec)
+
+				Expect(v1beta1Spec.CommonTemplatesNamespace).To(HaveValue(Equal("my-ns")))
+				Expect(v1beta1Spec.CommonBootImageNamespace).To(BeNil())
+				Expect(v1beta1Spec.EnableCommonBootImageImport).To(BeNil())
+				Expect(v1beta1Spec.DataImportCronTemplates).To(BeEmpty())
+				Expect(v1beta1Spec.InstancetypeConfig).To(BeNil())
+				Expect(v1beta1Spec.CommonInstancetypesDeployment).To(BeNil())
+			})
+
+			It("should convert CommonBootImageNamespace", func() {
+				v1Config := hcov1.WorkloadSourcesConfig{
+					CommonBootImageNamespace: ptr.To("boot-ns"),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &v1beta1Spec)
+
+				Expect(v1beta1Spec.CommonBootImageNamespace).To(HaveValue(Equal("boot-ns")))
+				Expect(v1beta1Spec.CommonTemplatesNamespace).To(BeNil())
+			})
+
+			It("should convert EnableCommonBootImageImport", func() {
+				v1Config := hcov1.WorkloadSourcesConfig{
+					EnableCommonBootImageImport: ptr.To(true),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &v1beta1Spec)
+
+				Expect(v1beta1Spec.EnableCommonBootImageImport).To(HaveValue(BeTrue()))
+			})
+
+			It("should convert DataImportCronTemplates", func() {
+				v1Config := hcov1.WorkloadSourcesConfig{
+					DataImportCronTemplates: []hcov1.DataImportCronTemplate{
+						{ObjectMeta: metav1.ObjectMeta{Name: "template1"}},
+						{ObjectMeta: metav1.ObjectMeta{Name: "template2"}},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &v1beta1Spec)
+
+				Expect(v1beta1Spec.DataImportCronTemplates).To(HaveLen(2))
+				Expect(v1beta1Spec.DataImportCronTemplates[0].Name).To(Equal("template1"))
+				Expect(v1beta1Spec.DataImportCronTemplates[1].Name).To(Equal("template2"))
+			})
+
+			It("should not convert DataImportCronTemplates when empty", func() {
+				v1Config := hcov1.WorkloadSourcesConfig{}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &v1beta1Spec)
+
+				Expect(v1beta1Spec.DataImportCronTemplates).To(BeEmpty())
+			})
+
+			It("should convert InstancetypeConfig", func() {
+				v1Config := hcov1.WorkloadSourcesConfig{
+					InstancetypeConfig: &kubevirtv1.InstancetypeConfiguration{},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &v1beta1Spec)
+
+				Expect(v1beta1Spec.InstancetypeConfig).ToNot(BeNil())
+			})
+
+			It("should convert CommonInstancetypesDeployment", func() {
+				v1Config := hcov1.WorkloadSourcesConfig{
+					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
+						Enabled: ptr.To(true),
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &v1beta1Spec)
+
+				Expect(v1beta1Spec.CommonInstancetypesDeployment).ToNot(BeNil())
+				Expect(v1beta1Spec.CommonInstancetypesDeployment.Enabled).To(HaveValue(BeTrue()))
+			})
+
+			It("should convert all fields together", func() {
+				v1Config := hcov1.WorkloadSourcesConfig{
+					CommonTemplatesNamespace:    ptr.To("templates-ns"),
+					CommonBootImageNamespace:    ptr.To("boot-ns"),
+					EnableCommonBootImageImport: ptr.To(false),
+					DataImportCronTemplates: []hcov1.DataImportCronTemplate{
+						{ObjectMeta: metav1.ObjectMeta{Name: "tmpl1"}},
+					},
+					InstancetypeConfig: &kubevirtv1.InstancetypeConfiguration{},
+					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
+						Enabled: ptr.To(true),
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &v1beta1Spec)
+
+				Expect(v1beta1Spec.CommonTemplatesNamespace).To(HaveValue(Equal("templates-ns")))
+				Expect(v1beta1Spec.CommonBootImageNamespace).To(HaveValue(Equal("boot-ns")))
+				Expect(v1beta1Spec.EnableCommonBootImageImport).To(HaveValue(BeFalse()))
+				Expect(v1beta1Spec.DataImportCronTemplates).To(HaveLen(1))
+				Expect(v1beta1Spec.DataImportCronTemplates[0].Name).To(Equal("tmpl1"))
+				Expect(v1beta1Spec.InstancetypeConfig).ToNot(BeNil())
+				Expect(v1beta1Spec.CommonInstancetypesDeployment).ToNot(BeNil())
+			})
+		})
+
+		Context("v1beta1 ==> v1", func() {
+			It("should convert CommonTemplatesNamespace", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					CommonTemplatesNamespace: ptr.To("my-ns"),
+				}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &v1Config)
+
+				Expect(v1Config.CommonTemplatesNamespace).To(HaveValue(Equal("my-ns")))
+				Expect(v1Config.CommonBootImageNamespace).To(BeNil())
+				Expect(v1Config.EnableCommonBootImageImport).To(BeNil())
+				Expect(v1Config.DataImportCronTemplates).To(BeEmpty())
+				Expect(v1Config.InstancetypeConfig).To(BeNil())
+				Expect(v1Config.CommonInstancetypesDeployment).To(BeNil())
+			})
+
+			It("should convert CommonBootImageNamespace", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					CommonBootImageNamespace: ptr.To("boot-ns"),
+				}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &v1Config)
+
+				Expect(v1Config.CommonBootImageNamespace).To(HaveValue(Equal("boot-ns")))
+				Expect(v1Config.CommonTemplatesNamespace).To(BeNil())
+			})
+
+			It("should convert EnableCommonBootImageImport", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					EnableCommonBootImageImport: ptr.To(true),
+				}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &v1Config)
+
+				Expect(v1Config.EnableCommonBootImageImport).To(HaveValue(BeTrue()))
+			})
+
+			It("should convert DataImportCronTemplates", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					DataImportCronTemplates: []hcov1.DataImportCronTemplate{
+						{ObjectMeta: metav1.ObjectMeta{Name: "template1"}},
+						{ObjectMeta: metav1.ObjectMeta{Name: "template2"}},
+					},
+				}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &v1Config)
+
+				Expect(v1Config.DataImportCronTemplates).To(HaveLen(2))
+				Expect(v1Config.DataImportCronTemplates[0].Name).To(Equal("template1"))
+				Expect(v1Config.DataImportCronTemplates[1].Name).To(Equal("template2"))
+			})
+
+			It("should not convert DataImportCronTemplates when empty", func() {
+				v1beta1Spec := HyperConvergedSpec{}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &v1Config)
+
+				Expect(v1Config.DataImportCronTemplates).To(BeEmpty())
+			})
+
+			It("should convert InstancetypeConfig", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					InstancetypeConfig: &kubevirtv1.InstancetypeConfiguration{},
+				}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &v1Config)
+
+				Expect(v1Config.InstancetypeConfig).ToNot(BeNil())
+			})
+
+			It("should convert CommonInstancetypesDeployment", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
+						Enabled: ptr.To(true),
+					},
+				}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &v1Config)
+
+				Expect(v1Config.CommonInstancetypesDeployment).ToNot(BeNil())
+				Expect(v1Config.CommonInstancetypesDeployment.Enabled).To(HaveValue(BeTrue()))
+			})
+
+			It("should convert all fields together", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					CommonTemplatesNamespace:    ptr.To("templates-ns"),
+					CommonBootImageNamespace:    ptr.To("boot-ns"),
+					EnableCommonBootImageImport: ptr.To(false),
+					DataImportCronTemplates: []hcov1.DataImportCronTemplate{
+						{ObjectMeta: metav1.ObjectMeta{Name: "tmpl1"}},
+					},
+					InstancetypeConfig: &kubevirtv1.InstancetypeConfiguration{},
+					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
+						Enabled: ptr.To(true),
+					},
+				}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &v1Config)
+
+				Expect(v1Config.CommonTemplatesNamespace).To(HaveValue(Equal("templates-ns")))
+				Expect(v1Config.CommonBootImageNamespace).To(HaveValue(Equal("boot-ns")))
+				Expect(v1Config.EnableCommonBootImageImport).To(HaveValue(BeFalse()))
+				Expect(v1Config.DataImportCronTemplates).To(HaveLen(1))
+				Expect(v1Config.DataImportCronTemplates[0].Name).To(Equal("tmpl1"))
+				Expect(v1Config.InstancetypeConfig).ToNot(BeNil())
+				Expect(v1Config.CommonInstancetypesDeployment).ToNot(BeNil())
+			})
+		})
+
+		Context("round-trip", func() {
+			It("should preserve workload sources config through v1beta1 => v1 => v1beta1", func() {
+				original := HyperConvergedSpec{
+					CommonTemplatesNamespace:    ptr.To("templates-ns"),
+					CommonBootImageNamespace:    ptr.To("boot-ns"),
+					EnableCommonBootImageImport: ptr.To(true),
+					DataImportCronTemplates: []hcov1.DataImportCronTemplate{
+						{ObjectMeta: metav1.ObjectMeta{Name: "tmpl1"}},
+					},
+					InstancetypeConfig: &kubevirtv1.InstancetypeConfiguration{},
+					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
+						Enabled: ptr.To(true),
+					},
+				}
+
+				var v1Config hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(original, &v1Config)
+
+				var result HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(v1Config, &result)
+
+				Expect(result.CommonTemplatesNamespace).To(Equal(original.CommonTemplatesNamespace))
+				Expect(result.CommonBootImageNamespace).To(Equal(original.CommonBootImageNamespace))
+				Expect(result.EnableCommonBootImageImport).To(Equal(original.EnableCommonBootImageImport))
+				Expect(result.DataImportCronTemplates).To(HaveLen(1))
+				Expect(result.DataImportCronTemplates[0].Name).To(Equal("tmpl1"))
+				Expect(result.InstancetypeConfig).ToNot(BeNil())
+				Expect(result.CommonInstancetypesDeployment).ToNot(BeNil())
+			})
+
+			It("should preserve workload sources config through v1 => v1beta1 => v1", func() {
+				original := hcov1.WorkloadSourcesConfig{
+					CommonTemplatesNamespace:    ptr.To("templates-ns"),
+					CommonBootImageNamespace:    ptr.To("boot-ns"),
+					EnableCommonBootImageImport: ptr.To(true),
+					DataImportCronTemplates: []hcov1.DataImportCronTemplate{
+						{ObjectMeta: metav1.ObjectMeta{Name: "tmpl1"}},
+					},
+					InstancetypeConfig: &kubevirtv1.InstancetypeConfiguration{},
+					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
+						Enabled: ptr.To(true),
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertWorkloadSourcesV1ToV1beta1(original, &v1beta1Spec)
+
+				var result hcov1.WorkloadSourcesConfig
+				convertWorkloadSourcesV1beta1ToV1(v1beta1Spec, &result)
+
+				Expect(result.CommonTemplatesNamespace).To(Equal(original.CommonTemplatesNamespace))
+				Expect(result.CommonBootImageNamespace).To(Equal(original.CommonBootImageNamespace))
+				Expect(result.EnableCommonBootImageImport).To(Equal(original.EnableCommonBootImageImport))
+				Expect(result.DataImportCronTemplates).To(HaveLen(1))
+				Expect(result.DataImportCronTemplates[0].Name).To(Equal("tmpl1"))
+				Expect(result.InstancetypeConfig).ToNot(BeNil())
+				Expect(result.CommonInstancetypesDeployment).ToNot(BeNil())
+			})
+		})
+	})
+
+	Context("Security conversion", func() {
+		Context("v1 ==> v1beta1", func() {
+			It("should convert CertConfig", func() {
+				v1Security := hcov1.SecurityConfig{
+					CertConfig: hcov1.HyperConvergedCertConfig{
+						CA: hcov1.CertRotateConfigCA{
+							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+						},
+						Server: hcov1.CertRotateConfigServer{
+							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+						},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertSecurityV1ToV1beta1(v1Security, &v1beta1Spec)
+
+				Expect(v1beta1Spec.CertConfig.CA.Duration).To(HaveValue(Equal(metav1.Duration{Duration: 48 * time.Hour})))
+				Expect(v1beta1Spec.CertConfig.CA.RenewBefore).To(HaveValue(Equal(metav1.Duration{Duration: 24 * time.Hour})))
+				Expect(v1beta1Spec.CertConfig.Server.Duration).To(HaveValue(Equal(metav1.Duration{Duration: 24 * time.Hour})))
+				Expect(v1beta1Spec.CertConfig.Server.RenewBefore).To(HaveValue(Equal(metav1.Duration{Duration: 12 * time.Hour})))
+			})
+
+			It("should convert TLSSecurityProfile", func() {
+				v1Security := hcov1.SecurityConfig{
+					TLSSecurityProfile: &openshiftconfigv1.TLSSecurityProfile{
+						Type:         openshiftconfigv1.TLSProfileIntermediateType,
+						Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertSecurityV1ToV1beta1(v1Security, &v1beta1Spec)
+
+				Expect(v1beta1Spec.TLSSecurityProfile).ToNot(BeNil())
+				Expect(v1beta1Spec.TLSSecurityProfile.Type).To(Equal(openshiftconfigv1.TLSProfileIntermediateType))
+			})
+
+			It("should not convert TLSSecurityProfile when nil", func() {
+				v1Security := hcov1.SecurityConfig{}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertSecurityV1ToV1beta1(v1Security, &v1beta1Spec)
+
+				Expect(v1beta1Spec.TLSSecurityProfile).To(BeNil())
+			})
+
+			It("should convert all fields together", func() {
+				v1Security := hcov1.SecurityConfig{
+					CertConfig: hcov1.HyperConvergedCertConfig{
+						CA: hcov1.CertRotateConfigCA{
+							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+						},
+						Server: hcov1.CertRotateConfigServer{
+							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+						},
+					},
+					TLSSecurityProfile: &openshiftconfigv1.TLSSecurityProfile{
+						Type: openshiftconfigv1.TLSProfileOldType,
+						Old:  &openshiftconfigv1.OldTLSProfile{},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertSecurityV1ToV1beta1(v1Security, &v1beta1Spec)
+
+				Expect(v1beta1Spec.CertConfig.CA.Duration).To(HaveValue(Equal(metav1.Duration{Duration: 48 * time.Hour})))
+				Expect(v1beta1Spec.TLSSecurityProfile).ToNot(BeNil())
+				Expect(v1beta1Spec.TLSSecurityProfile.Type).To(Equal(openshiftconfigv1.TLSProfileOldType))
+			})
+		})
+
+		Context("v1beta1 ==> v1", func() {
+			It("should convert CertConfig", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					CertConfig: hcov1.HyperConvergedCertConfig{
+						CA: hcov1.CertRotateConfigCA{
+							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+						},
+						Server: hcov1.CertRotateConfigServer{
+							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+						},
+					},
+				}
+
+				var v1Security hcov1.SecurityConfig
+				convertSecurityV1beta1ToV1(v1beta1Spec, &v1Security)
+
+				Expect(v1Security.CertConfig.CA.Duration).To(HaveValue(Equal(metav1.Duration{Duration: 48 * time.Hour})))
+				Expect(v1Security.CertConfig.CA.RenewBefore).To(HaveValue(Equal(metav1.Duration{Duration: 24 * time.Hour})))
+				Expect(v1Security.CertConfig.Server.Duration).To(HaveValue(Equal(metav1.Duration{Duration: 24 * time.Hour})))
+				Expect(v1Security.CertConfig.Server.RenewBefore).To(HaveValue(Equal(metav1.Duration{Duration: 12 * time.Hour})))
+			})
+
+			It("should convert TLSSecurityProfile", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					TLSSecurityProfile: &openshiftconfigv1.TLSSecurityProfile{
+						Type:         openshiftconfigv1.TLSProfileIntermediateType,
+						Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
+					},
+				}
+
+				var v1Security hcov1.SecurityConfig
+				convertSecurityV1beta1ToV1(v1beta1Spec, &v1Security)
+
+				Expect(v1Security.TLSSecurityProfile).ToNot(BeNil())
+				Expect(v1Security.TLSSecurityProfile.Type).To(Equal(openshiftconfigv1.TLSProfileIntermediateType))
+			})
+
+			It("should not convert TLSSecurityProfile when nil", func() {
+				v1beta1Spec := HyperConvergedSpec{}
+
+				var v1Security hcov1.SecurityConfig
+				convertSecurityV1beta1ToV1(v1beta1Spec, &v1Security)
+
+				Expect(v1Security.TLSSecurityProfile).To(BeNil())
+			})
+
+			It("should convert all fields together", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					CertConfig: hcov1.HyperConvergedCertConfig{
+						CA: hcov1.CertRotateConfigCA{
+							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+						},
+						Server: hcov1.CertRotateConfigServer{
+							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+						},
+					},
+					TLSSecurityProfile: &openshiftconfigv1.TLSSecurityProfile{
+						Type: openshiftconfigv1.TLSProfileOldType,
+						Old:  &openshiftconfigv1.OldTLSProfile{},
+					},
+				}
+
+				var v1Security hcov1.SecurityConfig
+				convertSecurityV1beta1ToV1(v1beta1Spec, &v1Security)
+
+				Expect(v1Security.CertConfig.CA.Duration).To(HaveValue(Equal(metav1.Duration{Duration: 48 * time.Hour})))
+				Expect(v1Security.TLSSecurityProfile).ToNot(BeNil())
+				Expect(v1Security.TLSSecurityProfile.Type).To(Equal(openshiftconfigv1.TLSProfileOldType))
+			})
+		})
+
+		Context("round-trip", func() {
+			It("should preserve security config through v1beta1 => v1 => v1beta1", func() {
+				original := HyperConvergedSpec{
+					CertConfig: hcov1.HyperConvergedCertConfig{
+						CA: hcov1.CertRotateConfigCA{
+							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+						},
+						Server: hcov1.CertRotateConfigServer{
+							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+						},
+					},
+					TLSSecurityProfile: &openshiftconfigv1.TLSSecurityProfile{
+						Type:         openshiftconfigv1.TLSProfileIntermediateType,
+						Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
+					},
+				}
+
+				var v1Security hcov1.SecurityConfig
+				convertSecurityV1beta1ToV1(original, &v1Security)
+
+				var result HyperConvergedSpec
+				convertSecurityV1ToV1beta1(v1Security, &result)
+
+				Expect(result.CertConfig.CA.Duration).To(Equal(original.CertConfig.CA.Duration))
+				Expect(result.CertConfig.CA.RenewBefore).To(Equal(original.CertConfig.CA.RenewBefore))
+				Expect(result.CertConfig.Server.Duration).To(Equal(original.CertConfig.Server.Duration))
+				Expect(result.CertConfig.Server.RenewBefore).To(Equal(original.CertConfig.Server.RenewBefore))
+				Expect(result.TLSSecurityProfile).ToNot(BeNil())
+				Expect(result.TLSSecurityProfile.Type).To(Equal(original.TLSSecurityProfile.Type))
+			})
+
+			It("should preserve security config through v1 => v1beta1 => v1", func() {
+				original := hcov1.SecurityConfig{
+					CertConfig: hcov1.HyperConvergedCertConfig{
+						CA: hcov1.CertRotateConfigCA{
+							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+						},
+						Server: hcov1.CertRotateConfigServer{
+							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+						},
+					},
+					TLSSecurityProfile: &openshiftconfigv1.TLSSecurityProfile{
+						Type: openshiftconfigv1.TLSProfileOldType,
+						Old:  &openshiftconfigv1.OldTLSProfile{},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				convertSecurityV1ToV1beta1(original, &v1beta1Spec)
+
+				var result hcov1.SecurityConfig
+				convertSecurityV1beta1ToV1(v1beta1Spec, &result)
+
+				Expect(result.CertConfig.CA.Duration).To(Equal(original.CertConfig.CA.Duration))
+				Expect(result.CertConfig.CA.RenewBefore).To(Equal(original.CertConfig.CA.RenewBefore))
+				Expect(result.CertConfig.Server.Duration).To(Equal(original.CertConfig.Server.Duration))
+				Expect(result.CertConfig.Server.RenewBefore).To(Equal(original.CertConfig.Server.RenewBefore))
+				Expect(result.TLSSecurityProfile).ToNot(BeNil())
+				Expect(result.TLSSecurityProfile.Type).To(Equal(original.TLSSecurityProfile.Type))
+			})
+		})
+	})
+
+	Context("Deployment conversion", func() {
+		Context("v1 ==> v1beta1", func() {
+			It("should convert UninstallStrategy", func() {
+				v1Config := hcov1.DeploymentConfig{
+					UninstallStrategy: hcov1.HyperConvergedUninstallStrategyRemoveWorkloads,
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.UninstallStrategy).To(Equal(hcov1.HyperConvergedUninstallStrategyRemoveWorkloads))
+			})
+
+			It("should convert LogVerbosityConfig", func() {
+				v1Config := hcov1.DeploymentConfig{
+					LogVerbosityConfig: &hcov1.LogVerbosityConfiguration{
+						Kubevirt: &kubevirtv1.LogVerbosity{
+							VirtAPI:        3,
+							VirtController: 2,
+						},
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.LogVerbosityConfig).ToNot(BeNil())
+				Expect(v1beta1Spec.LogVerbosityConfig.Kubevirt).ToNot(BeNil())
+				Expect(v1beta1Spec.LogVerbosityConfig.Kubevirt.VirtAPI).To(Equal(uint(3)))
+				Expect(v1beta1Spec.LogVerbosityConfig.Kubevirt.VirtController).To(Equal(uint(2)))
+			})
+
+			It("should not convert LogVerbosityConfig when nil", func() {
+				v1Config := hcov1.DeploymentConfig{}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.LogVerbosityConfig).To(BeNil())
+			})
+
+			It("should convert DeployVMConsoleProxy", func() {
+				v1Config := hcov1.DeploymentConfig{
+					DeployVMConsoleProxy: ptr.To(true),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.DeployVMConsoleProxy).To(HaveValue(BeTrue()))
+			})
+
+			It("should not convert DeployVMConsoleProxy when nil", func() {
+				v1Config := hcov1.DeploymentConfig{}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.DeployVMConsoleProxy).To(BeNil())
+			})
+
+			It("should convert ApplicationAwareConfig with Enable=true", func() {
+				v1Config := hcov1.DeploymentConfig{
+					ApplicationAwareConfig: &hcov1.ApplicationAwareConfigurations{
+						Enable: ptr.To(true),
+						AllowApplicationAwareClusterResourceQuota: true,
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1beta1Spec.ApplicationAwareConfig.AllowApplicationAwareClusterResourceQuota).To(BeTrue())
+				Expect(v1beta1Spec.EnableApplicationAwareQuota).To(HaveValue(BeTrue()))
+			})
+
+			It("should convert ApplicationAwareConfig with Enable=false", func() {
+				v1Config := hcov1.DeploymentConfig{
+					ApplicationAwareConfig: &hcov1.ApplicationAwareConfigurations{
+						Enable: ptr.To(false),
+					},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1beta1Spec.EnableApplicationAwareQuota).To(HaveValue(BeFalse()))
+			})
+
+			It("should convert ApplicationAwareConfig with Enable=nil", func() {
+				v1Config := hcov1.DeploymentConfig{
+					ApplicationAwareConfig: &hcov1.ApplicationAwareConfigurations{},
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1beta1Spec.EnableApplicationAwareQuota).To(BeNil())
+			})
+
+			It("should not convert ApplicationAwareConfig when nil", func() {
+				v1Config := hcov1.DeploymentConfig{}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.ApplicationAwareConfig).To(BeNil())
+				Expect(v1beta1Spec.EnableApplicationAwareQuota).To(BeNil())
+			})
+
+			It("should convert all fields together", func() {
+				v1Config := hcov1.DeploymentConfig{
+					UninstallStrategy: hcov1.HyperConvergedUninstallStrategyRemoveWorkloads,
+					LogVerbosityConfig: &hcov1.LogVerbosityConfiguration{
+						Kubevirt: &kubevirtv1.LogVerbosity{
+							VirtAPI: 5,
+						},
+					},
+					ApplicationAwareConfig: &hcov1.ApplicationAwareConfigurations{
+						Enable: ptr.To(true),
+					},
+					DeployVMConsoleProxy: ptr.To(true),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.UninstallStrategy).To(Equal(hcov1.HyperConvergedUninstallStrategyRemoveWorkloads))
+				Expect(v1beta1Spec.LogVerbosityConfig).ToNot(BeNil())
+				Expect(v1beta1Spec.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1beta1Spec.EnableApplicationAwareQuota).To(HaveValue(BeTrue()))
+				Expect(v1beta1Spec.DeployVMConsoleProxy).To(HaveValue(BeTrue()))
+			})
+		})
+
+		Context("v1beta1 ==> v1", func() {
+			It("should convert UninstallStrategy", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					UninstallStrategy: hcov1.HyperConvergedUninstallStrategyRemoveWorkloads,
+				}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.UninstallStrategy).To(Equal(hcov1.HyperConvergedUninstallStrategyRemoveWorkloads))
+			})
+
+			It("should convert LogVerbosityConfig", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					LogVerbosityConfig: &hcov1.LogVerbosityConfiguration{
+						Kubevirt: &kubevirtv1.LogVerbosity{
+							VirtAPI:        3,
+							VirtController: 2,
+						},
+					},
+				}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.LogVerbosityConfig).ToNot(BeNil())
+				Expect(v1Config.LogVerbosityConfig.Kubevirt).ToNot(BeNil())
+				Expect(v1Config.LogVerbosityConfig.Kubevirt.VirtAPI).To(Equal(uint(3)))
+				Expect(v1Config.LogVerbosityConfig.Kubevirt.VirtController).To(Equal(uint(2)))
+			})
+
+			It("should not convert LogVerbosityConfig when nil", func() {
+				v1beta1Spec := HyperConvergedSpec{}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.LogVerbosityConfig).To(BeNil())
+			})
+
+			It("should convert ApplicationAwareConfig", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					ApplicationAwareConfig: &ApplicationAwareConfigurations{
+						AllowApplicationAwareClusterResourceQuota: true,
+					},
+				}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1Config.ApplicationAwareConfig.AllowApplicationAwareClusterResourceQuota).To(BeTrue())
+			})
+
+			It("should not convert ApplicationAwareConfig when nil", func() {
+				v1beta1Spec := HyperConvergedSpec{}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.ApplicationAwareConfig).To(BeNil())
+			})
+
+			It("should set Enable=true when EnableApplicationAwareQuota is true and ApplicationAwareConfig is set", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					ApplicationAwareConfig:      &ApplicationAwareConfigurations{},
+					EnableApplicationAwareQuota: ptr.To(true),
+				}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1Config.ApplicationAwareConfig.Enable).To(HaveValue(BeTrue()))
+			})
+
+			It("should set Enable=true when EnableApplicationAwareQuota is true and ApplicationAwareConfig is nil", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					EnableApplicationAwareQuota: ptr.To(true),
+				}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1Config.ApplicationAwareConfig.Enable).To(HaveValue(BeTrue()))
+			})
+
+			It("should set Enable=false when EnableApplicationAwareQuota is false", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					EnableApplicationAwareQuota: ptr.To(false),
+				}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1Config.ApplicationAwareConfig.Enable).To(HaveValue(BeFalse()))
+			})
+
+			It("should not set ApplicationAwareConfig when both ApplicationAwareConfig and EnableApplicationAwareQuota are nil", func() {
+				v1beta1Spec := HyperConvergedSpec{}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.ApplicationAwareConfig).To(BeNil())
+			})
+
+			It("should convert all fields together", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					UninstallStrategy: hcov1.HyperConvergedUninstallStrategyRemoveWorkloads,
+					LogVerbosityConfig: &hcov1.LogVerbosityConfiguration{
+						Kubevirt: &kubevirtv1.LogVerbosity{
+							VirtAPI: 5,
+						},
+					},
+					ApplicationAwareConfig:      &ApplicationAwareConfigurations{},
+					EnableApplicationAwareQuota: ptr.To(true),
+				}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &v1Config)).To(Succeed())
+
+				Expect(v1Config.UninstallStrategy).To(Equal(hcov1.HyperConvergedUninstallStrategyRemoveWorkloads))
+				Expect(v1Config.LogVerbosityConfig).ToNot(BeNil())
+				Expect(v1Config.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(v1Config.ApplicationAwareConfig.Enable).To(HaveValue(BeTrue()))
+			})
+		})
+
+		Context("round-trip", func() {
+			It("should preserve deployment config through v1beta1 => v1 => v1beta1", func() {
+				original := HyperConvergedSpec{
+					UninstallStrategy: hcov1.HyperConvergedUninstallStrategyRemoveWorkloads,
+					LogVerbosityConfig: &hcov1.LogVerbosityConfiguration{
+						Kubevirt: &kubevirtv1.LogVerbosity{
+							VirtAPI: 5,
+						},
+					},
+					ApplicationAwareConfig:      &ApplicationAwareConfigurations{},
+					EnableApplicationAwareQuota: ptr.To(true),
+				}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(original, &v1Config)).To(Succeed())
+
+				var result HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &result)).To(Succeed())
+
+				Expect(result.UninstallStrategy).To(Equal(original.UninstallStrategy))
+				Expect(result.LogVerbosityConfig).ToNot(BeNil())
+				Expect(result.LogVerbosityConfig.Kubevirt.VirtAPI).To(Equal(original.LogVerbosityConfig.Kubevirt.VirtAPI))
+				Expect(result.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(result.EnableApplicationAwareQuota).To(HaveValue(BeTrue()))
+			})
+
+			It("should preserve deployment config through v1 => v1beta1 => v1", func() {
+				original := hcov1.DeploymentConfig{
+					UninstallStrategy: hcov1.HyperConvergedUninstallStrategyRemoveWorkloads,
+					LogVerbosityConfig: &hcov1.LogVerbosityConfiguration{
+						Kubevirt: &kubevirtv1.LogVerbosity{
+							VirtAPI: 5,
+						},
+					},
+					ApplicationAwareConfig: &hcov1.ApplicationAwareConfigurations{
+						Enable: ptr.To(true),
+						AllowApplicationAwareClusterResourceQuota: true,
+					},
+					DeployVMConsoleProxy: ptr.To(true),
+				}
+
+				var v1beta1Spec HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(original, &v1beta1Spec)).To(Succeed())
+
+				var result hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(v1beta1Spec, &result)).To(Succeed())
+
+				Expect(result.UninstallStrategy).To(Equal(original.UninstallStrategy))
+				Expect(result.LogVerbosityConfig).ToNot(BeNil())
+				Expect(result.LogVerbosityConfig.Kubevirt.VirtAPI).To(Equal(original.LogVerbosityConfig.Kubevirt.VirtAPI))
+				Expect(result.ApplicationAwareConfig).ToNot(BeNil())
+				Expect(result.ApplicationAwareConfig.Enable).To(HaveValue(BeTrue()))
+				Expect(result.ApplicationAwareConfig.AllowApplicationAwareClusterResourceQuota).To(BeTrue())
+			})
+
+			It("should preserve nil fields through round-trip", func() {
+				original := HyperConvergedSpec{}
+
+				var v1Config hcov1.DeploymentConfig
+				Expect(convertDeploymentV1beta1ToV1(original, &v1Config)).To(Succeed())
+
+				var result HyperConvergedSpec
+				Expect(convertDeploymentV1ToV1beta1(v1Config, &result)).To(Succeed())
+
+				Expect(result.LogVerbosityConfig).To(BeNil())
+				Expect(result.ApplicationAwareConfig).To(BeNil())
+				Expect(result.EnableApplicationAwareQuota).To(BeNil())
+				Expect(result.DeployVMConsoleProxy).To(BeNil())
 			})
 		})
 	})

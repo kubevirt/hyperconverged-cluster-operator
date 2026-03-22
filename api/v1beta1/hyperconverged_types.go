@@ -20,13 +20,6 @@ import (
 // HyperConvergedName is the name of the HyperConverged resource that will be reconciled
 const HyperConvergedName = "kubevirt-hyperconverged"
 
-type HyperConvergedUninstallStrategy string
-
-const (
-	HyperConvergedUninstallStrategyRemoveWorkloads                HyperConvergedUninstallStrategy = "RemoveWorkloads"
-	HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist HyperConvergedUninstallStrategy = "BlockUninstallIfWorkloadsExist"
-)
-
 type HyperConvergedTuningPolicy string
 
 // HyperConvergedAnnotationTuningPolicy defines a static configuration of the kubevirt query per seconds (qps) and burst values
@@ -97,7 +90,8 @@ type HyperConvergedSpec struct {
 	// certConfig holds the rotation policy for internal, self-signed certificates
 	// +kubebuilder:default={"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}
 	// +optional
-	CertConfig HyperConvergedCertConfig `json:"certConfig,omitempty"`
+	// +k8s:conversion-gen=false
+	CertConfig hcov1.HyperConvergedCertConfig `json:"certConfig,omitempty"`
 
 	// ResourceRequirements describes the resource requirements for the operand workloads.
 	// +kubebuilder:default={"vmiCPUAllocationRatio": 10}
@@ -112,6 +106,7 @@ type HyperConvergedSpec struct {
 	// storage class, use the storage class of the DataVolume, if no storage class specified, use no storage class for
 	// scratch space
 	// +optional
+	// +k8s:conversion-gen=false
 	ScratchSpaceStorageClass *string `json:"scratchSpaceStorageClass,omitempty"`
 
 	// VDDK Init Image eventually used to import VMs from external providers
@@ -144,11 +139,13 @@ type HyperConvergedSpec struct {
 	// CommonTemplatesNamespace defines namespace in which common templates will
 	// be deployed. It overrides the default openshift namespace.
 	// +optional
+	// +k8s:conversion-gen=false
 	CommonTemplatesNamespace *string `json:"commonTemplatesNamespace,omitempty"`
 
 	// StorageImport contains configuration for importing containerized data
 	// +optional
-	StorageImport *StorageImportConfig `json:"storageImport,omitempty"`
+	// +k8s:conversion-gen=false
+	StorageImport *hcov1.StorageImportConfig `json:"storageImport,omitempty"`
 
 	// WorkloadUpdateStrategy defines at the cluster level how to handle automated workload updates
 	// +kubebuilder:default={"workloadUpdateMethods": {"LiveMigrate"}, "batchEvictionSize": 10, "batchEvictionInterval": "1m0s"}
@@ -158,11 +155,13 @@ type HyperConvergedSpec struct {
 	// DataImportCronTemplates holds list of data import cron templates (golden images)
 	// +optional
 	// +listType=atomic
-	DataImportCronTemplates []DataImportCronTemplate `json:"dataImportCronTemplates,omitempty"`
+	// +k8s:conversion-gen=false
+	DataImportCronTemplates []hcov1.DataImportCronTemplate `json:"dataImportCronTemplates,omitempty"`
 
 	// FilesystemOverhead describes the space reserved for overhead when using Filesystem volumes.
 	// A value is between 0 and 1, if not defined it is 0.055 (5.5 percent overhead)
 	// +optional
+	// +k8s:conversion-gen=false
 	FilesystemOverhead *cdiv1beta1.FilesystemOverhead `json:"filesystemOverhead,omitempty"`
 
 	// UninstallStrategy defines how to proceed on uninstall when workloads (VirtualMachines, DataVolumes) still exist.
@@ -176,18 +175,21 @@ type HyperConvergedSpec struct {
 	// +default="BlockUninstallIfWorkloadsExist"
 	// +kubebuilder:validation:Enum=RemoveWorkloads;BlockUninstallIfWorkloadsExist
 	// +optional
-	UninstallStrategy HyperConvergedUninstallStrategy `json:"uninstallStrategy,omitempty"`
+	// +k8s:conversion-gen=false
+	UninstallStrategy hcov1.HyperConvergedUninstallStrategy `json:"uninstallStrategy,omitempty"`
 
 	// LogVerbosityConfig configures the verbosity level of Kubevirt's different components. The higher
 	// the value - the higher the log verbosity.
 	// +optional
-	LogVerbosityConfig *LogVerbosityConfiguration `json:"logVerbosityConfig,omitempty"`
+	// +k8s:conversion-gen=false
+	LogVerbosityConfig *hcov1.LogVerbosityConfiguration `json:"logVerbosityConfig,omitempty"`
 
 	// TLSSecurityProfile specifies the settings for TLS connections to be propagated to all kubevirt-hyperconverged components.
 	// If unset, the hyperconverged cluster operator will consume the value set on the APIServer CR on OCP/OKD or Intermediate if on vanilla k8s.
 	// Note that only Old, Intermediate and Custom profiles are currently supported, and the maximum available
 	// MinTLSVersions is VersionTLS12.
 	// +optional
+	// +k8s:conversion-gen=false
 	TLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile `json:"tlsSecurityProfile,omitempty"`
 
 	// TektonPipelinesNamespace defines namespace in which example pipelines will be deployed.
@@ -208,11 +210,13 @@ type HyperConvergedSpec struct {
 
 	// KubeSecondaryDNSNameServerIP defines name server IP used by KubeSecondaryDNS
 	// +optional
+	// +k8s:conversion-gen=false
 	KubeSecondaryDNSNameServerIP *string `json:"kubeSecondaryDNSNameServerIP,omitempty"`
 
 	// KubeMacPoolConfiguration holds kubemacpool MAC address range configuration.
 	// +optional
-	KubeMacPoolConfiguration *KubeMacPoolConfig `json:"kubeMacPoolConfiguration,omitempty"`
+	// +k8s:conversion-gen=false
+	KubeMacPoolConfiguration *hcov1.KubeMacPoolConfig `json:"kubeMacPoolConfiguration,omitempty"`
 
 	// EvictionStrategy defines at the cluster level if the VirtualMachineInstance should be
 	// migrated instead of shut-off in case of a node drain. If the VirtualMachineInstance specific
@@ -230,6 +234,7 @@ type HyperConvergedSpec struct {
 
 	// VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM.
 	// +optional
+	// +k8s:conversion-gen=false
 	VMStateStorageClass *string `json:"vmStateStorageClass,omitempty"`
 
 	// VirtualMachineOptions holds the cluster level information regarding the virtual machine.
@@ -245,6 +250,7 @@ type HyperConvergedSpec struct {
 	// DataImportCronTemplates and the common image streams, with this namespace. This field is not set by default.
 	//
 	// +optional
+	// +k8s:conversion-gen=false
 	CommonBootImageNamespace *string `json:"commonBootImageNamespace,omitempty"`
 
 	// KSMConfiguration holds the information regarding
@@ -256,10 +262,12 @@ type HyperConvergedSpec struct {
 	// NetworkBinding defines the network binding plugins.
 	// Those bindings can be used when defining virtual machine interfaces.
 	// +optional
+	// +k8s:conversion-gen=false
 	NetworkBinding map[string]v1.InterfaceBindingPlugin `json:"networkBinding,omitempty"`
 
 	// ApplicationAwareConfig set the AAQ configurations
 	// +optional
+	// +k8s:conversion-gen=false
 	ApplicationAwareConfig *ApplicationAwareConfigurations `json:"applicationAwareConfig,omitempty"`
 
 	// HigherWorkloadDensity holds configuration aimed to increase virtual machine density
@@ -276,26 +284,31 @@ type HyperConvergedSpec struct {
 	// +optional
 	// +kubebuilder:default=true
 	// +default=true
+	// +k8s:conversion-gen=false
 	EnableCommonBootImageImport *bool `json:"enableCommonBootImageImport,omitempty"`
 
 	// InstancetypeConfig holds the configuration of instance type related functionality within KubeVirt.
 	// +optional
+	// +k8s:conversion-gen=false
 	InstancetypeConfig *v1.InstancetypeConfiguration `json:"instancetypeConfig,omitempty"`
 
 	// CommonInstancetypesDeployment holds the configuration of common-instancetypes deployment within KubeVirt.
 	// +optional
+	// +k8s:conversion-gen=false
 	CommonInstancetypesDeployment *v1.CommonInstancetypesDeployment `json:"CommonInstancetypesDeployment,omitempty"`
 
 	// deploy VM console proxy resources in SSP operator
 	// +optional
 	// +kubebuilder:default=false
 	// +default=false
+	// +k8s:conversion-gen=false
 	DeployVMConsoleProxy *bool `json:"deployVmConsoleProxy,omitempty"`
 
 	// EnableApplicationAwareQuota if true, enables the Application Aware Quota feature
 	// +optional
 	// +kubebuilder:default=false
 	// +default=false
+	// +k8s:conversion-gen=false
 	EnableApplicationAwareQuota *bool `json:"enableApplicationAwareQuota,omitempty"`
 
 	// LiveUpdateConfiguration holds the cluster configuration for live update of virtual machines - max cpu sockets,
@@ -321,60 +334,6 @@ type HyperConvergedSpec struct {
 	// +kubebuilder:validation:Enum=AggregateToDefault;Manual
 	// +k8s:conversion-gen=false
 	RoleAggregationStrategy *v1.RoleAggregationStrategy `json:"roleAggregationStrategy,omitempty"`
-}
-
-// CertRotateConfigCA contains the tunables for TLS certificates.
-// +k8s:openapi-gen=true
-type CertRotateConfigCA struct {
-	// The requested 'duration' (i.e. lifetime) of the Certificate.
-	// This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration)
-	// +kubebuilder:default="48h0m0s"
-	// +default="48h0m0s"
-	// +optional
-	Duration *metav1.Duration `json:"duration,omitempty"`
-
-	// The amount of time before the currently issued certificate's `notAfter`
-	// time that we will begin to attempt to renew the certificate.
-	// This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration)
-	// +kubebuilder:default="24h0m0s"
-	// +default="24h0m0s"
-	// +optional
-	RenewBefore *metav1.Duration `json:"renewBefore,omitempty"`
-}
-
-// CertRotateConfigServer contains the tunables for TLS certificates.
-// +k8s:openapi-gen=true
-type CertRotateConfigServer struct {
-	// The requested 'duration' (i.e. lifetime) of the Certificate.
-	// This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration)
-	// +kubebuilder:default="24h0m0s"
-	// +default="24h0m0s"
-	// +optional
-	Duration *metav1.Duration `json:"duration,omitempty"`
-
-	// The amount of time before the currently issued certificate's `notAfter`
-	// time that we will begin to attempt to renew the certificate.
-	// This should comply with golang's ParseDuration format (https://golang.org/pkg/time/#ParseDuration)
-	// +kubebuilder:default="12h0m0s"
-	// +default="12h0m0s"
-	// +optional
-	RenewBefore *metav1.Duration `json:"renewBefore,omitempty"`
-}
-
-// HyperConvergedCertConfig holds the CertConfig entries for the HCO operands
-// +k8s:openapi-gen=true
-type HyperConvergedCertConfig struct {
-	// CA configuration -
-	// CA certs are kept in the CA bundle as long as they are valid
-	// +kubebuilder:default={"duration": "48h0m0s", "renewBefore": "24h0m0s"}
-	// +optional
-	CA CertRotateConfigCA `json:"ca,omitempty"`
-
-	// Server configuration -
-	// Certs are rotated and discarded
-	// +kubebuilder:default={"duration": "24h0m0s", "renewBefore": "12h0m0s"}
-	// +optional
-	Server CertRotateConfigServer `json:"server,omitempty"`
 }
 
 // HyperConvergedConfig defines a set of configurations to pass to components
@@ -582,6 +541,7 @@ type NodeMediatedDeviceTypesConfig struct {
 
 // OperandResourceRequirements is a list of resource requirements for the operand workloads pods
 // +k8s:openapi-gen=true
+// +k8s:conversion-gen=false
 type OperandResourceRequirements struct {
 	// StorageWorkloads defines the resources requirements for storage workloads. It will propagate to the CDI custom
 	// resource
@@ -602,7 +562,6 @@ type OperandResourceRequirements struct {
 	// +kubebuilder:validation:Minimum=1
 	// +default=10
 	// +optional
-	// +k8s:conversion-gen=false
 	VmiCPUAllocationRatio *int `json:"vmiCPUAllocationRatio,omitempty"`
 
 	// When set, AutoCPULimitNamespaceLabelSelector will set a CPU limit on virt-launcher for VMIs running inside
@@ -610,7 +569,6 @@ type OperandResourceRequirements struct {
 	// The CPU limit will equal the number of requested vCPUs.
 	// This setting does not apply to VMIs with dedicated CPUs.
 	// +optional
-	// +k8s:conversion-gen=false
 	AutoCPULimitNamespaceLabelSelector *metav1.LabelSelector `json:"autoCPULimitNamespaceLabelSelector,omitempty"`
 }
 
@@ -628,16 +586,6 @@ type HyperConvergedObsoleteCPUs struct {
 	// +listType=set
 	// +optional
 	CPUModels []string `json:"cpuModels,omitempty"`
-}
-
-// StorageImportConfig contains configuration for importing containerized data
-// +k8s:openapi-gen=true
-type StorageImportConfig struct {
-	// InsecureRegistries is a list of image registries URLs that are not secured. Setting an insecure registry URL
-	// in this list allows pulling images from this registry.
-	// +listType=set
-	// +optional
-	InsecureRegistries []string `json:"insecureRegistries,omitempty"`
 }
 
 // HyperConvergedStatus defines the observed state of HyperConverged
@@ -696,19 +644,6 @@ type Version struct {
 	Version string `json:"version,omitempty"`
 }
 
-// LogVerbosityConfiguration configures log verbosity for different components
-// +k8s:openapi-gen=true
-type LogVerbosityConfiguration struct {
-	// Kubevirt is a struct that allows specifying the log verbosity level that controls the amount of information
-	// logged for each Kubevirt component.
-	// +optional
-	Kubevirt *v1.LogVerbosity `json:"kubevirt,omitempty"`
-
-	// CDI indicates the log verbosity level that controls the amount of information logged for CDI components.
-	// +optional
-	CDI *int32 `json:"cdi,omitempty"`
-}
-
 // DataImportCronStatus is the status field of the DIC template
 type DataImportCronStatus struct {
 	// Conditions is a list of conditions that describe the state of the DataImportCronTemplate.
@@ -725,17 +660,9 @@ type DataImportCronStatus struct {
 	OriginalSupportedArchitectures string `json:"originalSupportedArchitectures,omitempty"`
 }
 
-// DataImportCronTemplate defines the template type for DataImportCrons.
-// It requires metadata.name to be specified while leaving namespace as optional.
-type DataImportCronTemplate struct {
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec *cdiv1beta1.DataImportCronSpec `json:"spec,omitempty"`
-}
-
 // DataImportCronTemplateStatus is a copy of a dataImportCronTemplate as defined in the spec, or in the HCO image.
 type DataImportCronTemplateStatus struct {
-	DataImportCronTemplate `json:",inline"`
+	hcov1.DataImportCronTemplate `json:",inline"`
 
 	Status DataImportCronStatus `json:"status,omitempty"`
 }
@@ -763,22 +690,6 @@ type ApplicationAwareConfigurations struct {
 	// AllowApplicationAwareClusterResourceQuota if set to true, allows creation and management of ClusterAppsResourceQuota
 	// +kubebuilder:default=false
 	AllowApplicationAwareClusterResourceQuota bool `json:"allowApplicationAwareClusterResourceQuota,omitempty"`
-}
-
-// KubeMacPoolConfig defines kubemacpool MAC address range configuration
-// +k8s:openapi-gen=true
-// +kubebuilder:validation:XValidation:rule="(has(self.rangeStart) && has(self.rangeEnd)) || (!has(self.rangeStart) && !has(self.rangeEnd))",message="both rangeStart and rangeEnd must be configured together, or both omitted"
-type KubeMacPoolConfig struct {
-	// RangeStart defines the first MAC address in the kubemacpool range.
-	// The MAC address format should be AA:BB:CC:DD:EE:FF.
-	// +optional
-	// +kubebuilder:validation:Pattern=`^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$`
-	RangeStart *string `json:"rangeStart,omitempty"`
-	// RangeEnd defines the last MAC address in the kubemacpool range.
-	// The MAC address format should be AA:BB:CC:DD:EE:FF.
-	// +optional
-	// +kubebuilder:validation:Pattern=`^([0-9a-fA-F]{2}:){5}[0-9a-fA-F]{2}$`
-	RangeEnd *string `json:"rangeEnd,omitempty"`
 }
 
 const (

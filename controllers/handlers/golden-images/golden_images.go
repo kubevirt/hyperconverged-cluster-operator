@@ -21,6 +21,7 @@ import (
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
@@ -42,7 +43,7 @@ const (
 var (
 	// dataImportCronTemplateHardCodedMap are set of data import cron template configurations. The handler reads a list
 	// of data import cron templates from a local file and updates SSP with the up-to-date list
-	dataImportCronTemplateHardCodedMap map[string]hcov1beta1.DataImportCronTemplate
+	dataImportCronTemplateHardCodedMap map[string]hcov1.DataImportCronTemplate
 
 	logger = logf.Log.WithName("dataImportCronTemplateInit")
 )
@@ -118,7 +119,7 @@ func init() {
 }
 
 func readDataImportCronTemplatesFromFile(wdFS fs.FS) error {
-	dataImportCronTemplateHardCodedMap = make(map[string]hcov1beta1.DataImportCronTemplate)
+	dataImportCronTemplateHardCodedMap = make(map[string]hcov1.DataImportCronTemplate)
 
 	if err := util.ValidateManifestDir(dataImportCronTemplatesFileLocation, wdFS); err != nil {
 		return errors.Unwrap(err) // if not wrapped, then it's not an error that stops processing, and it returns nil
@@ -139,7 +140,7 @@ func readDataImportCronTemplatesFromFile(wdFS fs.FS) error {
 			return err
 		}
 
-		dataImportCronTemplateFromFile := make([]hcov1beta1.DataImportCronTemplate, 0)
+		dataImportCronTemplateFromFile := make([]hcov1.DataImportCronTemplate, 0)
 		err = util.UnmarshalYamlFileToObject(file, &dataImportCronTemplateFromFile)
 		if err != nil {
 			return err
@@ -162,7 +163,7 @@ func readDataImportCronTemplatesFromFile(wdFS fs.FS) error {
 	})
 }
 
-func getCommonDicts(list []hcov1beta1.DataImportCronTemplateStatus, crDicts map[string]hcov1beta1.DataImportCronTemplate, hc *hcov1beta1.HyperConverged) []hcov1beta1.DataImportCronTemplateStatus {
+func getCommonDicts(list []hcov1beta1.DataImportCronTemplateStatus, crDicts map[string]hcov1.DataImportCronTemplate, hc *hcov1beta1.HyperConverged) []hcov1beta1.DataImportCronTemplateStatus {
 	enableMultiArchBootImageImport := ptr.Deref(hc.Spec.FeatureGates.EnableMultiArchBootImageImport, false)
 	for dictName, commonDict := range dataImportCronTemplateHardCodedMap {
 		targetDict := hcov1beta1.DataImportCronTemplateStatus{
@@ -186,7 +187,7 @@ func getCommonDicts(list []hcov1beta1.DataImportCronTemplateStatus, crDicts map[
 	return list
 }
 
-func customizeCommonDICT(targetDict *hcov1beta1.DataImportCronTemplateStatus, crDict hcov1beta1.DataImportCronTemplate, enableMultiArchBootImageImport bool) bool {
+func customizeCommonDICT(targetDict *hcov1beta1.DataImportCronTemplateStatus, crDict hcov1.DataImportCronTemplate, enableMultiArchBootImageImport bool) bool {
 	if !isDataImportCronTemplateEnabled(crDict) {
 		return false
 	}
@@ -213,7 +214,7 @@ func customizeCommonDICT(targetDict *hcov1beta1.DataImportCronTemplateStatus, cr
 //
 // if DICT registry was customized, use the customized DICT annotation in the result DICT, or if it's
 // missing from the customized DICT, remove it from the result DITC.
-func customizeCommonDictAnnotations(targetDict *hcov1beta1.DataImportCronTemplateStatus, crDict hcov1beta1.DataImportCronTemplate, enableMultiArchBootImageImport bool) {
+func customizeCommonDictAnnotations(targetDict *hcov1beta1.DataImportCronTemplateStatus, crDict hcov1.DataImportCronTemplate, enableMultiArchBootImageImport bool) {
 	registryModified := crDict.Spec.Template.Spec.Source.Registry != nil &&
 		!reflect.DeepEqual(crDict.Spec.Template.Spec.Source.Registry, targetDict.Spec.Template.Spec.Source.Registry)
 	crDictAnnotations := maps.Clone(crDict.Annotations)
@@ -254,12 +255,12 @@ func adoptCRDictAnnotation(targetDict *hcov1beta1.DataImportCronTemplateStatus, 
 	}
 }
 
-func isDataImportCronTemplateEnabled(dict hcov1beta1.DataImportCronTemplate) bool {
+func isDataImportCronTemplateEnabled(dict hcov1.DataImportCronTemplate) bool {
 	annotationVal, found := dict.Annotations[util.DataImportCronEnabledAnnotation]
 	return !found || strings.ToLower(annotationVal) == "true"
 }
 
-func getCustomDicts(list []hcov1beta1.DataImportCronTemplateStatus, crDicts map[string]hcov1beta1.DataImportCronTemplate) []hcov1beta1.DataImportCronTemplateStatus {
+func getCustomDicts(list []hcov1beta1.DataImportCronTemplateStatus, crDicts map[string]hcov1.DataImportCronTemplate) []hcov1beta1.DataImportCronTemplateStatus {
 	for dictName, crDict := range crDicts {
 		if !isDataImportCronTemplateEnabled(crDict) {
 			continue
@@ -278,8 +279,8 @@ func getCustomDicts(list []hcov1beta1.DataImportCronTemplateStatus, crDicts map[
 	return list
 }
 
-func getDicMapFromCr(hc *hcov1beta1.HyperConverged) (map[string]hcov1beta1.DataImportCronTemplate, error) {
-	dictMap := make(map[string]hcov1beta1.DataImportCronTemplate)
+func getDicMapFromCr(hc *hcov1beta1.HyperConverged) (map[string]hcov1.DataImportCronTemplate, error) {
+	dictMap := make(map[string]hcov1.DataImportCronTemplate)
 	for _, dict := range hc.Spec.DataImportCronTemplates {
 		_, foundCustom := dictMap[dict.Name]
 		if foundCustom {

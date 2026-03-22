@@ -687,7 +687,7 @@ Version: 1.2.3`)
 			It("should set BlockUninstallIfWorkloadsExist if set on HCO CR", func() {
 				expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
 				Expect(err).ToNot(HaveOccurred())
-				uninstallStrategy := hcov1beta1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
+				uninstallStrategy := hcov1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
 				hco.Spec.UninstallStrategy = uninstallStrategy
 
 				cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
@@ -709,7 +709,7 @@ Version: 1.2.3`)
 			It("should set BlockUninstallIfRemoveWorkloads if set on HCO CR", func() {
 				expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
 				Expect(err).ToNot(HaveOccurred())
-				uninstallStrategy := hcov1beta1.HyperConvergedUninstallStrategyRemoveWorkloads
+				uninstallStrategy := hcov1.HyperConvergedUninstallStrategyRemoveWorkloads
 				hco.Spec.UninstallStrategy = uninstallStrategy
 
 				cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
@@ -2743,12 +2743,12 @@ Version: 1.2.3`)
 				existingResource, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.CertConfig = hcov1beta1.HyperConvergedCertConfig{
-					CA: hcov1beta1.CertRotateConfigCA{
+				hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+					CA: hcov1.CertRotateConfigCA{
 						Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 						RenewBefore: &metav1.Duration{Duration: 1 * time.Hour},
 					},
-					Server: hcov1beta1.CertRotateConfigServer{
+					Server: hcov1.CertRotateConfigServer{
 						Duration:    &metav1.Duration{Duration: 12 * time.Hour},
 						RenewBefore: &metav1.Duration{Duration: 30 * time.Minute},
 					},
@@ -2809,12 +2809,12 @@ Version: 1.2.3`)
 
 			It("should modify certificate rotation strategy according to HCO CR", func() {
 
-				hco.Spec.CertConfig = hcov1beta1.HyperConvergedCertConfig{
-					CA: hcov1beta1.CertRotateConfigCA{
+				hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+					CA: hcov1.CertRotateConfigCA{
 						Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 						RenewBefore: &metav1.Duration{Duration: 1 * time.Hour},
 					},
-					Server: hcov1beta1.CertRotateConfigServer{
+					Server: hcov1.CertRotateConfigServer{
 						Duration:    &metav1.Duration{Duration: 12 * time.Hour},
 						RenewBefore: &metav1.Duration{Duration: 30 * time.Minute},
 					},
@@ -2861,12 +2861,12 @@ Version: 1.2.3`)
 
 			It("should overwrite certificate rotation strategy if directly set on KV CR", func() {
 
-				hco.Spec.CertConfig = hcov1beta1.HyperConvergedCertConfig{
-					CA: hcov1beta1.CertRotateConfigCA{
+				hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+					CA: hcov1.CertRotateConfigCA{
 						Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 						RenewBefore: &metav1.Duration{Duration: 1 * time.Hour},
 					},
-					Server: hcov1beta1.CertRotateConfigServer{
+					Server: hcov1.CertRotateConfigServer{
 						Duration:    &metav1.Duration{Duration: 12 * time.Hour},
 						RenewBefore: &metav1.Duration{Duration: 30 * time.Minute},
 					},
@@ -4141,14 +4141,14 @@ Version: 1.2.3`)
 					VirtAPI:        456,
 					VirtController: 789,
 				}
-				hco.Spec.LogVerbosityConfig = &hcov1beta1.LogVerbosityConfiguration{Kubevirt: &logVerbosity}
+				hco.Spec.LogVerbosityConfig = &hcov1.LogVerbosityConfiguration{Kubevirt: &logVerbosity}
 				devConfig := getKVDevConfig(hco)
 
 				Expect(devConfig).ToNot(BeNil())
 				Expect(*devConfig.LogVerbosity).To(Equal(logVerbosity))
 			})
 
-			DescribeTable("Should not be defined for KubevirtCR if not defined in HCO CR", func(logConfig *hcov1beta1.LogVerbosityConfiguration) {
+			DescribeTable("Should not be defined for KubevirtCR if not defined in HCO CR", func(logConfig *hcov1.LogVerbosityConfiguration) {
 				hco.Spec.LogVerbosityConfig = logConfig
 				devConfig := getKVDevConfig(hco)
 
@@ -4156,7 +4156,7 @@ Version: 1.2.3`)
 				Expect(devConfig.LogVerbosity).To(BeNil())
 			},
 				Entry("nil LogVerbosityConfiguration", nil),
-				Entry("nil Kubevirt logs", &hcov1beta1.LogVerbosityConfiguration{Kubevirt: nil}),
+				Entry("nil Kubevirt logs", &hcov1.LogVerbosityConfiguration{Kubevirt: nil}),
 			)
 
 		})

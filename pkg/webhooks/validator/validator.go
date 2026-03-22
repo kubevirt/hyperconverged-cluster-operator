@@ -177,7 +177,7 @@ func (wh *WebhookHandler) validateCreate(logger logr.Logger, dryrun bool, hc *hc
 	}
 
 	if !dryrun {
-		tlssecprofile.SetHyperConvergedTLSSecurityProfile(hc.Spec.TLSSecurityProfile)
+		tlssecprofile.SetHyperConvergedTLSSecurityProfile(hc.Spec.Security.TLSSecurityProfile)
 	}
 
 	return admission.Allowed("")
@@ -214,7 +214,7 @@ func (wh *WebhookHandler) validateUpdate(ctx context.Context, logger logr.Logger
 	}
 
 	if !dryrun {
-		tlssecprofile.SetHyperConvergedTLSSecurityProfile(requested.Spec.TLSSecurityProfile)
+		tlssecprofile.SetHyperConvergedTLSSecurityProfile(requested.Spec.Security.TLSSecurityProfile)
 	}
 
 	return admission.Allowed("")
@@ -343,10 +343,10 @@ func (wh *WebhookHandler) validateCertConfig(hc *hcov1.HyperConverged) error {
 	minimalDuration := metav1.Duration{Duration: 10 * time.Minute}
 
 	ccValues := make(map[string]time.Duration)
-	ccValues["spec.certConfig.ca.duration"] = hc.Spec.CertConfig.CA.Duration.Duration
-	ccValues["spec.certConfig.ca.renewBefore"] = hc.Spec.CertConfig.CA.RenewBefore.Duration
-	ccValues["spec.certConfig.server.duration"] = hc.Spec.CertConfig.Server.Duration.Duration
-	ccValues["spec.certConfig.server.renewBefore"] = hc.Spec.CertConfig.Server.RenewBefore.Duration
+	ccValues["spec.certConfig.ca.duration"] = hc.Spec.Security.CertConfig.CA.Duration.Duration
+	ccValues["spec.certConfig.ca.renewBefore"] = hc.Spec.Security.CertConfig.CA.RenewBefore.Duration
+	ccValues["spec.certConfig.server.duration"] = hc.Spec.Security.CertConfig.Server.Duration.Duration
+	ccValues["spec.certConfig.server.renewBefore"] = hc.Spec.Security.CertConfig.Server.RenewBefore.Duration
 
 	for key, value := range ccValues {
 		if value < minimalDuration.Duration {
@@ -354,15 +354,15 @@ func (wh *WebhookHandler) validateCertConfig(hc *hcov1.HyperConverged) error {
 		}
 	}
 
-	if hc.Spec.CertConfig.CA.Duration.Duration < hc.Spec.CertConfig.CA.RenewBefore.Duration {
+	if hc.Spec.Security.CertConfig.CA.Duration.Duration < hc.Spec.Security.CertConfig.CA.RenewBefore.Duration {
 		return errors.New("spec.certConfig.ca: duration is smaller than renewBefore")
 	}
 
-	if hc.Spec.CertConfig.Server.Duration.Duration < hc.Spec.CertConfig.Server.RenewBefore.Duration {
+	if hc.Spec.Security.CertConfig.Server.Duration.Duration < hc.Spec.Security.CertConfig.Server.RenewBefore.Duration {
 		return errors.New("spec.certConfig.server: duration is smaller than renewBefore")
 	}
 
-	if hc.Spec.CertConfig.CA.Duration.Duration < hc.Spec.CertConfig.Server.Duration.Duration {
+	if hc.Spec.Security.CertConfig.CA.Duration.Duration < hc.Spec.Security.CertConfig.Server.Duration.Duration {
 		return errors.New("spec.certConfig: ca.duration is smaller than server.duration")
 	}
 
@@ -371,7 +371,7 @@ func (wh *WebhookHandler) validateCertConfig(hc *hcov1.HyperConverged) error {
 
 func (wh *WebhookHandler) validateDataImportCronTemplates(hc *hcov1.HyperConverged) error {
 
-	for _, dict := range hc.Spec.DataImportCronTemplates {
+	for _, dict := range hc.Spec.WorkloadSources.DataImportCronTemplates {
 		val, ok := dict.Annotations[hcoutil.DataImportCronEnabledAnnotation]
 		val = strings.ToLower(val)
 		if ok && val != "false" && val != "true" {
@@ -389,7 +389,7 @@ func (wh *WebhookHandler) validateDataImportCronTemplates(hc *hcov1.HyperConverg
 }
 
 func (wh *WebhookHandler) validateTLSSecurityProfiles(hc *hcov1.HyperConverged) error {
-	tlsSP := hc.Spec.TLSSecurityProfile
+	tlsSP := hc.Spec.Security.TLSSecurityProfile
 
 	if tlsSP == nil {
 		return nil

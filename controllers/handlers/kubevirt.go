@@ -295,7 +295,7 @@ func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtcorev1
 	infraHighlyAvailable := nodeinfo.IsInfrastructureHighlyAvailable()
 
 	uninstallStrategy := kubevirtcorev1.KubeVirtUninstallStrategyBlockUninstallIfWorkloadsExist
-	if hc.Spec.UninstallStrategy == hcov1beta1.HyperConvergedUninstallStrategyRemoveWorkloads {
+	if hc.Spec.UninstallStrategy == hcov1.HyperConvergedUninstallStrategyRemoveWorkloads {
 		uninstallStrategy = kubevirtcorev1.KubeVirtUninstallStrategyRemoveWorkloads
 	}
 
@@ -1097,7 +1097,7 @@ func getKvFeatureGateList(spec hcov1beta1.HyperConvergedSpec, annotations map[st
 	return res
 }
 
-func hcoCertConfig2KvCertificateRotateStrategy(hcoCertConfig hcov1beta1.HyperConvergedCertConfig) *kubevirtcorev1.KubeVirtCertificateRotateStrategy {
+func hcoCertConfig2KvCertificateRotateStrategy(hcoCertConfig hcov1.HyperConvergedCertConfig) *kubevirtcorev1.KubeVirtCertificateRotateStrategy {
 	return &kubevirtcorev1.KubeVirtCertificateRotateStrategy{
 		SelfSigned: &kubevirtcorev1.KubeVirtSelfSignConfiguration{
 			CA: &kubevirtcorev1.CertConfig{

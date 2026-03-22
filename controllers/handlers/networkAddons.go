@@ -17,6 +17,7 @@ import (
 	networkaddonsnames "github.com/kubevirt/cluster-network-addons-operator/pkg/names"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
@@ -244,7 +245,7 @@ func hcoAnnotation2CnaoSpec(hcoAnnotations map[string]string) *networkaddonsshar
 	return nil
 }
 
-func hcoKubeMacPool2CnaoKubeMacPool(hcoKubeMacPool *hcov1beta1.KubeMacPoolConfig) *networkaddonsshared.KubeMacPool {
+func hcoKubeMacPool2CnaoKubeMacPool(hcoKubeMacPool *hcov1.KubeMacPoolConfig) *networkaddonsshared.KubeMacPool {
 	kubeMacPool := &networkaddonsshared.KubeMacPool{}
 
 	if hcoKubeMacPool != nil {
@@ -259,7 +260,7 @@ func hcoKubeMacPool2CnaoKubeMacPool(hcoKubeMacPool *hcov1beta1.KubeMacPoolConfig
 	return kubeMacPool
 }
 
-func hcoCertConfig2CnaoSelfSignedConfig(hcoCertConfig *hcov1beta1.HyperConvergedCertConfig) *networkaddonsshared.SelfSignConfiguration {
+func hcoCertConfig2CnaoSelfSignedConfig(hcoCertConfig *hcov1.HyperConvergedCertConfig) *networkaddonsshared.SelfSignConfiguration {
 	caRotateInterval := defaultHco.Spec.CertConfig.CA.Duration.Duration.String()
 	caOverlapInterval := defaultHco.Spec.CertConfig.CA.RenewBefore.Duration.String()
 	certRotateInterval := defaultHco.Spec.CertConfig.Server.Duration.Duration.String()

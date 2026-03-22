@@ -262,12 +262,12 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 		})
 
 		Context("Test DataImportCronTemplates", func() {
-			var image1, image2, image3, image4 v1beta1.DataImportCronTemplate
+			var image1, image2, image3, image4 hcov1.DataImportCronTemplate
 
 			BeforeEach(func() {
 				dryRun = false
 
-				image1 = v1beta1.DataImportCronTemplate{
+				image1 = hcov1.DataImportCronTemplate{
 					ObjectMeta: metav1.ObjectMeta{Name: "image1"},
 					Spec: &cdiv1beta1.DataImportCronSpec{
 						Schedule: "1 */12 * * *",
@@ -282,7 +282,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					},
 				}
 
-				image2 = v1beta1.DataImportCronTemplate{
+				image2 = hcov1.DataImportCronTemplate{
 					ObjectMeta: metav1.ObjectMeta{Name: "image2"},
 					Spec: &cdiv1beta1.DataImportCronSpec{
 						Schedule: "2 */12 * * *",
@@ -297,7 +297,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					},
 				}
 
-				image3 = v1beta1.DataImportCronTemplate{
+				image3 = hcov1.DataImportCronTemplate{
 					ObjectMeta: metav1.ObjectMeta{Name: "image3"},
 					Spec: &cdiv1beta1.DataImportCronSpec{
 						Schedule: "3 */12 * * *",
@@ -312,7 +312,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					},
 				}
 
-				image4 = v1beta1.DataImportCronTemplate{
+				image4 = hcov1.DataImportCronTemplate{
 					ObjectMeta: metav1.ObjectMeta{Name: "image4"},
 					Spec: &cdiv1beta1.DataImportCronSpec{
 						Schedule: "4 */12 * * *",
@@ -327,7 +327,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 					},
 				}
 
-				cr.Spec.DataImportCronTemplates = []v1beta1.DataImportCronTemplate{image1, image2, image3, image4}
+				cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image1, image2, image3, image4}
 			})
 
 			It("should allow setting the annotation to true", func(ctx context.Context) {
@@ -1207,12 +1207,12 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 							Namespace: HcoValidNamespace,
 						},
 						Spec: v1beta1.HyperConvergedSpec{
-							CertConfig: v1beta1.HyperConvergedCertConfig{
-								CA: v1beta1.CertRotateConfigCA{
+							CertConfig: hcov1.HyperConvergedCertConfig{
+								CA: hcov1.CertRotateConfigCA{
 									Duration:    &metav1.Duration{Duration: 8 * time.Minute},
 									RenewBefore: &metav1.Duration{Duration: 24 * time.Hour},
 								},
-								Server: v1beta1.CertRotateConfigServer{
+								Server: hcov1.CertRotateConfigServer{
 									Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 									RenewBefore: &metav1.Duration{Duration: 12 * time.Hour},
 								},
@@ -1227,12 +1227,12 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 							Namespace: HcoValidNamespace,
 						},
 						Spec: v1beta1.HyperConvergedSpec{
-							CertConfig: v1beta1.HyperConvergedCertConfig{
-								CA: v1beta1.CertRotateConfigCA{
+							CertConfig: hcov1.HyperConvergedCertConfig{
+								CA: hcov1.CertRotateConfigCA{
 									Duration:    &metav1.Duration{Duration: 48 * time.Hour},
 									RenewBefore: &metav1.Duration{Duration: 8 * time.Minute},
 								},
-								Server: v1beta1.CertRotateConfigServer{
+								Server: hcov1.CertRotateConfigServer{
 									Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 									RenewBefore: &metav1.Duration{Duration: 12 * time.Hour},
 								},
@@ -1247,12 +1247,12 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 							Namespace: HcoValidNamespace,
 						},
 						Spec: v1beta1.HyperConvergedSpec{
-							CertConfig: v1beta1.HyperConvergedCertConfig{
-								CA: v1beta1.CertRotateConfigCA{
+							CertConfig: hcov1.HyperConvergedCertConfig{
+								CA: hcov1.CertRotateConfigCA{
 									Duration:    &metav1.Duration{Duration: 48 * time.Hour},
 									RenewBefore: &metav1.Duration{Duration: 24 * time.Hour},
 								},
-								Server: v1beta1.CertRotateConfigServer{
+								Server: hcov1.CertRotateConfigServer{
 									Duration:    &metav1.Duration{Duration: 8 * time.Minute},
 									RenewBefore: &metav1.Duration{Duration: 12 * time.Hour},
 								},
@@ -1267,12 +1267,12 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 							Namespace: HcoValidNamespace,
 						},
 						Spec: v1beta1.HyperConvergedSpec{
-							CertConfig: v1beta1.HyperConvergedCertConfig{
-								CA: v1beta1.CertRotateConfigCA{
+							CertConfig: hcov1.HyperConvergedCertConfig{
+								CA: hcov1.CertRotateConfigCA{
 									Duration:    &metav1.Duration{Duration: 48 * time.Hour},
 									RenewBefore: &metav1.Duration{Duration: 24 * time.Hour},
 								},
-								Server: v1beta1.CertRotateConfigServer{
+								Server: hcov1.CertRotateConfigServer{
 									Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 									RenewBefore: &metav1.Duration{Duration: 8 * time.Minute},
 								},
@@ -1287,12 +1287,12 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 							Namespace: HcoValidNamespace,
 						},
 						Spec: v1beta1.HyperConvergedSpec{
-							CertConfig: v1beta1.HyperConvergedCertConfig{
-								CA: v1beta1.CertRotateConfigCA{
+							CertConfig: hcov1.HyperConvergedCertConfig{
+								CA: hcov1.CertRotateConfigCA{
 									Duration:    &metav1.Duration{Duration: 23 * time.Hour},
 									RenewBefore: &metav1.Duration{Duration: 24 * time.Hour},
 								},
-								Server: v1beta1.CertRotateConfigServer{
+								Server: hcov1.CertRotateConfigServer{
 									Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 									RenewBefore: &metav1.Duration{Duration: 12 * time.Hour},
 								},
@@ -1307,12 +1307,12 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 							Namespace: HcoValidNamespace,
 						},
 						Spec: v1beta1.HyperConvergedSpec{
-							CertConfig: v1beta1.HyperConvergedCertConfig{
-								CA: v1beta1.CertRotateConfigCA{
+							CertConfig: hcov1.HyperConvergedCertConfig{
+								CA: hcov1.CertRotateConfigCA{
 									Duration:    &metav1.Duration{Duration: 48 * time.Hour},
 									RenewBefore: &metav1.Duration{Duration: 24 * time.Hour},
 								},
-								Server: v1beta1.CertRotateConfigServer{
+								Server: hcov1.CertRotateConfigServer{
 									Duration:    &metav1.Duration{Duration: 11 * time.Hour},
 									RenewBefore: &metav1.Duration{Duration: 12 * time.Hour},
 								},
@@ -1327,12 +1327,12 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 							Namespace: HcoValidNamespace,
 						},
 						Spec: v1beta1.HyperConvergedSpec{
-							CertConfig: v1beta1.HyperConvergedCertConfig{
-								CA: v1beta1.CertRotateConfigCA{
+							CertConfig: hcov1.HyperConvergedCertConfig{
+								CA: hcov1.CertRotateConfigCA{
 									Duration:    &metav1.Duration{Duration: 48 * time.Hour},
 									RenewBefore: &metav1.Duration{Duration: 24 * time.Hour},
 								},
-								Server: v1beta1.CertRotateConfigServer{
+								Server: hcov1.CertRotateConfigServer{
 									Duration:    &metav1.Duration{Duration: 96 * time.Hour},
 									RenewBefore: &metav1.Duration{Duration: 12 * time.Hour},
 								},
@@ -1873,7 +1873,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				cr.Spec.TLSSecurityProfile = &modernTLSSecurityProfile
 				cr.Namespace = ResourceInvalidNamespace
 
-				cr.Spec.DataImportCronTemplates = []v1beta1.DataImportCronTemplate{
+				cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Annotations: map[string]string{

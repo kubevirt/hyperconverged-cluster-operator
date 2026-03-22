@@ -36,10 +36,6 @@ const (
 // HyperConvergedSpec defines the desired state of HyperConverged
 // +k8s:openapi-gen=true
 type HyperConvergedSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
-	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
-
 	// TuningPolicy allows to configure the mode in which the RateLimits of kubevirt are set.
 	// If TuningPolicy is not present the default kubevirt values are used.
 	// It can be set to `annotation` for fine-tuning the kubevirt queryPerSeconds (qps) and burst values.
@@ -208,124 +204,28 @@ type HyperConvergedSpec struct {
 	// +k8s:conversion-gen=false
 	Virtualization VirtualizationConfig `json:"virtualization,omitempty"`
 
-	// certConfig holds the rotation policy for internal, self-signed certificates
-	// +kubebuilder:default={"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}
-	// +optional
-	CertConfig HyperConvergedCertConfig `json:"certConfig,omitempty"`
+	// Storage contains all the configurations for storage
+	// +k8s:conversion-gen=false
+	Storage *StorageConfig `json:"storage,omitempty"`
 
-	// ResourceRequirements describes the resource requirements for the operand workloads.
-	// +optional
-	ResourceRequirements *OperandResourceRequirements `json:"resourceRequirements,omitempty"`
+	// Networking contains all the configurations for networking
+	// +k8s:conversion-gen=false
+	Networking *NetworkingConfig `json:"networking,omitempty"`
 
-	// Override the storage class used for scratch space during transfer operations. The scratch space storage class
-	// is determined in the following order:
-	// value of scratchSpaceStorageClass, if that doesn't exist, use the default storage class, if there is no default
-	// storage class, use the storage class of the DataVolume, if no storage class specified, use no storage class for
-	// scratch space
-	// +optional
-	ScratchSpaceStorageClass *string `json:"scratchSpaceStorageClass,omitempty"`
+	// WorkloadSources contains all the configurations for workload sources
+	// +k8s:conversion-gen=false
+	WorkloadSources WorkloadSourcesConfig `json:"workloadSources,omitempty"`
 
-	// CommonTemplatesNamespace defines namespace in which common templates will
-	// be deployed. It overrides the default openshift namespace.
+	// Security contains all the security configurations
+	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}
 	// +optional
-	CommonTemplatesNamespace *string `json:"commonTemplatesNamespace,omitempty"`
+	// +k8s:conversion-gen=false
+	Security SecurityConfig `json:"security,omitempty"`
 
-	// StorageImport contains configuration for importing containerized data
-	// +optional
-	StorageImport *StorageImportConfig `json:"storageImport,omitempty"`
-
-	// DataImportCronTemplates holds list of data import cron templates (golden images)
-	// +optional
-	// +listType=atomic
-	DataImportCronTemplates []DataImportCronTemplate `json:"dataImportCronTemplates,omitempty"`
-
-	// FilesystemOverhead describes the space reserved for overhead when using Filesystem volumes.
-	// A value is between 0 and 1, if not defined it is 0.055 (5.5 percent overhead)
-	// +optional
-	FilesystemOverhead *cdiv1beta1.FilesystemOverhead `json:"filesystemOverhead,omitempty"`
-
-	// UninstallStrategy defines how to proceed on uninstall when workloads (VirtualMachines, DataVolumes) still exist.
-	// BlockUninstallIfWorkloadsExist will prevent the CR from being removed when workloads still exist.
-	// BlockUninstallIfWorkloadsExist is the safest choice to protect your workloads from accidental data loss, so it's strongly advised.
-	// RemoveWorkloads will cause all the workloads to be cascading deleted on uninstallation.
-	// WARNING: please notice that RemoveWorkloads will cause your workloads to be deleted as soon as this CR will be, even accidentally, deleted.
-	// Please correctly consider the implications of this option before setting it.
-	// BlockUninstallIfWorkloadsExist is the default behaviour.
-	// +kubebuilder:default=BlockUninstallIfWorkloadsExist
-	// +default="BlockUninstallIfWorkloadsExist"
-	// +kubebuilder:validation:Enum=RemoveWorkloads;BlockUninstallIfWorkloadsExist
-	// +optional
-	UninstallStrategy HyperConvergedUninstallStrategy `json:"uninstallStrategy,omitempty"`
-
-	// LogVerbosityConfig configures the verbosity level of Kubevirt's different components. The higher
-	// the value - the higher the log verbosity.
-	// +optional
-	LogVerbosityConfig *LogVerbosityConfiguration `json:"logVerbosityConfig,omitempty"`
-
-	// TLSSecurityProfile specifies the settings for TLS connections to be propagated to all kubevirt-hyperconverged components.
-	// If unset, the hyperconverged cluster operator will consume the value set on the APIServer CR on OCP/OKD or Intermediate if on vanilla k8s.
-	// Note that only Old, Intermediate and Custom profiles are currently supported, and the maximum available
-	// MinTLSVersions is VersionTLS12.
-	// +optional
-	TLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile `json:"tlsSecurityProfile,omitempty"`
-
-	// KubeSecondaryDNSNameServerIP defines name server IP used by KubeSecondaryDNS
-	// +optional
-	KubeSecondaryDNSNameServerIP *string `json:"kubeSecondaryDNSNameServerIP,omitempty"`
-
-	// KubeMacPoolConfiguration holds kubemacpool MAC address range configuration.
-	// +optional
-	KubeMacPoolConfiguration *KubeMacPoolConfig `json:"kubeMacPoolConfiguration,omitempty"`
-
-	// VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM.
-	// +optional
-	VMStateStorageClass *string `json:"vmStateStorageClass,omitempty"`
-
-	// CommonBootImageNamespace override the default namespace of the common boot images, in order to hide them.
-	//
-	// If not set, HCO won't set any namespace, letting SSP to use the default. If set, use the namespace to create the
-	// DataImportCronTemplates and the common image streams, with this namespace. This field is not set by default.
-	//
-	// +optional
-	CommonBootImageNamespace *string `json:"commonBootImageNamespace,omitempty"`
-
-	// NetworkBinding defines the network binding plugins.
-	// Those bindings can be used when defining virtual machine interfaces.
-	// +optional
-	NetworkBinding map[string]v1.InterfaceBindingPlugin `json:"networkBinding,omitempty"`
-
-	// ApplicationAwareConfig set the AAQ configurations
-	// +optional
-	ApplicationAwareConfig *ApplicationAwareConfigurations `json:"applicationAwareConfig,omitempty"`
-
-	// Opt-in to automatic delivery/updates of the common data import cron templates.
-	// There are two sources for the data import cron templates: hard coded list of common templates, and custom (user
-	// defined) templates that can be added to the dataImportCronTemplates field. This field only controls the common
-	// templates. It is possible to use custom templates by adding them to the dataImportCronTemplates field.
-	// +optional
-	// +kubebuilder:default=true
-	// +default=true
-	EnableCommonBootImageImport *bool `json:"enableCommonBootImageImport,omitempty"`
-
-	// InstancetypeConfig holds the configuration of instance type related functionality within KubeVirt.
-	// +optional
-	InstancetypeConfig *v1.InstancetypeConfiguration `json:"instancetypeConfig,omitempty"`
-
-	// CommonInstancetypesDeployment holds the configuration of common-instancetypes deployment within KubeVirt.
-	// +optional
-	CommonInstancetypesDeployment *v1.CommonInstancetypesDeployment `json:"CommonInstancetypesDeployment,omitempty"`
-
-	// deploy VM console proxy resources in SSP operator
-	// +optional
-	// +kubebuilder:default=false
-	// +default=false
-	DeployVMConsoleProxy *bool `json:"deployVmConsoleProxy,omitempty"`
-
-	// EnableApplicationAwareQuota if true, enables the Application Aware Quota feature
-	// +optional
-	// +kubebuilder:default=false
-	// +default=false
-	EnableApplicationAwareQuota *bool `json:"enableApplicationAwareQuota,omitempty"`
+	// Deployment contains all the configurations related to deployment of KubeVirt components
+	// +kubebuilder:default={"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "applicationAwareConfig": {"enable": false}}
+	// +k8s:conversion-gen=false
+	Deployment DeploymentConfig `json:"deployment"`
 }
 
 // VirtualizationConfig contains all the virtualization configurations
@@ -429,6 +329,135 @@ type VirtualizationConfig struct {
 	// This setting does not apply to VMIs with dedicated CPUs.
 	// +optional
 	AutoCPULimitNamespaceLabelSelector *metav1.LabelSelector `json:"autoCPULimitNamespaceLabelSelector,omitempty"`
+}
+
+// StorageConfig contains all the storage configurations
+type StorageConfig struct {
+	// VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM.
+	// +optional
+	VMStateStorageClass *string `json:"vmStateStorageClass,omitempty"`
+
+	// Override the storage class used for scratch space during transfer operations. The scratch space storage class
+	// is determined in the following order:
+	// value of scratchSpaceStorageClass, if that doesn't exist, use the default storage class, if there is no default
+	// storage class, use the storage class of the DataVolume, if no storage class specified, use no storage class for
+	// scratch space
+	// +optional
+	ScratchSpaceStorageClass *string `json:"scratchSpaceStorageClass,omitempty"`
+
+	// StorageImport contains configuration for importing containerized data
+	// +optional
+	StorageImport *StorageImportConfig `json:"storageImport,omitempty"`
+
+	// FilesystemOverhead describes the space reserved for overhead when using Filesystem volumes.
+	// A value is between 0 and 1, if not defined it is 0.055 (5.5 percent overhead)
+	// +optional
+	FilesystemOverhead *cdiv1beta1.FilesystemOverhead `json:"filesystemOverhead,omitempty"`
+
+	// StorageWorkloads defines the resources requirements for storage workloads. It will propagate to the CDI custom
+	// resource
+	// +optional
+	StorageWorkloads *corev1.ResourceRequirements `json:"storageWorkloads,omitempty"`
+}
+
+// NetworkingConfig contains all the networking configurations
+type NetworkingConfig struct {
+	// KubeSecondaryDNSNameServerIP defines name server IP used by KubeSecondaryDNS
+	// +optional
+	KubeSecondaryDNSNameServerIP *string `json:"kubeSecondaryDNSNameServerIP,omitempty"`
+
+	// KubeMacPoolConfiguration holds kubemacpool MAC address range configuration.
+	// +optional
+	KubeMacPoolConfiguration *KubeMacPoolConfig `json:"kubeMacPoolConfiguration,omitempty"`
+
+	// NetworkBinding defines the network binding plugins.
+	// Those bindings can be used when defining virtual machine interfaces.
+	// +optional
+	NetworkBinding map[string]v1.InterfaceBindingPlugin `json:"networkBinding,omitempty"`
+}
+
+// WorkloadSourcesConfig contains all the configurations related to workloads resources
+type WorkloadSourcesConfig struct {
+	// CommonTemplatesNamespace defines namespace in which common templates will
+	// be deployed. It overrides the default openshift namespace.
+	// +optional
+	CommonTemplatesNamespace *string `json:"commonTemplatesNamespace,omitempty"`
+
+	// CommonBootImageNamespace override the default namespace of the common boot images, in order to hide them.
+	//
+	// If not set, HCO won't set any namespace, letting SSP to use the default. If set, use the namespace to create the
+	// DataImportCronTemplates and the common image streams, with this namespace. This field is not set by default.
+	//
+	// +optional
+	CommonBootImageNamespace *string `json:"commonBootImageNamespace,omitempty"`
+
+	// Opt-in to automatic delivery/updates of the common data import cron templates.
+	// There are two sources for the data import cron templates: hard coded list of common templates, and custom (user
+	// defined) templates that can be added to the dataImportCronTemplates field. This field only controls the common
+	// templates. It is possible to use custom templates by adding them to the dataImportCronTemplates field.
+	// +optional
+	// +kubebuilder:default=true
+	// +default=true
+	EnableCommonBootImageImport *bool `json:"enableCommonBootImageImport,omitempty"`
+
+	// DataImportCronTemplates holds list of data import cron templates (golden images)
+	// +optional
+	// +listType=atomic
+	DataImportCronTemplates []DataImportCronTemplate `json:"dataImportCronTemplates,omitempty"`
+
+	// InstancetypeConfig holds the configuration of instance type related functionality within KubeVirt.
+	// +optional
+	InstancetypeConfig *v1.InstancetypeConfiguration `json:"instancetypeConfig,omitempty"`
+
+	// CommonInstancetypesDeployment holds the configuration of common-instancetypes deployment within KubeVirt.
+	// +optional
+	CommonInstancetypesDeployment *v1.CommonInstancetypesDeployment `json:"commonInstancetypesDeployment,omitempty"`
+}
+
+// SecurityConfig contains all the security configurations
+type SecurityConfig struct {
+	// certConfig holds the rotation policy for internal, self-signed certificates
+	// +kubebuilder:default={"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}
+	// +optional
+	// +k8s:conversion-gen=false
+	CertConfig HyperConvergedCertConfig `json:"certConfig,omitempty"`
+
+	// TLSSecurityProfile specifies the settings for TLS connections to be propagated to all kubevirt-hyperconverged components.
+	// If unset, the hyperconverged cluster operator will consume the value set on the APIServer CR on OCP/OKD or Intermediate if on vanilla k8s.
+	// Note that only Old, Intermediate and Custom profiles are currently supported, and the maximum available
+	// MinTLSVersions is VersionTLS12.
+	// +optional
+	TLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile `json:"tlsSecurityProfile,omitempty"`
+}
+
+type DeploymentConfig struct {
+	// UninstallStrategy defines how to proceed on uninstall when workloads (VirtualMachines, DataVolumes) still exist.
+	// BlockUninstallIfWorkloadsExist will prevent the CR from being removed when workloads still exist.
+	// BlockUninstallIfWorkloadsExist is the safest choice to protect your workloads from accidental data loss, so it's strongly advised.
+	// RemoveWorkloads will cause all the workloads to be cascading deleted on uninstallation.
+	// WARNING: please notice that RemoveWorkloads will cause your workloads to be deleted as soon as this CR will be, even accidentally, deleted.
+	// Please correctly consider the implications of this option before setting it.
+	// BlockUninstallIfWorkloadsExist is the default behavior.
+	// +kubebuilder:default=BlockUninstallIfWorkloadsExist
+	// +default="BlockUninstallIfWorkloadsExist"
+	// +kubebuilder:validation:Enum=RemoveWorkloads;BlockUninstallIfWorkloadsExist
+	// +optional
+	UninstallStrategy HyperConvergedUninstallStrategy `json:"uninstallStrategy,omitempty"`
+
+	// LogVerbosityConfig configures the verbosity level of Kubevirt's different components. The higher
+	// the value - the higher the log verbosity.
+	// +optional
+	LogVerbosityConfig *LogVerbosityConfiguration `json:"logVerbosityConfig,omitempty"`
+
+	// ApplicationAwareConfig set the AAQ configurations
+	// +optional
+	ApplicationAwareConfig *ApplicationAwareConfigurations `json:"applicationAwareConfig,omitempty"`
+
+	// deploy VM console proxy resources in SSP operator
+	// +optional
+	// +kubebuilder:default=false
+	// +default=false
+	DeployVMConsoleProxy *bool `json:"deployVmConsoleProxy,omitempty"`
 }
 
 // CertRotateConfigCA contains the tunables for TLS certificates.
@@ -693,15 +722,6 @@ type NodeMediatedDeviceTypesConfig struct {
 	MediatedDeviceTypes []string `json:"mediatedDeviceTypes"`
 }
 
-// OperandResourceRequirements is a list of resource requirements for the operand workloads pods
-// +k8s:openapi-gen=true
-type OperandResourceRequirements struct {
-	// StorageWorkloads defines the resources requirements for storage workloads. It will propagate to the CDI custom
-	// resource
-	// +optional
-	StorageWorkloads *corev1.ResourceRequirements `json:"storageWorkloads,omitempty"`
-}
-
 // StorageImportConfig contains configuration for importing containerized data
 // +k8s:openapi-gen=true
 type StorageImportConfig struct {
@@ -856,6 +876,13 @@ type NodeInfoStatus struct {
 // ApplicationAwareConfigurations holds the AAQ configurations
 // +k8s:openapi-gen=true
 type ApplicationAwareConfigurations struct {
+	// Enable if true, enables the Application Aware Quota feature
+	// +optional
+	// +kubebuilder:default=false
+	// +default=false
+	// +k8s:conversion-gen=false
+	Enable *bool `json:"enable,omitempty"`
+
 	// VmiCalcConfigName determine how resource allocation will be done with ApplicationsResourceQuota.
 	// allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources, IgnoreVmiCalculator or GuestEffectiveResources
 	// +kubebuilder:validation:Enum=VmiPodUsage;VirtualResources;DedicatedVirtualResources;IgnoreVmiCalculator;GuestEffectiveResources
@@ -937,7 +964,7 @@ type HyperConverged struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
+	// +kubebuilder:default={"security": {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10},"workloadSources":{"enableCommonBootImageImport":true}, "deployment": {"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "applicationAwareConfig": {"enable": false}}}
 	// +optional
 	Spec   HyperConvergedSpec   `json:"spec,omitempty"`
 	Status HyperConvergedStatus `json:"status,omitempty"`

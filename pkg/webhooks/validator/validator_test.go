@@ -285,23 +285,23 @@ var _ = Describe("v1 webhooks validator", func() {
 					},
 				}
 
-				cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image1, image2, image3, image4}
+				cr.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image1, image2, image3, image4}
 			})
 
 			It("should allow setting the annotation to true", func(ctx context.Context) {
-				cr.Spec.DataImportCronTemplates[0].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "true"}
-				cr.Spec.DataImportCronTemplates[1].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "TRUE"}
-				cr.Spec.DataImportCronTemplates[2].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "TrUe"}
-				cr.Spec.DataImportCronTemplates[3].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "tRuE"}
+				cr.Spec.WorkloadSources.DataImportCronTemplates[0].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "true"}
+				cr.Spec.WorkloadSources.DataImportCronTemplates[1].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "TRUE"}
+				cr.Spec.WorkloadSources.DataImportCronTemplates[2].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "TrUe"}
+				cr.Spec.WorkloadSources.DataImportCronTemplates[3].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "tRuE"}
 
 				checkAcceptedRequest(wh.validateCreate(GinkgoLogr, dryRun, cr))
 			})
 
 			It("should allow setting the annotation to false", func(ctx context.Context) {
-				cr.Spec.DataImportCronTemplates[0].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "false"}
-				cr.Spec.DataImportCronTemplates[1].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "FALSE"}
-				cr.Spec.DataImportCronTemplates[2].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "FaLsE"}
-				cr.Spec.DataImportCronTemplates[3].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "fAlSe"}
+				cr.Spec.WorkloadSources.DataImportCronTemplates[0].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "false"}
+				cr.Spec.WorkloadSources.DataImportCronTemplates[1].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "FALSE"}
+				cr.Spec.WorkloadSources.DataImportCronTemplates[2].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "FaLsE"}
+				cr.Spec.WorkloadSources.DataImportCronTemplates[3].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "fAlSe"}
 
 				checkAcceptedRequest(wh.validateCreate(GinkgoLogr, dryRun, cr))
 			})
@@ -311,15 +311,15 @@ var _ = Describe("v1 webhooks validator", func() {
 			})
 
 			It("should not allow empty annotation", func(ctx context.Context) {
-				cr.Spec.DataImportCronTemplates[0].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: ""}
-				cr.Spec.DataImportCronTemplates[1].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: ""}
+				cr.Spec.WorkloadSources.DataImportCronTemplates[0].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: ""}
+				cr.Spec.WorkloadSources.DataImportCronTemplates[1].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: ""}
 
 				checkRejectedRequest(wh.validateCreate(GinkgoLogr, dryRun, cr))
 			})
 
 			It("should not allow unknown annotation values", func(ctx context.Context) {
-				cr.Spec.DataImportCronTemplates[0].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "wrong"}
-				cr.Spec.DataImportCronTemplates[1].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "mistake"}
+				cr.Spec.WorkloadSources.DataImportCronTemplates[0].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "wrong"}
+				cr.Spec.WorkloadSources.DataImportCronTemplates[1].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "mistake"}
 
 				checkRejectedRequest(wh.validateCreate(GinkgoLogr, dryRun, cr))
 			})
@@ -327,28 +327,28 @@ var _ = Describe("v1 webhooks validator", func() {
 			Context("Empty DICT spec", func() {
 				It("don't allow if the annotation does not exist", func(ctx context.Context) {
 					// empty annotation map
-					cr.Spec.DataImportCronTemplates[0].Annotations = map[string]string{}
-					cr.Spec.DataImportCronTemplates[0].Spec = nil
+					cr.Spec.WorkloadSources.DataImportCronTemplates[0].Annotations = map[string]string{}
+					cr.Spec.WorkloadSources.DataImportCronTemplates[0].Spec = nil
 					// no annotation map
-					cr.Spec.DataImportCronTemplates[1].Spec = nil
+					cr.Spec.WorkloadSources.DataImportCronTemplates[1].Spec = nil
 
 					checkRejectedRequest(wh.validateCreate(GinkgoLogr, dryRun, cr))
 				})
 
 				It("don't allow if the annotation is true", func(ctx context.Context) {
-					cr.Spec.DataImportCronTemplates[0].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "True"}
-					cr.Spec.DataImportCronTemplates[0].Spec = nil
-					cr.Spec.DataImportCronTemplates[1].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "true"}
-					cr.Spec.DataImportCronTemplates[1].Spec = nil
+					cr.Spec.WorkloadSources.DataImportCronTemplates[0].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "True"}
+					cr.Spec.WorkloadSources.DataImportCronTemplates[0].Spec = nil
+					cr.Spec.WorkloadSources.DataImportCronTemplates[1].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "true"}
+					cr.Spec.WorkloadSources.DataImportCronTemplates[1].Spec = nil
 
 					checkRejectedRequest(wh.validateCreate(GinkgoLogr, dryRun, cr))
 				})
 
 				It("allow if the annotation is false", func(ctx context.Context) {
-					cr.Spec.DataImportCronTemplates[0].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "False"}
-					cr.Spec.DataImportCronTemplates[0].Spec = nil
-					cr.Spec.DataImportCronTemplates[1].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "false"}
-					cr.Spec.DataImportCronTemplates[1].Spec = nil
+					cr.Spec.WorkloadSources.DataImportCronTemplates[0].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "False"}
+					cr.Spec.WorkloadSources.DataImportCronTemplates[0].Spec = nil
+					cr.Spec.WorkloadSources.DataImportCronTemplates[1].Annotations = map[string]string{util.DataImportCronEnabledAnnotation: "false"}
+					cr.Spec.WorkloadSources.DataImportCronTemplates[1].Spec = nil
 
 					checkAcceptedRequest(wh.validateCreate(GinkgoLogr, dryRun, cr))
 				})
@@ -357,7 +357,7 @@ var _ = Describe("v1 webhooks validator", func() {
 
 		Context("validate tlsSecurityProfiles", func() {
 			updateTLSSecurityProfile := func(minTLSVersion openshiftconfigv1.TLSProtocolVersion, ciphers []string) admission.Response {
-				cr.Spec.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+				cr.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
 					Custom: &openshiftconfigv1.CustomTLSProfile{
 						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
 							MinTLSVersion: minTLSVersion,
@@ -405,7 +405,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			})
 
 			It("should fail when type is Custom but custom field is nil", func(ctx context.Context) {
-				cr.Spec.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+				cr.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
 					Type:   openshiftconfigv1.TLSProfileCustomType,
 					Custom: nil,
 				}
@@ -1742,24 +1742,24 @@ var _ = Describe("v1 webhooks validator", func() {
 
 			It("should update hcoTLSConfigCache creating a resource not in dry run mode", func(ctx context.Context) {
 				Expect(hcoTLSConfigCache).To(Equal(&initialTLSSecurityProfile))
-				cr.Spec.TLSSecurityProfile = &modernTLSSecurityProfile
+				cr.Spec.Security.TLSSecurityProfile = &modernTLSSecurityProfile
 				checkAcceptedRequest(wh.validateCreate(GinkgoLogr, false, cr))
 				Expect(hcoTLSConfigCache).To(Equal(&modernTLSSecurityProfile))
 			})
 
 			It("should not update hcoTLSConfigCache creating a resource in dry run mode", func(ctx context.Context) {
 				Expect(hcoTLSConfigCache).To(Equal(&initialTLSSecurityProfile))
-				cr.Spec.TLSSecurityProfile = &modernTLSSecurityProfile
+				cr.Spec.Security.TLSSecurityProfile = &modernTLSSecurityProfile
 				checkAcceptedRequest(wh.validateCreate(GinkgoLogr, true, cr))
 				Expect(hcoTLSConfigCache).ToNot(Equal(&modernTLSSecurityProfile))
 			})
 
 			It("should not update hcoTLSConfigCache if the create request is refused", func(ctx context.Context) {
 				Expect(hcoTLSConfigCache).To(Equal(&initialTLSSecurityProfile))
-				cr.Spec.TLSSecurityProfile = &modernTLSSecurityProfile
+				cr.Spec.Security.TLSSecurityProfile = &modernTLSSecurityProfile
 				cr.Namespace = ResourceInvalidNamespace
 
-				cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
+				cr.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Annotations: map[string]string{
@@ -1784,7 +1784,7 @@ var _ = Describe("v1 webhooks validator", func() {
 
 				newCr := &hcov1.HyperConverged{}
 				cr.DeepCopyInto(newCr)
-				newCr.Spec.TLSSecurityProfile = &oldTLSSecurityProfile
+				newCr.Spec.Security.TLSSecurityProfile = &oldTLSSecurityProfile
 
 				checkAcceptedRequest(wh.validateUpdate(ctx, GinkgoLogr, false, newCr, cr))
 				Expect(hcoTLSConfigCache).To(Equal(&oldTLSSecurityProfile))
@@ -1798,7 +1798,7 @@ var _ = Describe("v1 webhooks validator", func() {
 
 				newCr := &hcov1.HyperConverged{}
 				cr.DeepCopyInto(newCr)
-				newCr.Spec.TLSSecurityProfile = &oldTLSSecurityProfile
+				newCr.Spec.Security.TLSSecurityProfile = &oldTLSSecurityProfile
 
 				checkAcceptedRequest(wh.validateUpdate(ctx, GinkgoLogr, true, newCr, cr))
 				Expect(hcoTLSConfigCache).To(Equal(&initialTLSSecurityProfile))
@@ -1810,7 +1810,7 @@ var _ = Describe("v1 webhooks validator", func() {
 				tlssecprofile.SetHyperConvergedTLSSecurityProfile(&initialTLSSecurityProfile)
 				newCr := &hcov1.HyperConverged{}
 				cr.DeepCopyInto(newCr)
-				newCr.Spec.TLSSecurityProfile = &oldTLSSecurityProfile
+				newCr.Spec.Security.TLSSecurityProfile = &oldTLSSecurityProfile
 
 				checkRejectedRequest(wh.validateUpdate(ctx, GinkgoLogr, false, newCr, cr))
 				Expect(hcoTLSConfigCache).To(Equal(&initialTLSSecurityProfile))

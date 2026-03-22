@@ -2,6 +2,7 @@ package v1beta1
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"slices"
 
@@ -31,6 +32,18 @@ func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error { //revive:dis
 		return fmt.Errorf("failed to convert HyperConverged's spec.virtualization from v1beta1 to v1; %w", err)
 	}
 
+	dst.Spec.Storage = convertStorageV1beta1ToV1(src.Spec)
+
+	convertSecurityV1beta1ToV1(src.Spec, &dst.Spec.Security)
+
+	dst.Spec.Networking = convertNetworkingV1beta1ToV1(src.Spec)
+
+	convertWorkloadSourcesV1beta1ToV1(src.Spec, &dst.Spec.WorkloadSources)
+
+	if err := convertDeploymentV1beta1ToV1(src.Spec, &dst.Spec.Deployment); err != nil {
+		return fmt.Errorf("failed to convert HyperConverged's spec.deployment from v1beta1 to v1; %w", err)
+	}
+
 	return nil
 }
 
@@ -47,6 +60,18 @@ func (dst *HyperConverged) ConvertFrom(srcRaw conversion.Hub) error { //revive:d
 
 	if err := convertVirtualizationV1ToV1beta1(src.Spec.Virtualization, &dst.Spec); err != nil {
 		return fmt.Errorf("failed to convert HyperConverged's spec.virtualization from v1 to v1beta1; %w", err)
+	}
+
+	convertStorageV1ToV1beta1(src.Spec.Storage, &dst.Spec)
+
+	convertSecurityV1ToV1beta1(src.Spec.Security, &dst.Spec)
+
+	convertNetworkingV1ToV1beta1(src.Spec.Networking, &dst.Spec)
+
+	convertWorkloadSourcesV1ToV1beta1(src.Spec.WorkloadSources, &dst.Spec)
+
+	if err := convertDeploymentV1ToV1beta1(src.Spec.Deployment, &dst.Spec); err != nil {
+		return fmt.Errorf("failed to convert HyperConverged's spec.deployment from v1 to v1beta1; %w", err)
 	}
 
 	return nil
@@ -243,6 +268,224 @@ func convertVMOptionsV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1VirtConfig *h
 	}
 }
 
+func convertStorageV1ToV1beta1(v1StorageConfig *hcov1.StorageConfig, v1beta1Spec *HyperConvergedSpec) {
+	if v1StorageConfig == nil {
+		return
+	}
+
+	v1beta1Spec.VMStateStorageClass = setPtr(v1StorageConfig.VMStateStorageClass)
+	v1beta1Spec.ScratchSpaceStorageClass = setPtr(v1StorageConfig.ScratchSpaceStorageClass)
+
+	if v1StorageConfig.StorageImport != nil {
+		v1beta1Spec.StorageImport = v1StorageConfig.StorageImport.DeepCopy()
+	}
+	if v1StorageConfig.FilesystemOverhead != nil {
+		v1beta1Spec.FilesystemOverhead = v1StorageConfig.FilesystemOverhead.DeepCopy()
+	}
+
+	if v1StorageConfig.StorageWorkloads != nil {
+		if v1beta1Spec.ResourceRequirements == nil {
+			v1beta1Spec.ResourceRequirements = &OperandResourceRequirements{}
+		}
+
+		if v1StorageConfig.StorageWorkloads != nil {
+			v1beta1Spec.ResourceRequirements.StorageWorkloads = v1StorageConfig.StorageWorkloads.DeepCopy()
+		}
+	}
+}
+
+func convertStorageV1beta1ToV1(v1beta1Spec HyperConvergedSpec) *hcov1.StorageConfig {
+
+	if areV1beta1StorageFieldsEmpty(v1beta1Spec) {
+		return nil
+	}
+
+	v1StorageConfig := &hcov1.StorageConfig{}
+
+	v1StorageConfig.VMStateStorageClass = setPtr(v1beta1Spec.VMStateStorageClass)
+	v1StorageConfig.ScratchSpaceStorageClass = setPtr(v1beta1Spec.ScratchSpaceStorageClass)
+
+	if v1beta1Spec.StorageImport != nil {
+		v1StorageConfig.StorageImport = v1beta1Spec.StorageImport.DeepCopy()
+	}
+
+	if v1beta1Spec.FilesystemOverhead != nil {
+		v1StorageConfig.FilesystemOverhead = v1beta1Spec.FilesystemOverhead.DeepCopy()
+	}
+
+	if v1beta1Spec.ResourceRequirements != nil && v1beta1Spec.ResourceRequirements.StorageWorkloads != nil {
+		v1StorageConfig.StorageWorkloads = v1beta1Spec.ResourceRequirements.StorageWorkloads.DeepCopy()
+	}
+
+	return v1StorageConfig
+}
+
+func areV1beta1StorageFieldsEmpty(v1beta1Spec HyperConvergedSpec) bool {
+	return v1beta1Spec.VMStateStorageClass == nil &&
+		v1beta1Spec.ScratchSpaceStorageClass == nil &&
+		(v1beta1Spec.StorageImport == nil || len(v1beta1Spec.StorageImport.InsecureRegistries) == 0) &&
+		v1beta1Spec.FilesystemOverhead == nil &&
+		(v1beta1Spec.ResourceRequirements == nil || v1beta1Spec.ResourceRequirements.StorageWorkloads == nil)
+}
+
+func convertSecurityV1ToV1beta1(v1SecurityConfig hcov1.SecurityConfig, v1beta1Spec *HyperConvergedSpec) {
+	v1SecurityConfig.CertConfig.DeepCopyInto(&v1beta1Spec.CertConfig)
+
+	if v1SecurityConfig.TLSSecurityProfile != nil {
+		v1beta1Spec.TLSSecurityProfile = v1SecurityConfig.TLSSecurityProfile.DeepCopy()
+	}
+}
+
+func convertSecurityV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1SecurityConfig *hcov1.SecurityConfig) {
+	v1beta1Spec.CertConfig.DeepCopyInto(&v1SecurityConfig.CertConfig)
+
+	if v1beta1Spec.TLSSecurityProfile != nil {
+		v1SecurityConfig.TLSSecurityProfile = v1beta1Spec.TLSSecurityProfile.DeepCopy()
+	}
+}
+
+func convertNetworkingV1ToV1beta1(v1Networking *hcov1.NetworkingConfig, v1beta1Spec *HyperConvergedSpec) {
+	if v1Networking == nil {
+		return
+	}
+
+	v1beta1Spec.NetworkBinding = maps.Clone(v1Networking.NetworkBinding)
+	if v1Networking.KubeMacPoolConfiguration != nil {
+		v1beta1Spec.KubeMacPoolConfiguration = v1Networking.KubeMacPoolConfiguration.DeepCopy()
+	}
+	v1beta1Spec.KubeSecondaryDNSNameServerIP = setPtr(v1Networking.KubeSecondaryDNSNameServerIP)
+}
+
+func convertNetworkingV1beta1ToV1(v1beta1Spec HyperConvergedSpec) *hcov1.NetworkingConfig {
+	if areV1beta1NetworkingFieldsEmpty(v1beta1Spec) {
+		return nil
+	}
+
+	var kubeMacPoolConfig *hcov1.KubeMacPoolConfig
+	if v1beta1Spec.KubeMacPoolConfiguration != nil {
+		kubeMacPoolConfig = v1beta1Spec.KubeMacPoolConfiguration.DeepCopy()
+	}
+
+	return &hcov1.NetworkingConfig{
+		NetworkBinding:               maps.Clone(v1beta1Spec.NetworkBinding),
+		KubeMacPoolConfiguration:     kubeMacPoolConfig,
+		KubeSecondaryDNSNameServerIP: setPtr(v1beta1Spec.KubeSecondaryDNSNameServerIP),
+	}
+}
+
+func areV1beta1NetworkingFieldsEmpty(v1beta1Spec HyperConvergedSpec) bool {
+	return v1beta1Spec.NetworkBinding == nil &&
+		v1beta1Spec.KubeMacPoolConfiguration == nil &&
+		v1beta1Spec.KubeSecondaryDNSNameServerIP == nil
+}
+
+func convertWorkloadSourcesV1ToV1beta1(v1Config hcov1.WorkloadSourcesConfig, v1beta1Spec *HyperConvergedSpec) {
+	v1beta1Spec.CommonTemplatesNamespace = setPtr(v1Config.CommonTemplatesNamespace)
+	v1beta1Spec.CommonBootImageNamespace = setPtr(v1Config.CommonBootImageNamespace)
+	v1beta1Spec.EnableCommonBootImageImport = setPtr(v1Config.EnableCommonBootImageImport)
+
+	if len(v1Config.DataImportCronTemplates) > 0 {
+		v1beta1Spec.DataImportCronTemplates = make([]hcov1.DataImportCronTemplate, len(v1Config.DataImportCronTemplates))
+
+		for i := range v1Config.DataImportCronTemplates {
+			v1Config.DataImportCronTemplates[i].DeepCopyInto(&v1beta1Spec.DataImportCronTemplates[i])
+		}
+	}
+
+	if v1Config.InstancetypeConfig != nil {
+		v1beta1Spec.InstancetypeConfig = v1Config.InstancetypeConfig.DeepCopy()
+	}
+
+	if v1Config.CommonInstancetypesDeployment != nil {
+		v1beta1Spec.CommonInstancetypesDeployment = v1Config.CommonInstancetypesDeployment.DeepCopy()
+	}
+}
+
+func convertWorkloadSourcesV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1Config *hcov1.WorkloadSourcesConfig) {
+	v1Config.CommonTemplatesNamespace = setPtr(v1beta1Spec.CommonTemplatesNamespace)
+	v1Config.CommonBootImageNamespace = setPtr(v1beta1Spec.CommonBootImageNamespace)
+	v1Config.EnableCommonBootImageImport = setPtr(v1beta1Spec.EnableCommonBootImageImport)
+
+	if len(v1beta1Spec.DataImportCronTemplates) > 0 {
+		v1Config.DataImportCronTemplates = make([]hcov1.DataImportCronTemplate, len(v1beta1Spec.DataImportCronTemplates))
+		for i := range v1beta1Spec.DataImportCronTemplates {
+			v1beta1Spec.DataImportCronTemplates[i].DeepCopyInto(&v1Config.DataImportCronTemplates[i])
+		}
+	}
+
+	if v1beta1Spec.InstancetypeConfig != nil {
+		v1Config.InstancetypeConfig = v1beta1Spec.InstancetypeConfig.DeepCopy()
+	}
+
+	if v1beta1Spec.CommonInstancetypesDeployment != nil {
+		v1Config.CommonInstancetypesDeployment = v1beta1Spec.CommonInstancetypesDeployment.DeepCopy()
+	}
+}
+
+func convertDeploymentV1ToV1beta1(v1Config hcov1.DeploymentConfig, v1beta1Spec *HyperConvergedSpec) error {
+	if err := convertAAQConfigV1ToV1beta1(v1Config, v1beta1Spec); err != nil {
+		return err
+	}
+
+	v1beta1Spec.UninstallStrategy = v1Config.UninstallStrategy
+
+	if v1Config.LogVerbosityConfig != nil {
+		v1beta1Spec.LogVerbosityConfig = v1Config.LogVerbosityConfig.DeepCopy()
+	}
+
+	v1beta1Spec.DeployVMConsoleProxy = setPtr(v1Config.DeployVMConsoleProxy)
+
+	return nil
+}
+
+func convertAAQConfigV1ToV1beta1(v1Config hcov1.DeploymentConfig, v1beta1Spec *HyperConvergedSpec) error {
+	if v1Config.ApplicationAwareConfig == nil {
+		return nil
+	}
+
+	v1beta1Spec.ApplicationAwareConfig = &ApplicationAwareConfigurations{}
+	if err := converter.Convert(v1Config.ApplicationAwareConfig, v1beta1Spec.ApplicationAwareConfig, nil); err != nil {
+		return err
+	}
+
+	v1beta1Spec.EnableApplicationAwareQuota = setPtr(v1Config.ApplicationAwareConfig.Enable)
+
+	return nil
+}
+
+func convertDeploymentV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1Config *hcov1.DeploymentConfig) error {
+	if err := convertAAQConfigV1beta1ToV1(v1beta1Spec, v1Config); err != nil {
+		return err
+	}
+
+	v1Config.UninstallStrategy = v1beta1Spec.UninstallStrategy
+
+	if v1beta1Spec.LogVerbosityConfig != nil {
+		v1Config.LogVerbosityConfig = v1beta1Spec.LogVerbosityConfig.DeepCopy()
+	}
+
+	v1Config.DeployVMConsoleProxy = setPtr(v1beta1Spec.DeployVMConsoleProxy)
+
+	return nil
+}
+
+func convertAAQConfigV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1Config *hcov1.DeploymentConfig) error {
+	if v1beta1Spec.ApplicationAwareConfig == nil && v1beta1Spec.EnableApplicationAwareQuota == nil {
+		return nil
+	}
+
+	v1Config.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{}
+	if v1beta1Spec.ApplicationAwareConfig != nil {
+		if err := converter.Convert(v1beta1Spec.ApplicationAwareConfig, v1Config.ApplicationAwareConfig, nil); err != nil {
+			return err
+		}
+	}
+
+	v1Config.ApplicationAwareConfig.Enable = setPtr(v1beta1Spec.EnableApplicationAwareQuota)
+
+	return nil
+}
+
 var converter *conversion2.Converter
 
 func init() {
@@ -263,7 +506,6 @@ func init() {
 	if converter == nil {
 		panic("unable to register HyperConvergedScheme with runtime.Scheme")
 	}
-
 }
 
 func setPtr[T comparable](orig *T) *T {

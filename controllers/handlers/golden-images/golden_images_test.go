@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/dirtest"
@@ -29,7 +30,7 @@ var _ = Describe("Test data import cron template", func() {
 	var (
 		hco *hcov1beta1.HyperConverged
 
-		image1, image2, image3, image4                         hcov1beta1.DataImportCronTemplate
+		image1, image2, image3, image4                         hcov1.DataImportCronTemplate
 		statusImage1, statusImage2, statusImage3, statusImage4 hcov1beta1.DataImportCronTemplateStatus
 	)
 
@@ -122,17 +123,17 @@ var _ = Describe("Test data import cron template", func() {
 	Context("test GetDataImportCronTemplates", func() {
 		It("should not return the hard coded list dataImportCron FeatureGate is false", func() {
 			hco.Spec.EnableCommonBootImageImport = ptr.To(false)
-			dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
 				image1.Name: image1,
 				image2.Name: image2,
 			}
-			hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
+			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
 			list, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(list).To(HaveLen(2))
 			Expect(list).To(ContainElements(statusImage3, statusImage4))
 
-			hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{}
+			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{}
 			list, err = GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(list).To(BeEmpty())
@@ -141,7 +142,7 @@ var _ = Describe("Test data import cron template", func() {
 		It("should return an empty list if both the hard-coded list and the list from HC are empty", func() {
 			hcoWithEmptyList := commontestutils.NewHco()
 			hcoWithEmptyList.Spec.EnableCommonBootImageImport = ptr.To(true)
-			hcoWithEmptyList.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{}
+			hcoWithEmptyList.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{}
 			hcoWithNilList := commontestutils.NewHco()
 			hcoWithNilList.Spec.EnableCommonBootImageImport = ptr.To(true)
 			hcoWithNilList.Spec.DataImportCronTemplates = nil
@@ -149,18 +150,18 @@ var _ = Describe("Test data import cron template", func() {
 			dataImportCronTemplateHardCodedMap = nil
 			Expect(GetDataImportCronTemplates(hcoWithNilList)).To(BeNil())
 			Expect(GetDataImportCronTemplates(hcoWithEmptyList)).To(BeNil())
-			dataImportCronTemplateHardCodedMap = make(map[string]hcov1beta1.DataImportCronTemplate)
+			dataImportCronTemplateHardCodedMap = make(map[string]hcov1.DataImportCronTemplate)
 			Expect(GetDataImportCronTemplates(hcoWithNilList)).To(BeNil())
 			Expect(GetDataImportCronTemplates(hcoWithEmptyList)).To(BeNil())
 		})
 
 		It("Should add the CR list to the hard-coded list", func() {
-			dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
 				image1.Name: image1,
 				image2.Name: image2,
 			}
 			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-			hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
+			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
 			goldenImageList, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(goldenImageList).To(HaveLen(4))
@@ -169,7 +170,7 @@ var _ = Describe("Test data import cron template", func() {
 		})
 
 		It("Should not add a common DIC template if it marked as disabled", func() {
-			dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
 				image1.Name: image1,
 				image2.Name: image2,
 			}
@@ -181,7 +182,7 @@ var _ = Describe("Test data import cron template", func() {
 			enableDict(&enabledImage2, &expectedStatus2)
 			expectedStatus2.Status.Modified = true
 
-			hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{disabledImage1, enabledImage2, image3, image4}
+			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{disabledImage1, enabledImage2, image3, image4}
 			goldenImageList, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(goldenImageList).To(HaveLen(3))
@@ -200,7 +201,7 @@ var _ = Describe("Test data import cron template", func() {
 			disableDict(&image1)
 			enableDict(&image2, &statusImage2)
 
-			hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image1, image2}
+			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image1, image2}
 			goldenImageList, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(goldenImageList).To(HaveLen(1))
@@ -214,7 +215,7 @@ var _ = Describe("Test data import cron template", func() {
 		})
 
 		It("Should reject if the CR list contain DIC templates with the same name, when there are also common DIC templates", func() {
-			dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
 				image1.Name: image1,
 				image2.Name: image2,
 			}
@@ -222,7 +223,7 @@ var _ = Describe("Test data import cron template", func() {
 
 			image3.Name = image4.Name
 
-			hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
+			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
 			_, err := GetDataImportCronTemplates(hco)
 			Expect(err).To(HaveOccurred())
 		})
@@ -232,14 +233,14 @@ var _ = Describe("Test data import cron template", func() {
 
 			image3.Name = image4.Name
 
-			hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
+			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
 			_, err := GetDataImportCronTemplates(hco)
 			Expect(err).To(HaveOccurred())
 		})
 
 		It("Should not add the CR list to the hard-coded list, if it's empty", func() {
 			By("CR list is nil")
-			dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
 				image1.Name: image1,
 				image2.Name: image2,
 			}
@@ -253,7 +254,7 @@ var _ = Describe("Test data import cron template", func() {
 			Expect(goldenImageList).To(ContainElements(statusImage1, statusImage2))
 
 			By("CR list is empty")
-			hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{}
+			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{}
 			goldenImageList, err = GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(goldenImageList).To(HaveLen(2))
@@ -262,7 +263,7 @@ var _ = Describe("Test data import cron template", func() {
 
 		It("Should return only the CR list, if the hard-coded list is empty", func() {
 			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-			hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
+			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
 
 			By("when dataImportCronTemplateHardCodedList is nil")
 			dataImportCronTemplateHardCodedMap = nil
@@ -273,7 +274,7 @@ var _ = Describe("Test data import cron template", func() {
 			Expect(goldenImageList).To(ContainElements(statusImage3, statusImage4))
 
 			By("when dataImportCronTemplateHardCodedList is empty")
-			dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{}
+			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{}
 			goldenImageList, err = GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(goldenImageList).To(HaveLen(2))
@@ -291,7 +292,7 @@ var _ = Describe("Test data import cron template", func() {
 				Registry: &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To(modifiedURL)},
 			}
 
-			dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
 				image1.Name: image1,
 				image2.Name: image2,
 			}
@@ -306,7 +307,7 @@ var _ = Describe("Test data import cron template", func() {
 			By("check that if the CR schedule is empty, HCO adds it from the common dict")
 			modifiedImage1.Spec.Schedule = ""
 
-			hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{modifiedImage1, image3, image4}
+			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{modifiedImage1, image3, image4}
 
 			goldenImageList, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
@@ -334,7 +335,7 @@ var _ = Describe("Test data import cron template", func() {
 				StorageClassName: ptr.To("testName"),
 			}
 
-			dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
 				image1.Name: image1,
 				image2.Name: image2,
 			}
@@ -355,7 +356,7 @@ var _ = Describe("Test data import cron template", func() {
 			modifiedImage1 := image1.DeepCopy()
 			modifiedImage1.Spec.Template.Spec.Storage = storageFromCr.DeepCopy()
 
-			hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{*modifiedImage1, image3, image4}
+			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{*modifiedImage1, image3, image4}
 
 			goldenImageList, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
@@ -376,7 +377,7 @@ var _ = Describe("Test data import cron template", func() {
 		})
 
 		It("Should replace several common DICT fields, if the CR list includes it", func() {
-			dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
 				image1.Name: image1,
 				image2.Name: image2,
 			}
@@ -388,7 +389,7 @@ var _ = Describe("Test data import cron template", func() {
 			modifiedImage1.Spec.GarbageCollect = ptr.To(cdiv1beta1.DataImportCronGarbageCollectOutdated)
 			modifiedImage1.Spec.ImportsToKeep = ptr.To[int32](5)
 
-			hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{*modifiedImage1, image3, image4}
+			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{*modifiedImage1, image3, image4}
 
 			goldenImageList, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
@@ -420,14 +421,14 @@ var _ = Describe("Test data import cron template", func() {
 				CDIImmediateBindAnnotation: "false",
 			}
 
-			dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
 				image1.Name: image1,
 				image2.Name: image2,
 			}
 
 			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
-			hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
+			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
 
 			goldenImageStatuses, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
@@ -465,7 +466,7 @@ var _ = Describe("Test data import cron template", func() {
 			}
 			annotationMissingInBoth := image4.DeepCopy()
 
-			dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
 				image1.Name: image1,
 				image2.Name: image2,
 				image3.Name: image3,
@@ -474,7 +475,7 @@ var _ = Describe("Test data import cron template", func() {
 
 			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
-			hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{*annotationModified, *annotationMissingInCR, *annotationExistsInCR, *annotationMissingInBoth}
+			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{*annotationModified, *annotationMissingInCR, *annotationExistsInCR, *annotationMissingInBoth}
 
 			goldenImageStatuses, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
@@ -500,7 +501,7 @@ var _ = Describe("Test data import cron template", func() {
 				customNS   = "custom-ns"
 				modifiedNS = "some-other-ns"
 			)
-			dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
 				image1.Name: image1,
 				image2.Name: image2,
 			}
@@ -511,7 +512,7 @@ var _ = Describe("Test data import cron template", func() {
 			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 			hco.Spec.CommonBootImageNamespace = ptr.To(customNS)
 
-			hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{*withModifiedNS, image3}
+			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{*withModifiedNS, image3}
 
 			goldenImageList, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
@@ -530,7 +531,7 @@ var _ = Describe("Test data import cron template", func() {
 
 	Context("test ApplyDataImportSchedule", func() {
 		It("should not set the schedule filed if missing from the status", func() {
-			dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
 				image1.Name: image1,
 				image2.Name: image2,
 			}
@@ -545,7 +546,7 @@ var _ = Describe("Test data import cron template", func() {
 			const schedule = "42 */1 * * *"
 			hco.Status.DataImportSchedule = schedule
 
-			dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
 				image1.Name: image1,
 				image2.Name: image2,
 			}
@@ -619,12 +620,12 @@ var _ = Describe("Test data import cron template", func() {
 					MultiArchDICTAnnotation:               "amd64,arm64,s390x",
 				}
 
-				dataImportCronTemplateHardCodedMap = map[string]hcov1beta1.DataImportCronTemplate{
+				dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
 					image1.Name: image1,
 					image2.Name: image2,
 				}
 
-				hco.Spec.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplate{image3, image4}
+				hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
 
 				nodeinfo.GetWorkloadsArchitectures = func() []string {
 					return []string{"amd64", "arm64", "s390x"}
@@ -798,7 +799,7 @@ var _ = Describe("Test data import cron template", func() {
 		})
 
 		Context("test customizeCommonDictAnnotations", func() {
-			DescribeTable("should customize the common DICT annotations", func(modifyTargetDict, modifyCRDict func(*hcov1beta1.DataImportCronTemplate), enableMultiArchBootImageImport bool, matcher gomegatypes.GomegaMatcher) {
+			DescribeTable("should customize the common DICT annotations", func(modifyTargetDict, modifyCRDict func(*hcov1.DataImportCronTemplate), enableMultiArchBootImageImport bool, matcher gomegatypes.GomegaMatcher) {
 				crDict, targetDict := makeDICT(1, true)
 
 				modifyTargetDict(&targetDict.DataImportCronTemplate)
@@ -810,122 +811,122 @@ var _ = Describe("Test data import cron template", func() {
 				Expect(crDict.Annotations).To(Equal(origCrAnnotations))
 			},
 				Entry("if enableMultiArchBootImageImport if false, just copy from CR to target; when annotations are different",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
 					},
 					false,
 					HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
 				),
 				Entry("if enableMultiArchBootImageImport if false, leave the target value; when cr annotations is missing",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
 					},
 					false,
 					HaveKeyWithValue(MultiArchDICTAnnotation, "targetVal1,targetVal2,targetVal3"),
 				),
 				Entry("if enableMultiArchBootImageImport if false, just copy from CR to target; when target annotation is missing",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
 					},
 					false,
 					HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
 				),
 				Entry("if enableMultiArchBootImageImport if false, do nothing; when both annotation are missing",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
 					},
 					false,
 					Not(HaveKey(MultiArchDICTAnnotation)),
 				),
 				Entry("if reg was not changed, and MultiArchDICTAnnotation annotation exists in target, keep it; when annotations are the same",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
 					},
 					true,
 					HaveKeyWithValue(MultiArchDICTAnnotation, "targetVal1,targetVal2,targetVal3"),
 				),
 				Entry("if reg was not changed, and MultiArchDICTAnnotation annotation exists in target, keep it; when annotations are different",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
 					},
 					true,
 					HaveKeyWithValue(MultiArchDICTAnnotation, "targetVal1,targetVal2,targetVal3"),
 				),
 				Entry("if reg was not changed, and MultiArchDICTAnnotation annotation exists in target, keep it; when annotations are missing from CR",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{}
 					},
 					true,
 					HaveKeyWithValue(MultiArchDICTAnnotation, "targetVal1,targetVal2,targetVal3"),
 				),
 				Entry("if reg was not changed, and MultiArchDICTAnnotation annotation exists in target, keep it; when annotations are missing from CR",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = nil
 					},
 					true,
 					HaveKeyWithValue(MultiArchDICTAnnotation, "targetVal1,targetVal2,targetVal3"),
 				),
 				Entry("if reg was not changed, and MultiArchDICTAnnotation annotation does not exist in target don't override; no target annotations",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = nil
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
 					},
 					true,
 					Not(HaveKey(MultiArchDICTAnnotation)),
 				),
 				Entry("if reg was not changed, and MultiArchDICTAnnotation annotation does not exist in target don't override; empty target annotations",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = make(map[string]string)
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
 					},
 					true,
 					Not(HaveKey(MultiArchDICTAnnotation)),
 				),
 				Entry("if reg was not changed, and MultiArchDICTAnnotation annotation does not exist in target, don't override; no MultiArchDICTAnnotation annotation in target",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = map[string]string{
 							"testing.kubevirt.io/fake.annotation": "true",
 						}
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
 					},
 					true,
 					Not(HaveKey(MultiArchDICTAnnotation)),
 				),
 				Entry("if reg was changed, and MultiArchDICTAnnotation annotation exists in CR, copy to target; when annotations are different",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
 						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
 					},
@@ -933,10 +934,10 @@ var _ = Describe("Test data import cron template", func() {
 					HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
 				),
 				Entry("if reg was changed, and MultiArchDICTAnnotation annotation exists in CR, copy to target; when annotations are the same",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
 						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
 					},
@@ -944,10 +945,10 @@ var _ = Describe("Test data import cron template", func() {
 					HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
 				),
 				Entry("if reg was changed, and MultiArchDICTAnnotation annotation exists in CR, copy to target; when no MultiArchDICTAnnotation is missing in target",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
 						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
 					},
@@ -955,10 +956,10 @@ var _ = Describe("Test data import cron template", func() {
 					HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
 				),
 				Entry("if reg was changed, and MultiArchDICTAnnotation annotation exists in CR, copy to target; when no annotations in target",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = nil
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
 						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
 					},
@@ -966,10 +967,10 @@ var _ = Describe("Test data import cron template", func() {
 					HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
 				),
 				Entry("if reg was changed, and MultiArchDICTAnnotation annotation exists in CR, copy to target; when annotations are empty in target",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = map[string]string{}
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{MultiArchDICTAnnotation: "crVal1,crVal2,crVal3"}
 						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
 					},
@@ -977,10 +978,10 @@ var _ = Describe("Test data import cron template", func() {
 					HaveKeyWithValue(MultiArchDICTAnnotation, "crVal1,crVal2,crVal3"),
 				),
 				Entry("if reg was changed, and MultiArchDICTAnnotation annotation does not exist in CR, remove from target; when annotation exists in target",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = map[string]string{MultiArchDICTAnnotation: "targetVal1,targetVal2,targetVal3"}
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
 						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
 					},
@@ -988,10 +989,10 @@ var _ = Describe("Test data import cron template", func() {
 					Not(HaveKey(MultiArchDICTAnnotation)),
 				),
 				Entry("if reg was changed, and MultiArchDICTAnnotation annotation does not exist in CR, remove from target; when annotation does not exist in target",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
 						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
 					},
@@ -999,10 +1000,10 @@ var _ = Describe("Test data import cron template", func() {
 					Not(HaveKey(MultiArchDICTAnnotation)),
 				),
 				Entry("if reg was changed, and MultiArchDICTAnnotation annotation does not exist in CR, remove from target; when annotations are nil in CR",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = map[string]string{"testing.kubevirt.io/fake.annotation": "true"}
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = nil
 						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
 					},
@@ -1010,10 +1011,10 @@ var _ = Describe("Test data import cron template", func() {
 					Not(HaveKey(MultiArchDICTAnnotation)),
 				),
 				Entry("if reg was changed, and MultiArchDICTAnnotation annotation does not exist in CR, remove from target; when annotations are both nil",
-					func(targetDict *hcov1beta1.DataImportCronTemplate) {
+					func(targetDict *hcov1.DataImportCronTemplate) {
 						targetDict.Annotations = nil
 					},
-					func(crDict *hcov1beta1.DataImportCronTemplate) {
+					func(crDict *hcov1.DataImportCronTemplate) {
 						crDict.Annotations = nil
 						crDict.Spec.Template.Spec.Source.Registry = &cdiv1beta1.DataVolumeSourceRegistry{URL: ptr.To("docker://someregistry/customized-image")}
 					},
@@ -1025,7 +1026,7 @@ var _ = Describe("Test data import cron template", func() {
 	})
 })
 
-func enableDict(dict *hcov1beta1.DataImportCronTemplate, status *hcov1beta1.DataImportCronTemplateStatus) {
+func enableDict(dict *hcov1.DataImportCronTemplate, status *hcov1beta1.DataImportCronTemplateStatus) {
 	if dict.Annotations == nil {
 		dict.Annotations = make(map[string]string)
 	}
@@ -1037,17 +1038,17 @@ func enableDict(dict *hcov1beta1.DataImportCronTemplate, status *hcov1beta1.Data
 	status.Annotations[hcoutil.DataImportCronEnabledAnnotation] = "true"
 }
 
-func disableDict(dict *hcov1beta1.DataImportCronTemplate) {
+func disableDict(dict *hcov1.DataImportCronTemplate) {
 	if dict.Annotations == nil {
 		dict.Annotations = make(map[string]string)
 	}
 	dict.Annotations[hcoutil.DataImportCronEnabledAnnotation] = "false"
 }
 
-func makeDICT(num int, CommonTemplate bool) (hcov1beta1.DataImportCronTemplate, hcov1beta1.DataImportCronTemplateStatus) {
+func makeDICT(num int, CommonTemplate bool) (hcov1.DataImportCronTemplate, hcov1beta1.DataImportCronTemplateStatus) {
 	name := fmt.Sprintf("image%d", num)
 
-	dict := hcov1beta1.DataImportCronTemplate{
+	dict := hcov1.DataImportCronTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 		},

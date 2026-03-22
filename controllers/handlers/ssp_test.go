@@ -21,6 +21,7 @@ import (
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
@@ -1312,7 +1313,7 @@ var _ = Describe("SSP Operands", func() {
 func makeDICT(num int) hcov1beta1.DataImportCronTemplateStatus {
 	name := fmt.Sprintf("image%d", num)
 
-	dict := hcov1beta1.DataImportCronTemplate{
+	dict := hcov1.DataImportCronTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 			//Annotations: make(map[string]string),

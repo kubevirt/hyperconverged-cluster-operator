@@ -45,7 +45,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.MediatedDevicesConfiguration":         schema_kubevirt_hyperconverged_cluster_operator_api_v1_MediatedDevicesConfiguration(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.MediatedHostDevice":                   schema_kubevirt_hyperconverged_cluster_operator_api_v1_MediatedHostDevice(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodeMediatedDeviceTypesConfig":        schema_kubevirt_hyperconverged_cluster_operator_api_v1_NodeMediatedDeviceTypesConfig(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.OperandResourceRequirements":          schema_kubevirt_hyperconverged_cluster_operator_api_v1_OperandResourceRequirements(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PciHostDevice":                        schema_kubevirt_hyperconverged_cluster_operator_api_v1_PciHostDevice(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PermittedHostDevices":                 schema_kubevirt_hyperconverged_cluster_operator_api_v1_PermittedHostDevices(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageImportConfig":                  schema_kubevirt_hyperconverged_cluster_operator_api_v1_StorageImportConfig(ref),
@@ -61,6 +60,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_ApplicationAwareConf
 				Description: "ApplicationAwareConfigurations holds the AAQ configurations",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
+					"enable": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Enable if true, enables the Application Aware Quota feature",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 					"vmiCalcConfigName": {
 						SchemaProps: spec.SchemaProps{
 							Description: "VmiCalcConfigName determine how resource allocation will be done with ApplicationsResourceQuota. allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources, IgnoreVmiCalculator or GuestEffectiveResources",
@@ -263,173 +270,45 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig"),
 						},
 					},
-					"certConfig": {
+					"storage": {
 						SchemaProps: spec.SchemaProps{
-							Description: "certConfig holds the rotation policy for internal, self-signed certificates",
+							Description: "Storage contains all the configurations for storage",
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig"),
+						},
+					},
+					"networking": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Networking contains all the configurations for networking",
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NetworkingConfig"),
+						},
+					},
+					"workloadSources": {
+						SchemaProps: spec.SchemaProps{
+							Description: "WorkloadSources contains all the configurations for workload sources",
 							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedCertConfig"),
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.WorkloadSourcesConfig"),
 						},
 					},
-					"resourceRequirements": {
+					"security": {
 						SchemaProps: spec.SchemaProps{
-							Description: "ResourceRequirements describes the resource requirements for the operand workloads.",
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.OperandResourceRequirements"),
+							Description: "Security contains all the security configurations",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.SecurityConfig"),
 						},
 					},
-					"scratchSpaceStorageClass": {
+					"deployment": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Override the storage class used for scratch space during transfer operations. The scratch space storage class is determined in the following order: value of scratchSpaceStorageClass, if that doesn't exist, use the default storage class, if there is no default storage class, use the storage class of the DataVolume, if no storage class specified, use no storage class for scratch space",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"commonTemplatesNamespace": {
-						SchemaProps: spec.SchemaProps{
-							Description: "CommonTemplatesNamespace defines namespace in which common templates will be deployed. It overrides the default openshift namespace.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"storageImport": {
-						SchemaProps: spec.SchemaProps{
-							Description: "StorageImport contains configuration for importing containerized data",
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageImportConfig"),
-						},
-					},
-					"dataImportCronTemplates": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "DataImportCronTemplates holds list of data import cron templates (golden images)",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate"),
-									},
-								},
-							},
-						},
-					},
-					"filesystemOverhead": {
-						SchemaProps: spec.SchemaProps{
-							Description: "FilesystemOverhead describes the space reserved for overhead when using Filesystem volumes. A value is between 0 and 1, if not defined it is 0.055 (5.5 percent overhead)",
-							Ref:         ref("kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1.FilesystemOverhead"),
-						},
-					},
-					"uninstallStrategy": {
-						SchemaProps: spec.SchemaProps{
-							Description: "UninstallStrategy defines how to proceed on uninstall when workloads (VirtualMachines, DataVolumes) still exist. BlockUninstallIfWorkloadsExist will prevent the CR from being removed when workloads still exist. BlockUninstallIfWorkloadsExist is the safest choice to protect your workloads from accidental data loss, so it's strongly advised. RemoveWorkloads will cause all the workloads to be cascading deleted on uninstallation. WARNING: please notice that RemoveWorkloads will cause your workloads to be deleted as soon as this CR will be, even accidentally, deleted. Please correctly consider the implications of this option before setting it. BlockUninstallIfWorkloadsExist is the default behaviour.",
-							Default:     "BlockUninstallIfWorkloadsExist",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"logVerbosityConfig": {
-						SchemaProps: spec.SchemaProps{
-							Description: "LogVerbosityConfig configures the verbosity level of Kubevirt's different components. The higher the value - the higher the log verbosity.",
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration"),
-						},
-					},
-					"tlsSecurityProfile": {
-						SchemaProps: spec.SchemaProps{
-							Description: "TLSSecurityProfile specifies the settings for TLS connections to be propagated to all kubevirt-hyperconverged components. If unset, the hyperconverged cluster operator will consume the value set on the APIServer CR on OCP/OKD or Intermediate if on vanilla k8s. Note that only Old, Intermediate and Custom profiles are currently supported, and the maximum available MinTLSVersions is VersionTLS12.",
-							Ref:         ref("github.com/openshift/api/config/v1.TLSSecurityProfile"),
-						},
-					},
-					"kubeSecondaryDNSNameServerIP": {
-						SchemaProps: spec.SchemaProps{
-							Description: "KubeSecondaryDNSNameServerIP defines name server IP used by KubeSecondaryDNS",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"kubeMacPoolConfiguration": {
-						SchemaProps: spec.SchemaProps{
-							Description: "KubeMacPoolConfiguration holds kubemacpool MAC address range configuration.",
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.KubeMacPoolConfig"),
-						},
-					},
-					"vmStateStorageClass": {
-						SchemaProps: spec.SchemaProps{
-							Description: "VMStateStorageClass is the name of the storage class to use for the PVCs created to preserve VM state, like TPM.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"commonBootImageNamespace": {
-						SchemaProps: spec.SchemaProps{
-							Description: "CommonBootImageNamespace override the default namespace of the common boot images, in order to hide them.\n\nIf not set, HCO won't set any namespace, letting SSP to use the default. If set, use the namespace to create the DataImportCronTemplates and the common image streams, with this namespace. This field is not set by default.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"networkBinding": {
-						SchemaProps: spec.SchemaProps{
-							Description: "NetworkBinding defines the network binding plugins. Those bindings can be used when defining virtual machine interfaces.",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("kubevirt.io/api/core/v1.InterfaceBindingPlugin"),
-									},
-								},
-							},
-						},
-					},
-					"applicationAwareConfig": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ApplicationAwareConfig set the AAQ configurations",
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations"),
-						},
-					},
-					"enableCommonBootImageImport": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Opt-in to automatic delivery/updates of the common data import cron templates. There are two sources for the data import cron templates: hard coded list of common templates, and custom (user defined) templates that can be added to the dataImportCronTemplates field. This field only controls the common templates. It is possible to use custom templates by adding them to the dataImportCronTemplates field.",
-							Default:     true,
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"instancetypeConfig": {
-						SchemaProps: spec.SchemaProps{
-							Description: "InstancetypeConfig holds the configuration of instance type related functionality within KubeVirt.",
-							Ref:         ref("kubevirt.io/api/core/v1.InstancetypeConfiguration"),
-						},
-					},
-					"CommonInstancetypesDeployment": {
-						SchemaProps: spec.SchemaProps{
-							Description: "CommonInstancetypesDeployment holds the configuration of common-instancetypes deployment within KubeVirt.",
-							Ref:         ref("kubevirt.io/api/core/v1.CommonInstancetypesDeployment"),
-						},
-					},
-					"deployVmConsoleProxy": {
-						SchemaProps: spec.SchemaProps{
-							Description: "deploy VM console proxy resources in SSP operator",
-							Default:     false,
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"enableApplicationAwareQuota": {
-						SchemaProps: spec.SchemaProps{
-							Description: "EnableApplicationAwareQuota if true, enables the Application Aware Quota feature",
-							Default:     false,
-							Type:        []string{"boolean"},
-							Format:      "",
+							Description: "Deployment contains all the configurations related to deployment of KubeVirt components",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DeploymentConfig"),
 						},
 					},
 				},
+				Required: []string{"deployment"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedCertConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodePlacements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.OperandResourceRequirements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageImportConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate", "github.com/openshift/api/config/v1.TLSSecurityProfile", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin", "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1.FilesystemOverhead"},
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DeploymentConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NetworkingConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodePlacements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.SecurityConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.VirtualizationConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.WorkloadSourcesConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates.FeatureGate"},
 	}
 }
 
@@ -880,27 +759,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_NodeMediatedDeviceTy
 				Required: []string{"nodeSelector"},
 			},
 		},
-	}
-}
-
-func schema_kubevirt_hyperconverged_cluster_operator_api_v1_OperandResourceRequirements(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "OperandResourceRequirements is a list of resource requirements for the operand workloads pods",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"storageWorkloads": {
-						SchemaProps: spec.SchemaProps{
-							Description: "StorageWorkloads defines the resources requirements for storage workloads. It will propagate to the CDI custom resource",
-							Ref:         ref("k8s.io/api/core/v1.ResourceRequirements"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"k8s.io/api/core/v1.ResourceRequirements"},
 	}
 }
 

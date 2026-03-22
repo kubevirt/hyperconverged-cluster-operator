@@ -3,8 +3,10 @@ package v1beta1
 import (
 	"math/rand/v2"
 	"testing"
+	"time"
 
 	. "github.com/onsi/gomega"
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	kubevirtv1 "kubevirt.io/api/core/v1"
@@ -182,6 +184,91 @@ func randomV1beta1HC(r *rand.Rand) *HyperConverged {
 		}
 	}
 
+	hc.Spec.VMStateStorageClass = randPtr(r, randString(r))
+	hc.Spec.ScratchSpaceStorageClass = randPtr(r, randString(r))
+
+	if r.IntN(2) == 1 {
+		hc.Spec.StorageImport = &hcov1.StorageImportConfig{
+			InsecureRegistries: randStringSlice(r),
+		}
+	}
+
+	hc.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+		CA: hcov1.CertRotateConfigCA{
+			Duration:    randPtr(r, metav1.Duration{Duration: time.Duration(r.IntN(100)+1) * time.Hour}),
+			RenewBefore: randPtr(r, metav1.Duration{Duration: time.Duration(r.IntN(50)+1) * time.Hour}),
+		},
+		Server: hcov1.CertRotateConfigServer{
+			Duration:    randPtr(r, metav1.Duration{Duration: time.Duration(r.IntN(48)+1) * time.Hour}),
+			RenewBefore: randPtr(r, metav1.Duration{Duration: time.Duration(r.IntN(24)+1) * time.Hour}),
+		},
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+			Type:         openshiftconfigv1.TLSProfileIntermediateType,
+			Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.KubeSecondaryDNSNameServerIP = randPtr(r, randString(r))
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.KubeMacPoolConfiguration = &hcov1.KubeMacPoolConfig{
+			RangeStart: randPtr(r, randString(r)),
+			RangeEnd:   randPtr(r, randString(r)),
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.NetworkBinding = map[string]kubevirtv1.InterfaceBindingPlugin{
+			randString(r): {SidecarImage: randString(r)},
+		}
+	}
+
+	hc.Spec.CommonTemplatesNamespace = randPtr(r, randString(r))
+	hc.Spec.CommonBootImageNamespace = randPtr(r, randString(r))
+	hc.Spec.EnableCommonBootImageImport = randPtr(r, r.IntN(2) == 1)
+
+	if r.IntN(2) == 1 {
+		hc.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
+			{ObjectMeta: metav1.ObjectMeta{Name: randString(r)}},
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.InstancetypeConfig = &kubevirtv1.InstancetypeConfiguration{}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.CommonInstancetypesDeployment = &kubevirtv1.CommonInstancetypesDeployment{
+			Enabled: randPtr(r, r.IntN(2) == 1),
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.UninstallStrategy = hcov1.HyperConvergedUninstallStrategyRemoveWorkloads
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.LogVerbosityConfig = &hcov1.LogVerbosityConfiguration{
+			Kubevirt: &kubevirtv1.LogVerbosity{
+				VirtAPI: uint(r.IntN(10)),
+			},
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.ApplicationAwareConfig = &ApplicationAwareConfigurations{
+			AllowApplicationAwareClusterResourceQuota: r.IntN(2) == 1,
+		}
+	}
+
+	hc.Spec.EnableApplicationAwareQuota = randPtr(r, r.IntN(2) == 1)
+	hc.Spec.DeployVMConsoleProxy = randPtr(r, r.IntN(2) == 1)
+
 	return hc
 }
 
@@ -285,6 +372,105 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 			hc.Spec.FeatureGates.Disable("decentralizedLiveMigration")
 		}
 	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.Storage = &hcov1.StorageConfig{
+			VMStateStorageClass:      randPtr(r, randString(r)),
+			ScratchSpaceStorageClass: randPtr(r, randString(r)),
+		}
+		if r.IntN(2) == 1 {
+			hc.Spec.Storage.StorageImport = &hcov1.StorageImportConfig{
+				InsecureRegistries: randStringSlice(r),
+			}
+		}
+	}
+
+	hc.Spec.Security.CertConfig = hcov1.HyperConvergedCertConfig{
+		CA: hcov1.CertRotateConfigCA{
+			Duration:    randPtr(r, metav1.Duration{Duration: time.Duration(r.IntN(100)+1) * time.Hour}),
+			RenewBefore: randPtr(r, metav1.Duration{Duration: time.Duration(r.IntN(50)+1) * time.Hour}),
+		},
+		Server: hcov1.CertRotateConfigServer{
+			Duration:    randPtr(r, metav1.Duration{Duration: time.Duration(r.IntN(48)+1) * time.Hour}),
+			RenewBefore: randPtr(r, metav1.Duration{Duration: time.Duration(r.IntN(24)+1) * time.Hour}),
+		},
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+			Type:         openshiftconfigv1.TLSProfileIntermediateType,
+			Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		nsIP := randString(r)
+		hc.Spec.Networking = &hcov1.NetworkingConfig{
+			KubeSecondaryDNSNameServerIP: &nsIP,
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		if hc.Spec.Networking == nil {
+			hc.Spec.Networking = &hcov1.NetworkingConfig{}
+		}
+
+		hc.Spec.Networking.KubeMacPoolConfiguration = &hcov1.KubeMacPoolConfig{
+			RangeStart: randPtr(r, randString(r)),
+			RangeEnd:   randPtr(r, randString(r)),
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		if hc.Spec.Networking == nil {
+			hc.Spec.Networking = &hcov1.NetworkingConfig{}
+		}
+
+		hc.Spec.Networking.NetworkBinding = map[string]kubevirtv1.InterfaceBindingPlugin{
+			randString(r): {SidecarImage: randString(r)},
+		}
+	}
+
+	hc.Spec.WorkloadSources.CommonTemplatesNamespace = randPtr(r, randString(r))
+	hc.Spec.WorkloadSources.CommonBootImageNamespace = randPtr(r, randString(r))
+	hc.Spec.WorkloadSources.EnableCommonBootImageImport = randPtr(r, r.IntN(2) == 1)
+
+	if r.IntN(2) == 1 {
+		hc.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
+			{ObjectMeta: metav1.ObjectMeta{Name: randString(r)}},
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.WorkloadSources.InstancetypeConfig = &kubevirtv1.InstancetypeConfiguration{}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.WorkloadSources.CommonInstancetypesDeployment = &kubevirtv1.CommonInstancetypesDeployment{
+			Enabled: randPtr(r, r.IntN(2) == 1),
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.Deployment.UninstallStrategy = hcov1.HyperConvergedUninstallStrategyRemoveWorkloads
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.Deployment.LogVerbosityConfig = &hcov1.LogVerbosityConfiguration{
+			Kubevirt: &kubevirtv1.LogVerbosity{
+				VirtAPI: uint(r.IntN(10)),
+			},
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{
+			Enable: randPtr(r, r.IntN(2) == 1),
+			AllowApplicationAwareClusterResourceQuota: r.IntN(2) == 1,
+		}
+	}
+
+	hc.Spec.Deployment.DeployVMConsoleProxy = randPtr(r, r.IntN(2) == 1)
 
 	return hc
 }

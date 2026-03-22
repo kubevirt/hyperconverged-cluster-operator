@@ -63,7 +63,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 		)
 
 		DescribeTable("check dict annotation on create", func(ctx context.Context, annotations map[string]string, expectedPatches *jsonpatch.JsonPatchOperation) {
-			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
+			cr.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "dictName",
@@ -101,7 +101,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 		)
 
 		It("should handle multiple DICTs", func(ctx context.Context) {
-			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
+			cr.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "no-annotation",
@@ -238,7 +238,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 	Context("Check mutating webhook for update operation", func() {
 		DescribeTable("check dict annotation on update", func(ctx context.Context, annotations map[string]string, expectedPatches *jsonpatch.JsonPatchOperation) {
 			origCR := cr.DeepCopy()
-			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
+			cr.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:        "dictName",
@@ -276,7 +276,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 		It("should handle multiple DICTs on update", func(ctx context.Context) {
 			origCR := cr.DeepCopy()
 
-			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
+			cr.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "no-annotation",

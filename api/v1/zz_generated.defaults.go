@@ -107,40 +107,42 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		var ptrVar1 int = 10
 		in.Spec.Virtualization.VmiCPUAllocationRatio = &ptrVar1
 	}
-	if in.Spec.CertConfig.CA.Duration == nil {
-		if err := json.Unmarshal([]byte(`"48h0m0s"`), &in.Spec.CertConfig.CA.Duration); err != nil {
-			panic(err)
-		}
-	}
-	if in.Spec.CertConfig.CA.RenewBefore == nil {
-		if err := json.Unmarshal([]byte(`"24h0m0s"`), &in.Spec.CertConfig.CA.RenewBefore); err != nil {
-			panic(err)
-		}
-	}
-	if in.Spec.CertConfig.Server.Duration == nil {
-		if err := json.Unmarshal([]byte(`"24h0m0s"`), &in.Spec.CertConfig.Server.Duration); err != nil {
-			panic(err)
-		}
-	}
-	if in.Spec.CertConfig.Server.RenewBefore == nil {
-		if err := json.Unmarshal([]byte(`"12h0m0s"`), &in.Spec.CertConfig.Server.RenewBefore); err != nil {
-			panic(err)
-		}
-	}
-	if in.Spec.UninstallStrategy == "" {
-		in.Spec.UninstallStrategy = "BlockUninstallIfWorkloadsExist"
-	}
-	if in.Spec.EnableCommonBootImageImport == nil {
+	if in.Spec.WorkloadSources.EnableCommonBootImageImport == nil {
 		var ptrVar1 bool = true
-		in.Spec.EnableCommonBootImageImport = &ptrVar1
+		in.Spec.WorkloadSources.EnableCommonBootImageImport = &ptrVar1
 	}
-	if in.Spec.DeployVMConsoleProxy == nil {
-		var ptrVar1 bool = false
-		in.Spec.DeployVMConsoleProxy = &ptrVar1
+	if in.Spec.Security.CertConfig.CA.Duration == nil {
+		if err := json.Unmarshal([]byte(`"48h0m0s"`), &in.Spec.Security.CertConfig.CA.Duration); err != nil {
+			panic(err)
+		}
 	}
-	if in.Spec.EnableApplicationAwareQuota == nil {
+	if in.Spec.Security.CertConfig.CA.RenewBefore == nil {
+		if err := json.Unmarshal([]byte(`"24h0m0s"`), &in.Spec.Security.CertConfig.CA.RenewBefore); err != nil {
+			panic(err)
+		}
+	}
+	if in.Spec.Security.CertConfig.Server.Duration == nil {
+		if err := json.Unmarshal([]byte(`"24h0m0s"`), &in.Spec.Security.CertConfig.Server.Duration); err != nil {
+			panic(err)
+		}
+	}
+	if in.Spec.Security.CertConfig.Server.RenewBefore == nil {
+		if err := json.Unmarshal([]byte(`"12h0m0s"`), &in.Spec.Security.CertConfig.Server.RenewBefore); err != nil {
+			panic(err)
+		}
+	}
+	if in.Spec.Deployment.UninstallStrategy == "" {
+		in.Spec.Deployment.UninstallStrategy = "BlockUninstallIfWorkloadsExist"
+	}
+	if in.Spec.Deployment.ApplicationAwareConfig != nil {
+		if in.Spec.Deployment.ApplicationAwareConfig.Enable == nil {
+			var ptrVar1 bool = false
+			in.Spec.Deployment.ApplicationAwareConfig.Enable = &ptrVar1
+		}
+	}
+	if in.Spec.Deployment.DeployVMConsoleProxy == nil {
 		var ptrVar1 bool = false
-		in.Spec.EnableApplicationAwareQuota = &ptrVar1
+		in.Spec.Deployment.DeployVMConsoleProxy = &ptrVar1
 	}
 }
 
