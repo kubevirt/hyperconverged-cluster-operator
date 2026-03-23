@@ -390,7 +390,7 @@ func getHcoHighBurstProfileTuningValues(hc *hcov1beta1.HyperConverged) (*kubevir
 
 func hcoTuning2Kv(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.ReloadableComponentConfiguration, error) {
 	switch hc.Spec.TuningPolicy {
-	case hcov1beta1.HyperConvergedAnnotationTuningPolicy:
+	case hcov1.HyperConvergedAnnotationTuningPolicy:
 		return getHcoAnnotationTuning(hc)
 	case hcov1beta1.HyperConvergedHighBurstProfile: //nolint SA1019
 		return getHcoHighBurstProfileTuningValues(hc)

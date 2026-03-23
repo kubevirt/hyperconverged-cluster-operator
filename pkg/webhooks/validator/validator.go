@@ -416,8 +416,8 @@ func (wh *WebhookHandler) validateTLSSecurityProfiles(hc *hcov1.HyperConverged) 
 }
 
 func (wh *WebhookHandler) validateTuningPolicy(hc *hcov1.HyperConverged) error {
-	if hc.Spec.TuningPolicy == hcov1.HyperConvergedHighBurstProfile { //nolint SA1019
-		return newValidationWarning([]string{"spec.tuningPolicy: the highBurst profile is deprecated as of v1.16.0 and will be removed in a future release"})
+	if hc.Spec.Virtualization.TuningPolicy == hcov1beta1.HyperConvergedHighBurstProfile { //nolint SA1019
+		return newValidationWarning([]string{"spec.virtualization.tuningPolicy: the highBurst profile is not supported and ignored"})
 	}
 	return nil
 }
