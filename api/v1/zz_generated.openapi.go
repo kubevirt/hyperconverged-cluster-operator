@@ -237,13 +237,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 				Description: "HyperConvergedSpec defines the desired state of HyperConverged",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"tuningPolicy": {
-						SchemaProps: spec.SchemaProps{
-							Description: "TuningPolicy allows to configure the mode in which the RateLimits of kubevirt are set. If TuningPolicy is not present the default kubevirt values are used. It can be set to `annotation` for fine-tuning the kubevirt queryPerSeconds (qps) and burst values. Qps and burst values are taken from the annotation hco.kubevirt.io/tuningPolicy",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
 					"nodePlacements": {
 						SchemaProps: spec.SchemaProps{
 							Description: "NodePlacements defines the node scheduling configuration for infrastructure or workload entities",
@@ -304,7 +297,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedSpec(r
 						},
 					},
 				},
-				Required: []string{"deployment"},
 			},
 		},
 		Dependencies: []string{

@@ -308,7 +308,7 @@ func Convert_v1_HyperConvergedList_To_v1beta1_HyperConvergedList(in *v1.HyperCon
 
 func autoConvert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(in *HyperConvergedSpec, out *v1.HyperConvergedSpec, s conversion.Scope) error {
 	// INFO: in.LocalStorageClassName opted out of conversion generation
-	out.TuningPolicy = v1.HyperConvergedTuningPolicy(in.TuningPolicy)
+	// INFO: in.TuningPolicy opted out of conversion generation
 	// INFO: in.Infra opted out of conversion generation
 	// INFO: in.Workloads opted out of conversion generation
 	// INFO: in.FeatureGates opted out of conversion generation
@@ -359,7 +359,6 @@ func Convert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(in *HyperConver
 }
 
 func autoConvert_v1_HyperConvergedSpec_To_v1beta1_HyperConvergedSpec(in *v1.HyperConvergedSpec, out *HyperConvergedSpec, s conversion.Scope) error {
-	out.TuningPolicy = HyperConvergedTuningPolicy(in.TuningPolicy)
 	// INFO: in.NodePlacements opted out of conversion generation
 	// INFO: in.FeatureGates opted out of conversion generation
 	// INFO: in.Virtualization opted out of conversion generation

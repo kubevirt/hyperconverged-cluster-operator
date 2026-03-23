@@ -20,14 +20,9 @@ import (
 // HyperConvergedName is the name of the HyperConverged resource that will be reconciled
 const HyperConvergedName = "kubevirt-hyperconverged"
 
-type HyperConvergedTuningPolicy string
-
-// HyperConvergedAnnotationTuningPolicy defines a static configuration of the kubevirt query per seconds (qps) and burst values
-// through annotation values.
 const (
-	HyperConvergedAnnotationTuningPolicy HyperConvergedTuningPolicy = "annotation"
 	// Deprecated: The highBurst profile is deprecated as of v1.16.0 ahead of removal in a future release
-	HyperConvergedHighBurstProfile HyperConvergedTuningPolicy = "highBurst"
+	HyperConvergedHighBurstProfile hcov1.HyperConvergedTuningPolicy = "highBurst"
 )
 
 // HyperConvergedSpec defines the desired state of HyperConverged
@@ -47,7 +42,8 @@ type HyperConvergedSpec struct {
 	// Qps and burst values are taken from the annotation hco.kubevirt.io/tuningPolicy
 	// +kubebuilder:validation:Enum=annotation;highBurst
 	// +optional
-	TuningPolicy HyperConvergedTuningPolicy `json:"tuningPolicy,omitempty"`
+	// +k8s:conversion-gen=false
+	TuningPolicy hcov1.HyperConvergedTuningPolicy `json:"tuningPolicy,omitempty"`
 
 	// infra HyperConvergedConfig influences the pod configuration (currently only placement)
 	// for all the infra components needed on the virtualization enabled cluster

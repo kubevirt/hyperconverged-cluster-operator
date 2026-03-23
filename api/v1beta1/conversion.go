@@ -108,6 +108,8 @@ func convertNodePlacementsV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1Spec *hc
 }
 
 func convertVirtualizationV1ToV1beta1(v1VirtConfig hcov1.VirtualizationConfig, v1beta1Spec *HyperConvergedSpec) error {
+	v1beta1Spec.TuningPolicy = v1VirtConfig.TuningPolicy
+
 	v1VirtConfig.LiveMigrationConfig.DeepCopyInto(&v1beta1Spec.LiveMigrationConfig)
 
 	if v1VirtConfig.PermittedHostDevices != nil {
@@ -191,6 +193,12 @@ func convertVMOptionsV1ToV1beta1(v1VMOptions *hcov1.VirtualMachineOptions, v1bet
 }
 
 func convertVirtualizationV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1VirtConfig *hcov1.VirtualizationConfig) error {
+	// the "highBurst" policy is deprecated in v1. We don't need to copy it because it's now the
+	// default value in KubeVirt.
+	if v1beta1Spec.TuningPolicy == hcov1.HyperConvergedAnnotationTuningPolicy {
+		v1VirtConfig.TuningPolicy = hcov1.HyperConvergedAnnotationTuningPolicy
+	}
+
 	v1beta1Spec.LiveMigrationConfig.DeepCopyInto(&v1VirtConfig.LiveMigrationConfig)
 
 	if v1beta1Spec.PermittedHostDevices != nil {
@@ -283,14 +291,12 @@ func convertStorageV1ToV1beta1(v1StorageConfig *hcov1.StorageConfig, v1beta1Spec
 		v1beta1Spec.FilesystemOverhead = v1StorageConfig.FilesystemOverhead.DeepCopy()
 	}
 
-	if v1StorageConfig.StorageWorkloads != nil {
+	if v1StorageConfig.WorkloadResourceRequirements != nil {
 		if v1beta1Spec.ResourceRequirements == nil {
 			v1beta1Spec.ResourceRequirements = &OperandResourceRequirements{}
 		}
 
-		if v1StorageConfig.StorageWorkloads != nil {
-			v1beta1Spec.ResourceRequirements.StorageWorkloads = v1StorageConfig.StorageWorkloads.DeepCopy()
-		}
+		v1beta1Spec.ResourceRequirements.StorageWorkloads = v1StorageConfig.WorkloadResourceRequirements.DeepCopy()
 	}
 }
 
@@ -314,7 +320,7 @@ func convertStorageV1beta1ToV1(v1beta1Spec HyperConvergedSpec) *hcov1.StorageCon
 	}
 
 	if v1beta1Spec.ResourceRequirements != nil && v1beta1Spec.ResourceRequirements.StorageWorkloads != nil {
-		v1StorageConfig.StorageWorkloads = v1beta1Spec.ResourceRequirements.StorageWorkloads.DeepCopy()
+		v1StorageConfig.WorkloadResourceRequirements = v1beta1Spec.ResourceRequirements.StorageWorkloads.DeepCopy()
 	}
 
 	return v1StorageConfig
