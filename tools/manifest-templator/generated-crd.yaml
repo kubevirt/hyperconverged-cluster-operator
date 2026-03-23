@@ -2765,9 +2765,13 @@ spec:
                         type: array
                         x-kubernetes-list-type: set
                     type: object
-                  storageWorkloads:
+                  vmStateStorageClass:
+                    description: VMStateStorageClass is the name of the storage class
+                      to use for the PVCs created to preserve VM state, like TPM.
+                    type: string
+                  workloadResourceRequirements:
                     description: |-
-                      StorageWorkloads defines the resources requirements for storage workloads. It will propagate to the CDI custom
+                      WorkloadResourceRequirements defines the resource requirements for storage workloads. It will propagate to the CDI custom
                       resource
                     properties:
                       claims:
@@ -2826,21 +2830,7 @@ spec:
                           More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
                         type: object
                     type: object
-                  vmStateStorageClass:
-                    description: VMStateStorageClass is the name of the storage class
-                      to use for the PVCs created to preserve VM state, like TPM.
-                    type: string
                 type: object
-              tuningPolicy:
-                description: |-
-                  TuningPolicy allows to configure the mode in which the RateLimits of kubevirt are set.
-                  If TuningPolicy is not present the default kubevirt values are used.
-                  It can be set to `annotation` for fine-tuning the kubevirt queryPerSeconds (qps) and burst values.
-                  Qps and burst values are taken from the annotation hco.kubevirt.io/tuningPolicy
-                enum:
-                - annotation
-                - highBurst
-                type: string
               virtualization:
                 default:
                   liveMigrationConfig:
@@ -3278,6 +3268,16 @@ spec:
                     enum:
                     - AggregateToDefault
                     - Manual
+                    type: string
+                  tuningPolicy:
+                    description: |-
+                      TuningPolicy allows configuring the mode in which the RateLimits of kubevirt are set.
+                      If TuningPolicy is not present the default kubevirt values are used.
+                      It can be set to `annotation` for fine-tuning the kubevirt queryPerSeconds (QPS) and burst values.
+                      QPS and burst values are taken from the annotation hco.kubevirt.io/tuningPolicy
+                    enum:
+                    - annotation
+                    - highBurst
                     type: string
                   virtualMachineOptions:
                     default:
@@ -4254,8 +4254,6 @@ spec:
                         type: string
                     type: object
                 type: object
-            required:
-            - deployment
             type: object
           status:
             description: HyperConvergedStatus defines the observed state of HyperConverged
