@@ -18,6 +18,7 @@ import (
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	goldenimages "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/golden-images"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -233,6 +234,46 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 			Expect(res.Patches).To(BeEmpty())
 		})
 
+		Context("mutation of tuningPolicy", func() {
+			It("should not mutate an empty tuningPolicy", func(ctx context.Context) {
+				cr.Spec.Virtualization.TuningPolicy = ""
+				cr.Spec.Virtualization.KSMConfiguration = &kubevirtcorev1.KSMConfiguration{}
+				req := admission.Request{AdmissionRequest: newCreateRequest(cr, testCodec)}
+
+				res := mutator.Handle(ctx, req)
+				Expect(res.Allowed).To(BeTrue())
+
+				Expect(res.Patches).To(BeEmpty())
+			})
+
+			It("should not mutate the 'annotation' tuningPolicy", func(ctx context.Context) {
+				cr.Spec.Virtualization.TuningPolicy = hcov1.HyperConvergedAnnotationTuningPolicy
+				cr.Spec.Virtualization.KSMConfiguration = &kubevirtcorev1.KSMConfiguration{}
+
+				req := admission.Request{AdmissionRequest: newCreateRequest(cr, testCodec)}
+
+				res := mutator.Handle(ctx, req)
+				Expect(res.Allowed).To(BeTrue())
+
+				Expect(res.Patches).To(BeEmpty())
+			})
+
+			It("should drop the 'highBurst' tuningPolicy", func(ctx context.Context) {
+				cr.Spec.Virtualization.TuningPolicy = hcov1beta1.HyperConvergedHighBurstProfile //nolint SA1019
+				cr.Spec.Virtualization.KSMConfiguration = &kubevirtcorev1.KSMConfiguration{}
+				req := admission.Request{AdmissionRequest: newCreateRequest(cr, testCodec)}
+
+				res := mutator.Handle(ctx, req)
+				Expect(res.Allowed).To(BeTrue())
+
+				Expect(res.Patches).To(Equal([]jsonpatch.JsonPatchOperation{
+					{
+						Operation: "remove",
+						Path:      "/spec/virtualization/tuningPolicy",
+					},
+				}))
+			})
+		})
 	})
 
 	Context("Check mutating webhook for update operation", func() {
@@ -384,6 +425,50 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 					nil,
 				),
 			)
+		})
+
+		Context("mutation of tuningPolicy", func() {
+			var origCR *hcov1.HyperConverged
+
+			BeforeEach(func() {
+				origCR = cr.DeepCopy()
+			})
+
+			It("should not mutate an empty tuningPolicy", func(ctx context.Context) {
+				cr.Spec.Virtualization.TuningPolicy = ""
+				req := admission.Request{AdmissionRequest: newUpdateRequest(origCR, cr, testCodec)}
+
+				res := mutator.Handle(ctx, req)
+				Expect(res.Allowed).To(BeTrue())
+
+				Expect(res.Patches).To(BeEmpty())
+			})
+
+			It("should not mutate the 'annotation' tuningPolicy", func(ctx context.Context) {
+				cr.Spec.Virtualization.TuningPolicy = hcov1.HyperConvergedAnnotationTuningPolicy
+
+				req := admission.Request{AdmissionRequest: newUpdateRequest(origCR, cr, testCodec)}
+
+				res := mutator.Handle(ctx, req)
+				Expect(res.Allowed).To(BeTrue())
+
+				Expect(res.Patches).To(BeEmpty())
+			})
+
+			It("should drop the 'highBurst' tuningPolicy", func(ctx context.Context) {
+				cr.Spec.Virtualization.TuningPolicy = hcov1beta1.HyperConvergedHighBurstProfile //nolint SA1019
+				req := admission.Request{AdmissionRequest: newUpdateRequest(origCR, cr, testCodec)}
+
+				res := mutator.Handle(ctx, req)
+				Expect(res.Allowed).To(BeTrue())
+
+				Expect(res.Patches).To(Equal([]jsonpatch.JsonPatchOperation{
+					{
+						Operation: "remove",
+						Path:      "/spec/virtualization/tuningPolicy",
+					},
+				}))
+			})
 		})
 	})
 })

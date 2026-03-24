@@ -733,13 +733,13 @@ var _ = Describe("v1 webhooks validator", func() {
 
 		Context("validate tuning policy", func() {
 			It("should return warning for deprecated highBurst tuning policy", func(ctx context.Context) {
-				cr.Spec.TuningPolicy = hcov1.HyperConvergedHighBurstProfile //nolint SA1019
+				cr.Spec.Virtualization.TuningPolicy = hcov1beta1.HyperConvergedHighBurstProfile //nolint SA1019
 				resp := wh.validateCreate(GinkgoLogr, dryRun, cr)
-				checkAcceptedRequest(resp, "the highBurst profile is deprecated")
+				checkAcceptedRequest(resp, "the highBurst profile is not supported and ignored")
 			})
 
 			It("should not return warning when tuning policy is not set", func(ctx context.Context) {
-				cr.Spec.TuningPolicy = ""
+				cr.Spec.Virtualization.TuningPolicy = ""
 				checkAcceptedRequest(wh.validateCreate(GinkgoLogr, dryRun, cr))
 			})
 		})
@@ -1736,6 +1736,8 @@ var _ = Describe("v1 webhooks validator", func() {
 			DeferCleanup(func() {
 				tlssecprofile.SetHyperConvergedTLSSecurityProfile = origSetHyperConvergedProfile
 			})
+
+			cli = getFakeClient(cr)
 		})
 
 		Context("create", func() {

@@ -29,21 +29,11 @@ type HyperConvergedTuningPolicy string
 // through annotation values.
 const (
 	HyperConvergedAnnotationTuningPolicy HyperConvergedTuningPolicy = "annotation"
-	// Deprecated: The highBurst profile is deprecated as of v1.16.0 ahead of removal in a future release
-	HyperConvergedHighBurstProfile HyperConvergedTuningPolicy = "highBurst"
 )
 
 // HyperConvergedSpec defines the desired state of HyperConverged
 // +k8s:openapi-gen=true
 type HyperConvergedSpec struct {
-	// TuningPolicy allows to configure the mode in which the RateLimits of kubevirt are set.
-	// If TuningPolicy is not present the default kubevirt values are used.
-	// It can be set to `annotation` for fine-tuning the kubevirt queryPerSeconds (qps) and burst values.
-	// Qps and burst values are taken from the annotation hco.kubevirt.io/tuningPolicy
-	// +kubebuilder:validation:Enum=annotation;highBurst
-	// +optional
-	TuningPolicy HyperConvergedTuningPolicy `json:"tuningPolicy,omitempty"`
-
 	// NodePlacements defines the node scheduling configuration for infrastructure or workload entities
 	// +optional
 	// +k8s:conversion-gen=false
@@ -224,12 +214,21 @@ type HyperConvergedSpec struct {
 
 	// Deployment contains all the configurations related to deployment of KubeVirt components
 	// +kubebuilder:default={"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "applicationAwareConfig": {"enable": false}}
+	// +optional
 	// +k8s:conversion-gen=false
-	Deployment DeploymentConfig `json:"deployment"`
+	Deployment DeploymentConfig `json:"deployment,omitempty"`
 }
 
 // VirtualizationConfig contains all the virtualization configurations
 type VirtualizationConfig struct {
+	// TuningPolicy allows configuring the mode in which the RateLimits of kubevirt are set.
+	// If TuningPolicy is not present the default kubevirt values are used.
+	// It can be set to `annotation` for fine-tuning the kubevirt queryPerSeconds (QPS) and burst values.
+	// QPS and burst values are taken from the annotation hco.kubevirt.io/tuningPolicy
+	// +kubebuilder:validation:Enum=annotation;highBurst
+	// +optional
+	TuningPolicy HyperConvergedTuningPolicy `json:"tuningPolicy,omitempty"`
+
 	// Live migration limits and timeouts are applied so that migration processes do not
 	// overwhelm the cluster.
 	// +kubebuilder:default={"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}
@@ -354,10 +353,10 @@ type StorageConfig struct {
 	// +optional
 	FilesystemOverhead *cdiv1beta1.FilesystemOverhead `json:"filesystemOverhead,omitempty"`
 
-	// StorageWorkloads defines the resources requirements for storage workloads. It will propagate to the CDI custom
+	// WorkloadResourceRequirements defines the resource requirements for storage workloads. It will propagate to the CDI custom
 	// resource
 	// +optional
-	StorageWorkloads *corev1.ResourceRequirements `json:"storageWorkloads,omitempty"`
+	WorkloadResourceRequirements *corev1.ResourceRequirements `json:"workloadResourceRequirements,omitempty"`
 }
 
 // NetworkingConfig contains all the networking configurations

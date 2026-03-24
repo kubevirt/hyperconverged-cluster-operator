@@ -3809,7 +3809,7 @@ Version: 1.2.3`)
 
 			Context("with annotations", func() {
 				It("Should return error if annotation is not present", func() {
-					hco.Spec.TuningPolicy = hcov1beta1.HyperConvergedAnnotationTuningPolicy
+					hco.Spec.TuningPolicy = hcov1.HyperConvergedAnnotationTuningPolicy
 
 					kv, err := NewKubeVirt(hco)
 					Expect(err).To(MatchError("tuning policy set but annotation not present or wrong"))
@@ -3819,7 +3819,7 @@ Version: 1.2.3`)
 				})
 				It("Should return error if the annotation is present but the parameters are wrong", func() {
 
-					hco.Spec.TuningPolicy = hcov1beta1.HyperConvergedAnnotationTuningPolicy
+					hco.Spec.TuningPolicy = hcov1.HyperConvergedAnnotationTuningPolicy
 					hco.Annotations = make(map[string]string, 1)
 					//burst is missing
 					hco.Annotations[common.TuningPolicyAnnotationName] = `{"qps": 100}`
@@ -3831,7 +3831,7 @@ Version: 1.2.3`)
 				})
 
 				It("Should return error if the json annotation is corrupted", func() {
-					hco.Spec.TuningPolicy = hcov1beta1.HyperConvergedAnnotationTuningPolicy
+					hco.Spec.TuningPolicy = hcov1.HyperConvergedAnnotationTuningPolicy
 					hco.Annotations = make(map[string]string, 1)
 					// qps field is missing a "
 					hco.Annotations[common.TuningPolicyAnnotationName] = `{"qps: 100, "burst": 200}`
@@ -3843,7 +3843,7 @@ Version: 1.2.3`)
 				})
 
 				It("Should create the fields and populate them when requested", func() {
-					hco.Spec.TuningPolicy = hcov1beta1.HyperConvergedAnnotationTuningPolicy
+					hco.Spec.TuningPolicy = hcov1.HyperConvergedAnnotationTuningPolicy
 					hco.Annotations = make(map[string]string, 1)
 					hco.Annotations[common.TuningPolicyAnnotationName] = `{"qps": 100, "burst": 200}`
 

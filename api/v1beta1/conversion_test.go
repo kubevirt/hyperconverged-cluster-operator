@@ -513,7 +513,18 @@ var _ = Describe("api/v1beta1", func() {
 	})
 
 	Context("virtualization", func() {
-		Context("v1 ==> v1beta2", func() {
+		Context("v1 ==> v1beta1", func() {
+			It("should convert tuningPolicy", func() {
+				v1VirtConfig := hcov1.VirtualizationConfig{
+					TuningPolicy: hcov1.HyperConvergedAnnotationTuningPolicy,
+				}
+
+				var v1beta1Spec = HyperConvergedSpec{}
+				Expect(convertVirtualizationV1ToV1beta1(v1VirtConfig, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.TuningPolicy).To(Equal(hcov1.HyperConvergedAnnotationTuningPolicy))
+			})
+
 			It("should convert LiveMigrationConfig", func() {
 				v1VirtConfig := hcov1.VirtualizationConfig{
 					LiveMigrationConfig: hcov1.LiveMigrationConfigurations{
@@ -860,6 +871,28 @@ var _ = Describe("api/v1beta1", func() {
 		})
 
 		Context("v1beta1 ==> v1", func() {
+			It("should convert TuningPolicy if it's 'annotation'", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					TuningPolicy: hcov1.HyperConvergedAnnotationTuningPolicy,
+				}
+
+				var v1VirtConfig hcov1.VirtualizationConfig
+				Expect(convertVirtualizationV1beta1ToV1(v1beta1Spec, &v1VirtConfig)).To(Succeed())
+
+				Expect(v1VirtConfig.TuningPolicy).To(Equal(hcov1.HyperConvergedAnnotationTuningPolicy))
+			})
+
+			It("should not convert tuningPolicy if it's 'highBurst'", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					TuningPolicy: HyperConvergedHighBurstProfile, //nolint SA1019
+				}
+
+				var v1VirtConfig hcov1.VirtualizationConfig
+				Expect(convertVirtualizationV1beta1ToV1(v1beta1Spec, &v1VirtConfig)).To(Succeed())
+
+				Expect(v1VirtConfig.TuningPolicy).To(BeEmpty())
+			})
+
 			It("should convert LiveMigrationConfig", func() {
 				v1beta1Spec := HyperConvergedSpec{
 					LiveMigrationConfig: hcov1.LiveMigrationConfigurations{
@@ -1310,7 +1343,7 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert StorageWorkloads", func() {
 				v1Storage := &hcov1.StorageConfig{
-					StorageWorkloads: &corev1.ResourceRequirements{
+					WorkloadResourceRequirements: &corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{
 							corev1.ResourceCPU: resource.MustParse("100m"),
 						},
@@ -1340,7 +1373,7 @@ var _ = Describe("api/v1beta1", func() {
 							"class-2": "0.2",
 						},
 					},
-					StorageWorkloads: &corev1.ResourceRequirements{
+					WorkloadResourceRequirements: &corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{
 							corev1.ResourceCPU: resource.MustParse("100m"),
 						},
@@ -1458,9 +1491,9 @@ var _ = Describe("api/v1beta1", func() {
 				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
 
 				Expect(v1Storage).ToNot(BeNil())
-				Expect(v1Storage.StorageWorkloads).ToNot(BeNil())
-				Expect(v1Storage.StorageWorkloads.Limits).To(HaveLen(1))
-				Expect(v1Storage.StorageWorkloads.Limits).To(HaveKeyWithValue(corev1.ResourceCPU, resource.MustParse("100m")))
+				Expect(v1Storage.WorkloadResourceRequirements).ToNot(BeNil())
+				Expect(v1Storage.WorkloadResourceRequirements.Limits).To(HaveLen(1))
+				Expect(v1Storage.WorkloadResourceRequirements.Limits).To(HaveKeyWithValue(corev1.ResourceCPU, resource.MustParse("100m")))
 			})
 
 			It("should convert all fields together", func() {
@@ -1502,9 +1535,9 @@ var _ = Describe("api/v1beta1", func() {
 				Expect(v1Storage.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-1", cdiv1beta1.Percent("0.3")))
 				Expect(v1Storage.FilesystemOverhead.StorageClass).To(HaveKeyWithValue("class-2", cdiv1beta1.Percent("0.2")))
 
-				Expect(v1Storage.StorageWorkloads).ToNot(BeNil())
-				Expect(v1Storage.StorageWorkloads.Limits).To(HaveLen(1))
-				Expect(v1Storage.StorageWorkloads.Limits).To(HaveKeyWithValue(corev1.ResourceCPU, resource.MustParse("100m")))
+				Expect(v1Storage.WorkloadResourceRequirements).ToNot(BeNil())
+				Expect(v1Storage.WorkloadResourceRequirements.Limits).To(HaveLen(1))
+				Expect(v1Storage.WorkloadResourceRequirements.Limits).To(HaveKeyWithValue(corev1.ResourceCPU, resource.MustParse("100m")))
 			})
 		})
 

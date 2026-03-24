@@ -14,6 +14,7 @@ import (
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	goldenimages "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/golden-images"
 )
 
@@ -65,6 +66,7 @@ func (hcm *HyperConvergedMutator) mutateHyperConverged(req admission.Request, lo
 
 	patches := getDICTAnnotationPatches(hc.Spec.WorkloadSources.DataImportCronTemplates, annotationPathTemplate)
 	patches = mutateEvictionStrategy(hc, patches)
+	patches = mutateTuningPolicy(hc, patches)
 
 	if req.Operation == admissionv1.Create {
 		patches = getMutatePatchesOnCreate(hc, patches)
@@ -124,6 +126,21 @@ func mutateEvictionStrategy(hc *hcov1.HyperConverged, patches []jsonpatch.JsonPa
 		Operation: "replace",
 		Path:      "/spec/virtualization/evictionStrategy",
 		Value:     value,
+	})
+
+	return patches
+}
+
+// the "highBurst" tuningPolicy is not supported in v1. If set, drop it and make KubeVirt use its
+// default values, that are now equal to the v1beta1 highBurst policy.
+func mutateTuningPolicy(hc *hcov1.HyperConverged, patches []jsonpatch.JsonPatchOperation) []jsonpatch.JsonPatchOperation {
+	if hc.Spec.Virtualization.TuningPolicy != hcov1beta1.HyperConvergedHighBurstProfile { //nolint SA1019
+		return patches
+	}
+
+	patches = append(patches, jsonpatch.JsonPatchOperation{
+		Operation: "remove",
+		Path:      "/spec/virtualization/tuningPolicy",
 	})
 
 	return patches

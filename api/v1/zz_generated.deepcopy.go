@@ -783,8 +783,8 @@ func (in *StorageConfig) DeepCopyInto(out *StorageConfig) {
 		*out = new(v1beta1.FilesystemOverhead)
 		(*in).DeepCopyInto(*out)
 	}
-	if in.StorageWorkloads != nil {
-		in, out := &in.StorageWorkloads, &out.StorageWorkloads
+	if in.WorkloadResourceRequirements != nil {
+		in, out := &in.WorkloadResourceRequirements, &out.WorkloadResourceRequirements
 		*out = new(corev1.ResourceRequirements)
 		(*in).DeepCopyInto(*out)
 	}
