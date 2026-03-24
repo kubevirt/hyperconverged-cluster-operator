@@ -232,6 +232,7 @@ spec:
 In `v1beta1`, the following fields are directly under `spec`. In `v1`, they
 will be moved under the new `virtualization`:
 
+* `tuningPolicy`
 * `liveMigrationConfig`
 * `permittedHostDevices`
 * `mediatedDevicesConfiguration`
@@ -274,7 +275,7 @@ will be moved under the new `storage` field:
 * `storageImport`
 * `filesystemOverhead`
 * from the `resourceRequirements` field:
-  * `storageWorkloads`
+  * `storageWorkloads`; rename this field to `workloadResourceRequirements`
 
 #### Security
 
