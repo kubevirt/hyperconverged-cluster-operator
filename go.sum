@@ -918,8 +918,8 @@ kubevirt.io/containerized-data-importer-api v1.64.0 h1:yBLY6qEogUp8F+XSJvabIkx9u
 kubevirt.io/containerized-data-importer-api v1.64.0/go.mod h1:VGp35wxpLXU18b7cnEpmcThI3AjcZUSfg/Zfql44U4o=
 kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4 h1:fZYvD3/Vnitfkx6IJxjLAk8ugnZQ7CXVYcRfkSKmuZY=
 kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4/go.mod h1:018lASpFYBsYN6XwmA2TIrPCx6e0gviTd/ZNtSitKgc=
-kubevirt.io/kubevirt-migration-operator v0.1.0 h1:biphunY/l6hRIsnvW00AmbiPc7U8wa/9tLqOsdr2PAg=
-kubevirt.io/kubevirt-migration-operator v0.1.0/go.mod h1:pl/fet+qyP+AtjJuJrZFnI57kbtIOVQZDUgAiY5oSjk=
+kubevirt.io/kubevirt-migration-operator v0.2.0-rc.0 h1:o2T2xRyFDPmAZevvFZxqkyTgpL8L+7a8yCp1WHSZU8E=
+kubevirt.io/kubevirt-migration-operator v0.2.0-rc.0/go.mod h1:pl/fet+qyP+AtjJuJrZFnI57kbtIOVQZDUgAiY5oSjk=
 kubevirt.io/ssp-operator/api v0.25.0 h1:SKc+GDlgvR9nRfjQ0AnbPF3QFTVv49OayvYielv+QNE=
 kubevirt.io/ssp-operator/api v0.25.0/go.mod h1:ly26WRLDhZd67MSVGD/I4PneM8NhvELcn/EQZrPEh7A=
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.34.0 h1:hSfpvjjTQXQY2Fol2CS0QHMNs/WI1MOSGzCm1KhM5ec=
