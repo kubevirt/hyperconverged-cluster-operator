@@ -576,9 +576,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Expect(cm).ToNot(BeNil())
 				Expect(cm.Data).To(HaveKey("nginx.conf"))
 				nginxConf := cm.Data["nginx.conf"]
-				Expect(nginxConf).To(ContainSubstring("TLSv1.3"))
-				Expect(nginxConf).To(ContainSubstring("TLS_AES_128_GCM_SHA256"))
-				Expect(nginxConf).NotTo(ContainSubstring("ssl_protocols ;"))
+				Expect(nginxConf).To(MatchRegexp(`ssl_protocols +TLSv1\.3`))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
 			})
 

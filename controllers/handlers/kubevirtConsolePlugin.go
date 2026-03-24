@@ -382,10 +382,14 @@ type nginxConfTemplateData struct {
 
 func getNginxConfig(hc *hcov1beta1.HyperConverged) (string, error) {
 	ciphers, minTLS := tlssecprofile.GetCipherSuitesAndMinTLSVersion(hc.Spec.TLSSecurityProfile)
+
 	data := nginxConfTemplateData{
 		Port:         hcoutil.UIPluginServerPort,
 		SSLProtocols: nginxSSLProtocolsFromMinTLS(minTLS),
-		SSLCiphers:   strings.Join(ciphers, ":"),
+	}
+
+	if minTLS < openshiftconfigv1.VersionTLS13 {
+		data.SSLCiphers = strings.Join(ciphers, ":")
 	}
 
 	var out bytes.Buffer
