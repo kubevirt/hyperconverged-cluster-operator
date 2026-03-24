@@ -72,7 +72,7 @@ func checkAPIOverlapMap(overlapsMap map[string]sets.Set[string]) error {
 		// WriteString always returns error=nil. no point to check it.
 		_, _ = sb.WriteString("ERROR: Overlapping API Groups were found between different operators.\n")
 		for apiGroup := range overlapsMap {
-			_, _ = sb.WriteString(fmt.Sprintf("The API Group %s is being used by these operators: %s\n", apiGroup, strings.Join(overlapsMap[apiGroup].UnsortedList(), ", ")))
+			_, _ = fmt.Fprintf(&sb, "The API Group %s is being used by these operators: %s\n", apiGroup, strings.Join(overlapsMap[apiGroup].UnsortedList(), ", "))
 		}
 		return errors.New(sb.String())
 	}
