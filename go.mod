@@ -21,7 +21,7 @@ require (
 	github.com/openshift/api v0.0.1
 	github.com/openshift/cluster-kube-descheduler-operator v0.0.0-20260214173033-e860b7975c2c
 	github.com/openshift/custom-resource-status v1.1.2
-	github.com/openshift/library-go v0.0.0-20260213153706-03f1709971c5
+	github.com/openshift/library-go v0.0.0-20260318142011-72bf34f474bc
 	github.com/operator-framework/api v0.39.0
 	github.com/operator-framework/operator-lib v0.19.0
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.89.0
@@ -97,7 +97,6 @@ require (
 	github.com/go-openapi/swag/yamlutils v0.25.4 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/gobuffalo/flect v1.0.3 // indirect
-	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/btree v1.1.3 // indirect
 	github.com/google/cel-go v0.27.0 // indirect
 	github.com/google/gnostic-models v0.7.1 // indirect
@@ -237,4 +236,4 @@ replace vbom.ml/util => github.com/fvbommel/util v0.0.0-20180919145318-efcd4e0f9
 
 replace bitbucket.org/ww/goautoneg => github.com/munnerz/goautoneg v0.0.0-20120707110453-a547fc61f48d
 
-replace github.com/openshift/api => github.com/openshift/api v0.0.0-20250409155250-8fcc4e71758a
+replace github.com/openshift/api => github.com/openshift/api v0.0.0-20260320151444-324a1bcb9f55

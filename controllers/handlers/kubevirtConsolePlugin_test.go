@@ -539,9 +539,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Expect(cm).ToNot(BeNil())
 				Expect(cm.Data).To(HaveKey("nginx.conf"))
 				nginxConf := cm.Data["nginx.conf"]
-				Expect(nginxConf).To(ContainSubstring("TLSv1.3"))
-				Expect(nginxConf).NotTo(ContainSubstring("ssl_protocols ;"))
-				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
+				Expect(nginxConf).To(MatchRegexp(`ssl_protocols +TLSv1\.3`))
+				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers"))
 			})
 
 			It("should create nginx ConfigMap with Intermediate TLS profile", func() {
@@ -576,10 +575,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Expect(cm).ToNot(BeNil())
 				Expect(cm.Data).To(HaveKey("nginx.conf"))
 				nginxConf := cm.Data["nginx.conf"]
-				Expect(nginxConf).To(ContainSubstring("TLSv1.3"))
-				Expect(nginxConf).To(ContainSubstring("TLS_AES_128_GCM_SHA256"))
-				Expect(nginxConf).NotTo(ContainSubstring("ssl_protocols ;"))
-				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
+				Expect(nginxConf).To(MatchRegexp(`ssl_protocols +TLSv1\.3`))
+				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers"))
 			})
 
 			It("should not emit empty ssl_protocols or ssl_ciphers directives", func() {

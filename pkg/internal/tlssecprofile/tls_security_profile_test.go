@@ -166,8 +166,6 @@ var _ = Describe("TLS Security Profile", func() {
 							"ECDHE-RSA-AES256-GCM-SHA384",
 							"ECDHE-ECDSA-CHACHA20-POLY1305",
 							"ECDHE-RSA-CHACHA20-POLY1305",
-							"DHE-RSA-AES128-GCM-SHA256",
-							"DHE-RSA-AES256-GCM-SHA384",
 						},
 						MinTLSVersion: openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileIntermediateType].MinTLSVersion,
 					},
@@ -255,7 +253,7 @@ var _ = Describe("TLS Security Profile", func() {
 			ciphers, minTLSVersion := GetCipherSuitesAndMinTLSVersion(hcoTLSSecurityProfile)
 
 			expectedProfile := openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileModernType]
-			Expect(ciphers).To(Equal(expectedProfile.Ciphers))
+			Expect(ciphers).To(BeEmpty())
 			Expect(minTLSVersion).To(Equal(expectedProfile.MinTLSVersion))
 		})
 
@@ -315,7 +313,7 @@ var _ = Describe("TLS Security Profile", func() {
 
 			ciphers, minTLSVersion := GetCipherSuitesAndMinTLSVersion(hcoTLSSecurityProfile)
 
-			Expect(ciphers).To(Equal(customCiphers))
+			Expect(ciphers).To(BeEmpty())
 			Expect(minTLSVersion).To(Equal(openshiftconfigv1.VersionTLS13))
 		})
 
@@ -328,7 +326,7 @@ var _ = Describe("TLS Security Profile", func() {
 			ciphers, minTLSVersion := GetCipherSuitesAndMinTLSVersion(nil)
 
 			expectedProfile := openshiftconfigv1.TLSProfiles[openshiftconfigv1.TLSProfileModernType]
-			Expect(ciphers).To(Equal(expectedProfile.Ciphers))
+			Expect(ciphers).To(BeEmpty())
 			Expect(minTLSVersion).To(Equal(expectedProfile.MinTLSVersion))
 		})
 
@@ -513,6 +511,14 @@ var _ = Describe("TLS Security Profile", func() {
 
 			Expect(config.MinVersion).To(Equal(uint16(tls.VersionTLS13)))
 			expectedTLSCiphers := []uint16{
+				tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, // required by HTTP/2
+				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+
+				// TLS 1.3 cipher suites (negotiated automatically, not configurable)
 				tls.TLS_AES_128_GCM_SHA256,
 				tls.TLS_AES_256_GCM_SHA384,
 				tls.TLS_CHACHA20_POLY1305_SHA256,

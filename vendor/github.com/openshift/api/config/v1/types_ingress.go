@@ -43,6 +43,7 @@ type IngressSpec struct {
 	// default ingresscontroller domain will follow this pattern: "*.<domain>".
 	//
 	// Once set, changing domain is not currently supported.
+	// +kubebuilder:validation:XValidation:rule="self == oldSelf",message="domain is immutable once set"
 	Domain string `json:"domain"`
 
 	// appsDomain is an optional domain to use instead of the one specified
@@ -150,7 +151,7 @@ type AWSIngressSpec struct {
 	// +unionDiscriminator
 	// +kubebuilder:validation:Enum:=NLB;Classic
 	// +required
-	Type AWSLBType `json:"type,omitempty"`
+	Type AWSLBType `json:"type"`
 }
 
 type AWSLBType string

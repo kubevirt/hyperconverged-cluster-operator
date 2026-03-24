@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"crypto/tls"
+	"slices"
 
 	"github.com/go-logr/logr"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
@@ -42,11 +43,21 @@ func GetTLSSecurityProfile(fromHC *openshiftconfigv1.TLSSecurityProfile) *opensh
 func GetCipherSuitesAndMinTLSVersion(fromHC *openshiftconfigv1.TLSSecurityProfile) ([]string, openshiftconfigv1.TLSProtocolVersion) {
 	profile := GetTLSSecurityProfile(fromHC)
 
+	var ciphers []string
 	if profile.Type == openshiftconfigv1.TLSProfileCustomType {
-		return profile.Custom.Ciphers, profile.Custom.MinTLSVersion
+		if profile.Custom.MinTLSVersion < openshiftconfigv1.VersionTLS13 {
+			ciphers = slices.Clone(profile.Custom.Ciphers)
+		}
+
+		return ciphers, profile.Custom.MinTLSVersion
 	}
 
-	return openshiftconfigv1.TLSProfiles[profile.Type].Ciphers, openshiftconfigv1.TLSProfiles[profile.Type].MinTLSVersion
+	minVer := openshiftconfigv1.TLSProfiles[profile.Type].MinTLSVersion
+	if minVer < openshiftconfigv1.VersionTLS13 {
+		ciphers = slices.Clone(openshiftconfigv1.TLSProfiles[profile.Type].Ciphers)
+	}
+
+	return ciphers, minVer
 }
 
 func GetCipherSuitesAndMinTLSVersionInGolangFormat(fromHC *openshiftconfigv1.TLSSecurityProfile) (ciphers []uint16, minTLSVersion uint16) {
