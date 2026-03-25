@@ -233,6 +233,14 @@ spec:
           - delete
           - patch
         - apiGroups:
+          - kubevirt.io
+          resources:
+          - virtualmachineinstances
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
           - cdi.kubevirt.io
           resources:
           - cdis
@@ -465,6 +473,17 @@ spec:
           - watch
           - update
           - patch
+        - apiGroups:
+          - admissionregistration.k8s.io
+          resources:
+          - mutatingwebhookconfigurations
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
         - apiGroups:
           - console.openshift.io
           resources:
@@ -3860,6 +3879,8 @@ spec:
                   value: quay.io/kubevirt/network-passt-binding-cni@sha256:ee619ced99e99d07375c25fc36e97e23e6b64809dec1b9369e40aeec2a2c3301
                 - name: WASP_AGENT_IMAGE
                   value: quay.io/openshift-virtualization/wasp-agent@sha256:eabfa6a425213f520f7a9e5b81b43e8b6430779d42c5c8b1bfd48a4f1730447a
+                - name: AIE_WEBHOOK_IMAGE
+                  value: quay.io/kubevirt/kubevirt-aie-webhook@sha256:9a98ea7a9fe24484f323045f0cf8b36fa76408101f88bd459fe1f66e68b7c86c
                 image: +IMAGE_TO_REPLACE+
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
@@ -5766,6 +5787,8 @@ spec:
     name: kubemacpool
   - image: ghcr.io/kubevirt/kubesecondarydns@sha256:f5fe9c98fb6d7e5e57a6df23fe82e43e65db5953d76af44adda9ab40c46ad0bf
     name: kubesecondarydns
+  - image: quay.io/kubevirt/kubevirt-aie-webhook@sha256:9a98ea7a9fe24484f323045f0cf8b36fa76408101f88bd459fe1f66e68b7c86c
+    name: kubevirt-aie-webhook
   - image: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:d13b1735f35f04a88281280f71deb1aa94c44f57a66dd302635cd38964ab592e
     name: kubevirt-apiserver-proxy
   - image: quay.io/kubevirt/kubevirt-migration-controller@sha256:c91da241e6d89220dccbda750f84e89ef2db2cd1603b706930b711b95ebc59c6
