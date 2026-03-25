@@ -32,6 +32,8 @@ type MigControllerSpec struct {
 	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty" valid:"required"`
 	// Rules on which nodes infrastructure pods will be scheduled
 	Infra sdkapi.NodePlacement `json:"infra,omitempty"`
+	// TLSSecurityProfile is used by operators to apply cluster-wide TLS security settings to operands.
+	TLSSecurityProfile *TLSSecurityProfile `json:"tlsSecurityProfile,omitempty"`
 }
 
 // MigControllerStatus defines the observed state of MigController.
