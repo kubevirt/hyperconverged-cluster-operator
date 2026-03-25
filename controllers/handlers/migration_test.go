@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -212,6 +213,77 @@ var _ = Describe("Migration tests", func() {
 			Expect(hook.cache).To(BeIdenticalTo(thirdCallResult))
 			Expect(thirdCallResult).ToNot(BeIdenticalTo(firstCallResult))
 			Expect(thirdCallResult).ToNot(BeIdenticalTo(secondCallResult))
+		})
+	})
+
+	Context("TLSSecurityProfile", func() {
+
+		intermediateTLSSecurityProfile := &openshiftconfigv1.TLSSecurityProfile{
+			Type:         openshiftconfigv1.TLSProfileIntermediateType,
+			Intermediate: &openshiftconfigv1.IntermediateTLSProfile{},
+		}
+		modernTLSSecurityProfile := &openshiftconfigv1.TLSSecurityProfile{
+			Type:   openshiftconfigv1.TLSProfileModernType,
+			Modern: &openshiftconfigv1.ModernTLSProfile{},
+		}
+
+		It("should modify TLSSecurityProfile on MigController CR according to ApiServer or HCO CR", func() {
+			existingResource, err := NewMigController(hco)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(existingResource.Spec.TLSSecurityProfile).To(Equal(openshift2MigrationSecProfile(intermediateTLSSecurityProfile)))
+
+			// now, modify HCO's TLSSecurityProfile
+			hco.Spec.TLSSecurityProfile = modernTLSSecurityProfile
+
+			cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+			handler := NewMigControllerHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeTrue())
+			Expect(res.Err).ToNot(HaveOccurred())
+
+			foundResource := &migrationv1alpha1.MigController{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+			).ToNot(HaveOccurred())
+
+			Expect(foundResource.Spec.TLSSecurityProfile).To(Equal(openshift2MigrationSecProfile(modernTLSSecurityProfile)))
+
+			Expect(req.Conditions).To(BeEmpty())
+		})
+
+		It("should overwrite TLSSecurityProfile if directly set on MigController CR", func() {
+			hco.Spec.TLSSecurityProfile = intermediateTLSSecurityProfile
+			existingResource, err := NewMigController(hco)
+			Expect(err).ToNot(HaveOccurred())
+
+			// mock a reconciliation triggered by a change in MigController CR
+			req.HCOTriggered = false
+
+			// now, modify MigController node placement
+			existingResource.Spec.TLSSecurityProfile = openshift2MigrationSecProfile(modernTLSSecurityProfile)
+
+			cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+			handler := NewMigControllerHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.Updated).To(BeTrue())
+			Expect(res.Overwritten).To(BeTrue())
+			Expect(res.Err).ToNot(HaveOccurred())
+
+			foundResource := &migrationv1alpha1.MigController{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+					foundResource),
+			).ToNot(HaveOccurred())
+
+			Expect(foundResource.Spec.TLSSecurityProfile).To(Equal(openshift2MigrationSecProfile(hco.Spec.TLSSecurityProfile)))
+			Expect(foundResource.Spec.TLSSecurityProfile).ToNot(Equal(existingResource.Spec.TLSSecurityProfile))
+
+			Expect(req.Conditions).To(BeEmpty())
 		})
 	})
 })
