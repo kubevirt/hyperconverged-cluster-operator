@@ -31,13 +31,6 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/rules"
 )
 
-// This should be used only for very rare cases where the naming conventions that are explained in the best practices:
-// https://sdk.operatorframework.io/docs/best-practices/observability-best-practices/#metrics-guidelines
-// should be ignored.
-var excludedMetrics = map[string]struct{}{
-	"cluster:vmi_request_cpu_cores:sum": {},
-}
-
 type RecordingRule struct {
 	Record string `json:"record,omitempty"`
 	Expr   string `json:"expr,omitempty"`
@@ -66,14 +59,12 @@ func main() {
 
 	var metricFamilies []*dto.MetricFamily
 	for _, m := range metricsList {
-		if _, isExcludedMetric := excludedMetrics[m.GetOpts().Name]; !isExcludedMetric {
-			pm := parser.Metric{
-				Name: m.GetOpts().Name,
-				Help: m.GetOpts().Help,
-				Type: strings.ToUpper(string(m.GetBaseType())),
-			}
-			metricFamilies = append(metricFamilies, parser.CreateMetricFamily(pm))
+		pm := parser.Metric{
+			Name: m.GetOpts().Name,
+			Help: m.GetOpts().Help,
+			Type: strings.ToUpper(string(m.GetBaseType())),
 		}
+		metricFamilies = append(metricFamilies, parser.CreateMetricFamily(pm))
 	}
 
 	// Build recording rules JSON and record names for filtering
@@ -81,9 +72,6 @@ func main() {
 	var recRules []RecordingRule
 	for _, r := range rulesList {
 		name := r.GetOpts().Name
-		if _, isExcludedMetric := excludedMetrics[name]; isExcludedMetric {
-			continue
-		}
 		recNames[name] = struct{}{}
 		recRules = append(recRules, RecordingRule{
 			Record: name,
