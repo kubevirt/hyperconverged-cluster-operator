@@ -1,3 +1,4 @@
+// +kubebuilder:object:generate=true
 package shared
 
 import (
@@ -54,7 +55,10 @@ type Placement struct {
 type Multus struct{}
 
 // MultusDynamicNetworks A multus extension enabling hot-plug and hot-unplug of Pod interfaces
-type MultusDynamicNetworks struct{}
+type MultusDynamicNetworks struct {
+	// HostCRISocketPath defines the path to the CRI socket on the host
+	HostCRISocketPath string `json:"hostCRISocketPath,omitempty"`
+}
 
 // LinuxBridge plugin allows users to create a bridge and add the host and the container to it
 type LinuxBridge struct{}

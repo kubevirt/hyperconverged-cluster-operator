@@ -1339,6 +1339,18 @@ rules:
   - create
   - update
 - apiGroups:
+  - security.openshift.io
+  resourceNames:
+  - linux-bridge
+  - bridge-marker
+  - macvtap-cni
+  - multus
+  - ovs-cni-marker
+  resources:
+  - securitycontextconstraints
+  verbs:
+  - use
+- apiGroups:
   - apiextensions.k8s.io
   resources:
   - customresourcedefinitions
