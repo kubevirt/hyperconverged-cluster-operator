@@ -62,16 +62,24 @@ func (ch *ConditionalHandler) ensureDeleted(req *common.HcoRequest) *EnsureResul
 
 		if deleted {
 			res.SetDeleted()
-			objectRef, err := reference.GetReference(ch.operand.Scheme, cr)
-			if err != nil {
-				return res.Error(err)
-			}
-
-			if err = objectreferencesv1.RemoveObjectReference(&req.Instance.Status.RelatedObjects, *objectRef); err != nil {
-				return res.Error(err)
-			}
-			req.StatusDirty = true
 		}
+	}
+
+	objectRef, err := reference.GetReference(ch.operand.Scheme, cr)
+	if err != nil {
+		return res.Error(err)
+	}
+
+	ref, err := objectreferencesv1.FindObjectReference(req.Instance.Status.RelatedObjects, *objectRef)
+	if err != nil {
+		return res.Error(err)
+	}
+	if ref != nil {
+		if err = objectreferencesv1.RemoveObjectReference(&req.Instance.Status.RelatedObjects, *objectRef); err != nil {
+			return res.Error(err)
+		}
+
+		req.StatusDirty = true
 	}
 
 	return res.SetUpgradeDone(req.ComponentUpgradeInProgress)
