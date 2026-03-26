@@ -10,3 +10,6 @@ var wrongDataImportCronTemplatesFileContent []byte
 
 //go:embed testFiles/dataImportCronTemplates/dataImportCronTemplatesWithImageStream.yaml
 var validDataImportCronWithImageStreamFileContent []byte
+
+//go:embed testFiles/dataImportCronTemplates/dataImportCronTemplatesWithSpec.yaml
+var wrongDataImportCronWithImageStreamTemplatesFileContent []byte
