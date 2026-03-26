@@ -17,8 +17,10 @@ import (
 )
 
 const (
-	mutatorV1Beta1Name            = "hyperConverged v1beta1 mutator"
-	v1beta1AnnotationPathTemplate = "/spec/dataImportCronTemplates/%d/metadata/annotations"
+	mutatorV1Beta1Name = "hyperConverged v1beta1 mutator"
+
+	v1beta1DICTPathTemplate           = "/spec/dataImportCronTemplates/%d"
+	v1beta1DICTAnnotationPathTemplate = v1beta1DICTPathTemplate + "/metadata/annotations"
 )
 
 var (
@@ -58,7 +60,7 @@ func (hcm *HyperConvergedV1Beta1Mutator) mutateHyperConverged(req admission.Requ
 		return admission.Errored(http.StatusBadRequest, fmt.Errorf("failed to parse the HyperConverged"))
 	}
 
-	patches := getDICTAnnotationPatches(hc.Spec.DataImportCronTemplates, v1beta1AnnotationPathTemplate)
+	patches := getDICTAnnotationPatches(hc.Spec.DataImportCronTemplates, v1beta1DICTAnnotationPathTemplate)
 	patches = mutateV1beta1EvictionStrategy(hc, patches)
 
 	if hc.Spec.MediatedDevicesConfiguration != nil {

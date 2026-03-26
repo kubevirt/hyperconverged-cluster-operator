@@ -89,12 +89,12 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 		},
 			Entry("no annotations", nil, &jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(annotationPathTemplate, 0),
+				Path:      fmt.Sprintf(dictAnnotationPathTemplate, 0),
 				Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 			}),
 			Entry("different annotations", map[string]string{"something/else": "value"}, &jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(dictAnnotationPathTemplate, 0),
+				Path:      fmt.Sprintf(dictAnnotationPathTemplate+dictImmediateAnnotationPath, 0),
 				Value:     "true",
 			}),
 			Entry("annotation=true", map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"}, nil),
@@ -137,12 +137,12 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 			Expect(res.Patches).To(Equal([]jsonpatch.JsonPatchOperation{
 				{
 					Operation: "add",
-					Path:      fmt.Sprintf(annotationPathTemplate, 0),
+					Path:      fmt.Sprintf(dictAnnotationPathTemplate, 0),
 					Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 				},
 				{
 					Operation: "add",
-					Path:      fmt.Sprintf(dictAnnotationPathTemplate, 1),
+					Path:      fmt.Sprintf(dictAnnotationPathTemplate+dictImmediateAnnotationPath, 1),
 					Value:     "true",
 				},
 				ksmPatch,
@@ -302,12 +302,12 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 		},
 			Entry("no annotations", nil, &jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(annotationPathTemplate, 0),
+				Path:      fmt.Sprintf(dictAnnotationPathTemplate, 0),
 				Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 			}),
 			Entry("different annotations", map[string]string{"something/else": "value"}, &jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(dictAnnotationPathTemplate, 0),
+				Path:      fmt.Sprintf(dictAnnotationPathTemplate+dictImmediateAnnotationPath, 0),
 				Value:     "true",
 			}),
 			Entry("annotation=true", map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"}, nil),
@@ -351,12 +351,12 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 			Expect(res.Patches).To(HaveLen(2))
 			Expect(res.Patches[0]).To(Equal(jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(annotationPathTemplate, 0),
+				Path:      fmt.Sprintf(dictAnnotationPathTemplate, 0),
 				Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 			}))
 			Expect(res.Patches[1]).To(Equal(jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(dictAnnotationPathTemplate, 1),
+				Path:      fmt.Sprintf(dictAnnotationPathTemplate+dictImmediateAnnotationPath, 1),
 				Value:     "true",
 			}))
 		})
