@@ -75,7 +75,7 @@ spec:
         - name: AUTOPILOT_VERSION
           value: v0.0.8
         - name: INFLIGHT_OPERATIONS_VERSION
-          value: v0.0.2
+          value: v0.0.3
         - name: KV_CONSOLE_PLUGIN_IMAGE
         - name: KV_CONSOLE_PROXY_IMAGE
         - name: PASST_SIDECAR_IMAGE
@@ -1122,13 +1122,12 @@ spec:
         - --metrics-bind-address=:8443
         - --leader-elect
         - --health-probe-bind-address=:8081
-        - --olm-deployment
         command:
         - /manager
         env:
         - name: OPERATOR_VERSION
-          value: v0.0.2
-        image: quay.io/ifo-operator/controller@sha256:731fb6c62b347bd6928df016e206f6a6bf8f5eb455c120fa8aa8518ca8ff4655
+          value: v0.0.3
+        image: quay.io/ifo-operator/controller@sha256:0c53364ddf57462fe0d3e809ef00e8731778204000963c53955be8b79f42a7c5
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
@@ -1156,6 +1155,7 @@ spec:
             drop:
             - ALL
           readOnlyRootFilesystem: true
+        terminationMessagePolicy: FallbackToLogsOnError
       securityContext:
         runAsNonRoot: true
         seccompProfile:
