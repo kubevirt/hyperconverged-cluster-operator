@@ -104,6 +104,50 @@ var _ = Describe("Wasp Agent Service Account", func() {
 			Expect(foundSAs.Items).To(HaveLen(1))
 			Expect(foundSAs.Items[0].Name).To(Equal("wasp"))
 		})
+
+		It("should not create service account when autopilot swap annotation is set even with overcommit > 100", func() {
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+				MemoryOvercommitPercentage: 150,
+			}
+			hco.Annotations[AutopilotSwapAnnotation] = AutopilotSwapAnnotationValue
+			cl = commontestutils.InitClient([]client.Object{hco})
+
+			handler := NewWaspAgentServiceAccountHandler(cl, commontestutils.GetScheme())
+
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeFalse())
+
+			foundSAs := &corev1.ServiceAccountList{}
+			Expect(cl.List(context.Background(), foundSAs)).To(Succeed())
+			Expect(foundSAs.Items).To(BeEmpty())
+		})
+
+		It("should delete service account when autopilot swap annotation is added", func() {
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+				MemoryOvercommitPercentage: 150,
+			}
+			sa := newWaspAgentServiceAccount(hco)
+			hco.Annotations[AutopilotSwapAnnotation] = AutopilotSwapAnnotationValue
+			cl = commontestutils.InitClient([]client.Object{hco, sa})
+
+			handler := NewWaspAgentServiceAccountHandler(cl, commontestutils.GetScheme())
+
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Name).To(Equal(sa.Name))
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeTrue())
+
+			foundSAs := &corev1.ServiceAccountList{}
+			Expect(cl.List(context.Background(), foundSAs)).To(Succeed())
+			Expect(foundSAs.Items).To(BeEmpty())
+		})
 	})
 	Context("Wasp agent service account update", func() {
 		It("should reconcile labels if they are missing while preserving user labels", func() {

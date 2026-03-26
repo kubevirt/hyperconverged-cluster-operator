@@ -27,6 +27,9 @@ const (
 	waspAgentServiceAccountName = "wasp"
 	waspAgentSCCName            = "wasp"
 	NoOverCommitPercentage      = 100
+
+	AutopilotSwapAnnotation      = "platform.kubevirt.io/autopilot"
+	AutopilotSwapAnnotationValue = "swap-enable"
 )
 
 var (
@@ -181,6 +184,10 @@ func createDaemonSetEnvVar() []corev1.EnvVar {
 }
 
 func shouldDeployWaspAgent(hc *hcov1beta1.HyperConverged) bool {
+	if hc.Annotations[AutopilotSwapAnnotation] == AutopilotSwapAnnotationValue {
+		return false
+	}
+
 	overcommitPercentage := hc.Spec.HigherWorkloadDensity.MemoryOvercommitPercentage
 	return overcommitPercentage > NoOverCommitPercentage
 }
