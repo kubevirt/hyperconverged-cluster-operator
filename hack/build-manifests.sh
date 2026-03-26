@@ -244,17 +244,17 @@ create_autopilot_csv() {
 }
 
 
-function create_ifo_csv() {
-  local operatorName="ifo-operator"
+function create_inflight_operations_csv() {
+  local operatorName="inflightoperations"
   local dumpCRDsArg="--dump-crds"
   local operatorArgs=" \
     --csv-version=${CSV_VERSION} \
     --namespace=${OPERATOR_NAMESPACE} \
-    --operator-version=${IFO_VERSION} \
-    --operator-image=${IFO_IMAGE} \
+    --operator-version=${INFLIGHT_OPERATIONS_VERSION} \
+    --operator-image=${INFLIGHT_OPERATIONS_IMAGE} \
     --pull-policy=IfNotPresent \
   "
-  gen_csv ${DEFAULT_CSV_GENERATOR} ${operatorName} "${IFO_IMAGE}" ${dumpCRDsArg} ${operatorArgs}
+  gen_csv ${DEFAULT_CSV_GENERATOR} ${operatorName} "${INFLIGHT_OPERATIONS_IMAGE}" ${dumpCRDsArg} ${operatorArgs}
   echo "${operatorName}"
 }
 
@@ -282,8 +282,8 @@ migrationOperatorFile=$(create_migration_operator_csv)
 migrationOperatorCsv="${TEMPDIR}/${migrationOperatorFile}.${CSV_EXT}"
 autopilotFile=$(create_autopilot_csv)
 autopilotCsv="${TEMPDIR}/${autopilotFile}.${CSV_EXT}"
-ifoFile=$(create_ifo_csv)
-ifoCsv="${TEMPDIR}/${ifoFile}.${CSV_EXT}"
+inFlightOperationsFile=$(create_inflight_operations_csv)
+inFlightOperationsCsv="${TEMPDIR}/${inFlightOperationsFile}.${CSV_EXT}"
 csvOverrides="${TEMPDIR}/csv_overrides.${CSV_EXT}"
 keywords="  keywords:
   - KubeVirt
@@ -323,7 +323,7 @@ EOM
 )
 
 # validate CSVs. Make sure each one of them contain an image (and so, also not empty):
-csvs=("${cnaCsv}" "${virtCsv}" "${sspCsv}" "${cdiCsv}" "${hppCsv}" "${aaqCsv}" "${migrationOperatorCsv}" "${autopilotCsv}" "${ifoCsv}")
+csvs=("${cnaCsv}" "${virtCsv}" "${sspCsv}" "${cdiCsv}" "${hppCsv}" "${aaqCsv}" "${migrationOperatorCsv}" "${autopilotCsv}" "${inFlightOperationsCsv}")
 for csv in "${csvs[@]}"; do
   grep -E "^ *image: [_a-zA-Z0-9/\.:@\-]+$" ${csv}
 done
@@ -339,7 +339,7 @@ ${TOOLS}/manifest-templator \
   --aaq-csv-file="${aaqCsv}" \
   --migration-operator-csv-file="${migrationOperatorCsv}" \
   --autopilot-csv-file="${autopilotCsv}" \
-  --ifo-csv-file="${ifoCsv}" \
+  --inflight-operations-csv-file="${inFlightOperationsCsv}" \
   --kv-virtiowin-image-name="${KUBEVIRT_VIRTIO_IMAGE}" \
   --operator-namespace="${OPERATOR_NAMESPACE}" \
   --smbios="${SMBIOS}" \
@@ -355,7 +355,7 @@ ${TOOLS}/manifest-templator \
   --aaq-version="${AAQ_VERSION}" \
   --migration-operator-version="${MIGRATION_OPERATOR_VERSION}" \
   --autopilot-version="${AUTOPILOT_VERSION}" \
-  --ifo-version="${IFO_VERSION}" \
+  --inflight-operations-version="${INFLIGHT_OPERATIONS_VERSION}" \
   --operator-image="${HCO_OPERATOR_IMAGE}" \
   --webhook-image="${HCO_WEBHOOK_IMAGE}" \
   --network-passt-binding-image-name="${NETWORK_PASST_BINDING_IMAGE}" \
@@ -392,7 +392,7 @@ ${TOOLS}/csv-merger \
   --aaq-csv-file="${aaqCsv}" \
   --migration-operator-csv-file="${migrationOperatorCsv}" \
   --autopilot-csv-file="${autopilotCsv}" \
-  --ifo-csv-file="${ifoCsv}" \
+  --inflight-operations-csv-file="${inFlightOperationsCsv}" \
   --kv-virtiowin-image-name="${KUBEVIRT_VIRTIO_IMAGE}" \
   --csv-version=${CSV_VERSION_PARAM} \
   --replaces-csv-version=${REPLACES_CSV_VERSION} \
@@ -416,7 +416,7 @@ ${TOOLS}/csv-merger \
   --aaq-version="${AAQ_VERSION}" \
   --migration-operator-version="${MIGRATION_OPERATOR_VERSION}" \
   --autopilot-version="${AUTOPILOT_VERSION}" \
-  --ifo-version="${IFO_VERSION}" \
+  --inflight-operations-version="${INFLIGHT_OPERATIONS_VERSION}" \
   --related-images-list="${DIGEST_LIST}" \
   --operator-image-name="${HCO_OPERATOR_IMAGE}" \
   --webhook-image-name="${HCO_WEBHOOK_IMAGE}" \

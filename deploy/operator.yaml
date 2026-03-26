@@ -74,7 +74,7 @@ spec:
           value: v0.2.0-rc.0
         - name: AUTOPILOT_VERSION
           value: v0.0.8
-        - name: IFO_VERSION
+        - name: INFLIGHT_OPERATIONS_VERSION
           value: v0.0.2
         - name: KV_CONSOLE_PLUGIN_IMAGE
         - name: KV_CONSOLE_PROXY_IMAGE

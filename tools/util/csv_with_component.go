@@ -15,24 +15,24 @@ type CsvWithComponent struct {
 }
 
 var (
-	cnaCsv                   = flag.String("cna-csv", "", "Cluster Network Addons CSV string")
-	cnaCsvFile               = flag.String("cna-csv-file", "", "Cluster Network Addons CSV yaml file")
-	virtCsv                  = flag.String("virt-csv", "", "KubeVirt CSV string")
-	virtCsvFile              = flag.String("virt-csv-file", "", "KubeVirt CSV yaml file")
-	sspCsv                   = flag.String("ssp-csv", "", "Scheduling Scale Performance CSV string")
-	sspCsvFile               = flag.String("ssp-csv-file", "", "Scheduling Scale Performance CSV yaml file")
-	cdiCsv                   = flag.String("cdi-csv", "", "Containerized Data Importer CSV String")
-	cdiCsvFile               = flag.String("cdi-csv-file", "", "Containerized Data Importer CSV yaml file")
-	hppCsv                   = flag.String("hpp-csv", "", "HostPath Provisioner Operator CSV String")
-	hppCsvFile               = flag.String("hpp-csv-file", "", "HostPath Provisioner Operator CSV yaml file")
-	aaqCsv                   = flag.String("aaq-csv", "", "Applications Aware Quota Operator CSV String")
-	aaqCsvFile               = flag.String("aaq-csv-file", "", "Applications Aware Quota Operator CSV yaml file")
-	migrationoperatorCsv     = flag.String("migration-operator-csv", "", "KubeVirt Migration Operator CSV string")
-	migrationoperatorCsvFile = flag.String("migration-operator-csv-file", "", "KubeVirt Migration Operator CSV yaml file")
-	autopilotCsv             = flag.String("autopilot-csv", "", "Virt Platform Autopilot CSV string")
-	autopilotCsvFile         = flag.String("autopilot-csv-file", "", "Virt Platform Autopilot CSV yaml file")
-	ifoCsv                   = flag.String("ifo-csv", "", "InFlightOperations Operator CSV String")
-	ifoCsvFile               = flag.String("ifo-csv-file", "", "InFlightOperations Operator CSV yaml file")
+	cnaCsv                    = flag.String("cna-csv", "", "Cluster Network Addons CSV string")
+	cnaCsvFile                = flag.String("cna-csv-file", "", "Cluster Network Addons CSV yaml file")
+	virtCsv                   = flag.String("virt-csv", "", "KubeVirt CSV string")
+	virtCsvFile               = flag.String("virt-csv-file", "", "KubeVirt CSV yaml file")
+	sspCsv                    = flag.String("ssp-csv", "", "Scheduling Scale Performance CSV string")
+	sspCsvFile                = flag.String("ssp-csv-file", "", "Scheduling Scale Performance CSV yaml file")
+	cdiCsv                    = flag.String("cdi-csv", "", "Containerized Data Importer CSV String")
+	cdiCsvFile                = flag.String("cdi-csv-file", "", "Containerized Data Importer CSV yaml file")
+	hppCsv                    = flag.String("hpp-csv", "", "HostPath Provisioner Operator CSV String")
+	hppCsvFile                = flag.String("hpp-csv-file", "", "HostPath Provisioner Operator CSV yaml file")
+	aaqCsv                    = flag.String("aaq-csv", "", "Applications Aware Quota Operator CSV String")
+	aaqCsvFile                = flag.String("aaq-csv-file", "", "Applications Aware Quota Operator CSV yaml file")
+	migrationoperatorCsv      = flag.String("migration-operator-csv", "", "KubeVirt Migration Operator CSV string")
+	migrationoperatorCsvFile  = flag.String("migration-operator-csv-file", "", "KubeVirt Migration Operator CSV yaml file")
+	autopilotCsv              = flag.String("autopilot-csv", "", "Virt Platform Autopilot CSV string")
+	autopilotCsvFile          = flag.String("autopilot-csv-file", "", "Virt Platform Autopilot CSV yaml file")
+	inFlightOperationsCsv     = flag.String("inflight-operations-csv", "", "Inflight Operations Operator CSV String")
+	inFlightOperationsCsvFile = flag.String("inflight-operations-csv-file", "", "Inflight Operations Operator CSV yaml file")
 )
 
 func GetInitialCsvList() ([]CsvWithComponent, error) {
@@ -84,11 +84,11 @@ func GetInitialCsvList() ([]CsvWithComponent, error) {
 		})
 	}
 	// Only add inflightoperations if CSV is not empty
-	if *ifoCsv != "" {
+	if *inFlightOperationsCsv != "" {
 		components = append(components, CsvWithComponent{
 			Name:      "InFlightOperations",
-			Csv:       *ifoCsv,
-			Component: hcoutil.AppComponentIFO,
+			Csv:       *inFlightOperationsCsv,
+			Component: hcoutil.AppComponentInFlightOperations,
 		})
 	}
 
@@ -118,7 +118,7 @@ func getAllCSVs() error {
 		{str: aaqCsv, fileName: *aaqCsvFile, flagName: "aaq-csv"},
 		{str: migrationoperatorCsv, fileName: *migrationoperatorCsvFile, flagName: "migration-operator-csv"},
 		{str: autopilotCsv, fileName: *autopilotCsvFile, flagName: "autopilot-csv"},
-		{str: ifoCsv, fileName: *ifoCsvFile, flagName: "ifo-csv"},
+		{str: inFlightOperationsCsv, fileName: *inFlightOperationsCsvFile, flagName: "inflight-operations-csv"},
 	} {
 		if err := fileOrString(f.str, f.fileName, f.flagName); err != nil {
 			return err
