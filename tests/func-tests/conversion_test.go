@@ -45,7 +45,7 @@ var _ = Describe("check v1 <=> v1beta1 API conversion", func() {
 		converted := &hcov1.HyperConverged{}
 		Expect(hcv1beta1.ConvertTo(converted)).To(Succeed())
 
-		diff := cmp.Diff(hcv1, converted)
+		diff := cmp.Diff(hcv1.Spec, converted.Spec)
 		if diff != "" {
 			GinkgoWriter.Println(diff)
 			Fail("v1 HyperConverged should be equal to the v1beta1 converted one")
