@@ -105,6 +105,7 @@ var (
 	passtImage          = flag.String("network-passt-binding-image-name", "", "Passt binding image")
 	passtCNIImage       = flag.String("network-passt-binding-cni-image-name", "", "Passt binding cni image")
 	waspAgentImage      = flag.String("wasp-agent-image-name", "", "Wasp Agent image")
+	aieWebhookImage     = flag.String("aie-webhook-image-name", "", "AIE Webhook image")
 	smbios              = flag.String("smbios", "", "Custom SMBIOS string, used by HCO to configure the SMBIOS in KubeVirt CR")
 	smbiosFile          = flag.String("smbios-file", "", "Custom SMBIOS file name, used by HCO to configure the SMBIOS in KubeVirt CR")
 	machinetype         = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap (Deprecated, use amd64-machinetype)")
@@ -790,6 +791,7 @@ func getDeploymentParams() *components.DeploymentOperatorParams {
 		PasstImage:               *passtImage,
 		PasstCNIImage:            *passtCNIImage,
 		WaspAgentImage:           *waspAgentImage,
+		AIEWebhookImage:          *aieWebhookImage,
 		Env:                      envVars,
 		AddNetworkPolicyLabels:   *dumpNetworkPolicies,
 	}

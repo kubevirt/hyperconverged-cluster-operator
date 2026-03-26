@@ -40,6 +40,7 @@ type DeploymentOperatorParams struct {
 	PasstImage               string
 	PasstCNIImage            string
 	WaspAgentImage           string
+	AIEWebhookImage          string
 	ImagePullPolicy          string
 	ConversionContainer      string
 	VmwareContainer          string
@@ -226,6 +227,10 @@ func buildEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 		{
 			Name:  util.WaspAgentImageEnvV,
 			Value: params.WaspAgentImage,
+		},
+		{
+			Name:  util.AIEWebhookImageEnvV,
+			Value: params.AIEWebhookImage,
 		},
 	}, params.Env...)
 
@@ -443,6 +448,11 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			Verbs:     stringListToSlice("get", "list", "create", "update", "watch"),
 		},
 		roleWithAllPermissions(kvapi.GroupName, stringListToSlice("kubevirts", "kubevirts/finalizers")),
+		{
+			APIGroups: stringListToSlice(kvapi.GroupName),
+			Resources: stringListToSlice("virtualmachineinstances"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
 		roleWithAllPermissions(cdiapi.GroupName, stringListToSlice("cdis", "cdis/finalizers")),
 		roleWithAllPermissions(sspapi.GroupVersion.Group, stringListToSlice("ssps", "ssps/finalizers")),
 		roleWithAllPermissions(cnaoapi.GroupVersion.Group, stringListToSlice("networkaddonsconfigs", "networkaddonsconfigs/finalizers")),
@@ -503,6 +513,11 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			APIGroups: stringListToSlice("admissionregistration.k8s.io"),
 			Resources: stringListToSlice("validatingwebhookconfigurations"),
 			Verbs:     stringListToSlice("list", "watch", "update", "patch"),
+		},
+		{
+			APIGroups: stringListToSlice("admissionregistration.k8s.io"),
+			Resources: stringListToSlice("mutatingwebhookconfigurations"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
 		roleWithAllPermissions("console.openshift.io", stringListToSlice("consoleclidownloads", "consolequickstarts")),
 		{
