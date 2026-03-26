@@ -102,7 +102,10 @@ spec:
   restartPolicy: Never
 EOF
 
-for i in $(seq 1 120); do
+NUM_WAIT_ITERATIONS=150
+ITERATION_WAIT_TIME=10
+
+for i in $(seq 1 ${NUM_WAIT_ITERATIONS}); do
   exitCode=$($KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" get pod/functest -o jsonpath='{.status .containerStatuses[?(@.name=="functest")] .state .terminated .exitCode}')
 
   if [[ -n ${exitCode} ]]; then
@@ -110,11 +113,15 @@ for i in $(seq 1 120); do
   fi
 
   echo "Waiting for completion... Iteration:$i"
-  sleep 10
+  sleep ${ITERATION_WAIT_TIME}
 done
 
 if [[ -z ${exitCode} ]]; then
   $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" get pod functest -o yaml || true
+fi
+
+if [[ ${NUM_WAIT_ITERATIONS} -eq $i ]]; then
+  echo "ERROR: Timeout: the test pod didn't exit after $((${ITERATION_WAIT_TIME} * ${NUM_WAIT_ITERATIONS})) seconds"
 fi
 
 $KUBECTL_BINARY -n "${INSTALLED_NAMESPACE}" cp -c=copy functest:/test/output "$OUTPUT_DIR"
