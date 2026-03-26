@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"crypto/tls"
 	_ "embed"
 	"errors"
 	"fmt"
@@ -171,7 +172,7 @@ func NewKvUIProxyDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
 	ciphers, minTLSVersion := tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat(hc.Spec.TLSSecurityProfile)
 
 	var args []string
-	if len(ciphers) > 0 {
+	if minTLSVersion < tls.VersionTLS13 && len(ciphers) > 0 {
 		cipherStrs := make([]string, len(ciphers))
 		for i := range ciphers {
 			cipherStrs[i] = strconv.Itoa(int(ciphers[i]))
@@ -385,7 +386,10 @@ func getNginxConfig(hc *hcov1beta1.HyperConverged) (string, error) {
 	data := nginxConfTemplateData{
 		Port:         hcoutil.UIPluginServerPort,
 		SSLProtocols: nginxSSLProtocolsFromMinTLS(minTLS),
-		SSLCiphers:   strings.Join(ciphers, ":"),
+	}
+
+	if minTLS < openshiftconfigv1.VersionTLS13 {
+		data.SSLCiphers = strings.Join(ciphers, ":")
 	}
 
 	var out bytes.Buffer

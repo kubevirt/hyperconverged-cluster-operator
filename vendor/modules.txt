@@ -197,10 +197,6 @@ github.com/go-task/slim-sprig/v3
 # github.com/gobuffalo/flect v1.0.3
 ## explicit; go 1.16
 github.com/gobuffalo/flect
-# github.com/gogo/protobuf v1.3.2
-## explicit; go 1.15
-github.com/gogo/protobuf/proto
-github.com/gogo/protobuf/sortkeys
 # github.com/golang-jwt/jwt/v5 v5.3.1
 ## explicit; go 1.21
 github.com/golang-jwt/jwt/v5
@@ -373,8 +369,8 @@ github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runtime-spec v1.2.1
 ## explicit
 github.com/opencontainers/runtime-spec/specs-go
-# github.com/openshift/api v0.0.1 => github.com/openshift/api v0.0.0-20250409155250-8fcc4e71758a
-## explicit; go 1.23.0
+# github.com/openshift/api v0.0.1 => github.com/openshift/api v0.0.0-20260325070019-86893981287e
+## explicit; go 1.25.0
 github.com/openshift/api/config/v1
 github.com/openshift/api/console/v1
 github.com/openshift/api/image/docker10
@@ -391,8 +387,8 @@ github.com/openshift/cluster-kube-descheduler-operator/pkg/apis/descheduler/v1
 ## explicit; go 1.12
 github.com/openshift/custom-resource-status/conditions/v1
 github.com/openshift/custom-resource-status/objectreferences/v1
-# github.com/openshift/library-go v0.0.0-20260213153706-03f1709971c5
-## explicit; go 1.24.0
+# github.com/openshift/library-go v0.0.0-20260318142011-72bf34f474bc
+## explicit; go 1.25.0
 github.com/openshift/library-go/pkg/crypto
 # github.com/operator-framework/api v0.39.0
 ## explicit; go 1.25.3
@@ -1266,4 +1262,4 @@ sigs.k8s.io/yaml
 # k8s.io/sample-controller => k8s.io/sample-controller v0.35.1
 # vbom.ml/util => github.com/fvbommel/util v0.0.0-20180919145318-efcd4e0f9787
 # bitbucket.org/ww/goautoneg => github.com/munnerz/goautoneg v0.0.0-20120707110453-a547fc61f48d
-# github.com/openshift/api => github.com/openshift/api v0.0.0-20250409155250-8fcc4e71758a
+# github.com/openshift/api => github.com/openshift/api v0.0.0-20260325070019-86893981287e
