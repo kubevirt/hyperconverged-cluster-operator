@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"sync"
 
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -16,6 +17,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -96,6 +98,8 @@ func NewMigController(hc *hcov1beta1.HyperConverged) (*migrationv1alpha1.MigCont
 		hc.Spec.Infra.NodePlacement.DeepCopyInto(&spec.Infra)
 	}
 
+	spec.TLSSecurityProfile = openshift2MigrationSecProfile(tlssecprofile.GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile))
+
 	migController := NewMigControllerWithNameOnly(hc)
 	migController.Spec = spec
 
@@ -109,5 +113,25 @@ func NewMigControllerWithNameOnly(hc *hcov1beta1.HyperConverged) *migrationv1alp
 			Namespace: hc.Namespace,
 			Labels:    operands.GetLabels(hc, hcoutil.AppComponentMigration),
 		},
+	}
+}
+
+func openshift2MigrationSecProfile(hcProfile *openshiftconfigv1.TLSSecurityProfile) *migrationv1alpha1.TLSSecurityProfile {
+	var custom *migrationv1alpha1.CustomTLSProfile
+	if hcProfile.Custom != nil {
+		custom = &migrationv1alpha1.CustomTLSProfile{
+			TLSProfileSpec: migrationv1alpha1.TLSProfileSpec{
+				Ciphers:       hcProfile.Custom.Ciphers,
+				MinTLSVersion: migrationv1alpha1.TLSProtocolVersion(hcProfile.Custom.MinTLSVersion),
+			},
+		}
+	}
+
+	return &migrationv1alpha1.TLSSecurityProfile{
+		Type:         migrationv1alpha1.TLSProfileType(hcProfile.Type),
+		Old:          (*migrationv1alpha1.OldTLSProfile)(hcProfile.Old),
+		Intermediate: (*migrationv1alpha1.IntermediateTLSProfile)(hcProfile.Intermediate),
+		Modern:       (*migrationv1alpha1.ModernTLSProfile)(hcProfile.Modern),
+		Custom:       custom,
 	}
 }
