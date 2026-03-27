@@ -14,7 +14,10 @@ const AppliedPrefix = "cluster-networks-addons-operator-applied-"
 const RejectOwnerAnnotation = "networkaddonsoperator.network.kubevirt.io/rejectOwner"
 
 const PrometheusLabelKey = "prometheus.cnao.io"
-const PrometheusLabelValue = "true"
+const KubeMacPoolPrometheusLabelKey = "prometheus.kubemacpool.io"
+
+const PrometheusLabelValueTrue = "true"
+const PrometheusLabelValueFalse = "false"
 
 // Relationship labels
 
@@ -26,3 +29,4 @@ const ComponentLabelDefaultValue = "network"
 const ManagedByLabelDefaultValue = "cnao-operator"
 
 const KubemacpoolControlPlaneKey = "control-plane"
+const KubemacpoolMacControllerManagerValue = "mac-controller-manager"
