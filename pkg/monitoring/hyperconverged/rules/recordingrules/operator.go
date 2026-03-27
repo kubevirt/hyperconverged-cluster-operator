@@ -19,8 +19,16 @@ const (
 var operatorRecordingRules = []operatorrules.RecordingRule{
 	{
 		MetricsOpts: operatormetrics.MetricOpts{
-			Name: "kubevirt_hyperconverged_operator_health_status",
+			Name: "cluster:kubevirt_hco_operator_health_status:count",
 			Help: "Indicates whether HCO and its secondary resources health status is healthy (0), warning (1) or critical (2), based both on the firing alerts that impact the operator health, and on kubevirt_hco_system_health_status metric",
+		},
+		MetricType: operatormetrics.GaugeType,
+		Expr:       buildOperatorHealthStatusExpr(),
+	},
+	{
+		MetricsOpts: operatormetrics.MetricOpts{
+			Name: "kubevirt_hyperconverged_operator_health_status",
+			Help: "[Deprecated] Indicates whether HCO and its secondary resources health status is healthy (0), warning (1) or critical (2), based both on the firing alerts that impact the operator health, and on kubevirt_hco_system_health_status metric",
 		},
 		MetricType: operatormetrics.GaugeType,
 		Expr:       buildOperatorHealthStatusExpr(),

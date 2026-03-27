@@ -33,9 +33,10 @@ import (
 // https://sdk.operatorframework.io/docs/best-practices/observability-best-practices/#metrics-guidelines
 // should be ignored.
 var excludedMetrics = map[string]struct{}{
-	"kubevirt_hyperconverged_operator_health_status": struct{}{},
-	"cluster:vmi_request_cpu_cores:sum":              struct{}{},
-	"cnv_abnormal":                                   struct{}{},
+	"kubevirt_hyperconverged_operator_health_status":    {},
+	"cluster:kubevirt_hco_operator_health_status:count": {},
+	"cluster:vmi_request_cpu_cores:sum":                 {},
+	"cnv_abnormal":                                      {},
 }
 
 func main() {
