@@ -73,7 +73,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		hcoClient, err = tests.GetHCOPrometheusClient(ctx, cli)
 		Expect(err).NotTo(HaveOccurred())
 
-		initialOperatorHealthMetricValue = getMetricValue(ctx, promClient, "kubevirt_hyperconverged_operator_health_status")
+		initialOperatorHealthMetricValue = getMetricValue(ctx, promClient, "cluster:kubevirt_hco_operator_health_status:count")
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -390,12 +390,12 @@ func verifyOperatorHealthMetricValue(ctx context.Context, promClient promApiv1.A
 			systemHealthMetricValue, err := hcoClient.GetHCOMetric(ctx, "kubevirt_hco_system_health_status")
 			g.Expect(err).NotTo(HaveOccurred())
 
-			operatorHealthMetricValue := getMetricValue(ctx, promClient, "kubevirt_hyperconverged_operator_health_status")
+			operatorHealthMetricValue := getMetricValue(ctx, promClient, "cluster:kubevirt_hco_operator_health_status:count")
 
 			expectedOperatorHealthMetricValue := math.Max(alertImpact, systemHealthMetricValue)
 
 			g.Expect(operatorHealthMetricValue).To(Equal(expectedOperatorHealthMetricValue),
-				"kubevirt_hyperconverged_operator_health_status value is %f, but its expected value is %f, "+
+				"cluster:kubevirt_hco_operator_health_status:count value is %f, but its expected value is %f, "+
 					"while kubevirt_hco_system_health_status value is %f.",
 				operatorHealthMetricValue, expectedOperatorHealthMetricValue, systemHealthMetricValue)
 		}
