@@ -27,7 +27,7 @@ metadata:
     operatorframework.io/suggested-namespace: kubevirt-hyperconverged
     operators.openshift.io/infrastructure-features: '["disconnected","proxy-aware"]'
     operators.openshift.io/must-gather-image: quay.io/kubevirt/must-gather
-    operators.operatorframework.io/internal-objects: '["networkaddonsconfigs.networkaddonsoperator.network.kubevirt.io","kubevirts.kubevirt.io","ssps.ssp.kubevirt.io","ssps.ssp.kubevirt.io","cdis.cdi.kubevirt.io","aaqs.aaq.kubevirt.io","migcontrollers.migrations.kubevirt.io"]'
+    operators.operatorframework.io/internal-objects: '["networkaddonsconfigs.networkaddonsoperator.network.kubevirt.io","kubevirts.kubevirt.io","ssps.ssp.kubevirt.io","ssps.ssp.kubevirt.io","cdis.cdi.kubevirt.io","aaqs.aaq.kubevirt.io","migcontrollers.migrations.kubevirt.io","inflightoperations.ifo.kubevirt.io","operationrulesets.ifo.kubevirt.io"]'
     repository: https://github.com/kubevirt/hyperconverged-cluster-operator
     support: "false"
   labels:
@@ -125,6 +125,12 @@ spec:
       displayName: KubeVirt Migration Controller deployment
       kind: MigController
       name: migcontrollers.migrations.kubevirt.io
+      version: v1alpha1
+    - kind: InFlightOperation
+      name: inflightoperations.ifo.kubevirt.io
+      version: v1alpha1
+    - kind: OperationRuleSet
+      name: operationrulesets.ifo.kubevirt.io
       version: v1alpha1
   description: |-
     **HyperConverged Cluster Operator** is an Operator pattern for managing multi-operator products.
@@ -3667,6 +3673,62 @@ spec:
         serviceAccountName: kubevirt-migration-operator
       - rules:
         - apiGroups:
+          - ifo.kubevirt.io
+          resources:
+          - inflightoperations
+          - operationrulesets
+          verbs:
+          - create
+          - delete
+          - deletecollection
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - ifo.kubevirt.io
+          resources:
+          - inflightoperations/finalizers
+          - operationrulesets/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - ifo.kubevirt.io
+          resources:
+          - inflightoperations/status
+          - operationrulesets/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - authentication.k8s.io
+          resources:
+          - tokenreviews
+          verbs:
+          - create
+        - apiGroups:
+          - authorization.k8s.io
+          resources:
+          - subjectaccessreviews
+          verbs:
+          - create
+        - apiGroups:
+          - apps
+          - kubevirt.io
+          - cdi.kubevirt.io
+          - hco.kubevirt.io
+          - operators.coreos.com
+          resources:
+          - '*'
+          verbs:
+          - get
+          - list
+          - watch
+        serviceAccountName: inflightoperations-controller-manager
+      - rules:
+        - apiGroups:
           - ""
           resources:
           - nodes
@@ -3881,6 +3943,8 @@ spec:
                   value: v0.2.0-rc.0
                 - name: AUTOPILOT_VERSION
                   value: v0.0.8
+                - name: INFLIGHT_OPERATIONS_VERSION
+                  value: v0.0.3
                 - name: KV_CONSOLE_PLUGIN_IMAGE
                   value: quay.io/kubevirt-ui/kubevirt-plugin@sha256:a9273d9e69662320fc6677f51ee1b05f4c62528b8a83895f8f56849de3b8b9f2
                 - name: KV_CONSOLE_PROXY_IMAGE
@@ -4849,6 +4913,78 @@ spec:
                 runAsNonRoot: true
               serviceAccountName: kubevirt-migration-operator
       - label:
+          app.kubernetes.io/component: inflightoperations
+          app.kubernetes.io/managed-by: olm
+          app.kubernetes.io/name: inflightoperations
+          app.kubernetes.io/part-of: hyperconverged-cluster
+          app.kubernetes.io/version: 1.18.0
+          control-plane: controller-manager
+        name: inflightoperations-controller-manager
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app.kubernetes.io/name: inflightoperations
+              control-plane: controller-manager
+          strategy: {}
+          template:
+            metadata:
+              annotations:
+                kubectl.kubernetes.io/default-container: manager
+              labels:
+                app.kubernetes.io/component: inflightoperations
+                app.kubernetes.io/managed-by: olm
+                app.kubernetes.io/name: inflightoperations
+                app.kubernetes.io/part-of: hyperconverged-cluster
+                app.kubernetes.io/version: 1.18.0
+                control-plane: controller-manager
+            spec:
+              containers:
+              - args:
+                - --metrics-bind-address=:8443
+                - --leader-elect
+                - --health-probe-bind-address=:8081
+                command:
+                - /manager
+                env:
+                - name: OPERATOR_VERSION
+                  value: v0.0.3
+                image: quay.io/ifo-operator/controller@sha256:0c53364ddf57462fe0d3e809ef00e8731778204000963c53955be8b79f42a7c5
+                imagePullPolicy: IfNotPresent
+                livenessProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 8081
+                  initialDelaySeconds: 15
+                  periodSeconds: 20
+                name: manager
+                readinessProbe:
+                  httpGet:
+                    path: /readyz
+                    port: 8081
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                resources:
+                  limits:
+                    cpu: 500m
+                    memory: 512Mi
+                  requests:
+                    cpu: 10m
+                    memory: 256Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                    - ALL
+                  readOnlyRootFilesystem: true
+                terminationMessagePolicy: FallbackToLogsOnError
+              securityContext:
+                runAsNonRoot: true
+                seccompProfile:
+                  type: RuntimeDefault
+              serviceAccountName: inflightoperations-controller-manager
+              terminationGracePeriodSeconds: 10
+      - label:
           app: virt-platform-autopilot
           app.kubernetes.io/component: autopilot
           app.kubernetes.io/managed-by: olm
@@ -5700,6 +5836,39 @@ spec:
           - update
           - watch
         serviceAccountName: kubevirt-migration-operator
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - coordination.k8s.io
+          resources:
+          - leases
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+          - patch
+        serviceAccountName: inflightoperations-controller-manager
     strategy: deployment
   installModes:
   - supported: false
@@ -5755,6 +5924,8 @@ spec:
     name: cluster-network-addons-operator
   - image: quay.io/kubevirt/cni-default-plugins@sha256:976a24392c2a096c38c2663d234b2d3131f5c24558889196d30b9ac1b6716788
     name: cni-default-plugins
+  - image: quay.io/ifo-operator/controller@sha256:0c53364ddf57462fe0d3e809ef00e8731778204000963c53955be8b79f42a7c5
+    name: controller
   - image: registry.k8s.io/coredns/coredns@sha256:a0ead06651cf580044aeb0a0feba63591858fb2e43ade8c9dea45a6a89ae7e5e
     name: coredns
   - image: registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:ab482308a4921e28a6df09a16ab99a457e9af9641ff44fb1be1a690d07ce8b70

@@ -112,6 +112,22 @@ subjects:
   namespace: kubevirt-hyperconverged
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    name: inflightoperations-controller-manager
+  name: inflightoperations-controller-manager
+  namespace: kubevirt-hyperconverged
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: inflightoperations-controller-manager
+subjects:
+- kind: ServiceAccount
+  name: inflightoperations-controller-manager
+  namespace: kubevirt-hyperconverged
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   labels:
@@ -229,6 +245,21 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: kubevirt-migration-operator
+  namespace: kubevirt-hyperconverged
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    name: inflightoperations-controller-manager
+  name: inflightoperations-controller-manager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: inflightoperations-controller-manager
+subjects:
+- kind: ServiceAccount
+  name: inflightoperations-controller-manager
   namespace: kubevirt-hyperconverged
 ---
 apiVersion: rbac.authorization.k8s.io/v1

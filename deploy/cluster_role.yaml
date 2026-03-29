@@ -831,6 +831,45 @@ rules:
   - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    name: inflightoperations-controller-manager
+  name: inflightoperations-controller-manager
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
@@ -4342,6 +4381,68 @@ rules:
   - migcontrollers/status
   verbs:
   - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    name: inflightoperations-controller-manager
+  name: inflightoperations-controller-manager
+rules:
+- apiGroups:
+  - ifo.kubevirt.io
+  resources:
+  - inflightoperations
+  - operationrulesets
+  verbs:
+  - create
+  - delete
+  - deletecollection
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ifo.kubevirt.io
+  resources:
+  - inflightoperations/finalizers
+  - operationrulesets/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - ifo.kubevirt.io
+  resources:
+  - inflightoperations/status
+  - operationrulesets/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+- apiGroups:
+  - apps
+  - kubevirt.io
+  - cdi.kubevirt.io
+  - hco.kubevirt.io
+  - operators.coreos.com
+  resources:
+  - '*'
+  verbs:
+  - get
+  - list
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
