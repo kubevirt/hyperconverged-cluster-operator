@@ -164,7 +164,8 @@ var _ = Describe("Perses controller", func() {
 	})
 
 	Context("SetupPersesWithManager guard", func() {
-		It("should skip controller registration when Perses CRDs are not available", func() {
+		It("should skip controller registration when Perses CRDs are not available", func(ctx context.Context) {
+			ctx = logr.NewContext(ctx, GinkgoLogr)
 			old := checkPersesAvailable
 			checkPersesAvailable = func(_ context.Context, _ client.Client) bool { return false }
 			defer func() { checkPersesAvailable = old }()
@@ -174,7 +175,7 @@ var _ = Describe("Perses controller", func() {
 			mgr, err := commontestutils.NewManagerMock(nil, manager.Options{Scheme: scheme.Scheme}, cl, GinkgoLogr)
 			Expect(err).ToNot(HaveOccurred())
 
-			err = SetupPersesWithManager(mgr, metav1.OwnerReference{})
+			err = SetupPersesWithManager(ctx, mgr, metav1.OwnerReference{})
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})

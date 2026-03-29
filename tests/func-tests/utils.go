@@ -37,6 +37,11 @@ const (
 	TestNamespace = "hco-test-default"
 )
 
+const (
+	hcoRolloutTimeout = 5 * time.Minute
+	hcoRolloutPolling = 5 * time.Second
+)
+
 func init() {
 	flag.StringVar(&KubeVirtStorageClassLocal, "storage-class-local", "local", "Storage provider to use for tests which want local storage")
 	flag.StringVar(&InstallNamespace, "installed-namespace", "", "Set the namespace KubeVirt is installed in")
@@ -53,6 +58,29 @@ func BeforeEach(ctx context.Context) {
 	deleteAllResources(ctx, cli, "virtualmachines")
 	deleteAllResources(ctx, cli, "virtualmachineinstances")
 	deleteAllResources(ctx, cli, "persistentvolumeclaims")
+}
+
+// WaitForHCOOperatorRollout waits until the HCO operator deployment is ready.
+func WaitForHCOOperatorRollout(ctx context.Context) {
+	ginkgo.GinkgoHelper()
+
+	cli := GetK8sClientSet()
+	key := types.NamespacedName{Namespace: InstallNamespace, Name: hcoutil.HCOOperatorName}
+
+	Eventually(func(g Gomega, gctx context.Context) {
+		deployment, err := cli.AppsV1().Deployments(key.Namespace).Get(gctx, key.Name, metav1.GetOptions{})
+		g.Expect(err).ToNot(HaveOccurred())
+
+		desired := int32(1)
+		if deployment.Spec.Replicas != nil {
+			desired = *deployment.Spec.Replicas
+		}
+
+		g.Expect(deployment.Status.ObservedGeneration).To(BeNumerically(">=", deployment.Generation))
+		g.Expect(deployment.Status.UpdatedReplicas).To(BeNumerically(">=", desired))
+		g.Expect(deployment.Status.ReadyReplicas).To(BeNumerically(">=", desired))
+		g.Expect(deployment.Status.AvailableReplicas).To(BeNumerically(">=", desired))
+	}).WithTimeout(hcoRolloutTimeout).WithPolling(hcoRolloutPolling).WithContext(ctx).Should(Succeed())
 }
 
 func FailIfNotOpenShift(ctx context.Context, cli client.Client, testName string) {
