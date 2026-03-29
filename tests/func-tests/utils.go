@@ -32,6 +32,7 @@ var (
 const (
 	SingleNodeLabel             = "SINGLE_NODE_ONLY"
 	HighlyAvailableClusterLabel = "HIGHLY_AVAILABLE_CLUSTER"
+	DestructiveLabel            = "DESTRUCTIVE"
 	OpenshiftLabel              = "OpenShift"
 
 	TestNamespace = "hco-test-default"

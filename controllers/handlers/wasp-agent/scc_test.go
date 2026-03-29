@@ -120,6 +120,50 @@ var _ = Describe("Wasp Agent SecurityContextConstraints", func() {
 			Expect(foundSCCs.Items).To(HaveLen(1))
 			Expect(foundSCCs.Items[0].Name).To(Equal("wasp"))
 		})
+
+		It("should not create SCC when autopilot swap annotation is set even with overcommit > 100", func() {
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+				MemoryOvercommitPercentage: 150,
+			}
+			hco.Annotations[AutopilotSwapAnnotation] = AutopilotSwapAnnotationValue
+			cl = commontestutils.InitClient([]client.Object{hco})
+
+			handler := NewWaspAgentSCCHandler(cl, commontestutils.GetScheme())
+
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeFalse())
+
+			foundSCCs := &securityv1.SecurityContextConstraintsList{}
+			Expect(cl.List(context.Background(), foundSCCs)).To(Succeed())
+			Expect(foundSCCs.Items).To(BeEmpty())
+		})
+
+		It("should delete SCC when autopilot swap annotation is added", func() {
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+				MemoryOvercommitPercentage: 150,
+			}
+			scc := newWaspAgentSCC(hco)
+			hco.Annotations[AutopilotSwapAnnotation] = AutopilotSwapAnnotationValue
+			cl = commontestutils.InitClient([]client.Object{hco, scc})
+
+			handler := NewWaspAgentSCCHandler(cl, commontestutils.GetScheme())
+
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Name).To(Equal(scc.Name))
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeTrue())
+
+			foundSCCs := &securityv1.SecurityContextConstraintsList{}
+			Expect(cl.List(context.Background(), foundSCCs)).To(Succeed())
+			Expect(foundSCCs.Items).To(BeEmpty())
+		})
 	})
 
 	Context("SecurityContextConstraints update", func() {

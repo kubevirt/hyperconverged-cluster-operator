@@ -113,6 +113,31 @@ var _ = Describe("Wasp agent Cluster Role", func() {
 			Expect(foundCRs.Items).To(HaveLen(1))
 			Expect(foundCRs.Items[0].Name).To(Equal("wasp-cluster"))
 		})
+
+		It("should not create cluster role when autopilot swap annotation is set even with overcommit > 100", func() {
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+				MemoryOvercommitPercentage: 150,
+			}
+			hco.Annotations[AutopilotSwapAnnotation] = AutopilotSwapAnnotationValue
+			cr := newWaspAgentClusterRole(hco)
+
+			cl = commontestutils.InitClient([]client.Object{hco, cr})
+
+			handler, err := NewWaspAgentClusterRoleHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
+			Expect(err).ToNot(HaveOccurred())
+
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Name).To(Equal(cr.Name))
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeTrue())
+
+			foundCRs := &rbacv1.ClusterRoleList{}
+			Expect(cl.List(context.Background(), foundCRs)).To(Succeed())
+			Expect(foundCRs.Items).To(BeEmpty())
+		})
 	})
 	Context("Wasp agent cluster role update", func() {
 		It("should reconcile labels if they are missing while preserving user labels", func() {
@@ -236,6 +261,31 @@ var _ = Describe("Wasp agent Cluster Role Binding", func() {
 			Expect(cl.List(context.Background(), foundCRBs)).To(Succeed())
 			Expect(foundCRBs.Items).To(HaveLen(1))
 			Expect(foundCRBs.Items[0].Name).To(Equal("wasp-cluster"))
+		})
+
+		It("should not create cluster role binding when autopilot swap annotation is set even with overcommit > 100", func() {
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+				MemoryOvercommitPercentage: 150,
+			}
+			hco.Annotations[AutopilotSwapAnnotation] = AutopilotSwapAnnotationValue
+			crb := newWaspAgentClusterRoleBinding(hco)
+
+			cl = commontestutils.InitClient([]client.Object{hco, crb})
+
+			handler, err := NewWaspAgentClusterRoleBindingHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
+			Expect(err).ToNot(HaveOccurred())
+
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Name).To(Equal(crb.Name))
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeTrue())
+
+			foundCRBs := &rbacv1.ClusterRoleBindingList{}
+			Expect(cl.List(context.Background(), foundCRBs)).To(Succeed())
+			Expect(foundCRBs.Items).To(BeEmpty())
 		})
 	})
 	Context("Wasp agent cluster role binding update", func() {

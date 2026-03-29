@@ -93,6 +93,50 @@ var _ = Describe("Wasp Agent DaemonSet", func() {
 			Expect(foundDs.Items).To(HaveLen(1))
 			Expect(foundDs.Items[0].Name).To(Equal("wasp-agent"))
 		})
+
+		It("should not create DaemonSet when autopilot swap annotation is set even with overcommit > 100", func() {
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+				MemoryOvercommitPercentage: 150,
+			}
+			hco.Annotations[AutopilotSwapAnnotation] = AutopilotSwapAnnotationValue
+			ds = commontestutils.InitClient([]client.Object{hco})
+
+			handler := NewWaspAgentDaemonSetHandler(ds, commontestutils.GetScheme())
+
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeFalse())
+
+			foundDs := &appsv1.DaemonSetList{}
+			Expect(ds.List(context.Background(), foundDs)).To(Succeed())
+			Expect(foundDs.Items).To(BeEmpty())
+		})
+
+		It("should delete DaemonSet when autopilot swap annotation is added", func() {
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+				MemoryOvercommitPercentage: 150,
+			}
+			existingDs := newWaspAgentDaemonSet(hco)
+			hco.Annotations[AutopilotSwapAnnotation] = AutopilotSwapAnnotationValue
+			ds = commontestutils.InitClient([]client.Object{hco, existingDs})
+
+			handler := NewWaspAgentDaemonSetHandler(ds, commontestutils.GetScheme())
+
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Name).To(Equal(existingDs.Name))
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeTrue())
+
+			foundDs := &appsv1.DaemonSetList{}
+			Expect(ds.List(context.Background(), foundDs)).To(Succeed())
+			Expect(foundDs.Items).To(BeEmpty())
+		})
 	})
 	Context("Wasp agent DaemonSet update", func() {
 		It("should update DaemonSet fields if not matched to the requirements", func() {
