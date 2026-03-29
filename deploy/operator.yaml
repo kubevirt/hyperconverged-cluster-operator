@@ -84,6 +84,8 @@ spec:
           value: quay.io/openshift-virtualization/wasp-agent@sha256:eabfa6a425213f520f7a9e5b81b43e8b6430779d42c5c8b1bfd48a4f1730447a
         - name: AIE_WEBHOOK_IMAGE
           value: quay.io/kubevirt/kubevirt-aie-webhook@sha256:9a98ea7a9fe24484f323045f0cf8b36fa76408101f88bd459fe1f66e68b7c86c
+        - name: IOMMUFD_DEVICE_PLUGIN_IMAGE
+          value: quay.io/kubevirt/iommufd-device-plugin:latest
         image: quay.io/kubevirt/hyperconverged-cluster-operator:1.18.0-unstable
         imagePullPolicy: Always
         livenessProbe:

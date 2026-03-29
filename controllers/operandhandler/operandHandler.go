@@ -76,6 +76,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 	operandList = append(operandList, []operands.Operand{
 		aiewebhook.NewAIEWebhookServiceAccountHandler(client, scheme),
 		aiewebhook.NewAIEWebhookServiceHandler(client, scheme),
+		aiewebhook.NewIOMMUFDDevicePluginServiceAccountHandler(client, scheme),
 	}...)
 
 	if ci.IsOpenshift() && ci.IsConsolePluginImageProvided() {
@@ -107,6 +108,7 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 		aiewebhook.NewAIEWebhookClusterRoleBindingHandler,
 		aiewebhook.NewAIEWebhookDeploymentHandler,
 		aiewebhook.NewAIEWebhookMutatingWebhookConfigurationHandler,
+		aiewebhook.NewIOMMUFDDevicePluginDaemonSetHandler,
 	} {
 		h.addOperand(scheme, hc, fn)
 	}
@@ -129,6 +131,7 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 		handlers.NewVirtioWinCmReaderRoleBindingHandler,
 		waspagent.NewWaspAgentClusterRoleHandler,
 		waspagent.NewWaspAgentClusterRoleBindingHandler,
+		aiewebhook.NewIOMMUFDDevicePluginSCCHandler,
 	}
 
 	if ci.IsConsolePluginImageProvided() {
@@ -263,6 +266,7 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		aiewebhook.NewAIEWebhookClusterRoleWithNameOnly(req.Instance),
 		aiewebhook.NewAIEWebhookClusterRoleBindingWithNameOnly(req.Instance),
 		aiewebhook.NewAIEWebhookMutatingWebhookConfigurationWithNameOnly(req.Instance),
+		aiewebhook.NewIOMMUFDDevicePluginSCCWithNameOnly(req.Instance),
 	}
 
 	resources = append(resources, h.objects...)
