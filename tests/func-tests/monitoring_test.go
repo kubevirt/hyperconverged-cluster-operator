@@ -57,7 +57,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		promClient = initializePromClient(getPrometheusURL(virtCli), getAuthorizationTokenForPrometheus(virtCli))
 		prometheusRule = getPrometheusRule(virtCli)
 
-		initialOperatorHealthMetricValue = getMetricValue(promClient, "kubevirt_hyperconverged_operator_health_status")
+		initialOperatorHealthMetricValue = getMetricValue(promClient, "cluster:kubevirt_hco_operator_health_status:count")
 	})
 
 	It("Alert rules should have all the requried annotations", func() {
@@ -160,11 +160,11 @@ func verifyOperatorHealthMetricValue(promClient promApiv1.API, initialOperatorHe
 	Eventually(func(g Gomega) {
 		if alertImpact >= initialOperatorHealthMetricValue {
 			systemHealthMetricValue := getMetricValue(promClient, "kubevirt_hco_system_health_status")
-			operatorHealthMetricValue := getMetricValue(promClient, "kubevirt_hyperconverged_operator_health_status")
+			operatorHealthMetricValue := getMetricValue(promClient, "cluster:kubevirt_hco_operator_health_status:count")
 			expectedOperatorHealthMetricValue := math.Max(alertImpact, systemHealthMetricValue)
 
 			g.Expect(operatorHealthMetricValue).To(Equal(expectedOperatorHealthMetricValue),
-				"kubevirt_hyperconverged_operator_health_status value is %f, but its expected value is %f, "+
+				"cluster:kubevirt_hco_operator_health_status:count value is %f, but its expected value is %f, "+
 					"while kubevirt_hco_system_health_status value is %f.",
 				operatorHealthMetricValue, expectedOperatorHealthMetricValue, systemHealthMetricValue)
 		}

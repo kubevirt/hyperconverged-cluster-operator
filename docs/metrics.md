@@ -1,5 +1,8 @@
 # Hyperconverged Cluster Operator metrics
 
+### cluster:kubevirt_hco_operator_health_status:count
+Indicates whether HCO and its secondary resources health status is healthy (0), warning (1) or critical (2), based both on the firing alerts that impact the operator health, and on kubevirt_hco_system_health_status metric. Type: Gauge.
+
 ### cluster:vmi_request_cpu_cores:sum
 Sum of CPU core requests for all running virt-launcher VMIs across the entire Kubevirt cluster. Type: Gauge.
 
@@ -22,7 +25,7 @@ Indicates whether the system health status is healthy (0), warning (1), or error
 Count of unsafe modifications in the HyperConverged annotations. Type: Gauge.
 
 ### kubevirt_hyperconverged_operator_health_status
-Indicates whether HCO and its secondary resources health status is healthy (0), warning (1) or critical (2), based both on the firing alerts that impact the operator health, and on kubevirt_hco_system_health_status metric. Type: Gauge.
+[Deprecated] Indicates whether HCO and its secondary resources health status is healthy (0), warning (1) or critical (2), based both on the firing alerts that impact the operator health, and on kubevirt_hco_system_health_status metric. Type: Gauge.
 
 ## Developing new metrics
 
