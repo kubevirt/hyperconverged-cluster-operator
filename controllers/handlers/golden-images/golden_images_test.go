@@ -118,6 +118,50 @@ var _ = Describe("Test data import cron template", func() {
 			Expect(readDataImportCronTemplatesFromFile(fs)).To(MatchError(ContainSubstring("cannot unmarshal object into Go value of type")))
 			Expect(dataImportCronTemplateHardCodedMap).To(BeEmpty())
 		})
+
+		It("should add missing fields", func() {
+			fs := dirtest.New(
+				dirtest.WithFile(
+					"dataImportCronTemplates/dataImportCronTemplates.yaml",
+					wrongDataImportCronWithImageStreamTemplatesFileContent,
+				),
+			)
+
+			const (
+				defaultPolicy        = cdiv1beta1.DataImportCronRetainNone
+				defaultImportsToKeep = int32(1)
+
+				customPolicy        = cdiv1beta1.DataImportCronRetainAll
+				customImportsToKeep = int32(5)
+			)
+
+			Expect(readDataImportCronTemplatesFromFile(fs)).To(Succeed())
+			Expect(dataImportCronTemplateHardCodedMap).To(HaveLen(4))
+
+			dict, ok := dataImportCronTemplateHardCodedMap["no-retention-policy-nor-imports-to-keep"]
+			Expect(ok).To(BeTrue())
+			Expect(dict.Spec).ToNot(BeNil())
+			Expect(dict.Spec.RetentionPolicy).To(HaveValue(Equal(defaultPolicy)))
+			Expect(dict.Spec.ImportsToKeep).To(HaveValue(Equal(defaultImportsToKeep)))
+
+			dict, ok = dataImportCronTemplateHardCodedMap["no-retention-policy-import-to-keep-5"]
+			Expect(ok).To(BeTrue())
+			Expect(dict.Spec).ToNot(BeNil())
+			Expect(dict.Spec.RetentionPolicy).To(HaveValue(Equal(defaultPolicy)))
+			Expect(dict.Spec.ImportsToKeep).To(HaveValue(Equal(customImportsToKeep)))
+
+			dict, ok = dataImportCronTemplateHardCodedMap["retention-policy-all-no-import-to-keep"]
+			Expect(ok).To(BeTrue())
+			Expect(dict.Spec).ToNot(BeNil())
+			Expect(dict.Spec.RetentionPolicy).To(HaveValue(Equal(customPolicy)))
+			Expect(dict.Spec.ImportsToKeep).To(HaveValue(Equal(defaultImportsToKeep)))
+
+			dict, ok = dataImportCronTemplateHardCodedMap["retention-policy-all-import-to-keep-5"]
+			Expect(ok).To(BeTrue())
+			Expect(dict.Spec).ToNot(BeNil())
+			Expect(dict.Spec.RetentionPolicy).To(HaveValue(Equal(customPolicy)))
+			Expect(dict.Spec.ImportsToKeep).To(HaveValue(Equal(customImportsToKeep)))
+		})
 	})
 
 	Context("test GetDataImportCronTemplates", func() {

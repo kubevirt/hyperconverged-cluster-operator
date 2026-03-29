@@ -16,12 +16,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
+	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	goldenimages "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/golden-images"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+)
+
+const (
+	v1beta1DICTAnnotationPathTemplate = v1beta1DICTPathTemplate + dictAnnotationPath
 )
 
 var _ = Describe("test HyperConverged v1beta1 mutator", func() {
@@ -85,16 +90,72 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 		},
 			Entry("no annotations", nil, &jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(v1beta1AnnotationPathTemplate, 0),
+				Path:      fmt.Sprintf(v1beta1DICTAnnotationPathTemplate, 0),
 				Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 			}),
 			Entry("different annotations", map[string]string{"something/else": "value"}, &jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(dictAnnotationPathTemplate, 0),
+				Path:      fmt.Sprintf(v1beta1DICTAnnotationPathTemplate+dictImmediateAnnotationPath, 0),
 				Value:     "true",
 			}),
 			Entry("annotation=true", map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"}, nil),
 			Entry("annotation=false", map[string]string{goldenimages.CDIImmediateBindAnnotation: "false"}, nil),
+		)
+
+		DescribeTable("check dict spec on create", func(ctx context.Context, spec *cdiv1beta1.DataImportCronSpec, expectedPatches []jsonpatch.JsonPatchOperation) {
+			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "dictName",
+						Annotations: map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
+					},
+					Spec: spec,
+				},
+			}
+
+			cr.Spec.KSMConfiguration = &kubevirtcorev1.KSMConfiguration{}
+
+			req := admission.Request{AdmissionRequest: newCreateRequest(cr, testCodec)}
+
+			res := mutator.Handle(ctx, req)
+			Expect(res.Allowed).To(BeTrue())
+
+			if expectedPatches == nil {
+				Expect(res.Patches).To(BeEmpty())
+			} else {
+				Expect(res.Patches).To(Equal(expectedPatches))
+			}
+		},
+			Entry("spec is nil", nil, nil),
+			Entry("empty spec", &cdiv1beta1.DataImportCronSpec{}, []jsonpatch.JsonPatchOperation{
+				{
+					Operation: "add",
+					Path:      fmt.Sprintf(v1beta1DICTPathTemplate+retentionPolicyPath, 0),
+					Value:     cdiv1beta1.DataImportCronRetainNone,
+				}, {
+					Operation: "add",
+					Path:      fmt.Sprintf(v1beta1DICTPathTemplate+importsToKeepPath, 0),
+					Value:     1,
+				},
+			}),
+			Entry("retentionPolicy is missing", &cdiv1beta1.DataImportCronSpec{ImportsToKeep: ptr.To[int32](1)}, []jsonpatch.JsonPatchOperation{
+				{
+					Operation: "add",
+					Path:      fmt.Sprintf(v1beta1DICTPathTemplate+retentionPolicyPath, 0),
+					Value:     cdiv1beta1.DataImportCronRetainNone,
+				},
+			}),
+			Entry("importsToKeep is missing",
+				&cdiv1beta1.DataImportCronSpec{
+					RetentionPolicy: ptr.To(cdiv1beta1.DataImportCronRetainNone),
+				},
+				[]jsonpatch.JsonPatchOperation{
+					{
+						Operation: "add",
+						Path:      fmt.Sprintf(v1beta1DICTPathTemplate+importsToKeepPath, 0),
+						Value:     1,
+					},
+				}),
 		)
 
 		It("should handle multiple DICTs", func(ctx context.Context) {
@@ -122,6 +183,31 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 						Annotations: map[string]string{goldenimages.CDIImmediateBindAnnotation: "false"},
 					},
 				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "missing-retentionr-policy",
+						Annotations: map[string]string{goldenimages.CDIImmediateBindAnnotation: "false"},
+					},
+					Spec: &cdiv1beta1.DataImportCronSpec{
+						ImportsToKeep: ptr.To[int32](1),
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "missing-import-to-keep",
+						Annotations: map[string]string{goldenimages.CDIImmediateBindAnnotation: "false"},
+					},
+					Spec: &cdiv1beta1.DataImportCronSpec{
+						RetentionPolicy: ptr.To(cdiv1beta1.DataImportCronRetainNone),
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "missing-retentionr-policy-and-import-to-keep",
+						Annotations: map[string]string{goldenimages.CDIImmediateBindAnnotation: "false"},
+					},
+					Spec: &cdiv1beta1.DataImportCronSpec{},
+				},
 			}
 
 			req := admission.Request{AdmissionRequest: newCreateRequest(cr, testCodec)}
@@ -129,17 +215,37 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 			res := mutator.Handle(ctx, req)
 			Expect(res.Allowed).To(BeTrue())
 
-			Expect(res.Patches).To(HaveLen(3))
+			Expect(res.Patches).To(HaveLen(7))
 			Expect(res.Patches).To(Equal([]jsonpatch.JsonPatchOperation{
 				{
 					Operation: "add",
-					Path:      fmt.Sprintf(v1beta1AnnotationPathTemplate, 0),
+					Path:      fmt.Sprintf(v1beta1DICTAnnotationPathTemplate, 0),
 					Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 				},
 				{
 					Operation: "add",
-					Path:      fmt.Sprintf(dictAnnotationPathTemplate, 1),
+					Path:      fmt.Sprintf(v1beta1DICTAnnotationPathTemplate+dictImmediateAnnotationPath, 1),
 					Value:     "true",
+				},
+				{
+					Operation: "add",
+					Path:      fmt.Sprintf(v1beta1DICTPathTemplate+retentionPolicyPath, 4),
+					Value:     cdiv1beta1.DataImportCronRetainNone,
+				},
+				{
+					Operation: "add",
+					Path:      fmt.Sprintf(v1beta1DICTPathTemplate+importsToKeepPath, 5),
+					Value:     1,
+				},
+				{
+					Operation: "add",
+					Path:      fmt.Sprintf(v1beta1DICTPathTemplate+retentionPolicyPath, 6),
+					Value:     cdiv1beta1.DataImportCronRetainNone,
+				},
+				{
+					Operation: "add",
+					Path:      fmt.Sprintf(v1beta1DICTPathTemplate+importsToKeepPath, 6),
+					Value:     1,
 				},
 				ksmPatch,
 			}))
@@ -211,12 +317,12 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 			Expect(res.Patches).To(Equal([]jsonpatch.JsonPatchOperation{
 				{
 					Operation: "add",
-					Path:      fmt.Sprintf(v1beta1AnnotationPathTemplate, 0),
+					Path:      fmt.Sprintf(v1beta1DICTAnnotationPathTemplate, 0),
 					Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 				},
 				{
 					Operation: "add",
-					Path:      fmt.Sprintf(dictAnnotationPathTemplate, 1),
+					Path:      fmt.Sprintf(v1beta1DICTAnnotationPathTemplate+dictImmediateAnnotationPath, 1),
 					Value:     "true",
 				},
 				{
@@ -470,16 +576,73 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 		},
 			Entry("no annotations", nil, &jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(v1beta1AnnotationPathTemplate, 0),
+				Path:      fmt.Sprintf(v1beta1DICTAnnotationPathTemplate, 0),
 				Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 			}),
 			Entry("different annotations", map[string]string{"something/else": "value"}, &jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(dictAnnotationPathTemplate, 0),
+				Path:      fmt.Sprintf(v1beta1DICTAnnotationPathTemplate+dictImmediateAnnotationPath, 0),
 				Value:     "true",
 			}),
 			Entry("annotation=true", map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"}, nil),
 			Entry("annotation=false", map[string]string{goldenimages.CDIImmediateBindAnnotation: "false"}, nil),
+		)
+
+		DescribeTable("check dict spec on update", func(ctx context.Context, spec *cdiv1beta1.DataImportCronSpec, expectedPatches []jsonpatch.JsonPatchOperation) {
+			origCR := cr.DeepCopy()
+			cr.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "dictName",
+						Annotations: map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
+					},
+					Spec: spec,
+				},
+			}
+
+			cr.Spec.KSMConfiguration = &kubevirtcorev1.KSMConfiguration{}
+
+			req := admission.Request{AdmissionRequest: newUpdateRequest(origCR, cr, testCodec)}
+
+			res := mutator.Handle(ctx, req)
+			Expect(res.Allowed).To(BeTrue())
+
+			if expectedPatches == nil {
+				Expect(res.Patches).To(BeEmpty())
+			} else {
+				Expect(res.Patches).To(Equal(expectedPatches))
+			}
+		},
+			Entry("spec is nil", nil, nil),
+			Entry("empty spec", &cdiv1beta1.DataImportCronSpec{}, []jsonpatch.JsonPatchOperation{
+				{
+					Operation: "add",
+					Path:      fmt.Sprintf(v1beta1DICTPathTemplate+retentionPolicyPath, 0),
+					Value:     cdiv1beta1.DataImportCronRetainNone,
+				}, {
+					Operation: "add",
+					Path:      fmt.Sprintf(v1beta1DICTPathTemplate+importsToKeepPath, 0),
+					Value:     1,
+				},
+			}),
+			Entry("retentionPolicy is missing", &cdiv1beta1.DataImportCronSpec{ImportsToKeep: ptr.To[int32](1)}, []jsonpatch.JsonPatchOperation{
+				{
+					Operation: "add",
+					Path:      fmt.Sprintf(v1beta1DICTPathTemplate+retentionPolicyPath, 0),
+					Value:     cdiv1beta1.DataImportCronRetainNone,
+				},
+			}),
+			Entry("importsToKeep is missing",
+				&cdiv1beta1.DataImportCronSpec{
+					RetentionPolicy: ptr.To(cdiv1beta1.DataImportCronRetainNone),
+				},
+				[]jsonpatch.JsonPatchOperation{
+					{
+						Operation: "add",
+						Path:      fmt.Sprintf(v1beta1DICTPathTemplate+importsToKeepPath, 0),
+						Value:     1,
+					},
+				}),
 		)
 
 		It("should handle multiple DICTs on update", func(ctx context.Context) {
@@ -509,6 +672,31 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 						Annotations: map[string]string{goldenimages.CDIImmediateBindAnnotation: "false"},
 					},
 				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "missing-retentionr-policy",
+						Annotations: map[string]string{goldenimages.CDIImmediateBindAnnotation: "false"},
+					},
+					Spec: &cdiv1beta1.DataImportCronSpec{
+						ImportsToKeep: ptr.To[int32](1),
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "missing-import-to-keep",
+						Annotations: map[string]string{goldenimages.CDIImmediateBindAnnotation: "false"},
+					},
+					Spec: &cdiv1beta1.DataImportCronSpec{
+						RetentionPolicy: ptr.To(cdiv1beta1.DataImportCronRetainNone),
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:        "missing-retentionr-policy-and-import-to-keep",
+						Annotations: map[string]string{goldenimages.CDIImmediateBindAnnotation: "false"},
+					},
+					Spec: &cdiv1beta1.DataImportCronSpec{},
+				},
 			}
 
 			req := admission.Request{AdmissionRequest: newUpdateRequest(origCR, cr, testCodec)}
@@ -516,16 +704,38 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 			res := mutator.Handle(ctx, req)
 			Expect(res.Allowed).To(BeTrue())
 
-			Expect(res.Patches).To(HaveLen(2))
-			Expect(res.Patches[0]).To(Equal(jsonpatch.JsonPatchOperation{
-				Operation: "add",
-				Path:      fmt.Sprintf(v1beta1AnnotationPathTemplate, 0),
-				Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
-			}))
-			Expect(res.Patches[1]).To(Equal(jsonpatch.JsonPatchOperation{
-				Operation: "add",
-				Path:      fmt.Sprintf(dictAnnotationPathTemplate, 1),
-				Value:     "true",
+			Expect(res.Patches).To(HaveLen(6))
+			Expect(res.Patches).To(Equal([]jsonpatch.JsonPatchOperation{
+				{
+					Operation: "add",
+					Path:      fmt.Sprintf(v1beta1DICTAnnotationPathTemplate, 0),
+					Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
+				},
+				{
+					Operation: "add",
+					Path:      fmt.Sprintf(v1beta1DICTAnnotationPathTemplate+dictImmediateAnnotationPath, 1),
+					Value:     "true",
+				},
+				{
+					Operation: "add",
+					Path:      fmt.Sprintf(v1beta1DICTPathTemplate+retentionPolicyPath, 4),
+					Value:     cdiv1beta1.DataImportCronRetainNone,
+				},
+				{
+					Operation: "add",
+					Path:      fmt.Sprintf(v1beta1DICTPathTemplate+importsToKeepPath, 5),
+					Value:     1,
+				},
+				{
+					Operation: "add",
+					Path:      fmt.Sprintf(v1beta1DICTPathTemplate+retentionPolicyPath, 6),
+					Value:     cdiv1beta1.DataImportCronRetainNone,
+				},
+				{
+					Operation: "add",
+					Path:      fmt.Sprintf(v1beta1DICTPathTemplate+importsToKeepPath, 6),
+					Value:     1,
+				},
 			}))
 		})
 
@@ -595,12 +805,12 @@ var _ = Describe("test HyperConverged v1beta1 mutator", func() {
 			Expect(res.Patches).To(HaveLen(4))
 			Expect(res.Patches[0]).To(Equal(jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(v1beta1AnnotationPathTemplate, 0),
+				Path:      fmt.Sprintf(v1beta1DICTAnnotationPathTemplate, 0),
 				Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 			}))
 			Expect(res.Patches[1]).To(Equal(jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(dictAnnotationPathTemplate, 1),
+				Path:      fmt.Sprintf(v1beta1DICTAnnotationPathTemplate+dictImmediateAnnotationPath, 1),
 				Value:     "true",
 			}))
 			Expect(res.Patches[2]).To(Equal(jsonpatch.JsonPatchOperation{

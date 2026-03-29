@@ -152,7 +152,11 @@ func readDataImportCronTemplatesFromFile(wdFS fs.FS) error {
 				duplicateDICTsErrors = append(duplicateDICTsErrors, fmt.Errorf("duplicate DataImportCronTemplate found: %s", dict.Name))
 				continue
 			}
+
+			ensureDICTFields(&dict)
+
 			dataImportCronTemplateHardCodedMap[dict.Name] = dict
+
 		}
 
 		if len(duplicateDICTsErrors) > 0 {
@@ -161,6 +165,24 @@ func readDataImportCronTemplatesFromFile(wdFS fs.FS) error {
 
 		return nil
 	})
+}
+
+func ensureDICTFields(dict *hcov1.DataImportCronTemplate) {
+	if dict == nil || dict.Spec == nil {
+		return
+	}
+
+	// override "ALL" CDI default for the RetentionPolicy field, with "None" so the underline DataSource and PVC
+	// will be deleted once the DataImportCorn is deleted.
+	if dict.Spec.RetentionPolicy == nil {
+		dict.Spec.RetentionPolicy = ptr.To(cdiv1beta1.DataImportCronRetainNone)
+	}
+
+	// Override the CDI default of 3, for the ImportsToKeep field, as it makes no sense. We have nothing to do
+	// with the old PVC.
+	if dict.Spec.ImportsToKeep == nil {
+		dict.Spec.ImportsToKeep = ptr.To[int32](1)
+	}
 }
 
 func getCommonDicts(list []hcov1beta1.DataImportCronTemplateStatus, crDicts map[string]hcov1.DataImportCronTemplate, hc *hcov1beta1.HyperConverged) []hcov1beta1.DataImportCronTemplateStatus {

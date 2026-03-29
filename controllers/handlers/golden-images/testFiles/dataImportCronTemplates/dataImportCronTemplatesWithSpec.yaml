@@ -1,0 +1,56 @@
+- metadata:
+    annotations:
+      cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+    name: no-retention-policy-nor-imports-to-keep
+    namespace: golden-image-namespace
+  spec:
+    schedule: "* */1 * * *"
+    template:
+      spec:
+        source:
+          registry:
+            url: docker://quay.io/kubevirt/fedora
+    managedDataSource: fedora
+- metadata:
+    annotations:
+      cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+    name: no-retention-policy-import-to-keep-5
+    namespace: golden-image-namespace
+  spec:
+    schedule: "* */1 * * *"
+    importsToKeep: 5
+    template:
+      spec:
+        source:
+          registry:
+            url: docker://quay.io/kubevirt/fedora
+    managedDataSource: fedora
+- metadata:
+    annotations:
+      cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+    name: retention-policy-all-no-import-to-keep
+    namespace: golden-image-namespace
+  spec:
+    schedule: "* */1 * * *"
+    retentionPolicy: All
+    template:
+      spec:
+        source:
+          registry:
+            url: docker://quay.io/kubevirt/fedora
+    managedDataSource: fedora
+- metadata:
+    annotations:
+      cdi.kubevirt.io/storage.bind.immediate.requested: "true"
+    name: retention-policy-all-import-to-keep-5
+    namespace: golden-image-namespace
+  spec:
+    schedule: "* */1 * * *"
+    importsToKeep: 5
+    retentionPolicy: All
+    template:
+      spec:
+        source:
+          registry:
+            url: docker://quay.io/kubevirt/fedora
+    managedDataSource: fedora

@@ -12,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
+	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
@@ -52,8 +53,11 @@ func (hcm *HyperConvergedMutator) Handle(ctx context.Context, req admission.Requ
 }
 
 const (
-	annotationPathTemplate     = "/spec/workloadSources/dataImportCronTemplates/%d/metadata/annotations"
-	dictAnnotationPathTemplate = annotationPathTemplate + "/cdi.kubevirt.io~1storage.bind.immediate.requested"
+	dictsPathTemplate           = "/spec/workloadSources/dataImportCronTemplates/%d"
+	dictAnnotationPath          = "/metadata/annotations"
+	dictImmediateAnnotationPath = "/cdi.kubevirt.io~1storage.bind.immediate.requested"
+	retentionPolicyPath         = "/spec/retentionPolicy"
+	importsToKeepPath           = "/spec/importsToKeep"
 )
 
 func (hcm *HyperConvergedMutator) mutateHyperConverged(req admission.Request, logger logr.Logger) admission.Response {
@@ -64,7 +68,7 @@ func (hcm *HyperConvergedMutator) mutateHyperConverged(req admission.Request, lo
 		return admission.Errored(http.StatusBadRequest, fmt.Errorf("failed to parse the HyperConverged"))
 	}
 
-	patches := getDICTAnnotationPatches(hc.Spec.WorkloadSources.DataImportCronTemplates, annotationPathTemplate)
+	patches := getDICTPatches(hc.Spec.WorkloadSources.DataImportCronTemplates, dictsPathTemplate)
 	patches = mutateEvictionStrategy(hc, patches)
 	patches = mutateTuningPolicy(hc, patches)
 
@@ -79,21 +83,39 @@ func (hcm *HyperConvergedMutator) mutateHyperConverged(req admission.Request, lo
 	return admission.Allowed("")
 }
 
-func getDICTAnnotationPatches(dicts []hcov1.DataImportCronTemplate, patchTemplate string) []jsonpatch.JsonPatchOperation {
+func getDICTPatches(dicts []hcov1.DataImportCronTemplate, patchTemplate string) []jsonpatch.JsonPatchOperation {
 	var patches []jsonpatch.JsonPatchOperation
 	for index, dict := range dicts {
 		if dict.Annotations == nil {
 			patches = append(patches, jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(patchTemplate, index),
+				Path:      fmt.Sprintf(patchTemplate+dictAnnotationPath, index),
 				Value:     map[string]string{goldenimages.CDIImmediateBindAnnotation: "true"},
 			})
 		} else if _, annotationFound := dict.Annotations[goldenimages.CDIImmediateBindAnnotation]; !annotationFound {
 			patches = append(patches, jsonpatch.JsonPatchOperation{
 				Operation: "add",
-				Path:      fmt.Sprintf(dictAnnotationPathTemplate, index),
+				Path:      fmt.Sprintf(patchTemplate+dictAnnotationPath+dictImmediateAnnotationPath, index),
 				Value:     "true",
 			})
+		}
+
+		if dict.Spec != nil {
+			if dict.Spec.RetentionPolicy == nil {
+				patches = append(patches, jsonpatch.JsonPatchOperation{
+					Operation: "add",
+					Path:      fmt.Sprintf(patchTemplate+retentionPolicyPath, index),
+					Value:     cdiv1beta1.DataImportCronRetainNone,
+				})
+			}
+
+			if dict.Spec.ImportsToKeep == nil {
+				patches = append(patches, jsonpatch.JsonPatchOperation{
+					Operation: "add",
+					Path:      fmt.Sprintf(patchTemplate+importsToKeepPath, index),
+					Value:     1,
+				})
+			}
 		}
 	}
 
