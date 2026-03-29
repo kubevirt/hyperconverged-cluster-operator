@@ -5,6 +5,7 @@
     name: centos-stream9-image-cron
   spec:
     garbageCollect: Outdated
+    importsToKeep: 1
     managedDataSource: centos-stream9
     schedule: "0 */12 * * *"
     template:
@@ -23,6 +24,7 @@
     name: centos-stream10-image-cron
   spec:
     garbageCollect: Outdated
+    importsToKeep: 1
     managedDataSource: centos-stream10
     schedule: "0 */12 * * *"
     template:
@@ -41,6 +43,7 @@
     name: fedora-image-cron
   spec:
     garbageCollect: Outdated
+    importsToKeep: 1
     managedDataSource: fedora
     schedule: "0 */12 * * *"
     template:
@@ -52,4 +55,3 @@
           resources:
             requests:
               storage: 5Gi
-
