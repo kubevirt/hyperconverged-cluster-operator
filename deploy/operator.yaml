@@ -74,6 +74,8 @@ spec:
           value: v0.2.0-rc.1
         - name: AUTOPILOT_VERSION
           value: v0.0.8
+        - name: INFLIGHT_OPERATIONS_VERSION
+          value: v0.0.3
         - name: KV_CONSOLE_PLUGIN_IMAGE
         - name: KV_CONSOLE_PROXY_IMAGE
         - name: PASST_SIDECAR_IMAGE
@@ -1087,6 +1089,79 @@ spec:
       securityContext:
         runAsNonRoot: true
       serviceAccountName: kubevirt-migration-operator
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/component: inflightoperations
+    app.kubernetes.io/part-of: hyperconverged-cluster
+    app.kubernetes.io/version: 1.18.0
+    name: inflightoperations-controller-manager
+  name: inflightoperations-controller-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: inflightoperations
+      control-plane: controller-manager
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        app.kubernetes.io/component: inflightoperations
+        app.kubernetes.io/name: inflightoperations
+        app.kubernetes.io/part-of: hyperconverged-cluster
+        app.kubernetes.io/version: 1.18.0
+        control-plane: controller-manager
+    spec:
+      containers:
+      - args:
+        - --metrics-bind-address=:8443
+        - --leader-elect
+        - --health-probe-bind-address=:8081
+        command:
+        - /manager
+        env:
+        - name: OPERATOR_VERSION
+          value: v0.0.3
+        image: quay.io/ifo-operator/controller@sha256:0c53364ddf57462fe0d3e809ef00e8731778204000963c53955be8b79f42a7c5
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: manager
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 10m
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+        terminationMessagePolicy: FallbackToLogsOnError
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: inflightoperations-controller-manager
+      terminationGracePeriodSeconds: 10
 ---
 apiVersion: apps/v1
 kind: Deployment

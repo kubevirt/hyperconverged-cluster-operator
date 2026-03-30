@@ -26,6 +26,7 @@ const (
 	AaqVersionEnvV                          = "AAQ_VERSION"
 	MigrationOperatorVersionEnvV            = "MIGRATION_OPERATOR_VERSION"
 	AutopilotVersionEnvV                    = "AUTOPILOT_VERSION"
+	InFlightOperationsVersionEnvV           = "INFLIGHT_OPERATIONS_VERSION"
 	KVUIPluginImageEnvV                     = "KV_CONSOLE_PLUGIN_IMAGE"
 	KVUIProxyImageEnvV                      = "KV_CONSOLE_PROXY_IMAGE"
 	PasstImageEnvV                          = "PASST_SIDECAR_IMAGE"
@@ -52,6 +53,7 @@ const (
 	CurrentAPIVersion                       = v1beta1.APIVersionBeta
 	APIVersionGroup                         = v1beta1.APIVersionGroup
 	HyperConvergedKind                      = "HyperConverged"
+
 	// Recommended labels by Kubernetes. See
 	// https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/
 	AppLabelPrefix    = "app.kubernetes.io"
@@ -117,17 +119,18 @@ var (
 type AppComponent string
 
 const (
-	AppComponentCompute    AppComponent = "compute"
-	AppComponentStorage    AppComponent = "storage"
-	AppComponentNetwork    AppComponent = "network"
-	AppComponentMonitoring AppComponent = "monitoring"
-	AppComponentSchedule   AppComponent = "schedule"
-	AppComponentDeployment AppComponent = "deployment"
-	AppComponentUIPlugin   AppComponent = "kubevirt-console-plugin"
-	AppComponentUIProxy    AppComponent = "kubevirt-apiserver-proxy"
-	AppComponentUIConfig   AppComponent = "kubevirt-ui-config"
-	AppComponentQuotaMngt  AppComponent = "quota-management"
-	AppComponentMigration  AppComponent = "migration"
-	AppComponentAutopilot  AppComponent = "autopilot"
-	AppComponentAIEWebhook AppComponent = "aie-webhook"
+	AppComponentCompute            AppComponent = "compute"
+	AppComponentStorage            AppComponent = "storage"
+	AppComponentNetwork            AppComponent = "network"
+	AppComponentMonitoring         AppComponent = "monitoring"
+	AppComponentSchedule           AppComponent = "schedule"
+	AppComponentDeployment         AppComponent = "deployment"
+	AppComponentUIPlugin           AppComponent = "kubevirt-console-plugin"
+	AppComponentUIProxy            AppComponent = "kubevirt-apiserver-proxy"
+	AppComponentUIConfig           AppComponent = "kubevirt-ui-config"
+	AppComponentQuotaMngt          AppComponent = "quota-management"
+	AppComponentMigration          AppComponent = "migration"
+	AppComponentAutopilot          AppComponent = "autopilot"
+	AppComponentAIEWebhook         AppComponent = "aie-webhook"
+	AppComponentInFlightOperations AppComponent = "inflightoperations"
 )
