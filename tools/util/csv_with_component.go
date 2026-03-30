@@ -129,7 +129,8 @@ func getAllCSVs() error {
 
 func fileOrString(str *string, fileName, csvName string) error {
 	if (*str == "") == (fileName == "") {
-		if csvName == "migration-operator-csv" {
+		switch csvName {
+		case "migration-operator-csv", "inflight-operations-csv":
 			return nil
 		}
 
