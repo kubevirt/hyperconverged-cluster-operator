@@ -272,8 +272,8 @@ Set the `containerPathVolumes` feature gate to true in order to enable the use o
 
 **Graduation Status**: Alpha
 
-### The hco.kubevirt.io/deployAIEWebhook annotation
-Set the `hco.kubevirt.io/deployAIEWebhook` HyperConverged CR annotation to `true` to deploy the AIE
+### The hco.kubevirt.io/deployAIE annotation
+Set the `hco.kubevirt.io/deployAIE` HyperConverged CR annotation to `true` to deploy the AIE
 (Accelerated Infrastructure Enablement) webhook. The AIE webhook intercepts virt-launcher Pod creation
 and conditionally replaces the compute container image with an alternative launcher image (e.g.
 GPU-optimized builds) based on configurable rules.
@@ -1859,7 +1859,7 @@ The AIE (Accelerated Infrastructure Enablement) webhook allows replacing the def
 container image with alternative launcher images based on configurable rules. This is useful for deploying
 GPU-optimized or otherwise specialized launcher builds for specific virtual machines.
 
-The webhook is enabled by the `hco.kubevirt.io/deployAIEWebhook` [annotation](#the-hcokubevirtiodeployaiewebhook-annotation). Once enabled,
+The webhook is enabled by the `hco.kubevirt.io/deployAIE` [annotation](#the-hcokubevirtiodeployaie-annotation). Once enabled,
 HCO creates a ConfigMap named `kubevirt-aie-launcher-config` with an empty set of rules. Users configure
 replacement rules by editing this ConfigMap directly. HCO will not overwrite user edits to the ConfigMap data.
 
@@ -1886,7 +1886,7 @@ First enable the webhook by setting the annotation:
 
 ```bash
 kubectl annotate hco kubevirt-hyperconverged -n kubevirt-hyperconverged \
-  hco.kubevirt.io/deployAIEWebhook=true
+  hco.kubevirt.io/deployAIE=true
 ```
 
 Then edit the ConfigMap to add rules:

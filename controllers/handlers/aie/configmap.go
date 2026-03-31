@@ -1,4 +1,4 @@
-package aie_webhook
+package aie
 
 import (
 	"github.com/go-logr/logr"
@@ -15,7 +15,7 @@ func NewAIEWebhookConfigMapHandler(_ logr.Logger, Client client.Client, Scheme *
 	cm := newAIEWebhookConfigMap(hc)
 	return operands.NewConditionalHandler(
 		operands.NewCmHandler(Client, Scheme, cm),
-		shouldDeployAIEWebhook,
+		shouldDeployAIE,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
 			return newAIEWebhookConfigMapWithNameOnly(hc)
 		},

@@ -1,4 +1,4 @@
-package aie_webhook
+package aie
 
 import (
 	corev1 "k8s.io/api/core/v1"
@@ -15,7 +15,7 @@ import (
 func NewAIEWebhookServiceHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
 	return operands.NewConditionalHandler(
 		operands.NewServiceHandler(Client, Scheme, newAIEWebhookService),
-		shouldDeployAIEWebhook,
+		shouldDeployAIE,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
 			return newAIEWebhookServiceWithNameOnly(hc)
 		},

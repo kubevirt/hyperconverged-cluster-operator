@@ -26,13 +26,14 @@ import (
 )
 
 const (
-	aieWebhookName                = "kubevirt-aie-webhook"
-	aieWebhookTLSSecretName       = "kubevirt-aie-webhook-tls"
-	aieWebhookConfigMapName       = "kubevirt-aie-launcher-config"
-	deployAIEWebhookAnnotationKey = "hco.kubevirt.io/deployAIEWebhook"
+	aieWebhookName          = "kubevirt-aie-webhook"
+	aieWebhookTLSSecretName = "kubevirt-aie-webhook-tls"
+	aieWebhookConfigMapName = "kubevirt-aie-launcher-config"
+	iommufdDevicePluginName = "iommufd-device-plugin"
+	deployAIEAnnotationKey  = "hco.kubevirt.io/deployAIE"
 )
 
-var _ = Describe("Test AIE Webhook", Label("AIEWebhook"), Serial, Ordered, func() {
+var _ = Describe("Test AIE", Label("AIE"), Serial, Ordered, func() {
 	tests.FlagParse()
 
 	var cli client.Client
@@ -44,7 +45,7 @@ var _ = Describe("Test AIE Webhook", Label("AIEWebhook"), Serial, Ordered, func(
 	})
 
 	AfterAll(func(ctx context.Context) {
-		disableAIEWebhookFeatureGate(ctx, cli)
+		disableAIEFeatureGate(ctx, cli)
 
 		deleteAIEWebhookTLSSecret(ctx, cli)
 
@@ -55,11 +56,13 @@ var _ = Describe("Test AIE Webhook", Label("AIEWebhook"), Serial, Ordered, func(
 		validateAIEDeleted(ctx, cli, getAIEWebhookClusterRoleErr)
 		validateAIEDeleted(ctx, cli, getAIEWebhookClusterRoleBindingErr)
 		validateAIEDeleted(ctx, cli, getAIEWebhookMutatingWebhookConfigurationErr)
+		validateAIEDeleted(ctx, cli, getIOMMUFDDevicePluginDaemonSetErr)
+		validateAIEDeleted(ctx, cli, getIOMMUFDDevicePluginServiceAccountErr)
 	})
 
-	When("deploy-aie-webhook annotation is set to true", func() {
+	When("deployAIE annotation is set to true", func() {
 		It("should deploy AIE webhook components", func(ctx context.Context) {
-			enableAIEWebhookFeatureGate(ctx, cli)
+			enableAIEFeatureGate(ctx, cli)
 
 			By("creating a self-signed TLS secret for the webhook")
 			ensureAIEWebhookTLSSecret(ctx, cli)
@@ -125,8 +128,33 @@ var _ = Describe("Test AIE Webhook", Label("AIEWebhook"), Serial, Ordered, func(
 				Should(Succeed())
 		})
 
+		It("should deploy iommufd-device-plugin DaemonSet", func(ctx context.Context) {
+			enableAIEFeatureGate(ctx, cli)
+
+			By("check the iommufd-device-plugin ServiceAccount")
+			Eventually(func(ctx context.Context) error {
+				return getIOMMUFDDevicePluginServiceAccountErr(ctx, cli)
+			}).WithTimeout(1 * time.Minute).
+				WithPolling(100 * time.Millisecond).
+				WithContext(ctx).
+				Should(Succeed())
+
+			By("check the iommufd-device-plugin DaemonSet")
+			Eventually(func(g Gomega, ctx context.Context) {
+				ds := &appsv1.DaemonSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      iommufdDevicePluginName,
+						Namespace: tests.InstallNamespace,
+					},
+				}
+				g.Expect(cli.Get(ctx, client.ObjectKeyFromObject(ds), ds)).To(Succeed())
+				g.Expect(ds.Status.DesiredNumberScheduled).To(BeNumerically(">", 0))
+				g.Expect(ds.Status.NumberReady).To(Equal(ds.Status.DesiredNumberScheduled))
+			}).WithTimeout(5 * time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+		})
+
 		It("should preserve user edits to the ConfigMap across reconciliation", func(ctx context.Context) {
-			enableAIEWebhookFeatureGate(ctx, cli)
+			enableAIEFeatureGate(ctx, cli)
 			ensureAIEWebhookTLSSecret(ctx, cli)
 
 			By("waiting for the ConfigMap to be created")
@@ -150,7 +178,7 @@ var _ = Describe("Test AIE Webhook", Label("AIEWebhook"), Serial, Ordered, func(
 			Expect(cli.Update(ctx, cm)).To(Succeed())
 
 			By("triggering a reconcile by touching the HCO CR")
-			patchBytes := []byte(fmt.Sprintf(`{"metadata":{"annotations":{"%s":"true"}}}`, deployAIEWebhookAnnotationKey))
+			patchBytes := []byte(fmt.Sprintf(`{"metadata":{"annotations":{"%s":"true"}}}`, deployAIEAnnotationKey))
 			Eventually(tests.PatchMergeHCO).
 				WithArguments(ctx, cli, patchBytes).
 				WithTimeout(10 * time.Second).
@@ -174,8 +202,8 @@ var _ = Describe("Test AIE Webhook", Label("AIEWebhook"), Serial, Ordered, func(
 				Should(Succeed())
 		})
 
-		It("should remove AIE webhook resources when feature gate is disabled", func(ctx context.Context) {
-			enableAIEWebhookFeatureGate(ctx, cli)
+		It("should remove AIE resources when feature gate is disabled", func(ctx context.Context) {
+			enableAIEFeatureGate(ctx, cli)
 			ensureAIEWebhookTLSSecret(ctx, cli)
 
 			By("waiting for the Deployment to be created")
@@ -186,10 +214,18 @@ var _ = Describe("Test AIE Webhook", Label("AIEWebhook"), Serial, Ordered, func(
 				WithContext(ctx).
 				Should(Succeed())
 
-			By("disabling the AIE webhook feature gate")
-			disableAIEWebhookFeatureGate(ctx, cli)
+			By("waiting for the DaemonSet to be created")
+			Eventually(func(ctx context.Context) error {
+				return getIOMMUFDDevicePluginDaemonSetErr(ctx, cli)
+			}).WithTimeout(2 * time.Minute).
+				WithPolling(time.Second).
+				WithContext(ctx).
+				Should(Succeed())
 
-			By("checking that all AIE webhook resources are removed")
+			By("disabling the AIE feature gate")
+			disableAIEFeatureGate(ctx, cli)
+
+			By("checking that all AIE resources are removed")
 			validateAIEDeleted(ctx, cli, getAIEWebhookDeploymentErr)
 			validateAIEDeleted(ctx, cli, getAIEWebhookServiceErr)
 			validateAIEDeleted(ctx, cli, getAIEWebhookServiceAccountErr)
@@ -197,6 +233,8 @@ var _ = Describe("Test AIE Webhook", Label("AIEWebhook"), Serial, Ordered, func(
 			validateAIEDeleted(ctx, cli, getAIEWebhookClusterRoleErr)
 			validateAIEDeleted(ctx, cli, getAIEWebhookClusterRoleBindingErr)
 			validateAIEDeleted(ctx, cli, getAIEWebhookMutatingWebhookConfigurationErr)
+			validateAIEDeleted(ctx, cli, getIOMMUFDDevicePluginDaemonSetErr)
+			validateAIEDeleted(ctx, cli, getIOMMUFDDevicePluginServiceAccountErr)
 		})
 	})
 })
@@ -213,9 +251,9 @@ func validateAIEDeleted(ctx context.Context, cli client.Client, tryGetResource a
 		Should(MatchError(k8serrors.IsNotFound, "should be not-found error"))
 }
 
-func enableAIEWebhookFeatureGate(ctx context.Context, cli client.Client) {
+func enableAIEFeatureGate(ctx context.Context, cli client.Client) {
 	GinkgoHelper()
-	patchBytes := []byte(fmt.Sprintf(`{"metadata":{"annotations":{"%s":"true"}}}`, deployAIEWebhookAnnotationKey))
+	patchBytes := []byte(fmt.Sprintf(`{"metadata":{"annotations":{"%s":"true"}}}`, deployAIEAnnotationKey))
 
 	Eventually(tests.PatchMergeHCO).
 		WithArguments(ctx, cli, patchBytes).
@@ -226,9 +264,9 @@ func enableAIEWebhookFeatureGate(ctx context.Context, cli client.Client) {
 		Should(Succeed())
 }
 
-func disableAIEWebhookFeatureGate(ctx context.Context, cli client.Client) {
+func disableAIEFeatureGate(ctx context.Context, cli client.Client) {
 	GinkgoHelper()
-	patchBytes := []byte(fmt.Sprintf(`{"metadata":{"annotations":{"%s":null}}}`, deployAIEWebhookAnnotationKey))
+	patchBytes := []byte(fmt.Sprintf(`{"metadata":{"annotations":{"%s":null}}}`, deployAIEAnnotationKey))
 
 	Eventually(tests.PatchMergeHCO).
 		WithArguments(ctx, cli, patchBytes).
@@ -304,6 +342,26 @@ func getAIEWebhookMutatingWebhookConfigurationErr(ctx context.Context, cli clien
 		},
 	}
 	return cli.Get(ctx, client.ObjectKeyFromObject(mwc), mwc)
+}
+
+func getIOMMUFDDevicePluginDaemonSetErr(ctx context.Context, cli client.Client) error {
+	ds := &appsv1.DaemonSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      iommufdDevicePluginName,
+			Namespace: tests.InstallNamespace,
+		},
+	}
+	return cli.Get(ctx, client.ObjectKeyFromObject(ds), ds)
+}
+
+func getIOMMUFDDevicePluginServiceAccountErr(ctx context.Context, cli client.Client) error {
+	sa := &corev1.ServiceAccount{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      iommufdDevicePluginName,
+			Namespace: tests.InstallNamespace,
+		},
+	}
+	return cli.Get(ctx, client.ObjectKeyFromObject(sa), sa)
 }
 
 func ensureAIEWebhookTLSSecret(ctx context.Context, cli client.Client) {

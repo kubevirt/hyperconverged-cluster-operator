@@ -1,4 +1,4 @@
-package aie_webhook
+package aie
 
 import (
 	"context"
@@ -53,7 +53,7 @@ var _ = Describe("AIE Webhook ConfigMap", func() {
 		})
 
 		It("should create configmap when deploy-aie-webhook annotation is true", func() {
-			hco.Annotations[DeployAIEWebhookAnnotation] = "true"
+			hco.Annotations[DeployAIEAnnotation] = "true"
 			cl = commontestutils.InitClient([]client.Object{hco})
 
 			handler, err := NewAIEWebhookConfigMapHandler(log.Logger{}, cl, commontestutils.GetScheme(), hco)

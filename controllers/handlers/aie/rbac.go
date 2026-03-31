@@ -1,4 +1,4 @@
-package aie_webhook
+package aie
 
 import (
 	log "github.com/go-logr/logr"
@@ -16,7 +16,7 @@ func NewAIEWebhookClusterRoleHandler(
 ) (operands.Operand, error) {
 	return operands.NewConditionalHandler(
 		operands.NewClusterRoleHandler(Client, Scheme, newAIEWebhookClusterRole(hc)),
-		shouldDeployAIEWebhook,
+		shouldDeployAIE,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
 			return NewAIEWebhookClusterRoleWithNameOnly(hc)
 		},
@@ -28,7 +28,7 @@ func NewAIEWebhookClusterRoleBindingHandler(
 ) (operands.Operand, error) {
 	return operands.NewConditionalHandler(
 		operands.NewClusterRoleBindingHandler(Client, Scheme, newAIEWebhookClusterRoleBinding(hc)),
-		shouldDeployAIEWebhook,
+		shouldDeployAIE,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
 			return NewAIEWebhookClusterRoleBindingWithNameOnly(hc)
 		},

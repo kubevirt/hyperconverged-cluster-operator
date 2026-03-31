@@ -1,4 +1,4 @@
-package aie_webhook
+package aie
 
 import (
 	"context"
@@ -40,7 +40,7 @@ var _ = Describe("AIE Webhook Service Account", func() {
 
 	Context("AIE webhook service account deployment", func() {
 		It("should not create if deploy-aie-webhook annotation is absent", func() {
-			delete(hco.Annotations, DeployAIEWebhookAnnotation)
+			delete(hco.Annotations, DeployAIEAnnotation)
 			cl = commontestutils.InitClient([]client.Object{hco})
 
 			handler := NewAIEWebhookServiceAccountHandler(cl, commontestutils.GetScheme())
@@ -57,7 +57,7 @@ var _ = Describe("AIE Webhook Service Account", func() {
 		})
 
 		It("should delete service account when deploy-aie-webhook annotation is removed", func() {
-			delete(hco.Annotations, DeployAIEWebhookAnnotation)
+			delete(hco.Annotations, DeployAIEAnnotation)
 			sa := newAIEWebhookServiceAccount(hco)
 			cl = commontestutils.InitClient([]client.Object{hco, sa})
 
@@ -76,7 +76,7 @@ var _ = Describe("AIE Webhook Service Account", func() {
 		})
 
 		It("should create service account when deploy-aie-webhook annotation is true", func() {
-			hco.Annotations[DeployAIEWebhookAnnotation] = "true"
+			hco.Annotations[DeployAIEAnnotation] = "true"
 			cl = commontestutils.InitClient([]client.Object{hco})
 
 			handler := NewAIEWebhookServiceAccountHandler(cl, commontestutils.GetScheme())
@@ -97,7 +97,7 @@ var _ = Describe("AIE Webhook Service Account", func() {
 
 	Context("AIE webhook service account update", func() {
 		It("should reconcile labels if they are missing while preserving user labels", func() {
-			hco.Annotations[DeployAIEWebhookAnnotation] = "true"
+			hco.Annotations[DeployAIEAnnotation] = "true"
 			sa := newAIEWebhookServiceAccount(hco)
 			expectedLabels := maps.Clone(sa.Labels)
 			delete(sa.Labels, "app.kubernetes.io/component")
