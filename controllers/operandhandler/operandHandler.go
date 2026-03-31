@@ -16,7 +16,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
-	aiewebhook "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie-webhook"
+	aie "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
 	waspagent "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/wasp-agent"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
@@ -57,6 +57,9 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		handlers.NewMigControllerHandler(client, scheme),
 		passt.NewPasstDaemonSetHandler(client, scheme),
 		passt.NewPasstNetworkAttachmentDefinitionHandler(client, scheme),
+		aie.NewAIEWebhookServiceAccountHandler(client, scheme),
+		aie.NewAIEWebhookServiceHandler(client, scheme),
+		aie.NewIOMMUFDDevicePluginServiceAccountHandler(client, scheme),
 	}
 
 	if ci.IsOpenshift() {
@@ -72,11 +75,6 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 			waspagent.NewWaspAgentDaemonSetHandler(client, scheme),
 		}...)
 	}
-
-	operandList = append(operandList, []operands.Operand{
-		aiewebhook.NewAIEWebhookServiceAccountHandler(client, scheme),
-		aiewebhook.NewAIEWebhookServiceHandler(client, scheme),
-	}...)
 
 	if ci.IsOpenshift() && ci.IsConsolePluginImageProvided() {
 		operandList = append(operandList, handlers.NewConsoleHandler(client))
@@ -102,11 +100,12 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 	h.objects = make([]client.Object, 0)
 
 	for _, fn := range []operands.GetHandler{
-		aiewebhook.NewAIEWebhookConfigMapHandler,
-		aiewebhook.NewAIEWebhookClusterRoleHandler,
-		aiewebhook.NewAIEWebhookClusterRoleBindingHandler,
-		aiewebhook.NewAIEWebhookDeploymentHandler,
-		aiewebhook.NewAIEWebhookMutatingWebhookConfigurationHandler,
+		aie.NewAIEWebhookConfigMapHandler,
+		aie.NewAIEWebhookClusterRoleHandler,
+		aie.NewAIEWebhookClusterRoleBindingHandler,
+		aie.NewAIEWebhookDeploymentHandler,
+		aie.NewAIEWebhookMutatingWebhookConfigurationHandler,
+		aie.NewIOMMUFDDevicePluginDaemonSetHandler,
 	} {
 		h.addOperand(scheme, hc, fn)
 	}
@@ -129,6 +128,7 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 		handlers.NewVirtioWinCmReaderRoleBindingHandler,
 		waspagent.NewWaspAgentClusterRoleHandler,
 		waspagent.NewWaspAgentClusterRoleBindingHandler,
+		aie.NewIOMMUFDDevicePluginSCCHandler,
 	}
 
 	if ci.IsConsolePluginImageProvided() {
@@ -260,9 +260,10 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		passt.NewPasstBindingCNINetworkAttachmentDefinition(req.Instance),
 		passt.NewPasstBindingCNISecurityContextConstraints(req.Instance),
 		waspagent.NewWaspAgentSCCWithNameOnly(req.Instance),
-		aiewebhook.NewAIEWebhookClusterRoleWithNameOnly(req.Instance),
-		aiewebhook.NewAIEWebhookClusterRoleBindingWithNameOnly(req.Instance),
-		aiewebhook.NewAIEWebhookMutatingWebhookConfigurationWithNameOnly(req.Instance),
+		aie.NewAIEWebhookClusterRoleWithNameOnly(req.Instance),
+		aie.NewAIEWebhookClusterRoleBindingWithNameOnly(req.Instance),
+		aie.NewAIEWebhookMutatingWebhookConfigurationWithNameOnly(req.Instance),
+		aie.NewIOMMUFDDevicePluginSCCWithNameOnly(req.Instance),
 	}
 
 	resources = append(resources, h.objects...)

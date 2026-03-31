@@ -1,4 +1,4 @@
-package aie_webhook
+package aie
 
 import (
 	"os"
@@ -34,7 +34,7 @@ func NewAIEWebhookDeploymentHandler(
 ) (operands.Operand, error) {
 	return operands.NewConditionalHandler(
 		operands.NewDeploymentHandler(Client, Scheme, newAIEWebhookDeployment, hc),
-		shouldDeployAIEWebhook,
+		shouldDeployAIE,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
 			return newAIEWebhookDeploymentWithNameOnly(hc)
 		},

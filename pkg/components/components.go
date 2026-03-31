@@ -41,6 +41,7 @@ type DeploymentOperatorParams struct {
 	PasstCNIImage             string
 	WaspAgentImage            string
 	AIEWebhookImage           string
+	IOMMUFDDevicePluginImage  string
 	ImagePullPolicy           string
 	ConversionContainer       string
 	VmwareContainer           string
@@ -236,6 +237,10 @@ func buildEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 		{
 			Name:  util.AIEWebhookImageEnvV,
 			Value: params.AIEWebhookImage,
+		},
+		{
+			Name:  util.IOMMUFDDevicePluginImageEnvV,
+			Value: params.IOMMUFDDevicePluginImage,
 		},
 	}, params.Env...)
 

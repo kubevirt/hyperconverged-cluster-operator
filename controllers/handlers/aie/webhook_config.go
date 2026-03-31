@@ -1,4 +1,4 @@
-package aie_webhook
+package aie
 
 import (
 	"errors"
@@ -23,7 +23,7 @@ func NewAIEWebhookMutatingWebhookConfigurationHandler(
 	return operands.NewConditionalHandler(
 		operands.NewGenericOperand(Client, Scheme, "MutatingWebhookConfiguration",
 			&aieWebhookMWCHooks{required: newAIEMutatingWebhookConfiguration(hc)}, false),
-		shouldDeployAIEWebhook,
+		shouldDeployAIE,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
 			return NewAIEWebhookMutatingWebhookConfigurationWithNameOnly(hc)
 		},
