@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.18.0-unstable
-    createdAt: "2026-03-30 12:58:40"
+    createdAt: "2026-04-01 05:42:46"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -3932,7 +3932,7 @@ spec:
                 - name: CDI_VERSION
                   value: v1.64.0
                 - name: NETWORK_ADDONS_VERSION
-                  value: v0.102.0-rc-0
+                  value: v0.102.0
                 - name: SSP_VERSION
                   value: v0.25.0
                 - name: HPPO_VERSION
@@ -4186,7 +4186,7 @@ spec:
                 - name: OVS_CNI_IMAGE
                   value: ghcr.io/k8snetworkplumbingwg/ovs-cni-plugin@sha256:435f374b434b3bc70a5cfaba0011fdcf5f433d96b98b06d29306cbd8db3a8c21
                 - name: KUBEMACPOOL_IMAGE
-                  value: quay.io/kubevirt/kubemacpool@sha256:06187c3a5146fe664e010101cfee593b1ff365140310f207bfd1c14b9d2512a1
+                  value: quay.io/kubevirt/kubemacpool@sha256:fee2954568d346c3be9c1ae4353dc6b3acc57a80bf55f008d84ac5ac557b8104
                 - name: MACVTAP_CNI_IMAGE
                   value: quay.io/kubevirt/macvtap-cni@sha256:5266955a654a4cb4e425424ab274cf31e7a6deb3f340e3679a11d689bfa734d0
                 - name: KUBE_SECONDARY_DNS_IMAGE
@@ -4194,13 +4194,13 @@ spec:
                 - name: CORE_DNS_IMAGE
                   value: registry.k8s.io/coredns/coredns@sha256:a0ead06651cf580044aeb0a0feba63591858fb2e43ade8c9dea45a6a89ae7e5e
                 - name: KUBEVIRT_IPAM_CONTROLLER_IMAGE
-                  value: ghcr.io/kubevirt/ipam-controller@sha256:3d1e9bf40e716856c7ffe21c7a4d842299c492a059c74eaf832bd51b6e5e8fa4
+                  value: ghcr.io/kubevirt/ipam-controller@sha256:08f250f46f932beb81f82a8fdd003824815a726034d2aa2d58d59feb34496db3
                 - name: OPERATOR_IMAGE
-                  value: quay.io/kubevirt/cluster-network-addons-operator@sha256:d6a7bd2995c30926446b85c00dc7b66e633084c92c0919f51a7547eb9ffe0af0
+                  value: quay.io/kubevirt/cluster-network-addons-operator@sha256:6d19b3d8a7b406fc4106f2b1ddbb5894884fba4fb854558e39d14e54e644f818
                 - name: OPERATOR_NAME
                   value: cluster-network-addons-operator
                 - name: OPERATOR_VERSION
-                  value: v0.102.0-rc-0
+                  value: v0.102.0
                 - name: OPERATOR_NAMESPACE
                   valueFrom:
                     fieldRef:
@@ -4222,7 +4222,7 @@ spec:
                   value: https://kubevirt.io/monitoring/runbooks/%s
                 - name: CNAO_LOG_LEVEL
                   value: "0"
-                image: quay.io/kubevirt/cluster-network-addons-operator@sha256:d6a7bd2995c30926446b85c00dc7b66e633084c92c0919f51a7547eb9ffe0af0
+                image: quay.io/kubevirt/cluster-network-addons-operator@sha256:6d19b3d8a7b406fc4106f2b1ddbb5894884fba4fb854558e39d14e54e644f818
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -5920,7 +5920,7 @@ spec:
     name: cdi-uploadproxy
   - image: quay.io/kubevirt/cdi-uploadserver@sha256:79420a4e2769ef3cba123ae989c23faba7ebfe61a3b16c5509c5348cde8410fd
     name: cdi-uploadserver
-  - image: quay.io/kubevirt/cluster-network-addons-operator@sha256:d6a7bd2995c30926446b85c00dc7b66e633084c92c0919f51a7547eb9ffe0af0
+  - image: quay.io/kubevirt/cluster-network-addons-operator@sha256:6d19b3d8a7b406fc4106f2b1ddbb5894884fba4fb854558e39d14e54e644f818
     name: cluster-network-addons-operator
   - image: quay.io/kubevirt/cni-default-plugins@sha256:976a24392c2a096c38c2663d234b2d3131f5c24558889196d30b9ac1b6716788
     name: cni-default-plugins
@@ -5944,9 +5944,9 @@ spec:
     name: hyperconverged-cluster-operator
   - image: quay.io/kubevirt/hyperconverged-cluster-webhook:1.18.0-unstable
     name: hyperconverged-cluster-webhook
-  - image: ghcr.io/kubevirt/ipam-controller@sha256:3d1e9bf40e716856c7ffe21c7a4d842299c492a059c74eaf832bd51b6e5e8fa4
+  - image: ghcr.io/kubevirt/ipam-controller@sha256:08f250f46f932beb81f82a8fdd003824815a726034d2aa2d58d59feb34496db3
     name: ipam-controller
-  - image: quay.io/kubevirt/kubemacpool@sha256:06187c3a5146fe664e010101cfee593b1ff365140310f207bfd1c14b9d2512a1
+  - image: quay.io/kubevirt/kubemacpool@sha256:fee2954568d346c3be9c1ae4353dc6b3acc57a80bf55f008d84ac5ac557b8104
     name: kubemacpool
   - image: ghcr.io/kubevirt/kubesecondarydns@sha256:f5fe9c98fb6d7e5e57a6df23fe82e43e65db5953d76af44adda9ab40c46ad0bf
     name: kubesecondarydns
