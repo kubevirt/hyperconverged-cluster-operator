@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.18.0-unstable
-    createdAt: "2026-04-01 05:42:46"
+    createdAt: "2026-04-01 10:57:30"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -3956,7 +3956,9 @@ spec:
                 - name: WASP_AGENT_IMAGE
                   value: quay.io/openshift-virtualization/wasp-agent@sha256:eabfa6a425213f520f7a9e5b81b43e8b6430779d42c5c8b1bfd48a4f1730447a
                 - name: AIE_WEBHOOK_IMAGE
-                  value: quay.io/kubevirt/kubevirt-aie-webhook@sha256:9a98ea7a9fe24484f323045f0cf8b36fa76408101f88bd459fe1f66e68b7c86c
+                  value: quay.io/kubevirt/kubevirt-aie-webhook@sha256:d5aafc2c9ea71fc03c92a5f73d1c612996a20cff59051e029f82774210ff457e
+                - name: IOMMUFD_DEVICE_PLUGIN_IMAGE
+                  value: quay.io/kubevirt/iommufd-device-plugin@sha256:45b9a3e904b19e83592d4d9ee1029b04f4ed10013cce735cf03e42458eaf9db0
                 image: quay.io/kubevirt/hyperconverged-cluster-operator:1.18.0-unstable
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
@@ -5944,13 +5946,15 @@ spec:
     name: hyperconverged-cluster-operator
   - image: quay.io/kubevirt/hyperconverged-cluster-webhook:1.18.0-unstable
     name: hyperconverged-cluster-webhook
+  - image: quay.io/kubevirt/iommufd-device-plugin@sha256:45b9a3e904b19e83592d4d9ee1029b04f4ed10013cce735cf03e42458eaf9db0
+    name: iommufd-device-plugin
   - image: ghcr.io/kubevirt/ipam-controller@sha256:08f250f46f932beb81f82a8fdd003824815a726034d2aa2d58d59feb34496db3
     name: ipam-controller
   - image: quay.io/kubevirt/kubemacpool@sha256:fee2954568d346c3be9c1ae4353dc6b3acc57a80bf55f008d84ac5ac557b8104
     name: kubemacpool
   - image: ghcr.io/kubevirt/kubesecondarydns@sha256:f5fe9c98fb6d7e5e57a6df23fe82e43e65db5953d76af44adda9ab40c46ad0bf
     name: kubesecondarydns
-  - image: quay.io/kubevirt/kubevirt-aie-webhook@sha256:9a98ea7a9fe24484f323045f0cf8b36fa76408101f88bd459fe1f66e68b7c86c
+  - image: quay.io/kubevirt/kubevirt-aie-webhook@sha256:d5aafc2c9ea71fc03c92a5f73d1c612996a20cff59051e029f82774210ff457e
     name: kubevirt-aie-webhook
   - image: quay.io/kubevirt-ui/kubevirt-apiserver-proxy@sha256:d13b1735f35f04a88281280f71deb1aa94c44f57a66dd302635cd38964ab592e
     name: kubevirt-apiserver-proxy

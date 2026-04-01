@@ -1,0 +1,123 @@
+package aie
+
+import (
+	"context"
+	"maps"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+)
+
+var _ = Describe("IOMMUFD Device Plugin Service Account", func() {
+	var (
+		hco *hcov1beta1.HyperConverged
+		req *common.HcoRequest
+		cl  client.Client
+	)
+
+	BeforeEach(func() {
+		hco = commontestutils.NewHco()
+		hco.Annotations = make(map[string]string)
+		req = commontestutils.NewReq(hco)
+	})
+
+	Context("newIOMMUFDDevicePluginServiceAccount", func() {
+		It("should have all default values", func() {
+			sa := newIOMMUFDDevicePluginServiceAccount(hco)
+			Expect(sa.Name).To(Equal("iommufd-device-plugin"))
+			Expect(sa.Namespace).To(BeEquivalentTo(hco.Namespace))
+			Expect(sa.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
+			Expect(sa.Labels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentIOMMUFDDevicePlugin)))
+		})
+	})
+
+	Context("IOMMUFD device plugin service account deployment", func() {
+		It("should not create if deploy-aie-webhook annotation is absent", func() {
+			delete(hco.Annotations, DeployAIEAnnotation)
+			cl = commontestutils.InitClient([]client.Object{hco})
+
+			handler := NewIOMMUFDDevicePluginServiceAccountHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeFalse())
+
+			foundSAs := &corev1.ServiceAccountList{}
+			Expect(cl.List(context.Background(), foundSAs)).To(Succeed())
+			Expect(foundSAs.Items).To(BeEmpty())
+		})
+
+		It("should delete service account when deploy-aie-webhook annotation is removed", func() {
+			delete(hco.Annotations, DeployAIEAnnotation)
+			sa := newIOMMUFDDevicePluginServiceAccount(hco)
+			cl = commontestutils.InitClient([]client.Object{hco, sa})
+
+			handler := NewIOMMUFDDevicePluginServiceAccountHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Name).To(Equal(sa.Name))
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeTrue())
+
+			foundSAs := &corev1.ServiceAccountList{}
+			Expect(cl.List(context.Background(), foundSAs)).To(Succeed())
+			Expect(foundSAs.Items).To(BeEmpty())
+		})
+
+		It("should create service account when deploy-aie-webhook annotation is true", func() {
+			hco.Annotations[DeployAIEAnnotation] = "true"
+			cl = commontestutils.InitClient([]client.Object{hco})
+
+			handler := NewIOMMUFDDevicePluginServiceAccountHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Name).To(Equal("iommufd-device-plugin"))
+			Expect(res.Created).To(BeTrue())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeFalse())
+
+			foundSAs := &corev1.ServiceAccountList{}
+			Expect(cl.List(context.Background(), foundSAs)).To(Succeed())
+			Expect(foundSAs.Items).To(HaveLen(1))
+			Expect(foundSAs.Items[0].Name).To(Equal("iommufd-device-plugin"))
+		})
+	})
+
+	Context("IOMMUFD device plugin service account update", func() {
+		It("should reconcile labels if they are missing while preserving user labels", func() {
+			hco.Annotations[DeployAIEAnnotation] = "true"
+			sa := newIOMMUFDDevicePluginServiceAccount(hco)
+			expectedLabels := maps.Clone(sa.Labels)
+			delete(sa.Labels, "app.kubernetes.io/component")
+			sa.Labels["user-added-label"] = "user-value"
+			cl = commontestutils.InitClient([]client.Object{hco, sa})
+			handler := NewIOMMUFDDevicePluginServiceAccountHandler(cl, commontestutils.GetScheme())
+
+			res := handler.Ensure(req)
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeTrue())
+			Expect(res.Deleted).To(BeFalse())
+
+			foundSA := &corev1.ServiceAccount{}
+			Expect(cl.Get(context.Background(), client.ObjectKey{Name: "iommufd-device-plugin", Namespace: hco.Namespace}, foundSA)).To(Succeed())
+
+			for key, value := range expectedLabels {
+				Expect(foundSA.Labels).To(HaveKeyWithValue(key, value))
+			}
+			Expect(foundSA.Labels).To(HaveKeyWithValue("user-added-label", "user-value"))
+		})
+	})
+})
