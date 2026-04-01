@@ -47,7 +47,7 @@ require (
 	k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
 	kubevirt.io/api v1.8.1
 	kubevirt.io/application-aware-quota v1.8.0-alpha.0
-	kubevirt.io/containerized-data-importer-api v1.64.0
+	kubevirt.io/containerized-data-importer-api v1.65.0
 	kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4
 	kubevirt.io/kubevirt-migration-operator v0.2.0-rc.1
 	kubevirt.io/ssp-operator/api v0.25.0

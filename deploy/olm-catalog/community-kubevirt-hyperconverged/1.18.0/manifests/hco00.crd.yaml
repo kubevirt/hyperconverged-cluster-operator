@@ -3677,6 +3677,10 @@ spec:
                                             to the PersistentVolume backing this claim.
                                           type: string
                                       type: object
+                                    serviceAccountName:
+                                      description: ServiceAccountName for Importer
+                                        and Uploader pod
+                                      type: string
                                     source:
                                       description: Source is the src of the data for
                                         the requested DataVolume
@@ -3715,6 +3719,12 @@ spec:
                                                 reference, containing a Certificate
                                                 Authority(CA) public key, and a base64
                                                 encoded pem certificate
+                                              type: string
+                                            checksum:
+                                              description: |-
+                                                Checksum is the expected checksum of the file. Format: "algorithm:hash", e.g., "sha256:1234abcd..." or "md5:5678efgh..."
+                                                Supported algorithms: md5, sha1, sha256, sha512
+                                                If specified, the importer will verify the downloaded content matches this checksum
                                               type: string
                                             extraHeaders:
                                               description: ExtraHeaders is a list
@@ -4591,6 +4601,10 @@ spec:
                                         to the PersistentVolume backing this claim.
                                       type: string
                                   type: object
+                                serviceAccountName:
+                                  description: ServiceAccountName for Importer and
+                                    Uploader pod
+                                  type: string
                                 source:
                                   description: Source is the src of the data for the
                                     requested DataVolume
@@ -4625,6 +4639,12 @@ spec:
                                           description: CertConfigMap is a configmap
                                             reference, containing a Certificate Authority(CA)
                                             public key, and a base64 encoded pem certificate
+                                          type: string
+                                        checksum:
+                                          description: |-
+                                            Checksum is the expected checksum of the file. Format: "algorithm:hash", e.g., "sha256:1234abcd..." or "md5:5678efgh..."
+                                            Supported algorithms: md5, sha1, sha256, sha512
+                                            If specified, the importer will verify the downloaded content matches this checksum
                                           type: string
                                         extraHeaders:
                                           description: ExtraHeaders is a list of strings
@@ -5799,6 +5819,10 @@ spec:
                                         to the PersistentVolume backing this claim.
                                       type: string
                                   type: object
+                                serviceAccountName:
+                                  description: ServiceAccountName for Importer and
+                                    Uploader pod
+                                  type: string
                                 source:
                                   description: Source is the src of the data for the
                                     requested DataVolume
@@ -5833,6 +5857,12 @@ spec:
                                           description: CertConfigMap is a configmap
                                             reference, containing a Certificate Authority(CA)
                                             public key, and a base64 encoded pem certificate
+                                          type: string
+                                        checksum:
+                                          description: |-
+                                            Checksum is the expected checksum of the file. Format: "algorithm:hash", e.g., "sha256:1234abcd..." or "md5:5678efgh..."
+                                            Supported algorithms: md5, sha1, sha256, sha512
+                                            If specified, the importer will verify the downloaded content matches this checksum
                                           type: string
                                         extraHeaders:
                                           description: ExtraHeaders is a list of strings
@@ -9801,6 +9831,10 @@ spec:
                                         to the PersistentVolume backing this claim.
                                       type: string
                                   type: object
+                                serviceAccountName:
+                                  description: ServiceAccountName for Importer and
+                                    Uploader pod
+                                  type: string
                                 source:
                                   description: Source is the src of the data for the
                                     requested DataVolume
@@ -9835,6 +9869,12 @@ spec:
                                           description: CertConfigMap is a configmap
                                             reference, containing a Certificate Authority(CA)
                                             public key, and a base64 encoded pem certificate
+                                          type: string
+                                        checksum:
+                                          description: |-
+                                            Checksum is the expected checksum of the file. Format: "algorithm:hash", e.g., "sha256:1234abcd..." or "md5:5678efgh..."
+                                            Supported algorithms: md5, sha1, sha256, sha512
+                                            If specified, the importer will verify the downloaded content matches this checksum
                                           type: string
                                         extraHeaders:
                                           description: ExtraHeaders is a list of strings
