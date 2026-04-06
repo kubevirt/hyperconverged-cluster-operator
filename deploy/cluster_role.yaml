@@ -4432,11 +4432,22 @@ rules:
   verbs:
   - create
 - apiGroups:
+  - ""
   - apps
   - kubevirt.io
   - cdi.kubevirt.io
   - hco.kubevirt.io
+  - snapshot.kubevirt.io
+  - clone.kubevirt.io
+  - export.kubevirt.io
+  - networkaddonsoperator.network.kubevirt.io
+  - ssp.kubevirt.io
+  - hostpathprovisioner.kubevirt.io
+  - aaq.kubevirt.io
   - operators.coreos.com
+  - machine.openshift.io
+  - machineconfiguration.openshift.io
+  - config.openshift.io
   resources:
   - '*'
   verbs:
