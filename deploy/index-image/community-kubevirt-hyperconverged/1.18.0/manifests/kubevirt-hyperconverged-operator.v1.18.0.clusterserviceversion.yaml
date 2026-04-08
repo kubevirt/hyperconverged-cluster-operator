@@ -3715,11 +3715,22 @@ spec:
           verbs:
           - create
         - apiGroups:
+          - ""
           - apps
           - kubevirt.io
           - cdi.kubevirt.io
           - hco.kubevirt.io
+          - snapshot.kubevirt.io
+          - clone.kubevirt.io
+          - export.kubevirt.io
+          - networkaddonsoperator.network.kubevirt.io
+          - ssp.kubevirt.io
+          - hostpathprovisioner.kubevirt.io
+          - aaq.kubevirt.io
           - operators.coreos.com
+          - machine.openshift.io
+          - machineconfiguration.openshift.io
+          - config.openshift.io
           resources:
           - '*'
           verbs:
@@ -3944,7 +3955,7 @@ spec:
                 - name: AUTOPILOT_VERSION
                   value: v0.0.8
                 - name: INFLIGHT_OPERATIONS_VERSION
-                  value: v0.0.3
+                  value: v0.0.5
                 - name: KV_CONSOLE_PLUGIN_IMAGE
                   value: quay.io/kubevirt-ui/kubevirt-plugin@sha256:a9273d9e69662320fc6677f51ee1b05f4c62528b8a83895f8f56849de3b8b9f2
                 - name: KV_CONSOLE_PROXY_IMAGE
@@ -4948,8 +4959,8 @@ spec:
                 - /manager
                 env:
                 - name: OPERATOR_VERSION
-                  value: v0.0.3
-                image: quay.io/ifo-operator/controller@sha256:0c53364ddf57462fe0d3e809ef00e8731778204000963c53955be8b79f42a7c5
+                  value: v0.0.5
+                image: quay.io/ifo-operator/controller@sha256:0bb6180e651b2ef59486c616a700ed544cc50c06e0d872be6bd6af4f128a866c
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -5924,7 +5935,7 @@ spec:
     name: cluster-network-addons-operator
   - image: quay.io/kubevirt/cni-default-plugins@sha256:976a24392c2a096c38c2663d234b2d3131f5c24558889196d30b9ac1b6716788
     name: cni-default-plugins
-  - image: quay.io/ifo-operator/controller@sha256:0c53364ddf57462fe0d3e809ef00e8731778204000963c53955be8b79f42a7c5
+  - image: quay.io/ifo-operator/controller@sha256:0bb6180e651b2ef59486c616a700ed544cc50c06e0d872be6bd6af4f128a866c
     name: controller
   - image: registry.k8s.io/coredns/coredns@sha256:a0ead06651cf580044aeb0a0feba63591858fb2e43ade8c9dea45a6a89ae7e5e
     name: coredns
