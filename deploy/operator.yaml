@@ -75,7 +75,7 @@ spec:
         - name: AUTOPILOT_VERSION
           value: v0.0.8
         - name: INFLIGHT_OPERATIONS_VERSION
-          value: v0.0.3
+          value: v0.0.5
         - name: KV_CONSOLE_PLUGIN_IMAGE
         - name: KV_CONSOLE_PROXY_IMAGE
         - name: PASST_SIDECAR_IMAGE
@@ -1126,8 +1126,8 @@ spec:
         - /manager
         env:
         - name: OPERATOR_VERSION
-          value: v0.0.3
-        image: quay.io/ifo-operator/controller@sha256:0c53364ddf57462fe0d3e809ef00e8731778204000963c53955be8b79f42a7c5
+          value: v0.0.5
+        image: quay.io/ifo-operator/controller@sha256:0bb6180e651b2ef59486c616a700ed544cc50c06e0d872be6bd6af4f128a866c
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
