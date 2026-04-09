@@ -40,17 +40,17 @@ var _ = Describe("VirtioWin", func() {
 			os.Unsetenv("VIRTIOWIN_CONTAINER")
 
 			cl := commontestutils.InitClient([]client.Object{})
-			handler, err := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler, err := NewVirtioWinCmHandler(cl, commontestutils.GetScheme())
 
 			Expect(err).To(HaveOccurred())
 			Expect(handler).To(BeNil())
 		})
 
 		It("should create if not present", func() {
-			expectedResource, err := NewVirtioWinCm(hco)
+			expectedResource, err := NewVirtioWinCm()
 			Expect(err).ToNot(HaveOccurred())
 			cl := commontestutils.InitClient([]client.Object{})
-			handler, _ := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler, _ := NewVirtioWinCmHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -67,11 +67,11 @@ var _ = Describe("VirtioWin", func() {
 		})
 
 		It("should find if present", func() {
-			expectedResource, err := NewVirtioWinCm(hco)
+			expectedResource, err := NewVirtioWinCm()
 			Expect(err).ToNot(HaveOccurred())
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
-			handler, _ := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler, _ := NewVirtioWinCmHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -89,10 +89,10 @@ var _ = Describe("VirtioWin", func() {
 			updatableKeys := [...]string{virtiowink}
 			toBeRemovedKey := "toberemoved"
 
-			expectedResource, err := NewVirtioWinCm(hco)
+			expectedResource, err := NewVirtioWinCm()
 			Expect(err).ToNot(HaveOccurred())
 
-			outdatedResource, err := NewVirtioWinCm(hco)
+			outdatedResource, err := NewVirtioWinCm()
 			Expect(err).ToNot(HaveOccurred())
 
 			// values we should update
@@ -102,7 +102,7 @@ var _ = Describe("VirtioWin", func() {
 			outdatedResource.Data[toBeRemovedKey] = "value-we-should-remove"
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler, _ := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler, _ := NewVirtioWinCmHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
@@ -135,7 +135,7 @@ var _ = Describe("VirtioWin", func() {
 		It("should reconcile managed labels to default without touching user added ones", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
-			outdatedResource, err := NewVirtioWinCm(hco)
+			outdatedResource, err := NewVirtioWinCm()
 			Expect(err).ToNot(HaveOccurred())
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 			for k, v := range expectedLabels {
@@ -144,7 +144,7 @@ var _ = Describe("VirtioWin", func() {
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler, _ := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler, _ := NewVirtioWinCmHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
@@ -166,14 +166,14 @@ var _ = Describe("VirtioWin", func() {
 		It("should reconcile managed labels to default without touching user added ones", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
-			outdatedResource, err := NewVirtioWinCm(hco)
+			outdatedResource, err := NewVirtioWinCm()
 			Expect(err).ToNot(HaveOccurred())
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 			delete(outdatedResource.Labels, hcoutil.AppLabelVersion)
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler, _ := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler, _ := NewVirtioWinCmHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
