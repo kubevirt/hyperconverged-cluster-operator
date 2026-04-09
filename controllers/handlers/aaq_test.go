@@ -309,7 +309,7 @@ var _ = Describe("AAQ tests", func() {
 		It("should update AAQ fields, if not matched to the requirements", func() {
 			hco.Spec.ApplicationAwareConfig = &v1beta1.ApplicationAwareConfigurations{}
 			hco.Spec.EnableApplicationAwareQuota = ptr.To(true)
-			aaq := NewAAQWithNameOnly(hco)
+			aaq := NewAAQWithNameOnly()
 			aaq.Spec.Infra = testNodePlacement
 			aaq.Spec.PriorityClass = ptr.To[aaqv1alpha1.AAQPriorityClass]("wrongPC")
 			aaq.Spec.CertConfig = &aaqv1alpha1.AAQCertConfig{
@@ -360,7 +360,7 @@ var _ = Describe("AAQ tests", func() {
 			const userLabelValue = "userLabelValue"
 			hco.Spec.ApplicationAwareConfig = &v1beta1.ApplicationAwareConfigurations{}
 			hco.Spec.EnableApplicationAwareQuota = ptr.To(true)
-			outdatedResource := NewAAQWithNameOnly(hco)
+			outdatedResource := NewAAQWithNameOnly()
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 			for k, v := range expectedLabels {
 				outdatedResource.Labels[k] = "wrong_" + v
@@ -393,7 +393,7 @@ var _ = Describe("AAQ tests", func() {
 			const userLabelValue = "userLabelValue"
 			hco.Spec.ApplicationAwareConfig = &v1beta1.ApplicationAwareConfigurations{}
 			hco.Spec.EnableApplicationAwareQuota = ptr.To(true)
-			outdatedResource := NewAAQWithNameOnly(hco)
+			outdatedResource := NewAAQWithNameOnly()
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 			delete(outdatedResource.Labels, hcoutil.AppLabelVersion)
