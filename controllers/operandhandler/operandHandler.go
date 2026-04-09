@@ -259,7 +259,7 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		handlers.NewSSPWithNameOnly(req.Instance),
 		handlers.NewConsoleCLIDownload(),
 		handlers.NewAAQWithNameOnly(),
-		handlers.NewMigControllerWithNameOnly(req.Instance),
+		handlers.NewMigControllerWithNameOnly(),
 		passt.NewPasstBindingCNINetworkAttachmentDefinition(req.Instance),
 		passt.NewPasstBindingCNISecurityContextConstraints(req.Instance),
 		waspagent.NewWaspAgentSCCWithNameOnly(req.Instance),
