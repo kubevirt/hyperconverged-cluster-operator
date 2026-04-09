@@ -368,7 +368,7 @@ func createAllowAllEgressNetworkPolicy() *networkingv1.NetworkPolicy {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      allowAllNPProxyName,
 			Namespace: tests.InstallNamespace,
-			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIProxy),
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIProxy),
 		},
 
 		Spec: networkingv1.NetworkPolicySpec{

@@ -24,7 +24,6 @@ import (
 	"k8s.io/client-go/tools/reference"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 
@@ -39,9 +38,8 @@ import (
 
 var _ = Describe("Kubevirt Console Plugin", func() {
 	var (
-		testLogger = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("consoleplugin_test")
-		hco        *hcov1beta1.HyperConverged
-		req        *common.HcoRequest
+		hco *hcov1beta1.HyperConverged
+		req *common.HcoRequest
 	)
 
 	BeforeEach(func() {
@@ -1119,8 +1117,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 
 			It("should deploy NetworkPolicies for console plugin", func() {
 				cl := commontestutils.InitClient([]client.Object{hco})
-				handler, err := NewKVConsolePluginNetworkPolicyHandler(testLogger, cl, commontestutils.GetScheme(), hco)
-				Expect(err).ToNot(HaveOccurred())
+				handler := NewKVConsolePluginNetworkPolicyHandler(cl, commontestutils.GetScheme())
 
 				res := handler.Ensure(req)
 				Expect(res.Created).To(BeTrue())
@@ -1133,7 +1130,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 						foundNP),
 				).To(Succeed())
 
-				expectedNP := newKVConsolePluginNetworkPolicy(hco)
+				expectedNP := newKVConsolePluginNetworkPolicy()
 
 				Expect(foundNP.Name).To(Equal(expectedNP.Name))
 				Expect(foundNP.Namespace).To(Equal(expectedNP.Namespace))
@@ -1144,8 +1141,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 
 			It("should deploy NetworkPolicies for api-server proxy", func() {
 				cl := commontestutils.InitClient([]client.Object{})
-				handler, err := NewKVAPIServerProxyNetworkPolicyHandler(testLogger, cl, commontestutils.GetScheme(), hco)
-				Expect(err).ToNot(HaveOccurred())
+				handler := NewKVAPIServerProxyNetworkPolicyHandler(cl, commontestutils.GetScheme())
 
 				res := handler.Ensure(req)
 				Expect(res.UpgradeDone).To(BeTrue())
@@ -1163,7 +1159,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			})
 
 			It("should update NetworkPolicies for console plugin, if it was modified", func() {
-				expectedNP := newKVConsolePluginNetworkPolicy(hco)
+				expectedNP := newKVConsolePluginNetworkPolicy()
 
 				existingNP := expectedNP.DeepCopy()
 				existingNP.Spec.Egress = []networkingv1.NetworkPolicyEgressRule{
@@ -1184,8 +1180,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingNP})
 
-				handler, err := NewKVConsolePluginNetworkPolicyHandler(testLogger, cl, commontestutils.GetScheme(), hco)
-				Expect(err).ToNot(HaveOccurred())
+				handler := NewKVConsolePluginNetworkPolicyHandler(cl, commontestutils.GetScheme())
 
 				res := handler.Ensure(req)
 				Expect(res.Created).To(BeFalse())
@@ -1219,7 +1214,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			})
 
 			It("should update NetworkPolicies for api-server proxy, if it was modified", func() {
-				expectedNP := newKVAPIServerProxyNetworkPolicy(hco)
+				expectedNP := newKVAPIServerProxyNetworkPolicy()
 				existingNP := expectedNP.DeepCopy()
 				existingNP.Spec.Egress = []networkingv1.NetworkPolicyEgressRule{
 					{
@@ -1238,8 +1233,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				existingNP.Labels[hcoutil.AppLabel] = "wrong-label"
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingNP})
-				handler, err := NewKVAPIServerProxyNetworkPolicyHandler(testLogger, cl, commontestutils.GetScheme(), hco)
-				Expect(err).ToNot(HaveOccurred())
+				handler := NewKVAPIServerProxyNetworkPolicyHandler(cl, commontestutils.GetScheme())
 
 				res := handler.Ensure(req)
 				Expect(res.UpgradeDone).To(BeFalse())

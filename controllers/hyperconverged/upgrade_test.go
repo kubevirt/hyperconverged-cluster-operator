@@ -1199,7 +1199,7 @@ var _ = Describe("Upgrade Mode", func() {
 			foundNPs := &v1.NetworkPolicyList{}
 			Expect(cl.List(ctx, foundNPs)).To(Succeed())
 
-			Expect(foundNPs.Items).To(HaveLen(4))
+			Expect(foundNPs.Items).To(HaveLen(6))
 			Expect(foundNPs.Items).To(ContainElements(*upToDateNP1, *upToDateNP2, *nonOLMNP, *oldNPOtherNamespace))
 			Expect(foundNPs.Items).ToNot(ContainElements(*oldNP))
 		})
