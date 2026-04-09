@@ -14,7 +14,6 @@ import (
 	"strings"
 	"text/template"
 
-	log "github.com/go-logr/logr"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
@@ -637,18 +636,18 @@ func NewConsoleHandler(Client client.Client) operands.Operand {
 	return h
 }
 
-func newKVConsolePluginNetworkPolicy(hc *hcov1beta1.HyperConverged) *networkingv1.NetworkPolicy {
+func newKVConsolePluginNetworkPolicy() *networkingv1.NetworkPolicy {
 	return &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kubevirt-console-plugin-np",
-			Namespace: hc.Namespace,
-			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIPlugin),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIPlugin),
 		},
 
 		Spec: networkingv1.NetworkPolicySpec{
 			PodSelector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					hcoutil.AppLabel:          hc.Name,
+					hcoutil.AppLabel:          hcoutil.HyperConvergedName,
 					hcoutil.AppLabelComponent: string(hcoutil.AppComponentUIPlugin),
 				},
 			},
@@ -684,10 +683,10 @@ func newKVConsolePluginNetworkPolicy(hc *hcov1beta1.HyperConverged) *networkingv
 	}
 }
 
-func NewKVConsolePluginNetworkPolicyHandler(_ log.Logger, cli client.Client, schm *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	np := newKVConsolePluginNetworkPolicy(hc)
+func NewKVConsolePluginNetworkPolicyHandler(cli client.Client, schm *runtime.Scheme) operands.Operand {
+	np := newKVConsolePluginNetworkPolicy()
 
-	return operands.NewNetworkPolicyHandler(cli, schm, np), nil
+	return operands.NewNetworkPolicyHandler(cli, schm, np)
 }
 
 func getApiServerEgressRule() networkingv1.NetworkPolicyEgressRule {
@@ -733,17 +732,17 @@ func getApiServerEgressRule() networkingv1.NetworkPolicyEgressRule {
 	}
 }
 
-func newKVAPIServerProxyNetworkPolicy(hc *hcov1beta1.HyperConverged) *networkingv1.NetworkPolicy {
+func newKVAPIServerProxyNetworkPolicy() *networkingv1.NetworkPolicy {
 	return &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kubevirt-apiserver-proxy-np",
-			Namespace: hc.Namespace,
-			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIProxy),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIProxy),
 		},
 		Spec: networkingv1.NetworkPolicySpec{
 			PodSelector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					hcoutil.AppLabel:          hc.Name,
+					hcoutil.AppLabel:          hcoutil.HyperConvergedName,
 					hcoutil.AppLabelComponent: string(hcoutil.AppComponentUIProxy),
 				},
 			},
@@ -776,8 +775,8 @@ func newKVAPIServerProxyNetworkPolicy(hc *hcov1beta1.HyperConverged) *networking
 	}
 }
 
-func NewKVAPIServerProxyNetworkPolicyHandler(_ log.Logger, cli client.Client, schm *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	np := newKVAPIServerProxyNetworkPolicy(hc)
+func NewKVAPIServerProxyNetworkPolicyHandler(cli client.Client, schm *runtime.Scheme) operands.Operand {
+	np := newKVAPIServerProxyNetworkPolicy()
 
-	return operands.NewNetworkPolicyHandler(cli, schm, np), nil
+	return operands.NewNetworkPolicyHandler(cli, schm, np)
 }

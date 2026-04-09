@@ -101,6 +101,8 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 				handlers.NewKvUINginxCMHandler(client, scheme),
 				handlers.NewKvUIConfigReaderRoleHandler(client, scheme),
 				handlers.NewKvUIConfigReaderRoleBindingHandler(client, scheme),
+				handlers.NewKVConsolePluginNetworkPolicyHandler(client, scheme),
+				handlers.NewKVAPIServerProxyNetworkPolicyHandler(client, scheme),
 			}...)
 		}
 	}
@@ -147,13 +149,6 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 		waspagent.NewWaspAgentClusterRoleHandler,
 		waspagent.NewWaspAgentClusterRoleBindingHandler,
 		aie.NewIOMMUFDDevicePluginSCCHandler,
-	}
-
-	if ci.IsConsolePluginImageProvided() {
-		getHandlerFuncs = append(getHandlerFuncs,
-			handlers.NewKVConsolePluginNetworkPolicyHandler,
-			handlers.NewKVAPIServerProxyNetworkPolicyHandler,
-		)
 	}
 
 	for _, fn := range getHandlerFuncs {
