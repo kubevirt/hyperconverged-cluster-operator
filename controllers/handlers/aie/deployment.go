@@ -4,7 +4,6 @@ import (
 	"os"
 	"strings"
 
-	log "github.com/go-logr/logr"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	"github.com/openshift/library-go/pkg/crypto"
 	appsv1 "k8s.io/api/apps/v1"
@@ -29,16 +28,14 @@ var (
 	resourceMemoryLimit   = resource.MustParse("128Mi")
 )
 
-func NewAIEWebhookDeploymentHandler(
-	_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged,
-) (operands.Operand, error) {
+func NewAIEWebhookDeploymentHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
 	return operands.NewConditionalHandler(
-		operands.NewDeploymentHandler(Client, Scheme, newAIEWebhookDeployment, hc),
+		operands.NewDeploymentHandler(cli, Scheme, newAIEWebhookDeployment),
 		shouldDeployAIE,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
 			return newAIEWebhookDeploymentWithNameOnly(hc)
 		},
-	), nil
+	)
 }
 
 func newAIEWebhookDeploymentWithNameOnly(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
