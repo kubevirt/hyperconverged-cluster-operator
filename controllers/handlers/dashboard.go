@@ -68,7 +68,7 @@ func processDashboardConfigMapFile(path string, dir fs.FS, logger log.Logger, hc
 	if err != nil {
 		logger.Error(err, "Can't generate a Configmap object from yaml file", "file name", path)
 	} else {
-		maps.Copy(cm.Labels, operands.GetLabelsDeprecated(hc, util.AppComponentCompute))
+		maps.Copy(cm.Labels, operands.GetLabels(util.AppComponentCompute))
 		return operands.NewCmHandler(Client, Scheme, cm), nil
 	}
 
