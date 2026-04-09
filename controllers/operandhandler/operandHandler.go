@@ -67,19 +67,21 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 			handlers.NewSspHandler(client, scheme),
 			handlers.NewCliDownloadHandler(client, scheme),
 			handlers.NewCliDownloadsRouteHandler(client, scheme),
-			operands.NewServiceHandler(client, scheme, handlers.NewCliDownloadsService),
+			operands.NewServiceHandler(client, scheme, handlers.NewCliDownloadsService()),
 			passt.NewPasstServiceAccountHandler(client, scheme),
 			passt.NewPasstSecurityContextConstraintsHandler(client, scheme),
 			waspagent.NewWaspAgentServiceAccountHandler(client, scheme),
 			waspagent.NewWaspAgentSCCHandler(client, scheme),
 			waspagent.NewWaspAgentDaemonSetHandler(client, scheme),
 		}...)
-	}
 
-	if ci.IsOpenshift() && ci.IsConsolePluginImageProvided() {
-		operandList = append(operandList, handlers.NewConsoleHandler(client))
-		operandList = append(operandList, operands.NewServiceHandler(client, scheme, handlers.NewKvUIPluginSvc))
-		operandList = append(operandList, operands.NewServiceHandler(client, scheme, handlers.NewKvUIProxySvc))
+		if ci.IsConsolePluginImageProvided() {
+			operandList = append(operandList, []operands.Operand{
+				handlers.NewConsoleHandler(client),
+				operands.NewServiceHandler(client, scheme, handlers.NewKvUIPluginSvc()),
+				operands.NewServiceHandler(client, scheme, handlers.NewKvUIProxySvc()),
+			}...)
+		}
 	}
 
 	if ci.IsManagedByOLM() {
@@ -254,7 +256,7 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 	resources := []client.Object{
 		handlers.NewNetworkAddonsWithNameOnly(req.Instance),
 		handlers.NewSSPWithNameOnly(req.Instance),
-		handlers.NewConsoleCLIDownload(req.Instance),
+		handlers.NewConsoleCLIDownload(),
 		handlers.NewAAQWithNameOnly(),
 		handlers.NewMigControllerWithNameOnly(req.Instance),
 		passt.NewPasstBindingCNINetworkAttachmentDefinition(req.Instance),

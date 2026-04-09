@@ -34,8 +34,8 @@ func NewCliDownloadHandler(Client client.Client, Scheme *runtime.Scheme) *operan
 
 type cliDownloadHooks struct{}
 
-func (*cliDownloadHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	return NewConsoleCLIDownload(hc), nil
+func (*cliDownloadHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+	return NewConsoleCLIDownload(), nil
 }
 
 func (*cliDownloadHooks) GetEmptyCr() client.Object {
@@ -66,14 +66,14 @@ func (*cliDownloadHooks) UpdateCR(req *common.HcoRequest, Client client.Client, 
 	return false, false, nil
 }
 
-func NewConsoleCLIDownload(hc *hcov1beta1.HyperConverged) *consolev1.ConsoleCLIDownload {
+func NewConsoleCLIDownload() *consolev1.ConsoleCLIDownload {
 	host := string(downloadhost.Get().CurrentHost)
 	baseURL := "https://" + host
 
 	return &consolev1.ConsoleCLIDownload{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   "virtctl-clidownloads-" + hc.Name,
-			Labels: operands.GetLabelsDeprecated(hc, util.AppComponentCompute),
+			Name:   "virtctl-clidownloads-" + util.HyperConvergedName,
+			Labels: operands.GetLabels(util.AppComponentCompute),
 		},
 
 		Spec: consolev1.ConsoleCLIDownloadSpec{
@@ -116,13 +116,12 @@ func NewConsoleCLIDownload(hc *hcov1beta1.HyperConverged) *consolev1.ConsoleCLID
 // **** Handler for Service ****
 
 // NewCliDownloadsService creates a service object for the CLI downloads
-func NewCliDownloadsService(hc *hcov1beta1.HyperConverged) *corev1.Service {
-
+func NewCliDownloadsService() *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      downloadhost.CLIDownloadsServiceName,
-			Namespace: hc.Namespace,
-			Labels:    operands.GetLabelsDeprecated(hc, util.AppComponentCompute),
+			Namespace: util.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(util.AppComponentCompute),
 		},
 		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
@@ -141,13 +140,15 @@ func NewCliDownloadsService(hc *hcov1beta1.HyperConverged) *corev1.Service {
 }
 
 func NewCliDownloadsRouteHandler(Client client.Client, Scheme *runtime.Scheme) *operands.GenericOperand {
-	return operands.NewGenericOperand(Client, Scheme, "Route", &cliDownloadsRouteHooks{}, true)
+	return operands.NewGenericOperand(Client, Scheme, "Route", &cliDownloadsRouteHooks{route: NewCliDownloadsRoute()}, true)
 }
 
-type cliDownloadsRouteHooks struct{}
+type cliDownloadsRouteHooks struct {
+	route *routev1.Route
+}
 
-func (cliDownloadsRouteHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	return NewCliDownloadsRoute(hc), nil
+func (h cliDownloadsRouteHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+	return h.route.DeepCopy(), nil
 }
 
 func (cliDownloadsRouteHooks) GetEmptyCr() client.Object {
@@ -177,14 +178,14 @@ func (cliDownloadsRouteHooks) UpdateCR(req *common.HcoRequest, Client client.Cli
 	return false, false, nil
 }
 
-func NewCliDownloadsRoute(hc *hcov1beta1.HyperConverged) *routev1.Route {
+func NewCliDownloadsRoute() *routev1.Route {
 	host := downloadhost.Get()
 
 	route := &routev1.Route{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      downloadhost.CLIDownloadsServiceName,
-			Namespace: hc.Namespace,
-			Labels:    operands.GetLabelsDeprecated(hc, util.AppComponentCompute),
+			Namespace: util.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(util.AppComponentCompute),
 		},
 		Spec: routev1.RouteSpec{
 			Host: string(downloadhost.Get().CurrentHost),

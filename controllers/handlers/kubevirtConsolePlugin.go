@@ -299,7 +299,7 @@ func getKvUIDeployment(hc *hcov1beta1.HyperConverged, deploymentName string, ima
 	return deployment
 }
 
-func NewKvUIPluginSvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
+func NewKvUIPluginSvc() *corev1.Service {
 	servicePorts := []corev1.ServicePort{
 		{
 			Port:       hcoutil.UIPluginServerPort,
@@ -317,17 +317,17 @@ func NewKvUIPluginSvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kvUIPluginSvcName,
-			Labels: operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIPlugin),
+			Labels: operands.GetLabels(hcoutil.AppComponentUIPlugin),
 			Annotations: map[string]string{
 				"service.beta.openshift.io/serving-cert-secret-name": kvUIPluginServingCertName,
 			},
-			Namespace: hc.Namespace,
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		Spec: spec,
 	}
 }
 
-func NewKvUIProxySvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
+func NewKvUIProxySvc() *corev1.Service {
 	servicePorts := []corev1.ServicePort{
 		{
 			Port:       hcoutil.UIProxyServerPort,
@@ -345,11 +345,11 @@ func NewKvUIProxySvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kvUIProxySvcName,
-			Labels: operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIProxy),
+			Labels: operands.GetLabels(hcoutil.AppComponentUIProxy),
 			Annotations: map[string]string{
 				"service.beta.openshift.io/serving-cert-secret-name": kvUIProxyServingCertName,
 			},
-			Namespace: hc.Namespace,
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		Spec: spec,
 	}

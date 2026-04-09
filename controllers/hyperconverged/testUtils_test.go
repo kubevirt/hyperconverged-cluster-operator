@@ -268,13 +268,13 @@ func getBasicDeployment() *BasicExpected {
 	expectedMigController.Status.Conditions = getGenericCompletedConditions()
 	res.migController = expectedMigController
 
-	expectedCliDownload := handlers.NewConsoleCLIDownload(hco)
+	expectedCliDownload := handlers.NewConsoleCLIDownload()
 	res.cliDownload = expectedCliDownload
 
-	expectedCliDownloadsRoute := handlers.NewCliDownloadsRoute(hco)
+	expectedCliDownloadsRoute := handlers.NewCliDownloadsRoute()
 	res.cliDownloadsRoute = expectedCliDownloadsRoute
 
-	expectedCliDownloadsService := handlers.NewCliDownloadsService(hco)
+	expectedCliDownloadsService := handlers.NewCliDownloadsService()
 	res.cliDownloadsService = expectedCliDownloadsService
 
 	expectedVirtioWinConfig, err := handlers.NewVirtioWinCm(hco)
@@ -293,10 +293,10 @@ func getBasicDeployment() *BasicExpected {
 	expectedConsoleProxyDeployment := handlers.NewKvUIProxyDeployment(hco)
 	res.consoleProxyDeploy = expectedConsoleProxyDeployment
 
-	expectedConsolePluginService := handlers.NewKvUIPluginSvc(hco)
+	expectedConsolePluginService := handlers.NewKvUIPluginSvc()
 	res.consolePluginSvc = expectedConsolePluginService
 
-	expectedConsoleProxyService := handlers.NewKvUIProxySvc(hco)
+	expectedConsoleProxyService := handlers.NewKvUIProxySvc()
 	res.consoleProxySvc = expectedConsoleProxyService
 
 	expectedConsolePlugin := handlers.NewKVConsolePlugin(hco)
