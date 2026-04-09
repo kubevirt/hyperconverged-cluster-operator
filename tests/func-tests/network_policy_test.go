@@ -338,7 +338,7 @@ func createAllowAllIngressNetworkPolicy() *networkingv1.NetworkPolicy {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      allowAllNPPluginName,
 			Namespace: tests.InstallNamespace,
-			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIPlugin),
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIPlugin),
 		},
 
 		Spec: networkingv1.NetworkPolicySpec{
