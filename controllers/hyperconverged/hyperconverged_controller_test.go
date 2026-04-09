@@ -1058,7 +1058,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cdi.Spec.Config.TLSSecurityProfile).To(Equal(openshift2CdiSecProfile(initialTLSSecurityProfile)))
 
 				By("Verify that CNA was properly configured with initialTLSSecurityProfile")
-				cna := handlers.NewNetworkAddonsWithNameOnly(foundResource)
+				cna := handlers.NewNetworkAddonsWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},
@@ -1126,7 +1126,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cdi.Spec.Config.TLSSecurityProfile).To(Equal(openshift2CdiSecProfile(customTLSSecurityProfile)))
 
 				By("Verify that CNA was properly updated with customTLSSecurityProfile")
-				cna = handlers.NewNetworkAddonsWithNameOnly(foundResource)
+				cna = handlers.NewNetworkAddonsWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},
@@ -1223,7 +1223,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cdi.Spec.Config.TLSSecurityProfile).To(Equal(openshift2CdiSecProfile(initialTLSSecurityProfile)))
 
 				By("Verify that CNA was properly configured with initialTLSSecurityProfile")
-				cna := handlers.NewNetworkAddonsWithNameOnly(foundHCO)
+				cna := handlers.NewNetworkAddonsWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},
@@ -1281,7 +1281,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cdi.Spec.Config.TLSSecurityProfile).To(Equal(openshift2CdiSecProfile(customTLSSecurityProfile)))
 
 				By("Verify that CNA was properly updated with customTLSSecurityProfile")
-				cna = handlers.NewNetworkAddonsWithNameOnly(foundHCO)
+				cna = handlers.NewNetworkAddonsWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},
@@ -2190,7 +2190,7 @@ var _ = Describe("HyperconvergedController", func() {
 					})
 
 					By("Verify that CNA was modified by the annotation", func() {
-						cna := handlers.NewNetworkAddonsWithNameOnly(hco)
+						cna := handlers.NewNetworkAddonsWithNameOnly()
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},
@@ -2520,7 +2520,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					})
 					By("Verify that CNA was modified by the annotation", func() {
-						cna := handlers.NewNetworkAddonsWithNameOnly(hco)
+						cna := handlers.NewNetworkAddonsWithNameOnly()
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},

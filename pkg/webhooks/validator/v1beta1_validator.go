@@ -186,7 +186,7 @@ func (wh *WebhookV1Beta1Handler) getOperands(ctx context.Context, requested *v1b
 		return nil, nil, nil, err
 	}
 
-	cna := handlers.NewNetworkAddonsWithNameOnly(requested)
+	cna := handlers.NewNetworkAddonsWithNameOnly()
 	err = wh.cli.Get(ctx, client.ObjectKeyFromObject(cna), cna)
 	if err != nil {
 		return nil, nil, nil, err

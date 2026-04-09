@@ -383,7 +383,7 @@ var _ = Describe("CNA Operand", func() {
 		})
 
 		It("should set self signed configuration to defaults if missing in HCO CR", func() {
-			existingResource := NewNetworkAddonsWithNameOnly(hco)
+			existingResource := NewNetworkAddonsWithNameOnly()
 
 			cl := commontestutils.InitClient([]client.Object{hco})
 			handler := NewCnaHandler(cl, commontestutils.GetScheme())
@@ -902,7 +902,7 @@ var _ = Describe("CNA Operand", func() {
 					}
 				]`}
 
-				expectedResource := NewNetworkAddonsWithNameOnly(hco)
+				expectedResource := NewNetworkAddonsWithNameOnly()
 				cl := commontestutils.InitClient([]client.Object{})
 				handler := NewCnaHandler(cl, commontestutils.GetScheme())
 				res := handler.Ensure(req)
@@ -931,7 +931,7 @@ var _ = Describe("CNA Operand", func() {
 					}
 				]`}
 
-				expectedResource := NewNetworkAddonsWithNameOnly(hco)
+				expectedResource := NewNetworkAddonsWithNameOnly()
 				cl := commontestutils.InitClient([]client.Object{})
 				handler := NewCnaHandler(cl, commontestutils.GetScheme())
 				res := handler.Ensure(req)
@@ -972,7 +972,7 @@ var _ = Describe("CNA Operand", func() {
 
 				cna := &networkaddonsv1.NetworkAddonsConfig{}
 
-				expectedResource := NewNetworkAddonsWithNameOnly(hco)
+				expectedResource := NewNetworkAddonsWithNameOnly()
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -1004,7 +1004,7 @@ var _ = Describe("CNA Operand", func() {
 
 				cna := &networkaddonsv1.NetworkAddonsConfig{}
 
-				expectedResource := NewNetworkAddonsWithNameOnly(hco)
+				expectedResource := NewNetworkAddonsWithNameOnly()
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
