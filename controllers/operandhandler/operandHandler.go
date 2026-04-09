@@ -255,7 +255,7 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		handlers.NewNetworkAddonsWithNameOnly(req.Instance),
 		handlers.NewSSPWithNameOnly(req.Instance),
 		handlers.NewConsoleCLIDownload(req.Instance),
-		handlers.NewAAQWithNameOnly(req.Instance),
+		handlers.NewAAQWithNameOnly(),
 		handlers.NewMigControllerWithNameOnly(req.Instance),
 		passt.NewPasstBindingCNINetworkAttachmentDefinition(req.Instance),
 		passt.NewPasstBindingCNISecurityContextConstraints(req.Instance),
