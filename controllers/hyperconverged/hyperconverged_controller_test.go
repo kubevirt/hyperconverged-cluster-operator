@@ -1068,7 +1068,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cna.Spec.TLSSecurityProfile).To(Equal(initialTLSSecurityProfile))
 
 				By("Verify that SSP was properly configured with initialTLSSecurityProfile")
-				ssp := handlers.NewSSPWithNameOnly(foundResource)
+				ssp := handlers.NewSSPWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
@@ -1136,7 +1136,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cna.Spec.TLSSecurityProfile).To(Equal(customTLSSecurityProfile))
 
 				By("Verify that SSP was properly updated with customTLSSecurityProfile")
-				ssp = handlers.NewSSPWithNameOnly(foundResource)
+				ssp = handlers.NewSSPWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
@@ -1233,7 +1233,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cna.Spec.TLSSecurityProfile).To(Equal(initialTLSSecurityProfile))
 
 				By("Verify that SSP was properly configured with initialTLSSecurityProfile")
-				ssp := handlers.NewSSPWithNameOnly(foundHCO)
+				ssp := handlers.NewSSPWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
@@ -1291,7 +1291,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cna.Spec.TLSSecurityProfile).To(Equal(customTLSSecurityProfile))
 
 				By("Verify that SSP was properly updated with customTLSSecurityProfile")
-				ssp = handlers.NewSSPWithNameOnly(foundHCO)
+				ssp = handlers.NewSSPWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
@@ -2324,7 +2324,7 @@ var _ = Describe("HyperconvergedController", func() {
 					})
 
 					By("Verify that SSP was modified by the annotation", func() {
-						ssp := handlers.NewSSPWithNameOnly(hco)
+						ssp := handlers.NewSSPWithNameOnly()
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
@@ -2533,7 +2533,7 @@ var _ = Describe("HyperconvergedController", func() {
 						Expect(cna.Spec.ImagePullPolicy).To(BeEquivalentTo("Always"))
 					})
 					By("Verify that SSP was modified by the annotation", func() {
-						ssp := handlers.NewSSPWithNameOnly(hco)
+						ssp := handlers.NewSSPWithNameOnly()
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},

@@ -900,7 +900,7 @@ var _ = Describe("v1 webhooks validator", func() {
 		})
 
 		It("should return error if SSP CR is missing", func(ctx context.Context) {
-			Expect(cli.Delete(ctx, handlers.NewSSPWithNameOnly(v1beta1CR))).To(Succeed())
+			Expect(cli.Delete(ctx, handlers.NewSSPWithNameOnly())).To(Succeed())
 
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)

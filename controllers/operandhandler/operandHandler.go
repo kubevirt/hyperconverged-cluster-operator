@@ -256,7 +256,7 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 
 	resources := []client.Object{
 		handlers.NewNetworkAddonsWithNameOnly(),
-		handlers.NewSSPWithNameOnly(req.Instance),
+		handlers.NewSSPWithNameOnly(),
 		handlers.NewConsoleCLIDownload(),
 		handlers.NewAAQWithNameOnly(),
 		handlers.NewMigControllerWithNameOnly(),

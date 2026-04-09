@@ -473,7 +473,7 @@ var _ = Describe("SSP Operands", func() {
 					}
 				]`}
 
-				expectedResource := NewSSPWithNameOnly(hco)
+				expectedResource := NewSSPWithNameOnly()
 				cl := commontestutils.InitClient([]client.Object{})
 				handler := NewSspHandler(cl, commontestutils.GetScheme())
 				res := handler.Ensure(req)
@@ -501,7 +501,7 @@ var _ = Describe("SSP Operands", func() {
 					}
 				]`}
 
-				expectedResource := NewSSPWithNameOnly(hco)
+				expectedResource := NewSSPWithNameOnly()
 				cl := commontestutils.InitClient([]client.Object{})
 				handler := NewSspHandler(cl, commontestutils.GetScheme())
 				res := handler.Ensure(req)
@@ -537,7 +537,7 @@ var _ = Describe("SSP Operands", func() {
 
 				ssp := &sspv1beta3.SSP{}
 
-				expectedResource := NewSSPWithNameOnly(hco)
+				expectedResource := NewSSPWithNameOnly()
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -568,7 +568,7 @@ var _ = Describe("SSP Operands", func() {
 
 				ssp := &sspv1beta3.SSP{}
 
-				expectedResource := NewSSPWithNameOnly(hco)
+				expectedResource := NewSSPWithNameOnly()
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -667,7 +667,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.Created).To(BeTrue())
 
 						ssp := &sspv1beta3.SSP{}
-						expectedResource := NewSSPWithNameOnly(hco)
+						expectedResource := NewSSPWithNameOnly()
 
 						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), ssp)).To(Succeed())
 						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
@@ -711,7 +711,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.Created).To(BeTrue())
 
 						ssp := &sspv1beta3.SSP{}
-						expectedResource := NewSSPWithNameOnly(hco)
+						expectedResource := NewSSPWithNameOnly()
 
 						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), ssp)).To(Succeed())
 						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
@@ -772,7 +772,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.Created).To(BeTrue())
 
 						ssp := &sspv1beta3.SSP{}
-						expectedResource := NewSSPWithNameOnly(hco)
+						expectedResource := NewSSPWithNameOnly()
 
 						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), ssp)).To(Succeed())
 						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(BeEmpty())
@@ -822,7 +822,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.Updated).To(BeTrue())
 
 						newSSP := &sspv1beta3.SSP{}
-						expectedResource := NewSSPWithNameOnly(hco)
+						expectedResource := NewSSPWithNameOnly()
 
 						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), newSSP)).To(Succeed())
 						Expect(newSSP.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
@@ -878,7 +878,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.Updated).To(BeTrue())
 
 						newSSP := &sspv1beta3.SSP{}
-						expectedResource := NewSSPWithNameOnly(hco)
+						expectedResource := NewSSPWithNameOnly()
 
 						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), newSSP)).To(Succeed())
 						Expect(newSSP.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
@@ -947,7 +947,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.Updated).To(BeTrue())
 
 						newSSP := &sspv1beta3.SSP{}
-						expectedResource := NewSSPWithNameOnly(hco)
+						expectedResource := NewSSPWithNameOnly()
 
 						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), newSSP)).To(Succeed())
 						Expect(newSSP.Spec.CommonTemplates.DataImportCronTemplates).To(BeEmpty())
@@ -993,7 +993,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.Created).To(BeTrue())
 
 						ssp := &sspv1beta3.SSP{}
-						expectedResource := NewSSPWithNameOnly(hco)
+						expectedResource := NewSSPWithNameOnly()
 
 						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), ssp)).To(Succeed())
 						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
@@ -1037,7 +1037,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.Created).To(BeTrue())
 
 						ssp := &sspv1beta3.SSP{}
-						expectedResource := NewSSPWithNameOnly(hco)
+						expectedResource := NewSSPWithNameOnly()
 
 						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), ssp)).To(Succeed())
 						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
@@ -1075,7 +1075,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.Created).To(BeTrue())
 
 						ssp := &sspv1beta3.SSP{}
-						expectedResource := NewSSPWithNameOnly(hco)
+						expectedResource := NewSSPWithNameOnly()
 
 						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), ssp)).To(Succeed())
 						Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
@@ -1123,7 +1123,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.Updated).To(BeTrue())
 
 						newSSP := &sspv1beta3.SSP{}
-						expectedResource := NewSSPWithNameOnly(hco)
+						expectedResource := NewSSPWithNameOnly()
 
 						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), newSSP)).To(Succeed())
 						Expect(newSSP.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
@@ -1175,7 +1175,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.Updated).To(BeTrue())
 
 						newSSP := &sspv1beta3.SSP{}
-						expectedResource := NewSSPWithNameOnly(hco)
+						expectedResource := NewSSPWithNameOnly()
 
 						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), newSSP)).To(Succeed())
 						Expect(newSSP.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))
@@ -1223,7 +1223,7 @@ var _ = Describe("SSP Operands", func() {
 						Expect(res.Updated).To(BeTrue())
 
 						newSSP := &sspv1beta3.SSP{}
-						expectedResource := NewSSPWithNameOnly(hco)
+						expectedResource := NewSSPWithNameOnly()
 
 						Expect(cli.Get(ctx, client.ObjectKeyFromObject(expectedResource), newSSP)).To(Succeed())
 						Expect(newSSP.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(2))

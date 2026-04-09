@@ -185,7 +185,7 @@ func NewSSP(hc *hcov1beta1.HyperConverged) (*sspv1beta3.SSP, []hcov1beta1.DataIm
 		spec.TemplateValidator.Placement = hc.Spec.Infra.NodePlacement.DeepCopy()
 	}
 
-	ssp := NewSSPWithNameOnly(hc)
+	ssp := NewSSPWithNameOnly()
 	ssp.Spec = spec
 
 	if err = operands.ApplyPatchToSpec(hc, common.JSONPatchSSPAnnotationName, ssp); err != nil {
@@ -200,12 +200,12 @@ func NewSSP(hc *hcov1beta1.HyperConverged) (*sspv1beta3.SSP, []hcov1beta1.DataIm
 	return ssp, dataImportCronStatuses, nil
 }
 
-func NewSSPWithNameOnly(hc *hcov1beta1.HyperConverged, opts ...string) *sspv1beta3.SSP {
+func NewSSPWithNameOnly() *sspv1beta3.SSP {
 	return &sspv1beta3.SSP{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ssp-" + hc.Name,
-			Labels:    operands.GetLabelsDeprecated(hc, util.AppComponentSchedule),
-			Namespace: operands.GetNamespace(hc.Namespace, opts),
+			Name:      "ssp-" + util.HyperConvergedName,
+			Labels:    operands.GetLabels(util.AppComponentSchedule),
+			Namespace: util.GetOperatorNamespaceFromEnv(),
 		},
 	}
 }

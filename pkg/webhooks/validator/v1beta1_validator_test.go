@@ -963,7 +963,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 		It("should return error if SSP CR is missing", func(ctx context.Context) {
 			cli := getFakeClient(hco)
 
-			Expect(cli.Delete(ctx, handlers.NewSSPWithNameOnly(hco))).To(Succeed())
+			Expect(cli.Delete(ctx, handlers.NewSSPWithNameOnly())).To(Succeed())
 			wh := NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)
 
 			newHco := &v1beta1.HyperConverged{}
