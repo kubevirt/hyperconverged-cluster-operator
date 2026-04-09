@@ -61,7 +61,11 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		aie.NewAIEWebhookServiceHandler(client, scheme),
 		aie.NewAIEWebhookDeploymentHandler(client, scheme),
 		aie.NewAIEWebhookConfigMapHandler(client, scheme),
+		aie.NewAIEWebhookClusterRoleHandler(client, scheme),
+		aie.NewAIEWebhookClusterRoleBindingHandler(client, scheme),
+		aie.NewAIEWebhookMutatingWebhookConfigurationHandler(client, scheme),
 		aie.NewIOMMUFDDevicePluginServiceAccountHandler(client, scheme),
+		aie.NewIOMMUFDDevicePluginDaemonSetHandler(client, scheme),
 	}
 
 	if ci.IsOpenshift() {
@@ -126,15 +130,6 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 // Initial operations that need to read/write from the cluster can only be done when the client is already working.
 func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.ClusterInfo, hc *hcov1beta1.HyperConverged, pwdFS fs.FS) {
 	h.objects = make([]client.Object, 0)
-
-	for _, fn := range []operands.GetHandler{
-		aie.NewAIEWebhookClusterRoleHandler,
-		aie.NewAIEWebhookClusterRoleBindingHandler,
-		aie.NewAIEWebhookMutatingWebhookConfigurationHandler,
-		aie.NewIOMMUFDDevicePluginDaemonSetHandler,
-	} {
-		h.addOperand(scheme, hc, fn)
-	}
 
 	if !ci.IsOpenshift() {
 		return
@@ -256,9 +251,9 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		passt.NewPasstBindingCNINetworkAttachmentDefinition(),
 		passt.NewPasstBindingCNISecurityContextConstraints(),
 		waspagent.NewWaspAgentSCCWithNameOnly(),
-		aie.NewAIEWebhookClusterRoleWithNameOnly(req.Instance),
-		aie.NewAIEWebhookClusterRoleBindingWithNameOnly(req.Instance),
-		aie.NewAIEWebhookMutatingWebhookConfigurationWithNameOnly(req.Instance),
+		aie.NewAIEWebhookClusterRoleWithNameOnly(),
+		aie.NewAIEWebhookClusterRoleBindingWithNameOnly(),
+		aie.NewAIEWebhookMutatingWebhookConfigurationWithNameOnly(),
 		aie.NewIOMMUFDDevicePluginSCCWithNameOnly(),
 	}
 

@@ -33,17 +33,17 @@ func NewAIEWebhookDeploymentHandler(cli client.Client, Scheme *runtime.Scheme) o
 		operands.NewDeploymentHandler(cli, Scheme, newAIEWebhookDeployment),
 		shouldDeployAIE,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return newAIEWebhookDeploymentWithNameOnly(hc)
+			return newAIEWebhookDeploymentWithNameOnly()
 		},
 	)
 }
 
-func newAIEWebhookDeploymentWithNameOnly(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
+func newAIEWebhookDeploymentWithNameOnly() *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      aieWebhookName,
-			Namespace: hc.Namespace,
-			Labels:    operands.GetLabelsDeprecated(hc, appComponent),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(appComponent),
 		},
 	}
 }
@@ -59,7 +59,7 @@ func newAIEWebhookDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
 		hcoutil.AppLabelComponent: string(appComponent),
 	}
 
-	podLabels := operands.GetLabelsDeprecated(hc, appComponent)
+	podLabels := operands.GetLabels(appComponent)
 
 	args := []string{
 		"--metrics-bind-address=:8443",
@@ -74,7 +74,7 @@ func newAIEWebhookDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
 		args = append(args, "--tls-cipher-suites="+strings.Join(ianaCiphers, ","))
 	}
 
-	dep := newAIEWebhookDeploymentWithNameOnly(hc)
+	dep := newAIEWebhookDeploymentWithNameOnly()
 	dep.Spec = appsv1.DeploymentSpec{
 		Replicas: ptr.To[int32](1),
 		Selector: &metav1.LabelSelector{
