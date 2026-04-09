@@ -42,17 +42,17 @@ func NewWaspAgentDaemonSetHandler(Client client.Client, Scheme *runtime.Scheme) 
 		operands.NewDaemonSetHandler(Client, Scheme, newWaspAgentDaemonSet),
 		shouldDeployWaspAgent,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return NewWaspAgentWithNameOnly(hc)
+			return NewWaspAgentWithNameOnly()
 		},
 	)
 }
 
-func NewWaspAgentWithNameOnly(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet {
+func NewWaspAgentWithNameOnly() *appsv1.DaemonSet {
 	return &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      AppComponentWaspAgent,
-			Labels:    operands.GetLabelsDeprecated(hc, AppComponentWaspAgent),
-			Namespace: hc.Namespace,
+			Labels:    operands.GetLabels(AppComponentWaspAgent),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 	}
 }
@@ -60,7 +60,7 @@ func NewWaspAgentWithNameOnly(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet {
 func newWaspAgentDaemonSet(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet {
 	waspImage, _ := os.LookupEnv(hcoutil.WaspAgentImageEnvV)
 
-	podLabels := operands.GetLabelsDeprecated(hc, AppComponentWaspAgent)
+	podLabels := operands.GetLabels(AppComponentWaspAgent)
 	podLabels[hcoutil.AllowEgressToDNSAndAPIServerLabel] = "true"
 	podLabels["name"] = AppComponentWaspAgent
 
@@ -141,7 +141,7 @@ func newWaspAgentDaemonSet(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet {
 		},
 	}
 
-	ds := NewWaspAgentWithNameOnly(hc)
+	ds := NewWaspAgentWithNameOnly()
 	ds.Spec = spec
 
 	if hc.Spec.Infra.NodePlacement != nil {

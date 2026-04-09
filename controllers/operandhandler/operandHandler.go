@@ -75,8 +75,11 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 			waspagent.NewWaspAgentServiceAccountHandler(client, scheme),
 			waspagent.NewWaspAgentSCCHandler(client, scheme),
 			waspagent.NewWaspAgentDaemonSetHandler(client, scheme),
+			waspagent.NewWaspAgentClusterRoleHandler(client, scheme),
+			waspagent.NewWaspAgentClusterRoleBindingHandler(client, scheme),
 			handlers.NewVirtioWinCmReaderRoleHandler(client, scheme),
 			handlers.NewVirtioWinCmReaderRoleBindingHandler(client, scheme),
+			aie.NewIOMMUFDDevicePluginSCCHandler(client, scheme),
 		}...)
 
 		virtioWinCMHandler, err := handlers.NewVirtioWinCmHandler(client, scheme)
@@ -143,16 +146,6 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 		handlers.GetImageStreamHandlers,
 	} {
 		h.addOperands(scheme, hc, fn, pwdFS)
-	}
-
-	getHandlerFuncs := []operands.GetHandler{
-		waspagent.NewWaspAgentClusterRoleHandler,
-		waspagent.NewWaspAgentClusterRoleBindingHandler,
-		aie.NewIOMMUFDDevicePluginSCCHandler,
-	}
-
-	for _, fn := range getHandlerFuncs {
-		h.addOperand(scheme, hc, fn)
 	}
 }
 
@@ -261,12 +254,12 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		handlers.NewAAQWithNameOnly(),
 		handlers.NewMigControllerWithNameOnly(),
 		passt.NewPasstBindingCNINetworkAttachmentDefinition(req.Instance),
-		passt.NewPasstBindingCNISecurityContextConstraints(req.Instance),
-		waspagent.NewWaspAgentSCCWithNameOnly(req.Instance),
+		passt.NewPasstBindingCNISecurityContextConstraints(),
+		waspagent.NewWaspAgentSCCWithNameOnly(),
 		aie.NewAIEWebhookClusterRoleWithNameOnly(req.Instance),
 		aie.NewAIEWebhookClusterRoleBindingWithNameOnly(req.Instance),
 		aie.NewAIEWebhookMutatingWebhookConfigurationWithNameOnly(req.Instance),
-		aie.NewIOMMUFDDevicePluginSCCWithNameOnly(req.Instance),
+		aie.NewIOMMUFDDevicePluginSCCWithNameOnly(),
 	}
 
 	resources = append(resources, h.objects...)

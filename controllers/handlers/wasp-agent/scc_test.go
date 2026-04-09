@@ -32,7 +32,7 @@ var _ = Describe("Wasp Agent SecurityContextConstraints", func() {
 
 	Context("newWaspAgentSCC", func() {
 		It("should have all default fields", func() {
-			scc := newWaspAgentSCC(hco)
+			scc := newWaspAgentSCC()
 			Expect(scc.Name).To(Equal("wasp"))
 			Expect(scc.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
 			Expect(scc.Labels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, "wasp-agent"))
@@ -82,7 +82,7 @@ var _ = Describe("Wasp Agent SecurityContextConstraints", func() {
 			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 100,
 			}
-			scc := newWaspAgentSCC(hco)
+			scc := newWaspAgentSCC()
 			cl = commontestutils.InitClient([]client.Object{hco, scc})
 
 			handler := NewWaspAgentSCCHandler(cl, commontestutils.GetScheme())
@@ -146,7 +146,7 @@ var _ = Describe("Wasp Agent SecurityContextConstraints", func() {
 			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
-			scc := newWaspAgentSCC(hco)
+			scc := newWaspAgentSCC()
 			hco.Annotations[AutopilotSwapAnnotation] = AutopilotSwapAnnotationValue
 			cl = commontestutils.InitClient([]client.Object{hco, scc})
 
@@ -171,7 +171,7 @@ var _ = Describe("Wasp Agent SecurityContextConstraints", func() {
 			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
-			scc := newWaspAgentSCC(hco)
+			scc := newWaspAgentSCC()
 			scc.AllowPrivilegedContainer = false
 			scc.AllowHostNetwork = false
 			scc.Users = []string{"wrong-user"}
@@ -198,7 +198,7 @@ var _ = Describe("Wasp Agent SecurityContextConstraints", func() {
 			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
-			scc := newWaspAgentSCC(hco)
+			scc := newWaspAgentSCC()
 			expectedLabels := maps.Clone(scc.Labels)
 			delete(scc.Labels, "app.kubernetes.io/component")
 			scc.Labels["user-added-label"] = "user-value"
