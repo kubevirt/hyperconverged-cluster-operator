@@ -115,13 +115,13 @@ func NewKvUINginxCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.S
 }
 
 // **** UI user settings config map Handler ****
-func NewKvUIUserSettingsCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewCmHandler(Client, Scheme, NewKvUIUserSettingsCM(hc)), nil
+func NewKvUIUserSettingsCMHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewCmHandler(Client, Scheme, NewKvUIUserSettingsCM())
 }
 
 // **** UI features config map Handler ****
-func NewKvUIFeaturesCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewCmHandler(Client, Scheme, NewKvUIFeaturesCM(hc)), nil
+func NewKvUIFeaturesCMHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewCmHandler(Client, Scheme, NewKvUIFeaturesCM())
 }
 
 // **** Kubevirt UI Console Plugin Custom Resource Handler ****
@@ -418,12 +418,12 @@ func NewKVUINginxCM(hc *hcov1beta1.HyperConverged) (*corev1.ConfigMap, error) {
 	}, nil
 }
 
-func NewKvUIUserSettingsCM(hc *hcov1beta1.HyperConverged) *corev1.ConfigMap {
+func NewKvUIUserSettingsCM() *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIUserSettingsCMName,
-			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIConfig),
-			Namespace: hc.Namespace,
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIConfig),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		Data: map[string]string{},
 	}
@@ -439,12 +439,12 @@ var UIFeaturesConfig = map[string]string{
 	"nodePortEnabled":                     "false",
 }
 
-func NewKvUIFeaturesCM(hc *hcov1beta1.HyperConverged) *corev1.ConfigMap {
+func NewKvUIFeaturesCM() *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIFeaturesCMName,
-			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIConfig),
-			Namespace: hc.Namespace,
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIConfig),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		Data: UIFeaturesConfig,
 	}

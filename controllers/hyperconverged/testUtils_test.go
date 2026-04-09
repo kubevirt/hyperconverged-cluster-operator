@@ -277,7 +277,7 @@ func getBasicDeployment() *BasicExpected {
 	expectedCliDownloadsService := handlers.NewCliDownloadsService()
 	res.cliDownloadsService = expectedCliDownloadsService
 
-	expectedVirtioWinConfig, err := handlers.NewVirtioWinCm(hco)
+	expectedVirtioWinConfig, err := handlers.NewVirtioWinCm()
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	res.virtioWinConfig = expectedVirtioWinConfig
 

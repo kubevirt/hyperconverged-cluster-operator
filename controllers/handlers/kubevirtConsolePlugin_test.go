@@ -444,11 +444,11 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			})
 
 			DescribeTable("should reconcile managed labels to default on label deletion without touching user added ones", func(appComponent hcoutil.AppComponent,
-				cmManifestor func(*hcov1beta1.HyperConverged) *v1.ConfigMap, handlerFunc operands.GetHandler) {
+				cmManifestor func() *v1.ConfigMap, handlerFunc func(Client client.Client, Scheme *runtime.Scheme) operands.Operand) {
 				const userLabelKey = "userLabelKey"
 				const userLabelValue = "userLabelValue"
 
-				outdatedResource := cmManifestor(hco)
+				outdatedResource := cmManifestor()
 
 				expectedLabels := maps.Clone(outdatedResource.Labels)
 				for k, v := range expectedLabels {
@@ -457,8 +457,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				outdatedResource.Labels[userLabelKey] = userLabelValue
 
 				cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-				handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
-				Expect(err).ToNot(HaveOccurred())
+				handler := handlerFunc(cl, commontestutils.GetScheme())
 
 				res := handler.Ensure(req)
 				Expect(res.UpgradeDone).To(BeFalse())
@@ -481,11 +480,11 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			)
 
 			DescribeTable("should not reconcile UI settings config map data", func(appComponent hcoutil.AppComponent,
-				cmManifestor func(*hcov1beta1.HyperConverged) *v1.ConfigMap, handlerFunc operands.GetHandler) {
+				cmManifestor func() *v1.ConfigMap, handlerFunc func(Client client.Client, Scheme *runtime.Scheme) operands.Operand) {
 				const userAddedDataKey = "userAddedDataKey"
 				const userAddedDataValue = "userAddedDataValue"
 
-				outdatedResource := cmManifestor(hco)
+				outdatedResource := cmManifestor()
 
 				modifiedData := maps.Clone(outdatedResource.Data)
 				for k, v := range modifiedData {
@@ -494,8 +493,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				outdatedResource.Data[userAddedDataKey] = userAddedDataValue
 
 				cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-				handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
-				Expect(err).ToNot(HaveOccurred())
+				handler := handlerFunc(cl, commontestutils.GetScheme())
 
 				res := handler.Ensure(req)
 				Expect(res.UpgradeDone).To(BeFalse())

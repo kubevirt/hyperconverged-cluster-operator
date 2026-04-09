@@ -19,12 +19,12 @@ import (
 const virtioWinCmName = "virtio-win"
 
 // NewVirtioWinCmHandler creates the Virtio-Win ConfigMap Handler
-func NewVirtioWinCmHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	virtioWincm, err := NewVirtioWinCm(hc)
+func NewVirtioWinCmHandler(cli client.Client, Scheme *runtime.Scheme) (operands.Operand, error) {
+	virtioWincm, err := NewVirtioWinCm()
 	if err != nil {
 		return nil, err
 	}
-	return operands.NewCmHandler(Client, Scheme, virtioWincm), nil
+	return operands.NewCmHandler(cli, Scheme, virtioWincm), nil
 }
 
 // NewVirtioWinCmReaderRoleHandler creates the Virtio-Win ConfigMap Role Handler
@@ -37,7 +37,7 @@ func NewVirtioWinCmReaderRoleBindingHandler(_ log.Logger, Client client.Client, 
 	return operands.NewRoleBindingHandler(Client, Scheme, NewVirtioWinCmReaderRoleBinding(hc)), nil
 }
 
-func NewVirtioWinCm(hc *hcov1beta1.HyperConverged) (*corev1.ConfigMap, error) {
+func NewVirtioWinCm() (*corev1.ConfigMap, error) {
 	virtiowinContainer := os.Getenv("VIRTIOWIN_CONTAINER")
 	if virtiowinContainer == "" {
 		return nil, errors.New("kv-virtiowin-image-name was not specified")
@@ -46,8 +46,8 @@ func NewVirtioWinCm(hc *hcov1beta1.HyperConverged) (*corev1.ConfigMap, error) {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      virtioWinCmName,
-			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentDeployment),
-			Namespace: hc.Namespace,
+			Labels:    operands.GetLabels(hcoutil.AppComponentDeployment),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		Data: map[string]string{
 			"virtio-win-image": virtiowinContainer,

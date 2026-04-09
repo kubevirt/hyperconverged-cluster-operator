@@ -3,7 +3,6 @@ package aie
 import (
 	"context"
 
-	log "github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -29,7 +28,7 @@ var _ = Describe("AIE Webhook ConfigMap", func() {
 
 	Context("newAIEWebhookConfigMap", func() {
 		It("should create a ConfigMap with empty rules", func() {
-			cm := newAIEWebhookConfigMap(hco)
+			cm := newAIEWebhookConfigMap()
 			Expect(cm.Name).To(Equal("kubevirt-aie-launcher-config"))
 			Expect(cm.Data).To(HaveKey("config.yaml"))
 			Expect(cm.Data["config.yaml"]).To(Equal("rules:\n"))
@@ -40,8 +39,7 @@ var _ = Describe("AIE Webhook ConfigMap", func() {
 		It("should not create if deploy-aie-webhook annotation is absent", func() {
 			cl = commontestutils.InitClient([]client.Object{hco})
 
-			handler, err := NewAIEWebhookConfigMapHandler(log.Logger{}, cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewAIEWebhookConfigMapHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
 
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -56,8 +54,7 @@ var _ = Describe("AIE Webhook ConfigMap", func() {
 			hco.Annotations[DeployAIEAnnotation] = "true"
 			cl = commontestutils.InitClient([]client.Object{hco})
 
-			handler, err := NewAIEWebhookConfigMapHandler(log.Logger{}, cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewAIEWebhookConfigMapHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
 
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -71,11 +68,10 @@ var _ = Describe("AIE Webhook ConfigMap", func() {
 		})
 
 		It("should delete configmap when deploy-aie-webhook annotation is removed", func() {
-			cm := newAIEWebhookConfigMap(hco)
+			cm := newAIEWebhookConfigMap()
 			cl = commontestutils.InitClient([]client.Object{hco, cm})
 
-			handler, err := NewAIEWebhookConfigMapHandler(log.Logger{}, cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewAIEWebhookConfigMapHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
 
 			Expect(res.Err).ToNot(HaveOccurred())

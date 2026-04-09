@@ -59,8 +59,9 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		passt.NewPasstNetworkAttachmentDefinitionHandler(client, scheme),
 		aie.NewAIEWebhookServiceAccountHandler(client, scheme),
 		aie.NewAIEWebhookServiceHandler(client, scheme),
-		aie.NewIOMMUFDDevicePluginServiceAccountHandler(client, scheme),
 		aie.NewAIEWebhookDeploymentHandler(client, scheme),
+		aie.NewAIEWebhookConfigMapHandler(client, scheme),
+		aie.NewIOMMUFDDevicePluginServiceAccountHandler(client, scheme),
 	}
 
 	if ci.IsOpenshift() {
@@ -76,6 +77,13 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 			waspagent.NewWaspAgentDaemonSetHandler(client, scheme),
 		}...)
 
+		virtioWinCMHandler, err := handlers.NewVirtioWinCmHandler(client, scheme)
+		if err != nil {
+			logger.Error(err, "failed to create a handler for the virtio-win ConfigMap")
+		} else {
+			operandList = append(operandList, virtioWinCMHandler)
+		}
+
 		if ci.IsConsolePluginImageProvided() {
 			operandList = append(operandList, []operands.Operand{
 				handlers.NewConsoleHandler(client),
@@ -85,6 +93,8 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 				handlers.NewKvUIProxySAHandler(client, scheme),
 				handlers.NewKvUIPluginDeploymentHandler(client, scheme),
 				handlers.NewKvUIProxyDeploymentHandler(client, scheme),
+				handlers.NewKvUIUserSettingsCMHandler(client, scheme),
+				handlers.NewKvUIFeaturesCMHandler(client, scheme),
 			}...)
 		}
 	}
@@ -107,7 +117,6 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 	h.objects = make([]client.Object, 0)
 
 	for _, fn := range []operands.GetHandler{
-		aie.NewAIEWebhookConfigMapHandler,
 		aie.NewAIEWebhookClusterRoleHandler,
 		aie.NewAIEWebhookClusterRoleBindingHandler,
 		aie.NewAIEWebhookMutatingWebhookConfigurationHandler,
@@ -129,7 +138,6 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 	}
 
 	getHandlerFuncs := []operands.GetHandler{
-		handlers.NewVirtioWinCmHandler,
 		handlers.NewVirtioWinCmReaderRoleHandler,
 		handlers.NewVirtioWinCmReaderRoleBindingHandler,
 		waspagent.NewWaspAgentClusterRoleHandler,
@@ -141,8 +149,6 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 		getHandlerFuncs = append(getHandlerFuncs,
 			handlers.NewKvUINginxCMHandler,
 			handlers.NewKvUIPluginCRHandler,
-			handlers.NewKvUIUserSettingsCMHandler,
-			handlers.NewKvUIFeaturesCMHandler,
 			handlers.NewKvUIConfigReaderRoleHandler,
 			handlers.NewKvUIConfigReaderRoleBindingHandler,
 			handlers.NewKVConsolePluginNetworkPolicyHandler,
