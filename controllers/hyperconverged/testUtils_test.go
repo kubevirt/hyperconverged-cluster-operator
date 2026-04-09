@@ -216,7 +216,7 @@ func getBasicDeployment() *BasicExpected {
 		},
 	}
 
-	res.pc = handlers.NewKubeVirtPriorityClass(hco)
+	res.pc = handlers.NewKubeVirtPriorityClass()
 
 	deploymentRef := metav1.OwnerReference{
 		APIVersion:         appsv1.SchemeGroupVersion.String(),
