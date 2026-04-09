@@ -66,12 +66,12 @@ func NetworkBinding() kubevirtcorev1.InterfaceBindingPlugin {
 }
 
 // NewPasstBindingCNISA creates a ServiceAccount for the passt binding CNI
-func NewPasstBindingCNISA(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount {
+func NewPasstBindingCNISA() *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      passtCNIObjectName,
-			Namespace: hc.Namespace,
-			Labels:    hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentNetwork),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(hcoutil.AppComponentNetwork),
 		},
 	}
 }
@@ -262,7 +262,7 @@ func NewPasstServiceAccountHandler(Client client.Client, Scheme *runtime.Scheme)
 	return createPasstConditionalHandler(
 		operands.NewServiceAccountHandler(Client, Scheme, NewPasstBindingCNISA),
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return NewPasstBindingCNISA(hc)
+			return NewPasstBindingCNISA()
 		},
 	)
 }

@@ -70,7 +70,7 @@ var _ = Describe("KubeVirt Operand", func() {
 			cl := commontestutils.InitClient([]client.Object{})
 			handler := NewKvPriorityClassHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.UpgradeDone).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			key := client.ObjectKeyFromObject(expectedResource)

@@ -68,6 +68,11 @@ func (h *GenericOperand) Ensure(req *common.HcoRequest) *EnsureResult {
 				// Let's try updating it bypassing the client cache mechanism
 				return h.handleExistingCrSkipCache(req, key, found, cr, res)
 			}
+
+			if _, isHCOOperand := h.hooks.(HCOOperandHooks); !isHCOOperand {
+				return res.SetUpgradeDone(true)
+			}
+
 		} else {
 			return res.Error(err)
 		}

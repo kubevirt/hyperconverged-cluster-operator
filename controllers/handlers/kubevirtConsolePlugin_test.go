@@ -72,7 +72,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			handler, _ := NewKvUIPluginCRHandler(testLogger, cl, commontestutils.GetScheme(), hco)
 
 			res := handler.Ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.UpgradeDone).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			foundResource := &consolev1.ConsolePlugin{}
@@ -288,7 +288,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			res := handler.Ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.UpgradeDone).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			foundResource := &appsv1.Deployment{}
@@ -1039,7 +1039,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				handler = operands.NewServiceHandler(cl, commontestutils.GetScheme(), serviceManifestor())
 
 				res := handler.Ensure(req)
-				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.UpgradeDone).To(BeTrue())
 				Expect(res.Err).ToNot(HaveOccurred())
 
 				foundResource := &v1.Service{}
@@ -1171,7 +1171,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				res := handler.Ensure(req)
-				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.UpgradeDone).To(BeTrue())
 				Expect(res.Err).ToNot(HaveOccurred())
 
 				foundResource := &networkingv1.NetworkPolicy{}

@@ -52,7 +52,7 @@ var _ = Describe("VirtioWin", func() {
 			cl := commontestutils.InitClient([]client.Object{})
 			handler, _ := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
 			res := handler.Ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.UpgradeDone).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			foundResource := &corev1.ConfigMap{}
