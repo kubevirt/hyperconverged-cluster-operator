@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
@@ -22,9 +21,6 @@ import (
 )
 
 var _ = Describe("VirtioWin", func() {
-
-	var testLogger = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("VirtioWin_test")
-
 	Context("Virtio-Win ConfigMap", func() {
 
 		var hco *hcov1beta1.HyperConverged
@@ -202,12 +198,24 @@ var _ = Describe("VirtioWin", func() {
 			os.Setenv("VIRTIOWIN_CONTAINER", "new-virtiowin-container-value")
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
+
+			origNS, origNSSet := os.LookupEnv(hcoutil.OperatorNamespaceEnv)
+			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
+
+			DeferCleanup(func() {
+				if origNSSet {
+					Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNS)).To(Succeed())
+				} else {
+					Expect(os.Unsetenv(hcoutil.OperatorNamespaceEnv)).To(Succeed())
+				}
+			})
 		})
+
 		It("should do nothing if exists", func() {
-			expectedRole := NewVirtioWinCmReaderRole(hco)
+			expectedRole := NewVirtioWinCmReaderRole()
 			cl := commontestutils.InitClient([]client.Object{hco, expectedRole})
 
-			handler, _ := NewVirtioWinCmReaderRoleHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewVirtioWinCmReaderRoleHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
@@ -223,13 +231,13 @@ var _ = Describe("VirtioWin", func() {
 		})
 
 		It("should update if labels are missing", func() {
-			expectedRole := NewVirtioWinCmReaderRole(hco)
+			expectedRole := NewVirtioWinCmReaderRole()
 			expectedLabels := expectedRole.Labels
 			expectedRole.Labels = nil
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedRole})
 
-			handler, _ := NewVirtioWinCmReaderRoleHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewVirtioWinCmReaderRoleHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
@@ -252,13 +260,25 @@ var _ = Describe("VirtioWin", func() {
 			os.Setenv("VIRTIOWIN_CONTAINER", "new-virtiowin-container-value")
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
+
+			origNS, origNSSet := os.LookupEnv(hcoutil.OperatorNamespaceEnv)
+			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
+
+			DeferCleanup(func() {
+				if origNSSet {
+					Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNS)).To(Succeed())
+				} else {
+					Expect(os.Unsetenv(hcoutil.OperatorNamespaceEnv)).To(Succeed())
+				}
+			})
 		})
+
 		It("should do nothing if exists", func() {
-			expectedRoleBinding := NewVirtioWinCmReaderRoleBinding(hco)
+			expectedRoleBinding := NewVirtioWinCmReaderRoleBinding()
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedRoleBinding})
 
-			handler, _ := NewVirtioWinCmReaderRoleBindingHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewVirtioWinCmReaderRoleBindingHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
@@ -273,13 +293,13 @@ var _ = Describe("VirtioWin", func() {
 		})
 
 		It("should update if labels are missing", func() {
-			expectedRoleBinding := NewVirtioWinCmReaderRoleBinding(hco)
+			expectedRoleBinding := NewVirtioWinCmReaderRoleBinding()
 			expectedLabels := expectedRoleBinding.Labels
 			expectedRoleBinding.Labels = nil
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedRoleBinding})
 
-			handler, _ := NewVirtioWinCmReaderRoleBindingHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewVirtioWinCmReaderRoleBindingHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 

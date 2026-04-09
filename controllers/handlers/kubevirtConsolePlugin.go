@@ -490,21 +490,21 @@ func newConsolePluginHandler(Client client.Client, Scheme *runtime.Scheme, requi
 }
 
 // NewKvUIConfigReaderRoleHandler returns UI configuration (user settings and features) ConfigMap Role Handler
-func NewKvUIConfigReaderRoleHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewRoleHandler(Client, Scheme, NewKvUIConfigCMReaderRole(hc)), nil
+func NewKvUIConfigReaderRoleHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewRoleHandler(Client, Scheme, NewKvUIConfigCMReaderRole())
 }
 
 // NewKvUIConfigReaderRoleBindingHandler returns UI configuration (user settings and features) ConfigMap RoleBinding Handler
-func NewKvUIConfigReaderRoleBindingHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewRoleBindingHandler(Client, Scheme, NewKvUIConfigCMReaderRoleBinding(hc)), nil
+func NewKvUIConfigReaderRoleBindingHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewRoleBindingHandler(Client, Scheme, NewKvUIConfigCMReaderRoleBinding())
 }
 
-func NewKvUIConfigCMReaderRole(hc *hcov1beta1.HyperConverged) *rbacv1.Role {
+func NewKvUIConfigCMReaderRole() *rbacv1.Role {
 	return &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIConfigReaderRoleName,
-			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIPlugin),
-			Namespace: hc.Namespace,
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIPlugin),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
@@ -523,12 +523,12 @@ func NewKvUIConfigCMReaderRole(hc *hcov1beta1.HyperConverged) *rbacv1.Role {
 	}
 }
 
-func NewKvUIConfigCMReaderRoleBinding(hc *hcov1beta1.HyperConverged) *rbacv1.RoleBinding {
+func NewKvUIConfigCMReaderRoleBinding() *rbacv1.RoleBinding {
 	return &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIConfigReaderRBName,
-			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIPlugin),
-			Namespace: hc.Namespace,
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIPlugin),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",

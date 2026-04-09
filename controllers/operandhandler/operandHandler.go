@@ -75,6 +75,8 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 			waspagent.NewWaspAgentServiceAccountHandler(client, scheme),
 			waspagent.NewWaspAgentSCCHandler(client, scheme),
 			waspagent.NewWaspAgentDaemonSetHandler(client, scheme),
+			handlers.NewVirtioWinCmReaderRoleHandler(client, scheme),
+			handlers.NewVirtioWinCmReaderRoleBindingHandler(client, scheme),
 		}...)
 
 		virtioWinCMHandler, err := handlers.NewVirtioWinCmHandler(client, scheme)
@@ -97,6 +99,8 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 				handlers.NewKvUIFeaturesCMHandler(client, scheme),
 				handlers.NewKvUIPluginCRHandler(client, scheme),
 				handlers.NewKvUINginxCMHandler(client, scheme),
+				handlers.NewKvUIConfigReaderRoleHandler(client, scheme),
+				handlers.NewKvUIConfigReaderRoleBindingHandler(client, scheme),
 			}...)
 		}
 	}
@@ -140,8 +144,6 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 	}
 
 	getHandlerFuncs := []operands.GetHandler{
-		handlers.NewVirtioWinCmReaderRoleHandler,
-		handlers.NewVirtioWinCmReaderRoleBindingHandler,
 		waspagent.NewWaspAgentClusterRoleHandler,
 		waspagent.NewWaspAgentClusterRoleBindingHandler,
 		aie.NewIOMMUFDDevicePluginSCCHandler,
@@ -149,8 +151,6 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 
 	if ci.IsConsolePluginImageProvided() {
 		getHandlerFuncs = append(getHandlerFuncs,
-			handlers.NewKvUIConfigReaderRoleHandler,
-			handlers.NewKvUIConfigReaderRoleBindingHandler,
 			handlers.NewKVConsolePluginNetworkPolicyHandler,
 			handlers.NewKVAPIServerProxyNetworkPolicyHandler,
 		)
