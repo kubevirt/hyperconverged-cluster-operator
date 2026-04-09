@@ -80,6 +80,8 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 				handlers.NewConsoleHandler(client),
 				operands.NewServiceHandler(client, scheme, handlers.NewKvUIPluginSvc()),
 				operands.NewServiceHandler(client, scheme, handlers.NewKvUIProxySvc()),
+				handlers.NewKvUIPluginSAHandler(client, scheme),
+				handlers.NewKvUIProxySAHandler(client, scheme),
 			}...)
 		}
 	}
@@ -135,8 +137,6 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 
 	if ci.IsConsolePluginImageProvided() {
 		getHandlerFuncs = append(getHandlerFuncs,
-			handlers.NewKvUIPluginSAHandler,
-			handlers.NewKvUIProxySAHandler,
 			handlers.NewKvUIPluginDeploymentHandler,
 			handlers.NewKvUIProxyDeploymentHandler,
 			handlers.NewKvUINginxCMHandler,

@@ -6,9 +6,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
-
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 func NewWaspAgentServiceAccountHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
@@ -16,17 +16,17 @@ func NewWaspAgentServiceAccountHandler(Client client.Client, Scheme *runtime.Sch
 		operands.NewServiceAccountHandler(Client, Scheme, newWaspAgentServiceAccount),
 		shouldDeployWaspAgent,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return newWaspAgentServiceAccount(hc)
+			return newWaspAgentServiceAccount()
 		},
 	)
 }
 
-func newWaspAgentServiceAccount(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount {
+func newWaspAgentServiceAccount() *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      waspAgentServiceAccountName,
-			Namespace: hc.Namespace,
-			Labels:    operands.GetLabelsDeprecated(hc, AppComponentWaspAgent),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(AppComponentWaspAgent),
 		},
 	}
 }

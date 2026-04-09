@@ -8,6 +8,7 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 func NewIOMMUFDDevicePluginServiceAccountHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
@@ -15,17 +16,17 @@ func NewIOMMUFDDevicePluginServiceAccountHandler(Client client.Client, Scheme *r
 		operands.NewServiceAccountHandler(Client, Scheme, newIOMMUFDDevicePluginServiceAccount),
 		shouldDeployAIE,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return newIOMMUFDDevicePluginServiceAccount(hc)
+			return newIOMMUFDDevicePluginServiceAccount()
 		},
 	)
 }
 
-func newIOMMUFDDevicePluginServiceAccount(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount {
+func newIOMMUFDDevicePluginServiceAccount() *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      iommufdDevicePluginServiceAccountName,
-			Namespace: hc.Namespace,
-			Labels:    operands.GetLabelsDeprecated(hc, iommufdDevicePluginAppComponent),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(iommufdDevicePluginAppComponent),
 		},
 	}
 }

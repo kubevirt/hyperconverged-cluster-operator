@@ -80,31 +80,31 @@ func NewKvUIProxyDeploymentHandler(_ log.Logger, Client client.Client, Scheme *r
 }
 
 // **** Kubevirt UI Plugin ServiceAccount Handler ****
-func NewKvUIPluginSAHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewServiceAccountHandler(Client, Scheme, NewKvUIPluginSA), nil
+func NewKvUIPluginSAHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewServiceAccountHandler(cli, Scheme, NewKvUIPluginSA)
 }
 
 // **** Kubevirt UI Proxy ServiceAccount Handler ****
-func NewKvUIProxySAHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewServiceAccountHandler(Client, Scheme, NewKvUIProxySA), nil
+func NewKvUIProxySAHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewServiceAccountHandler(cli, Scheme, NewKvUIProxySA)
 }
 
-func NewKvUIPluginSA(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount {
+func NewKvUIPluginSA() *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIPluginDeploymentName,
-			Namespace: hc.Namespace,
-			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIPlugin),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIPlugin),
 		},
 	}
 }
 
-func NewKvUIProxySA(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount {
+func NewKvUIProxySA() *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIProxyDeploymentName,
-			Namespace: hc.Namespace,
-			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIProxy),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIProxy),
 		},
 	}
 }

@@ -31,7 +31,7 @@ var _ = Describe("Wasp Agent Service Account", func() {
 
 	Context("newWaspAgentServiceAccount", func() {
 		It("should have all default values", func() {
-			sa := newWaspAgentServiceAccount(hco)
+			sa := newWaspAgentServiceAccount()
 			Expect(sa.Name).To(Equal("wasp"))
 			Expect(sa.Namespace).To(BeEquivalentTo(hco.Namespace))
 			Expect(sa.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
@@ -65,7 +65,7 @@ var _ = Describe("Wasp Agent Service Account", func() {
 			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 100,
 			}
-			sa := newWaspAgentServiceAccount(hco)
+			sa := newWaspAgentServiceAccount()
 
 			cl = commontestutils.InitClient([]client.Object{hco, sa})
 
@@ -130,7 +130,7 @@ var _ = Describe("Wasp Agent Service Account", func() {
 			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
-			sa := newWaspAgentServiceAccount(hco)
+			sa := newWaspAgentServiceAccount()
 			hco.Annotations[AutopilotSwapAnnotation] = AutopilotSwapAnnotationValue
 			cl = commontestutils.InitClient([]client.Object{hco, sa})
 
@@ -154,7 +154,7 @@ var _ = Describe("Wasp Agent Service Account", func() {
 			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
-			sa := newWaspAgentServiceAccount(hco)
+			sa := newWaspAgentServiceAccount()
 			expectedLabels := maps.Clone(sa.Labels)
 			delete(sa.Labels, "app.kubernetes.io/component")
 			sa.Labels["user-added-label"] = "user-value"
