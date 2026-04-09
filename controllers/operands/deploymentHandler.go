@@ -17,8 +17,8 @@ import (
 
 type newDeploymentFunc func(hc *hcov1beta1.HyperConverged) *appsv1.Deployment
 
-func NewDeploymentHandler(Client client.Client, Scheme *runtime.Scheme, deploymentGenerator newDeploymentFunc, hc *hcov1beta1.HyperConverged) *GenericOperand {
-	return NewGenericOperand(Client, Scheme, "Deployment", newDeploymentHooks(deploymentGenerator, hc), false)
+func NewDeploymentHandler(cli client.Client, Scheme *runtime.Scheme, deploymentGenerator newDeploymentFunc) *GenericOperand {
+	return NewGenericOperand(cli, Scheme, "Deployment", newDeploymentHooks(deploymentGenerator), false)
 }
 
 type deploymentHooks struct {
@@ -27,9 +27,8 @@ type deploymentHooks struct {
 	cache               *appsv1.Deployment
 }
 
-func newDeploymentHooks(deploymentGenerator newDeploymentFunc, hc *hcov1beta1.HyperConverged) *deploymentHooks {
+func newDeploymentHooks(deploymentGenerator newDeploymentFunc) *deploymentHooks {
 	return &deploymentHooks{
-		cache:               deploymentGenerator(hc),
 		deploymentGenerator: deploymentGenerator,
 	}
 }

@@ -70,13 +70,13 @@ const ( // for network policies
 )
 
 // **** Kubevirt UI Plugin Deployment Handler ****
-func NewKvUIPluginDeploymentHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewDeploymentHandler(Client, Scheme, NewKvUIPluginDeployment, hc), nil
+func NewKvUIPluginDeploymentHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewDeploymentHandler(cli, Scheme, NewKvUIPluginDeployment)
 }
 
 // **** Kubevirt UI apiserver proxy Deployment Handler ****
-func NewKvUIProxyDeploymentHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewDeploymentHandler(Client, Scheme, NewKvUIProxyDeployment, hc), nil
+func NewKvUIProxyDeploymentHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewDeploymentHandler(cli, Scheme, NewKvUIProxyDeployment)
 }
 
 // **** Kubevirt UI Plugin ServiceAccount Handler ****
@@ -193,7 +193,7 @@ func NewKvUIProxyDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
 
 func getKvUIDeployment(hc *hcov1beta1.HyperConverged, deploymentName string, image string,
 	servingCertName string, servingCertPath string, port int32, componentName hcoutil.AppComponent) *appsv1.Deployment {
-	labels := operands.GetLabelsDeprecated(hc, componentName)
+	labels := operands.GetLabels(componentName)
 	infrastructureHighlyAvailable := nodeinfo.IsInfrastructureHighlyAvailable()
 	var replicas int32
 	if infrastructureHighlyAvailable {
@@ -208,7 +208,7 @@ func getKvUIDeployment(hc *hcov1beta1.HyperConverged, deploymentName string, ima
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      deploymentName,
 			Labels:    labels,
-			Namespace: hc.Namespace,
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: ptr.To(replicas),

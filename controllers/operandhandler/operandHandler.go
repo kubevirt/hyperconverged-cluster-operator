@@ -60,6 +60,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		aie.NewAIEWebhookServiceAccountHandler(client, scheme),
 		aie.NewAIEWebhookServiceHandler(client, scheme),
 		aie.NewIOMMUFDDevicePluginServiceAccountHandler(client, scheme),
+		aie.NewAIEWebhookDeploymentHandler(client, scheme),
 	}
 
 	if ci.IsOpenshift() {
@@ -82,6 +83,8 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 				operands.NewServiceHandler(client, scheme, handlers.NewKvUIProxySvc()),
 				handlers.NewKvUIPluginSAHandler(client, scheme),
 				handlers.NewKvUIProxySAHandler(client, scheme),
+				handlers.NewKvUIPluginDeploymentHandler(client, scheme),
+				handlers.NewKvUIProxyDeploymentHandler(client, scheme),
 			}...)
 		}
 	}
@@ -107,7 +110,6 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 		aie.NewAIEWebhookConfigMapHandler,
 		aie.NewAIEWebhookClusterRoleHandler,
 		aie.NewAIEWebhookClusterRoleBindingHandler,
-		aie.NewAIEWebhookDeploymentHandler,
 		aie.NewAIEWebhookMutatingWebhookConfigurationHandler,
 		aie.NewIOMMUFDDevicePluginDaemonSetHandler,
 	} {
@@ -137,8 +139,6 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 
 	if ci.IsConsolePluginImageProvided() {
 		getHandlerFuncs = append(getHandlerFuncs,
-			handlers.NewKvUIPluginDeploymentHandler,
-			handlers.NewKvUIProxyDeploymentHandler,
 			handlers.NewKvUINginxCMHandler,
 			handlers.NewKvUIPluginCRHandler,
 			handlers.NewKvUIUserSettingsCMHandler,

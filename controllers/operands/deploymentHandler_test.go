@@ -50,7 +50,7 @@ var _ = Describe("Deployment Handler", func() {
 			Expect(foundResource.GetUID()).To(Equal(types.UID("oldObjectUID")))
 
 			// let's Ensure the handler properly reconcile it back to the expected state
-			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, hco)
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment)
 			res := handler.Ensure(req)
 			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -88,7 +88,7 @@ var _ = Describe("Deployment Handler", func() {
 			Expect(foundResource.GetUID()).To(Equal(types.UID("oldObjectUID")))
 
 			// let's Ensure the handler properly reconcile it back to the expected state
-			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, hco)
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment)
 			res := handler.Ensure(req)
 			Expect(res.Updated).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -117,7 +117,7 @@ var _ = Describe("Deployment Handler", func() {
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, hco)
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment)
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
@@ -153,7 +153,7 @@ var _ = Describe("Deployment Handler", func() {
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment, hco)
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme(), NewExpectedDeployment)
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
