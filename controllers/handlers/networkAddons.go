@@ -177,7 +177,7 @@ func NewNetworkAddons(hc *hcov1beta1.HyperConverged) (*networkaddonsv1.NetworkAd
 
 	cnaoSpec.TLSSecurityProfile = tlssecprofile.GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile)
 
-	cna := NewNetworkAddonsWithNameOnly(hc)
+	cna := NewNetworkAddonsWithNameOnly()
 	cna.Spec = cnaoSpec
 
 	if err = operands.ApplyPatchToSpec(hc, common.JSONPatchCNAOAnnotationName, cna); err != nil {
@@ -199,11 +199,11 @@ func getKSDNameServerIP(nameServerIPPtr *string) (string, error) {
 	return nameServerIP, nil
 }
 
-func NewNetworkAddonsWithNameOnly(hc *hcov1beta1.HyperConverged) *networkaddonsv1.NetworkAddonsConfig {
+func NewNetworkAddonsWithNameOnly() *networkaddonsv1.NetworkAddonsConfig {
 	return &networkaddonsv1.NetworkAddonsConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   networkaddonsnames.OperatorConfig,
-			Labels: operands.GetLabelsDeprecated(hc, util.AppComponentNetwork),
+			Labels: operands.GetLabels(util.AppComponentNetwork),
 		},
 	}
 }
