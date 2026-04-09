@@ -42,7 +42,7 @@ var _ = Describe("CDI Operand", func() {
 		})
 
 		It("should create if not present", func() {
-			expectedResource := NewCDIWithNameOnly(hco)
+			expectedResource := NewCDIWithNameOnly()
 			cl := commontestutils.InitClient([]client.Object{})
 			handler := NewCdiHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
@@ -912,7 +912,7 @@ var _ = Describe("CDI Operand", func() {
 		})
 
 		It("should add cert configuration if missing in CDI", func() {
-			existingResource := NewCDIWithNameOnly(hco)
+			existingResource := NewCDIWithNameOnly()
 
 			cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 			handler := NewCdiHandler(cl, commontestutils.GetScheme())
@@ -941,7 +941,7 @@ var _ = Describe("CDI Operand", func() {
 		})
 
 		It("should set cert config to defaults if missing in HCO CR", func() {
-			existingResource := NewCDIWithNameOnly(hco)
+			existingResource := NewCDIWithNameOnly()
 
 			cl := commontestutils.InitClient([]client.Object{hco})
 			handler := NewCdiHandler(cl, commontestutils.GetScheme())
@@ -1137,7 +1137,7 @@ var _ = Describe("CDI Operand", func() {
 					}
 				]`}
 
-				expectedResource := NewCDIWithNameOnly(hco)
+				expectedResource := NewCDIWithNameOnly()
 				cl := commontestutils.InitClient([]client.Object{})
 				handler := NewCdiHandler(cl, commontestutils.GetScheme())
 				res := handler.Ensure(req)
@@ -1169,7 +1169,7 @@ var _ = Describe("CDI Operand", func() {
 					}
 				]`}
 
-				expectedResource := NewCDIWithNameOnly(hco)
+				expectedResource := NewCDIWithNameOnly()
 				cl := commontestutils.InitClient([]client.Object{})
 				handler := NewCdiHandler(cl, commontestutils.GetScheme())
 				res := handler.Ensure(req)
@@ -1210,7 +1210,7 @@ var _ = Describe("CDI Operand", func() {
 
 				cdi := &cdiv1beta1.CDI{}
 
-				expectedResource := NewCDIWithNameOnly(hco)
+				expectedResource := NewCDIWithNameOnly()
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -1247,7 +1247,7 @@ var _ = Describe("CDI Operand", func() {
 
 				cdi := &cdiv1beta1.CDI{}
 
-				expectedResource := NewCDIWithNameOnly(hco)
+				expectedResource := NewCDIWithNameOnly()
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},

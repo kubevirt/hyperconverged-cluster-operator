@@ -1048,7 +1048,7 @@ var _ = Describe("HyperconvergedController", func() {
 				}))
 
 				By("Verify that CDI was properly configured with initialTLSSecurityProfile")
-				cdi := handlers.NewCDIWithNameOnly(foundResource)
+				cdi := handlers.NewCDIWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},
@@ -1116,7 +1116,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(kv.Spec.Configuration.TLSConfiguration.Ciphers).To(BeEmpty())
 
 				By("Verify that CDI was properly updated with customTLSSecurityProfile")
-				cdi = handlers.NewCDIWithNameOnly(foundResource)
+				cdi = handlers.NewCDIWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},
@@ -1213,7 +1213,7 @@ var _ = Describe("HyperconvergedController", func() {
 				}))
 
 				By("Verify that CDI was properly configured with initialTLSSecurityProfile")
-				cdi := handlers.NewCDIWithNameOnly(foundHCO)
+				cdi := handlers.NewCDIWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},
@@ -1271,7 +1271,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(kv.Spec.Configuration.TLSConfiguration.Ciphers).To(BeEmpty())
 
 				By("Verify that CDI was properly updated with customTLSSecurityProfile")
-				cdi = handlers.NewCDIWithNameOnly(foundHCO)
+				cdi = handlers.NewCDIWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},
@@ -2039,7 +2039,7 @@ var _ = Describe("HyperconvergedController", func() {
 					})
 
 					By("Verify that CDI was modified by the annotation", func() {
-						cdi := handlers.NewCDIWithNameOnly(hco)
+						cdi := handlers.NewCDIWithNameOnly()
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},
@@ -2504,7 +2504,7 @@ var _ = Describe("HyperconvergedController", func() {
 						Expect(*kv.Spec.Configuration.MigrationConfiguration.AllowPostCopy).To(BeTrue())
 					})
 					By("Verify that CDI was modified by the annotation", func() {
-						cdi := handlers.NewCDIWithNameOnly(hco)
+						cdi := handlers.NewCDIWithNameOnly()
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},

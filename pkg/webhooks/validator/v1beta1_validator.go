@@ -180,7 +180,7 @@ func (wh *WebhookV1Beta1Handler) getOperands(ctx context.Context, requested *v1b
 		return nil, nil, nil, err
 	}
 
-	cdi := handlers.NewCDIWithNameOnly(requested)
+	cdi := handlers.NewCDIWithNameOnly()
 	err = wh.cli.Get(ctx, client.ObjectKeyFromObject(cdi), cdi)
 	if err != nil {
 		return nil, nil, nil, err
@@ -339,7 +339,7 @@ func (wh *WebhookV1Beta1Handler) ValidateDelete(ctx context.Context, logger logr
 	logger.Info("Validating delete", "name", hc.Name, "namespace", hc.Namespace)
 
 	kv := handlers.NewKubeVirtWithNameOnly(hc)
-	cdi := handlers.NewCDIWithNameOnly(hc)
+	cdi := handlers.NewCDIWithNameOnly()
 
 	for _, obj := range []client.Object{
 		kv,

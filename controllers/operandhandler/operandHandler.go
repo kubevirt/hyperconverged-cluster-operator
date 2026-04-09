@@ -278,7 +278,7 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		return err
 	}
 
-	return h.deleteSingleResource(tCtx, req, handlers.NewCDIWithNameOnly(req.Instance), ErrCDIUninstall, uninstallCDIErrorMsg)
+	return h.deleteSingleResource(tCtx, req, handlers.NewCDIWithNameOnly(), ErrCDIUninstall, uninstallCDIErrorMsg)
 }
 
 func (h *OperandHandler) deleteMultipleResources(tCtx context.Context, req *common.HcoRequest, resources []client.Object) error {

@@ -1675,7 +1675,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			Expect(util.GetRuntimeObject(ctx, cli, kv)).To(Succeed())
 
 			By("Validate that CDI still exists, as it a dry-run deletion")
-			cdi := handlers.NewCDIWithNameOnly(hco)
+			cdi := handlers.NewCDIWithNameOnly()
 			Expect(util.GetRuntimeObject(ctx, cli, cdi)).To(Succeed())
 		})
 
@@ -1747,7 +1747,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 		It("should ignore if CDI does not exist", func(ctx context.Context) {
 			cli := getFakeClient(hco)
 
-			cdi := handlers.NewCDIWithNameOnly(hco)
+			cdi := handlers.NewCDIWithNameOnly()
 			Expect(cli.Delete(ctx, cdi)).To(Succeed())
 
 			wh := NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)
