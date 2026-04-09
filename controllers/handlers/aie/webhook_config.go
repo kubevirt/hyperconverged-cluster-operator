@@ -99,7 +99,7 @@ func NewAIEWebhookMutatingWebhookConfigurationWithNameOnly(hc *hcov1beta1.HyperC
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   aieWebhookName,
-			Labels: operands.GetLabels(hc, appComponent),
+			Labels: operands.GetLabelsDeprecated(hc, appComponent),
 		},
 	}
 }

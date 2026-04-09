@@ -170,7 +170,7 @@ func NewCDIWithNameOnly(hc *hcov1beta1.HyperConverged, opts ...string) *cdiv1bet
 	return &cdiv1beta1.CDI{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        "cdi-" + hc.Name,
-			Labels:      operands.GetLabels(hc, util.AppComponentStorage),
+			Labels:      operands.GetLabelsDeprecated(hc, util.AppComponentStorage),
 			Namespace:   operands.GetNamespace(util.UndefinedNamespace, opts),
 			Annotations: map[string]string{cdiConfigAuthorityAnnotation: ""},
 		},

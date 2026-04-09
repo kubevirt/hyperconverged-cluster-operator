@@ -95,7 +95,7 @@ func NewKvUIPluginSA(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIPluginDeploymentName,
 			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
+			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIPlugin),
 		},
 	}
 }
@@ -105,7 +105,7 @@ func NewKvUIProxySA(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIProxyDeploymentName,
 			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIProxy),
+			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIProxy),
 		},
 	}
 }
@@ -194,7 +194,7 @@ func NewKvUIProxyDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
 
 func getKvUIDeployment(hc *hcov1beta1.HyperConverged, deploymentName string, image string,
 	servingCertName string, servingCertPath string, port int32, componentName hcoutil.AppComponent) *appsv1.Deployment {
-	labels := operands.GetLabels(hc, componentName)
+	labels := operands.GetLabelsDeprecated(hc, componentName)
 	infrastructureHighlyAvailable := nodeinfo.IsInfrastructureHighlyAvailable()
 	var replicas int32
 	if infrastructureHighlyAvailable {
@@ -318,7 +318,7 @@ func NewKvUIPluginSvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kvUIPluginSvcName,
-			Labels: operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
+			Labels: operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIPlugin),
 			Annotations: map[string]string{
 				"service.beta.openshift.io/serving-cert-secret-name": kvUIPluginServingCertName,
 			},
@@ -346,7 +346,7 @@ func NewKvUIProxySvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kvUIProxySvcName,
-			Labels: operands.GetLabels(hc, hcoutil.AppComponentUIProxy),
+			Labels: operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIProxy),
 			Annotations: map[string]string{
 				"service.beta.openshift.io/serving-cert-secret-name": kvUIProxyServingCertName,
 			},
@@ -410,7 +410,7 @@ func NewKVUINginxCM(hc *hcov1beta1.HyperConverged) (*corev1.ConfigMap, error) {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nginxConfigMapName,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
+			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIPlugin),
 			Namespace: hc.Namespace,
 		},
 		Data: map[string]string{
@@ -423,7 +423,7 @@ func NewKvUIUserSettingsCM(hc *hcov1beta1.HyperConverged) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIUserSettingsCMName,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIConfig),
+			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIConfig),
 			Namespace: hc.Namespace,
 		},
 		Data: map[string]string{},
@@ -446,7 +446,7 @@ func NewKvUIFeaturesCM(hc *hcov1beta1.HyperConverged) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIFeaturesCMName,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIConfig),
+			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIConfig),
 			Namespace: hc.Namespace,
 		},
 		Data: data,
@@ -457,7 +457,7 @@ func NewKVConsolePlugin(hc *hcov1beta1.HyperConverged) *consolev1.ConsolePlugin 
 	return &consolev1.ConsolePlugin{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kvUIPluginName,
-			Labels: operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
+			Labels: operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIPlugin),
 		},
 		Spec: consolev1.ConsolePluginSpec{
 			DisplayName: "Kubevirt Console Plugin",
@@ -504,7 +504,7 @@ func NewKvUIConfigCMReaderRole(hc *hcov1beta1.HyperConverged) *rbacv1.Role {
 	return &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIConfigReaderRoleName,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
+			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIPlugin),
 			Namespace: hc.Namespace,
 		},
 		Rules: []rbacv1.PolicyRule{
@@ -528,7 +528,7 @@ func NewKvUIConfigCMReaderRoleBinding(hc *hcov1beta1.HyperConverged) *rbacv1.Rol
 	return &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIConfigReaderRBName,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
+			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIPlugin),
 			Namespace: hc.Namespace,
 		},
 		RoleRef: rbacv1.RoleRef{
@@ -640,7 +640,7 @@ func newKVConsolePluginNetworkPolicy(hc *hcov1beta1.HyperConverged) *networkingv
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kubevirt-console-plugin-np",
 			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
+			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIPlugin),
 		},
 
 		Spec: networkingv1.NetworkPolicySpec{
@@ -736,7 +736,7 @@ func newKVAPIServerProxyNetworkPolicy(hc *hcov1beta1.HyperConverged) *networking
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kubevirt-apiserver-proxy-np",
 			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIProxy),
+			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIProxy),
 		},
 		Spec: networkingv1.NetworkPolicySpec{
 			PodSelector: metav1.LabelSelector{

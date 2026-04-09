@@ -43,7 +43,7 @@ func NewAIEWebhookClusterRoleWithNameOnly(hc *hcov1beta1.HyperConverged) *rbacv1
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   aieWebhookClusterRoleName,
-			Labels: operands.GetLabels(hc, appComponent),
+			Labels: operands.GetLabelsDeprecated(hc, appComponent),
 		},
 	}
 }
@@ -73,7 +73,7 @@ func NewAIEWebhookClusterRoleBindingWithNameOnly(hc *hcov1beta1.HyperConverged) 
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   aieWebhookClusterRoleName,
-			Labels: operands.GetLabels(hc, appComponent),
+			Labels: operands.GetLabelsDeprecated(hc, appComponent),
 		},
 	}
 }

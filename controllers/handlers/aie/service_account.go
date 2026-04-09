@@ -25,7 +25,7 @@ func newAIEWebhookServiceAccount(hc *hcov1beta1.HyperConverged) *corev1.ServiceA
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      aieWebhookServiceAccountName,
 			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, appComponent),
+			Labels:    operands.GetLabelsDeprecated(hc, appComponent),
 		},
 	}
 }

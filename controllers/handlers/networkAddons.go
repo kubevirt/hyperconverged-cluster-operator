@@ -203,7 +203,7 @@ func NewNetworkAddonsWithNameOnly(hc *hcov1beta1.HyperConverged) *networkaddonsv
 	return &networkaddonsv1.NetworkAddonsConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   networkaddonsnames.OperatorConfig,
-			Labels: operands.GetLabels(hc, util.AppComponentNetwork),
+			Labels: operands.GetLabelsDeprecated(hc, util.AppComponentNetwork),
 		},
 	}
 }

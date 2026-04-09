@@ -860,7 +860,7 @@ func NewKubeVirtWithNameOnly(hc *hcov1beta1.HyperConverged, opts ...string) *kub
 	return &kubevirtcorev1.KubeVirt{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kubevirt-" + hc.Name,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentCompute),
+			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentCompute),
 			Namespace: operands.GetNamespace(hc.Namespace, opts),
 		},
 	}
@@ -1051,7 +1051,7 @@ func NewKubeVirtPriorityClass(hc *hcov1beta1.HyperConverged) *schedulingv1.Prior
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kvPriorityClass,
-			Labels: operands.GetLabels(hc, hcoutil.AppComponentCompute),
+			Labels: operands.GetLabelsDeprecated(hc, hcoutil.AppComponentCompute),
 		},
 		// 1 billion is the highest value we can set
 		// https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass

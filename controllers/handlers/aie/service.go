@@ -27,7 +27,7 @@ func newAIEWebhookServiceWithNameOnly(hc *hcov1beta1.HyperConverged) *corev1.Ser
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      aieWebhookName,
 			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, appComponent),
+			Labels:    operands.GetLabelsDeprecated(hc, appComponent),
 		},
 	}
 }

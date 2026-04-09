@@ -45,7 +45,7 @@ func NewIOMMUFDDevicePluginDaemonSetWithNameOnly(hc *hcov1beta1.HyperConverged) 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      iommufdDevicePluginName,
 			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, iommufdDevicePluginAppComponent),
+			Labels:    operands.GetLabelsDeprecated(hc, iommufdDevicePluginAppComponent),
 		},
 	}
 }
@@ -58,7 +58,7 @@ func newIOMMUFDDevicePluginDaemonSet(hc *hcov1beta1.HyperConverged) *appsv1.Daem
 		hcoutil.AppLabelComponent: string(iommufdDevicePluginAppComponent),
 	}
 
-	podLabels := operands.GetLabels(hc, iommufdDevicePluginAppComponent)
+	podLabels := operands.GetLabelsDeprecated(hc, iommufdDevicePluginAppComponent)
 
 	ds := NewIOMMUFDDevicePluginDaemonSetWithNameOnly(hc)
 	ds.Spec = appsv1.DaemonSetSpec{

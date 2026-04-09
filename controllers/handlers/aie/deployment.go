@@ -46,7 +46,7 @@ func newAIEWebhookDeploymentWithNameOnly(hc *hcov1beta1.HyperConverged) *appsv1.
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      aieWebhookName,
 			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, appComponent),
+			Labels:    operands.GetLabelsDeprecated(hc, appComponent),
 		},
 	}
 }
@@ -62,7 +62,7 @@ func newAIEWebhookDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
 		hcoutil.AppLabelComponent: string(appComponent),
 	}
 
-	podLabels := operands.GetLabels(hc, appComponent)
+	podLabels := operands.GetLabelsDeprecated(hc, appComponent)
 
 	args := []string{
 		"--metrics-bind-address=:8443",

@@ -46,7 +46,7 @@ func NewVirtioWinCm(hc *hcov1beta1.HyperConverged) (*corev1.ConfigMap, error) {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      virtioWinCmName,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentDeployment),
+			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentDeployment),
 			Namespace: hc.Namespace,
 		},
 		Data: map[string]string{
@@ -59,7 +59,7 @@ func NewVirtioWinCmReaderRole(hc *hcov1beta1.HyperConverged) *rbacv1.Role {
 	return &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      virtioWinCmName,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentDeployment),
+			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentDeployment),
 			Namespace: hc.Namespace,
 		},
 		Rules: []rbacv1.PolicyRule{
@@ -77,7 +77,7 @@ func NewVirtioWinCmReaderRoleBinding(hc *hcov1beta1.HyperConverged) *rbacv1.Role
 	return &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      virtioWinCmName,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentStorage),
+			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentStorage),
 			Namespace: hc.Namespace,
 		},
 		RoleRef: rbacv1.RoleRef{

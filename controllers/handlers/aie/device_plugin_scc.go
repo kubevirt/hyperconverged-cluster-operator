@@ -34,7 +34,7 @@ func NewIOMMUFDDevicePluginSCCWithNameOnly(hc *hcov1beta1.HyperConverged) *secur
 	return &securityv1.SecurityContextConstraints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   iommufdDevicePluginSCCName,
-			Labels: operands.GetLabels(hc, iommufdDevicePluginAppComponent),
+			Labels: operands.GetLabelsDeprecated(hc, iommufdDevicePluginAppComponent),
 		},
 	}
 }
