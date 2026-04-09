@@ -299,7 +299,7 @@ func getBasicDeployment() *BasicExpected {
 	expectedConsoleProxyService := handlers.NewKvUIProxySvc()
 	res.consoleProxySvc = expectedConsoleProxyService
 
-	expectedConsolePlugin := handlers.NewKVConsolePlugin(hco)
+	expectedConsolePlugin := handlers.NewKVConsolePlugin()
 	res.consolePlugin = expectedConsolePlugin
 
 	expectedConsoleConfig := &operatorv1.Console{

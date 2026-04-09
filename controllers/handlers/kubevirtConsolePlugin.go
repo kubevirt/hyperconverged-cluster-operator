@@ -110,8 +110,8 @@ func NewKvUIProxySA() *corev1.ServiceAccount {
 }
 
 // **** nginx config map Handler ****
-func NewKvUINginxCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, _ *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewDynamicCmHandler(Client, Scheme, NewKVUINginxCM), nil
+func NewKvUINginxCMHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewDynamicCmHandler(Client, Scheme, NewKVUINginxCM)
 }
 
 // **** UI user settings config map Handler ****
@@ -125,8 +125,8 @@ func NewKvUIFeaturesCMHandler(Client client.Client, Scheme *runtime.Scheme) oper
 }
 
 // **** Kubevirt UI Console Plugin Custom Resource Handler ****
-func NewKvUIPluginCRHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return newConsolePluginHandler(Client, Scheme, NewKVConsolePlugin(hc)), nil
+func NewKvUIPluginCRHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return newConsolePluginHandler(Client, Scheme, NewKVConsolePlugin())
 }
 
 func NewKvUIPluginDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
@@ -409,7 +409,7 @@ func NewKVUINginxCM(hc *hcov1beta1.HyperConverged) (*corev1.ConfigMap, error) {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nginxConfigMapName,
-			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIPlugin),
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIPlugin),
 			Namespace: hc.Namespace,
 		},
 		Data: map[string]string{
@@ -450,11 +450,13 @@ func NewKvUIFeaturesCM() *corev1.ConfigMap {
 	}
 }
 
-func NewKVConsolePlugin(hc *hcov1beta1.HyperConverged) *consolev1.ConsolePlugin {
+func NewKVConsolePlugin() *consolev1.ConsolePlugin {
+	namespace := hcoutil.GetOperatorNamespaceFromEnv()
+
 	return &consolev1.ConsolePlugin{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kvUIPluginName,
-			Labels: operands.GetLabelsDeprecated(hc, hcoutil.AppComponentUIPlugin),
+			Labels: operands.GetLabels(hcoutil.AppComponentUIPlugin),
 		},
 		Spec: consolev1.ConsolePluginSpec{
 			DisplayName: "Kubevirt Console Plugin",
@@ -462,7 +464,7 @@ func NewKVConsolePlugin(hc *hcov1beta1.HyperConverged) *consolev1.ConsolePlugin 
 				Type: consolev1.Service,
 				Service: &consolev1.ConsolePluginService{
 					Name:      kvUIPluginSvcName,
-					Namespace: hc.Namespace,
+					Namespace: namespace,
 					Port:      hcoutil.UIPluginServerPort,
 					BasePath:  "/",
 				},
@@ -474,7 +476,7 @@ func NewKVConsolePlugin(hc *hcov1beta1.HyperConverged) *consolev1.ConsolePlugin 
 					Type: consolev1.ProxyTypeService,
 					Service: &consolev1.ConsolePluginProxyServiceConfig{
 						Name:      kvUIProxySvcName,
-						Namespace: hc.Namespace,
+						Namespace: namespace,
 						Port:      hcoutil.UIProxyServerPort,
 					},
 				},
