@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"maps"
+	"os"
 	"reflect"
 	"slices"
 	"strings"
@@ -45,6 +46,13 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 	BeforeEach(func() {
 		hco = commontestutils.NewHco()
 		req = commontestutils.NewReq(hco)
+
+		origNS := os.Getenv(hcoutil.OperatorNamespaceEnv)
+		Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
+
+		DeferCleanup(func() {
+			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNS)).To(Succeed())
+		})
 	})
 
 	Context("Console Plugin CR", func() {
@@ -1022,99 +1030,97 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 	})
 
 	Context("Kubevirt Plugin and UI Proxy Service", func() {
-		DescribeTable("should create service if not present", func(appComponent hcoutil.AppComponent,
-			serviceManifestor func(*hcov1beta1.HyperConverged) *v1.Service) {
-			var expectedResource *v1.Service
-			var handler *operands.GenericOperand
-			cl := commontestutils.InitClient([]client.Object{})
-			expectedResource = serviceManifestor(hco)
-			handler = operands.NewServiceHandler(cl, commontestutils.GetScheme(), serviceManifestor)
+		DescribeTable("should create service if not present",
+			func(appComponent hcoutil.AppComponent, serviceManifestor func() *v1.Service) {
+				var expectedResource *v1.Service
+				var handler *operands.GenericOperand
+				cl := commontestutils.InitClient([]client.Object{})
+				expectedResource = serviceManifestor()
+				handler = operands.NewServiceHandler(cl, commontestutils.GetScheme(), serviceManifestor())
 
-			res := handler.Ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
-			Expect(res.Err).ToNot(HaveOccurred())
+				res := handler.Ensure(req)
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Err).ToNot(HaveOccurred())
 
-			foundResource := &v1.Service{}
-			Expect(
-				cl.Get(context.TODO(),
-					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
-					foundResource),
-			).To(Succeed())
-			Expect(foundResource.Name).To(Equal(expectedResource.Name))
-			Expect(foundResource.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, commontestutils.Name))
-			Expect(foundResource.Namespace).To(Equal(expectedResource.Namespace))
-		},
+				foundResource := &v1.Service{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
+						foundResource),
+				).To(Succeed())
+				Expect(foundResource.Name).To(Equal(expectedResource.Name))
+				Expect(foundResource.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, commontestutils.Name))
+				Expect(foundResource.Namespace).To(Equal(expectedResource.Namespace))
+			},
 			Entry("ui plugin service", hcoutil.AppComponentUIPlugin, NewKvUIPluginSvc),
 			Entry("ui proxy service", hcoutil.AppComponentUIProxy, NewKvUIProxySvc),
 		)
 
-		DescribeTable("should find service if present", func(appComponent hcoutil.AppComponent,
-			serviceManifestor func(*hcov1beta1.HyperConverged) *v1.Service) {
+		DescribeTable("should find service if present",
+			func(appComponent hcoutil.AppComponent, serviceManifestor func() *v1.Service) {
+				expectedResource := serviceManifestor()
+				cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
+				handler := operands.NewServiceHandler(cl, commontestutils.GetScheme(), serviceManifestor())
 
-			expectedResource := serviceManifestor(hco)
-			cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
-			handler := operands.NewServiceHandler(cl, commontestutils.GetScheme(), serviceManifestor)
+				res := handler.Ensure(req)
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Err).ToNot(HaveOccurred())
 
-			res := handler.Ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
-			Expect(res.Err).ToNot(HaveOccurred())
+				foundResource := &v1.Service{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
+						foundResource),
+				).To(Succeed())
 
-			foundResource := &v1.Service{}
-			Expect(
-				cl.Get(context.TODO(),
-					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
-					foundResource),
-			).To(Succeed())
-
-			// Check HCO's status
-			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
-			objectRef, err := reference.GetReference(commontestutils.GetScheme(), foundResource)
-			Expect(err).ToNot(HaveOccurred())
-			// ObjectReference should have been added
-			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
-		},
+				// Check HCO's status
+				Expect(hco.Status.RelatedObjects).ToNot(BeNil())
+				objectRef, err := reference.GetReference(commontestutils.GetScheme(), foundResource)
+				Expect(err).ToNot(HaveOccurred())
+				// ObjectReference should have been added
+				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
+			},
 			Entry("ui plugin service", hcoutil.AppComponentUIPlugin, NewKvUIPluginSvc),
 			Entry("ui proxy service", hcoutil.AppComponentUIProxy, NewKvUIProxySvc),
 		)
 
-		DescribeTable("should reconcile service to default if changed", func(appComponent hcoutil.AppComponent,
-			serviceManifestor func(*hcov1beta1.HyperConverged) *v1.Service) {
+		DescribeTable("should reconcile service to default if changed",
+			func(appComponent hcoutil.AppComponent, serviceManifestor func() *v1.Service) {
+				expectedResource := serviceManifestor()
+				outdatedResource := serviceManifestor()
 
-			expectedResource := serviceManifestor(hco)
-			outdatedResource := serviceManifestor(hco)
+				outdatedResource.Labels[hcoutil.AppLabel] = "wrong label"
+				outdatedResource.Spec.Ports[0].Port = 6666
 
-			outdatedResource.Labels[hcoutil.AppLabel] = "wrong label"
-			outdatedResource.Spec.Ports[0].Port = 6666
+				cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
+				handler := operands.NewServiceHandler(cl, commontestutils.GetScheme(), serviceManifestor())
 
-			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler := operands.NewServiceHandler(cl, commontestutils.GetScheme(), serviceManifestor)
+				res := handler.Ensure(req)
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Updated).To(BeTrue())
+				Expect(res.Err).ToNot(HaveOccurred())
 
-			res := handler.Ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
-			Expect(res.Updated).To(BeTrue())
-			Expect(res.Err).ToNot(HaveOccurred())
+				foundResource := &v1.Service{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
+						foundResource),
+				).To(Succeed())
 
-			foundResource := &v1.Service{}
-			Expect(
-				cl.Get(context.TODO(),
-					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
-					foundResource),
-			).To(Succeed())
+				Expect(foundResource.Labels).ToNot(Equal(outdatedResource.Labels))
+				Expect(foundResource.Labels).To(Equal(expectedResource.Labels))
+				Expect(foundResource.Spec.Ports).ToNot(Equal(outdatedResource.Spec.Ports))
+				Expect(foundResource.Spec.Ports).To(Equal(expectedResource.Spec.Ports))
 
-			Expect(foundResource.Labels).ToNot(Equal(outdatedResource.Labels))
-			Expect(foundResource.Labels).To(Equal(expectedResource.Labels))
-			Expect(foundResource.Spec.Ports).ToNot(Equal(outdatedResource.Spec.Ports))
-			Expect(foundResource.Spec.Ports).To(Equal(expectedResource.Spec.Ports))
-
-			// ObjectReference should have been updated
-			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
-			objectRefOutdated, err := reference.GetReference(commontestutils.GetScheme(), outdatedResource)
-			Expect(err).ToNot(HaveOccurred())
-			objectRefFound, err := reference.GetReference(commontestutils.GetScheme(), foundResource)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
-			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
-		},
+				// ObjectReference should have been updated
+				Expect(hco.Status.RelatedObjects).ToNot(BeNil())
+				objectRefOutdated, err := reference.GetReference(commontestutils.GetScheme(), outdatedResource)
+				Expect(err).ToNot(HaveOccurred())
+				objectRefFound, err := reference.GetReference(commontestutils.GetScheme(), foundResource)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
+				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
+			},
 			Entry("ui plugin service", hcoutil.AppComponentUIPlugin, NewKvUIPluginSvc),
 			Entry("ui proxy service", hcoutil.AppComponentUIProxy, NewKvUIProxySvc),
 		)
