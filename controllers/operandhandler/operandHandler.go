@@ -95,6 +95,8 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 				handlers.NewKvUIProxyDeploymentHandler(client, scheme),
 				handlers.NewKvUIUserSettingsCMHandler(client, scheme),
 				handlers.NewKvUIFeaturesCMHandler(client, scheme),
+				handlers.NewKvUIPluginCRHandler(client, scheme),
+				handlers.NewKvUINginxCMHandler(client, scheme),
 			}...)
 		}
 	}
@@ -147,8 +149,6 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 
 	if ci.IsConsolePluginImageProvided() {
 		getHandlerFuncs = append(getHandlerFuncs,
-			handlers.NewKvUINginxCMHandler,
-			handlers.NewKvUIPluginCRHandler,
 			handlers.NewKvUIConfigReaderRoleHandler,
 			handlers.NewKvUIConfigReaderRoleBindingHandler,
 			handlers.NewKVConsolePluginNetworkPolicyHandler,

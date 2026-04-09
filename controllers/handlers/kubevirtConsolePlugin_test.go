@@ -68,9 +68,9 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		}
 
 		It("should create plugin CR if not present", func() {
-			expectedResource := NewKVConsolePlugin(hco)
+			expectedResource := NewKVConsolePlugin()
 			cl := commontestutils.InitClient([]client.Object{})
-			handler, _ := NewKvUIPluginCRHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewKvUIPluginCRHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeTrue())
@@ -88,10 +88,10 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		})
 
 		It("should find plugin CR if present", func() {
-			expectedResource := NewKVConsolePlugin(hco)
+			expectedResource := NewKVConsolePlugin()
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedResource, expectedConsoleConfig})
-			handler, _ := NewKvUIPluginCRHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewKvUIPluginCRHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
@@ -106,14 +106,14 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		})
 
 		It("should reconcile plugin spec to default if changed", func() {
-			expectedResource := NewKVConsolePlugin(hco)
-			outdatedResource := NewKVConsolePlugin(hco)
+			expectedResource := NewKVConsolePlugin()
+			outdatedResource := NewKVConsolePlugin()
 
 			outdatedResource.Spec.Backend.Service.Port = int32(6666)
 			outdatedResource.Spec.DisplayName = "fake plugin name"
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource, expectedConsoleConfig})
-			handler, _ := NewKvUIPluginCRHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewKvUIPluginCRHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
@@ -140,13 +140,13 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		})
 
 		It("should reconcile plugin labels to default if changed", func() {
-			expectedResource := NewKVConsolePlugin(hco)
-			outdatedResource := NewKVConsolePlugin(hco)
+			expectedResource := NewKVConsolePlugin()
+			outdatedResource := NewKVConsolePlugin()
 
 			outdatedResource.Labels[hcoutil.AppLabel] = "changed"
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource, expectedConsoleConfig})
-			handler, _ := NewKvUIPluginCRHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewKvUIPluginCRHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
@@ -164,14 +164,14 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		})
 
 		It("should reconcile plugin labels to default if added", func() {
-			expectedResource := NewKVConsolePlugin(hco)
-			outdatedResource := NewKVConsolePlugin(hco)
+			expectedResource := NewKVConsolePlugin()
+			outdatedResource := NewKVConsolePlugin()
 
 			outdatedResource.Labels["app.kubernetes.io/managed-by"] = "something"
 			// TODO: add another test for extra labels!
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource, expectedConsoleConfig})
-			handler, _ := NewKvUIPluginCRHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewKvUIPluginCRHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
@@ -189,13 +189,13 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		})
 
 		It("should reconcile plugin labels to default if deleted", func() {
-			expectedResource := NewKVConsolePlugin(hco)
-			outdatedResource := NewKVConsolePlugin(hco)
+			expectedResource := NewKVConsolePlugin()
+			outdatedResource := NewKVConsolePlugin()
 
 			delete(outdatedResource.Labels, hcoutil.AppLabel)
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource, expectedConsoleConfig})
-			handler, _ := NewKvUIPluginCRHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewKvUIPluginCRHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
@@ -215,7 +215,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		It("should reconcile managed labels to default without touching user added ones", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
-			outdatedResource := NewKVConsolePlugin(hco)
+			outdatedResource := NewKVConsolePlugin()
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 			for k, v := range expectedLabels {
 				outdatedResource.Labels[k] = "wrong_" + v
@@ -223,7 +223,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler, _ := NewKvUIPluginCRHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewKvUIPluginCRHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
