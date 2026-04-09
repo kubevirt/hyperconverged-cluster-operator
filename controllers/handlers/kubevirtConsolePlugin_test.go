@@ -525,6 +525,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Expect(nginxConf).To(ContainSubstring("listen"))
 				Expect(nginxConf).To(ContainSubstring("ssl_protocols"))
 				Expect(nginxConf).To(ContainSubstring("ssl_ciphers"))
+				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve X25519MLKEM768:SecP256r1MLKEM768:SecP384r1MLKEM1024:X25519:prime256v1:secp384r1;"))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_protocols ;"))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
 			})
@@ -540,6 +541,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Expect(cm.Data).To(HaveKey("nginx.conf"))
 				nginxConf := cm.Data["nginx.conf"]
 				Expect(nginxConf).To(MatchRegexp(`ssl_protocols +TLSv1\.3`))
+				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve X25519MLKEM768:SecP256r1MLKEM768:SecP384r1MLKEM1024:X25519:prime256v1:secp384r1;"))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
 			})
 
@@ -555,6 +557,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				nginxConf := cm.Data["nginx.conf"]
 				Expect(nginxConf).To(ContainSubstring("ssl_protocols"))
 				Expect(nginxConf).To(ContainSubstring("ssl_ciphers"))
+				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve X25519MLKEM768:SecP256r1MLKEM768:SecP384r1MLKEM1024:X25519:prime256v1:secp384r1;"))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_protocols ;"))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
 			})
@@ -576,6 +579,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Expect(cm.Data).To(HaveKey("nginx.conf"))
 				nginxConf := cm.Data["nginx.conf"]
 				Expect(nginxConf).To(MatchRegexp(`ssl_protocols +TLSv1\.3`))
+				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve X25519MLKEM768:SecP256r1MLKEM768:SecP384r1MLKEM1024:X25519:prime256v1:secp384r1;"))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers"))
 			})
 
@@ -586,6 +590,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				nginxConf := cm.Data["nginx.conf"]
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_protocols ;"))
 				Expect(nginxConf).NotTo(ContainSubstring("ssl_ciphers ;"))
+				Expect(nginxConf).To(ContainSubstring("ssl_ecdh_curve X25519MLKEM768:SecP256r1MLKEM768:SecP384r1MLKEM1024:X25519:prime256v1:secp384r1;"))
 			})
 		})
 
