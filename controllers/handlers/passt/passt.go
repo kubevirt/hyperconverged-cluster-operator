@@ -229,11 +229,11 @@ func NewPasstBindingCNINetworkAttachmentDefinition(hc *hcov1beta1.HyperConverged
 }
 
 // NewPasstBindingCNISecurityContextConstraints creates a SecurityContextConstraints for the passt binding CNI
-func NewPasstBindingCNISecurityContextConstraints(hc *hcov1beta1.HyperConverged) *securityv1.SecurityContextConstraints {
+func NewPasstBindingCNISecurityContextConstraints() *securityv1.SecurityContextConstraints {
 	return &securityv1.SecurityContextConstraints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   passtCNIObjectName,
-			Labels: hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentNetwork),
+			Labels: operands.GetLabels(hcoutil.AppComponentNetwork),
 		},
 		AllowPrivilegedContainer: true,
 		AllowHostDirVolumePlugin: true,
@@ -249,7 +249,7 @@ func NewPasstBindingCNISecurityContextConstraints(hc *hcov1beta1.HyperConverged)
 			Type: securityv1.SELinuxStrategyRunAsAny,
 		},
 		Users: []string{
-			fmt.Sprintf("system:serviceaccount:%s:%s", hc.Namespace, passtCNIObjectName),
+			fmt.Sprintf("system:serviceaccount:%s:%s", hcoutil.GetOperatorNamespaceFromEnv(), passtCNIObjectName),
 		},
 		Volumes: []securityv1.FSType{
 			securityv1.FSTypeAll,
@@ -288,11 +288,11 @@ func NewPasstNetworkAttachmentDefinitionHandler(Client client.Client, Scheme *ru
 }
 
 // NewPasstSecurityContextConstraintsHandler creates a conditional handler for passt SecurityContextConstraints
-func NewPasstSecurityContextConstraintsHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+func NewPasstSecurityContextConstraintsHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
 	return createPasstConditionalHandler(
-		operands.NewSecurityContextConstraintsHandler(Client, Scheme, NewPasstBindingCNISecurityContextConstraints),
-		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return NewPasstBindingCNISecurityContextConstraints(hc)
+		operands.NewSecurityContextConstraintsHandler(cli, Scheme, NewPasstBindingCNISecurityContextConstraints()),
+		func(_ *hcov1beta1.HyperConverged) client.Object {
+			return NewPasstBindingCNISecurityContextConstraints()
 		},
 	)
 }

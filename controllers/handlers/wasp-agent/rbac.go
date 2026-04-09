@@ -1,7 +1,6 @@
 package wasp_agent
 
 import (
-	log "github.com/go-logr/logr"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -9,21 +8,21 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-func NewWaspAgentClusterRoleBindingHandler(
-	_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
+func NewWaspAgentClusterRoleBindingHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
 	return operands.NewConditionalHandler(
-		operands.NewClusterRoleBindingHandler(Client, Scheme, newWaspAgentClusterRoleBinding(hc)),
+		operands.NewClusterRoleBindingHandler(cli, Scheme, newWaspAgentClusterRoleBinding()),
 		shouldDeployWaspAgent,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return newWaspAgentClusterRoleBindingWithNameOnly(hc)
+			return newWaspAgentClusterRoleBindingWithNameOnly()
 		},
-	), nil
+	)
 }
 
-func newWaspAgentClusterRoleBinding(hc *hcov1beta1.HyperConverged) *rbacv1.ClusterRoleBinding {
-	crb := newWaspAgentClusterRoleBindingWithNameOnly(hc)
+func newWaspAgentClusterRoleBinding() *rbacv1.ClusterRoleBinding {
+	crb := newWaspAgentClusterRoleBindingWithNameOnly()
 
 	crb.RoleRef = rbacv1.RoleRef{
 		Kind:     "ClusterRole",
@@ -35,14 +34,14 @@ func newWaspAgentClusterRoleBinding(hc *hcov1beta1.HyperConverged) *rbacv1.Clust
 		{
 			Kind:      "ServiceAccount",
 			Name:      waspAgentServiceAccountName,
-			Namespace: hc.Namespace,
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 	}
 
 	return crb
 }
 
-func newWaspAgentClusterRoleBindingWithNameOnly(hc *hcov1beta1.HyperConverged) *rbacv1.ClusterRoleBinding {
+func newWaspAgentClusterRoleBindingWithNameOnly() *rbacv1.ClusterRoleBinding {
 	return &rbacv1.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: rbacv1.SchemeGroupVersion.String(),
@@ -50,30 +49,29 @@ func newWaspAgentClusterRoleBindingWithNameOnly(hc *hcov1beta1.HyperConverged) *
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   clusterRoleName,
-			Labels: operands.GetLabelsDeprecated(hc, AppComponentWaspAgent),
+			Labels: operands.GetLabels(AppComponentWaspAgent),
 		},
 	}
 }
 
-func NewWaspAgentClusterRoleHandler(
-	_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
+func NewWaspAgentClusterRoleHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
 	return operands.NewConditionalHandler(
-		operands.NewClusterRoleHandler(Client, Scheme, newWaspAgentClusterRole(hc)),
+		operands.NewClusterRoleHandler(Client, Scheme, newWaspAgentClusterRole()),
 		shouldDeployWaspAgent,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return newWaspAgentClusterRoleWithNameOnly(hc)
+			return newWaspAgentClusterRoleWithNameOnly()
 		},
-	), nil
+	)
 }
 
-func newWaspAgentClusterRole(hc *hcov1beta1.HyperConverged) *rbacv1.ClusterRole {
-	cr := newWaspAgentClusterRoleWithNameOnly(hc)
+func newWaspAgentClusterRole() *rbacv1.ClusterRole {
+	cr := newWaspAgentClusterRoleWithNameOnly()
 	cr.Rules = getClusterPolicyRules()
 
 	return cr
 }
 
-func newWaspAgentClusterRoleWithNameOnly(hc *hcov1beta1.HyperConverged) *rbacv1.ClusterRole {
+func newWaspAgentClusterRoleWithNameOnly() *rbacv1.ClusterRole {
 	return &rbacv1.ClusterRole{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: rbacv1.SchemeGroupVersion.String(),
@@ -81,7 +79,7 @@ func newWaspAgentClusterRoleWithNameOnly(hc *hcov1beta1.HyperConverged) *rbacv1.
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   clusterRoleName,
-			Labels: operands.GetLabelsDeprecated(hc, AppComponentWaspAgent),
+			Labels: operands.GetLabels(AppComponentWaspAgent),
 		},
 	}
 }

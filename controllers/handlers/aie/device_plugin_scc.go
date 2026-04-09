@@ -3,7 +3,6 @@ package aie
 import (
 	"fmt"
 
-	log "github.com/go-logr/logr"
 	securityv1 "github.com/openshift/api/security/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,35 +11,34 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 const (
 	iommufdDevicePluginSCCName = "iommufd-device-plugin"
 )
 
-func NewIOMMUFDDevicePluginSCCHandler(
-	_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged,
-) (operands.Operand, error) {
+func NewIOMMUFDDevicePluginSCCHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
 	return operands.NewConditionalHandler(
-		operands.NewSecurityContextConstraintsHandler(Client, Scheme, newIOMMUFDDevicePluginSCC),
+		operands.NewSecurityContextConstraintsHandler(cli, Scheme, newIOMMUFDDevicePluginSCC()),
 		shouldDeployAIE,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return NewIOMMUFDDevicePluginSCCWithNameOnly(hc)
+			return NewIOMMUFDDevicePluginSCCWithNameOnly()
 		},
-	), nil
+	)
 }
 
-func NewIOMMUFDDevicePluginSCCWithNameOnly(hc *hcov1beta1.HyperConverged) *securityv1.SecurityContextConstraints {
+func NewIOMMUFDDevicePluginSCCWithNameOnly() *securityv1.SecurityContextConstraints {
 	return &securityv1.SecurityContextConstraints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   iommufdDevicePluginSCCName,
-			Labels: operands.GetLabelsDeprecated(hc, iommufdDevicePluginAppComponent),
+			Labels: operands.GetLabels(iommufdDevicePluginAppComponent),
 		},
 	}
 }
 
-func newIOMMUFDDevicePluginSCC(hc *hcov1beta1.HyperConverged) *securityv1.SecurityContextConstraints {
-	scc := NewIOMMUFDDevicePluginSCCWithNameOnly(hc)
+func newIOMMUFDDevicePluginSCC() *securityv1.SecurityContextConstraints {
+	scc := NewIOMMUFDDevicePluginSCCWithNameOnly()
 
 	scc.AllowPrivilegedContainer = true
 	scc.AllowHostDirVolumePlugin = true
@@ -59,7 +57,7 @@ func newIOMMUFDDevicePluginSCC(hc *hcov1beta1.HyperConverged) *securityv1.Securi
 		Type: securityv1.SELinuxStrategyRunAsAny,
 	}
 	scc.Users = []string{
-		fmt.Sprintf("system:serviceaccount:%s:%s", hc.Namespace, iommufdDevicePluginServiceAccountName),
+		fmt.Sprintf("system:serviceaccount:%s:%s", hcoutil.GetOperatorNamespaceFromEnv(), iommufdDevicePluginServiceAccountName),
 	}
 	scc.Volumes = []securityv1.FSType{
 		securityv1.FSTypeHostPath,

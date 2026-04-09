@@ -4,7 +4,6 @@ import (
 	"context"
 	"maps"
 
-	log "github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -32,7 +31,7 @@ var _ = Describe("Wasp agent Cluster Role", func() {
 
 	Context("newWaspAgentClusterRole", func() {
 		It("Should have all the default fields", func() {
-			cr := newWaspAgentClusterRole(hco)
+			cr := newWaspAgentClusterRole()
 			Expect(cr.Name).To(Equal("wasp-cluster"))
 			Expect(cr.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
 			Expect(cr.Labels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, "wasp-agent"))
@@ -51,12 +50,11 @@ var _ = Describe("Wasp agent Cluster Role", func() {
 			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 100,
 			}
-			cr := newWaspAgentClusterRole(hco)
+			cr := newWaspAgentClusterRole()
 
 			cl = commontestutils.InitClient([]client.Object{hco, cr})
 
-			handler, err := NewWaspAgentClusterRoleHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewWaspAgentClusterRoleHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 
@@ -74,12 +72,11 @@ var _ = Describe("Wasp agent Cluster Role", func() {
 			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 100,
 			}
-			cr := newWaspAgentClusterRole(hco)
+			cr := newWaspAgentClusterRole()
 
 			cl = commontestutils.InitClient([]client.Object{hco, cr})
 
-			handler, err := NewWaspAgentClusterRoleHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewWaspAgentClusterRoleHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 
@@ -98,8 +95,7 @@ var _ = Describe("Wasp agent Cluster Role", func() {
 				MemoryOvercommitPercentage: 150,
 			}
 
-			handler, err := NewWaspAgentClusterRoleHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewWaspAgentClusterRoleHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -119,12 +115,11 @@ var _ = Describe("Wasp agent Cluster Role", func() {
 				MemoryOvercommitPercentage: 150,
 			}
 			hco.Annotations[AutopilotSwapAnnotation] = AutopilotSwapAnnotationValue
-			cr := newWaspAgentClusterRole(hco)
+			cr := newWaspAgentClusterRole()
 
 			cl = commontestutils.InitClient([]client.Object{hco, cr})
 
-			handler, err := NewWaspAgentClusterRoleHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewWaspAgentClusterRoleHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 
@@ -144,14 +139,13 @@ var _ = Describe("Wasp agent Cluster Role", func() {
 			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
-			cr := newWaspAgentClusterRole(hco)
+			cr := newWaspAgentClusterRole()
 			expectedLabels := maps.Clone(cr.Labels)
 			delete(cr.Labels, "app.kubernetes.io/component")
 			cr.Labels["user-added-label"] = "user-value"
 			cl = commontestutils.InitClient([]client.Object{hco, cr})
 
-			handler, err := NewWaspAgentClusterRoleHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewWaspAgentClusterRoleHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -185,7 +179,7 @@ var _ = Describe("Wasp agent Cluster Role Binding", func() {
 
 	Context("newWaspAgentClusterRoleBinding", func() {
 		It("Should have all the default fields", func() {
-			crb := newWaspAgentClusterRoleBinding(hco)
+			crb := newWaspAgentClusterRoleBinding()
 			Expect(crb.Name).To(Equal("wasp-cluster"))
 			Expect(crb.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
 			Expect(crb.Labels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, "wasp-agent"))
@@ -200,12 +194,11 @@ var _ = Describe("Wasp agent Cluster Role Binding", func() {
 			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 100,
 			}
-			crb := newWaspAgentClusterRoleBinding(hco)
+			crb := newWaspAgentClusterRoleBinding()
 
 			cl = commontestutils.InitClient([]client.Object{hco, crb})
 
-			handler, err := NewWaspAgentClusterRoleBindingHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewWaspAgentClusterRoleBindingHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 
@@ -223,12 +216,11 @@ var _ = Describe("Wasp agent Cluster Role Binding", func() {
 			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 100,
 			}
-			crb := newWaspAgentClusterRoleBinding(hco)
+			crb := newWaspAgentClusterRoleBinding()
 
 			cl = commontestutils.InitClient([]client.Object{hco, crb})
 
-			handler, err := NewWaspAgentClusterRoleBindingHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewWaspAgentClusterRoleBindingHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 
@@ -247,8 +239,7 @@ var _ = Describe("Wasp agent Cluster Role Binding", func() {
 				MemoryOvercommitPercentage: 150,
 			}
 
-			handler, err := NewWaspAgentClusterRoleBindingHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewWaspAgentClusterRoleBindingHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -268,12 +259,11 @@ var _ = Describe("Wasp agent Cluster Role Binding", func() {
 				MemoryOvercommitPercentage: 150,
 			}
 			hco.Annotations[AutopilotSwapAnnotation] = AutopilotSwapAnnotationValue
-			crb := newWaspAgentClusterRoleBinding(hco)
+			crb := newWaspAgentClusterRoleBinding()
 
 			cl = commontestutils.InitClient([]client.Object{hco, crb})
 
-			handler, err := NewWaspAgentClusterRoleBindingHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewWaspAgentClusterRoleBindingHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 
@@ -293,14 +283,13 @@ var _ = Describe("Wasp agent Cluster Role Binding", func() {
 			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
-			crb := newWaspAgentClusterRoleBinding(hco)
+			crb := newWaspAgentClusterRoleBinding()
 			expectedLabels := maps.Clone(crb.Labels)
 			delete(crb.Labels, "app.kubernetes.io/component")
 			crb.Labels["user-added-label"] = "user-value"
 			cl = commontestutils.InitClient([]client.Object{hco, crb})
 
-			handler, err := NewWaspAgentClusterRoleBindingHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewWaspAgentClusterRoleBindingHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())

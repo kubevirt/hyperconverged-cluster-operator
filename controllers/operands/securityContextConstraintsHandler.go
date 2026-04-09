@@ -14,18 +14,16 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-type newSecurityContextConstraintsFunc func(hc *hcov1beta1.HyperConverged) *securityv1.SecurityContextConstraints
-
-func NewSecurityContextConstraintsHandler(Client client.Client, Scheme *runtime.Scheme, newCrFunc newSecurityContextConstraintsFunc) *GenericOperand {
-	return NewGenericOperand(Client, Scheme, "SecurityContextConstraints", &securityContextConstraintsHooks{newCrFunc: newCrFunc}, false)
+func NewSecurityContextConstraintsHandler(Client client.Client, Scheme *runtime.Scheme, scc *securityv1.SecurityContextConstraints) *GenericOperand {
+	return NewGenericOperand(Client, Scheme, "SecurityContextConstraints", &securityContextConstraintsHooks{scc: scc}, false)
 }
 
 type securityContextConstraintsHooks struct {
-	newCrFunc newSecurityContextConstraintsFunc
+	scc *securityv1.SecurityContextConstraints
 }
 
-func (h securityContextConstraintsHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	return h.newCrFunc(hc), nil
+func (h securityContextConstraintsHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+	return h.scc.DeepCopy(), nil
 }
 
 func (securityContextConstraintsHooks) GetEmptyCr() client.Object {
