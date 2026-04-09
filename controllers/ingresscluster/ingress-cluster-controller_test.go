@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/downloadhost"
 	hcoutils "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -62,26 +63,22 @@ var _ = BeforeSuite(func() {
 var _ = Describe("IngressClusterController", func() {
 
 	var (
-		ingress                 *configv1.Ingress
-		hostBeforeTest          downloadhost.CLIDownloadHost
-		selfNamespaceBeforeTest string
-		defaultDomain           configv1.Hostname
+		ingress        *configv1.Ingress
+		hostBeforeTest downloadhost.CLIDownloadHost
+		defaultDomain  configv1.Hostname
 	)
 
 	BeforeEach(func() {
 		hostBeforeTest = downloadhost.Get()
 		ingress = getIngress()
-		selfNamespaceBeforeTest = hcoutils.GetOperatorNamespaceFromEnv()
-		Expect(os.Setenv("OPERATOR_NAMESPACE", testNS)).To(Succeed())
+		Expect(os.Setenv(hcoutils.OperatorNamespaceEnv, testNS)).To(Succeed())
 		reqresolver.GeneratePlaceHolders()
-		selfNamespace = testNS
 		defaultDomain = getDefaultCLIIDownloadHost(testDomain)
 	})
 
 	AfterEach(func() {
 		downloadhost.Set(hostBeforeTest)
-		selfNamespace = selfNamespaceBeforeTest
-		Expect(os.Setenv("OPERATOR_NAMESPACE", selfNamespace)).To(Succeed())
+		Expect(os.Setenv(hcoutils.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
 		reqresolver.GeneratePlaceHolders()
 	})
 

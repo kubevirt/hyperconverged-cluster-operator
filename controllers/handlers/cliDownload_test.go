@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"maps"
-	"os"
 	"reflect"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -33,13 +32,6 @@ var _ = Describe("CLI Download", func() {
 		BeforeEach(func() {
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
-
-			origNS := os.Getenv(hcoutil.OperatorNamespaceEnv)
-			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
-
-			DeferCleanup(func() {
-				Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNS)).To(Succeed())
-			})
 		})
 
 		It("should create if not present", func() {
@@ -184,13 +176,6 @@ var _ = Describe("Downloads Service", func() {
 		BeforeEach(func() {
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
-
-			origNS := os.Getenv(hcoutil.OperatorNamespaceEnv)
-			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
-
-			DeferCleanup(func() {
-				Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNS)).To(Succeed())
-			})
 		})
 
 		It("should create if not present", func() {
@@ -272,13 +257,6 @@ var _ = Describe("Cli Downloads Route", func() {
 		BeforeEach(func() {
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
-
-			origNS := os.Getenv(hcoutil.OperatorNamespaceEnv)
-			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
-
-			DeferCleanup(func() {
-				Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNS)).To(Succeed())
-			})
 		})
 
 		It("should create if not present", func() {

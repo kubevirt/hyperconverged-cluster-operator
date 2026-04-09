@@ -49,7 +49,7 @@ import (
 // name and namespace of our primary resource
 const (
 	name      = "kubevirt-hyperconverged"
-	namespace = "kubevirt-hyperconverged"
+	namespace = commontestutils.Namespace
 )
 
 var _ = Describe("HyperconvergedController", func() {
@@ -58,7 +58,6 @@ var _ = Describe("HyperconvergedController", func() {
 
 	origOperatorCondVarName := os.Getenv(hcoutil.OperatorConditionNameEnvVar)
 	origVirtIOWinContainer := os.Getenv("VIRTIOWIN_CONTAINER")
-	origOperatorNS := os.Getenv("OPERATOR_NAMESPACE")
 	origVersion := os.Getenv(hcoutil.HcoKvIoVersionName)
 
 	BeforeEach(func() {
@@ -69,7 +68,6 @@ var _ = Describe("HyperconvergedController", func() {
 
 		Expect(os.Setenv(hcoutil.OperatorConditionNameEnvVar, "OPERATOR_CONDITION")).To(Succeed())
 		Expect(os.Setenv("VIRTIOWIN_CONTAINER", commontestutils.VirtioWinImage)).To(Succeed())
-		Expect(os.Setenv("OPERATOR_NAMESPACE", namespace)).To(Succeed())
 		Expect(os.Setenv(hcoutil.HcoKvIoVersionName, version.Version)).To(Succeed())
 
 		reqresolver.GeneratePlaceHolders()
@@ -80,7 +78,6 @@ var _ = Describe("HyperconvergedController", func() {
 
 			Expect(os.Setenv(hcoutil.OperatorConditionNameEnvVar, origOperatorCondVarName)).To(Succeed())
 			Expect(os.Setenv("VIRTIOWIN_CONTAINER", origVirtIOWinContainer)).To(Succeed())
-			Expect(os.Setenv("OPERATOR_NAMESPACE", origOperatorNS)).To(Succeed())
 			Expect(os.Setenv(hcoutil.HcoKvIoVersionName, origVersion)).To(Succeed())
 		})
 	})

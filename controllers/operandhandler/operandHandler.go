@@ -183,18 +183,6 @@ func (h *OperandHandler) addOperands(scheme *runtime.Scheme, hc *hcov1beta1.Hype
 	}
 }
 
-func (h *OperandHandler) addOperand(scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, getHandler operands.GetHandler) {
-	handler, err := getHandler(logger, h.client, scheme, hc)
-	if err != nil {
-		logger.Error(err, "can't create handler")
-		return
-	}
-
-	h.addOperandObject(handler, hc)
-
-	h.operands = append(h.operands, handler)
-}
-
 func (h *OperandHandler) Ensure(req *common.HcoRequest) error {
 	for _, handler := range h.operands {
 		res := handler.Ensure(req)

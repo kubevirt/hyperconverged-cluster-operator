@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"maps"
-	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -55,14 +54,6 @@ var _ = Describe("Migration tests", func() {
 	BeforeEach(func() {
 		hco = commontestutils.NewHco()
 		req = commontestutils.NewReq(hco)
-
-		origNS := os.Getenv(hcoutil.OperatorNamespaceEnv)
-		Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
-
-		DeferCleanup(func() {
-			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNS)).To(Succeed())
-		})
-
 	})
 
 	Context("test NewMigController", func() {
