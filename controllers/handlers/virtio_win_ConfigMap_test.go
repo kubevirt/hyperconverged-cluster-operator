@@ -198,17 +198,6 @@ var _ = Describe("VirtioWin", func() {
 			os.Setenv("VIRTIOWIN_CONTAINER", "new-virtiowin-container-value")
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
-
-			origNS, origNSSet := os.LookupEnv(hcoutil.OperatorNamespaceEnv)
-			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
-
-			DeferCleanup(func() {
-				if origNSSet {
-					Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNS)).To(Succeed())
-				} else {
-					Expect(os.Unsetenv(hcoutil.OperatorNamespaceEnv)).To(Succeed())
-				}
-			})
 		})
 
 		It("should do nothing if exists", func() {
@@ -260,17 +249,6 @@ var _ = Describe("VirtioWin", func() {
 			os.Setenv("VIRTIOWIN_CONTAINER", "new-virtiowin-container-value")
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
-
-			origNS, origNSSet := os.LookupEnv(hcoutil.OperatorNamespaceEnv)
-			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
-
-			DeferCleanup(func() {
-				if origNSSet {
-					Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNS)).To(Succeed())
-				} else {
-					Expect(os.Unsetenv(hcoutil.OperatorNamespaceEnv)).To(Succeed())
-				}
-			})
 		})
 
 		It("should do nothing if exists", func() {

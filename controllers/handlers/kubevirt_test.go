@@ -56,13 +56,6 @@ var _ = Describe("KubeVirt Operand", func() {
 		BeforeEach(func() {
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
-
-			origNS := os.Getenv(hcoutil.OperatorNamespaceEnv)
-			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
-
-			DeferCleanup(func() {
-				Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNS)).To(Succeed())
-			})
 		})
 
 		It("should create if not present", func() {
@@ -274,9 +267,6 @@ var _ = Describe("KubeVirt Operand", func() {
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
 
-			origNS := os.Getenv(hcoutil.OperatorNamespaceEnv)
-			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
-
 			Expect(os.Setenv(smbiosEnvName,
 				`Family: smbios family
 Product: smbios product
@@ -292,7 +282,6 @@ Version: 1.2.3`)).To(Succeed())
 			restArchConfig()
 
 			DeferCleanup(func() {
-				Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNS)).To(Succeed())
 				Expect(os.Unsetenv(smbiosEnvName)).To(Succeed())
 				Expect(os.Unsetenv(machineTypeEnvName)).To(Succeed())
 				Expect(os.Unsetenv(amd64MachineTypeEnvName)).To(Succeed())
@@ -4599,13 +4588,6 @@ Version: 1.2.3`)
 		BeforeEach(func() {
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
-
-			origNS := os.Getenv(hcoutil.OperatorNamespaceEnv)
-			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
-
-			DeferCleanup(func() {
-				Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNS)).To(Succeed())
-			})
 		})
 
 		oldTLSSecurityProfile := &openshiftconfigv1.TLSSecurityProfile{

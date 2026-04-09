@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/tls"
 	"maps"
-	"os"
 	"reflect"
 	"slices"
 	"strings"
@@ -45,13 +44,6 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 	BeforeEach(func() {
 		hco = commontestutils.NewHco()
 		req = commontestutils.NewReq(hco)
-
-		origNS := os.Getenv(hcoutil.OperatorNamespaceEnv)
-		Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
-
-		DeferCleanup(func() {
-			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNS)).To(Succeed())
-		})
 	})
 
 	Context("Console Plugin CR", func() {

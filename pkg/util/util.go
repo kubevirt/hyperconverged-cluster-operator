@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -48,8 +49,17 @@ var ErrNoNamespace = fmt.Errorf("namespace not found for current environment")
 // is returned by functions that only work on operators running in cluster mode)
 var ErrRunLocal = fmt.Errorf("operator run mode forced to local")
 
+var (
+	namespaceOnce     = &sync.Once{}
+	operatorNamespace string
+)
+
 func GetOperatorNamespaceFromEnv() string {
-	return os.Getenv(OperatorNamespaceEnv)
+	namespaceOnce.Do(func() {
+		operatorNamespace = os.Getenv(OperatorNamespaceEnv)
+	})
+
+	return operatorNamespace
 }
 
 func IsRunModeLocal() bool {

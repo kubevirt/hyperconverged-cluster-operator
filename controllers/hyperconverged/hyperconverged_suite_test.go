@@ -28,6 +28,8 @@ func TestHyperconverged(t *testing.T) {
 
 		pwdFS := dirtest.New(dirtest.WithFile(upgradepatch.UpgradeChangesFileLocation, upgradePatchesFileContent))
 		Expect(upgradepatch.Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+		commontestutils.CommonBeforeSuite()
 	})
 
 	AfterSuite(func() {
