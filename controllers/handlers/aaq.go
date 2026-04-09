@@ -146,7 +146,7 @@ func NewAAQWithNameOnly(hc *hcov1beta1.HyperConverged) *aaqv1alpha1.AAQ {
 	return &aaqv1alpha1.AAQ{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "aaq-" + hc.Name,
-			Labels: operands.GetLabels(hc, hcoutil.AppComponentQuotaMngt),
+			Labels: operands.GetLabelsDeprecated(hc, hcoutil.AppComponentQuotaMngt),
 		},
 	}
 }

@@ -316,7 +316,7 @@ func processImageStreamFile(path string, dir fs.FS, logger log.Logger, hc *hcov1
 		is.Namespace = *ns
 	}
 
-	is.Labels = operands.GetLabels(hc, util.AppComponentCompute)
+	is.Labels = operands.GetLabelsDeprecated(hc, util.AppComponentCompute)
 	imageStreamNames = append(imageStreamNames, is.Name)
 	return newImageStreamHandler(Client, Scheme, is, origNS), nil
 }

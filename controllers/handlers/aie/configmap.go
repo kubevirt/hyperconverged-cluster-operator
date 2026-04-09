@@ -27,7 +27,7 @@ func newAIEWebhookConfigMapWithNameOnly(hc *hcov1beta1.HyperConverged) *corev1.C
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      aieWebhookConfigMapName,
 			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, appComponent),
+			Labels:    operands.GetLabelsDeprecated(hc, appComponent),
 		},
 	}
 }

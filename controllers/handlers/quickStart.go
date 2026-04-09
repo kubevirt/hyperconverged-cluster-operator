@@ -119,7 +119,7 @@ func processQuickstartFile(path string, logger log.Logger, hc *hcov1beta1.HyperC
 	if err != nil {
 		logger.Error(err, "Can't generate a ConsoleQuickStart object from yaml file", "file name", path)
 	} else {
-		qs.Labels = operands.GetLabels(hc, util.AppComponentCompute)
+		qs.Labels = operands.GetLabelsDeprecated(hc, util.AppComponentCompute)
 		quickstartNames = append(quickstartNames, qs.Name)
 		return newQuickStartHandler(Client, Scheme, qs), nil
 	}

@@ -50,7 +50,7 @@ func newWaspAgentClusterRoleBindingWithNameOnly(hc *hcov1beta1.HyperConverged) *
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   clusterRoleName,
-			Labels: operands.GetLabels(hc, AppComponentWaspAgent),
+			Labels: operands.GetLabelsDeprecated(hc, AppComponentWaspAgent),
 		},
 	}
 }
@@ -81,7 +81,7 @@ func newWaspAgentClusterRoleWithNameOnly(hc *hcov1beta1.HyperConverged) *rbacv1.
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   clusterRoleName,
-			Labels: operands.GetLabels(hc, AppComponentWaspAgent),
+			Labels: operands.GetLabelsDeprecated(hc, AppComponentWaspAgent),
 		},
 	}
 }

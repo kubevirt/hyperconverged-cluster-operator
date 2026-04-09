@@ -204,7 +204,7 @@ func NewSSPWithNameOnly(hc *hcov1beta1.HyperConverged, opts ...string) *sspv1bet
 	return &sspv1beta3.SSP{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ssp-" + hc.Name,
-			Labels:    operands.GetLabels(hc, util.AppComponentSchedule),
+			Labels:    operands.GetLabelsDeprecated(hc, util.AppComponentSchedule),
 			Namespace: operands.GetNamespace(hc.Namespace, opts),
 		},
 	}

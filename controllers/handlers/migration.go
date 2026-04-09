@@ -111,7 +111,7 @@ func NewMigControllerWithNameOnly(hc *hcov1beta1.HyperConverged) *migrationv1alp
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "migcontroller-" + hc.Name,
 			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentMigration),
+			Labels:    operands.GetLabelsDeprecated(hc, hcoutil.AppComponentMigration),
 		},
 	}
 }

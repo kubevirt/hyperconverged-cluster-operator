@@ -25,7 +25,7 @@ func newIOMMUFDDevicePluginServiceAccount(hc *hcov1beta1.HyperConverged) *corev1
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      iommufdDevicePluginServiceAccountName,
 			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, iommufdDevicePluginAppComponent),
+			Labels:    operands.GetLabelsDeprecated(hc, iommufdDevicePluginAppComponent),
 		},
 	}
 }

@@ -26,7 +26,7 @@ func newWaspAgentServiceAccount(hc *hcov1beta1.HyperConverged) *corev1.ServiceAc
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      waspAgentServiceAccountName,
 			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, AppComponentWaspAgent),
+			Labels:    operands.GetLabelsDeprecated(hc, AppComponentWaspAgent),
 		},
 	}
 }
