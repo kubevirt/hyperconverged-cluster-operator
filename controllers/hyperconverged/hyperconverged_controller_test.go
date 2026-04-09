@@ -1027,7 +1027,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(foundResource.Spec.TLSSecurityProfile).To(BeNil(), "TLSSecurityProfile on HCO CR should still be nil")
 
 				By("Verify that Kubevirt was properly configured with initialTLSSecurityProfile")
-				kv := handlers.NewKubeVirtWithNameOnly(foundResource)
+				kv := handlers.NewKubeVirtWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},
@@ -1105,7 +1105,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(tlssecprofile.GetTLSSecurityProfile(expected.hco.Spec.TLSSecurityProfile)).To(Equal(customTLSSecurityProfile), "should return the up-to-date value")
 
 				By("Verify that Kubevirt was properly updated with customTLSSecurityProfile")
-				kv = handlers.NewKubeVirtWithNameOnly(foundResource)
+				kv = handlers.NewKubeVirtWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},
@@ -1192,7 +1192,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(foundHCO.Spec.TLSSecurityProfile).To(BeNil(), "TLSSecurityProfile on HCO CR should still be nil")
 
 				By("Verify that Kubevirt was properly configured with initialTLSSecurityProfile")
-				kv := handlers.NewKubeVirtWithNameOnly(foundHCO)
+				kv := handlers.NewKubeVirtWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},
@@ -1260,7 +1260,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(foundHCO.Spec.TLSSecurityProfile).To(Equal(customTLSSecurityProfile), "TLSSecurityProfile on HCO CR should be updated")
 
 				By("Verify that Kubevirt was properly updated with customTLSSecurityProfile")
-				kv = handlers.NewKubeVirtWithNameOnly(foundHCO)
+				kv = handlers.NewKubeVirtWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},
@@ -1884,7 +1884,7 @@ var _ = Describe("HyperconvergedController", func() {
 					})
 
 					By("Verify that KV was modified by the annotation", func() {
-						kv := handlers.NewKubeVirtWithNameOnly(hco)
+						kv := handlers.NewKubeVirtWithNameOnly()
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},
@@ -2492,7 +2492,7 @@ var _ = Describe("HyperconvergedController", func() {
 					})
 
 					By("Verify that KV was modified by the annotation", func() {
-						kv := handlers.NewKubeVirtWithNameOnly(hco)
+						kv := handlers.NewKubeVirtWithNameOnly()
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},

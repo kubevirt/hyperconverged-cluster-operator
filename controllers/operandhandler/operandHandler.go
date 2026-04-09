@@ -275,7 +275,7 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		return err
 	}
 
-	err = h.deleteSingleResource(tCtx, req, handlers.NewKubeVirtWithNameOnly(req.Instance), ErrVirtUninstall, uninstallVirtErrorMsg)
+	err = h.deleteSingleResource(tCtx, req, handlers.NewKubeVirtWithNameOnly(), ErrVirtUninstall, uninstallVirtErrorMsg)
 	if err != nil {
 		return err
 	}
