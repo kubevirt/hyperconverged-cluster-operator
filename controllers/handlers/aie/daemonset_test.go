@@ -69,8 +69,7 @@ var _ = Describe("IOMMUFD Device Plugin DaemonSet", func() {
 			delete(hco.Annotations, DeployAIEAnnotation)
 			cl = commontestutils.InitClient([]client.Object{hco})
 
-			handler, err := NewIOMMUFDDevicePluginDaemonSetHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewIOMMUFDDevicePluginDaemonSetHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -88,8 +87,7 @@ var _ = Describe("IOMMUFD Device Plugin DaemonSet", func() {
 			ds := newIOMMUFDDevicePluginDaemonSet(hco)
 			cl = commontestutils.InitClient([]client.Object{hco, ds})
 
-			handler, err := NewIOMMUFDDevicePluginDaemonSetHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewIOMMUFDDevicePluginDaemonSetHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -107,8 +105,7 @@ var _ = Describe("IOMMUFD Device Plugin DaemonSet", func() {
 			hco.Annotations[DeployAIEAnnotation] = "true"
 			cl = commontestutils.InitClient([]client.Object{hco})
 
-			handler, err := NewIOMMUFDDevicePluginDaemonSetHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewIOMMUFDDevicePluginDaemonSetHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -134,8 +131,7 @@ var _ = Describe("IOMMUFD Device Plugin DaemonSet", func() {
 			modifiedDs.Spec.Template.Spec.Volumes = nil
 			cl = commontestutils.InitClient([]client.Object{hco, modifiedDs})
 
-			handler, err := NewIOMMUFDDevicePluginDaemonSetHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewIOMMUFDDevicePluginDaemonSetHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -161,8 +157,7 @@ var _ = Describe("IOMMUFD Device Plugin DaemonSet", func() {
 			ds.Labels["user-added-label"] = "user-value"
 			cl = commontestutils.InitClient([]client.Object{hco, ds})
 
-			handler, err := NewIOMMUFDDevicePluginDaemonSetHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewIOMMUFDDevicePluginDaemonSetHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())

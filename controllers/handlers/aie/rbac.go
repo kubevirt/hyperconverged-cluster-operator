@@ -1,7 +1,6 @@
 package aie
 
 import (
-	log "github.com/go-logr/logr"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -9,33 +8,30 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-func NewAIEWebhookClusterRoleHandler(
-	_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged,
-) (operands.Operand, error) {
+func NewAIEWebhookClusterRoleHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
 	return operands.NewConditionalHandler(
-		operands.NewClusterRoleHandler(Client, Scheme, newAIEWebhookClusterRole(hc)),
+		operands.NewClusterRoleHandler(cli, Scheme, newAIEWebhookClusterRole()),
 		shouldDeployAIE,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return NewAIEWebhookClusterRoleWithNameOnly(hc)
+			return NewAIEWebhookClusterRoleWithNameOnly()
 		},
-	), nil
+	)
 }
 
-func NewAIEWebhookClusterRoleBindingHandler(
-	_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged,
-) (operands.Operand, error) {
+func NewAIEWebhookClusterRoleBindingHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
 	return operands.NewConditionalHandler(
-		operands.NewClusterRoleBindingHandler(Client, Scheme, newAIEWebhookClusterRoleBinding(hc)),
+		operands.NewClusterRoleBindingHandler(cli, Scheme, newAIEWebhookClusterRoleBinding()),
 		shouldDeployAIE,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return NewAIEWebhookClusterRoleBindingWithNameOnly(hc)
+			return NewAIEWebhookClusterRoleBindingWithNameOnly()
 		},
-	), nil
+	)
 }
 
-func NewAIEWebhookClusterRoleWithNameOnly(hc *hcov1beta1.HyperConverged) *rbacv1.ClusterRole {
+func NewAIEWebhookClusterRoleWithNameOnly() *rbacv1.ClusterRole {
 	return &rbacv1.ClusterRole{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: rbacv1.SchemeGroupVersion.String(),
@@ -43,13 +39,13 @@ func NewAIEWebhookClusterRoleWithNameOnly(hc *hcov1beta1.HyperConverged) *rbacv1
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   aieWebhookClusterRoleName,
-			Labels: operands.GetLabelsDeprecated(hc, appComponent),
+			Labels: operands.GetLabels(appComponent),
 		},
 	}
 }
 
-func newAIEWebhookClusterRole(hc *hcov1beta1.HyperConverged) *rbacv1.ClusterRole {
-	cr := NewAIEWebhookClusterRoleWithNameOnly(hc)
+func newAIEWebhookClusterRole() *rbacv1.ClusterRole {
+	cr := NewAIEWebhookClusterRoleWithNameOnly()
 	cr.Rules = []rbacv1.PolicyRule{
 		{
 			APIGroups: []string{"kubevirt.io"},
@@ -65,7 +61,7 @@ func newAIEWebhookClusterRole(hc *hcov1beta1.HyperConverged) *rbacv1.ClusterRole
 	return cr
 }
 
-func NewAIEWebhookClusterRoleBindingWithNameOnly(hc *hcov1beta1.HyperConverged) *rbacv1.ClusterRoleBinding {
+func NewAIEWebhookClusterRoleBindingWithNameOnly() *rbacv1.ClusterRoleBinding {
 	return &rbacv1.ClusterRoleBinding{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: rbacv1.SchemeGroupVersion.String(),
@@ -73,13 +69,13 @@ func NewAIEWebhookClusterRoleBindingWithNameOnly(hc *hcov1beta1.HyperConverged) 
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   aieWebhookClusterRoleName,
-			Labels: operands.GetLabelsDeprecated(hc, appComponent),
+			Labels: operands.GetLabels(appComponent),
 		},
 	}
 }
 
-func newAIEWebhookClusterRoleBinding(hc *hcov1beta1.HyperConverged) *rbacv1.ClusterRoleBinding {
-	crb := NewAIEWebhookClusterRoleBindingWithNameOnly(hc)
+func newAIEWebhookClusterRoleBinding() *rbacv1.ClusterRoleBinding {
+	crb := NewAIEWebhookClusterRoleBindingWithNameOnly()
 	crb.RoleRef = rbacv1.RoleRef{
 		Kind:     "ClusterRole",
 		Name:     aieWebhookClusterRoleName,
@@ -89,7 +85,7 @@ func newAIEWebhookClusterRoleBinding(hc *hcov1beta1.HyperConverged) *rbacv1.Clus
 		{
 			Kind:      "ServiceAccount",
 			Name:      aieWebhookServiceAccountName,
-			Namespace: hc.Namespace,
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 	}
 	return crb
