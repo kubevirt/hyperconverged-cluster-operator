@@ -15,6 +15,7 @@ import (
 	"k8s.io/utils/net"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ipstacktype"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 )
 
@@ -141,6 +142,11 @@ func (c *ClusterInfoImp) initOpenshift(ctx context.Context, cl client.Client) er
 		)
 	}
 	c.singlestackipv6 = len(cn) == 1 && net.IsIPv6CIDRString(cn[0].CIDR)
+
+	stackType := ipstacktype.Compute(cn)
+	ipstacktype.Set(stackType)
+	c.logger.Info("Detected IP stack type", "ipStackType", stackType)
+
 	return nil
 }
 

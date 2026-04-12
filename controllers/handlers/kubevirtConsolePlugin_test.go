@@ -476,7 +476,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			)
 
 			DescribeTable("should not reconcile UI settings config map data", func(appComponent hcoutil.AppComponent,
-				cmManifestor func(*hcov1beta1.HyperConverged) *v1.ConfigMap, handlerFunc operands.GetHandler) {
+				cmManifestor func(*hcov1beta1.HyperConverged) *v1.ConfigMap, handlerFunc operands.GetHandler, managedKeys []string) {
 				const userAddedDataKey = "userAddedDataKey"
 				const userAddedDataValue = "userAddedDataValue"
 
@@ -487,6 +487,11 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 					outdatedResource.Data[k] = "modified_" + v
 				}
 				outdatedResource.Data[userAddedDataKey] = userAddedDataValue
+
+				managedSet := make(map[string]bool, len(managedKeys))
+				for _, k := range managedKeys {
+					managedSet[k] = true
+				}
 
 				cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
 				handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
@@ -504,12 +509,16 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				).To(Succeed())
 				Expect(foundResource.Name).To(Equal(outdatedResource.Name))
 				for k, v := range modifiedData {
-					Expect(foundResource.Data).ToNot(HaveKeyWithValue(k, v))
+					if managedSet[k] {
+						Expect(foundResource.Data).To(HaveKeyWithValue(k, v))
+					} else {
+						Expect(foundResource.Data).ToNot(HaveKeyWithValue(k, v))
+					}
 				}
 				Expect(foundResource.Data).To(HaveKeyWithValue(userAddedDataKey, userAddedDataValue))
 			},
-				Entry("user settings config", hcoutil.AppComponentUIConfig, NewKvUIUserSettingsCM, NewKvUIUserSettingsCMHandler),
-				Entry("UI features config", hcoutil.AppComponentUIConfig, NewKvUIFeaturesCM, NewKvUIFeaturesCMHandler),
+				Entry("user settings config", hcoutil.AppComponentUIConfig, NewKvUIUserSettingsCM, NewKvUIUserSettingsCMHandler, []string(nil)),
+				Entry("UI features config", hcoutil.AppComponentUIConfig, NewKvUIFeaturesCM, NewKvUIFeaturesCMHandler, []string{"ipStackType"}),
 			)
 		})
 

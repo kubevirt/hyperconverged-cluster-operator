@@ -14,7 +14,7 @@ import (
 func NewAIEWebhookConfigMapHandler(_ logr.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
 	cm := newAIEWebhookConfigMap(hc)
 	return operands.NewConditionalHandler(
-		operands.NewCmHandler(Client, Scheme, cm),
+		operands.NewEditableCmHandler(Client, Scheme, cm),
 		shouldDeployAIE,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
 			return newAIEWebhookConfigMapWithNameOnly(hc)
