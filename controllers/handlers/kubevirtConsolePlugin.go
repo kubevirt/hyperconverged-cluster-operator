@@ -440,13 +440,15 @@ var UIFeaturesConfig = map[string]string{
 }
 
 func NewKvUIFeaturesCM(hc *hcov1beta1.HyperConverged) *corev1.ConfigMap {
+	data := maps.Clone(UIFeaturesConfig)
+	data["ipStackType"] = hcoutil.GetClusterInfo().GetIPStackType()
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIFeaturesCMName,
 			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIConfig),
 			Namespace: hc.Namespace,
 		},
-		Data: UIFeaturesConfig,
+		Data: data,
 	}
 }
 

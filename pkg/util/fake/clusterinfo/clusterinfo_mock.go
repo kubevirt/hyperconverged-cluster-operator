@@ -83,3 +83,7 @@ func (ClusterInfoMock) IsDeschedulerCRDDeployed(ctx context.Context, cl client.C
 func (ClusterInfoMock) IsSingleStackIPv6() bool {
 	return true
 }
+
+func (ClusterInfoMock) GetIPStackType() string {
+	return hcoutil.IPStackTypeIPv6SingleStack
+}

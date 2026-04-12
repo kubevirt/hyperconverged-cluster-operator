@@ -9,6 +9,13 @@ const (
 	CLIDownloadsName = "hyperconverged-cluster-cli-download"
 )
 
+// IP stack type values for the cluster network configuration
+const (
+	IPStackTypeIPv4SingleStack = "IPv4SingleStack"
+	IPStackTypeIPv6SingleStack = "IPv6SingleStack"
+	IPStackTypeDualStack       = "DualStack"
+)
+
 // HCO common constants
 const (
 	OperatorNamespaceEnv                    = "OPERATOR_NAMESPACE"

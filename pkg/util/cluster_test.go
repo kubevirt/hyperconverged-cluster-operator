@@ -367,6 +367,7 @@ var _ = Describe("test clusterInfo", func() {
 
 		Expect(GetClusterInfo().IsOpenshift()).To(BeTrue(), "should return true for IsOpenshift()")
 		Expect(GetClusterInfo().IsManagedByOLM()).To(BeFalse(), "should return false for IsManagedByOLM()")
+		Expect(GetClusterInfo().GetIPStackType()).To(Equal(IPStackTypeIPv4SingleStack))
 	})
 
 	It("check init on OpenShift, with single-stack IPv6 network", func() {
@@ -379,6 +380,7 @@ var _ = Describe("test clusterInfo", func() {
 
 		Expect(GetClusterInfo().IsOpenshift()).To(BeTrue())
 		Expect(GetClusterInfo().IsSingleStackIPv6()).To(BeTrue())
+		Expect(GetClusterInfo().GetIPStackType()).To(Equal(IPStackTypeIPv6SingleStack))
 	})
 
 	It("checks init on OpenShift with dual stack ipv4/ipv6 network configuration", func() {
@@ -391,6 +393,7 @@ var _ = Describe("test clusterInfo", func() {
 
 		Expect(GetClusterInfo().IsOpenshift()).To(BeTrue())
 		Expect(GetClusterInfo().IsSingleStackIPv6()).To(BeFalse())
+		Expect(GetClusterInfo().GetIPStackType()).To(Equal(IPStackTypeDualStack))
 	})
 
 	Context("HyperShift Detection", func() {
