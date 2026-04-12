@@ -775,30 +775,6 @@ spec:
   commonTemplatesNamespace: kubevirt
 ```
 
-## Tekton Pipelines namespace
-User can specify namespace in which example pipelines will be deployed.
-```yaml
-apiVersion: hco.kubevirt.io/v1beta1
-kind: HyperConverged
-metadata:
-  name: kubevirt-hyperconverged
-spec:
-  tektonPipelinesNamespace: kubevirt
-```
-In case the namespace is unspecified, the operator namespace will serve as the default value.
-
-## Tekton Tasks namespace
-User can specify namespace in which tekton tasks will be deployed.
-```yaml
-apiVersion: hco.kubevirt.io/v1beta1
-kind: HyperConverged
-metadata:
-  name: kubevirt-hyperconverged
-spec:
-  tektonTasksNamespace: kubevirt
-```
-In case the namespace is unspecified, the operator namespace will serve as the default value.
-
 ## Enable eventual launcher updates by default
 us the HyperConverged `spec.workloadUpdateStrategy` object to define how to handle automated workload updates at the cluster
 level.
