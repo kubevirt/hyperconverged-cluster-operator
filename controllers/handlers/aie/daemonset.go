@@ -3,7 +3,6 @@ package aie
 import (
 	"os"
 
-	log "github.com/go-logr/logr"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -28,16 +27,14 @@ var (
 	iommufdDevicePluginResourceMemory = resource.MustParse("50M")
 )
 
-func NewIOMMUFDDevicePluginDaemonSetHandler(
-	_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged,
-) (operands.Operand, error) {
+func NewIOMMUFDDevicePluginDaemonSetHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
 	return operands.NewConditionalHandler(
-		operands.NewDaemonSetHandler(Client, Scheme, newIOMMUFDDevicePluginDaemonSet),
+		operands.NewDaemonSetHandler(cli, Scheme, newIOMMUFDDevicePluginDaemonSet),
 		shouldDeployAIE,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
 			return NewIOMMUFDDevicePluginDaemonSetWithNameOnly(hc)
 		},
-	), nil
+	)
 }
 
 func NewIOMMUFDDevicePluginDaemonSetWithNameOnly(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet {
@@ -45,7 +42,7 @@ func NewIOMMUFDDevicePluginDaemonSetWithNameOnly(hc *hcov1beta1.HyperConverged) 
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      iommufdDevicePluginName,
 			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, iommufdDevicePluginAppComponent),
+			Labels:    operands.GetLabels(iommufdDevicePluginAppComponent),
 		},
 	}
 }
@@ -58,7 +55,7 @@ func newIOMMUFDDevicePluginDaemonSet(hc *hcov1beta1.HyperConverged) *appsv1.Daem
 		hcoutil.AppLabelComponent: string(iommufdDevicePluginAppComponent),
 	}
 
-	podLabels := operands.GetLabels(hc, iommufdDevicePluginAppComponent)
+	podLabels := operands.GetLabels(iommufdDevicePluginAppComponent)
 
 	ds := NewIOMMUFDDevicePluginDaemonSetWithNameOnly(hc)
 	ds.Spec = appsv1.DaemonSetSpec{

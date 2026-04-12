@@ -117,6 +117,7 @@ func RegisterReconciler(mgr manager.Manager,
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond hcoutil.Condition) reconcile.Reconciler {
+	reqresolver.GeneratePlaceHolders()
 
 	ownVersion := cmp.Or(os.Getenv(hcoutil.HcoKvIoVersionName), version.Version)
 

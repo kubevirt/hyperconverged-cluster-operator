@@ -338,7 +338,7 @@ func createAllowAllIngressNetworkPolicy() *networkingv1.NetworkPolicy {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      allowAllNPPluginName,
 			Namespace: tests.InstallNamespace,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIPlugin),
 		},
 
 		Spec: networkingv1.NetworkPolicySpec{
@@ -368,7 +368,7 @@ func createAllowAllEgressNetworkPolicy() *networkingv1.NetworkPolicy {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      allowAllNPProxyName,
 			Namespace: tests.InstallNamespace,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIProxy),
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIProxy),
 		},
 
 		Spec: networkingv1.NetworkPolicySpec{

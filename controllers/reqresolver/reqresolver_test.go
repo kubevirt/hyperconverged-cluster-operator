@@ -9,12 +9,9 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-)
-
-const (
-	namespace = "test-ns"
 )
 
 func TestReqResolver(t *testing.T) {
@@ -23,16 +20,21 @@ func TestReqResolver(t *testing.T) {
 }
 
 var (
-	nsBefore string
-
 	_ = BeforeSuite(func() {
-		nsBefore = hcoutil.GetOperatorNamespaceFromEnv()
-		Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, namespace)).To(Succeed())
+		nsBefore, nsIsSet := os.LookupEnv(hcoutil.OperatorNamespaceEnv)
+		Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
 		reqresolver.GeneratePlaceHolders()
+
+		DeferCleanup(func() {
+			if nsIsSet {
+				Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, nsBefore)).To(Succeed())
+			} else {
+				Expect(os.Unsetenv(hcoutil.OperatorNamespaceEnv)).To(Succeed())
+			}
+		})
 	})
 
 	_ = AfterSuite(func() {
-		Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, nsBefore)).To(Succeed())
 		reqresolver.GeneratePlaceHolders()
 	})
 )
@@ -41,7 +43,7 @@ var _ = Describe("test ResolveReconcileRequest", func() {
 	It("should return original req and true for request triggered by HC", func() {
 		req := reconcile.Request{
 			NamespacedName: types.NamespacedName{
-				Namespace: namespace,
+				Namespace: commontestutils.Namespace,
 				Name:      hcoutil.HyperConvergedName,
 			},
 		}
@@ -53,7 +55,7 @@ var _ = Describe("test ResolveReconcileRequest", func() {
 	It("should return original req and true for request triggered by unknown source", func() {
 		req := reconcile.Request{
 			NamespacedName: types.NamespacedName{
-				Namespace: namespace,
+				Namespace: commontestutils.Namespace,
 				Name:      "unknown",
 			},
 		}
@@ -93,14 +95,14 @@ var _ = Describe("test ResolveReconcileRequest", func() {
 var _ = Describe("Check generated requests", func() {
 	It("test GetHyperConvergedNamespacedName", func() {
 		n := reqresolver.GetHyperConvergedNamespacedName()
-		Expect(n).To(Equal(types.NamespacedName{Name: hcoutil.HyperConvergedName, Namespace: namespace}))
+		Expect(n).To(Equal(types.NamespacedName{Name: hcoutil.HyperConvergedName, Namespace: commontestutils.Namespace}))
 		Expect(reqresolver.IsTriggeredByHyperConverged(n)).To(BeTrueBecause("should recognized as triggered by HyperConverged CR"))
 		Expect(reqresolver.IsTriggeredByAPIServerCR(reconcile.Request{NamespacedName: n})).To(BeFalseBecause("should not be recognized as triggered by APIServer CR"))
 	})
 
 	It("test GetAPIServerCRRequest", func() {
 		req := reqresolver.GetAPIServerCRRequest()
-		Expect(req.NamespacedName.Namespace).To(Equal(namespace))
+		Expect(req.NamespacedName.Namespace).To(Equal(commontestutils.Namespace))
 		Expect(req.NamespacedName.Name).To(HavePrefix("api-server-cr-"))
 		Expect(reqresolver.IsTriggeredByHyperConverged(req.NamespacedName)).To(BeFalseBecause("should not be recognized as triggered by HyperConverged CR"))
 		Expect(reqresolver.IsTriggeredByAPIServerCR(req)).To(BeTrueBecause("should be recognized as triggered by APIServer CR"))
@@ -108,7 +110,7 @@ var _ = Describe("Check generated requests", func() {
 
 	It("test GetSecondaryCRRequest", func() {
 		req := reqresolver.GetSecondaryCRRequest()
-		Expect(req.NamespacedName.Namespace).To(Equal(namespace))
+		Expect(req.NamespacedName.Namespace).To(Equal(commontestutils.Namespace))
 		Expect(req.NamespacedName.Name).To(HavePrefix("hco-controlled-cr-"))
 		Expect(reqresolver.IsTriggeredByHyperConverged(req.NamespacedName)).To(BeFalseBecause("should not be recognized as triggered by HyperConverged CR"))
 		Expect(reqresolver.IsTriggeredByAPIServerCR(req)).To(BeFalseBecause("should not be recognized as triggered by APIServer CR"))
@@ -116,7 +118,7 @@ var _ = Describe("Check generated requests", func() {
 
 	It("test GetIngressCRResource", func() {
 		req := reqresolver.GetIngressCRResource()
-		Expect(req.NamespacedName.Namespace).To(Equal(namespace))
+		Expect(req.NamespacedName.Namespace).To(Equal(commontestutils.Namespace))
 		Expect(req.NamespacedName.Name).To(HavePrefix("ingress-cr-"))
 		Expect(reqresolver.IsTriggeredByHyperConverged(req.NamespacedName)).To(BeFalseBecause("should not be recognized as triggered by HyperConverged CR"))
 		Expect(reqresolver.IsTriggeredByAPIServerCR(req)).To(BeFalseBecause("should not be recognized as triggered by APIServer CR"))

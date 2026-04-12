@@ -4,7 +4,6 @@ import (
 	"errors"
 	"reflect"
 
-	log "github.com/go-logr/logr"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -17,17 +16,15 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-func NewAIEWebhookMutatingWebhookConfigurationHandler(
-	_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged,
-) (operands.Operand, error) {
+func NewAIEWebhookMutatingWebhookConfigurationHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
 	return operands.NewConditionalHandler(
-		operands.NewGenericOperand(Client, Scheme, "MutatingWebhookConfiguration",
-			&aieWebhookMWCHooks{required: newAIEMutatingWebhookConfiguration(hc)}, false),
+		operands.NewGenericOperand(cli, Scheme, "MutatingWebhookConfiguration",
+			&aieWebhookMWCHooks{required: newAIEMutatingWebhookConfiguration()}, false),
 		shouldDeployAIE,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return NewAIEWebhookMutatingWebhookConfigurationWithNameOnly(hc)
+			return NewAIEWebhookMutatingWebhookConfigurationWithNameOnly()
 		},
-	), nil
+	)
 }
 
 type aieWebhookMWCHooks struct {
@@ -91,7 +88,7 @@ func (h *aieWebhookMWCHooks) UpdateCR(req *common.HcoRequest, Client client.Clie
 	return false, false, nil
 }
 
-func NewAIEWebhookMutatingWebhookConfigurationWithNameOnly(hc *hcov1beta1.HyperConverged) *admissionregistrationv1.MutatingWebhookConfiguration {
+func NewAIEWebhookMutatingWebhookConfigurationWithNameOnly() *admissionregistrationv1.MutatingWebhookConfiguration {
 	return &admissionregistrationv1.MutatingWebhookConfiguration{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: admissionregistrationv1.SchemeGroupVersion.String(),
@@ -99,13 +96,13 @@ func NewAIEWebhookMutatingWebhookConfigurationWithNameOnly(hc *hcov1beta1.HyperC
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   aieWebhookName,
-			Labels: operands.GetLabels(hc, appComponent),
+			Labels: operands.GetLabels(appComponent),
 		},
 	}
 }
 
-func newAIEMutatingWebhookConfiguration(hc *hcov1beta1.HyperConverged) *admissionregistrationv1.MutatingWebhookConfiguration {
-	mwc := NewAIEWebhookMutatingWebhookConfigurationWithNameOnly(hc)
+func newAIEMutatingWebhookConfiguration() *admissionregistrationv1.MutatingWebhookConfiguration {
+	mwc := NewAIEWebhookMutatingWebhookConfigurationWithNameOnly()
 	if util.GetClusterInfo().IsOpenshift() {
 		mwc.Annotations = map[string]string{
 			"service.beta.openshift.io/inject-cabundle": "true",
@@ -123,7 +120,7 @@ func newAIEMutatingWebhookConfiguration(hc *hcov1beta1.HyperConverged) *admissio
 			ClientConfig: admissionregistrationv1.WebhookClientConfig{
 				Service: &admissionregistrationv1.ServiceReference{
 					Name:      aieWebhookName,
-					Namespace: hc.Namespace,
+					Namespace: util.GetOperatorNamespaceFromEnv(),
 					Path:      ptr.To("/mutate-pods"),
 					Port:      ptr.To[int32](443),
 				},

@@ -13,26 +13,24 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-func NewServiceHandler(Client client.Client, Scheme *runtime.Scheme, newCrFunc newSvcFunc) *GenericOperand {
+func NewServiceHandler(Client client.Client, Scheme *runtime.Scheme, svc *corev1.Service) *GenericOperand {
 	h := &GenericOperand{
 		Client:                 Client,
 		Scheme:                 Scheme,
 		crType:                 "Service",
-		hooks:                  &serviceHooks{newCrFunc: newCrFunc},
+		hooks:                  &serviceHooks{svc: svc},
 		setControllerReference: true,
 	}
 
 	return h
 }
 
-type newSvcFunc func(hc *hcov1beta1.HyperConverged) *corev1.Service
-
 type serviceHooks struct {
-	newCrFunc newSvcFunc
+	svc *corev1.Service
 }
 
-func (h serviceHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	return h.newCrFunc(hc), nil
+func (h serviceHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+	return h.svc.DeepCopy(), nil
 }
 
 func (serviceHooks) GetEmptyCr() client.Object {

@@ -49,7 +49,7 @@ import (
 // name and namespace of our primary resource
 const (
 	name      = "kubevirt-hyperconverged"
-	namespace = "kubevirt-hyperconverged"
+	namespace = commontestutils.Namespace
 )
 
 var _ = Describe("HyperconvergedController", func() {
@@ -58,7 +58,6 @@ var _ = Describe("HyperconvergedController", func() {
 
 	origOperatorCondVarName := os.Getenv(hcoutil.OperatorConditionNameEnvVar)
 	origVirtIOWinContainer := os.Getenv("VIRTIOWIN_CONTAINER")
-	origOperatorNS := os.Getenv("OPERATOR_NAMESPACE")
 	origVersion := os.Getenv(hcoutil.HcoKvIoVersionName)
 
 	BeforeEach(func() {
@@ -69,7 +68,6 @@ var _ = Describe("HyperconvergedController", func() {
 
 		Expect(os.Setenv(hcoutil.OperatorConditionNameEnvVar, "OPERATOR_CONDITION")).To(Succeed())
 		Expect(os.Setenv("VIRTIOWIN_CONTAINER", commontestutils.VirtioWinImage)).To(Succeed())
-		Expect(os.Setenv("OPERATOR_NAMESPACE", namespace)).To(Succeed())
 		Expect(os.Setenv(hcoutil.HcoKvIoVersionName, version.Version)).To(Succeed())
 
 		reqresolver.GeneratePlaceHolders()
@@ -80,7 +78,6 @@ var _ = Describe("HyperconvergedController", func() {
 
 			Expect(os.Setenv(hcoutil.OperatorConditionNameEnvVar, origOperatorCondVarName)).To(Succeed())
 			Expect(os.Setenv("VIRTIOWIN_CONTAINER", origVirtIOWinContainer)).To(Succeed())
-			Expect(os.Setenv("OPERATOR_NAMESPACE", origOperatorNS)).To(Succeed())
 			Expect(os.Setenv(hcoutil.HcoKvIoVersionName, origVersion)).To(Succeed())
 		})
 	})
@@ -1027,7 +1024,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(foundResource.Spec.TLSSecurityProfile).To(BeNil(), "TLSSecurityProfile on HCO CR should still be nil")
 
 				By("Verify that Kubevirt was properly configured with initialTLSSecurityProfile")
-				kv := handlers.NewKubeVirtWithNameOnly(foundResource)
+				kv := handlers.NewKubeVirtWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},
@@ -1048,7 +1045,7 @@ var _ = Describe("HyperconvergedController", func() {
 				}))
 
 				By("Verify that CDI was properly configured with initialTLSSecurityProfile")
-				cdi := handlers.NewCDIWithNameOnly(foundResource)
+				cdi := handlers.NewCDIWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},
@@ -1058,7 +1055,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cdi.Spec.Config.TLSSecurityProfile).To(Equal(openshift2CdiSecProfile(initialTLSSecurityProfile)))
 
 				By("Verify that CNA was properly configured with initialTLSSecurityProfile")
-				cna := handlers.NewNetworkAddonsWithNameOnly(foundResource)
+				cna := handlers.NewNetworkAddonsWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},
@@ -1068,7 +1065,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cna.Spec.TLSSecurityProfile).To(Equal(initialTLSSecurityProfile))
 
 				By("Verify that SSP was properly configured with initialTLSSecurityProfile")
-				ssp := handlers.NewSSPWithNameOnly(foundResource)
+				ssp := handlers.NewSSPWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
@@ -1105,7 +1102,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(tlssecprofile.GetTLSSecurityProfile(expected.hco.Spec.TLSSecurityProfile)).To(Equal(customTLSSecurityProfile), "should return the up-to-date value")
 
 				By("Verify that Kubevirt was properly updated with customTLSSecurityProfile")
-				kv = handlers.NewKubeVirtWithNameOnly(foundResource)
+				kv = handlers.NewKubeVirtWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},
@@ -1116,7 +1113,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(kv.Spec.Configuration.TLSConfiguration.Ciphers).To(BeEmpty())
 
 				By("Verify that CDI was properly updated with customTLSSecurityProfile")
-				cdi = handlers.NewCDIWithNameOnly(foundResource)
+				cdi = handlers.NewCDIWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},
@@ -1126,7 +1123,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cdi.Spec.Config.TLSSecurityProfile).To(Equal(openshift2CdiSecProfile(customTLSSecurityProfile)))
 
 				By("Verify that CNA was properly updated with customTLSSecurityProfile")
-				cna = handlers.NewNetworkAddonsWithNameOnly(foundResource)
+				cna = handlers.NewNetworkAddonsWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},
@@ -1136,7 +1133,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cna.Spec.TLSSecurityProfile).To(Equal(customTLSSecurityProfile))
 
 				By("Verify that SSP was properly updated with customTLSSecurityProfile")
-				ssp = handlers.NewSSPWithNameOnly(foundResource)
+				ssp = handlers.NewSSPWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
@@ -1192,7 +1189,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(foundHCO.Spec.TLSSecurityProfile).To(BeNil(), "TLSSecurityProfile on HCO CR should still be nil")
 
 				By("Verify that Kubevirt was properly configured with initialTLSSecurityProfile")
-				kv := handlers.NewKubeVirtWithNameOnly(foundHCO)
+				kv := handlers.NewKubeVirtWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},
@@ -1213,7 +1210,7 @@ var _ = Describe("HyperconvergedController", func() {
 				}))
 
 				By("Verify that CDI was properly configured with initialTLSSecurityProfile")
-				cdi := handlers.NewCDIWithNameOnly(foundHCO)
+				cdi := handlers.NewCDIWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},
@@ -1223,7 +1220,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cdi.Spec.Config.TLSSecurityProfile).To(Equal(openshift2CdiSecProfile(initialTLSSecurityProfile)))
 
 				By("Verify that CNA was properly configured with initialTLSSecurityProfile")
-				cna := handlers.NewNetworkAddonsWithNameOnly(foundHCO)
+				cna := handlers.NewNetworkAddonsWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},
@@ -1233,7 +1230,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cna.Spec.TLSSecurityProfile).To(Equal(initialTLSSecurityProfile))
 
 				By("Verify that SSP was properly configured with initialTLSSecurityProfile")
-				ssp := handlers.NewSSPWithNameOnly(foundHCO)
+				ssp := handlers.NewSSPWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
@@ -1260,7 +1257,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(foundHCO.Spec.TLSSecurityProfile).To(Equal(customTLSSecurityProfile), "TLSSecurityProfile on HCO CR should be updated")
 
 				By("Verify that Kubevirt was properly updated with customTLSSecurityProfile")
-				kv = handlers.NewKubeVirtWithNameOnly(foundHCO)
+				kv = handlers.NewKubeVirtWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},
@@ -1271,7 +1268,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(kv.Spec.Configuration.TLSConfiguration.Ciphers).To(BeEmpty())
 
 				By("Verify that CDI was properly updated with customTLSSecurityProfile")
-				cdi = handlers.NewCDIWithNameOnly(foundHCO)
+				cdi = handlers.NewCDIWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},
@@ -1281,7 +1278,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cdi.Spec.Config.TLSSecurityProfile).To(Equal(openshift2CdiSecProfile(customTLSSecurityProfile)))
 
 				By("Verify that CNA was properly updated with customTLSSecurityProfile")
-				cna = handlers.NewNetworkAddonsWithNameOnly(foundHCO)
+				cna = handlers.NewNetworkAddonsWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},
@@ -1291,7 +1288,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(cna.Spec.TLSSecurityProfile).To(Equal(customTLSSecurityProfile))
 
 				By("Verify that SSP was properly updated with customTLSSecurityProfile")
-				ssp = handlers.NewSSPWithNameOnly(foundHCO)
+				ssp = handlers.NewSSPWithNameOnly()
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
@@ -1884,7 +1881,7 @@ var _ = Describe("HyperconvergedController", func() {
 					})
 
 					By("Verify that KV was modified by the annotation", func() {
-						kv := handlers.NewKubeVirtWithNameOnly(hco)
+						kv := handlers.NewKubeVirtWithNameOnly()
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},
@@ -2039,7 +2036,7 @@ var _ = Describe("HyperconvergedController", func() {
 					})
 
 					By("Verify that CDI was modified by the annotation", func() {
-						cdi := handlers.NewCDIWithNameOnly(hco)
+						cdi := handlers.NewCDIWithNameOnly()
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},
@@ -2190,7 +2187,7 @@ var _ = Describe("HyperconvergedController", func() {
 					})
 
 					By("Verify that CNA was modified by the annotation", func() {
-						cna := handlers.NewNetworkAddonsWithNameOnly(hco)
+						cna := handlers.NewNetworkAddonsWithNameOnly()
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},
@@ -2324,7 +2321,7 @@ var _ = Describe("HyperconvergedController", func() {
 					})
 
 					By("Verify that SSP was modified by the annotation", func() {
-						ssp := handlers.NewSSPWithNameOnly(hco)
+						ssp := handlers.NewSSPWithNameOnly()
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},
@@ -2492,7 +2489,7 @@ var _ = Describe("HyperconvergedController", func() {
 					})
 
 					By("Verify that KV was modified by the annotation", func() {
-						kv := handlers.NewKubeVirtWithNameOnly(hco)
+						kv := handlers.NewKubeVirtWithNameOnly()
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: kv.Name, Namespace: kv.Namespace},
@@ -2504,7 +2501,7 @@ var _ = Describe("HyperconvergedController", func() {
 						Expect(*kv.Spec.Configuration.MigrationConfiguration.AllowPostCopy).To(BeTrue())
 					})
 					By("Verify that CDI was modified by the annotation", func() {
-						cdi := handlers.NewCDIWithNameOnly(hco)
+						cdi := handlers.NewCDIWithNameOnly()
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: cdi.Name, Namespace: cdi.Namespace},
@@ -2520,7 +2517,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					})
 					By("Verify that CNA was modified by the annotation", func() {
-						cna := handlers.NewNetworkAddonsWithNameOnly(hco)
+						cna := handlers.NewNetworkAddonsWithNameOnly()
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: cna.Name, Namespace: cna.Namespace},
@@ -2533,7 +2530,7 @@ var _ = Describe("HyperconvergedController", func() {
 						Expect(cna.Spec.ImagePullPolicy).To(BeEquivalentTo("Always"))
 					})
 					By("Verify that SSP was modified by the annotation", func() {
-						ssp := handlers.NewSSPWithNameOnly(hco)
+						ssp := handlers.NewSSPWithNameOnly()
 						Expect(
 							cl.Get(context.TODO(),
 								types.NamespacedName{Name: ssp.Name, Namespace: ssp.Namespace},

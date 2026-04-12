@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"os"
 	"path"
 	"testing"
 	"time"
@@ -29,6 +30,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/dirtest"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	fakeownresources "github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources/fake"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 func TestOperandHandler(t *testing.T) {
@@ -44,16 +46,20 @@ var _ = Describe("Test operandHandler", func() {
 	BeforeEach(func() {
 		logger = GinkgoLogr
 		fakeownresources.OLMV0OwnResourcesMock()
-		DeferCleanup(func() {
-			logger = origLogger
-			fakeownresources.ResetOwnResources()
-		})
+		origNS := os.Getenv(hcoutil.OperatorNamespaceEnv)
+		Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
 
 		pwdFS = dirtest.New(
 			dirtest.WithFile(path.Join(handlers.DashboardManifestLocation, "test-dashboard.yaml"), kubevirtTopConsumersFileContent),
 			dirtest.WithFile(path.Join(handlers.ImageStreamDefaultManifestLocation, "test-image-stream.yaml"), imageStreamFileContent),
 			dirtest.WithFile(path.Join(handlers.QuickStartDefaultManifestLocation, "test-quick-start.yaml"), quickstartFileContent),
 		)
+
+		DeferCleanup(func() {
+			logger = origLogger
+			fakeownresources.ResetOwnResources()
+			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNS)).To(Succeed())
+		})
 	})
 
 	Context("Test operandHandler", func() {

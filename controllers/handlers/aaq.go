@@ -28,8 +28,8 @@ func NewAAQHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operan
 		func(hc *hcov1beta1.HyperConverged) bool {
 			return hc.Spec.EnableApplicationAwareQuota != nil && *hc.Spec.EnableApplicationAwareQuota
 		},
-		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return NewAAQWithNameOnly(hc)
+		func(_ *hcov1beta1.HyperConverged) client.Object {
+			return NewAAQWithNameOnly()
 		},
 	)
 }
@@ -136,17 +136,17 @@ func NewAAQ(hc *hcov1beta1.HyperConverged) (*aaqv1alpha1.AAQ, error) {
 		spec.Configuration.AllowApplicationAwareClusterResourceQuota = config.AllowApplicationAwareClusterResourceQuota
 	}
 
-	aaq := NewAAQWithNameOnly(hc)
+	aaq := NewAAQWithNameOnly()
 	aaq.Spec = spec
 
 	return reformatobj.ReformatObj(aaq)
 }
 
-func NewAAQWithNameOnly(hc *hcov1beta1.HyperConverged) *aaqv1alpha1.AAQ {
+func NewAAQWithNameOnly() *aaqv1alpha1.AAQ {
 	return &aaqv1alpha1.AAQ{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   "aaq-" + hc.Name,
-			Labels: operands.GetLabels(hc, hcoutil.AppComponentQuotaMngt),
+			Name:   "aaq-" + hcoutil.HyperConvergedName,
+			Labels: operands.GetLabels(hcoutil.AppComponentQuotaMngt),
 		},
 	}
 }

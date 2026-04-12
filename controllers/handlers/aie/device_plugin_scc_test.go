@@ -31,7 +31,7 @@ var _ = Describe("IOMMUFD Device Plugin SecurityContextConstraints", func() {
 
 	Context("newIOMMUFDDevicePluginSCC", func() {
 		It("should have all default fields", func() {
-			scc := newIOMMUFDDevicePluginSCC(hco)
+			scc := newIOMMUFDDevicePluginSCC()
 			Expect(scc.Name).To(Equal("iommufd-device-plugin"))
 			Expect(scc.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
 			Expect(scc.Labels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentIOMMUFDDevicePlugin)))
@@ -60,8 +60,7 @@ var _ = Describe("IOMMUFD Device Plugin SecurityContextConstraints", func() {
 			delete(hco.Annotations, DeployAIEAnnotation)
 			cl = commontestutils.InitClient([]client.Object{hco})
 
-			handler, err := NewIOMMUFDDevicePluginSCCHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewIOMMUFDDevicePluginSCCHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -76,11 +75,10 @@ var _ = Describe("IOMMUFD Device Plugin SecurityContextConstraints", func() {
 
 		It("should delete SCC when deploy-aie-webhook annotation is removed", func() {
 			delete(hco.Annotations, DeployAIEAnnotation)
-			scc := newIOMMUFDDevicePluginSCC(hco)
+			scc := newIOMMUFDDevicePluginSCC()
 			cl = commontestutils.InitClient([]client.Object{hco, scc})
 
-			handler, err := NewIOMMUFDDevicePluginSCCHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewIOMMUFDDevicePluginSCCHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -98,8 +96,7 @@ var _ = Describe("IOMMUFD Device Plugin SecurityContextConstraints", func() {
 			hco.Annotations[DeployAIEAnnotation] = "true"
 			cl = commontestutils.InitClient([]client.Object{hco})
 
-			handler, err := NewIOMMUFDDevicePluginSCCHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewIOMMUFDDevicePluginSCCHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -118,14 +115,13 @@ var _ = Describe("IOMMUFD Device Plugin SecurityContextConstraints", func() {
 	Context("SCC update", func() {
 		It("should update SCC fields if not matched to the requirements", func() {
 			hco.Annotations[DeployAIEAnnotation] = "true"
-			scc := newIOMMUFDDevicePluginSCC(hco)
+			scc := newIOMMUFDDevicePluginSCC()
 			scc.AllowPrivilegedContainer = false
 			scc.Users = []string{"wrong-user"}
 
 			cl = commontestutils.InitClient([]client.Object{hco, scc})
 
-			handler, err := NewIOMMUFDDevicePluginSCCHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewIOMMUFDDevicePluginSCCHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -141,14 +137,13 @@ var _ = Describe("IOMMUFD Device Plugin SecurityContextConstraints", func() {
 
 		It("should reconcile labels if they are missing while preserving user labels", func() {
 			hco.Annotations[DeployAIEAnnotation] = "true"
-			scc := newIOMMUFDDevicePluginSCC(hco)
+			scc := newIOMMUFDDevicePluginSCC()
 			expectedLabels := maps.Clone(scc.Labels)
 			delete(scc.Labels, "app.kubernetes.io/component")
 			scc.Labels["user-added-label"] = "user-value"
 			cl = commontestutils.InitClient([]client.Object{hco, scc})
 
-			handler, err := NewIOMMUFDDevicePluginSCCHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewIOMMUFDDevicePluginSCCHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())

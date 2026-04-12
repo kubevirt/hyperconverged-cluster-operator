@@ -14,26 +14,26 @@ import (
 
 func NewAIEWebhookServiceHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
 	return operands.NewConditionalHandler(
-		operands.NewServiceHandler(Client, Scheme, newAIEWebhookService),
+		operands.NewServiceHandler(Client, Scheme, newAIEWebhookService()),
 		shouldDeployAIE,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return newAIEWebhookServiceWithNameOnly(hc)
+			return newAIEWebhookServiceWithNameOnly()
 		},
 	)
 }
 
-func newAIEWebhookServiceWithNameOnly(hc *hcov1beta1.HyperConverged) *corev1.Service {
+func newAIEWebhookServiceWithNameOnly() *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      aieWebhookName,
-			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, appComponent),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(appComponent),
 		},
 	}
 }
 
-func newAIEWebhookService(hc *hcov1beta1.HyperConverged) *corev1.Service {
-	svc := newAIEWebhookServiceWithNameOnly(hc)
+func newAIEWebhookService() *corev1.Service {
+	svc := newAIEWebhookServiceWithNameOnly()
 	if hcoutil.GetClusterInfo().IsOpenshift() {
 		svc.Annotations = map[string]string{
 			"service.beta.openshift.io/serving-cert-secret-name": aieWebhookTLSSecretName,

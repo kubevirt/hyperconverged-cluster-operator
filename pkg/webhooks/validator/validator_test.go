@@ -796,7 +796,7 @@ var _ = Describe("v1 webhooks validator", func() {
 		})
 
 		It("should return error if KV CR is missing", func(ctx context.Context) {
-			kv := handlers.NewKubeVirtWithNameOnly(v1beta1CR)
+			kv := handlers.NewKubeVirtWithNameOnly()
 			Expect(cli.Delete(ctx, kv)).To(Succeed())
 
 			tlssecprofile.SetHyperConvergedTLSSecurityProfile(nil)
@@ -900,7 +900,7 @@ var _ = Describe("v1 webhooks validator", func() {
 		})
 
 		It("should return error if SSP CR is missing", func(ctx context.Context) {
-			Expect(cli.Delete(ctx, handlers.NewSSPWithNameOnly(v1beta1CR))).To(Succeed())
+			Expect(cli.Delete(ctx, handlers.NewSSPWithNameOnly())).To(Succeed())
 
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
@@ -1587,11 +1587,11 @@ var _ = Describe("v1 webhooks validator", func() {
 			checkAcceptedRequest(wh.Handle(ctx, req))
 
 			By("Validate that KV still exists, as it a dry-run deletion")
-			kv := handlers.NewKubeVirtWithNameOnly(v1Beta1CR)
+			kv := handlers.NewKubeVirtWithNameOnly()
 			Expect(util.GetRuntimeObject(ctx, cli, kv)).To(Succeed())
 
 			By("Validate that CDI still exists, as it a dry-run deletion")
-			cdi := handlers.NewCDIWithNameOnly(v1Beta1CR)
+			cdi := handlers.NewCDIWithNameOnly()
 			Expect(util.GetRuntimeObject(ctx, cli, cdi)).To(Succeed())
 		})
 
@@ -1626,7 +1626,7 @@ var _ = Describe("v1 webhooks validator", func() {
 		})
 
 		It("should ignore if KV does not exist", func(ctx context.Context) {
-			kv := handlers.NewKubeVirtWithNameOnly(v1Beta1CR)
+			kv := handlers.NewKubeVirtWithNameOnly()
 			Expect(cli.Delete(ctx, kv)).To(Succeed())
 
 			req := newRequest(admissionv1.Delete, cr, hcoCodec, false)
@@ -1646,7 +1646,7 @@ var _ = Describe("v1 webhooks validator", func() {
 		})
 
 		It("should ignore if CDI does not exist", func(ctx context.Context) {
-			cdi := handlers.NewCDIWithNameOnly(v1Beta1CR)
+			cdi := handlers.NewCDIWithNameOnly()
 			Expect(cli.Delete(ctx, cdi)).To(Succeed())
 
 			req := newRequest(admissionv1.Delete, cr, hcoCodec, false)

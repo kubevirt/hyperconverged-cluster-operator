@@ -51,7 +51,6 @@ var _ = Describe("Upgrade Mode", func() {
 
 		origOperatorCondVarName := os.Getenv(hcoutil.OperatorConditionNameEnvVar)
 		origVirtIOWinContainer := os.Getenv("VIRTIOWIN_CONTAINER")
-		origOperatorNS := os.Getenv("OPERATOR_NAMESPACE")
 		origVersion := os.Getenv(hcoutil.HcoKvIoVersionName)
 
 		hcoutil.GetClusterInfo = func() hcoutil.ClusterInfo {
@@ -59,7 +58,6 @@ var _ = Describe("Upgrade Mode", func() {
 		}
 		Expect(os.Setenv(hcoutil.OperatorConditionNameEnvVar, "OPERATOR_CONDITION")).To(Succeed())
 		Expect(os.Setenv("VIRTIOWIN_CONTAINER", commontestutils.VirtioWinImage)).To(Succeed())
-		Expect(os.Setenv("OPERATOR_NAMESPACE", namespace)).To(Succeed())
 		Expect(os.Setenv(hcoutil.HcoKvIoVersionName, version.Version)).To(Succeed())
 
 		reqresolver.GeneratePlaceHolders()
@@ -110,7 +108,6 @@ var _ = Describe("Upgrade Mode", func() {
 
 			Expect(os.Setenv(hcoutil.OperatorConditionNameEnvVar, origOperatorCondVarName)).To(Succeed())
 			Expect(os.Setenv("VIRTIOWIN_CONTAINER", origVirtIOWinContainer)).To(Succeed())
-			Expect(os.Setenv("OPERATOR_NAMESPACE", origOperatorNS)).To(Succeed())
 			Expect(os.Setenv(hcoutil.HcoKvIoVersionName, origVersion)).To(Succeed())
 		})
 	})
@@ -1199,7 +1196,7 @@ var _ = Describe("Upgrade Mode", func() {
 			foundNPs := &v1.NetworkPolicyList{}
 			Expect(cl.List(ctx, foundNPs)).To(Succeed())
 
-			Expect(foundNPs.Items).To(HaveLen(4))
+			Expect(foundNPs.Items).To(HaveLen(6))
 			Expect(foundNPs.Items).To(ContainElements(*upToDateNP1, *upToDateNP2, *nonOLMNP, *oldNPOtherNamespace))
 			Expect(foundNPs.Items).ToNot(ContainElements(*oldNP))
 		})

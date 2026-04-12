@@ -312,7 +312,7 @@ func NewKubeVirt(hc *hcov1beta1.HyperConverged, opts ...string) (*kubevirtcorev1
 		ServiceMonitorNamespace:     operands.GetNamespace(hc.Namespace, opts),
 	}
 
-	kv := NewKubeVirtWithNameOnly(hc, opts...)
+	kv := NewKubeVirtWithNameOnly()
 	setAnnotationsToReqState(hc, kv)
 	kv.Spec = spec
 
@@ -856,12 +856,12 @@ func getKVSeccompConfig() *kubevirtcorev1.SeccompConfiguration {
 	}
 }
 
-func NewKubeVirtWithNameOnly(hc *hcov1beta1.HyperConverged, opts ...string) *kubevirtcorev1.KubeVirt {
+func NewKubeVirtWithNameOnly() *kubevirtcorev1.KubeVirt {
 	return &kubevirtcorev1.KubeVirt{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "kubevirt-" + hc.Name,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentCompute),
-			Namespace: operands.GetNamespace(hc.Namespace, opts),
+			Name:      "kubevirt-" + hcoutil.HyperConvergedName,
+			Labels:    operands.GetLabels(hcoutil.AppComponentCompute),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 	}
 }
@@ -980,8 +980,8 @@ func NewKvPriorityClassHandler(Client client.Client, Scheme *runtime.Scheme) *op
 
 type kvPriorityClassHooks struct{}
 
-func (kvPriorityClassHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	return NewKubeVirtPriorityClass(hc), nil
+func (kvPriorityClassHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+	return NewKubeVirtPriorityClass(), nil
 }
 func (kvPriorityClassHooks) GetEmptyCr() client.Object { return &schedulingv1.PriorityClass{} }
 
@@ -1043,7 +1043,7 @@ func (kvPriorityClassHooks) UpdateCR(req *common.HcoRequest, Client client.Clien
 	return true, !req.HCOTriggered, nil
 }
 
-func NewKubeVirtPriorityClass(hc *hcov1beta1.HyperConverged) *schedulingv1.PriorityClass {
+func NewKubeVirtPriorityClass() *schedulingv1.PriorityClass {
 	return &schedulingv1.PriorityClass{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "scheduling.k8s.io/v1",
@@ -1051,7 +1051,7 @@ func NewKubeVirtPriorityClass(hc *hcov1beta1.HyperConverged) *schedulingv1.Prior
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kvPriorityClass,
-			Labels: operands.GetLabels(hc, hcoutil.AppComponentCompute),
+			Labels: operands.GetLabels(hcoutil.AppComponentCompute),
 		},
 		// 1 billion is the highest value we can set
 		// https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/#priorityclass

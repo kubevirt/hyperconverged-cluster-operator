@@ -30,7 +30,7 @@ var _ = Describe("Passt ServiceAccount tests", func() {
 
 	Context("test NewPasstBindingCNISA", func() {
 		It("should have all default fields", func() {
-			sa := passt.NewPasstBindingCNISA(hco)
+			sa := passt.NewPasstBindingCNISA()
 
 			Expect(sa.Name).To(Equal("passt-binding-cni"))
 			Expect(sa.Namespace).To(Equal(hco.Namespace))
@@ -58,7 +58,7 @@ var _ = Describe("Passt ServiceAccount tests", func() {
 		})
 
 		It("should delete ServiceAccount if the deployPasstNetworkBinding annotation is not set", func() {
-			sa := passt.NewPasstBindingCNISA(hco)
+			sa := passt.NewPasstBindingCNISA()
 			cl = commontestutils.InitClient([]client.Object{hco, sa})
 
 			handler := passt.NewPasstServiceAccountHandler(cl, commontestutils.GetScheme())

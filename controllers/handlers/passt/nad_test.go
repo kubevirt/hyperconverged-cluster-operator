@@ -31,7 +31,7 @@ var _ = Describe("Passt NetworkAttachmentDefinition tests", func() {
 
 	Context("test NewPasstBindingCNINetworkAttachmentDefinition", func() {
 		It("should have all default fields", func() {
-			nad := passt.NewPasstBindingCNINetworkAttachmentDefinition(hco)
+			nad := passt.NewPasstBindingCNINetworkAttachmentDefinition()
 
 			Expect(nad.Name).To(Equal("primary-udn-kubevirt-binding"))
 			Expect(nad.Namespace).To(Equal("default"))
@@ -65,7 +65,7 @@ var _ = Describe("Passt NetworkAttachmentDefinition tests", func() {
 
 		It("should delete NetworkAttachmentDefinition if the deployPasstNetworkBinding annotation is false", func() {
 			hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "false"
-			nad := passt.NewPasstBindingCNINetworkAttachmentDefinition(hco)
+			nad := passt.NewPasstBindingCNINetworkAttachmentDefinition()
 			cl = commontestutils.InitClient([]client.Object{hco, nad})
 
 			handler := passt.NewPasstNetworkAttachmentDefinitionHandler(cl, commontestutils.GetScheme())
@@ -111,7 +111,7 @@ var _ = Describe("Passt NetworkAttachmentDefinition tests", func() {
 		It("should update NetworkAttachmentDefinition fields if not matched to the requirements", func() {
 			hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "true"
 
-			nad := passt.NewPasstBindingCNINetworkAttachmentDefinition(hco)
+			nad := passt.NewPasstBindingCNINetworkAttachmentDefinition()
 			nad.Spec.Config = `{"cniVersion": "0.3.1", "name": "wrong-name", "type": "wrong-type"}`
 
 			cl = commontestutils.InitClient([]client.Object{hco, nad})
@@ -138,7 +138,7 @@ var _ = Describe("Passt NetworkAttachmentDefinition tests", func() {
 			const userLabelValue = "userLabelValue"
 			hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "true"
 
-			outdatedResource := passt.NewPasstBindingCNINetworkAttachmentDefinition(hco)
+			outdatedResource := passt.NewPasstBindingCNINetworkAttachmentDefinition()
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 
 			for k, v := range expectedLabels {
@@ -172,7 +172,7 @@ var _ = Describe("Passt NetworkAttachmentDefinition tests", func() {
 			const userLabelValue = "userLabelValue"
 			hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "true"
 
-			outdatedResource := passt.NewPasstBindingCNINetworkAttachmentDefinition(hco)
+			outdatedResource := passt.NewPasstBindingCNINetworkAttachmentDefinition()
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 
 			outdatedResource.Labels[userLabelKey] = userLabelValue

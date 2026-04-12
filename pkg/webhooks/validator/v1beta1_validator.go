@@ -174,19 +174,19 @@ func (wh *WebhookV1Beta1Handler) getOperands(ctx context.Context, requested *v1b
 		return nil, nil, nil, err
 	}
 
-	kv := handlers.NewKubeVirtWithNameOnly(requested)
+	kv := handlers.NewKubeVirtWithNameOnly()
 	err := wh.cli.Get(ctx, client.ObjectKeyFromObject(kv), kv)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	cdi := handlers.NewCDIWithNameOnly(requested)
+	cdi := handlers.NewCDIWithNameOnly()
 	err = wh.cli.Get(ctx, client.ObjectKeyFromObject(cdi), cdi)
 	if err != nil {
 		return nil, nil, nil, err
 	}
 
-	cna := handlers.NewNetworkAddonsWithNameOnly(requested)
+	cna := handlers.NewNetworkAddonsWithNameOnly()
 	err = wh.cli.Get(ctx, client.ObjectKeyFromObject(cna), cna)
 	if err != nil {
 		return nil, nil, nil, err
@@ -338,8 +338,8 @@ func (wh *WebhookV1Beta1Handler) updateOperatorCr(ctx context.Context, logger lo
 func (wh *WebhookV1Beta1Handler) ValidateDelete(ctx context.Context, logger logr.Logger, dryrun bool, hc *v1beta1.HyperConverged) error {
 	logger.Info("Validating delete", "name", hc.Name, "namespace", hc.Namespace)
 
-	kv := handlers.NewKubeVirtWithNameOnly(hc)
-	cdi := handlers.NewCDIWithNameOnly(hc)
+	kv := handlers.NewKubeVirtWithNameOnly()
+	cdi := handlers.NewCDIWithNameOnly()
 
 	for _, obj := range []client.Object{
 		kv,

@@ -30,7 +30,7 @@ var _ = Describe("IOMMUFD Device Plugin Service Account", func() {
 
 	Context("newIOMMUFDDevicePluginServiceAccount", func() {
 		It("should have all default values", func() {
-			sa := newIOMMUFDDevicePluginServiceAccount(hco)
+			sa := newIOMMUFDDevicePluginServiceAccount()
 			Expect(sa.Name).To(Equal("iommufd-device-plugin"))
 			Expect(sa.Namespace).To(BeEquivalentTo(hco.Namespace))
 			Expect(sa.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
@@ -58,7 +58,7 @@ var _ = Describe("IOMMUFD Device Plugin Service Account", func() {
 
 		It("should delete service account when deploy-aie-webhook annotation is removed", func() {
 			delete(hco.Annotations, DeployAIEAnnotation)
-			sa := newIOMMUFDDevicePluginServiceAccount(hco)
+			sa := newIOMMUFDDevicePluginServiceAccount()
 			cl = commontestutils.InitClient([]client.Object{hco, sa})
 
 			handler := NewIOMMUFDDevicePluginServiceAccountHandler(cl, commontestutils.GetScheme())
@@ -98,7 +98,7 @@ var _ = Describe("IOMMUFD Device Plugin Service Account", func() {
 	Context("IOMMUFD device plugin service account update", func() {
 		It("should reconcile labels if they are missing while preserving user labels", func() {
 			hco.Annotations[DeployAIEAnnotation] = "true"
-			sa := newIOMMUFDDevicePluginServiceAccount(hco)
+			sa := newIOMMUFDDevicePluginServiceAccount()
 			expectedLabels := maps.Clone(sa.Labels)
 			delete(sa.Labels, "app.kubernetes.io/component")
 			sa.Labels["user-added-label"] = "user-value"

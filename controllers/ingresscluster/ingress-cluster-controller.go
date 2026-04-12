@@ -41,8 +41,7 @@ const (
 )
 
 var (
-	selfNamespace = hcoutil.GetOperatorNamespaceFromEnv()
-	logger        = logf.Log.WithName("controller_ingress_cluster")
+	logger = logf.Log.WithName("controller_ingress_cluster")
 )
 
 type ReconcileIngressCluster struct {
@@ -100,7 +99,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 }
 
 func (r *ReconcileIngressCluster) Reconcile(ctx context.Context, _ reconcile.Request) (reconcile.Result, error) {
-
 	clusterIngress := &configv1.Ingress{}
 
 	if err := r.Get(ctx, client.ObjectKey{Name: ingressName}, clusterIngress); err != nil {
@@ -168,6 +166,8 @@ func (r *ReconcileIngressCluster) Reconcile(ctx context.Context, _ reconcile.Req
 func updateComponentInStatus(clusterIngress *configv1.Ingress, hcExists bool, dh downloadhost.CLIDownloadHost) (int, bool, bool) {
 	needUpdate := false
 	deleted := false
+
+	selfNamespace := hcoutil.GetOperatorNamespaceFromEnv()
 	routeInd := slices.IndexFunc(clusterIngress.Status.ComponentRoutes, func(component configv1.ComponentRouteStatus) bool {
 		return component.Name == componentName && component.Namespace == selfNamespace
 	})
@@ -217,6 +217,8 @@ func (r *ReconcileIngressCluster) hyperConvergedExists(ctx context.Context, loog
 }
 
 func generateDefaultRouteStatus(host downloadhost.CLIDownloadHost) configv1.ComponentRouteStatus {
+	selfNamespace := hcoutil.GetOperatorNamespaceFromEnv()
+
 	serviceAccount := configv1.ConsumingUser(fmt.Sprintf("system:serviceaccount:%s:hyperconverged-cluster-operator", selfNamespace))
 
 	currentHostName := host.DefaultHost
@@ -242,7 +244,7 @@ func generateDefaultRouteStatus(host downloadhost.CLIDownloadHost) configv1.Comp
 }
 
 func getDefaultCLIIDownloadHost(domain string) configv1.Hostname {
-	return configv1.Hostname(fmt.Sprintf("%s-%s.%s", downloadhost.CLIDownloadsServiceName, selfNamespace, domain))
+	return configv1.Hostname(fmt.Sprintf("%s-%s.%s", downloadhost.CLIDownloadsServiceName, hcoutil.GetOperatorNamespaceFromEnv(), domain))
 }
 
 func (r *ReconcileIngressCluster) getDownloadHost(ctx context.Context, clusterIngress *configv1.Ingress) (downloadhost.CLIDownloadHost, error) {
@@ -252,6 +254,7 @@ func (r *ReconcileIngressCluster) getDownloadHost(ctx context.Context, clusterIn
 		CurrentHost: defaultHost,
 	}
 
+	selfNamespace := hcoutil.GetOperatorNamespaceFromEnv()
 	routeInd := slices.IndexFunc(clusterIngress.Spec.ComponentRoutes, func(component configv1.ComponentRouteSpec) bool {
 		return component.Name == componentName && component.Namespace == selfNamespace
 	})

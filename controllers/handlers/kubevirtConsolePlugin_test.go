@@ -17,12 +17,12 @@ import (
 	v1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/tools/reference"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 
@@ -37,9 +37,8 @@ import (
 
 var _ = Describe("Kubevirt Console Plugin", func() {
 	var (
-		testLogger = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("consoleplugin_test")
-		hco        *hcov1beta1.HyperConverged
-		req        *common.HcoRequest
+		hco *hcov1beta1.HyperConverged
+		req *common.HcoRequest
 	)
 
 	BeforeEach(func() {
@@ -59,12 +58,12 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		}
 
 		It("should create plugin CR if not present", func() {
-			expectedResource := NewKVConsolePlugin(hco)
+			expectedResource := NewKVConsolePlugin()
 			cl := commontestutils.InitClient([]client.Object{})
-			handler, _ := NewKvUIPluginCRHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewKvUIPluginCRHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.UpgradeDone).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			foundResource := &consolev1.ConsolePlugin{}
@@ -79,10 +78,10 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		})
 
 		It("should find plugin CR if present", func() {
-			expectedResource := NewKVConsolePlugin(hco)
+			expectedResource := NewKVConsolePlugin()
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedResource, expectedConsoleConfig})
-			handler, _ := NewKvUIPluginCRHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewKvUIPluginCRHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
@@ -97,14 +96,14 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		})
 
 		It("should reconcile plugin spec to default if changed", func() {
-			expectedResource := NewKVConsolePlugin(hco)
-			outdatedResource := NewKVConsolePlugin(hco)
+			expectedResource := NewKVConsolePlugin()
+			outdatedResource := NewKVConsolePlugin()
 
 			outdatedResource.Spec.Backend.Service.Port = int32(6666)
 			outdatedResource.Spec.DisplayName = "fake plugin name"
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource, expectedConsoleConfig})
-			handler, _ := NewKvUIPluginCRHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewKvUIPluginCRHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
@@ -131,13 +130,13 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		})
 
 		It("should reconcile plugin labels to default if changed", func() {
-			expectedResource := NewKVConsolePlugin(hco)
-			outdatedResource := NewKVConsolePlugin(hco)
+			expectedResource := NewKVConsolePlugin()
+			outdatedResource := NewKVConsolePlugin()
 
 			outdatedResource.Labels[hcoutil.AppLabel] = "changed"
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource, expectedConsoleConfig})
-			handler, _ := NewKvUIPluginCRHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewKvUIPluginCRHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
@@ -155,14 +154,14 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		})
 
 		It("should reconcile plugin labels to default if added", func() {
-			expectedResource := NewKVConsolePlugin(hco)
-			outdatedResource := NewKVConsolePlugin(hco)
+			expectedResource := NewKVConsolePlugin()
+			outdatedResource := NewKVConsolePlugin()
 
 			outdatedResource.Labels["app.kubernetes.io/managed-by"] = "something"
 			// TODO: add another test for extra labels!
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource, expectedConsoleConfig})
-			handler, _ := NewKvUIPluginCRHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewKvUIPluginCRHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
@@ -180,13 +179,13 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		})
 
 		It("should reconcile plugin labels to default if deleted", func() {
-			expectedResource := NewKVConsolePlugin(hco)
-			outdatedResource := NewKVConsolePlugin(hco)
+			expectedResource := NewKVConsolePlugin()
+			outdatedResource := NewKVConsolePlugin()
 
 			delete(outdatedResource.Labels, hcoutil.AppLabel)
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource, expectedConsoleConfig})
-			handler, _ := NewKvUIPluginCRHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewKvUIPluginCRHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
@@ -206,7 +205,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		It("should reconcile managed labels to default without touching user added ones", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
-			outdatedResource := NewKVConsolePlugin(hco)
+			outdatedResource := NewKVConsolePlugin()
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 			for k, v := range expectedLabels {
 				outdatedResource.Labels[k] = "wrong_" + v
@@ -214,7 +213,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler, _ := NewKvUIPluginCRHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := NewKvUIPluginCRHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
@@ -249,7 +248,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler := operands.NewDeploymentHandler(cl, commontestutils.GetScheme(), newExpectedDeployment, hco)
+			handler := operands.NewDeploymentHandler(cl, commontestutils.GetScheme(), newExpectedDeployment)
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
@@ -272,15 +271,14 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 
 	Context("Kubevirt Console Plugin and UI Proxy Deployments", func() {
 		DescribeTable("should create if not present", func(appComponent hcoutil.AppComponent,
-			deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc operands.GetHandler) {
+			deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 			expectedResource := deploymentManifestor(hco)
 
 			cl := commontestutils.InitClient([]client.Object{})
-			handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := handlerFunc(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.UpgradeDone).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			foundResource := &appsv1.Deployment{}
@@ -304,12 +302,11 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		)
 
 		DescribeTable("should find deployment if present", func(appComponent hcoutil.AppComponent,
-			deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc operands.GetHandler) {
+			deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 			expectedResource := deploymentManifestor(hco)
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
-			handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := handlerFunc(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
@@ -334,7 +331,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		)
 
 		DescribeTable("should reconcile deployment to default if changed - (updatable fields)", func(appComponent hcoutil.AppComponent,
-			deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc operands.GetHandler) {
+			deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 			expectedResource := deploymentManifestor(hco)
 			outdatedResource := deploymentManifestor(hco)
 
@@ -345,9 +342,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			outdatedResource.Spec.Template.Spec.Containers[0].Image = "quay.io/fake/image:latest"
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := handlerFunc(cl, commontestutils.GetScheme())
 
-			Expect(err).ToNot(HaveOccurred())
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
@@ -382,7 +378,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		)
 
 		DescribeTable("should reconcile deployment to default if changed - (immutable fields)", func(appComponent hcoutil.AppComponent,
-			deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc operands.GetHandler) {
+			deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 			expectedResource := deploymentManifestor(hco)
 			outdatedResource := deploymentManifestor(hco)
 
@@ -394,9 +390,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			outdatedResource.Spec.Template.Labels[hcoutil.AppLabel] = "wrong label"
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler := handlerFunc(cl, commontestutils.GetScheme())
 
-			Expect(err).ToNot(HaveOccurred())
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
@@ -439,11 +434,11 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			})
 
 			DescribeTable("should reconcile managed labels to default on label deletion without touching user added ones", func(appComponent hcoutil.AppComponent,
-				cmManifestor func(*hcov1beta1.HyperConverged) *v1.ConfigMap, handlerFunc operands.GetHandler) {
+				cmManifestor func() *v1.ConfigMap, handlerFunc func(Client client.Client, Scheme *runtime.Scheme) operands.Operand) {
 				const userLabelKey = "userLabelKey"
 				const userLabelValue = "userLabelValue"
 
-				outdatedResource := cmManifestor(hco)
+				outdatedResource := cmManifestor()
 
 				expectedLabels := maps.Clone(outdatedResource.Labels)
 				for k, v := range expectedLabels {
@@ -452,8 +447,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				outdatedResource.Labels[userLabelKey] = userLabelValue
 
 				cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-				handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
-				Expect(err).ToNot(HaveOccurred())
+				handler := handlerFunc(cl, commontestutils.GetScheme())
 
 				res := handler.Ensure(req)
 				Expect(res.UpgradeDone).To(BeFalse())
@@ -476,11 +470,11 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			)
 
 			DescribeTable("should not reconcile UI settings config map data", func(appComponent hcoutil.AppComponent,
-				cmManifestor func(*hcov1beta1.HyperConverged) *v1.ConfigMap, handlerFunc operands.GetHandler) {
+				cmManifestor func() *v1.ConfigMap, handlerFunc func(Client client.Client, Scheme *runtime.Scheme) operands.Operand) {
 				const userAddedDataKey = "userAddedDataKey"
 				const userAddedDataValue = "userAddedDataValue"
 
-				outdatedResource := cmManifestor(hco)
+				outdatedResource := cmManifestor()
 
 				modifiedData := maps.Clone(outdatedResource.Data)
 				for k, v := range modifiedData {
@@ -489,8 +483,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				outdatedResource.Data[userAddedDataKey] = userAddedDataValue
 
 				cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-				handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
-				Expect(err).ToNot(HaveOccurred())
+				handler := handlerFunc(cl, commontestutils.GetScheme())
 
 				res := handler.Ensure(req)
 				Expect(res.UpgradeDone).To(BeFalse())
@@ -596,16 +589,15 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 
 		Context("Node Placement", func() {
 			DescribeTable("should add node placement if missing", func(appComponent hcoutil.AppComponent,
-				deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc operands.GetHandler) {
+				deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 				existingResource := deploymentManifestor(hco)
 
 				hco.Spec.Workloads.NodePlacement = commontestutils.NewNodePlacement()
 				hco.Spec.Infra.NodePlacement = commontestutils.NewOtherNodePlacement()
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
-				handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
+				handler := handlerFunc(cl, commontestutils.GetScheme())
 
-				Expect(err).ToNot(HaveOccurred())
 				res := handler.Ensure(req)
 				Expect(res.Created).To(BeFalse())
 				Expect(res.Updated).To(BeTrue())
@@ -633,7 +625,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			)
 
 			DescribeTable("should remove node placement if missing in HCO CR", func(appComponent hcoutil.AppComponent,
-				deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc operands.GetHandler) {
+				deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 				hcoNodePlacement := commontestutils.NewHco()
 				hcoNodePlacement.Spec.Workloads.NodePlacement = commontestutils.NewNodePlacement()
 				hcoNodePlacement.Spec.Infra.NodePlacement = commontestutils.NewOtherNodePlacement()
@@ -641,9 +633,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				existingResource := deploymentManifestor(hcoNodePlacement)
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
-				handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
+				handler := handlerFunc(cl, commontestutils.GetScheme())
 
-				Expect(err).ToNot(HaveOccurred())
 				res := handler.Ensure(req)
 				Expect(res.Created).To(BeFalse())
 				Expect(res.Updated).To(BeTrue())
@@ -671,7 +662,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			)
 
 			DescribeTable("should modify node placement according to HCO CR", func(appComponent hcoutil.AppComponent,
-				deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc operands.GetHandler) {
+				deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 
 				hco.Spec.Workloads.NodePlacement = commontestutils.NewNodePlacement()
 				hco.Spec.Infra.NodePlacement = commontestutils.NewOtherNodePlacement()
@@ -685,9 +676,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				hco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "something entirely else"
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
-				handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
+				handler := handlerFunc(cl, commontestutils.GetScheme())
 
-				Expect(err).ToNot(HaveOccurred())
 				res := handler.Ensure(req)
 				Expect(res.Created).To(BeFalse())
 				Expect(res.Updated).To(BeTrue())
@@ -717,7 +707,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			)
 
 			DescribeTable("should overwrite node placement if directly set on Kubevirt Console Plugin Deployment", func(appComponent hcoutil.AppComponent,
-				deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc operands.GetHandler) {
+				deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 
 				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
 				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewOtherNodePlacement()}
@@ -733,9 +723,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				existingResource.Spec.Template.Spec.NodeSelector["key3"] = "BADvalue3"
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
-				handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
+				handler := handlerFunc(cl, commontestutils.GetScheme())
 
-				Expect(err).ToNot(HaveOccurred())
 				res := handler.Ensure(req)
 				Expect(res.UpgradeDone).To(BeFalse())
 				Expect(res.Updated).To(BeTrue())
@@ -762,16 +751,15 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			)
 
 			DescribeTable("apply only NodeSelector if missing", func(appComponent hcoutil.AppComponent,
-				deploymentManifestor func(converged *hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc operands.GetHandler) {
+				deploymentManifestor func(converged *hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 				existingResource := deploymentManifestor(hco)
 
 				hco.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{}
 				hco.Spec.Infra.NodePlacement.NodeSelector = commontestutils.NewNodePlacement().NodeSelector
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
-				handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
+				handler := handlerFunc(cl, commontestutils.GetScheme())
 
-				Expect(err).ToNot(HaveOccurred())
 				res := handler.Ensure(req)
 				Expect(res.Created).To(BeFalse())
 				Expect(res.Updated).To(BeTrue())
@@ -794,16 +782,15 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			)
 
 			DescribeTable("apply only Affinity if missing", func(appComponent hcoutil.AppComponent,
-				deploymentManifestor func(converged *hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc operands.GetHandler) {
+				deploymentManifestor func(converged *hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 				existingResource := deploymentManifestor(hco)
 
 				hco.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{}
 				hco.Spec.Infra.NodePlacement.Affinity = commontestutils.NewNodePlacement().Affinity
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
-				handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
+				handler := handlerFunc(cl, commontestutils.GetScheme())
 
-				Expect(err).ToNot(HaveOccurred())
 				res := handler.Ensure(req)
 				Expect(res.Created).To(BeFalse())
 				Expect(res.Updated).To(BeTrue())
@@ -826,16 +813,15 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			)
 
 			DescribeTable("apply only Tolerations if missing", func(appComponent hcoutil.AppComponent,
-				deploymentManifestor func(converged *hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc operands.GetHandler) {
+				deploymentManifestor func(converged *hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 				existingResource := deploymentManifestor(hco)
 
 				hco.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{}
 				hco.Spec.Infra.NodePlacement.Tolerations = commontestutils.NewNodePlacement().Tolerations
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
-				handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
+				handler := handlerFunc(cl, commontestutils.GetScheme())
 
-				Expect(err).ToNot(HaveOccurred())
 				res := handler.Ensure(req)
 				Expect(res.Created).To(BeFalse())
 				Expect(res.Updated).To(BeTrue())
@@ -858,7 +844,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			)
 
 			DescribeTable("apply PodAntiAffinity and two replicas if HighlyAvailable", func(ctx context.Context, appComponent hcoutil.AppComponent,
-				deploymentManifestor func(converged *hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc operands.GetHandler) {
+				deploymentManifestor func(converged *hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 
 				originalNodeInfoFunc := nodeinfo.IsInfrastructureHighlyAvailable
 				nodeinfo.IsInfrastructureHighlyAvailable = func() bool {
@@ -876,9 +862,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				existingResource.Spec.Replicas = ptr.To(int32(1))
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
-				handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
+				handler := handlerFunc(cl, commontestutils.GetScheme())
 
-				Expect(err).ToNot(HaveOccurred())
 				res := handler.Ensure(req)
 				Expect(res.Created).To(BeFalse())
 				Expect(res.Updated).To(BeTrue())
@@ -905,7 +890,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			)
 
 			DescribeTable("use one replica on SNO", func(ctx context.Context, appComponent hcoutil.AppComponent,
-				deploymentManifestor func(converged *hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc operands.GetHandler) {
+				deploymentManifestor func(converged *hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 
 				commontestutils.SNONodeInfoMock()
 				DeferCleanup(func() {
@@ -916,9 +901,8 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				existingResource.Spec.Replicas = ptr.To(int32(3))
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
-				handler, err := handlerFunc(testLogger, cl, commontestutils.GetScheme(), hco)
+				handler := handlerFunc(cl, commontestutils.GetScheme())
 
-				Expect(err).ToNot(HaveOccurred())
 				res := handler.Ensure(req)
 				Expect(res.Created).To(BeFalse())
 				Expect(res.Updated).To(BeTrue())
@@ -1013,99 +997,97 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 	})
 
 	Context("Kubevirt Plugin and UI Proxy Service", func() {
-		DescribeTable("should create service if not present", func(appComponent hcoutil.AppComponent,
-			serviceManifestor func(*hcov1beta1.HyperConverged) *v1.Service) {
-			var expectedResource *v1.Service
-			var handler *operands.GenericOperand
-			cl := commontestutils.InitClient([]client.Object{})
-			expectedResource = serviceManifestor(hco)
-			handler = operands.NewServiceHandler(cl, commontestutils.GetScheme(), serviceManifestor)
+		DescribeTable("should create service if not present",
+			func(appComponent hcoutil.AppComponent, serviceManifestor func() *v1.Service) {
+				var expectedResource *v1.Service
+				var handler *operands.GenericOperand
+				cl := commontestutils.InitClient([]client.Object{})
+				expectedResource = serviceManifestor()
+				handler = operands.NewServiceHandler(cl, commontestutils.GetScheme(), serviceManifestor())
 
-			res := handler.Ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
-			Expect(res.Err).ToNot(HaveOccurred())
+				res := handler.Ensure(req)
+				Expect(res.UpgradeDone).To(BeTrue())
+				Expect(res.Err).ToNot(HaveOccurred())
 
-			foundResource := &v1.Service{}
-			Expect(
-				cl.Get(context.TODO(),
-					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
-					foundResource),
-			).To(Succeed())
-			Expect(foundResource.Name).To(Equal(expectedResource.Name))
-			Expect(foundResource.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, commontestutils.Name))
-			Expect(foundResource.Namespace).To(Equal(expectedResource.Namespace))
-		},
+				foundResource := &v1.Service{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
+						foundResource),
+				).To(Succeed())
+				Expect(foundResource.Name).To(Equal(expectedResource.Name))
+				Expect(foundResource.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, commontestutils.Name))
+				Expect(foundResource.Namespace).To(Equal(expectedResource.Namespace))
+			},
 			Entry("ui plugin service", hcoutil.AppComponentUIPlugin, NewKvUIPluginSvc),
 			Entry("ui proxy service", hcoutil.AppComponentUIProxy, NewKvUIProxySvc),
 		)
 
-		DescribeTable("should find service if present", func(appComponent hcoutil.AppComponent,
-			serviceManifestor func(*hcov1beta1.HyperConverged) *v1.Service) {
+		DescribeTable("should find service if present",
+			func(appComponent hcoutil.AppComponent, serviceManifestor func() *v1.Service) {
+				expectedResource := serviceManifestor()
+				cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
+				handler := operands.NewServiceHandler(cl, commontestutils.GetScheme(), serviceManifestor())
 
-			expectedResource := serviceManifestor(hco)
-			cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
-			handler := operands.NewServiceHandler(cl, commontestutils.GetScheme(), serviceManifestor)
+				res := handler.Ensure(req)
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Err).ToNot(HaveOccurred())
 
-			res := handler.Ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
-			Expect(res.Err).ToNot(HaveOccurred())
+				foundResource := &v1.Service{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
+						foundResource),
+				).To(Succeed())
 
-			foundResource := &v1.Service{}
-			Expect(
-				cl.Get(context.TODO(),
-					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
-					foundResource),
-			).To(Succeed())
-
-			// Check HCO's status
-			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
-			objectRef, err := reference.GetReference(commontestutils.GetScheme(), foundResource)
-			Expect(err).ToNot(HaveOccurred())
-			// ObjectReference should have been added
-			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
-		},
+				// Check HCO's status
+				Expect(hco.Status.RelatedObjects).ToNot(BeNil())
+				objectRef, err := reference.GetReference(commontestutils.GetScheme(), foundResource)
+				Expect(err).ToNot(HaveOccurred())
+				// ObjectReference should have been added
+				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
+			},
 			Entry("ui plugin service", hcoutil.AppComponentUIPlugin, NewKvUIPluginSvc),
 			Entry("ui proxy service", hcoutil.AppComponentUIProxy, NewKvUIProxySvc),
 		)
 
-		DescribeTable("should reconcile service to default if changed", func(appComponent hcoutil.AppComponent,
-			serviceManifestor func(*hcov1beta1.HyperConverged) *v1.Service) {
+		DescribeTable("should reconcile service to default if changed",
+			func(appComponent hcoutil.AppComponent, serviceManifestor func() *v1.Service) {
+				expectedResource := serviceManifestor()
+				outdatedResource := serviceManifestor()
 
-			expectedResource := serviceManifestor(hco)
-			outdatedResource := serviceManifestor(hco)
+				outdatedResource.Labels[hcoutil.AppLabel] = "wrong label"
+				outdatedResource.Spec.Ports[0].Port = 6666
 
-			outdatedResource.Labels[hcoutil.AppLabel] = "wrong label"
-			outdatedResource.Spec.Ports[0].Port = 6666
+				cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
+				handler := operands.NewServiceHandler(cl, commontestutils.GetScheme(), serviceManifestor())
 
-			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler := operands.NewServiceHandler(cl, commontestutils.GetScheme(), serviceManifestor)
+				res := handler.Ensure(req)
+				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.Updated).To(BeTrue())
+				Expect(res.Err).ToNot(HaveOccurred())
 
-			res := handler.Ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
-			Expect(res.Updated).To(BeTrue())
-			Expect(res.Err).ToNot(HaveOccurred())
+				foundResource := &v1.Service{}
+				Expect(
+					cl.Get(context.TODO(),
+						types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
+						foundResource),
+				).To(Succeed())
 
-			foundResource := &v1.Service{}
-			Expect(
-				cl.Get(context.TODO(),
-					types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
-					foundResource),
-			).To(Succeed())
+				Expect(foundResource.Labels).ToNot(Equal(outdatedResource.Labels))
+				Expect(foundResource.Labels).To(Equal(expectedResource.Labels))
+				Expect(foundResource.Spec.Ports).ToNot(Equal(outdatedResource.Spec.Ports))
+				Expect(foundResource.Spec.Ports).To(Equal(expectedResource.Spec.Ports))
 
-			Expect(foundResource.Labels).ToNot(Equal(outdatedResource.Labels))
-			Expect(foundResource.Labels).To(Equal(expectedResource.Labels))
-			Expect(foundResource.Spec.Ports).ToNot(Equal(outdatedResource.Spec.Ports))
-			Expect(foundResource.Spec.Ports).To(Equal(expectedResource.Spec.Ports))
-
-			// ObjectReference should have been updated
-			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
-			objectRefOutdated, err := reference.GetReference(commontestutils.GetScheme(), outdatedResource)
-			Expect(err).ToNot(HaveOccurred())
-			objectRefFound, err := reference.GetReference(commontestutils.GetScheme(), foundResource)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
-			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
-		},
+				// ObjectReference should have been updated
+				Expect(hco.Status.RelatedObjects).ToNot(BeNil())
+				objectRefOutdated, err := reference.GetReference(commontestutils.GetScheme(), outdatedResource)
+				Expect(err).ToNot(HaveOccurred())
+				objectRefFound, err := reference.GetReference(commontestutils.GetScheme(), foundResource)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(hco.Status.RelatedObjects).ToNot(ContainElement(*objectRefOutdated))
+				Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRefFound))
+			},
 			Entry("ui plugin service", hcoutil.AppComponentUIPlugin, NewKvUIPluginSvc),
 			Entry("ui proxy service", hcoutil.AppComponentUIProxy, NewKvUIProxySvc),
 		)
@@ -1127,8 +1109,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 
 			It("should deploy NetworkPolicies for console plugin", func() {
 				cl := commontestutils.InitClient([]client.Object{hco})
-				handler, err := NewKVConsolePluginNetworkPolicyHandler(testLogger, cl, commontestutils.GetScheme(), hco)
-				Expect(err).ToNot(HaveOccurred())
+				handler := NewKVConsolePluginNetworkPolicyHandler(cl, commontestutils.GetScheme())
 
 				res := handler.Ensure(req)
 				Expect(res.Created).To(BeTrue())
@@ -1141,7 +1122,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 						foundNP),
 				).To(Succeed())
 
-				expectedNP := newKVConsolePluginNetworkPolicy(hco)
+				expectedNP := newKVConsolePluginNetworkPolicy()
 
 				Expect(foundNP.Name).To(Equal(expectedNP.Name))
 				Expect(foundNP.Namespace).To(Equal(expectedNP.Namespace))
@@ -1152,11 +1133,10 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 
 			It("should deploy NetworkPolicies for api-server proxy", func() {
 				cl := commontestutils.InitClient([]client.Object{})
-				handler, err := NewKVAPIServerProxyNetworkPolicyHandler(testLogger, cl, commontestutils.GetScheme(), hco)
-				Expect(err).ToNot(HaveOccurred())
+				handler := NewKVAPIServerProxyNetworkPolicyHandler(cl, commontestutils.GetScheme())
 
 				res := handler.Ensure(req)
-				Expect(res.UpgradeDone).To(BeFalse())
+				Expect(res.UpgradeDone).To(BeTrue())
 				Expect(res.Err).ToNot(HaveOccurred())
 
 				foundResource := &networkingv1.NetworkPolicy{}
@@ -1171,7 +1151,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			})
 
 			It("should update NetworkPolicies for console plugin, if it was modified", func() {
-				expectedNP := newKVConsolePluginNetworkPolicy(hco)
+				expectedNP := newKVConsolePluginNetworkPolicy()
 
 				existingNP := expectedNP.DeepCopy()
 				existingNP.Spec.Egress = []networkingv1.NetworkPolicyEgressRule{
@@ -1192,8 +1172,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingNP})
 
-				handler, err := NewKVConsolePluginNetworkPolicyHandler(testLogger, cl, commontestutils.GetScheme(), hco)
-				Expect(err).ToNot(HaveOccurred())
+				handler := NewKVConsolePluginNetworkPolicyHandler(cl, commontestutils.GetScheme())
 
 				res := handler.Ensure(req)
 				Expect(res.Created).To(BeFalse())
@@ -1227,7 +1206,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			})
 
 			It("should update NetworkPolicies for api-server proxy, if it was modified", func() {
-				expectedNP := newKVAPIServerProxyNetworkPolicy(hco)
+				expectedNP := newKVAPIServerProxyNetworkPolicy()
 				existingNP := expectedNP.DeepCopy()
 				existingNP.Spec.Egress = []networkingv1.NetworkPolicyEgressRule{
 					{
@@ -1246,8 +1225,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				existingNP.Labels[hcoutil.AppLabel] = "wrong-label"
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingNP})
-				handler, err := NewKVAPIServerProxyNetworkPolicyHandler(testLogger, cl, commontestutils.GetScheme(), hco)
-				Expect(err).ToNot(HaveOccurred())
+				handler := NewKVAPIServerProxyNetworkPolicyHandler(cl, commontestutils.GetScheme())
 
 				res := handler.Ensure(req)
 				Expect(res.UpgradeDone).To(BeFalse())
