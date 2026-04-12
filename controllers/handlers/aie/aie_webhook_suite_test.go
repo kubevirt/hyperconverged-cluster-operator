@@ -1,4 +1,4 @@
-package aie_webhook
+package aie
 
 import (
 	"testing"

@@ -1,4 +1,4 @@
-package aie_webhook
+package aie
 
 import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
@@ -14,10 +14,9 @@ const (
 	aieWebhookConfigMapName      = "kubevirt-aie-launcher-config"
 	appComponent                 = hcoutil.AppComponentAIEWebhook
 
-	DeployAIEWebhookAnnotation = hcoutil.HCOAnnotationPrefix + "deployAIEWebhook"
+	DeployAIEAnnotation = hcoutil.HCOAnnotationPrefix + "deployAIE"
 )
 
-func shouldDeployAIEWebhook(hc *hcov1beta1.HyperConverged) bool {
-	value, ok := hc.Annotations[DeployAIEWebhookAnnotation]
-	return ok && value == "true"
+func shouldDeployAIE(hc *hcov1beta1.HyperConverged) bool {
+	return hc.Annotations[DeployAIEAnnotation] == "true"
 }
