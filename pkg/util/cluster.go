@@ -31,6 +31,7 @@ type ClusterInfo interface {
 	IsDeschedulerCRDDeployed(ctx context.Context, cl client.Client) bool
 	IsSingleStackIPv6() bool
 	IsHyperShiftManaged() bool
+	GetIPStackType() string
 }
 
 type ClusterInfoImp struct {
@@ -43,6 +44,7 @@ type ClusterInfoImp struct {
 	nadAvailable               bool
 	singlestackipv6            bool
 	isHyperShiftManaged        bool
+	ipStackType                string
 	baseDomain                 string
 	logger                     logr.Logger
 }
@@ -141,6 +143,26 @@ func (c *ClusterInfoImp) initOpenshift(ctx context.Context, cl client.Client) er
 		)
 	}
 	c.singlestackipv6 = len(cn) == 1 && net.IsIPv6CIDRString(cn[0].CIDR)
+
+	hasIPv4, hasIPv6 := false, false
+	for _, n := range cn {
+		if net.IsIPv4CIDRString(n.CIDR) {
+			hasIPv4 = true
+		}
+		if net.IsIPv6CIDRString(n.CIDR) {
+			hasIPv6 = true
+		}
+	}
+	switch {
+	case hasIPv4 && hasIPv6:
+		c.ipStackType = IPStackTypeDualStack
+	case hasIPv6:
+		c.ipStackType = IPStackTypeIPv6SingleStack
+	default:
+		c.ipStackType = IPStackTypeIPv4SingleStack
+	}
+	c.logger.Info("Detected IP stack type", "ipStackType", c.ipStackType)
+
 	return nil
 }
 
@@ -182,6 +204,10 @@ func (c *ClusterInfoImp) IsSingleStackIPv6() bool {
 
 func (c *ClusterInfoImp) IsHyperShiftManaged() bool {
 	return c.isHyperShiftManaged
+}
+
+func (c *ClusterInfoImp) GetIPStackType() string {
+	return c.ipStackType
 }
 
 func (c *ClusterInfoImp) GetBaseDomain() string {

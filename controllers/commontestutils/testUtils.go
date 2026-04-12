@@ -281,6 +281,10 @@ func (c ClusterInfoMock) IsHyperShiftManaged() bool {
 	return false
 }
 
+func (c ClusterInfoMock) GetIPStackType() string {
+	return hcoutil.IPStackTypeIPv4SingleStack
+}
+
 func KeysFromSSMap(ssmap map[string]string) gstruct.Keys {
 	keys := gstruct.Keys{}
 	for k, v := range ssmap {
