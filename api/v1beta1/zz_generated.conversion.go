@@ -359,7 +359,6 @@ func Convert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(in *HyperConver
 }
 
 func autoConvert_v1_HyperConvergedSpec_To_v1beta1_HyperConvergedSpec(in *v1.HyperConvergedSpec, out *HyperConvergedSpec, s conversion.Scope) error {
-	// INFO: in.NodePlacements opted out of conversion generation
 	// INFO: in.FeatureGates opted out of conversion generation
 	// INFO: in.Virtualization opted out of conversion generation
 	// INFO: in.Storage opted out of conversion generation

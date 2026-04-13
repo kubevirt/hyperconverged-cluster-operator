@@ -25,113 +25,6 @@ The alert is supposed to resolve after 10 minutes if there isn't a manual interv
 
 ***Note***: The cluster configurations are supported only in API version `v1beta1` or higher.
 
-## Node Placement
-Kubernetes lets the cluster admin influence node placement in several ways, see
-https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/ for a general overview.
-
-The HyperConverged Cluster's CR is the single entry point to let the cluster admin influence the placement of all the
-pods directly and indirectly managed by the HyperConverged Cluster Operator.
-
-The `spec.nodePlacements` contains the `infra` and the `workload` fields, to configure the scheduling of the
-infrastructure pods, and the workload pods, respectively.
-
-The `spec.nodePlacements.infra` and the `spec.nodePlacements.workload` objects uses the same structure, and contains the
-following fields:
-* `nodeSelector` is the node selector applied to the relevant kind of pods. It specifies a map of key-value pairs: for
-the pod to be eligible to run on a node,	the node must have each of the indicated key-value pairs as labels 	(it can
-have additional labels as well). See https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#nodeselector.
-* `affinity` enables pod affinity/anti-affinity placement expanding the types of constraints
-that can be expressed with nodeSelector.
-affinity is going to be applied to the relevant kind of pods in parallel with nodeSelector
-See https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity.
-* `tolerations` is a list of tolerations applied to the relevant kind of pods.
-See https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ for more info.
-
-### Operators placement
-The HyperConverged Cluster Operator and the operators for its component are supposed to be deployed by the Operator
-Lifecycle Manager (OLM).
-Thus, the HyperConverged Cluster Operator is not going to directly influence its own placement but that should be
-influenced by the OLM.
-In OLM v0, The cluster admin indeed is allowed to influence the placement of the Pods directly created by the OLM
-configuring a [nodeSelector](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#nodeselector) or [tolerations](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#tolerations) directly on the OLM subscription object. This is not supported
-in OLM v1.
-
-### Node Placement Examples
-* Place the infra resources on nodes labeled with "nodeType = infra", and workloads in nodes labeled with "nodeType = nested-virtualization", using node selector:
-  ```yaml
-  apiVersion: hco.kubevirt.io/v1
-  kind: HyperConverged
-  metadata:
-    name: kubevirt-hyperconverged
-    namespace: kubevirt-hyperconverged
-  spec:
-    nodePlacements:
-      infra:
-        nodeSelector:
-          nodeType: infra
-      workload:
-        nodeSelector:
-          nodeType: nested-virtualization
-  ```
-* Place the infra resources on nodes labeled with "nodeType = infra", and workloads in nodes labeled with
-"nodeType = nested-virtualization", preferring nodes with more than 8 CPUs, using affinity:
-  ```yaml
-  apiVersion: hco.kubevirt.io/v1
-  kind: HyperConverged
-  metadata:
-    name: kubevirt-hyperconverged
-    namespace: kubevirt-hyperconverged
-  spec:
-    nodePlacements:
-      infra:
-        affinity:
-          nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-              - matchExpressions:
-                - key: nodeType
-                  operator: In
-                  values:
-                  - infra
-      workload:
-        affinity:
-          nodeAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-              nodeSelectorTerms:
-              - matchExpressions:
-                - key: nodeType
-                  operator: In
-                  values:
-                  - nested-virtualization
-            preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 1
-              preference:
-                matchExpressions:
-                - key: my-cloud.io/num-cpus
-                  operator: gt
-                  values:
-                  - 8
-  ```
-* In this example, there are several nodes that are reserved for KubeVirt resources (e.g. VMs), already set with the
-`key=kubevirt:NoSchedule` taint. This taint prevents the scheduling of any pod to these nodes; the `tolerations` field in
-the example, allows KubeVirt workloads to be scheduled on these nodes, and that how we can dedicate nodes for KubeVirt
-workloads.
-  ```yaml
-   apiVersion: hco.kubevirt.io/v1
-  kind: HyperConverged
-  metadata:
-    name: kubevirt-hyperconverged
-    namespace: kubevirt-hyperconverged
-  spec:
-    nodePlacements:
-      workload:
-        tolerations:
-        - key: "key"
-          operator: "Equal"
-          value: "kubevirt"
-          effect: "NoSchedule"
-  ```
-
 ## FeatureGates
 The `featureGates` field is a set of optional feature gates to enable or disable new features that are not generally
 available yet.
@@ -1631,6 +1524,117 @@ spec:
 
 ## Deployment Configurations
 The `spec.deployment` field contains all the configurations for deployment.
+
+### Node Placement
+Kubernetes lets the cluster admin influence node placement in several ways, see
+https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/ for a general overview.
+
+The HyperConverged Cluster's CR is the single entry point to let the cluster admin influence the placement of all the
+pods directly and indirectly managed by the HyperConverged Cluster Operator.
+
+The `spec.deployment.nodePlacements` field contains the `infra` and the `workload` fields, to configure the scheduling
+of the infrastructure pods, and the workload pods, respectively.
+
+The `spec.deployment.nodePlacements.infra` and the `spec.deployment.nodePlacements.workload` objects uses the same
+structure, and contains the following fields:
+* `nodeSelector` is the node selector applied to the relevant kind of pods. It specifies a map of key-value pairs: for
+  the pod to be eligible to run on a node,	the node must have each of the indicated key-value pairs as labels 	(it can
+  have additional labels as well). See https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#nodeselector.
+* `affinity` enables pod affinity/anti-affinity placement expanding the types of constraints
+  that can be expressed with nodeSelector.
+  affinity is going to be applied to the relevant kind of pods in parallel with nodeSelector
+  See https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity.
+* `tolerations` is a list of tolerations applied to the relevant kind of pods.
+  See https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/ for more info.
+
+#### Operators placement
+The HyperConverged Cluster Operator and the operators for its component are supposed to be deployed by the Operator
+Lifecycle Manager (OLM).
+Thus, the HyperConverged Cluster Operator is not going to directly influence its own placement but that should be
+influenced by the OLM.
+In OLM v0, The cluster admin indeed is allowed to influence the placement of the Pods directly created by the OLM
+configuring a [nodeSelector](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#nodeselector) or [tolerations](https://github.com/operator-framework/operator-lifecycle-manager/blob/master/doc/design/subscription-config.md#tolerations) directly on the OLM subscription object. This is not supported
+in OLM v1.
+
+#### Node Placement Examples
+* Place the infra resources on nodes labeled with "nodeType = infra", and workloads in nodes labeled with "nodeType = nested-virtualization", using node selector:
+  ```yaml
+  apiVersion: hco.kubevirt.io/v1
+  kind: HyperConverged
+  metadata:
+    name: kubevirt-hyperconverged
+    namespace: kubevirt-hyperconverged
+  spec:
+    deployment:
+      nodePlacements:
+        infra:
+          nodeSelector:
+            nodeType: infra
+        workload:
+          nodeSelector:
+            nodeType: nested-virtualization
+  ```
+
+* Place the infra resources on nodes labeled with "nodeType = infra", and workloads in nodes labeled with
+    "nodeType = nested-virtualization", preferring nodes with more than 8 CPUs, using affinity:
+    ```yaml
+    apiVersion: hco.kubevirt.io/v1
+    kind: HyperConverged
+    metadata:
+      name: kubevirt-hyperconverged
+      namespace: kubevirt-hyperconverged
+    spec:
+      deployment:
+        nodePlacements:
+          infra:
+            affinity:
+              nodeAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  nodeSelectorTerms:
+                  - matchExpressions:
+                    - key: nodeType
+                      operator: In
+                      values:
+                      - infra
+          workload:
+            affinity:
+              nodeAffinity:
+                requiredDuringSchedulingIgnoredDuringExecution:
+                  nodeSelectorTerms:
+                  - matchExpressions:
+                    - key: nodeType
+                      operator: In
+                      values:
+                      - nested-virtualization
+                preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 1
+                  preference:
+                    matchExpressions:
+                    - key: my-cloud.io/num-cpus
+                      operator: gt
+                      values:
+                      - 8
+    ```
+* In this example, there are several nodes that are reserved for KubeVirt resources (e.g. VMs), already set with the
+  `key=kubevirt:NoSchedule` taint. This taint prevents the scheduling of any pod to these nodes; the `tolerations` field in
+  the example, allows KubeVirt workloads to be scheduled on these nodes, and that how we can dedicate nodes for KubeVirt
+  workloads.
+  ```yaml
+   apiVersion: hco.kubevirt.io/v1
+  kind: HyperConverged
+  metadata:
+    name: kubevirt-hyperconverged
+    namespace: kubevirt-hyperconverged
+  spec:
+    deployment:
+      nodePlacements:
+        workload:
+          tolerations:
+          - key: "key"
+            operator: "Equal"
+            value: "kubevirt"
+            effect: "NoSchedule"
+  ```
 
 ### Log verbosity
 Currently, logging verbosity is only supported for Kubevirt.

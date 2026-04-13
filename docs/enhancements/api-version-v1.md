@@ -167,66 +167,6 @@ when configuring the KubeVirt system.
 In `v1`, the fields will be grouped by a common topic or logic, to ease the
 maintainability of the `HyperConverged` CR.
 
-#### Node Placement:
-
-In `v1beta1`, the infra and workloads fields are of type `HyperConvergedConfig`,
-which contains only the single `nodePlacement` field.
-This structure does not make a lot of sense, and can be improved.
-
-`v1beta1` example:
-
-```yaml
-apiVersion: hco.kubevirt.io/v1beta1
-kind: HyperConverged
-metadata:
-  name: kubevirt-hyperconverged
-spec:
-  infra:
-    nodePlacement:
-      nodeSelector:
-        some-label: some-value
-  workloads:
-    nodePlacement:
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: some-other-label
-                operator: In
-                values:
-                - some-other-value
-                - alternative-value
-```
-
-Instead, we will introduce a new `nodePlacements` field under `spec`, containing
-both `infra` and `workload` fields, both of type
-`kubevirt.io/controller-lifecycle-operator-sdk/api.NodePlacement.nodePlacement`.
-The setting above will look like this in `v1`:
-
-```yaml
-apiVersion: hco.kubevirt.io/v1
-kind: HyperConverged
-metadata:
-  name: kubevirt-hyperconverged
-spec:
-  nodePlacements:
-    infra:
-      nodeSelector:
-        some-label: some-value
-    workload:
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-            - matchExpressions:
-              - key: some-other-label
-                operator: In
-                values:
-                - some-other-value
-                - alternative-value
-```
-
 #### Virtualization
 
 In `v1beta1`, the following fields are directly under `spec`. In `v1`, they
@@ -319,6 +259,69 @@ will be moved under the new `deployment` field:
 * The `enableApplicationAwareQuota` field will be moved under the
   new `deployment.applicationAwareConfig` field, and will be renamed
   to `enable`.
+* The `infra` and `workloads` field will be modified, and moved under the new
+  `nodePlacements` field; see [below](#node-placement).
+
+###### Node Placement:
+
+In `v1beta1`, the infra and workloads fields are of type `HyperConvergedConfig`,
+which contains only the single `nodePlacement` field.
+This structure does not make a lot of sense, and can be improved.
+
+`v1beta1` example:
+
+```yaml
+apiVersion: hco.kubevirt.io/v1beta1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  infra:
+    nodePlacement:
+      nodeSelector:
+        some-label: some-value
+  workloads:
+    nodePlacement:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: some-other-label
+                operator: In
+                values:
+                - some-other-value
+                - alternative-value
+```
+
+Instead, we will introduce a new `nodePlacements` field under `spec.deployment`, containing
+both `infra` and `workload` fields, both of type
+`kubevirt.io/controller-lifecycle-operator-sdk/api.NodePlacement.nodePlacement`.
+The setting above will look like this in `v1`:
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  deployment:
+    nodePlacements:
+      infra:
+        nodeSelector:
+          some-label: some-value
+      workload:
+        affinity:
+          nodeAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: some-other-label
+                  operator: In
+                  values:
+                  - some-other-value
+                  - alternative-value
+```
 
 ## Development Phases
 

@@ -78,32 +78,32 @@ func (dst *HyperConverged) ConvertFrom(srcRaw conversion.Hub) error { //revive:d
 }
 
 func convertNodePlacementsV1ToV1beta1(v1Spec hcov1.HyperConvergedSpec, v1beta1Spec *HyperConvergedSpec) {
-	if v1Spec.NodePlacements == nil {
+	if v1Spec.Deployment.NodePlacements == nil {
 		return
 	}
 
-	if v1Spec.NodePlacements.Infra != nil {
-		v1beta1Spec.Infra.NodePlacement = v1Spec.NodePlacements.Infra.DeepCopy()
+	if v1Spec.Deployment.NodePlacements.Infra != nil {
+		v1beta1Spec.Infra.NodePlacement = v1Spec.Deployment.NodePlacements.Infra.DeepCopy()
 	}
 
-	if v1Spec.NodePlacements.Workload != nil {
-		v1beta1Spec.Workloads.NodePlacement = v1Spec.NodePlacements.Workload.DeepCopy()
+	if v1Spec.Deployment.NodePlacements.Workload != nil {
+		v1beta1Spec.Workloads.NodePlacement = v1Spec.Deployment.NodePlacements.Workload.DeepCopy()
 	}
 }
 
 func convertNodePlacementsV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1Spec *hcov1.HyperConvergedSpec) {
 	if v1beta1Spec.Infra.NodePlacement != nil {
-		v1Spec.NodePlacements = &hcov1.NodePlacements{
+		v1Spec.Deployment.NodePlacements = &hcov1.NodePlacements{
 			Infra: v1beta1Spec.Infra.NodePlacement.DeepCopy(),
 		}
 	}
 
 	if v1beta1Spec.Workloads.NodePlacement != nil {
-		if v1Spec.NodePlacements == nil {
-			v1Spec.NodePlacements = &hcov1.NodePlacements{}
+		if v1Spec.Deployment.NodePlacements == nil {
+			v1Spec.Deployment.NodePlacements = &hcov1.NodePlacements{}
 		}
 
-		v1Spec.NodePlacements.Workload = v1beta1Spec.Workloads.NodePlacement.DeepCopy()
+		v1Spec.Deployment.NodePlacements.Workload = v1beta1Spec.Workloads.NodePlacement.DeepCopy()
 	}
 }
 

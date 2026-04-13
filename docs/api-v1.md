@@ -119,6 +119,7 @@ DataImportCronTemplateStatus is a copy of a dataImportCronTemplate as defined in
 
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
+| nodePlacements | NodePlacements defines the node scheduling configuration for infrastructure or workload entities | *[NodePlacements](#nodeplacements) |  | false |
 | uninstallStrategy | UninstallStrategy defines how to proceed on uninstall when workloads (VirtualMachines, DataVolumes) still exist. BlockUninstallIfWorkloadsExist will prevent the CR from being removed when workloads still exist. BlockUninstallIfWorkloadsExist is the safest choice to protect your workloads from accidental data loss, so it's strongly advised. RemoveWorkloads will cause all the workloads to be cascading deleted on uninstallation. WARNING: please notice that RemoveWorkloads will cause your workloads to be deleted as soon as this CR will be, even accidentally, deleted. Please correctly consider the implications of this option before setting it. BlockUninstallIfWorkloadsExist is the default behavior. | HyperConvergedUninstallStrategy | BlockUninstallIfWorkloadsExist | false |
 | logVerbosityConfig | LogVerbosityConfig configures the verbosity level of Kubevirt's different components. The higher the value - the higher the log verbosity. | *[LogVerbosityConfiguration](#logverbosityconfiguration) |  | false |
 | applicationAwareConfig | ApplicationAwareConfig set the AAQ configurations | *[ApplicationAwareConfigurations](#applicationawareconfigurations) |  | false |
@@ -176,7 +177,6 @@ HyperConvergedSpec defines the desired state of HyperConverged
 
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
-| nodePlacements | NodePlacements defines the node scheduling configuration for infrastructure or workload entities | *[NodePlacements](#nodeplacements) |  | false |
 | featureGates | For feature gate details, see [here](#hco-feature-gates) | featuregates.HyperConvergedFeatureGates |  | false |
 | virtualization | Virtualization contains all the configurations for virtualization | [VirtualizationConfig](#virtualizationconfig) | {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10} | false |
 | storage | Storage contains all the configurations for storage | *[StorageConfig](#storageconfig) |  | false |
