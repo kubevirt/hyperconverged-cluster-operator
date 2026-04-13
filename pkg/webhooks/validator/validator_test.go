@@ -472,12 +472,12 @@ var _ = Describe("v1 webhooks validator", func() {
 
 		Context("validate affinity", func() {
 			It("should allow empty nodePlacements", func(ctx context.Context) {
-				cr.Spec.NodePlacements = &hcov1.NodePlacements{}
+				cr.Spec.Deployment.NodePlacements = &hcov1.NodePlacements{}
 				checkAcceptedRequest(wh.validateCreate(GinkgoLogr, dryRun, cr))
 			})
 
 			It("should allow empty affinity", func(ctx context.Context) {
-				cr.Spec.NodePlacements = &hcov1.NodePlacements{
+				cr.Spec.Deployment.NodePlacements = &hcov1.NodePlacements{
 					Infra: &sdkapi.NodePlacement{
 						Affinity: &corev1.Affinity{},
 					},
@@ -489,7 +489,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			})
 
 			It("should allow valid affinity", func(ctx context.Context) {
-				cr.Spec.NodePlacements = &hcov1.NodePlacements{
+				cr.Spec.Deployment.NodePlacements = &hcov1.NodePlacements{
 					Infra: &sdkapi.NodePlacement{
 						Affinity: &corev1.Affinity{
 							NodeAffinity: &corev1.NodeAffinity{
@@ -534,7 +534,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			})
 
 			It("should reject invalid workloads affinity: unknown operator", func(ctx context.Context) {
-				cr.Spec.NodePlacements = &hcov1.NodePlacements{
+				cr.Spec.Deployment.NodePlacements = &hcov1.NodePlacements{
 					Infra: &sdkapi.NodePlacement{
 						Affinity: &corev1.Affinity{
 							NodeAffinity: &corev1.NodeAffinity{
@@ -583,7 +583,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			})
 
 			It("should reject invalid workloads affinity: more than one value in matchFields", func(ctx context.Context) {
-				cr.Spec.NodePlacements = &hcov1.NodePlacements{
+				cr.Spec.Deployment.NodePlacements = &hcov1.NodePlacements{
 					Infra: &sdkapi.NodePlacement{
 						Affinity: &corev1.Affinity{
 							NodeAffinity: &corev1.NodeAffinity{
@@ -632,7 +632,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			})
 
 			It("should reject invalid infra affinity: unknown operator", func(ctx context.Context) {
-				cr.Spec.NodePlacements = &hcov1.NodePlacements{
+				cr.Spec.Deployment.NodePlacements = &hcov1.NodePlacements{
 					Infra: &sdkapi.NodePlacement{
 						Affinity: &corev1.Affinity{
 							NodeAffinity: &corev1.NodeAffinity{
@@ -682,7 +682,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			})
 
 			It("should reject invalid infra affinity: more than one value in fieldSelector", func(ctx context.Context) {
-				cr.Spec.NodePlacements = &hcov1.NodePlacements{
+				cr.Spec.Deployment.NodePlacements = &hcov1.NodePlacements{
 					Infra: &sdkapi.NodePlacement{
 						Affinity: &corev1.Affinity{
 							NodeAffinity: &corev1.NodeAffinity{
@@ -750,7 +750,7 @@ var _ = Describe("v1 webhooks validator", func() {
 		var v1beta1CR *hcov1beta1.HyperConverged
 
 		BeforeEach(func() {
-			cr.Spec.NodePlacements = &hcov1.NodePlacements{
+			cr.Spec.Deployment.NodePlacements = &hcov1.NodePlacements{
 				Infra:    newHyperConvergedConfig(),
 				Workload: newHyperConvergedConfig(),
 			}
@@ -804,7 +804,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// just do some change to force update
-			newHco.Spec.NodePlacements.Infra.NodeSelector["key3"] = "value3"
+			newHco.Spec.Deployment.NodePlacements.Infra.NodeSelector["key3"] = "value3"
 
 			checkRejectedRequest(
 				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
@@ -820,7 +820,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// change something in workloads to trigger dry-run update
-			newHco.Spec.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
+			newHco.Spec.Deployment.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
 
 			checkRejectedRequest(
 				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
@@ -838,7 +838,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// just do some change to force update
-			newHco.Spec.NodePlacements.Infra.NodeSelector["key3"] = "value3"
+			newHco.Spec.Deployment.NodePlacements.Infra.NodeSelector["key3"] = "value3"
 
 			checkRejectedRequest(
 				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
@@ -852,7 +852,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// change something in workloads to trigger dry-run update
-			newHco.Spec.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
+			newHco.Spec.Deployment.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
 
 			checkRejectedRequest(
 				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
@@ -866,7 +866,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// change something in workloads to trigger dry-run update
-			newHco.Spec.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
+			newHco.Spec.Deployment.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
 
 			checkAcceptedRequest(wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr))
 		})
@@ -879,7 +879,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// just do some change to force update
-			newHco.Spec.NodePlacements.Infra.NodeSelector["key3"] = "value3"
+			newHco.Spec.Deployment.NodePlacements.Infra.NodeSelector["key3"] = "value3"
 
 			checkRejectedRequest(
 				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
@@ -893,7 +893,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// change something in workloads to trigger dry-run update
-			newHco.Spec.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
+			newHco.Spec.Deployment.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
 
 			resp := wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr)
 			Expect(resp.String()).To(ContainSubstring(ErrFakeNetworkError.Error()))
@@ -905,7 +905,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// just do some change to force update
-			newHco.Spec.NodePlacements.Infra.NodeSelector["key3"] = "value3"
+			newHco.Spec.Deployment.NodePlacements.Infra.NodeSelector["key3"] = "value3"
 
 			checkRejectedRequest(
 				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
@@ -919,7 +919,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// change something in workloads to trigger dry-run update
-			newHco.Spec.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
+			newHco.Spec.Deployment.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
 
 			resp := wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr)
 			Expect(resp.String()).To(ContainSubstring(ErrFakeSspError.Error()))
@@ -931,7 +931,7 @@ var _ = Describe("v1 webhooks validator", func() {
 			newHco := &hcov1.HyperConverged{}
 			cr.DeepCopyInto(newHco)
 			// change something in workloads to trigger dry-run update
-			newHco.Spec.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
+			newHco.Spec.Deployment.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
 
 			resp := wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr)
 			Expect(resp.String()).To(ContainSubstring(context.DeadlineExceeded.Error()))
