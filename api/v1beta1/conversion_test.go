@@ -107,11 +107,13 @@ var _ = Describe("api/v1beta1", func() {
 
 				convertNodePlacementsV1beta1ToV1(v1beta1Spec, v1Spec)
 
-				Expect(v1Spec.NodePlacements).ToNot(BeNil())
-				Expect(v1Spec.NodePlacements.Infra).ToNot(BeNil())
-				Expect(v1Spec.NodePlacements.Infra.NodeSelector).To(Equal(map[string]string{"infra-key": "infra-val"}))
-				Expect(v1Spec.NodePlacements.Workload).ToNot(BeNil())
-				Expect(v1Spec.NodePlacements.Workload.NodeSelector).To(Equal(map[string]string{"workload-key": "workload-val"}))
+				nodePlacements := v1Spec.Deployment.NodePlacements
+
+				Expect(nodePlacements).ToNot(BeNil())
+				Expect(nodePlacements.Infra).ToNot(BeNil())
+				Expect(nodePlacements.Infra.NodeSelector).To(Equal(map[string]string{"infra-key": "infra-val"}))
+				Expect(nodePlacements.Workload).ToNot(BeNil())
+				Expect(nodePlacements.Workload.NodeSelector).To(Equal(map[string]string{"workload-key": "workload-val"}))
 			})
 
 			It("should convert only infra node placement when workload is nil", func() {
@@ -126,9 +128,9 @@ var _ = Describe("api/v1beta1", func() {
 
 				convertNodePlacementsV1beta1ToV1(v1beta1Spec, v1Spec)
 
-				Expect(v1Spec.NodePlacements).ToNot(BeNil())
-				Expect(v1Spec.NodePlacements.Infra).ToNot(BeNil())
-				Expect(v1Spec.NodePlacements.Workload).To(BeNil())
+				Expect(v1Spec.Deployment.NodePlacements).ToNot(BeNil())
+				Expect(v1Spec.Deployment.NodePlacements.Infra).ToNot(BeNil())
+				Expect(v1Spec.Deployment.NodePlacements.Workload).To(BeNil())
 			})
 
 			It("should convert only workload node placement when infra is nil", func() {
@@ -143,9 +145,9 @@ var _ = Describe("api/v1beta1", func() {
 
 				convertNodePlacementsV1beta1ToV1(v1beta1Spec, v1Spec)
 
-				Expect(v1Spec.NodePlacements).ToNot(BeNil())
-				Expect(v1Spec.NodePlacements.Infra).To(BeNil())
-				Expect(v1Spec.NodePlacements.Workload).ToNot(BeNil())
+				Expect(v1Spec.Deployment.NodePlacements).ToNot(BeNil())
+				Expect(v1Spec.Deployment.NodePlacements.Infra).To(BeNil())
+				Expect(v1Spec.Deployment.NodePlacements.Workload).ToNot(BeNil())
 			})
 
 			It("should not set NodePlacements when both are nil", func() {
@@ -154,7 +156,7 @@ var _ = Describe("api/v1beta1", func() {
 
 				convertNodePlacementsV1beta1ToV1(v1beta1Spec, v1Spec)
 
-				Expect(v1Spec.NodePlacements).To(BeNil())
+				Expect(v1Spec.Deployment.NodePlacements).To(BeNil())
 			})
 
 			It("should convert affinity and anti-affinity", func() {
@@ -173,24 +175,26 @@ var _ = Describe("api/v1beta1", func() {
 				v1Spec := &hcov1.HyperConvergedSpec{}
 
 				convertNodePlacementsV1beta1ToV1(v1beta1Spec, v1Spec)
-				Expect(v1Spec.NodePlacements).ToNot(BeNil())
-				Expect(v1Spec.NodePlacements.Infra).ToNot(BeNil())
-				Expect(v1Spec.NodePlacements.Infra.Affinity).To(Equal(infraAffinity))
+				Expect(v1Spec.Deployment.NodePlacements).ToNot(BeNil())
+				Expect(v1Spec.Deployment.NodePlacements.Infra).ToNot(BeNil())
+				Expect(v1Spec.Deployment.NodePlacements.Infra.Affinity).To(Equal(infraAffinity))
 
-				Expect(v1Spec.NodePlacements.Workload).ToNot(BeNil())
-				Expect(v1Spec.NodePlacements.Workload.Affinity).To(Equal(workloadAffinity))
+				Expect(v1Spec.Deployment.NodePlacements.Workload).ToNot(BeNil())
+				Expect(v1Spec.Deployment.NodePlacements.Workload.Affinity).To(Equal(workloadAffinity))
 			})
 		})
 
 		Context("v1 to v1beta1", func() {
 			It("should convert both infra and workload node placements", func() {
 				v1Spec := hcov1.HyperConvergedSpec{
-					NodePlacements: &hcov1.NodePlacements{
-						Infra: &sdkapi.NodePlacement{
-							NodeSelector: map[string]string{"infra-key": "infra-val"},
-						},
-						Workload: &sdkapi.NodePlacement{
-							NodeSelector: map[string]string{"workload-key": "workload-val"},
+					Deployment: hcov1.DeploymentConfig{
+						NodePlacements: &hcov1.NodePlacements{
+							Infra: &sdkapi.NodePlacement{
+								NodeSelector: map[string]string{"infra-key": "infra-val"},
+							},
+							Workload: &sdkapi.NodePlacement{
+								NodeSelector: map[string]string{"workload-key": "workload-val"},
+							},
 						},
 					},
 				}
@@ -206,9 +210,11 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert only infra when workload is nil", func() {
 				v1Spec := hcov1.HyperConvergedSpec{
-					NodePlacements: &hcov1.NodePlacements{
-						Infra: &sdkapi.NodePlacement{
-							NodeSelector: map[string]string{"infra-key": "infra-val"},
+					Deployment: hcov1.DeploymentConfig{
+						NodePlacements: &hcov1.NodePlacements{
+							Infra: &sdkapi.NodePlacement{
+								NodeSelector: map[string]string{"infra-key": "infra-val"},
+							},
 						},
 					},
 				}
@@ -232,12 +238,14 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert affinity and anti-affinity", func() {
 				v1Spec := hcov1.HyperConvergedSpec{
-					NodePlacements: &hcov1.NodePlacements{
-						Infra: &sdkapi.NodePlacement{
-							Affinity: infraAffinity,
-						},
-						Workload: &sdkapi.NodePlacement{
-							Affinity: workloadAffinity,
+					Deployment: hcov1.DeploymentConfig{
+						NodePlacements: &hcov1.NodePlacements{
+							Infra: &sdkapi.NodePlacement{
+								Affinity: infraAffinity,
+							},
+							Workload: &sdkapi.NodePlacement{
+								Affinity: workloadAffinity,
+							},
 						},
 					},
 				}
@@ -279,12 +287,14 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should preserve node placements through v1 => v1beta1 => v1", func() {
 				original := hcov1.HyperConvergedSpec{
-					NodePlacements: &hcov1.NodePlacements{
-						Infra: &sdkapi.NodePlacement{
-							NodeSelector: map[string]string{"infra-key": "infra-val"},
-						},
-						Workload: &sdkapi.NodePlacement{
-							NodeSelector: map[string]string{"workload-key": "workload-val"},
+					Deployment: hcov1.DeploymentConfig{
+						NodePlacements: &hcov1.NodePlacements{
+							Infra: &sdkapi.NodePlacement{
+								NodeSelector: map[string]string{"infra-key": "infra-val"},
+							},
+							Workload: &sdkapi.NodePlacement{
+								NodeSelector: map[string]string{"workload-key": "workload-val"},
+							},
 						},
 					},
 				}
@@ -295,8 +305,8 @@ var _ = Describe("api/v1beta1", func() {
 				result := &hcov1.HyperConvergedSpec{}
 				convertNodePlacementsV1beta1ToV1(*v1beta1Spec, result)
 
-				Expect(result.NodePlacements.Infra.NodeSelector).To(Equal(original.NodePlacements.Infra.NodeSelector))
-				Expect(result.NodePlacements.Workload.NodeSelector).To(Equal(original.NodePlacements.Workload.NodeSelector))
+				Expect(result.Deployment.NodePlacements.Infra.NodeSelector).To(Equal(original.Deployment.NodePlacements.Infra.NodeSelector))
+				Expect(result.Deployment.NodePlacements.Workload.NodeSelector).To(Equal(original.Deployment.NodePlacements.Workload.NodeSelector))
 			})
 		})
 	})

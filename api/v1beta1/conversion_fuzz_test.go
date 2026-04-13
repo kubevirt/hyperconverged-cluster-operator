@@ -301,7 +301,7 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 	}
 
 	if r.IntN(2) == 1 {
-		hc.Spec.NodePlacements = &hcov1.NodePlacements{
+		hc.Spec.Deployment.NodePlacements = &hcov1.NodePlacements{
 			Infra: &sdkapi.NodePlacement{
 				NodeSelector: map[string]string{randString(r): randString(r)},
 			},
