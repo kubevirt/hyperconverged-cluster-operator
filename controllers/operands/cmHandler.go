@@ -4,6 +4,7 @@ import (
 	"errors"
 	"maps"
 	"reflect"
+	"slices"
 	"sync"
 
 	corev1 "k8s.io/api/core/v1"
@@ -19,6 +20,10 @@ func NewCmHandler(Client client.Client, Scheme *runtime.Scheme, required *corev1
 	return NewGenericOperand(Client, Scheme, "ConfigMap", &cmHooks{required: required}, false)
 }
 
+func NewEditableCmHandler(Client client.Client, Scheme *runtime.Scheme, required *corev1.ConfigMap, managedKeys ...string) *GenericOperand {
+	return NewGenericOperand(Client, Scheme, "ConfigMap", &cmHooks{required: required, editable: true, managedKeys: managedKeys}, false)
+}
+
 type newDynamicConfigMapFunc func(*hcov1beta1.HyperConverged) (*corev1.ConfigMap, error)
 
 func NewDynamicCmHandler(Client client.Client, Scheme *runtime.Scheme, makeCM newDynamicConfigMapFunc) *GenericOperand {
@@ -26,7 +31,9 @@ func NewDynamicCmHandler(Client client.Client, Scheme *runtime.Scheme, makeCM ne
 }
 
 type cmHooks struct {
-	required *corev1.ConfigMap
+	required    *corev1.ConfigMap
+	editable    bool
+	managedKeys []string
 }
 
 func (h cmHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
@@ -49,16 +56,8 @@ func (h cmHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists r
 		util.MergeLabels(&h.required.ObjectMeta, &found.ObjectMeta)
 	}
 
-	// Don't reconcile contents of UI settings or AIE webhook config maps
-	if label, exist := found.Labels[util.AppLabelComponent]; exist &&
-		(label == string(util.AppComponentUIConfig) || label == string(util.AppComponentAIEWebhook)) {
-		if labelChanged {
-			err := Client.Update(req.Ctx, found)
-			if err != nil {
-				return false, false, err
-			}
-		}
-		return labelChanged, false, nil
+	if h.editable {
+		return h.reconcileUserEditableCM(req, Client, found, labelChanged)
 	}
 
 	if !reflect.DeepEqual(found.Data, h.required.Data) || labelChanged {
@@ -76,6 +75,29 @@ func (h cmHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists r
 	}
 
 	return labelChanged, false, nil
+}
+
+// reconcileUserEditableCM seeds any missing keys from the required data and
+// always reconciles keys explicitly listed as operator-managed, without
+// overwriting other user-modified values.
+func (h cmHooks) reconcileUserEditableCM(req *common.HcoRequest, Client client.Client, found *corev1.ConfigMap, labelChanged bool) (bool, bool, error) {
+	dataChanged := false
+	if found.Data == nil {
+		found.Data = make(map[string]string)
+	}
+	for k, v := range h.required.Data {
+		if foundVal, exists := found.Data[k]; !exists || (slices.Contains(h.managedKeys, k) && foundVal != v) {
+			found.Data[k] = v
+			dataChanged = true
+		}
+	}
+	if labelChanged || dataChanged {
+		err := Client.Update(req.Ctx, found)
+		if err != nil {
+			return false, false, err
+		}
+	}
+	return labelChanged || dataChanged, false, nil
 }
 
 type dynamicCmHooks struct {

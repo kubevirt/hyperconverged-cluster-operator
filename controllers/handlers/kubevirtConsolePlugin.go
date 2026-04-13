@@ -33,6 +33,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ipstacktype"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -116,12 +117,12 @@ func NewKvUINginxCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.S
 
 // **** UI user settings config map Handler ****
 func NewKvUIUserSettingsCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewCmHandler(Client, Scheme, NewKvUIUserSettingsCM(hc)), nil
+	return operands.NewEditableCmHandler(Client, Scheme, NewKvUIUserSettingsCM(hc)), nil
 }
 
 // **** UI features config map Handler ****
 func NewKvUIFeaturesCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewCmHandler(Client, Scheme, NewKvUIFeaturesCM(hc)), nil
+	return operands.NewEditableCmHandler(Client, Scheme, NewKvUIFeaturesCM(hc), "ipStackType"), nil
 }
 
 // **** Kubevirt UI Console Plugin Custom Resource Handler ****
@@ -440,13 +441,15 @@ var UIFeaturesConfig = map[string]string{
 }
 
 func NewKvUIFeaturesCM(hc *hcov1beta1.HyperConverged) *corev1.ConfigMap {
+	data := maps.Clone(UIFeaturesConfig)
+	data["ipStackType"] = ipstacktype.Get()
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIFeaturesCMName,
 			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIConfig),
 			Namespace: hc.Namespace,
 		},
-		Data: UIFeaturesConfig,
+		Data: data,
 	}
 }
 

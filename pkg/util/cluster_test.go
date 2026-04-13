@@ -17,6 +17,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ipstacktype"
 )
 
 var _ = Describe("test clusterInfo", func() {
@@ -367,6 +369,7 @@ var _ = Describe("test clusterInfo", func() {
 
 		Expect(GetClusterInfo().IsOpenshift()).To(BeTrue(), "should return true for IsOpenshift()")
 		Expect(GetClusterInfo().IsManagedByOLM()).To(BeFalse(), "should return false for IsManagedByOLM()")
+		Expect(ipstacktype.Get()).To(Equal(ipstacktype.IPv4SingleStack))
 	})
 
 	It("check init on OpenShift, with single-stack IPv6 network", func() {
@@ -379,6 +382,7 @@ var _ = Describe("test clusterInfo", func() {
 
 		Expect(GetClusterInfo().IsOpenshift()).To(BeTrue())
 		Expect(GetClusterInfo().IsSingleStackIPv6()).To(BeTrue())
+		Expect(ipstacktype.Get()).To(Equal(ipstacktype.IPv6SingleStack))
 	})
 
 	It("checks init on OpenShift with dual stack ipv4/ipv6 network configuration", func() {
@@ -391,6 +395,7 @@ var _ = Describe("test clusterInfo", func() {
 
 		Expect(GetClusterInfo().IsOpenshift()).To(BeTrue())
 		Expect(GetClusterInfo().IsSingleStackIPv6()).To(BeFalse())
+		Expect(ipstacktype.Get()).To(Equal(ipstacktype.DualStack))
 	})
 
 	Context("HyperShift Detection", func() {
