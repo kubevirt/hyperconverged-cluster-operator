@@ -17,7 +17,7 @@ http {
 {{- if .SSLCiphers }}
 			ssl_ciphers         {{ .SSLCiphers }};
 {{- end }}
-			ssl_ecdh_curve X25519MLKEM768:SecP256r1MLKEM768:SecP384r1MLKEM1024:X25519:prime256v1:secp384r1;
+			ssl_ecdh_curve SecP256r1MLKEM768:SecP384r1MLKEM1024:secp256r1:secp384r1;
 			root                /usr/share/nginx/html;
 
 			# Prevent caching for plugin-manifest.json and plugin-entry.js
