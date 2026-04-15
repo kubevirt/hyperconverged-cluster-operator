@@ -3750,6 +3750,9 @@ rules:
   - list
   - get
   - watch
+  - create
+  - update
+  - delete
 - apiGroups:
   - ""
   resources:
