@@ -3,6 +3,7 @@ package crd
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -109,13 +110,13 @@ var _ = Describe("CRDController", func() {
 				},
 			}
 
-			It("Should trigger a restart of the operator if KubeDescheduler was not there and it appeared", func() {
-
+			It("Should trigger a restart of the operator if KubeDescheduler was not there and it appeared", func(ctx context.Context) {
+				ctx = logr.NewContext(ctx, GinkgoLogr)
 				cl := commontestutils.InitClient(clusterObjects)
-				Expect(hcoutil.GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
+				Expect(hcoutil.GetClusterInfo().Init(ctx, cl, logger)).To(Succeed())
 
 				Expect(hcoutil.GetClusterInfo().IsDeschedulerAvailable()).To(BeFalse(), "KubeDescheduler is not installed")
-				Expect(hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(context.TODO(), cl)).To(BeFalse(), "KubeDescheduler is not installed")
+				Expect(hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(ctx, cl)).To(BeFalse(), "KubeDescheduler is not installed")
 
 				testCh := make(chan struct{}, 1)
 
@@ -131,10 +132,10 @@ var _ = Describe("CRDController", func() {
 					},
 				}
 
-				err := cl.Create(context.TODO(), deschedulerCRD)
+				err := cl.Create(ctx, deschedulerCRD)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(hcoutil.GetClusterInfo().IsDeschedulerAvailable()).To(BeFalse(), "When the operator started the KubeDescheduler wasn't available")
-				Expect(hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(context.TODO(), cl)).To(BeTrue(), "KubeDescheduler is now installed")
+				Expect(hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(ctx, cl)).To(BeTrue(), "KubeDescheduler is now installed")
 
 				res, err := r.Reconcile(context.Background(), deschedulerRequest)
 				Expect(err).ToNot(HaveOccurred())
@@ -144,13 +145,14 @@ var _ = Describe("CRDController", func() {
 
 			})
 
-			It("Should not trigger a restart of the operator if KubeDescheduler was not there and another CRD appeared", func() {
+			It("Should not trigger a restart of the operator if KubeDescheduler was not there and another CRD appeared", func(ctx context.Context) {
+				ctx = logr.NewContext(ctx, GinkgoLogr)
 
 				cl := commontestutils.InitClient(clusterObjects)
-				Expect(hcoutil.GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
+				Expect(hcoutil.GetClusterInfo().Init(ctx, cl, logger)).To(Succeed())
 
 				Expect(hcoutil.GetClusterInfo().IsDeschedulerAvailable()).To(BeFalse(), "KubeDescheduler is not installed")
-				Expect(hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(context.TODO(), cl)).To(BeFalse(), "KubeDescheduler is not installed")
+				Expect(hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(ctx, cl)).To(BeFalse(), "KubeDescheduler is not installed")
 
 				testCh := make(chan struct{}, 1)
 
@@ -161,9 +163,9 @@ var _ = Describe("CRDController", func() {
 				}
 
 				Expect(hcoutil.GetClusterInfo().IsDeschedulerAvailable()).To(BeFalse(), "When the operator started the KubeDescheduler wasn't available")
-				Expect(hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(context.TODO(), cl)).To(BeFalse(), "KubeDescheduler is still not installed")
+				Expect(hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(ctx, cl)).To(BeFalse(), "KubeDescheduler is still not installed")
 
-				res, err := r.Reconcile(context.Background(), otherRequest)
+				res, err := r.Reconcile(ctx, otherRequest)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.IsZero()).To(BeTrue())
 				Expect(res).To(Equal(reconcile.Result{}))
@@ -171,7 +173,8 @@ var _ = Describe("CRDController", func() {
 
 			})
 
-			It("Should not trigger a restart of the operator if KubeDescheduler was already there and its CRD got updated", func() {
+			It("Should not trigger a restart of the operator if KubeDescheduler was already there and its CRD got updated", func(ctx context.Context) {
+				ctx = logr.NewContext(ctx, GinkgoLogr)
 
 				deschedulerCRD := &apiextensionsv1.CustomResourceDefinition{
 					ObjectMeta: metav1.ObjectMeta{
@@ -181,10 +184,10 @@ var _ = Describe("CRDController", func() {
 				clusterObjects := append(clusterObjects, deschedulerCRD)
 
 				cl := commontestutils.InitClient(clusterObjects)
-				Expect(hcoutil.GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
+				Expect(hcoutil.GetClusterInfo().Init(ctx, cl, logger)).To(Succeed())
 
 				Expect(hcoutil.GetClusterInfo().IsDeschedulerAvailable()).To(BeTrue(), "KubeDescheduler is alredy installed")
-				Expect(hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(context.TODO(), cl)).To(BeTrue(), "KubeDescheduler is already installed")
+				Expect(hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(ctx, cl)).To(BeTrue(), "KubeDescheduler is already installed")
 
 				testCh := make(chan struct{}, 1)
 
@@ -195,9 +198,9 @@ var _ = Describe("CRDController", func() {
 				}
 
 				Expect(hcoutil.GetClusterInfo().IsDeschedulerAvailable()).To(BeTrue(), "When the operator started the KubeDescheduler was already available")
-				Expect(hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(context.TODO(), cl)).To(BeTrue(), "KubeDescheduler is already installed")
+				Expect(hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(ctx, cl)).To(BeTrue(), "KubeDescheduler is already installed")
 
-				res, err := r.Reconcile(context.Background(), deschedulerRequest)
+				res, err := r.Reconcile(ctx, deschedulerRequest)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.IsZero()).To(BeTrue())
 				Expect(res).To(Equal(reconcile.Result{}))
@@ -205,7 +208,8 @@ var _ = Describe("CRDController", func() {
 
 			})
 
-			It("Should not trigger a restart of the operator if KubeDescheduler was already there and another CRD got updated", func() {
+			It("Should not trigger a restart of the operator if KubeDescheduler was already there and another CRD got updated", func(ctx context.Context) {
+				ctx = logr.NewContext(ctx, GinkgoLogr)
 
 				deschedulerCRD := &apiextensionsv1.CustomResourceDefinition{
 					ObjectMeta: metav1.ObjectMeta{
@@ -215,10 +219,10 @@ var _ = Describe("CRDController", func() {
 				clusterObjects := append(clusterObjects, deschedulerCRD)
 
 				cl := commontestutils.InitClient(clusterObjects)
-				Expect(hcoutil.GetClusterInfo().Init(context.TODO(), cl, logger)).To(Succeed())
+				Expect(hcoutil.GetClusterInfo().Init(ctx, cl, logger)).To(Succeed())
 
 				Expect(hcoutil.GetClusterInfo().IsDeschedulerAvailable()).To(BeTrue(), "KubeDescheduler is alredy installed")
-				Expect(hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(context.TODO(), cl)).To(BeTrue(), "KubeDescheduler is already installed")
+				Expect(hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(ctx, cl)).To(BeTrue(), "KubeDescheduler is already installed")
 
 				testCh := make(chan struct{}, 1)
 
@@ -229,9 +233,9 @@ var _ = Describe("CRDController", func() {
 				}
 
 				Expect(hcoutil.GetClusterInfo().IsDeschedulerAvailable()).To(BeTrue(), "When the operator started the KubeDescheduler was already available")
-				Expect(hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(context.TODO(), cl)).To(BeTrue(), "KubeDescheduler is already installed")
+				Expect(hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(ctx, cl)).To(BeTrue(), "KubeDescheduler is already installed")
 
-				res, err := r.Reconcile(context.Background(), otherRequest)
+				res, err := r.Reconcile(ctx, otherRequest)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.IsZero()).To(BeTrue())
 				Expect(res).To(Equal(reconcile.Result{}))

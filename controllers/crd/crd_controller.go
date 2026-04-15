@@ -3,6 +3,7 @@ package crd
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	operatorhandler "github.com/operator-framework/operator-lib/handler"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -92,21 +93,43 @@ func (r *ReconcileCRD) operatorRestart() {
 
 // Reconcile refreshes KubeDesheduler view on ClusterInfo singleton
 func (r *ReconcileCRD) Reconcile(ctx context.Context, req reconcile.Request) (reconcile.Result, error) {
-
-	log.Info("Triggered by a CRD")
-	if !hcoutil.GetClusterInfo().IsDeschedulerAvailable() {
-		if hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(ctx, r.client) {
-			log.Info("KubeDescheduler CRD got deployed, restarting the operator to reconfigure the operator for the new kind")
-			r.eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "KubeDescheduler CRD got deployed, restarting the operator to reconfigure the operator for the new kind", "Restarting the operator to be able to read KubeDescheduler CRs ")
-			r.operatorRestart()
-		}
+	logger, err := logr.FromContext(ctx)
+	if err != nil {
+		logger = log
 	}
 
-	// If Perses CRDs became available after boot, restart once to register Perses controller and cache the new GVKs.
-	if !r.persesAvailableOnBoot && hcoutil.IsPersesAvailable(ctx, r.client) {
-		log.Info("Perses CRDs detected, restarting the operator to register the Perses controller")
-		r.eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Perses CRDs detected", "Restarting the operator to register the Perses controller")
-		r.operatorRestart()
+	logger = logger.WithName("crd-reconciler").WithValues("Request.Name", req.Name)
+
+	logger.Info("Triggered by a CRD")
+
+	switch req.Name {
+	case hcoutil.DeschedulerCRDName:
+		// if the KubeDescheduler CRD was already exist on boot, do nothing.
+		if hcoutil.GetClusterInfo().IsDeschedulerAvailable() {
+			break
+		}
+
+		// if the CRD deployed now, after boot, restart, so the cache setup will include it.
+		if hcoutil.GetClusterInfo().IsDeschedulerCRDDeployed(ctx, r.client) {
+			const logMsg = "KubeDescheduler CRD got deployed, restarting the operator to reconfigure the operator for the new kind"
+			logger.Info(logMsg)
+			r.eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Restarting", logMsg+"; Restarting the operator to allow reading KubeDescheduler CRs")
+			r.operatorRestart()
+		}
+
+	case hcoutil.PersesDashboardsCRDName, hcoutil.PersesDatasourcesCRDName:
+		// if Perses CRDs were already exist on boot, do nothing
+		if r.persesAvailableOnBoot {
+			break
+		}
+
+		// If Perses CRDs became available after boot, restart once to register Perses controller and cache the new GVKs.
+		if hcoutil.IsPersesAvailable(ctx, r.client) {
+			const logMsg = "Perses CRDs detected, restarting the operator to register the Perses controller"
+			logger.Info(logMsg)
+			r.eventEmitter.EmitEvent(nil, corev1.EventTypeNormal, "Restarting", logMsg+"; Restarting the operator to allow reading Perses CRs")
+			r.operatorRestart()
+		}
 	}
 
 	return reconcile.Result{}, nil

@@ -164,17 +164,21 @@ var _ = Describe("Perses controller", func() {
 	})
 
 	Context("SetupPersesWithManager guard", func() {
-		It("should skip controller registration when Perses CRDs are not available", func() {
-			old := checkPersesAvailable
+		It("should skip controller registration when Perses CRDs are not available", func(ctx context.Context) {
+			ctx = logr.NewContext(ctx, GinkgoLogr)
+
+			origCheckPersesAvailable := checkPersesAvailable
 			checkPersesAvailable = func(_ context.Context, _ client.Client) bool { return false }
-			defer func() { checkPersesAvailable = old }()
+			DeferCleanup(func() {
+				checkPersesAvailable = origCheckPersesAvailable
+			})
 
 			// Build a no-CRD fake client and a lightweight manager mock
 			cl := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
 			mgr, err := commontestutils.NewManagerMock(nil, manager.Options{Scheme: scheme.Scheme}, cl, GinkgoLogr)
 			Expect(err).ToNot(HaveOccurred())
 
-			err = SetupPersesWithManager(mgr, metav1.OwnerReference{})
+			err = SetupPersesWithManager(ctx, mgr, cl, metav1.OwnerReference{})
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
@@ -225,8 +229,14 @@ var _ = Describe("Perses controller", func() {
 
 	Context("Parsers and helpers", func() {
 		It("parseDashboards: valid and invalid yaml", func() {
+			const goodYAML = `apiVersion: perses.dev/v1alpha1
+kind: PersesDashboard
+metadata:
+  name: test
+  spec: {}
+`
 			good := fstest.MapFS{
-				"good.yaml": {Data: []byte("apiVersion: perses.dev/v1alpha1\nkind: PersesDashboard\nmetadata:\n  name: test\nspec: {}\n")},
+				"good.yaml": {Data: []byte(goodYAML)},
 			}
 			m, err := parseDashboards(good, commontestutils.Namespace, GinkgoLogr)
 			Expect(err).ToNot(HaveOccurred())
