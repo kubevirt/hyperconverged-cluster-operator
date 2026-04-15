@@ -63,6 +63,7 @@ func newIOMMUFDDevicePluginSCC(hc *hcov1beta1.HyperConverged) *securityv1.Securi
 	}
 	scc.Volumes = []securityv1.FSType{
 		securityv1.FSTypeHostPath,
+		securityv1.FSProjected,
 	}
 	scc.AllowedCapabilities = []corev1.Capability{}
 
