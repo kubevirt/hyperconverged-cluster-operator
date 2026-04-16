@@ -266,7 +266,7 @@ higher completionTimeoutPerGiB to let workload with spikes in its memory dirty
 rate to converge.
 The format is a number.
 
-**default**: 800
+**default**: 150
 
 #### parallelMigrationsPerCluster
 
@@ -320,7 +320,7 @@ metadata:
 spec:
   virtualization:
     liveMigrationConfig:
-      completionTimeoutPerGiB: 800
+      completionTimeoutPerGiB: 150
       network: migration-network
       parallelMigrationsPerCluster: 5
       parallelOutboundMigrationsPerNode: 2
