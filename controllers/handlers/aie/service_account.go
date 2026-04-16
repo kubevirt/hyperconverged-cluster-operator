@@ -8,6 +8,7 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 func NewAIEWebhookServiceAccountHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
@@ -15,17 +16,17 @@ func NewAIEWebhookServiceAccountHandler(Client client.Client, Scheme *runtime.Sc
 		operands.NewServiceAccountHandler(Client, Scheme, newAIEWebhookServiceAccount),
 		shouldDeployAIE,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return newAIEWebhookServiceAccount(hc)
+			return newAIEWebhookServiceAccount()
 		},
 	)
 }
 
-func newAIEWebhookServiceAccount(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount {
+func newAIEWebhookServiceAccount() *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      aieWebhookServiceAccountName,
-			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, appComponent),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(appComponent),
 		},
 	}
 }

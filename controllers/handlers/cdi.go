@@ -101,7 +101,7 @@ func getDefaultFeatureGates() []string {
 	return []string{honorWaitForFirstConsumerGate, dataVolumeClaimAdoptionGate, webhookPvcRenderingGate}
 }
 
-func NewCDI(hc *hcov1beta1.HyperConverged, opts ...string) (*cdiv1beta1.CDI, error) {
+func NewCDI(hc *hcov1beta1.HyperConverged) (*cdiv1beta1.CDI, error) {
 	uninstallStrategy := cdiv1beta1.CDIUninstallStrategyBlockUninstallIfWorkloadsExist
 	if hc.Spec.UninstallStrategy == hcov1.HyperConvergedUninstallStrategyRemoveWorkloads {
 		uninstallStrategy = cdiv1beta1.CDIUninstallStrategyRemoveWorkloads
@@ -156,7 +156,7 @@ func NewCDI(hc *hcov1beta1.HyperConverged, opts ...string) (*cdiv1beta1.CDI, err
 		spec.Config.LogVerbosity = lv.CDI
 	}
 
-	cdi := NewCDIWithNameOnly(hc, opts...)
+	cdi := NewCDIWithNameOnly()
 	cdi.Spec = spec
 
 	if err := operands.ApplyPatchToSpec(hc, common.JSONPatchCDIAnnotationName, cdi); err != nil {
@@ -166,12 +166,11 @@ func NewCDI(hc *hcov1beta1.HyperConverged, opts ...string) (*cdiv1beta1.CDI, err
 	return reformatobj.ReformatObj(cdi)
 }
 
-func NewCDIWithNameOnly(hc *hcov1beta1.HyperConverged, opts ...string) *cdiv1beta1.CDI {
+func NewCDIWithNameOnly() *cdiv1beta1.CDI {
 	return &cdiv1beta1.CDI{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        "cdi-" + hc.Name,
-			Labels:      operands.GetLabels(hc, util.AppComponentStorage),
-			Namespace:   operands.GetNamespace(util.UndefinedNamespace, opts),
+			Name:        "cdi-" + util.HyperConvergedName,
+			Labels:      operands.GetLabels(util.AppComponentStorage),
 			Annotations: map[string]string{cdiConfigAuthorityAnnotation: ""},
 		},
 	}

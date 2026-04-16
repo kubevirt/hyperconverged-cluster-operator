@@ -100,18 +100,18 @@ func NewMigController(hc *hcov1beta1.HyperConverged) (*migrationv1alpha1.MigCont
 
 	spec.TLSSecurityProfile = openshift2MigrationSecProfile(tlssecprofile.GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile))
 
-	migController := NewMigControllerWithNameOnly(hc)
+	migController := NewMigControllerWithNameOnly()
 	migController.Spec = spec
 
 	return reformatobj.ReformatObj(migController)
 }
 
-func NewMigControllerWithNameOnly(hc *hcov1beta1.HyperConverged) *migrationv1alpha1.MigController {
+func NewMigControllerWithNameOnly() *migrationv1alpha1.MigController {
 	return &migrationv1alpha1.MigController{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "migcontroller-" + hc.Name,
-			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentMigration),
+			Name:      "migcontroller-" + hcoutil.HyperConvergedName,
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(hcoutil.AppComponentMigration),
 		},
 	}
 }

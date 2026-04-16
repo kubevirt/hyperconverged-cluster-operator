@@ -12,7 +12,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-type newSvcAccountFunc func(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount
+type newSvcAccountFunc func() *corev1.ServiceAccount
 
 func NewServiceAccountHandler(Client client.Client, Scheme *runtime.Scheme, newCrFunc newSvcAccountFunc) *GenericOperand {
 	return NewGenericOperand(Client, Scheme, "ServiceAccount", &serviceAccountHooks{newCrFunc: newCrFunc}, true)
@@ -22,8 +22,8 @@ type serviceAccountHooks struct {
 	newCrFunc newSvcAccountFunc
 }
 
-func (h serviceAccountHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	return h.newCrFunc(hc), nil
+func (h serviceAccountHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+	return h.newCrFunc(), nil
 }
 
 func (serviceAccountHooks) GetEmptyCr() client.Object {

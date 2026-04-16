@@ -216,7 +216,7 @@ func getBasicDeployment() *BasicExpected {
 		},
 	}
 
-	res.pc = handlers.NewKubeVirtPriorityClass(hco)
+	res.pc = handlers.NewKubeVirtPriorityClass()
 
 	deploymentRef := metav1.OwnerReference{
 		APIVersion:         appsv1.SchemeGroupVersion.String(),
@@ -268,23 +268,23 @@ func getBasicDeployment() *BasicExpected {
 	expectedMigController.Status.Conditions = getGenericCompletedConditions()
 	res.migController = expectedMigController
 
-	expectedCliDownload := handlers.NewConsoleCLIDownload(hco)
+	expectedCliDownload := handlers.NewConsoleCLIDownload()
 	res.cliDownload = expectedCliDownload
 
-	expectedCliDownloadsRoute := handlers.NewCliDownloadsRoute(hco)
+	expectedCliDownloadsRoute := handlers.NewCliDownloadsRoute()
 	res.cliDownloadsRoute = expectedCliDownloadsRoute
 
-	expectedCliDownloadsService := handlers.NewCliDownloadsService(hco)
+	expectedCliDownloadsService := handlers.NewCliDownloadsService()
 	res.cliDownloadsService = expectedCliDownloadsService
 
-	expectedVirtioWinConfig, err := handlers.NewVirtioWinCm(hco)
+	expectedVirtioWinConfig, err := handlers.NewVirtioWinCm()
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	res.virtioWinConfig = expectedVirtioWinConfig
 
-	expectedVirtioWinRole := handlers.NewVirtioWinCmReaderRole(hco)
+	expectedVirtioWinRole := handlers.NewVirtioWinCmReaderRole()
 	res.virtioWinRole = expectedVirtioWinRole
 
-	expectedVirtioWinRoleBinding := handlers.NewVirtioWinCmReaderRoleBinding(hco)
+	expectedVirtioWinRoleBinding := handlers.NewVirtioWinCmReaderRoleBinding()
 	res.virtioWinRoleBinding = expectedVirtioWinRoleBinding
 
 	expectedConsolePluginDeployment := handlers.NewKvUIPluginDeployment(hco)
@@ -293,13 +293,13 @@ func getBasicDeployment() *BasicExpected {
 	expectedConsoleProxyDeployment := handlers.NewKvUIProxyDeployment(hco)
 	res.consoleProxyDeploy = expectedConsoleProxyDeployment
 
-	expectedConsolePluginService := handlers.NewKvUIPluginSvc(hco)
+	expectedConsolePluginService := handlers.NewKvUIPluginSvc()
 	res.consolePluginSvc = expectedConsolePluginService
 
-	expectedConsoleProxyService := handlers.NewKvUIProxySvc(hco)
+	expectedConsoleProxyService := handlers.NewKvUIProxySvc()
 	res.consoleProxySvc = expectedConsoleProxyService
 
-	expectedConsolePlugin := handlers.NewKVConsolePlugin(hco)
+	expectedConsolePlugin := handlers.NewKVConsolePlugin()
 	res.consolePlugin = expectedConsolePlugin
 
 	expectedConsoleConfig := &operatorv1.Console{

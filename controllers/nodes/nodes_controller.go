@@ -3,6 +3,7 @@ package nodes
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -38,7 +39,7 @@ var (
 	hcoReq = reconcile.Request{
 		NamespacedName: k8stypes.NamespacedName{
 			Name:      "hyperconverged-req-" + randomConstSuffix,
-			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Namespace: os.Getenv(hcoutil.OperatorNamespaceEnv),
 		},
 	}
 )

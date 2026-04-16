@@ -66,12 +66,12 @@ func NetworkBinding() kubevirtcorev1.InterfaceBindingPlugin {
 }
 
 // NewPasstBindingCNISA creates a ServiceAccount for the passt binding CNI
-func NewPasstBindingCNISA(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount {
+func NewPasstBindingCNISA() *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      passtCNIObjectName,
-			Namespace: hc.Namespace,
-			Labels:    hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentNetwork),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(hcoutil.AppComponentNetwork),
 		},
 	}
 }
@@ -167,7 +167,7 @@ sleep 2147483647`,
 		spec.Template.Spec.ServiceAccountName = passtCNIObjectName
 	}
 
-	daemonSet := NewPasstBindingCNIDaemonSetWithNameOnly(hc)
+	daemonSet := NewPasstBindingCNIDaemonSetWithNameOnly()
 	daemonSet.Spec = spec
 
 	affinity := operands.GetPodAntiAffinity(daemonSet.Labels[hcoutil.AppLabelComponent], nodeinfo.IsInfrastructureHighlyAvailable())
@@ -193,26 +193,26 @@ sleep 2147483647`,
 }
 
 // NewPasstBindingCNIDaemonSetWithNameOnly creates a DaemonSet for the passt binding CNI with name only (for deletion)
-func NewPasstBindingCNIDaemonSetWithNameOnly(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet {
-	labels := hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentNetwork)
+func NewPasstBindingCNIDaemonSetWithNameOnly() *appsv1.DaemonSet {
+	labels := operands.GetLabels(hcoutil.AppComponentNetwork)
 	labels["tier"] = "node"
 
 	return &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      passtCNIObjectName,
-			Namespace: hc.Namespace,
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 			Labels:    labels,
 		},
 	}
 }
 
 // NewPasstBindingCNINetworkAttachmentDefinition creates a NetworkAttachmentDefinition for the passt binding CNI
-func NewPasstBindingCNINetworkAttachmentDefinition(hc *hcov1beta1.HyperConverged) *netattdefv1.NetworkAttachmentDefinition {
+func NewPasstBindingCNINetworkAttachmentDefinition() *netattdefv1.NetworkAttachmentDefinition {
 	return &netattdefv1.NetworkAttachmentDefinition{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      networkBindingNADName,
 			Namespace: networkBindingNADNamespace,
-			Labels:    hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentNetwork),
+			Labels:    operands.GetLabels(hcoutil.AppComponentNetwork),
 		},
 		Spec: netattdefv1.NetworkAttachmentDefinitionSpec{
 			Config: `{
@@ -229,11 +229,11 @@ func NewPasstBindingCNINetworkAttachmentDefinition(hc *hcov1beta1.HyperConverged
 }
 
 // NewPasstBindingCNISecurityContextConstraints creates a SecurityContextConstraints for the passt binding CNI
-func NewPasstBindingCNISecurityContextConstraints(hc *hcov1beta1.HyperConverged) *securityv1.SecurityContextConstraints {
+func NewPasstBindingCNISecurityContextConstraints() *securityv1.SecurityContextConstraints {
 	return &securityv1.SecurityContextConstraints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   passtCNIObjectName,
-			Labels: hcoutil.GetLabels(hcoutil.HyperConvergedName, hcoutil.AppComponentNetwork),
+			Labels: operands.GetLabels(hcoutil.AppComponentNetwork),
 		},
 		AllowPrivilegedContainer: true,
 		AllowHostDirVolumePlugin: true,
@@ -249,7 +249,7 @@ func NewPasstBindingCNISecurityContextConstraints(hc *hcov1beta1.HyperConverged)
 			Type: securityv1.SELinuxStrategyRunAsAny,
 		},
 		Users: []string{
-			fmt.Sprintf("system:serviceaccount:%s:%s", hc.Namespace, passtCNIObjectName),
+			fmt.Sprintf("system:serviceaccount:%s:%s", hcoutil.GetOperatorNamespaceFromEnv(), passtCNIObjectName),
 		},
 		Volumes: []securityv1.FSType{
 			securityv1.FSTypeAll,
@@ -262,7 +262,7 @@ func NewPasstServiceAccountHandler(Client client.Client, Scheme *runtime.Scheme)
 	return createPasstConditionalHandler(
 		operands.NewServiceAccountHandler(Client, Scheme, NewPasstBindingCNISA),
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return NewPasstBindingCNISA(hc)
+			return NewPasstBindingCNISA()
 		},
 	)
 }
@@ -272,7 +272,7 @@ func NewPasstDaemonSetHandler(Client client.Client, Scheme *runtime.Scheme) oper
 	return createPasstConditionalHandler(
 		operands.NewDaemonSetHandler(Client, Scheme, NewPasstBindingCNIDaemonSet),
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return NewPasstBindingCNIDaemonSetWithNameOnly(hc)
+			return NewPasstBindingCNIDaemonSetWithNameOnly()
 		},
 	)
 }
@@ -280,19 +280,19 @@ func NewPasstDaemonSetHandler(Client client.Client, Scheme *runtime.Scheme) oper
 // NewPasstNetworkAttachmentDefinitionHandler creates a conditional handler for passt NetworkAttachmentDefinition
 func NewPasstNetworkAttachmentDefinitionHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
 	return createPasstConditionalHandler(
-		operands.NewNetworkAttachmentDefinitionHandler(Client, Scheme, NewPasstBindingCNINetworkAttachmentDefinition),
+		operands.NewGenericOperand(Client, Scheme, "NetworkAttachmentDefinition", &networkAttachmentDefinitionHooks{nad: NewPasstBindingCNINetworkAttachmentDefinition()}, false),
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return NewPasstBindingCNINetworkAttachmentDefinition(hc)
+			return NewPasstBindingCNINetworkAttachmentDefinition()
 		},
 	)
 }
 
 // NewPasstSecurityContextConstraintsHandler creates a conditional handler for passt SecurityContextConstraints
-func NewPasstSecurityContextConstraintsHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+func NewPasstSecurityContextConstraintsHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
 	return createPasstConditionalHandler(
-		operands.NewSecurityContextConstraintsHandler(Client, Scheme, NewPasstBindingCNISecurityContextConstraints),
-		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return NewPasstBindingCNISecurityContextConstraints(hc)
+		operands.NewSecurityContextConstraintsHandler(cli, Scheme, NewPasstBindingCNISecurityContextConstraints()),
+		func(_ *hcov1beta1.HyperConverged) client.Object {
+			return NewPasstBindingCNISecurityContextConstraints()
 		},
 	)
 }

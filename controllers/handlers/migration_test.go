@@ -104,7 +104,7 @@ var _ = Describe("Migration tests", func() {
 		})
 
 		It("should update MigController fields, if not matched to the requirements", func() {
-			migController := NewMigControllerWithNameOnly(hco)
+			migController := NewMigControllerWithNameOnly()
 			migController.Spec.ImagePullPolicy = corev1.PullAlways
 			migController.Spec.Infra = testNodePlacement
 
@@ -130,7 +130,7 @@ var _ = Describe("Migration tests", func() {
 		It("should reconcile managed labels to default without touching user added ones", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
-			outdatedResource := NewMigControllerWithNameOnly(hco)
+			outdatedResource := NewMigControllerWithNameOnly()
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 			for k, v := range expectedLabels {
 				outdatedResource.Labels[k] = "wrong_" + v
@@ -161,7 +161,7 @@ var _ = Describe("Migration tests", func() {
 		It("should reconcile managed labels to default on label deletion without touching user added ones", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
-			outdatedResource := NewMigControllerWithNameOnly(hco)
+			outdatedResource := NewMigControllerWithNameOnly()
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 			delete(outdatedResource.Labels, hcoutil.AppLabelVersion)

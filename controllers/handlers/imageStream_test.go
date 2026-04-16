@@ -144,7 +144,7 @@ var _ = Describe("imageStream tests", func() {
 					},
 				},
 			}
-			exists.Labels = operands.GetLabels(hco, util.AppComponentCompute)
+			exists.Labels = operands.GetLabels(util.AppComponentCompute)
 
 			ref, err := reference.GetReference(commontestutils.GetScheme(), exists)
 			Expect(err).ToNot(HaveOccurred())
@@ -209,7 +209,7 @@ var _ = Describe("imageStream tests", func() {
 					},
 				},
 			}
-			exists.Labels = operands.GetLabels(hco, util.AppComponentCompute)
+			exists.Labels = operands.GetLabels(util.AppComponentCompute)
 
 			cli := commontestutils.InitClient([]client.Object{exists})
 			handlers, err := GetImageStreamHandlers(testLogger, cli, schemeForTest, hco, dir)
@@ -267,7 +267,7 @@ var _ = Describe("imageStream tests", func() {
 					},
 				},
 			}
-			exists.Labels = operands.GetLabels(hco, util.AppComponentCompute)
+			exists.Labels = operands.GetLabels(util.AppComponentCompute)
 
 			cli := commontestutils.InitClient([]client.Object{exists})
 			handlers, err := GetImageStreamHandlers(testLogger, cli, schemeForTest, hco, dir)
@@ -335,7 +335,7 @@ var _ = Describe("imageStream tests", func() {
 					},
 				},
 			}
-			exists.Labels = operands.GetLabels(hco, util.AppComponentCompute)
+			exists.Labels = operands.GetLabels(util.AppComponentCompute)
 
 			cli := commontestutils.InitClient([]client.Object{exists})
 			handlers, err := GetImageStreamHandlers(testLogger, cli, schemeForTest, hco, dir)
@@ -399,7 +399,7 @@ var _ = Describe("imageStream tests", func() {
 					},
 				},
 			}
-			exists.Labels = operands.GetLabels(hco, util.AppComponentCompute)
+			exists.Labels = operands.GetLabels(util.AppComponentCompute)
 
 			cli := commontestutils.InitClient([]client.Object{exists})
 			handlers, err := GetImageStreamHandlers(testLogger, cli, schemeForTest, hco, dir)
@@ -528,7 +528,7 @@ var _ = Describe("imageStream tests", func() {
 					},
 				},
 			}
-			exists.Labels = operands.GetLabels(hco, util.AppComponentCompute)
+			exists.Labels = operands.GetLabels(util.AppComponentCompute)
 
 			cli := commontestutils.InitClient([]client.Object{exists})
 			handlers, err := GetImageStreamHandlers(testLogger, cli, schemeForTest, hco, dir)
@@ -594,7 +594,7 @@ var _ = Describe("imageStream tests", func() {
 					},
 				},
 			}
-			exists.Labels = operands.GetLabels(hco, util.AppComponentCompute)
+			exists.Labels = operands.GetLabels(util.AppComponentCompute)
 			expectedLabels := maps.Clone(exists.Labels)
 			exists.Labels[userLabelKey] = userLabelValue
 			for k, v := range expectedLabels {

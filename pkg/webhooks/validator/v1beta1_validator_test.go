@@ -849,7 +849,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 		It("should return error if KV CR is missing", func(ctx context.Context) {
 			cli := getFakeClient(hco)
 
-			kv := handlers.NewKubeVirtWithNameOnly(hco)
+			kv := handlers.NewKubeVirtWithNameOnly()
 			Expect(cli.Delete(ctx, kv)).To(Succeed())
 
 			wh := NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)
@@ -963,7 +963,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 		It("should return error if SSP CR is missing", func(ctx context.Context) {
 			cli := getFakeClient(hco)
 
-			Expect(cli.Delete(ctx, handlers.NewSSPWithNameOnly(hco))).To(Succeed())
+			Expect(cli.Delete(ctx, handlers.NewSSPWithNameOnly())).To(Succeed())
 			wh := NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)
 
 			newHco := &v1beta1.HyperConverged{}
@@ -1107,7 +1107,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				// and so it exits with no error before finding that KV is not there.
 				// Later we'll check that there is no error from the webhook, and that will prove that
 				// the comparison works.
-				kv := handlers.NewKubeVirtWithNameOnly(hco)
+				kv := handlers.NewKubeVirtWithNameOnly()
 				Expect(cli.Delete(ctx, kv)).To(Succeed())
 
 				wh := NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)
@@ -1163,7 +1163,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				// and so it exits with no error before finding that KV is not there.
 				// Later we'll check that there is no error from the webhook, and that will prove that
 				// the comparison works.
-				kv := handlers.NewKubeVirtWithNameOnly(hco)
+				kv := handlers.NewKubeVirtWithNameOnly()
 				Expect(cli.Delete(ctx, kv)).To(Succeed())
 
 				wh := NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)
@@ -1671,11 +1671,11 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			Expect(wh.ValidateDelete(ctx, GinkgoLogr, dryRun, hco)).To(Succeed())
 
 			By("Validate that KV still exists, as it a dry-run deletion")
-			kv := handlers.NewKubeVirtWithNameOnly(hco)
+			kv := handlers.NewKubeVirtWithNameOnly()
 			Expect(util.GetRuntimeObject(ctx, cli, kv)).To(Succeed())
 
 			By("Validate that CDI still exists, as it a dry-run deletion")
-			cdi := handlers.NewCDIWithNameOnly(hco)
+			cdi := handlers.NewCDIWithNameOnly()
 			Expect(util.GetRuntimeObject(ctx, cli, cdi)).To(Succeed())
 		})
 
@@ -1720,7 +1720,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 		It("should ignore if KV does not exist", func(ctx context.Context) {
 			cli := getFakeClient(hco)
 
-			kv := handlers.NewKubeVirtWithNameOnly(hco)
+			kv := handlers.NewKubeVirtWithNameOnly()
 			Expect(cli.Delete(ctx, kv)).To(Succeed())
 
 			wh := NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)
@@ -1747,7 +1747,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 		It("should ignore if CDI does not exist", func(ctx context.Context) {
 			cli := getFakeClient(hco)
 
-			cdi := handlers.NewCDIWithNameOnly(hco)
+			cdi := handlers.NewCDIWithNameOnly()
 			Expect(cli.Delete(ctx, cdi)).To(Succeed())
 
 			wh := NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)

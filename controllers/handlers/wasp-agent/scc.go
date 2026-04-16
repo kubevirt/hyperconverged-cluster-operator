@@ -12,20 +12,21 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 func NewWaspAgentSCCHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
 	return operands.NewConditionalHandler(
-		operands.NewSecurityContextConstraintsHandler(Client, Scheme, newWaspAgentSCC),
+		operands.NewSecurityContextConstraintsHandler(Client, Scheme, newWaspAgentSCC()),
 		shouldDeployWaspAgent,
 		func(hc *hcov1beta1.HyperConverged) client.Object {
-			return NewWaspAgentSCCWithNameOnly(hc)
+			return NewWaspAgentSCCWithNameOnly()
 		},
 	)
 }
 
-func newWaspAgentSCC(hc *hcov1beta1.HyperConverged) *securityv1.SecurityContextConstraints {
-	scc := NewWaspAgentSCCWithNameOnly(hc)
+func newWaspAgentSCC() *securityv1.SecurityContextConstraints {
+	scc := NewWaspAgentSCCWithNameOnly()
 
 	scc.AllowPrivilegedContainer = true
 	scc.AllowHostDirVolumePlugin = true
@@ -45,7 +46,7 @@ func newWaspAgentSCC(hc *hcov1beta1.HyperConverged) *securityv1.SecurityContextC
 		Type: securityv1.SELinuxStrategyRunAsAny,
 	}
 	scc.Users = []string{
-		fmt.Sprintf("system:serviceaccount:%s:%s", hc.Namespace, waspAgentServiceAccountName),
+		fmt.Sprintf("system:serviceaccount:%s:%s", hcoutil.GetOperatorNamespaceFromEnv(), waspAgentServiceAccountName),
 	}
 	scc.Volumes = []securityv1.FSType{
 		securityv1.FSTypeAll,
@@ -63,11 +64,11 @@ func newWaspAgentSCC(hc *hcov1beta1.HyperConverged) *securityv1.SecurityContextC
 	return scc
 }
 
-func NewWaspAgentSCCWithNameOnly(hc *hcov1beta1.HyperConverged) *securityv1.SecurityContextConstraints {
+func NewWaspAgentSCCWithNameOnly() *securityv1.SecurityContextConstraints {
 	return &securityv1.SecurityContextConstraints{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   waspAgentSCCName,
-			Labels: operands.GetLabels(hc, AppComponentWaspAgent),
+			Labels: operands.GetLabels(AppComponentWaspAgent),
 		},
 	}
 }

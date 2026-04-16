@@ -59,7 +59,13 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		passt.NewPasstNetworkAttachmentDefinitionHandler(client, scheme),
 		aie.NewAIEWebhookServiceAccountHandler(client, scheme),
 		aie.NewAIEWebhookServiceHandler(client, scheme),
+		aie.NewAIEWebhookDeploymentHandler(client, scheme),
+		aie.NewAIEWebhookConfigMapHandler(client, scheme),
+		aie.NewAIEWebhookClusterRoleHandler(client, scheme),
+		aie.NewAIEWebhookClusterRoleBindingHandler(client, scheme),
+		aie.NewAIEWebhookMutatingWebhookConfigurationHandler(client, scheme),
 		aie.NewIOMMUFDDevicePluginServiceAccountHandler(client, scheme),
+		aie.NewIOMMUFDDevicePluginDaemonSetHandler(client, scheme),
 	}
 
 	if ci.IsOpenshift() {
@@ -67,19 +73,45 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 			handlers.NewSspHandler(client, scheme),
 			handlers.NewCliDownloadHandler(client, scheme),
 			handlers.NewCliDownloadsRouteHandler(client, scheme),
-			operands.NewServiceHandler(client, scheme, handlers.NewCliDownloadsService),
+			operands.NewServiceHandler(client, scheme, handlers.NewCliDownloadsService()),
 			passt.NewPasstServiceAccountHandler(client, scheme),
 			passt.NewPasstSecurityContextConstraintsHandler(client, scheme),
 			waspagent.NewWaspAgentServiceAccountHandler(client, scheme),
 			waspagent.NewWaspAgentSCCHandler(client, scheme),
 			waspagent.NewWaspAgentDaemonSetHandler(client, scheme),
+			waspagent.NewWaspAgentClusterRoleHandler(client, scheme),
+			waspagent.NewWaspAgentClusterRoleBindingHandler(client, scheme),
+			handlers.NewVirtioWinCmReaderRoleHandler(client, scheme),
+			handlers.NewVirtioWinCmReaderRoleBindingHandler(client, scheme),
+			aie.NewIOMMUFDDevicePluginSCCHandler(client, scheme),
 		}...)
-	}
 
-	if ci.IsOpenshift() && ci.IsConsolePluginImageProvided() {
-		operandList = append(operandList, handlers.NewConsoleHandler(client))
-		operandList = append(operandList, operands.NewServiceHandler(client, scheme, handlers.NewKvUIPluginSvc))
-		operandList = append(operandList, operands.NewServiceHandler(client, scheme, handlers.NewKvUIProxySvc))
+		virtioWinCMHandler, err := handlers.NewVirtioWinCmHandler(client, scheme)
+		if err != nil {
+			logger.Error(err, "failed to create a handler for the virtio-win ConfigMap")
+		} else {
+			operandList = append(operandList, virtioWinCMHandler)
+		}
+
+		if ci.IsConsolePluginImageProvided() {
+			operandList = append(operandList, []operands.Operand{
+				handlers.NewConsoleHandler(client),
+				operands.NewServiceHandler(client, scheme, handlers.NewKvUIPluginSvc()),
+				operands.NewServiceHandler(client, scheme, handlers.NewKvUIProxySvc()),
+				handlers.NewKvUIPluginSAHandler(client, scheme),
+				handlers.NewKvUIProxySAHandler(client, scheme),
+				handlers.NewKvUIPluginDeploymentHandler(client, scheme),
+				handlers.NewKvUIProxyDeploymentHandler(client, scheme),
+				handlers.NewKvUIUserSettingsCMHandler(client, scheme),
+				handlers.NewKvUIFeaturesCMHandler(client, scheme),
+				handlers.NewKvUIPluginCRHandler(client, scheme),
+				handlers.NewKvUINginxCMHandler(client, scheme),
+				handlers.NewKvUIConfigReaderRoleHandler(client, scheme),
+				handlers.NewKvUIConfigReaderRoleBindingHandler(client, scheme),
+				handlers.NewKVConsolePluginNetworkPolicyHandler(client, scheme),
+				handlers.NewKVAPIServerProxyNetworkPolicyHandler(client, scheme),
+			}...)
+		}
 	}
 
 	if ci.IsManagedByOLM() {
@@ -99,17 +131,6 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.ClusterInfo, hc *hcov1beta1.HyperConverged, pwdFS fs.FS) {
 	h.objects = make([]client.Object, 0)
 
-	for _, fn := range []operands.GetHandler{
-		aie.NewAIEWebhookConfigMapHandler,
-		aie.NewAIEWebhookClusterRoleHandler,
-		aie.NewAIEWebhookClusterRoleBindingHandler,
-		aie.NewAIEWebhookDeploymentHandler,
-		aie.NewAIEWebhookMutatingWebhookConfigurationHandler,
-		aie.NewIOMMUFDDevicePluginDaemonSetHandler,
-	} {
-		h.addOperand(scheme, hc, fn)
-	}
-
 	if !ci.IsOpenshift() {
 		return
 	}
@@ -120,36 +141,6 @@ func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.C
 		handlers.GetImageStreamHandlers,
 	} {
 		h.addOperands(scheme, hc, fn, pwdFS)
-	}
-
-	getHandlerFuncs := []operands.GetHandler{
-		handlers.NewVirtioWinCmHandler,
-		handlers.NewVirtioWinCmReaderRoleHandler,
-		handlers.NewVirtioWinCmReaderRoleBindingHandler,
-		waspagent.NewWaspAgentClusterRoleHandler,
-		waspagent.NewWaspAgentClusterRoleBindingHandler,
-		aie.NewIOMMUFDDevicePluginSCCHandler,
-	}
-
-	if ci.IsConsolePluginImageProvided() {
-		getHandlerFuncs = append(getHandlerFuncs,
-			handlers.NewKvUIPluginSAHandler,
-			handlers.NewKvUIProxySAHandler,
-			handlers.NewKvUIPluginDeploymentHandler,
-			handlers.NewKvUIProxyDeploymentHandler,
-			handlers.NewKvUINginxCMHandler,
-			handlers.NewKvUIPluginCRHandler,
-			handlers.NewKvUIUserSettingsCMHandler,
-			handlers.NewKvUIFeaturesCMHandler,
-			handlers.NewKvUIConfigReaderRoleHandler,
-			handlers.NewKvUIConfigReaderRoleBindingHandler,
-			handlers.NewKVConsolePluginNetworkPolicyHandler,
-			handlers.NewKVAPIServerProxyNetworkPolicyHandler,
-		)
-	}
-
-	for _, fn := range getHandlerFuncs {
-		h.addOperand(scheme, hc, fn)
 	}
 }
 
@@ -190,18 +181,6 @@ func (h *OperandHandler) addOperands(scheme *runtime.Scheme, hc *hcov1beta1.Hype
 		}
 		h.operands = append(h.operands, handlers...)
 	}
-}
-
-func (h *OperandHandler) addOperand(scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, getHandler operands.GetHandler) {
-	handler, err := getHandler(logger, h.client, scheme, hc)
-	if err != nil {
-		logger.Error(err, "can't create handler")
-		return
-	}
-
-	h.addOperandObject(handler, hc)
-
-	h.operands = append(h.operands, handler)
 }
 
 func (h *OperandHandler) Ensure(req *common.HcoRequest) error {
@@ -252,18 +231,18 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 	defer cancel()
 
 	resources := []client.Object{
-		handlers.NewNetworkAddonsWithNameOnly(req.Instance),
-		handlers.NewSSPWithNameOnly(req.Instance),
-		handlers.NewConsoleCLIDownload(req.Instance),
-		handlers.NewAAQWithNameOnly(req.Instance),
-		handlers.NewMigControllerWithNameOnly(req.Instance),
-		passt.NewPasstBindingCNINetworkAttachmentDefinition(req.Instance),
-		passt.NewPasstBindingCNISecurityContextConstraints(req.Instance),
-		waspagent.NewWaspAgentSCCWithNameOnly(req.Instance),
-		aie.NewAIEWebhookClusterRoleWithNameOnly(req.Instance),
-		aie.NewAIEWebhookClusterRoleBindingWithNameOnly(req.Instance),
-		aie.NewAIEWebhookMutatingWebhookConfigurationWithNameOnly(req.Instance),
-		aie.NewIOMMUFDDevicePluginSCCWithNameOnly(req.Instance),
+		handlers.NewNetworkAddonsWithNameOnly(),
+		handlers.NewSSPWithNameOnly(),
+		handlers.NewConsoleCLIDownload(),
+		handlers.NewAAQWithNameOnly(),
+		handlers.NewMigControllerWithNameOnly(),
+		passt.NewPasstBindingCNINetworkAttachmentDefinition(),
+		passt.NewPasstBindingCNISecurityContextConstraints(),
+		waspagent.NewWaspAgentSCCWithNameOnly(),
+		aie.NewAIEWebhookClusterRoleWithNameOnly(),
+		aie.NewAIEWebhookClusterRoleBindingWithNameOnly(),
+		aie.NewAIEWebhookMutatingWebhookConfigurationWithNameOnly(),
+		aie.NewIOMMUFDDevicePluginSCCWithNameOnly(),
 	}
 
 	resources = append(resources, h.objects...)
@@ -273,12 +252,12 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		return err
 	}
 
-	err = h.deleteSingleResource(tCtx, req, handlers.NewKubeVirtWithNameOnly(req.Instance), ErrVirtUninstall, uninstallVirtErrorMsg)
+	err = h.deleteSingleResource(tCtx, req, handlers.NewKubeVirtWithNameOnly(), ErrVirtUninstall, uninstallVirtErrorMsg)
 	if err != nil {
 		return err
 	}
 
-	return h.deleteSingleResource(tCtx, req, handlers.NewCDIWithNameOnly(req.Instance), ErrCDIUninstall, uninstallCDIErrorMsg)
+	return h.deleteSingleResource(tCtx, req, handlers.NewCDIWithNameOnly(), ErrCDIUninstall, uninstallCDIErrorMsg)
 }
 
 func (h *OperandHandler) deleteMultipleResources(tCtx context.Context, req *common.HcoRequest, resources []client.Object) error {

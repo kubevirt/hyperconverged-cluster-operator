@@ -32,7 +32,7 @@ var _ = Describe("Passt SecurityContextConstraints tests", func() {
 
 	Context("test NewPasstBindingCNISecurityContextConstraints", func() {
 		It("should have all default fields", func() {
-			scc := passt.NewPasstBindingCNISecurityContextConstraints(hco)
+			scc := passt.NewPasstBindingCNISecurityContextConstraints()
 
 			Expect(scc.Name).To(Equal("passt-binding-cni"))
 			Expect(scc.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
@@ -76,7 +76,7 @@ var _ = Describe("Passt SecurityContextConstraints tests", func() {
 
 		It("should delete SecurityContextConstraints if the deployPasstNetworkBinding annotation is false", func() {
 			hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "false"
-			scc := passt.NewPasstBindingCNISecurityContextConstraints(hco)
+			scc := passt.NewPasstBindingCNISecurityContextConstraints()
 			cl = commontestutils.InitClient([]client.Object{hco, scc})
 
 			handler := passt.NewPasstSecurityContextConstraintsHandler(cl, commontestutils.GetScheme())
@@ -120,7 +120,7 @@ var _ = Describe("Passt SecurityContextConstraints tests", func() {
 		It("should update SecurityContextConstraints fields if not matched to the requirements", func() {
 			hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "true"
 
-			scc := passt.NewPasstBindingCNISecurityContextConstraints(hco)
+			scc := passt.NewPasstBindingCNISecurityContextConstraints()
 			scc.AllowPrivilegedContainer = false
 			scc.AllowHostNetwork = true
 			scc.Users = []string{"wrong-user"}
@@ -147,7 +147,7 @@ var _ = Describe("Passt SecurityContextConstraints tests", func() {
 		It("should reconcile labels if they are missing while preserving user labels", func() {
 			hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "true"
 
-			scc := passt.NewPasstBindingCNISecurityContextConstraints(hco)
+			scc := passt.NewPasstBindingCNISecurityContextConstraints()
 			expectedLabels := maps.Clone(scc.Labels)
 			delete(scc.Labels, "app.kubernetes.io/component")
 			scc.Labels["user-added-label"] = "user-value"
@@ -175,7 +175,7 @@ var _ = Describe("Passt SecurityContextConstraints tests", func() {
 		It("should reconcile labels if they are deleted while preserving user labels", func() {
 			hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "true"
 
-			scc := passt.NewPasstBindingCNISecurityContextConstraints(hco)
+			scc := passt.NewPasstBindingCNISecurityContextConstraints()
 			expectedLabels := maps.Clone(scc.Labels)
 			scc.Labels = map[string]string{
 				"user-added-label": "user-value",

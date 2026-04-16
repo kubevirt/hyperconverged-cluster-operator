@@ -35,7 +35,7 @@ var _ = Describe("CLI Download", func() {
 		})
 
 		It("should create if not present", func() {
-			expectedResource := NewConsoleCLIDownload(hco)
+			expectedResource := NewConsoleCLIDownload()
 			cl := commontestutils.InitClient([]client.Object{})
 			handler := NewCliDownloadHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
@@ -51,7 +51,7 @@ var _ = Describe("CLI Download", func() {
 		})
 
 		It("should find if present", func() {
-			expectedResource := NewConsoleCLIDownload(hco)
+			expectedResource := NewConsoleCLIDownload()
 			cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
 			handler := NewCliDownloadHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
@@ -66,7 +66,7 @@ var _ = Describe("CLI Download", func() {
 		})
 
 		DescribeTable("should update if something changed", func(modify func(resource *consolev1.ConsoleCLIDownload)) {
-			expectedResource := NewConsoleCLIDownload(hco)
+			expectedResource := NewConsoleCLIDownload()
 			modifiedResource := &consolev1.ConsoleCLIDownload{}
 			expectedResource.DeepCopyInto(modifiedResource)
 			modify(modifiedResource)
@@ -107,7 +107,7 @@ var _ = Describe("CLI Download", func() {
 		It("should reconcile managed labels to default without touching user added ones", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
-			outdatedResource := NewConsoleCLIDownload(hco)
+			outdatedResource := NewConsoleCLIDownload()
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 			for k, v := range expectedLabels {
 				outdatedResource.Labels[k] = "wrong_" + v
@@ -138,7 +138,7 @@ var _ = Describe("CLI Download", func() {
 		It("should reconcile managed labels to default on label deletion without touching user added ones", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
-			outdatedResource := NewConsoleCLIDownload(hco)
+			outdatedResource := NewConsoleCLIDownload()
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 			delete(outdatedResource.Labels, hcoutil.AppLabelVersion)
@@ -179,9 +179,9 @@ var _ = Describe("Downloads Service", func() {
 		})
 
 		It("should create if not present", func() {
-			expectedResource := NewCliDownloadsService(hco)
+			expectedResource := NewCliDownloadsService()
 			cl := commontestutils.InitClient([]client.Object{})
-			handler := operands.NewServiceHandler(cl, commontestutils.GetScheme(), NewCliDownloadsService)
+			handler := operands.NewServiceHandler(cl, commontestutils.GetScheme(), NewCliDownloadsService())
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
@@ -194,9 +194,9 @@ var _ = Describe("Downloads Service", func() {
 		})
 
 		It("should find if present", func() {
-			expectedResource := NewCliDownloadsService(hco)
+			expectedResource := NewCliDownloadsService()
 			cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
-			handler := operands.NewServiceHandler(cl, commontestutils.GetScheme(), NewCliDownloadsService)
+			handler := operands.NewServiceHandler(cl, commontestutils.GetScheme(), NewCliDownloadsService())
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
@@ -209,14 +209,14 @@ var _ = Describe("Downloads Service", func() {
 		})
 
 		DescribeTable("should update if something changed", func(modify func(resource *corev1.Service)) {
-			expectedResource := NewCliDownloadsService(hco)
+			expectedResource := NewCliDownloadsService()
 			modifiedResource := &corev1.Service{}
 			expectedResource.DeepCopyInto(modifiedResource)
 			modify(modifiedResource)
 
 			cl := commontestutils.InitClient([]client.Object{modifiedResource})
 
-			handler := operands.NewServiceHandler(cl, commontestutils.GetScheme(), NewCliDownloadsService)
+			handler := operands.NewServiceHandler(cl, commontestutils.GetScheme(), NewCliDownloadsService())
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
@@ -260,7 +260,7 @@ var _ = Describe("Cli Downloads Route", func() {
 		})
 
 		It("should create if not present", func() {
-			expectedResource := NewCliDownloadsRoute(hco)
+			expectedResource := NewCliDownloadsRoute()
 			cl := commontestutils.InitClient([]client.Object{})
 			handler := NewCliDownloadsRouteHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
@@ -275,7 +275,7 @@ var _ = Describe("Cli Downloads Route", func() {
 		})
 
 		It("should find if present", func() {
-			expectedResource := NewCliDownloadsRoute(hco)
+			expectedResource := NewCliDownloadsRoute()
 			cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
 			handler := NewCliDownloadsRouteHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
@@ -290,7 +290,7 @@ var _ = Describe("Cli Downloads Route", func() {
 		})
 
 		DescribeTable("should update if something changed", func(modify func(resource *routev1.Route)) {
-			expectedResource := NewCliDownloadsRoute(hco)
+			expectedResource := NewCliDownloadsRoute()
 			modifiedResource := &routev1.Route{}
 			expectedResource.DeepCopyInto(modifiedResource)
 			modify(modifiedResource)
@@ -355,7 +355,7 @@ var _ = Describe("Cli Downloads Route", func() {
 					Key:         "key",
 				})
 
-				expectedResource := NewCliDownloadsRoute(hco)
+				expectedResource := NewCliDownloadsRoute()
 
 				Expect(expectedResource.Spec.Host).To(Equal("cli-dl.example.com"))
 				Expect(expectedResource.Spec.TLS.Certificate).To(Equal("crt"))

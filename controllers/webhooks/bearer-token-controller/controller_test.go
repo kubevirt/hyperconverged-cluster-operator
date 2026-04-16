@@ -71,8 +71,6 @@ var _ = Describe("Controller setup and reconcile", func() {
 	})
 
 	Describe("Reconcile", func() {
-		const nsName = "wb-bearer-token-test-ns"
-
 		var (
 			secret    *corev1.Secret
 			resources []client.Object
@@ -84,10 +82,10 @@ var _ = Describe("Controller setup and reconcile", func() {
 
 		JustBeforeEach(func() {
 			origNS, hadEnvVar := os.LookupEnv(hcoutil.OperatorNamespaceEnv)
-			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, nsName)).To(Succeed())
+			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, commontestutils.Namespace)).To(Succeed())
 
 			resources = []client.Object{
-				&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: nsName}},
+				&corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: commontestutils.Namespace}},
 			}
 			if secret != nil {
 				resources = append(resources, secret)
@@ -98,7 +96,7 @@ var _ = Describe("Controller setup and reconcile", func() {
 			mgrIntf, err = commontestutils.NewManagerMock(&rest.Config{}, manager.Options{Scheme: commontestutils.GetScheme()}, cl, commontestutils.TestLogger)
 			Expect(err).ToNot(HaveOccurred())
 			r = newReconciler(mgrIntf, commontestutils.ClusterInfoMock{}, commontestutils.NewEventEmitterMock())
-			request = reconcile.Request{NamespacedName: k8stypes.NamespacedName{Name: "irrelevant", Namespace: nsName}}
+			request = reconcile.Request{NamespacedName: k8stypes.NamespacedName{Name: "irrelevant", Namespace: commontestutils.Namespace}}
 
 			DeferCleanup(func() {
 				if hadEnvVar {
@@ -117,17 +115,17 @@ var _ = Describe("Controller setup and reconcile", func() {
 
 			// Service
 			svc := &corev1.Service{}
-			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: serviceName}, svc)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceName}, svc)).To(Succeed())
 			Expect(svc.Spec.Ports).ToNot(BeEmpty())
 			Expect(svc.Labels).ToNot(BeEmpty())
 
 			// Secret
 			sec := &corev1.Secret{}
-			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: secretName}, sec)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: secretName}, sec)).To(Succeed())
 			Expect(sec.StringData).To(HaveKey("token"))
 
 			sm := &monitoringv1.ServiceMonitor{}
-			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: serviceName}, sm)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceName}, sm)).To(Succeed())
 		})
 
 		It("propagates error from underlying metric reconciler and requeues quickly", func(ctx context.Context) {
@@ -154,7 +152,7 @@ var _ = Describe("Controller setup and reconcile", func() {
 
 			// Secret
 			sec := &corev1.Secret{}
-			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: secretName}, sec)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: secretName}, sec)).To(Succeed())
 			Expect(sec.StringData).To(HaveKey("token"))
 
 			origToken := sec.StringData["token"]
@@ -162,7 +160,7 @@ var _ = Describe("Controller setup and reconcile", func() {
 			Expect(cl.Update(ctx, sec)).To(Succeed())
 
 			newSec := &corev1.Secret{}
-			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: secretName}, newSec)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: secretName}, newSec)).To(Succeed())
 			Expect(newSec.StringData).To(HaveKey("token"))
 			Expect(newSec.StringData["token"]).To(Equal("some-wrong-token"))
 
@@ -172,17 +170,17 @@ var _ = Describe("Controller setup and reconcile", func() {
 			Expect(res.RequeueAfter).To(Equal(5 * time.Minute))
 
 			newSec = &corev1.Secret{}
-			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: secretName}, newSec)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: secretName}, newSec)).To(Succeed())
 			Expect(newSec.StringData).To(HaveKey("token"))
 			Expect(newSec.StringData["token"]).To(Equal(origToken))
 
 			newSM := &monitoringv1.ServiceMonitor{}
-			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: serviceName}, newSM)).To(MatchError(apierrors.IsNotFound, "not found error"))
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceName}, newSM)).To(MatchError(apierrors.IsNotFound, "not found error"))
 
 			res, err = r.Reconcile(ctx, request)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(res.RequeueAfter).To(Equal(5 * time.Minute))
-			Expect(cl.Get(ctx, client.ObjectKey{Namespace: nsName, Name: serviceName}, newSM)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKey{Namespace: commontestutils.Namespace, Name: serviceName}, newSM)).To(Succeed())
 		})
 
 		Context("secret labels", func() {
@@ -191,7 +189,7 @@ var _ = Describe("Controller setup and reconcile", func() {
 					token, err := authorization.CreateToken()
 					Expect(err).ToNot(HaveOccurred())
 
-					secret = newSecret(nsName, ownresources.GetDeploymentRef(), token)
+					secret = newSecret(commontestutils.Namespace, ownresources.GetDeploymentRef(), token)
 					secret.Data = map[string][]byte{"token": []byte(token)}
 				})
 
@@ -307,7 +305,7 @@ var _ = Describe("Controller setup and reconcile", func() {
 					token, err = authorization.CreateToken()
 					Expect(err).ToNot(HaveOccurred())
 
-					secret = newSecret(nsName, ownresources.GetDeploymentRef(), "something-else")
+					secret = newSecret(commontestutils.Namespace, ownresources.GetDeploymentRef(), "something-else")
 					secret.Data = map[string][]byte{"token": []byte("something-else")}
 				})
 

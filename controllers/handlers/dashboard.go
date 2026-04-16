@@ -22,16 +22,16 @@ const (
 	DashboardManifestLocation = "dashboard"
 )
 
-func GetDashboardHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, dir fs.FS) ([]operands.Operand, error) {
+func GetDashboardHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, _ *hcov1beta1.HyperConverged, dir fs.FS) ([]operands.Operand, error) {
 	err := util.ValidateManifestDir(DashboardManifestLocation, dir)
 	if err != nil {
 		return nil, errors.Unwrap(err) // if not wrapped, then it's not an error that stops processing, and it return nil
 	}
 
-	return createDashboardHandlersFromFiles(logger, Client, Scheme, hc, DashboardManifestLocation, dir)
+	return createDashboardHandlersFromFiles(logger, Client, Scheme, DashboardManifestLocation, dir)
 }
 
-func createDashboardHandlersFromFiles(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, filesLocation string, dir fs.FS) ([]operands.Operand, error) {
+func createDashboardHandlersFromFiles(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, filesLocation string, dir fs.FS) ([]operands.Operand, error) {
 	var handlers []operands.Operand
 	err := fs.WalkDir(dir, filesLocation, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
@@ -42,7 +42,7 @@ func createDashboardHandlersFromFiles(logger log.Logger, Client client.Client, S
 			return nil
 		}
 
-		qs, err := processDashboardConfigMapFile(path, dir, logger, hc, Client, Scheme)
+		qs, err := processDashboardConfigMapFile(path, dir, logger, Client, Scheme)
 		if err != nil {
 			return err
 		}
@@ -57,7 +57,7 @@ func createDashboardHandlersFromFiles(logger log.Logger, Client client.Client, S
 	return handlers, err
 }
 
-func processDashboardConfigMapFile(path string, dir fs.FS, logger log.Logger, hc *hcov1beta1.HyperConverged, Client client.Client, Scheme *runtime.Scheme) (operands.Operand, error) {
+func processDashboardConfigMapFile(path string, dir fs.FS, logger log.Logger, Client client.Client, Scheme *runtime.Scheme) (operands.Operand, error) {
 	file, err := dir.Open(path)
 	if err != nil {
 		logger.Error(err, "Can't open the dashboard yaml file", "file name", path)
@@ -68,7 +68,7 @@ func processDashboardConfigMapFile(path string, dir fs.FS, logger log.Logger, hc
 	if err != nil {
 		logger.Error(err, "Can't generate a Configmap object from yaml file", "file name", path)
 	} else {
-		maps.Copy(cm.Labels, operands.GetLabels(hc, util.AppComponentCompute))
+		maps.Copy(cm.Labels, operands.GetLabels(util.AppComponentCompute))
 		return operands.NewCmHandler(Client, Scheme, cm), nil
 	}
 

@@ -138,7 +138,3 @@ func GeneratePlaceHolders() {
 		Namespace: ns,
 	}
 }
-
-func init() {
-	GeneratePlaceHolders()
-}

@@ -521,7 +521,7 @@ func getManagerOptions(operatorNamespace string, needLeaderElection bool, ci hco
 // so we are never supposed to delete it: because the priority class
 // is completely opaque to OLM it will remain as a leftover on the cluster
 func createPriorityClass(ctx context.Context, mgr manager.Manager) error {
-	pc := handlers.NewKubeVirtPriorityClass(&hcov1beta1.HyperConverged{})
+	pc := handlers.NewKubeVirtPriorityClass()
 
 	err := mgr.GetAPIReader().Get(ctx, client.ObjectKeyFromObject(pc), pc)
 	if err != nil && apierrors.IsNotFound(err) {

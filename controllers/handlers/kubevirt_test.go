@@ -59,11 +59,11 @@ var _ = Describe("KubeVirt Operand", func() {
 		})
 
 		It("should create if not present", func() {
-			expectedResource := NewKubeVirtPriorityClass(hco)
+			expectedResource := NewKubeVirtPriorityClass()
 			cl := commontestutils.InitClient([]client.Object{})
 			handler := NewKvPriorityClassHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
-			Expect(res.UpgradeDone).To(BeFalse())
+			Expect(res.UpgradeDone).To(BeTrue())
 			Expect(res.Err).ToNot(HaveOccurred())
 
 			key := client.ObjectKeyFromObject(expectedResource)
@@ -75,7 +75,7 @@ var _ = Describe("KubeVirt Operand", func() {
 		})
 
 		It("should do nothing if already exists", func() {
-			expectedResource := NewKubeVirtPriorityClass(hco)
+			expectedResource := NewKubeVirtPriorityClass()
 			cl := commontestutils.InitClient([]client.Object{expectedResource})
 			handler := NewKvPriorityClassHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
@@ -88,7 +88,7 @@ var _ = Describe("KubeVirt Operand", func() {
 		})
 
 		DescribeTable("should update if something changed", func(modifiedPC *schedulingv1.PriorityClass) {
-			expectedPC := NewKubeVirtPriorityClass(hco)
+			expectedPC := NewKubeVirtPriorityClass()
 			key := client.ObjectKeyFromObject(expectedPC)
 
 			cl := commontestutils.InitClient([]client.Object{modifiedPC})
@@ -143,7 +143,7 @@ var _ = Describe("KubeVirt Operand", func() {
 		)
 
 		DescribeTable("should return error when there is something wrong", func(initiateErrors func(testClient *commontestutils.HcoTestClient) error) {
-			modifiedResource := NewKubeVirtPriorityClass(hco)
+			modifiedResource := NewKubeVirtPriorityClass()
 			modifiedResource.Value = 1
 
 			cl := commontestutils.InitClient([]client.Object{modifiedResource})
@@ -191,7 +191,7 @@ var _ = Describe("KubeVirt Operand", func() {
 		Context("check labels", func() {
 			const origUID = types.UID("origPC")
 			It("should add missing labels", func(ctx context.Context) {
-				expectedResource := NewKubeVirtPriorityClass(hco)
+				expectedResource := NewKubeVirtPriorityClass()
 				expectedResource.UID = origUID
 				delete(expectedResource.Labels, hcoutil.AppLabelComponent)
 
@@ -212,7 +212,7 @@ var _ = Describe("KubeVirt Operand", func() {
 			})
 
 			It("should fix wrong labels", func(ctx context.Context) {
-				expectedResource := NewKubeVirtPriorityClass(hco)
+				expectedResource := NewKubeVirtPriorityClass()
 				expectedResource.UID = "origPC"
 				expectedResource.Labels[hcoutil.AppLabelComponent] = string(hcoutil.AppComponentStorage)
 
@@ -234,7 +234,7 @@ var _ = Describe("KubeVirt Operand", func() {
 
 			It("should keep user-defined labels", func(ctx context.Context) {
 				const customLabel = "custom-label"
-				expectedResource := NewKubeVirtPriorityClass(hco)
+				expectedResource := NewKubeVirtPriorityClass()
 				expectedResource.Labels[customLabel] = "test"
 				expectedResource.Labels[hcoutil.AppLabelComponent] = string(hcoutil.AppComponentStorage)
 				expectedResource.UID = "origPC"
@@ -266,6 +266,7 @@ var _ = Describe("KubeVirt Operand", func() {
 		BeforeEach(func() {
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
+
 			Expect(os.Setenv(smbiosEnvName,
 				`Family: smbios family
 Product: smbios product
@@ -2779,7 +2780,7 @@ Version: 1.2.3`)
 			})
 
 			It("should set certificate rotation strategy to defaults if missing in HCO CR", func() {
-				existingResource := NewKubeVirtWithNameOnly(hco)
+				existingResource := NewKubeVirtWithNameOnly()
 
 				cl := commontestutils.InitClient([]client.Object{hco})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -2961,7 +2962,7 @@ Version: 1.2.3`)
 			})
 
 			It("should set Workload Update Strategy to defaults if missing in HCO CR", func() {
-				existingResource := NewKubeVirtWithNameOnly(hco)
+				existingResource := NewKubeVirtWithNameOnly()
 
 				cl := commontestutils.InitClient([]client.Object{hco})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -3967,7 +3968,7 @@ Version: 1.2.3`)
 					}
 				]`}
 
-				expectedResource := NewKubeVirtWithNameOnly(hco)
+				expectedResource := NewKubeVirtWithNameOnly()
 				cl := commontestutils.InitClient([]client.Object{hco})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
 				res := handler.Ensure(req)
@@ -4004,7 +4005,7 @@ Version: 1.2.3`)
 					}
 				]`}
 
-				expectedResource := NewKubeVirtWithNameOnly(hco)
+				expectedResource := NewKubeVirtWithNameOnly()
 				cl := commontestutils.InitClient([]client.Object{hco})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
 				res := handler.Ensure(req)
@@ -4050,7 +4051,7 @@ Version: 1.2.3`)
 
 				kv := &kubevirtcorev1.KubeVirt{}
 
-				expectedResource := NewKubeVirtWithNameOnly(hco)
+				expectedResource := NewKubeVirtWithNameOnly()
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},
@@ -4089,7 +4090,7 @@ Version: 1.2.3`)
 
 				kv := &kubevirtcorev1.KubeVirt{}
 
-				expectedResource := NewKubeVirtWithNameOnly(hco)
+				expectedResource := NewKubeVirtWithNameOnly()
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expectedResource.Name, Namespace: expectedResource.Namespace},

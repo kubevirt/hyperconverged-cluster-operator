@@ -14,7 +14,6 @@ import (
 	"strings"
 	"text/template"
 
-	log "github.com/go-logr/logr"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	operatorv1 "github.com/openshift/api/operator/v1"
@@ -71,63 +70,63 @@ const ( // for network policies
 )
 
 // **** Kubevirt UI Plugin Deployment Handler ****
-func NewKvUIPluginDeploymentHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewDeploymentHandler(Client, Scheme, NewKvUIPluginDeployment, hc), nil
+func NewKvUIPluginDeploymentHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewDeploymentHandler(cli, Scheme, NewKvUIPluginDeployment)
 }
 
 // **** Kubevirt UI apiserver proxy Deployment Handler ****
-func NewKvUIProxyDeploymentHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewDeploymentHandler(Client, Scheme, NewKvUIProxyDeployment, hc), nil
+func NewKvUIProxyDeploymentHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewDeploymentHandler(cli, Scheme, NewKvUIProxyDeployment)
 }
 
 // **** Kubevirt UI Plugin ServiceAccount Handler ****
-func NewKvUIPluginSAHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewServiceAccountHandler(Client, Scheme, NewKvUIPluginSA), nil
+func NewKvUIPluginSAHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewServiceAccountHandler(cli, Scheme, NewKvUIPluginSA)
 }
 
 // **** Kubevirt UI Proxy ServiceAccount Handler ****
-func NewKvUIProxySAHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewServiceAccountHandler(Client, Scheme, NewKvUIProxySA), nil
+func NewKvUIProxySAHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewServiceAccountHandler(cli, Scheme, NewKvUIProxySA)
 }
 
-func NewKvUIPluginSA(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount {
+func NewKvUIPluginSA() *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIPluginDeploymentName,
-			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIPlugin),
 		},
 	}
 }
 
-func NewKvUIProxySA(hc *hcov1beta1.HyperConverged) *corev1.ServiceAccount {
+func NewKvUIProxySA() *corev1.ServiceAccount {
 	return &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIProxyDeploymentName,
-			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIProxy),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIProxy),
 		},
 	}
 }
 
 // **** nginx config map Handler ****
-func NewKvUINginxCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, _ *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewDynamicCmHandler(Client, Scheme, NewKVUINginxCM), nil
+func NewKvUINginxCMHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewDynamicCmHandler(Client, Scheme, NewKVUINginxCM)
 }
 
 // **** UI user settings config map Handler ****
-func NewKvUIUserSettingsCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewEditableCmHandler(Client, Scheme, NewKvUIUserSettingsCM(hc)), nil
+func NewKvUIUserSettingsCMHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewEditableCmHandler(cli, Scheme, NewKvUIUserSettingsCM())
 }
 
 // **** UI features config map Handler ****
-func NewKvUIFeaturesCMHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewEditableCmHandler(Client, Scheme, NewKvUIFeaturesCM(hc), "ipStackType"), nil
+func NewKvUIFeaturesCMHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewEditableCmHandler(cli, Scheme, NewKvUIFeaturesCM(), "ipStackType")
 }
 
 // **** Kubevirt UI Console Plugin Custom Resource Handler ****
-func NewKvUIPluginCRHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return newConsolePluginHandler(Client, Scheme, NewKVConsolePlugin(hc)), nil
+func NewKvUIPluginCRHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return newConsolePluginHandler(Client, Scheme, NewKVConsolePlugin())
 }
 
 func NewKvUIPluginDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
@@ -194,7 +193,7 @@ func NewKvUIProxyDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
 
 func getKvUIDeployment(hc *hcov1beta1.HyperConverged, deploymentName string, image string,
 	servingCertName string, servingCertPath string, port int32, componentName hcoutil.AppComponent) *appsv1.Deployment {
-	labels := operands.GetLabels(hc, componentName)
+	labels := operands.GetLabels(componentName)
 	infrastructureHighlyAvailable := nodeinfo.IsInfrastructureHighlyAvailable()
 	var replicas int32
 	if infrastructureHighlyAvailable {
@@ -209,7 +208,7 @@ func getKvUIDeployment(hc *hcov1beta1.HyperConverged, deploymentName string, ima
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      deploymentName,
 			Labels:    labels,
-			Namespace: hc.Namespace,
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: ptr.To(replicas),
@@ -300,7 +299,7 @@ func getKvUIDeployment(hc *hcov1beta1.HyperConverged, deploymentName string, ima
 	return deployment
 }
 
-func NewKvUIPluginSvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
+func NewKvUIPluginSvc() *corev1.Service {
 	servicePorts := []corev1.ServicePort{
 		{
 			Port:       hcoutil.UIPluginServerPort,
@@ -318,17 +317,17 @@ func NewKvUIPluginSvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kvUIPluginSvcName,
-			Labels: operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
+			Labels: operands.GetLabels(hcoutil.AppComponentUIPlugin),
 			Annotations: map[string]string{
 				"service.beta.openshift.io/serving-cert-secret-name": kvUIPluginServingCertName,
 			},
-			Namespace: hc.Namespace,
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		Spec: spec,
 	}
 }
 
-func NewKvUIProxySvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
+func NewKvUIProxySvc() *corev1.Service {
 	servicePorts := []corev1.ServicePort{
 		{
 			Port:       hcoutil.UIProxyServerPort,
@@ -346,11 +345,11 @@ func NewKvUIProxySvc(hc *hcov1beta1.HyperConverged) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kvUIProxySvcName,
-			Labels: operands.GetLabels(hc, hcoutil.AppComponentUIProxy),
+			Labels: operands.GetLabels(hcoutil.AppComponentUIProxy),
 			Annotations: map[string]string{
 				"service.beta.openshift.io/serving-cert-secret-name": kvUIProxyServingCertName,
 			},
-			Namespace: hc.Namespace,
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		Spec: spec,
 	}
@@ -410,8 +409,8 @@ func NewKVUINginxCM(hc *hcov1beta1.HyperConverged) (*corev1.ConfigMap, error) {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      nginxConfigMapName,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
-			Namespace: hc.Namespace,
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIPlugin),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		Data: map[string]string{
 			"nginx.conf": nginxConf,
@@ -419,12 +418,12 @@ func NewKVUINginxCM(hc *hcov1beta1.HyperConverged) (*corev1.ConfigMap, error) {
 	}, nil
 }
 
-func NewKvUIUserSettingsCM(hc *hcov1beta1.HyperConverged) *corev1.ConfigMap {
+func NewKvUIUserSettingsCM() *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIUserSettingsCMName,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIConfig),
-			Namespace: hc.Namespace,
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIConfig),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		Data: map[string]string{},
 	}
@@ -440,24 +439,26 @@ var UIFeaturesConfig = map[string]string{
 	"nodePortEnabled":                     "false",
 }
 
-func NewKvUIFeaturesCM(hc *hcov1beta1.HyperConverged) *corev1.ConfigMap {
+func NewKvUIFeaturesCM() *corev1.ConfigMap {
 	data := maps.Clone(UIFeaturesConfig)
 	data["ipStackType"] = ipstacktype.Get()
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIFeaturesCMName,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIConfig),
-			Namespace: hc.Namespace,
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIConfig),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		Data: data,
 	}
 }
 
-func NewKVConsolePlugin(hc *hcov1beta1.HyperConverged) *consolev1.ConsolePlugin {
+func NewKVConsolePlugin() *consolev1.ConsolePlugin {
+	namespace := hcoutil.GetOperatorNamespaceFromEnv()
+
 	return &consolev1.ConsolePlugin{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kvUIPluginName,
-			Labels: operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
+			Labels: operands.GetLabels(hcoutil.AppComponentUIPlugin),
 		},
 		Spec: consolev1.ConsolePluginSpec{
 			DisplayName: "Kubevirt Console Plugin",
@@ -465,7 +466,7 @@ func NewKVConsolePlugin(hc *hcov1beta1.HyperConverged) *consolev1.ConsolePlugin 
 				Type: consolev1.Service,
 				Service: &consolev1.ConsolePluginService{
 					Name:      kvUIPluginSvcName,
-					Namespace: hc.Namespace,
+					Namespace: namespace,
 					Port:      hcoutil.UIPluginServerPort,
 					BasePath:  "/",
 				},
@@ -477,7 +478,7 @@ func NewKVConsolePlugin(hc *hcov1beta1.HyperConverged) *consolev1.ConsolePlugin 
 					Type: consolev1.ProxyTypeService,
 					Service: &consolev1.ConsolePluginProxyServiceConfig{
 						Name:      kvUIProxySvcName,
-						Namespace: hc.Namespace,
+						Namespace: namespace,
 						Port:      hcoutil.UIProxyServerPort,
 					},
 				},
@@ -491,21 +492,21 @@ func newConsolePluginHandler(Client client.Client, Scheme *runtime.Scheme, requi
 }
 
 // NewKvUIConfigReaderRoleHandler returns UI configuration (user settings and features) ConfigMap Role Handler
-func NewKvUIConfigReaderRoleHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewRoleHandler(Client, Scheme, NewKvUIConfigCMReaderRole(hc)), nil
+func NewKvUIConfigReaderRoleHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewRoleHandler(Client, Scheme, NewKvUIConfigCMReaderRole())
 }
 
 // NewKvUIConfigReaderRoleBindingHandler returns UI configuration (user settings and features) ConfigMap RoleBinding Handler
-func NewKvUIConfigReaderRoleBindingHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	return operands.NewRoleBindingHandler(Client, Scheme, NewKvUIConfigCMReaderRoleBinding(hc)), nil
+func NewKvUIConfigReaderRoleBindingHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
+	return operands.NewRoleBindingHandler(Client, Scheme, NewKvUIConfigCMReaderRoleBinding())
 }
 
-func NewKvUIConfigCMReaderRole(hc *hcov1beta1.HyperConverged) *rbacv1.Role {
+func NewKvUIConfigCMReaderRole() *rbacv1.Role {
 	return &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIConfigReaderRoleName,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
-			Namespace: hc.Namespace,
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIPlugin),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		Rules: []rbacv1.PolicyRule{
 			{
@@ -524,12 +525,12 @@ func NewKvUIConfigCMReaderRole(hc *hcov1beta1.HyperConverged) *rbacv1.Role {
 	}
 }
 
-func NewKvUIConfigCMReaderRoleBinding(hc *hcov1beta1.HyperConverged) *rbacv1.RoleBinding {
+func NewKvUIConfigCMReaderRoleBinding() *rbacv1.RoleBinding {
 	return &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIConfigReaderRBName,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
-			Namespace: hc.Namespace,
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIPlugin),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		RoleRef: rbacv1.RoleRef{
 			APIGroup: "rbac.authorization.k8s.io",
@@ -635,18 +636,18 @@ func NewConsoleHandler(Client client.Client) operands.Operand {
 	return h
 }
 
-func newKVConsolePluginNetworkPolicy(hc *hcov1beta1.HyperConverged) *networkingv1.NetworkPolicy {
+func newKVConsolePluginNetworkPolicy() *networkingv1.NetworkPolicy {
 	return &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kubevirt-console-plugin-np",
-			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIPlugin),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIPlugin),
 		},
 
 		Spec: networkingv1.NetworkPolicySpec{
 			PodSelector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					hcoutil.AppLabel:          hc.Name,
+					hcoutil.AppLabel:          hcoutil.HyperConvergedName,
 					hcoutil.AppLabelComponent: string(hcoutil.AppComponentUIPlugin),
 				},
 			},
@@ -682,10 +683,10 @@ func newKVConsolePluginNetworkPolicy(hc *hcov1beta1.HyperConverged) *networkingv
 	}
 }
 
-func NewKVConsolePluginNetworkPolicyHandler(_ log.Logger, cli client.Client, schm *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	np := newKVConsolePluginNetworkPolicy(hc)
+func NewKVConsolePluginNetworkPolicyHandler(cli client.Client, schm *runtime.Scheme) operands.Operand {
+	np := newKVConsolePluginNetworkPolicy()
 
-	return operands.NewNetworkPolicyHandler(cli, schm, np), nil
+	return operands.NewNetworkPolicyHandler(cli, schm, np)
 }
 
 func getApiServerEgressRule() networkingv1.NetworkPolicyEgressRule {
@@ -731,17 +732,17 @@ func getApiServerEgressRule() networkingv1.NetworkPolicyEgressRule {
 	}
 }
 
-func newKVAPIServerProxyNetworkPolicy(hc *hcov1beta1.HyperConverged) *networkingv1.NetworkPolicy {
+func newKVAPIServerProxyNetworkPolicy() *networkingv1.NetworkPolicy {
 	return &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "kubevirt-apiserver-proxy-np",
-			Namespace: hc.Namespace,
-			Labels:    operands.GetLabels(hc, hcoutil.AppComponentUIProxy),
+			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
+			Labels:    operands.GetLabels(hcoutil.AppComponentUIProxy),
 		},
 		Spec: networkingv1.NetworkPolicySpec{
 			PodSelector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					hcoutil.AppLabel:          hc.Name,
+					hcoutil.AppLabel:          hcoutil.HyperConvergedName,
 					hcoutil.AppLabelComponent: string(hcoutil.AppComponentUIProxy),
 				},
 			},
@@ -774,8 +775,8 @@ func newKVAPIServerProxyNetworkPolicy(hc *hcov1beta1.HyperConverged) *networking
 	}
 }
 
-func NewKVAPIServerProxyNetworkPolicyHandler(_ log.Logger, cli client.Client, schm *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	np := newKVAPIServerProxyNetworkPolicy(hc)
+func NewKVAPIServerProxyNetworkPolicyHandler(cli client.Client, schm *runtime.Scheme) operands.Operand {
+	np := newKVAPIServerProxyNetworkPolicy()
 
-	return operands.NewNetworkPolicyHandler(cli, schm, np), nil
+	return operands.NewNetworkPolicyHandler(cli, schm, np)
 }

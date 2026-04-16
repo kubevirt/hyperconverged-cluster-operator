@@ -4,7 +4,6 @@ import (
 	"context"
 	"maps"
 
-	log "github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -31,7 +30,7 @@ var _ = Describe("AIE Webhook Cluster Role", func() {
 
 	Context("newAIEWebhookClusterRole", func() {
 		It("Should have all the default fields", func() {
-			cr := newAIEWebhookClusterRole(hco)
+			cr := newAIEWebhookClusterRole()
 			Expect(cr.Name).To(Equal("kubevirt-aie-webhook"))
 			Expect(cr.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
 			Expect(cr.Labels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentAIEWebhook)))
@@ -47,11 +46,10 @@ var _ = Describe("AIE Webhook Cluster Role", func() {
 	Context("Cluster role deployment", func() {
 		It("should delete cluster role when deploy-aie-webhook annotation is absent", func() {
 			delete(hco.Annotations, DeployAIEAnnotation)
-			cr := newAIEWebhookClusterRole(hco)
+			cr := newAIEWebhookClusterRole()
 			cl = commontestutils.InitClient([]client.Object{hco, cr})
 
-			handler, err := NewAIEWebhookClusterRoleHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewAIEWebhookClusterRoleHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -69,8 +67,7 @@ var _ = Describe("AIE Webhook Cluster Role", func() {
 			hco.Annotations[DeployAIEAnnotation] = "true"
 			cl = commontestutils.InitClient([]client.Object{hco})
 
-			handler, err := NewAIEWebhookClusterRoleHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewAIEWebhookClusterRoleHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -89,14 +86,13 @@ var _ = Describe("AIE Webhook Cluster Role", func() {
 	Context("Cluster role update", func() {
 		It("should reconcile labels if they are missing while preserving user labels", func() {
 			hco.Annotations[DeployAIEAnnotation] = "true"
-			cr := newAIEWebhookClusterRole(hco)
+			cr := newAIEWebhookClusterRole()
 			expectedLabels := maps.Clone(cr.Labels)
 			delete(cr.Labels, "app.kubernetes.io/component")
 			cr.Labels["user-added-label"] = "user-value"
 			cl = commontestutils.InitClient([]client.Object{hco, cr})
 
-			handler, err := NewAIEWebhookClusterRoleHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewAIEWebhookClusterRoleHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -130,7 +126,7 @@ var _ = Describe("AIE Webhook Cluster Role Binding", func() {
 
 	Context("newAIEWebhookClusterRoleBinding", func() {
 		It("Should have all the default fields", func() {
-			crb := newAIEWebhookClusterRoleBinding(hco)
+			crb := newAIEWebhookClusterRoleBinding()
 			Expect(crb.Name).To(Equal("kubevirt-aie-webhook"))
 			Expect(crb.Labels).To(HaveKeyWithValue(hcoutil.AppLabel, hcoutil.HyperConvergedName))
 			Expect(crb.Labels).To(HaveKeyWithValue(hcoutil.AppLabelComponent, string(hcoutil.AppComponentAIEWebhook)))
@@ -144,11 +140,10 @@ var _ = Describe("AIE Webhook Cluster Role Binding", func() {
 	Context("Cluster role binding deployment", func() {
 		It("should delete cluster role binding when deploy-aie-webhook annotation is absent", func() {
 			delete(hco.Annotations, DeployAIEAnnotation)
-			crb := newAIEWebhookClusterRoleBinding(hco)
+			crb := newAIEWebhookClusterRoleBinding()
 			cl = commontestutils.InitClient([]client.Object{hco, crb})
 
-			handler, err := NewAIEWebhookClusterRoleBindingHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewAIEWebhookClusterRoleBindingHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -166,8 +161,7 @@ var _ = Describe("AIE Webhook Cluster Role Binding", func() {
 			hco.Annotations[DeployAIEAnnotation] = "true"
 			cl = commontestutils.InitClient([]client.Object{hco})
 
-			handler, err := NewAIEWebhookClusterRoleBindingHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewAIEWebhookClusterRoleBindingHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -186,14 +180,13 @@ var _ = Describe("AIE Webhook Cluster Role Binding", func() {
 	Context("Cluster role binding update", func() {
 		It("should reconcile labels if they are missing while preserving user labels", func() {
 			hco.Annotations[DeployAIEAnnotation] = "true"
-			crb := newAIEWebhookClusterRoleBinding(hco)
+			crb := newAIEWebhookClusterRoleBinding()
 			expectedLabels := maps.Clone(crb.Labels)
 			delete(crb.Labels, "app.kubernetes.io/component")
 			crb.Labels["user-added-label"] = "user-value"
 			cl = commontestutils.InitClient([]client.Object{hco, crb})
 
-			handler, err := NewAIEWebhookClusterRoleBindingHandler(log.New(nil), cl, commontestutils.GetScheme(), hco)
-			Expect(err).ToNot(HaveOccurred())
+			handler := NewAIEWebhookClusterRoleBindingHandler(cl, commontestutils.GetScheme())
 
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
