@@ -841,9 +841,9 @@ spec:
         - name: OPERATOR_IMAGE
           value: quay.io/kubevirt/hostpath-provisioner-operator@sha256:493bcd9d5c3500b87953ca929c2f28e5e013cd860fae58f3a0dc8b4eae87cbc7
         - name: PROVISIONER_IMAGE
-          value: quay.io/kubevirt/hostpath-provisioner@sha256:b2d752a6ffb3ae91a5c13bf8e6f00a4e8c0c28ceb7656d0deabbf23410b6375e
+          value: quay.io/kubevirt/hostpath-provisioner@sha256:fe42232510b44abd8f6014a7d56afe3ddfe38fd03513f467ad5b3ef8cc286335
         - name: CSI_PROVISIONER_IMAGE
-          value: quay.io/kubevirt/hostpath-csi-driver@sha256:66be0f1cdedb3b7d0a86b472410accc129b4f62da4e1cf0e4a724ffc79bca62f
+          value: quay.io/kubevirt/hostpath-csi-driver@sha256:3e736dcb69622dfb8a51bb95e84cd00b534e8d2a05b013ea75ce81b1835f8e4e
         - name: NODE_DRIVER_REG_IMAGE
           value: registry.k8s.io/sig-storage/csi-node-driver-registrar@sha256:ab482308a4921e28a6df09a16ab99a457e9af9641ff44fb1be1a690d07ce8b70
         - name: LIVENESS_PROBE_IMAGE
