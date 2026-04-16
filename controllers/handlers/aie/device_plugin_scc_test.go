@@ -52,6 +52,7 @@ var _ = Describe("IOMMUFD Device Plugin SecurityContextConstraints", func() {
 			Expect(scc.Users).To(ContainElement(expectedUser))
 
 			Expect(scc.Volumes).To(ContainElement(securityv1.FSTypeHostPath))
+			Expect(scc.Volumes).To(ContainElement(securityv1.FSProjected))
 		})
 	})
 
