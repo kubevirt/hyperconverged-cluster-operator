@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.18.0-unstable
-    createdAt: "2026-04-15 05:44:58"
+    createdAt: "2026-04-18 05:35:17"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -3718,24 +3718,193 @@ spec:
           verbs:
           - create
         - apiGroups:
-          - ""
-          - apps
-          - kubevirt.io
-          - cdi.kubevirt.io
-          - hco.kubevirt.io
-          - snapshot.kubevirt.io
-          - clone.kubevirt.io
-          - export.kubevirt.io
-          - networkaddonsoperator.network.kubevirt.io
-          - ssp.kubevirt.io
-          - hostpathprovisioner.kubevirt.io
           - aaq.kubevirt.io
-          - operators.coreos.com
-          - machine.openshift.io
-          - machineconfiguration.openshift.io
+          resources:
+          - aaqs
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - build.openshift.io
+          resources:
+          - builds
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - cdi.kubevirt.io
+          resources:
+          - cdis
+          - datavolumes
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - clone.kubevirt.io
+          resources:
+          - virtualmachineclones
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
           - config.openshift.io
           resources:
-          - '*'
+          - clusteroperators
+          - clusterversions
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - export.kubevirt.io
+          resources:
+          - virtualmachineexports
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - fence-agents-remediation.medik8s.io
+          resources:
+          - fenceagentsremediations
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - forklift.konveyor.io
+          resources:
+          - plans
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - hco.kubevirt.io
+          resources:
+          - hyperconvergeds
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - hostpathprovisioner.kubevirt.io
+          resources:
+          - hostpathprovisioners
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - kubevirt.io
+          resources:
+          - kubevirts
+          - virtualmachineinstancemigrations
+          - virtualmachineinstances
+          - virtualmachines
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - machine.openshift.io
+          resources:
+          - machines
+          - machinesets
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - machineconfiguration.openshift.io
+          resources:
+          - machineconfigpools
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - migration.k8s.io
+          resources:
+          - storageversionmigrations
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - networkaddonsoperator.network.kubevirt.io
+          resources:
+          - networkaddonsconfigs
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - nmstate.io
+          resources:
+          - nodenetworkconfigurationenactments
+          - nodenetworkconfigurationpolicies
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - nodemaintenance.medik8s.io
+          resources:
+          - nodemaintenances
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - operators.coreos.com
+          resources:
+          - clusterserviceversions
+          - installplans
+          - subscriptions
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - snapshot.kubevirt.io
+          resources:
+          - virtualmachinerestores
+          - virtualmachinesnapshots
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - snapshot.storage.k8s.io
+          resources:
+          - volumesnapshots
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - ssp.kubevirt.io
+          resources:
+          - ssps
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
+          - velero.io
+          resources:
+          - backups
+          - datadownloads
+          - datauploads
+          - deletebackuprequests
+          - podvolumebackups
+          - podvolumerestores
+          - restores
           verbs:
           - get
           - list
@@ -3958,7 +4127,7 @@ spec:
                 - name: AUTOPILOT_VERSION
                   value: v0.0.8
                 - name: INFLIGHT_OPERATIONS_VERSION
-                  value: v0.0.5
+                  value: v0.0.6
                 - name: KV_CONSOLE_PLUGIN_IMAGE
                   value: quay.io/kubevirt-ui/kubevirt-plugin@sha256:a9273d9e69662320fc6677f51ee1b05f4c62528b8a83895f8f56849de3b8b9f2
                 - name: KV_CONSOLE_PROXY_IMAGE
@@ -4964,8 +5133,8 @@ spec:
                 - /manager
                 env:
                 - name: OPERATOR_VERSION
-                  value: v0.0.5
-                image: quay.io/ifo-operator/controller@sha256:0bb6180e651b2ef59486c616a700ed544cc50c06e0d872be6bd6af4f128a866c
+                  value: v0.0.6
+                image: quay.io/ifo-operator/controller@sha256:3dff33743351c00c9d2b7fc990e8820ac4db88690f6754533bcc23f9bbaa7eaf
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -5940,7 +6109,7 @@ spec:
     name: cluster-network-addons-operator
   - image: quay.io/kubevirt/cni-default-plugins@sha256:976a24392c2a096c38c2663d234b2d3131f5c24558889196d30b9ac1b6716788
     name: cni-default-plugins
-  - image: quay.io/ifo-operator/controller@sha256:0bb6180e651b2ef59486c616a700ed544cc50c06e0d872be6bd6af4f128a866c
+  - image: quay.io/ifo-operator/controller@sha256:3dff33743351c00c9d2b7fc990e8820ac4db88690f6754533bcc23f9bbaa7eaf
     name: controller
   - image: registry.k8s.io/coredns/coredns@sha256:a0ead06651cf580044aeb0a0feba63591858fb2e43ade8c9dea45a6a89ae7e5e
     name: coredns
