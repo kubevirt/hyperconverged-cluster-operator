@@ -4435,24 +4435,193 @@ rules:
   verbs:
   - create
 - apiGroups:
-  - ""
-  - apps
-  - kubevirt.io
-  - cdi.kubevirt.io
-  - hco.kubevirt.io
-  - snapshot.kubevirt.io
-  - clone.kubevirt.io
-  - export.kubevirt.io
-  - networkaddonsoperator.network.kubevirt.io
-  - ssp.kubevirt.io
-  - hostpathprovisioner.kubevirt.io
   - aaq.kubevirt.io
-  - operators.coreos.com
-  - machine.openshift.io
-  - machineconfiguration.openshift.io
+  resources:
+  - aaqs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - build.openshift.io
+  resources:
+  - builds
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cdi.kubevirt.io
+  resources:
+  - cdis
+  - datavolumes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - clone.kubevirt.io
+  resources:
+  - virtualmachineclones
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - config.openshift.io
   resources:
-  - '*'
+  - clusteroperators
+  - clusterversions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - export.kubevirt.io
+  resources:
+  - virtualmachineexports
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - fence-agents-remediation.medik8s.io
+  resources:
+  - fenceagentsremediations
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - forklift.konveyor.io
+  resources:
+  - plans
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - hco.kubevirt.io
+  resources:
+  - hyperconvergeds
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - hostpathprovisioner.kubevirt.io
+  resources:
+  - hostpathprovisioners
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kubevirt.io
+  resources:
+  - kubevirts
+  - virtualmachineinstancemigrations
+  - virtualmachineinstances
+  - virtualmachines
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - machine.openshift.io
+  resources:
+  - machines
+  - machinesets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - machineconfiguration.openshift.io
+  resources:
+  - machineconfigpools
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - migration.k8s.io
+  resources:
+  - storageversionmigrations
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - networkaddonsoperator.network.kubevirt.io
+  resources:
+  - networkaddonsconfigs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - nmstate.io
+  resources:
+  - nodenetworkconfigurationenactments
+  - nodenetworkconfigurationpolicies
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - nodemaintenance.medik8s.io
+  resources:
+  - nodemaintenances
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - operators.coreos.com
+  resources:
+  - clusterserviceversions
+  - installplans
+  - subscriptions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - snapshot.kubevirt.io
+  resources:
+  - virtualmachinerestores
+  - virtualmachinesnapshots
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshots
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ssp.kubevirt.io
+  resources:
+  - ssps
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - velero.io
+  resources:
+  - backups
+  - datadownloads
+  - datauploads
+  - deletebackuprequests
+  - podvolumebackups
+  - podvolumerestores
+  - restores
   verbs:
   - get
   - list
