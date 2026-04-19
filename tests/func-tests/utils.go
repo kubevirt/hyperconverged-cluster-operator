@@ -16,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
@@ -232,4 +233,33 @@ func deleteAllResources(ctx context.Context, restClient rest.Interface, resource
 	}).WithTimeout(time.Minute).
 		WithPolling(time.Second).
 		Should(BeTrue())
+}
+
+const (
+	hcoRolloutTimeout = 5 * time.Minute
+	hcoRolloutPolling = 5 * time.Second
+)
+
+// WaitForHCOOperatorRollout waits until the HCO operator deployment is ready.
+func WaitForHCOOperatorRollout(ctx context.Context) {
+	ginkgo.GinkgoHelper()
+
+	cli := GetK8sClientSet()
+
+	deployments, err := cli.AppsV1().Deployments(InstallNamespace).List(ctx, metav1.ListOptions{LabelSelector: "name=hyperconverged-cluster-operator"})
+	Expect(err).ToNot(HaveOccurred())
+	Expect(deployments.Items).To(HaveLen(1))
+	deployName := deployments.Items[0].Name
+
+	Eventually(func(g Gomega, gctx context.Context) {
+		deployment, err := cli.AppsV1().Deployments(InstallNamespace).Get(gctx, deployName, metav1.GetOptions{})
+		g.Expect(err).ToNot(HaveOccurred())
+
+		desired := ptr.Deref(deployment.Spec.Replicas, 1)
+
+		g.Expect(deployment.Status.ObservedGeneration).To(BeNumerically(">=", deployment.Generation))
+		g.Expect(deployment.Status.UpdatedReplicas).To(BeNumerically(">=", desired))
+		g.Expect(deployment.Status.ReadyReplicas).To(BeNumerically(">=", desired))
+		g.Expect(deployment.Status.AvailableReplicas).To(BeNumerically(">=", desired))
+	}).WithTimeout(hcoRolloutTimeout).WithPolling(hcoRolloutPolling).WithContext(ctx).Should(Succeed())
 }
