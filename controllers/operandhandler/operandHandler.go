@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
@@ -191,7 +192,7 @@ func (h *OperandHandler) Ensure(req *common.HcoRequest) error {
 
 			req.ComponentUpgradeInProgress = false
 			req.Conditions.SetStatusCondition(metav1.Condition{
-				Type:               hcov1beta1.ConditionReconcileComplete,
+				Type:               hcov1.ConditionReconcileComplete,
 				Status:             metav1.ConditionFalse,
 				Reason:             reconcileFailed,
 				Message:            fmt.Sprintf("Error while reconciling: %v", res.Err),

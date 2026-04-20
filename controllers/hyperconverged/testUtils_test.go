@@ -32,6 +32,7 @@ import (
 	migrationv1alpha1 "kubevirt.io/kubevirt-migration-operator/api/v1alpha1"
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
@@ -186,16 +187,16 @@ func getBasicDeployment() *BasicExpected {
 			Labels:    map[string]string{hcoutil.AppLabel: name},
 		},
 		Spec: hcov1beta1.HyperConvergedSpec{},
-		Status: hcov1beta1.HyperConvergedStatus{
+		Status: hcov1.HyperConvergedStatus{
 			Conditions: []metav1.Condition{
 				{
-					Type:    hcov1beta1.ConditionReconcileComplete,
+					Type:    hcov1.ConditionReconcileComplete,
 					Status:  metav1.ConditionTrue,
 					Reason:  common.ReconcileCompleted,
 					Message: common.ReconcileCompletedMessage,
 				},
 			},
-			Versions: []hcov1beta1.Version{
+			Versions: []hcov1.Version{
 				{
 					Name:    hcoVersionName,
 					Version: version.Version,
@@ -382,7 +383,7 @@ func getGenericProgressingConditions() []conditionsv1.Condition {
 func checkAvailability(hco *hcov1beta1.HyperConverged, expected metav1.ConditionStatus) {
 	found := false
 	for _, cond := range hco.Status.Conditions {
-		if cond.Type == hcov1beta1.ConditionAvailable {
+		if cond.Type == hcov1.ConditionAvailable {
 			found = true
 			ExpectWithOffset(1, cond.Status).To(Equal(expected))
 			break

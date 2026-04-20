@@ -385,20 +385,20 @@ Version: 1.2.3`)).To(Succeed())
 			// ObjectReference should have been added
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 			// Check conditions
-			Expect(req.Conditions[hcov1beta1.ConditionAvailable]).To(commontestutils.RepresentCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionAvailable,
+			Expect(req.Conditions[hcov1.ConditionAvailable]).To(commontestutils.RepresentCondition(metav1.Condition{
+				Type:    hcov1.ConditionAvailable,
 				Status:  metav1.ConditionFalse,
 				Reason:  "KubeVirtConditions",
 				Message: "KubeVirt resource has no conditions",
 			}))
-			Expect(req.Conditions[hcov1beta1.ConditionProgressing]).To(commontestutils.RepresentCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionProgressing,
+			Expect(req.Conditions[hcov1.ConditionProgressing]).To(commontestutils.RepresentCondition(metav1.Condition{
+				Type:    hcov1.ConditionProgressing,
 				Status:  metav1.ConditionTrue,
 				Reason:  "KubeVirtConditions",
 				Message: "KubeVirt resource has no conditions",
 			}))
-			Expect(req.Conditions[hcov1beta1.ConditionUpgradeable]).To(commontestutils.RepresentCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionUpgradeable,
+			Expect(req.Conditions[hcov1.ConditionUpgradeable]).To(commontestutils.RepresentCondition(metav1.Condition{
+				Type:    hcov1.ConditionUpgradeable,
 				Status:  metav1.ConditionFalse,
 				Reason:  "KubeVirtConditions",
 				Message: "KubeVirt resource has no conditions",
@@ -3763,26 +3763,26 @@ Version: 1.2.3`)
 			// ObjectReference should have been added
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 			// Check conditions
-			Expect(req.Conditions[hcov1beta1.ConditionAvailable]).To(commontestutils.RepresentCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionAvailable,
+			Expect(req.Conditions[hcov1.ConditionAvailable]).To(commontestutils.RepresentCondition(metav1.Condition{
+				Type:    hcov1.ConditionAvailable,
 				Status:  metav1.ConditionFalse,
 				Reason:  "KubeVirtNotAvailable",
 				Message: "KubeVirt is not available: Bar",
 			}))
-			Expect(req.Conditions[hcov1beta1.ConditionProgressing]).To(commontestutils.RepresentCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionProgressing,
+			Expect(req.Conditions[hcov1.ConditionProgressing]).To(commontestutils.RepresentCondition(metav1.Condition{
+				Type:    hcov1.ConditionProgressing,
 				Status:  metav1.ConditionTrue,
 				Reason:  "KubeVirtProgressing",
 				Message: "KubeVirt is progressing: Bar",
 			}))
-			Expect(req.Conditions[hcov1beta1.ConditionUpgradeable]).To(commontestutils.RepresentCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionUpgradeable,
+			Expect(req.Conditions[hcov1.ConditionUpgradeable]).To(commontestutils.RepresentCondition(metav1.Condition{
+				Type:    hcov1.ConditionUpgradeable,
 				Status:  metav1.ConditionFalse,
 				Reason:  "KubeVirtProgressing",
 				Message: "KubeVirt is progressing: Bar",
 			}))
-			Expect(req.Conditions[hcov1beta1.ConditionDegraded]).To(commontestutils.RepresentCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionDegraded,
+			Expect(req.Conditions[hcov1.ConditionDegraded]).To(commontestutils.RepresentCondition(metav1.Condition{
+				Type:    hcov1.ConditionDegraded,
 				Status:  metav1.ConditionTrue,
 				Reason:  "KubeVirtDegraded",
 				Message: "KubeVirt is degraded: Bar",

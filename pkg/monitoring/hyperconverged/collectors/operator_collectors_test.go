@@ -36,7 +36,7 @@ var _ = Describe("HyperConverged Collectors", func() {
 
 			When("we deploy DICTs", func() {
 				BeforeEach(func() {
-					hco.Status.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplateStatus{
+					hco.Status.DataImportCronTemplates = []hcov1.DataImportCronTemplateStatus{
 						{
 							DataImportCronTemplate: hcov1.DataImportCronTemplate{
 								ObjectMeta: metav1.ObjectMeta{
@@ -116,7 +116,7 @@ var _ = Describe("HyperConverged Collectors", func() {
 
 			When("we deploy DICTs", func() {
 				BeforeEach(func() {
-					hco.Status.DataImportCronTemplates = []hcov1beta1.DataImportCronTemplateStatus{
+					hco.Status.DataImportCronTemplates = []hcov1.DataImportCronTemplateStatus{
 						{
 							DataImportCronTemplate: hcov1.DataImportCronTemplate{
 								ObjectMeta: metav1.ObjectMeta{

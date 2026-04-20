@@ -96,7 +96,7 @@ const (
 )
 
 // JSONPatchAnnotationNames - annotations used to patch operand CRs with unsupported/unofficial/hidden features.
-// The presence of any of these annotations raises the hcov1beta1.ConditionTaintedConfiguration condition.
+// The presence of any of these annotations raises the hcov1.ConditionTaintedConfiguration condition.
 var JSONPatchAnnotationNames = []string{
 	common.JSONPatchKVAnnotationName,
 	common.JSONPatchCDIAnnotationName,
@@ -601,7 +601,7 @@ func (r *ReconcileHyperConverged) validateNamespace(req *common.HcoRequest) bool
 		req.Logger.Info("Invalid request", "HyperConverged.Namespace", req.Namespace, "HyperConverged.Name", req.Name)
 		hc := reqresolver.GetHyperConvergedNamespacedName()
 		req.Conditions.SetStatusCondition(metav1.Condition{
-			Type:               hcov1beta1.ConditionReconcileComplete,
+			Type:               hcov1.ConditionReconcileComplete,
 			Status:             metav1.ConditionFalse,
 			Reason:             invalidRequestReason,
 			Message:            fmt.Sprintf(invalidRequestMessageFormat, hc.Name, hc.Namespace),
@@ -617,35 +617,35 @@ func (r *ReconcileHyperConverged) setInitialConditions(req *common.HcoRequest) {
 	UpdateVersion(&req.Instance.Status, hcoVersionName, r.ownVersion)
 
 	req.Conditions.SetStatusCondition(metav1.Condition{
-		Type:               hcov1beta1.ConditionReconcileComplete,
+		Type:               hcov1.ConditionReconcileComplete,
 		Status:             metav1.ConditionUnknown, // we just started trying to reconcile
 		Reason:             reconcileInit,
 		Message:            reconcileInitMessage,
 		ObservedGeneration: req.Instance.Generation,
 	})
 	req.Conditions.SetStatusCondition(metav1.Condition{
-		Type:               hcov1beta1.ConditionAvailable,
+		Type:               hcov1.ConditionAvailable,
 		Status:             metav1.ConditionFalse,
 		Reason:             reconcileInit,
 		Message:            reconcileInitMessage,
 		ObservedGeneration: req.Instance.Generation,
 	})
 	req.Conditions.SetStatusCondition(metav1.Condition{
-		Type:               hcov1beta1.ConditionProgressing,
+		Type:               hcov1.ConditionProgressing,
 		Status:             metav1.ConditionTrue,
 		Reason:             reconcileInit,
 		Message:            reconcileInitMessage,
 		ObservedGeneration: req.Instance.Generation,
 	})
 	req.Conditions.SetStatusCondition(metav1.Condition{
-		Type:               hcov1beta1.ConditionDegraded,
+		Type:               hcov1.ConditionDegraded,
 		Status:             metav1.ConditionFalse,
 		Reason:             reconcileInit,
 		Message:            reconcileInitMessage,
 		ObservedGeneration: req.Instance.Generation,
 	})
 	req.Conditions.SetStatusCondition(metav1.Condition{
-		Type:               hcov1beta1.ConditionUpgradeable,
+		Type:               hcov1.ConditionUpgradeable,
 		Status:             metav1.ConditionUnknown,
 		Reason:             reconcileInit,
 		Message:            reconcileInitMessage,
@@ -784,17 +784,17 @@ func (r *ReconcileHyperConverged) aggregateComponentConditions(req *common.HcoRe
 	*/
 	allComponentsAreUp := req.Conditions.IsEmpty()
 	req.Conditions.SetStatusCondition(metav1.Condition{
-		Type:               hcov1beta1.ConditionReconcileComplete,
+		Type:               hcov1.ConditionReconcileComplete,
 		Status:             metav1.ConditionTrue,
 		Reason:             reconcileCompleted,
 		Message:            reconcileCompletedMessage,
 		ObservedGeneration: req.Instance.Generation,
 	})
 
-	if req.Conditions.HasCondition(hcov1beta1.ConditionDegraded) { // (#chart 1)
+	if req.Conditions.HasCondition(hcov1.ConditionDegraded) { // (#chart 1)
 
 		req.Conditions.SetStatusConditionIfUnset(metav1.Condition{ // (#chart 2,3)
-			Type:               hcov1beta1.ConditionProgressing,
+			Type:               hcov1.ConditionProgressing,
 			Status:             metav1.ConditionFalse,
 			Reason:             reconcileCompleted,
 			Message:            reconcileCompletedMessage,
@@ -802,7 +802,7 @@ func (r *ReconcileHyperConverged) aggregateComponentConditions(req *common.HcoRe
 		})
 
 		req.Conditions.SetStatusConditionIfUnset(metav1.Condition{ // (#chart 4,5)
-			Type:               hcov1beta1.ConditionUpgradeable,
+			Type:               hcov1.ConditionUpgradeable,
 			Status:             metav1.ConditionFalse,
 			Reason:             commonDegradedReason,
 			Message:            "HCO is not Upgradeable due to degraded components",
@@ -810,7 +810,7 @@ func (r *ReconcileHyperConverged) aggregateComponentConditions(req *common.HcoRe
 		})
 
 		req.Conditions.SetStatusConditionIfUnset(metav1.Condition{ // (#chart 6,7)
-			Type:               hcov1beta1.ConditionAvailable,
+			Type:               hcov1.ConditionAvailable,
 			Status:             metav1.ConditionFalse,
 			Reason:             commonDegradedReason,
 			Message:            "HCO is not available due to degraded components",
@@ -821,17 +821,17 @@ func (r *ReconcileHyperConverged) aggregateComponentConditions(req *common.HcoRe
 
 		// Degraded is not found. add it.
 		req.Conditions.SetStatusCondition(metav1.Condition{ // (#chart 8)
-			Type:               hcov1beta1.ConditionDegraded,
+			Type:               hcov1.ConditionDegraded,
 			Status:             metav1.ConditionFalse,
 			Reason:             reconcileCompleted,
 			Message:            reconcileCompletedMessage,
 			ObservedGeneration: req.Instance.Generation,
 		})
 
-		if req.Conditions.HasCondition(hcov1beta1.ConditionProgressing) { // (#chart 9)
+		if req.Conditions.HasCondition(hcov1.ConditionProgressing) { // (#chart 9)
 
 			req.Conditions.SetStatusConditionIfUnset(metav1.Condition{ // (#chart 10,11)
-				Type:               hcov1beta1.ConditionUpgradeable,
+				Type:               hcov1.ConditionUpgradeable,
 				Status:             metav1.ConditionFalse,
 				Reason:             commonProgressingReason,
 				Message:            "HCO is not Upgradeable due to progressing components",
@@ -839,7 +839,7 @@ func (r *ReconcileHyperConverged) aggregateComponentConditions(req *common.HcoRe
 			})
 
 			req.Conditions.SetStatusConditionIfUnset(metav1.Condition{ // (#chart 12,13)
-				Type:               hcov1beta1.ConditionAvailable,
+				Type:               hcov1.ConditionAvailable,
 				Status:             metav1.ConditionTrue,
 				Reason:             reconcileCompleted,
 				Message:            reconcileCompletedMessage,
@@ -849,7 +849,7 @@ func (r *ReconcileHyperConverged) aggregateComponentConditions(req *common.HcoRe
 		} else {
 
 			req.Conditions.SetStatusCondition(metav1.Condition{ // (#chart 14)
-				Type:               hcov1beta1.ConditionProgressing,
+				Type:               hcov1.ConditionProgressing,
 				Status:             metav1.ConditionFalse,
 				Reason:             reconcileCompleted,
 				Message:            reconcileCompletedMessage,
@@ -857,7 +857,7 @@ func (r *ReconcileHyperConverged) aggregateComponentConditions(req *common.HcoRe
 			})
 
 			req.Conditions.SetStatusConditionIfUnset(metav1.Condition{ // (#chart 15,16)
-				Type:               hcov1beta1.ConditionUpgradeable,
+				Type:               hcov1.ConditionUpgradeable,
 				Status:             metav1.ConditionTrue,
 				Reason:             reconcileCompleted,
 				Message:            reconcileCompletedMessage,
@@ -865,7 +865,7 @@ func (r *ReconcileHyperConverged) aggregateComponentConditions(req *common.HcoRe
 			})
 
 			req.Conditions.SetStatusConditionIfUnset(metav1.Condition{ // (#chart 17,18)
-				Type:               hcov1beta1.ConditionAvailable,
+				Type:               hcov1.ConditionAvailable,
 				Status:             metav1.ConditionTrue,
 				Reason:             reconcileCompleted,
 				Message:            reconcileCompletedMessage,
@@ -906,7 +906,7 @@ func (r *ReconcileHyperConverged) completeReconciliation(req *common.HcoRequest)
 	if r.upgradeMode {
 		// override the Progressing condition during upgrade
 		req.Conditions.SetStatusCondition(metav1.Condition{
-			Type:               hcov1beta1.ConditionProgressing,
+			Type:               hcov1.ConditionProgressing,
 			Status:             metav1.ConditionTrue,
 			Reason:             "HCOUpgrading",
 			Message:            "HCO is now upgrading to version " + r.ownVersion,
@@ -915,8 +915,8 @@ func (r *ReconcileHyperConverged) completeReconciliation(req *common.HcoRequest)
 	}
 
 	// check if HCO was available before this reconcile loop
-	hcoWasAvailable := apimetav1.IsStatusConditionTrue(req.Instance.Status.Conditions, hcov1beta1.ConditionAvailable) &&
-		apimetav1.IsStatusConditionFalse(req.Instance.Status.Conditions, hcov1beta1.ConditionProgressing)
+	hcoWasAvailable := apimetav1.IsStatusConditionTrue(req.Instance.Status.Conditions, hcov1.ConditionAvailable) &&
+		apimetav1.IsStatusConditionFalse(req.Instance.Status.Conditions, hcov1.ConditionProgressing)
 
 	if hcoReady {
 		// If no operator whose conditions we are watching reports an error, then it is safe
@@ -982,7 +982,7 @@ func (r *ReconcileHyperConverged) setLabels(req *common.HcoRequest) {
 }
 
 func (r *ReconcileHyperConverged) detectTaintedConfiguration(req *common.HcoRequest, conditions *[]metav1.Condition) {
-	conditionExists := apimetav1.IsStatusConditionTrue(req.Instance.Status.Conditions, hcov1beta1.ConditionTaintedConfiguration)
+	conditionExists := apimetav1.IsStatusConditionTrue(req.Instance.Status.Conditions, hcov1.ConditionTaintedConfiguration)
 
 	// A tainted configuration state is indicated by the
 	// presence of at least one of the JSON Patch annotations
@@ -1000,7 +1000,7 @@ func (r *ReconcileHyperConverged) detectTaintedConfiguration(req *common.HcoRequ
 
 	if tainted {
 		apimetav1.SetStatusCondition(conditions, metav1.Condition{
-			Type:               hcov1beta1.ConditionTaintedConfiguration,
+			Type:               hcov1.ConditionTaintedConfiguration,
 			Status:             metav1.ConditionTrue,
 			Reason:             taintedConfigurationReason,
 			Message:            taintedConfigurationMessage,
@@ -1016,7 +1016,7 @@ func (r *ReconcileHyperConverged) detectTaintedConfiguration(req *common.HcoRequ
 		// For the sake of keeping the JSONPatch backdoor in low profile,
 		// we just remove the condition instead of False'ing it.
 		if conditionExists {
-			apimetav1.RemoveStatusCondition(conditions, hcov1beta1.ConditionTaintedConfiguration)
+			apimetav1.RemoveStatusCondition(conditions, hcov1.ConditionTaintedConfiguration)
 
 			req.Logger.Info("Detected untainted configuration state for HCO")
 		}
@@ -1038,19 +1038,19 @@ func (r *ReconcileHyperConverged) getSystemHealthStatus(req *common.HcoRequest) 
 func isSystemHealthStatusError(req *common.HcoRequest) bool {
 	// During upgrade, only Degraded=True is an error. Temporary Available=false is expected.
 	if req.UpgradeMode {
-		return req.Conditions.IsStatusConditionTrue(hcov1beta1.ConditionDegraded)
+		return req.Conditions.IsStatusConditionTrue(hcov1.ConditionDegraded)
 	}
 
-	return !req.Conditions.IsStatusConditionTrue(hcov1beta1.ConditionAvailable) || req.Conditions.IsStatusConditionTrue(hcov1beta1.ConditionDegraded)
+	return !req.Conditions.IsStatusConditionTrue(hcov1.ConditionAvailable) || req.Conditions.IsStatusConditionTrue(hcov1.ConditionDegraded)
 }
 
 func isSystemHealthStatusWarning(req *common.HcoRequest) bool {
 	// During upgrade, treat health as non-warning while progressing; wait for reconcile complete.
 	if req.UpgradeMode {
-		return !req.Conditions.IsStatusConditionTrue(hcov1beta1.ConditionReconcileComplete)
+		return !req.Conditions.IsStatusConditionTrue(hcov1.ConditionReconcileComplete)
 	}
 
-	return !req.Conditions.IsStatusConditionTrue(hcov1beta1.ConditionReconcileComplete) || req.Conditions.IsStatusConditionTrue(hcov1beta1.ConditionProgressing)
+	return !req.Conditions.IsStatusConditionTrue(hcov1.ConditionReconcileComplete) || req.Conditions.IsStatusConditionTrue(hcov1.ConditionProgressing)
 }
 
 func getNumOfChangesJSONPatch(jsonPatch string) int {
@@ -1104,7 +1104,7 @@ func (r *ReconcileHyperConverged) setOperatorUpgradeableStatus(request *common.H
 				msg = hcoutil.UpgradeableUpgradingMessage + r.ownVersion
 				reason = hcoutil.UpgradeableUpgradingReason
 			} else {
-				condition, found := request.Conditions.GetCondition(hcov1beta1.ConditionUpgradeable)
+				condition, found := request.Conditions.GetCondition(hcov1.ConditionUpgradeable)
 				if found && condition.Status == metav1.ConditionFalse {
 					reason = condition.Reason
 					msg = condition.Message

@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 )
@@ -61,7 +62,7 @@ func handleOperandDegradedCond(req *common.HcoRequest, component string, conditi
 	if condition.Status == metav1.ConditionTrue {
 		req.Logger.Info(fmt.Sprintf("%s is 'Degraded'", component))
 		req.Conditions.SetStatusCondition(metav1.Condition{
-			Type:               hcov1beta1.ConditionDegraded,
+			Type:               hcov1.ConditionDegraded,
 			Status:             metav1.ConditionTrue,
 			Reason:             fmt.Sprintf("%sDegraded", component),
 			Message:            fmt.Sprintf("%s is degraded: %v", component, condition.Message),
@@ -77,14 +78,14 @@ func handleOperandProgressingCond(req *common.HcoRequest, component string, cond
 	if condition.Status == metav1.ConditionTrue {
 		req.Logger.Info(fmt.Sprintf("%s is 'Progressing'", component))
 		req.Conditions.SetStatusCondition(metav1.Condition{
-			Type:               hcov1beta1.ConditionProgressing,
+			Type:               hcov1.ConditionProgressing,
 			Status:             metav1.ConditionTrue,
 			Reason:             fmt.Sprintf("%sProgressing", component),
 			Message:            fmt.Sprintf("%s is progressing: %v", component, condition.Message),
 			ObservedGeneration: req.Instance.Generation,
 		})
 		req.Conditions.SetStatusConditionIfUnset(metav1.Condition{
-			Type:               hcov1beta1.ConditionUpgradeable,
+			Type:               hcov1.ConditionUpgradeable,
 			Status:             metav1.ConditionFalse,
 			Reason:             fmt.Sprintf("%sProgressing", component),
 			Message:            fmt.Sprintf("%s is progressing: %v", component, condition.Message),
@@ -101,7 +102,7 @@ func handleOperandUpgradeableCond(req *common.HcoRequest, component string, cond
 		req.Upgradeable = false
 		req.Logger.Info(fmt.Sprintf("%s is 'Progressing'", component))
 		req.Conditions.SetStatusCondition(metav1.Condition{
-			Type:               hcov1beta1.ConditionUpgradeable,
+			Type:               hcov1.ConditionUpgradeable,
 			Status:             metav1.ConditionFalse,
 			Reason:             fmt.Sprintf("%sNotUpgradeable", component),
 			Message:            fmt.Sprintf("%s is not upgradeable: %v", component, condition.Message),

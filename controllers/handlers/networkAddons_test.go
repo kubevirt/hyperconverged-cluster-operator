@@ -79,20 +79,20 @@ var _ = Describe("CNA Operand", func() {
 			// ObjectReference should have been added
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 			// Check conditions
-			Expect(req.Conditions[hcov1beta1.ConditionAvailable]).To(commontestutils.RepresentCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionAvailable,
+			Expect(req.Conditions[hcov1.ConditionAvailable]).To(commontestutils.RepresentCondition(metav1.Condition{
+				Type:    hcov1.ConditionAvailable,
 				Status:  metav1.ConditionFalse,
 				Reason:  "NetworkAddonsConfigConditions",
 				Message: "NetworkAddonsConfig resource has no conditions",
 			}))
-			Expect(req.Conditions[hcov1beta1.ConditionProgressing]).To(commontestutils.RepresentCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionProgressing,
+			Expect(req.Conditions[hcov1.ConditionProgressing]).To(commontestutils.RepresentCondition(metav1.Condition{
+				Type:    hcov1.ConditionProgressing,
 				Status:  metav1.ConditionTrue,
 				Reason:  "NetworkAddonsConfigConditions",
 				Message: "NetworkAddonsConfig resource has no conditions",
 			}))
-			Expect(req.Conditions[hcov1beta1.ConditionUpgradeable]).To(commontestutils.RepresentCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionUpgradeable,
+			Expect(req.Conditions[hcov1.ConditionUpgradeable]).To(commontestutils.RepresentCondition(metav1.Condition{
+				Type:    hcov1.ConditionUpgradeable,
 				Status:  metav1.ConditionFalse,
 				Reason:  "NetworkAddonsConfigConditions",
 				Message: "NetworkAddonsConfig resource has no conditions",
@@ -745,26 +745,26 @@ var _ = Describe("CNA Operand", func() {
 			// ObjectReference should have been added
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 			// Check conditions
-			Expect(req.Conditions[hcov1beta1.ConditionAvailable]).To(commontestutils.RepresentCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionAvailable,
+			Expect(req.Conditions[hcov1.ConditionAvailable]).To(commontestutils.RepresentCondition(metav1.Condition{
+				Type:    hcov1.ConditionAvailable,
 				Status:  metav1.ConditionFalse,
 				Reason:  "NetworkAddonsConfigNotAvailable",
 				Message: "NetworkAddonsConfig is not available: Bar",
 			}))
-			Expect(req.Conditions[hcov1beta1.ConditionProgressing]).To(commontestutils.RepresentCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionProgressing,
+			Expect(req.Conditions[hcov1.ConditionProgressing]).To(commontestutils.RepresentCondition(metav1.Condition{
+				Type:    hcov1.ConditionProgressing,
 				Status:  metav1.ConditionTrue,
 				Reason:  "NetworkAddonsConfigProgressing",
 				Message: "NetworkAddonsConfig is progressing: Bar",
 			}))
-			Expect(req.Conditions[hcov1beta1.ConditionUpgradeable]).To(commontestutils.RepresentCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionUpgradeable,
+			Expect(req.Conditions[hcov1.ConditionUpgradeable]).To(commontestutils.RepresentCondition(metav1.Condition{
+				Type:    hcov1.ConditionUpgradeable,
 				Status:  metav1.ConditionFalse,
 				Reason:  "NetworkAddonsConfigProgressing",
 				Message: "NetworkAddonsConfig is progressing: Bar",
 			}))
-			Expect(req.Conditions[hcov1beta1.ConditionDegraded]).To(commontestutils.RepresentCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionDegraded,
+			Expect(req.Conditions[hcov1.ConditionDegraded]).To(commontestutils.RepresentCondition(metav1.Condition{
+				Type:    hcov1.ConditionDegraded,
 				Status:  metav1.ConditionTrue,
 				Reason:  "NetworkAddonsConfigDegraded",
 				Message: "NetworkAddonsConfig is degraded: Bar",
@@ -800,8 +800,8 @@ var _ = Describe("CNA Operand", func() {
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 			// Check conditions
 			Expect(req.Conditions).To(HaveLen(1))
-			Expect(req.Conditions[hcov1beta1.ConditionUpgradeable]).To(commontestutils.RepresentCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionUpgradeable,
+			Expect(req.Conditions[hcov1.ConditionUpgradeable]).To(commontestutils.RepresentCondition(metav1.Condition{
+				Type:    hcov1.ConditionUpgradeable,
 				Status:  metav1.ConditionFalse,
 				Reason:  "NetworkAddonsConfigNotUpgradeable",
 				Message: "NetworkAddonsConfig is not upgradeable: Bar",
@@ -811,7 +811,7 @@ var _ = Describe("CNA Operand", func() {
 		It("should override an existing upgrade condition, if the operand one is false", func() {
 			expectedResource, err := NewNetworkAddons(hco)
 			req.Conditions.SetStatusCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionUpgradeable,
+				Type:    hcov1.ConditionUpgradeable,
 				Status:  metav1.ConditionFalse,
 				Reason:  "another reason",
 				Message: "another message",
@@ -844,8 +844,8 @@ var _ = Describe("CNA Operand", func() {
 			Expect(hco.Status.RelatedObjects).To(ContainElement(*objectRef))
 			// Check conditions
 			Expect(req.Conditions).To(HaveLen(1))
-			Expect(req.Conditions[hcov1beta1.ConditionUpgradeable]).To(commontestutils.RepresentCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionUpgradeable,
+			Expect(req.Conditions[hcov1.ConditionUpgradeable]).To(commontestutils.RepresentCondition(metav1.Condition{
+				Type:    hcov1.ConditionUpgradeable,
 				Status:  metav1.ConditionFalse,
 				Reason:  "NetworkAddonsConfigNotUpgradeable",
 				Message: "NetworkAddonsConfig is not upgradeable: Bar",

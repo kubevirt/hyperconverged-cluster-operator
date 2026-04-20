@@ -10,6 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -229,19 +230,19 @@ func setConditionsByOperandConditions(req *common.HcoRequest, component string, 
 	foundDegradedCond := false
 	for _, condition := range componentConds {
 		switch condition.Type {
-		case hcov1beta1.ConditionAvailable:
+		case hcov1.ConditionAvailable:
 			foundAvailableCond = true
 			isReady = handleOperandAvailableCond(req, component, condition) && isReady
 
-		case hcov1beta1.ConditionProgressing:
+		case hcov1.ConditionProgressing:
 			foundProgressingCond = true
 			isReady = handleOperandProgressingCond(req, component, condition) && isReady
 
-		case hcov1beta1.ConditionDegraded:
+		case hcov1.ConditionDegraded:
 			foundDegradedCond = true
 			isReady = handleOperandDegradedCond(req, component, condition) && isReady
 
-		case hcov1beta1.ConditionUpgradeable:
+		case hcov1.ConditionUpgradeable:
 			handleOperandUpgradeableCond(req, component, condition)
 		}
 	}
@@ -258,21 +259,21 @@ func getConditionsForNewCr(req *common.HcoRequest, component string) {
 	message := fmt.Sprintf("%s resource has no conditions", component)
 	req.Logger.Info(fmt.Sprintf("%s's resource is not reporting Conditions on it's Status", component))
 	req.Conditions.SetStatusCondition(metav1.Condition{
-		Type:               hcov1beta1.ConditionAvailable,
+		Type:               hcov1.ConditionAvailable,
 		Status:             metav1.ConditionFalse,
 		Reason:             reason,
 		Message:            message,
 		ObservedGeneration: req.Instance.Generation,
 	})
 	req.Conditions.SetStatusCondition(metav1.Condition{
-		Type:               hcov1beta1.ConditionProgressing,
+		Type:               hcov1.ConditionProgressing,
 		Status:             metav1.ConditionTrue,
 		Reason:             reason,
 		Message:            message,
 		ObservedGeneration: req.Instance.Generation,
 	})
 	req.Conditions.SetStatusCondition(metav1.Condition{
-		Type:               hcov1beta1.ConditionUpgradeable,
+		Type:               hcov1.ConditionUpgradeable,
 		Status:             metav1.ConditionFalse,
 		Reason:             reason,
 		Message:            message,
@@ -292,7 +293,7 @@ func handleOperandAvailableCond(req *common.HcoRequest, component string, condit
 func componentNotAvailable(req *common.HcoRequest, component string, msg string) {
 	req.Logger.Info(fmt.Sprintf("%s is not 'Available'", component))
 	req.Conditions.SetStatusCondition(metav1.Condition{
-		Type:               hcov1beta1.ConditionAvailable,
+		Type:               hcov1.ConditionAvailable,
 		Status:             metav1.ConditionFalse,
 		Reason:             fmt.Sprintf("%sNotAvailable", component),
 		Message:            msg,

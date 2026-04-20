@@ -134,7 +134,7 @@ var _ = Describe("HyperconvergedController", func() {
 				).ToNot(HaveOccurred())
 				// Check conditions
 				Expect(foundResource.Status.Conditions).To(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-					Type:    hcov1beta1.ConditionReconcileComplete,
+					Type:    hcov1.ConditionReconcileComplete,
 					Status:  metav1.ConditionFalse,
 					Reason:  invalidRequestReason,
 					Message: fmt.Sprintf(invalidRequestMessageFormat, name, namespace),
@@ -172,31 +172,31 @@ var _ = Describe("HyperconvergedController", func() {
 				).ToNot(HaveOccurred())
 				// Check conditions
 				Expect(foundResource.Status.Conditions).To(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-					Type:    hcov1beta1.ConditionReconcileComplete,
+					Type:    hcov1.ConditionReconcileComplete,
 					Status:  metav1.ConditionUnknown,
 					Reason:  reconcileInit,
 					Message: reconcileInitMessage,
 				})))
 				Expect(foundResource.Status.Conditions).To(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-					Type:    hcov1beta1.ConditionAvailable,
+					Type:    hcov1.ConditionAvailable,
 					Status:  metav1.ConditionFalse,
 					Reason:  reconcileInit,
 					Message: "Initializing HyperConverged cluster",
 				})))
 				Expect(foundResource.Status.Conditions).To(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-					Type:    hcov1beta1.ConditionProgressing,
+					Type:    hcov1.ConditionProgressing,
 					Status:  metav1.ConditionTrue,
 					Reason:  reconcileInit,
 					Message: "Initializing HyperConverged cluster",
 				})))
 				Expect(foundResource.Status.Conditions).To(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-					Type:    hcov1beta1.ConditionDegraded,
+					Type:    hcov1.ConditionDegraded,
 					Status:  metav1.ConditionFalse,
 					Reason:  reconcileInit,
 					Message: "Initializing HyperConverged cluster",
 				})))
 				Expect(foundResource.Status.Conditions).To(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-					Type:    hcov1beta1.ConditionUpgradeable,
+					Type:    hcov1.ConditionUpgradeable,
 					Status:  metav1.ConditionUnknown,
 					Reason:  reconcileInit,
 					Message: "Initializing HyperConverged cluster",
@@ -305,7 +305,7 @@ var _ = Describe("HyperconvergedController", func() {
 				).ToNot(HaveOccurred())
 				// Check conditions
 				Expect(foundResource.Status.Conditions).To(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-					Type:    hcov1beta1.ConditionReconcileComplete,
+					Type:    hcov1.ConditionReconcileComplete,
 					Status:  metav1.ConditionTrue,
 					Reason:  reconcileCompleted,
 					Message: reconcileCompletedMessage,
@@ -583,31 +583,31 @@ var _ = Describe("HyperconvergedController", func() {
 				).ToNot(HaveOccurred())
 				// Check conditions
 				Expect(foundResource.Status.Conditions).To(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-					Type:    hcov1beta1.ConditionReconcileComplete,
+					Type:    hcov1.ConditionReconcileComplete,
 					Status:  metav1.ConditionTrue,
 					Reason:  reconcileCompleted,
 					Message: reconcileCompletedMessage,
 				})))
 				Expect(foundResource.Status.Conditions).To(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-					Type:    hcov1beta1.ConditionAvailable,
+					Type:    hcov1.ConditionAvailable,
 					Status:  metav1.ConditionTrue,
 					Reason:  reconcileCompleted,
 					Message: reconcileCompletedMessage,
 				})))
 				Expect(foundResource.Status.Conditions).To(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-					Type:    hcov1beta1.ConditionProgressing,
+					Type:    hcov1.ConditionProgressing,
 					Status:  metav1.ConditionFalse,
 					Reason:  reconcileCompleted,
 					Message: reconcileCompletedMessage,
 				})))
 				Expect(foundResource.Status.Conditions).To(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-					Type:    hcov1beta1.ConditionDegraded,
+					Type:    hcov1.ConditionDegraded,
 					Status:  metav1.ConditionFalse,
 					Reason:  reconcileCompleted,
 					Message: reconcileCompletedMessage,
 				})))
 				Expect(foundResource.Status.Conditions).To(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-					Type:    hcov1beta1.ConditionUpgradeable,
+					Type:    hcov1.ConditionUpgradeable,
 					Status:  metav1.ConditionTrue,
 					Reason:  reconcileCompleted,
 					Message: reconcileCompletedMessage,
@@ -885,7 +885,7 @@ var _ = Describe("HyperconvergedController", func() {
 				// Check condition
 				foundCond := false
 				for _, cond := range foundResource.Status.Conditions {
-					if cond.Type == hcov1beta1.ConditionReconcileComplete {
+					if cond.Type == hcov1.ConditionReconcileComplete {
 						foundCond = true
 						Expect(cond.Status).To(Equal(metav1.ConditionFalse))
 						Expect(cond.Message).To(ContainSubstring("fake create error"))
@@ -927,7 +927,7 @@ var _ = Describe("HyperconvergedController", func() {
 				// Check condition
 				foundCond := false
 				for _, cond := range foundHyperConverged.Status.Conditions {
-					if cond.Type == hcov1beta1.ConditionReconcileComplete {
+					if cond.Type == hcov1.ConditionReconcileComplete {
 						foundCond = true
 						Expect(cond.Status).To(Equal(metav1.ConditionFalse))
 						Expect(cond.Message).To(ContainSubstring("fake update error"))
@@ -1351,20 +1351,20 @@ var _ = Describe("HyperconvergedController", func() {
 				wr.SetIndent("", "  ")
 				_ = wr.Encode(conditions)
 
-				cd := apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionReconcileComplete)
+				cd := apimetav1.FindStatusCondition(conditions, hcov1.ConditionReconcileComplete)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionAvailable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionAvailable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(commonDegradedReason))
 				Expect(cd.Message).To(Equal("HCO is not available due to degraded components"))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionProgressing)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionProgressing)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionDegraded)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionDegraded)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal("CDIDegraded"))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionUpgradeable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionUpgradeable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(commonDegradedReason))
 				Expect(cd.Message).To(Equal("HCO is not Upgradeable due to degraded components"))
@@ -1396,19 +1396,19 @@ var _ = Describe("HyperconvergedController", func() {
 				wr.SetIndent("", "  ")
 				_ = wr.Encode(conditions)
 
-				cd := apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionReconcileComplete)
+				cd := apimetav1.FindStatusCondition(conditions, hcov1.ConditionReconcileComplete)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionAvailable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionAvailable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(commonDegradedReason))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionProgressing)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionProgressing)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal("CDIProgressing"))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionDegraded)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionDegraded)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal("CDIDegraded"))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionUpgradeable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionUpgradeable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal("CDIProgressing"))
 
@@ -1439,19 +1439,19 @@ var _ = Describe("HyperconvergedController", func() {
 				wr.SetIndent("", "  ")
 				_ = wr.Encode(conditions)
 
-				cd := apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionReconcileComplete)
+				cd := apimetav1.FindStatusCondition(conditions, hcov1.ConditionReconcileComplete)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionAvailable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionAvailable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal("CDINotAvailable"))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionProgressing)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionProgressing)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionDegraded)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionDegraded)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal("CDIDegraded"))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionUpgradeable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionUpgradeable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(commonDegradedReason))
 
@@ -1476,19 +1476,19 @@ var _ = Describe("HyperconvergedController", func() {
 				wr.SetIndent("", "  ")
 				_ = wr.Encode(conditions)
 
-				cd := apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionReconcileComplete)
+				cd := apimetav1.FindStatusCondition(conditions, hcov1.ConditionReconcileComplete)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionAvailable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionAvailable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionProgressing)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionProgressing)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal("CDIProgressing"))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionDegraded)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionDegraded)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionUpgradeable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionUpgradeable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal("CDIProgressing"))
 
@@ -1519,19 +1519,19 @@ var _ = Describe("HyperconvergedController", func() {
 				wr.SetIndent("", "  ")
 				_ = wr.Encode(conditions)
 
-				cd := apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionReconcileComplete)
+				cd := apimetav1.FindStatusCondition(conditions, hcov1.ConditionReconcileComplete)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionAvailable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionAvailable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal("CDINotAvailable"))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionProgressing)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionProgressing)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal("CDIProgressing"))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionDegraded)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionDegraded)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionUpgradeable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionUpgradeable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal("CDIProgressing"))
 
@@ -1556,19 +1556,19 @@ var _ = Describe("HyperconvergedController", func() {
 				wr.SetIndent("", "  ")
 				_ = wr.Encode(conditions)
 
-				cd := apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionReconcileComplete)
+				cd := apimetav1.FindStatusCondition(conditions, hcov1.ConditionReconcileComplete)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionAvailable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionAvailable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal("CDINotAvailable"))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionProgressing)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionProgressing)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionDegraded)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionDegraded)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionUpgradeable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionUpgradeable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
 			})
@@ -1584,19 +1584,19 @@ var _ = Describe("HyperconvergedController", func() {
 				wr.SetIndent("", "  ")
 				_ = wr.Encode(conditions)
 
-				cd := apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionReconcileComplete)
+				cd := apimetav1.FindStatusCondition(conditions, hcov1.ConditionReconcileComplete)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionAvailable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionAvailable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionProgressing)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionProgressing)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionDegraded)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionDegraded)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionUpgradeable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionUpgradeable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
 			})
@@ -1625,19 +1625,19 @@ var _ = Describe("HyperconvergedController", func() {
 				wr.SetIndent("", "  ")
 				_ = wr.Encode(conditions)
 
-				cd := apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionReconcileComplete)
+				cd := apimetav1.FindStatusCondition(conditions, hcov1.ConditionReconcileComplete)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionAvailable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionAvailable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal("NetworkAddonsConfigNotAvailable"))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionProgressing)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionProgressing)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionDegraded)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionDegraded)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionUpgradeable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionUpgradeable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
 			})
@@ -1659,23 +1659,23 @@ var _ = Describe("HyperconvergedController", func() {
 				wr.SetIndent("", "  ")
 				_ = wr.Encode(conditions)
 
-				cd := apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionReconcileComplete)
+				cd := apimetav1.FindStatusCondition(conditions, hcov1.ConditionReconcileComplete)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
 
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionAvailable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionAvailable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
 
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionProgressing)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionProgressing)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
 
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionDegraded)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionDegraded)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
 
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionUpgradeable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionUpgradeable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal("CDINotUpgradeable"))
 				Expect(cd.Message).To(Equal("CDI is not upgradeable: CDI Test Error message"))
@@ -1708,23 +1708,23 @@ var _ = Describe("HyperconvergedController", func() {
 				wr.SetIndent("", "  ")
 				_ = wr.Encode(conditions)
 
-				cd := apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionReconcileComplete)
+				cd := apimetav1.FindStatusCondition(conditions, hcov1.ConditionReconcileComplete)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
 
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionAvailable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionAvailable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
 
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionProgressing)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionProgressing)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal("CDIProgressing"))
 
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionDegraded)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionDegraded)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
 
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionUpgradeable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionUpgradeable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal("CDINotUpgradeable"))
 				Expect(cd.Message).To(Equal("CDI is not upgradeable: CDI Upgrade Error message"))
@@ -1757,23 +1757,23 @@ var _ = Describe("HyperconvergedController", func() {
 				wr.SetIndent("", "  ")
 				_ = wr.Encode(conditions)
 
-				cd := apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionReconcileComplete)
+				cd := apimetav1.FindStatusCondition(conditions, hcov1.ConditionReconcileComplete)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
 
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionAvailable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionAvailable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(commonDegradedReason))
 
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionProgressing)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionProgressing)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal(reconcileCompleted))
 
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionDegraded)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionDegraded)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 				Expect(cd.Reason).To(Equal("CDIDegraded"))
 
-				cd = apimetav1.FindStatusCondition(conditions, hcov1beta1.ConditionUpgradeable)
+				cd = apimetav1.FindStatusCondition(conditions, hcov1.ConditionUpgradeable)
 				Expect(cd.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 				Expect(cd.Reason).To(Equal("CDINotUpgradeable"))
 				Expect(cd.Message).To(Equal("CDI is not upgradeable: CDI Upgrade Error message"))
@@ -1869,7 +1869,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					By("Verify HC conditions", func() {
 						Expect(foundResource.Status.Conditions).To(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-							Type:    hcov1beta1.ConditionTaintedConfiguration,
+							Type:    hcov1.ConditionTaintedConfiguration,
 							Status:  metav1.ConditionTrue,
 							Reason:  taintedConfigurationReason,
 							Message: taintedConfigurationMessage,
@@ -1896,7 +1896,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				It("Removes the TaintedConfiguration condition upon removal of such configuration", func() {
 					hco.Status.Conditions = append(hco.Status.Conditions, metav1.Condition{
-						Type:    hcov1beta1.ConditionTaintedConfiguration,
+						Type:    hcov1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
@@ -1924,7 +1924,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					// Check conditions
 					Expect(foundResource.Status.Conditions).ToNot(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-						Type:    hcov1beta1.ConditionTaintedConfiguration,
+						Type:    hcov1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
@@ -1936,7 +1936,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				It("Removes the TaintedConfiguration condition if the annotation is wrong", func() {
 					hco.Status.Conditions = append(hco.Status.Conditions, metav1.Condition{
-						Type:    hcov1beta1.ConditionTaintedConfiguration,
+						Type:    hcov1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
@@ -1974,7 +1974,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					// Check conditions
 					Expect(foundResource.Status.Conditions).ToNot(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-						Type:    hcov1beta1.ConditionTaintedConfiguration,
+						Type:    hcov1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
@@ -2024,7 +2024,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					By("Verify HC conditions", func() {
 						Expect(foundResource.Status.Conditions).To(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-							Type:    hcov1beta1.ConditionTaintedConfiguration,
+							Type:    hcov1.ConditionTaintedConfiguration,
 							Status:  metav1.ConditionTrue,
 							Reason:  taintedConfigurationReason,
 							Message: taintedConfigurationMessage,
@@ -2055,7 +2055,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				It("Removes the TaintedConfiguration condition upon removal of such configuration", func() {
 					hco.Status.Conditions = append(hco.Status.Conditions, metav1.Condition{
-						Type:    hcov1beta1.ConditionTaintedConfiguration,
+						Type:    hcov1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
@@ -2083,7 +2083,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					// Check conditions
 					Expect(foundResource.Status.Conditions).ToNot(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-						Type:    hcov1beta1.ConditionTaintedConfiguration,
+						Type:    hcov1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
@@ -2095,7 +2095,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				It("Removes the TaintedConfiguration condition if the annotation is wrong", func() {
 					hco.Status.Conditions = append(hco.Status.Conditions, metav1.Condition{
-						Type:    hcov1beta1.ConditionTaintedConfiguration,
+						Type:    hcov1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
@@ -2126,7 +2126,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					// Check conditions
 					Expect(foundResource.Status.Conditions).ToNot(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-						Type:    hcov1beta1.ConditionTaintedConfiguration,
+						Type:    hcov1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
@@ -2175,7 +2175,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					By("Verify HC conditions", func() {
 						Expect(foundResource.Status.Conditions).To(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-							Type:    hcov1beta1.ConditionTaintedConfiguration,
+							Type:    hcov1.ConditionTaintedConfiguration,
 							Status:  metav1.ConditionTrue,
 							Reason:  taintedConfigurationReason,
 							Message: taintedConfigurationMessage,
@@ -2203,7 +2203,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				It("Removes the TaintedConfiguration condition upon removal of such configuration", func() {
 					hco.Status.Conditions = append(hco.Status.Conditions, metav1.Condition{
-						Type:    hcov1beta1.ConditionTaintedConfiguration,
+						Type:    hcov1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
@@ -2230,7 +2230,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					// Check conditions
 					Expect(foundResource.Status.Conditions).ToNot(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-						Type:    hcov1beta1.ConditionTaintedConfiguration,
+						Type:    hcov1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
@@ -2265,7 +2265,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					// Check conditions
 					Expect(foundResource.Status.Conditions).ToNot(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-						Type:    hcov1beta1.ConditionTaintedConfiguration,
+						Type:    hcov1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
@@ -2309,7 +2309,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					By("Verify HC conditions", func() {
 						Expect(foundResource.Status.Conditions).To(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-							Type:    hcov1beta1.ConditionTaintedConfiguration,
+							Type:    hcov1.ConditionTaintedConfiguration,
 							Status:  metav1.ConditionTrue,
 							Reason:  taintedConfigurationReason,
 							Message: taintedConfigurationMessage,
@@ -2335,7 +2335,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 				It("Removes the TaintedConfiguration condition upon removal of such configuration", func() {
 					hco.Status.Conditions = append(hco.Status.Conditions, metav1.Condition{
-						Type:    hcov1beta1.ConditionTaintedConfiguration,
+						Type:    hcov1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
@@ -2362,7 +2362,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					// Check conditions
 					Expect(foundResource.Status.Conditions).ToNot(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-						Type:    hcov1beta1.ConditionTaintedConfiguration,
+						Type:    hcov1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
@@ -2397,7 +2397,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					// Check conditions
 					Expect(foundResource.Status.Conditions).ToNot(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-						Type:    hcov1beta1.ConditionTaintedConfiguration,
+						Type:    hcov1.ConditionTaintedConfiguration,
 						Status:  metav1.ConditionTrue,
 						Reason:  taintedConfigurationReason,
 						Message: taintedConfigurationMessage,
@@ -2474,7 +2474,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 					By("Verify HC conditions", func() {
 						Expect(foundResource.Status.Conditions).To(ContainElement(commontestutils.RepresentCondition(metav1.Condition{
-							Type:    hcov1beta1.ConditionTaintedConfiguration,
+							Type:    hcov1.ConditionTaintedConfiguration,
 							Status:  metav1.ConditionTrue,
 							Reason:  taintedConfigurationReason,
 							Message: taintedConfigurationMessage,
