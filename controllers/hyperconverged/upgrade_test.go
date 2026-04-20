@@ -25,6 +25,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
@@ -139,7 +140,7 @@ var _ = Describe("Upgrade Mode", func() {
 		checkAvailability(foundResource, metav1.ConditionFalse)
 
 		for _, cond := range foundResource.Status.Conditions {
-			if cond.Type == hcov1beta1.ConditionAvailable {
+			if cond.Type == hcov1.ConditionAvailable {
 				Expect(cond.Reason).To(Equal("Init"))
 				break
 			}
@@ -183,7 +184,7 @@ var _ = Describe("Upgrade Mode", func() {
 		ver, ok = GetVersion(&foundResource.Status, hcoVersionName)
 		Expect(ok).To(BeTrue())
 		Expect(ver).To(Equal(oldVersion))
-		cond := apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1beta1.ConditionProgressing)
+		cond := apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1.ConditionProgressing)
 		Expect(cond.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 
 		// Call again, to start complete the upgrade
@@ -195,7 +196,7 @@ var _ = Describe("Upgrade Mode", func() {
 		ver, ok = GetVersion(&foundResource.Status, hcoVersionName)
 		Expect(ok).To(BeTrue())
 		Expect(ver).To(Equal(newHCOVersion))
-		cond = apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1beta1.ConditionProgressing)
+		cond = apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1.ConditionProgressing)
 		Expect(cond.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 		validateOperatorCondition(reconciler, metav1.ConditionTrue, hcoutil.UpgradeableAllowReason, hcoutil.UpgradeableAllowMessage)
 
@@ -431,14 +432,14 @@ var _ = Describe("Upgrade Mode", func() {
 
 		_, ok = GetVersion(&foundResource.Status, hcoVersionName)
 		Expect(ok).To(BeTrue())
-		cond := apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1beta1.ConditionProgressing)
+		cond := apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1.ConditionProgressing)
 		Expect(cond.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 
 		ver, ok = GetVersion(&foundResource.Status, hcoVersionName)
 		Expect(ok).To(BeTrue())
 		Expect(ver).To(Equal(newHCOVersion))
 
-		cond = apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1beta1.ConditionProgressing)
+		cond = apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1.ConditionProgressing)
 		Expect(cond.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 	})
 
@@ -467,7 +468,7 @@ var _ = Describe("Upgrade Mode", func() {
 			ver, ok := GetVersion(&foundResource.Status, hcoVersionName)
 			Expect(ok).To(BeTrue())
 			Expect(ver).To(Equal(oldVersion))
-			cond := apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1beta1.ConditionProgressing)
+			cond := apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1.ConditionProgressing)
 			Expect(cond.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 			Expect(cond.Reason).To(Equal("HCOUpgrading"))
 			Expect(cond.Message).To(Equal("HCO is now upgrading to version " + newHCOVersion))
@@ -489,7 +490,7 @@ var _ = Describe("Upgrade Mode", func() {
 			ver, ok = GetVersion(&foundResource.Status, hcoVersionName)
 			Expect(ok).To(BeTrue())
 			Expect(ver).To(Equal(oldVersion))
-			cond = apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1beta1.ConditionProgressing)
+			cond = apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1.ConditionProgressing)
 			Expect(cond.Status).To(BeEquivalentTo(metav1.ConditionTrue))
 			Expect(cond.Reason).To(Equal("HCOUpgrading"))
 			Expect(cond.Message).To(Equal("HCO is now upgrading to version " + newHCOVersion))
@@ -510,7 +511,7 @@ var _ = Describe("Upgrade Mode", func() {
 			ver, ok = GetVersion(&foundResource.Status, hcoVersionName)
 			Expect(ok).To(BeTrue())
 			Expect(ver).To(Equal(newHCOVersion))
-			cond = apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1beta1.ConditionProgressing)
+			cond = apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1.ConditionProgressing)
 			Expect(cond.Status).To(BeEquivalentTo(metav1.ConditionFalse))
 			Expect(cond.Reason).To(Equal("ReconcileCompleted"))
 		},

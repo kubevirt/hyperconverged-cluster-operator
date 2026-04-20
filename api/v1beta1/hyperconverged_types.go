@@ -584,93 +584,6 @@ type HyperConvergedObsoleteCPUs struct {
 	CPUModels []string `json:"cpuModels,omitempty"`
 }
 
-// HyperConvergedStatus defines the observed state of HyperConverged
-// +k8s:openapi-gen=true
-type HyperConvergedStatus struct {
-	// Conditions describes the state of the HyperConverged resource.
-	// +listType=atomic
-	// +patchMergeKey=type
-	// +patchStrategy=merge
-	// +optional
-	Conditions []metav1.Condition `json:"conditions,omitempty"  patchStrategy:"merge" patchMergeKey:"type"`
-
-	// RelatedObjects is a list of objects created and maintained by this
-	// operator. Object references will be added to this list after they have
-	// been created AND found in the cluster.
-	// +listType=atomic
-	// +optional
-	RelatedObjects []corev1.ObjectReference `json:"relatedObjects,omitempty"`
-
-	// Versions is a list of HCO component versions, as name/version pairs. The version with a name of "operator"
-	// is the HCO version itself, as described here:
-	// https://github.com/openshift/cluster-version-operator/blob/master/docs/dev/clusteroperator.md#version
-	// +listType=atomic
-	// +optional
-	Versions []Version `json:"versions,omitempty"`
-
-	// ObservedGeneration reflects the HyperConverged resource generation. If the ObservedGeneration is less than the
-	// resource generation in metadata, the status is out of date
-	// +optional
-	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-
-	// DataImportSchedule is the cron expression that is used in for the hard-coded data import cron templates. HCO
-	// generates the value of this field once and stored in the status field, so will survive restart.
-	// +optional
-	DataImportSchedule string `json:"dataImportSchedule,omitempty"`
-
-	// DataImportCronTemplates is a list of the actual DataImportCronTemplates as HCO update in the SSP CR. The list
-	// contains both the common and the custom templates, including any modification done by HCO.
-	DataImportCronTemplates []DataImportCronTemplateStatus `json:"dataImportCronTemplates,omitempty"`
-
-	// SystemHealthStatus reflects the health of HCO and its secondary resources, based on the aggregated conditions.
-	// +optional
-	SystemHealthStatus string `json:"systemHealthStatus,omitempty"`
-
-	// InfrastructureHighlyAvailable describes whether the cluster has only one worker node
-	// (false) or more (true).
-	// +optional
-	InfrastructureHighlyAvailable *bool `json:"infrastructureHighlyAvailable,omitempty"`
-
-	// NodeInfo holds information about the cluster nodes
-	NodeInfo NodeInfoStatus `json:"nodeInfo,omitempty"`
-}
-
-type Version struct {
-	Name    string `json:"name,omitempty"`
-	Version string `json:"version,omitempty"`
-}
-
-// DataImportCronStatus is the status field of the DIC template
-type DataImportCronStatus struct {
-	// Conditions is a list of conditions that describe the state of the DataImportCronTemplate.
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
-
-	// CommonTemplate indicates whether this is a common template (true), or a custom one (false)
-	CommonTemplate bool `json:"commonTemplate,omitempty"`
-
-	// Modified indicates if a common template was customized. Always false for custom templates.
-	Modified bool `json:"modified,omitempty"`
-
-	// OriginalSupportedArchitectures is a comma-separated list of CPU architectures that the original
-	// template supports.
-	OriginalSupportedArchitectures string `json:"originalSupportedArchitectures,omitempty"`
-}
-
-// DataImportCronTemplateStatus is a copy of a dataImportCronTemplate as defined in the spec, or in the HCO image.
-type DataImportCronTemplateStatus struct {
-	hcov1.DataImportCronTemplate `json:",inline"`
-
-	Status DataImportCronStatus `json:"status,omitempty"`
-}
-
-// NodeInfoStatus holds information about the cluster nodes
-type NodeInfoStatus struct {
-	// WorkloadsArchitectures is a distinct list of the CPU architectures of the workloads nodes in the cluster.
-	WorkloadsArchitectures []string `json:"workloadsArchitectures,omitempty"`
-	// ControlPlaneArchitectures is a distinct list of the CPU architecture of the control-plane nodes.
-	ControlPlaneArchitectures []string `json:"controlPlaneArchitectures,omitempty"`
-}
-
 // ApplicationAwareConfigurations holds the AAQ configurations
 // +k8s:openapi-gen=true
 type ApplicationAwareConfigurations struct {
@@ -688,34 +601,6 @@ type ApplicationAwareConfigurations struct {
 	AllowApplicationAwareClusterResourceQuota bool `json:"allowApplicationAwareClusterResourceQuota,omitempty"`
 }
 
-const (
-	ConditionAvailable = "Available"
-
-	// ConditionProgressing indicates that the operator is actively making changes to the resources maintained by the
-	// operator
-	ConditionProgressing = "Progressing"
-
-	// ConditionDegraded indicates that the resources maintained by the operator are not functioning completely.
-	// An example of a degraded state would be if not all pods in a deployment were running.
-	// It may still be available, but it is degraded
-	ConditionDegraded = "Degraded"
-
-	// ConditionUpgradeable indicates whether the resources maintained by the operator are in a state that is safe to upgrade.
-	// When `False`, the resources maintained by the operator should not be upgraded and the
-	// message field should contain a human-readable description of what the administrator should do to
-	// allow the operator to successfully update the resources maintained by the operator.
-	ConditionUpgradeable = "Upgradeable"
-
-	// ConditionReconcileComplete communicates the status of the HyperConverged resource's
-	// reconcile functionality. Basically, is the Reconcile function running to completion.
-	ConditionReconcileComplete = "ReconcileComplete"
-
-	// ConditionTaintedConfiguration indicates that a hidden/debug configuration
-	// has been applied to the HyperConverged resource via a specialized annotation.
-	// This condition is exposed only when its value is True, and is otherwise hidden.
-	ConditionTaintedConfiguration = "TaintedConfiguration"
-)
-
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // HyperConverged is the Schema for the hyperconvergeds API
@@ -730,8 +615,8 @@ type HyperConverged struct {
 
 	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}},"featureGates": {"downwardMetrics": false, "deployKubeSecondaryDNS": false, "disableMDevConfiguration": false, "persistentReservation": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": false, "videoConfig": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false}, "liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "resourceRequirements": {"vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
 	// +optional
-	Spec   HyperConvergedSpec   `json:"spec,omitempty"`
-	Status HyperConvergedStatus `json:"status,omitempty"`
+	Spec   HyperConvergedSpec         `json:"spec,omitempty"`
+	Status hcov1.HyperConvergedStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

@@ -28,7 +28,6 @@ import (
 	unsafe "unsafe"
 
 	v1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	conversion "k8s.io/apimachinery/pkg/conversion"
 	runtime "k8s.io/apimachinery/pkg/runtime"
@@ -49,26 +48,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*v1.ApplicationAwareConfigurations)(nil), (*ApplicationAwareConfigurations)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1_ApplicationAwareConfigurations_To_v1beta1_ApplicationAwareConfigurations(a.(*v1.ApplicationAwareConfigurations), b.(*ApplicationAwareConfigurations), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*DataImportCronStatus)(nil), (*v1.DataImportCronStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_DataImportCronStatus_To_v1_DataImportCronStatus(a.(*DataImportCronStatus), b.(*v1.DataImportCronStatus), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.DataImportCronStatus)(nil), (*DataImportCronStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_DataImportCronStatus_To_v1beta1_DataImportCronStatus(a.(*v1.DataImportCronStatus), b.(*DataImportCronStatus), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*DataImportCronTemplateStatus)(nil), (*v1.DataImportCronTemplateStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_DataImportCronTemplateStatus_To_v1_DataImportCronTemplateStatus(a.(*DataImportCronTemplateStatus), b.(*v1.DataImportCronTemplateStatus), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.DataImportCronTemplateStatus)(nil), (*DataImportCronTemplateStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_DataImportCronTemplateStatus_To_v1beta1_DataImportCronTemplateStatus(a.(*v1.DataImportCronTemplateStatus), b.(*DataImportCronTemplateStatus), scope)
 	}); err != nil {
 		return err
 	}
@@ -102,16 +81,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*HyperConvergedStatus)(nil), (*v1.HyperConvergedStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_HyperConvergedStatus_To_v1_HyperConvergedStatus(a.(*HyperConvergedStatus), b.(*v1.HyperConvergedStatus), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.HyperConvergedStatus)(nil), (*HyperConvergedStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_HyperConvergedStatus_To_v1beta1_HyperConvergedStatus(a.(*v1.HyperConvergedStatus), b.(*HyperConvergedStatus), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*MediatedDevicesConfiguration)(nil), (*v1.MediatedDevicesConfiguration)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta1_MediatedDevicesConfiguration_To_v1_MediatedDevicesConfiguration(a.(*MediatedDevicesConfiguration), b.(*v1.MediatedDevicesConfiguration), scope)
 	}); err != nil {
@@ -122,16 +91,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}); err != nil {
 		return err
 	}
-	if err := s.AddGeneratedConversionFunc((*NodeInfoStatus)(nil), (*v1.NodeInfoStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_NodeInfoStatus_To_v1_NodeInfoStatus(a.(*NodeInfoStatus), b.(*v1.NodeInfoStatus), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.NodeInfoStatus)(nil), (*NodeInfoStatus)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_NodeInfoStatus_To_v1beta1_NodeInfoStatus(a.(*v1.NodeInfoStatus), b.(*NodeInfoStatus), scope)
-	}); err != nil {
-		return err
-	}
 	if err := s.AddGeneratedConversionFunc((*NodeMediatedDeviceTypesConfig)(nil), (*v1.NodeMediatedDeviceTypesConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1beta1_NodeMediatedDeviceTypesConfig_To_v1_NodeMediatedDeviceTypesConfig(a.(*NodeMediatedDeviceTypesConfig), b.(*v1.NodeMediatedDeviceTypesConfig), scope)
 	}); err != nil {
@@ -139,16 +98,6 @@ func RegisterConversions(s *runtime.Scheme) error {
 	}
 	if err := s.AddGeneratedConversionFunc((*v1.NodeMediatedDeviceTypesConfig)(nil), (*NodeMediatedDeviceTypesConfig)(nil), func(a, b interface{}, scope conversion.Scope) error {
 		return Convert_v1_NodeMediatedDeviceTypesConfig_To_v1beta1_NodeMediatedDeviceTypesConfig(a.(*v1.NodeMediatedDeviceTypesConfig), b.(*NodeMediatedDeviceTypesConfig), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*Version)(nil), (*v1.Version)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1beta1_Version_To_v1_Version(a.(*Version), b.(*v1.Version), scope)
-	}); err != nil {
-		return err
-	}
-	if err := s.AddGeneratedConversionFunc((*v1.Version)(nil), (*Version)(nil), func(a, b interface{}, scope conversion.Scope) error {
-		return Convert_v1_Version_To_v1beta1_Version(a.(*v1.Version), b.(*Version), scope)
 	}); err != nil {
 		return err
 	}
@@ -180,66 +129,12 @@ func Convert_v1_ApplicationAwareConfigurations_To_v1beta1_ApplicationAwareConfig
 	return autoConvert_v1_ApplicationAwareConfigurations_To_v1beta1_ApplicationAwareConfigurations(in, out, s)
 }
 
-func autoConvert_v1beta1_DataImportCronStatus_To_v1_DataImportCronStatus(in *DataImportCronStatus, out *v1.DataImportCronStatus, s conversion.Scope) error {
-	out.Conditions = *(*[]metav1.Condition)(unsafe.Pointer(&in.Conditions))
-	out.CommonTemplate = in.CommonTemplate
-	out.Modified = in.Modified
-	out.OriginalSupportedArchitectures = in.OriginalSupportedArchitectures
-	return nil
-}
-
-// Convert_v1beta1_DataImportCronStatus_To_v1_DataImportCronStatus is an autogenerated conversion function.
-func Convert_v1beta1_DataImportCronStatus_To_v1_DataImportCronStatus(in *DataImportCronStatus, out *v1.DataImportCronStatus, s conversion.Scope) error {
-	return autoConvert_v1beta1_DataImportCronStatus_To_v1_DataImportCronStatus(in, out, s)
-}
-
-func autoConvert_v1_DataImportCronStatus_To_v1beta1_DataImportCronStatus(in *v1.DataImportCronStatus, out *DataImportCronStatus, s conversion.Scope) error {
-	out.Conditions = *(*[]metav1.Condition)(unsafe.Pointer(&in.Conditions))
-	out.CommonTemplate = in.CommonTemplate
-	out.Modified = in.Modified
-	out.OriginalSupportedArchitectures = in.OriginalSupportedArchitectures
-	return nil
-}
-
-// Convert_v1_DataImportCronStatus_To_v1beta1_DataImportCronStatus is an autogenerated conversion function.
-func Convert_v1_DataImportCronStatus_To_v1beta1_DataImportCronStatus(in *v1.DataImportCronStatus, out *DataImportCronStatus, s conversion.Scope) error {
-	return autoConvert_v1_DataImportCronStatus_To_v1beta1_DataImportCronStatus(in, out, s)
-}
-
-func autoConvert_v1beta1_DataImportCronTemplateStatus_To_v1_DataImportCronTemplateStatus(in *DataImportCronTemplateStatus, out *v1.DataImportCronTemplateStatus, s conversion.Scope) error {
-	out.DataImportCronTemplate = in.DataImportCronTemplate
-	if err := Convert_v1beta1_DataImportCronStatus_To_v1_DataImportCronStatus(&in.Status, &out.Status, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_v1beta1_DataImportCronTemplateStatus_To_v1_DataImportCronTemplateStatus is an autogenerated conversion function.
-func Convert_v1beta1_DataImportCronTemplateStatus_To_v1_DataImportCronTemplateStatus(in *DataImportCronTemplateStatus, out *v1.DataImportCronTemplateStatus, s conversion.Scope) error {
-	return autoConvert_v1beta1_DataImportCronTemplateStatus_To_v1_DataImportCronTemplateStatus(in, out, s)
-}
-
-func autoConvert_v1_DataImportCronTemplateStatus_To_v1beta1_DataImportCronTemplateStatus(in *v1.DataImportCronTemplateStatus, out *DataImportCronTemplateStatus, s conversion.Scope) error {
-	out.DataImportCronTemplate = in.DataImportCronTemplate
-	if err := Convert_v1_DataImportCronStatus_To_v1beta1_DataImportCronStatus(&in.Status, &out.Status, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_v1_DataImportCronTemplateStatus_To_v1beta1_DataImportCronTemplateStatus is an autogenerated conversion function.
-func Convert_v1_DataImportCronTemplateStatus_To_v1beta1_DataImportCronTemplateStatus(in *v1.DataImportCronTemplateStatus, out *DataImportCronTemplateStatus, s conversion.Scope) error {
-	return autoConvert_v1_DataImportCronTemplateStatus_To_v1beta1_DataImportCronTemplateStatus(in, out, s)
-}
-
 func autoConvert_v1beta1_HyperConverged_To_v1_HyperConverged(in *HyperConverged, out *v1.HyperConverged, s conversion.Scope) error {
 	out.ObjectMeta = in.ObjectMeta
 	if err := Convert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
 	}
-	if err := Convert_v1beta1_HyperConvergedStatus_To_v1_HyperConvergedStatus(&in.Status, &out.Status, s); err != nil {
-		return err
-	}
+	out.Status = in.Status
 	return nil
 }
 
@@ -253,9 +148,7 @@ func autoConvert_v1_HyperConverged_To_v1beta1_HyperConverged(in *v1.HyperConverg
 	if err := Convert_v1_HyperConvergedSpec_To_v1beta1_HyperConvergedSpec(&in.Spec, &out.Spec, s); err != nil {
 		return err
 	}
-	if err := Convert_v1_HyperConvergedStatus_To_v1beta1_HyperConvergedStatus(&in.Status, &out.Status, s); err != nil {
-		return err
-	}
+	out.Status = in.Status
 	return nil
 }
 
@@ -374,46 +267,6 @@ func Convert_v1_HyperConvergedSpec_To_v1beta1_HyperConvergedSpec(in *v1.HyperCon
 	return autoConvert_v1_HyperConvergedSpec_To_v1beta1_HyperConvergedSpec(in, out, s)
 }
 
-func autoConvert_v1beta1_HyperConvergedStatus_To_v1_HyperConvergedStatus(in *HyperConvergedStatus, out *v1.HyperConvergedStatus, s conversion.Scope) error {
-	out.Conditions = *(*[]metav1.Condition)(unsafe.Pointer(&in.Conditions))
-	out.RelatedObjects = *(*[]corev1.ObjectReference)(unsafe.Pointer(&in.RelatedObjects))
-	out.Versions = *(*[]v1.Version)(unsafe.Pointer(&in.Versions))
-	out.ObservedGeneration = in.ObservedGeneration
-	out.DataImportSchedule = in.DataImportSchedule
-	out.DataImportCronTemplates = *(*[]v1.DataImportCronTemplateStatus)(unsafe.Pointer(&in.DataImportCronTemplates))
-	out.SystemHealthStatus = in.SystemHealthStatus
-	out.InfrastructureHighlyAvailable = (*bool)(unsafe.Pointer(in.InfrastructureHighlyAvailable))
-	if err := Convert_v1beta1_NodeInfoStatus_To_v1_NodeInfoStatus(&in.NodeInfo, &out.NodeInfo, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_v1beta1_HyperConvergedStatus_To_v1_HyperConvergedStatus is an autogenerated conversion function.
-func Convert_v1beta1_HyperConvergedStatus_To_v1_HyperConvergedStatus(in *HyperConvergedStatus, out *v1.HyperConvergedStatus, s conversion.Scope) error {
-	return autoConvert_v1beta1_HyperConvergedStatus_To_v1_HyperConvergedStatus(in, out, s)
-}
-
-func autoConvert_v1_HyperConvergedStatus_To_v1beta1_HyperConvergedStatus(in *v1.HyperConvergedStatus, out *HyperConvergedStatus, s conversion.Scope) error {
-	out.Conditions = *(*[]metav1.Condition)(unsafe.Pointer(&in.Conditions))
-	out.RelatedObjects = *(*[]corev1.ObjectReference)(unsafe.Pointer(&in.RelatedObjects))
-	out.Versions = *(*[]Version)(unsafe.Pointer(&in.Versions))
-	out.ObservedGeneration = in.ObservedGeneration
-	out.DataImportSchedule = in.DataImportSchedule
-	out.DataImportCronTemplates = *(*[]DataImportCronTemplateStatus)(unsafe.Pointer(&in.DataImportCronTemplates))
-	out.SystemHealthStatus = in.SystemHealthStatus
-	out.InfrastructureHighlyAvailable = (*bool)(unsafe.Pointer(in.InfrastructureHighlyAvailable))
-	if err := Convert_v1_NodeInfoStatus_To_v1beta1_NodeInfoStatus(&in.NodeInfo, &out.NodeInfo, s); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Convert_v1_HyperConvergedStatus_To_v1beta1_HyperConvergedStatus is an autogenerated conversion function.
-func Convert_v1_HyperConvergedStatus_To_v1beta1_HyperConvergedStatus(in *v1.HyperConvergedStatus, out *HyperConvergedStatus, s conversion.Scope) error {
-	return autoConvert_v1_HyperConvergedStatus_To_v1beta1_HyperConvergedStatus(in, out, s)
-}
-
 func autoConvert_v1beta1_MediatedDevicesConfiguration_To_v1_MediatedDevicesConfiguration(in *MediatedDevicesConfiguration, out *v1.MediatedDevicesConfiguration, s conversion.Scope) error {
 	out.MediatedDeviceTypes = *(*[]string)(unsafe.Pointer(&in.MediatedDeviceTypes))
 	// INFO: in.MediatedDevicesTypes opted out of conversion generation
@@ -457,28 +310,6 @@ func Convert_v1_MediatedDevicesConfiguration_To_v1beta1_MediatedDevicesConfigura
 	return autoConvert_v1_MediatedDevicesConfiguration_To_v1beta1_MediatedDevicesConfiguration(in, out, s)
 }
 
-func autoConvert_v1beta1_NodeInfoStatus_To_v1_NodeInfoStatus(in *NodeInfoStatus, out *v1.NodeInfoStatus, s conversion.Scope) error {
-	out.WorkloadsArchitectures = *(*[]string)(unsafe.Pointer(&in.WorkloadsArchitectures))
-	out.ControlPlaneArchitectures = *(*[]string)(unsafe.Pointer(&in.ControlPlaneArchitectures))
-	return nil
-}
-
-// Convert_v1beta1_NodeInfoStatus_To_v1_NodeInfoStatus is an autogenerated conversion function.
-func Convert_v1beta1_NodeInfoStatus_To_v1_NodeInfoStatus(in *NodeInfoStatus, out *v1.NodeInfoStatus, s conversion.Scope) error {
-	return autoConvert_v1beta1_NodeInfoStatus_To_v1_NodeInfoStatus(in, out, s)
-}
-
-func autoConvert_v1_NodeInfoStatus_To_v1beta1_NodeInfoStatus(in *v1.NodeInfoStatus, out *NodeInfoStatus, s conversion.Scope) error {
-	out.WorkloadsArchitectures = *(*[]string)(unsafe.Pointer(&in.WorkloadsArchitectures))
-	out.ControlPlaneArchitectures = *(*[]string)(unsafe.Pointer(&in.ControlPlaneArchitectures))
-	return nil
-}
-
-// Convert_v1_NodeInfoStatus_To_v1beta1_NodeInfoStatus is an autogenerated conversion function.
-func Convert_v1_NodeInfoStatus_To_v1beta1_NodeInfoStatus(in *v1.NodeInfoStatus, out *NodeInfoStatus, s conversion.Scope) error {
-	return autoConvert_v1_NodeInfoStatus_To_v1beta1_NodeInfoStatus(in, out, s)
-}
-
 func autoConvert_v1beta1_NodeMediatedDeviceTypesConfig_To_v1_NodeMediatedDeviceTypesConfig(in *NodeMediatedDeviceTypesConfig, out *v1.NodeMediatedDeviceTypesConfig, s conversion.Scope) error {
 	out.NodeSelector = *(*map[string]string)(unsafe.Pointer(&in.NodeSelector))
 	out.MediatedDeviceTypes = *(*[]string)(unsafe.Pointer(&in.MediatedDeviceTypes))
@@ -500,26 +331,4 @@ func autoConvert_v1_NodeMediatedDeviceTypesConfig_To_v1beta1_NodeMediatedDeviceT
 // Convert_v1_NodeMediatedDeviceTypesConfig_To_v1beta1_NodeMediatedDeviceTypesConfig is an autogenerated conversion function.
 func Convert_v1_NodeMediatedDeviceTypesConfig_To_v1beta1_NodeMediatedDeviceTypesConfig(in *v1.NodeMediatedDeviceTypesConfig, out *NodeMediatedDeviceTypesConfig, s conversion.Scope) error {
 	return autoConvert_v1_NodeMediatedDeviceTypesConfig_To_v1beta1_NodeMediatedDeviceTypesConfig(in, out, s)
-}
-
-func autoConvert_v1beta1_Version_To_v1_Version(in *Version, out *v1.Version, s conversion.Scope) error {
-	out.Name = in.Name
-	out.Version = in.Version
-	return nil
-}
-
-// Convert_v1beta1_Version_To_v1_Version is an autogenerated conversion function.
-func Convert_v1beta1_Version_To_v1_Version(in *Version, out *v1.Version, s conversion.Scope) error {
-	return autoConvert_v1beta1_Version_To_v1_Version(in, out, s)
-}
-
-func autoConvert_v1_Version_To_v1beta1_Version(in *v1.Version, out *Version, s conversion.Scope) error {
-	out.Name = in.Name
-	out.Version = in.Version
-	return nil
-}
-
-// Convert_v1_Version_To_v1beta1_Version is an autogenerated conversion function.
-func Convert_v1_Version_To_v1beta1_Version(in *v1.Version, out *Version, s conversion.Scope) error {
-	return autoConvert_v1_Version_To_v1beta1_Version(in, out, s)
 }

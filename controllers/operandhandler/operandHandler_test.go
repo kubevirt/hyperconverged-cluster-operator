@@ -25,7 +25,7 @@ import (
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/dirtest"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
@@ -195,7 +195,7 @@ var _ = Describe("Test operandHandler", func() {
 			Expect(handler.Ensure(req)).To(Equal(fakeError))
 
 			Expect(req.ComponentUpgradeInProgress).To(BeFalse())
-			cond := req.Conditions[hcov1beta1.ConditionReconcileComplete]
+			cond := req.Conditions[hcov1.ConditionReconcileComplete]
 			Expect(cond).ToNot(BeNil())
 			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
 			Expect(cond.Reason).To(Equal(reconcileFailed))

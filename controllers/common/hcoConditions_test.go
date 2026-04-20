@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 )
 
 var _ = Describe("HCO Conditions Tests", func() {
@@ -15,7 +15,7 @@ var _ = Describe("HCO Conditions Tests", func() {
 
 		It("Should create new condition", func() {
 			conds.SetStatusCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionReconcileComplete,
+				Type:    hcov1.ConditionReconcileComplete,
 				Status:  metav1.ConditionFalse,
 				Reason:  "reason",
 				Message: "a message",
@@ -24,16 +24,16 @@ var _ = Describe("HCO Conditions Tests", func() {
 			Expect(conds.IsEmpty()).To(BeFalse())
 			Expect(conds).To(HaveLen(1))
 
-			Expect(conds[hcov1beta1.ConditionReconcileComplete]).ToNot(BeNil())
-			Expect(conds[hcov1beta1.ConditionReconcileComplete].Type).To(Equal(hcov1beta1.ConditionReconcileComplete))
-			Expect(conds[hcov1beta1.ConditionReconcileComplete].Status).To(Equal(metav1.ConditionFalse))
-			Expect(conds[hcov1beta1.ConditionReconcileComplete].Reason).To(Equal("reason"))
-			Expect(conds[hcov1beta1.ConditionReconcileComplete].Message).To(Equal("a message"))
+			Expect(conds[hcov1.ConditionReconcileComplete]).ToNot(BeNil())
+			Expect(conds[hcov1.ConditionReconcileComplete].Type).To(Equal(hcov1.ConditionReconcileComplete))
+			Expect(conds[hcov1.ConditionReconcileComplete].Status).To(Equal(metav1.ConditionFalse))
+			Expect(conds[hcov1.ConditionReconcileComplete].Reason).To(Equal("reason"))
+			Expect(conds[hcov1.ConditionReconcileComplete].Message).To(Equal("a message"))
 		})
 
 		It("Should update a condition if already exists", func() {
 			conds.SetStatusCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionReconcileComplete,
+				Type:    hcov1.ConditionReconcileComplete,
 				Status:  metav1.ConditionTrue,
 				Reason:  "reason2",
 				Message: "another message",
@@ -42,11 +42,11 @@ var _ = Describe("HCO Conditions Tests", func() {
 			Expect(conds.IsEmpty()).To(BeFalse())
 			Expect(conds).To(HaveLen(1))
 
-			Expect(conds[hcov1beta1.ConditionReconcileComplete]).ToNot(BeNil())
-			Expect(conds[hcov1beta1.ConditionReconcileComplete].Type).To(Equal(hcov1beta1.ConditionReconcileComplete))
-			Expect(conds[hcov1beta1.ConditionReconcileComplete].Status).To(Equal(metav1.ConditionTrue))
-			Expect(conds[hcov1beta1.ConditionReconcileComplete].Reason).To(Equal("reason2"))
-			Expect(conds[hcov1beta1.ConditionReconcileComplete].Message).To(Equal("another message"))
+			Expect(conds[hcov1.ConditionReconcileComplete]).ToNot(BeNil())
+			Expect(conds[hcov1.ConditionReconcileComplete].Type).To(Equal(hcov1.ConditionReconcileComplete))
+			Expect(conds[hcov1.ConditionReconcileComplete].Status).To(Equal(metav1.ConditionTrue))
+			Expect(conds[hcov1.ConditionReconcileComplete].Reason).To(Equal("reason2"))
+			Expect(conds[hcov1.ConditionReconcileComplete].Message).To(Equal("another message"))
 		})
 	})
 
@@ -57,7 +57,7 @@ var _ = Describe("HCO Conditions Tests", func() {
 		It("Should not update the condition", func() {
 			By("Set initial condition")
 			conds.SetStatusConditionIfUnset(metav1.Condition{
-				Type:    hcov1beta1.ConditionReconcileComplete,
+				Type:    hcov1.ConditionReconcileComplete,
 				Status:  metav1.ConditionFalse,
 				Reason:  "reason",
 				Message: "a message",
@@ -66,15 +66,15 @@ var _ = Describe("HCO Conditions Tests", func() {
 			Expect(conds.IsEmpty()).To(BeFalse())
 			Expect(conds).To(HaveLen(1))
 
-			Expect(conds[hcov1beta1.ConditionReconcileComplete]).ToNot(BeNil())
-			Expect(conds[hcov1beta1.ConditionReconcileComplete].Type).To(Equal(hcov1beta1.ConditionReconcileComplete))
-			Expect(conds[hcov1beta1.ConditionReconcileComplete].Status).To(Equal(metav1.ConditionFalse))
-			Expect(conds[hcov1beta1.ConditionReconcileComplete].Reason).To(Equal("reason"))
-			Expect(conds[hcov1beta1.ConditionReconcileComplete].Message).To(Equal("a message"))
+			Expect(conds[hcov1.ConditionReconcileComplete]).ToNot(BeNil())
+			Expect(conds[hcov1.ConditionReconcileComplete].Type).To(Equal(hcov1.ConditionReconcileComplete))
+			Expect(conds[hcov1.ConditionReconcileComplete].Status).To(Equal(metav1.ConditionFalse))
+			Expect(conds[hcov1.ConditionReconcileComplete].Reason).To(Equal("reason"))
+			Expect(conds[hcov1.ConditionReconcileComplete].Message).To(Equal("a message"))
 
 			By("The condition should not be changed by this call")
 			conds.SetStatusConditionIfUnset(metav1.Condition{
-				Type:    hcov1beta1.ConditionReconcileComplete,
+				Type:    hcov1.ConditionReconcileComplete,
 				Status:  metav1.ConditionTrue,
 				Reason:  "reason2",
 				Message: "another message",
@@ -84,11 +84,11 @@ var _ = Describe("HCO Conditions Tests", func() {
 			Expect(conds).To(HaveLen(1))
 
 			By("Make sure the values are the same as before and were not changed")
-			Expect(conds[hcov1beta1.ConditionReconcileComplete]).ToNot(BeNil())
-			Expect(conds[hcov1beta1.ConditionReconcileComplete].Type).To(Equal(hcov1beta1.ConditionReconcileComplete))
-			Expect(conds[hcov1beta1.ConditionReconcileComplete].Status).To(Equal(metav1.ConditionFalse))
-			Expect(conds[hcov1beta1.ConditionReconcileComplete].Reason).To(Equal("reason"))
-			Expect(conds[hcov1beta1.ConditionReconcileComplete].Message).To(Equal("a message"))
+			Expect(conds[hcov1.ConditionReconcileComplete]).ToNot(BeNil())
+			Expect(conds[hcov1.ConditionReconcileComplete].Type).To(Equal(hcov1.ConditionReconcileComplete))
+			Expect(conds[hcov1.ConditionReconcileComplete].Status).To(Equal(metav1.ConditionFalse))
+			Expect(conds[hcov1.ConditionReconcileComplete].Reason).To(Equal("reason"))
+			Expect(conds[hcov1.ConditionReconcileComplete].Message).To(Equal("a message"))
 		})
 	})
 
@@ -97,16 +97,16 @@ var _ = Describe("HCO Conditions Tests", func() {
 		Expect(conds.IsEmpty()).To(BeTrue())
 
 		It("Should not contain the condition", func() {
-			Expect(conds.HasCondition(hcov1beta1.ConditionReconcileComplete)).To(BeFalse())
+			Expect(conds.HasCondition(hcov1.ConditionReconcileComplete)).To(BeFalse())
 			conds.SetStatusConditionIfUnset(metav1.Condition{
-				Type:    hcov1beta1.ConditionReconcileComplete,
+				Type:    hcov1.ConditionReconcileComplete,
 				Status:  metav1.ConditionFalse,
 				Reason:  "reason",
 				Message: "a message",
 			})
 
-			Expect(conds.HasCondition(hcov1beta1.ConditionReconcileComplete)).To(BeTrue())
-			Expect(conds.HasCondition(hcov1beta1.ConditionAvailable)).To(BeFalse())
+			Expect(conds.HasCondition(hcov1.ConditionReconcileComplete)).To(BeTrue())
+			Expect(conds.HasCondition(hcov1.ConditionAvailable)).To(BeFalse())
 		})
 	})
 
@@ -119,29 +119,29 @@ var _ = Describe("HCO Conditions Tests", func() {
 		})
 
 		It("Should return false when the conditionType is not present", func() {
-			Expect(conds.IsStatusConditionTrue(hcov1beta1.ConditionReconcileComplete)).To(BeFalse())
+			Expect(conds.IsStatusConditionTrue(hcov1.ConditionReconcileComplete)).To(BeFalse())
 		})
 
 		It("Should return false when the conditionType is present but not set to True", func() {
 			conds.SetStatusConditionIfUnset(metav1.Condition{
-				Type:    hcov1beta1.ConditionReconcileComplete,
+				Type:    hcov1.ConditionReconcileComplete,
 				Status:  metav1.ConditionFalse,
 				Reason:  "reason",
 				Message: "a message",
 			})
 
-			Expect(conds.IsStatusConditionTrue(hcov1beta1.ConditionReconcileComplete)).To(BeFalse())
+			Expect(conds.IsStatusConditionTrue(hcov1.ConditionReconcileComplete)).To(BeFalse())
 		})
 
 		It("Should return true when the conditionType is present and set to True", func() {
 			conds.SetStatusCondition(metav1.Condition{
-				Type:    hcov1beta1.ConditionReconcileComplete,
+				Type:    hcov1.ConditionReconcileComplete,
 				Status:  metav1.ConditionTrue,
 				Reason:  "reason2",
 				Message: "another message",
 			})
 
-			Expect(conds.IsStatusConditionTrue(hcov1beta1.ConditionReconcileComplete)).To(BeTrue())
+			Expect(conds.IsStatusConditionTrue(hcov1.ConditionReconcileComplete)).To(BeTrue())
 		})
 	})
 })

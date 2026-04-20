@@ -31,7 +31,7 @@ var _ = Describe("Test data import cron template", func() {
 		hco *hcov1beta1.HyperConverged
 
 		image1, image2, image3, image4                         hcov1.DataImportCronTemplate
-		statusImage1, statusImage2, statusImage3, statusImage4 hcov1beta1.DataImportCronTemplateStatus
+		statusImage1, statusImage2, statusImage3, statusImage4 hcov1.DataImportCronTemplateStatus
 	)
 
 	BeforeEach(func() {
@@ -250,9 +250,9 @@ var _ = Describe("Test data import cron template", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(goldenImageList).To(HaveLen(1))
 
-			statusImageEnabled := hcov1beta1.DataImportCronTemplateStatus{
+			statusImageEnabled := hcov1.DataImportCronTemplateStatus{
 				DataImportCronTemplate: image2,
-				Status:                 hcov1beta1.DataImportCronStatus{},
+				Status:                 hcov1.DataImportCronStatus{},
 			}
 
 			Expect(goldenImageList).To(ContainElements(statusImageEnabled))
@@ -1070,7 +1070,7 @@ var _ = Describe("Test data import cron template", func() {
 	})
 })
 
-func enableDict(dict *hcov1.DataImportCronTemplate, status *hcov1beta1.DataImportCronTemplateStatus) {
+func enableDict(dict *hcov1.DataImportCronTemplate, status *hcov1.DataImportCronTemplateStatus) {
 	if dict.Annotations == nil {
 		dict.Annotations = make(map[string]string)
 	}
@@ -1089,7 +1089,7 @@ func disableDict(dict *hcov1.DataImportCronTemplate) {
 	dict.Annotations[hcoutil.DataImportCronEnabledAnnotation] = "false"
 }
 
-func makeDICT(num int, CommonTemplate bool) (hcov1.DataImportCronTemplate, hcov1beta1.DataImportCronTemplateStatus) {
+func makeDICT(num int, CommonTemplate bool) (hcov1.DataImportCronTemplate, hcov1.DataImportCronTemplateStatus) {
 	name := fmt.Sprintf("image%d", num)
 
 	dict := hcov1.DataImportCronTemplate{
@@ -1109,9 +1109,9 @@ func makeDICT(num int, CommonTemplate bool) (hcov1.DataImportCronTemplate, hcov1
 		},
 	}
 
-	return dict, hcov1beta1.DataImportCronTemplateStatus{
+	return dict, hcov1.DataImportCronTemplateStatus{
 		DataImportCronTemplate: *dict.DeepCopy(),
-		Status: hcov1beta1.DataImportCronStatus{
+		Status: hcov1.DataImportCronStatus{
 			CommonTemplate: CommonTemplate,
 			Modified:       false,
 		},

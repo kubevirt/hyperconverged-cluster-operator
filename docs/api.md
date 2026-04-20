@@ -6,20 +6,15 @@ This Document documents the types introduced by the hyperconverged-cluster-opera
 
 ## Table of Contents
 * [ApplicationAwareConfigurations](#applicationawareconfigurations)
-* [DataImportCronStatus](#dataimportcronstatus)
-* [DataImportCronTemplateStatus](#dataimportcrontemplatestatus)
 * [HyperConverged](#hyperconverged)
 * [HyperConvergedConfig](#hyperconvergedconfig)
 * [HyperConvergedFeatureGates](#hyperconvergedfeaturegates)
 * [HyperConvergedList](#hyperconvergedlist)
 * [HyperConvergedObsoleteCPUs](#hyperconvergedobsoletecpus)
 * [HyperConvergedSpec](#hyperconvergedspec)
-* [HyperConvergedStatus](#hyperconvergedstatus)
 * [MediatedDevicesConfiguration](#mediateddevicesconfiguration)
-* [NodeInfoStatus](#nodeinfostatus)
 * [NodeMediatedDeviceTypesConfig](#nodemediateddevicetypesconfig)
 * [OperandResourceRequirements](#operandresourcerequirements)
-* [Version](#version)
 * [VirtualMachineOptions](#virtualmachineoptions)
 
 
@@ -35,29 +30,6 @@ ApplicationAwareConfigurations holds the AAQ configurations
 
 [Back to TOC](#table-of-contents)
 
-## DataImportCronStatus
-
-DataImportCronStatus is the status field of the DIC template
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| conditions | Conditions is a list of conditions that describe the state of the DataImportCronTemplate. | []metav1.Condition |  | false |
-| commonTemplate | CommonTemplate indicates whether this is a common template (true), or a custom one (false) | bool |  | false |
-| modified | Modified indicates if a common template was customized. Always false for custom templates. | bool |  | false |
-| originalSupportedArchitectures | OriginalSupportedArchitectures is a comma-separated list of CPU architectures that the original template supports. | string |  | false |
-
-[Back to TOC](#table-of-contents)
-
-## DataImportCronTemplateStatus
-
-DataImportCronTemplateStatus is a copy of a dataImportCronTemplate as defined in the spec, or in the HCO image.
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| status |  | [DataImportCronStatus](#dataimportcronstatus) |  | false |
-
-[Back to TOC](#table-of-contents)
-
 ## HyperConverged
 
 HyperConverged is the Schema for the hyperconvergeds API
@@ -66,7 +38,7 @@ HyperConverged is the Schema for the hyperconvergeds API
 | ----- | ----------- | ------ | ------- | -------- |
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#objectmeta-v1-meta) |  | false |
 | spec |  | [HyperConvergedSpec](#hyperconvergedspec) | {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}},"featureGates": {"downwardMetrics": false, "deployKubeSecondaryDNS": false, "disableMDevConfiguration": false, "persistentReservation": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": false, "videoConfig": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false}, "liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "resourceRequirements": {"vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false} | false |
-| status |  | [HyperConvergedStatus](#hyperconvergedstatus) |  | false |
+| status |  | hcov1.HyperConvergedStatus |  | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -185,24 +157,6 @@ HyperConvergedSpec defines the desired state of HyperConverged
 
 [Back to TOC](#table-of-contents)
 
-## HyperConvergedStatus
-
-HyperConvergedStatus defines the observed state of HyperConverged
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| conditions | Conditions describes the state of the HyperConverged resource. | []metav1.Condition |  | false |
-| relatedObjects | RelatedObjects is a list of objects created and maintained by this operator. Object references will be added to this list after they have been created AND found in the cluster. | []corev1.ObjectReference |  | false |
-| versions | Versions is a list of HCO component versions, as name/version pairs. The version with a name of \"operator\" is the HCO version itself, as described here: https://github.com/openshift/cluster-version-operator/blob/master/docs/dev/clusteroperator.md#version | [][Version](#version) |  | false |
-| observedGeneration | ObservedGeneration reflects the HyperConverged resource generation. If the ObservedGeneration is less than the resource generation in metadata, the status is out of date | int64 |  | false |
-| dataImportSchedule | DataImportSchedule is the cron expression that is used in for the hard-coded data import cron templates. HCO generates the value of this field once and stored in the status field, so will survive restart. | string |  | false |
-| dataImportCronTemplates | DataImportCronTemplates is a list of the actual DataImportCronTemplates as HCO update in the SSP CR. The list contains both the common and the custom templates, including any modification done by HCO. | [][DataImportCronTemplateStatus](#dataimportcrontemplatestatus) |  | false |
-| systemHealthStatus | SystemHealthStatus reflects the health of HCO and its secondary resources, based on the aggregated conditions. | string |  | false |
-| infrastructureHighlyAvailable | InfrastructureHighlyAvailable describes whether the cluster has only one worker node (false) or more (true). | *bool |  | false |
-| nodeInfo | NodeInfo holds information about the cluster nodes | [NodeInfoStatus](#nodeinfostatus) |  | false |
-
-[Back to TOC](#table-of-contents)
-
 ## MediatedDevicesConfiguration
 
 MediatedDevicesConfiguration holds information about MDEV types to be defined, if available
@@ -212,17 +166,6 @@ MediatedDevicesConfiguration holds information about MDEV types to be defined, i
 | mediatedDeviceTypes |  | []string |  | true |
 | mediatedDevicesTypes | Deprecated: please use mediatedDeviceTypes instead. | []string |  | false |
 | nodeMediatedDeviceTypes |  | [][NodeMediatedDeviceTypesConfig](#nodemediateddevicetypesconfig) |  | false |
-
-[Back to TOC](#table-of-contents)
-
-## NodeInfoStatus
-
-NodeInfoStatus holds information about the cluster nodes
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| workloadsArchitectures | WorkloadsArchitectures is a distinct list of the CPU architectures of the workloads nodes in the cluster. | []string |  | false |
-| controlPlaneArchitectures | ControlPlaneArchitectures is a distinct list of the CPU architecture of the control-plane nodes. | []string |  | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -247,17 +190,6 @@ OperandResourceRequirements is a list of resource requirements for the operand w
 | storageWorkloads | StorageWorkloads defines the resources requirements for storage workloads. It will propagate to the CDI custom resource | *corev1.ResourceRequirements |  | false |
 | vmiCPUAllocationRatio | VmiCPUAllocationRatio defines, for each requested virtual CPU, how much physical CPU to request per VMI from the hosting node. The value is in fraction of a CPU thread (or core on non-hyperthreaded nodes). VMI POD CPU request = number of vCPUs * 1/vmiCPUAllocationRatio For example, a value of 1 means 1 physical CPU thread per VMI CPU thread. A value of 100 would be 1% of a physical thread allocated for each requested VMI thread. This option has no effect on VMIs that request dedicated CPUs. Defaults to 10 | *int | 10 | false |
 | autoCPULimitNamespaceLabelSelector | When set, AutoCPULimitNamespaceLabelSelector will set a CPU limit on virt-launcher for VMIs running inside namespaces that match the label selector. The CPU limit will equal the number of requested vCPUs. This setting does not apply to VMIs with dedicated CPUs. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#labelselector-v1-meta) |  | false |
-
-[Back to TOC](#table-of-contents)
-
-## Version
-
-
-
-| Field | Description | Scheme | Default | Required |
-| ----- | ----------- | ------ | ------- | -------- |
-| name |  | string |  | false |
-| version |  | string |  | false |
 
 [Back to TOC](#table-of-contents)
 

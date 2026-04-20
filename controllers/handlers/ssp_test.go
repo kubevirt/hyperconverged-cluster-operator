@@ -588,8 +588,8 @@ var _ = Describe("SSP Operands", func() {
 				Expect(hook.cache).To(BeNil())
 
 				origFunc := goldenimages.GetDataImportCronTemplates
-				goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-					return []hcov1beta1.DataImportCronTemplateStatus{makeDICT(1)}, nil
+				goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+					return []hcov1.DataImportCronTemplateStatus{makeDICT(1)}, nil
 				}
 				DeferCleanup(func() {
 					goldenimages.GetDataImportCronTemplates = origFunc
@@ -653,8 +653,8 @@ var _ = Describe("SSP Operands", func() {
 							goldenimages.MultiArchDICTAnnotation: "noarch1,noarch2",
 						}
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 
 						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
@@ -696,8 +696,8 @@ var _ = Describe("SSP Operands", func() {
 						}
 						customDICT.Status.OriginalSupportedArchitectures = "arch2,arch3"
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 
 						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
@@ -732,7 +732,7 @@ var _ = Describe("SSP Operands", func() {
 						commonDICT.Annotations = map[string]string{
 							goldenimages.MultiArchDICTAnnotation: "",
 						}
-						commonDICT.Status = hcov1beta1.DataImportCronStatus{
+						commonDICT.Status = hcov1.DataImportCronStatus{
 							CommonTemplate: true,
 							Conditions: []metav1.Condition{
 								{
@@ -747,7 +747,7 @@ var _ = Describe("SSP Operands", func() {
 						customDICT.Annotations = map[string]string{
 							goldenimages.MultiArchDICTAnnotation: "",
 						}
-						customDICT.Status = hcov1beta1.DataImportCronStatus{
+						customDICT.Status = hcov1.DataImportCronStatus{
 							Conditions: []metav1.Condition{
 								{
 									Type:   goldenimages.DictConditionDeployedType,
@@ -757,8 +757,8 @@ var _ = Describe("SSP Operands", func() {
 							OriginalSupportedArchitectures: "noarch1,noarch2",
 						}
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 
 						hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
@@ -801,15 +801,15 @@ var _ = Describe("SSP Operands", func() {
 							goldenimages.MultiArchDICTAnnotation: "noarch1,noarch2",
 						}
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT}, nil
 						}
 
 						ssp, _, err := NewSSP(hco)
 						Expect(err).ToNot(HaveOccurred())
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 
@@ -842,7 +842,7 @@ var _ = Describe("SSP Operands", func() {
 						commonDICT.Annotations = map[string]string{
 							goldenimages.MultiArchDICTAnnotation: "arch2",
 						}
-						commonDICT.Status = hcov1beta1.DataImportCronStatus{
+						commonDICT.Status = hcov1.DataImportCronStatus{
 							CommonTemplate:                 true,
 							OriginalSupportedArchitectures: "arch2,arch3",
 						}
@@ -852,19 +852,19 @@ var _ = Describe("SSP Operands", func() {
 							goldenimages.MultiArchDICTAnnotation: "arch2",
 						}
 
-						customDICT.Status = hcov1beta1.DataImportCronStatus{
+						customDICT.Status = hcov1.DataImportCronStatus{
 							OriginalSupportedArchitectures: "arch2,arch3",
 						}
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT}, nil
 						}
 
 						ssp, _, err := NewSSP(hco)
 						Expect(err).ToNot(HaveOccurred())
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 						hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
 						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
@@ -899,7 +899,7 @@ var _ = Describe("SSP Operands", func() {
 						commonDICT.Annotations = map[string]string{
 							goldenimages.MultiArchDICTAnnotation: "",
 						}
-						commonDICT.Status = hcov1beta1.DataImportCronStatus{
+						commonDICT.Status = hcov1.DataImportCronStatus{
 							CommonTemplate: true,
 							Conditions: []metav1.Condition{
 								{
@@ -915,7 +915,7 @@ var _ = Describe("SSP Operands", func() {
 							goldenimages.MultiArchDICTAnnotation: "",
 						}
 
-						customDICT.Status = hcov1beta1.DataImportCronStatus{
+						customDICT.Status = hcov1.DataImportCronStatus{
 							Conditions: []metav1.Condition{
 								{
 									Type:   goldenimages.DictConditionDeployedType,
@@ -925,15 +925,15 @@ var _ = Describe("SSP Operands", func() {
 							OriginalSupportedArchitectures: "noarch1,noarch2",
 						}
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT}, nil
 						}
 
 						ssp, _, err := NewSSP(hco)
 						Expect(err).ToNot(HaveOccurred())
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 						hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
 						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
@@ -979,8 +979,8 @@ var _ = Describe("SSP Operands", func() {
 						customDICT := makeDICT(2)
 						customDICT.Annotations = map[string]string{}
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 
 						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
@@ -1022,8 +1022,8 @@ var _ = Describe("SSP Operands", func() {
 						}
 						customDICT.Status.OriginalSupportedArchitectures = "arch2,arch3"
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 
 						hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
@@ -1060,8 +1060,8 @@ var _ = Describe("SSP Operands", func() {
 						customDICT := makeDICT(2)
 						customDICT.Annotations = map[string]string{}
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 
 						hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
@@ -1095,23 +1095,23 @@ var _ = Describe("SSP Operands", func() {
 
 						commonDICT := makeDICT(1)
 						commonDICT.Annotations = map[string]string{}
-						commonDICT.Status = hcov1beta1.DataImportCronStatus{
+						commonDICT.Status = hcov1.DataImportCronStatus{
 							CommonTemplate: true,
 						}
 
 						customDICT := makeDICT(2)
 						customDICT.Annotations = map[string]string{}
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT}, nil
 						}
 
 						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
 						ssp, _, err := NewSSP(hco)
 						Expect(err).ToNot(HaveOccurred())
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 
 						cli := commontestutils.InitClient([]client.Object{hco, ssp})
@@ -1144,7 +1144,7 @@ var _ = Describe("SSP Operands", func() {
 							goldenimages.MultiArchDICTAnnotation: "arch2",
 						}
 
-						commonDICT.Status = hcov1beta1.DataImportCronStatus{
+						commonDICT.Status = hcov1.DataImportCronStatus{
 							CommonTemplate:                 true,
 							OriginalSupportedArchitectures: "arch2,arch3",
 						}
@@ -1153,15 +1153,15 @@ var _ = Describe("SSP Operands", func() {
 						customDICT.Annotations = map[string]string{}
 						customDICT.Status.OriginalSupportedArchitectures = "arch2,arch3"
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT}, nil
 						}
 
 						ssp, _, err := NewSSP(hco)
 						Expect(err).ToNot(HaveOccurred())
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 						hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
 						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
@@ -1194,22 +1194,22 @@ var _ = Describe("SSP Operands", func() {
 						commonDICT := makeDICT(1)
 						commonDICT.Annotations = map[string]string{}
 
-						commonDICT.Status = hcov1beta1.DataImportCronStatus{
+						commonDICT.Status = hcov1.DataImportCronStatus{
 							CommonTemplate: true,
 						}
 
 						customDICT := makeDICT(2)
 						customDICT.Annotations = map[string]string{}
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT}, nil
 						}
 
 						ssp, _, err := NewSSP(hco)
 						Expect(err).ToNot(HaveOccurred())
 
-						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1beta1.DataImportCronTemplateStatus, error) {
-							return []hcov1beta1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
+						goldenimages.GetDataImportCronTemplates = func(_ *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+							return []hcov1.DataImportCronTemplateStatus{commonDICT, customDICT}, nil
 						}
 						hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
 						hco.Spec.EnableCommonBootImageImport = ptr.To(true)
@@ -1310,7 +1310,7 @@ var _ = Describe("SSP Operands", func() {
 	})
 })
 
-func makeDICT(num int) hcov1beta1.DataImportCronTemplateStatus {
+func makeDICT(num int) hcov1.DataImportCronTemplateStatus {
 	name := fmt.Sprintf("image%d", num)
 
 	dict := hcov1.DataImportCronTemplate{
@@ -1331,9 +1331,9 @@ func makeDICT(num int) hcov1beta1.DataImportCronTemplateStatus {
 		},
 	}
 
-	return hcov1beta1.DataImportCronTemplateStatus{
+	return hcov1.DataImportCronTemplateStatus{
 		DataImportCronTemplate: *dict.DeepCopy(),
-		Status: hcov1beta1.DataImportCronStatus{
+		Status: hcov1.DataImportCronStatus{
 			CommonTemplate: true,
 			Modified:       false,
 		},

@@ -12,6 +12,7 @@ import (
 
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	goldenimages "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/golden-images"
@@ -63,7 +64,7 @@ func NewSspHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operan
 type sspHooks struct {
 	sync.Mutex
 	cache        *sspv1beta3.SSP
-	dictStatuses []hcov1beta1.DataImportCronTemplateStatus
+	dictStatuses []hcov1.DataImportCronTemplateStatus
 }
 
 func (h *sspHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
@@ -131,7 +132,7 @@ func (h *sspHooks) updateDICTsInHCStatus(req *common.HcoRequest) {
 	goldenimages.CheckDataImportCronTemplates(req.Instance)
 }
 
-func NewSSP(hc *hcov1beta1.HyperConverged) (*sspv1beta3.SSP, []hcov1beta1.DataImportCronTemplateStatus, error) {
+func NewSSP(hc *hcov1beta1.HyperConverged) (*sspv1beta3.SSP, []hcov1.DataImportCronTemplateStatus, error) {
 	templatesNamespace := defaultCommonTemplatesNamespace
 
 	if hc.Spec.CommonTemplatesNamespace != nil {

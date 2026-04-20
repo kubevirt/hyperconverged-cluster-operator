@@ -3,16 +3,16 @@ package common
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 )
 
 var (
 	HcoConditionTypes = []string{
-		hcov1beta1.ConditionReconcileComplete,
-		hcov1beta1.ConditionAvailable,
-		hcov1beta1.ConditionProgressing,
-		hcov1beta1.ConditionDegraded,
-		hcov1beta1.ConditionUpgradeable,
+		hcov1.ConditionReconcileComplete,
+		hcov1.ConditionAvailable,
+		hcov1.ConditionProgressing,
+		hcov1.ConditionDegraded,
+		hcov1.ConditionUpgradeable,
 	}
 )
 
