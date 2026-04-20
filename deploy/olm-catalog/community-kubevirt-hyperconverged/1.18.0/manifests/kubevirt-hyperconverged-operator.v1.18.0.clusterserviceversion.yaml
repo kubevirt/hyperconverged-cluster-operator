@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.18.0-unstable
-    createdAt: "2026-04-19 10:09:40"
+    createdAt: "2026-04-20 05:54:38"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -4125,7 +4125,7 @@ spec:
                 - name: MIGRATION_OPERATOR_VERSION
                   value: v0.2.0-rc.1
                 - name: AUTOPILOT_VERSION
-                  value: v0.0.8
+                  value: v0.0.9
                 - name: INFLIGHT_OPERATIONS_VERSION
                   value: v0.0.6
                 - name: KV_CONSOLE_PLUGIN_IMAGE
@@ -5200,7 +5200,7 @@ spec:
                 - --namespace=kubevirt-hyperconverged
                 command:
                 - /manager
-                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:73fc7615ecde2cd1335011b7bcfb49856d8c686dccb161d82c245a4ac7d799cf
+                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:13bd63b12d578c78159bd05c588b314ca205502a4e092242fcf6cb5e5770d956
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -6189,7 +6189,7 @@ spec:
     name: virt-launcher
   - image: quay.io/kubevirt/virt-operator@sha256:a6cd48ee32c53fc09944cb1b3b709b8ef634f0168472b2409d1a31d0c345cbcb
     name: virt-operator
-  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:73fc7615ecde2cd1335011b7bcfb49856d8c686dccb161d82c245a4ac7d799cf
+  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:13bd63b12d578c78159bd05c588b314ca205502a4e092242fcf6cb5e5770d956
     name: virt-platform-autopilot
   - image: quay.io/kubevirt/virt-synchronization-controller@sha256:d1c01b394dafa9bb32725f99f61160d1137444e7a87c684ea91f8babfefd3213
     name: virt-synchronization-controller
