@@ -230,7 +230,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		})
 
 		It("should have no images in the HyperConverged status", func(ctx context.Context) {
-			Eventually(func(ctx context.Context) []hcov1beta1.DataImportCronTemplateStatus {
+			Eventually(func(ctx context.Context) []hcov1.DataImportCronTemplateStatus {
 				hco := tests.GetHCO(ctx, cli)
 				return hco.Status.DataImportCronTemplates
 			}).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(BeEmpty())
@@ -281,7 +281,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		})
 
 		It("should have all the images in the HyperConverged status", func(ctx context.Context) {
-			Eventually(func(ctx context.Context) []hcov1beta1.DataImportCronTemplateStatus {
+			Eventually(func(ctx context.Context) []hcov1.DataImportCronTemplateStatus {
 				hco := tests.GetHCO(ctx, cli)
 				return hco.Status.DataImportCronTemplates
 			}).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(HaveLen(len(expectedImages)))
@@ -568,7 +568,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 			By("Check DICT in HCO status")
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc = tests.GetHCO(ctx, cli)
-				idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
+				idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1.DataImportCronTemplateStatus) bool {
 					return d.Name == hcCustomDict.Name
 				})
 				g.Expect(idx).To(BeNumerically(">", -1), "should have the %q in the HC status", hcCustomDict.Name)
@@ -634,7 +634,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 				Eventually(func(g Gomega, ctx context.Context) {
 					hc = tests.GetHCO(ctx, cli)
-					idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
+					idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1.DataImportCronTemplateStatus) bool {
 						return d.Name == "custom-dict"
 					})
 					g.Expect(idx).To(BeNumerically(">", -1), "should have the custom-dict in the HC status")
@@ -702,7 +702,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				By("Check the DICT in the HC status")
 				Eventually(func(g Gomega, ctx context.Context) {
 					hc = tests.GetHCO(ctx, cli)
-					idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
+					idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1.DataImportCronTemplateStatus) bool {
 						return d.Name == "custom-dict"
 					})
 					g.Expect(idx).To(BeNumerically(">", -1), "should have the custom-dict in the HC status")
@@ -774,7 +774,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				By("Check the DICT in the HC status")
 				Eventually(func(g Gomega, ctx context.Context) {
 					hc = tests.GetHCO(ctx, cli)
-					idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
+					idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1.DataImportCronTemplateStatus) bool {
 						return d.Name == hcCustomDict.Name
 					})
 					g.Expect(idx).To(BeNumerically(">", -1), "should have the %q in the HC status", hcCustomDict.Name)
@@ -843,7 +843,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				By("Check the DICT in the HC status")
 				Eventually(func(g Gomega, ctx context.Context) {
 					hc := tests.GetHCO(ctx, cli)
-					idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1beta1.DataImportCronTemplateStatus) bool {
+					idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1.DataImportCronTemplateStatus) bool {
 						return d.Name == hcCustomDict.Name
 					})
 					g.Expect(idx).To(BeNumerically(">", -1), "should have the %q in the HC status", hcCustomDict.Name)
@@ -902,14 +902,14 @@ func getExpectedArchs(originalArchs string, archs []string) string {
 	return strings.Join(expectedArchs, ",")
 }
 
-func getHCODICT(hc *hcov1beta1.HyperConverged, name string) (hcov1beta1.DataImportCronTemplateStatus, bool) {
+func getHCODICT(hc *hcov1beta1.HyperConverged, name string) (hcov1.DataImportCronTemplateStatus, bool) {
 	for _, dict := range hc.Status.DataImportCronTemplates {
 		if dict.Name == name {
 			return dict, true
 		}
 	}
 
-	return hcov1beta1.DataImportCronTemplateStatus{}, false
+	return hcov1.DataImportCronTemplateStatus{}, false
 }
 
 func getArchs(ctx context.Context) ([]string, error) {
