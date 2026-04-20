@@ -2672,7 +2672,6 @@ rules:
   resources:
   - virtualmachineinstances/console
   - virtualmachineinstances/vnc
-  - virtualmachineinstances/vnc/screenshot
   - virtualmachineinstances/portforward
   - virtualmachineinstances/guestosinfo
   - virtualmachineinstances/filesystemlist
