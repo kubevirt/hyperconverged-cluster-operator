@@ -36,7 +36,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedFeatureGates":     schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedFeatureGates(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedObsoleteCPUs":     schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedObsoleteCPUs(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedSpec":             schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedSpec(ref),
-		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedStatus":           schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedStatus(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.MediatedDevicesConfiguration":   schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_MediatedDevicesConfiguration(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.NodeMediatedDeviceTypesConfig":  schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_NodeMediatedDeviceTypesConfig(ref),
 		"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.OperandResourceRequirements":    schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_OperandResourceRequirements(ref),
@@ -114,14 +113,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConverged(
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Default: map[string]interface{}{},
-							Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedStatus"),
+							Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedSpec", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedStatus", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedSpec", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -679,129 +678,6 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 		},
 		Dependencies: []string{
 			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HigherWorkloadDensityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedCertConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.HyperConvergedWorkloadUpdateStrategy", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.KubeMacPoolConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LiveMigrationConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.LogVerbosityConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PermittedHostDevices", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1.StorageImportConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.ApplicationAwareConfigurations", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedConfig", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedFeatureGates", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.HyperConvergedObsoleteCPUs", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.MediatedDevicesConfiguration", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.OperandResourceRequirements", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.VirtualMachineOptions", "github.com/openshift/api/config/v1.TLSSecurityProfile", "kubevirt.io/api/core/v1.CommonInstancetypesDeployment", "kubevirt.io/api/core/v1.HypervisorConfiguration", "kubevirt.io/api/core/v1.InstancetypeConfiguration", "kubevirt.io/api/core/v1.InterfaceBindingPlugin", "kubevirt.io/api/core/v1.KSMConfiguration", "kubevirt.io/api/core/v1.LiveUpdateConfiguration", "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1.FilesystemOverhead"},
-	}
-}
-
-func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedStatus(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "HyperConvergedStatus defines the observed state of HyperConverged",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"conditions": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type":       "atomic",
-								"x-kubernetes-patch-merge-key": "type",
-								"x-kubernetes-patch-strategy":  "merge",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Conditions describes the state of the HyperConverged resource.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.Condition"),
-									},
-								},
-							},
-						},
-					},
-					"relatedObjects": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "RelatedObjects is a list of objects created and maintained by this operator. Object references will be added to this list after they have been created AND found in the cluster.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
-									},
-								},
-							},
-						},
-					},
-					"versions": {
-						VendorExtensible: spec.VendorExtensible{
-							Extensions: spec.Extensions{
-								"x-kubernetes-list-type": "atomic",
-							},
-						},
-						SchemaProps: spec.SchemaProps{
-							Description: "Versions is a list of HCO component versions, as name/version pairs. The version with a name of \"operator\" is the HCO version itself, as described here: https://github.com/openshift/cluster-version-operator/blob/master/docs/dev/clusteroperator.md#version",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.Version"),
-									},
-								},
-							},
-						},
-					},
-					"observedGeneration": {
-						SchemaProps: spec.SchemaProps{
-							Description: "ObservedGeneration reflects the HyperConverged resource generation. If the ObservedGeneration is less than the resource generation in metadata, the status is out of date",
-							Type:        []string{"integer"},
-							Format:      "int64",
-						},
-					},
-					"dataImportSchedule": {
-						SchemaProps: spec.SchemaProps{
-							Description: "DataImportSchedule is the cron expression that is used in for the hard-coded data import cron templates. HCO generates the value of this field once and stored in the status field, so will survive restart.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"dataImportCronTemplates": {
-						SchemaProps: spec.SchemaProps{
-							Description: "DataImportCronTemplates is a list of the actual DataImportCronTemplates as HCO update in the SSP CR. The list contains both the common and the custom templates, including any modification done by HCO.",
-							Type:        []string{"array"},
-							Items: &spec.SchemaOrArray{
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.DataImportCronTemplateStatus"),
-									},
-								},
-							},
-						},
-					},
-					"systemHealthStatus": {
-						SchemaProps: spec.SchemaProps{
-							Description: "SystemHealthStatus reflects the health of HCO and its secondary resources, based on the aggregated conditions.",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"infrastructureHighlyAvailable": {
-						SchemaProps: spec.SchemaProps{
-							Description: "InfrastructureHighlyAvailable describes whether the cluster has only one worker node (false) or more (true).",
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
-					"nodeInfo": {
-						SchemaProps: spec.SchemaProps{
-							Description: "NodeInfo holds information about the cluster nodes",
-							Default:     map[string]interface{}{},
-							Ref:         ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.NodeInfoStatus"),
-						},
-					},
-				},
-			},
-		},
-		Dependencies: []string{
-			"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.DataImportCronTemplateStatus", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.NodeInfoStatus", "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.Version", "k8s.io/api/core/v1.ObjectReference", "k8s.io/apimachinery/pkg/apis/meta/v1.Condition"},
 	}
 }
 
