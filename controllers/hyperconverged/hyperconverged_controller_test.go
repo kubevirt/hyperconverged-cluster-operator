@@ -217,6 +217,7 @@ var _ = Describe("HyperconvergedController", func() {
 					"KubevirtSeccompProfile",
 					"VideoConfig",
 					"DecentralizedLiveMigration",
+					"LiveUpdateNADRef",
 				}
 				// Get the KV
 				kvList := &kubevirtcorev1.KubeVirtList{}
