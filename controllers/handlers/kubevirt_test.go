@@ -28,6 +28,7 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -2169,6 +2170,25 @@ Version: 1.2.3`)
 							Expect(kv.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
 							Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).ToNot(HaveKey(passt.BindingName))
 						},
+					),
+					// PCINUMAAwareTopology
+					Entry("should add the PCINUMAAwareTopology FG to KubeVirt CR if deployAIE annotation is true",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Annotations[aie.DeployAIEAnnotation] = "true"
+						},
+						ContainElement(kvPCINUMAAwareTopology),
+					),
+					Entry("should not add the PCINUMAAwareTopology FG to KubeVirt CR if deployAIE annotation is false",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Annotations[aie.DeployAIEAnnotation] = "false"
+						},
+						Not(ContainElement(kvPCINUMAAwareTopology)),
+					),
+					Entry("should not add the PCINUMAAwareTopology FG to KubeVirt CR if deployAIE annotation is not set",
+						func(hc *hcov1beta1.HyperConverged) {
+							delete(hc.Annotations, aie.DeployAIEAnnotation)
+						},
+						Not(ContainElement(kvPCINUMAAwareTopology)),
 					),
 					Entry("should add the DeclarativeHotplugVolumes feature gate if DeclarativeHotplugVolumes is true in HyperConverged CR",
 						func(hc *hcov1beta1.HyperConverged) {
