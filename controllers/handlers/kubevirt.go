@@ -30,6 +30,7 @@ import (
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
@@ -169,6 +170,7 @@ const (
 	kvConfigurableHypervisor     = "ConfigurableHypervisor"
 	kvOptOutRoleAggregation      = "OptOutRoleAggregation"
 	kvContainerPathVolumes       = "ContainerPathVolumes"
+	kvPCINUMAAwareTopology       = "PCINUMAAwareTopology"
 )
 
 // CPU Plugin default values
@@ -951,6 +953,10 @@ func getFeatureGateChecks(spec hcov1beta1.HyperConvergedSpec, annotations map[st
 
 	if annotations[passt.DeployPasstNetworkBindingAnnotation] == "true" {
 		fgs = append(fgs, kvPasstBinding)
+	}
+
+	if annotations[aie.DeployAIEAnnotation] == "true" {
+		fgs = append(fgs, kvPCINUMAAwareTopology)
 	}
 
 	if slices.Contains(nodeinfo.GetWorkloadsArchitectures(), nodeinfo.S390X) {
