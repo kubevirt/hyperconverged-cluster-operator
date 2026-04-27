@@ -181,6 +181,29 @@ var _ = Describe("Wasp Agent DaemonSet", func() {
 			Expect(ds.List(context.Background(), foundDs)).To(Succeed())
 			Expect(foundDs.Items).To(BeEmpty())
 		})
+
+		It("should not create DaemonSet when autopilot swap value is embedded in a comma-separated list", func() {
+			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+				MemoryOvercommitPercentage: 150,
+			}
+			// introducing whitespaces to verify the consistency with autopilot implementation
+			hco.Annotations[AutopilotSwapAnnotation] = "test123, " + AutopilotSwapAnnotationValue + " , test456"
+			ds = commontestutils.InitClient([]client.Object{hco})
+
+			handler := NewWaspAgentDaemonSetHandler(ds, commontestutils.GetScheme())
+
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
+			Expect(res.Deleted).To(BeFalse())
+
+			foundDs := &appsv1.DaemonSetList{}
+			Expect(ds.List(context.Background(), foundDs)).To(Succeed())
+			Expect(foundDs.Items).To(BeEmpty())
+		})
+
 	})
 	Context("Wasp agent DaemonSet update", func() {
 		It("should update DaemonSet fields if not matched to the requirements", func() {
