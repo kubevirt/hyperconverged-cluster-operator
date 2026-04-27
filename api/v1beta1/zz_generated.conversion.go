@@ -268,6 +268,7 @@ func Convert_v1_HyperConvergedSpec_To_v1beta1_HyperConvergedSpec(in *v1.HyperCon
 }
 
 func autoConvert_v1beta1_MediatedDevicesConfiguration_To_v1_MediatedDevicesConfiguration(in *MediatedDevicesConfiguration, out *v1.MediatedDevicesConfiguration, s conversion.Scope) error {
+	out.Enabled = (*bool)(unsafe.Pointer(in.Enabled))
 	out.MediatedDeviceTypes = *(*[]string)(unsafe.Pointer(&in.MediatedDeviceTypes))
 	// INFO: in.MediatedDevicesTypes opted out of conversion generation
 	if in.NodeMediatedDeviceTypes != nil {
@@ -290,6 +291,7 @@ func Convert_v1beta1_MediatedDevicesConfiguration_To_v1_MediatedDevicesConfigura
 }
 
 func autoConvert_v1_MediatedDevicesConfiguration_To_v1beta1_MediatedDevicesConfiguration(in *v1.MediatedDevicesConfiguration, out *MediatedDevicesConfiguration, s conversion.Scope) error {
+	out.Enabled = (*bool)(unsafe.Pointer(in.Enabled))
 	out.MediatedDeviceTypes = *(*[]string)(unsafe.Pointer(&in.MediatedDeviceTypes))
 	if in.NodeMediatedDeviceTypes != nil {
 		in, out := &in.NodeMediatedDeviceTypes, &out.NodeMediatedDeviceTypes
