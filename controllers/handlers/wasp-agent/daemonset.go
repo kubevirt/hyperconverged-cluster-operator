@@ -28,8 +28,9 @@ const (
 	waspAgentSCCName            = "wasp"
 	NoOverCommitPercentage      = 100
 
-	AutopilotSwapAnnotation      = "platform.kubevirt.io/autopilot"
-	AutopilotSwapAnnotationValue = "swap-enable"
+	AutopilotSwapAnnotation           = "platform.kubevirt.io/autopilot"
+	AutopilotSwapAnnotationValue      = "swap-enable"
+	AutopilotFullOptInAnnotationValue = "true"
 )
 
 var (
@@ -184,7 +185,8 @@ func createDaemonSetEnvVar() []corev1.EnvVar {
 }
 
 func shouldDeployWaspAgent(hc *hcov1beta1.HyperConverged) bool {
-	if hc.Annotations[AutopilotSwapAnnotation] == AutopilotSwapAnnotationValue {
+	autopilot := hc.Annotations[AutopilotSwapAnnotation]
+	if autopilot == AutopilotSwapAnnotationValue || autopilot == AutopilotFullOptInAnnotationValue {
 		return false
 	}
 
