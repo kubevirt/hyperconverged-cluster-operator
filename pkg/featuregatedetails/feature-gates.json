@@ -30,11 +30,6 @@
     "description": "Deploy KubeSecondaryDNS by CNAO"
   },
   {
-    "name": "disableMDevConfiguration",
-    "phase": "alpha",
-    "description": "Disable mediated devices handling on KubeVirt"
-  },
-  {
     "name": "downwardMetrics",
     "phase": "alpha",
     "description": "Allow to expose a limited set of host metrics to guests."
@@ -78,6 +73,11 @@
     "name": "deployVmConsoleProxy",
     "phase": "deprecated",
     "description": "Deprecated: This feature gate is ignored. Use spec.deployVmConsoleProxy instead"
+  },
+  {
+    "name": "disableMDevConfiguration",
+    "phase": "deprecated",
+    "description": "Deprecated: use spec.mediatedDevicesConfiguration.enabled instead. This field is still read for backward compatibility and will be removed in a future API version."
   },
   {
     "name": "enableApplicationAwareQuota",

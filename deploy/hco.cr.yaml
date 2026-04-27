@@ -20,7 +20,6 @@ spec:
     decentralizedLiveMigration: true
     declarativeHotplugVolumes: false
     deployKubeSecondaryDNS: false
-    disableMDevConfiguration: false
     downwardMetrics: false
     enableMultiArchBootImageImport: false
     incrementalBackup: false
