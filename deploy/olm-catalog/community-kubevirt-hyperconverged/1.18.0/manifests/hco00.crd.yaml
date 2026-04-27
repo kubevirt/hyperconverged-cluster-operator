@@ -2254,10 +2254,6 @@ spec:
                     Deploy KubeSecondaryDNS by CNAO
                     Phase: alpha
 
-                  * disableMDevConfiguration:
-                    Disable mediated devices handling on KubeVirt
-                    Phase: alpha
-
                   * downwardMetrics:
                     Allow to expose a limited set of host metrics to guests.
                     Phase: alpha
@@ -2307,6 +2303,12 @@ spec:
                   * deployVmConsoleProxy:
                     Deprecated: This feature gate is ignored. Use spec.deployVmConsoleProxy
                     instead
+                    Phase: deprecated
+
+                  * disableMDevConfiguration:
+                    Deprecated: use spec.mediatedDevicesConfiguration.enabled instead. This
+                    field is still read for backward compatibility and will be removed in a
+                    future API version.
                     Phase: deprecated
 
                   * enableApplicationAwareQuota:
@@ -3054,6 +3056,11 @@ spec:
                     description: MediatedDevicesConfiguration holds information about
                       MDEV types to be defined on nodes, if available
                     properties:
+                      enabled:
+                        description: |-
+                          Enabled controls whether mediated devices are configured on the cluster. When set to false,
+                          mediated devices handling is disabled in KubeVirt. When nil, KubeVirt defaults apply.
+                        type: boolean
                       mediatedDeviceTypes:
                         items:
                           type: string
@@ -5319,7 +5326,6 @@ spec:
                 decentralizedLiveMigration: true
                 declarativeHotplugVolumes: false
                 deployKubeSecondaryDNS: false
-                disableMDevConfiguration: false
                 downwardMetrics: false
                 enableMultiArchBootImageImport: false
                 incrementalBackup: false
@@ -6359,7 +6365,6 @@ spec:
                   decentralizedLiveMigration: true
                   declarativeHotplugVolumes: false
                   deployKubeSecondaryDNS: false
-                  disableMDevConfiguration: false
                   downwardMetrics: false
                   enableMultiArchBootImageImport: false
                   incrementalBackup: false
@@ -6417,8 +6422,9 @@ spec:
                       Use spec.deployVmConsoleProxy instead
                     type: boolean
                   disableMDevConfiguration:
-                    default: false
-                    description: Disable mediated devices handling on KubeVirt
+                    description: |-
+                      Deprecated: use spec.mediatedDevicesConfiguration.enabled instead. This field is still read
+                      for backward compatibility and will be removed in a future API version.
                     type: boolean
                   downwardMetrics:
                     default: false
@@ -7780,6 +7786,12 @@ spec:
                 description: MediatedDevicesConfiguration holds information about
                   MDEV types to be defined on nodes, if available
                 properties:
+                  enabled:
+                    description: |-
+                      Enable the creation and removal of mediated devices by virt-handler
+                      Replaces the deprecated DisableMDEVConfiguration feature gate
+                      Defaults to true
+                    type: boolean
                   mediatedDeviceTypes:
                     items:
                       type: string
@@ -7830,9 +7842,11 @@ spec:
                 type: object
                 x-kubernetes-validations:
                 - message: for mediatedDevicesConfiguration a non-empty mediatedDeviceTypes
-                    or mediatedDevicesTypes(deprecated) is required
-                  rule: (has(self.mediatedDeviceTypes) && size(self.mediatedDeviceTypes)>0)
-                    || (has(self.mediatedDevicesTypes) && size(self.mediatedDevicesTypes)>0)
+                    or mediatedDevicesTypes(deprecated) is required, unless enabled
+                    is false
+                  rule: (has(self.enabled) && self.enabled == false) || (has(self.mediatedDeviceTypes)
+                    && size(self.mediatedDeviceTypes)>0) || (has(self.mediatedDevicesTypes)
+                    && size(self.mediatedDevicesTypes)>0)
               networkBinding:
                 additionalProperties:
                   properties:

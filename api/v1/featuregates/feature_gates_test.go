@@ -332,4 +332,30 @@ var _ = Describe("Feature Gates", func() {
 			Expect(fgs).To(ContainElement(Equal(featuregates.FeatureGate{Name: "ccc", State: ptr.To(featuregates.Disabled)})))
 		})
 	})
+
+	Context("IsDeprecatedDisableMDevActive", func() {
+		It("should be false when the legacy gate is absent", func() {
+			fgs := featuregates.HyperConvergedFeatureGates{
+				{Name: "other", State: ptr.To(featuregates.Enabled)},
+			}
+
+			Expect(fgs.IsDeprecatedDisableMDevActive()).To(BeFalse())
+		})
+
+		It("should be true when the legacy gate is present with default Enabled state", func() {
+			fgs := featuregates.HyperConvergedFeatureGates{
+				{Name: featuregates.DeprecatedDisableMDevConfigurationFeatureGateName},
+			}
+
+			Expect(fgs.IsDeprecatedDisableMDevActive()).To(BeTrue())
+		})
+
+		It("should be false when the legacy gate is explicitly Disabled", func() {
+			fgs := featuregates.HyperConvergedFeatureGates{
+				{Name: featuregates.DeprecatedDisableMDevConfigurationFeatureGateName, State: ptr.To(featuregates.Disabled)},
+			}
+
+			Expect(fgs.IsDeprecatedDisableMDevActive()).To(BeFalse())
+		})
+	})
 })

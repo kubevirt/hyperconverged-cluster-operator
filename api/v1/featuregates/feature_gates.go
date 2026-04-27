@@ -16,6 +16,10 @@ type State string
 const (
 	Enabled  State = "Enabled"
 	Disabled State = "Disabled"
+
+	// DeprecatedDisableMDevConfigurationFeatureGateName is the legacy feature gate that disabled
+	// mediated devices handling. Use spec.virtualization.mediatedDevicesConfiguration.enabled instead.
+	DeprecatedDisableMDevConfigurationFeatureGateName = "disableMDevConfiguration"
 )
 
 // FeatureGate is an optional feature gate to enable or disable a new feature that is not generally available yet.
@@ -118,4 +122,18 @@ func (fgs *HyperConvergedFeatureGates) IsEnabled(name string) bool {
 	}
 
 	return state == Enabled
+}
+
+// IsDeprecatedDisableMDevActive reports whether the legacy disableMDevConfiguration feature gate
+// is present with Enabled state in the v1 feature gate list.
+func (fgs HyperConvergedFeatureGates) IsDeprecatedDisableMDevActive() bool {
+	for _, fg := range fgs {
+		if fg.Name != DeprecatedDisableMDevConfigurationFeatureGateName {
+			continue
+		}
+
+		return ptr.Deref(fg.State, Enabled) == Enabled
+	}
+
+	return false
 }
