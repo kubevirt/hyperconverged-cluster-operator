@@ -3,6 +3,7 @@ package wasp_agent
 import (
 	"maps"
 	"os"
+	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -185,9 +186,14 @@ func createDaemonSetEnvVar() []corev1.EnvVar {
 }
 
 func shouldDeployWaspAgent(hc *hcov1beta1.HyperConverged) bool {
-	autopilot := hc.Annotations[AutopilotSwapAnnotation]
-	if autopilot == AutopilotSwapAnnotationValue || autopilot == AutopilotFullOptInAnnotationValue {
+	val := strings.TrimSpace(hc.Annotations[AutopilotSwapAnnotation])
+	if val == AutopilotFullOptInAnnotationValue {
 		return false
+	}
+	for _, name := range strings.Split(val, ",") {
+		if strings.TrimSpace(name) == AutopilotSwapAnnotationValue {
+			return false
+		}
 	}
 
 	overcommitPercentage := hc.Spec.HigherWorkloadDensity.MemoryOvercommitPercentage
