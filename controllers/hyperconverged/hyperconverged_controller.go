@@ -271,23 +271,23 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 		if err != nil {
 			return err
 		}
+	}
 
-		err = c.Watch(
-			source.Channel(
-				nodeEventChannel,
-				handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, a client.Object) []reconcile.Request {
-					// the nodes controller initiate this by pushing an event to the nodeEventChannel channel
-					// This will force this controller to update the status fields related to the cluster nodes, and
-					// to re-generate the DataImportCronTemplates in the SSP CR.
-					log.Info("Reconciling for core.Node")
-					return []reconcile.Request{
-						reqresolver.GetNodeResource(),
-					}
-				}),
-			))
-		if err != nil {
-			return err
-		}
+	err = c.Watch(
+		source.Channel(
+			nodeEventChannel,
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, a client.Object) []reconcile.Request {
+				// the nodes controller initiate this by pushing an event to the nodeEventChannel channel
+				// This will force this controller to update the status fields related to the cluster nodes, and
+				// to re-generate the DataImportCronTemplates in the SSP CR.
+				log.Info("Reconciling for core.Node")
+				return []reconcile.Request{
+					reqresolver.GetNodeResource(),
+				}
+			}),
+		))
+	if err != nil {
+		return err
 	}
 
 	return nil
