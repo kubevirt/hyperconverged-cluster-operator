@@ -76,6 +76,8 @@ function get_current_versions {
     ["HPPO"]=""
     ["HPP"]=""
     ["AAQ"]=""
+    ["MIGRATION_OPERATOR"]=""
+    ["MIGRATION_CONTROLLER"]=""
     ["KUBEVIRT_CONSOLE_PLUGIN"]=""
     ["KUBEVIRT_CONSOLE_PROXY"]=""
     ["NODE_DRIVER_REG"]=""
@@ -98,6 +100,8 @@ function get_updated_versions {
     ["HPPO"]="kubevirt/hostpath-provisioner-operator"
     ["HPP"]="kubevirt/hostpath-provisioner"
     ["AAQ"]="kubevirt/application-aware-quota"
+    ["MIGRATION_OPERATOR"]="kubevirt/kubevirt-migration-operator"
+    ["MIGRATION_CONTROLLER"]="kubevirt/kubevirt-migration-controller"
     ["KUBEVIRT_CONSOLE_PLUGIN"]="kubevirt-ui/kubevirt-plugin"
     ["KUBEVIRT_CONSOLE_PROXY"]="kubevirt-ui/kubevirt-apiserver-proxy"
     ["NODE_DRIVER_REG"]="kubernetes-csi/node-driver-registrar"
@@ -112,6 +116,7 @@ function get_updated_versions {
     ["NETWORK_ADDONS"]="kubevirt/cluster-network-addons-operator"
     ["SSP"]="kubevirt.io/ssp-operator/api"
     ["AAQ"]="kubevirt.io/application-aware-quota"
+    ["MIGRATION_OPERATOR"]="kubevirt.io/kubevirt-migration-operator"
   )
 
   UPDATED_VERSIONS=()
