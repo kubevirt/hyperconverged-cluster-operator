@@ -380,7 +380,11 @@ func deleteSwapMachineConfig(ctx context.Context, cli client.Client) {
 	})
 	mc.SetName(swapMachineConfig)
 
-	Expect(cli.Get(ctx, client.ObjectKeyFromObject(mc), mc)).To(Succeed(), "expected MachineConfig %q to exist before deletion", swapMachineConfig)
+	err := cli.Get(ctx, client.ObjectKeyFromObject(mc), mc)
+	if k8serrors.IsNotFound(err) {
+		return
+	}
+	Expect(err).ToNot(HaveOccurred(), "unexpected error getting MachineConfig %q", swapMachineConfig)
 
 	Eventually(func(ctx context.Context) error {
 		err := cli.Delete(ctx, mc)
