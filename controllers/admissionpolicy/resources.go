@@ -13,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -58,7 +59,7 @@ func getRequiredPolicy(owner *metav1.OwnerReference) *admissionv1.ValidatingAdmi
 							RuleWithOperations: admissionv1.RuleWithOperations{
 								Rule: admissionv1.Rule{
 									APIGroups:   []string{hcov1beta1.APIVersionGroup},
-									APIVersions: []string{hcov1beta1.APIVersionBeta},
+									APIVersions: []string{hcov1.APIVersionV1, hcov1beta1.APIVersionBeta},
 									Resources:   []string{"hyperconvergeds"},
 									Scope:       ptr.To(admissionv1.NamespacedScope),
 								},
