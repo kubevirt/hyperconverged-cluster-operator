@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -54,21 +55,32 @@ var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, testNam
 		}
 	})
 
+	AfterEach(func(ctx context.Context) {
+		tests.WaitForHCOOperatorRollout(ctx)
+	})
+
 	Context("PodDisruptionBudgetAtLimit", func() {
 		It("should be silenced", func(ctx context.Context) {
 			amAPI := alertmanager.NewAPI(httpClient, alertmanagerURL, cliConfig.BearerToken)
 
+			By("Verifying the PodDisruptionBudgetAtLimit silence exists")
 			amSilences, err := amAPI.ListSilences()
 			Expect(err).ToNot(HaveOccurred())
 
-			// PodDisruptionBudgetAtLimit silence should have been created by the controller
 			podDisruptionBudgetAtLimitSilence := observability.FindPodDisruptionBudgetAtLimitSilence(amSilences)
 			Expect(podDisruptionBudgetAtLimitSilence).ToNot(BeNil())
 
+			By("Deleting the silence and waiting for it to be removed")
 			err = amAPI.DeleteSilence(podDisruptionBudgetAtLimitSilence.ID)
 			Expect(err).ToNot(HaveOccurred())
 
-			// Restart pod to force reconcile (reconcile periodicity is 1h)
+			Eventually(func(g Gomega) {
+				amSilences, err := amAPI.ListSilences()
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(observability.FindPodDisruptionBudgetAtLimitSilence(amSilences)).To(BeNil())
+			}).WithTimeout(30 * time.Second).WithPolling(time.Second).Should(Succeed())
+
+			By("Restarting the HCO operator pods to force reconciliation")
 			var hcoPods v1.PodList
 			err = cli.List(ctx, &hcoPods, &client.MatchingLabels{
 				"name": "hyperconverged-cluster-operator",
@@ -81,13 +93,15 @@ var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, testNam
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			// Wait for the controller to recreate the silence
-			Eventually(func() bool {
-				amSilences, err := amAPI.ListSilences()
-				Expect(err).ToNot(HaveOccurred())
+			By("Waiting for the HCO operator to roll out")
+			tests.WaitForHCOOperatorRollout(ctx)
 
-				return observability.FindPodDisruptionBudgetAtLimitSilence(amSilences) != nil
-			}, "5m", "10s").Should(BeTrue())
+			By("Waiting for the controller to recreate the silence")
+			Eventually(func(g Gomega) {
+				amSilences, err := amAPI.ListSilences()
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(observability.FindPodDisruptionBudgetAtLimitSilence(amSilences)).ToNot(BeNil())
+			}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
 		})
 	})
 })
