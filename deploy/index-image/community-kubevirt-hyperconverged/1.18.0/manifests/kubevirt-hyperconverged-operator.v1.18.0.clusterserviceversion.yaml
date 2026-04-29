@@ -4528,9 +4528,9 @@ spec:
                 - name: VIRT_SYNCHRONIZATIONCONTROLLER_IMAGE
                   value: quay.io/kubevirt/virt-synchronization-controller@sha256:4e8fcc8833bf33fe522e0b7070fa3399a8f203ac9dd86b31150cda4f2ff55e3c
                 - name: VIRT_TEMPLATE_APISERVER_IMAGE
-                  value: quay.io/kubevirt/virt-template-apiserver@sha256:9c0d6244cc9529a484ea049c92edf3d83b7cb4efbaa3cc22f100db661f811748
+                  value: quay.io/kubevirt/virt-template-apiserver@sha256:22e30fae8ec41238764fa07733a4107812b9997207002a0a8c4da234d99a3c5f
                 - name: VIRT_TEMPLATE_CONTROLLER_IMAGE
-                  value: quay.io/kubevirt/virt-template-controller@sha256:194e54fd8d9bd1999e85be6e6af73b82e608d19c640641d47a001bc18f4e7079
+                  value: quay.io/kubevirt/virt-template-controller@sha256:e9fee9511f0198dbc5906417ea71785e5db3390ab4f76cc7f2bb7ca04e80d96c
                 - name: GS_IMAGE
                   value: quay.io/kubevirt/libguestfs-tools@sha256:589ddca87c8ecd10c85babe121096466d57dbef081e548601134514a5dd00db2
                 - name: PR_HELPER_IMAGE
@@ -6192,9 +6192,9 @@ spec:
     name: virt-platform-autopilot
   - image: quay.io/kubevirt/virt-synchronization-controller@sha256:4e8fcc8833bf33fe522e0b7070fa3399a8f203ac9dd86b31150cda4f2ff55e3c
     name: virt-synchronization-controller
-  - image: quay.io/kubevirt/virt-template-apiserver@sha256:9c0d6244cc9529a484ea049c92edf3d83b7cb4efbaa3cc22f100db661f811748
+  - image: quay.io/kubevirt/virt-template-apiserver@sha256:22e30fae8ec41238764fa07733a4107812b9997207002a0a8c4da234d99a3c5f
     name: virt-template-apiserver
-  - image: quay.io/kubevirt/virt-template-controller@sha256:194e54fd8d9bd1999e85be6e6af73b82e608d19c640641d47a001bc18f4e7079
+  - image: quay.io/kubevirt/virt-template-controller@sha256:e9fee9511f0198dbc5906417ea71785e5db3390ab4f76cc7f2bb7ca04e80d96c
     name: virt-template-controller
   - image: quay.io/kubevirt/virtio-container-disk@sha256:6b823946eb7493347a93d6daa16b4101a68e16a0ee1766e01ac3adf82e4b5838
     name: virtio-container-disk
