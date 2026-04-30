@@ -423,50 +423,12 @@ var _ = Describe("v1 webhooks validator", func() {
 				resp := wh.validateCreate(GinkgoLogr, dryRun, cr)
 				checkAcceptedRequest(resp, fgNames...)
 			},
-				Entry("should trigger a warning if the withHostPassthroughCPU=false FG exists in the CR",
-					hcov1fg.HyperConvergedFeatureGates{{Name: "withHostPassthroughCPU", State: ptr.To(hcov1fg.Disabled)}}, "withHostPassthroughCPU"),
-				Entry("should trigger a warning if the withHostPassthroughCPU=true FG exists in the CR",
-					hcov1fg.HyperConvergedFeatureGates{{Name: "withHostPassthroughCPU", State: ptr.To(hcov1fg.Enabled)}}, "withHostPassthroughCPU"),
-				Entry("should trigger a warning if the withHostPassthroughCPU FG exists in the CR",
-					hcov1fg.HyperConvergedFeatureGates{{Name: "withHostPassthroughCPU"}}, "withHostPassthroughCPU"),
-
-				Entry("should trigger a warning if the deployTektonTaskResources=false FG exists in the CR",
-					hcov1fg.HyperConvergedFeatureGates{{Name: "deployTektonTaskResources", State: ptr.To(hcov1fg.Disabled)}}, "deployTektonTaskResources"),
-				Entry("should trigger a warning if the deployTektonTaskResources=true FG exists in the CR",
-					hcov1fg.HyperConvergedFeatureGates{{Name: "deployTektonTaskResources", State: ptr.To(hcov1fg.Enabled)}}, "deployTektonTaskResources"),
-				Entry("should trigger a warning if the deployTektonTaskResources FG exists in the CR",
-					hcov1fg.HyperConvergedFeatureGates{{Name: "deployTektonTaskResources"}}, "deployTektonTaskResources"),
-
-				Entry("should trigger a warning if the enableManagedTenantQuota=false FG exists in the CR",
-					hcov1fg.HyperConvergedFeatureGates{{Name: "enableManagedTenantQuota", State: ptr.To(hcov1fg.Disabled)}}, "enableManagedTenantQuota"),
-				Entry("should trigger a warning if the enableManagedTenantQuota=true FG exists in the CR",
-					hcov1fg.HyperConvergedFeatureGates{{Name: "enableManagedTenantQuota", State: ptr.To(hcov1fg.Enabled)}}, "enableManagedTenantQuota"),
-				Entry("should trigger a warning if the enableManagedTenantQuota FG exists in the CR",
-					hcov1fg.HyperConvergedFeatureGates{{Name: "enableManagedTenantQuota"}}, "enableManagedTenantQuota"),
-
-				Entry("should trigger a warning if the nonRoot=false FG exists in the CR",
-					hcov1fg.HyperConvergedFeatureGates{{Name: "nonRoot", State: ptr.To(hcov1fg.Disabled)}}, "nonRoot"),
-				Entry("should trigger a warning if the nonRoot=true FG exists in the CR",
-					hcov1fg.HyperConvergedFeatureGates{{Name: "nonRoot", State: ptr.To(hcov1fg.Enabled)}}, "nonRoot"),
-				Entry("should trigger a warning if the nonRoot FG exists in the CR",
-					hcov1fg.HyperConvergedFeatureGates{{Name: "nonRoot"}}, "nonRoot"),
-
-				Entry("should trigger multiple warnings if several deprecated FG exist in the CR",
-					hcov1fg.HyperConvergedFeatureGates{
-						{Name: "nonRoot", State: ptr.To(hcov1fg.Enabled)},
-						{Name: "enableManagedTenantQuota", State: ptr.To(hcov1fg.Enabled)},
-					}, "enableManagedTenantQuota", "nonRoot"),
-
-				Entry("should trigger multiple warnings if several deprecated FG exist in the CR, with some valid FGs",
-					hcov1fg.HyperConvergedFeatureGates{
-						{Name: "downwardMetrics", State: ptr.To(hcov1fg.Enabled)},
-						{Name: "nonRoot", State: ptr.To(hcov1fg.Disabled)},
-						{Name: "enableCommonBootImageImport", State: ptr.To(hcov1fg.Enabled)},
-						{Name: "enableApplicationAwareQuota", State: ptr.To(hcov1fg.Disabled)},
-						{Name: "enableManagedTenantQuota", State: ptr.To(hcov1fg.Disabled)},
-						{Name: "deployVmConsoleProxy", State: ptr.To(hcov1fg.Disabled)},
-						{Name: "deployKubeSecondaryDNS", State: ptr.To(hcov1fg.Disabled)},
-					}, "enableManagedTenantQuota", "nonRoot", "enableApplicationAwareQuota", "enableCommonBootImageImport", "deployVmConsoleProxy"),
+				Entry("should trigger a warning if the disableMDevConfiguration=false FG exists in the CR",
+					hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration", State: ptr.To(hcov1fg.Disabled)}}, "disableMDevConfiguration"),
+				Entry("should trigger a warning if the disableMDevConfiguration=true FG exists in the CR",
+					hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration", State: ptr.To(hcov1fg.Enabled)}}, "disableMDevConfiguration"),
+				Entry("should trigger a warning if the disableMDevConfiguration FG exists in the CR",
+					hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration"}}, "disableMDevConfiguration"),
 			)
 		})
 
