@@ -471,15 +471,8 @@ func (wh *WebhookHandler) validateAffinity(hc *hcov1.HyperConverged) error {
 
 const (
 	fgv1Unknown            = "the %s featureGate is unknown and ignored."
-	fgv1MovedWarning       = "the %s featureGate is deprecated and ignored. use %s field instead"
-	fgv1DeprecationWarning = "the %s featureGate deprecated and ignored."
+	fgv1DeprecationWarning = "the %s featureGate deprecated and will be removed in a future release."
 )
-
-var movedFGs = map[string]string{
-	"enableApplicationAwareQuota": "spec.enableApplicationAwareQuota",
-	"enableCommonBootImageImport": "spec.enableCommonBootImageImport",
-	"deployVmConsoleProxy":        "spec.deployVmConsoleProxy",
-}
 
 func (wh *WebhookHandler) validateDeprecatedFeatureGates(fgMap, oldFgMap map[string]bool) []string {
 	var warnings []string
@@ -495,11 +488,7 @@ func (wh *WebhookHandler) validateDeprecatedFeatureGates(fgMap, oldFgMap map[str
 			continue
 		}
 
-		if newFiled, ok := movedFGs[fgName]; ok {
-			if oldEnabled, oldExists := oldFgMap[fgName]; !oldExists || enabled != oldEnabled {
-				warnings = append(warnings, fmt.Sprintf(fgv1MovedWarning, fgName, newFiled))
-			}
-		} else {
+		if oldEnabled, oldExists := oldFgMap[fgName]; !oldExists || enabled != oldEnabled {
 			warnings = append(warnings, fmt.Sprintf(fgv1DeprecationWarning, fgName))
 		}
 	}

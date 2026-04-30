@@ -28,6 +28,7 @@ var _ = Describe("FeatureGate", func() {
 			Entry("beta", featuregates.PhaseBeta, `"beta"`),
 			Entry("alpha", featuregates.PhaseAlpha, `"alpha"`),
 			Entry("Deprecated", featuregates.PhaseDeprecated, `"deprecated"`),
+			Entry("Discontinued", featuregates.PhaseDiscontinued, `"discontinued"`),
 		)
 
 		DescribeTable("UnmarshalJSON", func(jsonStr string, expected featuregates.Phase) {
@@ -42,6 +43,7 @@ var _ = Describe("FeatureGate", func() {
 			Entry("beta", `"beta"`, featuregates.PhaseBeta),
 			Entry("alpha", `"alpha"`, featuregates.PhaseAlpha),
 			Entry("Deprecated", `"deprecated"`, featuregates.PhaseDeprecated),
+			Entry("Discontinued", `"discontinued"`, featuregates.PhaseDiscontinued),
 		)
 	})
 
@@ -74,8 +76,9 @@ var _ = Describe("FeatureGate", func() {
 	})
 
 	Context("FeatureGates.Sort", func() {
-		It("should sort by phase order: GA, beta, alpha, deprecated", func() {
+		It("should sort by phase order: GA, beta, alpha, deprecated, discontinued", func() {
 			fgs := featuregates.FeatureGates{
+				{Name: "disc1", Phase: featuregates.PhaseDiscontinued},
 				{Name: "dep1", Phase: featuregates.PhaseDeprecated},
 				{Name: "alpha1", Phase: featuregates.PhaseAlpha},
 				{Name: "beta1", Phase: featuregates.PhaseBeta},
@@ -86,6 +89,7 @@ var _ = Describe("FeatureGate", func() {
 			Expect(fgs[1].Phase).To(Equal(featuregates.PhaseBeta))
 			Expect(fgs[2].Phase).To(Equal(featuregates.PhaseAlpha))
 			Expect(fgs[3].Phase).To(Equal(featuregates.PhaseDeprecated))
+			Expect(fgs[4].Phase).To(Equal(featuregates.PhaseDiscontinued))
 		})
 
 		It("should sort by name within the same phase", func() {
@@ -108,6 +112,8 @@ var _ = Describe("FeatureGate", func() {
 				{Name: "aAlpha", Phase: featuregates.PhaseAlpha},
 				{Name: "aDeprecated", Phase: featuregates.PhaseDeprecated},
 				{Name: "zBeta", Phase: featuregates.PhaseBeta},
+				{Name: "zDiscontinued", Phase: featuregates.PhaseDiscontinued},
+				{Name: "aDiscontinued", Phase: featuregates.PhaseDiscontinued},
 			}
 			fgs.Sort()
 			Expect(fgs).To(Equal(featuregates.FeatureGates{
@@ -117,6 +123,8 @@ var _ = Describe("FeatureGate", func() {
 				{Name: "zAlpha", Phase: featuregates.PhaseAlpha},
 				{Name: "aDeprecated", Phase: featuregates.PhaseDeprecated},
 				{Name: "bDeprecated", Phase: featuregates.PhaseDeprecated},
+				{Name: "aDiscontinued", Phase: featuregates.PhaseDiscontinued},
+				{Name: "zDiscontinued", Phase: featuregates.PhaseDiscontinued},
 			}))
 		})
 

@@ -10,8 +10,7 @@
 //   can be disabled.
 // * GA: the feature is graduated and is always enabled. There is no way to
 //   disable it.
-// * deprecated: the feature is no longer supported. There is no way to enable
-//   it
+// * deprecated: the feature is deprecated. The feature gate will be removed in a future release.
 //
 // Feature-Gate list:
 {{- range .}}
