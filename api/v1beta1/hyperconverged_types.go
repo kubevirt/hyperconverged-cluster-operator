@@ -378,16 +378,20 @@ type HyperConvergedFeatureGates struct {
 	DownwardMetrics *bool `json:"downwardMetrics,omitempty"`
 
 	// Deprecated: This feature gate is ignored
+	// +hco:fgphase:discontinued
 	WithHostPassthroughCPU *bool `json:"withHostPassthroughCPU,omitempty"`
 
 	// Deprecated: This feature gate is ignored. Use spec.enableCommonBootImageImport instead
+	// +hco:fgphase:discontinued
 	EnableCommonBootImageImport *bool `json:"enableCommonBootImageImport,omitempty"`
 
 	// Deprecated: This feature gate is ignored.
+	// +hco:fgphase:discontinued
 	DeployTektonTaskResources *bool `json:"deployTektonTaskResources,omitempty"`
 
 	// Deprecated: This feature gate is ignored.
 	// Use spec.deployVmConsoleProxy instead
+	// +hco:fgphase:discontinued
 	DeployVMConsoleProxy *bool `json:"deployVmConsoleProxy,omitempty"`
 
 	// Deploy KubeSecondaryDNS by CNAO
@@ -397,9 +401,11 @@ type HyperConvergedFeatureGates struct {
 	DeployKubeSecondaryDNS *bool `json:"deployKubeSecondaryDNS,omitempty"`
 
 	// Deprecated: this feature gate is ignored.
+	// +hco:fgphase:discontinued
 	DeployKubevirtIpamController *bool `json:"deployKubevirtIpamController,omitempty"`
 
 	// Deprecated: This feature gate is ignored.
+	// +hco:fgphase:discontinued
 	NonRoot *bool `json:"nonRoot,omitempty"`
 
 	// Disable mediated devices handling on KubeVirt
@@ -418,11 +424,13 @@ type HyperConvergedFeatureGates struct {
 	PersistentReservation *bool `json:"persistentReservation,omitempty"`
 
 	// Deprecated: This feature gate is ignored.
+	// +hco:fgphase:discontinued
 	EnableManagedTenantQuota *bool `json:"enableManagedTenantQuota,omitempty"`
 
 	// TODO update description to also include cpu limits as well, after 4.14
 
 	// Deprecated: this feature gate is ignored.
+	// +hco:fgphase:discontinued
 	AutoResourceLimits *bool `json:"autoResourceLimits,omitempty"`
 
 	// Enable KubeVirt to request up to two additional dedicated CPUs
@@ -435,9 +443,11 @@ type HyperConvergedFeatureGates struct {
 
 	// Deprecated: This field is ignored and will be removed on the next version of the API.
 	// Use spec.enableApplicationAwareQuota instead
+	// +hco:fgphase:discontinued
 	EnableApplicationAwareQuota *bool `json:"enableApplicationAwareQuota,omitempty"`
 
 	// Deprecated: this feature gate is ignored.
+	// +hco:fgphase:discontinued
 	PrimaryUserDefinedNetworkBinding *bool `json:"primaryUserDefinedNetworkBinding,omitempty"`
 
 	// EnableMultiArchBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures.
