@@ -57,8 +57,7 @@ type HyperConvergedSpec struct {
 	//   can be disabled.
 	// * GA: the feature is graduated and is always enabled. There is no way to
 	//   disable it.
-	// * deprecated: the feature is no longer supported. There is no way to enable
-	//   it
+	// * deprecated: the feature is deprecated. The feature gate will be removed in a future release.
 	//
 	// Feature-Gate list:
 	// * decentralizedLiveMigration:
@@ -135,49 +134,6 @@ type HyperConvergedSpec struct {
 	//   deployed inside the virt-handler pod. Enabling (or removing) the feature
 	//   gate causes the redeployment of the virt-handler pod.
 	//   Phase: alpha
-	//
-	// * autoResourceLimits:
-	//   Deprecated: this feature gate is ignored.
-	//   Phase: deprecated
-	//
-	// * deployKubevirtIpamController:
-	//   Deprecated: this feature gate is ignored.
-	//   Phase: deprecated
-	//
-	// * deployTektonTaskResources:
-	//   Deprecated: This feature gate is ignored.
-	//   Phase: deprecated
-	//
-	// * deployVmConsoleProxy:
-	//   Deprecated: This feature gate is ignored. Use spec.deployVmConsoleProxy
-	//   instead
-	//   Phase: deprecated
-	//
-	// * enableApplicationAwareQuota:
-	//   Deprecated: This field is ignored and will be removed on the next version
-	//   of the API. Use spec.enableApplicationAwareQuota instead
-	//   Phase: deprecated
-	//
-	// * enableCommonBootImageImport:
-	//   Deprecated: This feature gate is ignored. Use
-	//   spec.enableCommonBootImageImport instead
-	//   Phase: deprecated
-	//
-	// * enableManagedTenantQuota:
-	//   Deprecated: This feature gate is ignored.
-	//   Phase: deprecated
-	//
-	// * nonRoot:
-	//   Deprecated: This feature gate is ignored.
-	//   Phase: deprecated
-	//
-	// * primaryUserDefinedNetworkBinding:
-	//   Deprecated: this feature gate is ignored.
-	//   Phase: deprecated
-	//
-	// * withHostPassthroughCPU:
-	//   Deprecated: This feature gate is ignored
-	//   Phase: deprecated
 	//
 	// +optional
 	// +k8s:conversion-gen=false

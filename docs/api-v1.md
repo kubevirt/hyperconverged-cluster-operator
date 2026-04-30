@@ -501,16 +501,6 @@ A feature gate may be in the following phases:
 | incrementalBackup | IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt. When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This feature is in Tech Preview. | alpha |
 | objectGraph | ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking. Note: This feature is in Developer Preview. | alpha |
 | persistentReservation | Enable persistent reservation of a LUN through the SCSI Persistent Reserve commands on Kubevirt. In order to issue privileged SCSI ioctls, the VM requires activation of the persistent reservation flag. Once this feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod. | alpha |
-| autoResourceLimits | Deprecated: this feature gate is ignored. | deprecated |
-| deployKubevirtIpamController | Deprecated: this feature gate is ignored. | deprecated |
-| deployTektonTaskResources | Deprecated: This feature gate is ignored. | deprecated |
-| deployVmConsoleProxy | Deprecated: This feature gate is ignored. Use spec.deployVmConsoleProxy instead | deprecated |
-| enableApplicationAwareQuota | Deprecated: This field is ignored and will be removed on the next version of the API. Use spec.enableApplicationAwareQuota instead | deprecated |
-| enableCommonBootImageImport | Deprecated: This feature gate is ignored. Use spec.enableCommonBootImageImport instead | deprecated |
-| enableManagedTenantQuota | Deprecated: This feature gate is ignored. | deprecated |
-| nonRoot | Deprecated: This feature gate is ignored. | deprecated |
-| primaryUserDefinedNetworkBinding | Deprecated: this feature gate is ignored. | deprecated |
-| withHostPassthroughCPU | Deprecated: This feature gate is ignored | deprecated |
 
 [Back to TOC](#table-of-contents)
 
