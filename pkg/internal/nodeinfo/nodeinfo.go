@@ -9,10 +9,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 )
 
-func HandleNodeChanges(ctx context.Context, cl client.Client, hc *v1beta1.HyperConverged, logger logr.Logger) (bool, error) {
+func HandleNodeChanges(ctx context.Context, cl client.Client, hc *hcov1.HyperConverged, logger logr.Logger) (bool, error) {
 	logger.Info("reading cluster nodes")
 	nodes, err := getNodes(ctx, cl)
 	if err != nil {
@@ -32,7 +32,7 @@ func getNodes(ctx context.Context, cl client.Client) ([]corev1.Node, error) {
 	return nodesList.Items, nil
 }
 
-func processNodeInfo(nodes []corev1.Node, hc *v1beta1.HyperConverged) bool {
+func processNodeInfo(nodes []corev1.Node, hc *hcov1.HyperConverged) bool {
 	workerNodeCount := 0
 	cpNodeCount := 0
 	arbiterNodeCount := 0
@@ -88,7 +88,7 @@ func isWorkerNode(node corev1.Node) bool {
 	return exists
 }
 
-func isWorkloadNodeFunc(hc *v1beta1.HyperConverged) func(corev1.Node) bool {
+func isWorkloadNodeFunc(hc *hcov1.HyperConverged) func(corev1.Node) bool {
 	if hasWorkloadRequirements(hc) {
 
 		workloadMatcher := getWorkloadMatcher(hc)

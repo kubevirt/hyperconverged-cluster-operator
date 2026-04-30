@@ -22,7 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -162,9 +162,9 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	}
 
 	return c.Watch(
-		source.Kind[*hcov1beta1.HyperConverged](
-			mgr.GetCache(), &hcov1beta1.HyperConverged{},
-			&handler.TypedEnqueueRequestForObject[*hcov1beta1.HyperConverged]{},
+		source.Kind[*hcov1.HyperConverged](
+			mgr.GetCache(), &hcov1.HyperConverged{},
+			&handler.TypedEnqueueRequestForObject[*hcov1.HyperConverged]{},
 			hyperconvergedPredicate{},
 		))
 }
@@ -223,8 +223,8 @@ func (r *ReconcileNodeCounter) Reconcile(ctx context.Context, req reconcile.Requ
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileNodeCounter) readHyperConverged(ctx context.Context) (*hcov1beta1.HyperConverged, error) {
-	hc := &hcov1beta1.HyperConverged{}
+func (r *ReconcileNodeCounter) readHyperConverged(ctx context.Context) (*hcov1.HyperConverged, error) {
+	hc := &hcov1.HyperConverged{}
 	hcoKey := k8stypes.NamespacedName{
 		Name:      hcoutil.HyperConvergedName,
 		Namespace: hcoutil.GetOperatorNamespaceFromEnv(),

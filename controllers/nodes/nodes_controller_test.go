@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -51,11 +51,11 @@ var _ = Describe("NodesController", func() {
 
 		Context("Node Count Change", func() {
 			It("Should send event if nodeInfo was changed", func() {
-				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1beta1.HyperConverged, _ logr.Logger) (bool, error) {
+				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
 					return true, nil
 				}
 
-				hco := commontestutils.NewHco()
+				hco := commontestutils.NewHcoV1()
 				resources := []client.Object{hco}
 				cl := commontestutils.InitClient(resources)
 
@@ -73,7 +73,7 @@ var _ = Describe("NodesController", func() {
 			})
 
 			It("Should not send event if nodeInfo was changed, but there is no HC CR", func() {
-				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1beta1.HyperConverged, _ logr.Logger) (bool, error) {
+				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
 					return true, nil
 				}
 
@@ -93,11 +93,11 @@ var _ = Describe("NodesController", func() {
 			})
 
 			It("Should not send event if nodeInfo was not changed", func() {
-				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1beta1.HyperConverged, _ logr.Logger) (bool, error) {
+				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
 					return false, nil
 				}
 
-				hco := commontestutils.NewHco()
+				hco := commontestutils.NewHcoV1()
 				resources := []client.Object{hco}
 				cl := commontestutils.InitClient(resources)
 
@@ -115,11 +115,11 @@ var _ = Describe("NodesController", func() {
 			})
 
 			It("Should return error is failed to handle nodeInfo", func() {
-				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1beta1.HyperConverged, _ logr.Logger) (bool, error) {
+				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
 					return false, errors.New("fake error")
 				}
 
-				hco := commontestutils.NewHco()
+				hco := commontestutils.NewHcoV1()
 				resources := []client.Object{hco}
 				cl := commontestutils.InitClient(resources)
 
@@ -148,7 +148,7 @@ var _ = Describe("NodesController", func() {
 					},
 				}
 
-				hco := commontestutils.NewHco()
+				hco := commontestutils.NewHcoV1()
 				resources := []client.Object{hco, workerNode}
 				cl := commontestutils.InitClient(resources)
 
@@ -158,7 +158,7 @@ var _ = Describe("NodesController", func() {
 					HandleHyperShiftNodeLabeling: HandleHyperShiftNodeLabeling,
 				}
 
-				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1beta1.HyperConverged, _ logr.Logger) (bool, error) {
+				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
 					return false, nil
 				}
 
@@ -192,7 +192,7 @@ var _ = Describe("NodesController", func() {
 					},
 				}
 
-				hco := commontestutils.NewHco()
+				hco := commontestutils.NewHcoV1()
 				resources := []client.Object{hco, cpNode}
 				cl := commontestutils.InitClient(resources)
 
@@ -202,7 +202,7 @@ var _ = Describe("NodesController", func() {
 					HandleHyperShiftNodeLabeling: HandleHyperShiftNodeLabeling,
 				}
 
-				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1beta1.HyperConverged, _ logr.Logger) (bool, error) {
+				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
 					return false, nil
 				}
 
@@ -233,7 +233,7 @@ var _ = Describe("NodesController", func() {
 					},
 				}
 
-				hco := commontestutils.NewHco()
+				hco := commontestutils.NewHcoV1()
 				resources := []client.Object{hco, workerNode}
 				cl := commontestutils.InitClient(resources)
 
@@ -243,7 +243,7 @@ var _ = Describe("NodesController", func() {
 					HandleHyperShiftNodeLabeling: staleHyperShiftNodeLabeling,
 				}
 
-				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1beta1.HyperConverged, _ logr.Logger) (bool, error) {
+				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
 					return false, nil
 				}
 
@@ -265,7 +265,7 @@ var _ = Describe("NodesController", func() {
 			})
 
 			It("Should handle missing node gracefully", func() {
-				hco := commontestutils.NewHco()
+				hco := commontestutils.NewHcoV1()
 				resources := []client.Object{hco}
 				cl := commontestutils.InitClient(resources)
 
@@ -275,7 +275,7 @@ var _ = Describe("NodesController", func() {
 					HandleHyperShiftNodeLabeling: HandleHyperShiftNodeLabeling,
 				}
 
-				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1beta1.HyperConverged, _ logr.Logger) (bool, error) {
+				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
 					return false, nil
 				}
 
@@ -301,7 +301,7 @@ var _ = Describe("NodesController", func() {
 					},
 				}
 
-				hco := commontestutils.NewHco()
+				hco := commontestutils.NewHcoV1()
 				resources := []client.Object{hco, workerNode}
 				cl := commontestutils.InitClient(resources)
 
@@ -310,7 +310,7 @@ var _ = Describe("NodesController", func() {
 					nodeEvents: nodeEvents,
 				}
 
-				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1beta1.HyperConverged, _ logr.Logger) (bool, error) {
+				nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
 					return false, nil
 				}
 
