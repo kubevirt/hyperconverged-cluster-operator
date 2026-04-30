@@ -66,7 +66,7 @@ HyperConvergedFeatureGates is a set of optional feature gates to enable or disab
 | deployKubeSecondaryDNS | Deploy KubeSecondaryDNS by CNAO | *bool | false | false |
 | deployKubevirtIpamController | Deprecated: this feature gate is ignored. | *bool |  | false |
 | nonRoot | Deprecated: This feature gate is ignored. | *bool |  | false |
-| disableMDevConfiguration | Disable mediated devices handling on KubeVirt | *bool | false | false |
+| disableMDevConfiguration | Deprecated: This feature gate will be removed in a future release. Use spec.mediatedDevicesConfiguration.enabled instead. | *bool | false | false |
 | persistentReservation | Enable persistent reservation of a LUN through the SCSI Persistent Reserve commands on Kubevirt. In order to issue privileged SCSI ioctls, the VM requires activation of the persistent reservation flag. Once this feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod. | *bool | false | false |
 | enableManagedTenantQuota | Deprecated: This feature gate is ignored. | *bool |  | false |
 | autoResourceLimits | Deprecated: this feature gate is ignored. | *bool |  | false |

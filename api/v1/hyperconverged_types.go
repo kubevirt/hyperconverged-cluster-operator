@@ -57,8 +57,8 @@ type HyperConvergedSpec struct {
 	//   can be disabled.
 	// * GA: the feature is graduated and is always enabled. There is no way to
 	//   disable it.
-	// * deprecated: the feature is no longer supported. There is no way to enable
-	//   it
+	// * deprecated: the feature is deprecated. Unless noted otherwise, it is
+	//   disabled by default, but can still be enabled until it is removed.
 	//
 	// Feature-Gate list:
 	// * decentralizedLiveMigration:
@@ -98,10 +98,6 @@ type HyperConvergedSpec struct {
 	//   Deploy KubeSecondaryDNS by CNAO
 	//   Phase: alpha
 	//
-	// * disableMDevConfiguration:
-	//   Disable mediated devices handling on KubeVirt
-	//   Phase: alpha
-	//
 	// * downwardMetrics:
 	//   Allow to expose a limited set of host metrics to guests.
 	//   Phase: alpha
@@ -136,47 +132,9 @@ type HyperConvergedSpec struct {
 	//   gate causes the redeployment of the virt-handler pod.
 	//   Phase: alpha
 	//
-	// * autoResourceLimits:
-	//   Deprecated: this feature gate is ignored.
-	//   Phase: deprecated
-	//
-	// * deployKubevirtIpamController:
-	//   Deprecated: this feature gate is ignored.
-	//   Phase: deprecated
-	//
-	// * deployTektonTaskResources:
-	//   Deprecated: This feature gate is ignored.
-	//   Phase: deprecated
-	//
-	// * deployVmConsoleProxy:
-	//   Deprecated: This feature gate is ignored. Use spec.deployVmConsoleProxy
-	//   instead
-	//   Phase: deprecated
-	//
-	// * enableApplicationAwareQuota:
-	//   Deprecated: This field is ignored and will be removed on the next version
-	//   of the API. Use spec.enableApplicationAwareQuota instead
-	//   Phase: deprecated
-	//
-	// * enableCommonBootImageImport:
-	//   Deprecated: This feature gate is ignored. Use
-	//   spec.enableCommonBootImageImport instead
-	//   Phase: deprecated
-	//
-	// * enableManagedTenantQuota:
-	//   Deprecated: This feature gate is ignored.
-	//   Phase: deprecated
-	//
-	// * nonRoot:
-	//   Deprecated: This feature gate is ignored.
-	//   Phase: deprecated
-	//
-	// * primaryUserDefinedNetworkBinding:
-	//   Deprecated: this feature gate is ignored.
-	//   Phase: deprecated
-	//
-	// * withHostPassthroughCPU:
-	//   Deprecated: This feature gate is ignored
+	// * disableMDevConfiguration:
+	//   Deprecated: This feature gate will be removed in a future release. Use
+	//   spec.mediatedDevicesConfiguration.enabled instead.
 	//   Phase: deprecated
 	//
 	// +optional
