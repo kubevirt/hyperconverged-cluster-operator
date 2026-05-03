@@ -628,6 +628,7 @@ func getObsoleteCPUConfig(hcObsoleteCPUConf *hcov1beta1.HyperConvergedObsoleteCP
 
 func toKvMediatedDevicesConfiguration(hc *hcov1beta1.HyperConverged) *kubevirtcorev1.MediatedDevicesConfiguration {
 	mdevsConfig := hc.Spec.MediatedDevicesConfiguration
+	//nolint:staticcheck // SA1019: legacy feature gate still honored when building KubeVirt MediatedDevicesConfiguration
 	disabled := ptr.Deref(hc.Spec.FeatureGates.DisableMDevConfiguration, false)
 
 	if mdevsConfig == nil && !disabled {

@@ -15,6 +15,7 @@ const (
 	PhaseBeta
 	PhaseAlpha
 	PhaseDeprecated
+	PhaseDiscontinued
 )
 
 func (p Phase) MarshalJSON() ([]byte, error) {
@@ -36,6 +37,8 @@ func (p *Phase) UnmarshalJSON(bytes []byte) error {
 		*p = PhaseAlpha
 	case "deprecated":
 		*p = PhaseDeprecated
+	case "discontinued":
+		*p = PhaseDiscontinued
 	default:
 		*p = PhaseUnknown
 	}
@@ -53,6 +56,8 @@ func (p Phase) String() string {
 		return "alpha"
 	case PhaseDeprecated:
 		return "deprecated"
+	case PhaseDiscontinued:
+		return "discontinued"
 	default:
 		return "unknown"
 	}

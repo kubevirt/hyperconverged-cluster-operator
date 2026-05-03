@@ -30,11 +30,6 @@
     "description": "Deploy KubeSecondaryDNS by CNAO"
   },
   {
-    "name": "disableMDevConfiguration",
-    "phase": "alpha",
-    "description": "Disable mediated devices handling on KubeVirt"
-  },
-  {
     "name": "downwardMetrics",
     "phase": "alpha",
     "description": "Allow to expose a limited set of host metrics to guests."
@@ -60,53 +55,8 @@
     "description": "Enable persistent reservation of a LUN through the SCSI Persistent Reserve commands on Kubevirt. In order to issue privileged SCSI ioctls, the VM requires activation of the persistent reservation flag. Once this feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod."
   },
   {
-    "name": "autoResourceLimits",
+    "name": "disableMDevConfiguration",
     "phase": "deprecated",
-    "description": "Deprecated: this feature gate is ignored."
-  },
-  {
-    "name": "deployKubevirtIpamController",
-    "phase": "deprecated",
-    "description": "Deprecated: this feature gate is ignored."
-  },
-  {
-    "name": "deployTektonTaskResources",
-    "phase": "deprecated",
-    "description": "Deprecated: This feature gate is ignored."
-  },
-  {
-    "name": "deployVmConsoleProxy",
-    "phase": "deprecated",
-    "description": "Deprecated: This feature gate is ignored. Use spec.deployVmConsoleProxy instead"
-  },
-  {
-    "name": "enableApplicationAwareQuota",
-    "phase": "deprecated",
-    "description": "Deprecated: This field is ignored and will be removed on the next version of the API. Use spec.enableApplicationAwareQuota instead"
-  },
-  {
-    "name": "enableCommonBootImageImport",
-    "phase": "deprecated",
-    "description": "Deprecated: This feature gate is ignored. Use spec.enableCommonBootImageImport instead"
-  },
-  {
-    "name": "enableManagedTenantQuota",
-    "phase": "deprecated",
-    "description": "Deprecated: This feature gate is ignored."
-  },
-  {
-    "name": "nonRoot",
-    "phase": "deprecated",
-    "description": "Deprecated: This feature gate is ignored."
-  },
-  {
-    "name": "primaryUserDefinedNetworkBinding",
-    "phase": "deprecated",
-    "description": "Deprecated: this feature gate is ignored."
-  },
-  {
-    "name": "withHostPassthroughCPU",
-    "phase": "deprecated",
-    "description": "Deprecated: This feature gate is ignored"
+    "description": "Deprecated: This feature gate will be removed in a future release. Use spec.mediatedDevicesConfiguration.enabled instead."
   }
 ]

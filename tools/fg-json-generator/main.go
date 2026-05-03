@@ -29,6 +29,7 @@ type conversionField struct {
 const (
 	structName               = "HyperConvergedFeatureGates"
 	kubebuilderDefaultPrefix = "// +kubebuilder:default="
+	hcoFgPhaseMarker         = "+hco:fgphase:"
 )
 
 func main() {
@@ -164,6 +165,9 @@ func findStruct(file *ast.File, name string) *ast.StructType {
 	return nil
 }
 
+// extractFeatureGates builds the embedded catalog from v1beta1 struct fields.
+// Discontinued gates are omitted from feature-gates.json; v1 API doc generation
+// also skips them in fg-v1-comments.
 func extractFeatureGates(st *ast.StructType) featuregates.FeatureGates {
 	var gates featuregates.FeatureGates
 
@@ -177,9 +181,14 @@ func extractFeatureGates(st *ast.StructType) featuregates.FeatureGates {
 			continue
 		}
 
+		phase := fieldPhase(field)
+		if phase == featuregates.PhaseDiscontinued {
+			continue
+		}
+
 		fg := featuregates.FeatureGate{
 			Name:        name,
-			Phase:       fieldPhase(field),
+			Phase:       phase,
 			Description: fieldDescription(field),
 		}
 
@@ -195,26 +204,57 @@ func fieldJSONName(field *ast.Field) string {
 	return strings.Split(tag, ",")[0]
 }
 
-// fieldPhase determines the lifecycle phase of a feature gate field.
-// It checks for "Deprecated:" in comments first, then looks at the kubebuilder default value.
-func fieldPhase(field *ast.Field) featuregates.Phase {
-	if field.Doc != nil {
-		for _, comment := range field.Doc.List {
-			text := strings.TrimPrefix(comment.Text, "//")
-			text = strings.TrimSpace(text)
-			if strings.HasPrefix(strings.ToLower(text), "deprecated") {
-				return featuregates.PhaseDeprecated
-			}
-		}
+// phaseFromHcoAnnotation parses // +hco:fgphase:<value> (whitespace between tokens is optional).
+func phaseFromHcoAnnotation(commentText string) (featuregates.Phase, bool) {
+	text := strings.TrimPrefix(commentText, "//")
+	text = strings.TrimSpace(text)
+	compact := strings.ToLower(strings.ReplaceAll(text, " ", ""))
 
-		for _, comment := range field.Doc.List {
-			if strings.HasPrefix(comment.Text, kubebuilderDefaultPrefix) {
-				val := comment.Text[len(kubebuilderDefaultPrefix):]
-				if val == "true" {
-					return featuregates.PhaseBeta
-				}
-				return featuregates.PhaseAlpha
+	idx := strings.Index(compact, hcoFgPhaseMarker)
+	if idx == -1 {
+		return 0, false
+	}
+
+	val := compact[idx+len(hcoFgPhaseMarker):]
+	switch val {
+	case "discontinued":
+		return featuregates.PhaseDiscontinued, true
+	case "deprecated":
+		return featuregates.PhaseDeprecated, true
+	default:
+		return 0, false
+	}
+}
+
+// fieldPhase determines the lifecycle phase of a feature gate field.
+// It prefers // +hco:fgphase:discontinued or // +hco:fgphase:deprecated when present,
+// then "Deprecated:" in prose comments, then the kubebuilder default value.
+func fieldPhase(field *ast.Field) featuregates.Phase {
+	if field.Doc == nil {
+		return featuregates.PhaseAlpha
+	}
+
+	for _, comment := range field.Doc.List {
+		if p, ok := phaseFromHcoAnnotation(comment.Text); ok {
+			return p
+		}
+	}
+
+	for _, comment := range field.Doc.List {
+		text := strings.TrimPrefix(comment.Text, "//")
+		text = strings.TrimSpace(text)
+		if strings.HasPrefix(strings.ToLower(text), "deprecated") {
+			return featuregates.PhaseDeprecated
+		}
+	}
+
+	for _, comment := range field.Doc.List {
+		if strings.HasPrefix(comment.Text, kubebuilderDefaultPrefix) {
+			val := comment.Text[len(kubebuilderDefaultPrefix):]
+			if val == "true" {
+				return featuregates.PhaseBeta
 			}
+			return featuregates.PhaseAlpha
 		}
 	}
 

@@ -803,6 +803,7 @@ Version: 1.2.3`)
 
 			It("should propagate the mediated devices configuration, only with the Enabled field, if not set in HCO, and the FG is true", func() {
 				hco.Spec.MediatedDevicesConfiguration = nil
+				//nolint:staticcheck // SA1019: testing deprecated FG mapping
 				hco.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
 
 				kv, err := NewKubeVirt(hco)
@@ -1085,6 +1086,7 @@ Version: 1.2.3`)
 			})
 
 			It("should set the enabled field to false, if the DisableMDevConfiguration FG is enabled", func() {
+				//nolint:staticcheck // SA1019: testing deprecated FG mapping
 				hco.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
 				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
 					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
@@ -1098,6 +1100,7 @@ Version: 1.2.3`)
 			})
 
 			It("should not set the enabled field, if the DisableMDevConfiguration FG is disabled", func() {
+				//nolint:staticcheck // SA1019: testing deprecated FG mapping
 				hco.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(false)
 				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
 					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
@@ -1111,6 +1114,7 @@ Version: 1.2.3`)
 			})
 
 			It("should not set the enabled field, if the DisableMDevConfiguration FG is nil", func() {
+				//nolint:staticcheck // SA1019: testing deprecated FG mapping
 				hco.Spec.FeatureGates.DisableMDevConfiguration = nil
 				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
 					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
