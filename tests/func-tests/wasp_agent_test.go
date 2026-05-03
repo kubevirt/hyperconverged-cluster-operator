@@ -2,7 +2,9 @@ package tests_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os/exec"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -31,6 +33,10 @@ const (
 	clusterRoleBindingName      = "wasp-cluster"
 	setMemoryOvercommitTemplate = `[{"op": "replace", "path": "/spec/higherWorkloadDensity/memoryOvercommitPercentage", "value": %d}]`
 	overcommitPercent           = 150
+
+	ociHookScriptPath = "/host/opt/oci-hook-swap.sh"
+	ociHookConfigPath = "/host/run/containers/oci/hooks.d/swap-for-burstable.json"
+	workerNodeLabel   = "node-role.kubernetes.io/worker"
 
 	workerMachineConfigPoolName = "worker"
 	swapMachineConfig           = "90-worker-swap-online"
@@ -194,6 +200,35 @@ var _ = Describe("Test wasp-agent", Label(tests.OpenshiftLabel, "wasp-agent"), S
 				WithPolling(100 * time.Millisecond).
 				WithContext(ctx).
 				Should(Succeed())
+		})
+	})
+
+	When("wasp-agent is undeployed", Label(tests.DestructiveLabel), func() {
+		It("should remove OCI hook files from all worker nodes", func(ctx context.Context) {
+			By("ensure wasp-agent is deployed with overcommit > 100")
+			setMemoryOvercommitPercentage(ctx, cli, overcommitPercent)
+
+			Eventually(func(g Gomega, ctx context.Context) bool {
+				ds, err := getWaspDS(ctx, cli)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(ds.Status.DesiredNumberScheduled).ToNot(BeZero())
+				return ds.Status.DesiredNumberScheduled == ds.Status.CurrentNumberScheduled
+			}).WithTimeout(5 * time.Minute).WithPolling(time.Second).WithContext(ctx).Should(BeTrue())
+
+			By("verify OCI hook files are present on all worker nodes after deployment")
+			expectOCIHookFilesPresentOnAllNodes(ctx, cli)
+
+			By("set overcommit back to 100 to trigger wasp-agent removal with preStop hook")
+			setMemoryOvercommitPercentage(ctx, cli, 100)
+
+			By("wait for the wasp-agent DaemonSet to be deleted")
+			validateDeleted(ctx, cli, func(ctx context.Context, cli client.Client) error {
+				_, err := getWaspDS(ctx, cli)
+				return err
+			})
+
+			By("verify OCI hook files are removed from all worker nodes")
+			expectOCIHookFilesRemovedFromAllNodes(ctx, cli)
 		})
 	})
 })
@@ -368,6 +403,82 @@ func pauseWorkerMachineConfigPool(ctx context.Context, cli client.Client) {
 func unpauseWorkerMachineConfigPool(ctx context.Context, cli client.Client) {
 	GinkgoHelper()
 	patchWorkerMachineConfigPoolPaused(ctx, cli, false)
+}
+
+func listWorkerNodes(ctx context.Context, cli client.Client) ([]v1.Node, error) {
+	nodeList := &v1.NodeList{}
+	err := cli.List(ctx, nodeList, client.HasLabels{workerNodeLabel})
+	if err != nil {
+		return nil, err
+	}
+	return nodeList.Items, nil
+}
+
+func execCommandOnNode(nodeName string, command ...string) ([]byte, error) {
+	args := append([]string{"debug", fmt.Sprintf("node/%s", nodeName), "--"}, command...)
+	return exec.Command("oc", args...).CombinedOutput()
+}
+
+func checkFileExistsOnNode(nodeName, filePath string) error {
+	output, err := execCommandOnNode(nodeName, "test", "-f", filePath)
+	if err == nil {
+		return nil
+	}
+
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		return fmt.Errorf("file %s does not exist on node %s (exit code %d)", filePath, nodeName, exitErr.ExitCode())
+	}
+	return fmt.Errorf("unexpected error checking file %s on node %s (output: %s): %w", filePath, nodeName, string(output), err)
+}
+
+func checkFileNotExistOnNode(nodeName, filePath string) error {
+	output, err := execCommandOnNode(nodeName, "test", "-f", filePath)
+	if err == nil {
+		return fmt.Errorf("expected file %s to not exist on node %s, but it does", filePath, nodeName)
+	}
+
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+		return nil
+	}
+	return fmt.Errorf("unexpected error checking file %s on node %s (output: %s): %w", filePath, nodeName, string(output), err)
+}
+
+func expectOCIHookFilesPresentOnAllNodes(ctx context.Context, cli client.Client) {
+	GinkgoHelper()
+	Eventually(func(g Gomega, ctx context.Context) {
+		nodes, err := listWorkerNodes(ctx, cli)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(nodes).ToNot(BeEmpty(), "no worker nodes found")
+
+		for i := range nodes {
+			nodeName := nodes[i].Name
+			g.Expect(checkFileExistsOnNode(nodeName, ociHookScriptPath)).To(Succeed())
+			g.Expect(checkFileExistsOnNode(nodeName, ociHookConfigPath)).To(Succeed())
+		}
+	}).WithTimeout(5 * time.Minute).
+		WithPolling(10 * time.Second).
+		WithContext(ctx).
+		Should(Succeed())
+}
+
+func expectOCIHookFilesRemovedFromAllNodes(ctx context.Context, cli client.Client) {
+	GinkgoHelper()
+	Eventually(func(g Gomega, ctx context.Context) {
+		nodes, err := listWorkerNodes(ctx, cli)
+		g.Expect(err).ToNot(HaveOccurred())
+		g.Expect(nodes).ToNot(BeEmpty(), "no worker nodes found")
+
+		for i := range nodes {
+			nodeName := nodes[i].Name
+			g.Expect(checkFileNotExistOnNode(nodeName, ociHookScriptPath)).To(Succeed())
+			g.Expect(checkFileNotExistOnNode(nodeName, ociHookConfigPath)).To(Succeed())
+		}
+	}).WithTimeout(5 * time.Minute).
+		WithPolling(10 * time.Second).
+		WithContext(ctx).
+		Should(Succeed())
 }
 
 func deleteSwapMachineConfig(ctx context.Context, cli client.Client) {
