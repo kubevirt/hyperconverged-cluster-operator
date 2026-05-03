@@ -205,6 +205,34 @@ var _ = Describe("Wasp Agent DaemonSet", func() {
 		})
 
 	})
+	Context("Wasp agent DaemonSet spec definition", func() {
+		var createdDs *appsv1.DaemonSet
+
+		BeforeEach(func() {
+			createdDs = newWaspAgentDaemonSet(hco)
+		})
+
+		It("should set TerminationGracePeriodSeconds to 5", func() {
+			Expect(createdDs.Spec.Template.Spec.TerminationGracePeriodSeconds).ToNot(BeNil())
+			Expect(*createdDs.Spec.Template.Spec.TerminationGracePeriodSeconds).To(Equal(int64(5)))
+		})
+
+		It("should define a preStop lifecycle hook that removes OCI hook files", func() {
+			Expect(createdDs.Spec.Template.Spec.Containers).To(HaveLen(1))
+			container := createdDs.Spec.Template.Spec.Containers[0]
+
+			Expect(container.Lifecycle).ToNot(BeNil())
+			Expect(container.Lifecycle.PreStop).ToNot(BeNil())
+			Expect(container.Lifecycle.PreStop.Exec).ToNot(BeNil())
+			Expect(container.Lifecycle.PreStop.Exec.Command).To(Equal([]string{
+				"rm", "-f",
+				"/host/opt/oci-hook-swap.sh",
+				"/host/run/containers/oci/hooks.d/swap-for-burstable.json",
+			}))
+		})
+
+	})
+
 	Context("Wasp agent DaemonSet update", func() {
 		It("should update DaemonSet fields if not matched to the requirements", func() {
 			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
