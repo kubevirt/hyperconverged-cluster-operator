@@ -32,6 +32,9 @@ const (
 	AutopilotSwapAnnotation           = "platform.kubevirt.io/autopilot"
 	AutopilotSwapAnnotationValue      = "swap-enable"
 	AutopilotFullOptInAnnotationValue = "true"
+
+	ociHookSwapScriptPath = "/host/opt/oci-hook-swap.sh"
+	ociHookSwapConfigPath = "/host/run/containers/oci/hooks.d/swap-for-burstable.json"
 )
 
 var (
@@ -78,6 +81,17 @@ func newWaspAgentDaemonSet(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet {
 		},
 		SecurityContext: &corev1.SecurityContext{
 			Privileged: ptr.To(true),
+		},
+		Lifecycle: &corev1.Lifecycle{
+			PreStop: &corev1.LifecycleHandler{
+				Exec: &corev1.ExecAction{
+					Command: []string{
+						"rm", "-f",
+						ociHookSwapScriptPath,
+						ociHookSwapConfigPath,
+					},
+				},
+			},
 		},
 		TerminationMessagePath:   corev1.TerminationMessagePathDefault,
 		TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
