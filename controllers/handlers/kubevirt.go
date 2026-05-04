@@ -32,6 +32,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/kvfeaturegates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/patch"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
@@ -100,10 +101,10 @@ const (
 	kvHostDevicesGate = "HostDevices"
 
 	// Expand disks to the largest size
-	kvExpandDisksGate = "ExpandDisks"
+	kvExpandDisksGate = "ExpandDisks" // todo this FG is now GA in KV. Remove it after bumping KV to 1.9
 
 	// Export VMs to outside of the cluster
-	kvVMExportGate = "VMExport"
+	kvVMExportGate = "VMExport" // todo this FG is now GA in KV. Remove it after bumping KV to 1.9
 
 	// Enable the installation of the KubeVirt seccomp profile
 	kvKubevirtSeccompProfile = "KubevirtSeccompProfile"
@@ -134,7 +135,7 @@ var (
 // These KubeVirt feature gates are automatically enabled in KubeVirt if SSP is deployed
 const (
 	// Support migration for VMs with host-model CPU mode
-	kvWithHostModelCPU = "WithHostModelCPU"
+	kvWithHostModelCPU = "WithHostModelCPU" // todo check if can be dropped. seems to not known by KV
 
 	// Enable HyperV strict host checking for HyperV enlightenments
 	kvHypervStrictCheck = "HypervStrictCheck"
@@ -815,6 +816,9 @@ func getKVDevConfig(hc *hcov1.HyperConverged) *kubevirtcorev1.DeveloperConfigura
 	if len(fgs) > 0 {
 		devConf.FeatureGates = fgs
 	}
+	if disabledFGs := getKvDisabledFeatureGateList(fgs); len(disabledFGs) > 0 {
+		devConf.DisabledFeatureGates = disabledFGs
+	}
 	if useKVMEmulation {
 		devConf.UseEmulation = useKVMEmulation
 	}
@@ -1090,7 +1094,22 @@ func getKvFeatureGateList(hc *hcov1.HyperConverged) []string {
 	res = append(res, mandatoryKvFeatureGates...)
 	res = append(res, checks...)
 
+	slices.Sort(res)
+
 	return res
+}
+
+func getKvDisabledFeatureGateList(enabledFGs []string) []string {
+	betaFGs := kvfeaturegates.GetBetaFeatureGates()
+
+	disabled := make([]string, 0, len(betaFGs))
+	for _, fg := range betaFGs {
+		if !slices.Contains(enabledFGs, fg) {
+			disabled = append(disabled, fg)
+		}
+	}
+
+	return disabled
 }
 
 func hcoCertConfig2KvCertificateRotateStrategy(hcoCertConfig hcov1.HyperConvergedCertConfig) *kubevirtcorev1.KubeVirtCertificateRotateStrategy {
