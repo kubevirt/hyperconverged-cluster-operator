@@ -415,6 +415,11 @@ func (in *HyperConvergedSpec) DeepCopyInto(out *HyperConvergedSpec) {
 		*out = new(corev1.KSMConfiguration)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ChangedBlockTrackingLabelSelectors != nil {
+		in, out := &in.ChangedBlockTrackingLabelSelectors, &out.ChangedBlockTrackingLabelSelectors
+		*out = new(corev1.ChangedBlockTrackingSelectors)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.NetworkBinding != nil {
 		in, out := &in.NetworkBinding, &out.NetworkBinding
 		*out = make(map[string]corev1.InterfaceBindingPlugin, len(*in))

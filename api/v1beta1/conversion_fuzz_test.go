@@ -178,6 +178,17 @@ func randomV1beta1HC(r *rand.Rand) *HyperConverged {
 	}
 
 	if r.IntN(2) == 1 {
+		hc.Spec.ChangedBlockTrackingLabelSelectors = &kubevirtv1.ChangedBlockTrackingSelectors{
+			NamespaceLabelSelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{randString(r): randString(r)},
+			},
+			VirtualMachineLabelSelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{randString(r): randString(r)},
+			},
+		}
+	}
+
+	if r.IntN(2) == 1 {
 		hc.Spec.FeatureGates = HyperConvergedFeatureGates{
 			DownwardMetrics: randPtr(r, r.IntN(2) == 1),
 			AlignCPUs:       randPtr(r, r.IntN(2) == 1),
@@ -273,6 +284,8 @@ func randomV1beta1HC(r *rand.Rand) *HyperConverged {
 }
 
 // randomV1HC creates a HyperConverged v1 CR with randomly populated fields.
+//
+//nolint:gocognit
 func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 	hc := &hcov1.HyperConverged{
 		ObjectMeta: metav1.ObjectMeta{
@@ -358,6 +371,17 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 	if r.IntN(2) == 1 {
 		hc.Spec.Virtualization.KSMConfiguration = &kubevirtv1.KSMConfiguration{
 			NodeLabelSelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{randString(r): randString(r)},
+			},
+		}
+	}
+
+	if r.IntN(2) == 1 {
+		hc.Spec.Virtualization.ChangedBlockTrackingLabelSelectors = &kubevirtv1.ChangedBlockTrackingSelectors{
+			NamespaceLabelSelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{randString(r): randString(r)},
+			},
+			VirtualMachineLabelSelector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{randString(r): randString(r)},
 			},
 		}

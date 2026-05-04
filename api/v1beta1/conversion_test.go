@@ -781,6 +781,37 @@ var _ = Describe("api/v1beta1", func() {
 				Expect(v1beta1Spec.KSMConfiguration).To(BeNil())
 			})
 
+			It("should convert ChangedBlockTrackingLabelSelectors", func() {
+				v1VirtConfig := hcov1.VirtualizationConfig{
+					ChangedBlockTrackingLabelSelectors: &kubevirtv1.ChangedBlockTrackingSelectors{
+						NamespaceLabelSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{"cbt": "true"},
+						},
+						VirtualMachineLabelSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{"cbt": "true"},
+						},
+					},
+				}
+
+				var v1beta1Spec = HyperConvergedSpec{}
+				Expect(convertVirtualizationV1ToV1beta1(v1VirtConfig, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.ChangedBlockTrackingLabelSelectors).ToNot(BeNil())
+				Expect(v1beta1Spec.ChangedBlockTrackingLabelSelectors.NamespaceLabelSelector).ToNot(BeNil())
+				Expect(v1beta1Spec.ChangedBlockTrackingLabelSelectors.NamespaceLabelSelector.MatchLabels).To(HaveKeyWithValue("cbt", "true"))
+				Expect(v1beta1Spec.ChangedBlockTrackingLabelSelectors.VirtualMachineLabelSelector).ToNot(BeNil())
+				Expect(v1beta1Spec.ChangedBlockTrackingLabelSelectors.VirtualMachineLabelSelector.MatchLabels).To(HaveKeyWithValue("cbt", "true"))
+			})
+
+			It("should not convert ChangedBlockTrackingLabelSelectors when nil", func() {
+				v1VirtConfig := hcov1.VirtualizationConfig{}
+
+				var v1beta1Spec = HyperConvergedSpec{}
+				Expect(convertVirtualizationV1ToV1beta1(v1VirtConfig, &v1beta1Spec)).To(Succeed())
+
+				Expect(v1beta1Spec.ChangedBlockTrackingLabelSelectors).To(BeNil())
+			})
+
 			It("should convert Hypervisors", func() {
 				v1VirtConfig := hcov1.VirtualizationConfig{
 					Hypervisors: []kubevirtv1.HypervisorConfiguration{
@@ -1155,6 +1186,37 @@ var _ = Describe("api/v1beta1", func() {
 				Expect(convertVirtualizationV1beta1ToV1(v1beta1Spec, &v1VirtConfig)).To(Succeed())
 
 				Expect(v1VirtConfig.KSMConfiguration).To(BeNil())
+			})
+
+			It("should convert ChangedBlockTrackingLabelSelectors", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					ChangedBlockTrackingLabelSelectors: &kubevirtv1.ChangedBlockTrackingSelectors{
+						NamespaceLabelSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{"cbt": "true"},
+						},
+						VirtualMachineLabelSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{"cbt": "true"},
+						},
+					},
+				}
+
+				var v1VirtConfig hcov1.VirtualizationConfig
+				Expect(convertVirtualizationV1beta1ToV1(v1beta1Spec, &v1VirtConfig)).To(Succeed())
+
+				Expect(v1VirtConfig.ChangedBlockTrackingLabelSelectors).ToNot(BeNil())
+				Expect(v1VirtConfig.ChangedBlockTrackingLabelSelectors.NamespaceLabelSelector).ToNot(BeNil())
+				Expect(v1VirtConfig.ChangedBlockTrackingLabelSelectors.NamespaceLabelSelector.MatchLabels).To(HaveKeyWithValue("cbt", "true"))
+				Expect(v1VirtConfig.ChangedBlockTrackingLabelSelectors.VirtualMachineLabelSelector).ToNot(BeNil())
+				Expect(v1VirtConfig.ChangedBlockTrackingLabelSelectors.VirtualMachineLabelSelector.MatchLabels).To(HaveKeyWithValue("cbt", "true"))
+			})
+
+			It("should not convert ChangedBlockTrackingLabelSelectors when nil", func() {
+				v1beta1Spec := HyperConvergedSpec{}
+
+				var v1VirtConfig hcov1.VirtualizationConfig
+				Expect(convertVirtualizationV1beta1ToV1(v1beta1Spec, &v1VirtConfig)).To(Succeed())
+
+				Expect(v1VirtConfig.ChangedBlockTrackingLabelSelectors).To(BeNil())
 			})
 
 			It("should convert Hypervisors", func() {
