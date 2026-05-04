@@ -1,0 +1,182 @@
+[
+  {
+    "name": "AlignCPUs",
+    "state": "Alpha"
+  },
+  {
+    "name": "CPUManager",
+    "state": "Alpha"
+  },
+  {
+    "name": "ConfigurableHypervisor",
+    "state": "Alpha"
+  },
+  {
+    "name": "ContainerPathVolumes",
+    "state": "Alpha"
+  },
+  {
+    "name": "DecentralizedLiveMigration",
+    "state": "Alpha"
+  },
+  {
+    "name": "DeclarativeHotplugVolumes",
+    "state": "Alpha"
+  },
+  {
+    "name": "DownwardMetrics",
+    "state": "Alpha"
+  },
+  {
+    "name": "EnableVirtioFsStorageVolumes",
+    "state": "Alpha"
+  },
+  {
+    "name": "ExperimentalIgnitionSupport",
+    "state": "Alpha"
+  },
+  {
+    "name": "GPUsWithDRA",
+    "state": "Alpha"
+  },
+  {
+    "name": "HostDevices",
+    "state": "Alpha"
+  },
+  {
+    "name": "HostDevicesWithDRA",
+    "state": "Alpha"
+  },
+  {
+    "name": "HostDisk",
+    "state": "Alpha"
+  },
+  {
+    "name": "HotplugVolumes",
+    "state": "Alpha"
+  },
+  {
+    "name": "HypervStrictCheck",
+    "state": "Alpha"
+  },
+  {
+    "name": "IncrementalBackup",
+    "state": "Alpha"
+  },
+  {
+    "name": "LibvirtHooksServerAndClient",
+    "state": "Alpha"
+  },
+  {
+    "name": "ObjectGraph",
+    "state": "Alpha"
+  },
+  {
+    "name": "OptOutRoleAggregation",
+    "state": "Alpha"
+  },
+  {
+    "name": "PCINUMAAwareTopology",
+    "state": "Alpha"
+  },
+  {
+    "name": "PersistentReservation",
+    "state": "Alpha"
+  },
+  {
+    "name": "RebootPolicy",
+    "state": "Alpha"
+  },
+  {
+    "name": "ReservedOverheadMemlock",
+    "state": "Alpha"
+  },
+  {
+    "name": "Root",
+    "state": "Alpha"
+  },
+  {
+    "name": "Sidecar",
+    "state": "Alpha"
+  },
+  {
+    "name": "Template",
+    "state": "Alpha"
+  },
+  {
+    "name": "UtilityVolumes",
+    "state": "Alpha"
+  },
+  {
+    "name": "VGPULiveMigration",
+    "state": "Alpha"
+  },
+  {
+    "name": "VSOCK",
+    "state": "Alpha"
+  },
+  {
+    "name": "VmiMemoryOverheadReport",
+    "state": "Alpha"
+  },
+  {
+    "name": "WorkloadEncryptionSEV",
+    "state": "Alpha"
+  },
+  {
+    "name": "WorkloadEncryptionTDX",
+    "state": "Alpha"
+  },
+  {
+    "name": "ExternalNetResourceInjection",
+    "state": "Beta"
+  },
+  {
+    "name": "ImageVolume",
+    "state": "Beta"
+  },
+  {
+    "name": "KubevirtSeccompProfile",
+    "state": "Beta"
+  },
+  {
+    "name": "MigrationPriorityQueue",
+    "state": "Beta"
+  },
+  {
+    "name": "NodeRestriction",
+    "state": "Beta"
+  },
+  {
+    "name": "PasstBinding",
+    "state": "Beta"
+  },
+  {
+    "name": "PodSecondaryInterfaceNamingUpgrade",
+    "state": "Beta"
+  },
+  {
+    "name": "SecureExecution",
+    "state": "Beta"
+  },
+  {
+    "name": "Snapshot",
+    "state": "Beta"
+  },
+  {
+    "name": "VideoConfig",
+    "state": "Beta"
+  },
+  {
+    "name": "DisableMDEVConfiguration",
+    "state": "Deprecated"
+  },
+  {
+    "name": "DockerSELinuxMCSWorkaround",
+    "state": "Deprecated"
+  },
+  {
+    "name": "MultiArchitecture",
+    "state": "Deprecated"
+  }
+]
