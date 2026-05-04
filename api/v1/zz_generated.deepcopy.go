@@ -956,6 +956,11 @@ func (in *VirtualizationConfig) DeepCopyInto(out *VirtualizationConfig) {
 		*out = new(apicorev1.KSMConfiguration)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ChangedBlockTrackingLabelSelectors != nil {
+		in, out := &in.ChangedBlockTrackingLabelSelectors, &out.ChangedBlockTrackingLabelSelectors
+		*out = new(apicorev1.ChangedBlockTrackingSelectors)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.Hypervisors != nil {
 		in, out := &in.Hypervisors, &out.Hypervisors
 		*out = make([]apicorev1.HypervisorConfiguration, len(*in))
