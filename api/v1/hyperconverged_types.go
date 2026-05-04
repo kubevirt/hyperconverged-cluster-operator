@@ -285,6 +285,11 @@ type VirtualizationConfig struct {
 	// +optional
 	KSMConfiguration *v1.KSMConfiguration `json:"ksmConfiguration,omitempty"`
 
+	// ChangedBlockTrackingLabelSelectors defines label selectors. VMs matching these selectors will have changed
+	// block tracking enabled. Enabling changed block tracking is mandatory for performing incremental backups.
+	// +optional
+	ChangedBlockTrackingLabelSelectors *v1.ChangedBlockTrackingSelectors `json:"changedBlockTrackingLabelSelectors,omitempty"`
+
 	// Hypervisors specifies which hypervisor the cluster uses to run virtual machines.
 	// If empty or not set, KubeVirt defaults to KVM. Currently, only a single entry is supported.
 	// Allowed values for the hypervisor name are "kvm" and "hyperv-direct".

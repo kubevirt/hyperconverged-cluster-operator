@@ -255,6 +255,12 @@ type HyperConvergedSpec struct {
 	// +k8s:conversion-gen=false
 	KSMConfiguration *v1.KSMConfiguration `json:"ksmConfiguration,omitempty"`
 
+	// ChangedBlockTrackingLabelSelectors defines label selectors. VMs matching these selectors will have changed
+	// block tracking enabled. Enabling changed block tracking is mandatory for performing incremental backups.
+	// +optional
+	// +k8s:conversion-gen=false
+	ChangedBlockTrackingLabelSelectors *v1.ChangedBlockTrackingSelectors `json:"changedBlockTrackingLabelSelectors,omitempty"`
+
 	// NetworkBinding defines the network binding plugins.
 	// Those bindings can be used when defining virtual machine interfaces.
 	// +optional
