@@ -147,6 +147,10 @@ func convertVirtualizationV1ToV1beta1(v1VirtConfig hcov1.VirtualizationConfig, v
 		v1beta1Spec.KSMConfiguration = v1VirtConfig.KSMConfiguration.DeepCopy()
 	}
 
+	if v1VirtConfig.ChangedBlockTrackingLabelSelectors != nil {
+		v1beta1Spec.ChangedBlockTrackingLabelSelectors = v1VirtConfig.ChangedBlockTrackingLabelSelectors.DeepCopy()
+	}
+
 	if len(v1VirtConfig.Hypervisors) > 0 {
 		v1beta1Spec.Hypervisors = make([]kubevirtv1.HypervisorConfiguration, len(v1VirtConfig.Hypervisors))
 		for i := range v1VirtConfig.Hypervisors {
@@ -232,6 +236,10 @@ func convertVirtualizationV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1VirtConf
 
 	if v1beta1Spec.KSMConfiguration != nil {
 		v1VirtConfig.KSMConfiguration = v1beta1Spec.KSMConfiguration.DeepCopy()
+	}
+
+	if v1beta1Spec.ChangedBlockTrackingLabelSelectors != nil {
+		v1VirtConfig.ChangedBlockTrackingLabelSelectors = v1beta1Spec.ChangedBlockTrackingLabelSelectors.DeepCopy()
 	}
 
 	if len(v1beta1Spec.Hypervisors) > 0 {

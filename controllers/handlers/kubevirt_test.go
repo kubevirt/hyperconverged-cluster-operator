@@ -3738,6 +3738,28 @@ Version: 1.2.3`)
 			})
 		})
 
+		Context("ChangedBlockTrackingLabelSelectors", func() {
+			It("should set the label selectors according to HCO CR", func() {
+				hco.Spec.ChangedBlockTrackingLabelSelectors = &kubevirtcorev1.ChangedBlockTrackingSelectors{
+					NamespaceLabelSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"cbt": "true"},
+					},
+					VirtualMachineLabelSelector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{"cbt": "true"},
+					},
+				}
+
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.ChangedBlockTrackingLabelSelectors).NotTo(BeNil())
+				Expect(kv.Spec.Configuration.ChangedBlockTrackingLabelSelectors.NamespaceLabelSelector).NotTo(BeNil())
+				Expect(kv.Spec.Configuration.ChangedBlockTrackingLabelSelectors.NamespaceLabelSelector.MatchLabels).To(HaveKeyWithValue("cbt", "true"))
+				Expect(kv.Spec.Configuration.ChangedBlockTrackingLabelSelectors.VirtualMachineLabelSelector).NotTo(BeNil())
+				Expect(kv.Spec.Configuration.ChangedBlockTrackingLabelSelectors.VirtualMachineLabelSelector.MatchLabels).To(HaveKeyWithValue("cbt", "true"))
+			})
+		})
+
 		Context("Rollout Strategy", func() {
 			It("should be set to live update", func() {
 				kv, err := NewKubeVirt(hco)

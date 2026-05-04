@@ -232,6 +232,7 @@ func autoConvert_v1beta1_HyperConvergedSpec_To_v1_HyperConvergedSpec(in *HyperCo
 	// INFO: in.VirtualMachineOptions opted out of conversion generation
 	// INFO: in.CommonBootImageNamespace opted out of conversion generation
 	// INFO: in.KSMConfiguration opted out of conversion generation
+	// INFO: in.ChangedBlockTrackingLabelSelectors opted out of conversion generation
 	// INFO: in.NetworkBinding opted out of conversion generation
 	// INFO: in.ApplicationAwareConfig opted out of conversion generation
 	// INFO: in.HigherWorkloadDensity opted out of conversion generation

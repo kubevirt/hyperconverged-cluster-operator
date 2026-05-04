@@ -837,6 +837,37 @@ spec:
       nodeLabelSelector: {}
 ```
 
+### ChangedBlockTrackingLabelSelectors configuration
+
+Changed Block Tracking (CBT) is a feature that allows the creation of qcow2 metadata overlays for existing eligible disks in order to store bitmaps
+that will be used to facilitate VM incremental backups, for more information, see: https://libvirt.org/kbase/internals/incremental-backup.html.
+The `spec.virtualization.changedBlockTrackingLabelSelectors` configuration allows CBT opt-in by selecting VMs to enable the CBT incremental backup feature for.
+`namespaceLabelSelector` is a [labelselector](https://github.com/kubernetes/apimachinery/blob/60180f072f73eafec72ef9f2c418a6bb1357d434/pkg/apis/meta/v1/types.go#l1195)
+and defines the filter, based on the namespace labels. If a namespace's labels match the label selector term,
+then the VMs in that namespace will become eligible for CBT post-restart.
+`virtualMachineLabelSelector` is the same as `namespaceLabelSelector` except that it targets at the individual VM level.
+
+examples
+- enabling CBT on all VMs a namespace that has the `cbt` label:
+```yaml
+spec:
+  virtualization:
+    changedBlockTrackingLabelSelectors:
+      namespaceLabelSelector:
+        matchLabels:
+          cbt: ""
+```
+
+- enabling CBT on all VMs in the cluster that have the `cbt: true` label:
+```yaml
+spec:
+  virtualization:
+    changedBlockTrackingLabelSelectors:
+      virtualMachineLabelSelector:
+        matchLabels:
+          cbt: "true"
+```
+
 ### Configure higher workload density
 Cluster administrators can opt-in for higher VM workload density by configuring the memory overcommit percentage as
 follows:
