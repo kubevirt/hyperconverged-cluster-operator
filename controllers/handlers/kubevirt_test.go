@@ -43,9 +43,9 @@ var _ = Describe("KubeVirt Operand", func() {
 	)
 
 	var (
-		basicNumFgOnOpenshift = len(hardCodeKvFgs) + len(sspConditionKvFgs) + conditionalFeatureGatesCount
+		basicNumFgOnOpenshift = len(hardCodeKvFgs) + 1 + conditionalFeatureGatesCount
 		// Number of featuregates returned by getMandatoryKvFeatureGates (hardcoded + SSP conditional, excludes volume hotplug)
-		mandatoryFgCount = len(hardCodeKvFgs) + len(sspConditionKvFgs)
+		mandatoryFgCount = len(hardCodeKvFgs) + 1
 		// Default featuregate count (not Openshift))
 		defaultFeatureGateCount = len(hardCodeKvFgs) + conditionalFeatureGatesCount
 	)
@@ -340,9 +340,7 @@ Version: 1.2.3`)).To(Succeed())
 			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(
 				hardCodeKvFgs,
 			))
-			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(
-				sspConditionKvFgs,
-			))
+			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvHypervStrictCheck))
 			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(
 				kvDownwardMetrics,
 			))
@@ -557,12 +555,8 @@ Version: 1.2.3`)
 			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(
 				hardCodeKvFgs,
 			))
-			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(
-				sspConditionKvFgs,
-			))
-			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(
-				kvDownwardMetrics,
-			))
+			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvHypervStrictCheck))
+			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvDownwardMetrics))
 
 			Expect(foundResource.Spec.Configuration.MachineType).To(BeEmpty())
 			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Amd64.MachineType).To(Equal("q35"))
@@ -1895,7 +1889,7 @@ Version: 1.2.3`)
 						And(
 							HaveLen(basicNumFgOnOpenshift),
 							ContainElements(hardCodeKvFgs),
-							ContainElements(sspConditionKvFgs),
+							ContainElement(kvHypervStrictCheck),
 							Not(ContainElement(kvPersistentReservation)),
 							Not(ContainElement(kvDownwardMetrics)),
 							ContainElement(kvDecentralizedLiveMigration),
@@ -1908,6 +1902,7 @@ Version: 1.2.3`)
 						),
 						func(kv *kubevirtcorev1.KubeVirt) {
 							Expect(kv.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
+							Expect(kv.Spec.Configuration.DeveloperConfiguration.DisabledFeatureGates).ToNot(ContainElement(kvVideoConfig))
 						},
 					),
 					// PersistentReservation
@@ -2094,7 +2089,9 @@ Version: 1.2.3`)
 							}
 						},
 						ContainElement(kvVideoConfig),
-						//>>>Expect(existingResource.Spec.Configuration.DeveloperConfiguration.DisabledFeatureGates).NotTo(ContainElement(kvVideoConfig))
+						func(kv *kubevirtcorev1.KubeVirt) {
+							Expect(kv.Spec.Configuration.DeveloperConfiguration.DisabledFeatureGates).NotTo(ContainElement(kvVideoConfig))
+						},
 					),
 					Entry("should not add the VideoConfig if feature gate VideoConfig is set to false in HyperConverged CR",
 						func(hc *hcov1.HyperConverged) {
@@ -2103,7 +2100,9 @@ Version: 1.2.3`)
 							}
 						},
 						Not(ContainElement(kvVideoConfig)),
-						//>>>Expect(existingResource.Spec.Configuration.DeveloperConfiguration.DisabledFeatureGates).NotTo(ContainElement(kvVideoConfig))
+						func(kv *kubevirtcorev1.KubeVirt) {
+							Expect(kv.Spec.Configuration.DeveloperConfiguration.DisabledFeatureGates).To(ContainElement(kvVideoConfig))
+						},
 					),
 				)
 			})
@@ -2171,7 +2170,7 @@ Version: 1.2.3`)
 					fgList := foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates
 					Expect(fgList).To(HaveLen(basicNumFgOnOpenshift))
 					Expect(fgList).To(ContainElements(hardCodeKvFgs))
-					Expect(fgList).To(ContainElements(sspConditionKvFgs))
+					Expect(fgList).To(ContainElement(kvHypervStrictCheck))
 				})
 
 				It("should not add feature gates if they are not exist", func() {
@@ -2199,7 +2198,7 @@ Version: 1.2.3`)
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
 					fgList := foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates
 					Expect(fgList).To(ContainElements(hardCodeKvFgs))
-					Expect(fgList).To(ContainElements(sspConditionKvFgs))
+					Expect(fgList).To(ContainElement(kvHypervStrictCheck))
 				})
 
 				It("should keep FG if already exist", func() {
@@ -2265,7 +2264,7 @@ Version: 1.2.3`)
 
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(sspConditionKvFgs))
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvHypervStrictCheck))
 				})
 
 				It("should remove FG if it missing from the HC CR", func() {
@@ -2295,7 +2294,7 @@ Version: 1.2.3`)
 
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(sspConditionKvFgs))
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvHypervStrictCheck))
 				})
 
 				It("should remove FG if it the HC CR does not contain the featureGates field", func() {
@@ -2357,7 +2356,7 @@ Version: 1.2.3`)
 						false,
 						&featuregates.HyperConvergedFeatureGates{},
 						basicNumFgOnOpenshift,
-						[][]string{hardCodeKvFgs, sspConditionKvFgs},
+						[][]string{hardCodeKvFgs, {kvHypervStrictCheck}},
 					),
 					Entry("When using kvm-emulation and FG is empty",
 						true,
@@ -2369,7 +2368,7 @@ Version: 1.2.3`)
 						false,
 						&featuregates.HyperConvergedFeatureGates{{Name: "downwardMetrics", State: ptr.To(featuregates.Enabled)}},
 						basicNumFgOnOpenshift+1,
-						[][]string{hardCodeKvFgs, sspConditionKvFgs, {kvDownwardMetrics}},
+						[][]string{hardCodeKvFgs, {kvHypervStrictCheck}, {kvDownwardMetrics}},
 					),
 					Entry("When using kvm-emulation all FGs are enabled",
 						true,
@@ -2384,7 +2383,7 @@ Version: 1.2.3`)
 					fgs := getMandatoryKvFeatureGates(false)
 					Expect(fgs).To(HaveLen(mandatoryFgCount))
 					Expect(fgs).To(ContainElements(hardCodeKvFgs))
-					Expect(fgs).To(ContainElements(sspConditionKvFgs))
+					Expect(fgs).To(ContainElement(kvHypervStrictCheck))
 				})
 
 				It("Should not include the sspConditionKvFgs if not running in openshift", func() {
