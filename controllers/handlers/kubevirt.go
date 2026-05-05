@@ -132,20 +132,10 @@ var (
 	mandatoryKvFeatureGates []string
 )
 
-// These KubeVirt feature gates are automatically enabled in KubeVirt if SSP is deployed
+// These KubeVirt feature gates are automatically enabled in KubeVirt, unless emulation is enabled
 const (
-	// Support migration for VMs with host-model CPU mode
-	kvWithHostModelCPU = "WithHostModelCPU" // todo check if can be dropped. seems to not known by KV
-
 	// Enable HyperV strict host checking for HyperV enlightenments
 	kvHypervStrictCheck = "HypervStrictCheck"
-)
-
-var (
-	sspConditionKvFgs = []string{
-		kvWithHostModelCPU,
-		kvHypervStrictCheck,
-	}
 )
 
 // KubeVirt feature gates that are exposed in HCO API
@@ -1079,9 +1069,9 @@ func translateKubeVirtConds(orig []kubevirtcorev1.KubeVirtCondition) []metav1.Co
 }
 
 func getMandatoryKvFeatureGates(isKVMEmulation bool) []string {
-	mandatoryFeatureGates := hardCodeKvFgs
+	mandatoryFeatureGates := slices.Clone(hardCodeKvFgs)
 	if !isKVMEmulation {
-		mandatoryFeatureGates = append(mandatoryFeatureGates, sspConditionKvFgs...)
+		mandatoryFeatureGates = append(mandatoryFeatureGates, kvHypervStrictCheck)
 	}
 
 	return mandatoryFeatureGates

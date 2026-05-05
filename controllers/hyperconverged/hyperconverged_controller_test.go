@@ -209,7 +209,6 @@ var _ = Describe("HyperconvergedController", func() {
 					"Snapshot",
 					"HotplugVolumes",
 					"HostDevices",
-					"WithHostModelCPU",
 					"HypervStrictCheck",
 					"ExpandDisks",
 					"DownwardMetrics",
