@@ -3,6 +3,7 @@ module github.com/kubevirt/hyperconverged-cluster-operator
 go 1.25.7
 
 require (
+	github.com/konflux-ci/coverport v0.0.0-00010101000000-000000000000
 	dario.cat/mergo v1.0.2
 	github.com/blang/semver/v4 v4.0.0
 	github.com/containers/image/v5 v5.36.2

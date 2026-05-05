@@ -1,4 +1,5 @@
 FROM --platform=${BUILDPLATFORM} quay.io/projectquay/golang:1.25 AS builder
+ARG ENABLE_COVERAGE=false
 
 WORKDIR /go/src/github.com/kubevirt/hyperconverged-cluster-operator/
 COPY . .
@@ -26,6 +27,9 @@ RUN mkdir -p ${HOME} && \
 COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/_out/hyperconverged-cluster-operator $OPERATOR
 COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/_out/csv-merger $CSV_MERGER
 COPY --from=builder /go/src/github.com/kubevirt/hyperconverged-cluster-operator/assets/ ./
+RUN mkdir -p /tmp/covdata
+ENV GOCOVERDIR=/tmp/covdata
+EXPOSE 53700
 ENTRYPOINT $OPERATOR
 USER ${USER_UID}
 
