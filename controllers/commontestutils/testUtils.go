@@ -43,7 +43,6 @@ import (
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api"
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -66,15 +65,7 @@ var (
 	}
 )
 
-var NewHco = NewHcoV1beta1
-
-func NewHcoV1beta1() *hcov1beta1.HyperConverged {
-	hco := components.GetOperatorCR()
-	hco.Namespace = Namespace
-	return hco
-}
-
-func NewHcoV1() *hcov1.HyperConverged {
+func NewHco() *hcov1.HyperConverged {
 	hco := components.GetOperatorV1CR()
 	hco.Namespace = Namespace
 	return hco
@@ -88,7 +79,7 @@ func NewHcoNamespace() *corev1.Namespace {
 	}
 }
 
-func NewReq(inst *hcov1beta1.HyperConverged) *common.HcoRequest {
+func NewReq(inst *hcov1.HyperConverged) *common.HcoRequest {
 	return &common.HcoRequest{
 		Request:      TestRequest,
 		Logger:       TestLogger,
