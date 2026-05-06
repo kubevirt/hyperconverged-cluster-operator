@@ -14,7 +14,7 @@ import (
 
 	"kubevirt.io/controller-lifecycle-operator-sdk/api"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/internal/nodeinfo"
 )
 
@@ -24,7 +24,7 @@ var _ = Describe("test node architectures", func() {
 	BeforeEach(func() {
 		scheme = runtime.NewScheme()
 		Expect(corev1.AddToScheme(scheme)).To(Succeed())
-		Expect(v1beta1.AddToScheme(scheme)).To(Succeed())
+		Expect(hcov1.AddToScheme(scheme)).To(Succeed())
 	})
 
 	Context("no node selection", func() {
@@ -344,11 +344,15 @@ var _ = Describe("test node architectures", func() {
 	})
 
 	Context("with node selection", func() {
-		DescribeTable("When HyperConverged is deployed", func(ctx context.Context, nodes []client.Object, workloadsSettings v1beta1.HyperConvergedConfig, expectedWL types.GomegaMatcher) {
+		DescribeTable("When HyperConverged is deployed", func(ctx context.Context, nodes []client.Object, workloadsSettings *api.NodePlacement, expectedWL types.GomegaMatcher) {
 
-			hc := &v1beta1.HyperConverged{
-				Spec: v1beta1.HyperConvergedSpec{
-					Workloads: workloadsSettings,
+			hc := &hcov1.HyperConverged{
+				Spec: hcov1.HyperConvergedSpec{
+					Deployment: hcov1.DeploymentConfig{
+						NodePlacements: &hcov1.NodePlacements{
+							Workload: workloadsSettings,
+						},
+					},
 				},
 			}
 
@@ -368,7 +372,7 @@ var _ = Describe("test node architectures", func() {
 				Status: corev1.NodeStatus{
 					NodeInfo: corev1.NodeSystemInfo{},
 				},
-			}}, v1beta1.HyperConvergedConfig{}, BeEmpty()),
+			}}, nil, BeEmpty()),
 			Entry("1 worker, node selector - not match", []client.Object{&corev1.Node{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "worker1",
@@ -380,11 +384,9 @@ var _ = Describe("test node architectures", func() {
 				Status: corev1.NodeStatus{
 					NodeInfo: corev1.NodeSystemInfo{},
 				},
-			}}, v1beta1.HyperConvergedConfig{
-				NodePlacement: &api.NodePlacement{
-					NodeSelector: map[string]string{
-						"label-b": "value-b",
-					},
+			}}, &api.NodePlacement{
+				NodeSelector: map[string]string{
+					"label-b": "value-b",
 				},
 			}, BeEmpty()),
 			Entry("1 worker, node selector - match", []client.Object{&corev1.Node{
@@ -398,11 +400,9 @@ var _ = Describe("test node architectures", func() {
 				Status: corev1.NodeStatus{
 					NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
 				},
-			}}, v1beta1.HyperConvergedConfig{
-				NodePlacement: &api.NodePlacement{
-					NodeSelector: map[string]string{
-						"label-a": "value-a",
-					},
+			}}, &api.NodePlacement{
+				NodeSelector: map[string]string{
+					"label-a": "value-a",
 				},
 			}, Equal([]string{"amd64"})),
 			Entry("non-worker, node selector - match", []client.Object{&corev1.Node{
@@ -415,11 +415,9 @@ var _ = Describe("test node architectures", func() {
 				Status: corev1.NodeStatus{
 					NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
 				},
-			}}, v1beta1.HyperConvergedConfig{
-				NodePlacement: &api.NodePlacement{
-					NodeSelector: map[string]string{
-						"label-a": "value-a",
-					},
+			}}, &api.NodePlacement{
+				NodeSelector: map[string]string{
+					"label-a": "value-a",
 				},
 			}, Equal([]string{"amd64"})),
 			Entry("control-plane, node selector - match", []client.Object{&corev1.Node{
@@ -433,11 +431,9 @@ var _ = Describe("test node architectures", func() {
 				Status: corev1.NodeStatus{
 					NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
 				},
-			}}, v1beta1.HyperConvergedConfig{
-				NodePlacement: &api.NodePlacement{
-					NodeSelector: map[string]string{
-						"label-a": "value-a",
-					},
+			}}, &api.NodePlacement{
+				NodeSelector: map[string]string{
+					"label-a": "value-a",
 				},
 			}, Equal([]string{"amd64"})),
 			Entry("node selector w/ 2 labels - 1 match, 1 not", []client.Object{&corev1.Node{
@@ -450,12 +446,10 @@ var _ = Describe("test node architectures", func() {
 				Status: corev1.NodeStatus{
 					NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
 				},
-			}}, v1beta1.HyperConvergedConfig{
-				NodePlacement: &api.NodePlacement{
-					NodeSelector: map[string]string{
-						"label-a": "value-a",
-						"label-b": "value-b",
-					},
+			}}, &api.NodePlacement{
+				NodeSelector: map[string]string{
+					"label-a": "value-a",
+					"label-b": "value-b",
 				},
 			}, BeEmpty()),
 			Entry("2 nodes, 2 match", []client.Object{
@@ -481,11 +475,9 @@ var _ = Describe("test node architectures", func() {
 						NodeInfo: corev1.NodeSystemInfo{Architecture: "arm64"},
 					},
 				},
-			}, v1beta1.HyperConvergedConfig{
-				NodePlacement: &api.NodePlacement{
-					NodeSelector: map[string]string{
-						"label-a": "value-a",
-					},
+			}, &api.NodePlacement{
+				NodeSelector: map[string]string{
+					"label-a": "value-a",
 				},
 			}, Equal([]string{"amd64", "arm64"})),
 			Entry("non-worker, node affinity - not match", []client.Object{&corev1.Node{
@@ -498,16 +490,14 @@ var _ = Describe("test node architectures", func() {
 				Status: corev1.NodeStatus{
 					NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
 				},
-			}}, v1beta1.HyperConvergedConfig{
-				NodePlacement: &api.NodePlacement{
-					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{Key: "label-a", Operator: corev1.NodeSelectorOpIn, Values: []string{"value-b", "value-c"}},
-										},
+			}}, &api.NodePlacement{
+				Affinity: &corev1.Affinity{
+					NodeAffinity: &corev1.NodeAffinity{
+						RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+							NodeSelectorTerms: []corev1.NodeSelectorTerm{
+								{
+									MatchExpressions: []corev1.NodeSelectorRequirement{
+										{Key: "label-a", Operator: corev1.NodeSelectorOpIn, Values: []string{"value-b", "value-c"}},
 									},
 								},
 							},
@@ -525,16 +515,14 @@ var _ = Describe("test node architectures", func() {
 				Status: corev1.NodeStatus{
 					NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
 				},
-			}}, v1beta1.HyperConvergedConfig{
-				NodePlacement: &api.NodePlacement{
-					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{Key: "label-a", Operator: corev1.NodeSelectorOpIn, Values: []string{"value-a", "value-b", "value-c"}},
-										},
+			}}, &api.NodePlacement{
+				Affinity: &corev1.Affinity{
+					NodeAffinity: &corev1.NodeAffinity{
+						RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+							NodeSelectorTerms: []corev1.NodeSelectorTerm{
+								{
+									MatchExpressions: []corev1.NodeSelectorRequirement{
+										{Key: "label-a", Operator: corev1.NodeSelectorOpIn, Values: []string{"value-a", "value-b", "value-c"}},
 									},
 								},
 							},
@@ -576,16 +564,14 @@ var _ = Describe("test node architectures", func() {
 						NodeInfo: corev1.NodeSystemInfo{Architecture: "s390x"},
 					},
 				},
-			}, v1beta1.HyperConvergedConfig{
-				NodePlacement: &api.NodePlacement{
-					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{Key: "label-a", Operator: corev1.NodeSelectorOpIn, Values: []string{"value-a", "value-c"}},
-										},
+			}, &api.NodePlacement{
+				Affinity: &corev1.Affinity{
+					NodeAffinity: &corev1.NodeAffinity{
+						RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+							NodeSelectorTerms: []corev1.NodeSelectorTerm{
+								{
+									MatchExpressions: []corev1.NodeSelectorRequirement{
+										{Key: "label-a", Operator: corev1.NodeSelectorOpIn, Values: []string{"value-a", "value-c"}},
 									},
 								},
 							},
@@ -628,16 +614,14 @@ var _ = Describe("test node architectures", func() {
 						NodeInfo: corev1.NodeSystemInfo{Architecture: "s390x"},
 					},
 				},
-			}, v1beta1.HyperConvergedConfig{
-				NodePlacement: &api.NodePlacement{
-					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{Key: "label-a", Operator: corev1.NodeSelectorOpIn, Values: []string{"value-a", "value-c"}},
-										},
+			}, &api.NodePlacement{
+				Affinity: &corev1.Affinity{
+					NodeAffinity: &corev1.NodeAffinity{
+						RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+							NodeSelectorTerms: []corev1.NodeSelectorTerm{
+								{
+									MatchExpressions: []corev1.NodeSelectorRequirement{
+										{Key: "label-a", Operator: corev1.NodeSelectorOpIn, Values: []string{"value-a", "value-c"}},
 									},
 								},
 							},
@@ -811,12 +795,14 @@ var _ = Describe("test node architectures", func() {
 			nodes[4].(*corev1.Node).Labels["label-a"] = "value-a"
 			nodes[5].(*corev1.Node).Labels["label-a"] = "value-a"
 
-			hc := &v1beta1.HyperConverged{
-				Spec: v1beta1.HyperConvergedSpec{
-					Workloads: v1beta1.HyperConvergedConfig{
-						NodePlacement: &api.NodePlacement{
-							NodeSelector: map[string]string{
-								"label-a": "value-a",
+			hc := &hcov1.HyperConverged{
+				Spec: hcov1.HyperConvergedSpec{
+					Deployment: hcov1.DeploymentConfig{
+						NodePlacements: &hcov1.NodePlacements{
+							Workload: &api.NodePlacement{
+								NodeSelector: map[string]string{
+									"label-a": "value-a",
+								},
 							},
 						},
 					},
@@ -847,12 +833,14 @@ var _ = Describe("test node architectures", func() {
 			nodes[3].(*corev1.Node).Labels["label-a"] = "value-a"
 			nodes[5].(*corev1.Node).Labels["label-a"] = "value-a"
 
-			hc := &v1beta1.HyperConverged{
-				Spec: v1beta1.HyperConvergedSpec{
-					Workloads: v1beta1.HyperConvergedConfig{
-						NodePlacement: &api.NodePlacement{
-							NodeSelector: map[string]string{
-								"label-a": "value-a",
+			hc := &hcov1.HyperConverged{
+				Spec: hcov1.HyperConvergedSpec{
+					Deployment: hcov1.DeploymentConfig{
+						NodePlacements: &hcov1.NodePlacements{
+							Workload: &api.NodePlacement{
+								NodeSelector: map[string]string{
+									"label-a": "value-a",
+								},
 							},
 						},
 					},
@@ -885,12 +873,14 @@ var _ = Describe("test node architectures", func() {
 			nodes[5].(*corev1.Node).Labels["label-a"] = "value-a"
 			nodes[7].(*corev1.Node).Labels["label-a"] = "value-a"
 
-			hc := &v1beta1.HyperConverged{
-				Spec: v1beta1.HyperConvergedSpec{
-					Workloads: v1beta1.HyperConvergedConfig{
-						NodePlacement: &api.NodePlacement{
-							NodeSelector: map[string]string{
-								"label-a": "value-a",
+			hc := &hcov1.HyperConverged{
+				Spec: hcov1.HyperConvergedSpec{
+					Deployment: hcov1.DeploymentConfig{
+						NodePlacements: &hcov1.NodePlacements{
+							Workload: &api.NodePlacement{
+								NodeSelector: map[string]string{
+									"label-a": "value-a",
+								},
 							},
 						},
 					},

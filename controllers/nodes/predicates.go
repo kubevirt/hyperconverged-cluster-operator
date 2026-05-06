@@ -8,7 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 )
 
 // Custom predicate to detect changes in node count
@@ -32,32 +32,37 @@ func (nodeCountChangePredicate) Generic(_ event.TypedGenericEvent[*corev1.Node])
 	return false
 }
 
-type hyperconvergedPredicate predicate.TypedFuncs[*v1beta1.HyperConverged]
+type hyperconvergedPredicate predicate.TypedFuncs[*hcov1.HyperConverged]
 
-func (hyperconvergedPredicate) Create(_ event.TypedCreateEvent[*v1beta1.HyperConverged]) bool {
+func (hyperconvergedPredicate) Create(_ event.TypedCreateEvent[*hcov1.HyperConverged]) bool {
 	// HyperConverged CR is created, we want to reconcile
 	return true
 }
 
-func (hyperconvergedPredicate) Update(e event.TypedUpdateEvent[*v1beta1.HyperConverged]) bool {
+func (hyperconvergedPredicate) Update(e event.TypedUpdateEvent[*hcov1.HyperConverged]) bool {
 	// HyperConverged CR is updated
 	if e.ObjectNew.DeletionTimestamp != nil {
 		// If the HyperConverged CR is being deleted, we do not want to reconcile
 		return false
 	}
 
-	if !reflect.DeepEqual(e.ObjectNew.Spec.Workloads, e.ObjectOld.Spec.Workloads) {
-		// If the Workloads spec not changed, we want to reconcile
-		return true
+	newNP := e.ObjectNew.Spec.Deployment.NodePlacements
+	oldNP := e.ObjectOld.Spec.Deployment.NodePlacements
+	newNPExists, oldNPExists := newNP != nil, oldNP != nil
+
+	if newNPExists != oldNPExists {
+		return (newNPExists && newNP.Workload != nil) || (oldNPExists && oldNP.Workload != nil)
+	} else if newNPExists && oldNPExists {
+		return !reflect.DeepEqual(newNP.Workload, oldNP.Workload)
 	}
 
 	return false
 }
 
-func (hyperconvergedPredicate) Delete(_ event.TypedDeleteEvent[*v1beta1.HyperConverged]) bool {
+func (hyperconvergedPredicate) Delete(_ event.TypedDeleteEvent[*hcov1.HyperConverged]) bool {
 	return true
 }
 
-func (hyperconvergedPredicate) Generic(_ event.TypedGenericEvent[*v1beta1.HyperConverged]) bool {
+func (hyperconvergedPredicate) Generic(_ event.TypedGenericEvent[*hcov1.HyperConverged]) bool {
 	return false
 }

@@ -44,6 +44,7 @@ import (
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
@@ -67,8 +68,16 @@ var (
 	}
 )
 
-func NewHco() *hcov1beta1.HyperConverged {
+var NewHco = NewHcoV1beta1
+
+func NewHcoV1beta1() *hcov1beta1.HyperConverged {
 	hco := components.GetOperatorCR()
+	hco.Namespace = Namespace
+	return hco
+}
+
+func NewHcoV1() *hcov1.HyperConverged {
+	hco := components.GetOperatorV1CR()
 	hco.Namespace = Namespace
 	return hco
 }

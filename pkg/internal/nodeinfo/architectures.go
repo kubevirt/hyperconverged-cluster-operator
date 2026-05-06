@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/component-helpers/scheduling/corev1/nodeaffinity"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 )
 
 const S390X = "s390x"
@@ -58,22 +58,22 @@ func (a *Architectures) set(archs sets.Set[string]) bool {
 	return false
 }
 
-func hasWorkloadRequirements(hc *v1beta1.HyperConverged) bool {
-	if hc == nil || hc.Spec.Workloads.NodePlacement == nil {
+func hasWorkloadRequirements(hc *hcov1.HyperConverged) bool {
+	if hc == nil || hc.Spec.Deployment.NodePlacements == nil || hc.Spec.Deployment.NodePlacements.Workload == nil {
 		return false
 	}
 
-	return len(hc.Spec.Workloads.NodePlacement.NodeSelector) > 0 ||
-		(hc.Spec.Workloads.NodePlacement.Affinity != nil &&
-			hc.Spec.Workloads.NodePlacement.Affinity.NodeAffinity != nil &&
-			hc.Spec.Workloads.NodePlacement.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil)
+	return len(hc.Spec.Deployment.NodePlacements.Workload.NodeSelector) > 0 ||
+		(hc.Spec.Deployment.NodePlacements.Workload.Affinity != nil &&
+			hc.Spec.Deployment.NodePlacements.Workload.Affinity.NodeAffinity != nil &&
+			hc.Spec.Deployment.NodePlacements.Workload.Affinity.NodeAffinity.RequiredDuringSchedulingIgnoredDuringExecution != nil)
 }
 
-func getWorkloadMatcher(hc *v1beta1.HyperConverged) nodeaffinity.RequiredNodeAffinity {
+func getWorkloadMatcher(hc *hcov1.HyperConverged) nodeaffinity.RequiredNodeAffinity {
 	pod := &corev1.Pod{
 		Spec: corev1.PodSpec{
-			NodeSelector: hc.Spec.Workloads.NodePlacement.NodeSelector,
-			Affinity:     hc.Spec.Workloads.NodePlacement.Affinity,
+			NodeSelector: hc.Spec.Deployment.NodePlacements.Workload.NodeSelector,
+			Affinity:     hc.Spec.Deployment.NodePlacements.Workload.Affinity,
 		},
 	}
 

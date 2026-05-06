@@ -20,6 +20,7 @@ import (
 	migrationapi "kubevirt.io/kubevirt-migration-operator/api/v1alpha1"
 	sspapi "kubevirt.io/ssp-operator/api/v1beta3"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -632,6 +633,22 @@ func GetOperatorCR() *hcov1beta1.HyperConverged {
 	defaultHco := &hcov1beta1.HyperConverged{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: util.APIVersion,
+			Kind:       util.HyperConvergedKind,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: crName,
+		}}
+	defaultScheme.Default(defaultHco)
+	return defaultHco
+}
+
+func GetOperatorV1CR() *hcov1.HyperConverged {
+	defaultScheme := runtime.NewScheme()
+	_ = hcov1.AddToScheme(defaultScheme)
+	_ = hcov1.RegisterDefaults(defaultScheme)
+	defaultHco := &hcov1.HyperConverged{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: hcov1.APIVersionV1,
 			Kind:       util.HyperConvergedKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{

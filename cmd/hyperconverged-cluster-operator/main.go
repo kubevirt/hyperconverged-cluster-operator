@@ -59,6 +59,7 @@ import (
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/api"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/cmd/cmdcommon"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/admissionpolicy"
@@ -349,6 +350,7 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo, persesAvai
 
 	cacheOptions := cache.Options{
 		ByObject: map[client.Object]cache.ByObject{
+			&hcov1.HyperConverged{}:                {},
 			&hcov1beta1.HyperConverged{}:           {},
 			&kubevirtcorev1.KubeVirt{}:             {},
 			&cdiv1beta1.CDI{}:                      {},
