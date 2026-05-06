@@ -9,13 +9,12 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-type newDeploymentFunc func(hc *hcov1beta1.HyperConverged) *appsv1.Deployment
+type newDeploymentFunc func(hc *hcov1.HyperConverged) *appsv1.Deployment
 
 func NewDeploymentHandler(cli client.Client, Scheme *runtime.Scheme, deploymentGenerator newDeploymentFunc) *GenericOperand {
 	return NewGenericOperand(cli, Scheme, "Deployment", newDeploymentHooks(deploymentGenerator), false)
@@ -40,7 +39,7 @@ func (h *deploymentHooks) Reset() {
 	h.cache = nil
 }
 
-func (h *deploymentHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *deploymentHooks) GetFullCr(hc *hcov1.HyperConverged) (client.Object, error) {
 	h.Lock()
 	defer h.Unlock()
 

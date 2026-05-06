@@ -16,7 +16,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 )
 
@@ -27,7 +26,7 @@ type Operand interface {
 
 type CRGetter interface {
 	// GetFullCr Generate the required resource, with all the required fields)
-	GetFullCr(*hcov1beta1.HyperConverged) (client.Object, error)
+	GetFullCr(*hcov1.HyperConverged) (client.Object, error)
 }
 
 // HCOResourceHooks Set of resource handler hooks, to be implement in each handler
@@ -55,8 +54,8 @@ type Reseter interface {
 	Reset()
 }
 
-type GetHandler func(log.Logger, client.Client, *runtime.Scheme, *hcov1beta1.HyperConverged) (Operand, error)
-type GetHandlers func(log.Logger, client.Client, *runtime.Scheme, *hcov1beta1.HyperConverged, fs.FS) ([]Operand, error)
+type GetHandler func(log.Logger, client.Client, *runtime.Scheme, *hcov1.HyperConverged) (Operand, error)
+type GetHandlers func(log.Logger, client.Client, *runtime.Scheme, *hcov1.HyperConverged, fs.FS) ([]Operand, error)
 
 func handleOperandDegradedCond(req *common.HcoRequest, component string, condition metav1.Condition) bool {
 	if condition.Status == metav1.ConditionTrue {
@@ -151,7 +150,7 @@ func applyAnnotationPatch(obj runtime.Object, annotation string) error {
 	return json.Unmarshal(patchedBytes, obj)
 }
 
-func ApplyPatchToSpec(hc *hcov1beta1.HyperConverged, annotationName string, obj runtime.Object) error {
+func ApplyPatchToSpec(hc *hcov1.HyperConverged, annotationName string, obj runtime.Object) error {
 	if jsonpathAnnotation, ok := hc.Annotations[annotationName]; ok {
 		if err := applyAnnotationPatch(obj, jsonpathAnnotation); err != nil {
 			return fmt.Errorf("invalid jsonPatch in the %s annotation: %v", annotationName, err)

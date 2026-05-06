@@ -11,14 +11,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 )
 
 var _ = Describe("Deployment Handler", func() {
 	Context("update or recreate the Deployment as required", func() {
-		var hco *hcov1beta1.HyperConverged
+		var hco *hcov1.HyperConverged
 		var req *common.HcoRequest
 		var expectedDeployment *appsv1.Deployment
 
@@ -177,7 +177,7 @@ var _ = Describe("Deployment Handler", func() {
 
 })
 
-func NewExpectedDeployment(_ *hcov1beta1.HyperConverged) *appsv1.Deployment {
+func NewExpectedDeployment(_ *hcov1.HyperConverged) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Deployment",

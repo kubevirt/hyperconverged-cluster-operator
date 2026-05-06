@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -24,7 +24,7 @@ type roleHooks struct {
 	required *rbacv1.Role
 }
 
-func (h *roleHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *roleHooks) GetFullCr(_ *hcov1.HyperConverged) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
 func (h *roleHooks) GetEmptyCr() client.Object {
@@ -68,7 +68,7 @@ type clusterRoleHooks struct {
 	required *rbacv1.ClusterRole
 }
 
-func (h *clusterRoleHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *clusterRoleHooks) GetFullCr(_ *hcov1.HyperConverged) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
 
@@ -124,7 +124,7 @@ type roleBindingHooks struct {
 	required *rbacv1.RoleBinding
 }
 
-func (h roleBindingHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h roleBindingHooks) GetFullCr(_ *hcov1.HyperConverged) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
 func (h roleBindingHooks) GetEmptyCr() client.Object {
@@ -167,8 +167,8 @@ type clusterRoleBindingHooks struct {
 	required *rbacv1.ClusterRoleBinding
 }
 
-func (h clusterRoleBindingHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
-	return h.required, nil
+func (h clusterRoleBindingHooks) GetFullCr(_ *hcov1.HyperConverged) (client.Object, error) {
+	return h.required.DeepCopy(), nil
 }
 
 func (h clusterRoleBindingHooks) GetEmptyCr() client.Object { return &rbacv1.ClusterRoleBinding{} }
