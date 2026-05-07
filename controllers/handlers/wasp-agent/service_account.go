@@ -6,7 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -15,7 +15,7 @@ func NewWaspAgentServiceAccountHandler(Client client.Client, Scheme *runtime.Sch
 	return operands.NewConditionalHandler(
 		operands.NewServiceAccountHandler(Client, Scheme, newWaspAgentServiceAccount),
 		shouldDeployWaspAgent,
-		func(hc *hcov1beta1.HyperConverged) client.Object {
+		func(hc *hcov1.HyperConverged) client.Object {
 			return newWaspAgentServiceAccount()
 		},
 	)

@@ -10,7 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -19,7 +19,7 @@ func NewWaspAgentSCCHandler(Client client.Client, Scheme *runtime.Scheme) operan
 	return operands.NewConditionalHandler(
 		operands.NewSecurityContextConstraintsHandler(Client, Scheme, newWaspAgentSCC()),
 		shouldDeployWaspAgent,
-		func(hc *hcov1beta1.HyperConverged) client.Object {
+		func(hc *hcov1.HyperConverged) client.Object {
 			return NewWaspAgentSCCWithNameOnly()
 		},
 	)

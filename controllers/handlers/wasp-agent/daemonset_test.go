@@ -14,14 +14,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 )
 
 var _ = Describe("Wasp Agent DaemonSet", func() {
 	var (
-		hco *hcov1beta1.HyperConverged
+		hco *hcov1.HyperConverged
 		req *common.HcoRequest
 		ds  client.Client
 	)
@@ -34,7 +33,7 @@ var _ = Describe("Wasp Agent DaemonSet", func() {
 
 	Context("Wasp DaemonSet deployment", func() {
 		It("should not create if overcommit percent is less or equal to 100", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+			hco.Spec.Virtualization.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 100,
 			}
 			ds = commontestutils.InitClient([]client.Object{hco})
@@ -53,7 +52,7 @@ var _ = Describe("Wasp Agent DaemonSet", func() {
 			Expect(foundDs.Items).To(BeEmpty())
 		})
 		It("should delete DaemonSet when percentage is set to 100 and below", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+			hco.Spec.Virtualization.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 100,
 			}
 			scc := newWaspAgentDaemonSet(hco)
@@ -74,7 +73,7 @@ var _ = Describe("Wasp Agent DaemonSet", func() {
 			Expect(foundDs.Items).To(BeEmpty())
 		})
 		It("should create Deamonset when percentage is set to higher than 100", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+			hco.Spec.Virtualization.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
 			ds = commontestutils.InitClient([]client.Object{hco})
@@ -95,7 +94,7 @@ var _ = Describe("Wasp Agent DaemonSet", func() {
 		})
 
 		It("should not create DaemonSet when autopilot swap annotation is set even with overcommit > 100", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+			hco.Spec.Virtualization.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
 			hco.Annotations[AutopilotSwapAnnotation] = AutopilotSwapAnnotationValue
@@ -116,7 +115,7 @@ var _ = Describe("Wasp Agent DaemonSet", func() {
 		})
 
 		It("should not create DaemonSet when autopilot full opt-in annotation is set even with overcommit > 100", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+			hco.Spec.Virtualization.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
 			hco.Annotations[AutopilotSwapAnnotation] = AutopilotFullOptInAnnotationValue
@@ -137,7 +136,7 @@ var _ = Describe("Wasp Agent DaemonSet", func() {
 		})
 
 		It("should delete DaemonSet when autopilot full opt-in annotation is added", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+			hco.Spec.Virtualization.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
 			existingDs := newWaspAgentDaemonSet(hco)
@@ -160,7 +159,7 @@ var _ = Describe("Wasp Agent DaemonSet", func() {
 		})
 
 		It("should delete DaemonSet when autopilot swap annotation is added", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+			hco.Spec.Virtualization.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
 			existingDs := newWaspAgentDaemonSet(hco)
@@ -183,7 +182,7 @@ var _ = Describe("Wasp Agent DaemonSet", func() {
 		})
 
 		It("should not create DaemonSet when autopilot swap value is embedded in a comma-separated list", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+			hco.Spec.Virtualization.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
 			// introducing whitespaces to verify the consistency with autopilot implementation
@@ -207,7 +206,7 @@ var _ = Describe("Wasp Agent DaemonSet", func() {
 	})
 	Context("Wasp agent DaemonSet update", func() {
 		It("should update DaemonSet fields if not matched to the requirements", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+			hco.Spec.Virtualization.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
 			originalDs := newWaspAgentDaemonSet(hco)
@@ -242,7 +241,7 @@ var _ = Describe("Wasp Agent DaemonSet", func() {
 		})
 
 		It("should reconcile labels if they are missing while preserving user labels", func() {
-			hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+			hco.Spec.Virtualization.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 				MemoryOvercommitPercentage: 150,
 			}
 			ds := newWaspAgentDaemonSet(hco)

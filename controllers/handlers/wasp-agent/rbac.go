@@ -6,7 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -15,7 +15,7 @@ func NewWaspAgentClusterRoleBindingHandler(cli client.Client, Scheme *runtime.Sc
 	return operands.NewConditionalHandler(
 		operands.NewClusterRoleBindingHandler(cli, Scheme, newWaspAgentClusterRoleBinding()),
 		shouldDeployWaspAgent,
-		func(hc *hcov1beta1.HyperConverged) client.Object {
+		func(hc *hcov1.HyperConverged) client.Object {
 			return newWaspAgentClusterRoleBindingWithNameOnly()
 		},
 	)
@@ -58,7 +58,7 @@ func NewWaspAgentClusterRoleHandler(Client client.Client, Scheme *runtime.Scheme
 	return operands.NewConditionalHandler(
 		operands.NewClusterRoleHandler(Client, Scheme, newWaspAgentClusterRole()),
 		shouldDeployWaspAgent,
-		func(hc *hcov1beta1.HyperConverged) client.Object {
+		func(hc *hcov1.HyperConverged) client.Object {
 			return newWaspAgentClusterRoleWithNameOnly()
 		},
 	)
