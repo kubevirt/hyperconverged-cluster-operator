@@ -11,7 +11,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -31,13 +31,13 @@ func NewIOMMUFDDevicePluginDaemonSetHandler(cli client.Client, Scheme *runtime.S
 	return operands.NewConditionalHandler(
 		operands.NewDaemonSetHandler(cli, Scheme, newIOMMUFDDevicePluginDaemonSet),
 		shouldDeployAIE,
-		func(hc *hcov1beta1.HyperConverged) client.Object {
+		func(hc *hcov1.HyperConverged) client.Object {
 			return NewIOMMUFDDevicePluginDaemonSetWithNameOnly(hc)
 		},
 	)
 }
 
-func NewIOMMUFDDevicePluginDaemonSetWithNameOnly(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet {
+func NewIOMMUFDDevicePluginDaemonSetWithNameOnly(hc *hcov1.HyperConverged) *appsv1.DaemonSet {
 	return &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      iommufdDevicePluginName,
@@ -47,7 +47,7 @@ func NewIOMMUFDDevicePluginDaemonSetWithNameOnly(hc *hcov1beta1.HyperConverged) 
 	}
 }
 
-func newIOMMUFDDevicePluginDaemonSet(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet {
+func newIOMMUFDDevicePluginDaemonSet(hc *hcov1.HyperConverged) *appsv1.DaemonSet {
 	image := os.Getenv(hcoutil.IOMMUFDDevicePluginImageEnvV)
 
 	selectorLabels := map[string]string{

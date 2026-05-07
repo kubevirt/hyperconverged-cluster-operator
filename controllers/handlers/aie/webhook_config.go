@@ -10,7 +10,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -21,7 +21,7 @@ func NewAIEWebhookMutatingWebhookConfigurationHandler(cli client.Client, Scheme 
 		operands.NewGenericOperand(cli, Scheme, "MutatingWebhookConfiguration",
 			&aieWebhookMWCHooks{required: newAIEMutatingWebhookConfiguration()}, false),
 		shouldDeployAIE,
-		func(hc *hcov1beta1.HyperConverged) client.Object {
+		func(hc *hcov1.HyperConverged) client.Object {
 			return NewAIEWebhookMutatingWebhookConfigurationWithNameOnly()
 		},
 	)
@@ -31,7 +31,7 @@ type aieWebhookMWCHooks struct {
 	required *admissionregistrationv1.MutatingWebhookConfiguration
 }
 
-func (h *aieWebhookMWCHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *aieWebhookMWCHooks) GetFullCr(_ *hcov1.HyperConverged) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
 

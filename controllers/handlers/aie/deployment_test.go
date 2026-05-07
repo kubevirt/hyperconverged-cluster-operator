@@ -14,7 +14,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
@@ -25,7 +25,7 @@ var _ = Describe("AIE Webhook Deployment", func() {
 	const testImage = "quay.io/kubevirt/aieimage:test"
 
 	var (
-		hco *hcov1beta1.HyperConverged
+		hco *hcov1.HyperConverged
 		req *common.HcoRequest
 		cl  client.Client
 	)
