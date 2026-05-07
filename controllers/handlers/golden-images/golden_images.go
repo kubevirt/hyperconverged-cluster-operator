@@ -22,7 +22,6 @@ import (
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -33,7 +32,8 @@ const (
 
 	CDIImmediateBindAnnotation = "cdi.kubevirt.io/storage.bind.immediate.requested"
 
-	MultiArchDICTAnnotation = "ssp.kubevirt.io/dict.architectures"
+	MultiArchDICTAnnotation    = "ssp.kubevirt.io/dict.architectures"
+	EnableMultiArchFeatureGate = "enableMultiArchBootImageImport"
 
 	DictConditionDeployedType    = "Deployed"
 	dictConditionDeployedReason  = "UnsupportedArchitectures"
@@ -48,19 +48,19 @@ var (
 	logger = logf.Log.WithName("dataImportCronTemplateInit")
 )
 
-var GetDataImportCronTemplates = func(hc *hcov1beta1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
+var GetDataImportCronTemplates = func(hc *hcov1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
 	crDicts, err := getDicMapFromCr(hc)
 	if err != nil {
 		return nil, err
 	}
 
 	var dictList []hcov1.DataImportCronTemplateStatus
-	if ptr.Deref(hc.Spec.EnableCommonBootImageImport, true) {
+	if ptr.Deref(hc.Spec.WorkloadSources.EnableCommonBootImageImport, true) {
 		dictList = getCommonDicts(dictList, crDicts, hc)
 	}
 	dictList = getCustomDicts(dictList, crDicts)
 
-	if hc.Spec.FeatureGates.EnableMultiArchBootImageImport != nil && *hc.Spec.FeatureGates.EnableMultiArchBootImageImport {
+	if hc.Spec.FeatureGates.IsEnabled(EnableMultiArchFeatureGate) {
 		for i := range dictList {
 			setDataImportCronTemplateStatusMultiArch(&dictList[i], nodeinfo.GetWorkloadsArchitectures())
 		}
@@ -71,8 +71,8 @@ var GetDataImportCronTemplates = func(hc *hcov1beta1.HyperConverged) ([]hcov1.Da
 	return dictList, nil
 }
 
-func CheckDataImportCronTemplates(hc *hcov1beta1.HyperConverged) {
-	multiArchEnabled := ptr.Deref(hc.Spec.FeatureGates.EnableMultiArchBootImageImport, false)
+func CheckDataImportCronTemplates(hc *hcov1.HyperConverged) {
+	multiArchEnabled := hc.Spec.FeatureGates.IsEnabled(EnableMultiArchFeatureGate)
 
 	if multiArchEnabled {
 		for i := range hc.Status.DataImportCronTemplates {
@@ -97,11 +97,11 @@ func validateMultiArchDict(dict *hcov1.DataImportCronTemplateStatus) bool {
 	return true
 }
 
-func HCODictSliceToSSP(hc *hcov1beta1.HyperConverged, hcoDictStatuses []hcov1.DataImportCronTemplateStatus) []sspv1beta3.DataImportCronTemplate {
+func HCODictSliceToSSP(hc *hcov1.HyperConverged, hcoDictStatuses []hcov1.DataImportCronTemplateStatus) []sspv1beta3.DataImportCronTemplate {
 	return slices.Collect(hcoDictToSSPSeq(hc, slices.Values(hcoDictStatuses)))
 }
 
-func ApplyDataImportSchedule(hc *hcov1beta1.HyperConverged) {
+func ApplyDataImportSchedule(hc *hcov1.HyperConverged) {
 	if hc.Status.DataImportSchedule != "" {
 		overrideDataImportSchedule(hc.Status.DataImportSchedule)
 	}
@@ -185,8 +185,8 @@ func ensureDICTFields(dict *hcov1.DataImportCronTemplate) {
 	}
 }
 
-func getCommonDicts(list []hcov1.DataImportCronTemplateStatus, crDicts map[string]hcov1.DataImportCronTemplate, hc *hcov1beta1.HyperConverged) []hcov1.DataImportCronTemplateStatus {
-	enableMultiArchBootImageImport := ptr.Deref(hc.Spec.FeatureGates.EnableMultiArchBootImageImport, false)
+func getCommonDicts(list []hcov1.DataImportCronTemplateStatus, crDicts map[string]hcov1.DataImportCronTemplate, hc *hcov1.HyperConverged) []hcov1.DataImportCronTemplateStatus {
+	enableMultiArchBootImageImport := hc.Spec.FeatureGates.IsEnabled(EnableMultiArchFeatureGate)
 	for dictName, commonDict := range dataImportCronTemplateHardCodedMap {
 		targetDict := hcov1.DataImportCronTemplateStatus{
 			DataImportCronTemplate: *commonDict.DeepCopy(),
@@ -199,7 +199,7 @@ func getCommonDicts(list []hcov1.DataImportCronTemplateStatus, crDicts map[strin
 			if !customizeCommonDICT(&targetDict, crDict, enableMultiArchBootImageImport) {
 				continue
 			}
-		} else if ns := hc.Spec.CommonBootImageNamespace; ns != nil && len(*ns) > 0 {
+		} else if ns := hc.Spec.WorkloadSources.CommonBootImageNamespace; ns != nil && len(*ns) > 0 {
 			targetDict.Namespace = *ns
 		}
 
@@ -301,9 +301,9 @@ func getCustomDicts(list []hcov1.DataImportCronTemplateStatus, crDicts map[strin
 	return list
 }
 
-func getDicMapFromCr(hc *hcov1beta1.HyperConverged) (map[string]hcov1.DataImportCronTemplate, error) {
+func getDicMapFromCr(hc *hcov1.HyperConverged) (map[string]hcov1.DataImportCronTemplate, error) {
 	dictMap := make(map[string]hcov1.DataImportCronTemplate)
-	for _, dict := range hc.Spec.DataImportCronTemplates {
+	for _, dict := range hc.Spec.WorkloadSources.DataImportCronTemplates {
 		_, foundCustom := dictMap[dict.Name]
 		if foundCustom {
 			return nil, fmt.Errorf("%s DataImportCronTable is already defined", dict.Name)
@@ -385,9 +385,8 @@ func hcoDictToSSP(hcoDictStatus hcov1.DataImportCronTemplateStatus, multiArchEna
 	return dict, true
 }
 
-func hcoDictToSSPSeq(hc *hcov1beta1.HyperConverged, hcoDicts iter.Seq[hcov1.DataImportCronTemplateStatus]) iter.Seq[sspv1beta3.DataImportCronTemplate] {
-	multiArchEnabled := ptr.Deref(hc.Spec.FeatureGates.EnableMultiArchBootImageImport, false)
-
+func hcoDictToSSPSeq(hc *hcov1.HyperConverged, hcoDicts iter.Seq[hcov1.DataImportCronTemplateStatus]) iter.Seq[sspv1beta3.DataImportCronTemplate] {
+	multiArchEnabled := hc.Spec.FeatureGates.IsEnabled(EnableMultiArchFeatureGate)
 	return func(yield func(sspv1beta3.DataImportCronTemplate) bool) {
 		for hcoDict := range hcoDicts {
 			sspDict, valid := hcoDictToSSP(hcoDict, multiArchEnabled)

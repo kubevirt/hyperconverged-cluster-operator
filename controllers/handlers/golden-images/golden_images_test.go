@@ -13,7 +13,6 @@ import (
 	"k8s.io/utils/ptr"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/dirtest"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
@@ -28,7 +27,7 @@ func TestGoldenImages(t *testing.T) {
 
 var _ = Describe("Test data import cron template", func() {
 	var (
-		hco *hcov1beta1.HyperConverged
+		hco *hcov1.HyperConverged
 
 		image1, image2, image3, image4                         hcov1.DataImportCronTemplate
 		statusImage1, statusImage2, statusImage3, statusImage4 hcov1.DataImportCronTemplateStatus
@@ -166,18 +165,18 @@ var _ = Describe("Test data import cron template", func() {
 
 	Context("test GetDataImportCronTemplates", func() {
 		It("should not return the hard coded list dataImportCron FeatureGate is false", func() {
-			hco.Spec.EnableCommonBootImageImport = ptr.To(false)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(false)
 			dataImportCronTemplateHardCodedMap = map[string]hcov1.DataImportCronTemplate{
 				image1.Name: image1,
 				image2.Name: image2,
 			}
-			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
+			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
 			list, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(list).To(HaveLen(2))
 			Expect(list).To(ContainElements(statusImage3, statusImage4))
 
-			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{}
+			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{}
 			list, err = GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(list).To(BeEmpty())
@@ -185,11 +184,11 @@ var _ = Describe("Test data import cron template", func() {
 
 		It("should return an empty list if both the hard-coded list and the list from HC are empty", func() {
 			hcoWithEmptyList := commontestutils.NewHco()
-			hcoWithEmptyList.Spec.EnableCommonBootImageImport = ptr.To(true)
-			hcoWithEmptyList.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{}
+			hcoWithEmptyList.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hcoWithEmptyList.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{}
 			hcoWithNilList := commontestutils.NewHco()
-			hcoWithNilList.Spec.EnableCommonBootImageImport = ptr.To(true)
-			hcoWithNilList.Spec.DataImportCronTemplates = nil
+			hcoWithNilList.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hcoWithNilList.Spec.WorkloadSources.DataImportCronTemplates = nil
 
 			dataImportCronTemplateHardCodedMap = nil
 			Expect(GetDataImportCronTemplates(hcoWithNilList)).To(BeNil())
@@ -204,8 +203,8 @@ var _ = Describe("Test data import cron template", func() {
 				image1.Name: image1,
 				image2.Name: image2,
 			}
-			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
 			goldenImageList, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(goldenImageList).To(HaveLen(4))
@@ -218,7 +217,7 @@ var _ = Describe("Test data import cron template", func() {
 				image1.Name: image1,
 				image2.Name: image2,
 			}
-			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
 
 			disabledImage1, _ := makeDICT(1, true)
 			disableDict(&disabledImage1)
@@ -226,7 +225,7 @@ var _ = Describe("Test data import cron template", func() {
 			enableDict(&enabledImage2, &expectedStatus2)
 			expectedStatus2.Status.Modified = true
 
-			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{disabledImage1, enabledImage2, image3, image4}
+			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{disabledImage1, enabledImage2, image3, image4}
 			goldenImageList, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(goldenImageList).To(HaveLen(3))
@@ -240,12 +239,12 @@ var _ = Describe("Test data import cron template", func() {
 
 		It("should not add user DIC template if it is disabled", func() {
 			dataImportCronTemplateHardCodedMap = nil
-			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
 
 			disableDict(&image1)
 			enableDict(&image2, &statusImage2)
 
-			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image1, image2}
+			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image1, image2}
 			goldenImageList, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(goldenImageList).To(HaveLen(1))
@@ -263,21 +262,21 @@ var _ = Describe("Test data import cron template", func() {
 				image1.Name: image1,
 				image2.Name: image2,
 			}
-			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
 
 			image3.Name = image4.Name
 
-			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
+			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
 			_, err := GetDataImportCronTemplates(hco)
 			Expect(err).To(HaveOccurred())
 		})
 
 		It("Should reject if the CR list contain DIC templates with the same name", func() {
-			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
 
 			image3.Name = image4.Name
 
-			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
+			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
 			_, err := GetDataImportCronTemplates(hco)
 			Expect(err).To(HaveOccurred())
 		})
@@ -289,8 +288,8 @@ var _ = Describe("Test data import cron template", func() {
 				image2.Name: image2,
 			}
 
-			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-			hco.Spec.DataImportCronTemplates = nil
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.DataImportCronTemplates = nil
 			goldenImageList, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(goldenImageList).To(HaveLen(2))
@@ -298,7 +297,7 @@ var _ = Describe("Test data import cron template", func() {
 			Expect(goldenImageList).To(ContainElements(statusImage1, statusImage2))
 
 			By("CR list is empty")
-			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{}
+			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{}
 			goldenImageList, err = GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(goldenImageList).To(HaveLen(2))
@@ -306,8 +305,8 @@ var _ = Describe("Test data import cron template", func() {
 		})
 
 		It("Should return only the CR list, if the hard-coded list is empty", func() {
-			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
 
 			By("when dataImportCronTemplateHardCodedList is nil")
 			dataImportCronTemplateHardCodedMap = nil
@@ -341,7 +340,7 @@ var _ = Describe("Test data import cron template", func() {
 				image2.Name: image2,
 			}
 
-			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
 
 			modifiedImage1, _ := makeDICT(1, true)
 			modifiedImage1.Spec.Template.Spec.Source = &cdiv1beta1.DataVolumeSource{
@@ -351,7 +350,7 @@ var _ = Describe("Test data import cron template", func() {
 			By("check that if the CR schedule is empty, HCO adds it from the common dict")
 			modifiedImage1.Spec.Schedule = ""
 
-			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{modifiedImage1, image3, image4}
+			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{modifiedImage1, image3, image4}
 
 			goldenImageList, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
@@ -384,7 +383,7 @@ var _ = Describe("Test data import cron template", func() {
 				image2.Name: image2,
 			}
 
-			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
 
 			storageFromCr := &cdiv1beta1.StorageSpec{
 				VolumeName: "another-class-name",
@@ -400,7 +399,7 @@ var _ = Describe("Test data import cron template", func() {
 			modifiedImage1 := image1.DeepCopy()
 			modifiedImage1.Spec.Template.Spec.Storage = storageFromCr.DeepCopy()
 
-			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{*modifiedImage1, image3, image4}
+			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{*modifiedImage1, image3, image4}
 
 			goldenImageList, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
@@ -426,14 +425,14 @@ var _ = Describe("Test data import cron template", func() {
 				image2.Name: image2,
 			}
 
-			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
 
 			modifiedImage1 := image1.DeepCopy()
 			modifiedImage1.Spec.RetentionPolicy = ptr.To(cdiv1beta1.DataImportCronRetainAll)
 			modifiedImage1.Spec.GarbageCollect = ptr.To(cdiv1beta1.DataImportCronGarbageCollectOutdated)
 			modifiedImage1.Spec.ImportsToKeep = ptr.To[int32](5)
 
-			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{*modifiedImage1, image3, image4}
+			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{*modifiedImage1, image3, image4}
 
 			goldenImageList, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
@@ -470,9 +469,9 @@ var _ = Describe("Test data import cron template", func() {
 				image2.Name: image2,
 			}
 
-			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
 
-			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
+			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
 
 			goldenImageStatuses, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
@@ -517,9 +516,9 @@ var _ = Describe("Test data import cron template", func() {
 				image4.Name: image4,
 			}
 
-			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
 
-			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{*annotationModified, *annotationMissingInCR, *annotationExistsInCR, *annotationMissingInBoth}
+			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{*annotationModified, *annotationMissingInCR, *annotationExistsInCR, *annotationMissingInBoth}
 
 			goldenImageStatuses, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
@@ -553,10 +552,10 @@ var _ = Describe("Test data import cron template", func() {
 			withModifiedNS := image2.DeepCopy()
 			withModifiedNS.Namespace = modifiedNS
 
-			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-			hco.Spec.CommonBootImageNamespace = ptr.To(customNS)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.CommonBootImageNamespace = ptr.To(customNS)
 
-			hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{*withModifiedNS, image3}
+			hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{*withModifiedNS, image3}
 
 			goldenImageList, err := GetDataImportCronTemplates(hco)
 			Expect(err).ToNot(HaveOccurred())
@@ -669,7 +668,7 @@ var _ = Describe("Test data import cron template", func() {
 					image2.Name: image2,
 				}
 
-				hco.Spec.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
+				hco.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{image3, image4}
 
 				nodeinfo.GetWorkloadsArchitectures = func() []string {
 					return []string{"amd64", "arm64", "s390x"}
@@ -677,8 +676,8 @@ var _ = Describe("Test data import cron template", func() {
 			})
 
 			It("should drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is disabled (default)", func() {
-				hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-				hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(false)
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+				hco.Spec.FeatureGates.Disable(EnableMultiArchFeatureGate)
 
 				dictsStatuses, err := GetDataImportCronTemplates(hco)
 				Expect(err).ToNot(HaveOccurred())
@@ -701,8 +700,8 @@ var _ = Describe("Test data import cron template", func() {
 			})
 
 			It("should not drop the ssp.kubevirt.io/dict.architectures annotation, when the FG is enabled", func() {
-				hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-				hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+				hco.Spec.FeatureGates.Enable(EnableMultiArchFeatureGate)
 
 				dictsStatuses, err := GetDataImportCronTemplates(hco)
 				Expect(err).ToNot(HaveOccurred())
@@ -725,8 +724,8 @@ var _ = Describe("Test data import cron template", func() {
 			})
 
 			It("should remove unsupported architectures from the annotation", func() {
-				hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-				hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+				hco.Spec.FeatureGates.Enable(EnableMultiArchFeatureGate)
 
 				nodeinfo.GetWorkloadsArchitectures = func() []string {
 					return []string{"amd64", "arm64"}
@@ -758,8 +757,8 @@ var _ = Describe("Test data import cron template", func() {
 			})
 
 			It("should drop a DICT with no supported architectures", func() {
-				hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-				hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+				hco.Spec.FeatureGates.Enable(EnableMultiArchFeatureGate)
 
 				nodeinfo.GetWorkloadsArchitectures = func() []string {
 					return []string{"amd64", "s390x"}
@@ -801,8 +800,8 @@ var _ = Describe("Test data import cron template", func() {
 			})
 
 			It("should not add the multi-arch annotation if wasn't already exist in the original DICT", func() {
-				hco.Spec.EnableCommonBootImageImport = ptr.To(true)
-				hco.Spec.FeatureGates.EnableMultiArchBootImageImport = ptr.To(true)
+				hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
+				hco.Spec.FeatureGates.Enable(EnableMultiArchFeatureGate)
 
 				nodeinfo.GetWorkloadsArchitectures = func() []string {
 					return []string{"amd64", "s390x", "other-arch"}
