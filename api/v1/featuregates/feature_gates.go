@@ -103,7 +103,7 @@ func (fgs *HyperConvergedFeatureGates) IsEnabled(name string) bool {
 		return true
 	case featuregates.PhaseBeta:
 		state = Enabled
-	case featuregates.PhaseAlpha:
+	case featuregates.PhaseAlpha, featuregates.PhaseDeprecated:
 		state = Disabled
 	default:
 		return false
