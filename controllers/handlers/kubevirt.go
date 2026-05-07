@@ -31,7 +31,6 @@ import (
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/patch"
@@ -166,7 +165,6 @@ const (
 	kvObjectGraph                = "ObjectGraph"
 	kvUtilityVolumes             = "UtilityVolumes"
 	kvIncrementalBackup          = "IncrementalBackup"
-	kvPasstBinding               = "PasstBinding"
 	kvConfigurableHypervisor     = "ConfigurableHypervisor"
 	kvOptOutRoleAggregation      = "OptOutRoleAggregation"
 	kvContainerPathVolumes       = "ContainerPathVolumes"
@@ -445,7 +443,7 @@ func getKVConfig(hc *hcov1beta1.HyperConverged) (*kubevirtcorev1.KubeVirtConfigu
 
 	seccompConfig := getKVSeccompConfig()
 
-	networkBindings := getNetworkBindings(hc.Spec.NetworkBinding, hc.Annotations)
+	networkBindings := getNetworkBindings(hc.Spec.NetworkBinding)
 
 	config := &kubevirtcorev1.KubeVirtConfiguration{
 		DeveloperConfiguration: devConfig,
@@ -596,8 +594,7 @@ func getS390xArchConfig() *kubevirtcorev1.ArchSpecificConfiguration {
 	}
 }
 
-func getNetworkBindings(hcoNetworkBindings map[string]kubevirtcorev1.InterfaceBindingPlugin,
-	hcoAnnotations map[string]string) map[string]kubevirtcorev1.InterfaceBindingPlugin {
+func getNetworkBindings(hcoNetworkBindings map[string]kubevirtcorev1.InterfaceBindingPlugin) map[string]kubevirtcorev1.InterfaceBindingPlugin {
 	networkBindings := maps.Clone(hcoNetworkBindings)
 
 	if networkBindings == nil {
@@ -605,10 +602,6 @@ func getNetworkBindings(hcoNetworkBindings map[string]kubevirtcorev1.InterfaceBi
 	}
 
 	networkBindings[primaryUDNNetworkBindingName] = primaryUserDefinedNetworkBinding()
-
-	if hcoAnnotations[passt.DeployPasstNetworkBindingAnnotation] == "true" {
-		networkBindings[passt.BindingName] = passt.NetworkBinding()
-	}
 	return networkBindings
 }
 
@@ -950,10 +943,6 @@ func getFeatureGateChecks(spec hcov1beta1.HyperConvergedSpec, annotations map[st
 	} else {
 		// Default behavior: use the original HotplugVolumes featuregate
 		fgs = append(fgs, kvHotplugVolumesGate)
-	}
-
-	if annotations[passt.DeployPasstNetworkBindingAnnotation] == "true" {
-		fgs = append(fgs, kvPasstBinding)
 	}
 
 	if annotations[aie.DeployAIEAnnotation] == "true" {

@@ -12,7 +12,6 @@ import (
 
 	"github.com/blang/semver/v4"
 	jsonpatch "github.com/evanphx/json-patch/v5"
-	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	imagev1 "github.com/openshift/api/image/v1"
 	routev1 "github.com/openshift/api/route/v1"
@@ -208,12 +207,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 			&corev1.Namespace{},
 			&appsv1.Deployment{},
 			&securityv1.SecurityContextConstraints{},
-		}...)
-	}
-
-	if ci.IsNADAvailable() {
-		secondaryResources = append(secondaryResources, []client.Object{
-			&netattdefv1.NetworkAttachmentDefinition{},
 		}...)
 	}
 

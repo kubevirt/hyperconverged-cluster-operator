@@ -18,7 +18,6 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	aie "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
 	waspagent "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/wasp-agent"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
@@ -56,8 +55,6 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		handlers.NewCnaHandler(client, scheme),
 		handlers.NewAAQHandler(client, scheme),
 		handlers.NewMigControllerHandler(client, scheme),
-		passt.NewPasstDaemonSetHandler(client, scheme),
-		passt.NewPasstNetworkAttachmentDefinitionHandler(client, scheme),
 		aie.NewAIEWebhookServiceAccountHandler(client, scheme),
 		aie.NewAIEWebhookServiceHandler(client, scheme),
 		aie.NewAIEWebhookDeploymentHandler(client, scheme),
@@ -75,8 +72,6 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 			handlers.NewCliDownloadHandler(client, scheme),
 			handlers.NewCliDownloadsRouteHandler(client, scheme),
 			operands.NewServiceHandler(client, scheme, handlers.NewCliDownloadsService()),
-			passt.NewPasstServiceAccountHandler(client, scheme),
-			passt.NewPasstSecurityContextConstraintsHandler(client, scheme),
 			waspagent.NewWaspAgentServiceAccountHandler(client, scheme),
 			waspagent.NewWaspAgentSCCHandler(client, scheme),
 			waspagent.NewWaspAgentDaemonSetHandler(client, scheme),
@@ -237,8 +232,6 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		handlers.NewConsoleCLIDownload(),
 		handlers.NewAAQWithNameOnly(),
 		handlers.NewMigControllerWithNameOnly(),
-		passt.NewPasstBindingCNINetworkAttachmentDefinition(),
-		passt.NewPasstBindingCNISecurityContextConstraints(),
 		waspagent.NewWaspAgentSCCWithNameOnly(),
 		aie.NewAIEWebhookClusterRoleWithNameOnly(),
 		aie.NewAIEWebhookClusterRoleBindingWithNameOnly(),

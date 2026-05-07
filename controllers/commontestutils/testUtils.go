@@ -33,8 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
-
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
@@ -183,7 +181,6 @@ func GetScheme() *runtime.Scheme {
 			aaqv1alpha1.AddToScheme,
 			migrationv1alpha1.AddToScheme,
 			deschedulerv1.AddToScheme,
-			netattdefv1.AddToScheme,
 			rbacv1.AddToScheme,
 			networkingv1.AddToScheme,
 			appsv1.AddToScheme,
@@ -274,9 +271,6 @@ func (c ClusterInfoMock) IsMonitoringAvailable() bool {
 	return true
 }
 func (c ClusterInfoMock) IsDeschedulerAvailable() bool {
-	return true
-}
-func (c ClusterInfoMock) IsNADAvailable() bool {
 	return true
 }
 func (c ClusterInfoMock) IsDeschedulerCRDDeployed(_ context.Context, _ client.Client) bool {
