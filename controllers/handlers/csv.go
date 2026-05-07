@@ -45,7 +45,7 @@ func (c csvHandler) Ensure(req *common.HcoRequest) *operands.EnsureResult {
 	}
 
 	foundDisableOperandDeletion := csv.Annotations[components.DisableOperandDeletionAnnotation]
-	requiredDisableOperandDeletion := req.Instance.Spec.UninstallStrategy == hcov1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
+	requiredDisableOperandDeletion := req.Instance.Spec.Deployment.UninstallStrategy == hcov1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
 
 	if foundDisableOperandDeletion != strconv.FormatBool(requiredDisableOperandDeletion) {
 		updateErr := c.updateCsv(req, csv, requiredDisableOperandDeletion)

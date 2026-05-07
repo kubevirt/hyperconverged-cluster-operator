@@ -13,7 +13,7 @@ import (
 
 	migrationv1alpha1 "kubevirt.io/kubevirt-migration-operator/api/v1alpha1"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
@@ -30,7 +30,7 @@ type migrationHooks struct {
 	cache *migrationv1alpha1.MigController
 }
 
-func (h *migrationHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *migrationHooks) GetFullCr(hc *hcov1.HyperConverged) (client.Object, error) {
 	h.Lock()
 	defer h.Unlock()
 
@@ -89,16 +89,16 @@ func (*migrationHooks) UpdateCR(req *common.HcoRequest, Client client.Client, ex
 	return false, false, nil
 }
 
-func NewMigController(hc *hcov1beta1.HyperConverged) (*migrationv1alpha1.MigController, error) {
+func NewMigController(hc *hcov1.HyperConverged) (*migrationv1alpha1.MigController, error) {
 	spec := migrationv1alpha1.MigControllerSpec{
 		ImagePullPolicy: corev1.PullIfNotPresent,
 	}
 
-	if hc.Spec.Infra.NodePlacement != nil {
-		hc.Spec.Infra.NodePlacement.DeepCopyInto(&spec.Infra)
+	if np := hc.Spec.Deployment.NodePlacements; np != nil && np.Infra != nil {
+		np.Infra.DeepCopyInto(&spec.Infra)
 	}
 
-	spec.TLSSecurityProfile = openshift2MigrationSecProfile(tlssecprofile.GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile))
+	spec.TLSSecurityProfile = openshift2MigrationSecProfile(tlssecprofile.GetTLSSecurityProfile(hc.Spec.Security.TLSSecurityProfile))
 
 	migController := NewMigControllerWithNameOnly()
 	migController.Spec = spec

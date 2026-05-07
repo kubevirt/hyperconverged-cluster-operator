@@ -6,17 +6,16 @@ import (
 	"strconv"
 	"sync"
 
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	consolev1 "github.com/openshift/api/console/v1"
 	routev1 "github.com/openshift/api/route/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/downloadhost"
@@ -35,7 +34,7 @@ func NewCliDownloadHandler(Client client.Client, Scheme *runtime.Scheme) *operan
 
 type cliDownloadHooks struct{}
 
-func (*cliDownloadHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (*cliDownloadHooks) GetFullCr(_ *hcov1.HyperConverged) (client.Object, error) {
 	return NewConsoleCLIDownload(), nil
 }
 
@@ -149,7 +148,7 @@ type cliDownloadsRouteHooks struct {
 	route *routev1.Route
 }
 
-func (h cliDownloadsRouteHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h cliDownloadsRouteHooks) GetFullCr(_ *hcov1.HyperConverged) (client.Object, error) {
 	h.Lock()
 	defer h.Unlock()
 

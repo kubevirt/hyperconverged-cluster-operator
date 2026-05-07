@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"reflect"
+	"slices"
 	"sync"
 
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
@@ -13,7 +14,6 @@ import (
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
@@ -42,7 +42,7 @@ type cdiHooks struct {
 	cache  *cdiv1beta1.CDI
 }
 
-func (h *cdiHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *cdiHooks) GetFullCr(hc *hcov1.HyperConverged) (client.Object, error) {
 	h.Lock()
 	defer h.Unlock()
 
@@ -101,9 +101,9 @@ func getDefaultFeatureGates() []string {
 	return []string{honorWaitForFirstConsumerGate, dataVolumeClaimAdoptionGate, webhookPvcRenderingGate}
 }
 
-func NewCDI(hc *hcov1beta1.HyperConverged) (*cdiv1beta1.CDI, error) {
+func NewCDI(hc *hcov1.HyperConverged) (*cdiv1beta1.CDI, error) {
 	uninstallStrategy := cdiv1beta1.CDIUninstallStrategyBlockUninstallIfWorkloadsExist
-	if hc.Spec.UninstallStrategy == hcov1.HyperConvergedUninstallStrategyRemoveWorkloads {
+	if hc.Spec.Deployment.UninstallStrategy == hcov1.HyperConvergedUninstallStrategyRemoveWorkloads {
 		uninstallStrategy = cdiv1beta1.CDIUninstallStrategyRemoveWorkloads
 	}
 
@@ -111,48 +111,25 @@ func NewCDI(hc *hcov1beta1.HyperConverged) (*cdiv1beta1.CDI, error) {
 		UninstallStrategy: &uninstallStrategy,
 		Config: &cdiv1beta1.CDIConfigSpec{
 			FeatureGates:       getDefaultFeatureGates(),
-			TLSSecurityProfile: openshift2CdiSecProfile(tlssecprofile.GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile)),
+			TLSSecurityProfile: openshift2CdiSecProfile(tlssecprofile.GetTLSSecurityProfile(hc.Spec.Security.TLSSecurityProfile)),
 		},
 		CertConfig: &cdiv1beta1.CDICertConfig{
 			CA: &cdiv1beta1.CertConfig{
-				Duration:    hc.Spec.CertConfig.CA.Duration,
-				RenewBefore: hc.Spec.CertConfig.CA.RenewBefore,
+				Duration:    hc.Spec.Security.CertConfig.CA.Duration,
+				RenewBefore: hc.Spec.Security.CertConfig.CA.RenewBefore,
 			},
 			Server: &cdiv1beta1.CertConfig{
-				Duration:    hc.Spec.CertConfig.Server.Duration,
-				RenewBefore: hc.Spec.CertConfig.Server.RenewBefore,
+				Duration:    hc.Spec.Security.CertConfig.Server.Duration,
+				RenewBefore: hc.Spec.Security.CertConfig.Server.RenewBefore,
 			},
 		},
 	}
 
-	if hc.Spec.ResourceRequirements != nil && hc.Spec.ResourceRequirements.StorageWorkloads != nil {
-		spec.Config.PodResourceRequirements = hc.Spec.ResourceRequirements.StorageWorkloads.DeepCopy()
-	}
+	hcoStorage2CDISpec(hc.Spec.Storage, &spec)
 
-	if hc.Spec.ScratchSpaceStorageClass != nil {
-		spec.Config.ScratchSpaceStorageClass = hc.Spec.ScratchSpaceStorageClass
-	}
+	hcoNodePlacementToCDI(hc.Spec.Deployment.NodePlacements, &spec)
 
-	if hc.Spec.FilesystemOverhead != nil {
-		spec.Config.FilesystemOverhead = hc.Spec.FilesystemOverhead.DeepCopy()
-	}
-
-	if hc.Spec.StorageImport != nil {
-		if length := len(hc.Spec.StorageImport.InsecureRegistries); length > 0 {
-			spec.Config.InsecureRegistries = make([]string, length)
-			copy(spec.Config.InsecureRegistries, hc.Spec.StorageImport.InsecureRegistries)
-		}
-	}
-
-	if hc.Spec.Infra.NodePlacement != nil {
-		hc.Spec.Infra.NodePlacement.DeepCopyInto(&spec.Infra.NodePlacement)
-	}
-
-	if hc.Spec.Workloads.NodePlacement != nil {
-		hc.Spec.Workloads.NodePlacement.DeepCopyInto(&spec.Workloads)
-	}
-
-	if lv := hc.Spec.LogVerbosityConfig; lv != nil {
+	if lv := hc.Spec.Deployment.LogVerbosityConfig; lv != nil {
 		spec.Config.LogVerbosity = lv.CDI
 	}
 
@@ -164,6 +141,39 @@ func NewCDI(hc *hcov1beta1.HyperConverged) (*cdiv1beta1.CDI, error) {
 	}
 
 	return reformatobj.ReformatObj(cdi)
+}
+
+func hcoNodePlacementToCDI(np *hcov1.NodePlacements, spec *cdiv1beta1.CDISpec) {
+	if np != nil {
+		if np.Infra != nil {
+			np.Infra.DeepCopyInto(&spec.Infra.NodePlacement)
+		}
+
+		if np.Workload != nil {
+			np.Workload.DeepCopyInto(&spec.Workloads)
+		}
+	}
+}
+
+func hcoStorage2CDISpec(storage *hcov1.StorageConfig, spec *cdiv1beta1.CDISpec) {
+	if storage == nil {
+		return
+	}
+	if storage.WorkloadResourceRequirements != nil {
+		spec.Config.PodResourceRequirements = storage.WorkloadResourceRequirements.DeepCopy()
+	}
+
+	if storage.ScratchSpaceStorageClass != nil {
+		spec.Config.ScratchSpaceStorageClass = storage.ScratchSpaceStorageClass
+	}
+
+	if storage.FilesystemOverhead != nil {
+		spec.Config.FilesystemOverhead = storage.FilesystemOverhead.DeepCopy()
+	}
+
+	if storage.StorageImport != nil {
+		spec.Config.InsecureRegistries = slices.Clone(storage.StorageImport.InsecureRegistries)
+	}
 }
 
 func NewCDIWithNameOnly() *cdiv1beta1.CDI {

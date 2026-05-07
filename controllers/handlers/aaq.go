@@ -14,7 +14,7 @@ import (
 
 	aaqv1alpha1 "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core/v1alpha1"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
@@ -25,10 +25,10 @@ import (
 func NewAAQHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
 	return operands.NewConditionalHandler(
 		operands.NewGenericOperand(Client, Scheme, "AAQ", &aaqHooks{}, false),
-		func(hc *hcov1beta1.HyperConverged) bool {
-			return hc.Spec.EnableApplicationAwareQuota != nil && *hc.Spec.EnableApplicationAwareQuota
+		func(hc *hcov1.HyperConverged) bool {
+			return hc.Spec.Deployment.ApplicationAwareConfig != nil && ptr.Deref(hc.Spec.Deployment.ApplicationAwareConfig.Enable, false)
 		},
-		func(_ *hcov1beta1.HyperConverged) client.Object {
+		func(_ *hcov1.HyperConverged) client.Object {
 			return NewAAQWithNameOnly()
 		},
 	)
@@ -39,7 +39,7 @@ type aaqHooks struct {
 	cache *aaqv1alpha1.AAQ
 }
 
-func (h *aaqHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *aaqHooks) GetFullCr(hc *hcov1.HyperConverged) (client.Object, error) {
 	h.Lock()
 	defer h.Unlock()
 
@@ -98,33 +98,35 @@ func (*aaqHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists r
 	return false, false, nil
 }
 
-func NewAAQ(hc *hcov1beta1.HyperConverged) (*aaqv1alpha1.AAQ, error) {
+func NewAAQ(hc *hcov1.HyperConverged) (*aaqv1alpha1.AAQ, error) {
 	spec := aaqv1alpha1.AAQSpec{
 		PriorityClass:   ptr.To[aaqv1alpha1.AAQPriorityClass](kvPriorityClass),
 		ImagePullPolicy: corev1.PullIfNotPresent,
 		CertConfig: &aaqv1alpha1.AAQCertConfig{
 			CA: &aaqv1alpha1.CertConfig{
-				Duration:    hc.Spec.CertConfig.CA.Duration,
-				RenewBefore: hc.Spec.CertConfig.CA.RenewBefore,
+				Duration:    hc.Spec.Security.CertConfig.CA.Duration,
+				RenewBefore: hc.Spec.Security.CertConfig.CA.RenewBefore,
 			},
 			Server: &aaqv1alpha1.CertConfig{
-				Duration:    hc.Spec.CertConfig.Server.Duration,
-				RenewBefore: hc.Spec.CertConfig.Server.RenewBefore,
+				Duration:    hc.Spec.Security.CertConfig.Server.Duration,
+				RenewBefore: hc.Spec.Security.CertConfig.Server.RenewBefore,
 			},
 		},
-		TLSSecurityProfile: openshift2AAQSecProfile(tlssecprofile.GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile)),
+		TLSSecurityProfile: openshift2AAQSecProfile(tlssecprofile.GetTLSSecurityProfile(hc.Spec.Security.TLSSecurityProfile)),
 	}
 
-	if hc.Spec.Infra.NodePlacement != nil {
-		hc.Spec.Infra.NodePlacement.DeepCopyInto(&spec.Infra)
-	}
+	if np := hc.Spec.Deployment.NodePlacements; np != nil {
+		if np.Infra != nil {
+			np.Infra.DeepCopyInto(&spec.Infra)
+		}
 
-	if hc.Spec.Workloads.NodePlacement != nil {
-		hc.Spec.Workloads.NodePlacement.DeepCopyInto(&spec.Workloads)
+		if np.Workload != nil {
+			np.Workload.DeepCopyInto(&spec.Workloads)
+		}
 	}
 
 	spec.Configuration.VmiCalculatorConfiguration.ConfigName = aaqv1alpha1.DedicatedVirtualResources
-	if config := hc.Spec.ApplicationAwareConfig; config != nil {
+	if config := hc.Spec.Deployment.ApplicationAwareConfig; config != nil {
 		if config.VmiCalcConfigName != nil {
 			spec.Configuration.VmiCalculatorConfiguration.ConfigName = *config.VmiCalcConfigName
 		}

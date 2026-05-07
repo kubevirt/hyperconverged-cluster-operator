@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -37,7 +37,7 @@ type qsHooks struct {
 	required *consolev1.ConsoleQuickStart
 }
 
-func (h qsHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h qsHooks) GetFullCr(_ *hcov1.HyperConverged) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
 
@@ -71,7 +71,7 @@ func (h qsHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists r
 	return false, false, nil
 }
 
-func GetQuickStartHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, _ *hcov1beta1.HyperConverged, dir fs.FS) ([]operands.Operand, error) {
+func GetQuickStartHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, _ *hcov1.HyperConverged, dir fs.FS) ([]operands.Operand, error) {
 	err := util.ValidateManifestDir(QuickStartDefaultManifestLocation, dir)
 	if err != nil {
 		return nil, errors.Unwrap(err) // if not wrapped, then it's not an error that stops processing, and it return nil

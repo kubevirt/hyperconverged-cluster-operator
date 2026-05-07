@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -22,7 +22,7 @@ const (
 	DashboardManifestLocation = "dashboard"
 )
 
-func GetDashboardHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, _ *hcov1beta1.HyperConverged, dir fs.FS) ([]operands.Operand, error) {
+func GetDashboardHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, _ *hcov1.HyperConverged, dir fs.FS) ([]operands.Operand, error) {
 	err := util.ValidateManifestDir(DashboardManifestLocation, dir)
 	if err != nil {
 		return nil, errors.Unwrap(err) // if not wrapped, then it's not an error that stops processing, and it return nil

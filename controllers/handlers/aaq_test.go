@@ -18,7 +18,6 @@ import (
 	"kubevirt.io/controller-lifecycle-operator-sdk/api"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -26,7 +25,7 @@ import (
 
 var _ = Describe("AAQ tests", func() {
 	var (
-		hco *v1beta1.HyperConverged
+		hco *hcov1.HyperConverged
 		req *common.HcoRequest
 		cl  client.Client
 
@@ -96,7 +95,7 @@ var _ = Describe("AAQ tests", func() {
 		It("should have namespaceSelector", func() {
 			labels := map[string]string{"name": "value"}
 
-			hco.Spec.ApplicationAwareConfig = &v1beta1.ApplicationAwareConfigurations{
+			hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{
 				NamespaceSelector: &metav1.LabelSelector{
 					MatchLabels: labels,
 				},
@@ -109,7 +108,7 @@ var _ = Describe("AAQ tests", func() {
 		})
 
 		It("should have ConfigName", func() {
-			hco.Spec.ApplicationAwareConfig = &v1beta1.ApplicationAwareConfigurations{
+			hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{
 				VmiCalcConfigName: ptr.To(aaqv1alpha1.VmiPodUsage),
 			}
 
@@ -119,7 +118,7 @@ var _ = Describe("AAQ tests", func() {
 		})
 
 		It("should have ConfigName", func() {
-			hco.Spec.ApplicationAwareConfig = &v1beta1.ApplicationAwareConfigurations{
+			hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{
 				AllowApplicationAwareClusterResourceQuota: true,
 			}
 
@@ -129,8 +128,7 @@ var _ = Describe("AAQ tests", func() {
 		})
 
 		It("should get node placement configurations from the HyperConverged CR", func() {
-			hco.Spec.Infra.NodePlacement = &testNodePlacement
-			hco.Spec.Workloads.NodePlacement = &testNodePlacement
+			commontestutils.SetNodeCustomPlacement(hco, &testNodePlacement, &testNodePlacement)
 
 			aaq, err := NewAAQ(hco)
 			Expect(err).ToNot(HaveOccurred())
@@ -141,7 +139,7 @@ var _ = Describe("AAQ tests", func() {
 
 		It("should get certification configurations from the HyperConverged CR", func() {
 
-			hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+			hco.Spec.Security.CertConfig = hcov1.HyperConvergedCertConfig{
 				CA: hcov1.CertRotateConfigCA{
 					Duration:    &metav1.Duration{Duration: time.Hour * 72},
 					RenewBefore: &metav1.Duration{Duration: time.Hour * 56},
@@ -183,8 +181,8 @@ var _ = Describe("AAQ tests", func() {
 				Expect(existingResource.Spec.TLSSecurityProfile).To(Equal(openshift2AAQSecProfile(intermediateTLSSecurityProfile)))
 
 				// now, modify HCO's TLSSecurityProfile
-				hco.Spec.TLSSecurityProfile = modernTLSSecurityProfile
-				hco.Spec.EnableApplicationAwareQuota = ptr.To(true)
+				hco.Spec.Security.TLSSecurityProfile = modernTLSSecurityProfile
+				hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{Enable: ptr.To(true)}
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewAAQHandler(cl, commontestutils.GetScheme())
@@ -206,7 +204,7 @@ var _ = Describe("AAQ tests", func() {
 			})
 
 			It("should overwrite TLSSecurityProfile if directly set on AAQ CR", func(ctx context.Context) {
-				hco.Spec.TLSSecurityProfile = intermediateTLSSecurityProfile
+				hco.Spec.Security.TLSSecurityProfile = intermediateTLSSecurityProfile
 				existingResource, err := NewAAQ(hco)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -216,8 +214,7 @@ var _ = Describe("AAQ tests", func() {
 				// now, modify AAQ node placement
 				existingResource.Spec.TLSSecurityProfile = openshift2AAQSecProfile(modernTLSSecurityProfile)
 
-				hco.Spec.EnableApplicationAwareQuota = ptr.To(true)
-
+				hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{Enable: ptr.To(true)}
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewAAQHandler(cl, commontestutils.GetScheme())
 				res := handler.Ensure(req)
@@ -233,7 +230,7 @@ var _ = Describe("AAQ tests", func() {
 						foundResource),
 				).ToNot(HaveOccurred())
 
-				Expect(foundResource.Spec.TLSSecurityProfile).To(Equal(openshift2AAQSecProfile(hco.Spec.TLSSecurityProfile)))
+				Expect(foundResource.Spec.TLSSecurityProfile).To(Equal(openshift2AAQSecProfile(hco.Spec.Security.TLSSecurityProfile)))
 				Expect(foundResource.Spec.TLSSecurityProfile).ToNot(Equal(existingResource.Spec.TLSSecurityProfile))
 
 				Expect(req.Conditions).To(BeEmpty())
@@ -280,7 +277,7 @@ var _ = Describe("AAQ tests", func() {
 		})
 
 		It("should create AAQ if the enableApplicationAwareQuota FG is true", func() {
-			hco.Spec.EnableApplicationAwareQuota = ptr.To(true)
+			hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{Enable: ptr.To(true)}
 			cl = commontestutils.InitClient([]client.Object{hco})
 
 			handler := NewAAQHandler(cl, commontestutils.GetScheme())
@@ -307,8 +304,9 @@ var _ = Describe("AAQ tests", func() {
 	Context("check update", func() {
 
 		It("should update AAQ fields, if not matched to the requirements", func() {
-			hco.Spec.ApplicationAwareConfig = &v1beta1.ApplicationAwareConfigurations{}
-			hco.Spec.EnableApplicationAwareQuota = ptr.To(true)
+			hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{
+				Enable: ptr.To(true),
+			}
 			aaq := NewAAQWithNameOnly()
 			aaq.Spec.Infra = testNodePlacement
 			aaq.Spec.PriorityClass = ptr.To[aaqv1alpha1.AAQPriorityClass]("wrongPC")
@@ -358,8 +356,10 @@ var _ = Describe("AAQ tests", func() {
 		It("should reconcile managed labels to default without touching user added ones", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
-			hco.Spec.ApplicationAwareConfig = &v1beta1.ApplicationAwareConfigurations{}
-			hco.Spec.EnableApplicationAwareQuota = ptr.To(true)
+			hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{
+				Enable: ptr.To(true),
+			}
+
 			outdatedResource := NewAAQWithNameOnly()
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 			for k, v := range expectedLabels {
@@ -391,8 +391,10 @@ var _ = Describe("AAQ tests", func() {
 		It("should reconcile managed labels to default on label deletion without touching user added ones", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
-			hco.Spec.ApplicationAwareConfig = &v1beta1.ApplicationAwareConfigurations{}
-			hco.Spec.EnableApplicationAwareQuota = ptr.To(true)
+			hco.Spec.Deployment.ApplicationAwareConfig = &hcov1.ApplicationAwareConfigurations{
+				Enable: ptr.To(true),
+			}
+
 			outdatedResource := NewAAQWithNameOnly()
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 			outdatedResource.Labels[userLabelKey] = userLabelValue

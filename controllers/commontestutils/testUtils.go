@@ -143,6 +143,17 @@ func NewNodePlacement() *sdkapi.NodePlacement {
 	return getNodePlacement(1, 2)
 }
 
+func SetNodeCustomPlacement(hc *hcov1.HyperConverged, infra, workload *sdkapi.NodePlacement) {
+	hc.Spec.Deployment.NodePlacements = &hcov1.NodePlacements{
+		Infra:    infra,
+		Workload: workload,
+	}
+}
+
+func SetNodePlacement(hc *hcov1.HyperConverged) {
+	SetNodeCustomPlacement(hc, NewNodePlacement(), NewNodePlacement())
+}
+
 func NewOtherNodePlacement() *sdkapi.NodePlacement {
 	return getNodePlacement(3, 4)
 }

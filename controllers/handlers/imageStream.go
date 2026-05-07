@@ -14,9 +14,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/reference"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -42,7 +43,7 @@ type imageStreamOperand struct {
 
 func (iso imageStreamOperand) Ensure(req *common.HcoRequest) *operands.EnsureResult {
 	// if the EnableCommonBootImageImport field is set, make sure the imageStream is in place and up-to-date
-	if req.Instance.Spec.EnableCommonBootImageImport != nil && *req.Instance.Spec.EnableCommonBootImageImport {
+	if ptr.Deref(req.Instance.Spec.WorkloadSources.EnableCommonBootImageImport, false) {
 		if result := iso.checkCustomNamespace(req); result != nil {
 			return result
 		}
@@ -76,7 +77,7 @@ func (iso imageStreamOperand) Ensure(req *common.HcoRequest) *operands.EnsureRes
 }
 
 func (iso imageStreamOperand) checkCustomNamespace(req *common.HcoRequest) *operands.EnsureResult {
-	if ns := req.Instance.Spec.CommonBootImageNamespace; ns != nil && len(*ns) > 0 && iso.hooks.required.Namespace != *ns {
+	if ns := req.Instance.Spec.WorkloadSources.CommonBootImageNamespace; ns != nil && len(*ns) > 0 && iso.hooks.required.Namespace != *ns {
 		if result := iso.deleteImageStream(req); result != nil {
 			return result
 		}
@@ -115,7 +116,7 @@ func (iso imageStreamOperand) Reset() {
 	iso.operand.Reset()
 }
 
-func (iso imageStreamOperand) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (iso imageStreamOperand) GetFullCr(hc *hcov1.HyperConverged) (client.Object, error) {
 	return iso.operand.GetFullCr(hc)
 }
 
@@ -141,7 +142,7 @@ func newIsHook(required *imagev1.ImageStream, origNS string) *isHooks {
 	return &isHooks{required: required, tags: tags, originalNS: origNS}
 }
 
-func (h isHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h isHooks) GetFullCr(_ *hcov1.HyperConverged) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
 
@@ -233,7 +234,7 @@ func (h isHooks) addMissingTags(found *imagev1.ImageStream, newTags []imagev1.Ta
 	return newTags, modified
 }
 
-func GetImageStreamHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, dir fs.FS) ([]operands.Operand, error) {
+func GetImageStreamHandlers(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1.HyperConverged, dir fs.FS) ([]operands.Operand, error) {
 	err := util.ValidateManifestDir(ImageStreamDefaultManifestLocation, dir)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
@@ -248,7 +249,7 @@ func GetImageStreamHandlers(logger log.Logger, Client client.Client, Scheme *run
 	return createImageStreamHandlersFromFiles(logger, Client, Scheme, hc, ImageStreamDefaultManifestLocation, dir)
 }
 
-func createImageStreamHandlersFromFiles(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, filesLocation string, dir fs.FS) ([]operands.Operand, error) {
+func createImageStreamHandlersFromFiles(logger log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1.HyperConverged, filesLocation string, dir fs.FS) ([]operands.Operand, error) {
 	var handlers []operands.Operand
 
 	logger.Info("walking over the files in " + filesLocation + ", to find imageStream files.")
@@ -293,7 +294,7 @@ func compareOneTag(foundTag, reqTag *imagev1.TagReference) bool {
 	return modified
 }
 
-func processImageStreamFile(path string, dir fs.FS, logger log.Logger, hc *hcov1beta1.HyperConverged, Client client.Client, Scheme *runtime.Scheme) (operands.Operand, error) {
+func processImageStreamFile(path string, dir fs.FS, logger log.Logger, hc *hcov1.HyperConverged, Client client.Client, Scheme *runtime.Scheme) (operands.Operand, error) {
 	file, err := dir.Open(path)
 	if err != nil {
 		logger.Error(err, "Can't open the ImageStream yaml file", "file name", path)
@@ -312,7 +313,7 @@ func processImageStreamFile(path string, dir fs.FS, logger log.Logger, hc *hcov1
 	}
 
 	origNS := is.Namespace
-	if ns := hc.Spec.CommonBootImageNamespace; ns != nil && len(*ns) > 0 {
+	if ns := hc.Spec.WorkloadSources.CommonBootImageNamespace; ns != nil && len(*ns) > 0 {
 		is.Namespace = *ns
 	}
 

@@ -25,7 +25,7 @@ import (
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
@@ -50,7 +50,7 @@ var _ = Describe("KubeVirt Operand", func() {
 
 	Context("KubeVirt Priority Classes", func() {
 
-		var hco *hcov1beta1.HyperConverged
+		var hco *hcov1.HyperConverged
 		var req *common.HcoRequest
 
 		BeforeEach(func() {
@@ -260,7 +260,7 @@ var _ = Describe("KubeVirt Operand", func() {
 	})
 
 	Context("KubeVirt", func() {
-		var hco *hcov1beta1.HyperConverged
+		var hco *hcov1.HyperConverged
 		var req *common.HcoRequest
 
 		BeforeEach(func() {
@@ -282,6 +282,9 @@ Version: 1.2.3`)).To(Succeed())
 			restArchConfig()
 
 			DeferCleanup(func() {
+				// reset smbios once
+				smbiosOnce = &sync.Once{}
+
 				Expect(os.Unsetenv(smbiosEnvName)).To(Succeed())
 				Expect(os.Unsetenv(machineTypeEnvName)).To(Succeed())
 				Expect(os.Unsetenv(amd64MachineTypeEnvName)).To(Succeed())
@@ -295,14 +298,12 @@ Version: 1.2.3`)).To(Succeed())
 
 		It("should create if not present", func() {
 			mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
-			hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-				DownwardMetrics: ptr.To(true),
-			}
+			hco.Spec.FeatureGates.Enable("downwardMetrics")
 			bindingPlugins := map[string]kubevirtcorev1.InterfaceBindingPlugin{
 				"binding1": {SidecarImage: "image1", NetworkAttachmentDefinition: "nad1"},
 				"l2bridge": {Migration: &kubevirtcorev1.InterfaceBindingMigration{}, DomainAttachmentType: "managedTap"},
 			}
-			hco.Spec.NetworkBinding = bindingPlugins
+			hco.Spec.Networking = &hcov1.NetworkingConfig{NetworkBinding: bindingPlugins}
 
 			expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
 			Expect(err).ToNot(HaveOccurred())
@@ -470,9 +471,7 @@ Version: 1.2.3`)).To(Succeed())
 
 		It("should force mandatory configurations", func() {
 			mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
-			hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-				DownwardMetrics: ptr.To(true),
-			}
+			hco.Spec.FeatureGates.Enable("downwardMetrics")
 
 			os.Setenv(smbiosEnvName,
 				`Family: smbios family
@@ -621,9 +620,7 @@ Version: 1.2.3`)
 		})
 
 		It("should fail if the SMBIOS is wrongly formatted mandatory configurations", func() {
-			hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-				WithHostPassthroughCPU: ptr.To(true),
-			}
+			hco.Spec.FeatureGates.Enable("withHostPassthroughCPU")
 
 			_ = os.Setenv(smbiosEnvName, "WRONG YAML")
 
@@ -632,7 +629,7 @@ Version: 1.2.3`)
 		})
 
 		It("should fail if the Spec.LiveMigrationConfig.BandwidthPerMigration is wrongly formatted", func() {
-			hco.Spec.LiveMigrationConfig.BandwidthPerMigration = ptr.To("Wrong Format")
+			hco.Spec.Virtualization.LiveMigrationConfig.BandwidthPerMigration = ptr.To("Wrong Format")
 
 			_, err := NewKubeVirt(hco, commontestutils.Namespace)
 			Expect(err).To(HaveOccurred())
@@ -667,7 +664,7 @@ Version: 1.2.3`)
 			It("should set BlockUninstallIfWorkloadsExist if missing HCO CR", func() {
 				expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
 				Expect(err).ToNot(HaveOccurred())
-				hco.Spec.UninstallStrategy = ""
+				hco.Spec.Deployment.UninstallStrategy = ""
 
 				cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -689,7 +686,7 @@ Version: 1.2.3`)
 				expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
 				Expect(err).ToNot(HaveOccurred())
 				uninstallStrategy := hcov1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
-				hco.Spec.UninstallStrategy = uninstallStrategy
+				hco.Spec.Deployment.UninstallStrategy = uninstallStrategy
 
 				cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -711,7 +708,7 @@ Version: 1.2.3`)
 				expectedResource, err := NewKubeVirt(hco, commontestutils.Namespace)
 				Expect(err).ToNot(HaveOccurred())
 				uninstallStrategy := hcov1.HyperConvergedUninstallStrategyRemoveWorkloads
-				hco.Spec.UninstallStrategy = uninstallStrategy
+				hco.Spec.Deployment.UninstallStrategy = uninstallStrategy
 
 				cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -744,14 +741,14 @@ Version: 1.2.3`)
 				network                           = "testNetwork"
 			)
 
-			hco.Spec.LiveMigrationConfig.BandwidthPerMigration = ptr.To(bandwidthPerMigration)
-			hco.Spec.LiveMigrationConfig.CompletionTimeoutPerGiB = ptr.To(completionTimeoutPerGiB)
-			hco.Spec.LiveMigrationConfig.ParallelOutboundMigrationsPerNode = ptr.To(parallelOutboundMigrationsPerNode)
-			hco.Spec.LiveMigrationConfig.ParallelMigrationsPerCluster = ptr.To(parallelMigrationsPerCluster)
-			hco.Spec.LiveMigrationConfig.ProgressTimeout = ptr.To(progressTimeout)
-			hco.Spec.LiveMigrationConfig.Network = ptr.To(network)
-			hco.Spec.LiveMigrationConfig.AllowAutoConverge = ptr.To(true)
-			hco.Spec.LiveMigrationConfig.AllowPostCopy = ptr.To(true)
+			hco.Spec.Virtualization.LiveMigrationConfig.BandwidthPerMigration = ptr.To(bandwidthPerMigration)
+			hco.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB = ptr.To(completionTimeoutPerGiB)
+			hco.Spec.Virtualization.LiveMigrationConfig.ParallelOutboundMigrationsPerNode = ptr.To(parallelOutboundMigrationsPerNode)
+			hco.Spec.Virtualization.LiveMigrationConfig.ParallelMigrationsPerCluster = ptr.To(parallelMigrationsPerCluster)
+			hco.Spec.Virtualization.LiveMigrationConfig.ProgressTimeout = ptr.To(progressTimeout)
+			hco.Spec.Virtualization.LiveMigrationConfig.Network = ptr.To(network)
+			hco.Spec.Virtualization.LiveMigrationConfig.AllowAutoConverge = ptr.To(true)
+			hco.Spec.Virtualization.LiveMigrationConfig.AllowPostCopy = ptr.To(true)
 
 			cl := commontestutils.InitClient([]client.Object{hco, existKv})
 			handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -792,7 +789,7 @@ Version: 1.2.3`)
 
 		Context("test mediated device configuration", func() {
 			It("should not propagate the mediated devices configuration, if not set in HCO", func() {
-				hco.Spec.MediatedDevicesConfiguration = nil
+				hco.Spec.Virtualization.MediatedDevicesConfiguration = nil
 
 				kv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
@@ -801,8 +798,8 @@ Version: 1.2.3`)
 			})
 
 			It("should propagate the mediated devices configuration, only with the Enabled field, if not set in HCO, and the FG is true", func() {
-				hco.Spec.MediatedDevicesConfiguration = nil
-				hco.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
+				hco.Spec.Virtualization.MediatedDevicesConfiguration = nil
+				hco.Spec.FeatureGates.Enable("disableMDevConfiguration")
 
 				kv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
@@ -811,42 +808,11 @@ Version: 1.2.3`)
 				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeFalse()))
 			})
 
-			It("should propagate the mediated devices configuration from the HC with deprecated APIs", func() {
-				existKv, err := NewKubeVirt(hco)
-				Expect(err).ToNot(HaveOccurred())
-
-				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
-					MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"}, //nolint SA1019
-				}
-
-				cl := commontestutils.InitClient([]client.Object{hco, existKv})
-				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
-				res := handler.Ensure(req)
-
-				Expect(res.UpgradeDone).To(BeFalse())
-				Expect(res.Updated).To(BeTrue())
-				Expect(res.Err).ToNot(HaveOccurred())
-
-				foundResource := &kubevirtcorev1.KubeVirt{}
-				Expect(
-					cl.Get(context.TODO(),
-						types.NamespacedName{Name: existKv.Name, Namespace: existKv.Namespace},
-						foundResource),
-				).ToNot(HaveOccurred())
-
-				mdevConf := foundResource.Spec.Configuration.MediatedDevicesConfiguration
-				Expect(mdevConf).ToNot(BeNil())
-				Expect(mdevConf.MediatedDeviceTypes).To(HaveLen(2))
-				Expect(mdevConf.MediatedDeviceTypes).To(ContainElements("nvidia-222", "nvidia-230"))
-				Expect(mdevConf.MediatedDevicesTypes).To(BeEmpty()) //nolint SA1019
-
-			})
-
 			It("should propagate the mediated devices configuration from the HC - mediatedDeviceTypes", func() {
 				existKv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
+				hco.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
 					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
 				}
 
@@ -873,68 +839,13 @@ Version: 1.2.3`)
 
 			})
 
-			It("should propagate the mediated devices configuration from the HC with node selectors with deprecated APIs", func() {
-				existKv, err := NewKubeVirt(hco)
-				Expect(err).ToNot(HaveOccurred())
-
-				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
-					MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"}, //nolint SA1019
-					NodeMediatedDeviceTypes: []hcov1beta1.NodeMediatedDeviceTypesConfig{
-						{
-							NodeSelector: map[string]string{
-								"testLabel1": "true",
-							},
-							MediatedDevicesTypes: []string{ //nolint SA1019
-								"nvidia-223",
-							},
-						},
-						{
-							NodeSelector: map[string]string{
-								"testLabel2": "true",
-							},
-							MediatedDevicesTypes: []string{ //nolint SA1019
-								"nvidia-229",
-							},
-						},
-					},
-				}
-
-				cl := commontestutils.InitClient([]client.Object{hco, existKv})
-				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
-				res := handler.Ensure(req)
-
-				Expect(res.UpgradeDone).To(BeFalse())
-				Expect(res.Updated).To(BeTrue())
-				Expect(res.Err).ToNot(HaveOccurred())
-
-				foundResource := &kubevirtcorev1.KubeVirt{}
-				Expect(
-					cl.Get(context.TODO(),
-						types.NamespacedName{Name: existKv.Name, Namespace: existKv.Namespace},
-						foundResource),
-				).ToNot(HaveOccurred())
-
-				mdevConf := foundResource.Spec.Configuration.MediatedDevicesConfiguration
-				Expect(mdevConf).ToNot(BeNil())
-				Expect(mdevConf.MediatedDeviceTypes).To(HaveLen(2))
-				Expect(mdevConf.MediatedDeviceTypes).To(ContainElements("nvidia-222", "nvidia-230"))
-				Expect(mdevConf.MediatedDevicesTypes).To(BeEmpty()) //nolint SA1019
-				Expect(mdevConf.NodeMediatedDeviceTypes).To(HaveLen(2))
-				Expect(mdevConf.NodeMediatedDeviceTypes[0].MediatedDeviceTypes).To(ContainElements("nvidia-223"))
-				Expect(mdevConf.NodeMediatedDeviceTypes[0].NodeSelector).To(HaveKeyWithValue("testLabel1", "true"))
-				Expect(mdevConf.NodeMediatedDeviceTypes[0].MediatedDevicesTypes).To(BeEmpty()) //nolint SA1019
-				Expect(mdevConf.NodeMediatedDeviceTypes[1].MediatedDeviceTypes).To(ContainElements("nvidia-229"))
-				Expect(mdevConf.NodeMediatedDeviceTypes[1].NodeSelector).To(HaveKeyWithValue("testLabel2", "true"))
-				Expect(mdevConf.NodeMediatedDeviceTypes[1].MediatedDevicesTypes).To(BeEmpty()) //nolint SA1019
-
-			})
 			It("should propagate the mediated devices configuration from the HC with node selectors - mediatedDeviceTypes", func() {
 				existKv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
+				hco.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
 					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
-					NodeMediatedDeviceTypes: []hcov1beta1.NodeMediatedDeviceTypesConfig{
+					NodeMediatedDeviceTypes: []hcov1.NodeMediatedDeviceTypesConfig{
 						{
 							NodeSelector: map[string]string{
 								"testLabel1": "true",
@@ -991,7 +902,7 @@ Version: 1.2.3`)
 					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
 				}
 
-				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
+				hco.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
 					MediatedDeviceTypes: []string{"nvidia-181", "nvidia-191", "nvidia-224"},
 				}
 
@@ -1033,59 +944,11 @@ Version: 1.2.3`)
 				Expect(mdc.MediatedDeviceTypes).To(ContainElements("nvidia-181", "nvidia-191", "nvidia-224"))
 			})
 
-			It("should update the permitted host devices configuration from the HC migrating to mediatedDeviceTypes", func() {
-				existKv, err := NewKubeVirt(hco)
-				Expect(err).ToNot(HaveOccurred())
-
-				existKv.Spec.Configuration.MediatedDevicesConfiguration = &kubevirtcorev1.MediatedDevicesConfiguration{
-					MediatedDevicesTypes: []string{"nvidia-222", "nvidia-230"}, //nolint SA1019
-				}
-
-				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
-					MediatedDevicesTypes: []string{"nvidia-181", "nvidia-191", "nvidia-224"}, //nolint SA1019
-				}
-
-				cl := commontestutils.InitClient([]client.Object{hco, existKv})
-
-				By("Check before reconciling", func() {
-					foundResource := &kubevirtcorev1.KubeVirt{}
-					Expect(
-						cl.Get(context.TODO(),
-							types.NamespacedName{Name: existKv.Name, Namespace: existKv.Namespace},
-							foundResource),
-					).To(Succeed())
-
-					mdc := foundResource.Spec.Configuration.MediatedDevicesConfiguration
-					Expect(mdc).ToNot(BeNil())
-					Expect(mdc.MediatedDevicesTypes).To(HaveLen(2))                                  //nolint SA1019
-					Expect(mdc.MediatedDevicesTypes).To(ContainElements("nvidia-222", "nvidia-230")) //nolint SA1019
-
-				})
-
-				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
-				res := handler.Ensure(req)
-
-				Expect(res.UpgradeDone).To(BeFalse())
-				Expect(res.Updated).To(BeTrue())
-				Expect(res.Err).ToNot(HaveOccurred())
-
-				foundResource := &kubevirtcorev1.KubeVirt{}
-				Expect(
-					cl.Get(context.TODO(),
-						types.NamespacedName{Name: existKv.Name, Namespace: existKv.Namespace},
-						foundResource),
-				).ToNot(HaveOccurred())
-
-				By("Check after reconcile")
-				mdc := foundResource.Spec.Configuration.MediatedDevicesConfiguration
-				Expect(mdc).ToNot(BeNil())
-				Expect(mdc.MediatedDeviceTypes).To(HaveLen(3))
-				Expect(mdc.MediatedDeviceTypes).To(ContainElements("nvidia-181", "nvidia-191", "nvidia-224"))
-			})
-
 			It("should set the enabled field to false, if the DisableMDevConfiguration FG is enabled", func() {
-				hco.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(true)
-				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
+				hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+					{Name: "disableMDevConfiguration"},
+				}
+				hco.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
 					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
 				}
 
@@ -1097,8 +960,10 @@ Version: 1.2.3`)
 			})
 
 			It("should not set the enabled field, if the DisableMDevConfiguration FG is disabled", func() {
-				hco.Spec.FeatureGates.DisableMDevConfiguration = ptr.To(false)
-				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
+				hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+					{Name: "disableMDevConfiguration", State: ptr.To(featuregates.Disabled)},
+				}
+				hco.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
 					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
 				}
 
@@ -1109,9 +974,9 @@ Version: 1.2.3`)
 				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration.Enabled).To(BeNil())
 			})
 
-			It("should not set the enabled field, if the DisableMDevConfiguration FG is nil", func() {
-				hco.Spec.FeatureGates.DisableMDevConfiguration = nil
-				hco.Spec.MediatedDevicesConfiguration = &hcov1beta1.MediatedDevicesConfiguration{
+			It("should not set the enabled field, if the DisableMDevConfiguration FG is not defined", func() {
+				hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{}
+				hco.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
 					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
 				}
 
@@ -1128,7 +993,7 @@ Version: 1.2.3`)
 				existKv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.PermittedHostDevices = &hcov1.PermittedHostDevices{
+				hco.Spec.Virtualization.PermittedHostDevices = &hcov1.PermittedHostDevices{
 					PciHostDevices: []hcov1.PciHostDevice{
 						{
 							PCIDeviceSelector:        "vendor1",
@@ -1411,7 +1276,7 @@ Version: 1.2.3`)
 					},
 				}
 
-				hco.Spec.PermittedHostDevices = &hcov1.PermittedHostDevices{
+				hco.Spec.Virtualization.PermittedHostDevices = &hcov1.PermittedHostDevices{
 					PciHostDevices: []hcov1.PciHostDevice{
 						{
 							PCIDeviceSelector:        "vendor1",
@@ -1702,8 +1567,10 @@ Version: 1.2.3`)
 				existKv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				testCPUModel := "testValue"
-				hco.Spec.DefaultCPUModel = ptr.To(testCPUModel)
+				const testCPUModel = "testValue"
+				hco.Spec.Virtualization.VirtualMachineOptions = &hcov1.VirtualMachineOptions{
+					DefaultCPUModel: ptr.To(testCPUModel),
+				}
 
 				cl := commontestutils.InitClient([]client.Object{hco, existKv})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -1721,7 +1588,6 @@ Version: 1.2.3`)
 				).ToNot(HaveOccurred())
 
 				kvCPUModel := foundResource.Spec.Configuration.CPUModel
-				Expect(kvCPUModel).ToNot(BeEmpty())
 				Expect(kvCPUModel).To(Equal(testCPUModel))
 
 			})
@@ -1730,7 +1596,7 @@ Version: 1.2.3`)
 				existKv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.DefaultCPUModel = nil
+				hco.Spec.Virtualization.VirtualMachineOptions = &hcov1.VirtualMachineOptions{DefaultCPUModel: nil}
 
 				cl := commontestutils.InitClient([]client.Object{hco, existKv})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -1763,7 +1629,9 @@ Version: 1.2.3`)
 
 				existKv.Spec.Configuration.CPUModel = oldKVCPUmodel
 
-				hco.Spec.DefaultCPUModel = ptr.To(testCPUModel)
+				hco.Spec.Virtualization.VirtualMachineOptions = &hcov1.VirtualMachineOptions{
+					DefaultCPUModel: ptr.To(testCPUModel),
+				}
 
 				cl := commontestutils.InitClient([]client.Object{hco, existKv})
 
@@ -1821,9 +1689,7 @@ Version: 1.2.3`)
 			It("should add node placement if missing in KubeVirt", func() {
 				existingResource, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
-
-				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+				commontestutils.SetNodePlacement(hco)
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -1843,23 +1709,24 @@ Version: 1.2.3`)
 				Expect(existingResource.Spec.Infra).To(BeNil())
 				Expect(existingResource.Spec.Workloads).To(BeNil())
 
+				expectedNP := commontestutils.NewNodePlacement()
 				Expect(foundResource.Spec.Infra).ToNot(BeNil())
 				Expect(foundResource.Spec.Infra.NodePlacement).ToNot(BeNil())
 				Expect(foundResource.Spec.Infra.NodePlacement.Affinity).ToNot(BeNil())
-				Expect(foundResource.Spec.Infra.NodePlacement.NodeSelector["key1"]).To(Equal("value1"))
-				Expect(foundResource.Spec.Infra.NodePlacement.NodeSelector["key2"]).To(Equal("value2"))
+				Expect(foundResource.Spec.Infra.NodePlacement.NodeSelector).To(Equal(expectedNP.NodeSelector))
+				Expect(foundResource.Spec.Infra.NodePlacement.Tolerations).To(Equal(expectedNP.Tolerations))
 
 				Expect(foundResource.Spec.Workloads).ToNot(BeNil())
 				Expect(foundResource.Spec.Workloads.NodePlacement).ToNot(BeNil())
-				Expect(foundResource.Spec.Workloads.NodePlacement.Tolerations).To(Equal(hco.Spec.Workloads.NodePlacement.Tolerations))
+				Expect(foundResource.Spec.Workloads.NodePlacement.NodeSelector).To(Equal(expectedNP.NodeSelector))
+				Expect(foundResource.Spec.Workloads.NodePlacement.Tolerations).To(Equal(expectedNP.Tolerations))
 
 				Expect(req.Conditions).To(BeEmpty())
 			})
 
 			It("should remove node placement if missing in HCO CR", func() {
 				hcoNodePlacement := commontestutils.NewHco()
-				hcoNodePlacement.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-				hcoNodePlacement.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+				commontestutils.SetNodePlacement(hcoNodePlacement)
 				existingResource, err := NewKubeVirt(hcoNodePlacement)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -1888,17 +1755,16 @@ Version: 1.2.3`)
 			})
 
 			It("should modify node placement according to HCO CR", func() {
-				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+				commontestutils.SetNodePlacement(hco)
 				existingResource, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
 				// now, modify HCO's node placement
-				hco.Spec.Infra.NodePlacement.Tolerations = append(hco.Spec.Infra.NodePlacement.Tolerations, corev1.Toleration{
+				hco.Spec.Deployment.NodePlacements.Infra.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, corev1.Toleration{
 					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
 				})
 
-				hco.Spec.Workloads.NodePlacement.NodeSelector["key1"] = "something else"
+				hco.Spec.Deployment.NodePlacements.Workload.NodeSelector["key1"] = "something else"
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -1934,8 +1800,7 @@ Version: 1.2.3`)
 			})
 
 			It("should overwrite node placement if directly set on KV CR", func() {
-				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+				commontestutils.SetNodePlacement(hco)
 				existingResource, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -1943,10 +1808,10 @@ Version: 1.2.3`)
 				req.HCOTriggered = false
 
 				// now, modify KV's node placement
-				existingResource.Spec.Infra.NodePlacement.Tolerations = append(hco.Spec.Infra.NodePlacement.Tolerations, corev1.Toleration{
+				existingResource.Spec.Infra.NodePlacement.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, corev1.Toleration{
 					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
 				})
-				existingResource.Spec.Workloads.NodePlacement.Tolerations = append(hco.Spec.Workloads.NodePlacement.Tolerations, corev1.Toleration{
+				existingResource.Spec.Workloads.NodePlacement.Tolerations = append(hco.Spec.Deployment.NodePlacements.Workload.Tolerations, corev1.Toleration{
 					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
 				})
 
@@ -1996,7 +1861,7 @@ Version: 1.2.3`)
 			Context("test feature gates in NewKubeVirt", func() {
 				DescribeTable("featureGates in NewKubeVirt",
 					func(
-						modifyHC func(hc *hcov1beta1.HyperConverged),
+						modifyHC func(hc *hcov1.HyperConverged),
 						matcher gomegatypes.GomegaMatcher,
 						additionalKvAssertions ...func(virt *kubevirtcorev1.KubeVirt),
 					) {
@@ -2012,91 +1877,83 @@ Version: 1.2.3`)
 						}
 					},
 					Entry("should not add the feature gates if FeatureGates field is empty",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{}
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{}
 						},
-						And(HaveLen(basicNumFgOnOpenshift), ContainElements(hardCodeKvFgs), ContainElements(sspConditionKvFgs)),
+						And(
+							HaveLen(basicNumFgOnOpenshift),
+							ContainElements(hardCodeKvFgs),
+							ContainElements(sspConditionKvFgs),
+							Not(ContainElement(kvPersistentReservation)),
+							Not(ContainElement(kvDownwardMetrics)),
+							ContainElement(kvDecentralizedLiveMigration),
+							Not(ContainElement(kvAlignCPUs)),
+							And(ContainElement(kvHotplugVolumesGate), Not(ContainElement(kvDeclarativeHotplugVolumesGate))),
+							Not(ContainElement(kvObjectGraph)),
+							And(Not(ContainElement(kvIncrementalBackup)), Not(ContainElement(kvUtilityVolumes))),
+							Not(ContainElement(kvContainerPathVolumes)),
+							ContainElement(kvVideoConfig),
+						),
+						func(kv *kubevirtcorev1.KubeVirt) {
+							Expect(kv.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
+						},
 					),
 					// PersistentReservation
 					Entry("should add the PersistentReservation feature gate if PersistentReservation is true in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								PersistentReservation: ptr.To(true),
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "persistentReservation", State: ptr.To(featuregates.Enabled)},
 							}
 						},
 						ContainElement(kvPersistentReservation),
 					),
-					Entry("should not add the PersistentReservation feature gate if PersistentReservation is not set in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								PersistentReservation: nil,
-							}
-						},
-						Not(ContainElement(kvPersistentReservation)),
-					),
 					Entry("should not add the PersistentReservation feature gate if PersistentReservation is false in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								PersistentReservation: ptr.To(false),
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "persistentReservation", State: ptr.To(featuregates.Disabled)},
 							}
 						},
 						Not(ContainElement(kvPersistentReservation)),
 					),
 					// DownwardMetrics
 					Entry("should add the DownwardMetrics feature gate if DownwardMetrics is true in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								DownwardMetrics: ptr.To(true),
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "downwardMetrics", State: ptr.To(featuregates.Enabled)},
 							}
 						},
 						ContainElement(kvDownwardMetrics),
 					),
-					Entry("should not add the DownwardMetrics feature gate if DownwardMetrics is not set in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								DownwardMetrics: nil,
-							}
-						},
-						Not(ContainElement(kvDownwardMetrics)),
-					),
 					Entry("should not add the DownwardMetrics feature gate if DownwardMetrics is false in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								DownwardMetrics: ptr.To(false),
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "downwardMetrics", State: ptr.To(featuregates.Disabled)},
 							}
 						},
 						Not(ContainElement(kvDownwardMetrics)),
 					),
 					// DecentralizedLiveMigration
 					Entry("should add the DecentralizedLiveMigration feature gate if DecentralizedLiveMigration is true in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								DecentralizedLiveMigration: ptr.To(true),
-							}
-						},
-						ContainElement(kvDecentralizedLiveMigration),
-					),
-					Entry("should add the DecentralizedLiveMigration feature gate if DecentralizedLiveMigration is not set in HyperConverged CR (default true)",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								DecentralizedLiveMigration: nil,
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "decentralizedLiveMigration", State: ptr.To(featuregates.Enabled)},
 							}
 						},
 						ContainElement(kvDecentralizedLiveMigration),
 					),
 					Entry("should not add the DecentralizedLiveMigration feature gate if DecentralizedLiveMigration is false in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								DecentralizedLiveMigration: ptr.To(false),
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "decentralizedLiveMigration", State: ptr.To(featuregates.Disabled)},
 							}
 						},
 						Not(ContainElement(kvDecentralizedLiveMigration)),
 					),
 					// AlignCPUs
 					Entry("should add the AlignCPUs feature gate if DownwardMetrics is true in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								AlignCPUs: ptr.To(true),
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "alignCPUs", State: ptr.To(featuregates.Enabled)},
 							}
 						},
 						ContainElement(kvAlignCPUs),
@@ -2105,20 +1962,9 @@ Version: 1.2.3`)
 						},
 					),
 					Entry("should not add the AlignCPUs feature gate if DownwardMetrics is false in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								AlignCPUs: ptr.To(false),
-							}
-						},
-						Not(ContainElement(kvAlignCPUs)),
-						func(kv *kubevirtcorev1.KubeVirt) {
-							Expect(kv.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
-						},
-					),
-					Entry("should not add the AlignCPUs feature gate if DownwardMetrics is not set in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								AlignCPUs: nil,
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "alignCPUs", State: ptr.To(featuregates.Disabled)},
 							}
 						},
 						Not(ContainElement(kvAlignCPUs)),
@@ -2128,174 +1974,124 @@ Version: 1.2.3`)
 					),
 					// PasstBinding
 					Entry("should add the PasstBinding FG to Kubevirt CR if PasstNetworkBinding is true in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
+						func(hc *hcov1.HyperConverged) {
 							hc.Annotations[deployPasstNetworkBindingAnn] = "true"
 						},
 						ContainElement(kvPasstBinding),
 					),
 					Entry("should not add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is false in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
+						func(hc *hcov1.HyperConverged) {
 							hc.Annotations[deployPasstNetworkBindingAnn] = "false"
 						},
 						Not(ContainElement(kvPasstBinding)),
 					),
 					Entry("should not add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is not set in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
+						func(hc *hcov1.HyperConverged) {
 							delete(hc.Annotations, deployPasstNetworkBindingAnn)
 						},
 						Not(ContainElement(kvPasstBinding)),
 					),
 					// PCINUMAAwareTopology
 					Entry("should add the PCINUMAAwareTopology FG to KubeVirt CR if deployAIE annotation is true",
-						func(hc *hcov1beta1.HyperConverged) {
+						func(hc *hcov1.HyperConverged) {
 							hc.Annotations[aie.DeployAIEAnnotation] = "true"
 						},
 						ContainElement(kvPCINUMAAwareTopology),
 					),
 					Entry("should not add the PCINUMAAwareTopology FG to KubeVirt CR if deployAIE annotation is false",
-						func(hc *hcov1beta1.HyperConverged) {
+						func(hc *hcov1.HyperConverged) {
 							hc.Annotations[aie.DeployAIEAnnotation] = "false"
 						},
 						Not(ContainElement(kvPCINUMAAwareTopology)),
 					),
 					Entry("should not add the PCINUMAAwareTopology FG to KubeVirt CR if deployAIE annotation is not set",
-						func(hc *hcov1beta1.HyperConverged) {
+						func(hc *hcov1.HyperConverged) {
 							delete(hc.Annotations, aie.DeployAIEAnnotation)
 						},
 						Not(ContainElement(kvPCINUMAAwareTopology)),
 					),
 					Entry("should add the DeclarativeHotplugVolumes feature gate if DeclarativeHotplugVolumes is true in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								DeclarativeHotplugVolumes: ptr.To(true),
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "declarativeHotplugVolumes", State: ptr.To(featuregates.Enabled)},
 							}
 						},
 						And(ContainElement(kvDeclarativeHotplugVolumesGate), Not(ContainElement(kvHotplugVolumesGate))),
 					),
 					Entry("should add the HotplugVolumes feature gate if DeclarativeHotplugVolumes is false in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								DeclarativeHotplugVolumes: ptr.To(false),
-							}
-						},
-						And(ContainElement(kvHotplugVolumesGate), Not(ContainElement(kvDeclarativeHotplugVolumesGate))),
-					),
-					Entry("should add the HotplugVolumes feature gate if DeclarativeHotplugVolumes is not set in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								DeclarativeHotplugVolumes: nil,
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "declarativeHotplugVolumes", State: ptr.To(featuregates.Disabled)},
 							}
 						},
 						And(ContainElement(kvHotplugVolumesGate), Not(ContainElement(kvDeclarativeHotplugVolumesGate))),
 					),
 					Entry("should add the ObjectGraph feature gate if ObjectGraph is true in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								ObjectGraph: ptr.To(true),
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "objectGraph", State: ptr.To(featuregates.Enabled)},
 							}
 						},
 						And(ContainElement(kvObjectGraph)),
 					),
 					Entry("should not add the ObjectGraph feature gate if ObjectGraph is false in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								ObjectGraph: ptr.To(false),
-							}
-						},
-						Not(ContainElement(kvObjectGraph)),
-					),
-					Entry("should not add the ObjectGraph feature gate if ObjectGraph is not set in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								ObjectGraph: nil,
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "objectGraph", State: ptr.To(featuregates.Disabled)},
 							}
 						},
 						Not(ContainElement(kvObjectGraph)),
 					),
 					Entry("should add both IncrementalBackup and UtilityVolumes feature gates if IncrementalBackup is true in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								IncrementalBackup: ptr.To(true),
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "incrementalBackup", State: ptr.To(featuregates.Enabled)},
 							}
 						},
 						ContainElements(kvIncrementalBackup, kvUtilityVolumes),
 					),
 					Entry("should not add IncrementalBackup or UtilityVolumes feature gates if IncrementalBackup is false in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								IncrementalBackup: ptr.To(false),
-							}
-						},
-						And(Not(ContainElement(kvIncrementalBackup)), Not(ContainElement(kvUtilityVolumes))),
-					),
-					Entry("should not add IncrementalBackup or UtilityVolumes feature gates if IncrementalBackup is not set in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								IncrementalBackup: nil,
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "incrementalBackup", State: ptr.To(featuregates.Disabled)},
 							}
 						},
 						And(Not(ContainElement(kvIncrementalBackup)), Not(ContainElement(kvUtilityVolumes))),
 					),
 					// ContainerPathVolumes
 					Entry("should add the ContainerPathVolumes feature gate if ContainerPathVolumes is true in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								ContainerPathVolumes: ptr.To(true),
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "containerPathVolumes", State: ptr.To(featuregates.Enabled)},
 							}
 						},
 						ContainElement(kvContainerPathVolumes),
 					),
-					Entry("should not add the ContainerPathVolumes feature gate if ContainerPathVolumes is not set in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								ContainerPathVolumes: nil,
+					Entry("should not add the ContainerPathVolumes feature gate if ContainerPathVolumes is false in HyperConverged CR",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "containerPathVolumes", State: ptr.To(featuregates.Disabled)},
 							}
 						},
 						Not(ContainElement(kvContainerPathVolumes)),
 					),
-					Entry("should not add the ContainerPathVolumes feature gate if ContainerPathVolumes is false in HyperConverged CR",
-						func(hc *hcov1beta1.HyperConverged) {
-							hc.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-								ContainerPathVolumes: ptr.To(false),
+					Entry("should add the VideoConfig if feature gate VideoConfig is true in HyperConverged CR",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "videoConfig", State: ptr.To(featuregates.Enabled)},
 							}
 						},
-						Not(ContainElement(kvContainerPathVolumes)),
+						ContainElement(kvVideoConfig),
+					),
+					Entry("should not add the VideoConfig if feature gate VideoConfig is set to false in HyperConverged CR",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "videoConfig", State: ptr.To(featuregates.Disabled)},
+							}
+						},
+						Not(ContainElement(kvVideoConfig)),
 					),
 				)
-
-				It("should add the VideoConfig if feature gate VideoConfig is true in HyperConverged CR", func() {
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						VideoConfig: ptr.To(true),
-					}
-
-					existingResource, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
-					Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvVideoConfig))
-				})
-
-				It("should add the VideoConfig if feature gate VideoConfig is not in HyperConverged CR", func() {
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						VideoConfig: nil,
-					}
-
-					existingResource, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
-					Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvVideoConfig))
-				})
-
-				It("should not add the VideoConfig if feature gate VideoConfig is set to false in HyperConverged CR", func() {
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						VideoConfig: ptr.To(false),
-					}
-
-					existingResource, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(existingResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
-					Expect(existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvVideoConfig))
-				})
-
 			})
 
 			Context("test feature gates in KV handler", func() {
@@ -2303,9 +2099,9 @@ Version: 1.2.3`)
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
 
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						DownwardMetrics:       ptr.To(true),
-						PersistentReservation: ptr.To(true),
+					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+						{Name: "downwardMetrics", State: ptr.To(featuregates.Enabled)},
+						{Name: "persistentReservation", State: ptr.To(featuregates.Enabled)},
 					}
 
 					cl := commontestutils.InitClient([]client.Object{hco, existingResource})
@@ -2334,9 +2130,9 @@ Version: 1.2.3`)
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
 
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						WithHostPassthroughCPU: ptr.To(false),
-						ObjectGraph:            ptr.To(false),
+					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+						{Name: "withHostPassthroughCPU", State: ptr.To(featuregates.Disabled)},
+						{Name: "objectGraph", State: ptr.To(featuregates.Disabled)},
 					}
 
 					cl := commontestutils.InitClient([]client.Object{hco, existingResource})
@@ -2354,18 +2150,18 @@ Version: 1.2.3`)
 							foundResource),
 					).ToNot(HaveOccurred())
 
-					By("KV CR should contain the HC enabled managed feature gates", func() {
-						mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
-						Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-						fgList := getKvFeatureGateList(hco.Spec, nil)
-						Expect(fgList).To(HaveLen(basicNumFgOnOpenshift))
-						Expect(fgList).To(ContainElements(hardCodeKvFgs))
-						Expect(fgList).To(ContainElements(sspConditionKvFgs))
-					})
+					By("KV CR should contain the HC enabled managed feature gates")
+					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
+
+					fgList := foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates
+					Expect(fgList).To(HaveLen(basicNumFgOnOpenshift))
+					Expect(fgList).To(ContainElements(hardCodeKvFgs))
+					Expect(fgList).To(ContainElements(sspConditionKvFgs))
 				})
 
 				It("should not add feature gates if they are not exist", func() {
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{}
+					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{}
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
 
@@ -2384,26 +2180,24 @@ Version: 1.2.3`)
 							foundResource),
 					).ToNot(HaveOccurred())
 
-					By("KV CR should contain the HC enabled managed feature gates", func() {
-						mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
-						Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-						fgList := getKvFeatureGateList(hco.Spec, nil)
-						Expect(fgList).To(HaveLen(len(getKvFeatureGateList(hco.Spec, nil))))
-						Expect(fgList).To(ContainElements(hardCodeKvFgs))
-						Expect(fgList).To(ContainElements(sspConditionKvFgs))
-					})
+					By("KV CR should contain the HC enabled managed feature gates")
+					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
+					fgList := foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates
+					Expect(fgList).To(ContainElements(hardCodeKvFgs))
+					Expect(fgList).To(ContainElements(sspConditionKvFgs))
 				})
 
 				It("should keep FG if already exist", func() {
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(true)
 
 					// Set up HCO with PersistentReservation enabled first
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						PersistentReservation: ptr.To(true),
+					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+						{Name: "persistentReservation", State: ptr.To(featuregates.Enabled)},
 					}
 
 					// Get the expected featuregates for this configuration
-					fgs := getKvFeatureGateList(hco.Spec, nil)
+					fgs := getKvFeatureGateList(hco)
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
 					existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates = fgs
@@ -2426,7 +2220,6 @@ Version: 1.2.3`)
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).
 						To(ContainElements(kvPersistentReservation))
-
 				})
 
 				It("should remove FG if it disabled in HC CR", func() {
@@ -2437,8 +2230,8 @@ Version: 1.2.3`)
 						FeatureGates: []string{kvPersistentReservation},
 					}
 
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-						PersistentReservation: ptr.To(false),
+					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+						{Name: "persistentReservation", State: ptr.To(featuregates.Disabled)},
 					}
 
 					cl := commontestutils.InitClient([]client.Object{hco, existingResource})
@@ -2457,7 +2250,6 @@ Version: 1.2.3`)
 					).ToNot(HaveOccurred())
 
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(len(getKvFeatureGateList(hco.Spec, nil))))
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(sspConditionKvFgs))
 				})
@@ -2470,7 +2262,7 @@ Version: 1.2.3`)
 						FeatureGates: []string{kvPersistentReservation},
 					}
 
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{}
+					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{}
 
 					cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 					handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -2488,7 +2280,6 @@ Version: 1.2.3`)
 					).ToNot(HaveOccurred())
 
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(len(getKvFeatureGateList(hco.Spec, nil))))
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(sspConditionKvFgs))
 				})
@@ -2501,7 +2292,7 @@ Version: 1.2.3`)
 						FeatureGates: []string{kvPersistentReservation},
 					}
 
-					hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{}
+					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{}
 
 					cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 					handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -2531,7 +2322,7 @@ Version: 1.2.3`)
 					DeferCleanup(func() {
 						commontestutils.ResetNodeInfoMocks()
 					})
-					fgList := getKvFeatureGateList(hco.Spec, nil)
+					fgList := getKvFeatureGateList(hco)
 
 					Expect(fgList).To(ContainElement(kvSecureExecution))
 				})
@@ -2539,10 +2330,10 @@ Version: 1.2.3`)
 
 			Context("Test getKvFeatureGateList", func() {
 				DescribeTable("Should return featureGate slice",
-					func(isKVMEmulation bool, fgs *hcov1beta1.HyperConvergedFeatureGates, expectedLength int, expectedFgs [][]string) {
+					func(isKVMEmulation bool, fgs *featuregates.HyperConvergedFeatureGates, expectedLength int, expectedFgs [][]string) {
 						mandatoryKvFeatureGates = getMandatoryKvFeatureGates(isKVMEmulation)
-						hcoForFg := &hcov1beta1.HyperConverged{Spec: hcov1beta1.HyperConvergedSpec{FeatureGates: *fgs}}
-						fgList := getKvFeatureGateList(hcoForFg.Spec, nil)
+						hcoForFg := &hcov1.HyperConverged{Spec: hcov1.HyperConvergedSpec{FeatureGates: *fgs}}
+						fgList := getKvFeatureGateList(hcoForFg)
 						Expect(fgList).To(HaveLen(expectedLength))
 						for _, expected := range expectedFgs {
 							Expect(fgList).To(ContainElements(expected))
@@ -2550,37 +2341,25 @@ Version: 1.2.3`)
 					},
 					Entry("When not using kvm-emulation and FG is empty",
 						false,
-						&hcov1beta1.HyperConvergedFeatureGates{},
+						&featuregates.HyperConvergedFeatureGates{},
 						basicNumFgOnOpenshift,
 						[][]string{hardCodeKvFgs, sspConditionKvFgs},
 					),
 					Entry("When using kvm-emulation and FG is empty",
 						true,
-						&hcov1beta1.HyperConvergedFeatureGates{},
-						defaultFeatureGateCount,
-						[][]string{hardCodeKvFgs},
-					),
-					Entry("When not using kvm-emulation and all FGs are disabled",
-						false,
-						&hcov1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: ptr.To(false)},
-						basicNumFgOnOpenshift,
-						[][]string{hardCodeKvFgs, sspConditionKvFgs},
-					),
-					Entry("When using kvm-emulation all FGs are disabled",
-						true,
-						&hcov1beta1.HyperConvergedFeatureGates{WithHostPassthroughCPU: ptr.To(false)},
+						&featuregates.HyperConvergedFeatureGates{},
 						defaultFeatureGateCount,
 						[][]string{hardCodeKvFgs},
 					),
 					Entry("When not using kvm-emulation and all FGs are enabled",
 						false,
-						&hcov1beta1.HyperConvergedFeatureGates{DownwardMetrics: ptr.To(true)},
+						&featuregates.HyperConvergedFeatureGates{{Name: "downwardMetrics", State: ptr.To(featuregates.Enabled)}},
 						basicNumFgOnOpenshift+1,
 						[][]string{hardCodeKvFgs, sspConditionKvFgs, {kvDownwardMetrics}},
 					),
 					Entry("When using kvm-emulation all FGs are enabled",
 						true,
-						&hcov1beta1.HyperConvergedFeatureGates{DownwardMetrics: ptr.To(true)},
+						&featuregates.HyperConvergedFeatureGates{{Name: "downwardMetrics", State: ptr.To(featuregates.Enabled)}},
 						defaultFeatureGateCount+1, // +1 for DownwardMetrics
 						[][]string{hardCodeKvFgs, {kvDownwardMetrics}},
 					))
@@ -2605,9 +2384,7 @@ Version: 1.2.3`)
 		Context("Obsolete CPU Models", func() {
 			Context("test Obsolete CPU Models in NewKubeVirt", func() {
 				It("should add obsolete CPU Models if exists in HC CR", func() {
-					hco.Spec.ObsoleteCPUs = &hcov1beta1.HyperConvergedObsoleteCPUs{
-						CPUModels: []string{"aaa", "bbb", "ccc"},
-					}
+					hco.Spec.Virtualization.ObsoleteCPUModels = []string{"aaa", "bbb", "ccc"}
 
 					kv, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
@@ -2627,9 +2404,7 @@ Version: 1.2.3`)
 					existingKV, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
 
-					hco.Spec.ObsoleteCPUs = &hcov1beta1.HyperConvergedObsoleteCPUs{
-						CPUModels: []string{"aaa", "bbb", "ccc"},
-					}
+					hco.Spec.Virtualization.ObsoleteCPUModels = []string{"aaa", "bbb", "ccc"}
 
 					cl := commontestutils.InitClient([]client.Object{hco, existingKV})
 					handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -2667,9 +2442,7 @@ Version: 1.2.3`)
 						"shouldBeRemoved": true,
 					}
 
-					hco.Spec.ObsoleteCPUs = &hcov1beta1.HyperConvergedObsoleteCPUs{
-						CPUModels: []string{"shouldStay", "shouldBeTrue", "newOne"},
-					}
+					hco.Spec.Virtualization.ObsoleteCPUModels = []string{"shouldStay", "shouldBeTrue", "newOne"}
 
 					cl := commontestutils.InitClient([]client.Object{hco, existingKV})
 					handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -2686,17 +2459,16 @@ Version: 1.2.3`)
 							foundKV),
 					).ToNot(HaveOccurred())
 
-					By("KV CR should contain the HC obsolete CPU models", func() {
-						Expect(foundKV.Spec.Configuration.ObsoleteCPUModels).To(HaveLen(3 + len(hardcodedObsoleteCPUModels)))
-						Expect(foundKV.Spec.Configuration.ObsoleteCPUModels).To(HaveKeyWithValue("shouldStay", true))
-						Expect(foundKV.Spec.Configuration.ObsoleteCPUModels).To(HaveKeyWithValue("shouldBeTrue", true))
-						Expect(foundKV.Spec.Configuration.ObsoleteCPUModels).To(HaveKeyWithValue("newOne", true))
-						for _, cpu := range hardcodedObsoleteCPUModels {
-							Expect(foundKV.Spec.Configuration.ObsoleteCPUModels[cpu]).To(BeTrue())
-						}
+					By("KV CR should contain the HC obsolete CPU models")
+					Expect(foundKV.Spec.Configuration.ObsoleteCPUModels).To(HaveLen(3 + len(hardcodedObsoleteCPUModels)))
+					Expect(foundKV.Spec.Configuration.ObsoleteCPUModels).To(HaveKeyWithValue("shouldStay", true))
+					Expect(foundKV.Spec.Configuration.ObsoleteCPUModels).To(HaveKeyWithValue("shouldBeTrue", true))
+					Expect(foundKV.Spec.Configuration.ObsoleteCPUModels).To(HaveKeyWithValue("newOne", true))
+					for _, cpu := range hardcodedObsoleteCPUModels {
+						Expect(foundKV.Spec.Configuration.ObsoleteCPUModels[cpu]).To(BeTrue())
+					}
 
-						Expect(foundKV.Spec.Configuration.ObsoleteCPUModels).ToNot(HaveKey("shouldBeRemoved"))
-					})
+					Expect(foundKV.Spec.Configuration.ObsoleteCPUModels).ToNot(HaveKey("shouldBeRemoved"))
 				})
 
 				It("Should remove obsolete CPU model if they are not set in HC CR", func() {
@@ -2738,7 +2510,7 @@ Version: 1.2.3`)
 				existingResource, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+				hco.Spec.Security.CertConfig = hcov1.HyperConvergedCertConfig{
 					CA: hcov1.CertRotateConfigCA{
 						Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 						RenewBefore: &metav1.Duration{Duration: 1 * time.Hour},
@@ -2804,7 +2576,7 @@ Version: 1.2.3`)
 
 			It("should modify certificate rotation strategy according to HCO CR", func() {
 
-				hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+				hco.Spec.Security.CertConfig = hcov1.HyperConvergedCertConfig{
 					CA: hcov1.CertRotateConfigCA{
 						Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 						RenewBefore: &metav1.Duration{Duration: 1 * time.Hour},
@@ -2818,10 +2590,10 @@ Version: 1.2.3`)
 				Expect(err).ToNot(HaveOccurred())
 
 				By("Modify HCO's cert configuration")
-				hco.Spec.CertConfig.CA.Duration.Duration *= 2
-				hco.Spec.CertConfig.CA.RenewBefore.Duration *= 2
-				hco.Spec.CertConfig.Server.Duration.Duration *= 2
-				hco.Spec.CertConfig.Server.RenewBefore.Duration *= 2
+				hco.Spec.Security.CertConfig.CA.Duration.Duration *= 2
+				hco.Spec.Security.CertConfig.CA.RenewBefore.Duration *= 2
+				hco.Spec.Security.CertConfig.Server.Duration.Duration *= 2
+				hco.Spec.Security.CertConfig.Server.RenewBefore.Duration *= 2
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -2856,7 +2628,7 @@ Version: 1.2.3`)
 
 			It("should overwrite certificate rotation strategy if directly set on KV CR", func() {
 
-				hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+				hco.Spec.Security.CertConfig = hcov1.HyperConvergedCertConfig{
 					CA: hcov1.CertRotateConfigCA{
 						Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 						RenewBefore: &metav1.Duration{Duration: 1 * time.Hour},
@@ -2925,7 +2697,7 @@ Version: 1.2.3`)
 				existingResource, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.WorkloadUpdateStrategy = hcov1.HyperConvergedWorkloadUpdateStrategy{
+				hco.Spec.Virtualization.WorkloadUpdateStrategy = hcov1.HyperConvergedWorkloadUpdateStrategy{
 					WorkloadUpdateMethods: []string{"aaa", "bbb"},
 					BatchEvictionInterval: &metav1.Duration{Duration: time.Minute * 1},
 					BatchEvictionSize:     ptr.To(defaultBatchEvictionSize),
@@ -2992,9 +2764,9 @@ Version: 1.2.3`)
 				Expect(err).ToNot(HaveOccurred())
 
 				const modifiedBatchEvictionSize = 5
-				hco.Spec.WorkloadUpdateStrategy.WorkloadUpdateMethods = []string{"aaa", "bbb", "ccc"}
-				hco.Spec.WorkloadUpdateStrategy.BatchEvictionInterval = &metav1.Duration{Duration: time.Minute * 3}
-				hco.Spec.WorkloadUpdateStrategy.BatchEvictionSize = ptr.To(modifiedBatchEvictionSize)
+				hco.Spec.Virtualization.WorkloadUpdateStrategy.WorkloadUpdateMethods = []string{"aaa", "bbb", "ccc"}
+				hco.Spec.Virtualization.WorkloadUpdateStrategy.BatchEvictionInterval = &metav1.Duration{Duration: time.Minute * 3}
+				hco.Spec.Virtualization.WorkloadUpdateStrategy.BatchEvictionSize = ptr.To(modifiedBatchEvictionSize)
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingKv})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -3028,7 +2800,7 @@ Version: 1.2.3`)
 					hcoModifiedBatchEvictionSize = 5
 					kvModifiedBatchEvictionSize  = 7
 				)
-				hco.Spec.WorkloadUpdateStrategy = hcov1.HyperConvergedWorkloadUpdateStrategy{
+				hco.Spec.Virtualization.WorkloadUpdateStrategy = hcov1.HyperConvergedWorkloadUpdateStrategy{
 					WorkloadUpdateMethods: []string{"LiveMigrate"},
 					BatchEvictionInterval: &metav1.Duration{Duration: time.Minute * 5},
 					BatchEvictionSize:     ptr.To(hcoModifiedBatchEvictionSize),
@@ -3091,9 +2863,8 @@ Version: 1.2.3`)
 			})
 
 			Context("Custom Infra placement, default Workloads placement", func() {
-
 				BeforeEach(func() {
-					hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+					commontestutils.SetNodeCustomPlacement(hco, commontestutils.NewNodePlacement(), nil)
 				})
 
 				It("should set replica=1 on SNO", func() {
@@ -3132,7 +2903,7 @@ Version: 1.2.3`)
 			Context("Custom Workloads placement, default Infra placement", func() {
 
 				BeforeEach(func() {
-					hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+					commontestutils.SetNodeCustomPlacement(hco, nil, commontestutils.NewNodePlacement())
 				})
 
 				It("should set replica=1 on SNO", func() {
@@ -3208,8 +2979,7 @@ Version: 1.2.3`)
 			Context("Custom Infra and Workloads placement", func() {
 
 				BeforeEach(func() {
-					hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-					hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+					commontestutils.SetNodePlacement(hco)
 				})
 
 				It("should set replica=1 on SNO", func() {
@@ -3254,7 +3024,7 @@ Version: 1.2.3`)
 				existingResource, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.EvictionStrategy = ptr.To(kubevirtcorev1.EvictionStrategyLiveMigrate)
+				hco.Spec.Virtualization.EvictionStrategy = ptr.To(kubevirtcorev1.EvictionStrategyLiveMigrate)
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -3279,12 +3049,12 @@ Version: 1.2.3`)
 
 			It("should modify eviction strategy according to HCO CR", func() {
 
-				hco.Spec.EvictionStrategy = ptr.To(kubevirtcorev1.EvictionStrategyNone)
+				hco.Spec.Virtualization.EvictionStrategy = ptr.To(kubevirtcorev1.EvictionStrategyNone)
 				existingResource, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
 				By("Modify HCO's eviction strategy configuration")
-				hco.Spec.EvictionStrategy = ptr.To(kubevirtcorev1.EvictionStrategyLiveMigrateIfPossible)
+				hco.Spec.Virtualization.EvictionStrategy = ptr.To(kubevirtcorev1.EvictionStrategyLiveMigrateIfPossible)
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -3314,7 +3084,7 @@ Version: 1.2.3`)
 
 		Context("Hypervisors", func() {
 			It("should propagate kvm hypervisor to KubeVirt CR and add ConfigurableHypervisor feature gate", func() {
-				hco.Spec.Hypervisors = []kubevirtcorev1.HypervisorConfiguration{
+				hco.Spec.Virtualization.Hypervisors = []kubevirtcorev1.HypervisorConfiguration{
 					{Name: kubevirtcorev1.KvmHypervisorName},
 				}
 				kv, err := NewKubeVirt(hco)
@@ -3326,7 +3096,7 @@ Version: 1.2.3`)
 			})
 
 			It("should propagate hyperv-direct hypervisor to KubeVirt CR and add ConfigurableHypervisor feature gate", func() {
-				hco.Spec.Hypervisors = []kubevirtcorev1.HypervisorConfiguration{
+				hco.Spec.Virtualization.Hypervisors = []kubevirtcorev1.HypervisorConfiguration{
 					{Name: kubevirtcorev1.HyperVDirectHypervisorName},
 				}
 				kv, err := NewKubeVirt(hco)
@@ -3338,7 +3108,7 @@ Version: 1.2.3`)
 			})
 
 			It("should not set Hypervisors or ConfigurableHypervisor FG when not set in HCO", func() {
-				hco.Spec.Hypervisors = nil
+				hco.Spec.Virtualization.Hypervisors = nil
 				kv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -3349,7 +3119,7 @@ Version: 1.2.3`)
 
 		Context("RoleAggregationStrategy", func() {
 			It("should propagate Manual to KubeVirt CR and add OptOutRoleAggregation feature gate", func() {
-				hco.Spec.RoleAggregationStrategy = ptr.To(kubevirtcorev1.RoleAggregationStrategyManual)
+				hco.Spec.Virtualization.RoleAggregationStrategy = ptr.To(kubevirtcorev1.RoleAggregationStrategyManual)
 				kv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -3358,7 +3128,7 @@ Version: 1.2.3`)
 			})
 
 			It("should propagate AggregateToDefault to KubeVirt CR and add OptOutRoleAggregation feature gate", func() {
-				hco.Spec.RoleAggregationStrategy = ptr.To(kubevirtcorev1.RoleAggregationStrategyAggregateToDefault)
+				hco.Spec.Virtualization.RoleAggregationStrategy = ptr.To(kubevirtcorev1.RoleAggregationStrategyAggregateToDefault)
 				kv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -3367,7 +3137,7 @@ Version: 1.2.3`)
 			})
 
 			It("should not set RoleAggregationStrategy or OptOutRoleAggregation FG when not set in HCO", func() {
-				hco.Spec.RoleAggregationStrategy = nil
+				hco.Spec.Virtualization.RoleAggregationStrategy = nil
 				kv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -3382,7 +3152,7 @@ Version: 1.2.3`)
 				Expect(err).ToNot(HaveOccurred())
 
 				By("Modify HCO's VM state storage class configuration")
-				hco.Spec.VMStateStorageClass = ptr.To("rook-cephfs")
+				hco.Spec.Storage = &hcov1.StorageConfig{VMStateStorageClass: ptr.To("rook-cephfs")}
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -3411,10 +3181,8 @@ Version: 1.2.3`)
 				existingResource, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.ResourceRequirements = &hcov1beta1.OperandResourceRequirements{
-					AutoCPULimitNamespaceLabelSelector: &metav1.LabelSelector{
-						MatchLabels: map[string]string{"someLabel": "true"},
-					},
+				hco.Spec.Virtualization.AutoCPULimitNamespaceLabelSelector = &metav1.LabelSelector{
+					MatchLabels: map[string]string{"someLabel": "true"},
 				}
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
@@ -3449,8 +3217,8 @@ Version: 1.2.3`)
 				Expect(kv.Spec.Configuration.VirtualMachineOptions).To(BeNil())
 			})
 
-			DescribeTable("Should set VirtualMachineOptions according to HCO CR options", func(hcoVMOptions *hcov1beta1.VirtualMachineOptions, kvVMOptions *kubevirtcorev1.VirtualMachineOptions) {
-				hco.Spec.VirtualMachineOptions = hcoVMOptions
+			DescribeTable("Should set VirtualMachineOptions according to HCO CR options", func(hcoVMOptions *hcov1.VirtualMachineOptions, kvVMOptions *kubevirtcorev1.VirtualMachineOptions) {
+				hco.Spec.Virtualization.VirtualMachineOptions = hcoVMOptions
 				kv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(kv.Spec.Configuration).ToNot(BeNil())
@@ -3461,45 +3229,45 @@ Version: 1.2.3`)
 					nil,
 				),
 				Entry("disableFreePageReporting only, false",
-					&hcov1beta1.VirtualMachineOptions{DisableFreePageReporting: ptr.To(false)},
+					&hcov1.VirtualMachineOptions{DisableFreePageReporting: ptr.To(false)},
 					nil,
 				),
 				Entry("disableFreePageReporting only, true",
-					&hcov1beta1.VirtualMachineOptions{DisableFreePageReporting: ptr.To(true)},
+					&hcov1.VirtualMachineOptions{DisableFreePageReporting: ptr.To(true)},
 					&kubevirtcorev1.VirtualMachineOptions{DisableFreePageReporting: &kubevirtcorev1.DisableFreePageReporting{}},
 				),
 				Entry("disableSerialConsoleLog only, false",
-					&hcov1beta1.VirtualMachineOptions{DisableSerialConsoleLog: ptr.To(false)},
+					&hcov1.VirtualMachineOptions{DisableSerialConsoleLog: ptr.To(false)},
 					nil,
 				),
 				Entry("disableSerialConsoleLog only, true",
-					&hcov1beta1.VirtualMachineOptions{DisableSerialConsoleLog: ptr.To(true)},
+					&hcov1.VirtualMachineOptions{DisableSerialConsoleLog: ptr.To(true)},
 					&kubevirtcorev1.VirtualMachineOptions{DisableSerialConsoleLog: &kubevirtcorev1.DisableSerialConsoleLog{}},
 				),
 				Entry("disableFreePageReporting false, disableSerialConsoleLog false",
-					&hcov1beta1.VirtualMachineOptions{DisableFreePageReporting: ptr.To(false), DisableSerialConsoleLog: ptr.To(false)},
+					&hcov1.VirtualMachineOptions{DisableFreePageReporting: ptr.To(false), DisableSerialConsoleLog: ptr.To(false)},
 					nil,
 				),
 				Entry("disableFreePageReporting true, disableSerialConsoleLog false",
-					&hcov1beta1.VirtualMachineOptions{DisableFreePageReporting: ptr.To(true), DisableSerialConsoleLog: ptr.To(false)},
+					&hcov1.VirtualMachineOptions{DisableFreePageReporting: ptr.To(true), DisableSerialConsoleLog: ptr.To(false)},
 					&kubevirtcorev1.VirtualMachineOptions{DisableFreePageReporting: &kubevirtcorev1.DisableFreePageReporting{}},
 				),
 				Entry("disableFreePageReporting false, disableSerialConsoleLog true",
-					&hcov1beta1.VirtualMachineOptions{DisableFreePageReporting: ptr.To(false), DisableSerialConsoleLog: ptr.To(true)},
+					&hcov1.VirtualMachineOptions{DisableFreePageReporting: ptr.To(false), DisableSerialConsoleLog: ptr.To(true)},
 					&kubevirtcorev1.VirtualMachineOptions{DisableSerialConsoleLog: &kubevirtcorev1.DisableSerialConsoleLog{}},
 				),
 				Entry("disableFreePageReporting true, disableSerialConsoleLog true",
-					&hcov1beta1.VirtualMachineOptions{DisableFreePageReporting: ptr.To(true), DisableSerialConsoleLog: ptr.To(true)},
+					&hcov1.VirtualMachineOptions{DisableFreePageReporting: ptr.To(true), DisableSerialConsoleLog: ptr.To(true)},
 					&kubevirtcorev1.VirtualMachineOptions{DisableFreePageReporting: &kubevirtcorev1.DisableFreePageReporting{}, DisableSerialConsoleLog: &kubevirtcorev1.DisableSerialConsoleLog{}},
 				),
 			)
 
-			DescribeTable("should modify disableFreePageReporting according to HCO CR", func(virtualMachineOptions *hcov1beta1.VirtualMachineOptions, updated, expectDisableFreePageReporting bool) {
+			DescribeTable("should modify disableFreePageReporting according to HCO CR", func(virtualMachineOptions *hcov1.VirtualMachineOptions, updated, expectDisableFreePageReporting bool) {
 				existingResource, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
 				By("Modify HCO's virtual machine options configuration")
-				hco.Spec.VirtualMachineOptions = virtualMachineOptions
+				hco.Spec.Virtualization.VirtualMachineOptions = virtualMachineOptions
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -3527,17 +3295,17 @@ Version: 1.2.3`)
 				}
 
 			},
-				Entry("with virtualMachineOptions containing disableFreePageReporting false", &hcov1beta1.VirtualMachineOptions{DisableFreePageReporting: ptr.To(false)}, false, false),
-				Entry("with virtualMachineOptions containing disableFreePageReporting true", &hcov1beta1.VirtualMachineOptions{DisableFreePageReporting: ptr.To(true)}, true, true),
-				Entry("with empty virtualMachineOptions", &hcov1beta1.VirtualMachineOptions{}, false, false),
+				Entry("with virtualMachineOptions containing disableFreePageReporting false", &hcov1.VirtualMachineOptions{DisableFreePageReporting: ptr.To(false)}, false, false),
+				Entry("with virtualMachineOptions containing disableFreePageReporting true", &hcov1.VirtualMachineOptions{DisableFreePageReporting: ptr.To(true)}, true, true),
+				Entry("with empty virtualMachineOptions", &hcov1.VirtualMachineOptions{}, false, false),
 			)
 
-			DescribeTable("should modify disableSerialConsoleLog according to HCO CR", func(virtualMachineOptions *hcov1beta1.VirtualMachineOptions, updated, expectDisableSerialConsoleLog bool) {
+			DescribeTable("should modify disableSerialConsoleLog according to HCO CR", func(virtualMachineOptions *hcov1.VirtualMachineOptions, updated, expectDisableSerialConsoleLog bool) {
 				existingResource, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
 				By("Modify HCO's virtual machine options configuration")
-				hco.Spec.VirtualMachineOptions = virtualMachineOptions
+				hco.Spec.Virtualization.VirtualMachineOptions = virtualMachineOptions
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -3564,9 +3332,9 @@ Version: 1.2.3`)
 					Expect(foundResource.Spec.Configuration.VirtualMachineOptions).To(BeNil())
 				}
 			},
-				Entry("with virtualMachineOptions containing disableSerialConsoleLog false", &hcov1beta1.VirtualMachineOptions{DisableSerialConsoleLog: ptr.To(false)}, false, false),
-				Entry("with virtualMachineOptions containing disableSerialConsoleLog true", &hcov1beta1.VirtualMachineOptions{DisableSerialConsoleLog: ptr.To(true)}, true, true),
-				Entry("with empty virtualMachineOptions", &hcov1beta1.VirtualMachineOptions{}, false, false),
+				Entry("with virtualMachineOptions containing disableSerialConsoleLog false", &hcov1.VirtualMachineOptions{DisableSerialConsoleLog: ptr.To(false)}, false, false),
+				Entry("with virtualMachineOptions containing disableSerialConsoleLog true", &hcov1.VirtualMachineOptions{DisableSerialConsoleLog: ptr.To(true)}, true, true),
+				Entry("with empty virtualMachineOptions", &hcov1.VirtualMachineOptions{}, false, false),
 			)
 
 		})
@@ -3578,9 +3346,7 @@ Version: 1.2.3`)
 				existingResource, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.ResourceRequirements = &hcov1beta1.OperandResourceRequirements{
-					VmiCPUAllocationRatio: ptr.To(expectedCPUAllocationRatio),
-				}
+				hco.Spec.Virtualization.VmiCPUAllocationRatio = ptr.To(expectedCPUAllocationRatio)
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -3605,9 +3371,7 @@ Version: 1.2.3`)
 				const initialCPUAllocationRatio = 16
 
 				hcoResourceRequirements := commontestutils.NewHco()
-				hcoResourceRequirements.Spec.ResourceRequirements = &hcov1beta1.OperandResourceRequirements{
-					VmiCPUAllocationRatio: ptr.To(initialCPUAllocationRatio),
-				}
+				hcoResourceRequirements.Spec.Virtualization.VmiCPUAllocationRatio = ptr.To(initialCPUAllocationRatio)
 
 				existingResource, err := NewKubeVirt(hcoResourceRequirements)
 				Expect(err).ToNot(HaveOccurred())
@@ -3631,7 +3395,7 @@ Version: 1.2.3`)
 				).ToNot(HaveOccurred())
 
 				Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-				Expect(foundResource.Spec.Configuration.DeveloperConfiguration.CPUAllocationRatio).To(Equal(0))
+				Expect(foundResource.Spec.Configuration.DeveloperConfiguration.CPUAllocationRatio).To(Equal(10))
 			})
 
 			It("should modify CPUAllocationRatio according to HCO CR", func() {
@@ -3641,16 +3405,12 @@ Version: 1.2.3`)
 				)
 				hcoResourceRequirements := commontestutils.NewHco()
 
-				hcoResourceRequirements.Spec.ResourceRequirements = &hcov1beta1.OperandResourceRequirements{
-					VmiCPUAllocationRatio: ptr.To(initialCPUAllocationRatio),
-				}
+				hcoResourceRequirements.Spec.Virtualization.VmiCPUAllocationRatio = ptr.To(initialCPUAllocationRatio)
 
 				existingResource, err := NewKubeVirt(hcoResourceRequirements)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.ResourceRequirements = &hcov1beta1.OperandResourceRequirements{
-					VmiCPUAllocationRatio: ptr.To(expectedCPUAllocationRatio),
-				}
+				hco.Spec.Virtualization.VmiCPUAllocationRatio = ptr.To(expectedCPUAllocationRatio)
 
 				Expect(existingResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
 				Expect(existingResource.Spec.Configuration.DeveloperConfiguration.CPUAllocationRatio).To(Equal(initialCPUAllocationRatio))
@@ -3681,7 +3441,7 @@ Version: 1.2.3`)
 				existingResource, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.KSMConfiguration = &kubevirtcorev1.KSMConfiguration{
+				hco.Spec.Virtualization.KSMConfiguration = &kubevirtcorev1.KSMConfiguration{
 					NodeLabelSelector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{"someLabel": "true"},
 					},
@@ -3714,7 +3474,7 @@ Version: 1.2.3`)
 
 		Context("ChangedBlockTrackingLabelSelectors", func() {
 			It("should set the label selectors according to HCO CR", func() {
-				hco.Spec.ChangedBlockTrackingLabelSelectors = &kubevirtcorev1.ChangedBlockTrackingSelectors{
+				hco.Spec.Virtualization.ChangedBlockTrackingLabelSelectors = &kubevirtcorev1.ChangedBlockTrackingSelectors{
 					NamespaceLabelSelector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{"cbt": "true"},
 					},
@@ -3807,7 +3567,7 @@ Version: 1.2.3`)
 
 		Context("Tune KubeVirt rateLimiters", func() {
 
-			var hco *hcov1beta1.HyperConverged
+			var hco *hcov1.HyperConverged
 
 			BeforeEach(func() {
 				hco = commontestutils.NewHco()
@@ -3816,7 +3576,7 @@ Version: 1.2.3`)
 			It("Should be empty by default", func() {
 				kv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(hco.Spec.TuningPolicy).To(BeEmpty())
+				Expect(hco.Spec.Virtualization.TuningPolicy).To(BeEmpty())
 				Expect(kv.Spec.Configuration.APIConfiguration).To(BeNil())
 				Expect(kv.Spec.Configuration.ControllerConfiguration).To(BeNil())
 				Expect(kv.Spec.Configuration.WebhookConfiguration).To(BeNil())
@@ -3826,7 +3586,7 @@ Version: 1.2.3`)
 
 			Context("with annotations", func() {
 				It("Should return error if annotation is not present", func() {
-					hco.Spec.TuningPolicy = hcov1.HyperConvergedAnnotationTuningPolicy
+					hco.Spec.Virtualization.TuningPolicy = hcov1.HyperConvergedAnnotationTuningPolicy
 
 					kv, err := NewKubeVirt(hco)
 					Expect(err).To(MatchError("tuning policy set but annotation not present or wrong"))
@@ -3836,7 +3596,7 @@ Version: 1.2.3`)
 				})
 				It("Should return error if the annotation is present but the parameters are wrong", func() {
 
-					hco.Spec.TuningPolicy = hcov1.HyperConvergedAnnotationTuningPolicy
+					hco.Spec.Virtualization.TuningPolicy = hcov1.HyperConvergedAnnotationTuningPolicy
 					hco.Annotations = make(map[string]string, 1)
 					//burst is missing
 					hco.Annotations[common.TuningPolicyAnnotationName] = `{"qps": 100}`
@@ -3848,7 +3608,7 @@ Version: 1.2.3`)
 				})
 
 				It("Should return error if the json annotation is corrupted", func() {
-					hco.Spec.TuningPolicy = hcov1.HyperConvergedAnnotationTuningPolicy
+					hco.Spec.Virtualization.TuningPolicy = hcov1.HyperConvergedAnnotationTuningPolicy
 					hco.Annotations = make(map[string]string, 1)
 					// qps field is missing a "
 					hco.Annotations[common.TuningPolicyAnnotationName] = `{"qps: 100, "burst": 200}`
@@ -3860,7 +3620,7 @@ Version: 1.2.3`)
 				})
 
 				It("Should create the fields and populate them when requested", func() {
-					hco.Spec.TuningPolicy = hcov1.HyperConvergedAnnotationTuningPolicy
+					hco.Spec.Virtualization.TuningPolicy = hcov1.HyperConvergedAnnotationTuningPolicy
 					hco.Annotations = make(map[string]string, 1)
 					hco.Annotations[common.TuningPolicyAnnotationName] = `{"qps": 100, "burst": 200}`
 
@@ -3879,40 +3639,6 @@ Version: 1.2.3`)
 				})
 
 			})
-
-			Context("with highBurst profile", func() {
-
-				It("Should return error if the json annotation tuningPolicy is present", func() {
-					hco.Spec.TuningPolicy = hcov1beta1.HyperConvergedHighBurstProfile //nolint SA1019
-					hco.Annotations = make(map[string]string, 1)
-					hco.Annotations[common.TuningPolicyAnnotationName] = `{"qps": 100, "burst": 200}`
-
-					kv, err := NewKubeVirt(hco)
-
-					Expect(err).To(HaveOccurred())
-					Expect(kv).To(BeNil())
-				})
-
-				It("Should create the fields and populate them using the highBurst profile values", func() {
-					hco.Spec.TuningPolicy = hcov1beta1.HyperConvergedHighBurstProfile //nolint SA1019
-					kv, err := NewKubeVirt(hco)
-					const expectedQPS = float32(200)
-					const expectedBurst = 400
-
-					Expect(kv).ToNot(BeNil())
-					Expect(err).ToNot(HaveOccurred())
-					Expect(kv.Spec.Configuration.APIConfiguration.RestClient.RateLimiter.TokenBucketRateLimiter.QPS).To(Equal(expectedQPS))
-					Expect(kv.Spec.Configuration.APIConfiguration.RestClient.RateLimiter.TokenBucketRateLimiter.Burst).To(Equal(expectedBurst))
-					Expect(kv.Spec.Configuration.ControllerConfiguration.RestClient.RateLimiter.TokenBucketRateLimiter.QPS).To(Equal(expectedQPS))
-					Expect(kv.Spec.Configuration.ControllerConfiguration.RestClient.RateLimiter.TokenBucketRateLimiter.Burst).To(Equal(expectedBurst))
-					Expect(kv.Spec.Configuration.WebhookConfiguration.RestClient.RateLimiter.TokenBucketRateLimiter.QPS).To(Equal(expectedQPS))
-					Expect(kv.Spec.Configuration.WebhookConfiguration.RestClient.RateLimiter.TokenBucketRateLimiter.Burst).To(Equal(expectedBurst))
-					Expect(kv.Spec.Configuration.HandlerConfiguration.RestClient.RateLimiter.TokenBucketRateLimiter.QPS).To(Equal(expectedQPS))
-					Expect(kv.Spec.Configuration.HandlerConfiguration.RestClient.RateLimiter.TokenBucketRateLimiter.Burst).To(Equal(expectedBurst))
-
-				})
-			})
-
 		})
 
 		Context("jsonpath Annotation", func() {
@@ -4114,7 +3840,7 @@ Version: 1.2.3`)
 				).ToNot(HaveOccurred())
 
 				Expect(kv.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(len(getKvFeatureGateList(hco.Spec, nil))))
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(len(getKvFeatureGateList(hco))))
 				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
 				Expect(kv.Spec.Configuration.CPURequest).To(BeNil())
 
@@ -4158,7 +3884,7 @@ Version: 1.2.3`)
 					VirtAPI:        456,
 					VirtController: 789,
 				}
-				hco.Spec.LogVerbosityConfig = &hcov1.LogVerbosityConfiguration{Kubevirt: &logVerbosity}
+				hco.Spec.Deployment.LogVerbosityConfig = &hcov1.LogVerbosityConfiguration{Kubevirt: &logVerbosity}
 				devConfig := getKVDevConfig(hco)
 
 				Expect(devConfig).ToNot(BeNil())
@@ -4166,7 +3892,7 @@ Version: 1.2.3`)
 			})
 
 			DescribeTable("Should not be defined for KubevirtCR if not defined in HCO CR", func(logConfig *hcov1.LogVerbosityConfiguration) {
-				hco.Spec.LogVerbosityConfig = logConfig
+				hco.Spec.Deployment.LogVerbosityConfig = logConfig
 				devConfig := getKVDevConfig(hco)
 
 				Expect(devConfig).ToNot(BeNil())
@@ -4182,7 +3908,7 @@ Version: 1.2.3`)
 
 			It("Should be defined for KubevirtCR if defined in HCO CR", func() {
 				const runtimeClass = "myCustomRuntimeClass"
-				hco.Spec.DefaultRuntimeClass = ptr.To(runtimeClass)
+				hco.Spec.Virtualization.VirtualMachineOptions = &hcov1.VirtualMachineOptions{DefaultRuntimeClass: ptr.To(runtimeClass)}
 				kv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -4190,7 +3916,7 @@ Version: 1.2.3`)
 			})
 
 			DescribeTable("Should be empty on KubevirtCR if not defined in HCO CR", func(runtimeClass *string) {
-				hco.Spec.DefaultRuntimeClass = runtimeClass
+				hco.Spec.Virtualization.VirtualMachineOptions = &hcov1.VirtualMachineOptions{DefaultRuntimeClass: runtimeClass}
 				kv, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -4221,7 +3947,7 @@ Version: 1.2.3`)
 					existingResource.Annotations[kubevirtcorev1.EmulatorThreadCompleteToEvenParity] = ""
 				}
 
-				hco.Spec.FeatureGates.AlignCPUs = ptr.To(true)
+				hco.Spec.FeatureGates.Enable("alignCPUs")
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -4245,7 +3971,7 @@ Version: 1.2.3`)
 				Entry("FG present, annotation is missing in KubeVirt", true, false),
 			)
 
-			DescribeTable("AlignCPUs is disabled in HCO", func(alignCPUsValue *bool, isAlignCPUsFGEnabledOnKV, isAnnotationPresentOnKV bool) {
+			DescribeTable("AlignCPUs is disabled in HCO", func(alignCPUsValue *featuregates.State, isAlignCPUsFGEnabledOnKV, isAnnotationPresentOnKV bool) {
 				existingResource, err := NewKubeVirt(hco)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -4263,7 +3989,11 @@ Version: 1.2.3`)
 					existingResource.Annotations[kubevirtcorev1.EmulatorThreadCompleteToEvenParity] = ""
 				}
 
-				hco.Spec.FeatureGates.AlignCPUs = alignCPUsValue
+				if alignCPUsValue != nil {
+					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+						{Name: "alignCPUs", State: alignCPUsValue},
+					}
+				}
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -4285,10 +4015,10 @@ Version: 1.2.3`)
 				Entry("implicitly disabled, FG and annotation are present in KubeVirt", nil, true, true),
 				Entry("implicitly disabled, FG missing, annotation is present in KubeVirt", nil, false, true),
 				Entry("implicitly disabled, FG present, annotation is missing in KubeVirt", nil, true, false),
-				Entry("explicitly disabled, FG and annotation are missing in KubeVirt", ptr.To(false), false, false),
-				Entry("explicitly disabled, FG and annotation are present in KubeVirt", ptr.To(false), true, true),
-				Entry("explicitly disabled, FG missing, annotation is present in KubeVirt", ptr.To(false), false, true),
-				Entry("explicitly disabled, FG present, annotation is missing in KubeVirt", ptr.To(false), true, false),
+				Entry("explicitly disabled, FG and annotation are missing in KubeVirt", ptr.To(featuregates.Disabled), false, false),
+				Entry("explicitly disabled, FG and annotation are present in KubeVirt", ptr.To(featuregates.Disabled), true, true),
+				Entry("explicitly disabled, FG missing, annotation is present in KubeVirt", ptr.To(featuregates.Disabled), false, true),
+				Entry("explicitly disabled, FG present, annotation is missing in KubeVirt", ptr.To(featuregates.Disabled), true, false),
 			)
 		})
 
@@ -4296,7 +4026,7 @@ Version: 1.2.3`)
 			It("should convert ratio to corresponding percentage when overcommit ratio is set", func() {
 				const expectedPercentage int = 125
 
-				hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+				hco.Spec.Virtualization.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 					MemoryOvercommitPercentage: expectedPercentage,
 				}
 				devConfig := getKVDevConfig(hco)
@@ -4305,60 +4035,66 @@ Version: 1.2.3`)
 		})
 
 		Context("InstancetypeConfig", func() {
-			DescribeTable("should", func(spec hcov1beta1.HyperConvergedSpec, expectedConfig *kubevirtcorev1.InstancetypeConfiguration) {
+			DescribeTable("should", func(spec hcov1.HyperConvergedSpec, expectedConfig *kubevirtcorev1.InstancetypeConfiguration) {
 				hco.Spec = spec
 				config, err := getKVConfig(hco)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(config.Instancetype).To(Equal(expectedConfig))
 			},
 				Entry("pass to KubeVirt when provided",
-					hcov1beta1.HyperConvergedSpec{
-						InstancetypeConfig: &kubevirtcorev1.InstancetypeConfiguration{
-							ReferencePolicy: ptr.To(kubevirtcorev1.Reference),
+					hcov1.HyperConvergedSpec{
+						WorkloadSources: hcov1.WorkloadSourcesConfig{
+							InstancetypeConfig: &kubevirtcorev1.InstancetypeConfiguration{
+								ReferencePolicy: ptr.To(kubevirtcorev1.Reference),
+							},
 						},
 					},
 					&kubevirtcorev1.InstancetypeConfiguration{
 						ReferencePolicy: ptr.To(kubevirtcorev1.Reference),
 					},
 				),
-				Entry("not pass to KubeVirt when nil", hcov1beta1.HyperConvergedSpec{}, nil),
+				Entry("not pass to KubeVirt when nil", hcov1.HyperConvergedSpec{}, nil),
 			)
 		})
 
 		Context("CommonInstancetypesDeployment", func() {
-			DescribeTable("should", func(spec hcov1beta1.HyperConvergedSpec, expectedConfig *kubevirtcorev1.CommonInstancetypesDeployment) {
+			DescribeTable("should", func(spec hcov1.HyperConvergedSpec, expectedConfig *kubevirtcorev1.CommonInstancetypesDeployment) {
 				hco.Spec = spec
 				config, err := getKVConfig(hco)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(config.CommonInstancetypesDeployment).To(Equal(expectedConfig))
 			},
 				Entry("pass to KubeVirt when provided",
-					hcov1beta1.HyperConvergedSpec{
-						CommonInstancetypesDeployment: &kubevirtcorev1.CommonInstancetypesDeployment{
-							Enabled: ptr.To(false),
+					hcov1.HyperConvergedSpec{
+						WorkloadSources: hcov1.WorkloadSourcesConfig{
+							CommonInstancetypesDeployment: &kubevirtcorev1.CommonInstancetypesDeployment{
+								Enabled: ptr.To(false),
+							},
 						},
 					},
 					&kubevirtcorev1.CommonInstancetypesDeployment{
 						Enabled: ptr.To(false),
 					},
 				),
-				Entry("not pass to KubeVirt when nil", hcov1beta1.HyperConvergedSpec{}, nil),
+				Entry("not pass to KubeVirt when nil", hcov1.HyperConvergedSpec{}, nil),
 			)
 		})
 
 		Context("LiveUpdateConfiguration", func() {
-			DescribeTable("should", func(spec hcov1beta1.HyperConvergedSpec, expectedConfig *kubevirtcorev1.LiveUpdateConfiguration) {
+			DescribeTable("should", func(spec hcov1.HyperConvergedSpec, expectedConfig *kubevirtcorev1.LiveUpdateConfiguration) {
 				hco.Spec = spec
 				config, err := getKVConfig(hco)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(config.LiveUpdateConfiguration).To(Equal(expectedConfig))
 			},
 				Entry("pass to KubeVirt when provided",
-					hcov1beta1.HyperConvergedSpec{
-						LiveUpdateConfiguration: &kubevirtcorev1.LiveUpdateConfiguration{
-							MaxHotplugRatio: uint32(3),
-							MaxCpuSockets:   ptr.To(uint32(2)),
-							MaxGuest:        resource.NewQuantity(int64(3), resource.BinarySI),
+					hcov1.HyperConvergedSpec{
+						Virtualization: hcov1.VirtualizationConfig{
+							LiveUpdateConfiguration: &kubevirtcorev1.LiveUpdateConfiguration{
+								MaxHotplugRatio: uint32(3),
+								MaxCpuSockets:   ptr.To(uint32(2)),
+								MaxGuest:        resource.NewQuantity(int64(3), resource.BinarySI),
+							},
 						},
 					},
 					&kubevirtcorev1.LiveUpdateConfiguration{
@@ -4368,16 +4104,18 @@ Version: 1.2.3`)
 					},
 				),
 				Entry("pass to KubeVirt when provided",
-					hcov1beta1.HyperConvergedSpec{
-						LiveUpdateConfiguration: &kubevirtcorev1.LiveUpdateConfiguration{
-							MaxHotplugRatio: uint32(4),
+					hcov1.HyperConvergedSpec{
+						Virtualization: hcov1.VirtualizationConfig{
+							LiveUpdateConfiguration: &kubevirtcorev1.LiveUpdateConfiguration{
+								MaxHotplugRatio: uint32(4),
+							},
 						},
 					},
 					&kubevirtcorev1.LiveUpdateConfiguration{
 						MaxHotplugRatio: uint32(4),
 					},
 				),
-				Entry("not pass to KubeVirt when nil", hcov1beta1.HyperConvergedSpec{}, nil),
+				Entry("not pass to KubeVirt when nil", hcov1.HyperConvergedSpec{}, nil),
 			)
 		})
 
@@ -4598,7 +4336,7 @@ Version: 1.2.3`)
 
 	Context("TLSSecurityProfile", func() {
 
-		var hco *hcov1beta1.HyperConverged
+		var hco *hcov1.HyperConverged
 		var req *common.HcoRequest
 
 		BeforeEach(func() {
@@ -4666,7 +4404,7 @@ Version: 1.2.3`)
 				Expect(existingResource.Spec.Configuration.TLSConfiguration.Ciphers).To(Equal(kvIntermediateCiphers))
 
 				// now, modify HCO's TLSSecurityProfile
-				hco.Spec.TLSSecurityProfile = hcoTLSSecurityProfile
+				hco.Spec.Security.TLSSecurityProfile = hcoTLSSecurityProfile
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -4721,7 +4459,7 @@ Version: 1.2.3`)
 		)
 
 		It("should overwrite TLSSecurityProfile if directly set on Kubevirt CR", func() {
-			hco.Spec.TLSSecurityProfile = intermediateTLSSecurityProfile
+			hco.Spec.Security.TLSSecurityProfile = intermediateTLSSecurityProfile
 			existingResource, err := NewKubeVirt(hco)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -4758,7 +4496,7 @@ Version: 1.2.3`)
 	Context("Quantity", func() {
 		It("should add a quantity type if missing", func() {
 			hco := commontestutils.NewHco()
-			hco.Spec.LiveMigrationConfig.BandwidthPerMigration = ptr.To("1.5")
+			hco.Spec.Virtualization.LiveMigrationConfig.BandwidthPerMigration = ptr.To("1.5")
 
 			kv, err := NewKubeVirt(hco)
 			Expect(err).ToNot(HaveOccurred())
