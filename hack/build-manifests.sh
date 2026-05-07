@@ -358,8 +358,6 @@ ${TOOLS}/manifest-templator \
   --inflight-operations-version="${INFLIGHT_OPERATIONS_VERSION}" \
   --operator-image="${HCO_OPERATOR_IMAGE}" \
   --webhook-image="${HCO_WEBHOOK_IMAGE}" \
-  --network-passt-binding-image-name="${NETWORK_PASST_BINDING_IMAGE}" \
-  --network-passt-binding-cni-image-name="${NETWORK_PASST_BINDING_CNI_IMAGE}" \
   --cli-downloads-image="${HCO_DOWNLOADS_IMAGE}" \
   --wasp-agent-image-name="${WASP_AGENT_IMAGE}" \
   --aie-webhook-image-name="${AIE_WEBHOOK_IMAGE}" \
@@ -425,8 +423,6 @@ ${TOOLS}/csv-merger \
   --kubevirt-consoleproxy-image-name="${KUBEVIRT_CONSOLE_PROXY_IMAGE}" \
   --cli-downloads-image-name="${HCO_DOWNLOADS_IMAGE}" \
   --wasp-agent-image-name="${WASP_AGENT_IMAGE}" \
-  --network-passt-binding-image-name="${NETWORK_PASST_BINDING_IMAGE}" \
-  --network-passt-binding-cni-image-name="${NETWORK_PASST_BINDING_CNI_IMAGE}" \
   --aie-webhook-image-name="${AIE_WEBHOOK_IMAGE}" \
   --iommufd-device-plugin-image-name="${IOMMUFD_DEVICE_PLUGIN_IMAGE}" \
   ${NETWORK_POLICIES_PARAMS} \

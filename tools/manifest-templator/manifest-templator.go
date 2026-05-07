@@ -75,10 +75,10 @@ var (
 	migrationOperatorVersion  = flag.String("migration-operator-version", "", "Migration operator version")
 	autopilotVersion          = flag.String("autopilot-version", "", "Autopilot version")
 	inFlightOperationsVersion = flag.String("inflight-operations-version", "", "InFlightOperations version")
-	passtImage                = flag.String("network-passt-binding-image-name", "", "Passt binding image")
-	passtCNIImage             = flag.String("network-passt-binding-cni-image-name", "", "Passt binding cni image")
 	_                         = flag.String("primary-udn-binding-image-name", "", "deprecated. This flag is ignored")
 	_                         = flag.String("api-sources", "", "ignored")
+	_                         = flag.String("network-passt-binding-image-name", "", "deprecated. this flag is ignored")
+	_                         = flag.String("network-passt-binding-cni-image-name", "", "deprecated. this flag is ignored")
 )
 
 // check handles errors
@@ -459,8 +459,6 @@ func getOperatorParameters() *components.DeploymentOperatorParams {
 		MigrationOperatorVersion:  *migrationOperatorVersion,
 		AutopilotVersion:          *autopilotVersion,
 		InFlightOperationsVersion: *inFlightOperationsVersion,
-		PasstImage:                *passtImage,
-		PasstCNIImage:             *passtCNIImage,
 		Env:                       []corev1.EnvVar{},
 	}
 	return params

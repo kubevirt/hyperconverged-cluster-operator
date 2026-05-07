@@ -102,8 +102,6 @@ var (
 	kvUIPluginImage          = flag.String("kubevirt-consoleplugin-image-name", "", "KubeVirt Console Plugin image")
 	kvUIProxyImage           = flag.String("kubevirt-consoleproxy-image-name", "", "KubeVirt Console Proxy image")
 	kvVirtIOWinImage         = flag.String("kv-virtiowin-image-name", "", "KubeVirt VirtIO Win image")
-	passtImage               = flag.String("network-passt-binding-image-name", "", "Passt binding image")
-	passtCNIImage            = flag.String("network-passt-binding-cni-image-name", "", "Passt binding cni image")
 	waspAgentImage           = flag.String("wasp-agent-image-name", "", "Wasp Agent image")
 	aieWebhookImage          = flag.String("aie-webhook-image-name", "", "AIE Webhook image")
 	iommufdDevicePluginImage = flag.String("iommufd-device-plugin-image-name", "", "IOMMUFD device plugin image")
@@ -148,6 +146,8 @@ var (
 	mgImage             = flag.String("mg-image", "quay.io/kubevirt/must-gather", "Operator suggested must-gather image")
 	testImagesNVRs      = flag.String("test-images-nvrs", "", "Test Images NVRs")
 	dumpNetworkPolicies = flag.Bool("dump-network-policies", false, "Dump network policy yamls to stdout")
+	_                   = flag.String("network-passt-binding-image-name", "", "deprecated. this flag is ignored")
+	_                   = flag.String("network-passt-binding-cni-image-name", "", "deprecated. this flag is ignored")
 
 	envVars EnvVarFlags
 )
@@ -791,8 +791,6 @@ func getDeploymentParams() *components.DeploymentOperatorParams {
 		MigrationOperatorVersion:  *migrationOperatorVersion,
 		AutopilotVersion:          *autopilotVersion,
 		InFlightOperationsVersion: *inFlightOperationsVersion,
-		PasstImage:                *passtImage,
-		PasstCNIImage:             *passtCNIImage,
 		WaspAgentImage:            *waspAgentImage,
 		AIEWebhookImage:           *aieWebhookImage,
 		IOMMUFDDevicePluginImage:  *iommufdDevicePluginImage,

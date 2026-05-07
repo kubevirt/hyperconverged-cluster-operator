@@ -342,6 +342,54 @@
         "name": "kubevirt-user-settings-reader-binding",
         "namespace": "default"
       }
+    },
+    {
+      "semverRange": ">=1.16.0 <1.19.0",
+      "groupVersionKind": {
+        "group": "apps",
+        "version": "v1",
+        "kind": "DaemonSet"
+      },
+      "objectKey": {
+        "name": "passt-binding-cni",
+        "namespace": "kubevirt-hyperconverged"
+      }
+    },
+    {
+      "semverRange": ">=1.16.0 <1.19.0",
+      "groupVersionKind": {
+        "group": "k8s.cni.cncf.io",
+        "version": "v1",
+        "kind": "NetworkAttachmentDefinition"
+      },
+      "objectKey": {
+        "name": "primary-udn-kubevirt-binding",
+        "namespace": "default"
+      }
+    },
+    {
+      "semverRange": ">=1.16.0 <1.19.0",
+      "groupVersionKind": {
+        "group": "",
+        "version": "v1",
+        "kind": "ServiceAccount"
+      },
+      "objectKey": {
+        "name": "passt-binding-cni",
+        "namespace": "kubevirt-hyperconverged"
+      }
+    },
+    {
+      "semverRange": ">=1.16.0 <1.19.0",
+      "groupVersionKind": {
+        "group": "security.openshift.io",
+        "version": "v1",
+        "kind": "SecurityContextConstraints"
+      },
+      "objectKey": {
+        "name": "passt-binding-cni",
+        "namespace": ""
+      }
     }
   ]
 }
