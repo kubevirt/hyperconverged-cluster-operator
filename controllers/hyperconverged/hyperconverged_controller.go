@@ -158,7 +158,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler, ci hcoutil.ClusterInfo, in
 	// Watch for changes to primary resource HyperConverged
 	err = c.Watch(
 		source.Kind(
-			mgr.GetCache(), client.Object(&hcov1beta1.HyperConverged{}),
+			mgr.GetCache(), client.Object(&hcov1.HyperConverged{}),
 			&operatorhandler.InstrumentedEnqueueRequestForObject[client.Object]{},
 			predicate.Or[client.Object](predicate.GenerationChangedPredicate{}, predicate.AnnotationChangedPredicate{},
 				predicate.ResourceVersionChangedPredicate{}),
@@ -346,7 +346,7 @@ func (r *ReconcileHyperConverged) Reconcile(ctx context.Context, request reconci
 
 	// update the HyperConverged's TLS Security Profile cache, to be used in the
 	// server's TLS configurations.
-	tlssecprofile.SetHyperConvergedTLSSecurityProfile(instance.Spec.TLSSecurityProfile)
+	tlssecprofile.SetHyperConvergedTLSSecurityProfile(instance.Spec.Security.TLSSecurityProfile)
 
 	if err = r.monitoringReconciler.UpdateRelatedObjects(hcoRequest); err != nil {
 		logger.Error(err, "Failed to update the PrometheusRule as a related object")
@@ -392,7 +392,7 @@ func (r *ReconcileHyperConverged) doReconcile(req *common.HcoRequest) (reconcile
 	updateStatus(req)
 
 	metrics.SetHCOMetricMemoryOvercommitPercentage(
-		getMemoryOvercommitPercentage(req.Instance.Spec.HigherWorkloadDensity),
+		getMemoryOvercommitPercentage(req.Instance.Spec.Virtualization.HigherWorkloadDensity),
 	)
 
 	// in-memory conditions should start off empty. It will only ever hold
@@ -501,8 +501,8 @@ func updateStatus(req *common.HcoRequest) {
 }
 
 // getHyperConverged gets the HyperConverged resource from the Kubernetes API.
-func (r *ReconcileHyperConverged) getHyperConverged(req *common.HcoRequest) (*hcov1beta1.HyperConverged, error) {
-	instance := &hcov1beta1.HyperConverged{}
+func (r *ReconcileHyperConverged) getHyperConverged(req *common.HcoRequest) (*hcov1.HyperConverged, error) {
+	instance := &hcov1.HyperConverged{}
 	err := r.client.Get(req.Ctx, req.NamespacedName, instance)
 
 	// Green path first
@@ -536,7 +536,7 @@ func (r *ReconcileHyperConverged) updateHyperConverged(request *common.HcoReques
 	// In addition, metadata and spec changes are removed by status update, but since status update done first, we need
 	// to store metadata and spec and recover it after status update
 
-	var spec hcov1beta1.HyperConvergedSpec
+	var spec hcov1.HyperConvergedSpec
 	var meta metav1.ObjectMeta
 	if request.Dirty {
 		request.Instance.Spec.DeepCopyInto(&spec)
@@ -1144,9 +1144,29 @@ func (r *ReconcileHyperConverged) applyUpgradePatches(req *common.HcoRequest) (b
 		return false, err
 	}
 
-	tmpInstance, err := upgradepatch.ApplyUpgradePatch(req.Logger, req.Instance, knownHcoSV)
+	// Temporary workaround, until  upgradepatch.ApplyUpgradePatch moves to v1; TODO: restore when done
+	v1Beta1Instance := &hcov1beta1.HyperConverged{}
+	err = v1Beta1Instance.ConvertFrom(req.Instance)
 	if err != nil {
 		return false, err
+	}
+
+	tmpInstance, err := upgradepatch.ApplyUpgradePatch(req.Logger, v1Beta1Instance, knownHcoSV)
+	if err != nil {
+		return false, err
+	}
+
+	if !reflect.DeepEqual(tmpInstance.Spec, v1Beta1Instance.Spec) {
+		req.Logger.Info("updating HCO spec as a result of upgrade patches")
+		tmpInstance.Spec.DeepCopyInto(&v1Beta1Instance.Spec)
+		err = v1Beta1Instance.ConvertTo(req.Instance)
+		if err != nil {
+			return false, err
+		}
+		// End of workaround
+
+		modified = true
+		req.Dirty = true
 	}
 
 	for _, p := range upgradepatch.GetObjectsToBeRemoved() {
@@ -1154,13 +1174,6 @@ func (r *ReconcileHyperConverged) applyUpgradePatches(req *common.HcoRequest) (b
 		if err != nil {
 			return removed, err
 		}
-	}
-
-	if !reflect.DeepEqual(tmpInstance.Spec, req.Instance.Spec) {
-		req.Logger.Info("updating HCO spec as a result of upgrade patches")
-		tmpInstance.Spec.DeepCopyInto(&req.Instance.Spec)
-		modified = true
-		req.Dirty = true
 	}
 
 	return modified, nil

@@ -26,7 +26,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
@@ -227,7 +226,7 @@ var _ = Describe("Upgrade Mode", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(result.RequeueAfter).To(Equal(requeueAfter))
 
-		foundHC := &hcov1beta1.HyperConverged{}
+		foundHC := &hcov1.HyperConverged{}
 		Expect(
 			cl.Get(context.TODO(),
 				types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
@@ -247,7 +246,7 @@ var _ = Describe("Upgrade Mode", func() {
 	DescribeTable(
 		"be tolerant parsing parse version",
 		func(testHcoVersion string, acceptableVersion bool, errorMessage string) {
-			foundResource := &hcov1beta1.HyperConverged{}
+			foundResource := &hcov1.HyperConverged{}
 			UpdateVersion(&expected.hco.Status, hcoVersionName, testHcoVersion)
 
 			cl := expected.initClient()
@@ -568,7 +567,7 @@ var _ = Describe("Upgrade Mode", func() {
 
 		It("should drop spec.livemigrationconfig.bandwidthpermigration if == 64Mi when upgrading from < 1.5.0", func() {
 			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.4.99")
-			expected.hco.Spec.LiveMigrationConfig.BandwidthPerMigration = ptr.To(badBandwidthPerMigration)
+			expected.hco.Spec.Virtualization.LiveMigrationConfig.BandwidthPerMigration = ptr.To(badBandwidthPerMigration)
 
 			cl := expected.initClient()
 			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
@@ -577,31 +576,31 @@ var _ = Describe("Upgrade Mode", func() {
 			Expect(requeue).To(BeTrue())
 			_, _, requeue = doReconcile(cl, expected.hco, reconciler)
 			Expect(requeue).To(BeFalse())
-			Expect(foundResource.Spec.LiveMigrationConfig.BandwidthPerMigration).To(BeNil())
+			Expect(foundResource.Spec.Virtualization.LiveMigrationConfig.BandwidthPerMigration).To(BeNil())
 		})
 
 		It("should preserve spec.livemigrationconfig.bandwidthpermigration if != 64Mi when upgrading from < 1.5.0", func() {
 			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.4.99")
-			expected.hco.Spec.LiveMigrationConfig.BandwidthPerMigration = ptr.To(customBandwidthPerMigration)
+			expected.hco.Spec.Virtualization.LiveMigrationConfig.BandwidthPerMigration = ptr.To(customBandwidthPerMigration)
 
 			cl := expected.initClient()
 			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
 			Expect(requeue).To(BeTrue())
 			foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
 			Expect(requeue).To(BeFalse())
-			Expect(foundResource.Spec.LiveMigrationConfig.BandwidthPerMigration).To(HaveValue(Equal(customBandwidthPerMigration)))
+			Expect(foundResource.Spec.Virtualization.LiveMigrationConfig.BandwidthPerMigration).To(HaveValue(Equal(customBandwidthPerMigration)))
 		})
 
 		It("should preserve spec.livemigrationconfig.bandwidthpermigration even if == 64Mi when upgrading from >= 1.5.1", func() {
 			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.5.1")
-			expected.hco.Spec.LiveMigrationConfig.BandwidthPerMigration = ptr.To(badBandwidthPerMigration)
+			expected.hco.Spec.Virtualization.LiveMigrationConfig.BandwidthPerMigration = ptr.To(badBandwidthPerMigration)
 
 			cl := expected.initClient()
 			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
 			Expect(requeue).To(BeTrue())
 			foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
 			Expect(requeue).To(BeFalse())
-			Expect(foundResource.Spec.LiveMigrationConfig.BandwidthPerMigration).To(HaveValue(Equal(badBandwidthPerMigration)))
+			Expect(foundResource.Spec.Virtualization.LiveMigrationConfig.BandwidthPerMigration).To(HaveValue(Equal(badBandwidthPerMigration)))
 		})
 	})
 
