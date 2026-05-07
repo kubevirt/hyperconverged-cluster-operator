@@ -13,7 +13,6 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
-	github.com/k8snetworkplumbingwg/network-attachment-definition-client v1.7.7
 	github.com/kubevirt/cluster-network-addons-operator v0.102.0
 	github.com/kubevirt/monitoring/pkg/metrics/parser v0.0.0-20260217101511-9344f1349f88
 	github.com/onsi/ginkgo/v2 v2.28.1
