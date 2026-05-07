@@ -42,8 +42,8 @@ type HyperConvergedSpec struct {
 	// To edit the general text of the comment, edit the template in the
 	// tools/fg-v1-comments/featuregates_list.gotmplt file
 	//
-	// To edit a specific feature gate information, edit the feature gate comment in v1beta1,
-	// Then, run "make generate"
+	// To edit a specific feature gate information, or to add a new one,
+	// edit the pkg/featuregatedetails/feature-gates.json file. Then, run "make generate".
 
 	// FeatureGates is a set of optional feature gates to enable or disable new
 	// features that are not generally available yet.
