@@ -67,7 +67,6 @@ build-manifest-templator: ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/manifest-templator ./tools/manifest-templator
 
 generate-feature-gates:
-	cd pkg/featuregatedetails && go generate .
 	cd api/v1beta1 && go generate .
 	go build -o _out/fg-v1-comments ./tools/fg-v1-comments
 	./_out/fg-v1-comments
