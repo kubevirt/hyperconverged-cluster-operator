@@ -22,6 +22,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
+	kubevirtcorev1 "kubevirt.io/api/core/v1"
+	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
+	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
+
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1fg "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
@@ -58,22 +63,20 @@ func (v *ValidationWarning) Warnings() []string {
 }
 
 type WebhookHandler struct {
-	logger         logr.Logger
-	cli            client.Client
-	namespace      string
-	isOpenshift    bool
-	decoder        admission.Decoder
-	v1beta1Handler *WebhookV1Beta1Handler
+	logger      logr.Logger
+	cli         client.Client
+	namespace   string
+	isOpenshift bool
+	decoder     admission.Decoder
 }
 
-func NewWebhookHandler(logger logr.Logger, cli client.Client, decoder admission.Decoder, namespace string, isOpenshift bool, v1beta1Handler *WebhookV1Beta1Handler) *WebhookHandler {
+func NewWebhookHandler(logger logr.Logger, cli client.Client, decoder admission.Decoder, namespace string, isOpenshift bool) *WebhookHandler {
 	return &WebhookHandler{
-		logger:         logger.WithName(validatorV1Name),
-		cli:            cli,
-		namespace:      namespace,
-		isOpenshift:    isOpenshift,
-		decoder:        decoder,
-		v1beta1Handler: v1beta1Handler,
+		logger:      logger.WithName(validatorV1Name),
+		cli:         cli,
+		namespace:   namespace,
+		isOpenshift: isOpenshift,
+		decoder:     decoder,
 	}
 }
 
@@ -87,75 +90,40 @@ func (wh *WebhookHandler) Handle(ctx context.Context, req admission.Request) adm
 	}
 
 	// Get the object in the request
-	v1obj := &hcov1.HyperConverged{}
+	obj := &hcov1.HyperConverged{}
 
 	dryRun := req.DryRun != nil && *req.DryRun
 
 	switch req.Operation {
 	case admissionv1.Create:
-		if err = wh.decoder.Decode(req, v1obj); err != nil {
+		if err = wh.decoder.Decode(req, obj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 
-		return wh.validateCreate(logger, dryRun, v1obj)
+		return wh.validateCreate(logger, dryRun, obj)
 
 	case admissionv1.Update:
-		v1OldObj := &hcov1.HyperConverged{}
-		if err = wh.decoder.DecodeRaw(req.Object, v1obj); err != nil {
-			return admission.Errored(http.StatusBadRequest, err)
-		}
-		if err = wh.decoder.DecodeRaw(req.OldObject, v1OldObj); err != nil {
+		if err = wh.decoder.DecodeRaw(req.Object, obj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 
-		obj := &hcov1beta1.HyperConverged{}
-		err = obj.ConvertFrom(v1obj)
-		if err != nil {
-			return admission.Errored(http.StatusInternalServerError, err)
+		oldObj := &hcov1.HyperConverged{}
+		if err = wh.decoder.DecodeRaw(req.OldObject, oldObj); err != nil {
+			return admission.Errored(http.StatusBadRequest, err)
 		}
 
-		oldObj := &hcov1beta1.HyperConverged{}
-		err = oldObj.ConvertFrom(v1OldObj)
-		if err != nil {
-			return admission.Errored(http.StatusInternalServerError, err)
-		}
-
-		err = wh.v1beta1Handler.ValidateUpdate(ctx, logger, dryRun, obj, oldObj)
+		return wh.validateUpdate(ctx, logger, dryRun, obj, oldObj)
 
 	case admissionv1.Delete:
-		if err = wh.decoder.DecodeRaw(req.OldObject, v1obj); err != nil {
+		if err = wh.decoder.DecodeRaw(req.OldObject, obj); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 
-		obj := &hcov1beta1.HyperConverged{}
-		err = obj.ConvertFrom(v1obj)
-		if err != nil {
-			return admission.Errored(http.StatusInternalServerError, err)
-		}
-
-		err = wh.v1beta1Handler.ValidateDelete(ctx, logger, dryRun, obj)
+		return wh.validateDelete(ctx, logger, dryRun, obj)
 
 	default:
 		return admission.Errored(http.StatusBadRequest, fmt.Errorf("unknown operation request %q", req.Operation))
 	}
-
-	// Check the error message first.
-	if err != nil {
-		var apiStatus apierrors.APIStatus
-		if errors.As(err, &apiStatus) {
-			return validationResponseFromStatus(false, apiStatus.Status())
-		}
-
-		var vw *ValidationWarning
-		if errors.As(err, &vw) {
-			return admission.Allowed("").WithWarnings(vw.Warnings()...)
-		}
-
-		return admission.Denied(err.Error())
-	}
-
-	// Return allowed if everything succeeded.
-	return admission.Allowed("")
 }
 
 func (wh *WebhookHandler) validateCreate(logger logr.Logger, dryrun bool, hc *hcov1.HyperConverged) admission.Response {
@@ -165,13 +133,7 @@ func (wh *WebhookHandler) validateCreate(logger logr.Logger, dryrun bool, hc *hc
 		return errToResponse(err)
 	}
 
-	v1beta1HC := &hcov1beta1.HyperConverged{}
-	err := v1beta1HC.ConvertFrom(hc)
-	if err != nil {
-		return admission.Errored(http.StatusInternalServerError, err)
-	}
-
-	err = wh.validateCreateComponents(v1beta1HC)
+	err := wh.validateCreateComponents(hc)
 	if err != nil {
 		return errToResponse(err)
 	}
@@ -196,20 +158,7 @@ func (wh *WebhookHandler) validateUpdate(ctx context.Context, logger logr.Logger
 		return errToResponse(err)
 	}
 
-	v1beta1Req := &hcov1beta1.HyperConverged{}
-	err := v1beta1Req.ConvertFrom(requested)
-	if err != nil {
-		return admission.Errored(http.StatusInternalServerError, err)
-	}
-
-	v1beta1Old := &hcov1beta1.HyperConverged{}
-	err = v1beta1Old.ConvertFrom(exists)
-	if err != nil {
-		return admission.Errored(http.StatusInternalServerError, err)
-	}
-
-	err = wh.dryRunUpdateComponents(ctx, logger, v1beta1Req, requested)
-	if err != nil {
+	if err := checkOperands(ctx, wh.cli, logger, requested, wh.isOpenshift); err != nil {
 		return errToResponse(err)
 	}
 
@@ -218,6 +167,28 @@ func (wh *WebhookHandler) validateUpdate(ctx context.Context, logger logr.Logger
 	}
 
 	return admission.Allowed("")
+}
+
+func (wh *WebhookHandler) validateDelete(ctx context.Context, logger logr.Logger, dryrun bool, hc *hcov1.HyperConverged) admission.Response {
+	logger.Info("Validating delete", "name", hc.Name, "namespace", hc.Namespace)
+
+	var err error
+	for _, obj := range []client.Object{
+		handlers.NewKubeVirtWithNameOnly(),
+		handlers.NewCDIWithNameOnly(),
+	} {
+		_, err = hcoutil.EnsureDeleted(ctx, wh.cli, obj, hc.Name, logger, true, false, true)
+		if err != nil {
+			logger.Error(err, "Delete validation failed", "GVK", obj.GetObjectKind().GroupVersionKind())
+			break
+		}
+	}
+
+	if err == nil && !dryrun {
+		tlssecprofile.SetHyperConvergedTLSSecurityProfile(nil)
+	}
+
+	return errToResponse(err)
 }
 
 func (wh *WebhookHandler) validateHyperConverged(hc *hcov1.HyperConverged) error {
@@ -268,75 +239,24 @@ func (wh *WebhookHandler) validateUpdateHyperConverged(hc, oldHC *hcov1.HyperCon
 	return nil
 }
 
-func (wh *WebhookHandler) validateCreateComponents(v1beta1HC *hcov1beta1.HyperConverged) error {
-	if _, err := handlers.NewKubeVirt(v1beta1HC); err != nil {
+func (wh *WebhookHandler) validateCreateComponents(hc *hcov1.HyperConverged) error {
+	if _, err := handlers.NewKubeVirt(hc); err != nil {
 		return err
 	}
 
-	if _, err := handlers.NewCDI(v1beta1HC); err != nil {
+	if _, err := handlers.NewCDI(hc); err != nil {
 		return err
 	}
 
-	if _, err := handlers.NewNetworkAddons(v1beta1HC); err != nil {
+	if _, err := handlers.NewNetworkAddons(hc); err != nil {
 		return err
 	}
 
-	if _, _, err := handlers.NewSSP(v1beta1HC); err != nil {
+	if _, _, err := handlers.NewSSP(hc); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (wh *WebhookHandler) dryRunUpdateComponents(ctx context.Context, logger logr.Logger, v1beta1Req *hcov1beta1.HyperConverged, requested *hcov1.HyperConverged) error {
-	kv, cdi, cna, err := wh.v1beta1Handler.getOperands(ctx, v1beta1Req)
-	if err != nil {
-		return err
-	}
-
-	toCtx, cancel := context.WithTimeout(ctx, updateDryRunTimeOut)
-	defer cancel()
-
-	eg, egCtx := xsync.WithContext(toCtx)
-	opts := &client.UpdateOptions{DryRun: []string{metav1.DryRunAll}}
-
-	resources := []client.Object{
-		kv,
-		cdi,
-		cna,
-	}
-
-	if wh.isOpenshift {
-		origGetControlPlaneArchitectures := nodeinfo.GetControlPlaneArchitectures
-		origGetWorkloadsArchitectures := nodeinfo.GetWorkloadsArchitectures
-		defer func() {
-			nodeinfo.GetControlPlaneArchitectures = origGetControlPlaneArchitectures
-			nodeinfo.GetWorkloadsArchitectures = origGetWorkloadsArchitectures
-		}()
-
-		nodeinfo.GetControlPlaneArchitectures = func() []string {
-			return requested.Status.NodeInfo.ControlPlaneArchitectures
-		}
-		nodeinfo.GetWorkloadsArchitectures = func() []string {
-			return requested.Status.NodeInfo.WorkloadsArchitectures
-		}
-
-		ssp, _, err := handlers.NewSSP(v1beta1Req)
-		if err != nil {
-			return err
-		}
-		resources = append(resources, ssp)
-	}
-
-	for _, obj := range resources {
-		func(o client.Object) {
-			eg.Go(func() error {
-				return wh.v1beta1Handler.updateOperatorCr(egCtx, logger, v1beta1Req, o, opts)
-			})
-		}(obj)
-	}
-
-	return eg.Wait()
 }
 
 func (wh *WebhookHandler) validateCertConfig(hc *hcov1.HyperConverged) error {
@@ -540,22 +460,22 @@ func validateAffinity(affinity *corev1.Affinity) error {
 }
 
 func errToResponse(err error) admission.Response {
-	if err != nil {
-		var apiStatus apierrors.APIStatus
-		if errors.As(err, &apiStatus) {
-			return validationResponseFromStatus(false, apiStatus.Status())
-		}
-
-		var vw *ValidationWarning
-		if errors.As(err, &vw) {
-			return admission.Allowed("").WithWarnings(vw.Warnings()...)
-		}
-
-		return admission.Denied(err.Error())
+	if err == nil {
+		// Return allowed if everything succeeded.
+		return admission.Allowed("")
 	}
 
-	// Return allowed if everything succeeded.
-	return admission.Allowed("")
+	var apiStatus apierrors.APIStatus
+	if errors.As(err, &apiStatus) {
+		return validationResponseFromStatus(false, apiStatus.Status())
+	}
+
+	var vw *ValidationWarning
+	if errors.As(err, &vw) {
+		return admission.Allowed("").WithWarnings(vw.Warnings()...)
+	}
+
+	return admission.Denied(err.Error())
 }
 
 func v1FGsToMap(fgs hcov1fg.HyperConvergedFeatureGates) map[string]bool {
@@ -565,4 +485,116 @@ func v1FGsToMap(fgs hcov1fg.HyperConvergedFeatureGates) map[string]bool {
 	}
 
 	return m
+}
+
+func checkOperands(ctx context.Context, cli client.Client, logger logr.Logger, requested *hcov1.HyperConverged, isOpenshift bool) error {
+	resources, err := getOperands(ctx, cli, isOpenshift)
+	if err != nil {
+		return err
+	}
+
+	toCtx, cancel := context.WithTimeout(ctx, updateDryRunTimeOut)
+	defer cancel()
+
+	eg, egCtx := xsync.WithContext(toCtx)
+	opts := &client.UpdateOptions{DryRun: []string{metav1.DryRunAll}}
+
+	for _, obj := range resources {
+		func(o client.Object) {
+			eg.Go(func() error {
+				return updateOperatorCr(egCtx, cli, logger, requested, o, opts)
+			})
+		}(obj)
+	}
+
+	return eg.Wait()
+}
+
+func getOperands(ctx context.Context, cli client.Client, isOpenshift bool) ([]client.Object, error) {
+	kv := handlers.NewKubeVirtWithNameOnly()
+	err := cli.Get(ctx, client.ObjectKeyFromObject(kv), kv)
+	if err != nil {
+		return nil, err
+	}
+
+	cdi := handlers.NewCDIWithNameOnly()
+	err = cli.Get(ctx, client.ObjectKeyFromObject(cdi), cdi)
+	if err != nil {
+		return nil, err
+	}
+
+	cna := handlers.NewNetworkAddonsWithNameOnly()
+	err = cli.Get(ctx, client.ObjectKeyFromObject(cna), cna)
+	if err != nil {
+		return nil, err
+	}
+
+	resources := make([]client.Object, 0, 4)
+	resources = append(resources, kv, cdi, cna)
+
+	if isOpenshift {
+		ssp := handlers.NewSSPWithNameOnly()
+		err = cli.Get(ctx, client.ObjectKeyFromObject(ssp), ssp)
+		if err != nil {
+			return nil, err
+		}
+
+		resources = append(resources, ssp)
+	}
+
+	return resources, nil
+}
+
+func updateOperatorCr(ctx context.Context, cli client.Client, logger logr.Logger, hc *hcov1.HyperConverged, exists client.Object, opts *client.UpdateOptions) error {
+	switch existing := exists.(type) {
+	case *kubevirtcorev1.KubeVirt:
+		required, err := handlers.NewKubeVirt(hc)
+		if err != nil {
+			return err
+		}
+		required.Spec.DeepCopyInto(&existing.Spec)
+
+	case *cdiv1beta1.CDI:
+		required, err := handlers.NewCDI(hc)
+		if err != nil {
+			return err
+		}
+		required.Spec.DeepCopyInto(&existing.Spec)
+
+	case *networkaddonsv1.NetworkAddonsConfig:
+		required, err := handlers.NewNetworkAddons(hc)
+		if err != nil {
+			return err
+		}
+		required.Spec.DeepCopyInto(&existing.Spec)
+
+	case *sspv1beta3.SSP:
+		origGetControlPlaneArchitectures := nodeinfo.GetControlPlaneArchitectures
+		origGetWorkloadsArchitectures := nodeinfo.GetWorkloadsArchitectures
+		defer func() {
+			nodeinfo.GetControlPlaneArchitectures = origGetControlPlaneArchitectures
+			nodeinfo.GetWorkloadsArchitectures = origGetWorkloadsArchitectures
+		}()
+
+		nodeinfo.GetControlPlaneArchitectures = func() []string {
+			return hc.Status.NodeInfo.ControlPlaneArchitectures
+		}
+		nodeinfo.GetWorkloadsArchitectures = func() []string {
+			return hc.Status.NodeInfo.WorkloadsArchitectures
+		}
+
+		required, _, err := handlers.NewSSP(hc)
+		if err != nil {
+			return err
+		}
+		required.Spec.DeepCopyInto(&existing.Spec)
+	}
+
+	if err := cli.Update(ctx, exists, opts); err != nil {
+		logger.Error(err, "failed to dry-run update the object", "kind", exists.GetObjectKind())
+		return err
+	}
+
+	logger.Info("dry-run update the object passed", "kind", exists.GetObjectKind())
+	return nil
 }

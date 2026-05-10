@@ -28,7 +28,7 @@ func SetupWebhookWithManager(mgr ctrl.Manager, isOpenshift bool) error {
 	decoder := admission.NewDecoder(mgr.GetScheme())
 
 	v1Beta1WHHandler := validator.NewWebhookV1Beta1Handler(logger, mgr.GetClient(), decoder, operatorNsEnv, isOpenshift)
-	v1WHHandler := validator.NewWebhookHandler(logger, mgr.GetClient(), decoder, operatorNsEnv, isOpenshift, v1Beta1WHHandler)
+	v1WHHandler := validator.NewWebhookHandler(logger, mgr.GetClient(), decoder, operatorNsEnv, isOpenshift)
 	nsMutator := mutator.NewNsMutator(mgr.GetClient(), decoder, operatorNsEnv)
 	v1HCMutator := mutator.NewHyperConvergedMutator(mgr.GetClient(), decoder)
 	v1Beta1HCMutator := mutator.NewHyperConvergedV1Beta1Mutator(mgr.GetClient(), decoder)

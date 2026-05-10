@@ -50,19 +50,16 @@ var _ = Describe("v1 webhooks validator", func() {
 	getFakeClient := func(hco *hcov1.HyperConverged) *commontestutils.HcoTestClient {
 		GinkgoHelper()
 
-		v1beta1HC := &hcov1beta1.HyperConverged{}
-		Expect(v1beta1HC.ConvertFrom(hco)).To(Succeed())
-
-		kv, err := handlers.NewKubeVirt(v1beta1HC)
+		kv, err := handlers.NewKubeVirt(hco)
 		Expect(err).ToNot(HaveOccurred())
 
-		cdi, err := handlers.NewCDI(v1beta1HC)
+		cdi, err := handlers.NewCDI(hco)
 		Expect(err).ToNot(HaveOccurred())
 
-		cna, err := handlers.NewNetworkAddons(v1beta1HC)
+		cna, err := handlers.NewNetworkAddons(hco)
 		Expect(err).ToNot(HaveOccurred())
 
-		ssp, _, err := handlers.NewSSP(v1beta1HC)
+		ssp, _, err := handlers.NewSSP(hco)
 		Expect(err).ToNot(HaveOccurred())
 
 		return commontestutils.InitClient([]client.Object{hco, kv, cdi, cna, ssp})
@@ -74,22 +71,19 @@ var _ = Describe("v1 webhooks validator", func() {
 	decoder := admission.NewDecoder(s)
 
 	var (
-		cr        *hcov1.HyperConverged
-		dryRun    bool
-		wh        *WebhookHandler
-		v1beta1WH *WebhookV1Beta1Handler
-		cli       client.Client
+		cr     *hcov1.HyperConverged
+		dryRun bool
+		wh     *WebhookHandler
+		cli    client.Client
 	)
 
 	JustBeforeEach(func() {
-		v1beta1WH = NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)
-		wh = NewWebhookHandler(GinkgoLogr, cli, decoder, HcoValidNamespace, true, v1beta1WH)
+		wh = NewWebhookHandler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)
 	})
 
 	BeforeEach(func() {
 		Expect(os.Setenv("OPERATOR_NAMESPACE", HcoValidNamespace)).To(Succeed())
-		cr = &hcov1.HyperConverged{}
-		Expect(commontestutils.NewHco().ConvertTo(cr)).To(Succeed())
+		cr = commontestutils.NewHco()
 		dryRun = false
 	})
 
@@ -792,7 +786,7 @@ var _ = Describe("v1 webhooks validator", func() {
 		})
 
 		It("should return error if CDI CR is missing", func(ctx context.Context) {
-			cdi, err := handlers.NewCDI(v1beta1CR)
+			cdi, err := handlers.NewCDI(cr)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cli.Delete(ctx, cdi)).To(Succeed())
 
@@ -835,7 +829,7 @@ var _ = Describe("v1 webhooks validator", func() {
 		})
 
 		It("should return error if NetworkAddons CR is missing", func(ctx context.Context) {
-			cna, err := handlers.NewNetworkAddons(v1beta1CR)
+			cna, err := handlers.NewNetworkAddons(cr)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(cli.Delete(ctx, cna)).To(Succeed())
 
