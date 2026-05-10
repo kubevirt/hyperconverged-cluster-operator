@@ -29,7 +29,6 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -1984,8 +1983,6 @@ Version: 1.2.3`)
 		})
 
 		Context("Feature Gates", func() {
-			const expectedPasstImage = "quay.io/some-org/some-repo@some-sha"
-
 			BeforeEach(func() {
 				commontestutils.HighlyAvailableNodeInfoMocks()
 
@@ -1994,11 +1991,6 @@ Version: 1.2.3`)
 				})
 
 				hco.Annotations = make(map[string]string)
-				Expect(os.Setenv(hcoutil.PasstImageEnvV, expectedPasstImage)).To(Succeed())
-			})
-
-			AfterEach(func() {
-				Expect(os.Unsetenv(hcoutil.PasstImageEnvV)).To(Succeed())
 			})
 
 			Context("test feature gates in NewKubeVirt", func() {
@@ -2134,42 +2126,24 @@ Version: 1.2.3`)
 							Expect(kv.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
 						},
 					),
-					// PasstIPStackMigration
+					// PasstBinding
 					Entry("should add the PasstBinding FG to Kubevirt CR if PasstNetworkBinding is true in HyperConverged CR",
 						func(hc *hcov1beta1.HyperConverged) {
-							hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "true"
-							hco.Spec.NetworkBinding = nil
+							hc.Annotations[deployPasstNetworkBindingAnn] = "true"
 						},
 						ContainElement(kvPasstBinding),
-						func(kv *kubevirtcorev1.KubeVirt) {
-							Expect(kv.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
-							Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).NotTo(BeNil())
-
-							expectedPasstBindingPlugin := passt.NetworkBinding()
-							Expect(kv.Spec.Configuration.NetworkConfiguration.Binding[passt.BindingName]).To(Equal(expectedPasstBindingPlugin))
-						},
 					),
 					Entry("should not add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is false in HyperConverged CR",
 						func(hc *hcov1beta1.HyperConverged) {
-							hco.Annotations[passt.DeployPasstNetworkBindingAnnotation] = "false"
-							hco.Spec.NetworkBinding = nil
+							hc.Annotations[deployPasstNetworkBindingAnn] = "false"
 						},
 						Not(ContainElement(kvPasstBinding)),
-						func(kv *kubevirtcorev1.KubeVirt) {
-							Expect(kv.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
-							Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).ToNot(HaveKey(passt.BindingName))
-						},
 					),
 					Entry("should not add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is not set in HyperConverged CR",
 						func(hc *hcov1beta1.HyperConverged) {
-							delete(hco.Annotations, passt.DeployPasstNetworkBindingAnnotation)
-							hco.Spec.NetworkBinding = nil
+							delete(hc.Annotations, deployPasstNetworkBindingAnn)
 						},
 						Not(ContainElement(kvPasstBinding)),
-						func(kv *kubevirtcorev1.KubeVirt) {
-							Expect(kv.Spec.Configuration.NetworkConfiguration).NotTo(BeNil())
-							Expect(kv.Spec.Configuration.NetworkConfiguration.Binding).ToNot(HaveKey(passt.BindingName))
-						},
 					),
 					// PCINUMAAwareTopology
 					Entry("should add the PCINUMAAwareTopology FG to KubeVirt CR if deployAIE annotation is true",

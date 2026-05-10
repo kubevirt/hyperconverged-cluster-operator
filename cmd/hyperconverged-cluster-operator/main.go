@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	netattdefv1 "github.com/k8snetworkplumbingwg/network-attachment-definition-client/pkg/apis/k8s.cni.cncf.io/v1"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	imagev1 "github.com/openshift/api/image/v1"
@@ -67,7 +66,6 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/crd"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/descheduler"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/passt"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/hyperconverged"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/ingresscluster"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/nodes"
@@ -118,7 +116,6 @@ var (
 		aaqv1alpha1.AddToScheme,
 		migrationv1alpha1.AddToScheme,
 		deschedulerv1.AddToScheme,
-		netattdefv1.AddToScheme,
 		networkingv1.AddToScheme,
 		persesv1alpha1.AddToScheme,
 	}
@@ -310,9 +307,6 @@ func main() {
 	err = collectors.SetupCollectors(mgr.GetClient(), operatorNamespace)
 	cmdHelper.ExitOnError(err, "failed to setup metrics controllers: %v")
 
-	err = passt.CheckPasstImagesEnvExists()
-	cmdHelper.ExitOnError(err, "failed to retrieve passt env vars")
-
 	if ci.IsOpenshift() {
 		err = checkWaspAgentImageEnvExists()
 		cmdHelper.ExitOnError(err, "failed to retrieve wasp agent image env var")
@@ -473,12 +467,6 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo, persesAvai
 		},
 	}
 
-	cacheOptionsByObjectForNetwork := map[client.Object]cache.ByObject{
-		&netattdefv1.NetworkAttachmentDefinition{}: {
-			Label: labelSelector,
-		},
-	}
-
 	if ci.IsMonitoringAvailable() {
 		maps.Copy(cacheOptions.ByObject, cacheOptionsByObjectForMonitoring)
 	}
@@ -487,10 +475,6 @@ func getCacheOption(operatorNamespace string, ci hcoutil.ClusterInfo, persesAvai
 	}
 	if ci.IsOpenshift() {
 		maps.Copy(cacheOptions.ByObject, cacheOptionsByObjectForOpenshift)
-	}
-
-	if ci.IsNADAvailable() {
-		maps.Copy(cacheOptions.ByObject, cacheOptionsByObjectForNetwork)
 	}
 
 	return cacheOptions

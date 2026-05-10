@@ -72,10 +72,6 @@ func (ClusterInfoMock) IsDeschedulerAvailable() bool {
 	return true
 }
 
-func (ClusterInfoMock) IsNADAvailable() bool {
-	return true
-}
-
 func (ClusterInfoMock) IsDeschedulerCRDDeployed(ctx context.Context, cl client.Client) bool {
 	return true
 }

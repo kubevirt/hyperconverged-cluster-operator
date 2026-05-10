@@ -287,8 +287,7 @@ configuring replacement rules.
 **Default**: `false` (annotation doesn't exist by default)
 
 ### The hco.kubevirt.io/deployPasstNetworkBinding annotation
-Set the `hco.kubevirt.io/deployPasstNetworkBinding` HyperConverged CR annotation to `true`, to deploy the needed
-configurations for kubevirt users, so they can bind their VM using a Passt Network binding.
+Set the `hco.kubevirt.io/deployPasstNetworkBinding` HyperConverged CR annotation to `true` so users can bind their VM using the core Passt Network binding.
 
 **Note**: this feature is in Tech Preview.
 

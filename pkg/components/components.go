@@ -38,8 +38,6 @@ type DeploymentOperatorParams struct {
 	CliDownloadsImage         string
 	KVUIPluginImage           string
 	KVUIProxyImage            string
-	PasstImage                string
-	PasstCNIImage             string
 	WaspAgentImage            string
 	AIEWebhookImage           string
 	IOMMUFDDevicePluginImage  string
@@ -222,14 +220,6 @@ func buildEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 		{
 			Name:  util.KVUIProxyImageEnvV,
 			Value: params.KVUIProxyImage,
-		},
-		{
-			Name:  util.PasstImageEnvV,
-			Value: params.PasstImage,
-		},
-		{
-			Name:  util.PasstCNIImageEnvV,
-			Value: params.PasstCNIImage,
 		},
 		{
 			Name:  util.WaspAgentImageEnvV,

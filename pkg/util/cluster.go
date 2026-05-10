@@ -28,7 +28,6 @@ type ClusterInfo interface {
 	IsConsolePluginImageProvided() bool
 	IsMonitoringAvailable() bool
 	IsDeschedulerAvailable() bool
-	IsNADAvailable() bool
 	IsDeschedulerCRDDeployed(ctx context.Context, cl client.Client) bool
 	IsSingleStackIPv6() bool
 	IsHyperShiftManaged() bool
@@ -41,7 +40,6 @@ type ClusterInfoImp struct {
 	consolePluginImageProvided bool
 	monitoringAvailable        bool
 	deschedulerAvailable       bool
-	nadAvailable               bool
 	singlestackipv6            bool
 	isHyperShiftManaged        bool
 	baseDomain                 string
@@ -87,11 +85,9 @@ func (c *ClusterInfoImp) Init(ctx context.Context, cl client.Client, logger logr
 
 	c.monitoringAvailable = isPrometheusExists(ctx, cl, logger)
 	c.deschedulerAvailable = isDeschedulerExists(ctx, cl, logger)
-	c.nadAvailable = isNADExists(ctx, cl, logger)
 	c.logger.Info("addOns ",
 		"monitoring", c.monitoringAvailable,
 		"kubeDescheduler", c.deschedulerAvailable,
-		"networkAttachmentDefinition", c.nadAvailable,
 	)
 
 	return nil
@@ -170,10 +166,6 @@ func (c *ClusterInfoImp) IsDeschedulerAvailable() bool {
 	return c.deschedulerAvailable
 }
 
-func (c *ClusterInfoImp) IsNADAvailable() bool {
-	return c.nadAvailable
-}
-
 func (c *ClusterInfoImp) IsDeschedulerCRDDeployed(ctx context.Context, cl client.Client) bool {
 	return isCRDExists(ctx, cl, DeschedulerCRDName, logr.FromContextOrDiscard(ctx))
 }
@@ -215,10 +207,6 @@ func isPrometheusExists(ctx context.Context, cl client.Client, logger logr.Logge
 
 func isDeschedulerExists(ctx context.Context, cl client.Client, logger logr.Logger) bool {
 	return isCRDExists(ctx, cl, DeschedulerCRDName, logger)
-}
-
-func isNADExists(ctx context.Context, cl client.Client, logger logr.Logger) bool {
-	return isCRDExists(ctx, cl, NetworkAttachmentDefinitionCRDName, logger)
 }
 
 // IsPersesAvailable returns true when the Perses CRDs are installed in the cluster.
