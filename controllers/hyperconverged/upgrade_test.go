@@ -11,15 +11,15 @@ import (
 	. "github.com/onsi/gomega"
 	consolev1 "github.com/openshift/api/console/v1"
 	imagev1 "github.com/openshift/api/image/v1"
+	securityv1 "github.com/openshift/api/security/v1"
 	objectreferencesv1 "github.com/openshift/custom-resource-status/objectreferences/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/networking/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
 	"k8s.io/utils/ptr"
@@ -688,70 +688,168 @@ var _ = Describe("Upgrade Mode", func() {
 	})
 
 	Context("remove leftovers on upgrades", func() {
+		const cniName = "passt-binding-cni"
 
-		It("should remove ConfigMap v2v-vmware upgrading from <= 1.6.0", func() {
+		var (
+			dsToBeRemoved     *appsv1.DaemonSet
+			nadToBeRemoved    *unstructured.Unstructured
+			saToBeRemoved     *corev1.ServiceAccount
+			sccToBeRemoved    *securityv1.SecurityContextConstraints
+			dsToNotBeRemoved  *appsv1.DaemonSet
+			nadToNotBeRemoved *unstructured.Unstructured
+			saToNotBeRemoved  *corev1.ServiceAccount
+			sccToNotBeRemoved *securityv1.SecurityContextConstraints
 
-			cmToBeRemoved1 := &corev1.ConfigMap{
+			resources []client.Object
+		)
+
+		BeforeEach(func() {
+			dsToBeRemoved = &appsv1.DaemonSet{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "v2v-vmware",
+					Name:      cniName,
 					Namespace: namespace,
 					Labels: map[string]string{
 						hcoutil.AppLabel: expected.hco.Name,
 					},
 				},
 			}
-			cmToBeRemoved2 := &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "vm-import-controller-config",
-					Namespace: namespace,
+			nadToBeRemoved = &unstructured.Unstructured{
+				Object: map[string]any{
+					"apiVersion": "k8s.cni.cncf.io/v1",
+					"kind":       "NetworkAttachmentDefinition",
+					"metadata": map[string]any{
+						"name":      "primary-udn-kubevirt-binding",
+						"namespace": "default",
+					},
 				},
 			}
-			cmNotToBeRemoved1 := &corev1.ConfigMap{
+			saToBeRemoved = &corev1.ServiceAccount{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "v2v-vmware",
-					Namespace: "different" + namespace,
+					Name:      cniName,
+					Namespace: namespace,
 					Labels: map[string]string{
 						hcoutil.AppLabel: expected.hco.Name,
 					},
 				},
 			}
-			cmNotToBeRemoved2 := &corev1.ConfigMap{
+			sccToBeRemoved = &securityv1.SecurityContextConstraints{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      "other",
-					Namespace: namespace,
+					Name: cniName,
 					Labels: map[string]string{
 						hcoutil.AppLabel: expected.hco.Name,
 					},
 				},
 			}
 
+			dsToNotBeRemoved = &appsv1.DaemonSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      cniName,
+					Namespace: "something-else",
+					Labels: map[string]string{
+						hcoutil.AppLabel: expected.hco.Name,
+					},
+				},
+			}
+			nadToNotBeRemoved = &unstructured.Unstructured{
+				Object: map[string]any{
+					"apiVersion": "k8s.cni.cncf.io/v1",
+					"kind":       "NetworkAttachmentDefinition",
+					"metadata": map[string]any{
+						"name":      "something-else",
+						"namespace": "default",
+					},
+				},
+			}
+			saToNotBeRemoved = &corev1.ServiceAccount{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      cniName,
+					Namespace: "something-else",
+					Labels: map[string]string{
+						hcoutil.AppLabel: expected.hco.Name,
+					},
+				},
+			}
+			sccToNotBeRemoved = &securityv1.SecurityContextConstraints{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "something-else",
+					Labels: map[string]string{
+						hcoutil.AppLabel: expected.hco.Name,
+					},
+				},
+			}
+
+			resources = append(expected.toArray(),
+				dsToBeRemoved,
+				nadToBeRemoved,
+				saToBeRemoved,
+				sccToBeRemoved,
+				dsToNotBeRemoved,
+				nadToNotBeRemoved,
+				saToNotBeRemoved,
+				sccToNotBeRemoved,
+			)
+		})
+		It("should remove passt objects when upgrading from < 1.19.0", func(ctx context.Context) {
 			toBeRemovedRelatedObjects := []corev1.ObjectReference{
 				{
+					APIVersion:      "apps/v1",
+					Kind:            "DaemonSet",
+					Name:            dsToBeRemoved.Name,
+					Namespace:       dsToBeRemoved.Namespace,
+					ResourceVersion: "999",
+				},
+				{
+					APIVersion:      nadToBeRemoved.GetAPIVersion(),
+					Kind:            nadToBeRemoved.GetKind(),
+					Name:            nadToBeRemoved.GetName(),
+					Namespace:       nadToBeRemoved.GetNamespace(),
+					ResourceVersion: "999",
+				},
+				{
 					APIVersion:      "v1",
-					Kind:            "ConfigMap",
-					Name:            cmToBeRemoved1.Name,
-					Namespace:       cmToBeRemoved1.Namespace,
+					Kind:            "ServiceAccount",
+					Name:            saToBeRemoved.GetName(),
+					Namespace:       saToBeRemoved.GetNamespace(),
+					ResourceVersion: "999",
+				},
+				{
+					APIVersion:      "security.openshift.io/v1",
+					Kind:            "SecurityContextConstraints",
+					Name:            sccToBeRemoved.GetName(),
 					ResourceVersion: "999",
 				},
 			}
 			otherRelatedObjects := []corev1.ObjectReference{
 				{
-					APIVersion:      "v1",
-					Kind:            "ConfigMap",
-					Name:            cmNotToBeRemoved1.Name,
-					Namespace:       cmNotToBeRemoved1.Namespace,
+					APIVersion:      "apps/v1",
+					Kind:            "DaemonSet",
+					Name:            dsToNotBeRemoved.Name,
+					Namespace:       dsToNotBeRemoved.Namespace,
+					ResourceVersion: "999",
+				},
+				{
+					APIVersion:      nadToNotBeRemoved.GetAPIVersion(),
+					Kind:            nadToNotBeRemoved.GetKind(),
+					Name:            nadToNotBeRemoved.GetName(),
+					Namespace:       nadToNotBeRemoved.GetNamespace(),
 					ResourceVersion: "999",
 				},
 				{
 					APIVersion:      "v1",
-					Kind:            "ConfigMap",
-					Name:            cmNotToBeRemoved2.Name,
-					Namespace:       cmNotToBeRemoved2.Namespace,
+					Kind:            "ServiceAccount",
+					Name:            saToNotBeRemoved.GetName(),
+					Namespace:       saToNotBeRemoved.GetNamespace(),
+					ResourceVersion: "999",
+				},
+				{
+					APIVersion:      "security.openshift.io/v1",
+					Kind:            "SecurityContextConstraints",
+					Name:            sccToNotBeRemoved.GetName(),
 					ResourceVersion: "999",
 				},
 			}
 
-			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.4.99")
+			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.18.99")
 
 			for _, objRef := range toBeRemovedRelatedObjects {
 				Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
@@ -760,9 +858,8 @@ var _ = Describe("Upgrade Mode", func() {
 				Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
 			}
 
-			resources := append(expected.toArray(), cmToBeRemoved1, cmToBeRemoved2, cmNotToBeRemoved1, cmNotToBeRemoved2)
-
 			cl := commontestutils.InitClient(resources)
+
 			foundResource, reconciler, requeue := doReconcile(cl, expected.hco, nil)
 			Expect(requeue).To(BeTrue())
 			checkAvailability(foundResource, metav1.ConditionTrue)
@@ -771,16 +868,32 @@ var _ = Describe("Upgrade Mode", func() {
 			Expect(requeue).To(BeFalse())
 			checkAvailability(foundResource, metav1.ConditionTrue)
 
-			foundCM := &corev1.ConfigMap{}
+			foundDS := &appsv1.DaemonSet{}
+			foundNAD := &unstructured.Unstructured{
+				Object: map[string]any{
+					"apiVersion": "k8s.cni.cncf.io/v1",
+					"kind":       "NetworkAttachmentDefinition",
+				},
+			}
+			foundSA := &corev1.ServiceAccount{}
+			foundSCC := &securityv1.SecurityContextConstraints{}
 
-			err := cl.Get(context.TODO(), client.ObjectKeyFromObject(cmToBeRemoved1), foundCM)
+			err := cl.Get(ctx, client.ObjectKeyFromObject(dsToBeRemoved), foundDS)
 			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
 
-			err = cl.Get(context.TODO(), client.ObjectKeyFromObject(cmToBeRemoved2), foundCM)
+			err = cl.Get(ctx, client.ObjectKeyFromObject(nadToBeRemoved), foundNAD)
 			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
 
-			Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(cmNotToBeRemoved1), foundCM)).To(Succeed())
-			Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(cmNotToBeRemoved2), foundCM)).To(Succeed())
+			err = cl.Get(ctx, client.ObjectKeyFromObject(saToBeRemoved), foundSA)
+			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
+
+			err = cl.Get(ctx, client.ObjectKeyFromObject(sccToBeRemoved), foundSCC)
+			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
+
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(dsToNotBeRemoved), foundDS)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(nadToNotBeRemoved), foundNAD)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(saToNotBeRemoved), foundSA)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(sccToNotBeRemoved), foundSCC)).To(Succeed())
 
 			for _, objRef := range toBeRemovedRelatedObjects {
 				Expect(foundResource.Status.RelatedObjects).ToNot(ContainElement(objRef))
@@ -791,350 +904,34 @@ var _ = Describe("Upgrade Mode", func() {
 
 		})
 
-		It("should not remove ConfigMap v2v-vmware upgrading from >= 1.6.1", func() {
-
-			cmToBeRemoved1 := &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "v2v-vmware",
-					Namespace: namespace,
-					Labels: map[string]string{
-						hcoutil.AppLabel: expected.hco.Name,
-					},
-				},
-			}
-			cmToBeRemoved2 := &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "vm-import-controller-config",
-					Namespace: namespace,
-				},
-			}
-			cmNotToBeRemoved1 := &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "v2v-vmware",
-					Namespace: "different" + namespace,
-					Labels: map[string]string{
-						hcoutil.AppLabel: expected.hco.Name,
-					},
-				},
-			}
-			cmNotToBeRemoved2 := &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "other",
-					Namespace: namespace,
-					Labels: map[string]string{
-						hcoutil.AppLabel: expected.hco.Name,
-					},
-				},
-			}
-
-			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.6.1")
-
-			resources := append(expected.toArray(), cmToBeRemoved1, cmToBeRemoved2, cmNotToBeRemoved1, cmNotToBeRemoved2)
+		It("should not remove passt objects when upgrading from >= 1.19.0", func(ctx context.Context) {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.19.0")
 
 			cl := commontestutils.InitClient(resources)
-			foundResource, reconciler, requeue := doReconcile(cl, expected.hco, nil)
-			Expect(requeue).To(BeTrue())
-			checkAvailability(foundResource, metav1.ConditionTrue)
-
-			foundResource, _, requeue = doReconcile(cl, expected.hco, reconciler)
+			foundResource, _, requeue := doReconcile(cl, expected.hco, nil)
 			Expect(requeue).To(BeFalse())
 			checkAvailability(foundResource, metav1.ConditionTrue)
 
-			foundCM := &corev1.ConfigMap{}
-			Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(cmToBeRemoved1), foundCM)).To(Succeed())
-			Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(cmToBeRemoved2), foundCM)).To(Succeed())
-			Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(cmNotToBeRemoved1), foundCM)).To(Succeed())
-			Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(cmNotToBeRemoved2), foundCM)).To(Succeed())
+			foundDS := &appsv1.DaemonSet{}
+			foundNAD := &unstructured.Unstructured{
+				Object: map[string]any{
+					"apiVersion": "k8s.cni.cncf.io/v1",
+					"kind":       "NetworkAttachmentDefinition",
+				},
+			}
+			foundSA := &corev1.ServiceAccount{}
+			foundSCC := &securityv1.SecurityContextConstraints{}
+
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(dsToBeRemoved), foundDS)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(nadToBeRemoved), foundNAD)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(saToBeRemoved), foundSA)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(sccToBeRemoved), foundSCC)).To(Succeed())
+
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(dsToNotBeRemoved), foundDS)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(nadToNotBeRemoved), foundNAD)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(saToNotBeRemoved), foundSA)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(sccToNotBeRemoved), foundSCC)).To(Succeed())
 		})
-
-		It("should remove ConfigMap kubevirt-storage-class-defaults upgrading from < 1.7.0", func() {
-			cmToBeRemoved1 := &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "kubevirt-storage-class-defaults",
-					Namespace: namespace,
-					Labels: map[string]string{
-						hcoutil.AppLabel: expected.hco.Name,
-					},
-				},
-			}
-			roleToBeRemoved := &rbacv1.Role{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "hco.kubevirt.io:config-reader",
-					Namespace: namespace,
-					Labels: map[string]string{
-						hcoutil.AppLabel: expected.hco.Name,
-					},
-				},
-			}
-			roleBindingToBeRemoved := &rbacv1.RoleBinding{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "hco.kubevirt.io:config-reader",
-					Namespace: namespace,
-					Labels: map[string]string{
-						hcoutil.AppLabel: expected.hco.Name,
-					},
-				},
-			}
-
-			cmNotToBeRemoved1 := &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "kubevirt-storage-class-defaults",
-					Namespace: "different" + namespace,
-					Labels: map[string]string{
-						hcoutil.AppLabel: expected.hco.Name,
-					},
-				},
-			}
-
-			cmNotToBeRemoved2 := &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "other",
-					Namespace: namespace,
-					Labels: map[string]string{
-						hcoutil.AppLabel: expected.hco.Name,
-					},
-				},
-			}
-
-			toBeRemovedRelatedObjects := []corev1.ObjectReference{
-				{
-					APIVersion:      "v1",
-					Kind:            "ConfigMap",
-					Name:            cmToBeRemoved1.Name,
-					Namespace:       cmToBeRemoved1.Namespace,
-					ResourceVersion: "999",
-				},
-				{
-					APIVersion:      "rbac.authorization.k8s.io/v1",
-					Kind:            "Role",
-					Name:            roleToBeRemoved.Name,
-					Namespace:       roleToBeRemoved.Namespace,
-					ResourceVersion: "999",
-				},
-				{
-					APIVersion:      "rbac.authorization.k8s.io/v1",
-					Kind:            "RoleBinding",
-					Name:            roleBindingToBeRemoved.Name,
-					Namespace:       roleBindingToBeRemoved.Namespace,
-					ResourceVersion: "999",
-				},
-			}
-			otherRelatedObjects := []corev1.ObjectReference{
-				{
-					APIVersion:      "v1",
-					Kind:            "ConfigMap",
-					Name:            cmNotToBeRemoved1.Name,
-					Namespace:       cmNotToBeRemoved1.Namespace,
-					ResourceVersion: "999",
-				},
-				{
-					APIVersion:      "v1",
-					Kind:            "ConfigMap",
-					Name:            cmNotToBeRemoved2.Name,
-					Namespace:       cmNotToBeRemoved2.Namespace,
-					ResourceVersion: "999",
-				},
-			}
-
-			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.6.9")
-
-			for _, objRef := range toBeRemovedRelatedObjects {
-				Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
-			}
-			for _, objRef := range otherRelatedObjects {
-				Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
-			}
-
-			resources := append(expected.toArray(), cmToBeRemoved1, roleToBeRemoved, roleBindingToBeRemoved, cmNotToBeRemoved1, cmNotToBeRemoved2)
-
-			cl := commontestutils.InitClient(resources)
-			foundResource, reconciler, requeue := doReconcile(cl, expected.hco, nil)
-			Expect(requeue).To(BeTrue())
-			checkAvailability(foundResource, metav1.ConditionTrue)
-
-			foundResource, _, requeue = doReconcile(cl, expected.hco, reconciler)
-			Expect(requeue).To(BeFalse())
-			checkAvailability(foundResource, metav1.ConditionTrue)
-
-			foundCM := &corev1.ConfigMap{}
-			foundRole := &rbacv1.Role{}
-			foundRoleBinding := &rbacv1.RoleBinding{}
-
-			err := cl.Get(context.TODO(), client.ObjectKeyFromObject(cmToBeRemoved1), foundCM)
-			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
-
-			err = cl.Get(context.TODO(), client.ObjectKeyFromObject(roleToBeRemoved), foundRole)
-			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
-
-			err = cl.Get(context.TODO(), client.ObjectKeyFromObject(roleBindingToBeRemoved), foundRoleBinding)
-			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
-
-			Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(cmNotToBeRemoved1), foundCM)).To(Succeed())
-			Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(cmNotToBeRemoved2), foundCM)).To(Succeed())
-
-			for _, objRef := range toBeRemovedRelatedObjects {
-				Expect(foundResource.Status.RelatedObjects).ToNot(ContainElement(objRef))
-			}
-			for _, objRef := range otherRelatedObjects {
-				Expect(foundResource.Status.RelatedObjects).To(ContainElement(objRef))
-			}
-
-		})
-
-		It("should not remove ConfigMap kubevirt-storage-class-defaults upgrading from > 1.7.0", func() {
-			cmToBeRemoved1 := &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "kubevirt-storage-class-defaults",
-					Namespace: namespace,
-					Labels: map[string]string{
-						hcoutil.AppLabel: expected.hco.Name,
-					},
-				},
-			}
-			roleToBeRemoved := &rbacv1.Role{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "hco.kubevirt.io:config-reader",
-					Namespace: namespace,
-					Labels: map[string]string{
-						hcoutil.AppLabel: expected.hco.Name,
-					},
-				},
-			}
-			roleBindingToBeRemoved := &rbacv1.RoleBinding{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "hco.kubevirt.io:config-reader",
-					Labels: map[string]string{
-						hcoutil.AppLabel: expected.hco.Name,
-					},
-					Namespace: namespace,
-				},
-			}
-			cmNotToBeRemoved1 := &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "kubevirt-storage-class-defaults",
-					Namespace: "different" + namespace,
-					Labels: map[string]string{
-						hcoutil.AppLabel: expected.hco.Name,
-					},
-				},
-			}
-
-			cmNotToBeRemoved2 := &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "other",
-					Namespace: namespace,
-					Labels: map[string]string{
-						hcoutil.AppLabel: expected.hco.Name,
-					},
-				},
-			}
-
-			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.7.1")
-
-			resources := append(expected.toArray(), cmToBeRemoved1, roleToBeRemoved, roleBindingToBeRemoved, cmNotToBeRemoved1, cmNotToBeRemoved2)
-
-			cl := commontestutils.InitClient(resources)
-			foundResource, reconciler, requeue := doReconcile(cl, expected.hco, nil)
-			Expect(requeue).To(BeTrue())
-			checkAvailability(foundResource, metav1.ConditionTrue)
-
-			foundResource, _, requeue = doReconcile(cl, expected.hco, reconciler)
-			Expect(requeue).To(BeFalse())
-			checkAvailability(foundResource, metav1.ConditionTrue)
-
-			foundCM := &corev1.ConfigMap{}
-			foundRole := &rbacv1.Role{}
-			foundRoleBinding := &rbacv1.RoleBinding{}
-
-			Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(cmToBeRemoved1), foundCM)).To(Succeed())
-			Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(roleToBeRemoved), foundRole)).To(Succeed())
-			Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(roleBindingToBeRemoved), foundRoleBinding)).To(Succeed())
-			Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(cmNotToBeRemoved1), foundCM)).To(Succeed())
-			Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(cmNotToBeRemoved2), foundCM)).To(Succeed())
-		})
-
-		It("should remove TTO CRD upgrading from < 1.10.0", func() {
-			crdToBeRemoved := &apiextensionsv1.CustomResourceDefinition{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "tektontasks.tektontasks.kubevirt.io",
-				},
-			}
-
-			cmNotToBeRemoved := &corev1.ConfigMap{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "other",
-					Namespace: namespace,
-					Labels: map[string]string{
-						hcoutil.AppLabel: expected.hco.Name,
-					},
-				},
-			}
-
-			toBeRemovedRelatedObjects := []corev1.ObjectReference{
-				{
-					APIVersion:      "tektontasks.kubevirt.io/v1alpha1",
-					Kind:            "TektonTasks",
-					Name:            "tto-kubevirt-hyperconverged",
-					Namespace:       "kubevirt-hyperconverged",
-					ResourceVersion: "999",
-				},
-			}
-			otherRelatedObjects := []corev1.ObjectReference{
-				{
-					APIVersion:      "v1",
-					Kind:            "ConfigMap",
-					Name:            cmNotToBeRemoved.Name,
-					Namespace:       cmNotToBeRemoved.Namespace,
-					ResourceVersion: "999",
-				},
-			}
-
-			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.9.0")
-
-			for _, objRef := range toBeRemovedRelatedObjects {
-				Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
-			}
-			for _, objRef := range otherRelatedObjects {
-				Expect(objectreferencesv1.SetObjectReference(&expected.hco.Status.RelatedObjects, objRef)).ToNot(HaveOccurred())
-			}
-
-			resources := append(expected.toArray(), crdToBeRemoved, cmNotToBeRemoved)
-
-			cl := commontestutils.InitClient(resources)
-			restMapper := cl.RESTMapper()
-			Expect(restMapper).ToNot(BeNil())
-			dRestMapper := restMapper.(*apimetav1.DefaultRESTMapper)
-			dRestMapper.AddSpecific(
-				schema.GroupVersionKind{Group: "tektontasks.kubevirt.io", Version: "v1alpha1", Kind: "TektonTasks"},
-				schema.GroupVersionResource{Group: "tektontasks.kubevirt.io", Version: "v1alpha1", Resource: "tektontasks"},
-				schema.GroupVersionResource{Group: "tektontasks.kubevirt.io", Version: "v1alpha1", Resource: "tektontask"},
-				apimetav1.RESTScopeNamespace)
-
-			foundResource, reconciler, requeue := doReconcile(cl, expected.hco, nil)
-			Expect(requeue).To(BeTrue())
-			checkAvailability(foundResource, metav1.ConditionTrue)
-
-			foundResource, _, requeue = doReconcile(cl, expected.hco, reconciler)
-			Expect(requeue).To(BeFalse())
-			checkAvailability(foundResource, metav1.ConditionTrue)
-
-			foundCRD := &apiextensionsv1.CustomResourceDefinition{}
-
-			err := cl.Get(context.TODO(), client.ObjectKeyFromObject(crdToBeRemoved), foundCRD)
-			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
-
-			foundCM := &corev1.ConfigMap{}
-			Expect(cl.Get(context.TODO(), client.ObjectKeyFromObject(cmNotToBeRemoved), foundCM)).To(Succeed())
-
-			for _, objRef := range toBeRemovedRelatedObjects {
-				Expect(foundResource.Status.RelatedObjects).ToNot(ContainElement(objRef))
-			}
-			for _, objRef := range otherRelatedObjects {
-				Expect(foundResource.Status.RelatedObjects).To(ContainElement(objRef))
-			}
-
-		})
-
 	})
 
 	Context("remove old NetworkPolicies", func() {

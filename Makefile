@@ -37,7 +37,7 @@ DO=eval
 export JOB_TYPE=prow
 endif
 
-sanity: generate gogenerate cp-json-patch gogenerate-crd-creator generate-doc validate-no-offensive-lang goimport lint-metrics lint-monitoring
+sanity: generate gogenerate gogenerate-crd-creator generate-doc validate-no-offensive-lang goimport lint-metrics lint-monitoring
 	go version
 	go fmt ./...
 	go mod tidy -v
@@ -270,11 +270,7 @@ help: ## Show this help screen
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ''
 
-cp-json-patch:
-	cp ./assets/upgradePatches.json ./controllers/hyperconverged/test-files/upgradePatches/
-	cp ./assets/upgradePatches.json ./pkg/upgradepatch/test-files/
-
-test-unit: gogenerate cp-json-patch gogenerate-crd-creator
+test-unit: gogenerate gogenerate-crd-creator
 	JOB_TYPE="travis" ./hack/build-tests.sh
 
 test-fuzz-api-conversion: generate
@@ -395,7 +391,6 @@ push-builder-image: retag-builder-image
 		retag-push-all-images \
 		build-annotate-dicts \
 		annotate-dicts \
-		cp-json-patch \
 		create-builder-image \
 		push-builder-image \
 		retag-builder-image \
