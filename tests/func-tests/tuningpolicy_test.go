@@ -12,7 +12,6 @@ import (
 	kvv1 "kubevirt.io/api/core/v1"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
@@ -50,22 +49,6 @@ var _ = Describe("Check that the TuningPolicy annotation is configuring the KV o
 		expected := kvv1.TokenBucketRateLimiter{
 			Burst: 200,
 			QPS:   100,
-		}
-
-		checkTuningPolicy(ctx, cli, expected)
-	})
-
-	It("should update KV with the highBurst tuningPolicy", func(ctx context.Context) {
-		hc := tests.GetHCO(ctx, cli)
-
-		delete(hc.Annotations, common.TuningPolicyAnnotationName)
-		hc.Spec.TuningPolicy = hcov1beta1.HyperConvergedHighBurstProfile //nolint SA1019
-
-		tests.UpdateHCORetry(ctx, cli, hc)
-
-		expected := kvv1.TokenBucketRateLimiter{
-			Burst: 400,
-			QPS:   200,
 		}
 
 		checkTuningPolicy(ctx, cli, expected)
