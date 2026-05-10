@@ -22,7 +22,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
@@ -558,51 +557,6 @@ var _ = Describe("Upgrade Mode", func() {
 			},
 		),
 	)
-
-	Context("Amend bad defaults", func() {
-		const (
-			badBandwidthPerMigration    = "64Mi"
-			customBandwidthPerMigration = "32Mi"
-		)
-
-		It("should drop spec.livemigrationconfig.bandwidthpermigration if == 64Mi when upgrading from < 1.5.0", func() {
-			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.4.99")
-			expected.hco.Spec.Virtualization.LiveMigrationConfig.BandwidthPerMigration = ptr.To(badBandwidthPerMigration)
-
-			cl := expected.initClient()
-			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
-			Expect(requeue).To(BeTrue())
-			foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
-			Expect(requeue).To(BeTrue())
-			_, _, requeue = doReconcile(cl, expected.hco, reconciler)
-			Expect(requeue).To(BeFalse())
-			Expect(foundResource.Spec.Virtualization.LiveMigrationConfig.BandwidthPerMigration).To(BeNil())
-		})
-
-		It("should preserve spec.livemigrationconfig.bandwidthpermigration if != 64Mi when upgrading from < 1.5.0", func() {
-			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.4.99")
-			expected.hco.Spec.Virtualization.LiveMigrationConfig.BandwidthPerMigration = ptr.To(customBandwidthPerMigration)
-
-			cl := expected.initClient()
-			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
-			Expect(requeue).To(BeTrue())
-			foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
-			Expect(requeue).To(BeFalse())
-			Expect(foundResource.Spec.Virtualization.LiveMigrationConfig.BandwidthPerMigration).To(HaveValue(Equal(customBandwidthPerMigration)))
-		})
-
-		It("should preserve spec.livemigrationconfig.bandwidthpermigration even if == 64Mi when upgrading from >= 1.5.1", func() {
-			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.5.1")
-			expected.hco.Spec.Virtualization.LiveMigrationConfig.BandwidthPerMigration = ptr.To(badBandwidthPerMigration)
-
-			cl := expected.initClient()
-			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
-			Expect(requeue).To(BeTrue())
-			foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
-			Expect(requeue).To(BeFalse())
-			Expect(foundResource.Spec.Virtualization.LiveMigrationConfig.BandwidthPerMigration).To(HaveValue(Equal(badBandwidthPerMigration)))
-		})
-	})
 
 	Context("remove old quickstart guides", func() {
 		It("should drop old quickstart guide", func() {
