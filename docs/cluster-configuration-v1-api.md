@@ -230,6 +230,15 @@ See more details [below](#golden-images-in-heterogeneous-clusters).
 
 **Graduation Status**: Alpha
 
+### The hco.kubevirt.io/deployPasstNetworkBinding annotation
+Set the `hco.kubevirt.io/deployPasstNetworkBinding` HyperConverged CR annotation to `true` so users can bind their VM using the core Passt Network binding.
+
+**Note**: this feature is in Tech Preview.
+
+**Default**: `false` (annotation doesn't exist by default)
+
+**Graduation Status**: Beta
+
 ## Virtualization Configurations
 The `spec.virtualization` field contains all the configurations for virtualization.
 

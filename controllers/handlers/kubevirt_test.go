@@ -2126,6 +2126,25 @@ Version: 1.2.3`)
 							Expect(kv.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
 						},
 					),
+					// PasstBinding
+					Entry("should add the PasstBinding FG to Kubevirt CR if PasstNetworkBinding is true in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Annotations[deployPasstNetworkBindingAnn] = "true"
+						},
+						ContainElement(kvPasstBinding),
+					),
+					Entry("should not add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is false in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							hc.Annotations[deployPasstNetworkBindingAnn] = "false"
+						},
+						Not(ContainElement(kvPasstBinding)),
+					),
+					Entry("should not add the Passt Network Binding to Kubevirt CR if PasstNetworkBinding is not set in HyperConverged CR",
+						func(hc *hcov1beta1.HyperConverged) {
+							delete(hc.Annotations, deployPasstNetworkBindingAnn)
+						},
+						Not(ContainElement(kvPasstBinding)),
+					),
 					// PCINUMAAwareTopology
 					Entry("should add the PCINUMAAwareTopology FG to KubeVirt CR if deployAIE annotation is true",
 						func(hc *hcov1beta1.HyperConverged) {

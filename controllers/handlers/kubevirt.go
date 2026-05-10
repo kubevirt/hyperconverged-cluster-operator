@@ -61,6 +61,7 @@ const (
 
 const (
 	primaryUDNNetworkBindingName = "l2bridge"
+	deployPasstNetworkBindingAnn = hcoutil.HCOAnnotationPrefix + "deployPasstNetworkBinding"
 )
 
 const kvPriorityClass = "kubevirt-cluster-critical"
@@ -165,6 +166,7 @@ const (
 	kvObjectGraph                = "ObjectGraph"
 	kvUtilityVolumes             = "UtilityVolumes"
 	kvIncrementalBackup          = "IncrementalBackup"
+	kvPasstBinding               = "PasstBinding"
 	kvConfigurableHypervisor     = "ConfigurableHypervisor"
 	kvOptOutRoleAggregation      = "OptOutRoleAggregation"
 	kvContainerPathVolumes       = "ContainerPathVolumes"
@@ -943,6 +945,10 @@ func getFeatureGateChecks(spec hcov1beta1.HyperConvergedSpec, annotations map[st
 	} else {
 		// Default behavior: use the original HotplugVolumes featuregate
 		fgs = append(fgs, kvHotplugVolumesGate)
+	}
+
+	if annotations[deployPasstNetworkBindingAnn] == "true" {
+		fgs = append(fgs, kvPasstBinding)
 	}
 
 	if annotations[aie.DeployAIEAnnotation] == "true" {
