@@ -16,10 +16,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 )
 
-//go:generate go run ../../tools/crwriter/ --format=json --out=./hc.cr.json
+//go:generate go run ../../tools/crwriter/ --format=json --api-version=v1 --out=./hc.cr.json
 //go:embed hc.cr.json
 var hcCRBytes []byte
 
@@ -145,7 +145,7 @@ type UpgradePatches struct {
 	ObjectsToBeRemoved []ObjectToBeRemoved `json:"objectsToBeRemoved"`
 }
 
-func (up UpgradePatches) applyUpgradePatch(logger logr.Logger, hc *v1beta1.HyperConverged, knownHcoSV semver.Version) (*v1beta1.HyperConverged, error) {
+func (up UpgradePatches) applyUpgradePatch(logger logr.Logger, hc *hcov1.HyperConverged, knownHcoSV semver.Version) (*hcov1.HyperConverged, error) {
 	hcoJSON, err := json.Marshal(hc)
 	if err != nil {
 		return nil, err
@@ -158,7 +158,7 @@ func (up UpgradePatches) applyUpgradePatch(logger logr.Logger, hc *v1beta1.Hyper
 		}
 	}
 
-	tmpInstance := &v1beta1.HyperConverged{}
+	tmpInstance := &hcov1.HyperConverged{}
 	err = json.Unmarshal(hcoJSON, tmpInstance)
 	if err != nil {
 		return nil, err
@@ -173,7 +173,7 @@ var (
 	onceErr           error
 )
 
-func ApplyUpgradePatch(logger logr.Logger, hc *v1beta1.HyperConverged, knownHcoSV semver.Version) (*v1beta1.HyperConverged, error) {
+func ApplyUpgradePatch(logger logr.Logger, hc *hcov1.HyperConverged, knownHcoSV semver.Version) (*hcov1.HyperConverged, error) {
 	return hcoUpgradeChanges.applyUpgradePatch(logger, hc, knownHcoSV)
 }
 
@@ -182,7 +182,6 @@ func GetObjectsToBeRemoved() []ObjectToBeRemoved {
 }
 
 func readUpgradePatchesFromFile(pwdFS fs.FS, logger logr.Logger) error {
-	hcoUpgradeChanges = UpgradePatches{}
 	file, err := pwdFS.Open(UpgradeChangesFileLocation)
 	if err != nil {
 		logger.Error(err, "Can't open the upgradeChanges yaml file", "file name", UpgradeChangesFileLocation)
@@ -195,6 +194,8 @@ func readUpgradePatchesFromFile(pwdFS fs.FS, logger logr.Logger) error {
 }
 
 func readJsonFromReader(file io.Reader) error {
+	hcoUpgradeChanges = UpgradePatches{}
+
 	jDec := json.NewDecoder(file)
 	err := jDec.Decode(&hcoUpgradeChanges)
 	if err != nil {

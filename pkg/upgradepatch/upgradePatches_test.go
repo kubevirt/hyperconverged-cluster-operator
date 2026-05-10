@@ -10,7 +10,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-	"k8s.io/utils/ptr"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/dirtest"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
@@ -195,7 +194,6 @@ var _ = Describe("upgradePatches", func() {
 		)
 	})
 
-	//nolint:staticcheck // ignore SA1019 for old code
 	Context("check patches", func() {
 		BeforeEach(func() {
 			resetOnce()
@@ -204,69 +202,15 @@ var _ = Describe("upgradePatches", func() {
 			hcCRBytes = slices.Clone(hcCRBytesOrig)
 		})
 
-		It("should apply changes as defined in the upgradePatches.json file", func() {
-			hc := components.GetOperatorCR()
-			hc.Spec.FeatureGates.DeployKubevirtIpamController = ptr.To(false)
-			hc.Spec.FeatureGates.EnableManagedTenantQuota = ptr.To(false)
-			hc.Spec.FeatureGates.EnableManagedTenantQuota = ptr.To(false)
-			hc.Spec.FeatureGates.NonRoot = ptr.To(false)
-			hc.Spec.FeatureGates.WithHostPassthroughCPU = ptr.To(false)
-			hc.Spec.FeatureGates.PrimaryUserDefinedNetworkBinding = ptr.To(false)
-
+		It("should not modify CR when hcoCRPatchList is empty", func() {
+			hc := components.GetOperatorV1CR()
 			ver, err := semver.Parse("1.13.9")
 			Expect(err).NotTo(HaveOccurred())
 
 			newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(newHc.Spec.FeatureGates.DeployKubevirtIpamController).To(BeNil())
-			Expect(newHc.Spec.FeatureGates.EnableManagedTenantQuota).To(BeNil())
-			Expect(newHc.Spec.FeatureGates.EnableManagedTenantQuota).To(BeNil())
-			Expect(newHc.Spec.FeatureGates.NonRoot).To(BeNil())
-			Expect(newHc.Spec.FeatureGates.WithHostPassthroughCPU).To(BeNil())
-			Expect(newHc.Spec.FeatureGates.PrimaryUserDefinedNetworkBinding).To(BeNil())
+			Expect(newHc.Spec).To(Equal(hc.Spec))
 		})
-
-		DescribeTable("Moving the deprecated EnableCommonBootImageImport FG to a new field",
-			func(oldFG, newFG *bool, ver semver.Version, assertField, assertFG types.GomegaMatcher) {
-				hc := components.GetOperatorCR()
-				hc.Spec.FeatureGates.EnableCommonBootImageImport = oldFG
-				hc.Spec.EnableCommonBootImageImport = newFG
-
-				newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(newHc.Spec.EnableCommonBootImageImport).To(assertField)
-				Expect(newHc.Spec.FeatureGates.EnableCommonBootImageImport).To(assertFG)
-			},
-			Entry("should move if the old value is not the default value",
-				ptr.To(false),
-				ptr.To(true),
-				semver.MustParse("1.14.0"),
-				HaveValue(BeFalse()),
-				BeNil(),
-			),
-			Entry("should not move for newer versions",
-				ptr.To(false),
-				ptr.To(true),
-				semver.MustParse("1.15.0"),
-				HaveValue(BeTrue()),
-				HaveValue(BeFalse()),
-			),
-			Entry("should not move if the old FG is empty",
-				nil,
-				ptr.To(true),
-				semver.MustParse("1.14.0"),
-				HaveValue(BeTrue()),
-				BeNil(),
-			),
-			Entry("should not move if the old FG is the default one",
-				ptr.To(true),
-				ptr.To(false),
-				semver.MustParse("1.14.0"),
-				HaveValue(BeFalse()),
-				BeNil(),
-			),
-		)
 	})
 })
