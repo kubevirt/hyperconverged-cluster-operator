@@ -638,7 +638,7 @@ func GetOperatorV1CR() *hcov1.HyperConverged {
 	_ = hcov1.RegisterDefaults(defaultScheme)
 	defaultHco := &hcov1.HyperConverged{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: hcov1.APIVersionV1,
+			APIVersion: hcov1.APIVersion,
 			Kind:       util.HyperConvergedKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
