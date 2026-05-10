@@ -1,5 +1,21 @@
 {
-  "hcoCRPatchList": [],
+  "hcoCRPatchList": [
+    {
+      "semverRange": ">=1.16.0 <1.17.0",
+      "jsonPatch": [
+        {
+          "op": "test",
+          "path": "/spec/virtualization/virtualMachineOptions/disableFreePageReporting",
+          "value": false
+        },
+        {
+          "op": "replace",
+          "path": "/spec/virtualization/virtualMachineOptions/disableFreePageReporting",
+          "value": true
+        }
+      ]
+    }
+  ],
   "objectsToBeRemoved": [
     {
       "semverRange": ">=1.16.0 <1.19.0",

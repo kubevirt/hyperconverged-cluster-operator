@@ -1,0 +1,16 @@
+{
+  "hcoCRPatchList": [
+    {
+      "semverRange": "<1.19.0",
+      "jsonPatch": [
+        {
+          "op": "remove",
+          "path": "/spec/virtualization/virtualMachineOptions/disableSerialConsoleLog"
+        }
+      ],
+      "jsonPatchApplyOptions": {
+        "allowMissingPathOnRemove": true
+      }
+    }
+  ]
+}

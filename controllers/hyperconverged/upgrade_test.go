@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
@@ -557,6 +558,46 @@ var _ = Describe("Upgrade Mode", func() {
 			},
 		),
 	)
+
+	Context("apply upgrade patches", func() {
+		It("should apply spec patch when upgrading from an affected version", func() {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.16.5")
+			expected.hco.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting = ptr.To(false)
+
+			cl := expected.initClient()
+			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+			Expect(requeue).To(BeTrue())
+			foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
+			Expect(requeue).To(BeTrue())
+			_, _, requeue = doReconcile(cl, expected.hco, reconciler)
+			Expect(requeue).To(BeFalse())
+			Expect(foundResource.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting).To(HaveValue(BeTrue()))
+		})
+
+		It("should not apply spec patch when upgrading from an unaffected version", func() {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, oldVersion)
+			expected.hco.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting = ptr.To(false)
+
+			cl := expected.initClient()
+			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+			Expect(requeue).To(BeTrue())
+			foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
+			Expect(requeue).To(BeFalse())
+			Expect(foundResource.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting).To(HaveValue(BeFalse()))
+		})
+
+		It("should skip test+replace patch when test value does not match", func() {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, "1.16.5")
+			expected.hco.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting = ptr.To(true)
+
+			cl := expected.initClient()
+			_, reconciler, requeue := doReconcile(cl, expected.hco, nil)
+			Expect(requeue).To(BeTrue())
+			foundResource, _, requeue := doReconcile(cl, expected.hco, reconciler)
+			Expect(requeue).To(BeFalse())
+			Expect(foundResource.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting).To(HaveValue(BeTrue()))
+		})
+	})
 
 	Context("remove old quickstart guides", func() {
 		It("should drop old quickstart guide", func() {
