@@ -24,7 +24,6 @@ import (
 )
 
 const (
-	waspAgentComponentLabel     = "app.kubernetes.io/component=wasp-agent"
 	dsName                      = "wasp-agent"
 	saName                      = "wasp"
 	sccName                     = "wasp"
