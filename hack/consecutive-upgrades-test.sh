@@ -218,7 +218,7 @@ END
 CSV=$( ${CMD} get csv -o name -n ${HCO_NAMESPACE} | grep "kubevirt-hyperconverged-operator")
 
 # Patch the default CPU model to ensure a successful live migration
-${CMD} patch hco kubevirt-hyperconverged -n ${HCO_NAMESPACE} --type=json -p='[{"op": "add", "path": "/spec/defaultCPUModel", "value": "Westmere"}]'
+${CMD} patch hco kubevirt-hyperconverged -n ${HCO_NAMESPACE} --type=merge -p='{"spec":{"virtualization":{"virtualMachineOptions":{"defaultCPUModel":"Westmere"}}}}'
 
 Msg "operator conditions before upgrade"
 source ./hack/check_operator_condition.sh
@@ -243,7 +243,7 @@ Msg "make sure that we don't have outdated VMs"
 ${CMD} get vmim -n ${VMS_NAMESPACE} -o yaml
 
 INFRASTRUCTURETOPOLOGY=$(${CMD} get infrastructure.config.openshift.io cluster -o json | jq -j '.status.infrastructureTopology')
-UPDATE_METHODS=$(${CMD} get hco ${HCO_RESOURCE_NAME} -n ${HCO_NAMESPACE} -o jsonpath='{.spec .workloadUpdateStrategy .workloadUpdateMethods}')
+UPDATE_METHODS=$(${CMD} get hco ${HCO_RESOURCE_NAME} -n ${HCO_NAMESPACE} -o jsonpath='{.spec.virtualization.workloadUpdateStrategy.workloadUpdateMethods}')
 
 if [[ "${INFRASTRUCTURETOPOLOGY}" == "SingleReplica" ]]; then
   echo "Skipping the check on SNO clusters"

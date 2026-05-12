@@ -36,8 +36,9 @@ ${TEST_OUT_PATH}/func-tests.test -ginkgo.v -ginkgo.junit-report="${TEST_OUT_PATH
 sleep 60
 
 # Check the webhook, to see if it allow updating of the HyperConverged CR
-./hack/retry.sh 10 3 "${KUBECTL_BINARY} patch hco -n ${INSTALLED_NAMESPACE} kubevirt-hyperconverged -p '{\"spec\":{\"infra\":{\"nodePlacement\":{\"tolerations\":[{\"effect\":\"NoSchedule\",\"key\":\"key\",\"operator\":\"Equal\",\"value\":\"value\"}]}}}}' --type=merge"
-./hack/retry.sh 10 3 "${KUBECTL_BINARY} patch hco -n ${INSTALLED_NAMESPACE} kubevirt-hyperconverged -p '{\"spec\":{\"workloads\":{\"nodePlacement\":{\"tolerations\":[{\"effect\":\"NoSchedule\",\"key\":\"key\",\"operator\":\"Equal\",\"value\":\"value\"}]}}}}' --type=merge"
+NODE_PLACEMENT_PATCH='{"spec":{"deployment":{"nodePlacements":{"infra":{"tolerations":[{"effect":"NoSchedule","key":"key","operator":"Equal","value":"value"}]},"workload":{"tolerations":[{"effect":"NoSchedule","key":"key","operator":"Equal","value":"value"}]}}}}}'
+./hack/retry.sh 10 3 "${KUBECTL_BINARY} patch hco -n ${INSTALLED_NAMESPACE} kubevirt-hyperconverged -p '${NODE_PLACEMENT_PATCH}' --type=merge"
+
 # Read the HyperConverged CR
 ${KUBECTL_BINARY} get hco -n "${INSTALLED_NAMESPACE}" kubevirt-hyperconverged -o yaml
 
