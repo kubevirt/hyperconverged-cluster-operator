@@ -107,9 +107,6 @@ const (
 
 	// Enable the installation of the KubeVirt seccomp profile
 	kvKubevirtSeccompProfile = "KubevirtSeccompProfile"
-
-	// Enable updating NAD reference on a running VM
-	kvLiveUpdateNADRef = "LiveUpdateNADRef"
 )
 
 // KubeVirt architecture dependant feature gates.
@@ -132,7 +129,6 @@ var (
 		kvHostDevicesGate,
 		kvVMExportGate,
 		kvKubevirtSeccompProfile,
-		kvLiveUpdateNADRef,
 	}
 
 	// holds a list of mandatory KubeVirt feature gates. Some of them are the hard coded feature gates and some of
