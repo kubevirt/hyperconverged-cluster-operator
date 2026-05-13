@@ -55,7 +55,7 @@ var _ = Describe("NodesController", func() {
 					return true, nil
 				}
 
-				hco := commontestutils.NewHcoV1()
+				hco := commontestutils.NewHco()
 				resources := []client.Object{hco}
 				cl := commontestutils.InitClient(resources)
 
@@ -97,7 +97,7 @@ var _ = Describe("NodesController", func() {
 					return false, nil
 				}
 
-				hco := commontestutils.NewHcoV1()
+				hco := commontestutils.NewHco()
 				resources := []client.Object{hco}
 				cl := commontestutils.InitClient(resources)
 
@@ -119,7 +119,7 @@ var _ = Describe("NodesController", func() {
 					return false, errors.New("fake error")
 				}
 
-				hco := commontestutils.NewHcoV1()
+				hco := commontestutils.NewHco()
 				resources := []client.Object{hco}
 				cl := commontestutils.InitClient(resources)
 
@@ -148,7 +148,7 @@ var _ = Describe("NodesController", func() {
 					},
 				}
 
-				hco := commontestutils.NewHcoV1()
+				hco := commontestutils.NewHco()
 				resources := []client.Object{hco, workerNode}
 				cl := commontestutils.InitClient(resources)
 
@@ -192,7 +192,7 @@ var _ = Describe("NodesController", func() {
 					},
 				}
 
-				hco := commontestutils.NewHcoV1()
+				hco := commontestutils.NewHco()
 				resources := []client.Object{hco, cpNode}
 				cl := commontestutils.InitClient(resources)
 
@@ -233,7 +233,7 @@ var _ = Describe("NodesController", func() {
 					},
 				}
 
-				hco := commontestutils.NewHcoV1()
+				hco := commontestutils.NewHco()
 				resources := []client.Object{hco, workerNode}
 				cl := commontestutils.InitClient(resources)
 
@@ -265,7 +265,7 @@ var _ = Describe("NodesController", func() {
 			})
 
 			It("Should handle missing node gracefully", func() {
-				hco := commontestutils.NewHcoV1()
+				hco := commontestutils.NewHco()
 				resources := []client.Object{hco}
 				cl := commontestutils.InitClient(resources)
 
@@ -301,7 +301,7 @@ var _ = Describe("NodesController", func() {
 					},
 				}
 
-				hco := commontestutils.NewHcoV1()
+				hco := commontestutils.NewHco()
 				resources := []client.Object{hco, workerNode}
 				cl := commontestutils.InitClient(resources)
 

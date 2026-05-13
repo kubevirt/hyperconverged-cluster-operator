@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -29,7 +29,7 @@ type serviceHooks struct {
 	svc *corev1.Service
 }
 
-func (h serviceHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h serviceHooks) GetFullCr(_ *hcov1.HyperConverged) (client.Object, error) {
 	return h.svc.DeepCopy(), nil
 }
 

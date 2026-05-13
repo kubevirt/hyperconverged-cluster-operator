@@ -7,7 +7,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -16,7 +16,7 @@ func NewAIEWebhookServiceHandler(Client client.Client, Scheme *runtime.Scheme) o
 	return operands.NewConditionalHandler(
 		operands.NewServiceHandler(Client, Scheme, newAIEWebhookService()),
 		shouldDeployAIE,
-		func(hc *hcov1beta1.HyperConverged) client.Object {
+		func(hc *hcov1.HyperConverged) client.Object {
 			return newAIEWebhookServiceWithNameOnly()
 		},
 	)

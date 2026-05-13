@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
@@ -26,7 +26,7 @@ import (
 var _ = Describe("CLI Download", func() {
 	Context("ConsoleCLIDownload", func() {
 
-		var hco *hcov1beta1.HyperConverged
+		var hco *hcov1.HyperConverged
 		var req *common.HcoRequest
 
 		BeforeEach(func() {
@@ -170,7 +170,7 @@ var _ = Describe("CLI Download", func() {
 var _ = Describe("Downloads Service", func() {
 	Context("Downloads Service", func() {
 
-		var hco *hcov1beta1.HyperConverged
+		var hco *hcov1.HyperConverged
 		var req *common.HcoRequest
 
 		BeforeEach(func() {
@@ -251,7 +251,7 @@ var _ = Describe("Downloads Service", func() {
 var _ = Describe("Cli Downloads Route", func() {
 	Context("Cli Downloads Route", func() {
 
-		var hco *hcov1beta1.HyperConverged
+		var hco *hcov1.HyperConverged
 		var req *common.HcoRequest
 
 		BeforeEach(func() {

@@ -99,16 +99,19 @@ const (
 
 var _ = Describe("v1beta1 webhooks validator", func() {
 	getFakeClient := func(hco *v1beta1.HyperConverged) *commontestutils.HcoTestClient {
-		kv, err := handlers.NewKubeVirt(hco)
+		v1hc := &hcov1.HyperConverged{}
+		Expect(hco.ConvertTo(v1hc)).To(Succeed())
+
+		kv, err := handlers.NewKubeVirt(v1hc)
 		Expect(err).ToNot(HaveOccurred())
 
-		cdi, err := handlers.NewCDI(hco)
+		cdi, err := handlers.NewCDI(v1hc)
 		Expect(err).ToNot(HaveOccurred())
 
-		cna, err := handlers.NewNetworkAddons(hco)
+		cna, err := handlers.NewNetworkAddons(v1hc)
 		Expect(err).ToNot(HaveOccurred())
 
-		ssp, _, err := handlers.NewSSP(hco)
+		ssp, _, err := handlers.NewSSP(v1hc)
 		Expect(err).ToNot(HaveOccurred())
 
 		return commontestutils.InitClient([]client.Object{hco, kv, cdi, cna, ssp})
@@ -136,9 +139,11 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 	Context("Check create validation webhook", func() {
 		var cr *v1beta1.HyperConverged
 		var dryRun bool
+
 		BeforeEach(func() {
+			cr = &v1beta1.HyperConverged{}
 			Expect(os.Setenv("OPERATOR_NAMESPACE", HcoValidNamespace)).To(Succeed())
-			cr = commontestutils.NewHco()
+			Expect(cr.ConvertFrom(commontestutils.NewHco())).To(Succeed())
 			dryRun = false
 		})
 
@@ -802,7 +807,9 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 		var dryRun bool
 
 		BeforeEach(func() {
-			hco = commontestutils.NewHco()
+			hco = &v1beta1.HyperConverged{}
+			Expect(hco.ConvertFrom(commontestutils.NewHco())).To(Succeed())
+
 			hco.Spec.Infra = v1beta1.HyperConvergedConfig{
 				NodePlacement: newHyperConvergedConfig(),
 			}
@@ -883,8 +890,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 
 		It("should return error if CDI CR is missing", func(ctx context.Context) {
 			cli := getFakeClient(hco)
-			cdi, err := handlers.NewCDI(hco)
-			Expect(err).ToNot(HaveOccurred())
+			cdi := handlers.NewCDIWithNameOnly()
 			Expect(cli.Delete(ctx, cdi)).To(Succeed())
 
 			wh := NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)
@@ -895,7 +901,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			// just do some change to force update
 			newHco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "value3"
 
-			err = wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
+			err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
 			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
 			Expect(err).To(MatchError(ContainSubstring("cdis.cdi.kubevirt.io")))
 		})
@@ -930,8 +936,8 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 
 		It("should return error if NetworkAddons CR is missing", func(ctx context.Context) {
 			cli := getFakeClient(hco)
-			cna, err := handlers.NewNetworkAddons(hco)
-			Expect(err).ToNot(HaveOccurred())
+
+			cna := handlers.NewNetworkAddonsWithNameOnly()
 			Expect(cli.Delete(ctx, cna)).To(Succeed())
 			wh := NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)
 
@@ -940,7 +946,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			// just do some change to force update
 			newHco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "value3"
 
-			err = wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
+			err := wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)
 			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
 			Expect(err).To(MatchError(ContainSubstring("networkaddonsconfigs.networkaddonsoperator.network.kubevirt.io")))
 		})
@@ -1072,14 +1078,20 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 
 		Context("plain-k8s tests", func() {
 			It("should return error in plain-k8s if KV CR is missing", func(ctx context.Context) {
-				hco := &v1beta1.HyperConverged{}
-				cli := getFakeClient(hco)
-				kv, err := handlers.NewKubeVirt(hco)
-				Expect(err).ToNot(HaveOccurred())
+				oldHC := &v1beta1.HyperConverged{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      hco.Name,
+						Namespace: hco.Namespace,
+					},
+				}
+				cli := getFakeClient(oldHC)
+				kv := handlers.NewKubeVirtWithNameOnly()
 				Expect(cli.Delete(ctx, kv)).To(Succeed())
 				wh := NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, false)
 
-				newHco := commontestutils.NewHco()
+				newHco := &v1beta1.HyperConverged{}
+				Expect(newHco.ConvertFrom(commontestutils.NewHco())).To(Succeed())
+
 				newHco.Spec.Infra = v1beta1.HyperConvergedConfig{
 					NodePlacement: newHyperConvergedConfig(),
 				}
@@ -1088,18 +1100,12 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				}
 
 				Expect(
-					wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco),
+					wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, oldHC),
 				).To(MatchError(apierrors.IsNotFound, "not found error"))
 			})
 		})
 
 		Context("Check LiveMigrationConfiguration", func() {
-			var hco *v1beta1.HyperConverged
-
-			BeforeEach(func() {
-				hco = commontestutils.NewHco()
-			})
-
 			It("should ignore if there is no change in live migration", func(ctx context.Context) {
 				cli := getFakeClient(hco)
 
@@ -1150,12 +1156,6 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 		})
 
 		Context("Check CertRotation", func() {
-			var hco *v1beta1.HyperConverged
-
-			BeforeEach(func() {
-				hco = commontestutils.NewHco()
-			})
-
 			It("should ignore if there is no change in cert config", func(ctx context.Context) {
 				cli := getFakeClient(hco)
 
@@ -1345,12 +1345,6 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 		})
 
 		Context("validate tlsSecurityProfiles", func() {
-			var hco *v1beta1.HyperConverged
-
-			BeforeEach(func() {
-				hco = commontestutils.NewHco()
-			})
-
 			updateTLSSecurityProfile := func(ctx context.Context, minTLSVersion openshiftconfigv1.TLSProtocolVersion, ciphers []string) error {
 				cli := getFakeClient(hco)
 
@@ -1775,8 +1769,9 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 	Context("unsupported annotation", func() {
 		var hco *v1beta1.HyperConverged
 		BeforeEach(func() {
+			hco = &v1beta1.HyperConverged{}
 			Expect(os.Setenv("OPERATOR_NAMESPACE", HcoValidNamespace)).To(Succeed())
-			hco = commontestutils.NewHco()
+			Expect(hco.ConvertFrom(commontestutils.NewHco())).To(Succeed())
 		})
 
 		DescribeTable("should accept if annotation is valid",
@@ -1784,7 +1779,7 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 				cli := getFakeClient(hco)
 				wh := NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)
 
-				dryRun := false
+				const dryRun = false
 
 				newHco := &v1beta1.HyperConverged{}
 				hco.DeepCopyInto(newHco)
@@ -1838,7 +1833,9 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 
 		BeforeEach(func() {
 			Expect(os.Setenv("OPERATOR_NAMESPACE", HcoValidNamespace)).To(Succeed())
-			cr = commontestutils.NewHco()
+			cr = &v1beta1.HyperConverged{}
+			Expect(cr.ConvertFrom(commontestutils.NewHco())).To(Succeed())
+
 			origSetHyperConvergedProfile := tlssecprofile.SetHyperConvergedTLSSecurityProfile
 
 			tlssecprofile.SetHyperConvergedTLSSecurityProfile = func(hcoTLSSecurityProfile *openshiftconfigv1.TLSSecurityProfile) {
@@ -1988,7 +1985,9 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 
 		BeforeEach(func() {
 			Expect(os.Setenv("OPERATOR_NAMESPACE", HcoValidNamespace)).To(Succeed())
-			cr = commontestutils.NewHco()
+			cr = &v1beta1.HyperConverged{}
+			Expect(cr.ConvertFrom(commontestutils.NewHco())).To(Succeed())
+
 			cr.Spec.MediatedDevicesConfiguration = nil
 			newCr = cr.DeepCopy()
 		})

@@ -12,21 +12,15 @@ import (
 
 	"github.com/go-logr/logr"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
-	xsync "golang.org/x/sync/errgroup"
 	admissionv1 "k8s.io/api/admission/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
-	kubevirtcorev1 "kubevirt.io/api/core/v1"
-	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
-	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
-
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -115,7 +109,7 @@ func (wh *WebhookV1Beta1Handler) Handle(ctx context.Context, req admission.Reque
 	return admission.Allowed("")
 }
 
-func (wh *WebhookV1Beta1Handler) ValidateCreate(ctx context.Context, logger logr.Logger, dryrun bool, hc *v1beta1.HyperConverged) error {
+func (wh *WebhookV1Beta1Handler) ValidateCreate(_ context.Context, logger logr.Logger, dryrun bool, hc *v1beta1.HyperConverged) error {
 	logger.Info("Validating create", "name", hc.Name, "namespace:", hc.Namespace)
 
 	if err := wh.validateCertConfig(hc); err != nil {
@@ -146,19 +140,24 @@ func (wh *WebhookV1Beta1Handler) ValidateCreate(ctx context.Context, logger logr
 		return err
 	}
 
-	if _, err := handlers.NewKubeVirt(hc); err != nil {
+	v1hc := &hcov1.HyperConverged{}
+	if err := hc.ConvertTo(v1hc); err != nil {
 		return err
 	}
 
-	if _, err := handlers.NewCDI(hc); err != nil {
+	if _, err := handlers.NewKubeVirt(v1hc); err != nil {
 		return err
 	}
 
-	if _, err := handlers.NewNetworkAddons(hc); err != nil {
+	if _, err := handlers.NewCDI(v1hc); err != nil {
 		return err
 	}
 
-	if _, _, err := handlers.NewSSP(hc); err != nil {
+	if _, err := handlers.NewNetworkAddons(v1hc); err != nil {
+		return err
+	}
+
+	if _, _, err := handlers.NewSSP(v1hc); err != nil {
 		return err
 	}
 
@@ -167,32 +166,6 @@ func (wh *WebhookV1Beta1Handler) ValidateCreate(ctx context.Context, logger logr
 	}
 
 	return nil
-}
-
-func (wh *WebhookV1Beta1Handler) getOperands(ctx context.Context, requested *v1beta1.HyperConverged) (*kubevirtcorev1.KubeVirt, *cdiv1beta1.CDI, *networkaddonsv1.NetworkAddonsConfig, error) {
-	if err := wh.validateCertConfig(requested); err != nil {
-		return nil, nil, nil, err
-	}
-
-	kv := handlers.NewKubeVirtWithNameOnly()
-	err := wh.cli.Get(ctx, client.ObjectKeyFromObject(kv), kv)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	cdi := handlers.NewCDIWithNameOnly()
-	err = wh.cli.Get(ctx, client.ObjectKeyFromObject(cdi), cdi)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	cna := handlers.NewNetworkAddonsWithNameOnly()
-	err = wh.cli.Get(ctx, client.ObjectKeyFromObject(cna), cna)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	return kv, cdi, cna, nil
 }
 
 // ValidateUpdate is the ValidateUpdate webhook implementation. It calls all the resources in parallel, to dry-run the
@@ -230,55 +203,16 @@ func (wh *WebhookV1Beta1Handler) ValidateUpdate(ctx context.Context, logger logr
 		return nil
 	}
 
-	kv, cdi, cna, err := wh.getOperands(ctx, requested)
-	if err != nil {
+	if err := wh.validateCertConfig(requested); err != nil {
 		return err
 	}
 
-	toCtx, cancel := context.WithTimeout(ctx, updateDryRunTimeOut)
-	defer cancel()
-
-	eg, egCtx := xsync.WithContext(toCtx)
-	opts := &client.UpdateOptions{DryRun: []string{metav1.DryRunAll}}
-
-	resources := []client.Object{
-		kv,
-		cdi,
-		cna,
+	v1hc := &hcov1.HyperConverged{}
+	if err := requested.ConvertTo(v1hc); err != nil {
+		return err
 	}
 
-	if wh.isOpenshift {
-		origGetControlPlaneArchitectures := nodeinfo.GetControlPlaneArchitectures
-		origGetWorkloadsArchitectures := nodeinfo.GetWorkloadsArchitectures
-		defer func() {
-			nodeinfo.GetControlPlaneArchitectures = origGetControlPlaneArchitectures
-			nodeinfo.GetWorkloadsArchitectures = origGetWorkloadsArchitectures
-		}()
-
-		nodeinfo.GetControlPlaneArchitectures = func() []string {
-			return requested.Status.NodeInfo.ControlPlaneArchitectures
-		}
-		nodeinfo.GetWorkloadsArchitectures = func() []string {
-			return requested.Status.NodeInfo.WorkloadsArchitectures
-		}
-
-		ssp, _, err := handlers.NewSSP(requested)
-		if err != nil {
-			return err
-		}
-		resources = append(resources, ssp)
-	}
-
-	for _, obj := range resources {
-		func(o client.Object) {
-			eg.Go(func() error {
-				return wh.updateOperatorCr(egCtx, logger, requested, o, opts)
-			})
-		}(obj)
-	}
-
-	err = eg.Wait()
-	if err != nil {
+	if err := checkOperands(ctx, wh.cli, logger, v1hc, wh.isOpenshift); err != nil {
 		return err
 	}
 
@@ -286,52 +220,6 @@ func (wh *WebhookV1Beta1Handler) ValidateUpdate(ctx context.Context, logger logr
 		tlssecprofile.SetHyperConvergedTLSSecurityProfile(requested.Spec.TLSSecurityProfile)
 	}
 
-	return nil
-}
-
-func (wh *WebhookV1Beta1Handler) updateOperatorCr(ctx context.Context, logger logr.Logger, hc *v1beta1.HyperConverged, exists client.Object, opts *client.UpdateOptions) error {
-	err := hcoutil.GetRuntimeObject(ctx, wh.cli, exists)
-	if err != nil {
-		logger.Error(err, "failed to get object from kubernetes", "kind", exists.GetObjectKind())
-		return err
-	}
-
-	switch existing := exists.(type) {
-	case *kubevirtcorev1.KubeVirt:
-		required, err := handlers.NewKubeVirt(hc)
-		if err != nil {
-			return err
-		}
-		required.Spec.DeepCopyInto(&existing.Spec)
-
-	case *cdiv1beta1.CDI:
-		required, err := handlers.NewCDI(hc)
-		if err != nil {
-			return err
-		}
-		required.Spec.DeepCopyInto(&existing.Spec)
-
-	case *networkaddonsv1.NetworkAddonsConfig:
-		required, err := handlers.NewNetworkAddons(hc)
-		if err != nil {
-			return err
-		}
-		required.Spec.DeepCopyInto(&existing.Spec)
-
-	case *sspv1beta3.SSP:
-		required, _, err := handlers.NewSSP(hc)
-		if err != nil {
-			return err
-		}
-		required.Spec.DeepCopyInto(&existing.Spec)
-	}
-
-	if err = wh.cli.Update(ctx, exists, opts); err != nil {
-		logger.Error(err, "failed to dry-run update the object", "kind", exists.GetObjectKind())
-		return err
-	}
-
-	logger.Info("dry-run update the object passed", "kind", exists.GetObjectKind())
 	return nil
 }
 

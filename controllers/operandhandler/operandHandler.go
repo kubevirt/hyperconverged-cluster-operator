@@ -14,7 +14,6 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	aie "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
@@ -124,7 +123,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 // FirstUseInitiation is a lazy init function
 // The k8s client is not available when calling to NewOperandHandler.
 // Initial operations that need to read/write from the cluster can only be done when the client is already working.
-func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.ClusterInfo, hc *hcov1beta1.HyperConverged, pwdFS fs.FS) {
+func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.ClusterInfo, hc *hcov1.HyperConverged, pwdFS fs.FS) {
 	h.objects = make([]client.Object, 0)
 
 	if !ci.IsOpenshift() {
@@ -148,7 +147,7 @@ func (h *OperandHandler) GetImageStreamNames() []string {
 	return handlers.GetImageStreamNames()
 }
 
-func (h *OperandHandler) addOperandObject(handler operands.Operand, hc *hcov1beta1.HyperConverged) {
+func (h *OperandHandler) addOperandObject(handler operands.Operand, hc *hcov1.HyperConverged) {
 	var (
 		obj client.Object
 		err error
@@ -167,7 +166,7 @@ func (h *OperandHandler) addOperandObject(handler operands.Operand, hc *hcov1bet
 	}
 }
 
-func (h *OperandHandler) addOperands(scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged, getHandlers operands.GetHandlers, dir fs.FS) {
+func (h *OperandHandler) addOperands(scheme *runtime.Scheme, hc *hcov1.HyperConverged, getHandlers operands.GetHandlers, dir fs.FS) {
 	handlers, err := getHandlers(logger, h.client, scheme, hc, dir)
 	if err != nil {
 		logger.Error(err, "can't create handler")

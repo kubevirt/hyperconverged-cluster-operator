@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -27,7 +27,7 @@ func newNetworkPolicyHook(required *networkingv1.NetworkPolicy) *networkPolicyHo
 	}
 }
 
-func (nph *networkPolicyHook) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (nph *networkPolicyHook) GetFullCr(_ *hcov1.HyperConverged) (client.Object, error) {
 	return nph.required.DeepCopy(), nil
 }
 

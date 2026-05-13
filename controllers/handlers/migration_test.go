@@ -14,7 +14,7 @@ import (
 	"kubevirt.io/controller-lifecycle-operator-sdk/api"
 	migrationv1alpha1 "kubevirt.io/kubevirt-migration-operator/api/v1alpha1"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -22,7 +22,7 @@ import (
 
 var _ = Describe("Migration tests", func() {
 	var (
-		hco *v1beta1.HyperConverged
+		hco *hcov1.HyperConverged
 		req *common.HcoRequest
 		cl  client.Client
 
@@ -72,7 +72,7 @@ var _ = Describe("Migration tests", func() {
 		})
 
 		It("should get node placement configurations from the HyperConverged CR", func() {
-			hco.Spec.Infra.NodePlacement = &testNodePlacement
+			commontestutils.SetNodeCustomPlacement(hco, &testNodePlacement, nil)
 
 			migController, err := NewMigController(hco)
 			Expect(err).ToNot(HaveOccurred())
@@ -233,7 +233,7 @@ var _ = Describe("Migration tests", func() {
 			Expect(existingResource.Spec.TLSSecurityProfile).To(Equal(openshift2MigrationSecProfile(intermediateTLSSecurityProfile)))
 
 			// now, modify HCO's TLSSecurityProfile
-			hco.Spec.TLSSecurityProfile = modernTLSSecurityProfile
+			hco.Spec.Security.TLSSecurityProfile = modernTLSSecurityProfile
 
 			cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 			handler := NewMigControllerHandler(cl, commontestutils.GetScheme())
@@ -255,7 +255,7 @@ var _ = Describe("Migration tests", func() {
 		})
 
 		It("should overwrite TLSSecurityProfile if directly set on MigController CR", func() {
-			hco.Spec.TLSSecurityProfile = intermediateTLSSecurityProfile
+			hco.Spec.Security.TLSSecurityProfile = intermediateTLSSecurityProfile
 			existingResource, err := NewMigController(hco)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -280,7 +280,7 @@ var _ = Describe("Migration tests", func() {
 					foundResource),
 			).ToNot(HaveOccurred())
 
-			Expect(foundResource.Spec.TLSSecurityProfile).To(Equal(openshift2MigrationSecProfile(hco.Spec.TLSSecurityProfile)))
+			Expect(foundResource.Spec.TLSSecurityProfile).To(Equal(openshift2MigrationSecProfile(hco.Spec.Security.TLSSecurityProfile)))
 			Expect(foundResource.Spec.TLSSecurityProfile).ToNot(Equal(existingResource.Spec.TLSSecurityProfile))
 
 			Expect(req.Conditions).To(BeEmpty())

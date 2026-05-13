@@ -10,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/net"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	networkaddonsshared "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/shared"
@@ -18,7 +19,6 @@ import (
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
@@ -27,7 +27,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-var defaultHco = components.GetOperatorCR()
+var defaultHcoCertCfg = components.GetOperatorV1CR().Spec.Security.CertConfig
 
 func NewCnaHandler(Client client.Client, Scheme *runtime.Scheme) *operands.GenericOperand {
 	return operands.NewGenericOperand(Client, Scheme, "NetworkAddonsConfig", &cnaHooks{}, false)
@@ -38,7 +38,7 @@ type cnaHooks struct {
 	cache *networkaddonsv1.NetworkAddonsConfig
 }
 
-func (h *cnaHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *cnaHooks) GetFullCr(hc *hcov1.HyperConverged) (client.Object, error) {
 	h.Lock()
 	defer h.Unlock()
 
@@ -138,7 +138,7 @@ func setDeployOvsAnnotation(req *common.HcoRequest, found *networkaddonsv1.Netwo
 	}
 }
 
-func NewNetworkAddons(hc *hcov1beta1.HyperConverged) (*networkaddonsv1.NetworkAddonsConfig, error) {
+func NewNetworkAddons(hc *hcov1.HyperConverged) (*networkaddonsv1.NetworkAddonsConfig, error) {
 	ipam := &networkaddonsshared.KubevirtIpamController{}
 	if util.GetClusterInfo().IsOpenshift() {
 		ipam.DefaultNetworkNADNamespace = "openshift-ovn-kubernetes"
@@ -147,16 +147,16 @@ func NewNetworkAddons(hc *hcov1beta1.HyperConverged) (*networkaddonsv1.NetworkAd
 	cnaoSpec := networkaddonsshared.NetworkAddonsConfigSpec{
 		Multus:                 &networkaddonsshared.Multus{},
 		LinuxBridge:            &networkaddonsshared.LinuxBridge{},
-		KubeMacPool:            hcoKubeMacPool2CnaoKubeMacPool(hc.Spec.KubeMacPoolConfiguration),
+		KubeMacPool:            hcoKubeMacPool2CnaoKubeMacPool(hc.Spec.Networking),
 		KubevirtIpamController: ipam,
 	}
 
-	nameServerIP, err := getKSDNameServerIP(hc.Spec.KubeSecondaryDNSNameServerIP)
+	nameServerIP, err := getKSDNameServerIP(hc.Spec.Networking)
 	if err != nil {
 		return nil, err
 	}
 
-	if hc.Spec.FeatureGates.DeployKubeSecondaryDNS != nil && *hc.Spec.FeatureGates.DeployKubeSecondaryDNS {
+	if hc.Spec.FeatureGates.IsEnabled("deployKubeSecondaryDNS") {
 		baseDomain := util.GetClusterInfo().GetBaseDomain()
 		cnaoSpec.KubeSecondaryDNS = &networkaddonsshared.KubeSecondaryDNS{
 			Domain:       baseDomain,
@@ -165,17 +165,21 @@ func NewNetworkAddons(hc *hcov1beta1.HyperConverged) (*networkaddonsv1.NetworkAd
 	}
 
 	cnaoSpec.Ovs = hcoAnnotation2CnaoSpec(hc.Annotations)
-	cnaoInfra := hcoConfig2CnaoPlacement(hc.Spec.Infra.NodePlacement)
-	cnaoWorkloads := hcoConfig2CnaoPlacement(hc.Spec.Workloads.NodePlacement)
-	if cnaoInfra != nil || cnaoWorkloads != nil {
-		cnaoSpec.PlacementConfiguration = &networkaddonsshared.PlacementConfiguration{
-			Infra:     cnaoInfra,
-			Workloads: cnaoWorkloads,
+
+	if np := hc.Spec.Deployment.NodePlacements; np != nil {
+		cnaoInfra := hcoConfig2CnaoPlacement(np.Infra)
+		cnaoWorkloads := hcoConfig2CnaoPlacement(np.Workload)
+		if cnaoInfra != nil || cnaoWorkloads != nil {
+			cnaoSpec.PlacementConfiguration = &networkaddonsshared.PlacementConfiguration{
+				Infra:     cnaoInfra,
+				Workloads: cnaoWorkloads,
+			}
 		}
 	}
-	cnaoSpec.SelfSignConfiguration = hcoCertConfig2CnaoSelfSignedConfig(&hc.Spec.CertConfig)
 
-	cnaoSpec.TLSSecurityProfile = tlssecprofile.GetTLSSecurityProfile(hc.Spec.TLSSecurityProfile)
+	cnaoSpec.SelfSignConfiguration = hcoCertConfig2CnaoSelfSignedConfig(&hc.Spec.Security.CertConfig)
+
+	cnaoSpec.TLSSecurityProfile = tlssecprofile.GetTLSSecurityProfile(hc.Spec.Security.TLSSecurityProfile)
 
 	cna := NewNetworkAddonsWithNameOnly()
 	cna.Spec = cnaoSpec
@@ -187,13 +191,14 @@ func NewNetworkAddons(hc *hcov1beta1.HyperConverged) (*networkaddonsv1.NetworkAd
 	return reformatobj.ReformatObj(cna)
 }
 
-func getKSDNameServerIP(nameServerIPPtr *string) (string, error) {
-	var nameServerIP string
-	if nameServerIPPtr != nil {
-		nameServerIP = *nameServerIPPtr
-		if nameServerIP != "" && !net.IsIPv4String(nameServerIP) {
-			return "", errors.New("kubeSecondaryDNSNameServerIP isn't a valid IPv4")
-		}
+func getKSDNameServerIP(nt *hcov1.NetworkingConfig) (string, error) {
+	if nt == nil {
+		return "", nil
+	}
+
+	nameServerIP := ptr.Deref(nt.KubeSecondaryDNSNameServerIP, "")
+	if nameServerIP != "" && !net.IsIPv4String(nameServerIP) {
+		return "", errors.New("kubeSecondaryDNSNameServerIP isn't a valid IPv4")
 	}
 
 	return nameServerIP, nil
@@ -245,26 +250,22 @@ func hcoAnnotation2CnaoSpec(hcoAnnotations map[string]string) *networkaddonsshar
 	return nil
 }
 
-func hcoKubeMacPool2CnaoKubeMacPool(hcoKubeMacPool *hcov1.KubeMacPoolConfig) *networkaddonsshared.KubeMacPool {
+func hcoKubeMacPool2CnaoKubeMacPool(nt *hcov1.NetworkingConfig) *networkaddonsshared.KubeMacPool {
 	kubeMacPool := &networkaddonsshared.KubeMacPool{}
 
-	if hcoKubeMacPool != nil {
-		if hcoKubeMacPool.RangeStart != nil {
-			kubeMacPool.RangeStart = *hcoKubeMacPool.RangeStart
-		}
-		if hcoKubeMacPool.RangeEnd != nil {
-			kubeMacPool.RangeEnd = *hcoKubeMacPool.RangeEnd
-		}
+	if nt != nil && nt.KubeMacPoolConfiguration != nil {
+		kubeMacPool.RangeStart = ptr.Deref(nt.KubeMacPoolConfiguration.RangeStart, "")
+		kubeMacPool.RangeEnd = ptr.Deref(nt.KubeMacPoolConfiguration.RangeEnd, "")
 	}
 
 	return kubeMacPool
 }
 
 func hcoCertConfig2CnaoSelfSignedConfig(hcoCertConfig *hcov1.HyperConvergedCertConfig) *networkaddonsshared.SelfSignConfiguration {
-	caRotateInterval := defaultHco.Spec.CertConfig.CA.Duration.Duration.String()
-	caOverlapInterval := defaultHco.Spec.CertConfig.CA.RenewBefore.Duration.String()
-	certRotateInterval := defaultHco.Spec.CertConfig.Server.Duration.Duration.String()
-	certOverlapInterval := defaultHco.Spec.CertConfig.Server.RenewBefore.Duration.String()
+	caRotateInterval := defaultHcoCertCfg.CA.Duration.Duration.String()
+	caOverlapInterval := defaultHcoCertCfg.CA.RenewBefore.Duration.String()
+	certRotateInterval := defaultHcoCertCfg.Server.Duration.Duration.String()
+	certOverlapInterval := defaultHcoCertCfg.Server.RenewBefore.Duration.String()
 	if hcoCertConfig.CA.Duration != nil {
 		caRotateInterval = hcoCertConfig.CA.Duration.Duration.String()
 	}

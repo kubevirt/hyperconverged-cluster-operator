@@ -33,7 +33,6 @@ import (
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
@@ -118,7 +117,7 @@ func validateOperatorCondition(r *ReconcileHyperConverged, status metav1.Conditi
 
 type BasicExpected struct {
 	namespace            *corev1.Namespace
-	hco                  *hcov1beta1.HyperConverged
+	hco                  *hcov1.HyperConverged
 	pc                   *schedulingv1.PriorityClass
 	kv                   *kubevirtcorev1.KubeVirt
 	cdi                  *cdiv1beta1.CDI
@@ -180,13 +179,13 @@ func getBasicDeployment() *BasicExpected {
 
 	res := &BasicExpected{}
 
-	hco := &hcov1beta1.HyperConverged{
+	hco := &hcov1.HyperConverged{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
 			Namespace: namespace,
 			Labels:    map[string]string{hcoutil.AppLabel: name},
 		},
-		Spec: hcov1beta1.HyperConvergedSpec{},
+		Spec: hcov1.HyperConvergedSpec{},
 		Status: hcov1.HyperConvergedStatus{
 			Conditions: []metav1.Condition{
 				{
@@ -206,7 +205,7 @@ func getBasicDeployment() *BasicExpected {
 	}
 	res.hco = hco
 
-	components.GetOperatorCR().Spec.DeepCopyInto(&res.hco.Spec)
+	components.GetOperatorV1CR().Spec.DeepCopyInto(&res.hco.Spec)
 
 	res.namespace = &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -327,7 +326,7 @@ func getBasicDeployment() *BasicExpected {
 }
 
 // returns the HCO after reconcile, and the returned requeue
-func doReconcile(cl client.Client, hco *hcov1beta1.HyperConverged, old *ReconcileHyperConverged) (*hcov1beta1.HyperConverged, *ReconcileHyperConverged, bool) {
+func doReconcile(cl client.Client, hco *hcov1.HyperConverged, old *ReconcileHyperConverged) (*hcov1.HyperConverged, *ReconcileHyperConverged, bool) {
 	r := initReconciler(cl, old)
 
 	r.firstLoop = false
@@ -336,7 +335,7 @@ func doReconcile(cl client.Client, hco *hcov1beta1.HyperConverged, old *Reconcil
 	res, err := r.Reconcile(context.TODO(), request)
 	Expect(err).ToNot(HaveOccurred())
 
-	foundResource := &hcov1beta1.HyperConverged{}
+	foundResource := &hcov1.HyperConverged{}
 	Expect(
 		cl.Get(context.TODO(),
 			types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -380,7 +379,7 @@ func getGenericProgressingConditions() []conditionsv1.Condition {
 	}
 }
 
-func checkAvailability(hco *hcov1beta1.HyperConverged, expected metav1.ConditionStatus) {
+func checkAvailability(hco *hcov1.HyperConverged, expected metav1.ConditionStatus) {
 	found := false
 	for _, cond := range hco.Status.Conditions {
 		if cond.Type == hcov1.ConditionAvailable {

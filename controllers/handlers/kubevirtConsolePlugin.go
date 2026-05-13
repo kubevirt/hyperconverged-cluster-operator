@@ -28,7 +28,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
@@ -129,7 +129,7 @@ func NewKvUIPluginCRHandler(Client client.Client, Scheme *runtime.Scheme) operan
 	return newConsolePluginHandler(Client, Scheme, NewKVConsolePlugin())
 }
 
-func NewKvUIPluginDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
+func NewKvUIPluginDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 	// The env var was validated prior to handler creation
 	kvUIPluginImage, _ := os.LookupEnv(hcoutil.KVUIPluginImageEnvV)
 	deployment := getKvUIDeployment(hc, kvUIPluginDeploymentName, kvUIPluginImage,
@@ -163,13 +163,13 @@ func NewKvUIPluginDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
 	return deployment
 }
 
-func NewKvUIProxyDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
+func NewKvUIProxyDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 	// The env var was validated prior to handler creation
 	kvUIProxyImage, _ := os.LookupEnv(hcoutil.KVUIProxyImageEnvV)
 	deployment := getKvUIDeployment(hc, kvUIProxyDeploymentName, kvUIProxyImage, kvUIProxyServingCertName,
 		kvUIProxyServingCertPath, hcoutil.UIProxyServerPort, hcoutil.AppComponentUIProxy)
 
-	ciphers, minTLSVersion := tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat(hc.Spec.TLSSecurityProfile)
+	ciphers, minTLSVersion := tlssecprofile.GetCipherSuitesAndMinTLSVersionInGolangFormat(hc.Spec.Security.TLSSecurityProfile)
 
 	var args []string
 	if minTLSVersion < tls.VersionTLS13 && len(ciphers) > 0 {
@@ -191,7 +191,7 @@ func NewKvUIProxyDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
 	return deployment
 }
 
-func getKvUIDeployment(hc *hcov1beta1.HyperConverged, deploymentName string, image string,
+func getKvUIDeployment(hc *hcov1.HyperConverged, deploymentName string, image string,
 	servingCertName string, servingCertPath string, port int32, componentName hcoutil.AppComponent) *appsv1.Deployment {
 	labels := operands.GetLabels(componentName)
 	infrastructureHighlyAvailable := nodeinfo.IsInfrastructureHighlyAvailable()
@@ -272,25 +272,20 @@ func getKvUIDeployment(hc *hcov1beta1.HyperConverged, deploymentName string, ima
 		},
 	}
 
-	if hc.Spec.Infra.NodePlacement != nil {
-		if hc.Spec.Infra.NodePlacement.NodeSelector != nil {
-			deployment.Spec.Template.Spec.NodeSelector = maps.Clone(hc.Spec.Infra.NodePlacement.NodeSelector)
+	if np := hc.Spec.Deployment.NodePlacements; np != nil && np.Infra != nil {
+		if np.Infra.NodeSelector != nil {
+			deployment.Spec.Template.Spec.NodeSelector = maps.Clone(np.Infra.NodeSelector)
 		} else {
 			deployment.Spec.Template.Spec.NodeSelector = nil
 		}
 
-		if hc.Spec.Infra.NodePlacement.Affinity != nil {
-			deployment.Spec.Template.Spec.Affinity = hc.Spec.Infra.NodePlacement.Affinity.DeepCopy()
+		if np.Infra.Affinity != nil {
+			deployment.Spec.Template.Spec.Affinity = np.Infra.Affinity.DeepCopy()
 		} else {
 			deployment.Spec.Template.Spec.Affinity = affinity
 		}
 
-		if hc.Spec.Infra.NodePlacement.Tolerations != nil {
-			deployment.Spec.Template.Spec.Tolerations = make([]corev1.Toleration, len(hc.Spec.Infra.NodePlacement.Tolerations))
-			copy(deployment.Spec.Template.Spec.Tolerations, hc.Spec.Infra.NodePlacement.Tolerations)
-		} else {
-			deployment.Spec.Template.Spec.Tolerations = nil
-		}
+		deployment.Spec.Template.Spec.Tolerations = slices.Clone(np.Infra.Tolerations)
 	} else {
 		deployment.Spec.Template.Spec.NodeSelector = nil
 		deployment.Spec.Template.Spec.Affinity = affinity
@@ -381,8 +376,8 @@ type nginxConfTemplateData struct {
 	SSLCiphers   string
 }
 
-func getNginxConfig(hc *hcov1beta1.HyperConverged) (string, error) {
-	ciphers, minTLS := tlssecprofile.GetCipherSuitesAndMinTLSVersion(hc.Spec.TLSSecurityProfile)
+func getNginxConfig(hc *hcov1.HyperConverged) (string, error) {
+	ciphers, minTLS := tlssecprofile.GetCipherSuitesAndMinTLSVersion(hc.Spec.Security.TLSSecurityProfile)
 	data := nginxConfTemplateData{
 		Port:         hcoutil.UIPluginServerPort,
 		SSLProtocols: nginxSSLProtocolsFromMinTLS(minTLS),
@@ -400,7 +395,7 @@ func getNginxConfig(hc *hcov1beta1.HyperConverged) (string, error) {
 	return out.String(), nil
 }
 
-func NewKVUINginxCM(hc *hcov1beta1.HyperConverged) (*corev1.ConfigMap, error) {
+func NewKVUINginxCM(hc *hcov1.HyperConverged) (*corev1.ConfigMap, error) {
 	nginxConf, err := getNginxConfig(hc)
 	if err != nil {
 		return nil, err
@@ -551,7 +546,7 @@ type consolePluginHooks struct {
 	required *consolev1.ConsolePlugin
 }
 
-func (h consolePluginHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h consolePluginHooks) GetFullCr(_ *hcov1.HyperConverged) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
 

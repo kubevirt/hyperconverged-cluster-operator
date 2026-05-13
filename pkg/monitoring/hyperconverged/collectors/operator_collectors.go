@@ -5,11 +5,11 @@ import (
 
 	"github.com/rhobs/operator-observability-toolkit/pkg/operatormetrics"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	goldenimages "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/golden-images"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 )
 
@@ -45,8 +45,8 @@ func getMultiArchBootImagesStatusCallback(cli client.Client, operatorNamespace s
 			return []operatormetrics.CollectorResult{}
 		}
 
-		hc := hcov1beta1.HyperConverged{}
-		key := client.ObjectKey{Name: hcov1beta1.HyperConvergedName, Namespace: operatorNamespace}
+		hc := hcov1.HyperConverged{}
+		key := client.ObjectKey{Name: hcov1.HyperConvergedName, Namespace: operatorNamespace}
 		if err := cli.Get(context.TODO(), key, &hc); err != nil {
 			if !errors.IsNotFound(err) {
 				logger.Error(err, "can't read HyperConverged CR")
@@ -62,7 +62,7 @@ func getMultiArchBootImagesStatusCallback(cli client.Client, operatorNamespace s
 
 		// Set the metric based on the FeatureGate value
 		value := multiArchBootImagesFeatureDisabled
-		if ptr.Deref(hc.Spec.FeatureGates.EnableMultiArchBootImageImport, false) {
+		if hc.Spec.FeatureGates.IsEnabled(goldenimages.EnableMultiArchFeatureGate) {
 			value = multiArchBootImagesFeatureEnabled
 		}
 

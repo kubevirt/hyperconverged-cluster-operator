@@ -15,7 +15,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -43,7 +43,7 @@ func NewWaspAgentDaemonSetHandler(Client client.Client, Scheme *runtime.Scheme) 
 	return operands.NewConditionalHandler(
 		operands.NewDaemonSetHandler(Client, Scheme, newWaspAgentDaemonSet),
 		shouldDeployWaspAgent,
-		func(hc *hcov1beta1.HyperConverged) client.Object {
+		func(hc *hcov1.HyperConverged) client.Object {
 			return NewWaspAgentWithNameOnly()
 		},
 	)
@@ -59,7 +59,7 @@ func NewWaspAgentWithNameOnly() *appsv1.DaemonSet {
 	}
 }
 
-func newWaspAgentDaemonSet(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet {
+func newWaspAgentDaemonSet(hc *hcov1.HyperConverged) *appsv1.DaemonSet {
 	waspImage, _ := os.LookupEnv(hcoutil.WaspAgentImageEnvV)
 
 	podLabels := operands.GetLabels(AppComponentWaspAgent)
@@ -146,18 +146,18 @@ func newWaspAgentDaemonSet(hc *hcov1beta1.HyperConverged) *appsv1.DaemonSet {
 	ds := NewWaspAgentWithNameOnly()
 	ds.Spec = spec
 
-	if hc.Spec.Infra.NodePlacement != nil {
-		if hc.Spec.Infra.NodePlacement.NodeSelector != nil {
-			ds.Spec.Template.Spec.NodeSelector = maps.Clone(hc.Spec.Infra.NodePlacement.NodeSelector)
+	if np := hc.Spec.Deployment.NodePlacements; np != nil && np.Infra != nil {
+		if np.Infra.NodeSelector != nil {
+			ds.Spec.Template.Spec.NodeSelector = maps.Clone(np.Infra.NodeSelector)
 		}
 
-		if hc.Spec.Infra.NodePlacement.Affinity != nil {
-			ds.Spec.Template.Spec.Affinity = hc.Spec.Infra.NodePlacement.Affinity.DeepCopy()
+		if np.Infra.Affinity != nil {
+			ds.Spec.Template.Spec.Affinity = np.Infra.Affinity.DeepCopy()
 		}
 
-		if hc.Spec.Infra.NodePlacement.Tolerations != nil {
-			ds.Spec.Template.Spec.Tolerations = make([]corev1.Toleration, len(hc.Spec.Infra.NodePlacement.Tolerations))
-			copy(ds.Spec.Template.Spec.Tolerations, hc.Spec.Infra.NodePlacement.Tolerations)
+		if np.Infra.Tolerations != nil {
+			ds.Spec.Template.Spec.Tolerations = make([]corev1.Toleration, len(np.Infra.Tolerations))
+			copy(ds.Spec.Template.Spec.Tolerations, np.Infra.Tolerations)
 		}
 	} else {
 		affinity := getPodAntiAffinity(ds.Labels[hcoutil.AppLabelComponent], nodeinfo.IsInfrastructureHighlyAvailable())
@@ -185,7 +185,7 @@ func createDaemonSetEnvVar() []corev1.EnvVar {
 	}
 }
 
-func shouldDeployWaspAgent(hc *hcov1beta1.HyperConverged) bool {
+func shouldDeployWaspAgent(hc *hcov1.HyperConverged) bool {
 	val := strings.TrimSpace(hc.Annotations[AutopilotSwapAnnotation])
 	if val == AutopilotFullOptInAnnotationValue {
 		return false
@@ -196,7 +196,7 @@ func shouldDeployWaspAgent(hc *hcov1beta1.HyperConverged) bool {
 		}
 	}
 
-	overcommitPercentage := hc.Spec.HigherWorkloadDensity.MemoryOvercommitPercentage
+	overcommitPercentage := hc.Spec.Virtualization.HigherWorkloadDensity.MemoryOvercommitPercentage
 	return overcommitPercentage > NoOverCommitPercentage
 }
 

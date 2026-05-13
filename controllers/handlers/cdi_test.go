@@ -21,7 +21,6 @@ import (
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -30,7 +29,7 @@ import (
 var _ = Describe("CDI Operand", func() {
 	Context("CDI", func() {
 		var (
-			hco *hcov1beta1.HyperConverged
+			hco *hcov1.HyperConverged
 			req *common.HcoRequest
 		)
 
@@ -188,9 +187,7 @@ var _ = Describe("CDI Operand", func() {
 			It("should add node placement if missing in CDI", func() {
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
-
-				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+				commontestutils.SetNodePlacement(hco)
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewCdiHandler(cl, commontestutils.GetScheme())
@@ -219,7 +216,7 @@ var _ = Describe("CDI Operand", func() {
 				Expect(foundResource.Spec.Infra.NodeSelector["key2"]).To(Equal("value2"))
 
 				Expect(foundResource.Spec.Workloads).ToNot(BeNil())
-				Expect(foundResource.Spec.Workloads.Tolerations).To(Equal(hco.Spec.Workloads.NodePlacement.Tolerations))
+				Expect(foundResource.Spec.Workloads.Tolerations).To(Equal(hco.Spec.Deployment.NodePlacements.Workload.Tolerations))
 
 				Expect(req.Conditions).To(BeEmpty())
 			})
@@ -227,8 +224,7 @@ var _ = Describe("CDI Operand", func() {
 			It("should remove node placement if missing in HCO CR", func() {
 
 				hcoNodePlacement := commontestutils.NewHco()
-				hcoNodePlacement.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-				hcoNodePlacement.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+				commontestutils.SetNodePlacement(hcoNodePlacement)
 				existingResource, err := NewCDI(hcoNodePlacement)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -265,17 +261,16 @@ var _ = Describe("CDI Operand", func() {
 			})
 
 			It("should modify node placement according to HCO CR", func() {
-				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+				commontestutils.SetNodePlacement(hco)
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
 
 				// now, modify HCO's node placement
-				hco.Spec.Infra.NodePlacement.Tolerations = append(hco.Spec.Infra.NodePlacement.Tolerations, corev1.Toleration{
+				hco.Spec.Deployment.NodePlacements.Infra.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, corev1.Toleration{
 					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
 				})
 
-				hco.Spec.Workloads.NodePlacement.NodeSelector["key1"] = "something else"
+				hco.Spec.Deployment.NodePlacements.Workload.NodeSelector["key1"] = "something else"
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewCdiHandler(cl, commontestutils.GetScheme())
@@ -302,8 +297,7 @@ var _ = Describe("CDI Operand", func() {
 			})
 
 			It("should overwrite node placement if directly set on CDI CR", func() {
-				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+				commontestutils.SetNodePlacement(hco)
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -311,10 +305,10 @@ var _ = Describe("CDI Operand", func() {
 				req.HCOTriggered = false
 
 				// now, modify CDI's node placement
-				existingResource.Spec.Infra.Tolerations = append(hco.Spec.Infra.NodePlacement.Tolerations, corev1.Toleration{
+				existingResource.Spec.Infra.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, corev1.Toleration{
 					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
 				})
-				existingResource.Spec.Workloads.Tolerations = append(hco.Spec.Workloads.NodePlacement.Tolerations, corev1.Toleration{
+				existingResource.Spec.Workloads.Tolerations = append(hco.Spec.Deployment.NodePlacements.Workload.Tolerations, corev1.Toleration{
 					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
 				})
 
@@ -355,8 +349,8 @@ var _ = Describe("CDI Operand", func() {
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.ResourceRequirements = &hcov1beta1.OperandResourceRequirements{
-					StorageWorkloads: &corev1.ResourceRequirements{
+				hco.Spec.Storage = &hcov1.StorageConfig{
+					WorkloadResourceRequirements: &corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{
 							corev1.ResourceCPU:    resource.MustParse("500m"),
 							corev1.ResourceMemory: resource.MustParse("2Gi"),
@@ -394,8 +388,8 @@ var _ = Describe("CDI Operand", func() {
 			It("should remove Resource Requirements if missing in HCO CR", func() {
 
 				hcoResourceRequirements := commontestutils.NewHco()
-				hcoResourceRequirements.Spec.ResourceRequirements = &hcov1beta1.OperandResourceRequirements{
-					StorageWorkloads: &corev1.ResourceRequirements{
+				hcoResourceRequirements.Spec.Storage = &hcov1.StorageConfig{
+					WorkloadResourceRequirements: &corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{
 							corev1.ResourceCPU:    resource.MustParse("500m"),
 							corev1.ResourceMemory: resource.MustParse("2Gi"),
@@ -437,8 +431,8 @@ var _ = Describe("CDI Operand", func() {
 			})
 
 			It("should modify Resource Requirements according to HCO CR", func() {
-				hco.Spec.ResourceRequirements = &hcov1beta1.OperandResourceRequirements{
-					StorageWorkloads: &corev1.ResourceRequirements{
+				hco.Spec.Storage = &hcov1.StorageConfig{
+					WorkloadResourceRequirements: &corev1.ResourceRequirements{
 						Limits: corev1.ResourceList{
 							corev1.ResourceCPU:    resource.MustParse("500m"),
 							corev1.ResourceMemory: resource.MustParse("2Gi"),
@@ -452,10 +446,10 @@ var _ = Describe("CDI Operand", func() {
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
 
-				hco.Spec.ResourceRequirements.StorageWorkloads.Limits[corev1.ResourceCPU] = resource.MustParse("1024m")
-				hco.Spec.ResourceRequirements.StorageWorkloads.Limits[corev1.ResourceMemory] = resource.MustParse("4Gi")
-				hco.Spec.ResourceRequirements.StorageWorkloads.Requests[corev1.ResourceCPU] = resource.MustParse("500m")
-				hco.Spec.ResourceRequirements.StorageWorkloads.Requests[corev1.ResourceMemory] = resource.MustParse("2Gi")
+				hco.Spec.Storage.WorkloadResourceRequirements.Limits[corev1.ResourceCPU] = resource.MustParse("1024m")
+				hco.Spec.Storage.WorkloadResourceRequirements.Limits[corev1.ResourceMemory] = resource.MustParse("4Gi")
+				hco.Spec.Storage.WorkloadResourceRequirements.Requests[corev1.ResourceCPU] = resource.MustParse("500m")
+				hco.Spec.Storage.WorkloadResourceRequirements.Requests[corev1.ResourceMemory] = resource.MustParse("2Gi")
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewCdiHandler(cl, commontestutils.GetScheme())
@@ -495,7 +489,7 @@ var _ = Describe("CDI Operand", func() {
 			It("should add FilesystemOverhead if missing in CDI", func() {
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
-				hco.Spec.FilesystemOverhead = &hcoFilesystemOverheadValue
+				hco.Spec.Storage = &hcov1.StorageConfig{FilesystemOverhead: &hcoFilesystemOverheadValue}
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewCdiHandler(cl, commontestutils.GetScheme())
@@ -548,14 +542,14 @@ var _ = Describe("CDI Operand", func() {
 			})
 
 			It("should modify FilesystemOverhead according to HCO CR", func() {
-				hco.Spec.FilesystemOverhead = &cdiFilesystemOverheadValue
+				hco.Spec.Storage = &hcov1.StorageConfig{FilesystemOverhead: &cdiFilesystemOverheadValue}
 				existingCDI, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(existingCDI.Spec.Config).ToNot(BeNil())
 				Expect(*existingCDI.Spec.Config.FilesystemOverhead).To(Equal(cdiFilesystemOverheadValue))
 
-				hco.Spec.FilesystemOverhead = &hcoFilesystemOverheadValue
+				hco.Spec.Storage = &hcov1.StorageConfig{FilesystemOverhead: &hcoFilesystemOverheadValue}
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingCDI})
 				handler := NewCdiHandler(cl, commontestutils.GetScheme())
@@ -580,7 +574,7 @@ var _ = Describe("CDI Operand", func() {
 		Context("Log verbosity", func() {
 
 			It("Should be defined for CDI CR if defined in HCO CR", func() {
-				hco.Spec.LogVerbosityConfig = &hcov1.LogVerbosityConfiguration{CDI: ptr.To[int32](4)}
+				hco.Spec.Deployment.LogVerbosityConfig = &hcov1.LogVerbosityConfiguration{CDI: ptr.To[int32](4)}
 				cdi, err := NewCDI(hco)
 
 				Expect(err).ToNot(HaveOccurred())
@@ -589,7 +583,7 @@ var _ = Describe("CDI Operand", func() {
 			})
 
 			DescribeTable("Should not be defined for CDI CR if not defined in HCO CR", func(logConfig *hcov1.LogVerbosityConfiguration) {
-				hco.Spec.LogVerbosityConfig = logConfig
+				hco.Spec.Deployment.LogVerbosityConfig = logConfig
 				cdi, err := NewCDI(hco)
 
 				Expect(err).ToNot(HaveOccurred())
@@ -611,7 +605,7 @@ var _ = Describe("CDI Operand", func() {
 			It("should add ScratchSpaceStorageClass if missing in CDI", func() {
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
-				hco.Spec.ScratchSpaceStorageClass = ptr.To(hcoScratchSpaceStorageClassValue)
+				hco.Spec.Storage = &hcov1.StorageConfig{ScratchSpaceStorageClass: ptr.To(hcoScratchSpaceStorageClassValue)}
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewCdiHandler(cl, commontestutils.GetScheme())
@@ -662,14 +656,14 @@ var _ = Describe("CDI Operand", func() {
 			})
 
 			It("should modify ScratchSpaceStorageClass according to HCO CR", func() {
-				hco.Spec.ScratchSpaceStorageClass = ptr.To(cdiScratchSpaceStorageClassValue)
+				hco.Spec.Storage = &hcov1.StorageConfig{ScratchSpaceStorageClass: ptr.To(cdiScratchSpaceStorageClassValue)}
 				existingCDI, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(existingCDI.Spec.Config).ToNot(BeNil())
 				Expect(*existingCDI.Spec.Config.ScratchSpaceStorageClass).To(Equal(cdiScratchSpaceStorageClassValue))
 
-				hco.Spec.ScratchSpaceStorageClass = ptr.To(hcoScratchSpaceStorageClassValue)
+				hco.Spec.Storage = &hcov1.StorageConfig{ScratchSpaceStorageClass: ptr.To(hcoScratchSpaceStorageClassValue)}
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingCDI})
 				handler := NewCdiHandler(cl, commontestutils.GetScheme())
@@ -695,8 +689,10 @@ var _ = Describe("CDI Operand", func() {
 			It("should add InsecureRegistries if exists in HC and missing in CDI", func() {
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
-				hco.Spec.StorageImport = &hcov1.StorageImportConfig{
-					InsecureRegistries: []string{"first:5000", "second:5000", "third:5000"},
+				hco.Spec.Storage = &hcov1.StorageConfig{
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{"first:5000", "second:5000", "third:5000"},
+					},
 				}
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
@@ -749,8 +745,10 @@ var _ = Describe("CDI Operand", func() {
 				Expect(err).ToNot(HaveOccurred())
 				existingCDI.Spec.Config.InsecureRegistries = []string{"first:5000", "second:5000", "third:5000"}
 
-				hco.Spec.StorageImport = &hcov1.StorageImportConfig{
-					InsecureRegistries: []string{"other1:5000", "other2:5000"},
+				hco.Spec.Storage = &hcov1.StorageConfig{
+					StorageImport: &hcov1.StorageImportConfig{
+						InsecureRegistries: []string{"other1:5000", "other2:5000"},
+					},
 				}
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingCDI})
@@ -778,7 +776,7 @@ var _ = Describe("CDI Operand", func() {
 			It("should set BlockUninstallIfWorkloadsExist if missing HCO CR", func() {
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
-				hco.Spec.UninstallStrategy = ""
+				hco.Spec.Deployment.UninstallStrategy = ""
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewCdiHandler(cl, commontestutils.GetScheme())
@@ -800,7 +798,7 @@ var _ = Describe("CDI Operand", func() {
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
 				uninstallStrategy := hcov1.HyperConvergedUninstallStrategyBlockUninstallIfWorkloadsExist
-				hco.Spec.UninstallStrategy = uninstallStrategy
+				hco.Spec.Deployment.UninstallStrategy = uninstallStrategy
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewCdiHandler(cl, commontestutils.GetScheme())
@@ -822,7 +820,7 @@ var _ = Describe("CDI Operand", func() {
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
 				uninstallStrategy := hcov1.HyperConvergedUninstallStrategyRemoveWorkloads
-				hco.Spec.UninstallStrategy = uninstallStrategy
+				hco.Spec.Deployment.UninstallStrategy = uninstallStrategy
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewCdiHandler(cl, commontestutils.GetScheme())
@@ -974,7 +972,7 @@ var _ = Describe("CDI Operand", func() {
 			existingResource, err := NewCDI(hcoCertConfig)
 			Expect(err).ToNot(HaveOccurred())
 
-			hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+			hco.Spec.Security.CertConfig = hcov1.HyperConvergedCertConfig{
 				CA: hcov1.CertRotateConfigCA{
 					Duration:    &metav1.Duration{Duration: 5 * time.Hour},
 					RenewBefore: &metav1.Duration{Duration: 6 * time.Hour},
@@ -1309,7 +1307,7 @@ var _ = Describe("CDI Operand", func() {
 				Expect(existingResource.Spec.Config.TLSSecurityProfile).To(Equal(openshift2CdiSecProfile(intermediateTLSSecurityProfile)))
 
 				// now, modify HCO's TLSSecurityProfile
-				hco.Spec.TLSSecurityProfile = modernTLSSecurityProfile
+				hco.Spec.Security.TLSSecurityProfile = modernTLSSecurityProfile
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewCdiHandler(cl, commontestutils.GetScheme())
@@ -1331,7 +1329,7 @@ var _ = Describe("CDI Operand", func() {
 			})
 
 			It("should overwrite TLSSecurityProfile if directly set on CDI CR", func() {
-				hco.Spec.TLSSecurityProfile = intermediateTLSSecurityProfile
+				hco.Spec.Security.TLSSecurityProfile = intermediateTLSSecurityProfile
 				existingResource, err := NewCDI(hco)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -1356,7 +1354,7 @@ var _ = Describe("CDI Operand", func() {
 						foundResource),
 				).ToNot(HaveOccurred())
 
-				Expect(foundResource.Spec.Config.TLSSecurityProfile).To(Equal(openshift2CdiSecProfile(hco.Spec.TLSSecurityProfile)))
+				Expect(foundResource.Spec.Config.TLSSecurityProfile).To(Equal(openshift2CdiSecProfile(hco.Spec.Security.TLSSecurityProfile)))
 				Expect(foundResource.Spec.Config.TLSSecurityProfile).ToNot(Equal(existingResource.Spec.Config.TLSSecurityProfile))
 
 				Expect(req.Conditions).To(BeEmpty())
@@ -1364,8 +1362,8 @@ var _ = Describe("CDI Operand", func() {
 		})
 
 		It("should reformat quantity field to add the quantity type, if missing", func() {
-			hco.Spec.ResourceRequirements = &hcov1beta1.OperandResourceRequirements{
-				StorageWorkloads: &corev1.ResourceRequirements{
+			hco.Spec.Storage = &hcov1.StorageConfig{
+				WorkloadResourceRequirements: &corev1.ResourceRequirements{
 					Requests: corev1.ResourceList{
 						corev1.ResourceCPU: resource.MustParse("1.5"),
 					},
@@ -1381,5 +1379,4 @@ var _ = Describe("CDI Operand", func() {
 			Expect(cdi.Spec.Config.PodResourceRequirements.Requests[corev1.ResourceCPU]).To(Equal(resource.MustParse("1500m")))
 		})
 	})
-
 })

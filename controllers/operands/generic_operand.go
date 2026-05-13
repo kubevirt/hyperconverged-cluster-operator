@@ -11,7 +11,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -208,7 +207,7 @@ func (h *GenericOperand) Reset() {
 	}
 }
 
-func (h *GenericOperand) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *GenericOperand) GetFullCr(hc *hcov1.HyperConverged) (client.Object, error) {
 	return h.hooks.GetFullCr(hc)
 }
 

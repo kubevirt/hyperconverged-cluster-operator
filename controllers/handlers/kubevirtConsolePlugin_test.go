@@ -26,7 +26,7 @@ import (
 
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
@@ -37,7 +37,7 @@ import (
 
 var _ = Describe("Kubevirt Console Plugin", func() {
 	var (
-		hco *hcov1beta1.HyperConverged
+		hco *hcov1.HyperConverged
 		req *common.HcoRequest
 	)
 
@@ -271,7 +271,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 
 	Context("Kubevirt Console Plugin and UI Proxy Deployments", func() {
 		DescribeTable("should create if not present", func(appComponent hcoutil.AppComponent,
-			deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
+			deploymentManifestor func(*hcov1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 			expectedResource := deploymentManifestor(hco)
 
 			cl := commontestutils.InitClient([]client.Object{})
@@ -302,7 +302,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		)
 
 		DescribeTable("should find deployment if present", func(appComponent hcoutil.AppComponent,
-			deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
+			deploymentManifestor func(*hcov1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 			expectedResource := deploymentManifestor(hco)
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
@@ -331,7 +331,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		)
 
 		DescribeTable("should reconcile deployment to default if changed - (updatable fields)", func(appComponent hcoutil.AppComponent,
-			deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
+			deploymentManifestor func(*hcov1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 			expectedResource := deploymentManifestor(hco)
 			outdatedResource := deploymentManifestor(hco)
 
@@ -378,7 +378,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		)
 
 		DescribeTable("should reconcile deployment to default if changed - (immutable fields)", func(appComponent hcoutil.AppComponent,
-			deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
+			deploymentManifestor func(*hcov1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 			expectedResource := deploymentManifestor(hco)
 			outdatedResource := deploymentManifestor(hco)
 
@@ -425,7 +425,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 		)
 
 		Context("Kubevirt UI configuration config maps", func() {
-			var hco *hcov1beta1.HyperConverged
+			var hco *hcov1.HyperConverged
 			var req *common.HcoRequest
 
 			BeforeEach(func() {
@@ -519,8 +519,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 
 		Context("KubeVirt UI Nginx ConfigMap (NewKVUINginxCM)", func() {
 			It("should create nginx ConfigMap with default TLS when TLSSecurityProfile is nil", func() {
-				hco := commontestutils.NewHco()
-				Expect(hco.Spec.TLSSecurityProfile).To(BeNil())
+				Expect(hco.Spec.Security.TLSSecurityProfile).To(BeNil())
 				cm, err := NewKVUINginxCM(hco)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(cm).ToNot(BeNil())
@@ -535,8 +534,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			})
 
 			It("should create nginx ConfigMap with Modern TLS profile", func() {
-				hco := commontestutils.NewHco()
-				hco.Spec.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+				hco.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
 					Type: openshiftconfigv1.TLSProfileModernType,
 				}
 				cm, err := NewKVUINginxCM(hco)
@@ -550,8 +548,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			})
 
 			It("should create nginx ConfigMap with Intermediate TLS profile", func() {
-				hco := commontestutils.NewHco()
-				hco.Spec.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+				hco.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
 					Type: openshiftconfigv1.TLSProfileIntermediateType,
 				}
 				cm, err := NewKVUINginxCM(hco)
@@ -567,8 +564,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			})
 
 			It("should create nginx ConfigMap with Custom TLS profile", func() {
-				hco := commontestutils.NewHco()
-				hco.Spec.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
+				hco.Spec.Security.TLSSecurityProfile = &openshiftconfigv1.TLSSecurityProfile{
 					Type: openshiftconfigv1.TLSProfileCustomType,
 					Custom: &openshiftconfigv1.CustomTLSProfile{
 						TLSProfileSpec: openshiftconfigv1.TLSProfileSpec{
@@ -588,7 +584,6 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			})
 
 			It("should not emit empty ssl_protocols or ssl_ciphers directives", func() {
-				hco := commontestutils.NewHco()
 				cm, err := NewKVUINginxCM(hco)
 				Expect(err).ToNot(HaveOccurred())
 				nginxConf := cm.Data["nginx.conf"]
@@ -600,11 +595,10 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 
 		Context("Node Placement", func() {
 			DescribeTable("should add node placement if missing", func(appComponent hcoutil.AppComponent,
-				deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
+				deploymentManifestor func(*hcov1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 				existingResource := deploymentManifestor(hco)
 
-				hco.Spec.Workloads.NodePlacement = commontestutils.NewNodePlacement()
-				hco.Spec.Infra.NodePlacement = commontestutils.NewOtherNodePlacement()
+				commontestutils.SetNodeCustomPlacement(hco, commontestutils.NewOtherNodePlacement(), commontestutils.NewNodePlacement())
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := handlerFunc(cl, commontestutils.GetScheme())
@@ -627,19 +621,19 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				Expect(existingResource.Spec.Template.Spec.Affinity).To(BeNil())
 				Expect(existingResource.Spec.Template.Spec.Tolerations).To(BeEmpty())
 
-				Expect(foundResource.Spec.Template.Spec.NodeSelector).To(BeEquivalentTo(hco.Spec.Infra.NodePlacement.NodeSelector))
-				Expect(foundResource.Spec.Template.Spec.Affinity).To(BeEquivalentTo(hco.Spec.Infra.NodePlacement.Affinity))
-				Expect(foundResource.Spec.Template.Spec.Tolerations).To(BeEquivalentTo(hco.Spec.Infra.NodePlacement.Tolerations))
+				infra := hco.Spec.Deployment.NodePlacements.Infra
+				Expect(foundResource.Spec.Template.Spec.NodeSelector).To(BeEquivalentTo(infra.NodeSelector))
+				Expect(foundResource.Spec.Template.Spec.Affinity).To(BeEquivalentTo(infra.Affinity))
+				Expect(foundResource.Spec.Template.Spec.Tolerations).To(BeEquivalentTo(infra.Tolerations))
 			},
 				Entry("plugin deployment", hcoutil.AppComponentUIPlugin, NewKvUIPluginDeployment, NewKvUIPluginDeploymentHandler),
 				Entry("proxy deployment", hcoutil.AppComponentUIProxy, NewKvUIProxyDeployment, NewKvUIProxyDeploymentHandler),
 			)
 
 			DescribeTable("should remove node placement if missing in HCO CR", func(appComponent hcoutil.AppComponent,
-				deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
+				deploymentManifestor func(*hcov1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 				hcoNodePlacement := commontestutils.NewHco()
-				hcoNodePlacement.Spec.Workloads.NodePlacement = commontestutils.NewNodePlacement()
-				hcoNodePlacement.Spec.Infra.NodePlacement = commontestutils.NewOtherNodePlacement()
+				commontestutils.SetNodeCustomPlacement(hcoNodePlacement, commontestutils.NewOtherNodePlacement(), commontestutils.NewNodePlacement())
 
 				existingResource := deploymentManifestor(hcoNodePlacement)
 
@@ -673,18 +667,17 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			)
 
 			DescribeTable("should modify node placement according to HCO CR", func(appComponent hcoutil.AppComponent,
-				deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
-
-				hco.Spec.Workloads.NodePlacement = commontestutils.NewNodePlacement()
-				hco.Spec.Infra.NodePlacement = commontestutils.NewOtherNodePlacement()
+				deploymentManifestor func(*hcov1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
+				commontestutils.SetNodeCustomPlacement(hco, commontestutils.NewOtherNodePlacement(), commontestutils.NewNodePlacement())
 
 				existingResource := deploymentManifestor(hco)
 
 				// now, modify HCO's node placement
-				hco.Spec.Infra.NodePlacement.Tolerations = append(hco.Spec.Infra.NodePlacement.Tolerations, v1.Toleration{
+				infra := hco.Spec.Deployment.NodePlacements.Infra
+				infra.Tolerations = append(infra.Tolerations, v1.Toleration{
 					Key: "key34", Operator: "operator34", Value: "value34", Effect: "effect34", TolerationSeconds: ptr.To[int64](34),
 				})
-				hco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "something entirely else"
+				infra.NodeSelector["key3"] = "something entirely else"
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := handlerFunc(cl, commontestutils.GetScheme())
@@ -718,17 +711,15 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			)
 
 			DescribeTable("should overwrite node placement if directly set on Kubevirt Console Plugin Deployment", func(appComponent hcoutil.AppComponent,
-				deploymentManifestor func(*hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
-
-				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewOtherNodePlacement()}
+				deploymentManifestor func(*hcov1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
+				commontestutils.SetNodeCustomPlacement(hco, commontestutils.NewOtherNodePlacement(), commontestutils.NewNodePlacement())
 				existingResource := deploymentManifestor(hco)
 
 				// mock a reconciliation triggered by a change in the deployment
 				req.HCOTriggered = false
 
 				// now, modify deployment Kubevirt Console Plugin Deployment node placement
-				existingResource.Spec.Template.Spec.Tolerations = append(hco.Spec.Infra.NodePlacement.Tolerations, v1.Toleration{
+				existingResource.Spec.Template.Spec.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, v1.Toleration{
 					Key: "key34", Operator: "operator34", Value: "value34", Effect: "effect34", TolerationSeconds: ptr.To[int64](34),
 				})
 				existingResource.Spec.Template.Spec.NodeSelector["key3"] = "BADvalue3"
@@ -762,11 +753,14 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			)
 
 			DescribeTable("apply only NodeSelector if missing", func(appComponent hcoutil.AppComponent,
-				deploymentManifestor func(converged *hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
+				deploymentManifestor func(converged *hcov1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 				existingResource := deploymentManifestor(hco)
 
-				hco.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{}
-				hco.Spec.Infra.NodePlacement.NodeSelector = commontestutils.NewNodePlacement().NodeSelector
+				hco.Spec.Deployment.NodePlacements = &hcov1.NodePlacements{
+					Infra: &sdkapi.NodePlacement{
+						NodeSelector: commontestutils.NewNodePlacement().NodeSelector,
+					},
+				}
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := handlerFunc(cl, commontestutils.GetScheme())
@@ -786,18 +780,21 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				).To(Succeed())
 
 				Expect(existingResource.Spec.Template.Spec.NodeSelector).To(BeEmpty())
-				Expect(foundResource.Spec.Template.Spec.NodeSelector).To(BeEquivalentTo(hco.Spec.Infra.NodePlacement.NodeSelector))
+				Expect(foundResource.Spec.Template.Spec.NodeSelector).To(BeEquivalentTo(hco.Spec.Deployment.NodePlacements.Infra.NodeSelector))
 			},
 				Entry("plugin deployment", hcoutil.AppComponentUIPlugin, NewKvUIPluginDeployment, NewKvUIPluginDeploymentHandler),
 				Entry("proxy deployment", hcoutil.AppComponentUIProxy, NewKvUIProxyDeployment, NewKvUIProxyDeploymentHandler),
 			)
 
 			DescribeTable("apply only Affinity if missing", func(appComponent hcoutil.AppComponent,
-				deploymentManifestor func(converged *hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
+				deploymentManifestor func(converged *hcov1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 				existingResource := deploymentManifestor(hco)
 
-				hco.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{}
-				hco.Spec.Infra.NodePlacement.Affinity = commontestutils.NewNodePlacement().Affinity
+				hco.Spec.Deployment.NodePlacements = &hcov1.NodePlacements{
+					Infra: &sdkapi.NodePlacement{
+						Affinity: commontestutils.NewNodePlacement().Affinity,
+					},
+				}
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := handlerFunc(cl, commontestutils.GetScheme())
@@ -817,18 +814,21 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				).To(Succeed())
 
 				Expect(existingResource.Spec.Template.Spec.Affinity).To(BeNil())
-				Expect(foundResource.Spec.Template.Spec.Affinity).To(BeEquivalentTo(hco.Spec.Infra.NodePlacement.Affinity))
+				Expect(foundResource.Spec.Template.Spec.Affinity).To(BeEquivalentTo(hco.Spec.Deployment.NodePlacements.Infra.Affinity))
 			},
 				Entry("plugin deployment", hcoutil.AppComponentUIPlugin, NewKvUIPluginDeployment, NewKvUIPluginDeploymentHandler),
 				Entry("proxy deployment", hcoutil.AppComponentUIProxy, NewKvUIProxyDeployment, NewKvUIProxyDeploymentHandler),
 			)
 
 			DescribeTable("apply only Tolerations if missing", func(appComponent hcoutil.AppComponent,
-				deploymentManifestor func(converged *hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
+				deploymentManifestor func(converged *hcov1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 				existingResource := deploymentManifestor(hco)
 
-				hco.Spec.Infra.NodePlacement = &sdkapi.NodePlacement{}
-				hco.Spec.Infra.NodePlacement.Tolerations = commontestutils.NewNodePlacement().Tolerations
+				hco.Spec.Deployment.NodePlacements = &hcov1.NodePlacements{
+					Infra: &sdkapi.NodePlacement{
+						Tolerations: commontestutils.NewNodePlacement().Tolerations,
+					},
+				}
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := handlerFunc(cl, commontestutils.GetScheme())
@@ -848,14 +848,14 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 				).To(Succeed())
 
 				Expect(existingResource.Spec.Template.Spec.Tolerations).To(BeEmpty())
-				Expect(foundResource.Spec.Template.Spec.Tolerations).To(BeEquivalentTo(hco.Spec.Infra.NodePlacement.Tolerations))
+				Expect(foundResource.Spec.Template.Spec.Tolerations).To(BeEquivalentTo(hco.Spec.Deployment.NodePlacements.Infra.Tolerations))
 			},
 				Entry("plugin deployment", hcoutil.AppComponentUIPlugin, NewKvUIPluginDeployment, NewKvUIPluginDeploymentHandler),
 				Entry("proxy deployment", hcoutil.AppComponentUIProxy, NewKvUIProxyDeployment, NewKvUIProxyDeploymentHandler),
 			)
 
 			DescribeTable("apply PodAntiAffinity and two replicas if HighlyAvailable", func(ctx context.Context, appComponent hcoutil.AppComponent,
-				deploymentManifestor func(converged *hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
+				deploymentManifestor func(converged *hcov1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 
 				originalNodeInfoFunc := nodeinfo.IsInfrastructureHighlyAvailable
 				nodeinfo.IsInfrastructureHighlyAvailable = func() bool {
@@ -868,7 +868,9 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 
 				existingResource := deploymentManifestor(hco)
 
-				hco.Spec.Infra.NodePlacement = nil
+				hco.Spec.Deployment.NodePlacements = &hcov1.NodePlacements{
+					Infra: nil,
+				}
 				existingResource.Spec.Template.Spec.Affinity = nil
 				existingResource.Spec.Replicas = ptr.To(int32(1))
 
@@ -901,7 +903,7 @@ var _ = Describe("Kubevirt Console Plugin", func() {
 			)
 
 			DescribeTable("use one replica on SNO", func(ctx context.Context, appComponent hcoutil.AppComponent,
-				deploymentManifestor func(converged *hcov1beta1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
+				deploymentManifestor func(converged *hcov1.HyperConverged) *appsv1.Deployment, handlerFunc func(cli client.Client, Scheme *runtime.Scheme) operands.Operand) {
 
 				commontestutils.SNONodeInfoMock()
 				DeferCleanup(func() {
@@ -1320,7 +1322,7 @@ func expectedPodAntiAffinity(appComponent hcoutil.AppComponent) *v1.Affinity {
 	}
 }
 
-func newExpectedDeployment(_ *hcov1beta1.HyperConverged) *appsv1.Deployment {
+func newExpectedDeployment(_ *hcov1.HyperConverged) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Deployment",

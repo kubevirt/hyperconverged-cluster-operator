@@ -22,7 +22,7 @@ import (
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -31,7 +31,7 @@ import (
 var _ = Describe("CNA Operand", func() {
 
 	Context("NetworkAddonsConfig", func() {
-		var hco *hcov1beta1.HyperConverged
+		var hco *hcov1.HyperConverged
 		var req *common.HcoRequest
 
 		BeforeEach(func() {
@@ -198,8 +198,7 @@ var _ = Describe("CNA Operand", func() {
 			existingResource, err := NewNetworkAddons(hco)
 			Expect(err).ToNot(HaveOccurred())
 
-			hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-			hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+			commontestutils.SetNodePlacement(hco)
 
 			cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 			handler := NewCnaHandler(cl, commontestutils.GetScheme())
@@ -223,7 +222,7 @@ var _ = Describe("CNA Operand", func() {
 			Expect(placementConfig.Infra.NodeSelector["key2"]).To(Equal("value2"))
 
 			Expect(placementConfig.Workloads).ToNot(BeNil())
-			Expect(placementConfig.Workloads.Tolerations).To(Equal(hco.Spec.Workloads.NodePlacement.Tolerations))
+			Expect(placementConfig.Workloads.Tolerations).To(Equal(hco.Spec.Deployment.NodePlacements.Workload.Tolerations))
 
 			Expect(req.Conditions).To(BeEmpty())
 		})
@@ -231,8 +230,7 @@ var _ = Describe("CNA Operand", func() {
 		It("should remove node placement if missing in HCO CR", func() {
 
 			hcoNodePlacement := commontestutils.NewHco()
-			hcoNodePlacement.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-			hcoNodePlacement.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+			commontestutils.SetNodePlacement(hcoNodePlacement)
 			existingResource, err := NewNetworkAddons(hcoNodePlacement)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -258,17 +256,16 @@ var _ = Describe("CNA Operand", func() {
 
 		It("should modify node placement according to HCO CR", func() {
 
-			hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-			hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+			commontestutils.SetNodePlacement(hco)
 			existingResource, err := NewNetworkAddons(hco)
 			Expect(err).ToNot(HaveOccurred())
 
 			// now, modify HCO's node placement
-			hco.Spec.Infra.NodePlacement.Tolerations = append(hco.Spec.Infra.NodePlacement.Tolerations, corev1.Toleration{
+			hco.Spec.Deployment.NodePlacements.Infra.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, corev1.Toleration{
 				Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
 			})
 
-			hco.Spec.Workloads.NodePlacement.NodeSelector["key1"] = "something else"
+			hco.Spec.Deployment.NodePlacements.Workload.NodeSelector["key1"] = "something else"
 
 			cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 			handler := NewCnaHandler(cl, commontestutils.GetScheme())
@@ -296,8 +293,7 @@ var _ = Describe("CNA Operand", func() {
 		})
 
 		It("should overwrite node placement if directly set on CNAO CR", func() {
-			hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-			hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+			commontestutils.SetNodePlacement(hco)
 			existingResource, err := NewNetworkAddons(hco)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -305,10 +301,10 @@ var _ = Describe("CNA Operand", func() {
 			req.HCOTriggered = false
 
 			// now, modify CNAO node placement
-			existingResource.Spec.PlacementConfiguration.Infra.Tolerations = append(hco.Spec.Infra.NodePlacement.Tolerations, corev1.Toleration{
+			existingResource.Spec.PlacementConfiguration.Infra.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, corev1.Toleration{
 				Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
 			})
-			existingResource.Spec.PlacementConfiguration.Workloads.Tolerations = append(hco.Spec.Workloads.NodePlacement.Tolerations, corev1.Toleration{
+			existingResource.Spec.PlacementConfiguration.Workloads.Tolerations = append(hco.Spec.Deployment.NodePlacements.Workload.Tolerations, corev1.Toleration{
 				Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
 			})
 
@@ -347,7 +343,7 @@ var _ = Describe("CNA Operand", func() {
 			existingResource, err := NewNetworkAddons(hco)
 			Expect(err).ToNot(HaveOccurred())
 
-			hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+			hco.Spec.Security.CertConfig = hcov1.HyperConvergedCertConfig{
 				CA: hcov1.CertRotateConfigCA{
 					Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 					RenewBefore: &metav1.Duration{Duration: 1 * time.Hour},
@@ -413,7 +409,7 @@ var _ = Describe("CNA Operand", func() {
 
 		It("should modify self signed configuration according to HCO CR", func() {
 
-			hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+			hco.Spec.Security.CertConfig = hcov1.HyperConvergedCertConfig{
 				CA: hcov1.CertRotateConfigCA{
 					Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 					RenewBefore: &metav1.Duration{Duration: 1 * time.Hour},
@@ -427,10 +423,10 @@ var _ = Describe("CNA Operand", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Modify HCO's cert configuration")
-			hco.Spec.CertConfig.CA.Duration.Duration *= 2
-			hco.Spec.CertConfig.CA.RenewBefore.Duration *= 2
-			hco.Spec.CertConfig.Server.Duration.Duration *= 2
-			hco.Spec.CertConfig.Server.RenewBefore.Duration *= 2
+			hco.Spec.Security.CertConfig.CA.Duration.Duration *= 2
+			hco.Spec.Security.CertConfig.CA.RenewBefore.Duration *= 2
+			hco.Spec.Security.CertConfig.Server.Duration.Duration *= 2
+			hco.Spec.Security.CertConfig.Server.RenewBefore.Duration *= 2
 
 			cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 			handler := NewCnaHandler(cl, commontestutils.GetScheme())
@@ -465,7 +461,7 @@ var _ = Describe("CNA Operand", func() {
 
 		It("should overwrite self signed configuration if directly set on CNAO CR", func() {
 
-			hco.Spec.CertConfig = hcov1.HyperConvergedCertConfig{
+			hco.Spec.Security.CertConfig = hcov1.HyperConvergedCertConfig{
 				CA: hcov1.CertRotateConfigCA{
 					Duration:    &metav1.Duration{Duration: 24 * time.Hour},
 					RenewBefore: &metav1.Duration{Duration: 1 * time.Hour},
@@ -592,7 +588,7 @@ var _ = Describe("CNA Operand", func() {
 		type ksdAnnotationParams struct {
 			ksdExists          bool
 			setFeatureGate     bool
-			featureGateValue   bool
+			featureGateValue   featuregates.State
 			ksdDeployExpected  bool
 			expectedBaseDomain string
 		}
@@ -606,8 +602,13 @@ var _ = Describe("CNA Operand", func() {
 
 			const kubeSecondaryDNSNameServerIP = "127.0.0.1"
 			if o.setFeatureGate {
-				hco.Spec.FeatureGates.DeployKubeSecondaryDNS = ptr.To(o.featureGateValue)
-				hco.Spec.KubeSecondaryDNSNameServerIP = ptr.To(kubeSecondaryDNSNameServerIP)
+				hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+					{Name: "deployKubeSecondaryDNS", State: ptr.To(o.featureGateValue)},
+				}
+
+				hco.Spec.Networking = &hcov1.NetworkingConfig{
+					KubeSecondaryDNSNameServerIP: ptr.To(kubeSecondaryDNSNameServerIP),
+				}
 			}
 
 			cl := commontestutils.InitClient([]client.Object{hco, existingCNAO})
@@ -639,21 +640,21 @@ var _ = Describe("CNA Operand", func() {
 				Entry("should have KSD if feature gate is set to true", ksdAnnotationParams{
 					ksdExists:          false,
 					setFeatureGate:     true,
-					featureGateValue:   true,
+					featureGateValue:   featuregates.Enabled,
 					ksdDeployExpected:  true,
 					expectedBaseDomain: "",
 				}),
 				Entry("should not have KSD if feature gate is set to false", ksdAnnotationParams{
 					ksdExists:          true,
 					setFeatureGate:     true,
-					featureGateValue:   false,
+					featureGateValue:   featuregates.Disabled,
 					ksdDeployExpected:  false,
 					expectedBaseDomain: "",
 				}),
 				Entry("should not have KSD if feature gate does not exist", ksdAnnotationParams{
 					ksdExists:          true,
 					setFeatureGate:     false,
-					featureGateValue:   false,
+					featureGateValue:   featuregates.Disabled,
 					ksdDeployExpected:  false,
 					expectedBaseDomain: "",
 				}),
@@ -677,21 +678,21 @@ var _ = Describe("CNA Operand", func() {
 				Entry("should have KSD if feature gate is set to true", ksdAnnotationParams{
 					ksdExists:          false,
 					setFeatureGate:     true,
-					featureGateValue:   true,
+					featureGateValue:   featuregates.Enabled,
 					ksdDeployExpected:  true,
 					expectedBaseDomain: commontestutils.BaseDomain,
 				}),
 				Entry("should not have KSD if feature gate is set to false", ksdAnnotationParams{
 					ksdExists:          true,
 					setFeatureGate:     true,
-					featureGateValue:   false,
+					featureGateValue:   featuregates.Disabled,
 					ksdDeployExpected:  false,
 					expectedBaseDomain: "",
 				}),
 				Entry("should not have KSD if feature gate does not exist", ksdAnnotationParams{
 					ksdExists:          true,
 					setFeatureGate:     false,
-					featureGateValue:   false,
+					featureGateValue:   featuregates.Disabled,
 					ksdDeployExpected:  false,
 					expectedBaseDomain: "",
 				}),
@@ -1019,7 +1020,7 @@ var _ = Describe("CNA Operand", func() {
 
 		Context("KubeMacPoolConfiguration", func() {
 			It("should create KubeMacPool with empty config when KubeMacPoolConfiguration is nil", func() {
-				hco.Spec.KubeMacPoolConfiguration = nil
+				hco.Spec.Networking = &hcov1.NetworkingConfig{KubeMacPoolConfiguration: nil}
 
 				expectedResource, err := NewNetworkAddons(hco)
 				Expect(err).ToNot(HaveOccurred())
@@ -1029,7 +1030,7 @@ var _ = Describe("CNA Operand", func() {
 			})
 
 			It("should create KubeMacPool with empty config when KubeMacPoolConfiguration is empty", func() {
-				hco.Spec.KubeMacPoolConfiguration = &hcov1.KubeMacPoolConfig{}
+				hco.Spec.Networking = &hcov1.NetworkingConfig{KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{}}
 
 				expectedResource, err := NewNetworkAddons(hco)
 				Expect(err).ToNot(HaveOccurred())
@@ -1039,9 +1040,11 @@ var _ = Describe("CNA Operand", func() {
 			})
 
 			It("should create KubeMacPool with both RangeStart and RangeEnd when both are specified", func() {
-				hco.Spec.KubeMacPoolConfiguration = &hcov1.KubeMacPoolConfig{
-					RangeStart: ptr.To("02:00:00:00:00:00"),
-					RangeEnd:   ptr.To("FD:FF:FF:FF:FF:FF"),
+				hco.Spec.Networking = &hcov1.NetworkingConfig{
+					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
+						RangeStart: ptr.To("02:00:00:00:00:00"),
+						RangeEnd:   ptr.To("FD:FF:FF:FF:FF:FF"),
+					},
 				}
 
 				expectedResource, err := NewNetworkAddons(hco)
@@ -1099,7 +1102,7 @@ var _ = Describe("CNA Operand", func() {
 				Expect(existingResource.Spec.TLSSecurityProfile).To(Equal(intermediateTLSSecurityProfile))
 
 				// now, modify HCO's TLSSecurityProfile
-				hco.Spec.TLSSecurityProfile = modernTLSSecurityProfile
+				hco.Spec.Security.TLSSecurityProfile = modernTLSSecurityProfile
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 				handler := NewCnaHandler(cl, commontestutils.GetScheme())
@@ -1121,7 +1124,7 @@ var _ = Describe("CNA Operand", func() {
 			})
 
 			It("should overwrite TLSSecurityProfile if directly set on CNAO CR", func() {
-				hco.Spec.TLSSecurityProfile = intermediateTLSSecurityProfile
+				hco.Spec.Security.TLSSecurityProfile = intermediateTLSSecurityProfile
 				existingResource, err := NewNetworkAddons(hco)
 				Expect(err).ToNot(HaveOccurred())
 
@@ -1146,7 +1149,7 @@ var _ = Describe("CNA Operand", func() {
 						foundResource),
 				).To(Succeed())
 
-				Expect(foundResource.Spec.TLSSecurityProfile).To(Equal(hco.Spec.TLSSecurityProfile))
+				Expect(foundResource.Spec.TLSSecurityProfile).To(Equal(hco.Spec.Security.TLSSecurityProfile))
 				Expect(foundResource.Spec.TLSSecurityProfile).ToNot(Equal(existingResource.Spec.TLSSecurityProfile))
 
 				Expect(req.Conditions).To(BeEmpty())

@@ -15,7 +15,7 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -32,7 +32,7 @@ func NewAIEWebhookDeploymentHandler(cli client.Client, Scheme *runtime.Scheme) o
 	return operands.NewConditionalHandler(
 		operands.NewDeploymentHandler(cli, Scheme, newAIEWebhookDeployment),
 		shouldDeployAIE,
-		func(hc *hcov1beta1.HyperConverged) client.Object {
+		func(hc *hcov1.HyperConverged) client.Object {
 			return newAIEWebhookDeploymentWithNameOnly()
 		},
 	)
@@ -48,10 +48,10 @@ func newAIEWebhookDeploymentWithNameOnly() *appsv1.Deployment {
 	}
 }
 
-func newAIEWebhookDeployment(hc *hcov1beta1.HyperConverged) *appsv1.Deployment {
+func newAIEWebhookDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 	image := os.Getenv(hcoutil.AIEWebhookImageEnvV)
 
-	cipherNames, minTLSVersion := tlssecprofile.GetCipherSuitesAndMinTLSVersion(hc.Spec.TLSSecurityProfile)
+	cipherNames, minTLSVersion := tlssecprofile.GetCipherSuitesAndMinTLSVersion(hc.Spec.Security.TLSSecurityProfile)
 	ianaCiphers := crypto.OpenSSLToIANACipherSuites(cipherNames)
 
 	selectorLabels := map[string]string{

@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -24,7 +24,7 @@ func NewEditableCmHandler(Client client.Client, Scheme *runtime.Scheme, required
 	return NewGenericOperand(Client, Scheme, "ConfigMap", &cmHooks{required: required, editable: true, managedKeys: managedKeys}, false)
 }
 
-type newDynamicConfigMapFunc func(*hcov1beta1.HyperConverged) (*corev1.ConfigMap, error)
+type newDynamicConfigMapFunc func(*hcov1.HyperConverged) (*corev1.ConfigMap, error)
 
 func NewDynamicCmHandler(Client client.Client, Scheme *runtime.Scheme, makeCM newDynamicConfigMapFunc) *GenericOperand {
 	return NewGenericOperand(Client, Scheme, "ConfigMap", &dynamicCmHooks{makeCM: makeCM}, false)
@@ -36,7 +36,7 @@ type cmHooks struct {
 	managedKeys []string
 }
 
-func (h cmHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h cmHooks) GetFullCr(_ *hcov1.HyperConverged) (client.Object, error) {
 	return h.required.DeepCopy(), nil
 }
 
@@ -113,7 +113,7 @@ func (h *dynamicCmHooks) Reset() {
 	h.cache = nil
 }
 
-func (h *dynamicCmHooks) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h *dynamicCmHooks) GetFullCr(hc *hcov1.HyperConverged) (client.Object, error) {
 	h.Lock()
 	defer h.Unlock()
 

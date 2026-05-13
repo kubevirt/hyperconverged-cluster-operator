@@ -6,13 +6,13 @@ import (
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
-type ConditionFunc func(hc *v1beta1.HyperConverged) bool
-type GetCRWithNameFunc func(hc *v1beta1.HyperConverged) client.Object
+type ConditionFunc func(hc *hcov1.HyperConverged) bool
+type GetCRWithNameFunc func(hc *hcov1.HyperConverged) client.Object
 
 // ConditionalHandler is an operand handler that only deploy the operand CR if a given shouldDeploy function returns true.
 // If not, it makes sure the CR is deleted.
@@ -85,6 +85,6 @@ func (ch *ConditionalHandler) ensureDeleted(req *common.HcoRequest) *EnsureResul
 	return res.SetUpgradeDone(req.ComponentUpgradeInProgress)
 }
 
-func (ch *ConditionalHandler) GetFullCr(hc *v1beta1.HyperConverged) (client.Object, error) {
+func (ch *ConditionalHandler) GetFullCr(hc *hcov1.HyperConverged) (client.Object, error) {
 	return ch.operand.GetFullCr(hc)
 }

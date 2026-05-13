@@ -33,7 +33,7 @@ import (
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
@@ -126,7 +126,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(res).To(Equal(reconcile.Result{}))
 
 				// Get the HCO
-				foundResource := &hcov1beta1.HyperConverged{}
+				foundResource := &hcov1.HyperConverged{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -144,9 +144,9 @@ var _ = Describe("HyperconvergedController", func() {
 			It("should create all managed resources", func() {
 
 				hco := commontestutils.NewHco()
-				hco.Spec.FeatureGates = hcov1beta1.HyperConvergedFeatureGates{
-					DownwardMetrics: ptr.To(true),
-					VideoConfig:     ptr.To(true),
+				hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+					{Name: "downwardMetrics"},
+					{Name: "videoConfig"},
 				}
 
 				ci := hcoutil.GetClusterInfo()
@@ -164,7 +164,7 @@ var _ = Describe("HyperconvergedController", func() {
 				verifyHyperConvergedCRExistsMetricTrue()
 
 				// Get the HCO
-				foundResource := &hcov1beta1.HyperConverged{}
+				foundResource := &hcov1.HyperConverged{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -242,7 +242,7 @@ var _ = Describe("HyperconvergedController", func() {
 				verifyHyperConvergedCRExistsMetricTrue()
 
 				// Get the HCO
-				foundResource = &hcov1beta1.HyperConverged{}
+				foundResource = &hcov1.HyperConverged{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -298,7 +298,7 @@ var _ = Describe("HyperconvergedController", func() {
 				verifyHyperConvergedCRExistsMetricTrue()
 
 				// Get the HCO
-				foundResource := &hcov1beta1.HyperConverged{}
+				foundResource := &hcov1.HyperConverged{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
@@ -338,7 +338,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(res).To(Equal(reconcile.Result{}))
 
 				// Get the HCO
-				foundResource := &hcov1beta1.HyperConverged{}
+				foundResource := &hcov1.HyperConverged{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
@@ -396,7 +396,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(res).To(Equal(reconcile.Result{}))
 
 				// Get the latest objects
-				latestHCO := &hcov1beta1.HyperConverged{}
+				latestHCO := &hcov1.HyperConverged{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
@@ -428,7 +428,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(res).To(Equal(reconcile.Result{}))
 
 				// Get the latest objects
-				HCO := &hcov1beta1.HyperConverged{}
+				HCO := &hcov1.HyperConverged{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
@@ -452,7 +452,7 @@ var _ = Describe("HyperconvergedController", func() {
 					cl.Status().Update(context.TODO(), HCO),
 				).ToNot(HaveOccurred())
 
-				HCO = &hcov1beta1.HyperConverged{}
+				HCO = &hcov1.HyperConverged{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
@@ -522,7 +522,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(res).To(Equal(reconcile.Result{}))
 
 				// Get the latest objects
-				latestHCO := &hcov1beta1.HyperConverged{}
+				latestHCO := &hcov1.HyperConverged{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
@@ -544,7 +544,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 			It("should set different template namespace to ssp CR", func() {
 				expected := getBasicDeployment()
-				expected.hco.Spec.CommonTemplatesNamespace = &expected.hco.Namespace
+				expected.hco.Spec.WorkloadSources.CommonTemplatesNamespace = &expected.hco.Namespace
 
 				cl := expected.initClient()
 				r := initReconciler(cl, nil)
@@ -576,7 +576,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(res).To(Equal(reconcile.Result{}))
 
 				// Get the HCO
-				foundResource := &hcov1beta1.HyperConverged{}
+				foundResource := &hcov1.HyperConverged{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
@@ -619,17 +619,16 @@ var _ = Describe("HyperconvergedController", func() {
 
 			It("should increment counter when out-of-band change overwritten", func() {
 				hco := commontestutils.NewHco()
-				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+				commontestutils.SetNodePlacement(hco)
 				existingResource, err := handlers.NewKubeVirt(hco, namespace)
 				Expect(err).ToNot(HaveOccurred())
 				existingResource.APIVersion, existingResource.Kind = kubevirtcorev1.KubeVirtGroupVersionKind.ToAPIVersionAndKind() // necessary for metrics
 
 				// now, modify KV's node placement
-				existingResource.Spec.Infra.NodePlacement.Tolerations = append(hco.Spec.Infra.NodePlacement.Tolerations, corev1.Toleration{
+				existingResource.Spec.Infra.NodePlacement.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, corev1.Toleration{
 					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
 				})
-				existingResource.Spec.Workloads.NodePlacement.Tolerations = append(hco.Spec.Workloads.NodePlacement.Tolerations, corev1.Toleration{
+				existingResource.Spec.Workloads.NodePlacement.Tolerations = append(hco.Spec.Deployment.NodePlacements.Workload.Tolerations, corev1.Toleration{
 					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
 				})
 
@@ -675,17 +674,17 @@ var _ = Describe("HyperconvergedController", func() {
 
 			It("should not increment counter when CR was changed by HCO", func() {
 				hco := commontestutils.NewHco()
-				hco.Spec.Infra = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
-				hco.Spec.Workloads = hcov1beta1.HyperConvergedConfig{NodePlacement: commontestutils.NewNodePlacement()}
+				commontestutils.SetNodePlacement(hco)
+
 				existingResource, err := handlers.NewKubeVirt(hco, namespace)
 				Expect(err).ToNot(HaveOccurred())
 				existingResource.Kind = kubevirtcorev1.KubeVirtGroupVersionKind.Kind // necessary for metrics
 
 				// now, modify KV's node placement
-				existingResource.Spec.Infra.NodePlacement.Tolerations = append(hco.Spec.Infra.NodePlacement.Tolerations, corev1.Toleration{
+				existingResource.Spec.Infra.NodePlacement.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, corev1.Toleration{
 					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
 				})
-				existingResource.Spec.Workloads.NodePlacement.Tolerations = append(hco.Spec.Workloads.NodePlacement.Tolerations, corev1.Toleration{
+				existingResource.Spec.Workloads.NodePlacement.Tolerations = append(hco.Spec.Deployment.NodePlacements.Workload.Tolerations, corev1.Toleration{
 					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
 				})
 
@@ -805,7 +804,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res).To(Equal(reconcile.Result{}))
 
-				foundResource := &hcov1beta1.HyperConverged{}
+				foundResource := &hcov1.HyperConverged{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
@@ -831,7 +830,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.IsZero()).To(BeTrue())
 
-				foundResource = &hcov1beta1.HyperConverged{}
+				foundResource = &hcov1.HyperConverged{}
 				err = cl.Get(context.TODO(),
 					types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
 					foundResource)
@@ -848,7 +847,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res).To(Equal(reconcile.Result{}))
 
-				foundResource := &hcov1beta1.HyperConverged{}
+				foundResource := &hcov1.HyperConverged{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
@@ -876,7 +875,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 
 				// Get the HCO
-				foundResource := &hcov1beta1.HyperConverged{}
+				foundResource := &hcov1.HyperConverged{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -918,7 +917,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(res.IsZero()).To(BeTrue())
 
 				// Get the HCO
-				foundHyperConverged := &hcov1beta1.HyperConverged{}
+				foundHyperConverged := &hcov1.HyperConverged{}
 				Expect(
 					cl.Get(context.TODO(),
 						types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -949,7 +948,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 			It("Should update memory overcommit metrics according to the CR", func() {
 				expected := getBasicDeployment()
-				expected.hco.Spec.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
+				expected.hco.Spec.Virtualization.HigherWorkloadDensity = &hcov1.HigherWorkloadDensityConfiguration{
 					MemoryOvercommitPercentage: 42,
 				}
 
@@ -1000,7 +999,7 @@ var _ = Describe("HyperconvergedController", func() {
 				}
 
 				expected := getBasicDeployment()
-				Expect(expected.hco.Spec.TLSSecurityProfile).To(BeNil())
+				Expect(expected.hco.Spec.Security.TLSSecurityProfile).To(BeNil())
 
 				resources := expected.toArray()
 				resources = append(resources, apiServer)
@@ -1015,14 +1014,14 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res).To(Equal(reconcile.Result{}))
 
-				foundResource := &hcov1beta1.HyperConverged{}
+				foundResource := &hcov1.HyperConverged{}
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
 						foundResource),
 				).ToNot(HaveOccurred())
 				checkAvailability(foundResource, metav1.ConditionTrue)
-				Expect(foundResource.Spec.TLSSecurityProfile).To(BeNil(), "TLSSecurityProfile on HCO CR should still be nil")
+				Expect(foundResource.Spec.Security.TLSSecurityProfile).To(BeNil(), "TLSSecurityProfile on HCO CR should still be nil")
 
 				By("Verify that Kubevirt was properly configured with initialTLSSecurityProfile")
 				kv := handlers.NewKubeVirtWithNameOnly()
@@ -1078,7 +1077,7 @@ var _ = Describe("HyperconvergedController", func() {
 				// Update ApiServer CR
 				apiServer.Spec.TLSSecurityProfile = customTLSSecurityProfile
 				Expect(cl.Update(ctx, apiServer)).To(Succeed())
-				Expect(tlssecprofile.GetTLSSecurityProfile(expected.hco.Spec.TLSSecurityProfile)).To(Equal(initialTLSSecurityProfile), "should still return the cached value (initial value)")
+				Expect(tlssecprofile.GetTLSSecurityProfile(expected.hco.Spec.Security.TLSSecurityProfile)).To(Equal(initialTLSSecurityProfile), "should still return the cached value (initial value)")
 
 				// this is done in the apiserver controller
 				modified, err := tlssecprofile.Refresh(ctx, cl)
@@ -1098,9 +1097,9 @@ var _ = Describe("HyperconvergedController", func() {
 						foundResource),
 				).ToNot(HaveOccurred())
 				checkAvailability(foundResource, metav1.ConditionTrue)
-				Expect(foundResource.Spec.TLSSecurityProfile).To(BeNil(), "TLSSecurityProfile on HCO CR should still be nil")
+				Expect(foundResource.Spec.Security.TLSSecurityProfile).To(BeNil(), "TLSSecurityProfile on HCO CR should still be nil")
 
-				Expect(tlssecprofile.GetTLSSecurityProfile(expected.hco.Spec.TLSSecurityProfile)).To(Equal(customTLSSecurityProfile), "should return the up-to-date value")
+				Expect(tlssecprofile.GetTLSSecurityProfile(expected.hco.Spec.Security.TLSSecurityProfile)).To(Equal(customTLSSecurityProfile), "should return the up-to-date value")
 
 				By("Verify that Kubevirt was properly updated with customTLSSecurityProfile")
 				kv = handlers.NewKubeVirtWithNameOnly()
@@ -1165,7 +1164,7 @@ var _ = Describe("HyperconvergedController", func() {
 				}
 
 				expected := getBasicDeployment()
-				Expect(expected.hco.Spec.TLSSecurityProfile).To(BeNil())
+				Expect(expected.hco.Spec.Security.TLSSecurityProfile).To(BeNil())
 
 				resources := expected.toArray()
 				resources = append(resources, apiServer)
@@ -1180,14 +1179,14 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res).To(Equal(reconcile.Result{}))
 
-				foundHCO := &hcov1beta1.HyperConverged{}
+				foundHCO := &hcov1.HyperConverged{}
 				Expect(
 					cl.Get(ctx,
 						types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
 						foundHCO),
 				).ToNot(HaveOccurred())
 
-				Expect(foundHCO.Spec.TLSSecurityProfile).To(BeNil(), "TLSSecurityProfile on HCO CR should still be nil")
+				Expect(foundHCO.Spec.Security.TLSSecurityProfile).To(BeNil(), "TLSSecurityProfile on HCO CR should still be nil")
 
 				By("Verify that Kubevirt was properly configured with initialTLSSecurityProfile")
 				kv := handlers.NewKubeVirtWithNameOnly()
@@ -1241,7 +1240,7 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(ssp.Spec.TLSSecurityProfile).To(Equal(initialTLSSecurityProfile))
 
 				By("Update HyperConverged CR with customTLSSecurityProfile")
-				foundHCO.Spec.TLSSecurityProfile = customTLSSecurityProfile
+				foundHCO.Spec.Security.TLSSecurityProfile = customTLSSecurityProfile
 				Expect(cl.Update(ctx, foundHCO)).To(Succeed())
 
 				// Reconcile again to make sure all the CRs get updated with the new TLS security profile
@@ -1255,7 +1254,7 @@ var _ = Describe("HyperconvergedController", func() {
 						foundHCO),
 				).ToNot(HaveOccurred())
 				checkAvailability(foundHCO, metav1.ConditionTrue)
-				Expect(foundHCO.Spec.TLSSecurityProfile).To(Equal(customTLSSecurityProfile), "TLSSecurityProfile on HCO CR should be updated")
+				Expect(foundHCO.Spec.Security.TLSSecurityProfile).To(Equal(customTLSSecurityProfile), "TLSSecurityProfile on HCO CR should be updated")
 
 				By("Verify that Kubevirt was properly updated with customTLSSecurityProfile")
 				kv = handlers.NewKubeVirtWithNameOnly()
@@ -1795,7 +1794,7 @@ var _ = Describe("HyperconvergedController", func() {
 				cl := expected.initClient()
 				rsc := schema.GroupResource{Group: hcoutil.APIVersionGroup, Resource: "hyperconvergeds.hco.kubevirt.io"}
 				cl.InitiateUpdateErrors(func(obj client.Object) error {
-					if _, ok := obj.(*hcov1beta1.HyperConverged); ok {
+					if _, ok := obj.(*hcov1.HyperConverged); ok {
 						return apierrors.NewConflict(rsc, "hco", errors.New("test error"))
 					}
 					return nil
@@ -1829,7 +1828,7 @@ var _ = Describe("HyperconvergedController", func() {
 		Context("Detection of a tainted configuration", func() {
 			var (
 				hcoNamespace *corev1.Namespace
-				hco          *hcov1beta1.HyperConverged
+				hco          *hcov1.HyperConverged
 			)
 			BeforeEach(func() {
 				hcoNamespace = commontestutils.NewHcoNamespace()
@@ -1861,7 +1860,7 @@ var _ = Describe("HyperconvergedController", func() {
 						Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 					})
 
-					foundResource := &hcov1beta1.HyperConverged{}
+					foundResource := &hcov1.HyperConverged{}
 					Expect(
 						cl.Get(context.TODO(),
 							types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -1916,7 +1915,7 @@ var _ = Describe("HyperconvergedController", func() {
 					Expect(res.IsZero()).To(BeTrue())
 
 					// Get the HCO
-					foundResource := &hcov1beta1.HyperConverged{}
+					foundResource := &hcov1.HyperConverged{}
 					Expect(
 						cl.Get(context.TODO(),
 							types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -1966,7 +1965,7 @@ var _ = Describe("HyperconvergedController", func() {
 						Expect(res.RequeueAfter).To(BeZero())
 					})
 
-					foundResource := &hcov1beta1.HyperConverged{}
+					foundResource := &hcov1.HyperConverged{}
 					Expect(
 						cl.Get(context.TODO(),
 							types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -2016,7 +2015,7 @@ var _ = Describe("HyperconvergedController", func() {
 						Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 					})
 
-					foundResource := &hcov1beta1.HyperConverged{}
+					foundResource := &hcov1.HyperConverged{}
 					Expect(
 						cl.Get(context.TODO(),
 							types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -2075,7 +2074,7 @@ var _ = Describe("HyperconvergedController", func() {
 					Expect(res.RequeueAfter).To(BeZero())
 
 					// Get the HCO
-					foundResource := &hcov1beta1.HyperConverged{}
+					foundResource := &hcov1.HyperConverged{}
 					Expect(
 						cl.Get(context.TODO(),
 							types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -2118,7 +2117,7 @@ var _ = Describe("HyperconvergedController", func() {
 						Expect(res.RequeueAfter).To(BeZero())
 					})
 
-					foundResource := &hcov1beta1.HyperConverged{}
+					foundResource := &hcov1.HyperConverged{}
 					Expect(
 						cl.Get(context.TODO(),
 							types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -2167,7 +2166,7 @@ var _ = Describe("HyperconvergedController", func() {
 						Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 					})
 
-					foundResource := &hcov1beta1.HyperConverged{}
+					foundResource := &hcov1.HyperConverged{}
 					Expect(
 						cl.Get(context.TODO(),
 							types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -2222,7 +2221,7 @@ var _ = Describe("HyperconvergedController", func() {
 					Expect(res.RequeueAfter).To(BeZero())
 
 					// Get the HCO
-					foundResource := &hcov1beta1.HyperConverged{}
+					foundResource := &hcov1.HyperConverged{}
 					Expect(
 						cl.Get(context.TODO(),
 							types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -2257,7 +2256,7 @@ var _ = Describe("HyperconvergedController", func() {
 						Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 					})
 
-					foundResource := &hcov1beta1.HyperConverged{}
+					foundResource := &hcov1.HyperConverged{}
 					Expect(
 						cl.Get(context.TODO(),
 							types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -2301,7 +2300,7 @@ var _ = Describe("HyperconvergedController", func() {
 						Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 					})
 
-					foundResource := &hcov1beta1.HyperConverged{}
+					foundResource := &hcov1.HyperConverged{}
 					Expect(
 						cl.Get(context.TODO(),
 							types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -2354,7 +2353,7 @@ var _ = Describe("HyperconvergedController", func() {
 					Expect(res.RequeueAfter).To(BeZero())
 
 					// Get the HCO
-					foundResource := &hcov1beta1.HyperConverged{}
+					foundResource := &hcov1.HyperConverged{}
 					Expect(
 						cl.Get(context.TODO(),
 							types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -2389,7 +2388,7 @@ var _ = Describe("HyperconvergedController", func() {
 						Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 					})
 
-					foundResource := &hcov1beta1.HyperConverged{}
+					foundResource := &hcov1.HyperConverged{}
 					Expect(
 						cl.Get(context.TODO(),
 							types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -2466,7 +2465,7 @@ var _ = Describe("HyperconvergedController", func() {
 						Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
 					})
 
-					foundResource := &hcov1beta1.HyperConverged{}
+					foundResource := &hcov1.HyperConverged{}
 					Expect(
 						cl.Get(context.TODO(),
 							types.NamespacedName{Name: hco.Name, Namespace: hco.Namespace},
@@ -2565,7 +2564,7 @@ func verifyHyperConvergedCRExistsMetricFalse() {
 	ExpectWithOffset(1, hcExists).To(BeFalse())
 }
 
-func verifySystemHealthStatusHealthy(hco *hcov1beta1.HyperConverged) {
+func verifySystemHealthStatusHealthy(hco *hcov1.HyperConverged) {
 	ExpectWithOffset(1, hco.Status.SystemHealthStatus).To(Equal(systemHealthStatusHealthy))
 
 	systemHealthStatusMetric, err := metrics.GetHCOMetricSystemHealthStatus()
@@ -2573,7 +2572,7 @@ func verifySystemHealthStatusHealthy(hco *hcov1beta1.HyperConverged) {
 	ExpectWithOffset(1, systemHealthStatusMetric).To(Equal(metrics.SystemHealthStatusHealthy))
 }
 
-func verifySystemHealthStatusError(hco *hcov1beta1.HyperConverged) {
+func verifySystemHealthStatusError(hco *hcov1.HyperConverged) {
 	ExpectWithOffset(1, hco.Status.SystemHealthStatus).To(Equal(systemHealthStatusError))
 
 	systemHealthStatusMetric, err := metrics.GetHCOMetricSystemHealthStatus()

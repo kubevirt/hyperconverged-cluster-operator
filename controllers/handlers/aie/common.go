@@ -1,7 +1,7 @@
 package aie
 
 import (
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -17,6 +17,6 @@ const (
 	DeployAIEAnnotation = hcoutil.HCOAnnotationPrefix + "deployAIE"
 )
 
-func shouldDeployAIE(hc *hcov1beta1.HyperConverged) bool {
+func shouldDeployAIE(hc *hcov1.HyperConverged) bool {
 	return hc.Annotations[DeployAIEAnnotation] == "true"
 }

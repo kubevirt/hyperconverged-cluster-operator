@@ -495,7 +495,7 @@ var _ = Describe("Test operandHandler", func() {
 		It("should delete the ImageStream resource if the FG is not set, and emit event", func() {
 			hcoNamespace := commontestutils.NewHcoNamespace()
 			hco := commontestutils.NewHco()
-			hco.Spec.EnableCommonBootImageImport = ptr.To(true)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
 			eventEmitter := commontestutils.NewEventEmitterMock()
 			ci := commontestutils.ClusterInfoMock{}
 			cli := commontestutils.InitClient([]client.Object{hcoNamespace, hco, commontestutils.GetCSV()})
@@ -522,7 +522,7 @@ var _ = Describe("Test operandHandler", func() {
 
 			By("Run again, this time when the FG is false")
 			eventEmitter.Reset()
-			hco.Spec.EnableCommonBootImageImport = ptr.To(false)
+			hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(false)
 			req = commontestutils.NewReq(hco)
 			Expect(handler.Ensure(req)).To(Succeed())
 

@@ -4,12 +4,11 @@ import (
 	"errors"
 	"reflect"
 
+	securityv1 "github.com/openshift/api/security/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	securityv1 "github.com/openshift/api/security/v1"
-
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -22,7 +21,7 @@ type securityContextConstraintsHooks struct {
 	scc *securityv1.SecurityContextConstraints
 }
 
-func (h securityContextConstraintsHooks) GetFullCr(_ *hcov1beta1.HyperConverged) (client.Object, error) {
+func (h securityContextConstraintsHooks) GetFullCr(_ *hcov1.HyperConverged) (client.Object, error) {
 	return h.scc.DeepCopy(), nil
 }
 
