@@ -1,21 +1,27 @@
 package tests
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega" //nolint dot-imports
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -263,4 +269,51 @@ func WaitForHCOOperatorRollout(ctx context.Context) {
 		g.Expect(deployment.Status.ReadyReplicas).To(BeNumerically(">=", desired))
 		g.Expect(deployment.Status.AvailableReplicas).To(BeNumerically(">=", desired))
 	}).WithTimeout(hcoRolloutTimeout).WithPolling(hcoRolloutPolling).WithContext(ctx).Should(Succeed())
+}
+
+func ExecuteCommandOnPod(ctx context.Context, k8scli *kubernetes.Clientset, pod *corev1.Pod, command string, container ...string) (string, string, error) {
+	cmd := []string{"/bin/sh", "-c", command}
+	return executeCommandOnPod(ctx, k8scli, pod, cmd, true, container...)
+}
+
+func ExecuteUnwrappedCommandOnPod(ctx context.Context, k8scli *kubernetes.Clientset, pod *corev1.Pod, command []string, container ...string) (string, string, error) {
+	return executeCommandOnPod(ctx, k8scli, pod, command, false, container...)
+}
+
+func executeCommandOnPod(ctx context.Context, k8scli *kubernetes.Clientset, pod *corev1.Pod, command []string, tty bool, container ...string) (string, string, error) {
+	buf := &bytes.Buffer{}
+	errBuf := &bytes.Buffer{}
+	var cntr string
+	if len(container) > 0 {
+		cntr = container[0]
+	}
+
+	request := k8scli.CoreV1().RESTClient().
+		Post().
+		Namespace(pod.Namespace).
+		Resource("pods").
+		Name(pod.Name).
+		SubResource("exec").
+		VersionedParams(&corev1.PodExecOptions{
+			Command:   command,
+			Stdin:     false,
+			Stdout:    true,
+			Stderr:    true,
+			TTY:       tty,
+			Container: cntr,
+		}, scheme.ParameterCodec)
+
+	exec, err := remotecommand.NewSPDYExecutor(GetClientConfig(), "POST", request.URL())
+	if err != nil {
+		return "", "", fmt.Errorf("%w: failed to create pod executor for %v/%v", err, pod.Namespace, pod.Name)
+	}
+
+	err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
+		Stdout: buf,
+		Stderr: errBuf,
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("%w Failed executing command %s on %v/%v", err, command, pod.Namespace, pod.Name)
+	}
+	return buf.String(), errBuf.String(), nil
 }

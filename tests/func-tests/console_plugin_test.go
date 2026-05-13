@@ -1,7 +1,6 @@
 package tests_test
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -14,8 +13,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/remotecommand"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -78,7 +75,7 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 			pluginServiceName, tests.InstallNamespace, pluginServicePort)
 
 		Eventually(func(g Gomega, ctx context.Context) string {
-			stdout, stderr, err := executeCommandOnPod(ctx, k8sClientSet, &testConsolePod, command)
+			stdout, stderr, err := tests.ExecuteCommandOnPod(ctx, k8sClientSet, &testConsolePod, command)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(stdout).ToNot(BeEmpty())
 			g.Expect(stderr).To(BeEmpty())
@@ -249,35 +246,3 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 			Should(Succeed())
 	})
 })
-
-func executeCommandOnPod(ctx context.Context, k8scli *kubernetes.Clientset, pod *corev1.Pod, command string) (string, string, error) {
-	buf := &bytes.Buffer{}
-	errBuf := &bytes.Buffer{}
-	request := k8scli.CoreV1().RESTClient().
-		Post().
-		Namespace(pod.Namespace).
-		Resource("pods").
-		Name(pod.Name).
-		SubResource("exec").
-		VersionedParams(&corev1.PodExecOptions{
-			Command: []string{"/bin/sh", "-c", command},
-			Stdin:   false,
-			Stdout:  true,
-			Stderr:  true,
-			TTY:     true,
-		}, scheme.ParameterCodec)
-
-	exec, err := remotecommand.NewSPDYExecutor(tests.GetClientConfig(), "POST", request.URL())
-	if err != nil {
-		return "", "", fmt.Errorf("%w: failed to create pod executor for %v/%v", err, pod.Namespace, pod.Name)
-	}
-
-	err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
-		Stdout: buf,
-		Stderr: errBuf,
-	})
-	if err != nil {
-		return "", "", fmt.Errorf("%w Failed executing command %s on %v/%v", err, command, pod.Namespace, pod.Name)
-	}
-	return buf.String(), errBuf.String(), nil
-}

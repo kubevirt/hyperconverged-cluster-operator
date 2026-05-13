@@ -312,7 +312,7 @@ func sendReqToConsolePlugin(ctx context.Context, cli client.Client, k8sClientSet
 	defer toCancel()
 
 	By("Sending an HTTP request from the client pod to the console plugin pods")
-	return executeCommandOnPod(toCtx, k8sClientSet, clientPod, command)
+	return tests.ExecuteCommandOnPod(toCtx, k8sClientSet, clientPod, command)
 }
 
 func sendReqToTestServer(ctx context.Context, k8sClientSet *kubernetes.Clientset, fromPod *corev1.Pod, toSvc *corev1.Service) (string, string, error) {
@@ -323,7 +323,7 @@ func sendReqToTestServer(ctx context.Context, k8sClientSet *kubernetes.Clientset
 	defer toCancel()
 
 	By("Sending an HTTP request from the client pod to the console plugin pods")
-	return executeCommandOnPod(toCtx, k8sClientSet, fromPod, command)
+	return tests.ExecuteCommandOnPod(toCtx, k8sClientSet, fromPod, command)
 }
 
 func createAllowAllIngressNetworkPolicy() *networkingv1.NetworkPolicy {
