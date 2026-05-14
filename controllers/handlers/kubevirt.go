@@ -100,12 +100,6 @@ const (
 	// Allow assigning host devices to virtual machines
 	kvHostDevicesGate = "HostDevices"
 
-	// Expand disks to the largest size
-	kvExpandDisksGate = "ExpandDisks" // todo this FG is now GA in KV. Remove it after bumping KV to 1.9
-
-	// Export VMs to outside of the cluster
-	kvVMExportGate = "VMExport" // todo this FG is now GA in KV. Remove it after bumping KV to 1.9
-
 	// Enable the installation of the KubeVirt seccomp profile
 	kvKubevirtSeccompProfile = "KubevirtSeccompProfile"
 )
@@ -121,9 +115,7 @@ var (
 	hardCodeKvFgs = []string{
 		kvCPUManagerGate,
 		kvSnapshotGate,
-		kvExpandDisksGate,
 		kvHostDevicesGate,
-		kvVMExportGate,
 		kvKubevirtSeccompProfile,
 	}
 
