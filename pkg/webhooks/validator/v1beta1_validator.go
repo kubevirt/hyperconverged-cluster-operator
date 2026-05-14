@@ -157,7 +157,7 @@ func (wh *WebhookV1Beta1Handler) ValidateCreate(_ context.Context, logger logr.L
 		return err
 	}
 
-	if _, _, err := handlers.NewSSP(v1hc); err != nil {
+	if _, _, err := handlers.NewSSP(v1hc, true); err != nil {
 		return err
 	}
 

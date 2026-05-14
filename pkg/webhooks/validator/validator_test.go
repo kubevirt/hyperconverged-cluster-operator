@@ -59,7 +59,7 @@ var _ = Describe("v1 webhooks validator", func() {
 		cna, err := handlers.NewNetworkAddons(hco)
 		Expect(err).ToNot(HaveOccurred())
 
-		ssp, _, err := handlers.NewSSP(hco)
+		ssp, _, err := handlers.NewSSP(hco, false)
 		Expect(err).ToNot(HaveOccurred())
 
 		return commontestutils.InitClient([]client.Object{hco, kv, cdi, cna, ssp})

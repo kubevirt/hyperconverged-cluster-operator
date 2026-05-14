@@ -33,7 +33,6 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregatedetails"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregates"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -252,7 +251,7 @@ func (wh *WebhookHandler) validateCreateComponents(hc *hcov1.HyperConverged) err
 		return err
 	}
 
-	if _, _, err := handlers.NewSSP(hc); err != nil {
+	if _, _, err := handlers.NewSSP(hc, true); err != nil {
 		return err
 	}
 
@@ -569,21 +568,7 @@ func updateOperatorCr(ctx context.Context, cli client.Client, logger logr.Logger
 		required.Spec.DeepCopyInto(&existing.Spec)
 
 	case *sspv1beta3.SSP:
-		origGetControlPlaneArchitectures := nodeinfo.GetControlPlaneArchitectures
-		origGetWorkloadsArchitectures := nodeinfo.GetWorkloadsArchitectures
-		defer func() {
-			nodeinfo.GetControlPlaneArchitectures = origGetControlPlaneArchitectures
-			nodeinfo.GetWorkloadsArchitectures = origGetWorkloadsArchitectures
-		}()
-
-		nodeinfo.GetControlPlaneArchitectures = func() []string {
-			return hc.Status.NodeInfo.ControlPlaneArchitectures
-		}
-		nodeinfo.GetWorkloadsArchitectures = func() []string {
-			return hc.Status.NodeInfo.WorkloadsArchitectures
-		}
-
-		required, _, err := handlers.NewSSP(hc)
+		required, _, err := handlers.NewSSP(hc, true)
 		if err != nil {
 			return err
 		}

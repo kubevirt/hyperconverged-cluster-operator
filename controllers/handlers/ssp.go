@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"reflect"
+	"slices"
 	"sync"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -71,7 +72,7 @@ func (h *sspHooks) GetFullCr(hc *hcov1.HyperConverged) (client.Object, error) {
 	defer h.Unlock()
 
 	if h.cache == nil {
-		ssp, dictStatus, err := NewSSP(hc)
+		ssp, dictStatus, err := NewSSP(hc, false)
 		if err != nil {
 			return nil, err
 		}
@@ -131,7 +132,7 @@ func (h *sspHooks) updateDICTsInHCStatus(req *common.HcoRequest) {
 	goldenimages.CheckDataImportCronTemplates(req.Instance)
 }
 
-func NewSSP(hc *hcov1.HyperConverged) (*sspv1beta3.SSP, []hcov1.DataImportCronTemplateStatus, error) {
+func NewSSP(hc *hcov1.HyperConverged, useNodeInfoFromStatus bool) (*sspv1beta3.SSP, []hcov1.DataImportCronTemplateStatus, error) {
 	templatesNamespace := ptr.Deref(hc.Spec.WorkloadSources.CommonTemplatesNamespace, defaultCommonTemplatesNamespace)
 
 	goldenimages.ApplyDataImportSchedule(hc)
@@ -141,8 +142,21 @@ func NewSSP(hc *hcov1.HyperConverged) (*sspv1beta3.SSP, []hcov1.DataImportCronTe
 		return nil, nil, err
 	}
 
-	cpArches := nodeinfo.GetControlPlaneArchitectures()
-	wlArches := nodeinfo.GetWorkloadsArchitectures()
+	var (
+		cpArches []string
+		wlArches []string
+	)
+
+	if useNodeInfoFromStatus {
+		// The webhook pod does not run the node controller, and so the node-info is never
+		// up-to-date. But the same info is copying to the HyperConverged CR status by the
+		// operator, and that is good enough for the webhook.
+		cpArches = slices.Clone(hc.Status.NodeInfo.ControlPlaneArchitectures)
+		wlArches = slices.Clone(hc.Status.NodeInfo.WorkloadsArchitectures)
+	} else {
+		cpArches = nodeinfo.GetControlPlaneArchitectures()
+		wlArches = nodeinfo.GetWorkloadsArchitectures()
+	}
 
 	var cluster *sspv1beta3.Cluster
 	if len(cpArches) > 0 || len(wlArches) > 0 {

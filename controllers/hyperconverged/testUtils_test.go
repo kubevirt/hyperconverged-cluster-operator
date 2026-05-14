@@ -258,7 +258,7 @@ func getBasicDeployment() *BasicExpected {
 	expectedCNA.Status.Conditions = getGenericCompletedConditions()
 	res.cna = expectedCNA
 
-	expectedSSP, _, err := handlers.NewSSP(hco)
+	expectedSSP, _, err := handlers.NewSSP(hco, false)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	expectedSSP.Status.Conditions = getGenericCompletedConditions()
 	res.ssp = expectedSSP

@@ -55,7 +55,7 @@ var _ = Describe("SSP Operands", func() {
 		})
 
 		It("should create if not present", func() {
-			expectedResource, _, err := NewSSP(hco)
+			expectedResource, _, err := NewSSP(hco, false)
 			Expect(err).ToNot(HaveOccurred())
 			cl := commontestutils.InitClient([]client.Object{})
 			handler := NewSspHandler(cl, commontestutils.GetScheme())
@@ -78,7 +78,7 @@ var _ = Describe("SSP Operands", func() {
 		})
 
 		It("should find if present", func() {
-			expectedResource, _, err := NewSSP(hco)
+			expectedResource, _, err := NewSSP(hco, false)
 			Expect(err).ToNot(HaveOccurred())
 			cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
 			handler := NewSspHandler(cl, commontestutils.GetScheme())
@@ -100,7 +100,7 @@ var _ = Describe("SSP Operands", func() {
 		It("should reconcile to default", func() {
 			const cTNamespace = "nonDefault"
 			hco.Spec.WorkloadSources.CommonTemplatesNamespace = ptr.To(cTNamespace)
-			expectedResource, _, err := NewSSP(hco)
+			expectedResource, _, err := NewSSP(hco, false)
 			Expect(err).ToNot(HaveOccurred())
 			existingResource := expectedResource.DeepCopy()
 
@@ -139,7 +139,7 @@ var _ = Describe("SSP Operands", func() {
 		It("should reconcile managed labels to default without touching user added ones", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
-			outdatedResource, _, err := NewSSP(hco)
+			outdatedResource, _, err := NewSSP(hco, false)
 			Expect(err).ToNot(HaveOccurred())
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 			for k, v := range expectedLabels {
@@ -171,7 +171,7 @@ var _ = Describe("SSP Operands", func() {
 		It("should reconcile managed labels to default on label deletion without touching user added ones", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
-			outdatedResource, _, err := NewSSP(hco)
+			outdatedResource, _, err := NewSSP(hco, false)
 			Expect(err).ToNot(HaveOccurred())
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 			outdatedResource.Labels[userLabelKey] = userLabelValue
@@ -201,7 +201,7 @@ var _ = Describe("SSP Operands", func() {
 		It("should create ssp with deployVmConsoleProxy feature gate enabled", func() {
 			hco.Spec.Deployment.DeployVMConsoleProxy = ptr.To(true)
 
-			expectedResource, _, err := NewSSP(hco)
+			expectedResource, _, err := NewSSP(hco, false)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(expectedResource.Spec.TokenGenerationService).ToNot(BeNil())
@@ -213,7 +213,7 @@ var _ = Describe("SSP Operands", func() {
 				{Name: goldenimages.EnableMultiArchFeatureGate, State: hcFG},
 			}
 
-			ssp, _, err := NewSSP(hco)
+			ssp, _, err := NewSSP(hco, false)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(ssp.Spec.EnableMultipleArchitectures).To(matcher)
 		},
@@ -222,78 +222,137 @@ var _ = Describe("SSP Operands", func() {
 		)
 
 		Context("SSP's Cluster filed", func() {
-			It("should set Cluster field to the HC's Cluster field", func() {
-				nodeinfo.GetControlPlaneArchitectures = func() []string {
-					return []string{"cparch1", "cparch2"}
-				}
+			Context("when useNodeInfoFromStatus is false (operator mode)", func() {
+				It("should set Cluster field to the HC's Cluster field", func() {
+					nodeinfo.GetControlPlaneArchitectures = func() []string {
+						return []string{"cparch1", "cparch2"}
+					}
 
-				nodeinfo.GetWorkloadsArchitectures = func() []string {
-					return []string{"wlarch1", "wlarch2", "wlarch3"}
-				}
+					nodeinfo.GetWorkloadsArchitectures = func() []string {
+						return []string{"wlarch1", "wlarch2", "wlarch3"}
+					}
 
-				ssp, _, err := NewSSP(hco)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(ssp.Spec.Cluster).ToNot(BeNil())
-				Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(HaveLen(2))
-				Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(ConsistOf("cparch1", "cparch2"))
-				Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(HaveLen(3))
-				Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(ConsistOf("wlarch1", "wlarch2", "wlarch3"))
+					ssp, _, err := NewSSP(hco, false)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(ssp.Spec.Cluster).ToNot(BeNil())
+					Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(HaveLen(2))
+					Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(ConsistOf("cparch1", "cparch2"))
+					Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(HaveLen(3))
+					Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(ConsistOf("wlarch1", "wlarch2", "wlarch3"))
 
+				})
+
+				It("should not set Cluster.ControlPlaneArchitectures field if there are no cp nodes", func() {
+					nodeinfo.GetControlPlaneArchitectures = func() []string {
+						return nil
+					}
+
+					nodeinfo.GetWorkloadsArchitectures = func() []string {
+						return []string{"wlarch1", "wlarch2", "wlarch3"}
+					}
+
+					ssp, _, err := NewSSP(hco, false)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(ssp.Spec.Cluster).ToNot(BeNil())
+					Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(BeNil())
+					Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(HaveLen(3))
+					Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(ConsistOf("wlarch1", "wlarch2", "wlarch3"))
+				})
+
+				It("should not set Cluster.WorkloadArchitectures field if there are no wl nodes", func() {
+					nodeinfo.GetControlPlaneArchitectures = func() []string {
+						return []string{"cparch1", "cparch2"}
+					}
+
+					nodeinfo.GetWorkloadsArchitectures = func() []string {
+						return nil
+					}
+
+					ssp, _, err := NewSSP(hco, false)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(ssp.Spec.Cluster).ToNot(BeNil())
+					Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(HaveLen(2))
+					Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(ConsistOf("cparch1", "cparch2"))
+					Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(BeNil())
+				})
+
+				It("should not set Cluster field if there are no nodes", func() { // should never happen, but just in case
+					nodeinfo.GetControlPlaneArchitectures = func() []string {
+						return nil
+					}
+
+					nodeinfo.GetWorkloadsArchitectures = func() []string {
+						return nil
+					}
+
+					ssp, _, err := NewSSP(hco, false)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(ssp.Spec.Cluster).To(BeNil())
+				})
 			})
 
-			It("should not set Cluster.ControlPlaneArchitectures field if there are no cp nodes", func() {
-				nodeinfo.GetControlPlaneArchitectures = func() []string {
-					return nil
-				}
+			Context("when useNodeInfoFromStatus is true (webhook mode)", func() {
+				It("should set Cluster field to the HC's Cluster field", func() {
+					hco.Status.NodeInfo = hcov1.NodeInfoStatus{
+						ControlPlaneArchitectures: []string{"cparch1", "cparch2"},
+						WorkloadsArchitectures:    []string{"wlarch1", "wlarch2", "wlarch3"},
+					}
 
-				nodeinfo.GetWorkloadsArchitectures = func() []string {
-					return []string{"wlarch1", "wlarch2", "wlarch3"}
-				}
+					ssp, _, err := NewSSP(hco, true)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(ssp.Spec.Cluster).ToNot(BeNil())
+					Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(HaveLen(2))
+					Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(ConsistOf("cparch1", "cparch2"))
+					Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(HaveLen(3))
+					Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(ConsistOf("wlarch1", "wlarch2", "wlarch3"))
 
-				ssp, _, err := NewSSP(hco)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(ssp.Spec.Cluster).ToNot(BeNil())
-				Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(BeNil())
-				Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(HaveLen(3))
-				Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(ConsistOf("wlarch1", "wlarch2", "wlarch3"))
-			})
+				})
 
-			It("should not set Cluster.WorkloadArchitectures field if there are no wl nodes", func() {
-				nodeinfo.GetControlPlaneArchitectures = func() []string {
-					return []string{"cparch1", "cparch2"}
-				}
+				It("should not set Cluster.ControlPlaneArchitectures field if there are no cp nodes", func() {
+					hco.Status.NodeInfo = hcov1.NodeInfoStatus{
+						ControlPlaneArchitectures: nil,
+						WorkloadsArchitectures:    []string{"wlarch1", "wlarch2", "wlarch3"},
+					}
 
-				nodeinfo.GetWorkloadsArchitectures = func() []string {
-					return nil
-				}
+					ssp, _, err := NewSSP(hco, true)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(ssp.Spec.Cluster).ToNot(BeNil())
+					Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(BeNil())
+					Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(HaveLen(3))
+					Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(ConsistOf("wlarch1", "wlarch2", "wlarch3"))
+				})
 
-				ssp, _, err := NewSSP(hco)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(ssp.Spec.Cluster).ToNot(BeNil())
-				Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(HaveLen(2))
-				Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(ConsistOf("cparch1", "cparch2"))
-				Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(BeNil())
-			})
+				It("should not set Cluster.WorkloadArchitectures field if there are no wl nodes", func() {
+					hco.Status.NodeInfo = hcov1.NodeInfoStatus{
+						ControlPlaneArchitectures: []string{"cparch1", "cparch2"},
+						WorkloadsArchitectures:    nil,
+					}
 
-			It("should not set Cluster field if there are no nodes", func() { // should never happen, but just in case
-				nodeinfo.GetControlPlaneArchitectures = func() []string {
-					return nil
-				}
+					ssp, _, err := NewSSP(hco, true)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(ssp.Spec.Cluster).ToNot(BeNil())
+					Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(HaveLen(2))
+					Expect(ssp.Spec.Cluster.ControlPlaneArchitectures).To(ConsistOf("cparch1", "cparch2"))
+					Expect(ssp.Spec.Cluster.WorkloadArchitectures).To(BeNil())
+				})
 
-				nodeinfo.GetWorkloadsArchitectures = func() []string {
-					return nil
-				}
+				It("should not set Cluster field if there are no nodes", func() { // should never happen, but just in case
+					hco.Status.NodeInfo = hcov1.NodeInfoStatus{
+						ControlPlaneArchitectures: nil,
+						WorkloadsArchitectures:    nil,
+					}
 
-				ssp, _, err := NewSSP(hco)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(ssp.Spec.Cluster).To(BeNil())
+					ssp, _, err := NewSSP(hco, true)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(ssp.Spec.Cluster).To(BeNil())
+				})
 			})
 		})
 
 		Context("Node placement", func() {
 
 			It("should add node placement if missing", func() {
-				existingResource, _, err := NewSSP(hco)
+				existingResource, _, err := NewSSP(hco, false)
 				Expect(err).ToNot(HaveOccurred())
 
 				commontestutils.SetNodeCustomPlacement(hco, commontestutils.NewOtherNodePlacement(), commontestutils.NewNodePlacement())
@@ -323,7 +382,7 @@ var _ = Describe("SSP Operands", func() {
 				hcoNodePlacement := commontestutils.NewHco()
 				commontestutils.SetNodeCustomPlacement(hcoNodePlacement, commontestutils.NewOtherNodePlacement(), commontestutils.NewNodePlacement())
 
-				existingResource, _, err := NewSSP(hcoNodePlacement)
+				existingResource, _, err := NewSSP(hcoNodePlacement, false)
 				Expect(err).ToNot(HaveOccurred())
 
 				cl := commontestutils.InitClient([]client.Object{hco, existingResource})
@@ -350,7 +409,7 @@ var _ = Describe("SSP Operands", func() {
 			It("should modify node placement according to HCO CR", func() {
 
 				commontestutils.SetNodeCustomPlacement(hco, commontestutils.NewOtherNodePlacement(), commontestutils.NewNodePlacement())
-				existingResource, _, err := NewSSP(hco)
+				existingResource, _, err := NewSSP(hco, false)
 				Expect(err).ToNot(HaveOccurred())
 
 				// now, modify HCO's node placement
@@ -393,7 +452,7 @@ var _ = Describe("SSP Operands", func() {
 
 			It("should overwrite node placement if directly set on SSP CR", func() {
 				commontestutils.SetNodeCustomPlacement(hco, commontestutils.NewOtherNodePlacement(), commontestutils.NewNodePlacement())
-				existingResource, _, err := NewSSP(hco)
+				existingResource, _, err := NewSSP(hco, false)
 				Expect(err).ToNot(HaveOccurred())
 
 				// mock a reconciliation triggered by a change in NewKubeVirtNodeLabellerBundle CR
@@ -440,7 +499,7 @@ var _ = Describe("SSP Operands", func() {
 					}
 				]`}
 
-				ssp, _, err := NewSSP(hco)
+				ssp, _, err := NewSSP(hco, false)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(ssp).ToNot(BeNil())
 				Expect(ssp.Spec.TemplateValidator.Replicas).ToNot(BeNil())
@@ -456,7 +515,7 @@ var _ = Describe("SSP Operands", func() {
 					}
 				]`}
 
-				_, _, err := NewSSP(hco)
+				_, _, err := NewSSP(hco, false)
 				Expect(err).To(HaveOccurred())
 			})
 
@@ -512,7 +571,7 @@ var _ = Describe("SSP Operands", func() {
 			})
 
 			It("Ensure func should update SSP object with changes from the annotation", func() {
-				existsSsp, _, err := NewSSP(hco)
+				existsSsp, _, err := NewSSP(hco, false)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Annotations = map[string]string{common.JSONPatchSSPAnnotationName: `[
@@ -545,7 +604,7 @@ var _ = Describe("SSP Operands", func() {
 			})
 
 			It("Ensure func should fail to update SSP object with wrong jsonPatch", func() {
-				existsSsp, _, err := NewSSP(hco)
+				existsSsp, _, err := NewSSP(hco, false)
 				Expect(err).ToNot(HaveOccurred())
 
 				hco.Annotations = map[string]string{common.JSONPatchSSPAnnotationName: `[
@@ -801,7 +860,7 @@ var _ = Describe("SSP Operands", func() {
 							return []hcov1.DataImportCronTemplateStatus{commonDICT}, nil
 						}
 
-						ssp, _, err := NewSSP(hco)
+						ssp, _, err := NewSSP(hco, false)
 						Expect(err).ToNot(HaveOccurred())
 
 						goldenimages.GetDataImportCronTemplates = func(_ *hcov1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
@@ -856,7 +915,7 @@ var _ = Describe("SSP Operands", func() {
 							return []hcov1.DataImportCronTemplateStatus{commonDICT}, nil
 						}
 
-						ssp, _, err := NewSSP(hco)
+						ssp, _, err := NewSSP(hco, false)
 						Expect(err).ToNot(HaveOccurred())
 
 						goldenimages.GetDataImportCronTemplates = func(_ *hcov1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
@@ -925,7 +984,7 @@ var _ = Describe("SSP Operands", func() {
 							return []hcov1.DataImportCronTemplateStatus{commonDICT}, nil
 						}
 
-						ssp, _, err := NewSSP(hco)
+						ssp, _, err := NewSSP(hco, false)
 						Expect(err).ToNot(HaveOccurred())
 
 						goldenimages.GetDataImportCronTemplates = func(_ *hcov1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
@@ -1103,7 +1162,7 @@ var _ = Describe("SSP Operands", func() {
 						}
 
 						hco.Spec.WorkloadSources.EnableCommonBootImageImport = ptr.To(true)
-						ssp, _, err := NewSSP(hco)
+						ssp, _, err := NewSSP(hco, false)
 						Expect(err).ToNot(HaveOccurred())
 
 						goldenimages.GetDataImportCronTemplates = func(_ *hcov1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
@@ -1153,7 +1212,7 @@ var _ = Describe("SSP Operands", func() {
 							return []hcov1.DataImportCronTemplateStatus{commonDICT}, nil
 						}
 
-						ssp, _, err := NewSSP(hco)
+						ssp, _, err := NewSSP(hco, false)
 						Expect(err).ToNot(HaveOccurred())
 
 						goldenimages.GetDataImportCronTemplates = func(_ *hcov1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
@@ -1201,7 +1260,7 @@ var _ = Describe("SSP Operands", func() {
 							return []hcov1.DataImportCronTemplateStatus{commonDICT}, nil
 						}
 
-						ssp, _, err := NewSSP(hco)
+						ssp, _, err := NewSSP(hco, false)
 						Expect(err).ToNot(HaveOccurred())
 
 						goldenimages.GetDataImportCronTemplates = func(_ *hcov1.HyperConverged) ([]hcov1.DataImportCronTemplateStatus, error) {
@@ -1245,7 +1304,7 @@ var _ = Describe("SSP Operands", func() {
 			}
 
 			It("should modify TLSSecurityProfile on SSP CR according to ApiServer or HCO CR", func() {
-				existingResource, _, err := NewSSP(hco)
+				existingResource, _, err := NewSSP(hco, false)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(existingResource.Spec.TLSSecurityProfile).To(Equal(intermediateTLSSecurityProfile))
 
@@ -1273,7 +1332,7 @@ var _ = Describe("SSP Operands", func() {
 
 			It("should overwrite TLSSecurityProfile if directly set on SSP CR", func() {
 				hco.Spec.Security.TLSSecurityProfile = intermediateTLSSecurityProfile
-				existingResource, _, err := NewSSP(hco)
+				existingResource, _, err := NewSSP(hco, false)
 				Expect(err).ToNot(HaveOccurred())
 
 				// mock a reconciliation triggered by a change in CDI CR
