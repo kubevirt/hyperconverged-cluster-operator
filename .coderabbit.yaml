@@ -1,0 +1,191 @@
+# CodeRabbit Configuration
+# Full reference: https://docs.coderabbit.ai/reference/configuration
+
+# ---------------------------------------------------------------------------
+# General
+# ---------------------------------------------------------------------------
+language: en-US
+tone_instructions: "Act as senior engineer: professional, constructive feedback only. Serious about upgrade safety, backward compatibility, and test coverage. Flag issues with file/line references. End positively."
+early_access: false
+enable_free_tier: true
+
+# ---------------------------------------------------------------------------
+# Reviews > General
+# ---------------------------------------------------------------------------
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: false
+  high_level_summary_in_walkthrough: false
+  auto_title_placeholder: ""
+  review_status: false
+  review_details: false
+  commit_status: false
+  fail_commit_status: false
+  collapse_walkthrough: true
+  changed_files_summary: false
+  sequence_diagrams: false
+  estimate_code_review_effort: true
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+  suggested_labels: false
+  auto_apply_labels: false
+  suggested_reviewers: false
+  auto_assign_reviewers: false
+  in_progress_fortune: false
+  poem: false
+  enable_prompt_for_ai_agents: true
+  path_filters:
+    - "!**/zz_generated.*"
+    - "!**/vendor/**"
+  path_instructions:
+    - path: "**/*.go"
+      instructions: "Follow docs/review_guidelines/go.md"
+    - path: "**/*controller*/**/*.go"
+      instructions: "Follow docs/review_guidelines/controllers.md"
+    - path: "pkg/monitoring/**"
+      instructions: "Follow docs/review_guidelines/monitoring.md"
+    - path: "**/*_test.go"
+      instructions: "Follow docs/review_guidelines/unit-tests.md"
+    - path: "tests/**/*.go"
+      instructions: "Follow docs/review_guidelines/func-tests.md"
+    - path: "docs/**"
+      instructions: "Follow docs/review_guidelines/docs.md"
+    - path: "**/Dockerfile*"
+      instructions: "Follow docs/review_guidelines/dockerfiles.md"
+    - path: "{deploy,manifests}/**"
+      instructions: "Follow docs/review_guidelines/deploy.md"
+    - path: "api/**"
+      instructions: "Follow docs/review_guidelines/api.md"
+  abort_on_close: true
+  disable_cache: false
+  slop_detection:
+    enabled: false
+
+  # ---------------------------------------------------------------------------
+  # Reviews > Auto Review
+  # ---------------------------------------------------------------------------
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 10
+    ignore_title_keywords:
+      - "WIP"
+    labels:
+      - "!do-not-merge/work-in-progress"
+    drafts: false
+    ignore_usernames:
+      - "hco-bot"
+      - "kubevirt-bot"
+      - "renovate[bot]"
+      - "dependabot[bot]"
+
+  # ---------------------------------------------------------------------------
+  # Reviews > Finishing Touches
+  # ---------------------------------------------------------------------------
+  finishing_touches:
+    docstrings:
+      enabled: false
+    unit_tests:
+      enabled: false
+    simplify:
+      enabled: false
+
+  # ---------------------------------------------------------------------------
+  # Reviews > Pre-merge Checks
+  # ---------------------------------------------------------------------------
+  pre_merge_checks:
+    override_requested_reviewers_only: false
+    docstrings:
+      mode: "off"
+    title:
+      mode: "off"
+    description:
+      mode: "off"
+    issue_assessment:
+      mode: "off"
+
+  # ---------------------------------------------------------------------------
+  # Review Tools: all enabled by default (golangci-lint, hadolint, yamllint, shellcheck, markdownlint, gitleaks, etc.)
+  # ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# Chat
+# ---------------------------------------------------------------------------
+chat:
+  art: true
+  allow_non_org_members: true
+  auto_reply: true
+  integrations:
+    jira:
+      usage: disabled
+    linear:
+      usage: disabled
+
+# ---------------------------------------------------------------------------
+# Knowledge Base
+# ---------------------------------------------------------------------------
+knowledge_base:
+  opt_out: false
+  web_search:
+    enabled: true
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "CONTRIBUTING.md"
+  learnings:
+    scope: global
+  issues:
+    scope: global
+  jira:
+    usage: disabled
+  linear:
+    usage: disabled
+  pull_requests:
+    scope: global
+  mcp:
+    usage: disabled
+  # Linked repositories — covers the kubevirt org.
+  linked_repositories:
+    # Operators
+    - repository: "kubevirt/kubevirt"
+      instructions: "Core virtualization platform. HCO installs and manages KubeVirt. Use to verify KubeVirt CR API fields, feature gate names, configuration defaults, and expected behavior."
+    - repository: "kubevirt/containerized-data-importer"
+      instructions: "HCO installs and manages CDI. Use to verify CDI CR fields, DataVolume behavior, and import/upload/clone features."
+    - repository: "kubevirt/ssp-operator"
+      instructions: "HCO installs and manages SSP (Scheduling, Scale and Performance). Use to verify SSP CR fields, common templates, and VM scheduling configuration."
+    - repository: "kubevirt/cluster-network-addons-operator"
+      instructions: "HCO installs and manages Cluster Network Addons. Use to verify NetworkAddonsConfig CR fields (Multus, Linux Bridge, OVS, etc.)."
+    - repository: "kubevirt/hostpath-provisioner-operator"
+      instructions: "HCO installs and manages the hostpath provisioner operator. Use to verify HostPathProvisioner CR fields and storage pool configuration."
+    - repository: "kubevirt/application-aware-quota"
+      instructions: "HCO installs and manages AAQ (Application Aware Quota). Use to verify AAQ CR fields and scheduling gate behavior."
+    - repository: "kubevirt/managed-tenant-quota"
+      instructions: "HCO installs and manages MTQ (Managed Tenant Quota). Use to verify MTQ CR fields and VM migration quota handling."
+    # Supporting repos
+    - repository: "kubevirt/hyperconverged-cluster-operator"
+      instructions: "This repo itself. Use for cross-referencing between branches, past PRs, and release history."
+    - repository: "kubevirt/monitoring"
+      instructions: "Contains alert runbooks under docs/runbooks/. Each operator alert should have a corresponding runbook here."
+    - repository: "kubevirt/community"
+      instructions: "Community governance, design proposals, and org-wide conventions."
+    - repository: "kubevirt/enhancements"
+      instructions: "Enhancement proposals (KEPs) for KubeVirt features. Reference when reviewing new feature implementations."
+    - repository: "kubevirt/project-infra"
+      instructions: "CI/CD infrastructure, Prow job definitions, and test lane configurations."
+    - repository: "kubevirt/kubevirtci"
+      instructions: "Cluster definitions and tooling for ephemeral test clusters used in CI."
+
+# ---------------------------------------------------------------------------
+# Issue Enrichment
+# ---------------------------------------------------------------------------
+issue_enrichment:
+  auto_enrich:
+    enabled: false
+  planning:
+    enabled: false
+    auto_planning:
+      enabled: false
+  labeling:
+    auto_apply_labels: false
