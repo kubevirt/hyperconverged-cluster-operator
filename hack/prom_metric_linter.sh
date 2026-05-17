@@ -20,7 +20,7 @@
 #
 set -e
 
-linter_image_tag="v0.0.11"
+linter_image_tag="v0.0.12"
 
 PROJECT_ROOT="$(readlink -e "$(dirname "${BASH_SOURCE[0]}")"/../)"
 export METRICS_COLLECTOR_PATH="${METRICS_COLLECTOR_PATH:-${PROJECT_ROOT}/tools/prom-metrics-collector}"

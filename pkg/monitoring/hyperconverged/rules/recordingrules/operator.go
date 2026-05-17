@@ -47,7 +47,7 @@ var operatorRecordingRules = []operatorrules.RecordingRule{
 			Help: "Monitors resources for potential problems",
 		},
 		MetricType: operatormetrics.GaugeType,
-		Expr:       intstr.FromString(`sum by (container, reason)(kubevirt_memory_delta_from_requested_bytes)`),
+		Expr:       intstr.FromString(`sum by (container, reason)(container:kubevirt_memory_delta_from_requested_bytes:max)`),
 	},
 }
 
