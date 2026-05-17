@@ -18,6 +18,7 @@ import (
 func TestTests(t *testing.T) {
 	GinkgoWriter.Printf("Start running the HCO functional tests; go version: %s; platform: %s/%s\n", runtime.Version(), runtime.GOOS, runtime.GOARCH)
 	RegisterFailHandler(Fail)
+
 	RunSpecs(t, "HyperConverged cluster E2E Test suite")
 }
 
@@ -55,6 +56,10 @@ var _ = BeforeSuite(func(ctx context.Context) {
 	}
 
 	tests.BeforeEach(ctx)
+
+	AfterEach(func(ctx context.Context) {
+		tests.Dump(ctx)
+	})
 
 	DeferCleanup(func(ctx context.Context) {
 		if isOpenshift {
