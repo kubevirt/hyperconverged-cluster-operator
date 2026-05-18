@@ -1,0 +1,547 @@
+apiVersion: perses.dev/v1alpha1
+kind: PersesDashboard
+metadata:
+  name: cnv-virtual-machines-inventory
+  namespace: openshift-cnv
+spec:
+  display:
+    name: Virtualization / Virtual Machines Inventory
+  duration: 1h
+  layouts:
+  - kind: Grid
+    spec:
+      display:
+        collapse:
+          open: true
+        title: Virtual Machines Inventory
+      items:
+      - content:
+          $ref: '#/spec/panels/0_0'
+        height: 24
+        width: 24
+        x: 0
+        "y": 0
+  panels:
+    "0_0":
+      kind: Panel
+      spec:
+        display:
+          name: Virtual Machines Inventory
+        plugin:
+          kind: Table
+          spec:
+            columnSettings:
+            - hide: true
+              name: timestamp
+            - enableSorting: true
+              header: Namespace
+              name: namespace
+            - dataLink:
+                openNewTab: true
+                title: Virtual Machine Details
+                url: /monitoring/v2/dashboards/view?dashboard=cnv-openshift-virtualization-single-vm-view&project=openshift-cnv&var-namespace=${__data.fields["namespace"]}&var-name=${__data.fields["name"]}
+              enableSorting: true
+              header: VM Name
+              name: name
+            - enableSorting: true
+              header: Status
+              name: status
+            - enableSorting: true
+              header: Instance Type
+              name: instance_type
+            - enableSorting: true
+              header: Preference
+              name: preference
+            - enableSorting: true
+              header: Workload
+              name: workload
+            - enableSorting: true
+              header: Flavor
+              name: flavor
+            - cellSettings:
+              - condition:
+                  kind: Value
+                  spec:
+                    value: "false"
+                textColor: '#f2495c'
+              enableSorting: true
+              header: Live Migratable
+              name: live_migratable
+            - enableSorting: true
+              header: Evictable
+              name: evictable
+            - enableSorting: true
+              header: Outdated
+              name: outdated
+            - enableSorting: true
+              header: OS Name
+              name: guest_os_name
+            - enableSorting: true
+              header: OS Version
+              name: guest_os_version_id
+            - enableSorting: true
+              header: OS Arch
+              name: guest_os_arch
+            - enableSorting: true
+              format:
+                unit: datetime-local
+              header: Create Date
+              name: 'value #5'
+            - cellSettings:
+              - condition:
+                  kind: Value
+                  spec:
+                    value: "1"
+                text: Reporting
+              - condition:
+                  kind: Misc
+                  spec:
+                    value: "null"
+                text: Not Reporting
+                textColor: '#F2495C'
+              enableSorting: true
+              header: Guest Agent
+              name: 'value #4'
+            - enableSorting: true
+              format:
+                decimalPlaces: 0
+                unit: decimal
+              header: CPU
+              name: 'value #2'
+            - enableSorting: true
+              format:
+                shortValues: true
+                unit: bytes
+              header: Memory
+              name: 'value #3'
+            - enableSorting: true
+              format:
+                shortValues: true
+                unit: bytes
+              header: Disk
+              name: 'value #6'
+            - hide: true
+              name: 'value #1'
+            - hide: true
+              name: 'value #8'
+            - hide: true
+              name: 'value #7'
+            - hide: true
+              name: 'value #9'
+            - hide: true
+              name: 'value #10'
+            - hide: true
+              name: 'value #11'
+            - hide: true
+              name: 'value #12'
+            - hide: true
+              name: __name__
+            - hide: true
+              name: clusterID
+            - hide: true
+              name: container
+            - hide: true
+              name: endpoint
+            - hide: true
+              name: instance
+            - hide: true
+              name: job
+            - hide: true
+              name: pod
+            - hide: true
+              name: receive
+            - hide: true
+              name: service
+            - hide: true
+              name: tenant_id
+            - hide: true
+              name: guest_os_kernel_release
+            - hide: true
+              name: guest_os_machine
+            - hide: true
+              name: os
+            - hide: true
+              name: disk_name
+            transforms:
+            - kind: MergeSeries
+              spec: {}
+            - kind: JoinByColumnValue
+              spec:
+                columns:
+                - cluster
+                - name
+                - namespace
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum by (namespace, name, status) (
+                    label_replace(label_replace(label_replace(label_replace(label_replace(
+                      kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0,
+                      "status", "Running",   "status_group", "running"),
+                      "status", "Stopped",   "status_group", "non_running"),
+                      "status", "Starting",  "status_group", "starting"),
+                      "status", "Migrating", "status_group", "migrating"),
+                      "status", "Error",     "status_group", "error")
+                  )
+                  +on(namespace, name) group_left()(0*sum by (namespace, name)(kubevirt_vm_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"} or kubevirt_vmi_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  (
+                  sum by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source="guest_effective"})
+                  or
+                  sum by (namespace, name)(
+                  (kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="sockets", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="threads", source=~"default|domain"})
+                  ) or
+                  sum by (namespace, name)(
+                  (kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="sockets", source=~"default|domain"})
+                  ) or
+                  sum by (namespace, name)(
+                  kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  )
+                  +on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+                  +on(namespace, name) group_left()(0*sum by (namespace, name)(kubevirt_vm_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"} or kubevirt_vmi_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  (
+                  sum by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="memory", source="guest_effective"})
+                  or
+                  max by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="memory", source=~"default|domain"})
+                  )
+                  +on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+                  +on(namespace, name) group_left()(0*sum by (namespace, name)(kubevirt_vm_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"} or kubevirt_vmi_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum by (namespace, name)(kubevirt_vmi_memory_available_bytes{namespace=~"$namespace", name=~"$name"}*0+1)+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+                  +on(namespace, name) group_left()(0*sum by (namespace, name)(kubevirt_vm_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"} or kubevirt_vmi_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum by (namespace, name)(kubevirt_vm_create_date_timestamp_seconds{name=~"$name", namespace=~"$namespace"}*1000)
+                  +on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+                  +on(namespace, name) group_left()(0*sum by (namespace, name)(kubevirt_vm_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"} or kubevirt_vmi_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum by (namespace, name)(kubevirt_vm_disk_allocated_size_bytes{name=~"$name", namespace=~"$namespace"})+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+                  +on(namespace, name) group_left()(0*sum by (namespace, name)(kubevirt_vm_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"} or kubevirt_vmi_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum by (namespace,name,flavor) (
+                    kubevirt_vmi_info{name=~"$name", namespace=~"$namespace", flavor!="<none>",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}
+                    or on(namespace,name) kubevirt_vm_info{name=~"$name", namespace=~"$namespace", flavor!="<none>",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}
+                  )+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum by (namespace,name,workload) (
+                    kubevirt_vmi_info{name=~"$name", namespace=~"$namespace", workload!="<none>",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}
+                    or on(namespace,name) kubevirt_vm_info{name=~"$name", namespace=~"$namespace", workload!="<none>",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}
+                  )+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum by (namespace,name,instance_type) (
+                    kubevirt_vmi_info{name=~"$name", namespace=~"$namespace", instance_type!="<none>",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}
+                    or on(namespace,name) kubevirt_vm_info{name=~"$name", namespace=~"$namespace", instance_type!="<none>",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}
+                  )+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum by (namespace,name,preference) (
+                    kubevirt_vmi_info{name=~"$name", namespace=~"$namespace", preference!="<none>",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}
+                    or on(namespace,name) kubevirt_vm_info{name=~"$name", namespace=~"$namespace", preference!="<none>",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}
+                  )+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum by (namespace,name,guest_os_name ,guest_os_version_id, guest_os_arch) (
+                    kubevirt_vmi_info{name=~"$name", namespace=~"$namespace",guest_os_name!="" ,guest_os_version_id!="",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}
+                    or on(namespace,name) kubevirt_vm_info{name=~"$name", namespace=~"$namespace",guest_os_name!="" ,guest_os_version_id!="",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}
+                  )+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum by (namespace,name,outdated ,evictable) (
+                    kubevirt_vmi_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}
+                    or on(namespace,name) kubevirt_vm_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}
+                  )+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  (
+                    label_replace(sum by (namespace, name)(kubevirt_vmi_non_evictable{name=~"$name", namespace=~"$namespace"} == 1), "live_migratable", "false", "__name__", ".*")
+                    or
+                    label_replace(sum by (namespace, name)(kubevirt_vmi_non_evictable{name=~"$name", namespace=~"$namespace"} == 0), "live_migratable", "true",  "__name__", ".*")
+                  )+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+                  +on(namespace, name) group_left()(0*sum by (namespace, name)(kubevirt_vm_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"} or kubevirt_vmi_info{name=~"$name", namespace=~"$namespace",flavor=~"$flavor",workload=~"$workload", instance_type=~"$instance_type", preference=~"$preference",guest_os_name=~"$guest_os_name" ,guest_os_version_id=~"$guest_os_version_id"}))
+  variables:
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: true
+      customAllValue: .*
+      defaultValue:
+      - $__all
+      display:
+        description: Filter the virtual machine by the namespace.
+        hidden: false
+        name: Namespace
+      name: namespace
+      plugin:
+        kind: PrometheusLabelValuesVariable
+        spec:
+          datasource:
+            kind: PrometheusDatasource
+            name: perses-thanos-datasource
+          labelName: namespace
+          matchers:
+          - kubevirt_vm_info
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: true
+      customAllValue: .*
+      defaultValue:
+      - $__all
+      display:
+        description: Filter the virtual machine by the name.
+        hidden: false
+        name: VM Name
+      name: name
+      plugin:
+        kind: PrometheusLabelValuesVariable
+        spec:
+          datasource:
+            kind: PrometheusDatasource
+            name: perses-thanos-datasource
+          labelName: name
+          matchers:
+          - kubevirt_vm_info{namespace=~"$namespace"}
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: true
+      customAllValue: .*
+      defaultValue:
+      - $__all
+      display:
+        description: Filter virtual machines by status
+        hidden: false
+        name: Status
+      name: status
+      plugin:
+        kind: StaticListVariable
+        spec:
+          values:
+          - label: Running
+            value: running
+          - label: Stopped
+            value: non_running
+          - label: Starting
+            value: starting
+          - label: Migrating
+            value: migrating
+          - label: Error
+            value: error
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: true
+      customAllValue: .*
+      defaultValue:
+      - $__all
+      display:
+        hidden: false
+        name: Flavor
+      name: flavor
+      plugin:
+        kind: PrometheusPromQLVariable
+        spec:
+          datasource:
+            kind: PrometheusDatasource
+            name: perses-thanos-datasource
+          expr: sum by (flavor)(kubevirt_vmi_info{namespace=~"$namespace",flavor!="<none>"})
+          labelName: flavor
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: true
+      customAllValue: .*
+      defaultValue:
+      - $__all
+      display:
+        hidden: false
+        name: Workload
+      name: workload
+      plugin:
+        kind: PrometheusPromQLVariable
+        spec:
+          datasource:
+            kind: PrometheusDatasource
+            name: perses-thanos-datasource
+          expr: sum by (workload)(kubevirt_vmi_info{namespace=~"$namespace",workload!="<none>"})
+          labelName: workload
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: true
+      customAllValue: .*
+      defaultValue:
+      - $__all
+      display:
+        hidden: false
+        name: Instance Type
+      name: instance_type
+      plugin:
+        kind: PrometheusPromQLVariable
+        spec:
+          datasource:
+            kind: PrometheusDatasource
+            name: perses-thanos-datasource
+          expr: sum by (instance_type)(kubevirt_vmi_info{namespace=~"$namespace",instance_type!="<none>"})
+          labelName: instance_type
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: true
+      customAllValue: .*
+      defaultValue:
+      - $__all
+      display:
+        hidden: false
+        name: Preference
+      name: preference
+      plugin:
+        kind: PrometheusPromQLVariable
+        spec:
+          datasource:
+            kind: PrometheusDatasource
+            name: perses-thanos-datasource
+          expr: sum by (preference)(kubevirt_vmi_info{namespace=~"$namespace",preference!="<none>"})
+          labelName: preference
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: true
+      customAllValue: .*
+      defaultValue:
+      - $__all
+      display:
+        hidden: false
+        name: OS Name
+      name: guest_os_name
+      plugin:
+        kind: PrometheusPromQLVariable
+        spec:
+          datasource:
+            kind: PrometheusDatasource
+            name: perses-thanos-datasource
+          expr: sum by (guest_os_name)(kubevirt_vm_info{namespace=~"$namespace",guest_os_name!="<none>"}
+            or kubevirt_vmi_info{namespace=~"$namespace",guest_os_name!="<none>"})
+          labelName: guest_os_name
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: true
+      customAllValue: .*
+      defaultValue:
+      - $__all
+      display:
+        hidden: false
+        name: OS Version
+      name: guest_os_version_id
+      plugin:
+        kind: PrometheusPromQLVariable
+        spec:
+          datasource:
+            kind: PrometheusDatasource
+            name: perses-thanos-datasource
+          expr: sum by (guest_os_version_id)(kubevirt_vm_info{namespace=~"$namespace",guest_os_version_id!="<none>"}
+            or kubevirt_vmi_info{namespace=~"$namespace",guest_os_version_id!="<none>"})
+          labelName: guest_os_version_id

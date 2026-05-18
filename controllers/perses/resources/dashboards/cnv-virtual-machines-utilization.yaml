@@ -1,0 +1,514 @@
+apiVersion: perses.dev/v1alpha1
+kind: PersesDashboard
+metadata:
+  name: cnv-virtual-machines-utilization
+  namespace: openshift-cnv
+spec:
+  display:
+    name: Virtualization / Virtual Machines Utilization
+  duration: 1h
+  layouts:
+  - kind: Grid
+    spec:
+      display:
+        collapse:
+          open: true
+        title: Virtual Machines Utilization
+      items:
+      - content:
+          $ref: '#/spec/panels/0_0'
+        height: 24
+        width: 24
+        x: 0
+        "y": 0
+  panels:
+    "0_0":
+      kind: Panel
+      spec:
+        display:
+          name: Virtual Machines Utilization
+        plugin:
+          kind: Table
+          spec:
+            columnSettings:
+            - hide: true
+              name: timestamp
+            - enableSorting: true
+              header: Namespace
+              name: namespace
+            - dataLink:
+                openNewTab: true
+                title: Virtual Machine Details
+                url: /monitoring/v2/dashboards/view?dashboard=cnv-openshift-virtualization-single-vm-view&project=openshift-cnv&var-namespace=${__data.fields["namespace"]}&var-name=${__data.fields["name"]}
+              enableSorting: true
+              header: VM Name
+              name: name
+            - enableSorting: true
+              header: Status
+              name: status
+            - cellSettings:
+              - condition:
+                  kind: Value
+                  spec:
+                    value: "1"
+                text: Reporting
+              - condition:
+                  kind: Misc
+                  spec:
+                    value: "null"
+                text: Not Reporting
+                textColor: '#F2495C'
+              enableSorting: true
+              header: Guest Agent
+              name: 'value #18'
+            - header: Allocated vCPU
+              hide: true
+              name: 'value #3'
+            - format:
+                unit: seconds
+              header: CPU Usage
+              hide: true
+              name: 'value #2'
+            - enableSorting: true
+              format:
+                unit: percent-decimal
+              header: CPU Usage (%)
+              name: 'value #4'
+            - format:
+                unit: seconds
+              header: CPU Delay Time
+              hide: true
+              name: 'value #11'
+            - enableSorting: true
+              format:
+                unit: percent-decimal
+              header: CPU Delay (%)
+              name: 'value #12'
+            - format:
+                shortValues: true
+                unit: bytes
+              header: Allocated Memory
+              hide: true
+              name: 'value #6'
+            - format:
+                shortValues: true
+                unit: bytes
+              header: Memory Usage
+              hide: true
+              name: 'value #5'
+            - enableSorting: true
+              format:
+                unit: percent-decimal
+              header: Memory Usage (%)
+              name: 'value #7'
+            - enableSorting: true
+              format:
+                shortValues: true
+                unit: bytes/sec
+              header: Memory Swap Traffic
+              name: 'value #14'
+            - enableSorting: true
+              format:
+                unit: seconds
+              header: CPU I/O Wait
+              name: 'value #13'
+            - enableSorting: true
+              format:
+                shortValues: true
+                unit: bytes/sec
+              header: Storage Traffic
+              name: 'value #9'
+            - enableSorting: true
+              format:
+                decimalPlaces: 5
+                unit: decimal
+              header: Storage IOPs
+              name: 'value #10'
+            - enableSorting: true
+              format:
+                shortValues: true
+                unit: bytes/sec
+              header: Network Traffic
+              name: 'value #8'
+            - hide: true
+              name: 'value #1'
+            - format:
+                shortValues: true
+                unit: bytes
+              header: File System Capacity
+              hide: true
+              name: 'value #15'
+            - format:
+                shortValues: true
+                unit: bytes
+              header: File System Usage
+              hide: true
+              name: 'value #16'
+            - enableSorting: true
+              format:
+                unit: percent-decimal
+              header: File System Usage (Max %)
+              name: 'value #17'
+            - hide: true
+              name: __name__
+            - hide: true
+              name: clusterID
+            - hide: true
+              name: container
+            - hide: true
+              name: endpoint
+            - hide: true
+              name: instance
+            - hide: true
+              name: job
+            - hide: true
+              name: pod
+            - hide: true
+              name: receive
+            - hide: true
+              name: service
+            - hide: true
+              name: tenant_id
+            - hide: true
+              name: guest_os_kernel_release
+            - hide: true
+              name: guest_os_machine
+            - hide: true
+              name: os
+            - hide: true
+              name: disk_name
+            transforms:
+            - kind: MergeSeries
+              spec: {}
+            - kind: JoinByColumnValue
+              spec:
+                columns:
+                - cluster
+                - name
+                - namespace
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum by (namespace, name, status) (
+                    label_replace(label_replace(label_replace(label_replace(label_replace(
+                      kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0,
+                      "status", "Running",   "status_group", "running"),
+                      "status", "Stopped",   "status_group", "non_running"),
+                      "status", "Starting",  "status_group", "starting"),
+                      "status", "Migrating", "status_group", "migrating"),
+                      "status", "Error",     "status_group", "error")
+                  )
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: sum by (namespace,name)(rate(kubevirt_vmi_cpu_usage_seconds_total{name=~"$name",
+                  namespace=~"$namespace"}[10m]))+on(name,namespace) group_left()(0*(sum
+                  by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  (
+                  sum by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source="guest_effective"})
+                  or
+                  sum by (namespace, name)(
+                  (kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="sockets", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="threads", source=~"default|domain"})
+                  ) or
+                  sum by (namespace, name)(
+                  (kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="sockets", source=~"default|domain"})
+                  ) or
+                  sum by (namespace, name)(
+                  kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  )+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  (sum by (namespace,name)(rate(kubevirt_vmi_cpu_usage_seconds_total{name=~"$name", namespace=~"$namespace"}[10m]))>0) / (
+                  sum by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source="guest_effective"})
+                  or
+                  sum by (namespace, name)(
+                  (kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="sockets", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="threads", source=~"default|domain"})
+                  ) or
+                  sum by (namespace, name)(
+                  (kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="sockets", source=~"default|domain"})
+                  ) or
+                  sum by (namespace, name)(
+                  kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  )+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: avg by (namespace,name) (avg_over_time(vmi:kubevirt_vmi_memory_used_bytes:sum{namespace=~"$namespace",
+                  name=~"$name"}[10m]))+on(name,namespace) group_left()(0*(sum by
+                  (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  (
+                  sum by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="memory", source="guest_effective"})
+                  or
+                  max by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="memory", source=~"default|domain"})
+                  )+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  (avg by (namespace,name) (avg_over_time(vmi:kubevirt_vmi_memory_used_bytes:sum{namespace=~"$namespace", name=~"$name"}[10m]))) / (
+                  sum by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="memory", source="guest_effective"})
+                  or
+                  max by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="memory", source=~"default|domain"})
+                  )+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: sum by (namespace,name)(rate(kubevirt_vmi_network_transmit_bytes_total{name=~"$name",
+                  namespace=~"$namespace"}[10m]) + rate(kubevirt_vmi_network_receive_bytes_total{name=~"$name",
+                  namespace=~"$namespace"}[10m]))+on(name,namespace) group_left()(0*(sum
+                  by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: sum by (namespace, name)(rate(kubevirt_vmi_storage_read_traffic_bytes_total{name=~"$name",
+                  namespace=~"$namespace"}[10m]) + rate(kubevirt_vmi_storage_write_traffic_bytes_total{name=~"$name",
+                  namespace=~"$namespace"}[10m]))+on(name,namespace) group_left()(0*(sum
+                  by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: sum by (namespace,name) (rate(kubevirt_vmi_storage_iops_read_total{name=~"$name",
+                  namespace=~"$namespace"}[10m]) + rate(kubevirt_vmi_storage_iops_write_total{name=~"$name",
+                  namespace=~"$namespace"}[10m]))+on(name,namespace) group_left()(0*(sum
+                  by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: sum by (namespace,name) (rate(kubevirt_vmi_vcpu_delay_seconds_total{name=~"$name",
+                  namespace=~"$namespace"}[10m]))+on(name,namespace) group_left()(0*(sum
+                  by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  (sum by (name, namespace)(rate(kubevirt_vmi_vcpu_delay_seconds_total{name=~"$name", namespace=~"$namespace"}[10m]))>0) / (
+                  sum by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source="guest_effective"})
+                  or
+                  sum by (namespace, name)(
+                  (kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="sockets", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="threads", source=~"default|domain"})
+                  ) or
+                  sum by (namespace, name)(
+                  (kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="sockets", source=~"default|domain"})
+                  ) or
+                  sum by (namespace, name)(
+                  kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  )+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: sum by (namespace,name)(rate(kubevirt_vmi_vcpu_wait_seconds_total{name=~"$name",
+                  namespace=~"$namespace"}[10m]))+on(name,namespace) group_left()(0*(sum
+                  by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: sum by (namespace,name) (avg_over_time(kubevirt_vmi_memory_swap_in_traffic_bytes{name=~"$name",
+                  namespace=~"$namespace"}[10m]) + avg_over_time(kubevirt_vmi_memory_swap_out_traffic_bytes{name=~"$name",
+                  namespace=~"$namespace"}[10m]))+on(name,namespace) group_left()(0*(sum
+                  by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: avg by (namespace, name) (avg_over_time(kubevirt_vmi_filesystem_capacity_bytes{name=~"$name",
+                  namespace=~"$namespace"}[10m]))+on(name,namespace) group_left()(0*(sum
+                  by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: avg by (namespace, name) (avg_over_time(kubevirt_vmi_filesystem_used_bytes{name=~"$name",
+                  namespace=~"$namespace"}[10m]))+on(name,namespace) group_left()(0*(sum
+                  by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  max by (namespace, name) (
+                    (max by (namespace, name, disk_name) (avg_over_time(kubevirt_vmi_filesystem_used_bytes{name=~"$name", namespace=~"$namespace"}[10m])))
+                    /
+                    (max by (namespace, name, disk_name) (avg_over_time(kubevirt_vmi_filesystem_capacity_bytes{name=~"$name", namespace=~"$namespace"}[10m])))
+                  )+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: sum by (namespace, name)(kubevirt_vmi_memory_available_bytes{namespace=~"$namespace",
+                  name=~"$name"}*0+1)+on(name,namespace) group_left()(0*(sum by (namespace,name)(kubevirt_vm_info{status_group=~"$status"})))
+  variables:
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: true
+      customAllValue: .*
+      defaultValue:
+      - $__all
+      display:
+        description: Filter the virtual machine by the namespace.
+        hidden: false
+        name: Namespace
+      name: namespace
+      plugin:
+        kind: PrometheusLabelValuesVariable
+        spec:
+          datasource:
+            kind: PrometheusDatasource
+            name: perses-thanos-datasource
+          labelName: namespace
+          matchers:
+          - kubevirt_vm_info
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: true
+      customAllValue: .*
+      defaultValue:
+      - $__all
+      display:
+        description: Filter the virtual machine by the name.
+        hidden: false
+        name: VM Name
+      name: name
+      plugin:
+        kind: PrometheusLabelValuesVariable
+        spec:
+          datasource:
+            kind: PrometheusDatasource
+            name: perses-thanos-datasource
+          labelName: name
+          matchers:
+          - kubevirt_vm_info{namespace=~"$namespace"}
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: true
+      customAllValue: .*
+      defaultValue:
+      - $__all
+      display:
+        description: Filter virtual machines by status
+        hidden: false
+        name: Status
+      name: status
+      plugin:
+        kind: StaticListVariable
+        spec:
+          values:
+          - label: Running
+            value: running
+          - label: Stopped
+            value: non_running
+          - label: Starting
+            value: starting
+          - label: Migrating
+            value: migrating
+          - label: Error
+            value: error

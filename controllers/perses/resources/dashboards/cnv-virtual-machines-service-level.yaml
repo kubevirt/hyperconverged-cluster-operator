@@ -1,0 +1,572 @@
+apiVersion: perses.dev/v1alpha1
+kind: PersesDashboard
+metadata:
+  name: cnv-virtual-machines-service-level
+  namespace: openshift-cnv
+spec:
+  display:
+    name: Virtualization / Virtual Machines Service Level
+  duration: 1h
+  layouts:
+  - kind: Grid
+    spec:
+      display:
+        collapse:
+          open: true
+        title: Service Level
+      items:
+      - content:
+          $ref: '#/spec/panels/0_0'
+        height: 3
+        width: 8
+        x: 0
+        "y": 0
+      - content:
+          $ref: '#/spec/panels/0_1'
+        height: 3
+        width: 8
+        x: 8
+        "y": 0
+      - content:
+          $ref: '#/spec/panels/0_2'
+        height: 3
+        width: 8
+        x: 16
+        "y": 0
+      - content:
+          $ref: '#/spec/panels/0_3'
+        height: 3
+        width: 8
+        x: 0
+        "y": 3
+      - content:
+          $ref: '#/spec/panels/0_4'
+        height: 3
+        width: 8
+        x: 8
+        "y": 3
+      - content:
+          $ref: '#/spec/panels/0_5'
+        height: 3
+        width: 8
+        x: 16
+        "y": 3
+      - content:
+          $ref: '#/spec/panels/0_6'
+        height: 16
+        width: 24
+        x: 0
+        "y": 6
+  panels:
+    "0_0":
+      kind: Panel
+      spec:
+        display:
+          description: The total uptime % of the VMs that are listed in the dashboard
+          name: Total Uptime %
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last-number
+            colorMode: none
+            format:
+              unit: percent-decimal
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: "sum(sum by (name , namespace)(\n    sum_over_time(\n    (kubevirt_vm_info{name=~\"$name\",
+                  namespace=~\"$namespace\", status_group=~\"running\"} > bool 0)
+                  \n    [24h:5m]\n    )) and on(name, namespace)\n  (kubevirt_vm_info{name=~\"$name\",
+                  namespace=~\"$namespace\", status_group=~\"$status\"} > 0))/ \nsum(sum
+                  by (name , namespace)(\n    sum_over_time(\n    (kubevirt_vm_info{name=~\"$name\",
+                  namespace=~\"$namespace\"} > bool 0) \n    [24h:5m]\n    )) and
+                  on(name, namespace)\n  (kubevirt_vm_info{name=~\"$name\", namespace=~\"$namespace\",
+                  status_group=~\"$status\"} > 0)) or vector(0)"
+    "0_1":
+      kind: Panel
+      spec:
+        display:
+          description: The total planned downtime % of the VMs that are listed in
+            the dashboard
+          name: Total Planned Downtime %
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last-number
+            colorMode: none
+            format:
+              unit: percent-decimal
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: "sum(sum by (name , namespace)(\n    sum_over_time(\n    (kubevirt_vm_info{name=~\"$name\",
+                  namespace=~\"$namespace\", status_group=~\"starting|migrating|non_running\"}
+                  > bool 0) \n    [24h:5m]\n    )) and on(name, namespace)\n  (kubevirt_vm_info{name=~\"$name\",
+                  namespace=~\"$namespace\", status_group=~\"$status\"} > 0))/ \nsum(sum
+                  by (name , namespace)(\n    sum_over_time(\n    (kubevirt_vm_info{name=~\"$name\",
+                  namespace=~\"$namespace\"} > bool 0) \n    [24h:5m]\n    )) and
+                  on(name, namespace)\n  (kubevirt_vm_info{name=~\"$name\", namespace=~\"$namespace\",
+                  status_group=~\"$status\"} > 0)) or vector(0)"
+    "0_2":
+      kind: Panel
+      spec:
+        display:
+          description: The total unplanned downtime % of the VMs that are listed in
+            the dashboard
+          name: Total Unplanned Downtime %
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last-number
+            colorMode: none
+            format:
+              unit: percent-decimal
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: "sum(sum by (name , namespace)(\n    sum_over_time(\n    (kubevirt_vm_info{name=~\"$name\",
+                  namespace=~\"$namespace\", status_group=~\"error\"} > bool 0) \n
+                  \   [24h:5m]\n    )) and on(name, namespace)\n  (kubevirt_vm_info{name=~\"$name\",
+                  namespace=~\"$namespace\", status_group=~\"$status\"} > 0))/ \nsum(sum
+                  by (name , namespace)(\n    sum_over_time(\n    (kubevirt_vm_info{name=~\"$name\",
+                  namespace=~\"$namespace\"} > bool 0) \n    [24h:5m]\n    )) and
+                  on(name, namespace)\n  (kubevirt_vm_info{name=~\"$name\", namespace=~\"$namespace\",
+                  status_group=~\"$status\"} > 0)) or vector(0)"
+    "0_3":
+      kind: Panel
+      spec:
+        display:
+          description: The total uptime hours of the VMs that are listed in the dashboard
+          name: Total Uptime (Hours)
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last-number
+            colorMode: none
+            format:
+              unit: hours
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: "sum(\n(sum by (name , namespace)(\n    sum_over_time(\n    (kubevirt_vm_info{name=~\"$name\",
+                  namespace=~\"$namespace\", status_group=~\"running\"} > bool 0)
+                  \n    [24h:5m]\n    )) and on(name, namespace)\n  (kubevirt_vm_info{name=~\"$name\",
+                  namespace=~\"$namespace\", status_group=~\"$status\"} > 0) *300
+                  )/3600\n) or vector(0)"
+    "0_4":
+      kind: Panel
+      spec:
+        display:
+          description: The total planned downtime hours of the VMs that are listed
+            in the dashboard
+          name: Total Planned Downtime (Hours)
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last-number
+            colorMode: none
+            format:
+              unit: hours
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: "sum(\n(sum by (name , namespace)(\n    sum_over_time(\n    (kubevirt_vm_info{name=~\"$name\",
+                  namespace=~\"$namespace\", status_group=~\"starting|migrating|non_running\"}
+                  > bool 0) \n    [24h:5m]\n    )) and on(name, namespace)\n  (kubevirt_vm_info{name=~\"$name\",
+                  namespace=~\"$namespace\", status_group=~\"$status\"} > 0) *300
+                  )/3600\n) or vector(0)"
+    "0_5":
+      kind: Panel
+      spec:
+        display:
+          description: The total unplanned downtime hours of the VMs that are listed
+            in the dashboard
+          name: Total Unplanned Downtime (Hours)
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last-number
+            colorMode: none
+            format:
+              unit: hours
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: "sum(\n(sum by (name , namespace)(\n    sum_over_time(\n    (kubevirt_vm_info{name=~\"$name\",
+                  namespace=~\"$namespace\", status_group=~\"error\"} > bool 0) \n
+                  \   [24h:5m]\n    )) and on(name, namespace)\n  (kubevirt_vm_info{name=~\"$name\",
+                  namespace=~\"$namespace\", status_group=~\"$status\"} > 0) *300
+                  )/3600\n) or vector(0)"
+    "0_6":
+      kind: Panel
+      spec:
+        display:
+          name: Virtual Machines Service Level Summary
+        plugin:
+          kind: Table
+          spec:
+            columnSettings:
+            - hide: true
+              name: timestamp
+            - enableSorting: true
+              header: Namespace
+              name: namespace
+            - dataLink:
+                openNewTab: true
+                title: Virtual Machine Details
+                url: /monitoring/v2/dashboards/view?dashboard=cnv-openshift-virtualization-single-vm-view&project=openshift-cnv&var-namespace=${__data.fields["namespace"]}&var-name=${__data.fields["name"]}
+              enableSorting: true
+              header: VM Name
+              name: name
+            - enableSorting: true
+              header: Status
+              name: status_group
+            - enableSorting: true
+              header: Reason
+              name: status
+            - hide: true
+              name: clusterID
+            - hide: true
+              name: container
+            - hide: true
+              name: endpoint
+            - hide: true
+              name: instance
+            - hide: true
+              name: job
+            - hide: true
+              name: pod
+            - hide: true
+              name: receive
+            - hide: true
+              name: service
+            - hide: true
+              name: tenant_id
+            - format:
+                unit: datetime-local
+              header: VM Create Date
+              hide: true
+              name: 'value #6'
+            - hide: true
+              name: 'value #1'
+            - enableSorting: true
+              format:
+                unit: hours
+              header: Uptime
+              name: 'value #7'
+            - enableSorting: true
+              format:
+                unit: percent-decimal
+              header: Uptime %
+              name: 'value #8'
+            - enableSorting: true
+              format:
+                unit: hours
+              header: Planned Downtime
+              name: 'value #2'
+            - enableSorting: true
+              format:
+                unit: percent-decimal
+              header: Planned Downtime %
+              name: 'value #3'
+            - enableSorting: true
+              format:
+                unit: hours
+              header: Unplanned Downtime
+              name: 'value #4'
+            - enableSorting: true
+              format:
+                unit: percent-decimal
+              header: Unplanned Downtime %
+              name: 'value #5'
+            - hide: true
+              name: __name__
+            - hide: true
+              name: guest_os_kernel_release
+            - hide: true
+              name: guest_os_machine
+            - hide: true
+              name: os
+            - hide: true
+              name: disk_name
+            - hide: true
+              name: 'value #9'
+            transforms:
+            - kind: MergeSeries
+              spec: {}
+            - kind: JoinByColumnValue
+              spec:
+                columns:
+                - cluster
+                - name
+                - namespace
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  label_replace(label_replace(label_replace(label_replace(label_replace(
+                    sum by (namespace, name, status_group)(kubevirt_vm_info{name=~"$name", namespace=~"$namespace"}) and on(name, namespace)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0),
+                    "status_group","Running","status_group","running"),
+                    "status_group","Stopped","status_group","non_running"),
+                    "status_group","Starting","status_group","starting"),
+                    "status_group","Migrating","status_group","migrating"),
+                    "status_group","Error","status_group","error")
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  (sum by (name, namespace)(
+                      sum_over_time(
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|migrating|non_running"} > bool 0)
+                      [24h:5m]
+                      )
+                    ) * 300
+                  ) / 3600 and on(name, namespace)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  (
+                    (sum by (name, namespace)(
+                      sum_over_time(
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|migrating|non_running"} > bool 0)
+                      [24h:5m]
+                      )
+                    ) * 300)
+                    /
+                    (sum by (name, namespace)(
+                      sum_over_time(
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace"} > bool 0)
+                      [24h:5m]
+                      )
+                    ) * 300)
+                  ) and on(name, namespace)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  (sum by (name, namespace)(
+                      sum_over_time(
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"error"} > bool 0)
+                      [24h:5m]
+                      )
+                    ) * 300
+                  ) / 3600 and on(name, namespace)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  (
+                    (sum by (name, namespace)(
+                      sum_over_time(
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"error"} > bool 0)
+                      [24h:5m]
+                      )
+                    ) * 300)
+                    /
+                    (sum by (name, namespace)(
+                      sum_over_time(
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace"} > bool 0)
+                      [24h:5m]
+                      )
+                    ) * 300)
+                  ) and on(name, namespace)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum by (namespace, name)((kubevirt_vm_create_date_timestamp_seconds{name=~"$name", namespace=~"$namespace"}>0)*1000) and on(name, namespace)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  (sum by (name, namespace)(
+                      sum_over_time(
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"running"} > bool 0)
+                      [24h:5m]
+                      )
+                    ) * 300
+                  ) / 3600 and on(name, namespace)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  (
+                    (sum by (name, namespace)(
+                      sum_over_time(
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"running"} > bool 0)
+                      [24h:5m]
+                      )
+                    ) * 300)
+                    /
+                    (sum by (name, namespace)(
+                      sum_over_time(
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace"} > bool 0)
+                      [24h:5m]
+                      )
+                    ) * 300)
+                  ) and on(name, namespace)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum by (namespace, name, status)(kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="error"}) and on(name, namespace)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+  variables:
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: true
+      customAllValue: .*
+      defaultValue:
+      - $__all
+      display:
+        description: Filter the virtual machine by the namespace.
+        hidden: false
+        name: Namespace
+      name: namespace
+      plugin:
+        kind: PrometheusLabelValuesVariable
+        spec:
+          datasource:
+            kind: PrometheusDatasource
+            name: perses-thanos-datasource
+          labelName: namespace
+          matchers:
+          - kubevirt_vm_info
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: true
+      customAllValue: .*
+      defaultValue:
+      - $__all
+      display:
+        description: Filter the virtual machine by the name.
+        hidden: false
+        name: VM Name
+      name: name
+      plugin:
+        kind: PrometheusLabelValuesVariable
+        spec:
+          datasource:
+            kind: PrometheusDatasource
+            name: perses-thanos-datasource
+          labelName: name
+          matchers:
+          - kubevirt_vm_info{namespace=~"$namespace"}
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: false
+      customAllValue: .*
+      defaultValue: $__all
+      display:
+        description: Filter virtual machines by status
+        hidden: false
+        name: Status
+      name: status
+      plugin:
+        kind: StaticListVariable
+        spec:
+          values:
+          - label: Running
+            value: running
+          - label: Stopped
+            value: non_running
+          - label: Starting
+            value: starting
+          - label: Migrating
+            value: migrating
+          - label: Error
+            value: error
