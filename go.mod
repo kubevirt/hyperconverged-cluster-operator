@@ -39,7 +39,6 @@ require (
 	k8s.io/api v0.35.1
 	k8s.io/apiextensions-apiserver v0.35.1
 	k8s.io/apimachinery v0.35.1
-	k8s.io/apiserver v0.35.1
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/component-helpers v0.34.3
 	k8s.io/kube-openapi v0.35.1
@@ -152,6 +151,7 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	k8s.io/apiserver v0.35.1 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect

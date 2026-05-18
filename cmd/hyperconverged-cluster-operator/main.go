@@ -3,9 +3,13 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"maps"
 	"os"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -34,6 +38,7 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
 	apiruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
@@ -150,6 +155,9 @@ func main() {
 
 	err = cmdcommon.ClusterInitializations(ctx, apiClient, scheme, logger)
 	cmdHelper.ExitOnError(err, "Cannot detect cluster type")
+
+	err = ensureAPIv1(ctx, apiClient, operatorNamespace, logger)
+	cmdHelper.ExitOnError(err, "Failed to store the HyperConverged CR in v1 format")
 
 	err = cmdcommon.SetHyperConvergedTLSProfile(ctx, operatorNamespace, apiClient)
 	cmdHelper.ExitOnError(err, "Cannot read existing HCO CR")
@@ -333,6 +341,125 @@ func main() {
 		eventEmitter.EmitEvent(nil, corev1.EventTypeWarning, "UnexpectedError", "HyperConverged crashed; "+err.Error())
 		os.Exit(1)
 	}
+}
+
+// ensureAPIv1 makes sure the HyperConverged CR is stored in v1 API version format.
+// This Based on the article in the Kubernetes documentation: https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definition-versioning/#upgrade-existing-objects-to-a-new-stored-version
+// We are using option 2 from this article: re-write the HyperConverged CR in v1 API version format, then update the
+// HyperConverged CRD status to only have v1 in its storedVersions field.
+func ensureAPIv1(ctx context.Context, cli client.Client, namespace string, logger logr.Logger) error {
+	hcCRD := &apiextensionsv1.CustomResourceDefinition{}
+
+	logger.Info("Reading the HyperConverged CRD")
+	err := cli.Get(ctx, client.ObjectKey{Name: hcoutil.HyperConvergedCRDName}, hcCRD)
+	if err != nil {
+		logger.Error(err, "Failed to read the HyperConverged CRD")
+		if apierrors.IsNotFound(err) {
+			return fmt.Errorf("%s CRD not found", hcoutil.HyperConvergedCRDName)
+		}
+		return err
+	}
+
+	if !slices.Contains(hcCRD.Status.StoredVersions, hcov1.APIVersionV1) {
+		return fmt.Errorf("unexpected stored API versions of %v in the %s CRD; missing %s", hcCRD.Status.StoredVersions, hcoutil.HyperConvergedCRDName, hcov1.APIVersionV1)
+	}
+
+	if len(hcCRD.Status.StoredVersions) == 1 {
+		logger.Info("HyperConverged CRD is already up-to-date")
+		return nil
+	}
+
+	if len(hcCRD.Status.StoredVersions) > 1 {
+		if err = reStoreHCv1(ctx, cli, namespace, logger); err != nil {
+			return err
+		}
+
+		const apiVersionPatch = `{"status":{"storedVersions":["v1"]}}`
+		patchBytes := []byte(apiVersionPatch)
+
+		attempt := 1
+		return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			defer func() {
+				attempt++
+			}()
+
+			retryLogger := logger.WithValues("attempt", attempt)
+			retryLogger.Info("Updating HyperConverged CRD to store only the v1 API version")
+			err = cli.Status().Patch(ctx, hcCRD, client.RawPatch(types.StrategicMergePatchType, patchBytes))
+			if err != nil {
+				return fmt.Errorf("failed to patch HyperConverged CRD, to store only the v1 API version; %w", err)
+			}
+
+			retryLogger.Info("Successfully updated the HyperConverged CRD to store only the v1 API version")
+			return nil
+		})
+	}
+
+	return nil
+}
+
+func reStoreHCv1(ctx context.Context, cli client.Client, namespace string, logger logr.Logger) error {
+	attempt := 1
+	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		defer func() {
+			attempt++
+		}()
+
+		retryLogger := logger.WithValues("attempt", attempt)
+		retryLogger.Info("reading the HyperConverged CR in API v1 format")
+		hc, err := getHyperConvergedV1(ctx, cli, namespace, retryLogger)
+		if err != nil {
+			return err
+		}
+
+		if hc == nil {
+			return nil
+		}
+
+		retryLogger.Info("re-storing the HyperConverged CR in API v1 format")
+		err = cli.Update(ctx, hc)
+		if err != nil {
+			return fmt.Errorf("failed to re-store the HyperConverged CR in API v1 format; %w", err)
+		}
+
+		retryLogger.Info("Successfully re-stored the HyperConverged CR in API v1 format")
+
+		return nil
+	})
+}
+
+func getHyperConvergedV1(ctx context.Context, cli client.Client, namespace string, retryLogger logr.Logger) (*hcov1.HyperConverged, error) {
+	hc := &hcov1.HyperConverged{}
+	hcKey := client.ObjectKey{Name: hcoutil.HyperConvergedName, Namespace: namespace}
+
+	err := cli.Get(ctx, hcKey, hc)
+	if err == nil {
+		return hc, nil
+	}
+
+	if apierrors.IsNotFound(err) {
+		retryLogger.Info("The HyperConverged CR does not exist, yet")
+		return nil, nil
+	}
+
+	suspectedErr := &json.UnmarshalTypeError{}
+	if !errors.Is(err, suspectedErr) && !strings.Contains(err.Error(), "json: cannot unmarshal") {
+		return nil, fmt.Errorf("unknown error while fetching the HyperConverged CR as v1; %w", err)
+	}
+
+	retryLogger.Info("reading the HyperConverged CR in API v1 format failed. Trying v1beta1")
+	hcv1beta1 := &hcov1beta1.HyperConverged{}
+	err = cli.Get(ctx, hcKey, hcv1beta1)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read the HyperConverged CR as v1beta1; %w", err)
+	}
+
+	err = hcv1beta1.ConvertTo(hc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert the HyperConverged CR from v1beta1 to v1; %w", err)
+	}
+
+	return hc, nil
 }
 
 // Restricts the cache's ListWatch to specific fields/labels per GVK at the specified object to control the memory impact
