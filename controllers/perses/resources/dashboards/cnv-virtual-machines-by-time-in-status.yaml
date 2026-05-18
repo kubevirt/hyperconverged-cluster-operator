@@ -1,0 +1,1015 @@
+apiVersion: perses.dev/v1alpha1
+kind: PersesDashboard
+metadata:
+  name: cnv-virtual-machines-by-time-in-status
+  namespace: openshift-cnv
+spec:
+  display:
+    name: Virtualization / Virtual Machines Time in Status
+  duration: 1h
+  layouts:
+  - kind: Grid
+    spec:
+      display:
+        collapse:
+          open: true
+        title: Time In Status
+      items:
+      - content:
+          $ref: '#/spec/panels/0_0'
+        height: 3
+        width: 8
+        x: 0
+        "y": 0
+      - content:
+          $ref: '#/spec/panels/0_1'
+        height: 3
+        width: 8
+        x: 8
+        "y": 0
+      - content:
+          $ref: '#/spec/panels/0_2'
+        height: 3
+        width: 8
+        x: 16
+        "y": 0
+      - content:
+          $ref: '#/spec/panels/0_3'
+        height: 16
+        width: 24
+        x: 0
+        "y": 3
+  panels:
+    "0_0":
+      kind: Panel
+      spec:
+        display:
+          description: The total CPUs of the VMs that are listed in the dashboard
+          name: Total Allocated CPU
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last-number
+            colorMode: none
+            format:
+              unit: decimal
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum (
+                  ((
+                  sum by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source="guest_effective"})
+                  or
+                  sum by (namespace, name)(
+                  (kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="sockets", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="threads", source=~"default|domain"})
+                  ) or
+                  sum by (namespace, name)(
+                  (kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="sockets", source=~"default|domain"})
+                  ) or
+                  sum by (namespace, name)(
+                  kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  ))
+
+                    + on(name, namespace) group_left(status)
+                    (
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="starting"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"running|non_running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="running"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|non_running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="non_running"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="error"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="migrating"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|error"} > 0)
+                      )
+                    ) and on(name, namespace)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+                  ) or vector(0)
+    "0_1":
+      kind: Panel
+      spec:
+        display:
+          description: The total Memory of the VMs that are listed in the dashboard
+          name: Total Allocated Memory
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last-number
+            colorMode: none
+            format:
+              unit: bytes
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum(
+                  max by (namespace, name, status)(
+                    ((
+                  sum by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="memory", source="guest_effective"})
+                  or
+                  max by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="memory", source=~"default|domain"})
+                  ))
+
+                    + on(name, namespace) group_left(status)
+                    (
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="starting"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"running|non_running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="running"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|non_running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="non_running"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="error"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="migrating"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|error"} > 0)
+                      )
+                    ) and on(name, namespace)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+                  )) or vector(0)
+    "0_2":
+      kind: Panel
+      spec:
+        display:
+          description: The total disk size of the VMs that are listed in the dashboard
+          name: Total Allocated Disk
+        plugin:
+          kind: StatChart
+          spec:
+            calculation: last-number
+            colorMode: none
+            format:
+              unit: bytes
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum (
+                    (kubevirt_vm_disk_allocated_size_bytes{name=~"$name", namespace=~"$namespace"})
+
+                    + on(name, namespace) group_left(status)
+                    (
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="starting"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"running|non_running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="running"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|non_running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="non_running"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="error"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="migrating"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|error"} > 0)
+                      )
+                    ) and on(name, namespace)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+                  ) or vector(0)
+    "0_3":
+      kind: Panel
+      spec:
+        display:
+          name: Virtual Machines List by Time In Status
+        plugin:
+          kind: Table
+          spec:
+            columnSettings:
+            - hide: true
+              name: timestamp
+            - hide: true
+              name: clusterID
+            - hide: true
+              name: container
+            - hide: true
+              name: endpoint
+            - hide: true
+              name: instance
+            - hide: true
+              name: job
+            - enableSorting: true
+              header: Namespace
+              name: namespace
+            - dataLink:
+                openNewTab: true
+                title: Virtual Machine Details
+                url: /monitoring/v2/dashboards/view?dashboard=cnv-openshift-virtualization-single-vm-view&project=openshift-cnv&var-namespace=${__data.fields["namespace"]}&var-name=${__data.fields["name"]}
+              enableSorting: true
+              header: VM Name
+              name: name
+            - hide: true
+              name: pod
+            - hide: true
+              name: receive
+            - hide: true
+              name: service
+            - enableSorting: true
+              header: Status
+              name: status
+            - hide: true
+              name: tenant_id
+            - hide: true
+              name: clusterType
+            - enableSorting: true
+              format:
+                unit: decimal
+              header: Allocated CPU
+              name: 'value #6'
+            - enableSorting: true
+              format:
+                shortValues: true
+                unit: bytes
+              header: Allocated Memory
+              name: 'value #5'
+            - enableSorting: true
+              format:
+                shortValues: true
+                unit: bytes
+              header: Allocated Disk
+              name: 'value #1'
+            - enableSorting: true
+              format:
+                unit: relative-time
+              header: Time Since Last Migration
+              name: 'value #3'
+            - format:
+                unit: datetime-local
+              header: Last Migration
+              hide: true
+              name: 'value #4'
+            - enableSorting: true
+              format:
+                unit: seconds
+              header: Time in Status
+              name: 'value #2'
+            - hide: true
+              name: __name__
+            - hide: true
+              name: guest_os_kernel_release
+            - hide: true
+              name: guest_os_machine
+            - hide: true
+              name: os
+            - hide: true
+              name: disk_name
+            transforms:
+            - kind: MergeSeries
+              spec: {}
+            - kind: JoinByColumnValue
+              spec:
+                columns:
+                - cluster
+                - name
+                - namespace
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum by (namespace, name, status)(
+                    (kubevirt_vm_disk_allocated_size_bytes{name=~"$name", namespace=~"$namespace"})
+
+                    + on(name, namespace) group_left(status)
+                    (
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="starting"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"running|non_running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="running"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|non_running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="non_running"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="error"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="migrating"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|error"} > 0)
+                      )
+                    ) and on(name, namespace)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+                  )
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  (
+                    (
+                      (
+                        (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", "")) > $days_in_status_gt * 24 * 60 * 60
+                      ) and (
+                        (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", "")) < $days_in_status_lt * 24 * 60 * 60
+                      ) and on(name, namespace)
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="starting"} > 0)
+                      unless on(name, namespace)
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"running|non_running|error|migrating"} > 0)
+                    )
+                    or
+                    (
+                      (
+                        (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", "")) > $days_in_status_gt * 24 * 60 * 60
+                      ) and (
+                        (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", "")) < $days_in_status_lt * 24 * 60 * 60
+                      ) and on(name, namespace)
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="running"} > 0)
+                      unless on(name, namespace)
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|non_running|error|migrating"} > 0)
+                    )
+                    or
+                    (
+                      (
+                        (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", "")) > $days_in_status_gt * 24 * 60 * 60
+                      ) and (
+                        (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", "")) < $days_in_status_lt * 24 * 60 * 60
+                      ) and on(name, namespace)
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="non_running"} > 0)
+                      unless on(name, namespace)
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|error|migrating"} > 0)
+                    )
+                    or
+                    (
+                      (
+                        (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", "")) > $days_in_status_gt * 24 * 60 * 60
+                      ) and (
+                        (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", "")) < $days_in_status_lt * 24 * 60 * 60
+                      ) and on(name, namespace)
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="error"} > 0)
+                      unless on(name, namespace)
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|migrating"} > 0)
+                    )
+                    or
+                    (
+                      (
+                        (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", "")) > $days_in_status_gt * 24 * 60 * 60
+                      ) and (
+                        (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", "")) < $days_in_status_lt * 24 * 60 * 60
+                      ) and on(name, namespace)
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="migrating"} > 0)
+                      unless on(name, namespace)
+                      (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|error"} > 0)
+                    )
+                  ) and on(name, namespace)
+                  (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum by (namespace, name, status)(
+                    (time() - kubevirt_vmi_migration_end_time_seconds{name=~"$name", namespace=~"$namespace"})
+
+                    + on(name, namespace) group_left(status)
+                    (
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="starting"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"running|non_running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="running"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|non_running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="non_running"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="error"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="migrating"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|error"} > 0)
+                      )
+                    ) and on(name, namespace)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+                  )
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  sum by (namespace, name, status)(
+                    (kubevirt_vmi_migration_end_time_seconds{name=~"$name", namespace=~"$namespace"}*1000)
+
+                    + on(name, namespace) group_left(status)
+                    (
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="starting"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"running|non_running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="running"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|non_running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="non_running"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="error"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="migrating"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|error"} > 0)
+                      )
+                    ) and on(name, namespace)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+                  )
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  max by (namespace, name, status)(
+                    ((
+                  sum by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="memory", source="guest_effective"})
+                  or
+                  max by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="memory", source=~"default|domain"})
+                  ))
+
+                    + on(name, namespace) group_left(status)
+                    (
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="starting"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"running|non_running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="running"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|non_running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="non_running"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="error"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="migrating"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|error"} > 0)
+                      )
+                    ) and on(name, namespace)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+                  )
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                datasource:
+                  kind: PrometheusDatasource
+                  name: perses-thanos-datasource
+                query: |-
+                  ((
+                  sum by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source="guest_effective"})
+                  or
+                  sum by (namespace, name)(
+                  (kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="sockets", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="threads", source=~"default|domain"})
+                  ) or
+                  sum by (namespace, name)(
+                  (kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  * ignoring (unit)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="sockets", source=~"default|domain"})
+                  ) or
+                  sum by (namespace, name)(
+                  kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source=~"default|domain"})
+                  ))
+
+                    + on(name, namespace) group_left(status)
+                    (
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="starting"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"running|non_running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Running", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="running"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|non_running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_non_running_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Stopped", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="non_running"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|error|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_error_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Error", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="error"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|migrating"} > 0)
+                      )
+                      or
+                      (
+                        (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", ""))
+                          > ($days_in_status_gt * 24 * 60 * 60)
+                        ) and (
+                          (time() - label_replace(max by (name, namespace)(kubevirt_vm_migrating_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Migrating", "", ""))
+                          < ($days_in_status_lt * 24 * 60 * 60)
+                        ) and on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group="migrating"} > 0)
+                        unless on(name, namespace)
+                        (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|error"} > 0)
+                      )
+                    ) and on(name, namespace)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+  variables:
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: true
+      customAllValue: .*
+      defaultValue:
+      - $__all
+      display:
+        description: Filter the virtual machine by the namespace.
+        hidden: false
+        name: Namespace
+      name: namespace
+      plugin:
+        kind: PrometheusLabelValuesVariable
+        spec:
+          datasource:
+            kind: PrometheusDatasource
+            name: perses-thanos-datasource
+          labelName: namespace
+          matchers:
+          - kubevirt_vm_info
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: true
+      customAllValue: .*
+      defaultValue:
+      - $__all
+      display:
+        description: Filter the virtual machine by the name.
+        hidden: false
+        name: VM Name
+      name: name
+      plugin:
+        kind: PrometheusLabelValuesVariable
+        spec:
+          datasource:
+            kind: PrometheusDatasource
+            name: perses-thanos-datasource
+          labelName: name
+          matchers:
+          - kubevirt_vm_info{namespace=~"$namespace"}
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: false
+      customAllValue: .*
+      defaultValue: $__all
+      display:
+        description: Filter virtual machines by status
+        hidden: false
+        name: Status
+      name: status
+      plugin:
+        kind: StaticListVariable
+        spec:
+          values:
+          - label: Running
+            value: running
+          - label: Stopped
+            value: non_running
+          - label: Starting
+            value: starting
+          - label: Migrating
+            value: migrating
+          - label: Error
+            value: error
+  - kind: TextVariable
+    spec:
+      display:
+        description: Filter the Virtual Machines that are in the specific status for
+          more than the selected number of days
+        hidden: false
+        name: Days in Status >
+      name: days_in_status_gt
+      value: "0"
+  - kind: TextVariable
+    spec:
+      display:
+        description: Filter the Virtual Machines that are in the specific status for
+          less than the selected number of days
+        hidden: false
+        name: Days in Status <
+      name: days_in_status_lt
+      value: "1000"

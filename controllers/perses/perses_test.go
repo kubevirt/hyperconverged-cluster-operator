@@ -72,7 +72,7 @@ var _ = Describe("Perses controller", func() {
 		var err error
 		dashboards, err = initDashboards(commontestutils.Namespace, GinkgoLogr)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(dashboards).ToNot(BeEmpty())
+		Expect(dashboards).To(HaveLen(5))
 
 		datasource, err = initDatasource(commontestutils.Namespace)
 		Expect(err).ToNot(HaveOccurred())

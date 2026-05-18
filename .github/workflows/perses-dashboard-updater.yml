@@ -1,0 +1,57 @@
+name: Update Perses Dashboards
+on:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+jobs:
+  build:
+    name: Update Perses Dashboards
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: hco
+
+      - name: Checkout monitoring repository
+        uses: actions/checkout@v4
+        with:
+          repository: kubevirt/monitoring
+          ref: main
+          path: monitoring
+
+      - name: Check for update
+        run: |
+          rm -rf hco/controllers/perses/resources/dashboards/
+          mkdir -p hco/controllers/perses/resources/dashboards/
+          cp monitoring/dashboards/perses/*.yaml hco/controllers/perses/resources/dashboards/
+          cd hco
+          git add --all
+          if ! git diff HEAD --quiet --exit-code; then
+            echo "There is an update."
+            echo "UPDATED=true" >> $GITHUB_ENV
+          fi
+
+      - name: Create a PR
+        uses: peter-evans/create-pull-request@v6
+        if: ${{ env.UPDATED }}
+        with:
+          path: hco
+          token: ${{ secrets.HCO_BOT_TOKEN }}
+          commit-message: |
+            controllers/perses: update single-cluster dashboards
+
+            Signed-off-by: HCO Bump Bot <noreply@github.com>
+          committer: HCO Bump Bot <noreply@github.com>
+          title: "Update Perses single-cluster dashboards"
+          body: |
+            Update Perses single-cluster dashboards from kubevirt/monitoring
+            ```release-note
+            Update Perses single-cluster dashboards
+            ```
+          assignees: sradco
+          reviewers: sradco
+          team-reviewers: owners, maintainers
+          branch: update_perses_dashboards
+          delete-branch: true

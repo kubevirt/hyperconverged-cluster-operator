@@ -67,14 +67,23 @@ var _ = Describe("Perses dynamic CRD gating", Label(tests.OpenshiftLabel, "perse
 			return list.Items
 		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).WithContext(ctx).ShouldNot(BeEmpty())
 
-		// And specifically, the expected names should be present
-		Eventually(func(gctx context.Context) error {
-			return cli.Get(
-				gctx,
-				client.ObjectKey{Namespace: tests.InstallNamespace, Name: "perses-dashboard-node-memory-overview"},
-				&persesv1alpha1.PersesDashboard{},
-			)
-		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).WithContext(ctx).Should(Succeed())
+		// And specifically, the expected dashboard names should be present
+		expectedDashboards := []string{
+			"cnv-node-memory-overview",
+			"cnv-virtual-machines-inventory",
+			"cnv-virtual-machines-utilization",
+			"cnv-virtual-machines-service-level",
+			"cnv-virtual-machines-by-time-in-status",
+		}
+		for _, name := range expectedDashboards {
+			Eventually(func(gctx context.Context) error {
+				return cli.Get(
+					gctx,
+					client.ObjectKey{Namespace: tests.InstallNamespace, Name: name},
+					&persesv1alpha1.PersesDashboard{},
+				)
+			}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).WithContext(ctx).Should(Succeed())
+		}
 
 		Eventually(func(gctx context.Context) error {
 			return cli.Get(
