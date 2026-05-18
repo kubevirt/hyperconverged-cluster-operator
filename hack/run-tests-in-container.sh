@@ -73,6 +73,8 @@ spec:
       value: $INSTALLED_NAMESPACE
     - name: GINKGO_LABELS
       value: "${GINKGO_LABELS}"
+    - name: ARTIFACT_DIR
+      value: /test/output
     image: $FUNC_TEST_IMAGE
     volumeMounts:
       - mountPath: /test/output
