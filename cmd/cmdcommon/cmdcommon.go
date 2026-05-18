@@ -20,7 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -182,7 +182,7 @@ func getOperatorNamespaceFromEnv() (string, error) {
 }
 
 func SetHyperConvergedTLSProfile(ctx context.Context, operatorNamespace string, apiClient client.Client) error {
-	hcoCR := &hcov1beta1.HyperConverged{
+	hcoCR := &hcov1.HyperConverged{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      hcoutil.HyperConvergedName,
 			Namespace: operatorNamespace,
@@ -198,7 +198,7 @@ func SetHyperConvergedTLSProfile(ctx context.Context, operatorNamespace string, 
 		return err
 	}
 
-	tlssecprofile.SetHyperConvergedTLSSecurityProfile(hcoCR.Spec.TLSSecurityProfile)
+	tlssecprofile.SetHyperConvergedTLSSecurityProfile(hcoCR.Spec.Security.TLSSecurityProfile)
 
 	return nil
 }

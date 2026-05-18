@@ -627,7 +627,6 @@ type ApplicationAwareConfigurations struct {
 
 // HyperConverged is the Schema for the hyperconvergeds API
 // +k8s:openapi-gen=true
-// +kubebuilder:storageversion
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +kubebuilder:resource:scope=Namespaced,categories={all},shortName={hco,hcos}
 // +kubebuilder:subresource:status
