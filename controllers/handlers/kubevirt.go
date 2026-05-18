@@ -32,6 +32,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/kvfeaturegates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/patch"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/reformatobj"
@@ -99,12 +100,6 @@ const (
 	// Allow assigning host devices to virtual machines
 	kvHostDevicesGate = "HostDevices"
 
-	// Expand disks to the largest size
-	kvExpandDisksGate = "ExpandDisks"
-
-	// Export VMs to outside of the cluster
-	kvVMExportGate = "VMExport"
-
 	// Enable the installation of the KubeVirt seccomp profile
 	kvKubevirtSeccompProfile = "KubevirtSeccompProfile"
 )
@@ -120,9 +115,7 @@ var (
 	hardCodeKvFgs = []string{
 		kvCPUManagerGate,
 		kvSnapshotGate,
-		kvExpandDisksGate,
 		kvHostDevicesGate,
-		kvVMExportGate,
 		kvKubevirtSeccompProfile,
 	}
 
@@ -131,20 +124,10 @@ var (
 	mandatoryKvFeatureGates []string
 )
 
-// These KubeVirt feature gates are automatically enabled in KubeVirt if SSP is deployed
+// These KubeVirt feature gates are automatically enabled in KubeVirt, unless emulation is enabled
 const (
-	// Support migration for VMs with host-model CPU mode
-	kvWithHostModelCPU = "WithHostModelCPU"
-
 	// Enable HyperV strict host checking for HyperV enlightenments
 	kvHypervStrictCheck = "HypervStrictCheck"
-)
-
-var (
-	sspConditionKvFgs = []string{
-		kvWithHostModelCPU,
-		kvHypervStrictCheck,
-	}
 )
 
 // KubeVirt feature gates that are exposed in HCO API
@@ -815,6 +798,9 @@ func getKVDevConfig(hc *hcov1.HyperConverged) *kubevirtcorev1.DeveloperConfigura
 	if len(fgs) > 0 {
 		devConf.FeatureGates = fgs
 	}
+	if disabledFGs := getKvDisabledFeatureGateList(fgs); len(disabledFGs) > 0 {
+		devConf.DisabledFeatureGates = disabledFGs
+	}
 	if useKVMEmulation {
 		devConf.UseEmulation = useKVMEmulation
 	}
@@ -1077,7 +1063,7 @@ func translateKubeVirtConds(orig []kubevirtcorev1.KubeVirtCondition) []metav1.Co
 func getMandatoryKvFeatureGates(isKVMEmulation bool) []string {
 	mandatoryFeatureGates := hardCodeKvFgs
 	if !isKVMEmulation {
-		mandatoryFeatureGates = append(mandatoryFeatureGates, sspConditionKvFgs...)
+		mandatoryFeatureGates = append(mandatoryFeatureGates, kvHypervStrictCheck)
 	}
 
 	return mandatoryFeatureGates
@@ -1090,7 +1076,22 @@ func getKvFeatureGateList(hc *hcov1.HyperConverged) []string {
 	res = append(res, mandatoryKvFeatureGates...)
 	res = append(res, checks...)
 
+	slices.Sort(res)
+
 	return res
+}
+
+func getKvDisabledFeatureGateList(enabledFGs []string) []string {
+	betaFGs := kvfeaturegates.GetBetaFeatureGates()
+
+	disabled := make([]string, 0, len(betaFGs))
+	for _, fg := range betaFGs {
+		if !slices.Contains(enabledFGs, fg) {
+			disabled = append(disabled, fg)
+		}
+	}
+
+	return disabled
 }
 
 func hcoCertConfig2KvCertificateRotateStrategy(hcoCertConfig hcov1.HyperConvergedCertConfig) *kubevirtcorev1.KubeVirtCertificateRotateStrategy {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"slices"
 	"sync"
 	"time"
 
@@ -29,6 +30,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/kvfeaturegates"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -41,9 +43,9 @@ var _ = Describe("KubeVirt Operand", func() {
 	)
 
 	var (
-		basicNumFgOnOpenshift = len(hardCodeKvFgs) + len(sspConditionKvFgs) + conditionalFeatureGatesCount
+		basicNumFgOnOpenshift = len(hardCodeKvFgs) + 1 + conditionalFeatureGatesCount
 		// Number of featuregates returned by getMandatoryKvFeatureGates (hardcoded + SSP conditional, excludes volume hotplug)
-		mandatoryFgCount = len(hardCodeKvFgs) + len(sspConditionKvFgs)
+		mandatoryFgCount = len(hardCodeKvFgs) + 1
 		// Default featuregate count (not Openshift))
 		defaultFeatureGateCount = len(hardCodeKvFgs) + conditionalFeatureGatesCount
 	)
@@ -52,10 +54,16 @@ var _ = Describe("KubeVirt Operand", func() {
 
 		var hco *hcov1.HyperConverged
 		var req *common.HcoRequest
+		var origMandatoryKvFeatureGates []string
 
 		BeforeEach(func() {
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
+
+			origMandatoryKvFeatureGates = slices.Clone(mandatoryKvFeatureGates)
+			DeferCleanup(func() {
+				mandatoryKvFeatureGates = slices.Clone(origMandatoryKvFeatureGates)
+			})
 		})
 
 		It("should create if not present", func() {
@@ -262,10 +270,13 @@ var _ = Describe("KubeVirt Operand", func() {
 	Context("KubeVirt", func() {
 		var hco *hcov1.HyperConverged
 		var req *common.HcoRequest
+		var origMandatoryKvFeatureGates []string
 
 		BeforeEach(func() {
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
+
+			origMandatoryKvFeatureGates = slices.Clone(mandatoryKvFeatureGates)
 
 			Expect(os.Setenv(smbiosEnvName,
 				`Family: smbios family
@@ -282,6 +293,7 @@ Version: 1.2.3`)).To(Succeed())
 			restArchConfig()
 
 			DeferCleanup(func() {
+				mandatoryKvFeatureGates = slices.Clone(origMandatoryKvFeatureGates)
 				// reset smbios once
 				smbiosOnce = &sync.Once{}
 
@@ -328,9 +340,7 @@ Version: 1.2.3`)).To(Succeed())
 			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(
 				hardCodeKvFgs,
 			))
-			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(
-				sspConditionKvFgs,
-			))
+			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvHypervStrictCheck))
 			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(
 				kvDownwardMetrics,
 			))
@@ -545,12 +555,8 @@ Version: 1.2.3`)
 			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(
 				hardCodeKvFgs,
 			))
-			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(
-				sspConditionKvFgs,
-			))
-			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(
-				kvDownwardMetrics,
-			))
+			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvHypervStrictCheck))
+			Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvDownwardMetrics))
 
 			Expect(foundResource.Spec.Configuration.MachineType).To(BeEmpty())
 			Expect(foundResource.Spec.Configuration.ArchitectureConfiguration.Amd64.MachineType).To(Equal("q35"))
@@ -1883,7 +1889,7 @@ Version: 1.2.3`)
 						And(
 							HaveLen(basicNumFgOnOpenshift),
 							ContainElements(hardCodeKvFgs),
-							ContainElements(sspConditionKvFgs),
+							ContainElement(kvHypervStrictCheck),
 							Not(ContainElement(kvPersistentReservation)),
 							Not(ContainElement(kvDownwardMetrics)),
 							ContainElement(kvDecentralizedLiveMigration),
@@ -1896,6 +1902,7 @@ Version: 1.2.3`)
 						),
 						func(kv *kubevirtcorev1.KubeVirt) {
 							Expect(kv.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
+							Expect(kv.Spec.Configuration.DeveloperConfiguration.DisabledFeatureGates).ToNot(ContainElement(kvVideoConfig))
 						},
 					),
 					// PersistentReservation
@@ -2082,6 +2089,9 @@ Version: 1.2.3`)
 							}
 						},
 						ContainElement(kvVideoConfig),
+						func(kv *kubevirtcorev1.KubeVirt) {
+							Expect(kv.Spec.Configuration.DeveloperConfiguration.DisabledFeatureGates).NotTo(ContainElement(kvVideoConfig))
+						},
 					),
 					Entry("should not add the VideoConfig if feature gate VideoConfig is set to false in HyperConverged CR",
 						func(hc *hcov1.HyperConverged) {
@@ -2090,6 +2100,9 @@ Version: 1.2.3`)
 							}
 						},
 						Not(ContainElement(kvVideoConfig)),
+						func(kv *kubevirtcorev1.KubeVirt) {
+							Expect(kv.Spec.Configuration.DeveloperConfiguration.DisabledFeatureGates).To(ContainElement(kvVideoConfig))
+						},
 					),
 				)
 			})
@@ -2157,7 +2170,7 @@ Version: 1.2.3`)
 					fgList := foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates
 					Expect(fgList).To(HaveLen(basicNumFgOnOpenshift))
 					Expect(fgList).To(ContainElements(hardCodeKvFgs))
-					Expect(fgList).To(ContainElements(sspConditionKvFgs))
+					Expect(fgList).To(ContainElement(kvHypervStrictCheck))
 				})
 
 				It("should not add feature gates if they are not exist", func() {
@@ -2185,7 +2198,7 @@ Version: 1.2.3`)
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
 					fgList := foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates
 					Expect(fgList).To(ContainElements(hardCodeKvFgs))
-					Expect(fgList).To(ContainElements(sspConditionKvFgs))
+					Expect(fgList).To(ContainElement(kvHypervStrictCheck))
 				})
 
 				It("should keep FG if already exist", func() {
@@ -2251,7 +2264,7 @@ Version: 1.2.3`)
 
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(sspConditionKvFgs))
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvHypervStrictCheck))
 				})
 
 				It("should remove FG if it missing from the HC CR", func() {
@@ -2281,7 +2294,7 @@ Version: 1.2.3`)
 
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(sspConditionKvFgs))
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvHypervStrictCheck))
 				})
 
 				It("should remove FG if it the HC CR does not contain the featureGates field", func() {
@@ -2343,7 +2356,7 @@ Version: 1.2.3`)
 						false,
 						&featuregates.HyperConvergedFeatureGates{},
 						basicNumFgOnOpenshift,
-						[][]string{hardCodeKvFgs, sspConditionKvFgs},
+						[][]string{hardCodeKvFgs, {kvHypervStrictCheck}},
 					),
 					Entry("When using kvm-emulation and FG is empty",
 						true,
@@ -2355,7 +2368,7 @@ Version: 1.2.3`)
 						false,
 						&featuregates.HyperConvergedFeatureGates{{Name: "downwardMetrics", State: ptr.To(featuregates.Enabled)}},
 						basicNumFgOnOpenshift+1,
-						[][]string{hardCodeKvFgs, sspConditionKvFgs, {kvDownwardMetrics}},
+						[][]string{hardCodeKvFgs, {kvHypervStrictCheck}, {kvDownwardMetrics}},
 					),
 					Entry("When using kvm-emulation all FGs are enabled",
 						true,
@@ -2370,13 +2383,92 @@ Version: 1.2.3`)
 					fgs := getMandatoryKvFeatureGates(false)
 					Expect(fgs).To(HaveLen(mandatoryFgCount))
 					Expect(fgs).To(ContainElements(hardCodeKvFgs))
-					Expect(fgs).To(ContainElements(sspConditionKvFgs))
+					Expect(fgs).To(ContainElement(kvHypervStrictCheck))
 				})
 
 				It("Should not include the sspConditionKvFgs if not running in openshift", func() {
 					fgs := getMandatoryKvFeatureGates(true)
 					Expect(fgs).To(HaveLen(len(hardCodeKvFgs)))
 					Expect(fgs).To(ContainElements(hardCodeKvFgs))
+				})
+			})
+
+			Context("Test getKvDisabledFeatureGateList", func() {
+				It("should disable all beta FGs when no beta FGs are enabled", func() {
+					enabledFGs := []string{"SomeNonBetaFG"}
+					disabled := getKvDisabledFeatureGateList(enabledFGs)
+					Expect(disabled).To(ConsistOf(kvfeaturegates.GetBetaFeatureGates()))
+				})
+
+				It("should not disable a beta FG that is in the enabled list", func() {
+					allBeta := kvfeaturegates.GetBetaFeatureGates()
+					Expect(allBeta).NotTo(BeEmpty())
+					enabledFGs := []string{allBeta[0]}
+					disabled := getKvDisabledFeatureGateList(enabledFGs)
+					Expect(disabled).NotTo(ContainElement(allBeta[0]))
+					Expect(disabled).To(HaveLen(len(allBeta) - 1))
+				})
+
+				It("should return empty when all beta FGs are enabled", func() {
+					disabled := getKvDisabledFeatureGateList(kvfeaturegates.GetBetaFeatureGates())
+					Expect(disabled).To(BeEmpty())
+				})
+
+				It("should not include Snapshot or KubevirtSeccompProfile when they are in mandatory FGs", func() {
+					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
+					fgs := getKvFeatureGateList(hco)
+					disabled := getKvDisabledFeatureGateList(fgs)
+					Expect(disabled).NotTo(ContainElement(kvSnapshotGate))
+					Expect(disabled).NotTo(ContainElement(kvKubevirtSeccompProfile))
+				})
+
+				It("should not include VideoConfig when it is enabled by default", func() {
+					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{}
+					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
+					fgs := getKvFeatureGateList(hco)
+					disabled := getKvDisabledFeatureGateList(fgs)
+					Expect(disabled).NotTo(ContainElement(kvVideoConfig))
+				})
+
+				It("should include VideoConfig when it is explicitly disabled", func() {
+					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+						{Name: "videoConfig", State: ptr.To(featuregates.Disabled)},
+					}
+					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
+					fgs := getKvFeatureGateList(hco)
+					disabled := getKvDisabledFeatureGateList(fgs)
+					Expect(disabled).To(ContainElement(kvVideoConfig))
+				})
+
+				It("should not include PasstBinding when passt annotation is true", func() {
+					hco.Annotations = map[string]string{deployPasstNetworkBindingAnn: "true"}
+					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
+					fgs := getKvFeatureGateList(hco)
+					disabled := getKvDisabledFeatureGateList(fgs)
+					Expect(disabled).NotTo(ContainElement(kvPasstBinding))
+				})
+
+				It("should include PasstBinding when passt annotation is absent", func() {
+					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
+					fgs := getKvFeatureGateList(hco)
+					disabled := getKvDisabledFeatureGateList(fgs)
+					Expect(disabled).To(ContainElement(kvPasstBinding))
+				})
+
+				It("should include SecureExecution when not on s390x", func() {
+					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
+					fgs := getKvFeatureGateList(hco)
+					disabled := getKvDisabledFeatureGateList(fgs)
+					Expect(disabled).To(ContainElement(kvSecureExecution))
+				})
+
+				It("should not have any FG in both enabled and disabled lists", func() {
+					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
+					fgs := getKvFeatureGateList(hco)
+					disabled := getKvDisabledFeatureGateList(fgs)
+					for _, fg := range disabled {
+						Expect(fgs).NotTo(ContainElement(fg), "feature gate %q must not appear in both enabled and disabled lists", fg)
+					}
 				})
 			})
 		})
@@ -3336,7 +3428,6 @@ Version: 1.2.3`)
 				Entry("with virtualMachineOptions containing disableSerialConsoleLog true", &hcov1.VirtualMachineOptions{DisableSerialConsoleLog: ptr.To(true)}, true, true),
 				Entry("with empty virtualMachineOptions", &hcov1.VirtualMachineOptions{}, false, false),
 			)
-
 		})
 
 		Context("VmiCPUAllocationRatio", func() {
@@ -4505,6 +4596,33 @@ Version: 1.2.3`)
 			Expect(kv.Spec.Configuration.MigrationConfiguration.BandwidthPerMigration).ToNot(BeNil())
 			Expect(kv.Spec.Configuration.MigrationConfiguration.BandwidthPerMigration).To(HaveValue(Equal(resource.MustParse("1500m"))))
 		})
+	})
+
+	Context("getKvDisabledFeatureGateList", func() {
+		BeforeEach(func() {
+			orig := kvfeaturegates.GetBetaFeatureGates
+			DeferCleanup(func() {
+				kvfeaturegates.GetBetaFeatureGates = orig
+			})
+		})
+
+		DescribeTable("should subtract the enabled list from the disabled one", func(enabled, disabled, expected []string) {
+			kvfeaturegates.GetBetaFeatureGates = func() []string {
+				return disabled
+			}
+
+			result := getKvDisabledFeatureGateList(enabled)
+			Expect(result).To(Equal(expected))
+		},
+			Entry("both list are empty", nil, nil, []string{}),
+			Entry("no overlap", []string{"aaa", "ccc", "eee"}, []string{"bbb", "ddd"}, []string{"bbb", "ddd"}),
+			Entry("overlap at start of enabled", []string{"bbb", "ddd", "fff"}, []string{"aaa", "bbb"}, []string{"aaa"}),
+			Entry("overlap at start of disabled", []string{"aaa", "bbb", "ccc"}, []string{"bbb", "ddd"}, []string{"ddd"}),
+			Entry("overlap at end of enabled", []string{"aaa", "ccc", "eee"}, []string{"bbb", "eee"}, []string{"bbb"}),
+			Entry("overlap at end of disabled", []string{"aaa", "ccc", "ddd", "eee"}, []string{"bbb", "ddd"}, []string{"bbb"}),
+			Entry("overlap in the middle", []string{"aaa", "ccc", "eee"}, []string{"bbb", "ccc", "ddd"}, []string{"bbb", "ddd"}),
+			Entry("mixed", []string{"aaa", "ccc", "eee", "ggg", "iii"}, []string{"aaa", "bbb", "ddd", "eee", "iii"}, []string{"bbb", "ddd"}),
+		)
 	})
 })
 
