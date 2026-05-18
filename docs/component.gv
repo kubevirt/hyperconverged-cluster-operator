@@ -21,6 +21,10 @@ digraph component {
 		"deployment/hco-webhook" [label="deployment/hco-webhook"]
 		"deployment/hyperconverged-cluster-cli-download" [label="deployment/hyperconverged-cluster-cli-download"]
 	}
+	subgraph cluster_inflightoperations {
+		fontname="Courier-Bold" fontsize=42 group=inflightoperations label=inflightoperations rank=same style=dashed
+		"deployment/inflightoperations-controller-manager" [label="deployment/inflightoperations-controller-manager"]
+	}
 	subgraph "cluster_kubevirt-apiserver-proxy" {
 		fontname="Courier-Bold" fontsize=42 group="kubevirt-apiserver-proxy" label="kubevirt-apiserver-proxy" rank=same style=dashed
 		"deployment/kubevirt-apiserver-proxy" [label="deployment/kubevirt-apiserver-proxy"]
@@ -74,7 +78,8 @@ digraph component {
 	edge [style=invis]
 	"deployment/virt-platform-autopilot" -> "KubeVirt/kubevirt-kubevirt-hyperconverged"
 	"KubeVirt/kubevirt-kubevirt-hyperconverged" -> "deployment/hco-operator"
-	"deployment/hco-operator" -> "deployment/kubevirt-apiserver-proxy"
+	"deployment/hco-operator" -> "deployment/inflightoperations-controller-manager"
+	"deployment/inflightoperations-controller-manager" -> "deployment/kubevirt-apiserver-proxy"
 	"deployment/kubevirt-apiserver-proxy" -> "deployment/kubevirt-console-plugin"
 	"deployment/kubevirt-console-plugin" -> "deployment/kubevirt-migration-controller"
 	"deployment/kubevirt-migration-controller" -> "NetworkAddonsConfig/cluster"

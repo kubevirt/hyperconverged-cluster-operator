@@ -48,6 +48,9 @@ digraph "managed-by" {
 	"deployment/hyperconverged-cluster-cli-download" [label="deployment/hyperconverged-cluster-cli-download"]
 	olm [label=olm]
 	olm -> "deployment/hyperconverged-cluster-cli-download"
+	"deployment/inflightoperations-controller-manager" [label="deployment/inflightoperations-controller-manager"]
+	olm [label=olm]
+	olm -> "deployment/inflightoperations-controller-manager"
 	"deployment/kubemacpool-cert-manager" [label="deployment/kubemacpool-cert-manager"]
 	"deployment/cluster-network-addons-operator" [label="deployment/cluster-network-addons-operator"]
 	"deployment/cluster-network-addons-operator" -> "deployment/kubemacpool-cert-manager"
