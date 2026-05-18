@@ -6,12 +6,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	v1 "kubevirt.io/api/core/v1"
 
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
+	"github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests/libnode"
 )
 
 var (
@@ -31,7 +31,7 @@ var _ = Describe("Cluster level evictionStrategy default value", Label("eviction
 		cli = tests.GetControllerRuntimeClient()
 
 		var err error
-		singleWorkerCluster, err = isSingleWorkerCluster(ctx, cli)
+		singleWorkerCluster, err = libnode.IsSingleWorkerCluster(ctx, cli)
 		Expect(err).ToNot(HaveOccurred())
 
 		tests.BeforeEach(ctx)
@@ -70,14 +70,3 @@ var _ = Describe("Cluster level evictionStrategy default value", Label("eviction
 		),
 	)
 })
-
-func isSingleWorkerCluster(ctx context.Context, cli client.Client) (bool, error) {
-	workerNodes := &corev1.NodeList{}
-	err := cli.List(ctx, workerNodes, client.MatchingLabels{"node-role.kubernetes.io/worker": ""})
-
-	if err != nil {
-		return false, err
-	}
-
-	return len(workerNodes.Items) == 1, nil
-}

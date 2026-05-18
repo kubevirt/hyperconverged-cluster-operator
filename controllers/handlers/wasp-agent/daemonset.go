@@ -196,6 +196,10 @@ func shouldDeployWaspAgent(hc *hcov1.HyperConverged) bool {
 		}
 	}
 
+	if hc.Spec.Virtualization.HigherWorkloadDensity == nil {
+		return false
+	}
+
 	overcommitPercentage := hc.Spec.Virtualization.HigherWorkloadDensity.MemoryOvercommitPercentage
 	return overcommitPercentage > NoOverCommitPercentage
 }
