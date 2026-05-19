@@ -79,7 +79,7 @@ spec:
         - name: KV_CONSOLE_PLUGIN_IMAGE
         - name: KV_CONSOLE_PROXY_IMAGE
         - name: WASP_AGENT_IMAGE
-          value: quay.io/openshift-virtualization/wasp-agent@sha256:eabfa6a425213f520f7a9e5b81b43e8b6430779d42c5c8b1bfd48a4f1730447a
+          value: quay.io/openshift-virtualization/wasp-agent@sha256:daaf1bd032a32a99ef8e5c9d7d40d6732713b0cbfe49952d6d2ce5fa38e78294
         - name: AIE_WEBHOOK_IMAGE
           value: quay.io/kubevirt/kubevirt-aie-webhook@sha256:d5aafc2c9ea71fc03c92a5f73d1c612996a20cff59051e029f82774210ff457e
         - name: IOMMUFD_DEVICE_PLUGIN_IMAGE

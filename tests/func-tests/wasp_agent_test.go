@@ -20,10 +20,10 @@ import (
 
 	wasp_agent "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/wasp-agent"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
+	"github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests/libnode"
 )
 
 const (
-	waspAgentComponentLabel     = "app.kubernetes.io/component=wasp-agent"
 	dsName                      = "wasp-agent"
 	saName                      = "wasp"
 	sccName                     = "wasp"
@@ -40,7 +40,7 @@ const (
 	machineConfigKind           = "MachineConfig"
 )
 
-var _ = Describe("Test wasp-agent", Label(tests.OpenshiftLabel, "wasp-agent"), Serial, Ordered, func() {
+var _ = Describe("Test wasp-agent", Label(tests.OpenshiftLabel, tests.HighlyAvailableClusterLabel, "wasp-agent"), Serial, Ordered, func() {
 	tests.FlagParse()
 
 	var (
@@ -51,6 +51,10 @@ var _ = Describe("Test wasp-agent", Label(tests.OpenshiftLabel, "wasp-agent"), S
 	BeforeAll(func(ctx context.Context) {
 		cli = tests.GetControllerRuntimeClient()
 		tests.FailIfNotOpenShift(ctx, cli, "wasp-agent")
+
+		workerNodes, err := libnode.ListWorkerNodes(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
+		tests.FailIfSingleNodeCluster(len(workerNodes) < 2)
 
 		Expect(securityv1.Install(cli.Scheme())).To(Succeed())
 
