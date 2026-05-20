@@ -16,7 +16,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -182,7 +181,7 @@ func createTempRoute(ctx context.Context, cli client.Client, routeName, serviceN
 			To: openshiftroutev1.RouteTargetReference{
 				Kind:   "Service",
 				Name:   serviceName,
-				Weight: ptr.To[int32](100),
+				Weight: new(int32(100)),
 			},
 			WildcardPolicy: openshiftroutev1.WildcardPolicyNone,
 		},

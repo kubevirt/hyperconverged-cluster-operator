@@ -39,7 +39,7 @@ var _ = Describe("[rfe_id:5100][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 		Expect(err).ToNot(HaveOccurred())
 
 		s := scheme.Scheme
-		Expect(consolev1.AddToScheme(s)).To(Succeed())
+		Expect(consolev1.Install(s)).To(Succeed())
 		cli, err = client.New(cfg, client.Options{Scheme: s})
 		Expect(err).ToNot(HaveOccurred())
 
@@ -102,7 +102,7 @@ var _ = Describe("[rfe_id:5100][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 
 			if len(ingress.Spec.ComponentRoutes) > 0 {
 				GinkgoWriter.Println("restoring the custom routes after the test")
-				cleanupPatch := []byte(fmt.Sprintf(`[{"op": "replace", "path": "/spec/componentRoutes", "value": %v}]`, existingRoutes))
+				cleanupPatch := fmt.Appendf(nil, `[{"op": "replace", "path": "/spec/componentRoutes", "value": %v}]`, existingRoutes)
 				Expect(cli.Patch(ctx, ingress, client.RawPatch(types.JSONPatchType, cleanupPatch))).To(Succeed())
 			}
 		})
@@ -119,7 +119,7 @@ var _ = Describe("[rfe_id:5100][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 			By("customize the virt-downloads route, to set another host")
 			baseDomain := ingress.Spec.Domain
 			newCLIDLHost := "virt-dl." + baseDomain
-			patch := []byte(fmt.Sprintf(`[{"op": "add", "path": "/spec/componentRoutes", "value": [{"name": "virt-downloads", "hostname": %q, "namespace": %q}]}]`, newCLIDLHost, tests.InstallNamespace))
+			patch := fmt.Appendf(nil, `[{"op": "add", "path": "/spec/componentRoutes", "value": [{"name": "virt-downloads", "hostname": %q, "namespace": %q}]}]`, newCLIDLHost, tests.InstallNamespace)
 			Expect(cli.Patch(ctx, ingress, client.RawPatch(types.JSONPatchType, patch))).To(Succeed())
 
 			customTransport := http.DefaultTransport.(*http.Transport).Clone()

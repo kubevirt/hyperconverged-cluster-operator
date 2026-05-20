@@ -32,7 +32,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
@@ -212,7 +211,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 				Namespace: tests.TestNamespace,
 			},
 			Spec: kubevirtcorev1.VirtualMachineSpec{
-				RunStrategy: ptr.To(kubevirtcorev1.RunStrategyAlways),
+				RunStrategy: new(kubevirtcorev1.RunStrategyAlways),
 				Template: &kubevirtcorev1.VirtualMachineInstanceTemplateSpec{
 					Spec: kubevirtcorev1.VirtualMachineInstanceSpec{
 						Domain: kubevirtcorev1.DomainSpec{
@@ -464,7 +463,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			for gi, group := range pr.Spec.Groups {
 				for ri, rule := range group.Rules {
 					if rule.Alert == alertName && rule.For != nil {
-						pr.Spec.Groups[gi].Rules[ri].For = ptr.To(monitoringv1.Duration("0m"))
+						pr.Spec.Groups[gi].Rules[ri].For = new(monitoringv1.Duration("0m"))
 					}
 				}
 			}

@@ -40,12 +40,12 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 		tests.FailIfNotOpenShift(ctx, cli, "kubevirt console plugin")
 
 		hco := tests.GetHCO(ctx, cli)
-		originalInfra := hco.Spec.Infra
+		originalNodePlacement := hco.Spec.Deployment.NodePlacements.DeepCopy()
 
 		k8sClientSet = tests.GetK8sClientSet()
 
 		DeferCleanup(func(ctx context.Context) {
-			hco.Spec.Infra = originalInfra
+			hco.Spec.Deployment.NodePlacements = originalNodePlacement
 			tests.UpdateHCORetry(ctx, cli, hco)
 		})
 	})
@@ -101,12 +101,11 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 		}
 		expectedNodeSelectorBytes, err := json.Marshal(expectedNodeSelector)
 		Expect(err).ToNot(HaveOccurred())
-		expectedNodeSelectorStr := string(expectedNodeSelectorBytes)
-		addNodeSelectorPatch := []byte(fmt.Sprintf(`[{"op": "add", "path": "/spec/infra", "value": {"nodePlacement": {"nodeSelector": %s}}}]`, expectedNodeSelectorStr))
+
+		addNodeSelectorPatch := fmt.Appendf(nil, `{"spec":{"deployment":{"nodePlacements":{"infra":{"nodeSelector": %s}}}}}`, string(expectedNodeSelectorBytes))
 
 		Eventually(func(ctx context.Context) error {
-			err = tests.PatchHCO(ctx, cli, addNodeSelectorPatch)
-			return err
+			return tests.PatchMergeHCO(ctx, cli, addNodeSelectorPatch)
 		}).WithTimeout(1 * time.Minute).
 			WithPolling(1 * time.Millisecond).
 			WithContext(ctx).
@@ -143,10 +142,9 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 			Should(Succeed())
 
 		// clear node placement from HyperConverged CR and verify the nodeSelector has been cleared as well from the UI Deployments
-		removeNodeSelectorPatch := []byte(`[{"op": "replace", "path": "/spec/infra", "value": {}}]`)
+		removeNodeSelectorPatch := []byte(`[{"op": "remove", "path": "/spec/deployment/nodePlacements/infra"}]`)
 		Eventually(func(ctx context.Context) error {
-			err = tests.PatchHCO(ctx, cli, removeNodeSelectorPatch)
-			return err
+			return tests.PatchHCO(ctx, cli, removeNodeSelectorPatch)
 		}).WithTimeout(1 * time.Minute).
 			WithPolling(1 * time.Millisecond).
 			WithContext(ctx).

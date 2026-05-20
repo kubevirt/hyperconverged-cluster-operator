@@ -26,12 +26,12 @@ var _ = Describe("Hypervisors configuration", Label("Hypervisors"), func() {
 
 		tests.BeforeEach(ctx)
 		hc := tests.GetHCO(ctx, cli)
-		initialHypervisors = hc.Spec.Hypervisors
+		initialHypervisors = hc.Spec.Virtualization.Hypervisors
 	})
 
 	AfterEach(func(ctx context.Context) {
 		hc := tests.GetHCO(ctx, cli)
-		hc.Spec.Hypervisors = initialHypervisors
+		hc.Spec.Virtualization.Hypervisors = initialHypervisors
 		_ = tests.UpdateHCORetry(ctx, cli, hc)
 	})
 
@@ -48,7 +48,7 @@ var _ = Describe("Hypervisors configuration", Label("Hypervisors"), func() {
 
 	It("should propagate hypervisors to KubeVirt CR and add ConfigurableHypervisor feature gate", func(ctx context.Context) {
 		hc := tests.GetHCO(ctx, cli)
-		hc.Spec.Hypervisors = []kubevirtcorev1.HypervisorConfiguration{
+		hc.Spec.Virtualization.Hypervisors = []kubevirtcorev1.HypervisorConfiguration{
 			{Name: kubevirtcorev1.KvmHypervisorName},
 		}
 		_ = tests.UpdateHCORetry(ctx, cli, hc)
@@ -66,7 +66,7 @@ var _ = Describe("Hypervisors configuration", Label("Hypervisors"), func() {
 
 	It("should remove hypervisors from KubeVirt CR and remove ConfigurableHypervisor FG when cleared from HCO", func(ctx context.Context) {
 		hc := tests.GetHCO(ctx, cli)
-		hc.Spec.Hypervisors = []kubevirtcorev1.HypervisorConfiguration{
+		hc.Spec.Virtualization.Hypervisors = []kubevirtcorev1.HypervisorConfiguration{
 			{Name: kubevirtcorev1.KvmHypervisorName},
 		}
 		_ = tests.UpdateHCORetry(ctx, cli, hc)
@@ -80,7 +80,7 @@ var _ = Describe("Hypervisors configuration", Label("Hypervisors"), func() {
 			Should(Succeed())
 
 		hc = tests.GetHCO(ctx, cli)
-		hc.Spec.Hypervisors = nil
+		hc.Spec.Virtualization.Hypervisors = nil
 		_ = tests.UpdateHCORetry(ctx, cli, hc)
 
 		Eventually(func(g Gomega, ctx context.Context) {

@@ -31,17 +31,17 @@ var _ = Describe("check v1 <=> v1beta1 API conversion", func() {
 		cli = tests.GetControllerRuntimeClient()
 	})
 
-	It("naively read HCO in v1 format", func(ctx context.Context) {
-		hcv1 := &hcov1.HyperConverged{
+	It("naively read HCO in v1beta1 format", func(ctx context.Context) {
+		hcv1beta1 := &hcov1beta1.HyperConverged{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      hcoutil.HyperConvergedName,
 				Namespace: tests.InstallNamespace,
 			},
 		}
 
-		Expect(cli.Get(ctx, hcKey, hcv1)).To(Succeed())
+		Expect(cli.Get(ctx, hcKey, hcv1beta1)).To(Succeed())
 
-		hcv1beta1 := tests.GetHCO(ctx, cli)
+		hcv1 := tests.GetHCO(ctx, cli)
 		converted := &hcov1.HyperConverged{}
 		Expect(hcv1beta1.ConvertTo(converted)).To(Succeed())
 
@@ -62,29 +62,29 @@ var _ = Describe("check v1 <=> v1beta1 API conversion", func() {
 		}
 	})
 
-	It("should allow set fields in HyperConverged v1", func(ctx context.Context) {
+	It("should allow set fields in HyperConverged v1beta1", func(ctx context.Context) {
 		By("Make sure feature gates are with default values")
 		restoreFGsToDefault(ctx, cli)
 
-		By("read HyperConverged in v1 format, then update two FGs")
+		By("read HyperConverged in v1beta1 format, then update two FGs")
 		Eventually(func(g Gomega, ctx context.Context) {
-			hcv1 := &hcov1.HyperConverged{}
-			g.Expect(cli.Get(ctx, hcKey, hcv1)).To(Succeed())
+			hcv1beta1 := &hcov1beta1.HyperConverged{}
+			g.Expect(cli.Get(ctx, hcKey, hcv1beta1)).To(Succeed())
 
-			hcv1.Spec.FeatureGates.Disable("videoConfig")
-			hcv1.Spec.FeatureGates.Enable("downwardMetrics")
+			hcv1beta1.Spec.FeatureGates.VideoConfig = new(false)
+			hcv1beta1.Spec.FeatureGates.DownwardMetrics = new(true)
 
-			g.Expect(cli.Update(ctx, hcv1)).To(Succeed())
+			g.Expect(cli.Update(ctx, hcv1beta1)).To(Succeed())
 		}).WithTimeout(60 * time.Second).
 			WithPolling(time.Second).
 			WithContext(ctx).
 			Should(Succeed())
 
-		By("read HyperConverged in v1beta1 format after the v1 update")
-		hcv1beta1 := &hcov1beta1.HyperConverged{}
-		Expect(cli.Get(ctx, hcKey, hcv1beta1)).To(Succeed())
-		Expect(hcv1beta1.Spec.FeatureGates.DownwardMetrics).To(HaveValue(BeTrueBecause("downwardMetrics was enabled using v1 API. it is expected to be 'true' in v1beta1, but it's not'")))
-		Expect(hcv1beta1.Spec.FeatureGates.VideoConfig).To(HaveValue(BeFalseBecause("videoConfig was disabled using v1 API. it is expected to be 'false' in v1beta1, but it's not'")))
+		By("read HyperConverged in v1 format after the v1beta1 update")
+		hcv1 := &hcov1.HyperConverged{}
+		Expect(cli.Get(ctx, hcKey, hcv1)).To(Succeed())
+		Expect(hcv1.Spec.FeatureGates.IsEnabled("downwardMetrics")).To(BeTrueBecause("downwardMetrics was enabled using v1beta1 API. it is expected to be 'true' in v1, but it's not'"))
+		Expect(hcv1.Spec.FeatureGates.IsEnabled("videoConfig")).To(BeFalseBecause("videoConfig was disabled using v1beta1 API. it is expected to be 'false' in v1, but it's not'"))
 
 		DeferCleanup(func(ctx context.Context) {
 			By("restore the FGs")
@@ -134,9 +134,14 @@ func restoreFGsToDefault(ctx context.Context, cl client.Client) {
 	GinkgoHelper()
 
 	hcv1beta1 := &hcov1beta1.HyperConverged{}
-	patch := []byte(fmt.Sprintf(removePathPatchTmplt, "/spec/featureGates"))
+	patch := fmt.Appendf(nil, removePathPatchTmplt, "/spec/featureGates")
 
 	Eventually(func(g Gomega, ctx context.Context) {
+		hco := tests.GetHCO(ctx, cl)
+		if len(hco.Spec.FeatureGates) == 0 {
+			return
+		}
+
 		g.Expect(tests.PatchHCO(ctx, cl, patch)).To(Succeed())
 	}).WithTimeout(2 * time.Second).
 		WithPolling(500 * time.Millisecond).
@@ -144,7 +149,7 @@ func restoreFGsToDefault(ctx context.Context, cl client.Client) {
 		Should(Succeed())
 
 	Eventually(func(g Gomega, ctx context.Context) {
-		hcv1beta1 = tests.GetHCO(ctx, cl)
+		hcv1beta1 = tests.GetHCOv1beta1(ctx, cl)
 		v1beta1FGStatus := getCurrentV1Beta1FGStatus(hcv1beta1.Spec.FeatureGates)
 		defaultFGs := featuregates.HyperConvergedFeatureGates{}
 

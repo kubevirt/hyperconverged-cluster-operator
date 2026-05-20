@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
@@ -26,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -132,10 +134,24 @@ func IsOpenShift(ctx context.Context, cli client.Client) (bool, error) {
 }
 
 // GetHCO reads the HCO CR from the APIServer with a DynamicClient
-func GetHCO(ctx context.Context, cli client.Client) *hcov1beta1.HyperConverged {
+func GetHCO(ctx context.Context, cli client.Client) *hcov1.HyperConverged {
 	ginkgo.GinkgoHelper()
 
-	Expect(hcov1beta1.AddToScheme(cli.Scheme())).To(Succeed())
+	hco := &hcov1.HyperConverged{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      hcoutil.HyperConvergedName,
+			Namespace: InstallNamespace,
+		},
+	}
+
+	Expect(cli.Get(ctx, client.ObjectKeyFromObject(hco), hco)).To(Succeed())
+
+	return hco
+}
+
+// GetHCOv1beta1 reads the HCO CR from the APIServer with a DynamicClient
+func GetHCOv1beta1(ctx context.Context, cli client.Client) *hcov1beta1.HyperConverged {
+	ginkgo.GinkgoHelper()
 
 	hco := &hcov1beta1.HyperConverged{
 		ObjectMeta: metav1.ObjectMeta{
@@ -155,8 +171,8 @@ func GetHCO(ctx context.Context, cli client.Client) *hcov1beta1.HyperConverged {
 // input object.
 // UpdateHCORetry should be preferred over UpdateHCO_old to reduce test flakiness due to
 // inevitable concurrency conflicts
-func UpdateHCORetry(ctx context.Context, cli client.Client, input *hcov1beta1.HyperConverged) *hcov1beta1.HyperConverged {
-	var output *hcov1beta1.HyperConverged
+func UpdateHCORetry(ctx context.Context, cli client.Client, input *hcov1.HyperConverged) *hcov1.HyperConverged {
+	var output *hcov1.HyperConverged
 	var err error
 
 	Eventually(func(ctx context.Context) error {
@@ -174,8 +190,8 @@ func UpdateHCORetry(ctx context.Context, cli client.Client, input *hcov1beta1.Hy
 }
 
 // UpdateHCO updates the HCO CR using a DynamicClient, it can return errors on failures
-func UpdateHCO(ctx context.Context, cli client.Client, input *hcov1beta1.HyperConverged) (*hcov1beta1.HyperConverged, error) {
-	err := hcov1beta1.AddToScheme(cli.Scheme())
+func UpdateHCO(ctx context.Context, cli client.Client, input *hcov1.HyperConverged) (*hcov1.HyperConverged, error) {
+	err := hcov1.AddToScheme(cli.Scheme())
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +215,7 @@ func UpdateHCO(ctx context.Context, cli client.Client, input *hcov1beta1.HyperCo
 // PatchHCO updates the HCO CR using a DynamicClient, it can return errors on failures
 func PatchHCO(ctx context.Context, cli client.Client, patchBytes []byte) error {
 	patch := client.RawPatch(types.JSONPatchType, patchBytes)
-	hco := &hcov1beta1.HyperConverged{
+	hco := &hcov1.HyperConverged{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      hcoutil.HyperConvergedName,
 			Namespace: InstallNamespace,
@@ -212,7 +228,7 @@ func PatchHCO(ctx context.Context, cli client.Client, patchBytes []byte) error {
 // PatchMergeHCO patches the HCO CR using a DynamicClient, it can return errors on failures
 func PatchMergeHCO(ctx context.Context, cli client.Client, patchBytes []byte) error {
 	patch := client.RawPatch(types.MergePatchType, patchBytes)
-	hco := &hcov1beta1.HyperConverged{
+	hco := &hcov1.HyperConverged{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      hcoutil.HyperConvergedName,
 			Namespace: InstallNamespace,
@@ -316,4 +332,28 @@ func executeCommandOnPod(ctx context.Context, k8scli *kubernetes.Clientset, pod 
 		return "", "", fmt.Errorf("%w Failed executing command %s on %v/%v", err, command, pod.Namespace, pod.Name)
 	}
 	return buf.String(), errBuf.String(), nil
+}
+
+func EnableFG(ctx context.Context, cli client.Client, fgName string) error {
+	hc := GetHCO(ctx, cli)
+	if hc.Spec.FeatureGates == nil {
+		patch := fmt.Appendf(nil, `{"spec":{"featureGates":[{"name": %q, "state": "%v"}]}}`, fgName, featuregates.Enabled)
+		return PatchMergeHCO(ctx, cli, patch)
+	}
+
+	if !hc.Spec.FeatureGates.IsEnabled(fgName) {
+		var patch []byte
+		idx := slices.IndexFunc(hc.Spec.FeatureGates, func(fg featuregates.FeatureGate) bool {
+			return fg.Name == fgName
+		})
+		if idx == -1 {
+			patch = fmt.Appendf(nil, `[{"op": "add", "path": "/spec/featureGates/-", "value": {"name": %q}}]`, fgName)
+		} else {
+			patch = fmt.Appendf(nil, `[{"op": "replace", "path": "/spec/featureGates/%d/state", "value": "%v"}]`, idx, featuregates.Enabled)
+		}
+
+		return PatchHCO(ctx, cli, patch)
+	}
+
+	return nil
 }

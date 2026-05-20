@@ -30,7 +30,7 @@ var _ = Describe("Check that the TuningPolicy annotation is configuring the KV o
 		hc := tests.GetHCO(ctx, cli)
 
 		delete(hc.Annotations, common.TuningPolicyAnnotationName)
-		hc.Spec.TuningPolicy = ""
+		hc.Spec.Virtualization.TuningPolicy = ""
 
 		tests.UpdateHCORetry(ctx, cli, hc)
 	})
@@ -42,7 +42,7 @@ var _ = Describe("Check that the TuningPolicy annotation is configuring the KV o
 			hc.Annotations = make(map[string]string)
 		}
 		hc.Annotations[common.TuningPolicyAnnotationName] = `{"qps":100,"burst":200}`
-		hc.Spec.TuningPolicy = hcov1.HyperConvergedAnnotationTuningPolicy
+		hc.Spec.Virtualization.TuningPolicy = hcov1.HyperConvergedAnnotationTuningPolicy
 
 		tests.UpdateHCORetry(ctx, cli, hc)
 

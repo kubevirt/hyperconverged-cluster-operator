@@ -18,7 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	wasp_agent "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/wasp-agent"
+	waspagent "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/wasp-agent"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests/libnode"
 )
@@ -29,7 +29,7 @@ const (
 	sccName                     = "wasp"
 	clusterRoleName             = "wasp-cluster"
 	clusterRoleBindingName      = "wasp-cluster"
-	setMemoryOvercommitTemplate = `[{"op": "replace", "path": "/spec/higherWorkloadDensity/memoryOvercommitPercentage", "value": %d}]`
+	setMemoryOvercommitTemplate = `[{"op": "replace", "path": "/spec/virtualization/higherWorkloadDensity/memoryOvercommitPercentage", "value": %d}]`
 	overcommitPercent           = 150
 
 	workerMachineConfigPoolName = "worker"
@@ -44,8 +44,9 @@ var _ = Describe("Test wasp-agent", Label(tests.OpenshiftLabel, tests.HighlyAvai
 	tests.FlagParse()
 
 	var (
-		cli                       client.Client
-		originalOvercommitPercent int
+		cli                             client.Client
+		originalOvercommitPercent       int
+		originalOvercommitPercentWasSet bool
 	)
 
 	BeforeAll(func(ctx context.Context) {
@@ -59,8 +60,9 @@ var _ = Describe("Test wasp-agent", Label(tests.OpenshiftLabel, tests.HighlyAvai
 		Expect(securityv1.Install(cli.Scheme())).To(Succeed())
 
 		originalHco := tests.GetHCO(ctx, cli)
-		if originalHco.Spec.HigherWorkloadDensity != nil {
-			originalOvercommitPercent = originalHco.Spec.HigherWorkloadDensity.MemoryOvercommitPercentage
+		if originalHco.Spec.Virtualization.HigherWorkloadDensity != nil {
+			originalOvercommitPercent = originalHco.Spec.Virtualization.HigherWorkloadDensity.MemoryOvercommitPercentage
+			originalOvercommitPercentWasSet = true
 		}
 
 		pauseWorkerMachineConfigPool(ctx, cli)
@@ -69,7 +71,7 @@ var _ = Describe("Test wasp-agent", Label(tests.OpenshiftLabel, tests.HighlyAvai
 	AfterAll(func(ctx context.Context) {
 		removeAutopilotSwapAnnotation(ctx, cli)
 
-		if originalOvercommitPercent != 0 {
+		if originalOvercommitPercentWasSet {
 			setMemoryOvercommitPercentage(ctx, cli, originalOvercommitPercent)
 		}
 
@@ -253,7 +255,7 @@ func getWaspSA(ctx context.Context, cli client.Client) error {
 }
 
 func setMemoryOvercommitPercentage(ctx context.Context, cli client.Client, percentage int) {
-	patchBytes := []byte(fmt.Sprintf(setMemoryOvercommitTemplate, percentage))
+	patchBytes := fmt.Appendf(nil, setMemoryOvercommitTemplate, percentage)
 
 	Eventually(tests.PatchHCO).
 		WithArguments(ctx, cli, patchBytes).
@@ -284,7 +286,7 @@ func setAutopilotSwapAnnotation(ctx context.Context, cli client.Client) {
 				%q: %q
 			}
 		}
-	}`, wasp_agent.AutopilotSwapAnnotation, wasp_agent.AutopilotSwapAnnotationValue))
+	}`, waspagent.AutopilotSwapAnnotation, waspagent.AutopilotSwapAnnotationValue))
 
 	Eventually(func(g Gomega, ctx context.Context) {
 		g.Expect(tests.PatchMergeHCO(ctx, cli, patchBytes)).To(Succeed())
@@ -295,7 +297,7 @@ func setAutopilotSwapAnnotation(ctx context.Context, cli client.Client) {
 
 	Eventually(func(g Gomega, ctx context.Context) {
 		hco := tests.GetHCO(ctx, cli)
-		g.Expect(hco.Annotations).To(HaveKeyWithValue(wasp_agent.AutopilotSwapAnnotation, wasp_agent.AutopilotSwapAnnotationValue))
+		g.Expect(hco.Annotations).To(HaveKeyWithValue(waspagent.AutopilotSwapAnnotation, waspagent.AutopilotSwapAnnotationValue))
 	}).WithTimeout(30 * time.Second).
 		WithPolling(time.Second).
 		WithContext(ctx).
@@ -310,7 +312,7 @@ func removeAutopilotSwapAnnotation(ctx context.Context, cli client.Client) {
 				%q: null
 			}
 		}
-	}`, wasp_agent.AutopilotSwapAnnotation))
+	}`, waspagent.AutopilotSwapAnnotation))
 
 	Eventually(func(g Gomega, ctx context.Context) {
 		g.Expect(tests.PatchMergeHCO(ctx, cli, patchBytes)).To(Succeed())
@@ -321,7 +323,7 @@ func removeAutopilotSwapAnnotation(ctx context.Context, cli client.Client) {
 
 	Eventually(func(g Gomega, ctx context.Context) {
 		hco := tests.GetHCO(ctx, cli)
-		g.Expect(hco.Annotations).ToNot(HaveKey(wasp_agent.AutopilotSwapAnnotation))
+		g.Expect(hco.Annotations).ToNot(HaveKey(waspagent.AutopilotSwapAnnotation))
 	}).WithTimeout(30 * time.Second).
 		WithPolling(time.Second).
 		WithContext(ctx).
@@ -342,7 +344,7 @@ func newWorkerMachineConfigPool() *unstructured.Unstructured {
 func patchWorkerMachineConfigPoolPaused(ctx context.Context, cli client.Client, paused bool) {
 	GinkgoHelper()
 	mcp := newWorkerMachineConfigPool()
-	patch := client.RawPatch(types.MergePatchType, []byte(fmt.Sprintf(`{"spec":{"paused":%t}}`, paused)))
+	patch := client.RawPatch(types.MergePatchType, fmt.Appendf(nil, `{"spec":{"paused":%t}}`, paused))
 
 	Eventually(func(g Gomega, ctx context.Context) {
 		g.Expect(cli.Patch(ctx, mcp, patch)).To(Succeed())

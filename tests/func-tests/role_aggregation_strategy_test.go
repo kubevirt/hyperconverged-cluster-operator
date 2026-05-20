@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
@@ -18,7 +17,8 @@ import (
 var _ = Describe("RoleAggregationStrategy", Serial, Label("RoleAggregationStrategy"), func() {
 	tests.FlagParse()
 	var (
-		cli client.Client
+		cli                client.Client
+		rmRoleAgrStrgPatch = []byte(`[{"op": "remove", "path": "/spec/virtualization/roleAggregationStrategy"}]`)
 	)
 
 	BeforeEach(func(ctx context.Context) {
@@ -27,13 +27,15 @@ var _ = Describe("RoleAggregationStrategy", Serial, Label("RoleAggregationStrate
 	})
 
 	AfterEach(func(ctx context.Context) {
-		rmPatch := []byte(`[{"op": "remove", "path": "/spec/roleAggregationStrategy"}]`)
-		_ = tests.PatchHCO(ctx, cli, rmPatch)
+		hco := tests.GetHCO(ctx, cli)
+		if hco.Spec.Virtualization.RoleAggregationStrategy != nil {
+			Expect(tests.PatchHCO(ctx, cli, rmRoleAgrStrgPatch)).To(Succeed())
+		}
 	})
 
 	It("should propagate Manual to KubeVirt CR and add OptOutRoleAggregation feature gate", func(ctx context.Context) {
 		hc := tests.GetHCO(ctx, cli)
-		hc.Spec.RoleAggregationStrategy = ptr.To(kubevirtcorev1.RoleAggregationStrategyManual)
+		hc.Spec.Virtualization.RoleAggregationStrategy = new(kubevirtcorev1.RoleAggregationStrategyManual)
 		tests.UpdateHCORetry(ctx, cli, hc)
 
 		Eventually(func(g Gomega, ctx context.Context) {
@@ -47,7 +49,7 @@ var _ = Describe("RoleAggregationStrategy", Serial, Label("RoleAggregationStrate
 	It("should keep OptOutRoleAggregation FG when changing from Manual to AggregateToDefault", func(ctx context.Context) {
 		By("Setting RoleAggregationStrategy to Manual")
 		hc := tests.GetHCO(ctx, cli)
-		hc.Spec.RoleAggregationStrategy = ptr.To(kubevirtcorev1.RoleAggregationStrategyManual)
+		hc.Spec.Virtualization.RoleAggregationStrategy = new(kubevirtcorev1.RoleAggregationStrategyManual)
 		tests.UpdateHCORetry(ctx, cli, hc)
 
 		Eventually(func(g Gomega, ctx context.Context) {
@@ -57,7 +59,7 @@ var _ = Describe("RoleAggregationStrategy", Serial, Label("RoleAggregationStrate
 
 		By("Changing RoleAggregationStrategy to AggregateToDefault")
 		hc = tests.GetHCO(ctx, cli)
-		hc.Spec.RoleAggregationStrategy = ptr.To(kubevirtcorev1.RoleAggregationStrategyAggregateToDefault)
+		hc.Spec.Virtualization.RoleAggregationStrategy = new(kubevirtcorev1.RoleAggregationStrategyAggregateToDefault)
 		tests.UpdateHCORetry(ctx, cli, hc)
 
 		Eventually(func(g Gomega, ctx context.Context) {
@@ -71,7 +73,7 @@ var _ = Describe("RoleAggregationStrategy", Serial, Label("RoleAggregationStrate
 	It("should clear RoleAggregationStrategy and remove OptOutRoleAggregation FG when removed from HCO", func(ctx context.Context) {
 		By("Setting RoleAggregationStrategy to Manual")
 		hc := tests.GetHCO(ctx, cli)
-		hc.Spec.RoleAggregationStrategy = ptr.To(kubevirtcorev1.RoleAggregationStrategyManual)
+		hc.Spec.Virtualization.RoleAggregationStrategy = new(kubevirtcorev1.RoleAggregationStrategyManual)
 		tests.UpdateHCORetry(ctx, cli, hc)
 
 		Eventually(func(g Gomega, ctx context.Context) {
@@ -80,10 +82,9 @@ var _ = Describe("RoleAggregationStrategy", Serial, Label("RoleAggregationStrate
 		}).WithTimeout(time.Minute).WithPolling(10 * time.Second).WithContext(ctx).Should(Succeed())
 
 		By("Removing RoleAggregationStrategy from HCO")
-		rmPatch := []byte(`[{"op": "remove", "path": "/spec/roleAggregationStrategy"}]`)
 		Eventually(func() error {
-			return tests.PatchHCO(ctx, cli, rmPatch)
-		}).WithTimeout(time.Minute).WithPolling(10 * time.Second).WithContext(ctx).Should(Succeed())
+			return tests.PatchHCO(ctx, cli, rmRoleAgrStrgPatch)
+		}).WithTimeout(10 * time.Second).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
 
 		Eventually(func(g Gomega, ctx context.Context) {
 			kv := getKubeVirt(ctx, g, cli)
