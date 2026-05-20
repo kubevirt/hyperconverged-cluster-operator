@@ -3983,6 +3983,17 @@ spec:
           - update
           - watch
         - apiGroups:
+          - ifo.kubevirt.io
+          resources:
+          - operationrulesets
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
           - machineconfiguration.openshift.io
           resources:
           - kubeletconfigs
@@ -4124,7 +4135,7 @@ spec:
                 - name: MIGRATION_OPERATOR_VERSION
                   value: v0.2.0-rc.1
                 - name: AUTOPILOT_VERSION
-                  value: v0.0.9
+                  value: v0.0.10
                 - name: INFLIGHT_OPERATIONS_VERSION
                   value: v0.0.6
                 - name: KV_CONSOLE_PLUGIN_IMAGE
@@ -5199,7 +5210,7 @@ spec:
                 - --namespace=kubevirt-hyperconverged
                 command:
                 - /manager
-                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:13bd63b12d578c78159bd05c588b314ca205502a4e092242fcf6cb5e5770d956
+                image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:ba94138eb74ebf3508dd1f2722773d0f1091aa683947ff1a1a5690168fed6384
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   httpGet:
@@ -5215,9 +5226,6 @@ spec:
                   initialDelaySeconds: 5
                   periodSeconds: 10
                 resources:
-                  limits:
-                    cpu: 500m
-                    memory: 512Mi
                   requests:
                     cpu: 100m
                     memory: 128Mi
@@ -5226,10 +5234,16 @@ spec:
                   capabilities:
                     drop:
                     - ALL
+                  runAsNonRoot: true
+                  seccompProfile:
+                    type: RuntimeDefault
+              priorityClassName: system-cluster-critical
               securityContext:
                 runAsNonRoot: true
+                seccompProfile:
+                  type: RuntimeDefault
               serviceAccountName: virt-platform-autopilot
-              terminationGracePeriodSeconds: 10
+              terminationGracePeriodSeconds: 30
       permissions:
       - rules:
         - apiGroups:
@@ -6188,7 +6202,7 @@ spec:
     name: virt-launcher
   - image: quay.io/kubevirt/virt-operator@sha256:3596b23097e0e2709d7ea744d018a9b40990735fab04aa5a415bca034b22f68a
     name: virt-operator
-  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:13bd63b12d578c78159bd05c588b314ca205502a4e092242fcf6cb5e5770d956
+  - image: quay.io/openshift-virtualization/virt-platform-autopilot@sha256:ba94138eb74ebf3508dd1f2722773d0f1091aa683947ff1a1a5690168fed6384
     name: virt-platform-autopilot
   - image: quay.io/kubevirt/virt-synchronization-controller@sha256:4e8fcc8833bf33fe522e0b7070fa3399a8f203ac9dd86b31150cda4f2ff55e3c
     name: virt-synchronization-controller
