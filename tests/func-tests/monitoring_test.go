@@ -288,7 +288,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			}).WithTimeout(10 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
 		})
 
-		It("KubeVirtCRModified alert should fired when KubeDescheduler is installed and not properly configured for KubeVirt", Serial, func(ctx context.Context) {
+		It("HCOMisconfiguredDescheduler alert should fire when KubeDescheduler is installed and not properly configured for KubeVirt", Serial, func(ctx context.Context) {
 
 			const (
 				query                 = `kubevirt_hco_misconfigured_descheduler`
@@ -433,6 +433,108 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 				Expect(err).ToNot(HaveOccurred())
 				alert := getAlertByName(alerts, hcoalerts.MisconfiguredDeschedulerAlert)
 				return alert
+			}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
+		})
+	})
+
+	Describe("HCOOperatorConditionsUnhealthy", Serial, Ordered, Label(tests.OpenshiftLabel, "monitoring"), func() {
+		const alertName = "HCOOperatorConditionsUnhealthy"
+
+		BeforeAll(func(ctx context.Context) {
+			By("Reducing alert pending time for HCOOperatorConditionsUnhealthy")
+			pr := &monitoringv1.PrometheusRule{}
+			Expect(cli.Get(ctx, client.ObjectKey{
+				Namespace: tests.InstallNamespace,
+				Name:      "kubevirt-hyperconverged-prometheus-rule",
+			}, pr)).To(Succeed())
+
+			originalSpec := pr.Spec.DeepCopy()
+
+			DeferCleanup(func(ctx context.Context) {
+				By("Restoring original HCO PrometheusRule")
+				current := &monitoringv1.PrometheusRule{}
+				Expect(cli.Get(ctx, client.ObjectKey{
+					Namespace: tests.InstallNamespace,
+					Name:      "kubevirt-hyperconverged-prometheus-rule",
+				}, current)).To(Succeed())
+				current.Spec = *originalSpec
+				Expect(cli.Update(ctx, current)).To(Succeed())
+			})
+
+			for gi, group := range pr.Spec.Groups {
+				for ri, rule := range group.Rules {
+					if rule.Alert == alertName && rule.For != nil {
+						pr.Spec.Groups[gi].Rules[ri].For = ptr.To(monitoringv1.Duration("0m"))
+					}
+				}
+			}
+			Expect(cli.Update(ctx, pr)).To(Succeed())
+		})
+
+		It("should fire when system health status is degraded", func(ctx context.Context) {
+			By("Scaling down virt-operator to prevent it from overwriting KubeVirt status")
+			var originalReplicas int32
+
+			dep, err := cliSet.AppsV1().Deployments(tests.InstallNamespace).Get(ctx, "virt-operator", metav1.GetOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			originalReplicas = *dep.Spec.Replicas
+
+			DeferCleanup(func(ctx context.Context) {
+				By("Restoring virt-operator replicas")
+				scale, err := cliSet.AppsV1().Deployments(tests.InstallNamespace).GetScale(ctx, "virt-operator", metav1.GetOptions{})
+				Expect(err).ToNot(HaveOccurred())
+				scale.Spec.Replicas = originalReplicas
+				_, err = cliSet.AppsV1().Deployments(tests.InstallNamespace).UpdateScale(ctx, "virt-operator", scale, metav1.UpdateOptions{})
+				Expect(err).ToNot(HaveOccurred())
+
+				By("Waiting for system health to return to healthy")
+				Eventually(func(ctx context.Context) *promApiv1.Alert {
+					alerts, err := promClient.Alerts(ctx)
+					Expect(err).ToNot(HaveOccurred())
+					return getAlertByName(alerts, alertName)
+				}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).Should(BeNil())
+			})
+
+			scale, err := cliSet.AppsV1().Deployments(tests.InstallNamespace).GetScale(ctx, "virt-operator", metav1.GetOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			scale.Spec.Replicas = 0
+			_, err = cliSet.AppsV1().Deployments(tests.InstallNamespace).UpdateScale(ctx, "virt-operator", scale, metav1.UpdateOptions{})
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Waiting for virt-operator pods to terminate")
+			Eventually(func(ctx context.Context) int32 {
+				dep, err := cliSet.AppsV1().Deployments(tests.InstallNamespace).Get(ctx, "virt-operator", metav1.GetOptions{})
+				Expect(err).ToNot(HaveOccurred())
+				return dep.Status.ReadyReplicas
+			}).WithTimeout(2 * time.Minute).WithPolling(5 * time.Second).WithContext(ctx).Should(BeZero())
+
+			By("Patching KubeVirt CR status to set Degraded=True")
+			kvStatusPatch := []byte(`{"status":{"conditions":[{"type":"Degraded","status":"True","reason":"TestDegradation","message":"Degraded by e2e test","lastTransitionTime":"` + time.Now().UTC().Format(time.RFC3339) + `"}]}}`)
+
+			kv := &kubevirtcorev1.KubeVirt{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "kubevirt-kubevirt-hyperconverged",
+					Namespace: tests.InstallNamespace,
+				},
+			}
+			Eventually(func(ctx context.Context) error {
+				return cli.Status().Patch(ctx, kv, client.RawPatch(types.MergePatchType, kvStatusPatch))
+			}).WithTimeout(30 * time.Second).WithPolling(2 * time.Second).WithContext(ctx).Should(Succeed())
+
+			By("Checking that the prometheus metric reports unhealthy status")
+			Eventually(func(ctx context.Context) float64 {
+				return getMetricValue(ctx, promClient, "kubevirt_hco_system_health_status")
+			}).
+				WithTimeout(5*time.Minute).
+				WithPolling(10*time.Second).
+				WithContext(ctx).
+				Should(BeNumerically(">=", 1), "expected system health status to be warning (1) or error (2)")
+
+			By("Checking that the alert fires")
+			Eventually(func(ctx context.Context) *promApiv1.Alert {
+				alerts, err := promClient.Alerts(ctx)
+				Expect(err).ToNot(HaveOccurred())
+				return getAlertByName(alerts, alertName)
 			}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
 		})
 	})
