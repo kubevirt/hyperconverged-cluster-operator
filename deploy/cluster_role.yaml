@@ -4699,6 +4699,17 @@ rules:
   - update
   - watch
 - apiGroups:
+  - ifo.kubevirt.io
+  resources:
+  - operationrulesets
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - machineconfiguration.openshift.io
   resources:
   - kubeletconfigs
