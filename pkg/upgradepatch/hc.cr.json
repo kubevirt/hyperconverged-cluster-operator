@@ -1,62 +1,54 @@
 {
   "kind": "HyperConverged",
-  "apiVersion": "hco.kubevirt.io/v1beta1",
+  "apiVersion": "hco.kubevirt.io/v1",
   "metadata": {
     "name": "kubevirt-hyperconverged"
   },
   "spec": {
-    "infra": {},
-    "workloads": {},
-    "featureGates": {
-      "downwardMetrics": false,
-      "deployKubeSecondaryDNS": false,
-      "disableMDevConfiguration": false,
-      "persistentReservation": false,
-      "alignCPUs": false,
-      "enableMultiArchBootImageImport": false,
-      "decentralizedLiveMigration": true,
-      "declarativeHotplugVolumes": false,
-      "videoConfig": true,
-      "objectGraph": false,
-      "incrementalBackup": false,
-      "containerPathVolumes": false
-    },
-    "liveMigrationConfig": {
-      "parallelMigrationsPerCluster": 5,
-      "parallelOutboundMigrationsPerNode": 2,
-      "completionTimeoutPerGiB": 150,
-      "progressTimeout": 150,
-      "allowAutoConverge": false,
-      "allowPostCopy": false
-    },
-    "certConfig": {
-      "ca": {
-        "duration": "48h0m0s",
-        "renewBefore": "24h0m0s"
+    "virtualization": {
+      "liveMigrationConfig": {
+        "parallelMigrationsPerCluster": 5,
+        "parallelOutboundMigrationsPerNode": 2,
+        "completionTimeoutPerGiB": 150,
+        "progressTimeout": 150,
+        "allowAutoConverge": false,
+        "allowPostCopy": false
       },
-      "server": {
-        "duration": "24h0m0s",
-        "renewBefore": "12h0m0s"
+      "workloadUpdateStrategy": {
+        "workloadUpdateMethods": [
+          "LiveMigrate"
+        ],
+        "batchEvictionSize": 10,
+        "batchEvictionInterval": "1m0s"
+      },
+      "virtualMachineOptions": {
+        "disableFreePageReporting": false,
+        "disableSerialConsoleLog": false
+      },
+      "higherWorkloadDensity": {
+        "memoryOvercommitPercentage": 100
+      },
+      "vmiCPUAllocationRatio": 10
+    },
+    "workloadSources": {
+      "enableCommonBootImageImport": true
+    },
+    "security": {
+      "certConfig": {
+        "ca": {
+          "duration": "48h0m0s",
+          "renewBefore": "24h0m0s"
+        },
+        "server": {
+          "duration": "24h0m0s",
+          "renewBefore": "12h0m0s"
+        }
       }
     },
-    "workloadUpdateStrategy": {
-      "workloadUpdateMethods": [
-        "LiveMigrate"
-      ],
-      "batchEvictionSize": 10,
-      "batchEvictionInterval": "1m0s"
-    },
-    "uninstallStrategy": "BlockUninstallIfWorkloadsExist",
-    "virtualMachineOptions": {
-      "disableFreePageReporting": false,
-      "disableSerialConsoleLog": false
-    },
-    "higherWorkloadDensity": {
-      "memoryOvercommitPercentage": 100
-    },
-    "enableCommonBootImageImport": true,
-    "deployVmConsoleProxy": false,
-    "enableApplicationAwareQuota": false
+    "deployment": {
+      "uninstallStrategy": "BlockUninstallIfWorkloadsExist",
+      "deployVmConsoleProxy": false
+    }
   },
   "status": {
     "nodeInfo": {}

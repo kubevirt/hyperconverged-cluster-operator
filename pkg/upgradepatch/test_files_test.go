@@ -55,3 +55,6 @@ var badSemverRangeORFileContent []byte
 
 //go:embed test-files/empty.json
 var emptyFileContent []byte
+
+//go:embed test-files/missingPathOnRemove.json
+var missingPathOnRemove []byte

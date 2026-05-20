@@ -49,7 +49,6 @@ import (
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/alerts"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operandhandler"
@@ -1144,27 +1143,14 @@ func (r *ReconcileHyperConverged) applyUpgradePatches(req *common.HcoRequest) (b
 		return false, err
 	}
 
-	// Temporary workaround, until  upgradepatch.ApplyUpgradePatch moves to v1; TODO: restore when done
-	v1Beta1Instance := &hcov1beta1.HyperConverged{}
-	err = v1Beta1Instance.ConvertFrom(req.Instance)
+	tmpInstance, err := upgradepatch.ApplyUpgradePatch(req.Logger, req.Instance, knownHcoSV)
 	if err != nil {
 		return false, err
 	}
 
-	tmpInstance, err := upgradepatch.ApplyUpgradePatch(req.Logger, v1Beta1Instance, knownHcoSV)
-	if err != nil {
-		return false, err
-	}
-
-	if !reflect.DeepEqual(tmpInstance.Spec, v1Beta1Instance.Spec) {
+	if !reflect.DeepEqual(tmpInstance.Spec, req.Instance.Spec) {
 		req.Logger.Info("updating HCO spec as a result of upgrade patches")
-		tmpInstance.Spec.DeepCopyInto(&v1Beta1Instance.Spec)
-		err = v1Beta1Instance.ConvertTo(req.Instance)
-		if err != nil {
-			return false, err
-		}
-		// End of workaround
-
+		tmpInstance.Spec.DeepCopyInto(&req.Instance.Spec)
 		modified = true
 		req.Dirty = true
 	}

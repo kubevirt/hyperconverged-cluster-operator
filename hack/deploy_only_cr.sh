@@ -28,7 +28,15 @@ function cleanup() {
 trap "cleanup" INT TERM EXIT
 
 mkdir -p _out
-cp deploy/hco.cr.yaml _out/
+api_version=$(${CMD} get crd hyperconvergeds.hco.kubevirt.io -o json | jq -r '.spec.versions[]|select(.storage)|.name')
+if [[ -z ${api_version} ]]; then
+  echo "CRD is not valid. No storage version in the CRD"
+  exit 1
+fi
+
+go run ./tools/crwriter --api-version="${api_version}" --format=yaml | tee _out/hco.cr.yaml
+# TODO: restore this after dropping of v1beta1:
+#cp deploy/hco.cr.yaml _out/
 
 ${CMD} get nodes -o wide --show-labels
 

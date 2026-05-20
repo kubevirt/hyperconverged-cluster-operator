@@ -10,7 +10,6 @@ import (
 	"path"
 	"time"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
 )
@@ -19,12 +18,14 @@ var (
 	format     string
 	outputFile string
 	header     string
+	apiVersion string
 )
 
 func init() {
 	flag.StringVar(&format, "format", "yaml", `output format. May be "json", "yaml" or "go"`)
 	flag.StringVar(&outputFile, "out", "", "output file name")
 	flag.StringVar(&header, "header", "", "path to an optional header text file, for go format")
+	flag.StringVar(&apiVersion, "api-version", "v1beta1", `API version to generate CR for. May be "v1beta1" or "v1"`)
 	flag.Parse()
 
 	switch format {
@@ -33,10 +34,23 @@ func init() {
 		fmt.Fprintln(os.Stderr, "format must be one of [json, yaml, go]")
 		os.Exit(1)
 	}
+
+	switch apiVersion {
+	case "v1beta1", "v1":
+	default:
+		fmt.Fprintln(os.Stderr, "api-version must be one of [v1beta1, v1]")
+		os.Exit(1)
+	}
 }
 
 func main() {
-	cr := components.GetOperatorCR()
+	var cr any
+	switch apiVersion {
+	case "v1":
+		cr = components.GetOperatorV1CR()
+	default:
+		cr = components.GetOperatorCR()
+	}
 
 	out := os.Stdout
 	if outputFile != "" {
@@ -70,13 +84,13 @@ func main() {
 	}
 }
 
-func writeJSON(cr *v1beta1.HyperConverged, w io.Writer) error {
+func writeJSON(cr any, w io.Writer) error {
 	dec := json.NewEncoder(w)
 	dec.SetIndent("", "  ")
 	return dec.Encode(cr)
 }
 
-func generateGo(w io.Writer, cr *v1beta1.HyperConverged) error {
+func generateGo(w io.Writer, cr any) error {
 	wd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("can't get current working directory; %v", err)

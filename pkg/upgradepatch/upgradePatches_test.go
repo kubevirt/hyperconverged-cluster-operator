@@ -195,78 +195,108 @@ var _ = Describe("upgradePatches", func() {
 		)
 	})
 
-	//nolint:staticcheck // ignore SA1019 for old code
 	Context("check patches", func() {
 		BeforeEach(func() {
 			resetOnce()
-			pwdFS := dirtest.New(dirtest.WithFile("upgradePatches.json", upgradePatchesFileContent))
-			Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
 			hcCRBytes = slices.Clone(hcCRBytesOrig)
 		})
 
-		It("should apply changes as defined in the upgradePatches.json file", func() {
-			hc := components.GetOperatorCR()
-			hc.Spec.FeatureGates.DeployKubevirtIpamController = ptr.To(false)
-			hc.Spec.FeatureGates.EnableManagedTenantQuota = ptr.To(false)
-			hc.Spec.FeatureGates.EnableManagedTenantQuota = ptr.To(false)
-			hc.Spec.FeatureGates.NonRoot = ptr.To(false)
-			hc.Spec.FeatureGates.WithHostPassthroughCPU = ptr.To(false)
-			hc.Spec.FeatureGates.PrimaryUserDefinedNetworkBinding = ptr.To(false)
+		It("should not modify CR when hcoCRPatchList is empty", func() {
+			pwdFS := dirtest.New(dirtest.WithFile("upgradePatches.json", emptyFileContent))
+			Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
 
-			ver, err := semver.Parse("1.13.9")
+			hc := components.GetOperatorV1CR()
+			ver, err := semver.Parse("1.18.5")
 			Expect(err).NotTo(HaveOccurred())
 
 			newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(newHc.Spec.FeatureGates.DeployKubevirtIpamController).To(BeNil())
-			Expect(newHc.Spec.FeatureGates.EnableManagedTenantQuota).To(BeNil())
-			Expect(newHc.Spec.FeatureGates.EnableManagedTenantQuota).To(BeNil())
-			Expect(newHc.Spec.FeatureGates.NonRoot).To(BeNil())
-			Expect(newHc.Spec.FeatureGates.WithHostPassthroughCPU).To(BeNil())
-			Expect(newHc.Spec.FeatureGates.PrimaryUserDefinedNetworkBinding).To(BeNil())
+			Expect(newHc.Spec).To(Equal(hc.Spec))
 		})
 
-		DescribeTable("Moving the deprecated EnableCommonBootImageImport FG to a new field",
-			func(oldFG, newFG *bool, ver semver.Version, assertField, assertFG types.GomegaMatcher) {
-				hc := components.GetOperatorCR()
-				hc.Spec.FeatureGates.EnableCommonBootImageImport = oldFG
-				hc.Spec.EnableCommonBootImageImport = newFG
+		It("should apply test+replace patch when version is in range", func() {
+			pwdFS := dirtest.New(dirtest.WithFile("upgradePatches.json", upgradePatchesFileContent))
+			Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
 
-				newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
-				Expect(err).NotTo(HaveOccurred())
+			hc := components.GetOperatorV1CR()
+			Expect(hc.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting).To(HaveValue(BeFalse()))
 
-				Expect(newHc.Spec.EnableCommonBootImageImport).To(assertField)
-				Expect(newHc.Spec.FeatureGates.EnableCommonBootImageImport).To(assertFG)
-			},
-			Entry("should move if the old value is not the default value",
-				ptr.To(false),
-				ptr.To(true),
-				semver.MustParse("1.14.0"),
-				HaveValue(BeFalse()),
-				BeNil(),
-			),
-			Entry("should not move for newer versions",
-				ptr.To(false),
-				ptr.To(true),
-				semver.MustParse("1.15.0"),
-				HaveValue(BeTrue()),
-				HaveValue(BeFalse()),
-			),
-			Entry("should not move if the old FG is empty",
-				nil,
-				ptr.To(true),
-				semver.MustParse("1.14.0"),
-				HaveValue(BeTrue()),
-				BeNil(),
-			),
-			Entry("should not move if the old FG is the default one",
-				ptr.To(true),
-				ptr.To(false),
-				semver.MustParse("1.14.0"),
-				HaveValue(BeFalse()),
-				BeNil(),
-			),
-		)
+			ver, err := semver.Parse("1.18.5")
+			Expect(err).NotTo(HaveOccurred())
+
+			newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(newHc.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting).To(HaveValue(BeTrue()))
+		})
+
+		It("should not apply patch when version is out of range", func() {
+			pwdFS := dirtest.New(dirtest.WithFile("upgradePatches.json", upgradePatchesFileContent))
+			Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+			hc := components.GetOperatorV1CR()
+			Expect(hc.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting).To(HaveValue(BeFalse()))
+
+			ver, err := semver.Parse("1.19.0")
+			Expect(err).NotTo(HaveOccurred())
+
+			newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(newHc.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting).To(HaveValue(BeFalse()))
+		})
+
+		It("should skip test+replace when test value does not match", func() {
+			pwdFS := dirtest.New(dirtest.WithFile("upgradePatches.json", upgradePatchesFileContent))
+			Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+			hc := components.GetOperatorV1CR()
+			hc.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting = ptr.To(true)
+
+			ver, err := semver.Parse("1.18.5")
+			Expect(err).NotTo(HaveOccurred())
+
+			newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(newHc.Spec.Virtualization.VirtualMachineOptions.DisableFreePageReporting).To(HaveValue(BeTrue()))
+		})
+
+		It("should apply remove patch", func() {
+			pwdFS := dirtest.New(dirtest.WithFile("upgradePatches.json", upgradePatchesFileContent))
+			Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+			hc := components.GetOperatorV1CR()
+
+			ver, err := semver.Parse("1.18.0")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(hc.Spec.Virtualization.VirtualMachineOptions).ToNot(BeNil())
+			Expect(hc.Spec.Virtualization.VirtualMachineOptions.DisableSerialConsoleLog).To(HaveValue(BeFalse()))
+			newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(newHc).NotTo(BeNil())
+			Expect(newHc.Spec.Virtualization.VirtualMachineOptions).ToNot(BeNil())
+			Expect(newHc.Spec.Virtualization.VirtualMachineOptions.DisableSerialConsoleLog).To(BeNil())
+		})
+
+		It("should apply remove patch with allowMissingPathOnRemove", func() {
+			pwdFS := dirtest.New(dirtest.WithFile("upgradePatches.json", missingPathOnRemove))
+			Expect(Init(pwdFS, GinkgoLogr)).To(Succeed())
+
+			hc := components.GetOperatorV1CR()
+			hc.Spec.Virtualization.VirtualMachineOptions = nil
+
+			ver, err := semver.Parse("1.18.0")
+			Expect(err).NotTo(HaveOccurred())
+
+			newHc, err := ApplyUpgradePatch(GinkgoLogr, hc, ver)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(newHc).NotTo(BeNil())
+			Expect(newHc.Spec.Virtualization.VirtualMachineOptions).To(BeNil())
+		})
 	})
 })
