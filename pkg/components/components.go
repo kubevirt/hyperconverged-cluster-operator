@@ -32,38 +32,39 @@ const (
 )
 
 type DeploymentOperatorParams struct {
-	Namespace                 string
-	Image                     string
-	WebhookImage              string
-	CliDownloadsImage         string
-	KVUIPluginImage           string
-	KVUIProxyImage            string
-	WaspAgentImage            string
-	AIEWebhookImage           string
-	IOMMUFDDevicePluginImage  string
-	ImagePullPolicy           string
-	ConversionContainer       string
-	VmwareContainer           string
-	VirtIOWinContainer        string
-	Smbios                    string
-	Machinetype               string
-	Amd64MachineType          string
-	Arm64MachineType          string
-	S390xMachineType          string
-	HcoKvIoVersion            string
-	KubevirtVersion           string
-	KvVirtLancherOsVersion    string
-	CdiVersion                string
-	CnaoVersion               string
-	SspVersion                string
-	HppoVersion               string
-	MtqVersion                string
-	AaqVersion                string
-	MigrationOperatorVersion  string
-	AutopilotVersion          string
-	InFlightOperationsVersion string
-	Env                       []corev1.EnvVar
-	AddNetworkPolicyLabels    bool
+	Namespace                     string
+	Image                         string
+	WebhookImage                  string
+	CliDownloadsImage             string
+	KVUIPluginImage               string
+	KVUIProxyImage                string
+	NetworkResourcesInjectorImage string
+	WaspAgentImage                string
+	AIEWebhookImage               string
+	IOMMUFDDevicePluginImage      string
+	ImagePullPolicy               string
+	ConversionContainer           string
+	VmwareContainer               string
+	VirtIOWinContainer            string
+	Smbios                        string
+	Machinetype                   string
+	Amd64MachineType              string
+	Arm64MachineType              string
+	S390xMachineType              string
+	HcoKvIoVersion                string
+	KubevirtVersion               string
+	KvVirtLancherOsVersion        string
+	CdiVersion                    string
+	CnaoVersion                   string
+	SspVersion                    string
+	HppoVersion                   string
+	MtqVersion                    string
+	AaqVersion                    string
+	MigrationOperatorVersion      string
+	AutopilotVersion              string
+	InFlightOperationsVersion     string
+	Env                           []corev1.EnvVar
+	AddNetworkPolicyLabels        bool
 }
 
 func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.DeploymentSpec {
@@ -220,6 +221,10 @@ func buildEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 		{
 			Name:  util.KVUIProxyImageEnvV,
 			Value: params.KVUIProxyImage,
+		},
+		{
+			Name:  util.NetworkResourcesInjectorImageEnvV,
+			Value: params.NetworkResourcesInjectorImage,
 		},
 		{
 			Name:  util.WaspAgentImageEnvV,
