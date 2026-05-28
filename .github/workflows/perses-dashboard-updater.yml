@@ -20,6 +20,7 @@ jobs:
           repository: kubevirt/monitoring
           ref: main
           path: monitoring
+          persist-credentials: false
 
       - name: Sync dashboards (full replace handles additions and removals)
         run: |
@@ -35,7 +36,7 @@ jobs:
           fi
 
       - name: Create a PR
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v7
         if: ${{ env.UPDATED }}
         with:
           path: hco
