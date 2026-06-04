@@ -291,7 +291,7 @@ data:
               "unit": "short"
             },
             {
-              "alias": "CPU Usage",
+              "alias": "CPU Usage (cores)",
               "colorMode": null,
               "colors": [],
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
@@ -303,7 +303,7 @@ data:
               "pattern": "Value #A",
               "thresholds": [],
               "type": "number",
-              "unit": "percentunit"
+              "unit": "short"
             },
             {
               "alias": "",
@@ -1389,8 +1389,8 @@ data:
           "yaxes": [
             {
               "decimals": 2,
-              "format": "s",
-              "label": null,
+              "format": "short",
+              "label": "cores",
               "logBase": 1,
               "max": null,
               "min": 0,
