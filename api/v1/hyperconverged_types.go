@@ -67,12 +67,6 @@ type HyperConvergedSpec struct {
 	//   Developer Preview.
 	//   Phase: beta
 	//
-	// * videoConfig:
-	//   VideoConfig allows users to configure video device types for their virtual
-	//   machines. This can be useful for workloads that require specific video
-	//   capabilities or architectures. Note: This feature is in Tech Preview.
-	//   Phase: beta
-	//
 	// * alignCPUs:
 	//   Enable KubeVirt to request up to two additional dedicated CPUs in order to
 	//   complete the total CPU count to an even parity when using emulator thread

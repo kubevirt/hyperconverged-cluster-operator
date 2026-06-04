@@ -188,10 +188,6 @@ var _ = Describe("Feature Gates", func() {
 		Entry("known alpha FG; in list; disabled", featuregates.HyperConvergedFeatureGates{{Name: "downwardMetrics", State: ptr.To(featuregates.Disabled)}}, "downwardMetrics", BeFalse()),
 		Entry("known alpha FG; not in list; disabled", featuregates.HyperConvergedFeatureGates{{Name: "deployKubeSecondaryDNS", State: ptr.To(featuregates.Enabled)}}, "downwardMetrics", BeFalse()),
 
-		Entry("known beta FG; in list; enabled", featuregates.HyperConvergedFeatureGates{{Name: "videoConfig", State: ptr.To(featuregates.Enabled)}}, "videoConfig", BeTrue()),
-		Entry("known beta FG; in list; disabled", featuregates.HyperConvergedFeatureGates{{Name: "videoConfig", State: ptr.To(featuregates.Disabled)}}, "videoConfig", BeFalse()),
-		Entry("known beta FG; not in list; disabled", featuregates.HyperConvergedFeatureGates{{Name: "deployKubeSecondaryDNS", State: ptr.To(featuregates.Enabled)}}, "videoConfig", BeTrue()),
-
 		Entry("known deprecated FG; in list; enabled", featuregates.HyperConvergedFeatureGates{{Name: "withHostPassthroughCPU", State: ptr.To(featuregates.Enabled)}}, "withHostPassthroughCPU", BeFalse()),
 		Entry("known deprecated FG; in list; disabled", featuregates.HyperConvergedFeatureGates{{Name: "withHostPassthroughCPU", State: ptr.To(featuregates.Disabled)}}, "withHostPassthroughCPU", BeFalse()),
 		Entry("known deprecated FG; not in list; disabled", featuregates.HyperConvergedFeatureGates{{Name: "deployKubeSecondaryDNS", State: ptr.To(featuregates.Enabled)}}, "withHostPassthroughCPU", BeFalse()),

@@ -403,14 +403,13 @@ var _ = Describe("api/v1beta1", func() {
 					DownwardMetrics:            ptr.To(true),
 					AlignCPUs:                  ptr.To(true),
 					DecentralizedLiveMigration: ptr.To(false),
-					VideoConfig:                ptr.To(false),
 					ObjectGraph:                ptr.To(false), // alpha default, should not appear
 				}
 				out := &hcofg.HyperConvergedFeatureGates{}
 
 				convert_v1beta1_FeatureGates_To_v1(in, out)
 
-				Expect(*out).To(HaveLen(4))
+				Expect(*out).To(HaveLen(3))
 			})
 		})
 
@@ -490,7 +489,6 @@ var _ = Describe("api/v1beta1", func() {
 			It("should preserve beta feature gate disabled through round-trip", func() {
 				original := &HyperConvergedFeatureGates{
 					DecentralizedLiveMigration: ptr.To(false),
-					VideoConfig:                ptr.To(false),
 				}
 
 				v1fgs := &hcofg.HyperConvergedFeatureGates{}
@@ -500,7 +498,6 @@ var _ = Describe("api/v1beta1", func() {
 				convert_v1_FeatureGates_To_v1beta1(*v1fgs, result)
 
 				Expect(*result.DecentralizedLiveMigration).To(BeFalse())
-				Expect(*result.VideoConfig).To(BeFalse())
 			})
 
 			It("should preserve defaults through round-trip", func() {
@@ -517,7 +514,6 @@ var _ = Describe("api/v1beta1", func() {
 				Expect(*result.AlignCPUs).To(BeFalse())
 				// beta defaults stay true
 				Expect(*result.DecentralizedLiveMigration).To(BeTrue())
-				Expect(*result.VideoConfig).To(BeTrue())
 			})
 		})
 	})

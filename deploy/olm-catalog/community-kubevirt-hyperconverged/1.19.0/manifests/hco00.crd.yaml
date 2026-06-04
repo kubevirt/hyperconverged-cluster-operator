@@ -2232,12 +2232,6 @@ spec:
                     Developer Preview.
                     Phase: beta
 
-                  * videoConfig:
-                    VideoConfig allows users to configure video device types for their virtual
-                    machines. This can be useful for workloads that require specific video
-                    capabilities or architectures. Note: This feature is in Tech Preview.
-                    Phase: beta
-
                   * alignCPUs:
                     Enable KubeVirt to request up to two additional dedicated CPUs in order to
                     complete the total CPU count to an even parity when using emulator thread
@@ -5396,7 +5390,6 @@ spec:
                 incrementalBackup: false
                 objectGraph: false
                 persistentReservation: false
-                videoConfig: true
               liveMigrationConfig:
                 allowAutoConverge: false
                 allowPostCopy: false
@@ -6535,7 +6528,6 @@ spec:
                   incrementalBackup: false
                   objectGraph: false
                   persistentReservation: false
-                  videoConfig: true
                 description: |-
                   featureGates is a map of feature gate flags. Setting a flag to `true` will enable
                   the feature. Setting `false` or removing the feature gate, disables the feature.
@@ -6645,11 +6637,7 @@ spec:
                     description: 'Deprecated: this feature gate is ignored.'
                     type: boolean
                   videoConfig:
-                    default: true
-                    description: |-
-                      VideoConfig allows users to configure video device types for their virtual machines.
-                      This can be useful for workloads that require specific video capabilities or architectures.
-                      Note: This feature is in Tech Preview.
+                    description: 'Deprecated: This feature gate is ignored.'
                     type: boolean
                   withHostPassthroughCPU:
                     description: 'Deprecated: This feature gate is ignored'
