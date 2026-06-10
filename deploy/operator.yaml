@@ -78,6 +78,8 @@ spec:
           value: v0.0.6
         - name: KV_CONSOLE_PLUGIN_IMAGE
         - name: KV_CONSOLE_PROXY_IMAGE
+        - name: NETWORK_RESOURCES_INJECTOR_IMAGE
+          value: ghcr.io/k8snetworkplumbingwg/network-resources-injector@sha256:18fdabaf1f8410f2a0b222d51323bd0401f58012a850f30c97c6091f7b47e096
         - name: WASP_AGENT_IMAGE
           value: quay.io/openshift-virtualization/wasp-agent@sha256:daaf1bd032a32a99ef8e5c9d7d40d6732713b0cbfe49952d6d2ce5fa38e78294
         - name: AIE_WEBHOOK_IMAGE

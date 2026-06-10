@@ -359,6 +359,7 @@ ${TOOLS}/manifest-templator \
   --operator-image="${HCO_OPERATOR_IMAGE}" \
   --webhook-image="${HCO_WEBHOOK_IMAGE}" \
   --cli-downloads-image="${HCO_DOWNLOADS_IMAGE}" \
+  --network-resources-injector-image-name="${NETWORK_RESOURCES_INJECTOR_IMAGE}" \
   --wasp-agent-image-name="${WASP_AGENT_IMAGE}" \
   --aie-webhook-image-name="${AIE_WEBHOOK_IMAGE}" \
   --iommufd-device-plugin-image-name="${IOMMUFD_DEVICE_PLUGIN_IMAGE}"
@@ -422,6 +423,7 @@ ${TOOLS}/csv-merger \
   --kubevirt-consoleplugin-image-name="${KUBEVIRT_CONSOLE_PLUGIN_IMAGE}" \
   --kubevirt-consoleproxy-image-name="${KUBEVIRT_CONSOLE_PROXY_IMAGE}" \
   --cli-downloads-image-name="${HCO_DOWNLOADS_IMAGE}" \
+  --network-resources-injector-image-name="${NETWORK_RESOURCES_INJECTOR_IMAGE}" \
   --wasp-agent-image-name="${WASP_AGENT_IMAGE}" \
   --aie-webhook-image-name="${AIE_WEBHOOK_IMAGE}" \
   --iommufd-device-plugin-image-name="${IOMMUFD_DEVICE_PLUGIN_IMAGE}" \
