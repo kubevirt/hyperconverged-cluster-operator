@@ -23,6 +23,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -185,6 +186,7 @@ func GetScheme() *runtime.Scheme {
 			deschedulerv1.AddToScheme,
 			rbacv1.AddToScheme,
 			networkingv1.AddToScheme,
+			policyv1.AddToScheme,
 			appsv1.AddToScheme,
 			corev1.AddToScheme,
 			schedulingv1.AddToScheme,
