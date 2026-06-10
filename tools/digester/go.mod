@@ -1,6 +1,6 @@
 module github.com/kubevirt/hyperconverged-cluster-operator/tools/digester
 
-go 1.25
+go 1.25.0
 
 require (
 	github.com/containers/image/v5 v5.36.2
@@ -26,7 +26,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/opencontainers/runtime-spec v1.2.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	golang.org/x/sys v0.37.0 // indirect
+	golang.org/x/sys v0.44.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
