@@ -17,6 +17,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
 	aie "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
+	netresinjector "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/netresinjector"
 	waspagent "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/wasp-agent"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
@@ -63,6 +64,13 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		aie.NewAIEWebhookMutatingWebhookConfigurationHandler(client, scheme),
 		aie.NewIOMMUFDDevicePluginServiceAccountHandler(client, scheme),
 		aie.NewIOMMUFDDevicePluginDaemonSetHandler(client, scheme),
+		netresinjector.NewClusterRoleHandler(client, scheme),
+		netresinjector.NewClusterRoleBindingHandler(client, scheme),
+		netresinjector.NewServiceAccountHandler(client, scheme),
+		netresinjector.NewServiceHandler(client, scheme),
+		netresinjector.NewDeploymentHandler(client, scheme),
+		netresinjector.NewPDBHandler(client, scheme),
+		netresinjector.NewMutatingWebhookConfigurationHandler(client, scheme),
 	}
 
 	if ci.IsOpenshift() {
@@ -236,6 +244,10 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 		aie.NewAIEWebhookClusterRoleBindingWithNameOnly(),
 		aie.NewAIEWebhookMutatingWebhookConfigurationWithNameOnly(),
 		aie.NewIOMMUFDDevicePluginSCCWithNameOnly(),
+		netresinjector.NewClusterRoleWithNameOnly(),
+		netresinjector.NewClusterRoleBindingWithNameOnly(),
+		netresinjector.NewPDBWithNameOnly(),
+		netresinjector.NewMutatingWebhookConfigurationWithNameOnly(),
 	}
 
 	resources = append(resources, h.objects...)

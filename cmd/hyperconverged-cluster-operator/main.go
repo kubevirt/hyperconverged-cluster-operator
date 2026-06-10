@@ -30,6 +30,7 @@ import (
 	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
 	networkingv1 "k8s.io/api/networking/v1"
+	policyv1 "k8s.io/api/policy/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -122,6 +123,7 @@ var (
 		migrationv1alpha1.AddToScheme,
 		deschedulerv1.AddToScheme,
 		networkingv1.AddToScheme,
+		policyv1.AddToScheme,
 		persesv1alpha1.AddToScheme,
 	}
 )

@@ -133,4 +133,5 @@ const (
 	AppComponentAIEWebhook          AppComponent = "aie-webhook"
 	AppComponentIOMMUFDDevicePlugin AppComponent = "iommufd-device-plugin"
 	AppComponentInFlightOperations  AppComponent = "inflightoperations"
+	AppComponentNetResInjector      AppComponent = "cnv-network-resources-injector"
 )
