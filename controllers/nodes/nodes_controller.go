@@ -283,19 +283,41 @@ func HandleHyperShiftNodeLabeling(ctx context.Context, cli client.Client, nodeNa
 	return labelNode(ctx, cli, node, logger)
 }
 
-// labelNode applies the HyperShift label on a single node
+// labelNode applies the HyperShift label on a single node.
+// It adds node-role.kubevirt.io/control-plane and removes the old
+// node-role.kubernetes.io/control-plane label if it was previously set by HCO (upgrade path).
 func labelNode(ctx context.Context, cli client.Client, node *corev1.Node, logger logr.Logger) error {
 	if !isWorkerNode(node) {
 		return nil
 	}
 
-	logger.Info("Adding control-plane label to worker node",
-		"node", node.Name,
-		"labelValue", hypershiftLabelValue,
-	)
-
 	patch := client.MergeFrom(node.DeepCopy())
-	node.Labels[nodeinfo.LabelNodeRoleControlPlane] = hypershiftLabelValue
+	needsPatch := false
+
+	// Add the new kubevirt-specific control-plane label if not already present
+	if node.Labels[nodeinfo.LabelNodeRoleKubevirtControlPlane] != hypershiftLabelValue {
+		logger.Info("Adding kubevirt control-plane label to worker node",
+			"node", node.Name,
+			"label", nodeinfo.LabelNodeRoleKubevirtControlPlane,
+			"labelValue", hypershiftLabelValue,
+		)
+		node.Labels[nodeinfo.LabelNodeRoleKubevirtControlPlane] = hypershiftLabelValue
+		needsPatch = true
+	}
+
+	// Upgrade path: remove the old kubernetes control-plane label if it was set by HCO
+	if node.Labels[nodeinfo.LabelNodeRoleControlPlane] == hypershiftLabelValue {
+		logger.Info("Removing old control-plane label from worker node (upgrade)",
+			"node", node.Name,
+			"label", nodeinfo.LabelNodeRoleControlPlane,
+		)
+		delete(node.Labels, nodeinfo.LabelNodeRoleControlPlane)
+		needsPatch = true
+	}
+
+	if !needsPatch {
+		return nil
+	}
 
 	if err := cli.Patch(ctx, node, patch); err != nil {
 		return fmt.Errorf("failed to patch node %s: %w", node.Name, err)
@@ -305,11 +327,18 @@ func labelNode(ctx context.Context, cli client.Client, node *corev1.Node, logger
 	return nil
 }
 
-// isWorkerNode checks if a node has the worker role label
+// isWorkerNode checks if a node has the worker role label.
+// A node is considered a worker if it has the worker label and does not have
+// the standard Kubernetes control-plane label (ignoring the kubevirt-specific one,
+// which HCO itself sets on HCP clusters).
 func isWorkerNode(node *corev1.Node) bool {
-	// A node is a worker if it has the worker label and doesn't have control-plane label
 	_, hasWorkerLabel := node.Labels[nodeinfo.LabelNodeRoleWorker]
-	_, hasControlPlaneLabel := node.Labels[nodeinfo.LabelNodeRoleControlPlane]
+	cpVal, hasControlPlaneLabel := node.Labels[nodeinfo.LabelNodeRoleControlPlane]
+
+	if hasControlPlaneLabel && cpVal == hypershiftLabelValue {
+		// This is a label HCO set previously; treat the node as a worker for upgrade purposes
+		return hasWorkerLabel
+	}
 
 	return hasWorkerLabel && !hasControlPlaneLabel
 }
