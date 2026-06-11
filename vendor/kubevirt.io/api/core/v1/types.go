@@ -302,6 +302,9 @@ type VirtualMachineInstanceStatus struct {
 
 	// VSOCKCID is used to track the allocated VSOCK CID in the VM.
 	// +optional
+	// +kubebuilder:validation:Format:=int64
+	// +kubebuilder:validation:Minimum:=0
+	// +kubebuilder:validation:Maximum:=4294967295
 	VSOCKCID *uint32 `json:"VSOCKCID,omitempty"`
 
 	// SELinuxContext is the actual SELinux context of the virt-launcher pod
@@ -1213,6 +1216,22 @@ const (
 	IgnitionAnnotation           string = "kubevirt.io/ignitiondata"
 	PlacePCIDevicesOnRootComplex string = "kubevirt.io/placePCIDevicesOnRootComplex"
 
+	// PciTopologyVersionAnnotation documents which PCI topology scheme was used to
+	// define the domain. Used to preserve PCI device addresses across reboots and upgrades.
+	PciTopologyVersionAnnotation string = "kubevirt.io/pci-topology-version"
+	// PciInterfaceSlotCountAnnotation stores the frozen total of placeholder interfaces
+	// plus boot-time non-hotplug interfaces. Set by virt-handler on detected v2 VMs.
+	// On subsequent boots, the placeholder count is derived as
+	// max(0, slotTotal - currentInterfaceCount), absorbing interface additions/removals
+	// while stopped without shifting PCI addresses.
+	PciInterfaceSlotCountAnnotation string = "kubevirt.io/pci-interface-slot-count"
+	// PciTopologyVersionV2 indicates the VM was created with the v2 hotplug port formula
+	// from PR #14754, which is unstable across spec changes.
+	PciTopologyVersionV2 string = "v2"
+	// PciTopologyVersionV3 indicates the VM uses v1 placeholders (for address stability)
+	// plus direct pcie-root-port controllers (for hotplug capacity).
+	PciTopologyVersionV3 string = "v3"
+
 	// This label represents supported cpu features on the node
 	CPUFeatureLabel = "cpu-feature.node.kubevirt.io/"
 	// This label represents supported cpu models on the node
@@ -2012,10 +2031,10 @@ const (
 	// VirtualMachineStatusUnschedulable indicates that an error has occurred while scheduling the virtual machine,
 	// e.g. due to unsatisfiable resource requests or unsatisfiable scheduling constraints.
 	VirtualMachineStatusUnschedulable VirtualMachinePrintableStatus = "ErrorUnschedulable"
-	// VirtualMachineStatusErrImagePull indicates that an error has occured while pulling an image for
+	// VirtualMachineStatusErrImagePull indicates that an error has occurred while pulling an image for
 	// a containerDisk VM volume.
 	VirtualMachineStatusErrImagePull VirtualMachinePrintableStatus = "ErrImagePull"
-	// VirtualMachineStatusImagePullBackOff indicates that an error has occured while pulling an image for
+	// VirtualMachineStatusImagePullBackOff indicates that an error has occurred while pulling an image for
 	// a containerDisk VM volume, and that kubelet is backing off before retrying.
 	VirtualMachineStatusImagePullBackOff VirtualMachinePrintableStatus = "ImagePullBackOff"
 	// VirtualMachineStatusPvcNotFound indicates that the virtual machine references a PVC volume which doesn't exist.
