@@ -1,0 +1,746 @@
+apiVersion: perses.dev/v1alpha1
+kind: PersesDashboard
+metadata:
+  name: cnv-virtual-machines-top-consumers
+  namespace: openshift-cnv
+spec:
+  display:
+    name: OpenShift Virtualization / Top Consumers
+  duration: 1h
+  layouts:
+  - kind: Grid
+    spec:
+      display:
+        collapse:
+          open: true
+        title: Memory
+      items:
+      - content:
+          $ref: '#/spec/panels/0_0'
+        height: 9
+        width: 12
+        x: 0
+        "y": 0
+      - content:
+          $ref: '#/spec/panels/0_1'
+        height: 9
+        width: 12
+        x: 12
+        "y": 0
+  - kind: Grid
+    spec:
+      display:
+        collapse:
+          open: true
+        title: CPU
+      items:
+      - content:
+          $ref: '#/spec/panels/1_0'
+        height: 9
+        width: 12
+        x: 0
+        "y": 0
+      - content:
+          $ref: '#/spec/panels/1_1'
+        height: 9
+        width: 12
+        x: 12
+        "y": 0
+  - kind: Grid
+    spec:
+      display:
+        collapse:
+          open: true
+        title: Storage Traffic
+      items:
+      - content:
+          $ref: '#/spec/panels/2_0'
+        height: 9
+        width: 12
+        x: 0
+        "y": 0
+      - content:
+          $ref: '#/spec/panels/2_1'
+        height: 9
+        width: 12
+        x: 12
+        "y": 0
+  - kind: Grid
+    spec:
+      display:
+        collapse:
+          open: true
+        title: Storage IOPS
+      items:
+      - content:
+          $ref: '#/spec/panels/3_0'
+        height: 9
+        width: 12
+        x: 0
+        "y": 0
+      - content:
+          $ref: '#/spec/panels/3_1'
+        height: 9
+        width: 12
+        x: 12
+        "y": 0
+  - kind: Grid
+    spec:
+      display:
+        collapse:
+          open: true
+        title: Network Traffic
+      items:
+      - content:
+          $ref: '#/spec/panels/4_0'
+        height: 9
+        width: 12
+        x: 0
+        "y": 0
+      - content:
+          $ref: '#/spec/panels/4_1'
+        height: 9
+        width: 12
+        x: 12
+        "y": 0
+  - kind: Grid
+    spec:
+      display:
+        collapse:
+          open: true
+        title: vCPU Wait
+      items:
+      - content:
+          $ref: '#/spec/panels/5_0'
+        height: 9
+        width: 12
+        x: 0
+        "y": 0
+      - content:
+          $ref: '#/spec/panels/5_1'
+        height: 9
+        width: 12
+        x: 12
+        "y": 0
+  - kind: Grid
+    spec:
+      display:
+        collapse:
+          open: true
+        title: Memory Swap Traffic
+      items:
+      - content:
+          $ref: '#/spec/panels/6_0'
+        height: 9
+        width: 12
+        x: 0
+        "y": 0
+      - content:
+          $ref: '#/spec/panels/6_1'
+        height: 9
+        width: 12
+        x: 12
+        "y": 0
+  panels:
+    "0_0":
+      kind: Panel
+      spec:
+        display:
+          description: Virtual machines with the highest memory consumption.
+          name: Top Consumers of Memory
+        plugin:
+          kind: Table
+          spec:
+            columnSettings:
+            - hide: true
+              name: timestamp
+            - enableSorting: true
+              header: Namespace
+              name: namespace
+            - enableSorting: true
+              header: Virtual Machine
+              name: name
+            - enableSorting: true
+              format:
+                unit: bytes
+              header: Avg Memory Usage
+              name: value
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                query: avg by (namespace,name)(avg_over_time(vmi:kubevirt_vmi_memory_used_bytes:sum{namespace=~"$namespace",
+                  name=~"$topn_memory"}[10m])) > 0
+    "0_1":
+      kind: Panel
+      spec:
+        display:
+          description: Top virtual machines by memory consumption over time.
+          name: Memory Usage Over Time
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              mode: table
+              position: right
+              values:
+              - last-number
+              - max
+            visual:
+              areaOpacity: 0.1
+              display: line
+              lineWidth: 1
+            yAxis:
+              format:
+                unit: bytes
+              show: true
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                query: avg by (namespace,name)(avg_over_time(vmi:kubevirt_vmi_memory_used_bytes:sum{namespace=~"$namespace",
+                  name=~"$topn_memory"}[10m]))
+                seriesNameFormat: '{{name}} / {{namespace}}'
+    "1_0":
+      kind: Panel
+      spec:
+        display:
+          description: Virtual machines with the highest CPU usage in cores. A value
+            of 2.0 means two full CPU cores are in use.
+          name: Top Consumers of CPU
+        plugin:
+          kind: Table
+          spec:
+            columnSettings:
+            - hide: true
+              name: timestamp
+            - enableSorting: true
+              header: Namespace
+              name: namespace
+            - enableSorting: true
+              header: Virtual Machine
+              name: name
+            - enableSorting: true
+              format:
+                decimalPlaces: 3
+                unit: decimal
+              header: CPU Usage (cores)
+              name: value
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                query: sum by (namespace,name)(rate(kubevirt_vmi_cpu_usage_seconds_total{namespace=~"$namespace",
+                  name=~"$topn_cpu"}[10m])) > 0
+    "1_1":
+      kind: Panel
+      spec:
+        display:
+          description: Top virtual machines by CPU usage in cores over time. A value
+            of 2.0 means two full CPU cores are in use.
+          name: CPU Usage Over Time
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              mode: table
+              position: right
+              values:
+              - last-number
+              - max
+            visual:
+              areaOpacity: 0.1
+              display: line
+              lineWidth: 1
+            yAxis:
+              format:
+                unit: decimal
+              show: true
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                query: sum by (namespace,name)(rate(kubevirt_vmi_cpu_usage_seconds_total{namespace=~"$namespace",
+                  name=~"$topn_cpu"}[10m]))
+                seriesNameFormat: '{{name}} / {{namespace}}'
+    "2_0":
+      kind: Panel
+      spec:
+        display:
+          description: Virtual machines with the highest storage traffic (read + write).
+          name: Top Consumers of Storage Traffic
+        plugin:
+          kind: Table
+          spec:
+            columnSettings:
+            - hide: true
+              name: timestamp
+            - enableSorting: true
+              header: Namespace
+              name: namespace
+            - enableSorting: true
+              header: Virtual Machine
+              name: name
+            - enableSorting: true
+              format:
+                unit: decbytes/sec
+              header: Storage Traffic
+              name: value
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                query: sum by (namespace,name)(rate(kubevirt_vmi_storage_read_traffic_bytes_total{namespace=~"$namespace",
+                  name=~"$topn_storage_traffic"}[10m]) + rate(kubevirt_vmi_storage_write_traffic_bytes_total{namespace=~"$namespace",
+                  name=~"$topn_storage_traffic"}[10m])) > 0
+    "2_1":
+      kind: Panel
+      spec:
+        display:
+          description: Top virtual machines by storage traffic (read + write) over
+            time.
+          name: Storage Traffic Over Time
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              mode: table
+              position: right
+              values:
+              - last-number
+              - max
+            visual:
+              areaOpacity: 0.1
+              display: line
+              lineWidth: 1
+            yAxis:
+              format:
+                unit: decbytes/sec
+              show: true
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                query: sum by (namespace,name)(rate(kubevirt_vmi_storage_read_traffic_bytes_total{namespace=~"$namespace",
+                  name=~"$topn_storage_traffic"}[10m]) + rate(kubevirt_vmi_storage_write_traffic_bytes_total{namespace=~"$namespace",
+                  name=~"$topn_storage_traffic"}[10m]))
+                seriesNameFormat: '{{name}} / {{namespace}}'
+    "3_0":
+      kind: Panel
+      spec:
+        display:
+          description: Virtual machines with the highest storage IOPS (read + write).
+          name: Top Consumers of Storage IOPS
+        plugin:
+          kind: Table
+          spec:
+            columnSettings:
+            - hide: true
+              name: timestamp
+            - enableSorting: true
+              header: Namespace
+              name: namespace
+            - enableSorting: true
+              header: Virtual Machine
+              name: name
+            - enableSorting: true
+              format:
+                unit: ops/sec
+              header: Storage IOPS
+              name: value
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                query: sum by (namespace,name)(rate(kubevirt_vmi_storage_iops_read_total{namespace=~"$namespace",
+                  name=~"$topn_storage_iops"}[10m]) + rate(kubevirt_vmi_storage_iops_write_total{namespace=~"$namespace",
+                  name=~"$topn_storage_iops"}[10m])) > 0
+    "3_1":
+      kind: Panel
+      spec:
+        display:
+          description: Top virtual machines by storage IOPS (read + write) over time.
+          name: Storage IOPS Over Time
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              mode: table
+              position: right
+              values:
+              - last-number
+              - max
+            visual:
+              areaOpacity: 0.1
+              display: line
+              lineWidth: 1
+            yAxis:
+              format:
+                unit: ops/sec
+              show: true
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                query: sum by (namespace,name)(rate(kubevirt_vmi_storage_iops_read_total{namespace=~"$namespace",
+                  name=~"$topn_storage_iops"}[10m]) + rate(kubevirt_vmi_storage_iops_write_total{namespace=~"$namespace",
+                  name=~"$topn_storage_iops"}[10m]))
+                seriesNameFormat: '{{name}} / {{namespace}}'
+    "4_0":
+      kind: Panel
+      spec:
+        display:
+          description: Virtual machines with the highest network traffic (receive
+            + transmit).
+          name: Top Consumers of Network Traffic
+        plugin:
+          kind: Table
+          spec:
+            columnSettings:
+            - hide: true
+              name: timestamp
+            - enableSorting: true
+              header: Namespace
+              name: namespace
+            - enableSorting: true
+              header: Virtual Machine
+              name: name
+            - enableSorting: true
+              format:
+                unit: decbytes/sec
+              header: Network Traffic
+              name: value
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                query: sum by (namespace,name)(rate(kubevirt_vmi_network_receive_bytes_total{namespace=~"$namespace",
+                  name=~"$topn_network_traffic"}[10m]) + rate(kubevirt_vmi_network_transmit_bytes_total{namespace=~"$namespace",
+                  name=~"$topn_network_traffic"}[10m])) > 0
+    "4_1":
+      kind: Panel
+      spec:
+        display:
+          description: Top virtual machines by network traffic (receive + transmit)
+            over time.
+          name: Network Traffic Over Time
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              mode: table
+              position: right
+              values:
+              - last-number
+              - max
+            visual:
+              areaOpacity: 0.1
+              display: line
+              lineWidth: 1
+            yAxis:
+              format:
+                unit: decbytes/sec
+              show: true
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                query: sum by (namespace,name)(rate(kubevirt_vmi_network_receive_bytes_total{namespace=~"$namespace",
+                  name=~"$topn_network_traffic"}[10m]) + rate(kubevirt_vmi_network_transmit_bytes_total{namespace=~"$namespace",
+                  name=~"$topn_network_traffic"}[10m]))
+                seriesNameFormat: '{{name}} / {{namespace}}'
+    "5_0":
+      kind: Panel
+      spec:
+        display:
+          description: Virtual machines with the highest vCPU wait time, indicating
+            CPU contention.
+          name: Top Consumers of vCPU Wait
+        plugin:
+          kind: Table
+          spec:
+            columnSettings:
+            - hide: true
+              name: timestamp
+            - enableSorting: true
+              header: Namespace
+              name: namespace
+            - enableSorting: true
+              header: Virtual Machine
+              name: name
+            - enableSorting: true
+              format:
+                unit: seconds
+              header: vCPU Wait Time
+              name: value
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                query: sum by (namespace,name)(rate(kubevirt_vmi_vcpu_wait_seconds_total{namespace=~"$namespace",
+                  name=~"$topn_vcpu_wait"}[10m])) > 0
+    "5_1":
+      kind: Panel
+      spec:
+        display:
+          description: Top virtual machines by vCPU wait time over time, indicating
+            CPU contention.
+          name: vCPU Wait Over Time
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              mode: table
+              position: right
+              values:
+              - last-number
+              - max
+            visual:
+              areaOpacity: 0.1
+              display: line
+              lineWidth: 1
+            yAxis:
+              format:
+                unit: seconds
+              show: true
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                query: sum by (namespace,name)(rate(kubevirt_vmi_vcpu_wait_seconds_total{namespace=~"$namespace",
+                  name=~"$topn_vcpu_wait"}[10m]))
+                seriesNameFormat: '{{name}} / {{namespace}}'
+    "6_0":
+      kind: Panel
+      spec:
+        display:
+          description: Virtual machines with the highest memory swap traffic (in +
+            out). High swap activity may indicate memory pressure.
+          name: Top Consumers of Memory Swap Traffic
+        plugin:
+          kind: Table
+          spec:
+            columnSettings:
+            - hide: true
+              name: timestamp
+            - enableSorting: true
+              header: Namespace
+              name: namespace
+            - enableSorting: true
+              header: Virtual Machine
+              name: name
+            - enableSorting: true
+              format:
+                unit: decbytes/sec
+              header: Avg Memory Swap Traffic
+              name: value
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                query: sum by (namespace,name)(avg_over_time(kubevirt_vmi_memory_swap_in_traffic_bytes{namespace=~"$namespace",
+                  name=~"$topn_memory_swap"}[10m]) + avg_over_time(kubevirt_vmi_memory_swap_out_traffic_bytes{namespace=~"$namespace",
+                  name=~"$topn_memory_swap"}[10m])) > 0
+    "6_1":
+      kind: Panel
+      spec:
+        display:
+          description: Top virtual machines by memory swap traffic (in + out) over
+            time. High swap activity may indicate memory pressure.
+          name: Memory Swap Traffic Over Time
+        plugin:
+          kind: TimeSeriesChart
+          spec:
+            legend:
+              mode: table
+              position: right
+              values:
+              - last-number
+              - max
+            visual:
+              areaOpacity: 0.1
+              display: line
+              lineWidth: 1
+            yAxis:
+              format:
+                unit: decbytes/sec
+              show: true
+        queries:
+        - kind: TimeSeriesQuery
+          spec:
+            plugin:
+              kind: PrometheusTimeSeriesQuery
+              spec:
+                query: sum by (namespace,name)(avg_over_time(kubevirt_vmi_memory_swap_in_traffic_bytes{namespace=~"$namespace",
+                  name=~"$topn_memory_swap"}[10m]) + avg_over_time(kubevirt_vmi_memory_swap_out_traffic_bytes{namespace=~"$namespace",
+                  name=~"$topn_memory_swap"}[10m]))
+                seriesNameFormat: '{{name}} / {{namespace}}'
+  variables:
+  - kind: ListVariable
+    spec:
+      allowAllValue: true
+      allowMultiple: true
+      customAllValue: .*
+      defaultValue:
+      - $__all
+      display:
+        description: Filter the virtual machine by the namespace.
+        hidden: false
+        name: Namespace
+      name: namespace
+      plugin:
+        kind: PrometheusLabelValuesVariable
+        spec:
+          labelName: namespace
+          matchers:
+          - kubevirt_vm_info
+  - kind: ListVariable
+    spec:
+      allowAllValue: false
+      allowMultiple: false
+      defaultValue: "5"
+      display:
+        description: Number of top consumers to display
+        hidden: false
+        name: Top N
+      name: topn
+      plugin:
+        kind: StaticListVariable
+        spec:
+          values:
+          - label: "5"
+            value: "5"
+          - label: "10"
+            value: "10"
+          - label: "20"
+            value: "20"
+          - label: "50"
+            value: "50"
+  - kind: ListVariable
+    spec:
+      allowAllValue: false
+      allowMultiple: true
+      defaultValue:
+      - $__all
+      display:
+        hidden: true
+      name: topn_memory
+      plugin:
+        kind: PrometheusPromQLVariable
+        spec:
+          expr: topk($topn, avg by (namespace,name)(vmi:kubevirt_vmi_memory_used_bytes:sum{namespace=~"$namespace"}))
+          labelName: name
+  - kind: ListVariable
+    spec:
+      allowAllValue: false
+      allowMultiple: true
+      defaultValue:
+      - $__all
+      display:
+        hidden: true
+      name: topn_cpu
+      plugin:
+        kind: PrometheusPromQLVariable
+        spec:
+          expr: topk($topn, sum by (namespace,name)(kubevirt_vmi_cpu_usage_seconds_total{namespace=~"$namespace"}))
+          labelName: name
+  - kind: ListVariable
+    spec:
+      allowAllValue: false
+      allowMultiple: true
+      defaultValue:
+      - $__all
+      display:
+        hidden: true
+      name: topn_storage_traffic
+      plugin:
+        kind: PrometheusPromQLVariable
+        spec:
+          expr: topk($topn, sum by (namespace,name)(kubevirt_vmi_storage_read_traffic_bytes_total{namespace=~"$namespace"}
+            + kubevirt_vmi_storage_write_traffic_bytes_total{namespace=~"$namespace"}))
+          labelName: name
+  - kind: ListVariable
+    spec:
+      allowAllValue: false
+      allowMultiple: true
+      defaultValue:
+      - $__all
+      display:
+        hidden: true
+      name: topn_storage_iops
+      plugin:
+        kind: PrometheusPromQLVariable
+        spec:
+          expr: topk($topn, sum by (namespace,name)(kubevirt_vmi_storage_iops_read_total{namespace=~"$namespace"}
+            + kubevirt_vmi_storage_iops_write_total{namespace=~"$namespace"}))
+          labelName: name
+  - kind: ListVariable
+    spec:
+      allowAllValue: false
+      allowMultiple: true
+      defaultValue:
+      - $__all
+      display:
+        hidden: true
+      name: topn_network_traffic
+      plugin:
+        kind: PrometheusPromQLVariable
+        spec:
+          expr: topk($topn, sum by (namespace,name)(kubevirt_vmi_network_receive_bytes_total{namespace=~"$namespace"}
+            + kubevirt_vmi_network_transmit_bytes_total{namespace=~"$namespace"}))
+          labelName: name
+  - kind: ListVariable
+    spec:
+      allowAllValue: false
+      allowMultiple: true
+      defaultValue:
+      - $__all
+      display:
+        hidden: true
+      name: topn_vcpu_wait
+      plugin:
+        kind: PrometheusPromQLVariable
+        spec:
+          expr: topk($topn, sum by (namespace,name)(kubevirt_vmi_vcpu_wait_seconds_total{namespace=~"$namespace"}))
+          labelName: name
+  - kind: ListVariable
+    spec:
+      allowAllValue: false
+      allowMultiple: true
+      defaultValue:
+      - $__all
+      display:
+        hidden: true
+      name: topn_memory_swap
+      plugin:
+        kind: PrometheusPromQLVariable
+        spec:
+          expr: topk($topn, max by (namespace,name)(kubevirt_vmi_memory_swap_in_traffic_bytes{namespace=~"$namespace"})
+            + max by (namespace,name)(kubevirt_vmi_memory_swap_out_traffic_bytes{namespace=~"$namespace"}))
+          labelName: name
