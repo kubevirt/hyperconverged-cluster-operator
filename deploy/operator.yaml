@@ -71,7 +71,7 @@ spec:
         - name: AAQ_VERSION
           value: v1.8.0-alpha.0
         - name: MIGRATION_OPERATOR_VERSION
-          value: v0.2.0-rc.1
+          value: v0.2.0
         - name: AUTOPILOT_VERSION
           value: v0.0.10
         - name: INFLIGHT_OPERATIONS_VERSION
@@ -1031,11 +1031,13 @@ spec:
               topologyKey: kubernetes.io/hostname
             weight: 1
       containers:
-      - env:
+      - args:
+        - --metrics-bind-address=:8443
+        env:
         - name: DEPLOY_CLUSTER_RESOURCES
           value: "true"
         - name: OPERATOR_VERSION
-          value: v0.2.0-rc.1
+          value: v0.2.0
         - name: CONTROLLER_IMAGE
           value: quay.io/kubevirt/kubevirt-migration-controller@sha256:d235178862451a14826894d9ddf8af96898fc098ae6e7af56987f694cfd57c5b
         - name: VERBOSITY
@@ -1044,8 +1046,8 @@ spec:
           value: IfNotPresent
         - name: MONITORING_NAMESPACE
         - name: OPERATOR_IMAGE
-          value: quay.io/kubevirt/kubevirt-migration-operator@sha256:4962081ebe1145a06e61603a0b31c6d8621ef9b4077f7dadb0607dd3bb29f20b
-        image: quay.io/kubevirt/kubevirt-migration-operator@sha256:4962081ebe1145a06e61603a0b31c6d8621ef9b4077f7dadb0607dd3bb29f20b
+          value: quay.io/kubevirt/kubevirt-migration-operator@sha256:54bd78472e336f176db777df1c02fbebeb34049bad067949666c76ea15f84141
+        image: quay.io/kubevirt/kubevirt-migration-operator@sha256:54bd78472e336f176db777df1c02fbebeb34049bad067949666c76ea15f84141
         imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
