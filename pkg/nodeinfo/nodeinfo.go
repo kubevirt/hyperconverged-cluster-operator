@@ -7,6 +7,8 @@ const (
 
 	// LabelNodeRoleControlPlane is the label used to identify control plane nodes
 	LabelNodeRoleControlPlane = internal.LabelNodeRoleControlPlane
+	// LabelNodeRoleKubevirtControlPlane is the label used by HCO on HCP clusters
+	LabelNodeRoleKubevirtControlPlane = internal.LabelNodeRoleKubevirtControlPlane
 	// LabelNodeRoleMaster is the old label used to identify control plane nodes
 	LabelNodeRoleMaster = internal.LabelNodeRoleMaster
 	// LabelNodeRoleWorker is the label used to identify worker nodes
