@@ -190,7 +190,7 @@ $ kubectl create -f deploy/hco.cr.yaml -n kubevirt-hyperconverged
 1. Choose the provider
 ```bash
 #For k8s cluster:
-$ export KUBEVIRT_PROVIDER="k8s-1.34"
+$ export KUBEVIRT_PROVIDER="k8s-1.36"
 ```
 ```bash
 #For okd cluster:
