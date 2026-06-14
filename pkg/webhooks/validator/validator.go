@@ -544,7 +544,39 @@ func getOperands(ctx context.Context, cli client.Client, isOpenshift bool) ([]cl
 	return resources, nil
 }
 
+const dryRunMaxRetries = 3
+
 func updateOperatorCr(ctx context.Context, cli client.Client, logger logr.Logger, hc *hcov1.HyperConverged, exists client.Object, opts *client.UpdateOptions) error {
+	for attempt := range dryRunMaxRetries {
+		if attempt > 0 {
+			if err := cli.Get(ctx, client.ObjectKeyFromObject(exists), exists); err != nil {
+				logger.Error(err, "failed to re-fetch object for dry-run retry", "kind", exists.GetObjectKind())
+				return err
+			}
+		}
+
+		if err := applyDesiredSpec(hc, exists); err != nil {
+			return err
+		}
+
+		err := cli.Update(ctx, exists, opts)
+		if err == nil {
+			logger.Info("dry-run update the object passed", "kind", exists.GetObjectKind())
+			return nil
+		}
+
+		if !apierrors.IsConflict(err) {
+			logger.Error(err, "failed to dry-run update the object", "kind", exists.GetObjectKind())
+			return err
+		}
+
+		logger.Info("dry-run update conflict, retrying", "kind", exists.GetObjectKind(), "attempt", attempt+1)
+	}
+
+	return fmt.Errorf("failed to dry-run update %v after %d retries due to persistent conflicts", exists.GetObjectKind(), dryRunMaxRetries)
+}
+
+func applyDesiredSpec(hc *hcov1.HyperConverged, exists client.Object) error {
 	switch existing := exists.(type) {
 	case *kubevirtcorev1.KubeVirt:
 		required, err := handlers.NewKubeVirt(hc)
@@ -575,11 +607,5 @@ func updateOperatorCr(ctx context.Context, cli client.Client, logger logr.Logger
 		required.Spec.DeepCopyInto(&existing.Spec)
 	}
 
-	if err := cli.Update(ctx, exists, opts); err != nil {
-		logger.Error(err, "failed to dry-run update the object", "kind", exists.GetObjectKind())
-		return err
-	}
-
-	logger.Info("dry-run update the object passed", "kind", exists.GetObjectKind())
 	return nil
 }

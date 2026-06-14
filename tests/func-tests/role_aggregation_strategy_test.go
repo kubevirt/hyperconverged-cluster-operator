@@ -81,7 +81,9 @@ var _ = Describe("RoleAggregationStrategy", Serial, Label("RoleAggregationStrate
 
 		By("Removing RoleAggregationStrategy from HCO")
 		rmPatch := []byte(`[{"op": "remove", "path": "/spec/roleAggregationStrategy"}]`)
-		Expect(tests.PatchHCO(ctx, cli, rmPatch)).To(Succeed())
+		Eventually(func() error {
+			return tests.PatchHCO(ctx, cli, rmPatch)
+		}).WithTimeout(time.Minute).WithPolling(10 * time.Second).WithContext(ctx).Should(Succeed())
 
 		Eventually(func(g Gomega, ctx context.Context) {
 			kv := getKubeVirt(ctx, g, cli)
