@@ -119,11 +119,11 @@ github.com/emicklei/go-restful/v3/log
 ## explicit; go 1.18
 github.com/evanphx/json-patch/v5
 github.com/evanphx/json-patch/v5/internal/json
-# github.com/fsnotify/fsnotify v1.9.0
-## explicit; go 1.17
+# github.com/fsnotify/fsnotify v1.10.0
+## explicit; go 1.23
 github.com/fsnotify/fsnotify
 github.com/fsnotify/fsnotify/internal
-# github.com/fxamacker/cbor/v2 v2.9.0
+# github.com/fxamacker/cbor/v2 v2.9.1
 ## explicit; go 1.20
 github.com/fxamacker/cbor/v2
 # github.com/gertd/go-pluralize v0.2.1
@@ -145,51 +145,51 @@ github.com/go-logr/logr/slogr
 # github.com/go-logr/zapr v1.3.0
 ## explicit; go 1.18
 github.com/go-logr/zapr
-# github.com/go-openapi/jsonpointer v0.22.4
-## explicit; go 1.24.0
+# github.com/go-openapi/jsonpointer v0.23.1
+## explicit; go 1.25.0
 github.com/go-openapi/jsonpointer
-# github.com/go-openapi/jsonreference v0.21.4
+# github.com/go-openapi/jsonreference v0.21.5
 ## explicit; go 1.24.0
 github.com/go-openapi/jsonreference
 github.com/go-openapi/jsonreference/internal
-# github.com/go-openapi/swag v0.25.4
-## explicit; go 1.24.0
+# github.com/go-openapi/swag v0.26.0
+## explicit; go 1.25.0
 github.com/go-openapi/swag
-# github.com/go-openapi/swag/cmdutils v0.25.4
-## explicit; go 1.24.0
+# github.com/go-openapi/swag/cmdutils v0.26.0
+## explicit; go 1.25.0
 github.com/go-openapi/swag/cmdutils
-# github.com/go-openapi/swag/conv v0.25.4
-## explicit; go 1.24.0
+# github.com/go-openapi/swag/conv v0.26.0
+## explicit; go 1.25.0
 github.com/go-openapi/swag/conv
-# github.com/go-openapi/swag/fileutils v0.25.4
-## explicit; go 1.24.0
+# github.com/go-openapi/swag/fileutils v0.26.0
+## explicit; go 1.25.0
 github.com/go-openapi/swag/fileutils
-# github.com/go-openapi/swag/jsonname v0.25.4
-## explicit; go 1.24.0
+# github.com/go-openapi/swag/jsonname v0.26.0
+## explicit; go 1.25.0
 github.com/go-openapi/swag/jsonname
-# github.com/go-openapi/swag/jsonutils v0.25.4
-## explicit; go 1.24.0
+# github.com/go-openapi/swag/jsonutils v0.26.0
+## explicit; go 1.25.0
 github.com/go-openapi/swag/jsonutils
 github.com/go-openapi/swag/jsonutils/adapters
 github.com/go-openapi/swag/jsonutils/adapters/ifaces
 github.com/go-openapi/swag/jsonutils/adapters/stdlib/json
-# github.com/go-openapi/swag/loading v0.25.4
-## explicit; go 1.24.0
+# github.com/go-openapi/swag/loading v0.26.0
+## explicit; go 1.25.0
 github.com/go-openapi/swag/loading
-# github.com/go-openapi/swag/mangling v0.25.4
-## explicit; go 1.24.0
+# github.com/go-openapi/swag/mangling v0.26.0
+## explicit; go 1.25.0
 github.com/go-openapi/swag/mangling
-# github.com/go-openapi/swag/netutils v0.25.4
-## explicit; go 1.24.0
+# github.com/go-openapi/swag/netutils v0.26.0
+## explicit; go 1.25.0
 github.com/go-openapi/swag/netutils
-# github.com/go-openapi/swag/stringutils v0.25.4
-## explicit; go 1.24.0
+# github.com/go-openapi/swag/stringutils v0.26.0
+## explicit; go 1.25.0
 github.com/go-openapi/swag/stringutils
-# github.com/go-openapi/swag/typeutils v0.25.4
-## explicit; go 1.24.0
+# github.com/go-openapi/swag/typeutils v0.26.0
+## explicit; go 1.25.0
 github.com/go-openapi/swag/typeutils
-# github.com/go-openapi/swag/yamlutils v0.25.4
-## explicit; go 1.24.0
+# github.com/go-openapi/swag/yamlutils v0.26.0
+## explicit; go 1.25.0
 github.com/go-openapi/swag/yamlutils
 # github.com/go-task/slim-sprig/v3 v3.0.0
 ## explicit; go 1.20
@@ -200,9 +200,6 @@ github.com/gobuffalo/flect
 # github.com/golang-jwt/jwt/v5 v5.3.1
 ## explicit; go 1.21
 github.com/golang-jwt/jwt/v5
-# github.com/google/btree v1.1.3
-## explicit; go 1.18
-github.com/google/btree
 # github.com/google/cel-go v0.27.0
 ## explicit; go 1.23.0
 github.com/google/cel-go/cel
@@ -337,7 +334,7 @@ github.com/onsi/ginkgo/v2/internal/reporters
 github.com/onsi/ginkgo/v2/internal/testingtproxy
 github.com/onsi/ginkgo/v2/reporters
 github.com/onsi/ginkgo/v2/types
-# github.com/onsi/gomega v1.39.1
+# github.com/onsi/gomega v1.40.0
 ## explicit; go 1.24.0
 github.com/onsi/gomega
 github.com/onsi/gomega/format
@@ -427,8 +424,8 @@ github.com/prometheus/client_model/go
 github.com/prometheus/common/config
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/model
-# github.com/prometheus/procfs v0.19.2
-## explicit; go 1.24.0
+# github.com/prometheus/procfs v0.20.1
+## explicit; go 1.25.0
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
@@ -503,7 +500,7 @@ go.uber.org/zap/internal/exit
 go.uber.org/zap/internal/pool
 go.uber.org/zap/internal/stacktrace
 go.uber.org/zap/zapcore
-# go.yaml.in/yaml/v2 v2.4.3
+# go.yaml.in/yaml/v2 v2.4.4
 ## explicit; go 1.15
 go.yaml.in/yaml/v2
 # go.yaml.in/yaml/v3 v3.0.4
@@ -1115,7 +1112,7 @@ k8s.io/streaming/pkg/httpstream
 k8s.io/streaming/pkg/httpstream/spdy
 k8s.io/streaming/pkg/httpstream/wsstream
 k8s.io/streaming/pkg/runtime
-# k8s.io/utils v0.0.0-20260210185600-b8788abfbbc2
+# k8s.io/utils v0.0.0-20260319190234-28399d86e0b5
 ## explicit; go 1.23
 k8s.io/utils/buffer
 k8s.io/utils/clock
@@ -1126,6 +1123,7 @@ k8s.io/utils/lru
 k8s.io/utils/net
 k8s.io/utils/pointer
 k8s.io/utils/ptr
+k8s.io/utils/third_party/forked/golang/btree
 k8s.io/utils/trace
 # kubevirt.io/api v1.9.0-beta.0
 ## explicit; go 1.24.0
@@ -1150,8 +1148,8 @@ kubevirt.io/kubevirt-migration-operator/api/v1alpha1
 # kubevirt.io/ssp-operator/api v0.25.0
 ## explicit; go 1.24.3
 kubevirt.io/ssp-operator/api/v1beta3
-# sigs.k8s.io/controller-runtime v0.23.1
-## explicit; go 1.25.0
+# sigs.k8s.io/controller-runtime v0.24.1
+## explicit; go 1.26.0
 sigs.k8s.io/controller-runtime
 sigs.k8s.io/controller-runtime/pkg/builder
 sigs.k8s.io/controller-runtime/pkg/cache
@@ -1200,8 +1198,8 @@ sigs.k8s.io/controller-runtime/pkg/webhook/admission/metrics
 sigs.k8s.io/controller-runtime/pkg/webhook/conversion
 sigs.k8s.io/controller-runtime/pkg/webhook/conversion/metrics
 sigs.k8s.io/controller-runtime/pkg/webhook/internal/metrics
-# sigs.k8s.io/controller-tools v0.20.1
-## explicit; go 1.25.0
+# sigs.k8s.io/controller-tools v0.21.0
+## explicit; go 1.26.0
 sigs.k8s.io/controller-tools/pkg/crd
 sigs.k8s.io/controller-tools/pkg/crd/markers
 sigs.k8s.io/controller-tools/pkg/genall
@@ -1217,7 +1215,7 @@ sigs.k8s.io/json/internal/golang/encoding/json
 ## explicit; go 1.18
 sigs.k8s.io/randfill
 sigs.k8s.io/randfill/bytesource
-# sigs.k8s.io/structured-merge-diff/v6 v6.3.2
+# sigs.k8s.io/structured-merge-diff/v6 v6.4.0
 ## explicit; go 1.23
 sigs.k8s.io/structured-merge-diff/v6/fieldpath
 sigs.k8s.io/structured-merge-diff/v6/merge
