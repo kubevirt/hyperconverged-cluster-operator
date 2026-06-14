@@ -15,7 +15,7 @@ INDEX_IMAGE        ?= $(REGISTRY_NAMESPACE)/hyperconverged-cluster-index
 BUILDER_IMAGE      ?= $(REGISTRY_NAMESPACE)/hco-builder
 BUILDER_IMAGE_TAG  ?= latest
 LDFLAGS            ?= -w -s
-GOLANDCI_LINT_VERSION ?= v2.6.0
+GOLANDCI_LINT_VERSION ?= v2.12.2
 HCO_BUMP_LEVEL ?= minor
 ASSETS_DIR ?= assets
 DUMP_NETWORK_POLICIES ?= "false"
@@ -52,7 +52,7 @@ goimport:
 
 
 lint:
-	GOTOOLCHAIN=go1.25.9 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANDCI_LINT_VERSION}
+	GOTOOLCHAIN=go1.26.3 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANDCI_LINT_VERSION}
 	golangci-lint run
 
 build: build-operator build-csv-merger build-webhook
