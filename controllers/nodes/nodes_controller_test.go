@@ -138,7 +138,7 @@ var _ = Describe("NodesController", func() {
 		})
 
 		Context("HyperShift Node Labeling", func() {
-			It("Should label worker node when shouldLabelNodes is true", func() {
+			It("Should label worker node with kubevirt control-plane label", func() {
 				workerNode := &corev1.Node{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "worker-1",
@@ -162,24 +162,22 @@ var _ = Describe("NodesController", func() {
 					return false, nil
 				}
 
-				// Create a request for the worker node
 				nodeRequest := reconcile.Request{
 					NamespacedName: types.NamespacedName{
 						Name: "worker-1",
 					},
 				}
 
-				// Reconcile
 				res, err := r.Reconcile(context.TODO(), nodeRequest)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.IsZero()).To(BeTrue())
 
-				// Verify the node was labeled
 				updatedNode := &corev1.Node{}
 				err = cl.Get(context.TODO(), client.ObjectKey{Name: "worker-1"}, updatedNode)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(updatedNode.Labels).To(HaveKey(nodeinfo.LabelNodeRoleControlPlane))
-				Expect(updatedNode.Labels[nodeinfo.LabelNodeRoleControlPlane]).To(Equal(hypershiftLabelValue))
+				Expect(updatedNode.Labels).To(HaveKey(nodeinfo.LabelNodeRoleKubevirtControlPlane))
+				Expect(updatedNode.Labels[nodeinfo.LabelNodeRoleKubevirtControlPlane]).To(Equal(hypershiftLabelValue))
+				Expect(updatedNode.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleControlPlane))
 			})
 
 			It("Should not label control plane node", func() {
@@ -216,11 +214,11 @@ var _ = Describe("NodesController", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.IsZero()).To(BeTrue())
 
-				// Verify the node label wasn't changed
 				updatedNode := &corev1.Node{}
 				err = cl.Get(context.TODO(), client.ObjectKey{Name: "control-plane-1"}, updatedNode)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(updatedNode.Labels[nodeinfo.LabelNodeRoleControlPlane]).To(Equal(""))
+				Expect(updatedNode.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleKubevirtControlPlane))
 			})
 
 			It("Should skip labeling when shouldLabelNodes is false", func() {
@@ -257,10 +255,10 @@ var _ = Describe("NodesController", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.IsZero()).To(BeTrue())
 
-				// Verify the node was not labeled
 				updatedNode := &corev1.Node{}
 				err = cl.Get(context.TODO(), client.ObjectKey{Name: "worker-1"}, updatedNode)
 				Expect(err).ToNot(HaveOccurred())
+				Expect(updatedNode.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleKubevirtControlPlane))
 				Expect(updatedNode.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleControlPlane))
 			})
 
@@ -285,7 +283,6 @@ var _ = Describe("NodesController", func() {
 					},
 				}
 
-				// Should not return error for missing node
 				res, err := r.Reconcile(context.TODO(), nodeRequest)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.IsZero()).To(BeTrue())
@@ -314,19 +311,18 @@ var _ = Describe("NodesController", func() {
 					return false, nil
 				}
 
-				// Use hcoReq instead of node request
 				res, err := r.Reconcile(context.TODO(), hcoReq)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res.IsZero()).To(BeTrue())
 
-				// Verify the node was not labeled (HCO event should skip node labeling)
 				updatedNode := &corev1.Node{}
 				err = cl.Get(context.TODO(), client.ObjectKey{Name: "worker-1"}, updatedNode)
 				Expect(err).ToNot(HaveOccurred())
+				Expect(updatedNode.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleKubevirtControlPlane))
 				Expect(updatedNode.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleControlPlane))
 			})
 
-			It("Should label all nodes at startup", func() {
+			It("Should label all nodes at startup with kubevirt control-plane label", func() {
 				worker1 := &corev1.Node{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "worker-1",
@@ -363,22 +359,198 @@ var _ = Describe("NodesController", func() {
 				err := r.labelAllNodesAtStartup(context.TODO())
 				Expect(err).ToNot(HaveOccurred())
 
-				// Verify worker nodes were labeled
 				updatedWorker1 := &corev1.Node{}
 				err = cl.Get(context.TODO(), client.ObjectKey{Name: "worker-1"}, updatedWorker1)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(updatedWorker1.Labels[nodeinfo.LabelNodeRoleControlPlane]).To(Equal(hypershiftLabelValue))
+				Expect(updatedWorker1.Labels[nodeinfo.LabelNodeRoleKubevirtControlPlane]).To(Equal(hypershiftLabelValue))
+				Expect(updatedWorker1.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleControlPlane))
 
 				updatedWorker2 := &corev1.Node{}
 				err = cl.Get(context.TODO(), client.ObjectKey{Name: "worker-2"}, updatedWorker2)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(updatedWorker2.Labels[nodeinfo.LabelNodeRoleControlPlane]).To(Equal(hypershiftLabelValue))
+				Expect(updatedWorker2.Labels[nodeinfo.LabelNodeRoleKubevirtControlPlane]).To(Equal(hypershiftLabelValue))
+				Expect(updatedWorker2.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleControlPlane))
 
 				// Verify control plane node was not changed
 				updatedCP := &corev1.Node{}
 				err = cl.Get(context.TODO(), client.ObjectKey{Name: "control-plane-1"}, updatedCP)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(updatedCP.Labels[nodeinfo.LabelNodeRoleControlPlane]).To(Equal(""))
+				Expect(updatedCP.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleKubevirtControlPlane))
+			})
+
+			Context("Upgrade scenarios", func() {
+				It("Should replace old kubernetes control-plane label with kubevirt label on upgrade", func() {
+					workerNode := &corev1.Node{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "worker-1",
+							Labels: map[string]string{
+								nodeinfo.LabelNodeRoleWorker:       "",
+								nodeinfo.LabelNodeRoleControlPlane: hypershiftLabelValue,
+							},
+						},
+					}
+
+					hco := commontestutils.NewHco()
+					resources := []client.Object{hco, workerNode}
+					cl := commontestutils.InitClient(resources)
+
+					r := &ReconcileNodeCounter{
+						Client:                       cl,
+						nodeEvents:                   nodeEvents,
+						HandleHyperShiftNodeLabeling: HandleHyperShiftNodeLabeling,
+					}
+
+					nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
+						return false, nil
+					}
+
+					nodeRequest := reconcile.Request{
+						NamespacedName: types.NamespacedName{
+							Name: "worker-1",
+						},
+					}
+
+					res, err := r.Reconcile(context.TODO(), nodeRequest)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(res.IsZero()).To(BeTrue())
+
+					updatedNode := &corev1.Node{}
+					err = cl.Get(context.TODO(), client.ObjectKey{Name: "worker-1"}, updatedNode)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(updatedNode.Labels).To(HaveKey(nodeinfo.LabelNodeRoleKubevirtControlPlane))
+					Expect(updatedNode.Labels[nodeinfo.LabelNodeRoleKubevirtControlPlane]).To(Equal(hypershiftLabelValue))
+					Expect(updatedNode.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleControlPlane))
+				})
+
+				It("Should replace old label on all nodes at startup (upgrade)", func() {
+					worker1 := &corev1.Node{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "worker-1",
+							Labels: map[string]string{
+								nodeinfo.LabelNodeRoleWorker:       "",
+								nodeinfo.LabelNodeRoleControlPlane: hypershiftLabelValue,
+							},
+						},
+					}
+					worker2 := &corev1.Node{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "worker-2",
+							Labels: map[string]string{
+								nodeinfo.LabelNodeRoleWorker:       "",
+								nodeinfo.LabelNodeRoleControlPlane: hypershiftLabelValue,
+							},
+						},
+					}
+
+					resources := []client.Object{worker1, worker2}
+					cl := commontestutils.InitClient(resources)
+
+					r := &ReconcileNodeCounter{
+						Client:     cl,
+						nodeEvents: nodeEvents,
+					}
+
+					err := r.labelAllNodesAtStartup(context.TODO())
+					Expect(err).ToNot(HaveOccurred())
+
+					for _, name := range []string{"worker-1", "worker-2"} {
+						updatedNode := &corev1.Node{}
+						err = cl.Get(context.TODO(), client.ObjectKey{Name: name}, updatedNode)
+						Expect(err).ToNot(HaveOccurred())
+						Expect(updatedNode.Labels[nodeinfo.LabelNodeRoleKubevirtControlPlane]).To(Equal(hypershiftLabelValue))
+						Expect(updatedNode.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleControlPlane))
+					}
+				})
+
+				It("Should not remove kubernetes control-plane label if not set by HCO", func() {
+					cpNode := &corev1.Node{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "control-plane-1",
+							Labels: map[string]string{
+								nodeinfo.LabelNodeRoleControlPlane: "",
+							},
+						},
+					}
+
+					hco := commontestutils.NewHco()
+					resources := []client.Object{hco, cpNode}
+					cl := commontestutils.InitClient(resources)
+
+					r := &ReconcileNodeCounter{
+						Client:                       cl,
+						nodeEvents:                   nodeEvents,
+						HandleHyperShiftNodeLabeling: HandleHyperShiftNodeLabeling,
+					}
+
+					nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
+						return false, nil
+					}
+
+					nodeRequest := reconcile.Request{
+						NamespacedName: types.NamespacedName{
+							Name: "control-plane-1",
+						},
+					}
+
+					res, err := r.Reconcile(context.TODO(), nodeRequest)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(res.IsZero()).To(BeTrue())
+
+					updatedNode := &corev1.Node{}
+					err = cl.Get(context.TODO(), client.ObjectKey{Name: "control-plane-1"}, updatedNode)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(updatedNode.Labels[nodeinfo.LabelNodeRoleControlPlane]).To(Equal(""))
+					Expect(updatedNode.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleKubevirtControlPlane))
+				})
+
+				It("Should not patch node already having the new label and no old label", func() {
+					workerNode := &corev1.Node{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "worker-1",
+							Labels: map[string]string{
+								nodeinfo.LabelNodeRoleWorker:               "",
+								nodeinfo.LabelNodeRoleKubevirtControlPlane: hypershiftLabelValue,
+							},
+						},
+					}
+
+					hco := commontestutils.NewHco()
+					resources := []client.Object{hco, workerNode}
+					cl := commontestutils.InitClient(resources)
+
+					r := &ReconcileNodeCounter{
+						Client:                       cl,
+						nodeEvents:                   nodeEvents,
+						HandleHyperShiftNodeLabeling: HandleHyperShiftNodeLabeling,
+					}
+
+					nodeinfo.HandleNodeChanges = func(_ context.Context, _ client.Client, _ *hcov1.HyperConverged, _ logr.Logger) (bool, error) {
+						return false, nil
+					}
+
+					nodeRequest := reconcile.Request{
+						NamespacedName: types.NamespacedName{
+							Name: "worker-1",
+						},
+					}
+
+					origNode := &corev1.Node{}
+					err := cl.Get(context.TODO(), client.ObjectKey{Name: "worker-1"}, origNode)
+					Expect(err).ToNot(HaveOccurred())
+					originalRV := origNode.ResourceVersion
+
+					res, err := r.Reconcile(context.TODO(), nodeRequest)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(res.IsZero()).To(BeTrue())
+
+					updatedNode := &corev1.Node{}
+					err = cl.Get(context.TODO(), client.ObjectKey{Name: "worker-1"}, updatedNode)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(updatedNode.ResourceVersion).To(Equal(originalRV), "node should not have been patched")
+					Expect(updatedNode.Labels[nodeinfo.LabelNodeRoleKubevirtControlPlane]).To(Equal(hypershiftLabelValue))
+					Expect(updatedNode.Labels).NotTo(HaveKey(nodeinfo.LabelNodeRoleControlPlane))
+				})
 			})
 		})
 
@@ -419,7 +591,7 @@ var _ = Describe("NodesController", func() {
 				Expect(isWorkerNode(masterNode)).To(BeFalse())
 			})
 
-			It("Should not identify node with both worker and control-plane labels as worker", func() {
+			It("Should not identify node with both worker and non-HCO control-plane labels as worker", func() {
 				mixedNode := &corev1.Node{
 					ObjectMeta: metav1.ObjectMeta{
 						Name: "mixed-1",
@@ -430,6 +602,19 @@ var _ = Describe("NodesController", func() {
 					},
 				}
 				Expect(isWorkerNode(mixedNode)).To(BeFalse())
+			})
+
+			It("Should identify worker node with HCO-set control-plane label as worker (upgrade path)", func() {
+				upgradedNode := &corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "worker-hco-labeled",
+						Labels: map[string]string{
+							nodeinfo.LabelNodeRoleWorker:       "",
+							nodeinfo.LabelNodeRoleControlPlane: hypershiftLabelValue,
+						},
+					},
+				}
+				Expect(isWorkerNode(upgradedNode)).To(BeTrue())
 			})
 
 			It("Should not identify node without labels as worker", func() {
