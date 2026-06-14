@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM} quay.io/projectquay/golang:1.25 AS builder
+FROM --platform=${BUILDPLATFORM} quay.io/projectquay/golang:1.26 AS builder
 
 WORKDIR /go/src/github.com/kubevirt/hyperconverged-cluster-operator/
 COPY . .
