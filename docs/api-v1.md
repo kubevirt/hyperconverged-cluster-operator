@@ -50,7 +50,7 @@ ApplicationAwareConfigurations holds the AAQ configurations
 | ----- | ----------- | ------ | ------- | -------- |
 | enable | Enable if true, enables the Application Aware Quota feature | *bool | false | false |
 | vmiCalcConfigName | VmiCalcConfigName determine how resource allocation will be done with ApplicationsResourceQuota. allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources, IgnoreVmiCalculator or GuestEffectiveResources | *aaqv1alpha1.VmiCalcConfigName | DedicatedVirtualResources | false |
-| namespaceSelector | NamespaceSelector determines in which namespaces scheduling gate will be added to pods.. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#labelselector-v1-meta) |  | false |
+| namespaceSelector | NamespaceSelector determines in which namespaces scheduling gate will be added to pods.. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.36/#labelselector-v1-meta) |  | false |
 | allowApplicationAwareClusterResourceQuota | AllowApplicationAwareClusterResourceQuota if set to true, allows creation and management of ClusterAppsResourceQuota | bool | false | false |
 
 [Back to TOC](#table-of-contents)
@@ -96,7 +96,7 @@ DataImportCronTemplate defines the template type for DataImportCrons. It require
 
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
-| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#objectmeta-v1-meta) |  | false |
+| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.36/#objectmeta-v1-meta) |  | false |
 | spec |  | *cdiv1beta1.DataImportCronSpec |  | false |
 
 [Back to TOC](#table-of-contents)
@@ -107,7 +107,7 @@ DataImportCronTemplateStatus is a copy of a dataImportCronTemplate as defined in
 
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
-| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#objectmeta-v1-meta) |  | false |
+| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.36/#objectmeta-v1-meta) |  | false |
 | spec |  | *cdiv1beta1.DataImportCronSpec |  | false |
 | status |  | [DataImportCronStatus](#dataimportcronstatus) |  | false |
 
@@ -143,7 +143,7 @@ HyperConverged is the Schema for the hyperconvergeds API
 
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
-| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#objectmeta-v1-meta) |  | false |
+| metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.36/#objectmeta-v1-meta) |  | false |
 | spec |  | [HyperConvergedSpec](#hyperconvergedspec) | {"security": {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10},"workloadSources":{"enableCommonBootImageImport":true}, "deployment": {"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "applicationAwareConfig": {"enable": false}}} | false |
 | status |  | [HyperConvergedStatus](#hyperconvergedstatus) |  | false |
 
@@ -166,7 +166,7 @@ HyperConvergedList contains a list of HyperConverged
 
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
-| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#listmeta-v1-meta) |  | false |
+| metadata |  | [metav1.ListMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.36/#listmeta-v1-meta) |  | false |
 | items |  | [][HyperConverged](#hyperconverged) |  | true |
 
 [Back to TOC](#table-of-contents)
@@ -454,7 +454,7 @@ VirtualizationConfig contains all the virtualization configurations
 | hypervisors | Hypervisors specifies which hypervisor the cluster uses to run virtual machines. If empty or not set, KubeVirt defaults to KVM. Currently, only a single entry is supported. Allowed values for the hypervisor name are \"kvm\" and \"hyperv-direct\". | []v1.HypervisorConfiguration |  | false |
 | roleAggregationStrategy | RoleAggregationStrategy controls whether KubeVirt RBAC cluster roles should be aggregated to the default Kubernetes roles (admin, edit, view). When set to \"AggregateToDefault\" or not specified, the aggregate-to-* labels are added to the cluster roles. When set to \"Manual\", the labels are not added, and roles will not be aggregated to the default roles. | *v1.RoleAggregationStrategy |  | false |
 | vmiCPUAllocationRatio | VmiCPUAllocationRatio defines, for each requested virtual CPU, how much physical CPU to request per VMI from the hosting node. The value is in fraction of a CPU thread (or core on non-hyperthreaded nodes). VMI POD CPU request = number of vCPUs * 1/vmiCPUAllocationRatio For example, a value of 1 means 1 physical CPU thread per VMI CPU thread. A value of 100 would be 1% of a physical thread allocated for each requested VMI thread. This option has no effect on VMIs that request dedicated CPUs. Defaults to 10 | *int | 10 | false |
-| autoCPULimitNamespaceLabelSelector | When set, AutoCPULimitNamespaceLabelSelector will set a CPU limit on virt-launcher for VMIs running inside namespaces that match the label selector. The CPU limit will equal the number of requested vCPUs. This setting does not apply to VMIs with dedicated CPUs. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.35/#labelselector-v1-meta) |  | false |
+| autoCPULimitNamespaceLabelSelector | When set, AutoCPULimitNamespaceLabelSelector will set a CPU limit on virt-launcher for VMIs running inside namespaces that match the label selector. The CPU limit will equal the number of requested vCPUs. This setting does not apply to VMIs with dedicated CPUs. | *[metav1.LabelSelector](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.36/#labelselector-v1-meta) |  | false |
 
 [Back to TOC](#table-of-contents)
 

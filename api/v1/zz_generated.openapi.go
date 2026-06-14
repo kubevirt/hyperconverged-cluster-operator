@@ -319,8 +319,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedStatus
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/apimachinery/pkg/apis/meta/v1.Condition"),
+										Ref: ref("k8s.io/apimachinery/pkg/apis/meta/v1.Condition"),
 									},
 								},
 							},
@@ -338,8 +337,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedStatus
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("k8s.io/api/core/v1.ObjectReference"),
+										Ref: ref("k8s.io/api/core/v1.ObjectReference"),
 									},
 								},
 							},
@@ -357,8 +355,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedStatus
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.Version"),
+										Ref: ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.Version"),
 									},
 								},
 							},
@@ -385,8 +382,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedStatus
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplateStatus"),
+										Ref: ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplateStatus"),
 									},
 								},
 							},
@@ -441,9 +437,8 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_HyperConvergedWorklo
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -621,9 +616,8 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_MediatedDevicesConfi
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -640,8 +634,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_MediatedDevicesConfi
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodeMediatedDeviceTypesConfig"),
+										Ref: ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.NodeMediatedDeviceTypesConfig"),
 									},
 								},
 							},
@@ -714,9 +707,8 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_NodeMediatedDeviceTy
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -733,9 +725,8 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_NodeMediatedDeviceTy
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -813,8 +804,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_PermittedHostDevices
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PciHostDevice"),
+										Ref: ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.PciHostDevice"),
 									},
 								},
 							},
@@ -834,8 +824,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_PermittedHostDevices
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.USBHostDevice"),
+										Ref: ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.USBHostDevice"),
 									},
 								},
 							},
@@ -855,8 +844,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_PermittedHostDevices
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.MediatedHostDevice"),
+										Ref: ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.MediatedHostDevice"),
 									},
 								},
 							},
@@ -889,9 +877,8 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_StorageImportConfig(
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -929,8 +916,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_USBHostDevice(ref co
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.USBSelector"),
+										Ref: ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.USBSelector"),
 									},
 								},
 							},

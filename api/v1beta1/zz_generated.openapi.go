@@ -329,9 +329,8 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedO
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -483,8 +482,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate"),
+										Ref: ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1.DataImportCronTemplate"),
 									},
 								},
 							},
@@ -591,8 +589,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("kubevirt.io/api/core/v1.InterfaceBindingPlugin"),
+										Ref: ref("kubevirt.io/api/core/v1.InterfaceBindingPlugin"),
 									},
 								},
 							},
@@ -665,8 +662,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedS
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("kubevirt.io/api/core/v1.HypervisorConfiguration"),
+										Ref: ref("kubevirt.io/api/core/v1.HypervisorConfiguration"),
 									},
 								},
 							},
@@ -705,9 +701,8 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_MediatedDevices
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -725,9 +720,8 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_MediatedDevices
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -744,8 +738,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_MediatedDevices
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: map[string]interface{}{},
-										Ref:     ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.NodeMediatedDeviceTypesConfig"),
+										Ref: ref("github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1.NodeMediatedDeviceTypesConfig"),
 									},
 								},
 							},
@@ -774,9 +767,8 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_NodeMediatedDev
 								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -793,9 +785,8 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_NodeMediatedDev
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
@@ -813,9 +804,8 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_NodeMediatedDev
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Default: "",
-										Type:    []string{"string"},
-										Format:  "",
+										Type:   []string{"string"},
+										Format: "",
 									},
 								},
 							},
