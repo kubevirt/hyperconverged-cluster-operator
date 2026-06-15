@@ -312,17 +312,17 @@ type csvBaseParams struct {
 // getCSVBase returns a base HCO CSV without an InstallStrategy
 func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 	almExamples, _ := json.Marshal(
-		map[string]interface{}{
-			"apiVersion": hcoutil.APIVersion,
+		map[string]any{
+			"apiVersion": hcov1.APIVersion,
 			"kind":       hcoutil.HyperConvergedKind,
-			"metadata": map[string]interface{}{
+			"metadata": map[string]any{
 				"name":      packageName,
 				"namespace": params.Namespace,
 				"annotations": map[string]string{
 					"deployOVS": "false",
 				},
 			},
-			"spec": map[string]interface{}{},
+			"spec": map[string]any{},
 		})
 
 	// Explicitly fail on unvalidated (for any reason) requests:
@@ -496,13 +496,11 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 						Kind:        hcoutil.HyperConvergedKind,
 						DisplayName: params.CrdDisplay + " Deployment",
 						Description: "Represents the deployment of " + params.CrdDisplay,
-						// TODO: move this to annotations on hyperconverged_types.go once kubebuilder
-						// properly supports SpecDescriptors as the operator-sdk already does
 						SpecDescriptors: []csvv1alpha1.SpecDescriptor{
 							{
 								DisplayName: "Infra components node affinity",
 								Description: "nodeAffinity describes node affinity scheduling rules for the infra pods.",
-								Path:        "infra.nodePlacement.affinity.nodeAffinity",
+								Path:        "deployment.nodePlacements.infra.affinity.nodeAffinity",
 								XDescriptors: []string{
 									"urn:alm:descriptor:com.tectonic.ui:nodeAffinity",
 								},
@@ -510,7 +508,7 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 							{
 								DisplayName: "Infra components pod affinity",
 								Description: "podAffinity describes pod affinity scheduling rules for the infra pods.",
-								Path:        "infra.nodePlacement.affinity.podAffinity",
+								Path:        "deployment.nodePlacements.infra.affinity.podAffinity",
 								XDescriptors: []string{
 									"urn:alm:descriptor:com.tectonic.ui:podAffinity",
 								},
@@ -518,7 +516,7 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 							{
 								DisplayName: "Infra components pod anti-affinity",
 								Description: "podAntiAffinity describes pod anti affinity scheduling rules for the infra pods.",
-								Path:        "infra.nodePlacement.affinity.podAntiAffinity",
+								Path:        "deployment.nodePlacements.infra.affinity.podAntiAffinity",
 								XDescriptors: []string{
 									"urn:alm:descriptor:com.tectonic.ui:podAntiAffinity",
 								},
@@ -526,7 +524,7 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 							{
 								DisplayName: "Workloads components node affinity",
 								Description: "nodeAffinity describes node affinity scheduling rules for the workloads pods.",
-								Path:        "workloads.nodePlacement.affinity.nodeAffinity",
+								Path:        "deployment.nodePlacements.workload.affinity.nodeAffinity",
 								XDescriptors: []string{
 									"urn:alm:descriptor:com.tectonic.ui:nodeAffinity",
 								},
@@ -534,7 +532,7 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 							{
 								DisplayName: "Workloads components pod affinity",
 								Description: "podAffinity describes pod affinity scheduling rules for the workloads pods.",
-								Path:        "workloads.nodePlacement.affinity.podAffinity",
+								Path:        "deployment.nodePlacements.workload.affinity.podAffinity",
 								XDescriptors: []string{
 									"urn:alm:descriptor:com.tectonic.ui:podAffinity",
 								},
@@ -542,7 +540,7 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 							{
 								DisplayName: "Workloads components pod anti-affinity",
 								Description: "podAntiAffinity describes pod anti affinity scheduling rules for the workloads pods.",
-								Path:        "workloads.nodePlacement.affinity.podAntiAffinity",
+								Path:        "deployment.nodePlacements.workload.affinity.podAntiAffinity",
 								XDescriptors: []string{
 									"urn:alm:descriptor:com.tectonic.ui:podAntiAffinity",
 								},
@@ -678,8 +676,8 @@ func processOneCsv(c util.CsvWithComponent, installStrategyBase *csvv1alpha1.Str
 	}
 	csvBaseAlmString := csvBase.Annotations[almExamplesAnnotation]
 	csvStructAlmString := csvStruct.Annotations[almExamplesAnnotation]
-	var baseAlmcrs []interface{}
-	var structAlmcrs []interface{}
+	var baseAlmcrs []any
+	var structAlmcrs []any
 
 	if !strings.HasPrefix(csvBaseAlmString, "[") {
 		csvBaseAlmString = "[" + csvBaseAlmString + "]"

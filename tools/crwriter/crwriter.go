@@ -46,8 +46,8 @@ func init() {
 func main() {
 	var cr any
 	switch apiVersion {
-	case "v1":
-		cr = components.GetOperatorV1CR()
+	case "v1beta1":
+		cr = components.GetOperatorV1beta1CR()
 	default:
 		cr = components.GetOperatorCR()
 	}
