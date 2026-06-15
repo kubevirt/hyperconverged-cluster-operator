@@ -280,9 +280,9 @@ spec:
               spec:
                 query: |-
                   (
-                  sum((label_replace((node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}), "node", "$1", "instance", "(.+)") * on (node) kube_node_role{role="$role", node=~"$node"}))
+                  sum((label_replace((node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}), "node", "$1", "instance", "(.+)") * on (node) group_left() kube_node_role{role="$role", node=~"$node"}))
                   -
-                  (sum((kube_node_status_capacity{resource="memory", node=~"$node"} * on (node) kube_node_role{role="$role", node=~"$node"})) - sum((kube_node_status_allocatable{resource="memory", node=~"$node"} * on (node) kube_node_role{role="$role", node=~"$node"})))
+                  (sum((kube_node_status_capacity{resource="memory", node=~"$node"} * on (node) group_left() kube_node_role{role="$role", node=~"$node"})) - sum((kube_node_status_allocatable{resource="memory", node=~"$node"} * on (node) group_left() kube_node_role{role="$role", node=~"$node"})))
                   +
                   sum(kubevirt_vmi_memory_domain_bytes{node=~"$node"})
                   )
@@ -290,7 +290,7 @@ spec:
                   /
 
                   (
-                  sum((kube_node_status_allocatable{resource="memory", node=~"$node"} * on (node) kube_node_role{role="$role", node=~"$node"}))
+                  sum((kube_node_status_allocatable{resource="memory", node=~"$node"} * on (node) group_left() kube_node_role{role="$role", node=~"$node"}))
                   )
                 seriesNameFormat: Virtual Memory commitment
     "0_2":
@@ -325,13 +325,12 @@ spec:
 
                   / on (namespace, label_vm_kubevirt_io_name) group_left()
 
-                  avg by (namespace, label_vm_kubevirt_io_name) (
-                    kube_pod_resource_request{resource="memory"}
-                    * on(namespace, pod) group_left(label_vm_kubevirt_io_name)
+                  max by (namespace, label_vm_kubevirt_io_name) (
                     group by(namespace, pod, label_vm_kubevirt_io_name) (
                       kube_pod_labels{label_vm_kubevirt_io_name!=""}
                     )
-
+                    * on(namespace, pod) group_left()
+                    max by (namespace, pod) (kube_pod_resource_request{resource="memory"})
                   )
                   )
                 seriesNameFormat: Average VM overcommit ratio
@@ -424,7 +423,7 @@ spec:
               kind: PrometheusTimeSeriesQuery
               spec:
                 query: |-
-                  (kubevirt_hco_memory_overcommit_percentage / 100)
+                  scalar(kubevirt_hco_memory_overcommit_percentage / 100)
 
                   *
 
@@ -791,9 +790,9 @@ spec:
               spec:
                 query: |-
                   (
-                  sum((label_replace((node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}), "node", "$1", "instance", "(.+)") * on (node) kube_node_role{role="$role", node=~"$node"}))
+                  sum((label_replace((node_memory_MemTotal_bytes{instance=~"$node"} - node_memory_MemAvailable_bytes{instance=~"$node"}), "node", "$1", "instance", "(.+)") * on (node) group_left() kube_node_role{role="$role", node=~"$node"}))
                   -
-                  (sum((kube_node_status_capacity{resource="memory", node=~"$node"} * on (node) kube_node_role{role="$role", node=~"$node"})) - sum((kube_node_status_allocatable{resource="memory", node=~"$node"} * on (node) kube_node_role{role="$role", node=~"$node"})))
+                  (sum((kube_node_status_capacity{resource="memory", node=~"$node"} * on (node) group_left() kube_node_role{role="$role", node=~"$node"})) - sum((kube_node_status_allocatable{resource="memory", node=~"$node"} * on (node) group_left() kube_node_role{role="$role", node=~"$node"})))
                   +
                   sum(kubevirt_vmi_memory_domain_bytes{node=~"$node"})
                   )
@@ -801,7 +800,7 @@ spec:
                   /
 
                   (
-                  sum((kube_node_status_allocatable{resource="memory", node=~"$node"} * on (node) kube_node_role{role="$role", node=~"$node"}))
+                  sum((kube_node_status_allocatable{resource="memory", node=~"$node"} * on (node) group_left() kube_node_role{role="$role", node=~"$node"}))
                   )
                 seriesNameFormat: Virtual Memory commitment
     "1_4":
@@ -1398,11 +1397,11 @@ spec:
                   / on (namespace, label_vm_kubevirt_io_name) group_left()
 
                   max by (namespace, label_vm_kubevirt_io_name) (
-                    kube_pod_resource_request{resource="memory"}
-                    * on(namespace, pod) group_left(label_vm_kubevirt_io_name)
                     group by(namespace, pod, label_vm_kubevirt_io_name) (
                       kube_pod_labels{label_vm_kubevirt_io_name!=""}
                     )
+                    * on(namespace, pod) group_left()
+                    max by (namespace, pod) (kube_pod_resource_request{resource="memory"})
                   )
                 seriesNameFormat: '{{namespace}}/{{label_vm_kubevirt_io_name}}'
     "4_1":
@@ -1437,13 +1436,12 @@ spec:
 
                   / on (namespace, label_vm_kubevirt_io_name) group_left()
 
-                  avg by (namespace, label_vm_kubevirt_io_name) (
-                    kube_pod_resource_request{resource="memory"}
-                    * on(namespace, pod) group_left(label_vm_kubevirt_io_name)
+                  max by (namespace, label_vm_kubevirt_io_name) (
                     group by(namespace, pod, label_vm_kubevirt_io_name) (
                       kube_pod_labels{label_vm_kubevirt_io_name!=""}
                     )
-
+                    * on(namespace, pod) group_left()
+                    max by (namespace, pod) (kube_pod_resource_request{resource="memory"})
                   )
                   )
                 seriesNameFormat: Average VM overcommit ratio
@@ -1481,11 +1479,11 @@ spec:
                   / on (namespace, label_vm_kubevirt_io_name) group_left()
 
                   sum by (namespace, label_vm_kubevirt_io_name) (
-                    container_memory_usage_bytes
-                    * on(namespace, pod) group_left(label_vm_kubevirt_io_name)
                     group by(namespace, pod, label_vm_kubevirt_io_name) (
                       kube_pod_labels{label_vm_kubevirt_io_name!=""}
                     )
+                    * on(namespace, pod) group_left()
+                    max by (namespace, pod) (container_memory_usage_bytes)
                   )
                   )
                 seriesNameFormat: '{{namespace}}/{{label_vm_kubevirt_io_name}}'

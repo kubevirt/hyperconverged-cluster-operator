@@ -61,7 +61,7 @@ spec:
               spec:
                 query: |-
                   sum (
-                  ((
+                  max by (namespace, name)((
                   sum by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source="guest_effective"})
                   or
                   sum by (namespace, name)(
@@ -78,7 +78,7 @@ spec:
                   ))
 
                     + on(name, namespace) group_left(status)
-                    (
+                    (0 * (
                       (
                         (
                           (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
@@ -144,7 +144,7 @@ spec:
                         (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|error"} > 0)
                       )
                     ) and on(name, namespace)
-                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0))
                   ) or vector(0)
     "0_1":
       kind: Panel
@@ -168,14 +168,14 @@ spec:
                 query: |-
                   sum(
                   max by (namespace, name, status)(
-                    ((
+                    max by (namespace, name)((
                   sum by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="memory", source="guest_effective"})
                   or
                   max by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="memory", source=~"default|domain"})
                   ))
 
                     + on(name, namespace) group_left(status)
-                    (
+                    (0 * (
                       (
                         (
                           (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
@@ -241,7 +241,7 @@ spec:
                         (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|error"} > 0)
                       )
                     ) and on(name, namespace)
-                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0))
                   )) or vector(0)
     "0_2":
       kind: Panel
@@ -264,10 +264,10 @@ spec:
               spec:
                 query: |-
                   sum (
-                    (kubevirt_vm_disk_allocated_size_bytes{name=~"$name", namespace=~"$namespace"})
+                    sum by (namespace, name)(kubevirt_vm_disk_allocated_size_bytes{name=~"$name", namespace=~"$namespace"})
 
                     + on(name, namespace) group_left(status)
-                    (
+                    (0 * (
                       (
                         (
                           (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
@@ -333,7 +333,7 @@ spec:
                         (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|error"} > 0)
                       )
                     ) and on(name, namespace)
-                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0))
                   ) or vector(0)
     "0_3":
       kind: Panel
@@ -433,10 +433,10 @@ spec:
               spec:
                 query: |-
                   sum by (namespace, name, status)(
-                    (kubevirt_vm_disk_allocated_size_bytes{name=~"$name", namespace=~"$namespace"})
+                    sum by (namespace, name)(kubevirt_vm_disk_allocated_size_bytes{name=~"$name", namespace=~"$namespace"})
 
                     + on(name, namespace) group_left(status)
-                    (
+                    (0 * (
                       (
                         (
                           (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
@@ -502,7 +502,7 @@ spec:
                         (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|error"} > 0)
                       )
                     ) and on(name, namespace)
-                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0))
                   )
         - kind: TimeSeriesQuery
           spec:
@@ -577,7 +577,7 @@ spec:
                     (time() - kubevirt_vmi_migration_end_time_seconds{name=~"$name", namespace=~"$namespace"})
 
                     + on(name, namespace) group_left(status)
-                    (
+                    (0 * (
                       (
                         (
                           (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
@@ -643,7 +643,7 @@ spec:
                         (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|error"} > 0)
                       )
                     ) and on(name, namespace)
-                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0))
                   )
         - kind: TimeSeriesQuery
           spec:
@@ -655,7 +655,7 @@ spec:
                     (kubevirt_vmi_migration_end_time_seconds{name=~"$name", namespace=~"$namespace"}*1000)
 
                     + on(name, namespace) group_left(status)
-                    (
+                    (0 * (
                       (
                         (
                           (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
@@ -721,7 +721,7 @@ spec:
                         (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|error"} > 0)
                       )
                     ) and on(name, namespace)
-                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0))
                   )
         - kind: TimeSeriesQuery
           spec:
@@ -730,14 +730,14 @@ spec:
               spec:
                 query: |-
                   max by (namespace, name, status)(
-                    ((
+                    max by (namespace, name)((
                   sum by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="memory", source="guest_effective"})
                   or
                   max by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="memory", source=~"default|domain"})
                   ))
 
                     + on(name, namespace) group_left(status)
-                    (
+                    (0 * (
                       (
                         (
                           (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
@@ -803,7 +803,7 @@ spec:
                         (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|error"} > 0)
                       )
                     ) and on(name, namespace)
-                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0))
                   )
         - kind: TimeSeriesQuery
           spec:
@@ -811,7 +811,8 @@ spec:
               kind: PrometheusTimeSeriesQuery
               spec:
                 query: |-
-                  ((
+                  max by (namespace, name, status)(
+                    max by (namespace, name)((
                   sum by (namespace, name)(kubevirt_vm_resource_requests{name=~"$name", namespace=~"$namespace", resource="cpu", unit="cores", source="guest_effective"})
                   or
                   sum by (namespace, name)(
@@ -828,7 +829,7 @@ spec:
                   ))
 
                     + on(name, namespace) group_left(status)
-                    (
+                    (0 * (
                       (
                         (
                           (time() - label_replace(max by (name, namespace)(kubevirt_vm_starting_status_last_transition_timestamp_seconds{name=~"$name", namespace=~"$namespace"}) > 0, "status", "Starting", "", ""))
@@ -894,7 +895,8 @@ spec:
                         (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"starting|running|non_running|error"} > 0)
                       )
                     ) and on(name, namespace)
-                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0)
+                    (kubevirt_vm_info{name=~"$name", namespace=~"$namespace", status_group=~"$status"} > 0))
+                  )
   variables:
   - kind: ListVariable
     spec:
