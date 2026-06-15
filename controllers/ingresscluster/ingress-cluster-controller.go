@@ -25,7 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/downloadhost"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
@@ -85,9 +85,9 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		GenericFunc: func(e event.GenericEvent) bool { return false },
 	}
 
-	if err = c.Watch(source.Kind(mgr.GetCache(), client.Object(&v1beta1.HyperConverged{
+	if err = c.Watch(source.Kind(mgr.GetCache(), client.Object(&hcov1.HyperConverged{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: v1beta1.HyperConvergedName,
+			Name: hcov1.HyperConvergedName,
 		},
 	}),
 		&operatorhandler.InstrumentedEnqueueRequestForObject[client.Object]{}, createDeleteOnly),
@@ -197,7 +197,7 @@ func updateComponentInStatus(clusterIngress *configv1.Ingress, hcExists bool, dh
 }
 
 func (r *ReconcileIngressCluster) hyperConvergedExists(ctx context.Context, looger logr.Logger) (bool, error) {
-	hc := &v1beta1.HyperConverged{}
+	hc := &hcov1.HyperConverged{}
 	err := r.Get(ctx, reqresolver.GetHyperConvergedNamespacedName(), hc)
 
 	if err != nil {

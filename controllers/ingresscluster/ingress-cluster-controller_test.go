@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/downloadhost"
@@ -53,7 +53,7 @@ var _ = BeforeSuite(func() {
 	scheme = runtime.NewScheme()
 	Expect(corev1.AddToScheme(scheme)).To(Succeed())
 	Expect(configv1.Install(scheme)).To(Succeed())
-	Expect(hcov1beta1.AddToScheme(scheme)).To(Succeed())
+	Expect(hcov1.AddToScheme(scheme)).To(Succeed())
 
 	var err error
 	cert, key, err = generateCert()
@@ -116,7 +116,7 @@ var _ = Describe("IngressClusterController", func() {
 		ingressEventCh := make(chan event.TypedGenericEvent[client.Object], 1)
 		defer close(ingressEventCh)
 
-		hc := &hcov1beta1.HyperConverged{
+		hc := &hcov1.HyperConverged{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      hcoutils.HyperConvergedName,
 				Namespace: testNS,
@@ -179,7 +179,7 @@ var _ = Describe("IngressClusterController", func() {
 		ingressEventCh := make(chan event.TypedGenericEvent[client.Object], 1)
 		defer close(ingressEventCh)
 
-		hc := &hcov1beta1.HyperConverged{
+		hc := &hcov1.HyperConverged{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      hcoutils.HyperConvergedName,
 				Namespace: testNS,
@@ -255,7 +255,7 @@ var _ = Describe("IngressClusterController", func() {
 			},
 		}
 
-		hc := &hcov1beta1.HyperConverged{
+		hc := &hcov1.HyperConverged{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      hcoutils.HyperConvergedName,
 				Namespace: testNS,
@@ -296,7 +296,7 @@ var _ = Describe("IngressClusterController", func() {
 		ingressEventCh := make(chan event.TypedGenericEvent[client.Object], 1)
 		defer close(ingressEventCh)
 
-		hc := &hcov1beta1.HyperConverged{
+		hc := &hcov1.HyperConverged{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      hcoutils.HyperConvergedName,
 				Namespace: testNS,
@@ -345,7 +345,7 @@ var _ = Describe("IngressClusterController", func() {
 		ingressEventCh := make(chan event.TypedGenericEvent[client.Object], 1)
 		defer close(ingressEventCh)
 
-		hc := &hcov1beta1.HyperConverged{
+		hc := &hcov1.HyperConverged{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      hcoutils.HyperConvergedName,
 				Namespace: testNS,
@@ -414,7 +414,7 @@ var _ = Describe("IngressClusterController", func() {
 		ingressEventCh := make(chan event.TypedGenericEvent[client.Object], 1)
 		defer close(ingressEventCh)
 
-		hc := &hcov1beta1.HyperConverged{
+		hc := &hcov1.HyperConverged{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      hcoutils.HyperConvergedName,
 				Namespace: testNS,
@@ -466,7 +466,7 @@ var _ = Describe("IngressClusterController", func() {
 		ingressEventCh := make(chan event.TypedGenericEvent[client.Object], 1)
 		defer close(ingressEventCh)
 
-		hc := &hcov1beta1.HyperConverged{
+		hc := &hcov1.HyperConverged{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      hcoutils.HyperConvergedName,
 				Namespace: testNS,
@@ -530,7 +530,7 @@ var _ = Describe("IngressClusterController", func() {
 		ingressEventCh := make(chan event.TypedGenericEvent[client.Object], 1)
 		defer close(ingressEventCh)
 
-		hc := &hcov1beta1.HyperConverged{
+		hc := &hcov1.HyperConverged{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      hcoutils.HyperConvergedName,
 				Namespace: testNS,
