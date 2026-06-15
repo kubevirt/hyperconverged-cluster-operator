@@ -26,9 +26,11 @@ var _ = Describe("Check CR validation", Label("validation"), Serial, func() {
 
 	Context("for AutoCPULimitNamespaceLabelSelector", func() {
 		DescribeTable("should", func(ctx context.Context, allocationRatio *int, outcome gomegatypes.GomegaMatcher) {
-			Eventually(func(ctx context.Context) error {
+			Eventually(func(g Gomega, ctx context.Context) error {
 				var err error
-				hc := tests.GetHCO(ctx, cli)
+				hc, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).ToNot(HaveOccurred())
+
 				hc.Spec.Virtualization.VmiCPUAllocationRatio = allocationRatio
 				hc.Spec.Virtualization.AutoCPULimitNamespaceLabelSelector = &metav1.LabelSelector{MatchLabels: map[string]string{
 					"someLabel": "true",

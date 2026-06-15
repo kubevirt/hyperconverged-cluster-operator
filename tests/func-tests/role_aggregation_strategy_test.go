@@ -27,14 +27,18 @@ var _ = Describe("RoleAggregationStrategy", Serial, Label("RoleAggregationStrate
 	})
 
 	AfterEach(func(ctx context.Context) {
-		hco := tests.GetHCO(ctx, cli)
+		hco, err := tests.GetHCO(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
+
 		if hco.Spec.Virtualization.RoleAggregationStrategy != nil {
 			Expect(tests.PatchHCO(ctx, cli, rmRoleAgrStrgPatch)).To(Succeed())
 		}
 	})
 
 	It("should propagate Manual to KubeVirt CR and add OptOutRoleAggregation feature gate", func(ctx context.Context) {
-		hc := tests.GetHCO(ctx, cli)
+		hc, err := tests.GetHCO(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
+
 		hc.Spec.Virtualization.RoleAggregationStrategy = new(kubevirtcorev1.RoleAggregationStrategyManual)
 		tests.UpdateHCORetry(ctx, cli, hc)
 
@@ -48,7 +52,9 @@ var _ = Describe("RoleAggregationStrategy", Serial, Label("RoleAggregationStrate
 
 	It("should keep OptOutRoleAggregation FG when changing from Manual to AggregateToDefault", func(ctx context.Context) {
 		By("Setting RoleAggregationStrategy to Manual")
-		hc := tests.GetHCO(ctx, cli)
+		hc, err := tests.GetHCO(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
+
 		hc.Spec.Virtualization.RoleAggregationStrategy = new(kubevirtcorev1.RoleAggregationStrategyManual)
 		tests.UpdateHCORetry(ctx, cli, hc)
 
@@ -58,7 +64,9 @@ var _ = Describe("RoleAggregationStrategy", Serial, Label("RoleAggregationStrate
 		}).WithTimeout(time.Minute).WithPolling(10 * time.Second).WithContext(ctx).Should(Succeed())
 
 		By("Changing RoleAggregationStrategy to AggregateToDefault")
-		hc = tests.GetHCO(ctx, cli)
+		hc, err = tests.GetHCO(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
+
 		hc.Spec.Virtualization.RoleAggregationStrategy = new(kubevirtcorev1.RoleAggregationStrategyAggregateToDefault)
 		tests.UpdateHCORetry(ctx, cli, hc)
 
@@ -72,7 +80,9 @@ var _ = Describe("RoleAggregationStrategy", Serial, Label("RoleAggregationStrate
 
 	It("should clear RoleAggregationStrategy and remove OptOutRoleAggregation FG when removed from HCO", func(ctx context.Context) {
 		By("Setting RoleAggregationStrategy to Manual")
-		hc := tests.GetHCO(ctx, cli)
+		hc, err := tests.GetHCO(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
+
 		hc.Spec.Virtualization.RoleAggregationStrategy = new(kubevirtcorev1.RoleAggregationStrategyManual)
 		tests.UpdateHCORetry(ctx, cli, hc)
 

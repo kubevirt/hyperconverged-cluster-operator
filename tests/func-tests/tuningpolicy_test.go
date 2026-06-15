@@ -27,7 +27,8 @@ var _ = Describe("Check that the TuningPolicy annotation is configuring the KV o
 	})
 
 	AfterEach(func(ctx context.Context) {
-		hc := tests.GetHCO(ctx, cli)
+		hc, err := tests.GetHCO(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
 
 		delete(hc.Annotations, common.TuningPolicyAnnotationName)
 		hc.Spec.Virtualization.TuningPolicy = ""
@@ -36,7 +37,8 @@ var _ = Describe("Check that the TuningPolicy annotation is configuring the KV o
 	})
 
 	It("should update KV with the tuningPolicy annotation", func(ctx context.Context) {
-		hc := tests.GetHCO(ctx, cli)
+		hc, err := tests.GetHCO(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
 
 		if hc.Annotations == nil {
 			hc.Annotations = make(map[string]string)

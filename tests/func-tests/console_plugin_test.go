@@ -39,7 +39,9 @@ var _ = Describe("kubevirt console plugin", Label(tests.OpenshiftLabel, "console
 
 		tests.FailIfNotOpenShift(ctx, cli, "kubevirt console plugin")
 
-		hco := tests.GetHCO(ctx, cli)
+		hco, err := tests.GetHCO(ctx, cli)
+		Expect(err).NotTo(HaveOccurred())
+
 		originalNodePlacement := hco.Spec.Deployment.NodePlacements.DeepCopy()
 
 		k8sClientSet = tests.GetK8sClientSet()

@@ -41,7 +41,9 @@ var _ = Describe("check v1 <=> v1beta1 API conversion", func() {
 
 		Expect(cli.Get(ctx, hcKey, hcv1beta1)).To(Succeed())
 
-		hcv1 := tests.GetHCO(ctx, cli)
+		hcv1, err := tests.GetHCO(ctx, cli)
+		Expect(err).NotTo(HaveOccurred())
+
 		converted := &hcov1.HyperConverged{}
 		Expect(hcv1beta1.ConvertTo(converted)).To(Succeed())
 
@@ -137,7 +139,9 @@ func restoreFGsToDefault(ctx context.Context, cl client.Client) {
 	patch := fmt.Appendf(nil, removePathPatchTmplt, "/spec/featureGates")
 
 	Eventually(func(g Gomega, ctx context.Context) {
-		hco := tests.GetHCO(ctx, cl)
+		hco, err := tests.GetHCO(ctx, cl)
+		g.Expect(err).ToNot(HaveOccurred())
+
 		if len(hco.Spec.FeatureGates) == 0 {
 			return
 		}
@@ -149,7 +153,10 @@ func restoreFGsToDefault(ctx context.Context, cl client.Client) {
 		Should(Succeed())
 
 	Eventually(func(g Gomega, ctx context.Context) {
-		hcv1beta1 = tests.GetHCOv1beta1(ctx, cl)
+		var err error
+		hcv1beta1, err = tests.GetHCOv1beta1(ctx, cl)
+		g.Expect(err).NotTo(HaveOccurred())
+
 		v1beta1FGStatus := getCurrentV1Beta1FGStatus(hcv1beta1.Spec.FeatureGates)
 		defaultFGs := featuregates.HyperConvergedFeatureGates{}
 

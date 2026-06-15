@@ -117,7 +117,9 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 	})
 
 	It("make sure the enabler is set", func(ctx context.Context) {
-		hco := tests.GetHCO(ctx, cli)
+		hco, err := tests.GetHCO(ctx, cli)
+		Expect(err).NotTo(HaveOccurred())
+
 		Expect(hco.Spec.WorkloadSources.EnableCommonBootImageImport).To(HaveValue(BeTrue()))
 	})
 
@@ -138,7 +140,8 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 		It("should have all the images in the HyperConverged status", func(ctx context.Context) {
 			Eventually(func(g Gomega, ctx context.Context) []string {
-				hco := tests.GetHCO(ctx, cli)
+				hco, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
 
 				g.Expect(hco.Status.DataImportCronTemplates).To(HaveLen(len(expectedImages)))
 
@@ -231,8 +234,9 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		})
 
 		It("should have no images in the HyperConverged status", func(ctx context.Context) {
-			Eventually(func(ctx context.Context) []hcov1.DataImportCronTemplateStatus {
-				hco := tests.GetHCO(ctx, cli)
+			Eventually(func(g Gomega, ctx context.Context) []hcov1.DataImportCronTemplateStatus {
+				hco, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
 				return hco.Status.DataImportCronTemplates
 			}).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(BeEmpty())
 		})
@@ -282,8 +286,10 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		})
 
 		It("should have all the images in the HyperConverged status", func(ctx context.Context) {
-			Eventually(func(ctx context.Context) []hcov1.DataImportCronTemplateStatus {
-				hco := tests.GetHCO(ctx, cli)
+			Eventually(func(g Gomega, ctx context.Context) []hcov1.DataImportCronTemplateStatus {
+				hco, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
+
 				return hco.Status.DataImportCronTemplates
 			}).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(HaveLen(len(expectedImages)))
 		})
@@ -302,7 +308,8 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 		AfterEach(func(ctx context.Context) {
 			Eventually(func(g Gomega, ctx context.Context) {
-				hc := tests.GetHCO(ctx, cli)
+				hc, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
 
 				// make sure there no user-defined DICT
 				if len(hc.Spec.WorkloadSources.DataImportCronTemplates) > 0 {
@@ -318,14 +325,16 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 		It("should add missing annotation in the DICT", func(ctx context.Context) {
 			Eventually(func(g Gomega, ctx context.Context) {
-				hc := tests.GetHCO(ctx, cli)
+				hc, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
 
 				hc.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
 					getDICT(),
 				}
 
 				tests.UpdateHCORetry(ctx, cli, hc)
-				newHC := tests.GetHCO(ctx, cli)
+				newHC, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
 
 				g.Expect(newHC.Spec.WorkloadSources.DataImportCronTemplates).To(HaveLen(1))
 				g.Expect(newHC.Spec.WorkloadSources.DataImportCronTemplates[0].Annotations).To(HaveKeyWithValue(cdiImmediateBindAnnotation, "true"), "should add the missing annotation")
@@ -334,7 +343,8 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 		It("should not change existing annotation in the DICT", func(ctx context.Context) {
 			Eventually(func(g Gomega, ctx context.Context) {
-				hc := tests.GetHCO(ctx, cli)
+				hc, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
 
 				hc.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{
 					getDICT(),
@@ -345,7 +355,8 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				}
 
 				tests.UpdateHCORetry(ctx, cli, hc)
-				newHC := tests.GetHCO(ctx, cli)
+				newHC, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
 
 				g.Expect(newHC.Spec.WorkloadSources.DataImportCronTemplates).To(HaveLen(1))
 				g.Expect(newHC.Spec.WorkloadSources.DataImportCronTemplates[0].Annotations).To(HaveKeyWithValue(cdiImmediateBindAnnotation, "false"), "should not change existing annotation")
@@ -383,7 +394,8 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 			removeCustomDICTFromHC(ctx, cli)
 
 			Eventually(func(g Gomega, ctx context.Context) {
-				origHC = tests.GetHCO(ctx, cli)
+				origHC, err = tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
 
 				for _, dictStatus := range origHC.Status.DataImportCronTemplates {
 					g.Expect(dictStatus.Status.OriginalSupportedArchitectures).ToNot(Equal(""), "the originalSupportedArchitectures field is not set in the status of DICT %q", dictStatus.Name)
@@ -394,8 +406,10 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				Should(Succeed(), tests.PrintHyperConvergedBecause(origHC, "the dictStatus.Status.OriginalSupportedArchitectures field should not be empty"))
 
 			DeferCleanup(func(ctx context.Context) {
-				Eventually(func(ctx context.Context) error {
-					cleanupHC := tests.GetHCO(ctx, cli)
+				Eventually(func(g Gomega, ctx context.Context) error {
+					cleanupHC, err := tests.GetHCO(ctx, cli)
+					g.Expect(err).NotTo(HaveOccurred())
+
 					var patch []byte
 					idx := slices.IndexFunc(cleanupHC.Spec.FeatureGates, func(fg featuregates.FeatureGate) bool {
 						return fg.Name == goldenimages.EnableMultiArchFeatureGate
@@ -415,7 +429,9 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 		})
 
 		It("should have the architectures in the HCO Status", func(ctx context.Context) {
-			hc := tests.GetHCO(ctx, cli)
+			hc, err := tests.GetHCO(ctx, cli)
+			Expect(err).NotTo(HaveOccurred())
+
 			Expect(hc.Status.NodeInfo.WorkloadsArchitectures).To(Equal(archs))
 		})
 
@@ -425,7 +441,9 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				ssp := getSSP(ctx, cli)
 				g.Expect(ssp.Spec.CommonTemplates.DataImportCronTemplates).To(HaveLen(len(expectedImages)))
 
-				hc = tests.GetHCO(ctx, cli)
+				var err error
+				hc, err = tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
 
 				for _, dict := range ssp.Spec.CommonTemplates.DataImportCronTemplates {
 					hcoDict, exists := getHCODICT(hc, dict.Name)
@@ -460,7 +478,9 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 			By("adding a user define DICT to the HyperConverged CR, with some supported and some unsupported architectures")
 			Eventually(func(g Gomega, ctx context.Context) {
-				hc = tests.GetHCO(ctx, cli)
+				var err error
+				hc, err = tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
 
 				g.Expect(hc.Status.DataImportCronTemplates).ToNot(BeEmpty())
 				hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
@@ -477,7 +497,6 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 				hc.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{hcCustomDict}
 
-				var err error
 				_, err = tests.UpdateHCO(ctx, cli, hc)
 				g.Expect(err).ToNot(HaveOccurred(), "failed to update HCO with custom DICT")
 
@@ -523,7 +542,9 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 			By("modify a common DICT in the HyperConverged CR, with some supported and some unsupported architectures")
 			Eventually(func(g Gomega, ctx context.Context) {
-				hc = tests.GetHCO(ctx, cli)
+				var err error
+				hc, err = tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
 
 				g.Expect(hc.Status.DataImportCronTemplates).ToNot(BeEmpty())
 				hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
@@ -541,7 +562,6 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 				hc.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{hcCustomDict}
 
-				var err error
 				_, err = tests.UpdateHCO(ctx, cli, hc)
 				g.Expect(err).ToNot(HaveOccurred(), "failed to update HCO with custom DICT")
 
@@ -575,7 +595,10 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 			By("Check DICT in HCO status")
 			Eventually(func(g Gomega, ctx context.Context) {
-				hc = tests.GetHCO(ctx, cli)
+				var err error
+				hc, err = tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
+
 				idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1.DataImportCronTemplateStatus) bool {
 					return d.Name == hcCustomDict.Name
 				})
@@ -601,7 +624,9 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 				By("Add a user-defined DICT to the HyperConverged CR, without the multi-arch annotation")
 				Eventually(func(g Gomega, ctx context.Context) {
-					hc = tests.GetHCO(ctx, cli)
+					var err error
+					hc, err = tests.GetHCO(ctx, cli)
+					g.Expect(err).NotTo(HaveOccurred())
 
 					g.Expect(hc.Status.DataImportCronTemplates).ToNot(BeEmpty())
 					hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
@@ -613,7 +638,6 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 					hc.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{hcCustomDict}
 
-					var err error
 					_, err = tests.UpdateHCO(ctx, cli, hc)
 					g.Expect(err).ToNot(HaveOccurred(), "failed to update HCO with custom DICT")
 
@@ -641,7 +665,10 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 					Should(Succeed())
 
 				Eventually(func(g Gomega, ctx context.Context) {
-					hc = tests.GetHCO(ctx, cli)
+					var err error
+					hc, err = tests.GetHCO(ctx, cli)
+					g.Expect(err).NotTo(HaveOccurred())
+
 					idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1.DataImportCronTemplateStatus) bool {
 						return d.Name == "custom-dict"
 					})
@@ -668,7 +695,9 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 				By("Add a user-defined DICT to the HyperConverged CR, with no supported architectures")
 				Eventually(func(g Gomega, ctx context.Context) {
-					hc = tests.GetHCO(ctx, cli)
+					var err error
+					hc, err = tests.GetHCO(ctx, cli)
+					g.Expect(err).NotTo(HaveOccurred())
 
 					g.Expect(hc.Status.DataImportCronTemplates).ToNot(BeEmpty())
 					hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
@@ -684,7 +713,6 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 					hc.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{hcCustomDict}
 
-					var err error
 					_, err = tests.UpdateHCO(ctx, cli, hc)
 					g.Expect(err).ToNot(HaveOccurred(), "failed to update HCO with custom DICT")
 
@@ -709,7 +737,10 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 				By("Check the DICT in the HC status")
 				Eventually(func(g Gomega, ctx context.Context) {
-					hc = tests.GetHCO(ctx, cli)
+					var err error
+					hc, err = tests.GetHCO(ctx, cli)
+					g.Expect(err).NotTo(HaveOccurred())
+
 					idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1.DataImportCronTemplateStatus) bool {
 						return d.Name == "custom-dict"
 					})
@@ -736,7 +767,9 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 				By("modify a common DICT in the HyperConverged CR, to have no supported architectures")
 				Eventually(func(g Gomega, ctx context.Context) {
-					hc = tests.GetHCO(ctx, cli)
+					var err error
+					hc, err = tests.GetHCO(ctx, cli)
+					g.Expect(err).NotTo(HaveOccurred())
 
 					g.Expect(len(hc.Status.DataImportCronTemplates)).To(BeNumerically(">", 1))
 					hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
@@ -755,7 +788,6 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 					hc.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{hcCustomDict}
 
-					var err error
 					_, err = tests.UpdateHCO(ctx, cli, hc)
 					g.Expect(err).ToNot(HaveOccurred(), "failed to update HCO with custom DICT")
 
@@ -781,7 +813,10 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 				By("Check the DICT in the HC status")
 				Eventually(func(g Gomega, ctx context.Context) {
-					hc = tests.GetHCO(ctx, cli)
+					var err error
+					hc, err = tests.GetHCO(ctx, cli)
+					g.Expect(err).NotTo(HaveOccurred())
+
 					idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1.DataImportCronTemplateStatus) bool {
 						return d.Name == hcCustomDict.Name
 					})
@@ -809,7 +844,9 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 				By("modify a common DICT in the HyperConverged CR, to have no supported architectures")
 				Eventually(func(g Gomega, ctx context.Context) {
-					hc = tests.GetHCO(ctx, cli)
+					var err error
+					hc, err = tests.GetHCO(ctx, cli)
+					g.Expect(err).NotTo(HaveOccurred())
 
 					g.Expect(len(hc.Status.DataImportCronTemplates)).To(BeNumerically(">", 1))
 					hc.Status.DataImportCronTemplates[0].DataImportCronTemplate.DeepCopyInto(&hcCustomDict)
@@ -824,7 +861,6 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 					hc.Spec.WorkloadSources.DataImportCronTemplates = []hcov1.DataImportCronTemplate{hcCustomDict}
 
-					var err error
 					_, err = tests.UpdateHCO(ctx, cli, hc)
 					g.Expect(err).ToNot(HaveOccurred(), "failed to update HCO with custom DICT")
 
@@ -850,7 +886,10 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 				By("Check the DICT in the HC status")
 				Eventually(func(g Gomega, ctx context.Context) {
-					hc := tests.GetHCO(ctx, cli)
+					var err error
+					hc, err = tests.GetHCO(ctx, cli)
+					g.Expect(err).NotTo(HaveOccurred())
+
 					idx := slices.IndexFunc(hc.Status.DataImportCronTemplates, func(d hcov1.DataImportCronTemplateStatus) bool {
 						return d.Name == hcCustomDict.Name
 					})
@@ -883,7 +922,9 @@ func removeCustomDICTFromHC(ctx context.Context, cli client.Client) {
 		Should(Or(Not(HaveOccurred()), MatchError(ContainSubstring("the server rejected our request due to an error in our request"))))
 
 	Eventually(func(g Gomega, ctx context.Context) {
-		hc := tests.GetHCO(ctx, cli)
+		hc, err := tests.GetHCO(ctx, cli)
+		g.Expect(err).NotTo(HaveOccurred())
+
 		g.Expect(hc.Spec.WorkloadSources.DataImportCronTemplates).To(BeEmpty(), "should have no DataImportCronTemplates in the HyperConverged CR")
 		g.Expect(hc.Status.DataImportCronTemplates).To(HaveLen(len(expectedImages)))
 

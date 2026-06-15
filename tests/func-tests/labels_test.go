@@ -63,7 +63,9 @@ var _ = Describe("Check that all the sub-resources have the required labels", La
 	It("should have all the required labels in all the controlled resources", func(ctx context.Context) {
 		By("checking all the labels")
 		plural := pluralize.NewClient()
-		hc := tests.GetHCO(ctx, cli)
+		hc, err := tests.GetHCO(ctx, cli)
+		Expect(err).NotTo(HaveOccurred())
+
 		for _, resource := range hc.Status.RelatedObjects {
 			By(fmt.Sprintf("checking labels for %s/%s", resource.Kind, resource.Name))
 			parts := strings.Split(resource.APIVersion, "/")

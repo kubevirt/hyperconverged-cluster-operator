@@ -37,7 +37,9 @@ var _ = Describe("Cluster level evictionStrategy default value", Label("eviction
 		Expect(err).ToNot(HaveOccurred())
 
 		tests.BeforeEach(ctx)
-		hc := tests.GetHCO(ctx, cli)
+		hc, err := tests.GetHCO(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
+
 		initialEvictionStrategy = hc.Spec.Virtualization.EvictionStrategy
 	})
 
@@ -59,7 +61,8 @@ var _ = Describe("Cluster level evictionStrategy default value", Label("eviction
 		Expect(tests.PatchHCO(ctx, cli, rmEvictionStrategyPatch)).To(Succeed())
 
 		Eventually(func(g Gomega, ctx context.Context) {
-			hc := tests.GetHCO(ctx, cli)
+			hc, err := tests.GetHCO(ctx, cli)
+			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(hc).NotTo(BeNil())
 			g.Expect(hc.Spec.Virtualization.EvictionStrategy).To(HaveValue(Equal(expectedValue)))
 		}).WithContext(ctx).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())

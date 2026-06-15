@@ -59,7 +59,9 @@ var _ = Describe("Test wasp-agent", Label(tests.OpenshiftLabel, tests.HighlyAvai
 
 		Expect(securityv1.Install(cli.Scheme())).To(Succeed())
 
-		originalHco := tests.GetHCO(ctx, cli)
+		originalHco, err := tests.GetHCO(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
+
 		if originalHco.Spec.Virtualization.HigherWorkloadDensity != nil {
 			originalOvercommitPercent = originalHco.Spec.Virtualization.HigherWorkloadDensity.MemoryOvercommitPercentage
 			originalOvercommitPercentWasSet = true
@@ -296,7 +298,9 @@ func setAutopilotSwapAnnotation(ctx context.Context, cli client.Client) {
 		Should(Succeed())
 
 	Eventually(func(g Gomega, ctx context.Context) {
-		hco := tests.GetHCO(ctx, cli)
+		hco, err := tests.GetHCO(ctx, cli)
+		g.Expect(err).NotTo(HaveOccurred())
+
 		g.Expect(hco.Annotations).To(HaveKeyWithValue(waspagent.AutopilotSwapAnnotation, waspagent.AutopilotSwapAnnotationValue))
 	}).WithTimeout(30 * time.Second).
 		WithPolling(time.Second).
@@ -322,7 +326,9 @@ func removeAutopilotSwapAnnotation(ctx context.Context, cli client.Client) {
 		Should(Succeed())
 
 	Eventually(func(g Gomega, ctx context.Context) {
-		hco := tests.GetHCO(ctx, cli)
+		hco, err := tests.GetHCO(ctx, cli)
+		g.Expect(err).NotTo(HaveOccurred())
+
 		g.Expect(hco.Annotations).ToNot(HaveKey(waspagent.AutopilotSwapAnnotation))
 	}).WithTimeout(30 * time.Second).
 		WithPolling(time.Second).

@@ -61,7 +61,9 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).WithContext(ctx).Should(Succeed())
 
 		// modify the HCO CR to use the labels we just applied to the nodes
-		originalHco := tests.GetHCO(ctx, cli)
+		originalHco, err := tests.GetHCO(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
+
 		originalHco.DeepCopyInto(hco)
 		originalNodePlacement = originalHco.Spec.Deployment.NodePlacements.DeepCopy()
 
@@ -90,7 +92,8 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 
 	AfterAll(func(ctx context.Context) {
 		// undo the modification to HCO CR done in BeforeAll stage
-		modifiedHco := tests.GetHCO(ctx, cli)
+		modifiedHco, err := tests.GetHCO(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
 
 		modifiedHco.DeepCopyInto(hco)
 		hco.Spec.Deployment.NodePlacements = originalNodePlacement.DeepCopy()

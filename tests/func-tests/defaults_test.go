@@ -48,7 +48,9 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
 
 			Eventually(func(g Gomega, ctx context.Context) {
-				hc := tests.GetHCO(ctx, cli)
+				hc, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
+
 				g.Expect(reflect.DeepEqual(hc.Spec.Security.CertConfig, defaultCertConfig)).To(BeTrue(), "certConfig should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(Succeed())
 		},
@@ -82,8 +84,10 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 		It("Check that featureGates defaults are behaving as expected", func(ctx context.Context) {
 			patch := fmt.Appendf(nil, removePathPatchTmplt, "/spec/featureGates")
-			Eventually(func(ctx context.Context) error {
-				hc := tests.GetHCO(ctx, cli)
+			Eventually(func(g Gomega, ctx context.Context) error {
+				hc, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
+
 				if len(hc.Spec.FeatureGates) == 0 {
 					return nil
 				}
@@ -91,7 +95,8 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
 
 			Eventually(func(g Gomega, ctx context.Context) {
-				hc := tests.GetHCO(ctx, cli)
+				hc, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
 
 				for fgName, matcher := range defaultFeatureGates {
 					g.Expect(hc.Spec.FeatureGates.IsEnabled(fgName)).To(matcher)
@@ -117,7 +122,9 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
 
 			Eventually(func(g Gomega, ctx context.Context) {
-				hc := tests.GetHCO(ctx, cli)
+				hc, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
+
 				g.Expect(reflect.DeepEqual(hc.Spec.Virtualization.LiveMigrationConfig, defaultLiveMigrationConfig)).To(BeTrue(), "liveMigrationConfig should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(Succeed())
 		},
@@ -143,7 +150,9 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			}).WithTimeout(20 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
 
 			Eventually(func(g Gomega, ctx context.Context) {
-				hc := tests.GetHCO(ctx, cli)
+				hc, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
+
 				g.Expect(hc.Spec.Virtualization.VmiCPUAllocationRatio).To(HaveValue(Equal(defaultVmiCPUAllocationRatio)), "VmiCPUAllocationRatio should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(Succeed())
 		},
@@ -167,7 +176,9 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			}).WithTimeout(20 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
 
 			Eventually(func(g Gomega, ctx context.Context) {
-				hc := tests.GetHCO(ctx, cli)
+				hc, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
+
 				g.Expect(reflect.DeepEqual(hc.Spec.Virtualization.WorkloadUpdateStrategy, defaultWorkloadUpdateStrategy)).To(BeTrue(), "workloadUpdateStrategy should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(Succeed())
 		},
@@ -190,7 +201,9 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
 
 			Eventually(func(g Gomega, ctx context.Context) {
-				hc := tests.GetHCO(ctx, cli)
+				hc, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
+
 				g.Expect(hc.Spec.Deployment.UninstallStrategy).To(Equal(defaultUninstallStrategy), "uninstallStrategy should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(Succeed())
 		},
@@ -213,7 +226,9 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
 
 			Eventually(func(g Gomega, ctx context.Context) {
-				hc := tests.GetHCO(ctx, cli)
+				hc, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
+
 				g.Expect(reflect.DeepEqual(hc.Spec.Virtualization.VirtualMachineOptions, defaultVirtualMachineOptions)).To(BeTrue(), "virtualMachineOptions should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(Succeed())
 		},
@@ -237,7 +252,9 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
 
 			Eventually(func(g Gomega, ctx context.Context) {
-				hc := tests.GetHCO(ctx, cli)
+				hc, err := tests.GetHCO(ctx, cli)
+				g.Expect(err).NotTo(HaveOccurred())
+
 				g.Expect(reflect.DeepEqual(hc.Spec.Virtualization.HigherWorkloadDensity, defaultHigherWorkloadDensity)).To(BeTrue(), "HigherWorkloadDensity should be equal to default")
 			}).WithTimeout(2 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(Succeed())
 		},
