@@ -17,7 +17,7 @@ import (
 	networkaddonsv1 "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
 	sdkapi "kubevirt.io/controller-lifecycle-operator-sdk/api"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
@@ -29,14 +29,13 @@ const (
 
 var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:system]Node Placement", Ordered, Serial, Label(tests.HighlyAvailableClusterLabel, "nodePlacement"), func() {
 	tests.FlagParse()
-	hco := &hcov1beta1.HyperConverged{}
+	hco := &hcov1.HyperConverged{}
 	var (
-		workloadsNode        *v1.Node
-		originalInfraSpec    hcov1beta1.HyperConvergedConfig
-		originalWorkloadSpec hcov1beta1.HyperConvergedConfig
-		cli                  client.Client
-		cliSet               *kubernetes.Clientset
-		workerNodes          *v1.NodeList
+		workloadsNode         *v1.Node
+		originalNodePlacement *hcov1.NodePlacements
+		cli                   client.Client
+		cliSet                *kubernetes.Clientset
+		workerNodes           *v1.NodeList
 	)
 
 	BeforeAll(func(ctx context.Context) {
@@ -62,25 +61,21 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 		}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).WithContext(ctx).Should(Succeed())
 
 		// modify the HCO CR to use the labels we just applied to the nodes
-		originalHco := tests.GetHCO(ctx, cli)
+		originalHco, err := tests.GetHCO(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
+
 		originalHco.DeepCopyInto(hco)
-		originalInfraSpec = originalHco.Spec.Infra
-		originalWorkloadSpec = originalHco.Spec.Workloads
+		originalNodePlacement = originalHco.Spec.Deployment.NodePlacements.DeepCopy()
 
 		// modify the "infra" and "workloads" keys
-		infraVal := hcov1beta1.HyperConvergedConfig{
-			NodePlacement: &sdkapi.NodePlacement{
+		hco.Spec.Deployment.NodePlacements = &hcov1.NodePlacements{
+			Infra: &sdkapi.NodePlacement{
 				NodeSelector: map[string]string{hcoLabel: infra},
 			},
-		}
-		workloadsVal := hcov1beta1.HyperConvergedConfig{
-			NodePlacement: &sdkapi.NodePlacement{
+			Workload: &sdkapi.NodePlacement{
 				NodeSelector: map[string]string{hcoLabel: workloads},
 			},
 		}
-
-		hco.Spec.Infra = infraVal
-		hco.Spec.Workloads = workloadsVal
 
 		tests.UpdateHCORetry(ctx, cli, hco)
 
@@ -97,11 +92,11 @@ var _ = Describe("[rfe_id:4356][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 
 	AfterAll(func(ctx context.Context) {
 		// undo the modification to HCO CR done in BeforeAll stage
-		modifiedHco := tests.GetHCO(ctx, cli)
+		modifiedHco, err := tests.GetHCO(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
 
 		modifiedHco.DeepCopyInto(hco)
-		hco.Spec.Infra = originalInfraSpec
-		hco.Spec.Workloads = originalWorkloadSpec
+		hco.Spec.Deployment.NodePlacements = originalNodePlacement.DeepCopy()
 
 		tests.UpdateHCORetry(ctx, cli, hco)
 

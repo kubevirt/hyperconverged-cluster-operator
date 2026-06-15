@@ -173,7 +173,7 @@ var _ = Describe("Test AIE", Label("AIE"), Serial, Ordered, func() {
 			Expect(cli.Update(ctx, cm)).To(Succeed())
 
 			By("triggering a reconcile by touching the HCO CR")
-			patchBytes := []byte(fmt.Sprintf(`{"metadata":{"annotations":{"%s":"true"}}}`, deployAIEAnnotationKey))
+			patchBytes := fmt.Appendf(nil, `{"metadata":{"annotations":{"%s":"true"}}}`, deployAIEAnnotationKey)
 			Eventually(tests.PatchMergeHCO).
 				WithArguments(ctx, cli, patchBytes).
 				WithTimeout(10 * time.Second).
@@ -248,7 +248,7 @@ func validateAIEDeleted(ctx context.Context, cli client.Client, tryGetResource a
 
 func enableAIEAnnotation(ctx context.Context, cli client.Client) {
 	GinkgoHelper()
-	patchBytes := []byte(fmt.Sprintf(`{"metadata":{"annotations":{"%s":"true"}}}`, deployAIEAnnotationKey))
+	patchBytes := fmt.Appendf(nil, `{"metadata":{"annotations":{"%s":"true"}}}`, deployAIEAnnotationKey)
 
 	Eventually(tests.PatchMergeHCO).
 		WithArguments(ctx, cli, patchBytes).
@@ -261,7 +261,7 @@ func enableAIEAnnotation(ctx context.Context, cli client.Client) {
 
 func disableAIEAnnotation(ctx context.Context, cli client.Client) {
 	GinkgoHelper()
-	patchBytes := []byte(fmt.Sprintf(`{"metadata":{"annotations":{"%s":null}}}`, deployAIEAnnotationKey))
+	patchBytes := fmt.Appendf(nil, `{"metadata":{"annotations":{"%s":null}}}`, deployAIEAnnotationKey)
 
 	Eventually(tests.PatchMergeHCO).
 		WithArguments(ctx, cli, patchBytes).

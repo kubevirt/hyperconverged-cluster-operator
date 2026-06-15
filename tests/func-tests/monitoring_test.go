@@ -32,7 +32,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	kubevirtcorev1 "kubevirt.io/api/core/v1"
@@ -169,7 +168,8 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 	It("UnsupportedHCOModification alert should fired when there is a jsonpatch annotation to modify an operand CRs", func(ctx context.Context) {
 		query := fmt.Sprintf(`kubevirt_hco_unsafe_modifications{annotation_name=%q}`, common.JSONPatchKVAnnotationName)
 
-		hco := tests.GetHCO(ctx, cli)
+		hco, err := tests.GetHCO(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
 
 		hco.Annotations = map[string]string{
 			common.JSONPatchKVAnnotationName: `[{"op": "add", "path": "/spec/configuration/migrations", "value": {"allowPostCopy": true}}]`,
@@ -196,10 +196,17 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		}).WithTimeout(prometheousTimeout).
 			WithPolling(prometheousPolling).
 			WithContext(ctx).
-			ShouldNot(BeNil(), tests.PrintHyperConvergedBecause(
-				tests.GetHCO(ctx, cli),
-				`can't find the "UnsupportedHCOModification" alert in the list of firing alerts: %s`, getAlertNames(alerts),
-			))
+			ShouldNot(BeNil(), func() func() string {
+				hc, err := tests.GetHCO(ctx, cli)
+				if err != nil {
+					return func() string {
+						return "Error reading HyperConverged CR; " + err.Error()
+					}
+				}
+				return tests.PrintHyperConvergedBecause(hc,
+					`can't find the "UnsupportedHCOModification" alert in the list of firing alerts: %s`, getAlertNames(alerts),
+				)
+			})
 	})
 
 	It("should fire the DeprecatedMachineType alert when a VM is using a deprecated machine type", func(ctx context.Context) {
@@ -212,7 +219,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 				Namespace: tests.TestNamespace,
 			},
 			Spec: kubevirtcorev1.VirtualMachineSpec{
-				RunStrategy: ptr.To(kubevirtcorev1.RunStrategyAlways),
+				RunStrategy: new(kubevirtcorev1.RunStrategyAlways),
 				Template: &kubevirtcorev1.VirtualMachineInstanceTemplateSpec{
 					Spec: kubevirtcorev1.VirtualMachineInstanceSpec{
 						Domain: kubevirtcorev1.DomainSpec{
@@ -464,7 +471,7 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			for gi, group := range pr.Spec.Groups {
 				for ri, rule := range group.Rules {
 					if rule.Alert == alertName && rule.For != nil {
-						pr.Spec.Groups[gi].Rules[ri].For = ptr.To(monitoringv1.Duration("0m"))
+						pr.Spec.Groups[gi].Rules[ri].For = new(monitoringv1.Duration("0m"))
 					}
 				}
 			}

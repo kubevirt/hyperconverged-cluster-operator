@@ -2,20 +2,22 @@ package tests_test
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1 "kubevirt.io/api/core/v1"
+	kvv1 "kubevirt.io/api/core/v1"
 
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests/libnode"
 )
 
 var (
-	rmEvictionStrategyPatch = []byte(`[{"op": "remove", "path": "/spec/evictionStrategy"}]`)
+	rmEvictionStrategyPatch  = []byte(`[{"op": "remove", "path": "/spec/virtualization/evictionStrategy"}]`)
+	setEvictionStrategyPatch = `[{"op": "replace", "path": "/spec/virtualization/evictionStrategy", "value": "%s"}]`
 )
 
 var _ = Describe("Cluster level evictionStrategy default value", Label("evictionStrategy"), func() {
@@ -23,7 +25,7 @@ var _ = Describe("Cluster level evictionStrategy default value", Label("eviction
 	var (
 		cli client.Client
 
-		initialEvictionStrategy *v1.EvictionStrategy
+		initialEvictionStrategy *kvv1.EvictionStrategy
 		singleWorkerCluster     bool
 	)
 
@@ -35,38 +37,47 @@ var _ = Describe("Cluster level evictionStrategy default value", Label("eviction
 		Expect(err).ToNot(HaveOccurred())
 
 		tests.BeforeEach(ctx)
-		hc := tests.GetHCO(ctx, cli)
-		initialEvictionStrategy = hc.Spec.EvictionStrategy
+		hc, err := tests.GetHCO(ctx, cli)
+		Expect(err).ToNot(HaveOccurred())
+
+		initialEvictionStrategy = hc.Spec.Virtualization.EvictionStrategy
 	})
 
 	AfterEach(func(ctx context.Context) {
-		hc := tests.GetHCO(ctx, cli)
-		hc.Spec.EvictionStrategy = initialEvictionStrategy
-		tests.UpdateHCORetry(ctx, cli, hc)
+		patch := rmEvictionStrategyPatch
+		if initialEvictionStrategy != nil {
+			patch = fmt.Appendf(nil, setEvictionStrategyPatch, *initialEvictionStrategy)
+		}
+		Eventually(tests.PatchHCO).
+			WithArguments(ctx, cli, patch).
+			WithPolling(100 * time.Millisecond).
+			WithTimeout(5 * time.Second).
+			Should(Succeed())
 	})
 
-	DescribeTable("test spec.evictionStrategy", func(ctx context.Context, clusterValidationFn func(bool), expectedValue v1.EvictionStrategy) {
+	DescribeTable("test spec.virtualization.evictionStrategy", func(ctx context.Context, clusterValidationFn func(bool), expectedValue kvv1.EvictionStrategy) {
 		clusterValidationFn(singleWorkerCluster)
 
 		Expect(tests.PatchHCO(ctx, cli, rmEvictionStrategyPatch)).To(Succeed())
 
 		Eventually(func(g Gomega, ctx context.Context) {
-			hc := tests.GetHCO(ctx, cli)
+			hc, err := tests.GetHCO(ctx, cli)
+			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(hc).NotTo(BeNil())
-			g.Expect(hc.Spec.EvictionStrategy).To(HaveValue(Equal(expectedValue)))
+			g.Expect(hc.Spec.Virtualization.EvictionStrategy).To(HaveValue(Equal(expectedValue)))
 		}).WithContext(ctx).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).Should(Succeed())
 	},
 		Entry(
-			"Should set spec.evictionStrategy = None by default on single worker clusters",
+			"Should set spec.virtualization.evictionStrategy = None by default on single worker clusters",
 			Label(tests.SingleNodeLabel),
 			tests.FailIfHighAvailableCluster,
-			v1.EvictionStrategyNone,
+			kvv1.EvictionStrategyNone,
 		),
 		Entry(
-			"Should set spec.evictionStrategy = LiveMigrate by default with multiple worker node",
+			"Should set spec.virtualization.evictionStrategy = LiveMigrate by default with multiple worker node",
 			Label(tests.HighlyAvailableClusterLabel),
 			tests.FailIfSingleNodeCluster,
-			v1.EvictionStrategyLiveMigrate,
+			kvv1.EvictionStrategyLiveMigrate,
 		),
 	)
 })

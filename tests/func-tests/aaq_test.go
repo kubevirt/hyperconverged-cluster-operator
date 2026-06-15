@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	setAAQFGPatchTemplate = `[{"op": "replace", "path": "/spec/enableApplicationAwareQuota", "value": %t}]`
+	setAAQFGPatchTemplate = `{"spec":{"deployment":{"applicationAwareConfig":{"enable": %t}}}}`
 )
 
 var _ = Describe("Test AAQ", Label("AAQ"), Serial, Ordered, func() {
@@ -34,17 +34,17 @@ var _ = Describe("Test AAQ", Label("AAQ"), Serial, Ordered, func() {
 	BeforeEach(func(ctx context.Context) {
 		k8scli = tests.GetControllerRuntimeClient()
 
-		disableAAQFeatureGate(ctx, k8scli)
+		disableAAQ(ctx, k8scli)
 	})
 
 	AfterAll(func(ctx context.Context) {
-		disableAAQFeatureGate(ctx, k8scli)
+		disableAAQ(ctx, k8scli)
 	})
 
 	When("set the applicationAwareConfig exists", func() {
 		It("should create the AAQ CR and all the pods", func(ctx context.Context) {
 
-			enableAAQFeatureGate(ctx, k8scli)
+			enableAAQ(ctx, k8scli)
 
 			By("check the AAQ CR")
 			Eventually(func(g Gomega, ctx context.Context) bool {
@@ -93,14 +93,14 @@ func getAAQ(ctx context.Context, cli client.Client) (*aaqv1alpha1.AAQ, error) {
 	return aaq, err
 }
 
-func enableAAQFeatureGate(ctx context.Context, cli client.Client) {
+func enableAAQ(ctx context.Context, cli client.Client) {
 	By("enable the AAQ FG")
-	setAAQFeatureGate(ctx, cli, true)
+	setAAQEnablement(ctx, cli, true)
 }
 
-func disableAAQFeatureGate(ctx context.Context, cli client.Client) {
+func disableAAQ(ctx context.Context, cli client.Client) {
 	By("disable the AAQ FG")
-	setAAQFeatureGate(ctx, cli, false)
+	setAAQEnablement(ctx, cli, false)
 
 	By("make sure the AAQ CR was removed")
 	Eventually(func(ctx context.Context) error {
@@ -113,10 +113,10 @@ func disableAAQFeatureGate(ctx context.Context, cli client.Client) {
 		Should(MatchError(errors.IsNotFound, "not found error"))
 }
 
-func setAAQFeatureGate(ctx context.Context, cli client.Client, fgState bool) {
-	patchBytes := []byte(fmt.Sprintf(setAAQFGPatchTemplate, fgState))
+func setAAQEnablement(ctx context.Context, cli client.Client, shouldEnable bool) {
+	patchBytes := fmt.Appendf(nil, setAAQFGPatchTemplate, shouldEnable)
 
-	Eventually(tests.PatchHCO).
+	Eventually(tests.PatchMergeHCO).
 		WithArguments(ctx, cli, patchBytes).
 		WithTimeout(10 * time.Second).
 		WithPolling(100 * time.Millisecond).

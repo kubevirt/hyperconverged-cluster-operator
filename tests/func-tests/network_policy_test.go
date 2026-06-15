@@ -14,10 +14,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
@@ -199,7 +197,7 @@ func createClientPod() *corev1.Pod {
 					Image:   "registry.fedoraproject.org/fedora:43",
 					Name:    clientPodName,
 					SecurityContext: &corev1.SecurityContext{
-						AllowPrivilegeEscalation: ptr.To(false),
+						AllowPrivilegeEscalation: new(false),
 						Capabilities: &corev1.Capabilities{
 							Drop: []corev1.Capability{"ALL"},
 						},
@@ -211,9 +209,9 @@ func createClientPod() *corev1.Pod {
 			},
 			RestartPolicy: corev1.RestartPolicyAlways,
 			SecurityContext: &corev1.PodSecurityContext{
-				RunAsUser:  ptr.To[int64](1000),
-				RunAsGroup: ptr.To[int64](3000),
-				FSGroup:    ptr.To[int64](2000),
+				RunAsUser:  new(int64(1000)),
+				RunAsGroup: new(int64(3000)),
+				FSGroup:    new(int64(2000)),
 			},
 		},
 	}
@@ -247,7 +245,7 @@ nc -l -p %d; done`, testServerPort),
 						},
 					},
 					SecurityContext: &corev1.SecurityContext{
-						AllowPrivilegeEscalation: ptr.To(false),
+						AllowPrivilegeEscalation: new(false),
 						Capabilities: &corev1.Capabilities{
 							Drop: []corev1.Capability{"ALL"},
 						},
@@ -259,9 +257,9 @@ nc -l -p %d; done`, testServerPort),
 			},
 			RestartPolicy: corev1.RestartPolicyAlways,
 			SecurityContext: &corev1.PodSecurityContext{
-				RunAsUser:  ptr.To[int64](1000),
-				RunAsGroup: ptr.To[int64](3000),
-				FSGroup:    ptr.To[int64](2000),
+				RunAsUser:  new(int64(1000)),
+				RunAsGroup: new(int64(3000)),
+				FSGroup:    new(int64(2000)),
 			},
 		},
 	}
@@ -327,13 +325,6 @@ func sendReqToTestServer(ctx context.Context, k8sClientSet *kubernetes.Clientset
 }
 
 func createAllowAllIngressNetworkPolicy() *networkingv1.NetworkPolicy {
-	hc := &hcov1beta1.HyperConverged{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      hcov1beta1.HyperConvergedName,
-			Namespace: tests.InstallNamespace,
-		},
-	}
-
 	return &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      allowAllNPPluginName,
@@ -344,7 +335,7 @@ func createAllowAllIngressNetworkPolicy() *networkingv1.NetworkPolicy {
 		Spec: networkingv1.NetworkPolicySpec{
 			PodSelector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					hcoutil.AppLabel:          hc.Name,
+					hcoutil.AppLabel:          hcoutil.HyperConvergedName,
 					hcoutil.AppLabelComponent: string(hcoutil.AppComponentUIPlugin),
 				},
 			},
@@ -357,13 +348,6 @@ func createAllowAllIngressNetworkPolicy() *networkingv1.NetworkPolicy {
 }
 
 func createAllowAllEgressNetworkPolicy() *networkingv1.NetworkPolicy {
-	hc := &hcov1beta1.HyperConverged{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      hcov1beta1.HyperConvergedName,
-			Namespace: tests.InstallNamespace,
-		},
-	}
-
 	return &networkingv1.NetworkPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      allowAllNPProxyName,
@@ -374,7 +358,7 @@ func createAllowAllEgressNetworkPolicy() *networkingv1.NetworkPolicy {
 		Spec: networkingv1.NetworkPolicySpec{
 			PodSelector: metav1.LabelSelector{
 				MatchLabels: map[string]string{
-					hcoutil.AppLabel:          hc.Name,
+					hcoutil.AppLabel:          hcoutil.HyperConvergedName,
 					hcoutil.AppLabelComponent: string(hcoutil.AppComponentUIProxy),
 				},
 			},
