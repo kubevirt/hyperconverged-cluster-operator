@@ -3188,6 +3188,15 @@ rules:
   - list
   - watch
 - apiGroups:
+  - snapshot.storage.k8s.io
+  resources:
+  - volumesnapshots
+  - volumesnapshots/status
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - ssp.kubevirt.io
   resources:
   - ssps

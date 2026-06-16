@@ -741,8 +741,8 @@ kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4 h1:fZYvD3/Vnitfkx6IJxjL
 kubevirt.io/controller-lifecycle-operator-sdk/api v0.2.4/go.mod h1:018lASpFYBsYN6XwmA2TIrPCx6e0gviTd/ZNtSitKgc=
 kubevirt.io/kubevirt-migration-operator v0.2.0 h1:XeKuwfuXbHr6csWNa+jjD4NYc9KKnHgeAV+eCHra0EA=
 kubevirt.io/kubevirt-migration-operator v0.2.0/go.mod h1:EuedSrCbsaswvQvleeeRjqkKNOZfN8qOOgUocFgvw3U=
-kubevirt.io/ssp-operator/api v0.25.0 h1:SKc+GDlgvR9nRfjQ0AnbPF3QFTVv49OayvYielv+QNE=
-kubevirt.io/ssp-operator/api v0.25.0/go.mod h1:ly26WRLDhZd67MSVGD/I4PneM8NhvELcn/EQZrPEh7A=
+kubevirt.io/ssp-operator/api v0.26.0 h1:LnByguzCQwA7asMefmp461c+KhRT6HtHueLznumbRSQ=
+kubevirt.io/ssp-operator/api v0.26.0/go.mod h1:CDX3rXSeARuO9IhMmmMsRECtOx3PZDMAUWoiisqKCnc=
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.34.0 h1:hSfpvjjTQXQY2Fol2CS0QHMNs/WI1MOSGzCm1KhM5ec=
 sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.34.0/go.mod h1:Ve9uj1L+deCXFrPOk1LpFXqTg7LCFzFso6PA48q/XZw=
 sigs.k8s.io/controller-runtime v0.24.1 h1:miPEwrmirImAvgME1L9qebGHrOnGJoVmVdtOU9fRfo4=
