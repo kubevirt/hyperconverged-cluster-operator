@@ -923,12 +923,8 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 		fgs = append(fgs, kvDecentralizedLiveMigration)
 	}
 
-	// Add the appropriate volume hotplug featuregate based on DeclarativeHotplugVolumes setting
 	if featureGates.IsEnabled("declarativeHotplugVolumes") {
 		fgs = append(fgs, kvDeclarativeHotplugVolumesGate)
-	} else {
-		// Default behavior: use the original HotplugVolumes featuregate
-		fgs = append(fgs, kvHotplugVolumesGate)
 	}
 
 	if hc.Annotations[deployPasstNetworkBindingAnn] == "true" {

@@ -21,7 +21,7 @@
   },
   {
     "name": "DeclarativeHotplugVolumes",
-    "state": "Alpha"
+    "state": "Beta"
   },
   {
     "name": "DownwardMetrics",
@@ -53,7 +53,7 @@
   },
   {
     "name": "HotplugVolumes",
-    "state": "Alpha"
+    "state": "Deprecated"
   },
   {
     "name": "HypervStrictCheck",
