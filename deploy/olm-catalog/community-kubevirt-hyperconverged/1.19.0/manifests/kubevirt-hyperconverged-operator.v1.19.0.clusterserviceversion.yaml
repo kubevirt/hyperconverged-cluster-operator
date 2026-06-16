@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.19.0-unstable
-    createdAt: "2026-06-11 11:12:01"
+    createdAt: "2026-06-16 06:50:11"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -2501,6 +2501,15 @@ spec:
           - list
           - watch
         - apiGroups:
+          - snapshot.storage.k8s.io
+          resources:
+          - volumesnapshots
+          - volumesnapshots/status
+          verbs:
+          - get
+          - list
+          - watch
+        - apiGroups:
           - ssp.kubevirt.io
           resources:
           - ssps
@@ -4120,7 +4129,7 @@ spec:
                 - name: NETWORK_ADDONS_VERSION
                   value: v0.102.0
                 - name: SSP_VERSION
-                  value: v0.25.0
+                  value: v0.26.0
                 - name: HPPO_VERSION
                   value: v0.25.1
                 - name: AAQ_VERSION
@@ -4645,15 +4654,15 @@ spec:
                 - /manager
                 env:
                 - name: VALIDATOR_IMAGE
-                  value: quay.io/kubevirt/kubevirt-template-validator@sha256:98512f42937e7474576d5b7970e10aa87ac1e78a16f674863c8916218bfc80ba
+                  value: quay.io/kubevirt/kubevirt-template-validator@sha256:00bc24b90e8e4c56ed80f34c30d2a4207c40b3f6d5f662124e80640f5a9a3c24
                 - name: OPERATOR_VERSION
-                  value: v0.25.0
+                  value: v0.26.0
                 - name: VM_CONSOLE_PROXY_IMAGE
                 - name: POD_NAMESPACE
                   valueFrom:
                     fieldRef:
                       fieldPath: metadata.namespace
-                image: quay.io/kubevirt/ssp-operator@sha256:73c69d81e76a0a7ce165b676756b72d018ffe3308037739932131d85b6b2bb3e
+                image: quay.io/kubevirt/ssp-operator@sha256:1a3b187432eda471442e14a0e429bdeeeffb54d990f8fb0a1500bba8f6d0f4ac
                 imagePullPolicy: IfNotPresent
                 livenessProbe:
                   failureThreshold: 5
@@ -6153,7 +6162,7 @@ spec:
     name: kubevirt-migration-operator
   - image: quay.io/kubevirt-ui/kubevirt-plugin@sha256:cb7832a2d2ec08504bf14344020ce876765b1bd9e719f40c367b717c07c44aee
     name: kubevirt-plugin
-  - image: quay.io/kubevirt/kubevirt-template-validator@sha256:98512f42937e7474576d5b7970e10aa87ac1e78a16f674863c8916218bfc80ba
+  - image: quay.io/kubevirt/kubevirt-template-validator@sha256:00bc24b90e8e4c56ed80f34c30d2a4207c40b3f6d5f662124e80640f5a9a3c24
     name: kubevirt-template-validator
   - image: quay.io/kubevirt/libguestfs-tools@sha256:d70d2e314b24b4eaeef80231dd2659688bcb80843840478af729568c77bb53be
     name: libguestfs-tools
@@ -6175,7 +6184,7 @@ spec:
     name: pr-helper
   - image: quay.io/kubevirt/sidecar-shim@sha256:65d950205dd31c240bdf0a707ca0568a705676c674492a357b65fa470fc55806
     name: sidecar-shim
-  - image: quay.io/kubevirt/ssp-operator@sha256:73c69d81e76a0a7ce165b676756b72d018ffe3308037739932131d85b6b2bb3e
+  - image: quay.io/kubevirt/ssp-operator@sha256:1a3b187432eda471442e14a0e429bdeeeffb54d990f8fb0a1500bba8f6d0f4ac
     name: ssp-operator
   - image: quay.io/kubevirt/virt-api@sha256:02e5460c29927f5bd183348792ddc039dfffba9a9353249f027a2368d55193fb
     name: virt-api
