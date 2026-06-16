@@ -209,8 +209,19 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			})
 	})
 
-	It("should fire the DeprecatedMachineType alert when a VM is using a deprecated machine type", func(ctx context.Context) {
-		const deprecatedMachineType = "pc-q35-rhel7.6.0"
+	It("should fire the DeprecatedMachineType alert when a VM is using a deprecated machine type", Label(tests.DeprecatedArchLabel), func(ctx context.Context) {
+		archs, err := getArchs(ctx)
+		Expect(err).ToNot(HaveOccurred())
+
+		var deprecatedMachineType string
+		switch {
+		case slices.Contains(archs, "amd64"):
+			deprecatedMachineType = "pc-q35-rhel7.6.0"
+		case slices.Contains(archs, "s390x"):
+			deprecatedMachineType = "s390-ccw-virtio-rhel7.6.0"
+		default:
+			Fail(fmt.Sprintf("no known deprecated machine type for architectures %v; Use the \"!%s\" label filter in order to skip this test", archs, tests.DeprecatedArchLabel))
+		}
 
 		By("Creating a VM with a deprecated machine type")
 		vm := &kubevirtcorev1.VirtualMachine{
