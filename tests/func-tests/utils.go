@@ -37,6 +37,7 @@ const (
 	HighlyAvailableClusterLabel = "HIGHLY_AVAILABLE_CLUSTER"
 	DestructiveLabel            = "DESTRUCTIVE"
 	OpenshiftLabel              = "OpenShift"
+	DeprecatedArchLabel         = "DEPRECATED_ARCH"
 
 	TestNamespace = "hco-test-default"
 )
