@@ -21,8 +21,8 @@
   },
   {
     "name": "declarativeHotplugVolumes",
-    "phase": "alpha",
-    "description": "DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt. When set to true, the \"DeclarativeHotplugVolumes\" feature gate is enabled instead of \"HotplugVolumes\". When set to false or nil, the \"HotplugVolumes\" feature gate is enabled (default behavior). This feature is in Developer Preview."
+    "phase": "beta",
+    "description": "DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt."
   },
   {
     "name": "deployKubeSecondaryDNS",

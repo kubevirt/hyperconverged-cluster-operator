@@ -36,8 +36,8 @@ func convert_v1beta1_FeatureGates_To_v1(in *HyperConvergedFeatureGates, out *hco
 		out.Disable("decentralizedLiveMigration")
 	}
 
-	if ptr.Deref(in.DeclarativeHotplugVolumes, false) {
-		out.Enable("declarativeHotplugVolumes")
+	if !ptr.Deref(in.DeclarativeHotplugVolumes, true) {
+		out.Disable("declarativeHotplugVolumes")
 	}
 
 	if !ptr.Deref(in.VideoConfig, true) {

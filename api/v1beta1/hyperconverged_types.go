@@ -67,7 +67,7 @@ type HyperConvergedSpec struct {
 
 	// featureGates is a map of feature gate flags. Setting a flag to `true` will enable
 	// the feature. Setting `false` or removing the feature gate, disables the feature.
-	// +kubebuilder:default={"downwardMetrics": false, "deployKubeSecondaryDNS": false, "persistentReservation": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": false, "videoConfig": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false}
+	// +kubebuilder:default={"downwardMetrics": false, "deployKubeSecondaryDNS": false, "persistentReservation": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": true, "videoConfig": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false}
 	// +optional
 	// +k8s:conversion-gen=false
 	FeatureGates HyperConvergedFeatureGates `json:"featureGates,omitempty"`
@@ -476,13 +476,9 @@ type HyperConvergedFeatureGates struct {
 	DecentralizedLiveMigration *bool `json:"decentralizedLiveMigration,omitempty"`
 
 	// DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt.
-	// When set to true, the "DeclarativeHotplugVolumes" feature gate is enabled instead of "HotplugVolumes".
-	// When set to false or nil, the "HotplugVolumes" feature gate is enabled (default behavior).
-	// This feature is in Developer Preview.
-	//
 	// +optional
-	// +kubebuilder:default=false
-	// +default=false
+	// +kubebuilder:default=true
+	// +default=true
 	DeclarativeHotplugVolumes *bool `json:"declarativeHotplugVolumes,omitempty"`
 
 	// VideoConfig allows users to configure video device types for their virtual machines.
@@ -634,7 +630,7 @@ type HyperConverged struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}},"featureGates": {"downwardMetrics": false, "deployKubeSecondaryDNS": false, "persistentReservation": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": false, "videoConfig": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false}, "liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "resourceRequirements": {"vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
+	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}},"featureGates": {"downwardMetrics": false, "deployKubeSecondaryDNS": false, "persistentReservation": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": true, "videoConfig": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false}, "liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "resourceRequirements": {"vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
 	// +optional
 	Spec   HyperConvergedSpec         `json:"spec,omitempty"`
 	Status hcov1.HyperConvergedStatus `json:"status,omitempty"`

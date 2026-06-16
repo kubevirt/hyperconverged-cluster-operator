@@ -73,7 +73,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 			"alignCPUs":                      BeFalseBecause("the alignCPUs feature gate should be disabled by default"),
 			"enableMultiArchBootImageImport": BeFalseBecause("the enableMultiArchBootImageImport feature gate should be disabled by default"),
 			"decentralizedLiveMigration":     BeTrueBecause("the decentralizedLiveMigration feature gate should be enabled by default"),
-			"declarativeHotplugVolumes":      BeFalseBecause("the declarativeHotplugVolumes feature gate should be disabled by default"),
+			"declarativeHotplugVolumes":      BeTrueBecause("the declarativeHotplugVolumes feature gate should be enabled by default"),
 			"videoConfig":                    BeTrueBecause("the videoConfig feature gate should be enabled by default"),
 			"objectGraph":                    BeFalseBecause("the objectGraph feature gate should be disabled by default"),
 			"incrementalBackup":              BeFalseBecause("the incrementalBackup feature gate should be disabled by default"),

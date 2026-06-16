@@ -232,11 +232,9 @@ heterogeneous clusters. See [Golden Images](#golden-images-in-heterogeneous-clus
 ### declarativeHotplugVolumes Feature Gate
 Set the `declarativeHotplugVolumes` feature gate to true to enable the declarative volume hotplug API in KubeVirt. By default, volume hotplug operations are performed using KubeVirt's subresource API. Changes made directly to the VirtualMachine spec require a VM restart to take effect. When enabled, volume hotplug operations can be performed declaratively by modifying the VirtualMachine spec directly. These changes are applied immediately without requiring a VM restart.
 
-**Note**: This feature is in Developer Preview.
+**Default**: `true`
 
-**Default**: `false`
-
-**Graduation Status**: Alpha
+**Graduation Status**: Beta
 
 ### videoConfig Feature Gate
 Set the `videoConfig` feature gate to true in order to override the default video device type used by KubeVirt. By default, the video type depends on the architecture and firmware:

@@ -67,6 +67,11 @@ type HyperConvergedSpec struct {
 	//   Developer Preview.
 	//   Phase: beta
 	//
+	// * declarativeHotplugVolumes:
+	//   DeclarativeHotplugVolumes enables the use of the declarative volume
+	//   hotplug feature in KubeVirt.
+	//   Phase: beta
+	//
 	// * videoConfig:
 	//   VideoConfig allows users to configure video device types for their virtual
 	//   machines. This can be useful for workloads that require specific video
@@ -83,14 +88,6 @@ type HyperConvergedSpec struct {
 	//   ContainerPathVolumes enables the use of container paths as volumes in
 	//   KubeVirt. This allows VMs to access files and directories from the
 	//   virt-launcher pod's filesystem via virtiofs.
-	//   Phase: alpha
-	//
-	// * declarativeHotplugVolumes:
-	//   DeclarativeHotplugVolumes enables the use of the declarative volume
-	//   hotplug feature in KubeVirt. When set to true, the
-	//   "DeclarativeHotplugVolumes" feature gate is enabled instead of
-	//   "HotplugVolumes". When set to false or nil, the "HotplugVolumes" feature
-	//   gate is enabled (default behavior). This feature is in Developer Preview.
 	//   Phase: alpha
 	//
 	// * deployKubeSecondaryDNS:
