@@ -1,49 +1,38 @@
 ---
-apiVersion: hco.kubevirt.io/v1beta1
+apiVersion: hco.kubevirt.io/v1
 kind: HyperConverged
 metadata:
   name: kubevirt-hyperconverged
 spec:
-  certConfig:
-    ca:
-      duration: 48h0m0s
-      renewBefore: 24h0m0s
-    server:
-      duration: 24h0m0s
-      renewBefore: 12h0m0s
-  deployVmConsoleProxy: false
-  enableApplicationAwareQuota: false
-  enableCommonBootImageImport: true
-  featureGates:
-    alignCPUs: false
-    containerPathVolumes: false
-    decentralizedLiveMigration: true
-    declarativeHotplugVolumes: false
-    deployKubeSecondaryDNS: false
-    disableMDevConfiguration: false
-    downwardMetrics: false
-    enableMultiArchBootImageImport: false
-    incrementalBackup: false
-    objectGraph: false
-    persistentReservation: false
-    videoConfig: true
-  higherWorkloadDensity:
-    memoryOvercommitPercentage: 100
-  infra: {}
-  liveMigrationConfig:
-    allowAutoConverge: false
-    allowPostCopy: false
-    completionTimeoutPerGiB: 150
-    parallelMigrationsPerCluster: 5
-    parallelOutboundMigrationsPerNode: 2
-    progressTimeout: 150
-  uninstallStrategy: BlockUninstallIfWorkloadsExist
-  virtualMachineOptions:
-    disableFreePageReporting: false
-    disableSerialConsoleLog: false
-  workloadUpdateStrategy:
-    batchEvictionInterval: 1m0s
-    batchEvictionSize: 10
-    workloadUpdateMethods:
-    - LiveMigrate
-  workloads: {}
+  deployment:
+    deployVmConsoleProxy: false
+    uninstallStrategy: BlockUninstallIfWorkloadsExist
+  security:
+    certConfig:
+      ca:
+        duration: 48h0m0s
+        renewBefore: 24h0m0s
+      server:
+        duration: 24h0m0s
+        renewBefore: 12h0m0s
+  virtualization:
+    higherWorkloadDensity:
+      memoryOvercommitPercentage: 100
+    liveMigrationConfig:
+      allowAutoConverge: false
+      allowPostCopy: false
+      completionTimeoutPerGiB: 150
+      parallelMigrationsPerCluster: 5
+      parallelOutboundMigrationsPerNode: 2
+      progressTimeout: 150
+    virtualMachineOptions:
+      disableFreePageReporting: false
+      disableSerialConsoleLog: false
+    vmiCPUAllocationRatio: 10
+    workloadUpdateStrategy:
+      batchEvictionInterval: 1m0s
+      batchEvictionSize: 10
+      workloadUpdateMethods:
+      - LiveMigrate
+  workloadSources:
+    enableCommonBootImageImport: true

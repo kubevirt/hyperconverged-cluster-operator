@@ -621,13 +621,15 @@ func roleWithAllPermissions(apiGroup string, resources []string) rbacv1.PolicyRu
 	}
 }
 
-func GetOperatorCR() *hcov1beta1.HyperConverged {
+var GetOperatorCR = GetOperatorV1CR
+
+func GetOperatorV1beta1CR() *hcov1beta1.HyperConverged {
 	defaultScheme := runtime.NewScheme()
 	_ = hcov1beta1.AddToScheme(defaultScheme)
 	_ = hcov1beta1.RegisterDefaults(defaultScheme)
 	defaultHco := &hcov1beta1.HyperConverged{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: util.APIVersion,
+			APIVersion: hcov1beta1.APIVersion,
 			Kind:       util.HyperConvergedKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{

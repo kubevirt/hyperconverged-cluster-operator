@@ -201,9 +201,6 @@ for op in "${OPERATORS[@]}"; do
     "${CMD}" wait deployment/"${op}" --for=condition=Available --timeout="540s" || CONTAINER_ERRORED+="${op} "
 done
 
-# TODO: remove this after re-generating the manifests in v1:
-go run ./tools/crwriter --api-version="v1" --format=yaml | tee _out/hco.cr.yaml
-
 "${CMD}" apply -f _out/hco.cr.yaml
 
 sleep 10

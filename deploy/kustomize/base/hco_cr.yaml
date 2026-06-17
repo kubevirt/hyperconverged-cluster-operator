@@ -1,4 +1,4 @@
-apiVersion: hco.kubevirt.io/v1beta1
+apiVersion: hco.kubevirt.io/v1
 kind: HyperConverged
 metadata:
   name: kubevirt-hyperconverged
