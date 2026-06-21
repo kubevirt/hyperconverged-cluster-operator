@@ -55,6 +55,12 @@ type Reseter interface {
 	Reset()
 }
 
+// ManualDeletionMarker is a marker interface, to exclude specific handlers from batch deletion
+// tracking. these are handled separately.
+type ManualDeletionMarker interface {
+	ManualDeletionMark()
+}
+
 type GetHandler func(log.Logger, client.Client, *runtime.Scheme, *hcov1beta1.HyperConverged) (Operand, error)
 type GetHandlers func(log.Logger, client.Client, *runtime.Scheme, *hcov1beta1.HyperConverged, fs.FS) ([]Operand, error)
 

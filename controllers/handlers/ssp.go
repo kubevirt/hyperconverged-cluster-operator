@@ -51,6 +51,11 @@ func (h *sspHandler) Reset() {
 	h.handler.Reset()
 }
 
+// GetFullCr returns the full SSP object. Added in order to satisfy the CRGetter interface
+func (h *sspHandler) GetFullCr(hc *hcov1beta1.HyperConverged) (client.Object, error) {
+	return h.hook.GetFullCr(hc)
+}
+
 func NewSspHandler(Client client.Client, Scheme *runtime.Scheme) operands.Operand {
 	hook := &sspHooks{}
 	handler := operands.NewGenericOperand(Client, Scheme, "SSP", hook, false)
