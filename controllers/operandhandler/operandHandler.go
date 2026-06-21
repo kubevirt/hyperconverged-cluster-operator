@@ -16,7 +16,7 @@ import (
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
-	aie "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
 	waspagent "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/wasp-agent"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
@@ -31,7 +31,7 @@ const (
 	uninstallVirtErrorMsg = "The uninstall request failed on virt component: "
 	ErrHCOUninstall       = "ErrHCOUninstall"
 	uninstallHCOErrorMsg  = "The uninstall request failed on dependent components, please check their logs."
-	deleteTimeOut         = 30 * time.Second
+	deleteTimeOut         = time.Minute
 )
 
 var (
@@ -124,7 +124,9 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 // The k8s client is not available when calling to NewOperandHandler.
 // Initial operations that need to read/write from the cluster can only be done when the client is already working.
 func (h *OperandHandler) FirstUseInitiation(scheme *runtime.Scheme, ci hcoutil.ClusterInfo, hc *hcov1.HyperConverged, pwdFS fs.FS) {
-	h.objects = make([]client.Object, 0)
+	for _, operand := range h.operands {
+		h.addOperandObject(operand, hc)
+	}
 
 	if !ci.IsOpenshift() {
 		return
@@ -148,6 +150,10 @@ func (h *OperandHandler) GetImageStreamNames() []string {
 }
 
 func (h *OperandHandler) addOperandObject(handler operands.Operand, hc *hcov1.HyperConverged) {
+	if _, shouldNotBeAdded := handler.(operands.ManualDeletionMarker); shouldNotBeAdded {
+		return
+	}
+
 	var (
 		obj client.Object
 		err error
@@ -156,7 +162,7 @@ func (h *OperandHandler) addOperandObject(handler operands.Operand, hc *hcov1.Hy
 	if gh, ok := handler.(operands.CRGetter); ok {
 		obj, err = gh.GetFullCr(hc)
 	} else {
-		err = fmt.Errorf("unknown handler with type %T", handler)
+		return
 	}
 
 	if err != nil {
@@ -221,26 +227,10 @@ func (h *OperandHandler) handleUpdatedOperand(req *common.HcoRequest, res *opera
 }
 
 func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
-
 	tCtx, cancel := context.WithTimeout(req.Ctx, deleteTimeOut)
 	defer cancel()
 
-	resources := []client.Object{
-		handlers.NewNetworkAddonsWithNameOnly(),
-		handlers.NewSSPWithNameOnly(),
-		handlers.NewConsoleCLIDownload(),
-		handlers.NewAAQWithNameOnly(),
-		handlers.NewMigControllerWithNameOnly(),
-		waspagent.NewWaspAgentSCCWithNameOnly(),
-		aie.NewAIEWebhookClusterRoleWithNameOnly(),
-		aie.NewAIEWebhookClusterRoleBindingWithNameOnly(),
-		aie.NewAIEWebhookMutatingWebhookConfigurationWithNameOnly(),
-		aie.NewIOMMUFDDevicePluginSCCWithNameOnly(),
-	}
-
-	resources = append(resources, h.objects...)
-
-	err := h.deleteMultipleResources(tCtx, req, resources)
+	err := h.deleteMultipleResources(tCtx, req)
 	if err != nil {
 		return err
 	}
@@ -253,23 +243,22 @@ func (h *OperandHandler) EnsureDeleted(req *common.HcoRequest) error {
 	return h.deleteSingleResource(tCtx, req, handlers.NewCDIWithNameOnly(), ErrCDIUninstall, uninstallCDIErrorMsg)
 }
 
-func (h *OperandHandler) deleteMultipleResources(tCtx context.Context, req *common.HcoRequest, resources []client.Object) error {
+func (h *OperandHandler) deleteMultipleResources(tCtx context.Context, req *common.HcoRequest) error {
 	eg, egCtx := errgroup.WithContext(tCtx)
+	eg.SetLimit(10)
 
-	for _, res := range resources {
-		func(o client.Object) {
-			eg.Go(func() error {
-				deleted, err := hcoutil.EnsureDeleted(egCtx, h.client, o, req.Instance.Name, req.Logger, false, true, true)
-				if err != nil {
-					req.Logger.Error(err, "Failed to manually delete objects")
-					h.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeWarning, ErrHCOUninstall, uninstallHCOErrorMsg)
-					return err
-				} else if deleted {
-					h.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "Killing", fmt.Sprintf("Removed %s %s", o.GetObjectKind().GroupVersionKind().Kind, o.GetName()))
-				}
-				return nil
-			})
-		}(res)
+	for _, o := range h.objects {
+		eg.Go(func() error {
+			deleted, err := hcoutil.EnsureDeleted(egCtx, h.client, o, req.Instance.Name, req.Logger, false, true, true)
+			if err != nil {
+				req.Logger.Error(err, "Failed to manually delete objects")
+				h.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeWarning, ErrHCOUninstall, uninstallHCOErrorMsg)
+				return err
+			} else if deleted {
+				h.eventEmitter.EmitEvent(req.Instance, corev1.EventTypeNormal, "Killing", fmt.Sprintf("Removed %s %s", o.GetObjectKind().GroupVersionKind().Kind, o.GetName()))
+			}
+			return nil
+		})
 	}
 
 	return eg.Wait()
