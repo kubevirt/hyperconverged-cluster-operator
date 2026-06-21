@@ -24,6 +24,14 @@ func GetFeatureGatePhase(fgName string) (enabled featuregates.Phase, fgExists bo
 	return fg.Phase, true
 }
 
+func ListBetaFeatureGates() []string {
+	return slices.Sorted(filterFGByPhase(maps.All(featureGatesDetails), featuregates.PhaseBeta))
+}
+
+func ListAlphaFeatureGates() []string {
+	return slices.Sorted(filterFGByPhase(maps.All(featureGatesDetails), featuregates.PhaseAlpha))
+}
+
 func init() {
 	if err := setup(featureGateJson); err != nil {
 		panic("unable to setup v1 feature gates;" + err.Error())
@@ -47,6 +55,18 @@ func fgsToMap(fgs iter.Seq[featuregates.FeatureGate]) iter.Seq2[string, featureg
 		for fg := range fgs {
 			if !yield(fg.Name, fg) {
 				return
+			}
+		}
+	}
+}
+
+func filterFGByPhase(fgs iter.Seq2[string, featuregates.FeatureGate], phase featuregates.Phase) iter.Seq[string] {
+	return func(yield func(string) bool) {
+		for fgName, fg := range fgs {
+			if fg.Phase == phase {
+				if !yield(fgName) {
+					return
+				}
 			}
 		}
 	}
