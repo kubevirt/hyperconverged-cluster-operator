@@ -1,6 +1,7 @@
 package nodeinfo
 
 import (
+	"maps"
 	"slices"
 	"sync"
 
@@ -14,21 +15,34 @@ import (
 const S390X = "s390x"
 
 var (
-	controlPlaneArchitectures = newArchitectures()
-	workloadArchitectures     = newArchitectures()
+	architectures = newArchitectures()
 )
 
 func GetControlPlaneArchitectures() []string {
-	return controlPlaneArchitectures.get()
+	return architectures.getCPArches()
 }
 
 func GetWorkloadsArchitectures() []string {
-	return workloadArchitectures.get()
+	return architectures.getWorkloadArches()
+}
+
+// GetDefaultArchitecture returns the default architecture for virtual machines
+// Assuming a single control plane architecture, HCO will choose this architecture as default, if the workload
+// architecture contains it. If not, HCO will choose the architecture used by most of the workload nodes.
+func GetDefaultArchitecture() string {
+	architectures.lock.RLock()
+	defer architectures.lock.RUnlock()
+
+	return architectures.defaultArch
 }
 
 type Architectures struct {
-	architectures []string
-	lock          *sync.RWMutex
+	workloadArches []string
+	cpArches       []string
+	workloadCount  map[string]int
+	defaultArch    string
+
+	lock *sync.RWMutex
 }
 
 func newArchitectures() *Architectures {
@@ -37,25 +51,61 @@ func newArchitectures() *Architectures {
 	}
 }
 
-func (a *Architectures) get() []string {
+func (a *Architectures) getWorkloadArches() []string {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
 
-	return slices.Clone(a.architectures)
+	return slices.Clone(a.workloadArches)
 }
 
-func (a *Architectures) set(archs sets.Set[string]) bool {
+func (a *Architectures) getCPArches() []string {
+	a.lock.RLock()
+	defer a.lock.RUnlock()
+
+	return slices.Clone(a.cpArches)
+}
+
+func (a *Architectures) set(wlArches map[string]int, cpArches sets.Set[string]) bool {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 
-	archList := archs.UnsortedList()
-	slices.Sort(archList)
-	if slices.Compare(a.architectures, archList) != 0 {
-		a.architectures = archList
-		return true
+	modified := false
+	if !maps.Equal(a.workloadCount, wlArches) {
+		a.workloadArches = getSortedMapKeys(wlArches)
+		a.workloadCount = maps.Clone(wlArches)
+		modified = true
 	}
 
-	return false
+	cpArchesList := cpArches.UnsortedList()
+	slices.Sort(cpArchesList)
+
+	if !slices.Equal(a.cpArches, cpArchesList) {
+		a.cpArches = cpArchesList
+		modified = true
+	}
+
+	if modified {
+		if len(cpArchesList) > 0 {
+			if cpArch := cpArchesList[0]; slices.Contains(a.workloadArches, cpArch) {
+				a.defaultArch = cpArch
+				return true
+			}
+		}
+
+		maxCount := 0
+		maxArch := ""
+		for _, wrkArch := range a.workloadArches {
+			count := a.workloadCount[wrkArch]
+			if maxCount < count {
+				maxCount = count
+				maxArch = wrkArch
+			}
+		}
+
+		a.defaultArch = maxArch
+	}
+
+	return modified
 }
 
 func hasWorkloadRequirements(hc *hcov1.HyperConverged) bool {
@@ -78,4 +128,8 @@ func getWorkloadMatcher(hc *hcov1.HyperConverged) nodeaffinity.RequiredNodeAffin
 	}
 
 	return nodeaffinity.GetRequiredNodeAffinity(pod)
+}
+
+func getSortedMapKeys(m map[string]int) []string {
+	return slices.Sorted(maps.Keys(m))
 }
