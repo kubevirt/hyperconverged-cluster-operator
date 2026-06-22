@@ -610,6 +610,11 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			Resources: stringListToSlice("persesdashboards", "persesdatasources"),
 			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
+		{
+			APIGroups: stringListToSlice("policy"),
+			Resources: stringListToSlice("poddisruptionbudgets"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
 	}
 }
 

@@ -701,6 +701,17 @@ spec:
           - create
           - update
           - delete
+        - apiGroups:
+          - policy
+          resources:
+          - poddisruptionbudgets
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
         serviceAccountName: hyperconverged-cluster-operator
       - rules: []
         serviceAccountName: hyperconverged-cluster-cli-download

@@ -16,7 +16,9 @@ import (
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers"
+
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/aie"
+	netresinjector "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/netresinjector"
 	waspagent "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/wasp-agent"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
@@ -63,6 +65,13 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 		aie.NewAIEWebhookMutatingWebhookConfigurationHandler(client, scheme),
 		aie.NewIOMMUFDDevicePluginServiceAccountHandler(client, scheme),
 		aie.NewIOMMUFDDevicePluginDaemonSetHandler(client, scheme),
+		netresinjector.NewClusterRoleHandler(client, scheme),
+		netresinjector.NewClusterRoleBindingHandler(client, scheme),
+		netresinjector.NewServiceAccountHandler(client, scheme),
+		netresinjector.NewServiceHandler(client, scheme),
+		netresinjector.NewDeploymentHandler(client, scheme),
+		netresinjector.NewPDBHandler(client, scheme),
+		netresinjector.NewMutatingWebhookConfigurationHandler(client, scheme),
 	}
 
 	if ci.IsOpenshift() {
