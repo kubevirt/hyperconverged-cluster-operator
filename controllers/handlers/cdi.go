@@ -29,11 +29,19 @@ const (
 	cdiConfigAuthorityAnnotation = "cdi.kubevirt.io/configAuthority"
 )
 
-func NewCdiHandler(Client client.Client, Scheme *runtime.Scheme) *operands.GenericOperand {
+type CDIHandler struct {
+	*operands.GenericOperand
+}
+
+func NewCdiHandler(Client client.Client, Scheme *runtime.Scheme) *CDIHandler {
 	hook := &cdiHooks{Client: Client, Scheme: Scheme}
 
-	return operands.NewGenericOperand(Client, Scheme, "CDI", hook, false)
+	return &CDIHandler{
+		GenericOperand: operands.NewGenericOperand(Client, Scheme, "CDI", hook, false),
+	}
 }
+
+func (CDIHandler) ManualDeletionMark() { /* no implementation */ }
 
 type cdiHooks struct {
 	sync.Mutex

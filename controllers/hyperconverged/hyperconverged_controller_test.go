@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -16,6 +15,7 @@ import (
 	conditionsv1 "github.com/openshift/custom-resource-status/conditions/v1"
 	objectreferencesv1 "github.com/openshift/custom-resource-status/objectreferences/v1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/api/meta"
@@ -805,6 +805,10 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res).To(Equal(reconcile.Result{}))
 
+				depNames, err := getDeploymentNames(context.TODO(), cl)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(depNames).To(ContainElements("kubevirt-apiserver-proxy", "kubevirt-console-plugin"))
+
 				foundResource := &hcov1beta1.HyperConverged{}
 				Expect(
 					cl.Get(context.TODO(),
@@ -816,13 +820,16 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(foundResource.Status.RelatedObjects).To(HaveLen(23))
 				Expect(foundResource.Finalizers).To(Equal([]string{FinalizerName}))
 
-				// Now, delete HCO
-				delTime := time.Now().UTC().Add(-1 * time.Minute)
-				expected.hco.DeletionTimestamp = &metav1.Time{Time: delTime}
-				expected.hco.Finalizers = []string{FinalizerName}
-				cl = expected.initClient()
+				hco := &hcov1beta1.HyperConverged{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      expected.hco.Name,
+						Namespace: expected.hco.Namespace,
+					},
+				}
 
-				r = initReconciler(cl, nil)
+				// Now, delete HCO
+				Expect(cl.Delete(context.TODO(), hco, &client.DeleteOptions{})).To(Succeed())
+
 				res, err = r.Reconcile(context.TODO(), request)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(res).To(Equal(reconcile.Result{RequeueAfter: requeueAfter}))
@@ -836,6 +843,18 @@ var _ = Describe("HyperconvergedController", func() {
 					types.NamespacedName{Name: expected.hco.Name, Namespace: expected.hco.Namespace},
 					foundResource)
 				Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
+
+				depNames, err = getDeploymentNames(context.TODO(), cl)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(depNames).To(And(Not(ContainElement("kubevirt-apiserver-proxy")), Not(ContainElement("kubevirt-console-plugin"))))
+
+				kvList := &kubevirtcorev1.KubeVirtList{}
+				Expect(cl.List(context.TODO(), kvList)).To(Succeed())
+				Expect(kvList.Items).To(BeEmpty(), "The KubeVirt object should be deleted")
+
+				cdiList := &cdiv1beta1.CDIList{}
+				Expect(cl.List(context.TODO(), cdiList)).To(Succeed())
+				Expect(cdiList.Items).To(BeEmpty(), "The CDI object should be deleted")
 
 				verifyHyperConvergedCRExistsMetricFalse()
 			})
@@ -2608,4 +2627,19 @@ func openshift2CdiSecProfile(hcProfile *openshiftconfigv1.TLSSecurityProfile) *c
 		Modern:       (*cdiv1beta1.ModernTLSProfile)(hcProfile.Modern),
 		Custom:       custom,
 	}
+}
+
+func getDeploymentNames(ctx context.Context, cl client.Client) ([]string, error) {
+	deps := &appsv1.DeploymentList{}
+	err := cl.List(ctx, deps, &client.ListOptions{Namespace: namespace})
+	if err != nil {
+		return nil, err
+	}
+
+	var depNames []string
+	for _, dep := range deps.Items {
+		depNames = append(depNames, dep.Name)
+	}
+
+	return depNames, nil
 }

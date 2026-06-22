@@ -3,6 +3,7 @@ package commontestutils
 import (
 	"context"
 	"reflect"
+	"slices"
 	"sync"
 
 	"github.com/go-logr/logr"
@@ -83,10 +84,7 @@ func (eem *EventEmitterMock) CheckNoEventEmitted() bool {
 }
 
 func eventInArray(eventList []MockEvent, event MockEvent) bool {
-	for _, expectedEvent := range eventList {
-		if reflect.DeepEqual(event, expectedEvent) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(eventList, func(e MockEvent) bool {
+		return reflect.DeepEqual(event, e)
+	})
 }

@@ -218,10 +218,18 @@ var (
 	kvDiskVerificationMemoryLimit = resource.MustParse("2G")
 )
 
-// ************  KubeVirt Handler  **************
-func NewKubevirtHandler(Client client.Client, Scheme *runtime.Scheme) *operands.GenericOperand {
-	return operands.NewGenericOperand(Client, Scheme, "KubeVirt", &kubevirtHooks{}, true)
+type KVHandler struct {
+	*operands.GenericOperand
 }
+
+// ************  KubeVirt Handler  **************
+func NewKubevirtHandler(Client client.Client, Scheme *runtime.Scheme) *KVHandler {
+	return &KVHandler{
+		GenericOperand: operands.NewGenericOperand(Client, Scheme, "KubeVirt", &kubevirtHooks{}, true),
+	}
+}
+
+func (KVHandler) ManualDeletionMark() { /* no implementation */ }
 
 type kubevirtHooks struct {
 	sync.Mutex
