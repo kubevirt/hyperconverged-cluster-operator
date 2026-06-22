@@ -168,8 +168,8 @@ type VmiCalcConfigName string
 
 type VmiCalculatorConfiguration struct {
 	// ConfigName determine how resource allocation will be done with ApplicationAwareResourceQuota.
-	// allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources or IgnoreVmiCalculator
-	// +kubebuilder:validation:Enum=VmiPodUsage;VirtualResources;DedicatedVirtualResources;IgnoreVmiCalculator
+	// allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources, IgnoreVmiCalculator or GuestEffectiveResources
+	// +kubebuilder:validation:Enum=VmiPodUsage;VirtualResources;DedicatedVirtualResources;IgnoreVmiCalculator;GuestEffectiveResources
 	// +kubebuilder:default=DedicatedVirtualResources
 	ConfigName VmiCalcConfigName `json:"configName,omitempty"`
 }
@@ -187,6 +187,8 @@ const (
 	DedicatedVirtualResources VmiCalcConfigName = "DedicatedVirtualResources"
 	// avoids allocating VM-associated pods differently from normal pods, maintaining uniform resource allocation.
 	IgnoreVmiCalculator VmiCalcConfigName = "IgnoreVmiCalculator"
+	// GuestEffectiveResources calculates pod usage for VM-associated pods like VmiPodUsage but excludes memory overhead,
+	GuestEffectiveResources VmiCalcConfigName = "GuestEffectiveResources"
 	//VirtualResources:
 	// ResourcePodsOfVmi Launcher Pods, number.
 	ResourcePodsOfVmi corev1.ResourceName = "requests.instances/vmi"
