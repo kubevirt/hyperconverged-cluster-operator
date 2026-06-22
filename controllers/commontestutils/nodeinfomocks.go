@@ -8,6 +8,7 @@ var (
 	origIsInfraHighlyAvailable        = nodeinfo.IsInfrastructureHighlyAvailable
 	origGetControlPlaneArchitectures  = nodeinfo.GetControlPlaneArchitectures
 	origGetWorkloadsArchitectures     = nodeinfo.GetWorkloadsArchitectures
+	origGetDefaultArchitecture        = nodeinfo.GetDefaultArchitecture
 )
 
 func ResetNodeInfoMocks() {
@@ -16,6 +17,7 @@ func ResetNodeInfoMocks() {
 	nodeinfo.IsInfrastructureHighlyAvailable = origIsInfraHighlyAvailable
 	nodeinfo.GetControlPlaneArchitectures = origGetControlPlaneArchitectures
 	nodeinfo.GetWorkloadsArchitectures = origGetWorkloadsArchitectures
+	nodeinfo.GetDefaultArchitecture = origGetDefaultArchitecture
 }
 
 // HighlyAvailableNodeInfoMocks mocks highly available cluster
@@ -70,9 +72,16 @@ func ControlPlaneArchitecturesMock(arch ...string) {
 	}
 }
 
-// WorkloadseArchitecturesMock mocks the architecures for compute nodes
+// WorkloadsArchitecturesMock mocks the architecures for compute nodes
 func WorkloadsArchitecturesMock(arch ...string) {
 	nodeinfo.GetWorkloadsArchitectures = func() []string {
+		return arch
+	}
+}
+
+// DefaultArchitectureMock mocks the default architecture
+func DefaultArchitectureMock(arch string) {
+	nodeinfo.GetDefaultArchitecture = func() string {
 		return arch
 	}
 }
