@@ -170,10 +170,6 @@ func (wh *WebhookV1Beta1Handler) ValidateCreate(ctx context.Context, logger logr
 }
 
 func (wh *WebhookV1Beta1Handler) getOperands(ctx context.Context, requested *v1beta1.HyperConverged) (*kubevirtcorev1.KubeVirt, *cdiv1beta1.CDI, *networkaddonsv1.NetworkAddonsConfig, error) {
-	if err := wh.validateCertConfig(requested); err != nil {
-		return nil, nil, nil, err
-	}
-
 	kv := handlers.NewKubeVirtWithNameOnly()
 	err := wh.cli.Get(ctx, client.ObjectKeyFromObject(kv), kv)
 	if err != nil {
@@ -230,6 +226,26 @@ func (wh *WebhookV1Beta1Handler) ValidateUpdate(ctx context.Context, logger logr
 		return nil
 	}
 
+	if err := wh.validateCertConfig(requested); err != nil {
+		return err
+	}
+
+	if err := wh.dryRunUpdateComponents(ctx, requested, logger); err != nil {
+		return err
+	}
+
+	if !dryrun {
+		tlssecprofile.SetHyperConvergedTLSSecurityProfile(requested.Spec.TLSSecurityProfile)
+	}
+
+	return nil
+}
+
+func (wh *WebhookV1Beta1Handler) dryRunUpdateComponents(ctx context.Context, requested *v1beta1.HyperConverged, logger logr.Logger) error {
+	if requested.DeletionTimestamp != nil {
+		return nil
+	}
+
 	kv, cdi, cna, err := wh.getOperands(ctx, requested)
 	if err != nil {
 		return err
@@ -277,16 +293,7 @@ func (wh *WebhookV1Beta1Handler) ValidateUpdate(ctx context.Context, logger logr
 		}(obj)
 	}
 
-	err = eg.Wait()
-	if err != nil {
-		return err
-	}
-
-	if !dryrun {
-		tlssecprofile.SetHyperConvergedTLSSecurityProfile(requested.Spec.TLSSecurityProfile)
-	}
-
-	return nil
+	return eg.Wait()
 }
 
 func (wh *WebhookV1Beta1Handler) updateOperatorCr(ctx context.Context, logger logr.Logger, hc *v1beta1.HyperConverged, exists client.Object, opts *client.UpdateOptions) error {

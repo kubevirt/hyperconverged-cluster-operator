@@ -900,6 +900,24 @@ var _ = Describe("v1beta1 webhooks validator", func() {
 			Expect(err).To(MatchError(ContainSubstring("cdis.cdi.kubevirt.io")))
 		})
 
+		It("should not return error if CDI CR is missing and the HC CR is deleted", func(ctx context.Context) {
+			cli := getFakeClient(hco)
+			cdi, err := handlers.NewCDI(hco)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cli.Delete(ctx, cdi)).To(Succeed())
+
+			wh := NewWebhookV1Beta1Handler(GinkgoLogr, cli, decoder, HcoValidNamespace, true)
+			tlssecprofile.SetHyperConvergedTLSSecurityProfile(nil)
+
+			newHco := &v1beta1.HyperConverged{}
+			hco.DeepCopyInto(newHco)
+			// just do some change to force update
+			newHco.Spec.Infra.NodePlacement.NodeSelector["key3"] = "value3"
+			newHco.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+
+			Expect(wh.ValidateUpdate(ctx, GinkgoLogr, dryRun, newHco, hco)).To(Succeed())
+		})
+
 		It("should return error if dry-run update of CDI CR returns error", func(ctx context.Context) {
 			cli := getFakeClient(hco)
 			cli.InitiateUpdateErrors(getUpdateError(cdiUpdateFailure))

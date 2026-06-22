@@ -208,6 +208,10 @@ func (wh *WebhookHandler) validateUpdate(ctx context.Context, logger logr.Logger
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
+	if err = wh.v1beta1Handler.validateCertConfig(v1beta1Req); err != nil {
+		return errToResponse(err)
+	}
+
 	err = wh.dryRunUpdateComponents(ctx, logger, v1beta1Req, requested)
 	if err != nil {
 		return errToResponse(err)
@@ -289,6 +293,10 @@ func (wh *WebhookHandler) validateCreateComponents(v1beta1HC *hcov1beta1.HyperCo
 }
 
 func (wh *WebhookHandler) dryRunUpdateComponents(ctx context.Context, logger logr.Logger, v1beta1Req *hcov1beta1.HyperConverged, requested *hcov1.HyperConverged) error {
+	if requested.DeletionTimestamp != nil {
+		return nil
+	}
+
 	kv, cdi, cna, err := wh.v1beta1Handler.getOperands(ctx, v1beta1Req)
 	if err != nil {
 		return err
@@ -343,10 +351,10 @@ func (wh *WebhookHandler) validateCertConfig(hc *hcov1.HyperConverged) error {
 	minimalDuration := metav1.Duration{Duration: 10 * time.Minute}
 
 	ccValues := make(map[string]time.Duration)
-	ccValues["spec.certConfig.ca.duration"] = hc.Spec.Security.CertConfig.CA.Duration.Duration
-	ccValues["spec.certConfig.ca.renewBefore"] = hc.Spec.Security.CertConfig.CA.RenewBefore.Duration
-	ccValues["spec.certConfig.server.duration"] = hc.Spec.Security.CertConfig.Server.Duration.Duration
-	ccValues["spec.certConfig.server.renewBefore"] = hc.Spec.Security.CertConfig.Server.RenewBefore.Duration
+	ccValues["spec.security.certConfig.ca.duration"] = hc.Spec.Security.CertConfig.CA.Duration.Duration
+	ccValues["spec.security.certConfig.ca.renewBefore"] = hc.Spec.Security.CertConfig.CA.RenewBefore.Duration
+	ccValues["spec.security.certConfig.server.duration"] = hc.Spec.Security.CertConfig.Server.Duration.Duration
+	ccValues["spec.security.certConfig.server.renewBefore"] = hc.Spec.Security.CertConfig.Server.RenewBefore.Duration
 
 	for key, value := range ccValues {
 		if value < minimalDuration.Duration {
@@ -355,15 +363,15 @@ func (wh *WebhookHandler) validateCertConfig(hc *hcov1.HyperConverged) error {
 	}
 
 	if hc.Spec.Security.CertConfig.CA.Duration.Duration < hc.Spec.Security.CertConfig.CA.RenewBefore.Duration {
-		return errors.New("spec.certConfig.ca: duration is smaller than renewBefore")
+		return errors.New("spec.security.certConfig.ca: duration is smaller than renewBefore")
 	}
 
 	if hc.Spec.Security.CertConfig.Server.Duration.Duration < hc.Spec.Security.CertConfig.Server.RenewBefore.Duration {
-		return errors.New("spec.certConfig.server: duration is smaller than renewBefore")
+		return errors.New("spec.security.certConfig.server: duration is smaller than renewBefore")
 	}
 
 	if hc.Spec.Security.CertConfig.CA.Duration.Duration < hc.Spec.Security.CertConfig.Server.Duration.Duration {
-		return errors.New("spec.certConfig: ca.duration is smaller than server.duration")
+		return errors.New("spec.security.certConfig: ca.duration is smaller than server.duration")
 	}
 
 	return nil

@@ -3,6 +3,7 @@ package validator
 import (
 	"context"
 	"os"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -810,6 +811,22 @@ var _ = Describe("v1 webhooks validator", func() {
 				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
 				"kubevirts.kubevirt.io",
 			)
+		})
+
+		It("should not return error if KV CR is missing and the HC CR is deleted", func(ctx context.Context) {
+			kv := handlers.NewKubeVirtWithNameOnly()
+			Expect(cli.Delete(ctx, kv)).To(Succeed())
+
+			tlssecprofile.SetHyperConvergedTLSSecurityProfile(nil)
+
+			newHco := &hcov1.HyperConverged{}
+			cr.DeepCopyInto(newHco)
+			// just do some change to force update
+			newHco.Spec.Deployment.NodePlacements.Infra.NodeSelector["key3"] = "value3"
+			newHco.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+
+			res := wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr)
+			Expect(res.Allowed).To(BeTrue())
 		})
 
 		It("should return error if dry-run update of KV CR returns error", func(ctx context.Context) {
