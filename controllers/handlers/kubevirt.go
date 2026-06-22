@@ -508,27 +508,39 @@ func hcoVmOptionsToKV(vmOpts *hcov1.VirtualMachineOptions, config *kubevirtcorev
 }
 
 var (
-	archConfigOnce            = &sync.Once{}
-	architectureConfiguration *kubevirtcorev1.ArchConfiguration
+	staticArchCfg = generateStaticArchConfig()
 )
 
+func generateStaticArchConfig() *kubevirtcorev1.ArchConfiguration {
+	amd64Config := getAMD64ArchConfig()
+	arm64Config := getARM64ArchConfig()
+	s390xConfig := getS390xArchConfig()
+
+	if amd64Config == nil && arm64Config == nil && s390xConfig == nil {
+		return nil
+	}
+
+	return &kubevirtcorev1.ArchConfiguration{
+		Amd64: amd64Config,
+		Arm64: arm64Config,
+		S390x: s390xConfig,
+	}
+}
+
 func getArchConfiguration() *kubevirtcorev1.ArchConfiguration {
-	archConfigOnce.Do(func() {
-		amd64Comfig := getAMD64ArchConfig()
-		arm64Config := getARM64ArchConfig()
-		s390xConfig := getS390xArchConfig()
-		if amd64Comfig == nil && arm64Config == nil && s390xConfig == nil {
-			return
-		}
+	defaultArch := nodeinfo.GetDefaultArchitecture()
+	var archCfg *kubevirtcorev1.ArchConfiguration
 
-		architectureConfiguration = &kubevirtcorev1.ArchConfiguration{
-			Amd64: amd64Comfig,
-			Arm64: arm64Config,
-			S390x: s390xConfig,
+	if staticArchCfg != nil {
+		archCfg = staticArchCfg.DeepCopy()
+		archCfg.DefaultArchitecture = defaultArch
+	} else if defaultArch != "" {
+		archCfg = &kubevirtcorev1.ArchConfiguration{
+			DefaultArchitecture: defaultArch,
 		}
-	})
+	}
 
-	return architectureConfiguration.DeepCopy()
+	return archCfg
 }
 
 func getAMD64ArchConfig() *kubevirtcorev1.ArchSpecificConfiguration {
