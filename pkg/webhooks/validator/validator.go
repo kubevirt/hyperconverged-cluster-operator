@@ -487,6 +487,10 @@ func v1FGsToMap(fgs hcov1fg.HyperConvergedFeatureGates) map[string]bool {
 }
 
 func checkOperands(ctx context.Context, cli client.Client, logger logr.Logger, requested *hcov1.HyperConverged, isOpenshift bool) error {
+	if requested.DeletionTimestamp != nil { // do not check other components when removing HCO
+		return nil
+	}
+
 	resources, err := getOperands(ctx, cli, isOpenshift)
 	if err != nil {
 		return err

@@ -770,6 +770,24 @@ var _ = Describe("v1 webhooks validator", func() {
 			)
 		})
 
+		It("should not return error if KV CR is missing, and HC is already deleted", func(ctx context.Context) {
+			kv := handlers.NewKubeVirtWithNameOnly()
+			Expect(cli.Delete(ctx, kv)).To(Succeed())
+
+			tlssecprofile.SetHyperConvergedTLSSecurityProfile(nil)
+
+			newHco := &hcov1.HyperConverged{}
+			cr.DeepCopyInto(newHco)
+			// just do some change to force update
+			newHco.Spec.Deployment.NodePlacements.Infra.NodeSelector["key3"] = "value3"
+
+			// the HC is already deleted
+			newHco.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+
+			res := wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr)
+			Expect(res.Allowed).To(BeTrue())
+		})
+
 		It("should return error if dry-run update of KV CR returns error", func(ctx context.Context) {
 			cli.(*commontestutils.HcoTestClient).InitiateUpdateErrors(getUpdateError(kvUpdateFailure))
 
@@ -784,6 +802,22 @@ var _ = Describe("v1 webhooks validator", func() {
 				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
 				ErrFakeKvError.Error(),
 			)
+		})
+
+		It("should not return error if dry-run update of KV CR returns error and the HC CR was deleted", func(ctx context.Context) {
+			cli.(*commontestutils.HcoTestClient).InitiateUpdateErrors(getUpdateError(kvUpdateFailure))
+
+			tlssecprofile.SetHyperConvergedTLSSecurityProfile(nil)
+
+			newHco := &hcov1.HyperConverged{}
+			cr.DeepCopyInto(newHco)
+			// change something in workloads to trigger dry-run update
+			newHco.Spec.Deployment.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
+
+			newHco.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+
+			res := wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr)
+			Expect(res.Allowed).To(BeTrue())
 		})
 
 		It("should return error if CDI CR is missing", func(ctx context.Context) {
@@ -804,6 +838,23 @@ var _ = Describe("v1 webhooks validator", func() {
 			)
 		})
 
+		It("should not return error if CDI CR is missing and HC CR is deleted", func(ctx context.Context) {
+			cdi, err := handlers.NewCDI(cr)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(cli.Delete(ctx, cdi)).To(Succeed())
+
+			tlssecprofile.SetHyperConvergedTLSSecurityProfile(nil)
+
+			newHco := &hcov1.HyperConverged{}
+			cr.DeepCopyInto(newHco)
+			// just do some change to force update
+			newHco.Spec.Deployment.NodePlacements.Infra.NodeSelector["key3"] = "value3"
+			newHco.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+
+			res := wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr)
+			Expect(res.Allowed).To(BeTrue())
+		})
+
 		It("should return error if dry-run update of CDI CR returns error", func(ctx context.Context) {
 			cli.(*commontestutils.HcoTestClient).InitiateUpdateErrors(getUpdateError(cdiUpdateFailure))
 
@@ -816,6 +867,19 @@ var _ = Describe("v1 webhooks validator", func() {
 				wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr),
 				ErrFakeCdiError.Error(),
 			)
+		})
+
+		It("should not return error if dry-run update of CDI CR returns error and HC CR is deleted", func(ctx context.Context) {
+			cli.(*commontestutils.HcoTestClient).InitiateUpdateErrors(getUpdateError(cdiUpdateFailure))
+
+			newHco := &hcov1.HyperConverged{}
+			cr.DeepCopyInto(newHco)
+			// change something in workloads to trigger dry-run update
+			newHco.Spec.Deployment.NodePlacements.Workload.NodeSelector["a change"] = "Something else"
+			newHco.DeletionTimestamp = &metav1.Time{Time: time.Now()}
+
+			res := wh.validateUpdate(ctx, GinkgoLogr, dryRun, newHco, cr)
+			Expect(res.Allowed).To(BeTrue())
 		})
 
 		It("should not return error if dry-run update of ALL CR passes", func(ctx context.Context) {
