@@ -1630,12 +1630,13 @@ spec:
                         default: DedicatedVirtualResources
                         description: |-
                           ConfigName determine how resource allocation will be done with ApplicationAwareResourceQuota.
-                          allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources or IgnoreVmiCalculator
+                          allowed values are: VmiPodUsage, VirtualResources, DedicatedVirtualResources, IgnoreVmiCalculator or GuestEffectiveResources
                         enum:
                         - VmiPodUsage
                         - VirtualResources
                         - DedicatedVirtualResources
                         - IgnoreVmiCalculator
+                        - GuestEffectiveResources
                         type: string
                     type: object
                 type: object
