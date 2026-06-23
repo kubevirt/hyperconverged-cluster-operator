@@ -297,7 +297,7 @@ func (wh *WebhookHandler) dryRunUpdateComponents(ctx context.Context, logger log
 		return nil
 	}
 
-	kv, cdi, cna, err := wh.v1beta1Handler.getOperands(ctx, v1beta1Req)
+	kv, cdi, cna, err := wh.v1beta1Handler.getOperands(ctx)
 	if err != nil {
 		return err
 	}

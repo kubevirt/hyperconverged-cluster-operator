@@ -99,7 +99,7 @@ func getCurrentV1Beta1FGStatus(fgs hcov1beta1.HyperConvergedFeatureGates) map[st
 	fgVal := reflect.ValueOf(fgs)
 	fgType := reflect.TypeOf(fgs)
 
-	if fgVal.Kind() == reflect.Ptr {
+	if fgVal.Kind() == reflect.Pointer {
 		fgVal = fgVal.Elem()
 		fgType = fgType.Elem()
 	}
@@ -114,7 +114,7 @@ func getCurrentV1Beta1FGStatus(fgs hcov1beta1.HyperConvergedFeatureGates) map[st
 		}
 
 		var fgValue bool
-		if value.Kind() == reflect.Ptr {
+		if value.Kind() == reflect.Pointer {
 			if value.IsNil() {
 				continue
 			}
