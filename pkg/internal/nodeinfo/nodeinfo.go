@@ -37,8 +37,8 @@ func processNodeInfo(nodes []corev1.Node, hc *hcov1.HyperConverged) bool {
 	cpNodeCount := 0
 	arbiterNodeCount := 0
 
-	workloadArchs := sets.New[string]()
-	cpArchs := sets.New[string]()
+	workloadArchMap := map[string]int{}
+	cpArches := sets.New[string]()
 
 	isWorkloadNode := isWorkloadNodeFunc(hc)
 
@@ -49,14 +49,14 @@ func processNodeInfo(nodes []corev1.Node, hc *hcov1.HyperConverged) bool {
 		}
 
 		if isWorkloadNode(node) {
-			workloadArchs.Insert(arch)
+			workloadArchMap[arch]++
 		}
 
 		_, masterLabelExists := node.Labels[LabelNodeRoleMaster]
 		_, cpLabelExists := node.Labels[LabelNodeRoleControlPlane]
 		if masterLabelExists || cpLabelExists {
 			cpNodeCount++
-			cpArchs.Insert(arch)
+			cpArches.Insert(arch)
 		}
 
 		if _, arbiterLabelExists := node.Labels[LabelNodeRoleArbiter]; arbiterLabelExists {
@@ -65,8 +65,8 @@ func processNodeInfo(nodes []corev1.Node, hc *hcov1.HyperConverged) bool {
 	}
 
 	// remove empty architectures
-	workloadArchs.Delete("")
-	cpArchs.Delete("")
+	delete(workloadArchMap, "")
+	cpArches.Delete("")
 
 	newValue := cpNodeCount >= 3 || (cpNodeCount >= 2 && arbiterNodeCount >= 1)
 	changed := controlPlaneHighlyAvailable.Swap(newValue) != newValue
@@ -77,8 +77,7 @@ func processNodeInfo(nodes []corev1.Node, hc *hcov1.HyperConverged) bool {
 	newValue = workerNodeCount >= 2
 	changed = infrastructureHighlyAvailable.Swap(newValue) != newValue || changed
 
-	changed = workloadArchitectures.set(workloadArchs) || changed
-	changed = controlPlaneArchitectures.set(cpArchs) || changed
+	changed = architectures.set(workloadArchMap, cpArches) || changed
 
 	return changed
 }

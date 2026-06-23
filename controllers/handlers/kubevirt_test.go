@@ -290,7 +290,7 @@ Version: 1.2.3`)).To(Succeed())
 			Expect(os.Setenv(s390xMachineTypeEnvName, "s390-ccw-virtio")).To(Succeed())
 			Expect(os.Setenv(kvmEmulationEnvName, "false")).To(Succeed())
 
-			restArchConfig()
+			resetArchConfig()
 
 			DeferCleanup(func() {
 				mandatoryKvFeatureGates = slices.Clone(origMandatoryKvFeatureGates)
@@ -304,7 +304,7 @@ Version: 1.2.3`)).To(Succeed())
 				Expect(os.Unsetenv(s390xMachineTypeEnvName)).To(Succeed())
 				Expect(os.Unsetenv(kvmEmulationEnvName)).To(Succeed())
 
-				restArchConfig()
+				resetArchConfig()
 			})
 		})
 
@@ -493,7 +493,7 @@ Version: 1.2.3`)
 			Expect(os.Setenv(arm64MachineTypeEnvName, "virt")).To(Succeed())
 			Expect(os.Setenv(s390xMachineTypeEnvName, "s390-ccw-virtio")).To(Succeed())
 
-			restArchConfig()
+			resetArchConfig()
 
 			existKv, err := NewKubeVirt(hco, commontestutils.Namespace)
 			Expect(err).ToNot(HaveOccurred())
@@ -596,7 +596,7 @@ Version: 1.2.3`)
 			Expect(os.Setenv(amd64MachineTypeEnvName, "q35")).To(Succeed())
 			Expect(os.Unsetenv(arm64MachineTypeEnvName)).To(Succeed())
 			Expect(os.Unsetenv(s390xMachineTypeEnvName)).To(Succeed())
-			restArchConfig()
+			resetArchConfig()
 
 			kv, err := NewKubeVirt(hco, commontestutils.Namespace)
 			Expect(err).ToNot(HaveOccurred())
@@ -613,7 +613,7 @@ Version: 1.2.3`)
 			Expect(os.Setenv(amd64MachineTypeEnvName, "q35")).To(Succeed())
 			Expect(os.Unsetenv(arm64MachineTypeEnvName)).To(Succeed())
 			Expect(os.Unsetenv(s390xMachineTypeEnvName)).To(Succeed())
-			restArchConfig()
+			resetArchConfig()
 
 			kv, err := NewKubeVirt(hco, commontestutils.Namespace)
 			Expect(err).ToNot(HaveOccurred())
@@ -623,6 +623,56 @@ Version: 1.2.3`)
 			Expect(kv.Spec.Configuration.ArchitectureConfiguration.Amd64.OVMFPath).To(Equal(DefaultAMD64OVMFPath))
 			Expect(kv.Spec.Configuration.ArchitectureConfiguration.Arm64).To(BeNil())
 			Expect(kv.Spec.Configuration.ArchitectureConfiguration.S390x).To(BeNil())
+		})
+
+		It("should set DefaultArchitecture when default arch is available", func() {
+			Expect(os.Setenv(amd64MachineTypeEnvName, "q35")).To(Succeed())
+			Expect(os.Unsetenv(arm64MachineTypeEnvName)).To(Succeed())
+			Expect(os.Unsetenv(s390xMachineTypeEnvName)).To(Succeed())
+			commontestutils.DefaultArchitectureMock("amd64")
+			DeferCleanup(commontestutils.ResetNodeInfoMocks)
+			resetArchConfig()
+
+			kv, err := NewKubeVirt(hco, commontestutils.Namespace)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(kv.Spec.Configuration.ArchitectureConfiguration).ToNot(BeNil())
+			Expect(kv.Spec.Configuration.ArchitectureConfiguration.Amd64.MachineType).To(Equal("q35"))
+			Expect(kv.Spec.Configuration.ArchitectureConfiguration.DefaultArchitecture).To(Equal("amd64"))
+		})
+
+		It("should set DefaultArchitecture even when no machine type envs are set", func() {
+			Expect(os.Unsetenv(machineTypeEnvName)).To(Succeed())
+			Expect(os.Unsetenv(amd64MachineTypeEnvName)).To(Succeed())
+			Expect(os.Unsetenv(arm64MachineTypeEnvName)).To(Succeed())
+			Expect(os.Unsetenv(s390xMachineTypeEnvName)).To(Succeed())
+			commontestutils.DefaultArchitectureMock("arm64")
+			DeferCleanup(commontestutils.ResetNodeInfoMocks)
+			resetArchConfig()
+
+			kv, err := NewKubeVirt(hco, commontestutils.Namespace)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(kv.Spec.Configuration.ArchitectureConfiguration).ToNot(BeNil())
+			Expect(kv.Spec.Configuration.ArchitectureConfiguration.Amd64).To(BeNil())
+			Expect(kv.Spec.Configuration.ArchitectureConfiguration.Arm64).To(BeNil())
+			Expect(kv.Spec.Configuration.ArchitectureConfiguration.S390x).To(BeNil())
+			Expect(kv.Spec.Configuration.ArchitectureConfiguration.DefaultArchitecture).To(Equal("arm64"))
+		})
+
+		It("should return nil ArchitectureConfiguration when no machine types and no default arch", func() {
+			Expect(os.Unsetenv(machineTypeEnvName)).To(Succeed())
+			Expect(os.Unsetenv(amd64MachineTypeEnvName)).To(Succeed())
+			Expect(os.Unsetenv(arm64MachineTypeEnvName)).To(Succeed())
+			Expect(os.Unsetenv(s390xMachineTypeEnvName)).To(Succeed())
+			commontestutils.DefaultArchitectureMock("")
+			DeferCleanup(commontestutils.ResetNodeInfoMocks)
+			resetArchConfig()
+
+			kv, err := NewKubeVirt(hco, commontestutils.Namespace)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(kv.Spec.Configuration.ArchitectureConfiguration).To(BeNil())
 		})
 
 		It("should fail if the SMBIOS is wrongly formatted mandatory configurations", func() {
@@ -4212,8 +4262,8 @@ Version: 1.2.3`)
 
 		Context("validate bug fixes", func() {
 
-			It("Removing HCO machine type annotation does not restore default in KubeVirt ", func() {
-				restArchConfig()
+			It("Removing HCO machine type annotation does not restore default in KubeVirt", func() {
+				resetArchConfig()
 
 				By("validate the default machine type")
 				kv, err := NewKubeVirt(hco)
@@ -4237,7 +4287,7 @@ Version: 1.2.3`)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(kv.Spec.Configuration.ArchitectureConfiguration.Amd64.MachineType).To(Equal("q35"))
 
-				restArchConfig()
+				resetArchConfig()
 			})
 		})
 	})
@@ -4626,7 +4676,6 @@ Version: 1.2.3`)
 	})
 })
 
-func restArchConfig() {
-	archConfigOnce = &sync.Once{}
-	getArchConfiguration()
+func resetArchConfig() {
+	staticArchCfg = generateStaticArchConfig()
 }
