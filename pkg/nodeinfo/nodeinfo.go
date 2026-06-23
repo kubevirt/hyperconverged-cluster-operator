@@ -26,4 +26,5 @@ var (
 
 	GetControlPlaneArchitectures = internal.GetControlPlaneArchitectures
 	GetWorkloadsArchitectures    = internal.GetWorkloadsArchitectures
+	GetDefaultArchitecture       = internal.GetDefaultArchitecture
 )

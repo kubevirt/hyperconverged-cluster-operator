@@ -714,6 +714,23 @@ var _ = Describe("test node architectures", func() {
 		})
 
 		It("should not changed if control plane architectures were not changed, even with different node list", func() {
+			nodes := genNodeList(3, 0, 3)
+			nodes[0].(*corev1.Node).Status.NodeInfo.Architecture = cpArch
+			nodes[1].(*corev1.Node).Status.NodeInfo.Architecture = cpArch
+			nodes[2].(*corev1.Node).Status.NodeInfo.Architecture = cpArch
+			nodes[3].(*corev1.Node).Status.NodeInfo.Architecture = wlArch1
+			nodes[4].(*corev1.Node).Status.NodeInfo.Architecture = wlArch2
+			nodes[5].(*corev1.Node).Status.NodeInfo.Architecture = wlArch3
+			cli := fake.NewClientBuilder().WithScheme(scheme).WithObjects(nodes...).Build()
+
+			changed, err := nodeinfo.HandleNodeChanges(context.TODO(), cli, nil, GinkgoLogr)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(changed).To(BeFalse())
+			Expect(nodeinfo.GetControlPlaneArchitectures()).To(Equal([]string{"cp-arch"}))
+			Expect(nodeinfo.GetWorkloadsArchitectures()).To(Equal([]string{wlArch1, wlArch2, wlArch3}))
+		})
+
+		It("should changed if control plane architectures were not changed, but number of nodes per arch was changed", func() {
 			nodes := genNodeList(6, 0, 9)
 			nodes[0].(*corev1.Node).Status.NodeInfo.Architecture = cpArch
 			nodes[1].(*corev1.Node).Status.NodeInfo.Architecture = cpArch
@@ -735,7 +752,7 @@ var _ = Describe("test node architectures", func() {
 
 			changed, err := nodeinfo.HandleNodeChanges(context.TODO(), cli, nil, GinkgoLogr)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(changed).To(BeFalse())
+			Expect(changed).To(BeTrue())
 			Expect(nodeinfo.GetControlPlaneArchitectures()).To(Equal([]string{"cp-arch"}))
 			Expect(nodeinfo.GetWorkloadsArchitectures()).To(Equal([]string{wlArch1, wlArch2, wlArch3}))
 		})
@@ -905,5 +922,303 @@ var _ = Describe("test node architectures", func() {
 			Expect(nodeinfo.GetControlPlaneArchitectures()).To(Equal([]string{"cp-arch"}))
 			Expect(nodeinfo.GetWorkloadsArchitectures()).To(Equal([]string{wlArch1, wlArch2, wlArch3, wlArch5}))
 		})
+	})
+
+	Context("GetDefaultArchitecture", func() {
+		DescribeTable("should return the correct default architecture",
+			func(ctx context.Context, nodes []client.Object, expectedDefault string) {
+				cl := fake.NewClientBuilder().WithScheme(scheme).WithObjects(nodes...).Build()
+				_, err := nodeinfo.HandleNodeChanges(ctx, cl, nil, GinkgoLogr)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(nodeinfo.GetDefaultArchitecture()).To(Equal(expectedDefault))
+			},
+			Entry("no nodes - empty string", nil, ""),
+			Entry("only control plane nodes - empty string", []client.Object{
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "cp1",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleControlPlane: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
+					},
+				},
+			}, ""),
+			Entry("only worker nodes - returns first workload arch", []client.Object{
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker1",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "arm64"},
+					},
+				},
+			}, "arm64"),
+			Entry("CP arch matches workload arch - returns CP arch", []client.Object{
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "cp1",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleControlPlane: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker1",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker2",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "arm64"},
+					},
+				},
+			}, "amd64"),
+			Entry("CP arch does not match any workload arch - returns first workload arch", []client.Object{
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "cp1",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleControlPlane: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker1",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "arm64"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker2",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "s390x"},
+					},
+				},
+			}, "arm64"),
+			Entry("single node cluster - returns the shared arch", []client.Object{
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "single",
+						Labels: map[string]string{
+							nodeinfo.LabelNodeRoleControlPlane: "",
+							nodeinfo.LabelNodeRoleWorker:       "",
+						},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
+					},
+				},
+			}, "amd64"),
+			Entry("multiple workload archs, no CP - returns first sorted", []client.Object{
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker1",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "s390x"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker2",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "arm64"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker3",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
+					},
+				},
+			}, "amd64"),
+			Entry("CP arch is not first sorted but matches workload - returns CP arch", []client.Object{
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "cp1",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleControlPlane: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "s390x"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker1",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker2",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "s390x"},
+					},
+				},
+			}, "s390x"),
+			Entry("if no CP arch, use the architecture with most nodes", []client.Object{
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker1",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker2",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "arm64"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker3",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
+					},
+				},
+			}, "amd64"),
+			Entry("if no CP arch, use the architecture with most nodes, even if it's not the first arch", []client.Object{
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker1",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker2",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "arm64"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker3",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "arm64"},
+					},
+				},
+			}, "arm64"),
+			Entry("choose the CP arch, even if not equal to the arch with most workers", []client.Object{
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "cp",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleControlPlane: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker1",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker2",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "arm64"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker3",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "arm64"},
+					},
+				},
+			}, "amd64"),
+			Entry("choose the max arch, if CP node does not shar arch with the workers", []client.Object{
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "cp",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleControlPlane: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "s390x"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker1",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "amd64"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker2",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "arm64"},
+					},
+				},
+				&corev1.Node{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:   "worker3",
+						Labels: map[string]string{nodeinfo.LabelNodeRoleWorker: ""},
+					},
+					Status: corev1.NodeStatus{
+						NodeInfo: corev1.NodeSystemInfo{Architecture: "arm64"},
+					},
+				},
+			}, "arm64"),
+		)
 	})
 })
