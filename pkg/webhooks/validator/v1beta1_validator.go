@@ -169,7 +169,7 @@ func (wh *WebhookV1Beta1Handler) ValidateCreate(ctx context.Context, logger logr
 	return nil
 }
 
-func (wh *WebhookV1Beta1Handler) getOperands(ctx context.Context, requested *v1beta1.HyperConverged) (*kubevirtcorev1.KubeVirt, *cdiv1beta1.CDI, *networkaddonsv1.NetworkAddonsConfig, error) {
+func (wh *WebhookV1Beta1Handler) getOperands(ctx context.Context) (*kubevirtcorev1.KubeVirt, *cdiv1beta1.CDI, *networkaddonsv1.NetworkAddonsConfig, error) {
 	kv := handlers.NewKubeVirtWithNameOnly()
 	err := wh.cli.Get(ctx, client.ObjectKeyFromObject(kv), kv)
 	if err != nil {
@@ -246,7 +246,7 @@ func (wh *WebhookV1Beta1Handler) dryRunUpdateComponents(ctx context.Context, req
 		return nil
 	}
 
-	kv, cdi, cna, err := wh.getOperands(ctx, requested)
+	kv, cdi, cna, err := wh.getOperands(ctx)
 	if err != nil {
 		return err
 	}
