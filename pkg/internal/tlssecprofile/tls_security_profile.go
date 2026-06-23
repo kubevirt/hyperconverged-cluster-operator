@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"crypto/tls"
+	"slices"
 
 	"github.com/go-logr/logr"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
@@ -79,6 +80,12 @@ func MutateTLSConfig(cfg *tls.Config) {
 	}
 }
 
+var validTLSAdherence = []openshiftconfigv1.TLSAdherencePolicy{
+	openshiftconfigv1.TLSAdherencePolicyNoOpinion,
+	openshiftconfigv1.TLSAdherencePolicyLegacyAdheringComponentsOnly,
+	openshiftconfigv1.TLSAdherencePolicyStrictAllComponents,
+}
+
 func Refresh(ctx context.Context, cl client.Client) (modified bool, err error) {
 	apiServer := &openshiftconfigv1.APIServer{}
 
@@ -88,6 +95,12 @@ func Refresh(ctx context.Context, cl client.Client) (modified bool, err error) {
 	err = cl.Get(ctx, key, apiServer)
 	if err != nil {
 		return false, err
+	}
+
+	// HCO is already in StrictAllComponents mode, so we don't really care about the spec.tlsAdherence field
+	// We just log for unknown value. But no behavior changes are needed.
+	if !slices.Contains(validTLSAdherence, apiServer.Spec.TLSAdherence) {
+		logger.Info("Unknown value for the APIServer's spec.tlsAdherence", "value", string(apiServer.Spec.TLSAdherence))
 	}
 
 	return setAPIServerProfile(validateAPIServerTLSSecurityProfile(apiServer.Spec.TLSSecurityProfile, logger)), nil
