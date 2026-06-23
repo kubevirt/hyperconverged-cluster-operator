@@ -43,9 +43,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 		DescribeTable("Check that certConfig defaults are behaving as expected", func(ctx context.Context, path string) {
 			patch := fmt.Appendf(nil, removePathPatchTmplt, path)
-			Eventually(func(ctx context.Context) error {
-				return tests.PatchHCO(ctx, cli, patch)
-			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			tests.PatchHCO(ctx, cli, patch)
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc, err := tests.GetHCO(ctx, cli)
@@ -84,15 +82,12 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 		It("Check that featureGates defaults are behaving as expected", func(ctx context.Context) {
 			patch := fmt.Appendf(nil, removePathPatchTmplt, "/spec/featureGates")
-			Eventually(func(g Gomega, ctx context.Context) error {
-				hc, err := tests.GetHCO(ctx, cli)
-				g.Expect(err).NotTo(HaveOccurred())
+			hc, err := tests.GetHCO(ctx, cli)
+			Expect(err).NotTo(HaveOccurred())
 
-				if len(hc.Spec.FeatureGates) == 0 {
-					return nil
-				}
-				return tests.PatchHCO(ctx, cli, patch)
-			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			if len(hc.Spec.FeatureGates) > 0 {
+				tests.PatchHCO(ctx, cli, patch)
+			}
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc, err := tests.GetHCO(ctx, cli)
@@ -117,9 +112,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 		DescribeTable("Check that liveMigrationConfig defaults are behaving as expected", func(ctx context.Context, path string) {
 			patch := fmt.Appendf(nil, removePathPatchTmplt, path)
-			Eventually(func(ctx context.Context) error {
-				return tests.PatchHCO(ctx, cli, patch)
-			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			tests.PatchHCO(ctx, cli, patch)
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc, err := tests.GetHCO(ctx, cli)
@@ -145,9 +138,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 		DescribeTable("Check that resourceRequirements defaults are behaving as expected", func(ctx context.Context, path string) {
 			patch := fmt.Appendf(nil, removePathPatchTmplt, path)
-			Eventually(func(ctx context.Context) error {
-				return tests.PatchHCO(ctx, cli, patch)
-			}).WithTimeout(20 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			tests.PatchHCO(ctx, cli, patch)
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc, err := tests.GetHCO(ctx, cli)
@@ -171,9 +162,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 		DescribeTable("Check that workloadUpdateStrategy defaults are behaving as expected", func(ctx context.Context, path string) {
 			patch := fmt.Appendf(nil, removePathPatchTmplt, path)
-			Eventually(func(ctx context.Context) error {
-				return tests.PatchHCO(ctx, cli, patch)
-			}).WithTimeout(20 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			tests.PatchHCO(ctx, cli, patch)
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc, err := tests.GetHCO(ctx, cli)
@@ -196,9 +185,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 		DescribeTable("Check that uninstallStrategy default is behaving as expected", func(ctx context.Context, path string) {
 			patch := fmt.Appendf(nil, removePathPatchTmplt, path)
-			Eventually(func(ctx context.Context) error {
-				return tests.PatchHCO(ctx, cli, patch)
-			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			tests.PatchHCO(ctx, cli, patch)
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc, err := tests.GetHCO(ctx, cli)
@@ -221,9 +208,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 		DescribeTable("Check that featureGates defaults are behaving as expected", func(ctx context.Context, path string) {
 			patch := fmt.Appendf(nil, removePathPatchTmplt, path)
-			Eventually(func(ctx context.Context) error {
-				return tests.PatchHCO(ctx, cli, patch)
-			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			tests.PatchHCO(ctx, cli, patch)
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc, err := tests.GetHCO(ctx, cli)
@@ -247,9 +232,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 
 		DescribeTable("Check that HigherWorkloadDensity defaults are behaving as expected", func(ctx context.Context, path string) {
 			patch := fmt.Appendf(nil, removePathPatchTmplt, path)
-			Eventually(func(ctx context.Context) error {
-				return tests.PatchHCO(ctx, cli, patch)
-			}).WithTimeout(2 * time.Second).WithPolling(500 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			tests.PatchHCO(ctx, cli, patch)
 
 			Eventually(func(g Gomega, ctx context.Context) {
 				hc, err := tests.GetHCO(ctx, cli)

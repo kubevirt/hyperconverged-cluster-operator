@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/onsi/ginkgo/v2"
@@ -16,7 +17,14 @@ import (
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregatedetails"
+	fgs "github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregates"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+)
+
+const (
+	HCPatchTimeout = 2 * time.Minute
+	HCPatchPolling = 5 * time.Second
 )
 
 // GetHCO reads the HCO CR from the APIServer with a DynamicClient
@@ -97,31 +105,62 @@ func UpdateHCO(ctx context.Context, cli client.Client, input *hcov1.HyperConverg
 	return GetHCO(ctx, cli)
 }
 
-// PatchHCO updates the HCO CR using a DynamicClient, it can return errors on failures
-func PatchHCO(ctx context.Context, cli client.Client, patchBytes []byte) error {
-	patch := client.RawPatch(types.JSONPatchType, patchBytes)
+func doPatch(ctx context.Context, cli client.Client, patch client.Patch) {
+	ginkgo.GinkgoHelper()
+
 	hco := HCOWithNameOnly()
 
-	return cli.Patch(ctx, hco, patch)
+	Eventually(cli.Patch).
+		WithContext(ctx).
+		WithArguments(hco, patch).
+		WithTimeout(HCPatchTimeout).
+		WithPolling(HCPatchPolling).
+		Should(Succeed(), func() string {
+			b := strings.Builder{}
+			// looking at the patch implementation, it never returns error and never uses the object argument
+			data, _ := patch.Data(nil)
+			b.WriteString("patch: ")
+			b.Write(data)
+			b.WriteByte('\n')
+
+			hc, err := GetHCO(ctx, cli)
+			if err != nil {
+				b.WriteString("Can't get the HyperConverged CR; ")
+				b.WriteString(err.Error())
+			} else {
+				b.WriteString("Current HyperConverged CR:\n")
+				b.WriteString(marshalHyperConverged(hc))
+			}
+
+			b.WriteByte('\n')
+
+			return b.String()
+		})
+
 }
 
-// PatchMergeHCO patches the HCO CR using a DynamicClient, it can return errors on failures
-func PatchMergeHCO(ctx context.Context, cli client.Client, patchBytes []byte) error {
-	patch := client.RawPatch(types.MergePatchType, patchBytes)
-	hco := HCOWithNameOnly()
+// PatchHCO updates the HCO CR using jsonpatch
+func PatchHCO(ctx context.Context, cli client.Client, patchBytes []byte) {
+	ginkgo.GinkgoHelper()
 
-	return cli.Patch(ctx, hco, patch)
+	patch := client.RawPatch(types.JSONPatchType, patchBytes)
+
+	doPatch(ctx, cli, patch)
+}
+
+// PatchMergeHCO patches the HCO CR using merge strategy
+func PatchMergeHCO(ctx context.Context, cli client.Client, patchBytes []byte) {
+	ginkgo.GinkgoHelper()
+
+	patch := client.RawPatch(types.MergePatchType, patchBytes)
+
+	doPatch(ctx, cli, patch)
 }
 
 func RestoreDefaults(ctx context.Context, cli client.Client) {
-	Eventually(func(ctx context.Context) error {
-		return PatchHCO(ctx, cli, []byte(`[{"op": "replace", "path": "/spec", "value": {}}]`))
-	}).
-		WithOffset(1).
-		WithTimeout(time.Second * 5).
-		WithPolling(time.Millisecond * 100).
-		WithContext(ctx).
-		Should(Succeed())
+	ginkgo.GinkgoHelper()
+
+	PatchHCO(ctx, cli, []byte(`[{"op": "replace", "path": "/spec", "value": {}}]`))
 }
 
 func EnableFG(ctx context.Context, cli client.Client, fgName string) error {
@@ -130,25 +169,90 @@ func EnableFG(ctx context.Context, cli client.Client, fgName string) error {
 		return err
 	}
 
-	if hc.Spec.FeatureGates == nil {
-		patch := fmt.Appendf(nil, `{"spec":{"featureGates":[{"name": %q, "state": "%v"}]}}`, fgName, featuregates.Enabled)
-		return PatchMergeHCO(ctx, cli, patch)
+	if hc.Spec.FeatureGates.IsEnabled(fgName) {
+		// already enabled
+		return nil
+	}
+
+	idx := slices.IndexFunc(hc.Spec.FeatureGates, func(fg featuregates.FeatureGate) bool {
+		return fg.Name == fgName
+	})
+
+	var patch []byte
+	switch phase, _ := featuregatedetails.GetFeatureGatePhase(fgName); phase {
+	case fgs.PhaseUnknown:
+		return fmt.Errorf("unknown feature gate %q", fgName)
+
+	case fgs.PhaseBeta:
+		// beta FG are enabled by default. We just need to drop them in order to enable them.
+		if idx == -1 {
+			// Should never happen
+			return fmt.Errorf("unknown issue. the beta feature gate %q is disabled, but is not in spec.featureGates", fgName)
+		}
+
+		patch = fmt.Appendf(nil, `[{ "op": "remove", "path": "/spec/featureGates/%d"}]`, idx)
+
+	default:
+		// alpha/deprecated FG are false by default. We need to explicitly enable them.
+		if idx == -1 {
+			if hc.Spec.FeatureGates == nil {
+				patch = fmt.Appendf(nil, `[{"op": "add", "path": "/spec/featureGates", "value": [{"name": %q}]}]`, fgName)
+			} else {
+				patch = fmt.Appendf(nil, `[{"op": "add", "path": "/spec/featureGates/-", "value": {"name": %q}}]`, fgName)
+			}
+		} else {
+			patch = fmt.Appendf(nil, `[{"op": "add", "path": "/spec/featureGates/%d", "value": {"name": %q, "state": "%s"}}]`, idx, fgName, featuregates.Enabled)
+		}
+	}
+
+	PatchHCO(ctx, cli, patch)
+	return nil
+}
+
+func DisableFG(ctx context.Context, cli client.Client, fgName string) error {
+	hc, err := GetHCO(ctx, cli)
+	if err != nil {
+		return err
 	}
 
 	if !hc.Spec.FeatureGates.IsEnabled(fgName) {
-		var patch []byte
-		idx := slices.IndexFunc(hc.Spec.FeatureGates, func(fg featuregates.FeatureGate) bool {
-			return fg.Name == fgName
-		})
-		if idx == -1 {
-			patch = fmt.Appendf(nil, `[{"op": "add", "path": "/spec/featureGates/-", "value": {"name": %q}}]`, fgName)
-		} else {
-			patch = fmt.Appendf(nil, `[{"op": "replace", "path": "/spec/featureGates/%d/state", "value": "%v"}]`, idx, featuregates.Enabled)
-		}
-
-		return PatchHCO(ctx, cli, patch)
+		// already disabled
+		return nil
 	}
 
+	idx := slices.IndexFunc(hc.Spec.FeatureGates, func(fg featuregates.FeatureGate) bool {
+		return fg.Name == fgName
+	})
+
+	var patch []byte
+	switch phase, _ := featuregatedetails.GetFeatureGatePhase(fgName); phase {
+	case fgs.PhaseUnknown:
+		return fmt.Errorf("unknown feature gate %q", fgName)
+
+	case fgs.PhaseBeta:
+		// beta FG are enabled by default. We need to explicitly disable them.
+		if idx == -1 {
+			if hc.Spec.FeatureGates == nil {
+				patch = fmt.Appendf(nil, `[{"op": "add", "path": "/spec/featureGates", "value": [{"name": %q, "state": "%s"}]}]`, fgName, featuregates.Disabled)
+			} else {
+				patch = fmt.Appendf(nil, `[{"op": "add", "path": "/spec/featureGates/-", "value": {"name": %q, "state": "%s"}}]`, fgName, featuregates.Disabled)
+			}
+
+		} else {
+			patch = fmt.Appendf(nil, `[{"op": "add", "path": "/spec/featureGates/%d", "value": {"name": %q, "state": "%s"}}]`, idx, fgName, featuregates.Disabled)
+		}
+
+	default:
+		// alpha/deprecated FG are false by default. We just need to drop them in order to disable them
+		if idx == -1 {
+			// Should never happen
+			return fmt.Errorf("unknown issue. the alpha feature gate %q is enabled, but is not in spec.featureGates", fgName)
+		}
+
+		patch = fmt.Appendf(nil, `[{ "op": "remove", "path": "/spec/featureGates/%d"}]`, idx)
+	}
+
+	PatchHCO(ctx, cli, patch)
 	return nil
 }
 

@@ -31,7 +31,7 @@ var _ = Describe("RoleAggregationStrategy", Serial, Label("RoleAggregationStrate
 		Expect(err).ToNot(HaveOccurred())
 
 		if hco.Spec.Virtualization.RoleAggregationStrategy != nil {
-			Expect(tests.PatchHCO(ctx, cli, rmRoleAgrStrgPatch)).To(Succeed())
+			tests.PatchHCO(ctx, cli, rmRoleAgrStrgPatch)
 		}
 	})
 
@@ -92,9 +92,7 @@ var _ = Describe("RoleAggregationStrategy", Serial, Label("RoleAggregationStrate
 		}).WithTimeout(time.Minute).WithPolling(10 * time.Second).WithContext(ctx).Should(Succeed())
 
 		By("Removing RoleAggregationStrategy from HCO")
-		Eventually(func() error {
-			return tests.PatchHCO(ctx, cli, rmRoleAgrStrgPatch)
-		}).WithTimeout(10 * time.Second).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+		tests.PatchHCO(ctx, cli, rmRoleAgrStrgPatch)
 
 		Eventually(func(g Gomega, ctx context.Context) {
 			kv := getKubeVirt(ctx, g, cli)

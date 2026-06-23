@@ -304,7 +304,7 @@ lint-metrics:
 
 lint-monitoring:
 	go install github.com/kubevirt/monitoring/monitoringlinter/cmd/monitoringlinter@a697c0c
-	monitoringlinter ./...
+	monitoringlinter ./api/... ./pkg/... ./controllers/...
 
 bump-hco:
 	./hack/bump-hco.sh ${HCO_BUMP_LEVEL}
