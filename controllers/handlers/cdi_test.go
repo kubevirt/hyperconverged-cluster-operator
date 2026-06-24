@@ -33,7 +33,7 @@ var _ = Describe("CDI Operand", func() {
 			req *common.HcoRequest
 		)
 
-		defaultFeatureGates := []string{honorWaitForFirstConsumerGate, dataVolumeClaimAdoptionGate, webhookPvcRenderingGate}
+		defaultFeatureGates := []string{honorWaitForFirstConsumerGate, dataVolumeClaimAdoptionGate}
 
 		BeforeEach(func() {
 			hco = commontestutils.NewHco()
@@ -881,7 +881,7 @@ var _ = Describe("CDI Operand", func() {
 			Expect(*foundResource.Spec.UninstallStrategy).To(Equal(cdiv1beta1.CDIUninstallStrategyBlockUninstallIfWorkloadsExist))
 		})
 
-		It("should add HonorWaitForFirstConsumer, DataVolumeClaimAdoption and WebhookPvcRendering feature gates if Spec.Config if empty", func() {
+		It("should add HonorWaitForFirstConsumer and DataVolumeClaimAdoption feature gates if Spec.Config is empty", func() {
 			expectedResource, err := NewCDI(hco)
 			Expect(err).ToNot(HaveOccurred())
 			expectedResource.Spec.Config = nil
