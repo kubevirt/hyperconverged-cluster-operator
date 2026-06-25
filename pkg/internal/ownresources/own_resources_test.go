@@ -6,6 +6,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	csvv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -60,6 +61,11 @@ var _ = Describe("Test OwnResources", func() {
 		Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, namespace)).To(Succeed())
 		Expect(os.Setenv(hcoutil.PodNameEnvVar, podName)).To(Succeed())
 
+		origGetOperatorNamespace := hcoutil.GetOperatorNamespace
+		hcoutil.GetOperatorNamespace = func(_ logr.Logger) (string, error) {
+			return namespace, nil
+		}
+
 		testScheme = scheme.Scheme
 		Expect(csvv1alpha1.AddToScheme(testScheme)).To(Succeed())
 
@@ -71,6 +77,7 @@ var _ = Describe("Test OwnResources", func() {
 			Expect(os.Setenv(hcoutil.OperatorNamespaceEnv, origNamespcase)).To(Succeed())
 			Expect(os.Setenv(hcoutil.PodNameEnvVar, origPodName)).To(Succeed())
 			hcoutil.GetClusterInfo = origGetClusterInfo
+			hcoutil.GetOperatorNamespace = origGetOperatorNamespace
 		})
 	})
 
