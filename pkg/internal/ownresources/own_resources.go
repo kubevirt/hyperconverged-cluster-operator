@@ -68,6 +68,7 @@ func doInit(ctx context.Context, cl client.Reader, scheme *runtime.Scheme, logge
 			pod, err := getThePod(ctx, cl, logger)
 			if err != nil {
 				logger.Error(err, "Can't get self pod")
+				return
 			}
 
 			thePod = pod
