@@ -137,7 +137,8 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		}
 
 		Eventually(cli.Patch).
-			WithArguments(ctx, kv, patch).
+			WithContext(ctx).
+			WithArguments(kv, patch).
 			WithTimeout(time.Minute).
 			WithPolling(time.Second).
 			To(Succeed())
@@ -247,14 +248,16 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 		}
 
 		Eventually(cli.Create).
-			WithArguments(ctx, vm).
+			WithContext(ctx).
+			WithArguments(vm).
 			WithTimeout(time.Minute).
 			WithPolling(time.Second * 10).
 			Should(Succeed())
 
 		DeferCleanup(func(ctx context.Context) {
 			Eventually(cli.Delete).
-				WithArguments(ctx, vm).
+				WithContext(ctx).
+				WithArguments(vm).
 				WithTimeout(time.Minute * 5).
 				WithPolling(time.Second * 10).
 				Should(Succeed())
@@ -334,7 +337,9 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			}
 
 			By("Misconfiguring the descheduler")
-			Eventually(cli.Patch).WithArguments(ctx, descheduler, patchMisconfigure).
+			Eventually(cli.Patch).
+				WithContext(ctx).
+				WithArguments(descheduler, patchMisconfigure).
 				WithTimeout(10 * time.Second).
 				WithPolling(500 * time.Millisecond).
 				Should(Succeed())
@@ -374,7 +379,9 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).ShouldNot(BeNil())
 
 			By("Correctly configuring the descheduler for KubeVirt")
-			Eventually(cli.Patch).WithArguments(ctx, descheduler, patchConfigure).
+			Eventually(cli.Patch).
+				WithContext(ctx).
+				WithArguments(descheduler, patchConfigure).
 				WithTimeout(10 * time.Second).
 				WithPolling(500 * time.Millisecond).
 				Should(Succeed())
@@ -414,7 +421,9 @@ var _ = Describe("[crit:high][vendor:cnv-qe@redhat.com][level:system]Monitoring"
 			}).WithTimeout(prometheousTimeout).WithPolling(prometheousPolling).WithContext(ctx).Should(BeNil())
 
 			By("Misconfiguring a second time the descheduler")
-			Eventually(cli.Patch).WithArguments(ctx, descheduler, patchMisconfigure).
+			Eventually(cli.Patch).
+				WithContext(ctx).
+				WithArguments(descheduler, patchMisconfigure).
 				WithTimeout(10 * time.Second).
 				WithPolling(500 * time.Millisecond).
 				Should(Succeed())

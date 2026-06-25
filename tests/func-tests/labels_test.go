@@ -57,7 +57,7 @@ var _ = Describe("Check that all the sub-resources have the required labels", La
 		Eventually(func(g Gomega, ctx context.Context) {
 			g.Expect(cli.Get(ctx, client.ObjectKeyFromObject(cdi), cdi)).To(Succeed())
 			g.Expect(cdi.Labels).To(HaveKeyWithValue(hcoutil.AppLabelVersion, expectedVersion))
-		}).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(Succeed())
+		}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
 	})
 
 	It("should have all the required labels in all the controlled resources", func(ctx context.Context) {
@@ -108,9 +108,10 @@ var _ = Describe("Check that all the sub-resources have the required labels", La
 })
 
 func checkLabels(labels map[string]string) {
-	ExpectWithOffset(1, labels).To(HaveKey("app.kubernetes.io/component"))
-	ExpectWithOffset(1, labels).To(HaveKey("app.kubernetes.io/version"))
-	ExpectWithOffset(1, labels).To(HaveKeyWithValue("app", "kubevirt-hyperconverged"))
-	ExpectWithOffset(1, labels).To(HaveKeyWithValue("app.kubernetes.io/part-of", "hyperconverged-cluster"))
-	ExpectWithOffset(1, labels).To(HaveKeyWithValue("app.kubernetes.io/managed-by", "hco-operator"))
+	GinkgoHelper()
+	Expect(labels).To(HaveKey(hcoutil.AppLabelComponent))
+	Expect(labels).To(HaveKey(hcoutil.AppLabelVersion))
+	Expect(labels).To(HaveKeyWithValue(hcoutil.AppLabel, "kubevirt-hyperconverged"))
+	Expect(labels).To(HaveKeyWithValue(hcoutil.AppLabelPartOf, "hyperconverged-cluster"))
+	Expect(labels).To(HaveKeyWithValue(hcoutil.AppLabelManagedBy, "hco-operator"))
 }

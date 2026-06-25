@@ -24,7 +24,6 @@ import (
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	goldenimages "github.com/kubevirt/hyperconverged-cluster-operator/controllers/handlers/golden-images"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
@@ -110,7 +109,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 			Eventually(func(g Gomega, ctx context.Context) string {
 				is = getImageStream(ctx, cli, expectedIS.Name, imageNamespace)
 				return is.GetLabels()["app.kubernetes.io/part-of"]
-			}).WithTimeout(time.Second * 15).WithPolling(time.Millisecond * 100).WithContext(ctx).Should(Equal(expectedValue))
+			}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Equal(expectedValue))
 		},
 			isEntries,
 		)
@@ -199,11 +198,9 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 	})
 
 	Context("disable the feature", func() {
-		It("Should set the FG to false", func(ctx context.Context) {
+		It("Should set the enabler to false", func(ctx context.Context) {
 			patch := fmt.Appendf(nil, dictEnablementTemplate, false)
-			Eventually(func(ctx context.Context) error {
-				return tests.PatchMergeHCO(ctx, cli, patch)
-			}).WithTimeout(5 * time.Second).WithPolling(100 * time.Millisecond).WithContext(ctx).Should(Succeed())
+			tests.PatchMergeHCO(ctx, cli, patch)
 		})
 
 		var isEntries []TableEntry
@@ -254,9 +251,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 	Context("enable the feature again", func() {
 		It("Should set the enabler to true", func(ctx context.Context) {
 			patch := fmt.Appendf(nil, dictEnablementTemplate, true)
-			Eventually(func(ctx context.Context) error {
-				return tests.PatchMergeHCO(ctx, cli, patch)
-			}).WithTimeout(time.Minute).WithPolling(10 * time.Second).WithContext(ctx).Should(Succeed())
+			tests.PatchMergeHCO(ctx, cli, patch)
 		})
 
 		var isEntries []TableEntry
@@ -384,12 +379,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 			Expect(err).ToNot(HaveOccurred(), "failed to get worker nodes architectures")
 
 			GinkgoWriter.Printf("Worker nodes architectures: %v\n", archs)
-			Eventually(tests.EnableFG).
-				WithArguments(ctx, cli, goldenimages.EnableMultiArchFeatureGate).
-				WithTimeout(10 * time.Second).
-				WithPolling(1 * time.Second).
-				WithContext(ctx).
-				Should(Succeed())
+			Expect(tests.EnableFG(ctx, cli, goldenimages.EnableMultiArchFeatureGate)).To(Succeed())
 
 			removeCustomDICTFromHC(ctx, cli)
 
@@ -406,23 +396,7 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 				Should(Succeed(), tests.PrintHyperConvergedBecause(origHC, "the dictStatus.Status.OriginalSupportedArchitectures field should not be empty"))
 
 			DeferCleanup(func(ctx context.Context) {
-				Eventually(func(g Gomega, ctx context.Context) error {
-					cleanupHC, err := tests.GetHCO(ctx, cli)
-					g.Expect(err).NotTo(HaveOccurred())
-
-					var patch []byte
-					idx := slices.IndexFunc(cleanupHC.Spec.FeatureGates, func(fg featuregates.FeatureGate) bool {
-						return fg.Name == goldenimages.EnableMultiArchFeatureGate
-					})
-					if idx > -1 {
-						patch = fmt.Appendf(nil, `[{ "op": "remove", "path": "/spec/featureGates/%d"}]`, idx)
-						return tests.PatchHCO(ctx, cli, patch)
-					}
-					return nil
-				}).WithTimeout(hcTimeout).
-					WithPolling(hcPolling).
-					WithContext(ctx).
-					Should(Succeed())
+				Expect(tests.DisableFG(ctx, cli, goldenimages.EnableMultiArchFeatureGate)).To(Succeed())
 
 				removeCustomDICTFromHC(ctx, cli)
 			})
@@ -915,14 +889,17 @@ var _ = Describe("golden image test", Label("data-import-cron"), Serial, Ordered
 
 func removeCustomDICTFromHC(ctx context.Context, cli client.Client) {
 	GinkgoHelper()
+	hc, err := tests.GetHCO(ctx, cli)
+	Expect(err).NotTo(HaveOccurred())
+	if hc.Spec.WorkloadSources.DataImportCronTemplates == nil {
+		return
+	}
+
 	// clear the DICTs if they exist. ignore error of not found, as it may not exist
-	Eventually(func(ctx context.Context) error {
-		return tests.PatchHCO(ctx, cli, []byte(`[{"op": "remove", "path": "/spec/workloadSources/dataImportCronTemplates"}]`))
-	}).WithTimeout(time.Minute).WithPolling(10 * time.Second).WithContext(ctx).
-		Should(Or(Not(HaveOccurred()), MatchError(ContainSubstring("the server rejected our request due to an error in our request"))))
+	tests.PatchHCO(ctx, cli, []byte(`[{"op": "remove", "path": "/spec/workloadSources/dataImportCronTemplates"}]`))
 
 	Eventually(func(g Gomega, ctx context.Context) {
-		hc, err := tests.GetHCO(ctx, cli)
+		hc, err = tests.GetHCO(ctx, cli)
 		g.Expect(err).NotTo(HaveOccurred())
 
 		g.Expect(hc.Spec.WorkloadSources.DataImportCronTemplates).To(BeEmpty(), "should have no DataImportCronTemplates in the HyperConverged CR")

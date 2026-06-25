@@ -174,12 +174,7 @@ var _ = Describe("Test AIE", Label("AIE"), Serial, Ordered, func() {
 
 			By("triggering a reconcile by touching the HCO CR")
 			patchBytes := fmt.Appendf(nil, `{"metadata":{"annotations":{"%s":"true"}}}`, deployAIEAnnotationKey)
-			Eventually(tests.PatchMergeHCO).
-				WithArguments(ctx, cli, patchBytes).
-				WithTimeout(10 * time.Second).
-				WithPolling(100 * time.Millisecond).
-				WithContext(ctx).
-				Should(Succeed())
+			tests.PatchMergeHCO(ctx, cli, patchBytes)
 
 			By("verifying user edits persist after reconciliation")
 			Consistently(func(g Gomega, ctx context.Context) {
@@ -250,26 +245,14 @@ func enableAIEAnnotation(ctx context.Context, cli client.Client) {
 	GinkgoHelper()
 	patchBytes := fmt.Appendf(nil, `{"metadata":{"annotations":{"%s":"true"}}}`, deployAIEAnnotationKey)
 
-	Eventually(tests.PatchMergeHCO).
-		WithArguments(ctx, cli, patchBytes).
-		WithTimeout(10 * time.Second).
-		WithPolling(100 * time.Millisecond).
-		WithContext(ctx).
-		WithOffset(1).
-		Should(Succeed())
+	tests.PatchMergeHCO(ctx, cli, patchBytes)
 }
 
 func disableAIEAnnotation(ctx context.Context, cli client.Client) {
 	GinkgoHelper()
 	patchBytes := fmt.Appendf(nil, `{"metadata":{"annotations":{"%s":null}}}`, deployAIEAnnotationKey)
 
-	Eventually(tests.PatchMergeHCO).
-		WithArguments(ctx, cli, patchBytes).
-		WithTimeout(10 * time.Second).
-		WithPolling(100 * time.Millisecond).
-		WithContext(ctx).
-		WithOffset(1).
-		Should(Succeed())
+	tests.PatchMergeHCO(ctx, cli, patchBytes)
 }
 
 func getAIEWebhookDeploymentErr(ctx context.Context, cli client.Client) error {
