@@ -107,13 +107,15 @@ func doInit(ctx context.Context, cl client.Reader, scheme *runtime.Scheme, logge
 
 func getThePod(ctx context.Context, c client.Reader, logger logr.Logger) (*corev1.Pod, error) {
 	ci := hcoutil.GetClusterInfo()
-	operatorNs := hcoutil.GetOperatorNamespaceFromEnv()
-
-	// This is taken from k8sutil.getPod. This method only receives client. But the client is not always ready. We'll
-	// use --- instead
 	if ci.IsRunningLocally() {
 		return nil, nil
 	}
+
+	operatorNs, err := hcoutil.GetOperatorNamespace(logger)
+	if err != nil {
+		return nil, err
+	}
+
 	podName := os.Getenv(hcoutil.PodNameEnvVar)
 	if podName == "" {
 		return nil, fmt.Errorf("required env %q not set, please configure downward API", hcoutil.PodNameEnvVar)
@@ -121,7 +123,7 @@ func getThePod(ctx context.Context, c client.Reader, logger logr.Logger) (*corev
 
 	pod := &corev1.Pod{}
 	key := client.ObjectKey{Namespace: operatorNs, Name: podName}
-	err := c.Get(ctx, key, pod)
+	err = c.Get(ctx, key, pod)
 	if err != nil {
 		logger.Error(err, "Failed to get Pod", "Pod.Namespace", operatorNs, "Pod.Name", podName)
 		return nil, err
