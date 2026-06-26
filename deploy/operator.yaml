@@ -5,7 +5,7 @@ metadata:
   labels:
     app.kubernetes.io/component: deployment
     app.kubernetes.io/part-of: hyperconverged-cluster
-    app.kubernetes.io/version: 1.17.2
+    app.kubernetes.io/version: 1.17.3
     name: hyperconverged-cluster-operator
   name: hyperconverged-cluster-operator
 spec:
@@ -20,7 +20,7 @@ spec:
       labels:
         app.kubernetes.io/component: deployment
         app.kubernetes.io/part-of: hyperconverged-cluster
-        app.kubernetes.io/version: 1.17.2
+        app.kubernetes.io/version: 1.17.3
         name: hyperconverged-cluster-operator
     spec:
       containers:
@@ -33,7 +33,7 @@ spec:
           value: OPERATOR
         - name: KVM_EMULATION
         - name: OPERATOR_IMAGE
-          value: quay.io/kubevirt/hyperconverged-cluster-operator:1.17.2-unstable
+          value: quay.io/kubevirt/hyperconverged-cluster-operator:1.17.3-unstable
         - name: OPERATOR_NAME
           value: hyperconverged-cluster-operator
         - name: OPERATOR_NAMESPACE
@@ -57,7 +57,7 @@ spec:
         - name: S390X_MACHINETYPE
           value: s390-ccw-virtio
         - name: HCO_KV_IO_VERSION
-          value: 1.17.2
+          value: 1.17.3
         - name: KUBEVIRT_VERSION
           value: v1.7.4
         - name: CDI_VERSION
@@ -80,7 +80,7 @@ spec:
           value: quay.io/kubevirt/network-passt-binding-cni@sha256:d4b69ad996b2bc1a506d1d6c162105a0141f4b2ee33d00bc2d6d137d7d6154f8
         - name: WASP_AGENT_IMAGE
           value: quay.io/openshift-virtualization/wasp-agent@sha256:daaf1bd032a32a99ef8e5c9d7d40d6732713b0cbfe49952d6d2ce5fa38e78294
-        image: quay.io/kubevirt/hyperconverged-cluster-operator:1.17.2-unstable
+        image: quay.io/kubevirt/hyperconverged-cluster-operator:1.17.3-unstable
         imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 1
@@ -126,7 +126,7 @@ metadata:
   labels:
     app.kubernetes.io/component: deployment
     app.kubernetes.io/part-of: hyperconverged-cluster
-    app.kubernetes.io/version: 1.17.2
+    app.kubernetes.io/version: 1.17.3
     name: hyperconverged-cluster-webhook
   name: hyperconverged-cluster-webhook
 spec:
@@ -141,7 +141,7 @@ spec:
       labels:
         app.kubernetes.io/component: deployment
         app.kubernetes.io/part-of: hyperconverged-cluster
-        app.kubernetes.io/version: 1.17.2
+        app.kubernetes.io/version: 1.17.3
         name: hyperconverged-cluster-webhook
     spec:
       containers:
@@ -153,7 +153,7 @@ spec:
         - name: APP
           value: WEBHOOK
         - name: OPERATOR_IMAGE
-          value: quay.io/kubevirt/hyperconverged-cluster-webhook:1.17.2-unstable
+          value: quay.io/kubevirt/hyperconverged-cluster-webhook:1.17.3-unstable
         - name: OPERATOR_NAME
           value: hyperconverged-cluster-webhook
         - name: OPERATOR_NAMESPACE
@@ -163,8 +163,8 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         - name: HCO_KV_IO_VERSION
-          value: 1.17.2
-        image: quay.io/kubevirt/hyperconverged-cluster-webhook:1.17.2-unstable
+          value: 1.17.3
+        image: quay.io/kubevirt/hyperconverged-cluster-webhook:1.17.3-unstable
         imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 1
@@ -226,7 +226,7 @@ metadata:
   labels:
     app.kubernetes.io/component: deployment
     app.kubernetes.io/part-of: hyperconverged-cluster
-    app.kubernetes.io/version: 1.17.2
+    app.kubernetes.io/version: 1.17.3
     name: hyperconverged-cluster-cli-download
   name: hyperconverged-cluster-cli-download
 spec:
@@ -241,12 +241,12 @@ spec:
       labels:
         app.kubernetes.io/component: deployment
         app.kubernetes.io/part-of: hyperconverged-cluster
-        app.kubernetes.io/version: 1.17.2
+        app.kubernetes.io/version: 1.17.3
         name: hyperconverged-cluster-cli-download
     spec:
       automountServiceAccountToken: false
       containers:
-      - image: quay.io/kubevirt/virt-artifacts-server:1.17.2-unstable
+      - image: quay.io/kubevirt/virt-artifacts-server:1.17.3-unstable
         imagePullPolicy: Always
         livenessProbe:
           failureThreshold: 1
@@ -291,7 +291,7 @@ metadata:
   labels:
     app.kubernetes.io/component: network
     app.kubernetes.io/part-of: hyperconverged-cluster
-    app.kubernetes.io/version: 1.17.2
+    app.kubernetes.io/version: 1.17.3
     name: cluster-network-addons-operator
   name: cluster-network-addons-operator
 spec:
@@ -309,7 +309,7 @@ spec:
       labels:
         app.kubernetes.io/component: network
         app.kubernetes.io/part-of: hyperconverged-cluster
-        app.kubernetes.io/version: 1.17.2
+        app.kubernetes.io/version: 1.17.3
         name: cluster-network-addons-operator
         np.kubevirt.io/allow-access-cluster-services: ""
         np.kubevirt.io/allow-prometheus-access: ""
@@ -428,7 +428,7 @@ metadata:
   labels:
     app.kubernetes.io/component: compute
     app.kubernetes.io/part-of: hyperconverged-cluster
-    app.kubernetes.io/version: 1.17.2
+    app.kubernetes.io/version: 1.17.3
     name: virt-operator
   name: virt-operator
 spec:
@@ -445,7 +445,7 @@ spec:
       labels:
         app.kubernetes.io/component: compute
         app.kubernetes.io/part-of: hyperconverged-cluster
-        app.kubernetes.io/version: 1.17.2
+        app.kubernetes.io/version: 1.17.3
         kubevirt.io: virt-operator
         name: virt-operator
         np.kubevirt.io/allow-access-cluster-services: "true"
@@ -589,7 +589,7 @@ metadata:
   labels:
     app.kubernetes.io/component: schedule
     app.kubernetes.io/part-of: hyperconverged-cluster
-    app.kubernetes.io/version: 1.17.2
+    app.kubernetes.io/version: 1.17.3
     name: ssp-operator
   name: ssp-operator
 spec:
@@ -606,7 +606,7 @@ spec:
       labels:
         app.kubernetes.io/component: schedule
         app.kubernetes.io/part-of: hyperconverged-cluster
-        app.kubernetes.io/version: 1.17.2
+        app.kubernetes.io/version: 1.17.3
         control-plane: ssp-operator
         hco.kubevirt.io/allow-access-cluster-services: "true"
         name: ssp-operator
@@ -685,7 +685,7 @@ metadata:
   labels:
     app.kubernetes.io/component: storage
     app.kubernetes.io/part-of: hyperconverged-cluster
-    app.kubernetes.io/version: 1.17.2
+    app.kubernetes.io/version: 1.17.3
     name: cdi-operator
   name: cdi-operator
 spec:
@@ -702,7 +702,7 @@ spec:
       labels:
         app.kubernetes.io/component: storage
         app.kubernetes.io/part-of: hyperconverged-cluster
-        app.kubernetes.io/version: 1.17.2
+        app.kubernetes.io/version: 1.17.3
         cdi.kubevirt.io: cdi-operator
         name: cdi-operator
         np.kubevirt.io/allow-access-cluster-services: "true"
@@ -797,7 +797,7 @@ metadata:
   labels:
     app.kubernetes.io/component: storage
     app.kubernetes.io/part-of: hyperconverged-cluster
-    app.kubernetes.io/version: 1.17.2
+    app.kubernetes.io/version: 1.17.3
     name: hostpath-provisioner-operator
   name: hostpath-provisioner-operator
 spec:
@@ -814,7 +814,7 @@ spec:
       labels:
         app.kubernetes.io/component: storage
         app.kubernetes.io/part-of: hyperconverged-cluster
-        app.kubernetes.io/version: 1.17.2
+        app.kubernetes.io/version: 1.17.3
         name: hostpath-provisioner-operator
         operator.hostpath-provisioner.kubevirt.io: ""
         prometheus.hostpathprovisioner.kubevirt.io: "true"
@@ -917,7 +917,7 @@ metadata:
   labels:
     app.kubernetes.io/component: quota-management
     app.kubernetes.io/part-of: hyperconverged-cluster
-    app.kubernetes.io/version: 1.17.2
+    app.kubernetes.io/version: 1.17.3
     name: aaq-operator
   name: aaq-operator
 spec:
@@ -933,7 +933,7 @@ spec:
         aaq.kubevirt.io: aaq-operator
         app.kubernetes.io/component: quota-management
         app.kubernetes.io/part-of: hyperconverged-cluster
-        app.kubernetes.io/version: 1.17.2
+        app.kubernetes.io/version: 1.17.3
         name: aaq-operator
         operator.aaq.kubevirt.io: ""
         prometheus.aaq.kubevirt.io: "true"
@@ -1002,7 +1002,7 @@ metadata:
   labels:
     app.kubernetes.io/component: migration
     app.kubernetes.io/part-of: hyperconverged-cluster
-    app.kubernetes.io/version: 1.17.2
+    app.kubernetes.io/version: 1.17.3
     name: kubevirt-migration-operator
   name: kubevirt-migration-operator
 spec:
@@ -1019,7 +1019,7 @@ spec:
       labels:
         app.kubernetes.io/component: migration
         app.kubernetes.io/part-of: hyperconverged-cluster
-        app.kubernetes.io/version: 1.17.2
+        app.kubernetes.io/version: 1.17.3
         name: kubevirt-migration-operator
         operator.migrations.kubevirt.io: ""
     spec:
