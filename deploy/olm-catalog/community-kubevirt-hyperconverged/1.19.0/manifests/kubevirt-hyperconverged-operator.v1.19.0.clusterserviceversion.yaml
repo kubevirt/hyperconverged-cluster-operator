@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.19.0-unstable
-    createdAt: "2026-06-24 03:40:52"
+    createdAt: "2026-06-26 06:25:44"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -4550,9 +4550,9 @@ spec:
                 - name: VIRT_SYNCHRONIZATIONCONTROLLER_IMAGE
                   value: quay.io/kubevirt/virt-synchronization-controller@sha256:74cf7e586d0d5132ed54c0d77a1f96cb2c1804c19ebfeb2c7c8024ce3fc61257
                 - name: VIRT_TEMPLATE_APISERVER_IMAGE
-                  value: quay.io/kubevirt/virt-template-apiserver@sha256:829b77af8d893e72d1b55329d2ee60623f98bcb34d0d3df248427b10b5a8323d
+                  value: quay.io/kubevirt/virt-template-apiserver@sha256:af326822d8907ce3c96a6458444f5af0f1e3f912215710eae3fa562c92a3470e
                 - name: VIRT_TEMPLATE_CONTROLLER_IMAGE
-                  value: quay.io/kubevirt/virt-template-controller@sha256:fee9bdd3c00cce2acc86a0a04a0253f0d84550bffc97e27a0df6a5e64f7c091d
+                  value: quay.io/kubevirt/virt-template-controller@sha256:2cd0770ce24b40d742bd6bac438c55c886352366c90e8165c11b715b7cfd94c7
                 - name: GS_IMAGE
                   value: quay.io/kubevirt/libguestfs-tools@sha256:d70d2e314b24b4eaeef80231dd2659688bcb80843840478af729568c77bb53be
                 - name: PR_HELPER_IMAGE
@@ -6217,9 +6217,9 @@ spec:
     name: virt-platform-autopilot
   - image: quay.io/kubevirt/virt-synchronization-controller@sha256:74cf7e586d0d5132ed54c0d77a1f96cb2c1804c19ebfeb2c7c8024ce3fc61257
     name: virt-synchronization-controller
-  - image: quay.io/kubevirt/virt-template-apiserver@sha256:829b77af8d893e72d1b55329d2ee60623f98bcb34d0d3df248427b10b5a8323d
+  - image: quay.io/kubevirt/virt-template-apiserver@sha256:af326822d8907ce3c96a6458444f5af0f1e3f912215710eae3fa562c92a3470e
     name: virt-template-apiserver
-  - image: quay.io/kubevirt/virt-template-controller@sha256:fee9bdd3c00cce2acc86a0a04a0253f0d84550bffc97e27a0df6a5e64f7c091d
+  - image: quay.io/kubevirt/virt-template-controller@sha256:2cd0770ce24b40d742bd6bac438c55c886352366c90e8165c11b715b7cfd94c7
     name: virt-template-controller
   - image: quay.io/kubevirt/virtio-container-disk@sha256:6b823946eb7493347a93d6daa16b4101a68e16a0ee1766e01ac3adf82e4b5838
     name: virtio-container-disk
