@@ -73,8 +73,7 @@ func doInit(ctx context.Context, cl client.Reader, scheme *runtime.Scheme, logge
 
 			thePod = pod
 
-			operatorNs := hcoutil.GetOperatorNamespaceFromEnv()
-			deployment, err := getDeploymentFromPod(ctx, pod, cl, operatorNs, logger)
+			deployment, err := getDeploymentFromPod(ctx, pod, cl, logger)
 			if err != nil {
 				logger.Error(err, "Can't get deployment")
 				return
@@ -139,7 +138,7 @@ func getThePod(ctx context.Context, c client.Reader, logger logr.Logger) (*corev
 	return pod, nil
 }
 
-func getDeploymentFromPod(ctx context.Context, pod *corev1.Pod, c client.Reader, operatorNs string, logger logr.Logger) (*appsv1.Deployment, error) {
+func getDeploymentFromPod(ctx context.Context, pod *corev1.Pod, c client.Reader, logger logr.Logger) (*appsv1.Deployment, error) {
 	if pod == nil {
 		return nil, nil
 	}
@@ -151,7 +150,7 @@ func getDeploymentFromPod(ctx context.Context, pod *corev1.Pod, c client.Reader,
 	}
 	rs := &appsv1.ReplicaSet{}
 	err := c.Get(context.TODO(), client.ObjectKey{
-		Namespace: operatorNs,
+		Namespace: pod.Namespace,
 		Name:      rsReference.Name,
 	}, rs)
 	if err != nil {
@@ -167,7 +166,7 @@ func getDeploymentFromPod(ctx context.Context, pod *corev1.Pod, c client.Reader,
 	}
 	deployment := &appsv1.Deployment{}
 	err = c.Get(ctx, client.ObjectKey{
-		Namespace: operatorNs,
+		Namespace: pod.Namespace,
 		Name:      dReference.Name,
 	}, deployment)
 	if err != nil {
