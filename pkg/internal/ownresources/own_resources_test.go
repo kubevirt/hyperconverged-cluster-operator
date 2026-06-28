@@ -142,6 +142,55 @@ var _ = Describe("Test OwnResources", func() {
 		Expect(GetDeploymentRef()).To(Equal(*buildOwnerReference(dep)))
 		Expect(GetCSVRef()).To(BeNil())
 	})
+
+	It("should run on a non-standard but allowed namespaces", func(ctx context.Context) {
+		// Note: the allowed namespaces are checked in the cmd/cdmcommon package.
+		// For this function, any namespace will dou.
+		const nonStandardNS = "community-kubevirt-hyperconverged"
+
+		hcoutil.GetClusterInfo = fakeclusterinfo.NewGetClusterInfo(
+			fakeclusterinfo.WithIsOpenshift(true),
+			fakeclusterinfo.WithIsManagedByOLM(true),
+			fakeclusterinfo.WithRunningLocally(false),
+		)
+
+		hcoutil.GetOperatorNamespace = func(_ logr.Logger) (string, error) {
+			return nonStandardNS, nil
+		}
+
+		csv := cretateCSV()
+		csv.Namespace = nonStandardNS
+
+		csvOwnerRef := &metav1.OwnerReference{
+			APIVersion: csvv1alpha1.ClusterServiceVersionAPIVersion,
+			Kind:       csvv1alpha1.ClusterServiceVersionKind,
+			Name:       rsName,
+			Controller: new(true),
+		}
+
+		dep := createDeployment(csvOwnerRef)
+		dep.Namespace = nonStandardNS
+
+		rs := createReplicaSet()
+		rs.Namespace = nonStandardNS
+
+		pod := createPod()
+		pod.Namespace = nonStandardNS
+
+		cl := fake.NewClientBuilder().
+			WithScheme(testScheme).
+			WithObjects(csv, dep, rs, pod).
+			WithStatusSubresource(csv, dep, rs, pod).
+			Build()
+
+		Init(ctx, cl, testScheme, GinkgoLogr)
+		Expect(GetPod()).To(Equal(pod))
+		Expect(GetDeploymentRef()).To(Equal(*buildOwnerReference(dep)))
+		csvObj := GetCSVRef()
+		ref, err := reference.GetReference(testScheme, csvObj)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(ref).To(HaveValue(Equal(*csvRef)))
+	})
 })
 
 func createPod() *corev1.Pod {
