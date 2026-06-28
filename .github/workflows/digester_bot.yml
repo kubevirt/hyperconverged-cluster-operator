@@ -17,12 +17,12 @@ jobs:
             echo "NEW_PR=true" >> $GITHUB_ENV
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: ${{ env.NEW_PR }}
         with:
           ref: main
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         if: ${{ env.NEW_PR }}
         with:
           go-version-file: go.mod # The Go version to download (if necessary) and use.

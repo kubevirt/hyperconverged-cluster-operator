@@ -9,13 +9,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout this repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: main
           path: hco
 
       - name: Checkout monitoring repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: kubevirt/monitoring
           ref: main
