@@ -2253,10 +2253,6 @@ spec:
                     Deploy KubeSecondaryDNS by CNAO
                     Phase: alpha
 
-                  * disableMDevConfiguration:
-                    Disable mediated devices handling on KubeVirt
-                    Phase: alpha
-
                   * downwardMetrics:
                     Allow to expose a limited set of host metrics to guests.
                     Phase: alpha
@@ -2290,6 +2286,12 @@ spec:
                     deployed inside the virt-handler pod. Enabling (or removing) the feature
                     gate causes the redeployment of the virt-handler pod.
                     Phase: alpha
+
+                  * disableMDevConfiguration:
+                    Deprecated: use spec.virtualization.mediatedDevicesConfiguration.enabled
+                    instead. This feature gate is deprecated and will be removed in a future
+                    release.
+                    Phase: deprecated
                 items:
                   description: FeatureGate is an optional feature gate to enable or
                     disable a new feature that is not generally available yet.
@@ -3111,6 +3113,10 @@ spec:
                     description: MediatedDevicesConfiguration holds information about
                       MDEV types to be defined on nodes, if available
                     properties:
+                      enabled:
+                        description: Enables the creation and removal of mediated
+                          devices by virt-handler
+                        type: boolean
                       mediatedDeviceTypes:
                         items:
                           type: string
@@ -5376,7 +5382,6 @@ spec:
                 decentralizedLiveMigration: true
                 declarativeHotplugVolumes: false
                 deployKubeSecondaryDNS: false
-                disableMDevConfiguration: false
                 downwardMetrics: false
                 enableMultiArchBootImageImport: false
                 incrementalBackup: false
@@ -6516,7 +6521,6 @@ spec:
                   decentralizedLiveMigration: true
                   declarativeHotplugVolumes: false
                   deployKubeSecondaryDNS: false
-                  disableMDevConfiguration: false
                   downwardMetrics: false
                   enableMultiArchBootImageImport: false
                   incrementalBackup: false
@@ -6574,8 +6578,9 @@ spec:
                       Use spec.deployVmConsoleProxy instead
                     type: boolean
                   disableMDevConfiguration:
-                    default: false
-                    description: Disable mediated devices handling on KubeVirt
+                    description: |-
+                      Disable mediated devices handling on KubeVirt
+                      Deprecated: use v1's spec.virtualization.mediatedDevicesConfiguration.enabled instead. This feature gate will be removed in a future release.
                     type: boolean
                   downwardMetrics:
                     default: false
