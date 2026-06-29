@@ -19,8 +19,13 @@ import (
 )
 
 func NewMutatingWebhookConfigurationHandler(cli client.Client, scheme *runtime.Scheme) operands.Operand {
-	return operands.NewGenericOperand(cli, scheme, "MutatingWebhookConfiguration",
-		&mwcHooks{required: newMutatingWebhookConfiguration()}, false)
+	return operands.NewConditionalHandler(
+		operands.NewGenericOperand(cli, scheme, "MutatingWebhookConfiguration", &mwcHooks{required: newMutatingWebhookConfiguration()}, false),
+		shouldDeploy,
+		func(hc *hcov1.HyperConverged) client.Object {
+			return NewMutatingWebhookConfigurationWithNameOnly()
+		},
+	)
 }
 
 type mwcHooks struct {

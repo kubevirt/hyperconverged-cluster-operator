@@ -22,7 +22,13 @@ var (
 )
 
 func NewDeploymentHandler(cli client.Client, scheme *runtime.Scheme) operands.Operand {
-	return operands.NewDeploymentHandler(cli, scheme, newDeployment)
+	return operands.NewConditionalHandler(
+		operands.NewDeploymentHandler(cli, scheme, newDeployment),
+		shouldDeploy,
+		func(hc *hcov1.HyperConverged) client.Object {
+			return NewDeploymentWithNameOnly()
+		},
+	)
 }
 
 func NewDeploymentWithNameOnly() *appsv1.Deployment {

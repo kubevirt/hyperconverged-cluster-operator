@@ -6,16 +6,29 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 func NewClusterRoleHandler(cli client.Client, scheme *runtime.Scheme) operands.Operand {
-	return operands.NewClusterRoleHandler(cli, scheme, newClusterRole())
+	return operands.NewConditionalHandler(
+		operands.NewClusterRoleHandler(cli, scheme, newClusterRole()),
+		shouldDeploy,
+		func(hc *hcov1.HyperConverged) client.Object {
+			return NewClusterRoleWithNameOnly()
+		},
+	)
 }
 
 func NewClusterRoleBindingHandler(cli client.Client, scheme *runtime.Scheme) operands.Operand {
-	return operands.NewClusterRoleBindingHandler(cli, scheme, newClusterRoleBinding())
+	return operands.NewConditionalHandler(
+		operands.NewClusterRoleBindingHandler(cli, scheme, newClusterRoleBinding()),
+		shouldDeploy,
+		func(hc *hcov1.HyperConverged) client.Object {
+			return NewClusterRoleBindingWithNameOnly()
+		},
+	)
 }
 
 func NewClusterRoleWithNameOnly() *rbacv1.ClusterRole {
