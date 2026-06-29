@@ -97,10 +97,6 @@ type HyperConvergedSpec struct {
 	//   Deploy KubeSecondaryDNS by CNAO
 	//   Phase: alpha
 	//
-	// * disableMDevConfiguration:
-	//   Disable mediated devices handling on KubeVirt
-	//   Phase: alpha
-	//
 	// * downwardMetrics:
 	//   Allow to expose a limited set of host metrics to guests.
 	//   Phase: alpha
@@ -134,6 +130,12 @@ type HyperConvergedSpec struct {
 	//   deployed inside the virt-handler pod. Enabling (or removing) the feature
 	//   gate causes the redeployment of the virt-handler pod.
 	//   Phase: alpha
+	//
+	// * disableMDevConfiguration:
+	//   Deprecated: use spec.virtualization.mediatedDevicesConfiguration.enabled
+	//   instead. This feature gate is deprecated and will be removed in a future
+	//   release.
+	//   Phase: deprecated
 	//
 	// +optional
 	// +k8s:conversion-gen=false
@@ -659,6 +661,12 @@ type MediatedHostDevice struct {
 // MediatedDevicesConfiguration holds information about MDEV types to be defined, if available
 // +k8s:openapi-gen=true
 type MediatedDevicesConfiguration struct {
+
+	// Enables the creation and removal of mediated devices by virt-handler
+	// +optional
+	// +k8s:conversion-gen=false
+	Enabled *bool `json:"enabled,omitempty"`
+
 	// +optional
 	// +listType=atomic
 	MediatedDeviceTypes []string `json:"mediatedDeviceTypes"`
