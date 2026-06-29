@@ -51,8 +51,69 @@ func newDeployment(_ *hcov1.HyperConverged) *appsv1.Deployment {
 
 	podLabels := operands.GetLabels(hcoutil.AppComponentNetResInjector)
 
-	infrastructureHighlyAvailable := nodeinfo.IsInfrastructureHighlyAvailable()
-	affinity := operands.GetPodAntiAffinity(podLabels[hcoutil.AppLabelComponent], infrastructureHighlyAvailable)
+	// Configure affinity to prefer control plane nodes
+	// Use PreferredDuringScheduling to support HyperShift (worker-only) and SNO clusters
+	affinity := &corev1.Affinity{
+		NodeAffinity: &corev1.NodeAffinity{
+			PreferredDuringSchedulingIgnoredDuringExecution: []corev1.PreferredSchedulingTerm{
+				// Prefer standard Kubernetes control-plane nodes
+				{
+					Preference: corev1.NodeSelectorTerm{
+						MatchExpressions: []corev1.NodeSelectorRequirement{
+							{
+								Key:      nodeinfo.LabelNodeRoleControlPlane,
+								Operator: corev1.NodeSelectorOpExists,
+							},
+						},
+					},
+					Weight: 100,
+				},
+				// Prefer KubeVirt control-plane nodes (HyperShift)
+				{
+					Preference: corev1.NodeSelectorTerm{
+						MatchExpressions: []corev1.NodeSelectorRequirement{
+							{
+								Key:      nodeinfo.LabelNodeRoleKubevirtControlPlane,
+								Operator: corev1.NodeSelectorOpExists,
+							},
+						},
+					},
+					Weight: 100,
+				},
+				// Avoid worker-only nodes when control plane nodes are available
+				{
+					Preference: corev1.NodeSelectorTerm{
+						MatchExpressions: []corev1.NodeSelectorRequirement{
+							{
+								Key:      nodeinfo.LabelNodeRoleWorker,
+								Operator: corev1.NodeSelectorOpDoesNotExist,
+							},
+						},
+					},
+					Weight: 50,
+				},
+			},
+		},
+		PodAntiAffinity: &corev1.PodAntiAffinity{
+			PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
+				{
+					PodAffinityTerm: corev1.PodAffinityTerm{
+						LabelSelector: &metav1.LabelSelector{
+							MatchExpressions: []metav1.LabelSelectorRequirement{
+								{
+									Key:      hcoutil.AppLabelComponent,
+									Operator: metav1.LabelSelectorOpIn,
+									Values:   []string{string(hcoutil.AppComponentNetResInjector)},
+								},
+							},
+						},
+						TopologyKey: corev1.LabelHostname,
+					},
+					Weight: 1,
+				},
+			},
+		},
+	}
 
 	dep := NewDeploymentWithNameOnly()
 	dep.Spec = appsv1.DeploymentSpec{
@@ -71,6 +132,20 @@ func newDeployment(_ *hcov1.HyperConverged) *appsv1.Deployment {
 				ServiceAccountName: serviceAccountName,
 				PriorityClassName:  "system-cluster-critical",
 				Affinity:           affinity,
+				NodeSelector: map[string]string{
+					"kubernetes.io/os": "linux",
+				},
+				Tolerations: []corev1.Toleration{
+					{
+						Key:      "CriticalAddonsOnly",
+						Operator: corev1.TolerationOpExists,
+					},
+					{
+						Effect:   corev1.TaintEffectNoSchedule,
+						Key:      nodeinfo.LabelNodeRoleControlPlane,
+						Operator: corev1.TolerationOpExists,
+					},
+				},
 				SecurityContext: &corev1.PodSecurityContext{
 					RunAsNonRoot: new(true),
 				},

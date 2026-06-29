@@ -55,6 +55,23 @@ var _ = Describe("Network Resources Injector Deployment", func() {
 			Expect(dep.Spec.Template.Spec.ServiceAccountName).To(Equal(serviceAccountName))
 			Expect(dep.Spec.Template.Spec.PriorityClassName).To(Equal("system-cluster-critical"))
 
+			// Verify control plane scheduling
+			Expect(dep.Spec.Template.Spec.NodeSelector).To(HaveKeyWithValue("kubernetes.io/os", "linux"))
+			Expect(dep.Spec.Template.Spec.Tolerations).To(HaveLen(2))
+			Expect(dep.Spec.Template.Spec.Tolerations[0].Key).To(Equal("CriticalAddonsOnly"))
+			Expect(dep.Spec.Template.Spec.Tolerations[1].Key).To(Equal("node-role.kubernetes.io/control-plane"))
+
+			Expect(dep.Spec.Template.Spec.Affinity).ToNot(BeNil())
+			Expect(dep.Spec.Template.Spec.Affinity.NodeAffinity).ToNot(BeNil())
+			// Verify preferred scheduling for control plane compatibility (HyperShift, SNO)
+			Expect(dep.Spec.Template.Spec.Affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution).To(HaveLen(3))
+			Expect(dep.Spec.Template.Spec.Affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution[0].Preference.MatchExpressions[0].Key).To(Equal("node-role.kubernetes.io/control-plane"))
+			Expect(dep.Spec.Template.Spec.Affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution[1].Preference.MatchExpressions[0].Key).To(Equal("node-role.kubevirt.io/control-plane"))
+			Expect(dep.Spec.Template.Spec.Affinity.NodeAffinity.PreferredDuringSchedulingIgnoredDuringExecution[2].Preference.MatchExpressions[0].Key).To(Equal("node-role.kubernetes.io/worker"))
+
+			Expect(dep.Spec.Template.Spec.Affinity.PodAntiAffinity).ToNot(BeNil())
+			Expect(dep.Spec.Template.Spec.Affinity.PodAntiAffinity.PreferredDuringSchedulingIgnoredDuringExecution).To(HaveLen(1))
+
 			Expect(dep.Spec.Template.Spec.Containers).To(HaveLen(1))
 			container := dep.Spec.Template.Spec.Containers[0]
 			Expect(container.Name).To(Equal("webhook-server"))
