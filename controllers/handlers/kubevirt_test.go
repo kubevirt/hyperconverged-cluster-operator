@@ -853,7 +853,7 @@ Version: 1.2.3`)
 				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration).To(BeNil())
 			})
 
-			It("should propagate the mediated devices configuration, only with the Enabled field, if not set in HCO, and the FG is true", func() {
+			It("should propagate mediated devices configuration with enabled=false when deprecated disableMDevConfiguration feature gate is enabled and spec is unset", func() {
 				hco.Spec.Virtualization.MediatedDevicesConfiguration = nil
 				hco.Spec.FeatureGates.Enable("disableMDevConfiguration")
 
@@ -889,6 +889,7 @@ Version: 1.2.3`)
 
 				mdevConf := foundResource.Spec.Configuration.MediatedDevicesConfiguration
 				Expect(mdevConf).ToNot(BeNil())
+				Expect(mdevConf.Enabled).To(BeNil())
 				Expect(mdevConf.MediatedDeviceTypes).To(HaveLen(2))
 				Expect(mdevConf.MediatedDeviceTypes).To(ContainElements("nvidia-222", "nvidia-230"))
 				Expect(mdevConf.MediatedDevicesTypes).To(BeEmpty()) //nolint SA1019
@@ -938,6 +939,7 @@ Version: 1.2.3`)
 
 				mdevConf := foundResource.Spec.Configuration.MediatedDevicesConfiguration
 				Expect(mdevConf).ToNot(BeNil())
+				Expect(mdevConf.Enabled).To(BeNil())
 				Expect(mdevConf.MediatedDeviceTypes).To(HaveLen(2))
 				Expect(mdevConf.MediatedDeviceTypes).To(ContainElements("nvidia-222", "nvidia-230"))
 				Expect(mdevConf.MediatedDevicesTypes).To(BeEmpty()) //nolint SA1019
@@ -1000,7 +1002,7 @@ Version: 1.2.3`)
 				Expect(mdc.MediatedDeviceTypes).To(ContainElements("nvidia-181", "nvidia-191", "nvidia-224"))
 			})
 
-			It("should set the enabled field to false, if the DisableMDevConfiguration FG is enabled", func() {
+			It("should set enabled to false when deprecated disableMDevConfiguration feature gate is enabled and mediatedDevicesConfiguration.enabled is unset", func() {
 				hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
 					{Name: "disableMDevConfiguration"},
 				}
@@ -1015,9 +1017,9 @@ Version: 1.2.3`)
 				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeFalse()))
 			})
 
-			It("should not set the enabled field, if the DisableMDevConfiguration FG is disabled", func() {
+			It("should not set enabled when deprecated disableMDevConfiguration feature gate is explicitly disabled", func() {
 				hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-					{Name: "disableMDevConfiguration", State: ptr.To(featuregates.Disabled)},
+					{Name: "disableMDevConfiguration", State: new(featuregates.Disabled)},
 				}
 				hco.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
 					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
@@ -1030,7 +1032,7 @@ Version: 1.2.3`)
 				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration.Enabled).To(BeNil())
 			})
 
-			It("should not set the enabled field, if the DisableMDevConfiguration FG is not defined", func() {
+			It("should not set enabled when deprecated disableMDevConfiguration feature gate is not defined", func() {
 				hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{}
 				hco.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
 					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
@@ -1041,6 +1043,49 @@ Version: 1.2.3`)
 
 				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration).ToNot(BeNil())
 				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration.Enabled).To(BeNil())
+			})
+
+			It("should propagate enabled=true from mediatedDevicesConfiguration", func() {
+				hco.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
+					Enabled:             new(true),
+					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
+				}
+
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration).ToNot(BeNil())
+				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeTrue()))
+			})
+
+			It("should propagate enabled=false from mediatedDevicesConfiguration when deprecated disableMDevConfiguration is disabled", func() {
+				hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+					{Name: "disableMDevConfiguration", State: new(featuregates.Disabled)},
+				}
+				hco.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
+					Enabled:             new(false),
+					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
+				}
+
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration).ToNot(BeNil())
+				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeFalse()))
+			})
+
+			It("should prefer mediatedDevicesConfiguration.enabled over deprecated disableMDevConfiguration feature gate", func() {
+				hco.Spec.FeatureGates.Enable("disableMDevConfiguration")
+				hco.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
+					Enabled:             new(true),
+					MediatedDeviceTypes: []string{"nvidia-222", "nvidia-230"},
+				}
+
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration).ToNot(BeNil())
+				Expect(kv.Spec.Configuration.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeTrue()))
 			})
 		})
 

@@ -619,9 +619,9 @@ func getObsoleteCPUConfig(hcObsoleteCPUModels []string) map[string]bool {
 
 func toKvMediatedDevicesConfiguration(hc *hcov1.HyperConverged) *kubevirtcorev1.MediatedDevicesConfiguration {
 	mdevsConfig := hc.Spec.Virtualization.MediatedDevicesConfiguration
-	disabled := hc.Spec.FeatureGates.IsEnabled("disableMDevConfiguration")
+	disabledByFG := hc.Spec.FeatureGates.IsEnabled("disableMDevConfiguration")
 
-	if mdevsConfig == nil && !disabled {
+	if mdevsConfig == nil && !disabledByFG {
 		return nil
 	}
 
@@ -637,8 +637,10 @@ func toKvMediatedDevicesConfiguration(hc *hcov1.HyperConverged) *kubevirtcorev1.
 		kvMdev.NodeMediatedDeviceTypes = toKvNodeMediatedDevicesConfiguration(mdevsConfig.NodeMediatedDeviceTypes)
 	}
 
-	if disabled {
-		kvMdev.Enabled = ptr.To(false)
+	if mdevsConfig != nil && mdevsConfig.Enabled != nil {
+		kvMdev.Enabled = mdevsConfig.Enabled
+	} else if disabledByFG {
+		kvMdev.Enabled = new(false)
 	}
 
 	return kvMdev
