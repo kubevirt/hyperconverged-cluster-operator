@@ -271,7 +271,10 @@ help: ## Show this help screen
 	@echo ''
 
 test-unit: gogenerate gogenerate-crd-creator
-	JOB_TYPE="travis" ./hack/build-tests.sh
+	./hack/unit-test.sh
+
+test-unit-coverage: gogenerate gogenerate-crd-creator
+	./hack/unit-test-coverage.sh
 
 test-fuzz-api-conversion: generate
 	go test -v ./api/v1beta1/ -run "FuzzV1beta1ToV1RoundTrip" -fuzz="FuzzV1beta1ToV1RoundTrip" -fuzztime=5s 2>&1
@@ -367,6 +370,8 @@ push-builder-image: retag-builder-image
 		test-functional-prow \
 		test-functional-in-container \
 		test-kv-smoke-prow \
+		test-unit \
+		test-unit-coverage \
 		charts \
 		kubevirt-nightly-test \
 		local \
