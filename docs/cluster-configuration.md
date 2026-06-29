@@ -125,16 +125,16 @@ to an even parity when using emulator thread isolation.
 
 **Graduation Status**: Alpha
 
-### disableMDevConfiguration Feature Gate
-KubeVirt aims to facilitate the configuration of mediated devices on large clusters.
+### disableMDevConfiguration Feature Gate (deprecated)
 
-If this is not desired, set the `disableMDevConfiguration` feature gate in order to disable this feature.
-
-**Note**: this feature is in Developer Preview.
+The `disableMDevConfiguration` feature gate is deprecated. Use
+`spec.virtualization.mediatedDevicesConfiguration.enabled` instead (`enabled: false` preserves prior behavior when
+the feature gate was used to disable mediated device configuration). See
+[Automatic Configuration of Mediated Devices](#automatic-configuration-of-mediated-devices-including-vgpus) for details.
 
 **Default**: `Disabled`
 
-**Graduation Status**: Alpha
+**Graduation Status**: Deprecated
 
 ### decentralizedLiveMigration Feature Gate
 By default, live migration is limited in its flexibility because the migration is centralized. This limits live
@@ -334,6 +334,29 @@ Cluster-admins can provide a list of desired mediated devices (vGPU) types.
 KubeVirt will attempt to automatically create the relevant devices on nodes that can support such configuration.
 Currently, it is possible to configure one type per physical card.
 KubeVirt will configure all `available_instances` for each configurable type.
+
+The `enabled` field controls whether virt-handler automatically creates and removes mediated devices on cluster nodes.
+It defaults to `true` when omitted. Set `enabled: false` to disable automatic mediated device configuration.
+
+#### Example: disabling automatic mediated device configuration
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  virtualization:
+    mediatedDevicesConfiguration:
+      enabled: false
+      mediatedDeviceTypes:
+      - nvidia-222
+```
+
+**Migration from `disableMDevConfiguration`:** The deprecated `disableMDevConfiguration` feature gate is replaced by
+`spec.virtualization.mediatedDevicesConfiguration.enabled`. If you previously used the feature gate to disable
+mediated device configuration, set `enabled: false` to preserve the same behavior. When both are set,
+`enabled` takes precedence over the deprecated feature gate.
 
 #### Example
 
