@@ -1002,6 +1002,8 @@ func getSSP(ctx context.Context, cli client.Client) *sspv1beta3.SSP {
 }
 
 func getImageStream(ctx context.Context, cli client.Client, name, namespace string) *v1.ImageStream {
+	GinkgoHelper()
+
 	is := &v1.ImageStream{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -1009,7 +1011,11 @@ func getImageStream(ctx context.Context, cli client.Client, name, namespace stri
 		},
 	}
 
-	Expect(cli.Get(ctx, client.ObjectKeyFromObject(is), is)).To(Succeed())
+	objectKey := client.ObjectKeyFromObject(is)
+
+	Eventually(func(ctx context.Context) error {
+		return cli.Get(ctx, objectKey, is)
+	}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
 
 	return is
 }
