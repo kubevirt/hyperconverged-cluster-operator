@@ -291,6 +291,7 @@ func Convert_v1beta1_MediatedDevicesConfiguration_To_v1_MediatedDevicesConfigura
 }
 
 func autoConvert_v1_MediatedDevicesConfiguration_To_v1beta1_MediatedDevicesConfiguration(in *v1.MediatedDevicesConfiguration, out *MediatedDevicesConfiguration, s conversion.Scope) error {
+	// INFO: in.Enabled opted out of conversion generation
 	out.MediatedDeviceTypes = *(*[]string)(unsafe.Pointer(&in.MediatedDeviceTypes))
 	if in.NodeMediatedDeviceTypes != nil {
 		in, out := &in.NodeMediatedDeviceTypes, &out.NodeMediatedDeviceTypes

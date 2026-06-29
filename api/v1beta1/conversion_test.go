@@ -522,6 +522,194 @@ var _ = Describe("api/v1beta1", func() {
 		})
 	})
 
+	Context("MDev enabled conversion", func() {
+		Context("v1beta1 to v1", func() {
+			It("should map disableMDevConfiguration=true to enabled=false when enabled is unset", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					FeatureGates: HyperConvergedFeatureGates{
+						DisableMDevConfiguration: new(true),
+					},
+				}
+				v1VirtConfig := hcov1.VirtualizationConfig{}
+
+				convertMDevEnabledV1beta1ToV1(v1beta1Spec, &v1VirtConfig)
+
+				Expect(v1VirtConfig.MediatedDevicesConfiguration).ToNot(BeNil())
+				Expect(v1VirtConfig.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeFalse()))
+			})
+
+			It("should map disableMDevConfiguration=false to enabled=true when enabled is unset", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					FeatureGates: HyperConvergedFeatureGates{
+						DisableMDevConfiguration: new(false),
+					},
+					MediatedDevicesConfiguration: &MediatedDevicesConfiguration{
+						MediatedDeviceTypes: []string{"nvidia-222"},
+					},
+				}
+				v1VirtConfig := hcov1.VirtualizationConfig{
+					MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+						MediatedDeviceTypes: []string{"nvidia-222"},
+					},
+				}
+
+				convertMDevEnabledV1beta1ToV1(v1beta1Spec, &v1VirtConfig)
+
+				Expect(v1VirtConfig.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeTrue()))
+			})
+
+			It("should not override enabled when already set", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					FeatureGates: HyperConvergedFeatureGates{
+						DisableMDevConfiguration: new(true),
+					},
+				}
+				v1VirtConfig := hcov1.VirtualizationConfig{
+					MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+						Enabled:             new(true),
+						MediatedDeviceTypes: []string{"nvidia-222"},
+					},
+				}
+
+				convertMDevEnabledV1beta1ToV1(v1beta1Spec, &v1VirtConfig)
+
+				Expect(v1VirtConfig.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeTrue()))
+			})
+
+			It("should do nothing when disableMDevConfiguration is unset", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					MediatedDevicesConfiguration: &MediatedDevicesConfiguration{
+						MediatedDeviceTypes: []string{"nvidia-222"},
+					},
+				}
+				v1VirtConfig := hcov1.VirtualizationConfig{
+					MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+						MediatedDeviceTypes: []string{"nvidia-222"},
+					},
+				}
+
+				convertMDevEnabledV1beta1ToV1(v1beta1Spec, &v1VirtConfig)
+
+				Expect(v1VirtConfig.MediatedDevicesConfiguration.Enabled).To(BeNil())
+			})
+		})
+
+		Context("v1 to v1beta1", func() {
+			It("should map enabled=false to disableMDevConfiguration=true", func() {
+				v1VirtConfig := hcov1.VirtualizationConfig{
+					MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+						Enabled:             new(false),
+						MediatedDeviceTypes: []string{"nvidia-222"},
+					},
+				}
+				v1beta1Spec := HyperConvergedSpec{}
+
+				convertMDevEnabledV1ToV1beta1(v1VirtConfig, &v1beta1Spec)
+
+				Expect(v1beta1Spec.FeatureGates.DisableMDevConfiguration).To(HaveValue(BeTrue()))
+			})
+
+			It("should map enabled=true to disableMDevConfiguration=false", func() {
+				v1VirtConfig := hcov1.VirtualizationConfig{
+					MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+						Enabled:             new(true),
+						MediatedDeviceTypes: []string{"nvidia-222"},
+					},
+				}
+				v1beta1Spec := HyperConvergedSpec{}
+
+				convertMDevEnabledV1ToV1beta1(v1VirtConfig, &v1beta1Spec)
+
+				Expect(v1beta1Spec.FeatureGates.DisableMDevConfiguration).To(HaveValue(BeFalse()))
+			})
+
+			It("should do nothing when enabled is unset", func() {
+				v1VirtConfig := hcov1.VirtualizationConfig{
+					MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+						MediatedDeviceTypes: []string{"nvidia-222"},
+					},
+				}
+				v1beta1Spec := HyperConvergedSpec{}
+
+				convertMDevEnabledV1ToV1beta1(v1VirtConfig, &v1beta1Spec)
+
+				Expect(v1beta1Spec.FeatureGates.DisableMDevConfiguration).To(BeNil())
+			})
+
+			It("should do nothing when mediatedDevicesConfiguration is nil", func() {
+				v1VirtConfig := hcov1.VirtualizationConfig{}
+				v1beta1Spec := HyperConvergedSpec{}
+
+				convertMDevEnabledV1ToV1beta1(v1VirtConfig, &v1beta1Spec)
+
+				Expect(v1beta1Spec.FeatureGates.DisableMDevConfiguration).To(BeNil())
+			})
+		})
+
+		Context("ConvertTo and ConvertFrom", func() {
+			It("should map disableMDevConfiguration to enabled on ConvertTo", func() {
+				src := &HyperConverged{
+					Spec: HyperConvergedSpec{
+						FeatureGates: HyperConvergedFeatureGates{
+							DisableMDevConfiguration: new(true),
+						},
+						MediatedDevicesConfiguration: &MediatedDevicesConfiguration{
+							MediatedDeviceTypes: []string{"nvidia-222"},
+						},
+					},
+				}
+				dst := &hcov1.HyperConverged{}
+
+				Expect(src.ConvertTo(dst)).To(Succeed())
+
+				Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration).ToNot(BeNil())
+				Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeFalse()))
+				Expect(dst.Spec.FeatureGates.IsEnabled("disableMDevConfiguration")).To(BeFalse())
+			})
+
+			It("should map enabled to disableMDevConfiguration on ConvertFrom", func() {
+				src := &hcov1.HyperConverged{
+					Spec: hcov1.HyperConvergedSpec{
+						Virtualization: hcov1.VirtualizationConfig{
+							MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+								Enabled:             new(false),
+								MediatedDeviceTypes: []string{"nvidia-222"},
+							},
+						},
+					},
+				}
+				dst := &HyperConverged{}
+
+				Expect(dst.ConvertFrom(src)).To(Succeed())
+
+				Expect(dst.Spec.FeatureGates.DisableMDevConfiguration).To(HaveValue(BeTrue()))
+			})
+
+			It("should preserve enabled through round-trip", func() {
+				original := &HyperConverged{
+					Spec: HyperConvergedSpec{
+						FeatureGates: HyperConvergedFeatureGates{
+							DisableMDevConfiguration: new(true),
+						},
+						MediatedDevicesConfiguration: &MediatedDevicesConfiguration{
+							MediatedDeviceTypes: []string{"nvidia-222"},
+						},
+					},
+				}
+
+				v1hco := &hcov1.HyperConverged{}
+				Expect(original.ConvertTo(v1hco)).To(Succeed())
+
+				result := &HyperConverged{}
+				Expect(result.ConvertFrom(v1hco)).To(Succeed())
+
+				Expect(result.Spec.FeatureGates.DisableMDevConfiguration).To(HaveValue(BeTrue()))
+				Expect(result.Spec.MediatedDevicesConfiguration).ToNot(BeNil())
+				Expect(result.Spec.MediatedDevicesConfiguration.MediatedDeviceTypes).To(Equal([]string{"nvidia-222"}))
+			})
+		})
+	})
+
 	Context("virtualization", func() {
 		Context("v1 ==> v1beta1", func() {
 			It("should convert tuningPolicy", func() {
@@ -585,6 +773,7 @@ var _ = Describe("api/v1beta1", func() {
 			It("should convert MediatedDevicesConfiguration", func() {
 				v1VirtConfig := hcov1.VirtualizationConfig{
 					MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+						Enabled:             new(false),
 						MediatedDeviceTypes: []string{"aaa", "bbb", "ccc"},
 						NodeMediatedDeviceTypes: []hcov1.NodeMediatedDeviceTypesConfig{
 							{
