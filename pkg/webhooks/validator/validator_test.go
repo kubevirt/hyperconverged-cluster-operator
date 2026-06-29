@@ -2,6 +2,7 @@ package validator
 
 import (
 	"context"
+	"errors"
 	"os"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 	sspv1beta3 "kubevirt.io/ssp-operator/api/v1beta3"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	hcov1fg "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
@@ -411,22 +413,127 @@ var _ = Describe("v1 webhooks validator", func() {
 			})
 		})
 
-		// TODO: Uncomment the table below when we have deprecated feature gates to test again.
-		//
-		//	Context("validate deprecated FGs", func() {
-		//		DescribeTable("should return warning for deprecated feature gate", func(ctx context.Context, fgs hcov1fg.HyperConvergedFeatureGates, fgNames ...string) {
-		//			cr.Spec.FeatureGates = fgs
-		//			resp := wh.validateCreate(GinkgoLogr, dryRun, cr)
-		//			checkAcceptedRequest(resp, fgNames...)
-		//		},
-		//			Entry("should trigger a warning if the disableMDevConfiguration=false FG exists in the CR",
-		//				hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration", State: ptr.To(hcov1fg.Disabled)}}, "disableMDevConfiguration"),
-		//			Entry("should trigger a warning if the disableMDevConfiguration=true FG exists in the CR",
-		//				hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration", State: ptr.To(hcov1fg.Enabled)}}, "disableMDevConfiguration"),
-		//			Entry("should trigger a warning if the disableMDevConfiguration FG exists in the CR",
-		//				hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration"}}, "disableMDevConfiguration"),
-		//		)
-		//	})
+		Context("validate deprecated FGs", func() {
+			DescribeTable("should return warning for deprecated feature gate", func(ctx context.Context, fgs hcov1fg.HyperConvergedFeatureGates, enabled *bool, fgNames ...string) {
+				cr.Spec.FeatureGates = fgs
+				if enabled != nil {
+					cr.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
+						Enabled: enabled,
+					}
+				}
+				resp := wh.validateCreate(GinkgoLogr, dryRun, cr)
+				checkAcceptedRequest(resp, fgNames...)
+			},
+				Entry("should trigger a warning if the disableMDevConfiguration=false FG exists in the CR",
+					hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration", State: ptr.To(hcov1fg.Disabled)}}, nil, "disableMDevConfiguration"),
+				Entry("should trigger a warning if the disableMDevConfiguration=true FG exists in the CR",
+					hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration", State: ptr.To(hcov1fg.Enabled)}}, ptr.To(false), "disableMDevConfiguration"),
+				Entry("should trigger a warning if the disableMDevConfiguration FG exists in the CR",
+					hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration"}}, ptr.To(false), "disableMDevConfiguration"),
+			)
+		})
+
+		Context("validate MDev feature gate and enabled", func() {
+			setMDevConfig := func(enabled *bool) {
+				cr.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+					Enabled:             enabled,
+				}
+			}
+
+			DescribeTable("create: reject when FG and enabled are inconsistent",
+				func(fgs hcov1fg.HyperConvergedFeatureGates, enabled *bool, expectReject bool) {
+					cr.Spec.FeatureGates = fgs
+					setMDevConfig(enabled)
+					resp := wh.validateCreate(GinkgoLogr, dryRun, cr)
+					if expectReject {
+						checkRejectedRequest(resp, "disableMDevConfiguration", "enabled")
+					} else if len(resp.Warnings) > 0 {
+						checkAcceptedRequest(resp, "disableMDevConfiguration")
+					} else {
+						checkAcceptedRequest(resp)
+					}
+				},
+				Entry("reject FG enabled and enabled true",
+					hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration"}}, ptr.To(true), true),
+				Entry("reject FG disabled and enabled false",
+					hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration", State: ptr.To(hcov1fg.Disabled)}}, ptr.To(false), true),
+				Entry("allow FG absent",
+					nil, ptr.To(true), false),
+				Entry("allow FG absent and enabled nil",
+					nil, nil, false),
+				Entry("allow FG enabled and enabled false",
+					hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration"}}, ptr.To(false), false),
+				Entry("allow FG disabled and enabled true",
+					hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration", State: ptr.To(hcov1fg.Disabled)}}, ptr.To(true), false),
+				Entry("allow FG disabled and enabled nil",
+					hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration", State: ptr.To(hcov1fg.Disabled)}}, nil, false),
+			)
+
+			It("reject when both FG and enabled changed and are inconsistent on update", func() {
+				exists := commontestutils.NewHco()
+				exists.Spec.FeatureGates = hcov1fg.HyperConvergedFeatureGates{
+					{Name: "disableMDevConfiguration", State: ptr.To(hcov1fg.Disabled)},
+				}
+				exists.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+					Enabled:             ptr.To(false),
+				}
+
+				requested := exists.DeepCopy()
+				requested.Spec.FeatureGates = hcov1fg.HyperConvergedFeatureGates{
+					{Name: "disableMDevConfiguration"},
+				}
+				requested.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+					Enabled:             ptr.To(true),
+				}
+
+				err := wh.validateUpdateHyperConverged(requested, exists)
+				Expect(err).To(MatchError(ContainSubstring("both changed")))
+				Expect(err.Error()).To(ContainSubstring("disableMDevConfiguration"))
+			})
+
+			It("allow when only enabled changed", func() {
+				exists := commontestutils.NewHco()
+				exists.Spec.FeatureGates = hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration"}}
+				exists.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+					Enabled:             ptr.To(false),
+				}
+
+				requested := exists.DeepCopy()
+				requested.Spec.Virtualization.MediatedDevicesConfiguration.Enabled = ptr.To(true)
+
+				err := wh.validateUpdateHyperConverged(requested, exists)
+				if err != nil {
+					var vw *ValidationWarning
+					Expect(errors.As(err, &vw)).To(BeTrue())
+					Expect(vw.Warnings()).To(ContainElement(ContainSubstring("disableMDevConfiguration")))
+				}
+			})
+
+			It("allow when only FG changed", func() {
+				exists := commontestutils.NewHco()
+				exists.Spec.FeatureGates = hcov1fg.HyperConvergedFeatureGates{{Name: "disableMDevConfiguration"}}
+				exists.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
+					MediatedDeviceTypes: []string{"nvidia-222"},
+					Enabled:             ptr.To(false),
+				}
+
+				requested := exists.DeepCopy()
+				requested.Spec.FeatureGates = hcov1fg.HyperConvergedFeatureGates{
+					{Name: "disableMDevConfiguration", State: ptr.To(hcov1fg.Disabled)},
+				}
+
+				err := wh.validateUpdateHyperConverged(requested, exists)
+				if err != nil {
+					var vw *ValidationWarning
+					Expect(errors.As(err, &vw)).To(BeTrue())
+					Expect(vw.Warnings()).To(ContainElement(ContainSubstring("disableMDevConfiguration")))
+				}
+			})
+		})
 
 		Context("validate affinity", func() {
 			It("should allow empty nodePlacements", func(ctx context.Context) {

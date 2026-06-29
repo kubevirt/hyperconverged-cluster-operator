@@ -346,6 +346,8 @@ func (wh *WebhookV1Beta1Handler) validateTuningPolicy(hc *v1beta1.HyperConverged
 const (
 	fgMovedWarning       = "spec.featureGates.%[1]s is deprecated and ignored. It will removed in a future version; use spec.%[1]s instead"
 	fgDeprecationWarning = "spec.featureGates.%s is deprecated and ignored. It will be removed in a future version;"
+
+	mDevFGDeprecationWarning = "spec.featureGates.disableMDevConfiguration is deprecated. Use spec.virtualization.mediatedDevicesConfiguration.enabled in the v1 API instead; it will be removed in a future version."
 )
 
 func (wh *WebhookV1Beta1Handler) validateFeatureGatesOnCreate(hc *v1beta1.HyperConverged) error {
@@ -391,6 +393,10 @@ func (wh *WebhookV1Beta1Handler) validateDeprecatedFeatureGates(hc *v1beta1.Hype
 	//nolint:staticcheck
 	if hc.Spec.FeatureGates.EnableManagedTenantQuota != nil {
 		warnings = append(warnings, fmt.Sprintf(fgDeprecationWarning, "enableManagedTenantQuota"))
+	}
+
+	if hc.Spec.FeatureGates.DisableMDevConfiguration != nil {
+		warnings = append(warnings, mDevFGDeprecationWarning)
 	}
 
 	return warnings
