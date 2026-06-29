@@ -148,7 +148,7 @@ func newMutatingWebhookConfiguration() *admissionregistrationv1.MutatingWebhookC
 			Name:                    "cnv-network-resources-injector-config.k8s.io",
 			AdmissionReviewVersions: []string{"v1", "v1beta1"},
 			SideEffects:             new(admissionregistrationv1.SideEffectClassNone),
-			FailurePolicy:           new(admissionregistrationv1.Ignore),
+			FailurePolicy:           new(admissionregistrationv1.Fail),
 			TimeoutSeconds:          new(int32(10)),
 			MatchPolicy:             new(admissionregistrationv1.Equivalent),
 			ReinvocationPolicy:      new(admissionregistrationv1.NeverReinvocationPolicy),
