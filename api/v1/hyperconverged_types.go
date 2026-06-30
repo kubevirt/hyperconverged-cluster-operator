@@ -166,7 +166,7 @@ type HyperConvergedSpec struct {
 	Security SecurityConfig `json:"security,omitempty"`
 
 	// Deployment contains all the configurations related to deployment of KubeVirt components
-	// +kubebuilder:default={"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "applicationAwareConfig": {"enable": false}}
+	// +kubebuilder:default={"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "deployNetworkResourcesInjector": true, "applicationAwareConfig": {"enable": false}}
 	// +optional
 	// +k8s:conversion-gen=false
 	Deployment DeploymentConfig `json:"deployment,omitempty"`
@@ -420,6 +420,14 @@ type DeploymentConfig struct {
 	// +kubebuilder:default=false
 	// +default=false
 	DeployVMConsoleProxy *bool `json:"deployVmConsoleProxy,omitempty"`
+
+	// DeployNetworkResourcesInjector enables deployment of the network-resources-injector component.
+	// When enabled, the network-resources-injector mutating webhook will be deployed to automatically
+	// inject resource requests for custom resources annotated in NetworkAttachmentDefinition.
+	// +optional
+	// +kubebuilder:default=true
+	// +default=true
+	DeployNetworkResourcesInjector *bool `json:"deployNetworkResourcesInjector,omitempty"`
 }
 
 // CertRotateConfigCA contains the tunables for TLS certificates.
@@ -933,7 +941,7 @@ type HyperConverged struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// +kubebuilder:default={"security": {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10},"workloadSources":{"enableCommonBootImageImport":true}, "deployment": {"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "applicationAwareConfig": {"enable": false}}}
+	// +kubebuilder:default={"security": {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10},"workloadSources":{"enableCommonBootImageImport":true}, "deployment": {"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "deployNetworkResourcesInjector": true, "applicationAwareConfig": {"enable": false}}}
 	// +optional
 	Spec   HyperConvergedSpec   `json:"spec,omitempty"`
 	Status HyperConvergedStatus `json:"status,omitempty"`

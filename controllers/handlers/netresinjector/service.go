@@ -7,12 +7,19 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 func NewServiceHandler(cli client.Client, scheme *runtime.Scheme) operands.Operand {
-	return operands.NewServiceHandler(cli, scheme, newService())
+	return operands.NewConditionalHandler(
+		operands.NewServiceHandler(cli, scheme, newService()),
+		shouldDeploy,
+		func(hc *hcov1.HyperConverged) client.Object {
+			return newService()
+		},
+	)
 }
 
 func newService() *corev1.Service {

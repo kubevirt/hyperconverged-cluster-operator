@@ -1837,6 +1837,37 @@ spec:
     deployVmConsoleProxy: true
 ```
 
+### Deploy Network Resources Injector
+The Network Resources Injector is a webhook that injects network-related resource requests into pod specifications based on network annotations. It is critical for proper SR-IOV and other network resource management.
+
+To control the deployment of the Network Resources Injector, set the `spec.deployment.deployNetworkResourcesInjector` field.
+
+**Default**: `true`
+
+**Note**: This component is mandatory for proper network resource management. Set this to `false` only if another instance is running elsewhere (e.g., under SR-IOV operator) to avoid conflicts, or if your system does not make use of multus with custom network resources.
+
+#### Example
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  deployment:
+    deployNetworkResourcesInjector: true
+```
+
+To disable the deployment (when running an external instance):
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  deployment:
+    deployNetworkResourcesInjector: false
+```
+
 ## Configurations via Annotations
 
 In addition to `featureGates` field in HyperConverged CR's spec, the user can set annotations in the HyperConverged CR

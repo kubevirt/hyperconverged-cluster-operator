@@ -204,6 +204,11 @@ func (in *DeploymentConfig) DeepCopyInto(out *DeploymentConfig) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.DeployNetworkResourcesInjector != nil {
+		in, out := &in.DeployNetworkResourcesInjector, &out.DeployNetworkResourcesInjector
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
