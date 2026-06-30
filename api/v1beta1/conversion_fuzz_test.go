@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	. "github.com/onsi/gomega"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -46,8 +47,9 @@ func FuzzV1beta1ToV1RoundTrip(f *testing.F) {
 		v1Second := &hcov1.HyperConverged{}
 		g.Expect(roundTripped.ConvertTo(v1Second)).To(Succeed())
 
+		diff := cmp.Diff(v1First.Spec, v1Second.Spec)
 		// the two v1 representations should be equal
-		g.Expect(v1Second.Spec).To(Equal(v1First.Spec))
+		g.Expect(diff).To(BeEmpty(), diff)
 	})
 }
 
@@ -77,7 +79,8 @@ func FuzzV1ToV1beta1RoundTrip(f *testing.F) {
 		g.Expect(v1beta1Second.ConvertFrom(roundTripped)).To(Succeed())
 
 		// the two v1beta1 representations should be equal
-		g.Expect(v1beta1Second.Spec).To(Equal(v1beta1First.Spec))
+		diff := cmp.Diff(v1beta1First.Spec, v1beta1Second.Spec)
+		g.Expect(diff).To(BeEmpty(), diff)
 	})
 }
 

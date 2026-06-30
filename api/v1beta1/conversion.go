@@ -1,6 +1,7 @@
 package v1beta1
 
 import (
+	"encoding/json"
 	"fmt"
 	"maps"
 	"reflect"
@@ -14,6 +15,11 @@ import (
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 )
+
+const v1OnlyFieldAnnotation = APIVersionGroup + "/v1-only-fields"
+
+type v1OnlyFields struct {
+}
 
 // Implement the conversion.Convertible interface, to be used in the conversion webhook.
 
@@ -44,7 +50,7 @@ func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error { //revive:dis
 		return fmt.Errorf("failed to convert HyperConverged's spec.deployment from v1beta1 to v1; %w", err)
 	}
 
-	return nil
+	return restoreV1OnlyFields(src, dst)
 }
 
 func (dst *HyperConverged) ConvertFrom(srcRaw conversion.Hub) error { //revive:disable:receiver-naming
@@ -74,7 +80,7 @@ func (dst *HyperConverged) ConvertFrom(srcRaw conversion.Hub) error { //revive:d
 		return fmt.Errorf("failed to convert HyperConverged's spec.deployment from v1 to v1beta1; %w", err)
 	}
 
-	return nil
+	return storeV1OnlyFields(src, dst)
 }
 
 func convertNodePlacementsV1ToV1beta1(v1Spec hcov1.HyperConvergedSpec, v1beta1Spec *HyperConvergedSpec) {
@@ -496,6 +502,48 @@ func convertAAQConfigV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1Config *hcov1
 	}
 
 	v1Config.ApplicationAwareConfig.Enable = setPtr(v1beta1Spec.EnableApplicationAwareQuota)
+
+	return nil
+}
+
+func restoreV1OnlyFields(src *HyperConverged, dst *hcov1.HyperConverged) error {
+	v1FieldStr, found := src.Annotations[v1OnlyFieldAnnotation]
+	if !found || v1FieldStr == "" {
+		return nil
+	}
+
+	var v1Fields v1OnlyFields
+	err := json.Unmarshal([]byte(v1FieldStr), &v1Fields)
+	if err != nil {
+		return fmt.Errorf("unable to parse the %s annotation: %w", v1OnlyFieldAnnotation, err)
+	}
+
+	// Field-specific restoration goes here
+
+	delete(dst.Annotations, v1OnlyFieldAnnotation)
+
+	return nil
+}
+
+func storeV1OnlyFields(src *hcov1.HyperConverged, dst *HyperConverged) error {
+	v1Fields := v1OnlyFields{}
+
+	// Field-specific storage goes here
+
+	if v1Fields == (v1OnlyFields{}) {
+		return nil
+	}
+
+	v1FieldAnn, err := json.Marshal(v1Fields)
+	if err != nil {
+		return fmt.Errorf("unable to create the %s annotation: %w", v1OnlyFieldAnnotation, err)
+	}
+
+	if dst.Annotations == nil {
+		dst.Annotations = map[string]string{}
+	}
+
+	dst.Annotations[v1OnlyFieldAnnotation] = string(v1FieldAnn)
 
 	return nil
 }
