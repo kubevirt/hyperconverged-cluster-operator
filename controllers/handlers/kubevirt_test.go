@@ -1944,7 +1944,7 @@ Version: 1.2.3`)
 							Not(ContainElement(kvDownwardMetrics)),
 							ContainElement(kvDecentralizedLiveMigration),
 							Not(ContainElement(kvAlignCPUs)),
-							And(ContainElement(kvHotplugVolumesGate), Not(ContainElement(kvDeclarativeHotplugVolumesGate))),
+							And(ContainElement(kvDeclarativeHotplugVolumesGate), Not(ContainElement(kvHotplugVolumesGate))),
 							Not(ContainElement(kvObjectGraph)),
 							And(Not(ContainElement(kvIncrementalBackup)), Not(ContainElement(kvUtilityVolumes))),
 							Not(ContainElement(kvContainerPathVolumes)),
@@ -2074,14 +2074,6 @@ Version: 1.2.3`)
 							}
 						},
 						And(ContainElement(kvDeclarativeHotplugVolumesGate), Not(ContainElement(kvHotplugVolumesGate))),
-					),
-					Entry("should add the HotplugVolumes feature gate if DeclarativeHotplugVolumes is false in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "declarativeHotplugVolumes", State: ptr.To(featuregates.Disabled)},
-							}
-						},
-						And(ContainElement(kvHotplugVolumesGate), Not(ContainElement(kvDeclarativeHotplugVolumesGate))),
 					),
 					Entry("should add the ObjectGraph feature gate if ObjectGraph is true in HyperConverged CR",
 						func(hc *hcov1.HyperConverged) {
@@ -2376,8 +2368,6 @@ Version: 1.2.3`)
 					// Should have base KVM emulation featuregate count (hardcoded + conditional volume hotplug)
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(defaultFeatureGateCount))
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
-					// Should contain HotplugVolumes by default when DeclarativeHotplugVolumes is not set
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvHotplugVolumesGate))
 				})
 
 				It("should enable architecture specific feature gates", func() {

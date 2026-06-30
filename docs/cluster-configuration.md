@@ -157,11 +157,9 @@ volume hotplug operations are performed using KubeVirt's subresource API. Change
 spec require a VM restart to take effect. When enabled, volume hotplug operations can be performed declaratively by
 modifying the VirtualMachine spec directly. These changes are applied immediately without requiring a VM restart.
 
-**Note**: This feature is in Developer Preview.
+**Default**: `Enabled`
 
-**Default**: `Disabled`
-
-**Graduation Status**: Alpha
+**Graduation Status**: Beta
 
 ### videoConfig Feature Gate
 By default, the video type depends on the architecture and firmware:
