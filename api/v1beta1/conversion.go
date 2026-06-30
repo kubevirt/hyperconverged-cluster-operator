@@ -32,6 +32,8 @@ func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error { //revive:dis
 		return fmt.Errorf("failed to convert HyperConverged's spec.virtualization from v1beta1 to v1; %w", err)
 	}
 
+	convertMDevEnabledV1beta1ToV1(src.Spec, &dst.Spec.Virtualization)
+
 	dst.Spec.Storage = convertStorageV1beta1ToV1(src.Spec)
 
 	convertSecurityV1beta1ToV1(src.Spec, &dst.Spec.Security)
@@ -61,6 +63,8 @@ func (dst *HyperConverged) ConvertFrom(srcRaw conversion.Hub) error { //revive:d
 	if err := convertVirtualizationV1ToV1beta1(src.Spec.Virtualization, &dst.Spec); err != nil {
 		return fmt.Errorf("failed to convert HyperConverged's spec.virtualization from v1 to v1beta1; %w", err)
 	}
+
+	convertMDevEnabledV1ToV1beta1(src.Spec.Virtualization, &dst.Spec)
 
 	convertStorageV1ToV1beta1(src.Spec.Storage, &dst.Spec)
 
@@ -530,4 +534,32 @@ func setPtr[T comparable](orig *T) *T {
 	dst := new(T)
 	*dst = *orig
 	return dst
+}
+
+// convertMDevEnabledV1beta1ToV1 maps the deprecated v1beta1 disableMDevConfiguration
+// feature gate to v1 spec.virtualization.mediatedDevicesConfiguration.enabled.
+func convertMDevEnabledV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1VirtConfig *hcov1.VirtualizationConfig) {
+	fg := v1beta1Spec.FeatureGates.DisableMDevConfiguration
+	if fg == nil {
+		return
+	}
+
+	if v1VirtConfig.MediatedDevicesConfiguration == nil {
+		v1VirtConfig.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{}
+	}
+
+	if v1VirtConfig.MediatedDevicesConfiguration.Enabled == nil {
+		v1VirtConfig.MediatedDevicesConfiguration.Enabled = new(!*fg)
+	}
+}
+
+// convertMDevEnabledV1ToV1beta1 maps v1 spec.virtualization.mediatedDevicesConfiguration.enabled
+// to the deprecated v1beta1 disableMDevConfiguration feature gate.
+func convertMDevEnabledV1ToV1beta1(v1VirtConfig hcov1.VirtualizationConfig, v1beta1Spec *HyperConvergedSpec) {
+	mdc := v1VirtConfig.MediatedDevicesConfiguration
+	if mdc == nil || mdc.Enabled == nil {
+		return
+	}
+
+	v1beta1Spec.FeatureGates.DisableMDevConfiguration = new(!*mdc.Enabled)
 }

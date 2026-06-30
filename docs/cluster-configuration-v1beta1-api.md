@@ -189,16 +189,21 @@ to an even parity when using emulator thread isolation.
 
 **Graduation Status**: Alpha
 
-### disableMDevConfiguration Feature Gate
-KubeVirt aims to facilitate the configuration of mediated devices on large clusters.
+### disableMDevConfiguration Feature Gate (deprecated)
 
-If this is not desired, set the `disableMDevConfiguration` feature gate in order to disable this feature.
+The `disableMDevConfiguration` feature gate is deprecated and will be removed in a future release.
 
-**Note**: this feature is in Developer Preview.
+On the v1 API, use `spec.virtualization.mediatedDevicesConfiguration.enabled` instead. See
+[Automatic Configuration of Mediated Devices](./cluster-configuration.md#automatic-configuration-of-mediated-devices-including-vgpus)
+in the v1 cluster configuration documentation for details.
+
+On v1beta1, set this feature gate to `true` to disable automatic mediated device configuration by virt-handler on
+cluster nodes. KubeVirt aims to facilitate the configuration of mediated devices on large clusters; if this is not
+desired, set the `disableMDevConfiguration` feature gate until you migrate to the v1 API.
 
 **Default**: `false`
 
-**Graduation Status**: Alpha
+**Graduation Status**: Deprecated
 
 ### decentralizedLiveMigration Feature Gate
 By default, live migration is limited in its flexibility because the migration is centralized. This limits live
@@ -401,6 +406,11 @@ Administrators can provide a list of desired mediated devices (vGPU) types.
 KubeVirt will attempt to automatically create the relevant devices on nodes that can support such configuration.
 Currently, it is possible to configure one type per physical card.
 KubeVirt will configure all `available_instances` for each configurable type.
+
+To disable automatic mediated device configuration on v1beta1, set the deprecated `disableMDevConfiguration` feature
+gate to `true`. On the v1 API, use `spec.virtualization.mediatedDevicesConfiguration.enabled: false` instead. See
+[Automatic Configuration of Mediated Devices](./cluster-configuration.md#automatic-configuration-of-mediated-devices-including-vgpus)
+for the v1 migration path.
 
 ### Example
 

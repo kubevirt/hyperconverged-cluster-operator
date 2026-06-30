@@ -20,10 +20,6 @@ func convert_v1beta1_FeatureGates_To_v1(in *HyperConvergedFeatureGates, out *hco
 		out.Enable("deployKubeSecondaryDNS")
 	}
 
-	if ptr.Deref(in.DisableMDevConfiguration, false) {
-		out.Enable("disableMDevConfiguration")
-	}
-
 	if ptr.Deref(in.PersistentReservation, false) {
 		out.Enable("persistentReservation")
 	}
@@ -64,7 +60,6 @@ func convert_v1beta1_FeatureGates_To_v1(in *HyperConvergedFeatureGates, out *hco
 func convert_v1_FeatureGates_To_v1beta1(in hcofg.HyperConvergedFeatureGates, out *HyperConvergedFeatureGates) {
 	out.DownwardMetrics = ptr.To(in.IsEnabled("downwardMetrics"))
 	out.DeployKubeSecondaryDNS = ptr.To(in.IsEnabled("deployKubeSecondaryDNS"))
-	out.DisableMDevConfiguration = ptr.To(in.IsEnabled("disableMDevConfiguration"))
 	out.PersistentReservation = ptr.To(in.IsEnabled("persistentReservation"))
 	out.AlignCPUs = ptr.To(in.IsEnabled("alignCPUs"))
 	out.EnableMultiArchBootImageImport = ptr.To(in.IsEnabled("enableMultiArchBootImageImport"))

@@ -30,11 +30,6 @@
     "description": "Deploy KubeSecondaryDNS by CNAO"
   },
   {
-    "name": "disableMDevConfiguration",
-    "phase": "alpha",
-    "description": "Disable mediated devices handling on KubeVirt"
-  },
-  {
     "name": "downwardMetrics",
     "phase": "alpha",
     "description": "Allow to expose a limited set of host metrics to guests."
@@ -58,5 +53,10 @@
     "name": "persistentReservation",
     "phase": "alpha",
     "description": "Enable persistent reservation of a LUN through the SCSI Persistent Reserve commands on Kubevirt. In order to issue privileged SCSI ioctls, the VM requires activation of the persistent reservation flag. Once this feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod."
+  },
+  {
+    "name": "disableMDevConfiguration",
+    "phase": "deprecated",
+    "description": "Deprecated: use spec.virtualization.mediatedDevicesConfiguration.enabled instead. This feature gate is deprecated and will be removed in a future release."
   }
 ]

@@ -143,6 +143,10 @@ func randomV1beta1HC(r *rand.Rand) *HyperConverged {
 	}
 
 	if r.IntN(2) == 1 {
+		hc.Spec.FeatureGates.DisableMDevConfiguration = randPtr(r, r.IntN(2) == 1)
+	}
+
+	if r.IntN(2) == 1 {
 		hc.Spec.ObsoleteCPUs = &HyperConvergedObsoleteCPUs{
 			CPUModels: randStringSlice(r),
 		}
@@ -340,6 +344,7 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 	if r.IntN(2) == 1 {
 		hc.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
 			MediatedDeviceTypes: randStringSlice(r),
+			Enabled:             randPtr(r, r.IntN(2) == 1),
 		}
 	}
 
