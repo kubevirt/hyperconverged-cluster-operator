@@ -20,7 +20,7 @@
 
 set -ex
 
-KUBECTL_BINARY=oc
+KUBECTL_BINARY=${KUBECTL_BINARY:-oc}
 INSTALLED_NAMESPACE=kubevirt-hyperconverged
 HCO_TYPE="hyperconvergeds"
 TLS_PATH="/spec/security/tlsSecurityProfile"
@@ -62,9 +62,17 @@ fi
 
 if ! which nmap ; then
     echo "Try to install nmap"
-    rpm -vhU --nodeps https://nmap.org/dist/nmap-7.94-1.x86_64.rpm
-    rpm -vhU https://nmap.org/dist/ncat-7.94-1.x86_64.rpm
-    rpm -vhU https://nmap.org/dist/nping-0.7.94-1.x86_64.rpm
+    if command -v microdnf &>/dev/null; then
+        microdnf install -y nmap
+    elif command -v dnf &>/dev/null; then
+        dnf install -y nmap
+    elif command -v yum &>/dev/null; then
+        yum install -y nmap
+    else
+        rpm -vhU --nodeps https://nmap.org/dist/nmap-7.94-1.x86_64.rpm
+        rpm -vhU https://nmap.org/dist/ncat-7.94-1.x86_64.rpm
+        rpm -vhU https://nmap.org/dist/nping-0.7.94-1.x86_64.rpm
+    fi
 fi
 
 if [ -n "${OPENSHIFT_BUILD_NAMESPACE:-}" ]; then
