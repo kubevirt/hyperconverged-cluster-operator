@@ -19,6 +19,7 @@ import (
 const v1OnlyFieldAnnotation = APIVersionGroup + "/v1-only-fields"
 
 type v1OnlyFields struct {
+	DeployNetworkResourcesInjector *bool `json:"deployNetworkResourcesInjector,omitempty"`
 }
 
 // Implement the conversion.Convertible interface, to be used in the conversion webhook.
@@ -518,7 +519,9 @@ func restoreV1OnlyFields(src *HyperConverged, dst *hcov1.HyperConverged) error {
 		return fmt.Errorf("unable to parse the %s annotation: %w", v1OnlyFieldAnnotation, err)
 	}
 
-	// Field-specific restoration goes here
+	if v1Fields.DeployNetworkResourcesInjector != nil {
+		dst.Spec.Deployment.DeployNetworkResourcesInjector = new(*v1Fields.DeployNetworkResourcesInjector)
+	}
 
 	delete(dst.Annotations, v1OnlyFieldAnnotation)
 
@@ -526,9 +529,9 @@ func restoreV1OnlyFields(src *HyperConverged, dst *hcov1.HyperConverged) error {
 }
 
 func storeV1OnlyFields(src *hcov1.HyperConverged, dst *HyperConverged) error {
-	v1Fields := v1OnlyFields{}
-
-	// Field-specific storage goes here
+	v1Fields := v1OnlyFields{
+		DeployNetworkResourcesInjector: src.Spec.Deployment.DeployNetworkResourcesInjector,
+	}
 
 	if v1Fields == (v1OnlyFields{}) {
 		return nil

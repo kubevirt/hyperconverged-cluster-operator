@@ -499,6 +499,10 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 
 	hc.Spec.Deployment.DeployVMConsoleProxy = randPtr(r, r.IntN(2) == 1)
 
+	if r.IntN(2) == 1 {
+		hc.Spec.Deployment.DeployNetworkResourcesInjector = new(r.IntN(2) == 1)
+	}
+
 	return hc
 }
 
