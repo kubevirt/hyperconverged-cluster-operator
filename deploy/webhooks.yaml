@@ -162,13 +162,13 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: cnv-network-resources-injector-cert
+  name: virt-network-resources-injector-cert
   labels:
-    name: cnv-network-resources-injector
+    name: virt-network-resources-injector
 spec:
-  secretName: cnv-network-resources-injector-secret
+  secretName: virt-network-resources-injector-secret
   dnsNames:
-  - cnv-network-resources-injector-service.kubevirt-hyperconverged.svc
+  - virt-network-resources-injector-service.kubevirt-hyperconverged.svc
   issuerRef:
     name: selfsigned
 ---

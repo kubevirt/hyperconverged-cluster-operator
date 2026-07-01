@@ -145,7 +145,7 @@ func newMutatingWebhookConfiguration() *admissionregistrationv1.MutatingWebhookC
 
 	mwc.Webhooks = []admissionregistrationv1.MutatingWebhook{
 		{
-			Name:                    "cnv-network-resources-injector-config.k8s.io",
+			Name:                    "virt-network-resources-injector-config.k8s.io",
 			AdmissionReviewVersions: []string{"v1", "v1beta1"},
 			SideEffects:             new(admissionregistrationv1.SideEffectClassNone),
 			FailurePolicy:           new(admissionregistrationv1.Fail),

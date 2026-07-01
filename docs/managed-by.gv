@@ -36,9 +36,9 @@ digraph "managed-by" {
 	"deployment/cluster-network-addons-operator" [label="deployment/cluster-network-addons-operator"]
 	olm [label=olm]
 	olm -> "deployment/cluster-network-addons-operator"
-	"deployment/cnv-network-resources-injector" [label="deployment/cnv-network-resources-injector"]
+	"deployment/virt-network-resources-injector" [label="deployment/virt-network-resources-injector"]
 	"deployment/hco-operator" [label="deployment/hco-operator"]
-	"deployment/hco-operator" -> "deployment/cnv-network-resources-injector"
+	"deployment/hco-operator" -> "deployment/virt-network-resources-injector"
 	"deployment/hco-operator" [label="deployment/hco-operator"]
 	olm [label=olm]
 	olm -> "deployment/hco-operator"

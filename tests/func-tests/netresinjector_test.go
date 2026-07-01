@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	netResInjectorDeploymentName = "cnv-network-resources-injector"
+	netResInjectorDeploymentName = "virt-network-resources-injector"
 )
 
 var _ = Describe("Test Network Resources Injector", Label("NetResInjector"), Serial, Ordered, func() {
