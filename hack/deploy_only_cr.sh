@@ -67,4 +67,7 @@ fi
 
 ${CMD} apply -n kubevirt-hyperconverged -f _out/hco.cr.yaml
 
+# WIP: opt in to virt-platform-autopilot on all CI lanes to measure stability and execution time impact
+${CMD} annotate -n "${HCO_NAMESPACE}" "${HCO_KIND}/${HCO_RESOURCE_NAME}" platform.kubevirt.io/autopilot=true --overwrite
+
 ${CMD} wait -n "${HCO_NAMESPACE}" "${HCO_KIND}" "${HCO_RESOURCE_NAME}" --for condition=Available --timeout="30m"
