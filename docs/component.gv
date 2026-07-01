@@ -5,9 +5,9 @@ digraph component {
 		fontname="Courier-Bold" fontsize=42 group=autopilot label=autopilot rank=same style=dashed
 		"deployment/virt-platform-autopilot" [label="deployment/virt-platform-autopilot"]
 	}
-	subgraph "cluster_cnv-network-resources-injector" {
-		fontname="Courier-Bold" fontsize=42 group="cnv-network-resources-injector" label="cnv-network-resources-injector" rank=same style=dashed
-		"deployment/cnv-network-resources-injector" [label="deployment/cnv-network-resources-injector"]
+	subgraph "cluster_virt-network-resources-injector" {
+		fontname="Courier-Bold" fontsize=42 group="virt-network-resources-injector" label="virt-network-resources-injector" rank=same style=dashed
+		"deployment/virt-network-resources-injector" [label="deployment/virt-network-resources-injector"]
 	}
 	subgraph cluster_compute {
 		fontname="Courier-Bold" fontsize=42 group=compute label=compute rank=same style=dashed
@@ -80,8 +80,8 @@ digraph component {
 		"HyperConverged/kubevirt-hyperconverged" [label="HyperConverged/kubevirt-hyperconverged"]
 	}
 	edge [style=invis]
-	"deployment/virt-platform-autopilot" -> "deployment/cnv-network-resources-injector"
-	"deployment/cnv-network-resources-injector" -> "KubeVirt/kubevirt-kubevirt-hyperconverged"
+	"deployment/virt-platform-autopilot" -> "deployment/virt-network-resources-injector"
+	"deployment/virt-network-resources-injector" -> "KubeVirt/kubevirt-kubevirt-hyperconverged"
 	"KubeVirt/kubevirt-kubevirt-hyperconverged" -> "deployment/hco-operator"
 	"deployment/hco-operator" -> "deployment/inflightoperations-controller-manager"
 	"deployment/inflightoperations-controller-manager" -> "deployment/kubevirt-apiserver-proxy"

@@ -38,7 +38,7 @@ var _ = Describe("Network Resources Injector MutatingWebhookConfiguration", func
 
 			Expect(mwc.Webhooks).To(HaveLen(1))
 			wh := mwc.Webhooks[0]
-			Expect(wh.Name).To(Equal("cnv-network-resources-injector-config.k8s.io"))
+			Expect(wh.Name).To(Equal("virt-network-resources-injector-config.k8s.io"))
 			Expect(wh.AdmissionReviewVersions).To(ConsistOf("v1", "v1beta1"))
 			Expect(wh.FailurePolicy).ToNot(BeNil())
 			Expect(*wh.FailurePolicy).To(Equal(admissionregistrationv1.Fail))
