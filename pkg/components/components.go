@@ -28,7 +28,8 @@ import (
 const DisableOperandDeletionAnnotation = "console.openshift.io/disable-operand-delete"
 
 const (
-	crName = util.HyperConvergedName
+	crName           = util.HyperConvergedName
+	virtioWinVolName = "virtio-win-data"
 )
 
 type DeploymentOperatorParams struct {
@@ -293,10 +294,29 @@ func GetDeploymentSpecCliDownloads(params *DeploymentOperatorParams) appsv1.Depl
 								ContainerPort: util.CliDownloadsServerPort,
 							},
 						},
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								Name:      virtioWinVolName,
+								MountPath: "/home/server/src/virtio-win/virtio-win.iso",
+								SubPath:   "disk/virtio-win.iso",
+								ReadOnly:  true,
+							},
+						},
 						SecurityContext:          GetStdContainerSecurityContext(),
 						ReadinessProbe:           getReadinessProbe("/health", util.CliDownloadsServerPort),
 						LivenessProbe:            getLivenessProbe("/health", util.CliDownloadsServerPort),
 						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+					},
+				},
+				Volumes: []corev1.Volume{
+					{
+						Name: virtioWinVolName,
+						VolumeSource: corev1.VolumeSource{
+							Image: &corev1.ImageVolumeSource{
+								Reference:  params.VirtIOWinContainer,
+								PullPolicy: corev1.PullPolicy(params.ImagePullPolicy),
+							},
+						},
 					},
 				},
 				PriorityClassName: "system-cluster-critical",

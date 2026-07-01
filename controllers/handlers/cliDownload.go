@@ -108,6 +108,10 @@ func NewConsoleCLIDownload() *consolev1.ConsoleCLIDownload {
 					Href: baseURL + "/arm64/windows/virtctl.zip",
 					Text: "Download virtctl for Windows for ARM 64",
 				},
+				{
+					Href: baseURL + "/virtio-win/virtio-win.iso",
+					Text: "Download virtio-win drivers ISO for Microsoft Windows",
+				},
 			},
 		},
 	}

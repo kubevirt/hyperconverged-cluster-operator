@@ -9,7 +9,7 @@ metadata:
     certified: "false"
     console.openshift.io/disable-operand-delete: "true"
     containerImage: quay.io/kubevirt/hyperconverged-cluster-operator:1.19.0-unstable
-    createdAt: "2026-07-12 13:33:50"
+    createdAt: "2026-07-14 14:14:57"
     description: A unified operator deploying and controlling KubeVirt and its supporting
       operators with opinionated defaults
     features.operators.openshift.io/cnf: "false"
@@ -4394,12 +4394,22 @@ spec:
                     drop:
                     - ALL
                 terminationMessagePolicy: FallbackToLogsOnError
+                volumeMounts:
+                - mountPath: /home/server/src/virtio-win/virtio-win.iso
+                  name: virtio-win-data
+                  readOnly: true
+                  subPath: disk/virtio-win.iso
               priorityClassName: system-cluster-critical
               securityContext:
                 runAsNonRoot: true
                 seccompProfile:
                   type: RuntimeDefault
               serviceAccountName: hyperconverged-cluster-cli-download
+              volumes:
+              - image:
+                  pullPolicy: IfNotPresent
+                  reference: quay.io/kubevirt/virtio-container-disk@sha256:6b823946eb7493347a93d6daa16b4101a68e16a0ee1766e01ac3adf82e4b5838
+                name: virtio-win-data
       - label:
           app.kubernetes.io/component: network
           app.kubernetes.io/managed-by: olm
@@ -6157,6 +6167,7 @@ spec:
   - email: kubevirt-dev@googlegroups.com
     name: KubeVirt project
   maturity: alpha
+  minKubeVersion: 1.36.0
   provider:
     name: KubeVirt project
   relatedImages:

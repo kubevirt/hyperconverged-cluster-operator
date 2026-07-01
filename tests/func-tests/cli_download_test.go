@@ -57,7 +57,7 @@ var _ = Describe("[rfe_id:5100][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 
 		Expect(cli.Get(ctx, client.ObjectKeyFromObject(ccd), ccd)).To(Succeed())
 
-		Expect(ccd.Spec.Links).To(HaveLen(7))
+		Expect(ccd.Spec.Links).To(HaveLen(8))
 
 		for _, link := range ccd.Spec.Links {
 			// virtctl for Windows for ARM 64 is still not shipped, avoid checking it
@@ -76,6 +76,45 @@ var _ = Describe("[rfe_id:5100][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 			ExpectWithOffset(1, err).ToNot(HaveOccurred())
 			ExpectWithOffset(1, resp).To(HaveHTTPStatus(http.StatusOK))
 		}
+	})
+
+	It("should expose virtio-win ISO for download", Label("virtio-win"), func(ctx context.Context) {
+		By("Checking that the ConsoleCLIDownload contains a virtio-win link")
+		ccd := &consolev1.ConsoleCLIDownload{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "virtctl-clidownloads-kubevirt-hyperconverged",
+			},
+		}
+		Expect(cli.Get(ctx, client.ObjectKeyFromObject(ccd), ccd)).To(Succeed())
+
+		var virtioWinLink string
+		for _, link := range ccd.Spec.Links {
+			if strings.Contains(link.Href, "virtio-win") {
+				virtioWinLink = link.Href
+				break
+			}
+		}
+		Expect(virtioWinLink).ToNot(BeEmpty(), "expected a virtio-win download link in ConsoleCLIDownload")
+
+		By("Initiating download of the virtio-win ISO from: " + virtioWinLink)
+		httpClient := &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+			Timeout: 30 * time.Second,
+		}
+		resp, err := httpClient.Head(virtioWinLink)
+		Expect(err).ToNot(HaveOccurred())
+		defer resp.Body.Close()
+
+		Expect(resp).To(HaveHTTPStatus(http.StatusOK))
+		Expect(resp.Header.Get("Content-Type")).To(
+			SatisfyAny(
+				ContainSubstring("application/octet-stream"),
+				ContainSubstring("application/x-iso9660-image"),
+			),
+		)
+		Expect(resp.ContentLength).To(BeNumerically(">", 0), "virtio-win ISO should have a non-zero content length")
 	})
 
 	Context("URL Download customization", func() {
@@ -133,7 +172,7 @@ var _ = Describe("[rfe_id:5100][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 				ccd := &consolev1.ConsoleCLIDownload{}
 
 				g.Expect(cli.Get(ctx, ccdKey, ccd)).To(Succeed())
-				g.Expect(ccd.Spec.Links).To(HaveLen(7))
+				g.Expect(ccd.Spec.Links).To(HaveLen(8))
 				for _, link := range ccd.Spec.Links {
 					// virtctl for Windows for ARM 64 is still not shipped, avoid checking it
 					// TODO: remove this once ready
