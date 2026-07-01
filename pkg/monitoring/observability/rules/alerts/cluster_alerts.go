@@ -15,6 +15,8 @@ const (
 	IFF_UP       = 1
 	IFF_RUNNING  = 64
 	IFF_LOWER_UP = 65536
+
+	kubevirtComponentLabelValue = "kubevirt"
 )
 
 var ignoredInterfacesForNetworkDown = []string{
@@ -116,6 +118,34 @@ func clusterAlerts() []promv1.Rule {
 			Labels: map[string]string{
 				"severity":               "warning",
 				"operator_health_impact": "none",
+			},
+		},
+		{
+			Alert: "VMNonRecoverableOSPanic",
+			Expr:  intstr.FromString(`sum by (namespace, name) (increase(kubevirt_vmi_guest_os_panic_total[24h])) > 0 and sum by (namespace, name) (increase(kubevirt_vmi_guest_os_panic_total[24h])) <= 5`),
+			For:   ptr.To[promv1.Duration]("1m"),
+			Annotations: map[string]string{
+				"summary":     "VM {{ $labels.name }} in namespace {{ $labels.namespace }} experienced a non-recoverable guest OS panic",
+				"description": "The VM has experienced {{ $value }} non-recoverable guest OS panic(s) in the last 24 hours.",
+			},
+			Labels: map[string]string{
+				"severity":                      "warning",
+				"operator_health_impact":        "none",
+				"kubernetes_operator_component": kubevirtComponentLabelValue,
+			},
+		},
+		{
+			Alert: "ClusterVMPanicDetected",
+			Expr:  intstr.FromString(`count(sum by (namespace, name) (increase(kubevirt_vmi_guest_os_panic_total[24h])) > 0) > 0`),
+			For:   ptr.To[promv1.Duration]("5m"),
+			Annotations: map[string]string{
+				"summary":     "VMs experienced non-recoverable guest OS panics in the last 24 hours",
+				"description": "{{ $value }} VM(s) across the cluster have experienced non-recoverable guest OS panics in the last 24 hours. This may indicate a cluster-wide infrastructure issue.",
+			},
+			Labels: map[string]string{
+				"severity":                      "warning",
+				"operator_health_impact":        "none",
+				"kubernetes_operator_component": kubevirtComponentLabelValue,
 			},
 		},
 		{
