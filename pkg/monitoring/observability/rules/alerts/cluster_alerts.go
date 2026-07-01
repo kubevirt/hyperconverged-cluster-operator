@@ -119,6 +119,19 @@ func clusterAlerts() []promv1.Rule {
 			},
 		},
 		{
+			Alert: "VMNonRecoverableOSPanic",
+			Expr:  intstr.FromString(`sum by (namespace, name) (increase(kubevirt_vmi_guest_os_panic_total[24h])) > 0`),
+			For:   ptr.To[promv1.Duration]("1m"),
+			Annotations: map[string]string{
+				"summary":     "Non-recoverable guest OS panic detected on VM {{ $labels.name }} in namespace {{ $labels.namespace }}",
+				"description": "At least one non-recoverable guest OS panic has been detected on the VM in the last 24 hours ({{ $value }} total).",
+			},
+			Labels: map[string]string{
+				"severity":               "warning",
+				"operator_health_impact": "none",
+			},
+		},
+		{
 			Alert: "DuplicateWaspAgentDSDetected",
 			Expr: intstr.FromString(
 				`count(kube_daemonset_metadata_generation{namespace="wasp",daemonset="wasp-agent"}) > 0

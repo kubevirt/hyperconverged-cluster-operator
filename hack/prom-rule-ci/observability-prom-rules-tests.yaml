@@ -446,6 +446,31 @@ tests:
               kubernetes_operator_part_of: "kubevirt"
               kubernetes_operator_component: "cnv-observability"
 
+  # VM non-recoverable OS panic
+  - interval: 1m
+    input_series:
+      - series: 'kubevirt_vmi_guest_os_panic_total{namespace="test", name="vm-01", type="pvpanic", bugcheck_code="unknown"}'
+        values: '0 0 1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: VMNonRecoverableOSPanic
+        exp_alerts: []
+      - eval_time: 4m
+        alertname: VMNonRecoverableOSPanic
+        exp_alerts:
+          - exp_annotations:
+              summary: "Non-recoverable guest OS panic detected on VM vm-01 in namespace test"
+              description: "At least one non-recoverable guest OS panic has been detected on the VM in the last 24 hours (1 total)."
+              runbook_url: "https://kubevirt.io/monitoring/runbooks/VMNonRecoverableOSPanic"
+            exp_labels:
+              severity: "warning"
+              operator_health_impact: "none"
+              kubernetes_operator_part_of: "kubevirt"
+              kubernetes_operator_component: "cnv-observability"
+              namespace: "test"
+              name: "vm-01"
+
   - interval: 1m
     input_series:
       - series: 'kubevirt_hco_memory_overcommit_percentage'
