@@ -40,10 +40,6 @@ func convert_v1beta1_FeatureGates_To_v1(in *HyperConvergedFeatureGates, out *hco
 		out.Enable("declarativeHotplugVolumes")
 	}
 
-	if !ptr.Deref(in.VideoConfig, true) {
-		out.Disable("videoConfig")
-	}
-
 	if ptr.Deref(in.ObjectGraph, false) {
 		out.Enable("objectGraph")
 	}
@@ -65,7 +61,6 @@ func convert_v1_FeatureGates_To_v1beta1(in hcofg.HyperConvergedFeatureGates, out
 	out.EnableMultiArchBootImageImport = ptr.To(in.IsEnabled("enableMultiArchBootImageImport"))
 	out.DecentralizedLiveMigration = ptr.To(in.IsEnabled("decentralizedLiveMigration"))
 	out.DeclarativeHotplugVolumes = ptr.To(in.IsEnabled("declarativeHotplugVolumes"))
-	out.VideoConfig = ptr.To(in.IsEnabled("videoConfig"))
 	out.ObjectGraph = ptr.To(in.IsEnabled("objectGraph"))
 	out.IncrementalBackup = ptr.To(in.IsEnabled("incrementalBackup"))
 	out.ContainerPathVolumes = ptr.To(in.IsEnabled("containerPathVolumes"))

@@ -136,7 +136,6 @@ const (
 	kvPersistentReservation      = "PersistentReservation"
 	kvAlignCPUs                  = "AlignCPUs"
 	kvDecentralizedLiveMigration = "DecentralizedLiveMigration"
-	kvVideoConfig                = "VideoConfig"
 	kvObjectGraph                = "ObjectGraph"
 	kvUtilityVolumes             = "UtilityVolumes"
 	kvIncrementalBackup          = "IncrementalBackup"
@@ -925,10 +924,6 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 	if featureGates.IsEnabled("alignCPUs") {
 		fgs = append(fgs, kvAlignCPUs)
 	}
-	if featureGates.IsEnabled("videoConfig") {
-		fgs = append(fgs, kvVideoConfig)
-	}
-
 	if featureGates.IsEnabled("objectGraph") {
 		fgs = append(fgs, kvObjectGraph)
 	}
