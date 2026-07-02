@@ -332,4 +332,39 @@ var _ = Describe("Feature Gates", func() {
 			Expect(fgs).To(ContainElement(Equal(featuregates.FeatureGate{Name: "ccc", State: ptr.To(featuregates.Disabled)})))
 		})
 	})
+
+	Context("check IsExplicitlyEnabled", func() {
+		It("should not find if the list is nil", func() {
+			var fgs featuregates.HyperConvergedFeatureGates
+
+			enabled, found := fgs.IsExplicitlyEnabled("aFeatureGateName")
+			Expect(enabled).To(BeFalse())
+			Expect(found).To(BeFalse())
+		})
+
+		It("should not find if the list is empty", func() {
+			fgs := featuregates.HyperConvergedFeatureGates{}
+
+			enabled, found := fgs.IsExplicitlyEnabled("aFeatureGateName")
+			Expect(enabled).To(BeFalse())
+			Expect(found).To(BeFalse())
+		})
+
+		DescribeTable("should", func(fgName string, expectedEnabled, expectedFound bool) {
+			fgs := featuregates.HyperConvergedFeatureGates{
+				{Name: "implicitlyEnabled"},
+				{Name: "explicitlyEnabled", State: new(featuregates.Enabled)},
+				{Name: "disabled", State: new(featuregates.Disabled)},
+			}
+
+			enabled, found := fgs.IsExplicitlyEnabled(fgName)
+			Expect(enabled).To(Equal(expectedEnabled))
+			Expect(found).To(Equal(expectedFound))
+		},
+			Entry("not find if the fg is not in the list", "notFoundFG", false, false),
+			Entry("find if the fg is implicitly enabled", "implicitlyEnabled", true, true),
+			Entry("find if the fg is explicitly enabled", "explicitlyEnabled", true, true),
+			Entry("find if the fg is disabled", "disabled", false, true),
+		)
+	})
 })

@@ -70,18 +70,18 @@ func (fg *FeatureGate) UnmarshalJSON(bytes []byte) error {
 // +k8s:deepcopy-gen=false
 type HyperConvergedFeatureGates []FeatureGate
 
+// Enable enables a feature gate by its name
 func (fgs *HyperConvergedFeatureGates) Enable(name string) {
 	fgs.set(name, Enabled)
 }
 
+// Disable disables a feature gate by its name
 func (fgs *HyperConvergedFeatureGates) Disable(name string) {
 	fgs.set(name, Disabled)
 }
 
 func (fgs *HyperConvergedFeatureGates) set(name string, enabled State) {
-	idx := slices.IndexFunc(*fgs, func(item FeatureGate) bool {
-		return item.Name == name
-	})
+	idx := fgs.index(name)
 
 	if idx == -1 {
 		*fgs = append(*fgs, FeatureGate{Name: name, State: &enabled})
@@ -91,6 +91,15 @@ func (fgs *HyperConvergedFeatureGates) set(name string, enabled State) {
 	(*fgs)[idx].State = &enabled
 }
 
+// IsEnabled return true if the feature gate is enabled
+//   - If the feature gate is GA, it's always enabled.
+//   - If the feature gate is discontinued, it's always disabled.
+//   - If the feature gate is in beta, alpha or deprecated phases, then
+//     if the feature gate is in the list, it's enabled if its state
+//     is missing, or equal to "Enabled".
+//     if the feature gate is not in the list, then the default state is used:
+//     alpha and deprecated feature gates are disabled by default
+//     beta feature gates are enabled by default
 func (fgs *HyperConvergedFeatureGates) IsEnabled(name string) bool {
 	phase, fgExist := featuregatedetails.GetFeatureGatePhase(name)
 	if !fgExist { // unsupported feature gate, even if it is in the featureGate list
@@ -109,13 +118,26 @@ func (fgs *HyperConvergedFeatureGates) IsEnabled(name string) bool {
 		return false
 	}
 
-	idx := slices.IndexFunc(*fgs, func(fg FeatureGate) bool {
-		return fg.Name == name
-	})
-
-	if idx > -1 {
+	if idx := fgs.index(name); idx > -1 {
 		state = ptr.Deref((*fgs)[idx].State, Enabled)
 	}
 
 	return state == Enabled
+}
+
+// IsExplicitlyEnabled checks if a feature gate is explicitly set in the feature gate list
+func (fgs *HyperConvergedFeatureGates) IsExplicitlyEnabled(name string) (enabled bool, found bool) {
+	idx := fgs.index(name)
+
+	if idx < 0 {
+		return false, false
+	}
+
+	return ptr.Deref((*fgs)[idx].State, Enabled) == Enabled, true
+}
+
+func (fgs *HyperConvergedFeatureGates) index(name string) int {
+	return slices.IndexFunc(*fgs, func(fg FeatureGate) bool {
+		return fg.Name == name
+	})
 }
