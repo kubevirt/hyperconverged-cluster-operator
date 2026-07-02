@@ -18,14 +18,21 @@ import (
 
 const v1OnlyFieldAnnotation = APIVersionGroup + "/v1-only-fields"
 
+const DisableMDevConfigurationFG = "disableMDevConfiguration"
+
 type v1OnlyFields struct {
 	DeployNetworkResourcesInjector *bool `json:"deployNetworkResourcesInjector,omitempty"`
+	MDevConfigEnable               *bool `json:"mdevConfigEnable,omitempty"`
+	DisableMDevConfigurationFG     *bool `json:"disableMDevConfigurationFG,omitempty"`
 }
 
 // Implement the conversion.Convertible interface, to be used in the conversion webhook.
 
 func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error { //revive:disable:receiver-naming
 	dst := dstRaw.(*hcov1.HyperConverged)
+	if err := restoreV1OnlyFields(src, dst); err != nil {
+		return err
+	}
 
 	if err := Convert_v1beta1_HyperConverged_To_v1_HyperConverged(src, dst, nil); err != nil {
 		return fmt.Errorf("failed to convert HyperConverged from v1beta1 to v1; %w", err)
@@ -39,7 +46,7 @@ func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error { //revive:dis
 		return fmt.Errorf("failed to convert HyperConverged's spec.virtualization from v1beta1 to v1; %w", err)
 	}
 
-	convertMDevEnabledV1beta1ToV1(src.Spec, &dst.Spec.Virtualization)
+	convertMDevEnabledV1beta1ToV1(src.Spec, &dst.Spec)
 
 	dst.Spec.Storage = convertStorageV1beta1ToV1(src.Spec)
 
@@ -53,7 +60,7 @@ func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error { //revive:dis
 		return fmt.Errorf("failed to convert HyperConverged's spec.deployment from v1beta1 to v1; %w", err)
 	}
 
-	return restoreV1OnlyFields(src, dst)
+	return nil
 }
 
 func (dst *HyperConverged) ConvertFrom(srcRaw conversion.Hub) error { //revive:disable:receiver-naming
@@ -221,7 +228,10 @@ func convertVirtualizationV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1VirtConf
 	}
 
 	if v1beta1Spec.MediatedDevicesConfiguration != nil {
-		v1VirtConfig.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{}
+		if v1VirtConfig.MediatedDevicesConfiguration == nil {
+			v1VirtConfig.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{}
+		}
+
 		if err := converter.Convert(v1beta1Spec.MediatedDevicesConfiguration, v1VirtConfig.MediatedDevicesConfiguration, converter.DefaultMeta(reflect.TypeOf(&hcov1.MediatedDevicesConfiguration{}))); err != nil {
 			return err
 		}
@@ -517,6 +527,8 @@ func restoreV1OnlyFields(src *HyperConverged, dst *hcov1.HyperConverged) error {
 		return nil
 	}
 
+	delete(src.Annotations, v1OnlyFieldAnnotation)
+
 	var v1Fields v1OnlyFields
 	err := json.Unmarshal([]byte(v1FieldStr), &v1Fields)
 	if err != nil {
@@ -527,7 +539,21 @@ func restoreV1OnlyFields(src *HyperConverged, dst *hcov1.HyperConverged) error {
 		dst.Spec.Deployment.DeployNetworkResourcesInjector = new(*v1Fields.DeployNetworkResourcesInjector)
 	}
 
-	delete(dst.Annotations, v1OnlyFieldAnnotation)
+	if v1Fields.MDevConfigEnable != nil {
+		if dst.Spec.Virtualization.MediatedDevicesConfiguration == nil {
+			dst.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{}
+		}
+
+		dst.Spec.Virtualization.MediatedDevicesConfiguration.Enabled = new(*v1Fields.MDevConfigEnable)
+	}
+
+	if v1Fields.DisableMDevConfigurationFG != nil {
+		if *v1Fields.DisableMDevConfigurationFG {
+			dst.Spec.FeatureGates.Enable(DisableMDevConfigurationFG)
+		} else {
+			dst.Spec.FeatureGates.Disable(DisableMDevConfigurationFG)
+		}
+	}
 
 	return nil
 }
@@ -535,6 +561,14 @@ func restoreV1OnlyFields(src *HyperConverged, dst *hcov1.HyperConverged) error {
 func storeV1OnlyFields(src *hcov1.HyperConverged, dst *HyperConverged) error {
 	v1Fields := v1OnlyFields{
 		DeployNetworkResourcesInjector: src.Spec.Deployment.DeployNetworkResourcesInjector,
+	}
+
+	if src.Spec.Virtualization.MediatedDevicesConfiguration != nil {
+		v1Fields.MDevConfigEnable = src.Spec.Virtualization.MediatedDevicesConfiguration.Enabled
+	}
+
+	if fgEnabled, fgFound := src.Spec.FeatureGates.IsExplicitlyEnabled(DisableMDevConfigurationFG); fgFound {
+		v1Fields.DisableMDevConfigurationFG = new(fgEnabled)
 	}
 
 	if v1Fields == (v1OnlyFields{}) {
@@ -589,18 +623,24 @@ func setPtr[T comparable](orig *T) *T {
 
 // convertMDevEnabledV1beta1ToV1 maps the deprecated v1beta1 disableMDevConfiguration
 // feature gate to v1 spec.virtualization.mediatedDevicesConfiguration.enabled.
-func convertMDevEnabledV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1VirtConfig *hcov1.VirtualizationConfig) {
-	fg := v1beta1Spec.FeatureGates.DisableMDevConfiguration
-	if fg == nil {
+func convertMDevEnabledV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1Spec *hcov1.HyperConvergedSpec) {
+	v1beta1FG := v1beta1Spec.FeatureGates.DisableMDevConfiguration
+	if v1beta1FG == nil {
 		return
 	}
 
-	if v1VirtConfig.MediatedDevicesConfiguration == nil {
-		v1VirtConfig.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{}
+	if v1Spec.Virtualization.MediatedDevicesConfiguration == nil {
+		v1Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{}
 	}
 
-	if v1VirtConfig.MediatedDevicesConfiguration.Enabled == nil {
-		v1VirtConfig.MediatedDevicesConfiguration.Enabled = new(!*fg)
+	v1Spec.Virtualization.MediatedDevicesConfiguration.Enabled = new(!*v1beta1FG)
+
+	if v1FGEnabled, v1FGExists := v1Spec.FeatureGates.IsExplicitlyEnabled(DisableMDevConfigurationFG); v1FGExists && v1FGEnabled != *v1beta1FG {
+		if *v1beta1FG {
+			v1Spec.FeatureGates.Enable(DisableMDevConfigurationFG)
+		} else {
+			v1Spec.FeatureGates.Disable(DisableMDevConfigurationFG)
+		}
 	}
 }
 

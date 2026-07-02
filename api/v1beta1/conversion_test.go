@@ -1,12 +1,14 @@
 package v1beta1
 
 import (
+	"fmt"
 	"slices"
 	"testing"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	gomegatypes "github.com/onsi/gomega/types"
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -524,21 +526,21 @@ var _ = Describe("api/v1beta1", func() {
 
 	Context("MDev enabled conversion", func() {
 		Context("v1beta1 to v1", func() {
-			It("should map disableMDevConfiguration=true to enabled=false when enabled is unset", func() {
+			It("should convert disableMDevConfiguration=true to enabled=false when enabled is unset", func() {
 				v1beta1Spec := HyperConvergedSpec{
 					FeatureGates: HyperConvergedFeatureGates{
 						DisableMDevConfiguration: new(true),
 					},
 				}
-				v1VirtConfig := hcov1.VirtualizationConfig{}
+				v1Spec := hcov1.HyperConvergedSpec{Virtualization: hcov1.VirtualizationConfig{}}
 
-				convertMDevEnabledV1beta1ToV1(v1beta1Spec, &v1VirtConfig)
+				convertMDevEnabledV1beta1ToV1(v1beta1Spec, &v1Spec)
 
-				Expect(v1VirtConfig.MediatedDevicesConfiguration).ToNot(BeNil())
-				Expect(v1VirtConfig.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeFalse()))
+				Expect(v1Spec.Virtualization.MediatedDevicesConfiguration).ToNot(BeNil())
+				Expect(v1Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeFalse()))
 			})
 
-			It("should map disableMDevConfiguration=false to enabled=true when enabled is unset", func() {
+			It("should convert disableMDevConfiguration=false to enabled=true when enabled is unset", func() {
 				v1beta1Spec := HyperConvergedSpec{
 					FeatureGates: HyperConvergedFeatureGates{
 						DisableMDevConfiguration: new(false),
@@ -547,33 +549,75 @@ var _ = Describe("api/v1beta1", func() {
 						MediatedDeviceTypes: []string{"nvidia-222"},
 					},
 				}
-				v1VirtConfig := hcov1.VirtualizationConfig{
-					MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
-						MediatedDeviceTypes: []string{"nvidia-222"},
+				v1Spec := hcov1.HyperConvergedSpec{
+					Virtualization: hcov1.VirtualizationConfig{
+						MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+							MediatedDeviceTypes: []string{"nvidia-222"},
+						},
 					},
 				}
 
-				convertMDevEnabledV1beta1ToV1(v1beta1Spec, &v1VirtConfig)
+				convertMDevEnabledV1beta1ToV1(v1beta1Spec, &v1Spec)
 
-				Expect(v1VirtConfig.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeTrue()))
+				Expect(v1Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeTrue()))
 			})
 
-			It("should not override enabled when already set", func() {
+			It("should override enabled=true when the FG is true", func() {
 				v1beta1Spec := HyperConvergedSpec{
 					FeatureGates: HyperConvergedFeatureGates{
 						DisableMDevConfiguration: new(true),
 					},
 				}
-				v1VirtConfig := hcov1.VirtualizationConfig{
-					MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
-						Enabled:             new(true),
-						MediatedDeviceTypes: []string{"nvidia-222"},
+				v1VSpec := hcov1.HyperConvergedSpec{
+					Virtualization: hcov1.VirtualizationConfig{
+						MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+							Enabled:             new(true),
+							MediatedDeviceTypes: []string{"nvidia-222"},
+						},
 					},
 				}
 
-				convertMDevEnabledV1beta1ToV1(v1beta1Spec, &v1VirtConfig)
+				convertMDevEnabledV1beta1ToV1(v1beta1Spec, &v1VSpec)
 
-				Expect(v1VirtConfig.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeTrue()))
+				Expect(v1VSpec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeFalse()))
+			})
+
+			It("should override enabled=false when the FG is false", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					FeatureGates: HyperConvergedFeatureGates{
+						DisableMDevConfiguration: new(false),
+					},
+				}
+				v1Spec := hcov1.HyperConvergedSpec{
+					Virtualization: hcov1.VirtualizationConfig{
+						MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+							Enabled:             new(false),
+							MediatedDeviceTypes: []string{"nvidia-222"},
+						},
+					},
+				}
+
+				convertMDevEnabledV1beta1ToV1(v1beta1Spec, &v1Spec)
+
+				Expect(v1Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeTrue()))
+			})
+
+			It("should not override enabled=false when the FG is not set", func() {
+				v1beta1Spec := HyperConvergedSpec{
+					FeatureGates: HyperConvergedFeatureGates{},
+				}
+				v1Spec := hcov1.HyperConvergedSpec{
+					Virtualization: hcov1.VirtualizationConfig{
+						MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+							Enabled:             new(true),
+							MediatedDeviceTypes: []string{"nvidia-222"},
+						},
+					},
+				}
+
+				convertMDevEnabledV1beta1ToV1(v1beta1Spec, &v1Spec)
+
+				Expect(v1Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeTrue()))
 			})
 
 			It("should do nothing when disableMDevConfiguration is unset", func() {
@@ -582,20 +626,22 @@ var _ = Describe("api/v1beta1", func() {
 						MediatedDeviceTypes: []string{"nvidia-222"},
 					},
 				}
-				v1VirtConfig := hcov1.VirtualizationConfig{
-					MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
-						MediatedDeviceTypes: []string{"nvidia-222"},
+				v1Spec := hcov1.HyperConvergedSpec{
+					Virtualization: hcov1.VirtualizationConfig{
+						MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+							MediatedDeviceTypes: []string{"nvidia-222"},
+						},
 					},
 				}
 
-				convertMDevEnabledV1beta1ToV1(v1beta1Spec, &v1VirtConfig)
+				convertMDevEnabledV1beta1ToV1(v1beta1Spec, &v1Spec)
 
-				Expect(v1VirtConfig.MediatedDevicesConfiguration.Enabled).To(BeNil())
+				Expect(v1Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(BeNil())
 			})
 		})
 
 		Context("v1 to v1beta1", func() {
-			It("should map enabled=false to disableMDevConfiguration=true", func() {
+			It("should convert enabled=false to v1beta1 disableMDevConfiguration FG = true", func() {
 				v1VirtConfig := hcov1.VirtualizationConfig{
 					MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
 						Enabled:             new(false),
@@ -609,7 +655,7 @@ var _ = Describe("api/v1beta1", func() {
 				Expect(v1beta1Spec.FeatureGates.DisableMDevConfiguration).To(HaveValue(BeTrue()))
 			})
 
-			It("should map enabled=true to disableMDevConfiguration=false", func() {
+			It("should convert enabled=true to the v1beta1 disableMDevConfiguration FG", func() {
 				v1VirtConfig := hcov1.VirtualizationConfig{
 					MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
 						Enabled:             new(true),
@@ -623,7 +669,7 @@ var _ = Describe("api/v1beta1", func() {
 				Expect(v1beta1Spec.FeatureGates.DisableMDevConfiguration).To(HaveValue(BeFalse()))
 			})
 
-			It("should do nothing when enabled is unset", func() {
+			It("should not convert to the v1beta1 disableMDevConfiguration FG when enabled is unset", func() {
 				v1VirtConfig := hcov1.VirtualizationConfig{
 					MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
 						MediatedDeviceTypes: []string{"nvidia-222"},
@@ -646,15 +692,12 @@ var _ = Describe("api/v1beta1", func() {
 			})
 		})
 
-		Context("ConvertTo and ConvertFrom", func() {
-			It("should map disableMDevConfiguration to enabled on ConvertTo", func() {
+		Context("ConvertTo()", func() {
+			DescribeTable("should convert v1beta1 disableMDevConfiguration to v1 enabled, if not set", func(v1beta1FG bool, matcher gomegatypes.GomegaMatcher) {
 				src := &HyperConverged{
 					Spec: HyperConvergedSpec{
 						FeatureGates: HyperConvergedFeatureGates{
-							DisableMDevConfiguration: new(true),
-						},
-						MediatedDevicesConfiguration: &MediatedDevicesConfiguration{
-							MediatedDeviceTypes: []string{"nvidia-222"},
+							DisableMDevConfiguration: new(v1beta1FG),
 						},
 					},
 				}
@@ -663,17 +706,226 @@ var _ = Describe("api/v1beta1", func() {
 				Expect(src.ConvertTo(dst)).To(Succeed())
 
 				Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration).ToNot(BeNil())
-				Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeFalse()))
-				Expect(dst.Spec.FeatureGates.IsEnabled("disableMDevConfiguration")).To(BeFalse())
-			})
+				Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(matcher))
+			},
+				Entry("when the v1beta1 FG is true", true, BeFalse()),
+				Entry("when the v1beta1 FG is false", false, BeTrue()),
+			)
 
-			It("should map enabled to disableMDevConfiguration on ConvertFrom", func() {
+			DescribeTableSubtree("should convert v1beta1 disableMDevConfiguration to v1 enabled, if set", func(v1Field, v1beta1FG bool) {
+				annotation := fmt.Sprintf(`{"mdevConfigEnable": %t}`, v1Field)
+
+				It("just make sure the annotation works", func() {
+					src := &HyperConverged{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{
+								v1OnlyFieldAnnotation: annotation,
+							},
+						},
+					}
+					dst := &hcov1.HyperConverged{}
+
+					Expect(src.ConvertTo(dst)).To(Succeed())
+
+					Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration).ToNot(BeNil())
+					Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(Equal(v1Field)))
+				})
+
+				It("should modify the v1 field", func() {
+					src := &HyperConverged{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{
+								v1OnlyFieldAnnotation: annotation,
+							},
+						},
+						Spec: HyperConvergedSpec{
+							FeatureGates: HyperConvergedFeatureGates{
+								DisableMDevConfiguration: new(v1beta1FG),
+							},
+						},
+					}
+					dst := &hcov1.HyperConverged{}
+
+					Expect(src.ConvertTo(dst)).To(Succeed())
+
+					Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration).ToNot(BeNil())
+					Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(Equal(!v1beta1FG)))
+				})
+			},
+				Entry("when the v1 field is true and the v1beta1 FG is true", true, true),
+				Entry("when the v1 field is false and the v1beta1 FG is true", false, true),
+				Entry("when the v1 field is true and the v1beta1 FG is false", true, false),
+				Entry("when the v1 field is false and the v1beta1 FG is false", false, false),
+			)
+
+			DescribeTableSubtree("should convert v1beta1 disableMDevConfiguration to v1 FG, if FG set", func(v1FG, v1beta1FG bool) {
+				annotation := fmt.Sprintf(`{"disableMDevConfigurationFG": %t}`, v1FG)
+
+				It("just make sure the annotation works", func() {
+					src := &HyperConverged{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{
+								v1OnlyFieldAnnotation: annotation,
+							},
+						},
+					}
+					dst := &hcov1.HyperConverged{}
+
+					Expect(src.ConvertTo(dst)).To(Succeed())
+
+					enabled, found := dst.Spec.FeatureGates.IsExplicitlyEnabled(DisableMDevConfigurationFG)
+					Expect(found).To(BeTrue())
+					Expect(enabled).To(Equal(v1FG))
+				})
+
+				It("should modify the v1 FG", func() {
+					src := &HyperConverged{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{
+								v1OnlyFieldAnnotation: annotation,
+							},
+						},
+						Spec: HyperConvergedSpec{
+							FeatureGates: HyperConvergedFeatureGates{
+								DisableMDevConfiguration: new(v1beta1FG),
+							},
+						},
+					}
+					dst := &hcov1.HyperConverged{}
+
+					Expect(src.ConvertTo(dst)).To(Succeed())
+
+					Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration).ToNot(BeNil())
+					Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(Equal(!v1beta1FG)))
+
+					enabled, found := dst.Spec.FeatureGates.IsExplicitlyEnabled(DisableMDevConfigurationFG)
+					Expect(found).To(BeTrue())
+					Expect(enabled).To(Equal(v1beta1FG))
+				})
+			},
+				Entry("when the v1 field is true and the v1beta1 FG is true", true, true),
+				Entry("when the v1 field is false and the v1beta1 FG is true", false, true),
+				Entry("when the v1 field is true and the v1beta1 FG is false", true, false),
+				Entry("when the v1 field is false and the v1beta1 FG is false", false, false),
+			)
+
+			DescribeTableSubtree("should convert v1beta1 FG to v1 FG, if set, and override the v1 enabled field", func(v1Enabled, v1FG, v1beta1FG bool) {
+				annotation := fmt.Sprintf(`{"mdevConfigEnable": %t, "disableMDevConfigurationFG": %t}`, v1Enabled, v1FG)
+
+				It("just make sure the annotation works", func() {
+					src := &HyperConverged{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{
+								v1OnlyFieldAnnotation: annotation,
+							},
+						},
+					}
+					dst := &hcov1.HyperConverged{}
+
+					Expect(src.ConvertTo(dst)).To(Succeed())
+
+					Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration).ToNot(BeNil())
+					Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(Equal(v1Enabled)))
+
+					enabled, found := dst.Spec.FeatureGates.IsExplicitlyEnabled(DisableMDevConfigurationFG)
+					Expect(found).To(BeTrue())
+					Expect(enabled).To(Equal(v1FG))
+				})
+
+				It("should modify the v1 FG and the v1 Enabled field", func() {
+					src := &HyperConverged{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{
+								v1OnlyFieldAnnotation: annotation,
+							},
+						},
+						Spec: HyperConvergedSpec{
+							FeatureGates: HyperConvergedFeatureGates{
+								DisableMDevConfiguration: new(v1beta1FG),
+							},
+						},
+					}
+					dst := &hcov1.HyperConverged{}
+
+					Expect(src.ConvertTo(dst)).To(Succeed())
+
+					Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration).ToNot(BeNil())
+					Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(Equal(!v1beta1FG)))
+
+					enabled, found := dst.Spec.FeatureGates.IsExplicitlyEnabled(DisableMDevConfigurationFG)
+					Expect(found).To(BeTrue())
+					Expect(enabled).To(Equal(v1beta1FG))
+				})
+			},
+				Entry("when the v1 field is true, v1 enabled is true, and the v1beta1 FG is true", true, true, true),
+				Entry("when the v1 field is false, v1 enabled is true, and the v1beta1 FG is true", false, true, true),
+				Entry("when the v1 field is true, v1 enabled is false, and the v1beta1 FG is true", true, false, true),
+				Entry("when the v1 field is false, v1 enabled is false, and the v1beta1 FG is true", false, false, true),
+				Entry("when the v1 field is true, v1 enabled is true, and the v1beta1 FG is false", true, true, false),
+				Entry("when the v1 field is false, v1 enabled is true, and the v1beta1 FG is false", false, true, false),
+				Entry("when the v1 field is true, v1 enabled is false, and the v1beta1 FG is false", true, false, false),
+				Entry("when the v1 field is false, v1 enabled is false, and the v1beta1 FG is false", false, false, false),
+			)
+
+			DescribeTableSubtree("should convert v1beta1 FG to v1 enabled, if FG set", func(v1FG bool, v1beta1FG bool) {
+				annotation := fmt.Sprintf(`{"disableMDevConfigurationFG": %t}`, v1FG)
+
+				It("just make sure the annotation works", func() {
+					src := &HyperConverged{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{
+								v1OnlyFieldAnnotation: annotation,
+							},
+						},
+					}
+					dst := &hcov1.HyperConverged{}
+
+					Expect(src.ConvertTo(dst)).To(Succeed())
+
+					enabled, found := dst.Spec.FeatureGates.IsExplicitlyEnabled(DisableMDevConfigurationFG)
+					Expect(found).To(BeTrue())
+					Expect(enabled).To(Equal(v1FG))
+				})
+
+				It("should modify the v1 FG", func() {
+					src := &HyperConverged{
+						ObjectMeta: metav1.ObjectMeta{
+							Annotations: map[string]string{
+								v1OnlyFieldAnnotation: annotation,
+							},
+						},
+						Spec: HyperConvergedSpec{
+							FeatureGates: HyperConvergedFeatureGates{
+								DisableMDevConfiguration: new(v1beta1FG),
+							},
+						},
+					}
+					dst := &hcov1.HyperConverged{}
+
+					Expect(src.ConvertTo(dst)).To(Succeed())
+
+					Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration).ToNot(BeNil())
+					Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(Equal(!v1beta1FG)))
+
+					enabled, found := dst.Spec.FeatureGates.IsExplicitlyEnabled(DisableMDevConfigurationFG)
+					Expect(found).To(BeTrue())
+					Expect(enabled).To(Equal(v1beta1FG))
+				})
+			},
+				Entry("when the v1 field is true and the v1beta1 FG is true", true, true),
+				Entry("when the v1 field is false and the v1beta1 FG is true", false, true),
+				Entry("when the v1 field is true and the v1beta1 FG is false", true, false),
+				Entry("when the v1 field is false and the v1beta1 FG is false", false, false),
+			)
+		})
+
+		Context("ConvertFrom()", func() {
+			It("should convert enabled=false to disableMDevConfiguration", func() {
 				src := &hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
 						Virtualization: hcov1.VirtualizationConfig{
 							MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
-								Enabled:             new(false),
-								MediatedDeviceTypes: []string{"nvidia-222"},
+								Enabled: new(false),
 							},
 						},
 					},
@@ -685,28 +937,81 @@ var _ = Describe("api/v1beta1", func() {
 				Expect(dst.Spec.FeatureGates.DisableMDevConfiguration).To(HaveValue(BeTrue()))
 			})
 
-			It("should preserve enabled through round-trip", func() {
-				original := &HyperConverged{
-					Spec: HyperConvergedSpec{
-						FeatureGates: HyperConvergedFeatureGates{
-							DisableMDevConfiguration: new(true),
-						},
-						MediatedDevicesConfiguration: &MediatedDevicesConfiguration{
-							MediatedDeviceTypes: []string{"nvidia-222"},
+			It("should convert enabled=true", func() {
+				src := &hcov1.HyperConverged{
+					Spec: hcov1.HyperConvergedSpec{
+						Virtualization: hcov1.VirtualizationConfig{
+							MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+								Enabled: new(true),
+							},
 						},
 					},
 				}
+				dst := &HyperConverged{}
 
-				v1hco := &hcov1.HyperConverged{}
-				Expect(original.ConvertTo(v1hco)).To(Succeed())
+				Expect(dst.ConvertFrom(src)).To(Succeed())
 
-				result := &HyperConverged{}
-				Expect(result.ConvertFrom(v1hco)).To(Succeed())
-
-				Expect(result.Spec.FeatureGates.DisableMDevConfiguration).To(HaveValue(BeTrue()))
-				Expect(result.Spec.MediatedDevicesConfiguration).ToNot(BeNil())
-				Expect(result.Spec.MediatedDevicesConfiguration.MediatedDeviceTypes).To(Equal([]string{"nvidia-222"}))
+				Expect(dst.Spec.FeatureGates.DisableMDevConfiguration).To(HaveValue(BeFalse()))
 			})
+
+			It("should not convert enabled=nil", func() {
+				src := &hcov1.HyperConverged{
+					Spec: hcov1.HyperConvergedSpec{
+						Virtualization: hcov1.VirtualizationConfig{
+							MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{},
+						},
+					},
+				}
+				dst := &HyperConverged{}
+
+				Expect(dst.ConvertFrom(src)).To(Succeed())
+
+				Expect(dst.Spec.FeatureGates.DisableMDevConfiguration).To(BeNil())
+			})
+
+			It("should ignore v1 FG", func() {
+				// this test should not really happen, but it proves that the v1 FG does nothing in conversion
+				src := &hcov1.HyperConverged{
+					Spec: hcov1.HyperConvergedSpec{
+						FeatureGates: hcofg.HyperConvergedFeatureGates{
+							{Name: DisableMDevConfigurationFG, State: new(hcofg.Disabled)},
+						},
+						Virtualization: hcov1.VirtualizationConfig{
+							MediatedDevicesConfiguration: &hcov1.MediatedDevicesConfiguration{
+								Enabled: new(false),
+							},
+						},
+					},
+				}
+				dst := &HyperConverged{}
+
+				Expect(dst.ConvertFrom(src)).To(Succeed())
+
+				Expect(dst.Spec.FeatureGates.DisableMDevConfiguration).To(HaveValue(BeTrue()))
+			})
+		})
+
+		It("should preserve enabled through round-trip", func() {
+			original := &HyperConverged{
+				Spec: HyperConvergedSpec{
+					FeatureGates: HyperConvergedFeatureGates{
+						DisableMDevConfiguration: new(true),
+					},
+					MediatedDevicesConfiguration: &MediatedDevicesConfiguration{
+						MediatedDeviceTypes: []string{"nvidia-222"},
+					},
+				},
+			}
+
+			v1hco := &hcov1.HyperConverged{}
+			Expect(original.ConvertTo(v1hco)).To(Succeed())
+
+			result := &HyperConverged{}
+			Expect(result.ConvertFrom(v1hco)).To(Succeed())
+
+			Expect(result.Spec.FeatureGates.DisableMDevConfiguration).To(HaveValue(BeTrue()))
+			Expect(result.Spec.MediatedDevicesConfiguration).ToNot(BeNil())
+			Expect(result.Spec.MediatedDevicesConfiguration.MediatedDeviceTypes).To(Equal([]string{"nvidia-222"}))
 		})
 	})
 
@@ -2936,6 +3241,188 @@ var _ = Describe("api/v1beta1", func() {
 				Expect(result.EnableApplicationAwareQuota).To(BeNil())
 				Expect(result.DeployVMConsoleProxy).To(BeNil())
 			})
+		})
+	})
+
+	Context("v1 only fields", func() {
+		DescribeTable("should round-trip, keeping the DeployNetworkResourcesInjector field", func(fieldValue bool, expectedAnnotation string) {
+			v1HC := getV1HC()
+			v1HC.Spec.Deployment.DeployNetworkResourcesInjector = new(fieldValue)
+			v1beta1HC := &HyperConverged{}
+
+			Expect(v1beta1HC.ConvertFrom(v1HC)).To(Succeed())
+			Expect(v1beta1HC.Annotations).To(HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(expectedAnnotation)))
+
+			roundTripHC := &hcov1.HyperConverged{}
+			Expect(v1beta1HC.ConvertTo(roundTripHC)).To(Succeed())
+
+			Expect(roundTripHC.Annotations).ToNot(HaveKey(v1OnlyFieldAnnotation))
+			Expect(roundTripHC.Spec.Deployment.DeployNetworkResourcesInjector).To(HaveValue(Equal(fieldValue)))
+		},
+			Entry("when the field is false", false, `{"deployNetworkResourcesInjector": false}`),
+			Entry("when the field is true", true, `{"deployNetworkResourcesInjector": true}`),
+		)
+
+		It("should round-trip when DeployNetworkResourcesInjector field is nil", func() {
+			v1HC := getV1HC()
+			v1HC.Spec.Deployment.DeployNetworkResourcesInjector = nil
+			v1beta1HC := &HyperConverged{}
+
+			Expect(v1beta1HC.ConvertFrom(v1HC)).To(Succeed())
+			Expect(v1beta1HC.Annotations).ToNot(HaveKey(v1OnlyFieldAnnotation))
+
+			roundTripHC := &hcov1.HyperConverged{}
+			Expect(v1beta1HC.ConvertTo(roundTripHC)).To(Succeed())
+
+			Expect(roundTripHC.Annotations).ToNot(HaveKey(v1OnlyFieldAnnotation))
+			Expect(roundTripHC.Spec.Deployment.DeployNetworkResourcesInjector).To(BeNil())
+		})
+
+		DescribeTable("should round-trip, keeping the MDevConfig.Enable field", func(fieldValue bool, v1FG hcofg.HyperConvergedFeatureGates, expectedAnnotation string) {
+			v1HC := getV1HC()
+			v1HC.Spec.Deployment.DeployNetworkResourcesInjector = nil
+			v1HC.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{Enabled: new(fieldValue)}
+			v1HC.Spec.FeatureGates = v1FG
+
+			_, originalExists := v1FG.IsExplicitlyEnabled(DisableMDevConfigurationFG)
+
+			v1beta1HC := &HyperConverged{}
+			Expect(v1beta1HC.ConvertFrom(v1HC)).To(Succeed())
+			Expect(v1beta1HC.Annotations).To(HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(expectedAnnotation)))
+
+			roundTripHC := &hcov1.HyperConverged{}
+			Expect(v1beta1HC.ConvertTo(roundTripHC)).To(Succeed())
+
+			Expect(roundTripHC.Annotations).ToNot(HaveKey(v1OnlyFieldAnnotation))
+			Expect(roundTripHC.Spec.Virtualization.MediatedDevicesConfiguration).ToNot(BeNil())
+			Expect(roundTripHC.Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(Equal(fieldValue)))
+
+			enabled, exists := roundTripHC.Spec.FeatureGates.IsExplicitlyEnabled(DisableMDevConfigurationFG)
+			Expect(exists).To(Equal(originalExists))
+			Expect(enabled).To(Equal(originalExists && !fieldValue))
+		},
+			Entry("when the field is false", false, nil, `{"mdevConfigEnable": false}`),
+			Entry("when the field is true", true, nil, `{"mdevConfigEnable": true}`),
+			Entry("when the field is false, and FG is true (implicit)",
+				false,
+				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG}},
+				`{"mdevConfigEnable": false, "disableMDevConfigurationFG": true}`,
+			),
+			Entry("when the field is false, and FG is true",
+				false,
+				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG, State: new(hcofg.Enabled)}},
+				`{"mdevConfigEnable": false, "disableMDevConfigurationFG": true}`,
+			),
+			Entry("when the field is true, and FG is false",
+				true,
+				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG, State: new(hcofg.Disabled)}},
+				`{"mdevConfigEnable": true, "disableMDevConfigurationFG": false}`,
+			),
+			Entry("when the field is true, and FG is true (implicit)",
+				true,
+				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG}},
+				`{"mdevConfigEnable": true, "disableMDevConfigurationFG": true}`,
+			),
+			Entry("when the field is true, and FG is true",
+				true,
+				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG, State: new(hcofg.Enabled)}},
+				`{"mdevConfigEnable": true, "disableMDevConfigurationFG": true}`,
+			),
+			Entry("when the field is false, and FG is false",
+				false,
+				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG, State: new(hcofg.Disabled)}},
+				`{"mdevConfigEnable": false, "disableMDevConfigurationFG": false}`,
+			),
+		)
+
+		It("should round-trip when MDevConfig.Enable field is nil", func() {
+			v1HC := getV1HC()
+			v1HC.Spec.Deployment.DeployNetworkResourcesInjector = nil
+			v1HC.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{}
+			v1beta1HC := &HyperConverged{}
+
+			Expect(v1beta1HC.ConvertFrom(v1HC)).To(Succeed())
+			Expect(v1beta1HC.Annotations).ToNot(HaveKey(v1OnlyFieldAnnotation))
+
+			roundTripHC := &hcov1.HyperConverged{}
+			Expect(v1beta1HC.ConvertTo(roundTripHC)).To(Succeed())
+
+			Expect(roundTripHC.Annotations).ToNot(HaveKey(v1OnlyFieldAnnotation))
+			Expect(roundTripHC.Spec.Virtualization.MediatedDevicesConfiguration).ToNot(BeNil())
+			Expect(roundTripHC.Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(BeNil())
+		})
+
+		DescribeTable("should round-trip, keeping the disableMDevConfiguration feature gate", func(fgs hcofg.HyperConvergedFeatureGates, expectedAnnotation gomegatypes.GomegaMatcher, isEnabled, isFound bool) {
+			v1HC := getV1HC()
+			v1HC.Spec.FeatureGates = fgs
+			v1HC.Spec.Deployment.DeployNetworkResourcesInjector = nil
+
+			v1beta1HC := &HyperConverged{}
+			Expect(v1beta1HC.ConvertFrom(v1HC)).To(Succeed())
+			Expect(v1beta1HC.Annotations).To(expectedAnnotation)
+
+			roundTripHC := &hcov1.HyperConverged{}
+			Expect(v1beta1HC.ConvertTo(roundTripHC)).To(Succeed())
+
+			Expect(roundTripHC.Annotations).ToNot(HaveKey(v1OnlyFieldAnnotation))
+			enabled, found := roundTripHC.Spec.FeatureGates.IsExplicitlyEnabled(DisableMDevConfigurationFG)
+			Expect(enabled).To(Equal(isEnabled))
+			Expect(found).To(Equal(isFound))
+		},
+			Entry("when FG list is nil", nil, Not(HaveKey(v1OnlyFieldAnnotation)), false, false),
+			Entry("when FG list is empty", hcofg.HyperConvergedFeatureGates{}, Not(HaveKey(v1OnlyFieldAnnotation)), false, false),
+			Entry("when the disableMDevConfiguration FG is not set",
+				hcofg.HyperConvergedFeatureGates{{Name: "somethingElse"}},
+				Not(HaveKey(v1OnlyFieldAnnotation)),
+				false,
+				false,
+			),
+			Entry("when the disableMDevConfiguration FG is implicitly enabled",
+				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG}}, // `{"deployNetworkResourcesInjector": false}`,
+				HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(`{"disableMDevConfigurationFG": true}`)),
+				true,
+				true,
+			),
+			Entry("when the disableMDevConfiguration FG is explicitly enabled",
+				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG, State: new(hcofg.Enabled)}},
+				HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(`{"disableMDevConfigurationFG": true}`)),
+				true,
+				true,
+			),
+			Entry("when the disableMDevConfiguration FG is disabled",
+				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG, State: new(hcofg.Disabled)}},
+				HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(`{"disableMDevConfigurationFG": false}`)),
+				false,
+				true,
+			),
+		)
+
+		// keep this up-to-date, and the last test case in this context
+		It("should round-trip, keeping v1-only fields", func() {
+			v1HC := getV1HC()
+			// set the spec with non-default values
+			v1HC.Spec.Deployment.DeployNetworkResourcesInjector = new(false)
+			v1HC.Spec.Virtualization.MediatedDevicesConfiguration = &hcov1.MediatedDevicesConfiguration{
+				Enabled: new(false),
+			}
+			v1HC.Spec.FeatureGates.Enable(DisableMDevConfigurationFG)
+			v1beta1HC := &HyperConverged{}
+
+			Expect(v1beta1HC.ConvertFrom(v1HC)).To(Succeed())
+			const expectedJSONAnnotation = `{
+	"deployNetworkResourcesInjector": false,
+	"mdevConfigEnable": false,
+	"disableMDevConfigurationFG": true
+}`
+			Expect(v1beta1HC.Annotations).To(HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(expectedJSONAnnotation)))
+
+			roundTripHC := &hcov1.HyperConverged{}
+			Expect(v1beta1HC.ConvertTo(roundTripHC)).To(Succeed())
+
+			Expect(roundTripHC.Annotations).ToNot(HaveKey(v1OnlyFieldAnnotation))
+			Expect(roundTripHC.Spec.Deployment.DeployNetworkResourcesInjector).To(HaveValue(BeFalse()))
+			Expect(roundTripHC.Spec.Virtualization.MediatedDevicesConfiguration).ToNot(BeNil())
+			Expect(roundTripHC.Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeFalse()))
 		})
 	})
 })
