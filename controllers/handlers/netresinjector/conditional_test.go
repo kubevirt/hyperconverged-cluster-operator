@@ -47,18 +47,21 @@ var _ = Describe("Network Resources Injector Conditional Handlers", func() {
 			Expect(foundCR.Name).To(Equal(clusterRoleName))
 		})
 
-		It("should create ClusterRole when deployNetworkResourcesInjector is not set (default true)", func() {
-			// Don't set deployNetworkResourcesInjector - should default to true
+		It("should not create ClusterRole when deployNetworkResourcesInjector is not set (default false)", func() {
+			// Don't set deployNetworkResourcesInjector - should default to false
 			cl = commontestutils.InitClient([]client.Object{hco})
 
 			handler := NewClusterRoleHandler(cl, commontestutils.GetScheme())
 			res := handler.Ensure(req)
 
 			Expect(res.Err).ToNot(HaveOccurred())
-			Expect(res.Created).To(BeTrue())
+			Expect(res.Created).To(BeFalse())
+			Expect(res.Updated).To(BeFalse())
 
 			foundCR := &rbacv1.ClusterRole{}
-			Expect(cl.Get(context.Background(), client.ObjectKey{Name: clusterRoleName}, foundCR)).To(Succeed())
+			err := cl.Get(context.Background(), client.ObjectKey{Name: clusterRoleName}, foundCR)
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(MatchError(apierrors.IsNotFound, "not found error"))
 		})
 
 		It("should delete ClusterRole when deployNetworkResourcesInjector is false", func() {

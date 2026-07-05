@@ -2,6 +2,7 @@ package tests_test
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -15,7 +16,8 @@ import (
 )
 
 const (
-	netResInjectorDeploymentName = "virt-network-resources-injector"
+	netResInjectorDeploymentName          = "virt-network-resources-injector"
+	netResInjectorDeploymentPatchTemplate = `{"spec":{"deployment":{"deployNetworkResourcesInjector": %t}}}`
 )
 
 var _ = Describe("Test Network Resources Injector", Label("NetResInjector"), Serial, Ordered, func() {
@@ -31,7 +33,21 @@ var _ = Describe("Test Network Resources Injector", Label("NetResInjector"), Ser
 		restoreNetResInjectorToDefault(ctx, cli)
 	})
 
-	Context("when deployNetworkResourcesInjector is true (default)", func() {
+	Context("when deployNetworkResourcesInjector is not set (default false)", func() {
+		BeforeAll(func(ctx context.Context) {
+			restoreNetResInjectorToDefault(ctx, cli)
+		})
+
+		It("should not deploy the network resources injector", func(ctx context.Context) {
+			validateNetResInjectorDeleted(ctx, cli)
+		})
+	})
+
+	Context("when deployNetworkResourcesInjector is true", func() {
+		BeforeAll(func(ctx context.Context) {
+			enableNetResInjector(ctx, cli)
+		})
+
 		It("should deploy the network resources injector", func(ctx context.Context) {
 			By("verifying the deployment exists and is ready")
 			Eventually(func(g Gomega, ctx context.Context) {
@@ -82,20 +98,9 @@ var _ = Describe("Test Network Resources Injector", Label("NetResInjector"), Ser
 			validateNetResInjectorDeleted(ctx, cli)
 		})
 
-		It("should recreate the deployment when set back to true", func(ctx context.Context) {
-			enableNetResInjector(ctx, cli)
-
-			By("verifying the deployment is recreated and ready")
-			Eventually(func(g Gomega, ctx context.Context) {
-				dep := &appsv1.Deployment{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:      netResInjectorDeploymentName,
-						Namespace: tests.InstallNamespace,
-					},
-				}
-				g.Expect(cli.Get(ctx, client.ObjectKeyFromObject(dep), dep)).To(Succeed())
-				g.Expect(dep.Status.ReadyReplicas).To(Equal(*dep.Spec.Replicas))
-			}).WithTimeout(5 * time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+		It("should delete the deployment when set back to default (false)", func(ctx context.Context) {
+			restoreNetResInjectorToDefault(ctx, cli)
+			validateNetResInjectorDeleted(ctx, cli)
 		})
 	})
 })
@@ -123,32 +128,27 @@ func validateNetResInjectorDeleted(ctx context.Context, cli client.Client) {
 func enableNetResInjector(ctx context.Context, cli client.Client) {
 	GinkgoHelper()
 	By("setting deployNetworkResourcesInjector to true")
-	patch := []byte(`[{"op": "replace", "path": "/spec/deployment/deployNetworkResourcesInjector", "value": true}]`)
-	tests.PatchHCO(ctx, cli, patch)
+	patch := []byte(fmt.Sprintf(netResInjectorDeploymentPatchTemplate, true))
+	tests.PatchMergeHCO(ctx, cli, patch)
 }
 
 func disableNetResInjector(ctx context.Context, cli client.Client) {
 	GinkgoHelper()
 	By("setting deployNetworkResourcesInjector to false")
-	patch := []byte(`[{"op": "add", "path": "/spec/deployment/deployNetworkResourcesInjector", "value": false}]`)
-	tests.PatchHCO(ctx, cli, patch)
+	patch := []byte(fmt.Sprintf(netResInjectorDeploymentPatchTemplate, false))
+	tests.PatchMergeHCO(ctx, cli, patch)
 }
 
 func restoreNetResInjectorToDefault(ctx context.Context, cli client.Client) {
 	GinkgoHelper()
 	By("restoring deployNetworkResourcesInjector to default")
-	patch := []byte(`[{"op": "remove", "path": "/spec/deployment/deployNetworkResourcesInjector"}]`)
-	tests.PatchHCO(ctx, cli, patch)
 
-	// Wait for deployment to be recreated
-	Eventually(func(g Gomega, ctx context.Context) {
-		dep := &appsv1.Deployment{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      netResInjectorDeploymentName,
-				Namespace: tests.InstallNamespace,
-			},
-		}
-		g.Expect(cli.Get(ctx, client.ObjectKeyFromObject(dep), dep)).To(Succeed())
-		g.Expect(dep.Status.ReadyReplicas).To(Equal(*dep.Spec.Replicas))
-	}).WithTimeout(5 * time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+	// Read the HyperConverged CR first to check if the field exists
+	hc, err := tests.GetHCO(ctx, cli)
+	Expect(err).ToNot(HaveOccurred())
+	if hc.Spec.Deployment.DeployNetworkResourcesInjector != nil {
+		// Field exists, remove it by setting to null in merge patch
+		patch := []byte(`{"spec":{"deployment":{"deployNetworkResourcesInjector": null}}}`)
+		tests.PatchMergeHCO(ctx, cli, patch)
+	}
 }

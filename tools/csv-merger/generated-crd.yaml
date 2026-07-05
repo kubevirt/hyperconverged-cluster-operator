@@ -52,7 +52,6 @@ spec:
               deployment:
                 applicationAwareConfig:
                   enable: false
-                deployNetworkResourcesInjector: true
                 deployVmConsoleProxy: false
                 uninstallStrategy: BlockUninstallIfWorkloadsExist
               security:
@@ -83,7 +82,6 @@ spec:
                 default:
                   applicationAwareConfig:
                     enable: false
-                  deployNetworkResourcesInjector: true
                   deployVmConsoleProxy: false
                   uninstallStrategy: BlockUninstallIfWorkloadsExist
                 description: Deployment contains all the configurations related to
@@ -163,7 +161,6 @@ spec:
                         type: string
                     type: object
                   deployNetworkResourcesInjector:
-                    default: true
                     description: |-
                       DeployNetworkResourcesInjector enables deployment of the network-resources-injector component.
                       When enabled, the network-resources-injector mutating webhook will be deployed to automatically
