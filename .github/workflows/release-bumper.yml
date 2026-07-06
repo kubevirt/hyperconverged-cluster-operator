@@ -78,7 +78,7 @@ jobs:
         if: ${{ env.CHANGED }}
         run: rm -f updated_component.txt updated_version.txt
 
-      - uses: peter-evans/create-pull-request@v6
+      - uses: peter-evans/create-pull-request@v8
         if: ${{ env.CHANGED }}
         with:
           token: ${{ secrets.HCO_BOT_TOKEN }}
