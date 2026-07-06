@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"slices"
 	"strings"
 	"time"
 
@@ -343,10 +342,6 @@ func (wh *WebhookHandler) validateTuningPolicy(hc *hcov1.HyperConverged) error {
 }
 
 func (wh *WebhookHandler) validateFeatureGatesOnCreate(hc *hcov1.HyperConverged) error {
-	if err := validateMDevFeatureGateVsEnabledOnCreate(hc); err != nil {
-		return err
-	}
-
 	fgMap := v1FGsToMap(hc.Spec.FeatureGates)
 
 	warnings := wh.validateDeprecatedFeatureGates(fgMap, nil)
@@ -359,10 +354,6 @@ func (wh *WebhookHandler) validateFeatureGatesOnCreate(hc *hcov1.HyperConverged)
 }
 
 func (wh *WebhookHandler) validateFeatureGatesOnUpdate(requested, exists *hcov1.HyperConverged) error {
-	if err := validateMDevFeatureGateVsEnabledOnUpdate(requested, exists); err != nil {
-		return err
-	}
-
 	reqFGMap := v1FGsToMap(requested.Spec.FeatureGates)
 	oldFGMap := v1FGsToMap(exists.Spec.FeatureGates)
 
@@ -399,103 +390,8 @@ func (wh *WebhookHandler) validateAffinity(hc *hcov1.HyperConverged) error {
 
 const (
 	fgv1Unknown            = "the %s featureGate is unknown and ignored."
-	fgv1DeprecationWarning = "the %s featureGate deprecated and will be removed in a future release."
-
-	disableMDevConfigurationFGName = "disableMDevConfiguration"
+	fgv1DeprecationWarning = "the %s featureGate is deprecated and will be removed in a future release."
 )
-
-func v1DisableMDevFGIndex(fgs hcov1fg.HyperConvergedFeatureGates) int {
-	return slices.IndexFunc(fgs, func(fg hcov1fg.FeatureGate) bool {
-		return fg.Name == disableMDevConfigurationFGName
-	})
-}
-
-func v1MDevEnabledExplicit(hc *hcov1.HyperConverged) (*bool, bool) {
-	mdc := hc.Spec.Virtualization.MediatedDevicesConfiguration
-	if mdc == nil || mdc.Enabled == nil {
-		return nil, false
-	}
-
-	return mdc.Enabled, true
-}
-
-func validateMDevFeatureGateVsEnabledOnCreate(hc *hcov1.HyperConverged) error {
-	if v1DisableMDevFGIndex(hc.Spec.FeatureGates) == -1 {
-		return nil
-	}
-
-	enabled, present := v1MDevEnabledExplicit(hc)
-	if !present {
-		return nil
-	}
-
-	fgDisable := hc.Spec.FeatureGates.IsEnabled(disableMDevConfigurationFGName)
-	if fgDisable == *enabled {
-		return fmt.Errorf("spec.featureGates.disableMDevConfiguration and spec.virtualization.mediatedDevicesConfiguration.enabled contradict each other; disableMDevConfiguration must equal !enabled")
-	}
-
-	return nil
-}
-
-func v1MDevEnabledChanged(oldHC, newHC *hcov1.HyperConverged) bool {
-	oldEnabled, oldPresent := v1MDevEnabledExplicit(oldHC)
-	newEnabled, newPresent := v1MDevEnabledExplicit(newHC)
-
-	if oldPresent != newPresent {
-		return true
-	}
-
-	if !oldPresent {
-		return false
-	}
-
-	return *oldEnabled != *newEnabled
-}
-
-func v1DisableMDevFGChanged(oldHC, newHC *hcov1.HyperConverged) bool {
-	oldIdx := v1DisableMDevFGIndex(oldHC.Spec.FeatureGates)
-	newIdx := v1DisableMDevFGIndex(newHC.Spec.FeatureGates)
-	oldFGPresent := oldIdx != -1
-	newFGPresent := newIdx != -1
-
-	if oldFGPresent != newFGPresent {
-		return true
-	}
-
-	if !oldFGPresent {
-		return false
-	}
-
-	oldFGEnabled := oldHC.Spec.FeatureGates.IsEnabled(disableMDevConfigurationFGName)
-	newFGEnabled := newHC.Spec.FeatureGates.IsEnabled(disableMDevConfigurationFGName)
-
-	return oldFGEnabled != newFGEnabled
-}
-
-func validateMDevFeatureGateVsEnabledOnUpdate(requested, exists *hcov1.HyperConverged) error {
-	fgChanged := v1DisableMDevFGChanged(exists, requested)
-	enabledChanged := v1MDevEnabledChanged(exists, requested)
-
-	if !fgChanged || !enabledChanged {
-		return nil
-	}
-
-	if v1DisableMDevFGIndex(requested.Spec.FeatureGates) == -1 {
-		return nil
-	}
-
-	enabled, present := v1MDevEnabledExplicit(requested)
-	if !present {
-		return nil
-	}
-
-	fgDisable := requested.Spec.FeatureGates.IsEnabled(disableMDevConfigurationFGName)
-	if fgDisable == *enabled {
-		return fmt.Errorf("spec.featureGates.disableMDevConfiguration and spec.virtualization.mediatedDevicesConfiguration.enabled were both changed and contradict each other; disableMDevConfiguration must equal !enabled")
-	}
-
-	return nil
-}
 
 func (wh *WebhookHandler) validateDeprecatedFeatureGates(fgMap, oldFgMap map[string]bool) []string {
 	var warnings []string
@@ -573,8 +469,7 @@ func errToResponse(err error) admission.Response {
 		return validationResponseFromStatus(false, apiStatus.Status())
 	}
 
-	var vw *ValidationWarning
-	if errors.As(err, &vw) {
+	if vw, ok := errors.AsType[*ValidationWarning](err); ok {
 		return admission.Allowed("").WithWarnings(vw.Warnings()...)
 	}
 
