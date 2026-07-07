@@ -54,7 +54,7 @@ To enable a feature, add a new feature gate object to the `featureGates` list. T
 by default (a beta feature gate), set its `state` field to `Disabled`. The default value of the `state` field is
 `Enabled`, and there is no need to set it to enable a feature gate.
 
-For example, the following setting enables the `alignCPUs` feature gate (alpha), and disables the `videoConfig` feature
+For example, the following setting enables the `alignCPUs` feature gate (alpha), and disables the `decentralizedLiveMigration` feature
 gate (beta).
 ```yaml
 apiVersion: hco.kubevirt.io/v1
@@ -65,7 +65,7 @@ metadata:
 spec:
   featureGates:
   - name: alignCPUs
-  - name: videoConfig
+  - name: decentralizedLiveMigration
     state: Disabled
 ```
 
@@ -157,24 +157,7 @@ volume hotplug operations are performed using KubeVirt's subresource API. Change
 spec require a VM restart to take effect. When enabled, volume hotplug operations can be performed declaratively by
 modifying the VirtualMachine spec directly. These changes are applied immediately without requiring a VM restart.
 
-**Note**: This feature is in Developer Preview.
-
-**Default**: `Disabled`
-
-**Graduation Status**: Alpha
-
-### videoConfig Feature Gate
-By default, the video type depends on the architecture and firmware:
-* For amd64: vga for BIOS VMs, and bochs for UEFI VMs.
-* For arm64 and s390x: virtio.
-
-By default, it is possible to explicitly configuring the video type in the
-VirtualMachine spec.
-
-To prevent customization of Virtual Machine video configurations, ddd the
-`videoConfig` feature gate with the `state` field set to `Disabled`.
-
-**Note**: This feature is in Tech Preview.
+**Note**: This feature is in Technical Preview.
 
 **Default**: `Enabled`
 

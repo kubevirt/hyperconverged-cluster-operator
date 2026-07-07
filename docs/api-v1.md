@@ -492,10 +492,9 @@ A feature gate may be in the following phases:
 | Name | Description | Phase |
 | ---- | ----------- | ----- |
 | decentralizedLiveMigration | DecentralizedLiveMigration enables the decentralized live migration (cross-cluster migration) feature. This feature allows live migration of VirtualMachineInstances between different clusters. This feature is in Developer Preview. | beta |
-| videoConfig | VideoConfig allows users to configure video device types for their virtual machines. This can be useful for workloads that require specific video capabilities or architectures. Note: This feature is in Tech Preview. | beta |
+| declarativeHotplugVolumes | DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt. When set to true or nil, the "DeclarativeHotplugVolumes" feature gate is enabled and the "HotplugVolumes" feature gate is not (default behavior). When set to false, the "HotplugVolumes" featuregate is enabled in KubeVirt. This feature is in Technical Preview. | beta |
 | alignCPUs | Enable KubeVirt to request up to two additional dedicated CPUs in order to complete the total CPU count to an even parity when using emulator thread isolation. Note: this feature is in Developer Preview. | alpha |
 | containerPathVolumes | ContainerPathVolumes enables the use of container paths as volumes in KubeVirt. This allows VMs to access files and directories from the virt-launcher pod's filesystem via virtiofs. | alpha |
-| declarativeHotplugVolumes | DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt. When set to true, the "DeclarativeHotplugVolumes" feature gate is enabled instead of "HotplugVolumes". When set to false or nil, the "HotplugVolumes" feature gate is enabled (default behavior). This feature is in Developer Preview. | alpha |
 | deployKubeSecondaryDNS | Deploy KubeSecondaryDNS by CNAO | alpha |
 | downwardMetrics | Allow to expose a limited set of host metrics to guests. | alpha |
 | enableMultiArchBootImageImport | EnableMultiArchBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures. Setting this field to true will allow the HCO to create Golden Images for different CPU architectures. This feature is in Developer Preview. | alpha |
