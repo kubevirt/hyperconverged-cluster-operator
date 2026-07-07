@@ -144,10 +144,6 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		var ptrVar1 bool = false
 		in.Spec.Deployment.DeployVMConsoleProxy = &ptrVar1
 	}
-	if in.Spec.Deployment.DeployNetworkResourcesInjector == nil {
-		var ptrVar1 bool = true
-		in.Spec.Deployment.DeployNetworkResourcesInjector = &ptrVar1
-	}
 }
 
 func SetObjectDefaults_HyperConvergedList(in *HyperConvergedList) {

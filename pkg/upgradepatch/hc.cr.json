@@ -47,8 +47,7 @@
     },
     "deployment": {
       "uninstallStrategy": "BlockUninstallIfWorkloadsExist",
-      "deployVmConsoleProxy": false,
-      "deployNetworkResourcesInjector": true
+      "deployVmConsoleProxy": false
     }
   },
   "status": {

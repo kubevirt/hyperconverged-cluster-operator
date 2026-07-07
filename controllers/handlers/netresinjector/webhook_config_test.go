@@ -24,6 +24,7 @@ var _ = Describe("Network Resources Injector MutatingWebhookConfiguration", func
 
 	BeforeEach(func() {
 		hco = commontestutils.NewHco()
+		hco.Spec.Deployment.DeployNetworkResourcesInjector = new(true)
 		req = commontestutils.NewReq(hco)
 	})
 
