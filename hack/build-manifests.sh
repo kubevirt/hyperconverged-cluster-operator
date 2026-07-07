@@ -258,10 +258,6 @@ function create_inflight_operations_csv() {
   echo "${operatorName}"
 }
 
-# Write HCO CRDs
-hco_crds=${PROJECT_ROOT}/config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml
-${TOOLS}/crd-creator --output-file=${hco_crds}
-
 (cd ${PROJECT_ROOT}/tools/manifest-splitter/ && go build)
 
 TEMPDIR=$(mktemp -d) || (echo "Failed to create temp directory" && exit 1)
@@ -295,10 +291,9 @@ spec:
 $keywords
 EOM
 
-cat ${hco_crds} | ${TOOLS}/manifest-splitter --operator-name="hco"
+cat "${PROJECT_ROOT}/config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml" | "${TOOLS}/manifest-splitter" --operator-name="hco"
 
 popd
-
 
 rm -fr "${CSV_DIR}"
 mkdir -p "${CSV_DIR}/metadata" "${CSV_DIR}/manifests"
