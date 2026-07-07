@@ -38,8 +38,8 @@ import (
 var _ = Describe("KubeVirt Operand", func() {
 
 	const (
-		// Number of conditional featuregates always added by getFeatureGateChecks (volume hotplug, VideoConfig, DecentralizedLiveMigration defaults)
-		conditionalFeatureGatesCount = 3
+		// Number of conditional featuregates always added by getFeatureGateChecks (one of the volume hotplug FGs and DecentralizedLiveMigration defaults)
+		conditionalFeatureGatesCount = 2
 	)
 
 	var (
@@ -1989,15 +1989,13 @@ Version: 1.2.3`)
 							Not(ContainElement(kvDownwardMetrics)),
 							ContainElement(kvDecentralizedLiveMigration),
 							Not(ContainElement(kvAlignCPUs)),
-							And(ContainElement(kvHotplugVolumesGate), Not(ContainElement(kvDeclarativeHotplugVolumesGate))),
+							And(ContainElement(kvDeclarativeHotplugVolumesGate), Not(ContainElement(kvHotplugVolumesGate))),
 							Not(ContainElement(kvObjectGraph)),
 							And(Not(ContainElement(kvIncrementalBackup)), Not(ContainElement(kvUtilityVolumes))),
 							Not(ContainElement(kvContainerPathVolumes)),
-							ContainElement(kvVideoConfig),
 						),
 						func(kv *kubevirtcorev1.KubeVirt) {
 							Expect(kv.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
-							Expect(kv.Spec.Configuration.DeveloperConfiguration.DisabledFeatureGates).ToNot(ContainElement(kvVideoConfig))
 						},
 					),
 					// PersistentReservation
@@ -2176,28 +2174,6 @@ Version: 1.2.3`)
 							}
 						},
 						Not(ContainElement(kvContainerPathVolumes)),
-					),
-					Entry("should add the VideoConfig if feature gate VideoConfig is true in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "videoConfig", State: ptr.To(featuregates.Enabled)},
-							}
-						},
-						ContainElement(kvVideoConfig),
-						func(kv *kubevirtcorev1.KubeVirt) {
-							Expect(kv.Spec.Configuration.DeveloperConfiguration.DisabledFeatureGates).NotTo(ContainElement(kvVideoConfig))
-						},
-					),
-					Entry("should not add the VideoConfig if feature gate VideoConfig is set to false in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "videoConfig", State: ptr.To(featuregates.Disabled)},
-							}
-						},
-						Not(ContainElement(kvVideoConfig)),
-						func(kv *kubevirtcorev1.KubeVirt) {
-							Expect(kv.Spec.Configuration.DeveloperConfiguration.DisabledFeatureGates).To(ContainElement(kvVideoConfig))
-						},
 					),
 				)
 			})
@@ -2422,7 +2398,7 @@ Version: 1.2.3`)
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(HaveLen(defaultFeatureGateCount))
 					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
 					// Should contain HotplugVolumes by default when DeclarativeHotplugVolumes is not set
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvHotplugVolumesGate))
+					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvDeclarativeHotplugVolumesGate))
 				})
 
 				It("should enable architecture specific feature gates", func() {
@@ -2517,22 +2493,22 @@ Version: 1.2.3`)
 					Expect(disabled).NotTo(ContainElement(kvKubevirtSeccompProfile))
 				})
 
-				It("should not include VideoConfig when it is enabled by default", func() {
+				It("should not include declarativeHotplugVolumes when it is enabled by default", func() {
 					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{}
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
 					fgs := getKvFeatureGateList(hco)
 					disabled := getKvDisabledFeatureGateList(fgs)
-					Expect(disabled).NotTo(ContainElement(kvVideoConfig))
+					Expect(disabled).NotTo(ContainElement(kvDeclarativeHotplugVolumesGate))
 				})
 
-				It("should include VideoConfig when it is explicitly disabled", func() {
+				It("should include declarativeHotplugVolumes when it is explicitly disabled", func() {
 					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-						{Name: "videoConfig", State: ptr.To(featuregates.Disabled)},
+						{Name: "declarativeHotplugVolumes", State: ptr.To(featuregates.Disabled)},
 					}
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
 					fgs := getKvFeatureGateList(hco)
 					disabled := getKvDisabledFeatureGateList(fgs)
-					Expect(disabled).To(ContainElement(kvVideoConfig))
+					Expect(disabled).To(ContainElement(kvDeclarativeHotplugVolumesGate))
 				})
 
 				It("should not include PasstBinding when passt annotation is true", func() {
@@ -2550,11 +2526,23 @@ Version: 1.2.3`)
 					Expect(disabled).To(ContainElement(kvPasstBinding))
 				})
 
-				It("should include SecureExecution when not on s390x", func() {
+				It("should include all beta FG if not in the enabled list", func() {
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
 					fgs := getKvFeatureGateList(hco)
 					disabled := getKvDisabledFeatureGateList(fgs)
-					Expect(disabled).To(ContainElement(kvSecureExecution))
+
+					kvBetaFGs := kvfeaturegates.GetBetaFeatureGates()
+					tested := false
+					for _, kvBetaFG := range kvBetaFGs {
+						if !slices.Contains(fgs, kvBetaFG) {
+							Expect(disabled).To(ContainElement(kvBetaFG))
+							tested = true
+						}
+					}
+
+					if !tested {
+						GinkgoLogr.Error(fmt.Errorf("can't test"), "no disabled beta by default")
+					}
 				})
 
 				It("should not have any FG in both enabled and disabled lists", func() {

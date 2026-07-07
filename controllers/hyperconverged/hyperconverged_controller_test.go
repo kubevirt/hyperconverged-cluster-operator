@@ -146,7 +146,6 @@ var _ = Describe("HyperconvergedController", func() {
 				hco := commontestutils.NewHco()
 				hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
 					{Name: "downwardMetrics"},
-					{Name: "videoConfig"},
 				}
 
 				ci := hcoutil.GetClusterInfo()
@@ -207,12 +206,11 @@ var _ = Describe("HyperconvergedController", func() {
 				expectedFeatureGates := []string{
 					"CPUManager",
 					"Snapshot",
-					"HotplugVolumes",
+					"DeclarativeHotplugVolumes",
 					"HostDevices",
 					"HypervStrictCheck",
 					"DownwardMetrics",
 					"KubevirtSeccompProfile",
-					"VideoConfig",
 					"DecentralizedLiveMigration",
 				}
 				// Get the KV
