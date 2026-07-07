@@ -348,6 +348,8 @@ const (
 	fgDeprecationWarning = "spec.featureGates.%s is deprecated and ignored. It will be removed in a future version;"
 
 	mDevFGDeprecationWarning = "spec.featureGates.disableMDevConfiguration is deprecated. Use spec.virtualization.mediatedDevicesConfiguration.enabled in the v1 API instead; it will be removed in a future version."
+
+	prFGDeprecationWarning = "spec.featureGates.persistentReservation is deprecated. Use spec.storage.persistentReservationConfiguration.enabled in the v1 API instead; it will be removed in a future version."
 )
 
 func (wh *WebhookV1Beta1Handler) validateFeatureGatesOnCreate(hc *v1beta1.HyperConverged) error {
@@ -397,6 +399,10 @@ func (wh *WebhookV1Beta1Handler) validateDeprecatedFeatureGates(hc *v1beta1.Hype
 
 	if hc.Spec.FeatureGates.DisableMDevConfiguration != nil {
 		warnings = append(warnings, mDevFGDeprecationWarning)
+	}
+
+	if hc.Spec.FeatureGates.PersistentReservation != nil {
+		warnings = append(warnings, prFGDeprecationWarning)
 	}
 
 	return warnings
