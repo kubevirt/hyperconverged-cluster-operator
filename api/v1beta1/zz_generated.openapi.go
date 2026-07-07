@@ -198,8 +198,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"persistentReservation": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Enable persistent reservation of a LUN through the SCSI Persistent Reserve commands on Kubevirt. In order to issue privileged SCSI ioctls, the VM requires activation of the persistent reservation flag. Once this feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod.",
-							Default:     false,
+							Description: "This feature gate has graduated to a dedicated configuration field. Deprecated: use v1's spec.storage.persistentReservationConfiguration.enabled instead. This feature gate will be removed in a future release.",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

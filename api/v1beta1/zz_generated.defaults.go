@@ -48,10 +48,6 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		var ptrVar1 bool = false
 		in.Spec.FeatureGates.DeployKubeSecondaryDNS = &ptrVar1
 	}
-	if in.Spec.FeatureGates.PersistentReservation == nil {
-		var ptrVar1 bool = false
-		in.Spec.FeatureGates.PersistentReservation = &ptrVar1
-	}
 	if in.Spec.FeatureGates.AlignCPUs == nil {
 		var ptrVar1 bool = false
 		in.Spec.FeatureGates.AlignCPUs = &ptrVar1

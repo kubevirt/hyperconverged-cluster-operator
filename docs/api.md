@@ -30,6 +30,7 @@ This Document documents the types introduced by the hyperconverged-cluster-opera
 * [NodePlacements](#nodeplacements)
 * [PciHostDevice](#pcihostdevice)
 * [PermittedHostDevices](#permittedhostdevices)
+* [PersistentReservationConfiguration](#persistentreservationconfiguration)
 * [SecurityConfig](#securityconfig)
 * [StorageConfig](#storageconfig)
 * [StorageImportConfig](#storageimportconfig)
@@ -352,6 +353,16 @@ PermittedHostDevices holds information about devices allowed for passthrough
 
 [Back to TOC](#table-of-contents)
 
+## PersistentReservationConfiguration
+
+PersistentReservationConfiguration holds the configuration for SCSI persistent reservation support
+
+| Field | Description | Scheme | Default | Required |
+| ----- | ----------- | ------ | ------- | -------- |
+| enabled | Enabled controls the deployment of additional resources like the pr-helper container for enabling the use of the SCSI persistent reservation in VMs, defaults to false. | *bool |  | false |
+
+[Back to TOC](#table-of-contents)
+
 ## SecurityConfig
 
 SecurityConfig contains all the security configurations
@@ -374,6 +385,7 @@ StorageConfig contains all the storage configurations
 | storageImport | StorageImport contains configuration for importing containerized data | *[StorageImportConfig](#storageimportconfig) |  | false |
 | filesystemOverhead | FilesystemOverhead describes the space reserved for overhead when using Filesystem volumes. A value is between 0 and 1, if not defined it is 0.055 (5.5 percent overhead) | *cdiv1beta1.FilesystemOverhead |  | false |
 | workloadResourceRequirements | WorkloadResourceRequirements defines the resource requirements for storage workloads. It will propagate to the CDI custom resource | *corev1.ResourceRequirements |  | false |
+| persistentReservationConfiguration | PersistentReservationConfiguration controls the deployment of additional resources required for using SCSI persistent reservation in VMs | *[PersistentReservationConfiguration](#persistentreservationconfiguration) |  | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -501,8 +513,8 @@ A feature gate may be in the following phases:
 | enableMultiArchBootImageImport | EnableMultiArchBootImageImport allows the HCO to run on heterogeneous clusters with different CPU architectures. Setting this field to true will allow the HCO to create Golden Images for different CPU architectures. This feature is in Developer Preview. | alpha |
 | incrementalBackup | IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt. When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This feature is in Tech Preview. | alpha |
 | objectGraph | ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking. Note: This feature is in Developer Preview. | alpha |
-| persistentReservation | Enable persistent reservation of a LUN through the SCSI Persistent Reserve commands on Kubevirt. In order to issue privileged SCSI ioctls, the VM requires activation of the persistent reservation flag. Once this feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod. | alpha |
 | disableMDevConfiguration | Deprecated: use spec.virtualization.mediatedDevicesConfiguration.enabled instead. This feature gate is deprecated and will be removed in a future release. | deprecated |
+| persistentReservation | This feature gate has graduated to a dedicated configuration field. Use spec.storage.persistentReservationConfiguration.enabled instead. This feature gate is deprecated and will be removed in a future release. | deprecated |
 
 [Back to TOC](#table-of-contents)
 
