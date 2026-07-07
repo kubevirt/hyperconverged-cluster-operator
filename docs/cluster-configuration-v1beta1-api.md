@@ -154,13 +154,25 @@ For additional information, see here: [KubeSecondaryDNS](https://github.com/kube
 
 **Default**: `false`
 
-### persistentReservation Feature Gate
-Set the `persistentReservation` feature gate to true in order to enable the reservation of a LUN through the SCSI Persistent Reserve commands.
+### persistentReservation Feature Gate (deprecated)
 
-SCSI protocol offers dedicated commands in order to reserve and control access to the LUNs. This can be used to prevent data corruption if the disk is shared by multiple VMs (or more in general processes).
-The SCSI persistent reservation is handled by the qemu-pr-helper. The pr-helper is a privileged daemon that can be either started by libvirt directly or managed externally.
-In case of KubeVirt, the qemu-pr-helper needs to be started externally because it requires high privileges in order to perform the persistent SCSI reservation. Afterward, the pr-helper socket is accessed by the unprivileged virt-launcher pod for enabling the SCSI persistent reservation.
-Once the feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod.
+The `persistentReservation` feature gate is deprecated and will be removed in a future release.
+
+On the v1 API, use `spec.storage.persistentReservationConfiguration.enabled` instead. See
+[SCSI Persistent Reservation](./cluster-configuration.md#scsi-persistent-reservation) in the v1 cluster configuration
+documentation for details.
+
+On v1beta1, set this feature gate to `true` to enable the reservation of a LUN through the SCSI Persistent Reserve
+commands until you migrate to the v1 API.
+
+SCSI protocol offers dedicated commands in order to reserve and control access to the LUNs. This can be used to prevent
+data corruption if the disk is shared by multiple VMs (or more in general processes). The SCSI persistent reservation is
+handled by the qemu-pr-helper. The pr-helper is a privileged daemon that can be either started by libvirt directly or
+managed externally. In case of KubeVirt, the qemu-pr-helper needs to be started externally because it requires high
+privileges in order to perform the persistent SCSI reservation. Afterward, the pr-helper socket is accessed by the
+unprivileged virt-launcher pod for enabling the SCSI persistent reservation. Once the feature gate is enabled, then the
+additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature
+gate causes the redeployment of the virt-handler pod.
 
 VMI example:
 ```yaml
@@ -170,13 +182,9 @@ VMI example:
         lun:
           reservations: true
 ```
-**Note**: An important aspect of this feature is that the SCSI persistent reservation doesn't support migration. Even if you apply the reservation to an RWX PVC provisioning SCSI devices, the restriction is due to the reservation done by the initiator on the node. The VM could be migrated but not the reservation.
-
-**Note**: this feature is in Developer Preview.
-
 **Default**: `false`
 
-**Graduation Status**: Alpha
+**Graduation Status**: Deprecated
 
 ### alignCPUs Feature Gate
 Set the `alignCPUs` feature gate to enable KubeVirt
