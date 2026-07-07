@@ -20,16 +20,19 @@ import (
 const v1OnlyFieldAnnotation = APIVersionGroup + "/v1-only-fields"
 
 const DisableMDevConfigurationFG = "disableMDevConfiguration"
+const PersistentReservationFGName = "persistentReservation"
 
 type v1OnlyFields struct {
 	DeployNetworkResourcesInjector *bool                              `json:"deployNetworkResourcesInjector,omitempty"`
 	MDevConfigEnable               *bool                              `json:"mdevConfigEnable,omitempty"`
+	PersistentReservationEnabled   *bool                              `json:"persistentReservationEnabled,omitempty"`
 	FeatureGates                   hcov1fg.HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 }
 
 func (fields *v1OnlyFields) isEmpty() bool {
 	return fields.DeployNetworkResourcesInjector == nil &&
 		fields.MDevConfigEnable == nil &&
+		fields.PersistentReservationEnabled == nil &&
 		fields.FeatureGates == nil
 }
 
@@ -55,7 +58,9 @@ func (src *HyperConverged) ConvertTo(dstRaw conversion.Hub) error { //revive:dis
 
 	convertMDevEnabledV1beta1ToV1(src.Spec, &dst.Spec)
 
-	dst.Spec.Storage = convertStorageV1beta1ToV1(src.Spec)
+	convertStorageV1beta1ToV1(src.Spec, &dst.Spec)
+
+	convertPersistentReservationV1beta1ToV1(src.Spec, &dst.Spec)
 
 	convertSecurityV1beta1ToV1(src.Spec, &dst.Spec.Security)
 
@@ -88,6 +93,8 @@ func (dst *HyperConverged) ConvertFrom(srcRaw conversion.Hub) error { //revive:d
 	convertMDevEnabledV1ToV1beta1(src.Spec.Virtualization, &dst.Spec)
 
 	convertStorageV1ToV1beta1(src.Spec.Storage, &dst.Spec)
+
+	convertPersistentReservationV1ToV1beta1(src.Spec.Storage, &dst.Spec)
 
 	convertSecurityV1ToV1beta1(src.Spec.Security, &dst.Spec)
 
@@ -336,30 +343,30 @@ func convertStorageV1ToV1beta1(v1StorageConfig *hcov1.StorageConfig, v1beta1Spec
 	}
 }
 
-func convertStorageV1beta1ToV1(v1beta1Spec HyperConvergedSpec) *hcov1.StorageConfig {
+func convertStorageV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1Spec *hcov1.HyperConvergedSpec) {
 
 	if areV1beta1StorageFieldsEmpty(v1beta1Spec) {
-		return nil
+		return
 	}
 
-	v1StorageConfig := &hcov1.StorageConfig{}
+	if v1Spec.Storage == nil {
+		v1Spec.Storage = &hcov1.StorageConfig{}
+	}
 
-	v1StorageConfig.VMStateStorageClass = setPtr(v1beta1Spec.VMStateStorageClass)
-	v1StorageConfig.ScratchSpaceStorageClass = setPtr(v1beta1Spec.ScratchSpaceStorageClass)
+	v1Spec.Storage.VMStateStorageClass = setPtr(v1beta1Spec.VMStateStorageClass)
+	v1Spec.Storage.ScratchSpaceStorageClass = setPtr(v1beta1Spec.ScratchSpaceStorageClass)
 
 	if v1beta1Spec.StorageImport != nil {
-		v1StorageConfig.StorageImport = v1beta1Spec.StorageImport.DeepCopy()
+		v1Spec.Storage.StorageImport = v1beta1Spec.StorageImport.DeepCopy()
 	}
 
 	if v1beta1Spec.FilesystemOverhead != nil {
-		v1StorageConfig.FilesystemOverhead = v1beta1Spec.FilesystemOverhead.DeepCopy()
+		v1Spec.Storage.FilesystemOverhead = v1beta1Spec.FilesystemOverhead.DeepCopy()
 	}
 
 	if v1beta1Spec.ResourceRequirements != nil && v1beta1Spec.ResourceRequirements.StorageWorkloads != nil {
-		v1StorageConfig.WorkloadResourceRequirements = v1beta1Spec.ResourceRequirements.StorageWorkloads.DeepCopy()
+		v1Spec.Storage.WorkloadResourceRequirements = v1beta1Spec.ResourceRequirements.StorageWorkloads.DeepCopy()
 	}
-
-	return v1StorageConfig
 }
 
 func areV1beta1StorageFieldsEmpty(v1beta1Spec HyperConvergedSpec) bool {
@@ -558,6 +565,17 @@ func restoreV1OnlyFields(src *HyperConverged, dst *hcov1.HyperConverged) error {
 		dst.Spec.FeatureGates = append(dst.Spec.FeatureGates, *fg.DeepCopy())
 	}
 
+	if v1Fields.PersistentReservationEnabled != nil {
+		if dst.Spec.Storage == nil {
+			dst.Spec.Storage = &hcov1.StorageConfig{}
+		}
+		if dst.Spec.Storage.PersistentReservationConfiguration == nil {
+			dst.Spec.Storage.PersistentReservationConfiguration = &hcov1.PersistentReservationConfiguration{}
+		}
+
+		dst.Spec.Storage.PersistentReservationConfiguration.Enabled = new(*v1Fields.PersistentReservationEnabled)
+	}
+
 	return nil
 }
 
@@ -568,6 +586,10 @@ func storeV1OnlyFields(src *hcov1.HyperConverged, dst *HyperConverged) error {
 
 	if src.Spec.Virtualization.MediatedDevicesConfiguration != nil {
 		v1Fields.MDevConfigEnable = src.Spec.Virtualization.MediatedDevicesConfiguration.Enabled
+	}
+
+	if src.Spec.Storage != nil && src.Spec.Storage.PersistentReservationConfiguration != nil {
+		v1Fields.PersistentReservationEnabled = src.Spec.Storage.PersistentReservationConfiguration.Enabled
 	}
 
 	if len(src.Spec.FeatureGates) > 0 {
@@ -659,4 +681,40 @@ func convertMDevEnabledV1ToV1beta1(v1VirtConfig hcov1.VirtualizationConfig, v1be
 	}
 
 	v1beta1Spec.FeatureGates.DisableMDevConfiguration = new(!*mdc.Enabled)
+}
+
+// convertPersistentReservationV1beta1ToV1 maps the deprecated v1beta1 persistentReservation
+// feature gate to v1 spec.storage.persistentReservationConfiguration.enabled.
+func convertPersistentReservationV1beta1ToV1(v1beta1Spec HyperConvergedSpec, v1Spec *hcov1.HyperConvergedSpec) {
+	v1beta1FG := v1beta1Spec.FeatureGates.PersistentReservation
+	if v1beta1FG == nil {
+		return
+	}
+
+	if v1Spec.Storage == nil {
+		v1Spec.Storage = &hcov1.StorageConfig{}
+	}
+	if v1Spec.Storage.PersistentReservationConfiguration == nil {
+		v1Spec.Storage.PersistentReservationConfiguration = &hcov1.PersistentReservationConfiguration{}
+	}
+
+	v1Spec.Storage.PersistentReservationConfiguration.Enabled = new(*v1beta1FG)
+
+	if v1FGEnabled, v1FGExists := v1Spec.FeatureGates.IsExplicitlyEnabled(PersistentReservationFGName); v1FGExists && v1FGEnabled != *v1beta1FG {
+		if *v1beta1FG {
+			v1Spec.FeatureGates.Enable(PersistentReservationFGName)
+		} else {
+			v1Spec.FeatureGates.Disable(PersistentReservationFGName)
+		}
+	}
+}
+
+// convertPersistentReservationV1ToV1beta1 maps v1 spec.storage.persistentReservationConfiguration.enabled
+// to the deprecated v1beta1 persistentReservation feature gate.
+func convertPersistentReservationV1ToV1beta1(v1Storage *hcov1.StorageConfig, v1beta1Spec *HyperConvergedSpec) {
+	if v1Storage == nil || v1Storage.PersistentReservationConfiguration == nil || v1Storage.PersistentReservationConfiguration.Enabled == nil {
+		return
+	}
+
+	v1beta1Spec.FeatureGates.PersistentReservation = new(*v1Storage.PersistentReservationConfiguration.Enabled)
 }
