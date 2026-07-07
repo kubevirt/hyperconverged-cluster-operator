@@ -23,6 +23,7 @@ const (
 // +k8s:openapi-gen=true
 type FeatureGate struct {
 	// Name is the feature gate name
+	// +kubebuilder:validation:MaxLength=256
 	Name string `json:"name"`
 
 	// State determines if the feature gate is Enabled, or Disabled. The default value is Enabled.
@@ -68,6 +69,8 @@ func (fg *FeatureGate) UnmarshalJSON(bytes []byte) error {
 // +k8s:openapi-gen=true
 // +k8s:conversion-gen=false
 // +k8s:deepcopy-gen=false
+// +kubebuilder:validation:MaxItems=64
+// +kubebuilder:validation:XValidation:rule="self.all(x, self.exists_one(y, x.name.lowerAscii() == y.name.lowerAscii()))",message="feature gate names must be unique (case-insensitive)"
 type HyperConvergedFeatureGates []FeatureGate
 
 // Enable enables a feature gate by its name
@@ -137,7 +140,8 @@ func (fgs *HyperConvergedFeatureGates) IsExplicitlyEnabled(name string) (enabled
 }
 
 func (fgs *HyperConvergedFeatureGates) index(name string) int {
+	name = strings.ToLower(name)
 	return slices.IndexFunc(*fgs, func(fg FeatureGate) bool {
-		return fg.Name == name
+		return strings.ToLower(fg.Name) == name
 	})
 }

@@ -6,6 +6,7 @@ import (
 	"iter"
 	"maps"
 	"slices"
+	"strings"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregates"
 )
@@ -16,6 +17,7 @@ var featureGateJson []byte
 var featureGatesDetails map[string]featuregates.FeatureGate
 
 func GetFeatureGatePhase(fgName string) (enabled featuregates.Phase, fgExists bool) {
+	fgName = strings.ToLower(fgName)
 	fg, ok := featureGatesDetails[fgName]
 	if !ok {
 		return featuregates.PhaseUnknown, false
@@ -53,7 +55,7 @@ func setup(fgJson []byte) error {
 func fgsToMap(fgs iter.Seq[featuregates.FeatureGate]) iter.Seq2[string, featuregates.FeatureGate] {
 	return func(yield func(string, featuregates.FeatureGate) bool) {
 		for fg := range fgs {
-			if !yield(fg.Name, fg) {
+			if !yield(strings.ToLower(fg.Name), fg) {
 				return
 			}
 		}
@@ -62,9 +64,9 @@ func fgsToMap(fgs iter.Seq[featuregates.FeatureGate]) iter.Seq2[string, featureg
 
 func filterFGByPhase(fgs iter.Seq2[string, featuregates.FeatureGate], phase featuregates.Phase) iter.Seq[string] {
 	return func(yield func(string) bool) {
-		for fgName, fg := range fgs {
+		for _, fg := range fgs {
 			if fg.Phase == phase {
-				if !yield(fgName) {
+				if !yield(fg.Name) {
 					return
 				}
 			}
