@@ -16,11 +16,11 @@
     "state": "Alpha"
   },
   {
-    "name": "DecentralizedLiveMigration",
+    "name": "CrossArchitectureVirtualization",
     "state": "Alpha"
   },
   {
-    "name": "DeclarativeHotplugVolumes",
+    "name": "DecentralizedLiveMigration",
     "state": "Alpha"
   },
   {
@@ -36,7 +36,15 @@
     "state": "Alpha"
   },
   {
+    "name": "FirmwareAutoSelection",
+    "state": "Alpha"
+  },
+  {
     "name": "GPUsWithDRA",
+    "state": "Alpha"
+  },
+  {
+    "name": "GraceIOVirtualization",
     "state": "Alpha"
   },
   {
@@ -52,11 +60,11 @@
     "state": "Alpha"
   },
   {
-    "name": "HotplugVolumes",
+    "name": "HypervStrictCheck",
     "state": "Alpha"
   },
   {
-    "name": "HypervStrictCheck",
+    "name": "IOMMUFD",
     "state": "Alpha"
   },
   {
@@ -64,7 +72,15 @@
     "state": "Alpha"
   },
   {
-    "name": "LibvirtHooksServerAndClient",
+    "name": "MigrationStallDetection",
+    "state": "Alpha"
+  },
+  {
+    "name": "NetworkDevicesWithDRA",
+    "state": "Alpha"
+  },
+  {
+    "name": "OCIExport",
     "state": "Alpha"
   },
   {
@@ -72,19 +88,15 @@
     "state": "Alpha"
   },
   {
-    "name": "OptOutRoleAggregation",
-    "state": "Alpha"
-  },
-  {
     "name": "PCINUMAAwareTopology",
     "state": "Alpha"
   },
   {
-    "name": "PersistentReservation",
+    "name": "Plugins",
     "state": "Alpha"
   },
   {
-    "name": "RebootPolicy",
+    "name": "PortRangesSpec",
     "state": "Alpha"
   },
   {
@@ -100,10 +112,6 @@
     "state": "Alpha"
   },
   {
-    "name": "Template",
-    "state": "Alpha"
-  },
-  {
     "name": "UtilityVolumes",
     "state": "Alpha"
   },
@@ -112,20 +120,20 @@
     "state": "Alpha"
   },
   {
+    "name": "VMStatsCollector",
+    "state": "Alpha"
+  },
+  {
     "name": "VSOCK",
-    "state": "Alpha"
-  },
-  {
-    "name": "VmiMemoryOverheadReport",
-    "state": "Alpha"
-  },
-  {
-    "name": "WorkloadEncryptionSEV",
     "state": "Alpha"
   },
   {
     "name": "WorkloadEncryptionTDX",
     "state": "Alpha"
+  },
+  {
+    "name": "DeclarativeHotplugVolumes",
+    "state": "Beta"
   },
   {
     "name": "ExternalNetResourceInjection",
@@ -140,11 +148,15 @@
     "state": "Beta"
   },
   {
-    "name": "MigrationPriorityQueue",
+    "name": "LibvirtHooksServerAndClient",
     "state": "Beta"
   },
   {
     "name": "NodeRestriction",
+    "state": "Beta"
+  },
+  {
+    "name": "OptOutRoleAggregation",
     "state": "Beta"
   },
   {
@@ -156,7 +168,7 @@
     "state": "Beta"
   },
   {
-    "name": "SecureExecution",
+    "name": "RebootPolicy",
     "state": "Beta"
   },
   {
@@ -164,7 +176,15 @@
     "state": "Beta"
   },
   {
-    "name": "VideoConfig",
+    "name": "Template",
+    "state": "Beta"
+  },
+  {
+    "name": "VmiMemoryOverheadReport",
+    "state": "Beta"
+  },
+  {
+    "name": "WorkloadEncryptionSEV",
     "state": "Beta"
   },
   {
@@ -173,6 +193,10 @@
   },
   {
     "name": "DockerSELinuxMCSWorkaround",
+    "state": "Deprecated"
+  },
+  {
+    "name": "HotplugVolumes",
     "state": "Deprecated"
   },
   {
