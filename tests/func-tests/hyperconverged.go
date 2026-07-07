@@ -163,6 +163,18 @@ func RestoreDefaults(ctx context.Context, cli client.Client) {
 	PatchHCO(ctx, cli, []byte(`[{"op": "replace", "path": "/spec", "value": {}}]`))
 }
 
+func RestoreDefaultFeatureGates(ctx context.Context, cli client.Client) {
+	ginkgo.GinkgoHelper()
+
+	hc, err := GetHCO(ctx, cli)
+	Expect(err).NotTo(HaveOccurred())
+	if hc.Spec.FeatureGates == nil {
+		return
+	}
+
+	PatchHCO(ctx, cli, []byte(`[{"op": "remove", "path": "/spec/featureGates"}]`))
+}
+
 func EnableFG(ctx context.Context, cli client.Client, fgName string) error {
 	hc, err := GetHCO(ctx, cli)
 	if err != nil {
