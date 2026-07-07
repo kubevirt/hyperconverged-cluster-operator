@@ -14,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/ptr"
 
 	kubevirtv1 "kubevirt.io/api/core/v1"
 	cdiv1beta1 "kubevirt.io/containerized-data-importer-api/pkg/apis/core/v1beta1"
@@ -317,7 +316,7 @@ var _ = Describe("api/v1beta1", func() {
 		Context("v1beta1 to v1", func() {
 			It("should enable alpha feature gate in v1 when set to true in v1beta1", func() {
 				in := &HyperConvergedFeatureGates{
-					DownwardMetrics: ptr.To(true),
+					DownwardMetrics: new(true),
 				}
 				out := &hcofg.HyperConvergedFeatureGates{}
 
@@ -327,18 +326,18 @@ var _ = Describe("api/v1beta1", func() {
 					return fg.Name == "downwardMetrics"
 				})
 				Expect(idx).ToNot(Equal(-1))
-				Expect(*(*out)[idx].State).To(Equal(hcofg.Enabled))
+				Expect((*out)[idx].State).To(HaveValue(Equal(hcofg.Enabled)))
 			})
 
 			It("should not add alpha feature gate to v1 when set to false in v1beta1", func() {
 				in := &HyperConvergedFeatureGates{
-					DownwardMetrics: ptr.To(false),
+					DownwardMetrics: new(false),
 				}
 				out := &hcofg.HyperConvergedFeatureGates{}
 
 				convert_v1beta1_FeatureGates_To_v1(in, out)
 
-				Expect(*out).To(BeEmpty())
+				Expect(out).To(HaveValue(BeEmpty()))
 			})
 
 			It("should not add alpha feature gate to v1 when nil in v1beta1", func() {
@@ -347,12 +346,12 @@ var _ = Describe("api/v1beta1", func() {
 
 				convert_v1beta1_FeatureGates_To_v1(in, out)
 
-				Expect(*out).To(BeEmpty())
+				Expect(out).To(HaveValue(BeEmpty()))
 			})
 
 			It("should disable beta feature gate in v1 when set to false in v1beta1", func() {
 				in := &HyperConvergedFeatureGates{
-					DecentralizedLiveMigration: ptr.To(false),
+					DecentralizedLiveMigration: new(false),
 				}
 				out := &hcofg.HyperConvergedFeatureGates{}
 
@@ -362,18 +361,18 @@ var _ = Describe("api/v1beta1", func() {
 					return fg.Name == "decentralizedLiveMigration"
 				})
 				Expect(idx).ToNot(Equal(-1))
-				Expect(*(*out)[idx].State).To(Equal(hcofg.Disabled))
+				Expect((*out)[idx].State).To(HaveValue(Equal(hcofg.Disabled)))
 			})
 
 			It("should not add beta feature gate to v1 when set to true in v1beta1", func() {
 				in := &HyperConvergedFeatureGates{
-					DecentralizedLiveMigration: ptr.To(true),
+					DecentralizedLiveMigration: new(true),
 				}
 				out := &hcofg.HyperConvergedFeatureGates{}
 
 				convert_v1beta1_FeatureGates_To_v1(in, out)
 
-				Expect(*out).To(BeEmpty())
+				Expect(out).To(HaveValue(BeEmpty()))
 			})
 
 			It("should not add beta feature gate to v1 when nil in v1beta1", func() {
@@ -384,35 +383,35 @@ var _ = Describe("api/v1beta1", func() {
 
 				convert_v1beta1_FeatureGates_To_v1(in, out)
 
-				Expect(*out).To(BeEmpty())
+				Expect(out).To(HaveValue(BeEmpty()))
 			})
 
 			It("should ignore deprecated feature gates", func() {
 				in := &HyperConvergedFeatureGates{
-					WithHostPassthroughCPU:      ptr.To(true),
-					EnableCommonBootImageImport: ptr.To(true),
-					DeployTektonTaskResources:   ptr.To(true),
+					WithHostPassthroughCPU:      new(true),
+					EnableCommonBootImageImport: new(true),
+					DeployTektonTaskResources:   new(true),
 				}
 				out := &hcofg.HyperConvergedFeatureGates{}
 
 				convert_v1beta1_FeatureGates_To_v1(in, out)
 
-				Expect(*out).To(BeEmpty())
+				Expect(out).To(HaveValue(BeEmpty()))
 			})
 
 			It("should convert multiple feature gates at once", func() {
 				in := &HyperConvergedFeatureGates{
-					DownwardMetrics:            ptr.To(true),
-					AlignCPUs:                  ptr.To(true),
-					DecentralizedLiveMigration: ptr.To(false),
-					VideoConfig:                ptr.To(false),
-					ObjectGraph:                ptr.To(false), // alpha default, should not appear
+					DownwardMetrics:            new(true),
+					AlignCPUs:                  new(true),
+					DecentralizedLiveMigration: new(false),
+					DeclarativeHotplugVolumes:  new(false),
+					ObjectGraph:                new(false), // alpha default, should not appear
 				}
 				out := &hcofg.HyperConvergedFeatureGates{}
 
 				convert_v1beta1_FeatureGates_To_v1(in, out)
 
-				Expect(*out).To(HaveLen(4))
+				Expect(out).To(HaveValue(HaveLen(4)))
 			})
 		})
 
@@ -425,7 +424,7 @@ var _ = Describe("api/v1beta1", func() {
 				convert_v1_FeatureGates_To_v1beta1(in, out)
 
 				Expect(out.DownwardMetrics).ToNot(BeNil())
-				Expect(*out.DownwardMetrics).To(BeTrue())
+				Expect(out.DownwardMetrics).To(HaveValue(BeTrue()))
 			})
 
 			It("should set alpha feature gate to false when not present in v1", func() {
@@ -435,7 +434,7 @@ var _ = Describe("api/v1beta1", func() {
 				convert_v1_FeatureGates_To_v1beta1(in, out)
 
 				Expect(out.DownwardMetrics).ToNot(BeNil())
-				Expect(*out.DownwardMetrics).To(BeFalse())
+				Expect(out.DownwardMetrics).To(HaveValue(BeFalse()))
 			})
 
 			It("should set beta feature gate to true when not explicitly disabled in v1", func() {
@@ -445,7 +444,7 @@ var _ = Describe("api/v1beta1", func() {
 				convert_v1_FeatureGates_To_v1beta1(in, out)
 
 				Expect(out.DecentralizedLiveMigration).ToNot(BeNil())
-				Expect(*out.DecentralizedLiveMigration).To(BeTrue())
+				Expect(out.DecentralizedLiveMigration).To(HaveValue(BeTrue()))
 			})
 
 			It("should set beta feature gate to false when disabled in v1", func() {
@@ -456,7 +455,7 @@ var _ = Describe("api/v1beta1", func() {
 				convert_v1_FeatureGates_To_v1beta1(in, out)
 
 				Expect(out.DecentralizedLiveMigration).ToNot(BeNil())
-				Expect(*out.DecentralizedLiveMigration).To(BeFalse())
+				Expect(out.DecentralizedLiveMigration).To(HaveValue(BeFalse()))
 			})
 
 			It("should not set deprecated feature gates", func() {
@@ -475,8 +474,8 @@ var _ = Describe("api/v1beta1", func() {
 		Context("round-trip", func() {
 			It("should preserve alpha feature gate enabled through round-trip", func() {
 				original := &HyperConvergedFeatureGates{
-					DownwardMetrics: ptr.To(true),
-					AlignCPUs:       ptr.To(true),
+					DownwardMetrics: new(true),
+					AlignCPUs:       new(true),
 				}
 
 				v1fgs := &hcofg.HyperConvergedFeatureGates{}
@@ -485,14 +484,14 @@ var _ = Describe("api/v1beta1", func() {
 				result := &HyperConvergedFeatureGates{}
 				convert_v1_FeatureGates_To_v1beta1(*v1fgs, result)
 
-				Expect(*result.DownwardMetrics).To(BeTrue())
-				Expect(*result.AlignCPUs).To(BeTrue())
+				Expect(result.DownwardMetrics).To(HaveValue(BeTrue()))
+				Expect(result.AlignCPUs).To(HaveValue(BeTrue()))
 			})
 
 			It("should preserve beta feature gate disabled through round-trip", func() {
 				original := &HyperConvergedFeatureGates{
-					DecentralizedLiveMigration: ptr.To(false),
-					VideoConfig:                ptr.To(false),
+					DecentralizedLiveMigration: new(false),
+					DeclarativeHotplugVolumes:  new(false),
 				}
 
 				v1fgs := &hcofg.HyperConvergedFeatureGates{}
@@ -501,8 +500,8 @@ var _ = Describe("api/v1beta1", func() {
 				result := &HyperConvergedFeatureGates{}
 				convert_v1_FeatureGates_To_v1beta1(*v1fgs, result)
 
-				Expect(*result.DecentralizedLiveMigration).To(BeFalse())
-				Expect(*result.VideoConfig).To(BeFalse())
+				Expect(result.DecentralizedLiveMigration).To(HaveValue(BeFalse()))
+				Expect(result.DeclarativeHotplugVolumes).To(HaveValue(BeFalse()))
 			})
 
 			It("should preserve defaults through round-trip", func() {
@@ -515,11 +514,11 @@ var _ = Describe("api/v1beta1", func() {
 				convert_v1_FeatureGates_To_v1beta1(*v1fgs, result)
 
 				// alpha defaults stay false
-				Expect(*result.DownwardMetrics).To(BeFalse())
-				Expect(*result.AlignCPUs).To(BeFalse())
+				Expect(result.DownwardMetrics).To(HaveValue(BeFalse()))
+				Expect(result.AlignCPUs).To(HaveValue(BeFalse()))
 				// beta defaults stay true
-				Expect(*result.DecentralizedLiveMigration).To(BeTrue())
-				Expect(*result.VideoConfig).To(BeTrue())
+				Expect(result.DecentralizedLiveMigration).To(HaveValue(BeTrue()))
+				Expect(result.DeclarativeHotplugVolumes).To(HaveValue(BeTrue()))
 			})
 		})
 	})
@@ -1031,13 +1030,13 @@ var _ = Describe("api/v1beta1", func() {
 			It("should convert LiveMigrationConfig", func() {
 				v1VirtConfig := hcov1.VirtualizationConfig{
 					LiveMigrationConfig: hcov1.LiveMigrationConfigurations{
-						ParallelMigrationsPerCluster:      ptr.To(uint32(10)),
-						ParallelOutboundMigrationsPerNode: ptr.To(uint32(4)),
-						BandwidthPerMigration:             ptr.To("1Gi"),
-						CompletionTimeoutPerGiB:           ptr.To(int64(300)),
-						ProgressTimeout:                   ptr.To(int64(200)),
-						AllowAutoConverge:                 ptr.To(true),
-						AllowPostCopy:                     ptr.To(false),
+						ParallelMigrationsPerCluster:      new(uint32(10)),
+						ParallelOutboundMigrationsPerNode: new(uint32(4)),
+						BandwidthPerMigration:             new("1Gi"),
+						CompletionTimeoutPerGiB:           new(int64(300)),
+						ProgressTimeout:                   new(int64(200)),
+						AllowAutoConverge:                 new(true),
+						AllowPostCopy:                     new(false),
 					},
 				}
 
@@ -1108,8 +1107,8 @@ var _ = Describe("api/v1beta1", func() {
 				v1VirtConfig := hcov1.VirtualizationConfig{
 					WorkloadUpdateStrategy: hcov1.HyperConvergedWorkloadUpdateStrategy{
 						WorkloadUpdateMethods: []string{"LiveMigrate", "Evict"},
-						BatchEvictionSize:     ptr.To(5),
-						BatchEvictionInterval: ptr.To(metav1.Duration{Duration: 30000000000}),
+						BatchEvictionSize:     new(5),
+						BatchEvictionInterval: new(metav1.Duration{Duration: 30000000000}),
 					},
 				}
 
@@ -1155,7 +1154,7 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert EvictionStrategy", func() {
 				v1VirtConfig := hcov1.VirtualizationConfig{
-					EvictionStrategy: ptr.To(kubevirtv1.EvictionStrategyLiveMigrate),
+					EvictionStrategy: new(kubevirtv1.EvictionStrategyLiveMigrate),
 				}
 
 				var v1beta1Spec = HyperConvergedSpec{}
@@ -1176,10 +1175,10 @@ var _ = Describe("api/v1beta1", func() {
 			It("should convert VirtualMachineOptions", func() {
 				v1VirtConfig := hcov1.VirtualizationConfig{
 					VirtualMachineOptions: &hcov1.VirtualMachineOptions{
-						DisableFreePageReporting: ptr.To(true),
-						DisableSerialConsoleLog:  ptr.To(false),
-						DefaultCPUModel:          ptr.To("Haswell"),
-						DefaultRuntimeClass:      ptr.To("my-runtime-class"),
+						DisableFreePageReporting: new(true),
+						DisableSerialConsoleLog:  new(false),
+						DefaultCPUModel:          new("Haswell"),
+						DefaultRuntimeClass:      new("my-runtime-class"),
 					},
 				}
 
@@ -1352,7 +1351,7 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert VmiCPUAllocationRatio and AutoCPULimitNamespaceLabelSelector", func() {
 				v1VirtConfig := hcov1.VirtualizationConfig{
-					VmiCPUAllocationRatio: ptr.To(10),
+					VmiCPUAllocationRatio: new(10),
 					AutoCPULimitNamespaceLabelSelector: &metav1.LabelSelector{
 						MatchLabels: map[string]string{"cpu-limit": "true"},
 					},
@@ -1369,7 +1368,7 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert only VmiCPUAllocationRatio when AutoCPULimitNamespaceLabelSelector is nil", func() {
 				v1VirtConfig := hcov1.VirtualizationConfig{
-					VmiCPUAllocationRatio: ptr.To(5),
+					VmiCPUAllocationRatio: new(5),
 				}
 
 				var v1beta1Spec = HyperConvergedSpec{}
@@ -1431,13 +1430,13 @@ var _ = Describe("api/v1beta1", func() {
 			It("should convert LiveMigrationConfig", func() {
 				v1beta1Spec := HyperConvergedSpec{
 					LiveMigrationConfig: hcov1.LiveMigrationConfigurations{
-						ParallelMigrationsPerCluster:      ptr.To(uint32(10)),
-						ParallelOutboundMigrationsPerNode: ptr.To(uint32(4)),
-						BandwidthPerMigration:             ptr.To("1Gi"),
-						CompletionTimeoutPerGiB:           ptr.To(int64(300)),
-						ProgressTimeout:                   ptr.To(int64(200)),
-						AllowAutoConverge:                 ptr.To(true),
-						AllowPostCopy:                     ptr.To(false),
+						ParallelMigrationsPerCluster:      new(uint32(10)),
+						ParallelOutboundMigrationsPerNode: new(uint32(4)),
+						BandwidthPerMigration:             new("1Gi"),
+						CompletionTimeoutPerGiB:           new(int64(300)),
+						ProgressTimeout:                   new(int64(200)),
+						AllowAutoConverge:                 new(true),
+						AllowPostCopy:                     new(false),
 					},
 				}
 
@@ -1526,8 +1525,8 @@ var _ = Describe("api/v1beta1", func() {
 				v1beta1Spec := HyperConvergedSpec{
 					WorkloadUpdateStrategy: hcov1.HyperConvergedWorkloadUpdateStrategy{
 						WorkloadUpdateMethods: []string{"LiveMigrate", "Evict"},
-						BatchEvictionSize:     ptr.To(5),
-						BatchEvictionInterval: ptr.To(metav1.Duration{Duration: 30000000000}),
+						BatchEvictionSize:     new(5),
+						BatchEvictionInterval: new(metav1.Duration{Duration: 30000000000}),
 					},
 				}
 
@@ -1563,7 +1562,7 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert EvictionStrategy", func() {
 				v1beta1Spec := HyperConvergedSpec{
-					EvictionStrategy: ptr.To(kubevirtv1.EvictionStrategyLiveMigrate),
+					EvictionStrategy: new(kubevirtv1.EvictionStrategyLiveMigrate),
 				}
 
 				var v1VirtConfig hcov1.VirtualizationConfig
@@ -1584,11 +1583,11 @@ var _ = Describe("api/v1beta1", func() {
 			It("should convert VirtualMachineOptions", func() {
 				v1beta1Spec := HyperConvergedSpec{
 					VirtualMachineOptions: &VirtualMachineOptions{
-						DisableFreePageReporting: ptr.To(true),
-						DisableSerialConsoleLog:  ptr.To(false),
+						DisableFreePageReporting: new(true),
+						DisableSerialConsoleLog:  new(false),
 					},
-					DefaultCPUModel:     ptr.To("Haswell"),
-					DefaultRuntimeClass: ptr.To("my-runtime-class"),
+					DefaultCPUModel:     new("Haswell"),
+					DefaultRuntimeClass: new("my-runtime-class"),
 				}
 
 				var v1VirtConfig hcov1.VirtualizationConfig
@@ -1760,7 +1759,7 @@ var _ = Describe("api/v1beta1", func() {
 			It("should convert ResourceRequirements with VmiCPUAllocationRatio and AutoCPULimitNamespaceLabelSelector", func() {
 				v1beta1Spec := HyperConvergedSpec{
 					ResourceRequirements: &OperandResourceRequirements{
-						VmiCPUAllocationRatio: ptr.To(10),
+						VmiCPUAllocationRatio: new(10),
 						AutoCPULimitNamespaceLabelSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{"cpu-limit": "true"},
 						},
@@ -1778,7 +1777,7 @@ var _ = Describe("api/v1beta1", func() {
 			It("should convert ResourceRequirements with only VmiCPUAllocationRatio", func() {
 				v1beta1Spec := HyperConvergedSpec{
 					ResourceRequirements: &OperandResourceRequirements{
-						VmiCPUAllocationRatio: ptr.To(5),
+						VmiCPUAllocationRatio: new(5),
 					},
 				}
 
@@ -1821,7 +1820,7 @@ var _ = Describe("api/v1beta1", func() {
 		Context("v1 ==> v1beta1", func() {
 			It("should convert VMStateStorageClass", func() {
 				v1Storage := &hcov1.StorageConfig{
-					VMStateStorageClass: ptr.To("my-storage-class"),
+					VMStateStorageClass: new("my-storage-class"),
 				}
 
 				var v1beta1Spec HyperConvergedSpec
@@ -1832,7 +1831,7 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert ScratchSpaceStorageClass", func() {
 				v1Storage := &hcov1.StorageConfig{
-					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+					ScratchSpaceStorageClass: new("scratch-class"),
 				}
 
 				var v1beta1Spec HyperConvergedSpec
@@ -1927,8 +1926,8 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert all fields together", func() {
 				v1Storage := &hcov1.StorageConfig{
-					VMStateStorageClass:      ptr.To("vm-state-class"),
-					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+					VMStateStorageClass:      new("vm-state-class"),
+					ScratchSpaceStorageClass: new("scratch-class"),
 					StorageImport: &hcov1.StorageImportConfig{
 						InsecureRegistries: []string{"registry.example.com"},
 					},
@@ -1970,7 +1969,7 @@ var _ = Describe("api/v1beta1", func() {
 		Context("v1beta1 ==> v1", func() {
 			It("should convert VMStateStorageClass", func() {
 				v1beta1Spec := HyperConvergedSpec{
-					VMStateStorageClass: ptr.To("my-storage-class"),
+					VMStateStorageClass: new("my-storage-class"),
 				}
 
 				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
@@ -1981,7 +1980,7 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert ScratchSpaceStorageClass", func() {
 				v1beta1Spec := HyperConvergedSpec{
-					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+					ScratchSpaceStorageClass: new("scratch-class"),
 				}
 
 				v1Storage := convertStorageV1beta1ToV1(v1beta1Spec)
@@ -2064,8 +2063,8 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert all fields together", func() {
 				v1beta1Spec := HyperConvergedSpec{
-					VMStateStorageClass:      ptr.To("vm-state-class"),
-					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+					VMStateStorageClass:      new("vm-state-class"),
+					ScratchSpaceStorageClass: new("scratch-class"),
 					StorageImport: &hcov1.StorageImportConfig{
 						InsecureRegistries: []string{"registry.example.com"},
 					},
@@ -2110,8 +2109,8 @@ var _ = Describe("api/v1beta1", func() {
 		Context("round-trip", func() {
 			It("should preserve storage config through v1beta1 => v1 => v1beta1", func() {
 				original := HyperConvergedSpec{
-					VMStateStorageClass:      ptr.To("vm-state-class"),
-					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+					VMStateStorageClass:      new("vm-state-class"),
+					ScratchSpaceStorageClass: new("scratch-class"),
 					StorageImport: &hcov1.StorageImportConfig{
 						InsecureRegistries: []string{"registry1.example.com", "registry2.example.com"},
 					},
@@ -2130,8 +2129,8 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should preserve storage config through v1 => v1beta1 => v1", func() {
 				original := &hcov1.StorageConfig{
-					VMStateStorageClass:      ptr.To("vm-state-class"),
-					ScratchSpaceStorageClass: ptr.To("scratch-class"),
+					VMStateStorageClass:      new("vm-state-class"),
+					ScratchSpaceStorageClass: new("scratch-class"),
 					StorageImport: &hcov1.StorageImportConfig{
 						InsecureRegistries: []string{"registry.example.com"},
 					},
@@ -2155,7 +2154,7 @@ var _ = Describe("api/v1beta1", func() {
 		Context("v1 ==> v1beta1", func() {
 			It("should convert KubeSecondaryDNSNameServerIP", func() {
 				v1Networking := &hcov1.NetworkingConfig{
-					KubeSecondaryDNSNameServerIP: ptr.To("192.168.1.1"),
+					KubeSecondaryDNSNameServerIP: new("192.168.1.1"),
 				}
 
 				var v1beta1Spec HyperConvergedSpec
@@ -2169,8 +2168,8 @@ var _ = Describe("api/v1beta1", func() {
 			It("should convert KubeMacPoolConfiguration", func() {
 				v1Networking := &hcov1.NetworkingConfig{
 					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
-						RangeStart: ptr.To("02:00:00:00:00:00"),
-						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+						RangeStart: new("02:00:00:00:00:00"),
+						RangeEnd:   new("02:FF:FF:FF:FF:FF"),
 					},
 				}
 
@@ -2215,10 +2214,10 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert all fields together", func() {
 				v1Networking := &hcov1.NetworkingConfig{
-					KubeSecondaryDNSNameServerIP: ptr.To("10.0.0.1"),
+					KubeSecondaryDNSNameServerIP: new("10.0.0.1"),
 					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
-						RangeStart: ptr.To("02:00:00:00:00:00"),
-						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+						RangeStart: new("02:00:00:00:00:00"),
+						RangeEnd:   new("02:FF:FF:FF:FF:FF"),
 					},
 					NetworkBinding: map[string]kubevirtv1.InterfaceBindingPlugin{
 						"binding1": {SidecarImage: "image1:v1"},
@@ -2241,7 +2240,7 @@ var _ = Describe("api/v1beta1", func() {
 		Context("v1beta1 ==> v1", func() {
 			It("should convert KubeSecondaryDNSNameServerIP", func() {
 				v1beta1Spec := HyperConvergedSpec{
-					KubeSecondaryDNSNameServerIP: ptr.To("192.168.1.1"),
+					KubeSecondaryDNSNameServerIP: new("192.168.1.1"),
 				}
 
 				result := convertNetworkingV1beta1ToV1(v1beta1Spec)
@@ -2255,8 +2254,8 @@ var _ = Describe("api/v1beta1", func() {
 			It("should convert KubeMacPoolConfiguration", func() {
 				v1beta1Spec := HyperConvergedSpec{
 					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
-						RangeStart: ptr.To("02:00:00:00:00:00"),
-						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+						RangeStart: new("02:00:00:00:00:00"),
+						RangeEnd:   new("02:FF:FF:FF:FF:FF"),
 					},
 				}
 
@@ -2300,10 +2299,10 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert all fields together", func() {
 				v1beta1Spec := HyperConvergedSpec{
-					KubeSecondaryDNSNameServerIP: ptr.To("10.0.0.1"),
+					KubeSecondaryDNSNameServerIP: new("10.0.0.1"),
 					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
-						RangeStart: ptr.To("02:00:00:00:00:00"),
-						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+						RangeStart: new("02:00:00:00:00:00"),
+						RangeEnd:   new("02:FF:FF:FF:FF:FF"),
 					},
 					NetworkBinding: map[string]kubevirtv1.InterfaceBindingPlugin{
 						"binding1": {SidecarImage: "image1:v1"},
@@ -2326,10 +2325,10 @@ var _ = Describe("api/v1beta1", func() {
 		Context("round-trip", func() {
 			It("should preserve networking config through v1beta1 => v1 => v1beta1", func() {
 				original := HyperConvergedSpec{
-					KubeSecondaryDNSNameServerIP: ptr.To("10.0.0.1"),
+					KubeSecondaryDNSNameServerIP: new("10.0.0.1"),
 					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
-						RangeStart: ptr.To("02:00:00:00:00:00"),
-						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+						RangeStart: new("02:00:00:00:00:00"),
+						RangeEnd:   new("02:FF:FF:FF:FF:FF"),
 					},
 					NetworkBinding: map[string]kubevirtv1.InterfaceBindingPlugin{
 						"binding1": {SidecarImage: "image1:v1"},
@@ -2350,10 +2349,10 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should preserve networking config through v1 => v1beta1 => v1", func() {
 				original := &hcov1.NetworkingConfig{
-					KubeSecondaryDNSNameServerIP: ptr.To("10.0.0.1"),
+					KubeSecondaryDNSNameServerIP: new("10.0.0.1"),
 					KubeMacPoolConfiguration: &hcov1.KubeMacPoolConfig{
-						RangeStart: ptr.To("02:00:00:00:00:00"),
-						RangeEnd:   ptr.To("02:FF:FF:FF:FF:FF"),
+						RangeStart: new("02:00:00:00:00:00"),
+						RangeEnd:   new("02:FF:FF:FF:FF:FF"),
 					},
 					NetworkBinding: map[string]kubevirtv1.InterfaceBindingPlugin{
 						"binding1": {SidecarImage: "image1:v1"},
@@ -2393,7 +2392,7 @@ var _ = Describe("api/v1beta1", func() {
 		Context("v1 ==> v1beta1", func() {
 			It("should convert CommonTemplatesNamespace", func() {
 				v1Config := hcov1.WorkloadSourcesConfig{
-					CommonTemplatesNamespace: ptr.To("my-ns"),
+					CommonTemplatesNamespace: new("my-ns"),
 				}
 
 				var v1beta1Spec HyperConvergedSpec
@@ -2409,7 +2408,7 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert CommonBootImageNamespace", func() {
 				v1Config := hcov1.WorkloadSourcesConfig{
-					CommonBootImageNamespace: ptr.To("boot-ns"),
+					CommonBootImageNamespace: new("boot-ns"),
 				}
 
 				var v1beta1Spec HyperConvergedSpec
@@ -2421,7 +2420,7 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert EnableCommonBootImageImport", func() {
 				v1Config := hcov1.WorkloadSourcesConfig{
-					EnableCommonBootImageImport: ptr.To(true),
+					EnableCommonBootImageImport: new(true),
 				}
 
 				var v1beta1Spec HyperConvergedSpec
@@ -2469,7 +2468,7 @@ var _ = Describe("api/v1beta1", func() {
 			It("should convert CommonInstancetypesDeployment", func() {
 				v1Config := hcov1.WorkloadSourcesConfig{
 					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
-						Enabled: ptr.To(true),
+						Enabled: new(true),
 					},
 				}
 
@@ -2482,15 +2481,15 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert all fields together", func() {
 				v1Config := hcov1.WorkloadSourcesConfig{
-					CommonTemplatesNamespace:    ptr.To("templates-ns"),
-					CommonBootImageNamespace:    ptr.To("boot-ns"),
-					EnableCommonBootImageImport: ptr.To(false),
+					CommonTemplatesNamespace:    new("templates-ns"),
+					CommonBootImageNamespace:    new("boot-ns"),
+					EnableCommonBootImageImport: new(false),
 					DataImportCronTemplates: []hcov1.DataImportCronTemplate{
 						{ObjectMeta: metav1.ObjectMeta{Name: "tmpl1"}},
 					},
 					InstancetypeConfig: &kubevirtv1.InstancetypeConfiguration{},
 					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
-						Enabled: ptr.To(true),
+						Enabled: new(true),
 					},
 				}
 
@@ -2510,7 +2509,7 @@ var _ = Describe("api/v1beta1", func() {
 		Context("v1beta1 ==> v1", func() {
 			It("should convert CommonTemplatesNamespace", func() {
 				v1beta1Spec := HyperConvergedSpec{
-					CommonTemplatesNamespace: ptr.To("my-ns"),
+					CommonTemplatesNamespace: new("my-ns"),
 				}
 
 				var v1Config hcov1.WorkloadSourcesConfig
@@ -2526,7 +2525,7 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert CommonBootImageNamespace", func() {
 				v1beta1Spec := HyperConvergedSpec{
-					CommonBootImageNamespace: ptr.To("boot-ns"),
+					CommonBootImageNamespace: new("boot-ns"),
 				}
 
 				var v1Config hcov1.WorkloadSourcesConfig
@@ -2538,7 +2537,7 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert EnableCommonBootImageImport", func() {
 				v1beta1Spec := HyperConvergedSpec{
-					EnableCommonBootImageImport: ptr.To(true),
+					EnableCommonBootImageImport: new(true),
 				}
 
 				var v1Config hcov1.WorkloadSourcesConfig
@@ -2586,7 +2585,7 @@ var _ = Describe("api/v1beta1", func() {
 			It("should convert CommonInstancetypesDeployment", func() {
 				v1beta1Spec := HyperConvergedSpec{
 					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
-						Enabled: ptr.To(true),
+						Enabled: new(true),
 					},
 				}
 
@@ -2599,15 +2598,15 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert all fields together", func() {
 				v1beta1Spec := HyperConvergedSpec{
-					CommonTemplatesNamespace:    ptr.To("templates-ns"),
-					CommonBootImageNamespace:    ptr.To("boot-ns"),
-					EnableCommonBootImageImport: ptr.To(false),
+					CommonTemplatesNamespace:    new("templates-ns"),
+					CommonBootImageNamespace:    new("boot-ns"),
+					EnableCommonBootImageImport: new(false),
 					DataImportCronTemplates: []hcov1.DataImportCronTemplate{
 						{ObjectMeta: metav1.ObjectMeta{Name: "tmpl1"}},
 					},
 					InstancetypeConfig: &kubevirtv1.InstancetypeConfiguration{},
 					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
-						Enabled: ptr.To(true),
+						Enabled: new(true),
 					},
 				}
 
@@ -2627,15 +2626,15 @@ var _ = Describe("api/v1beta1", func() {
 		Context("round-trip", func() {
 			It("should preserve workload sources config through v1beta1 => v1 => v1beta1", func() {
 				original := HyperConvergedSpec{
-					CommonTemplatesNamespace:    ptr.To("templates-ns"),
-					CommonBootImageNamespace:    ptr.To("boot-ns"),
-					EnableCommonBootImageImport: ptr.To(true),
+					CommonTemplatesNamespace:    new("templates-ns"),
+					CommonBootImageNamespace:    new("boot-ns"),
+					EnableCommonBootImageImport: new(true),
 					DataImportCronTemplates: []hcov1.DataImportCronTemplate{
 						{ObjectMeta: metav1.ObjectMeta{Name: "tmpl1"}},
 					},
 					InstancetypeConfig: &kubevirtv1.InstancetypeConfiguration{},
 					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
-						Enabled: ptr.To(true),
+						Enabled: new(true),
 					},
 				}
 
@@ -2656,15 +2655,15 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should preserve workload sources config through v1 => v1beta1 => v1", func() {
 				original := hcov1.WorkloadSourcesConfig{
-					CommonTemplatesNamespace:    ptr.To("templates-ns"),
-					CommonBootImageNamespace:    ptr.To("boot-ns"),
-					EnableCommonBootImageImport: ptr.To(true),
+					CommonTemplatesNamespace:    new("templates-ns"),
+					CommonBootImageNamespace:    new("boot-ns"),
+					EnableCommonBootImageImport: new(true),
 					DataImportCronTemplates: []hcov1.DataImportCronTemplate{
 						{ObjectMeta: metav1.ObjectMeta{Name: "tmpl1"}},
 					},
 					InstancetypeConfig: &kubevirtv1.InstancetypeConfiguration{},
 					CommonInstancetypesDeployment: &kubevirtv1.CommonInstancetypesDeployment{
-						Enabled: ptr.To(true),
+						Enabled: new(true),
 					},
 				}
 
@@ -2691,12 +2690,12 @@ var _ = Describe("api/v1beta1", func() {
 				v1Security := hcov1.SecurityConfig{
 					CertConfig: hcov1.HyperConvergedCertConfig{
 						CA: hcov1.CertRotateConfigCA{
-							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
-							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							Duration:    new(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: new(metav1.Duration{Duration: 24 * time.Hour}),
 						},
 						Server: hcov1.CertRotateConfigServer{
-							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
-							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+							Duration:    new(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: new(metav1.Duration{Duration: 12 * time.Hour}),
 						},
 					},
 				}
@@ -2738,12 +2737,12 @@ var _ = Describe("api/v1beta1", func() {
 				v1Security := hcov1.SecurityConfig{
 					CertConfig: hcov1.HyperConvergedCertConfig{
 						CA: hcov1.CertRotateConfigCA{
-							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
-							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							Duration:    new(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: new(metav1.Duration{Duration: 24 * time.Hour}),
 						},
 						Server: hcov1.CertRotateConfigServer{
-							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
-							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+							Duration:    new(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: new(metav1.Duration{Duration: 12 * time.Hour}),
 						},
 					},
 					TLSSecurityProfile: &openshiftconfigv1.TLSSecurityProfile{
@@ -2766,12 +2765,12 @@ var _ = Describe("api/v1beta1", func() {
 				v1beta1Spec := HyperConvergedSpec{
 					CertConfig: hcov1.HyperConvergedCertConfig{
 						CA: hcov1.CertRotateConfigCA{
-							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
-							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							Duration:    new(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: new(metav1.Duration{Duration: 24 * time.Hour}),
 						},
 						Server: hcov1.CertRotateConfigServer{
-							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
-							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+							Duration:    new(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: new(metav1.Duration{Duration: 12 * time.Hour}),
 						},
 					},
 				}
@@ -2813,12 +2812,12 @@ var _ = Describe("api/v1beta1", func() {
 				v1beta1Spec := HyperConvergedSpec{
 					CertConfig: hcov1.HyperConvergedCertConfig{
 						CA: hcov1.CertRotateConfigCA{
-							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
-							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							Duration:    new(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: new(metav1.Duration{Duration: 24 * time.Hour}),
 						},
 						Server: hcov1.CertRotateConfigServer{
-							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
-							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+							Duration:    new(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: new(metav1.Duration{Duration: 12 * time.Hour}),
 						},
 					},
 					TLSSecurityProfile: &openshiftconfigv1.TLSSecurityProfile{
@@ -2841,12 +2840,12 @@ var _ = Describe("api/v1beta1", func() {
 				original := HyperConvergedSpec{
 					CertConfig: hcov1.HyperConvergedCertConfig{
 						CA: hcov1.CertRotateConfigCA{
-							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
-							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							Duration:    new(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: new(metav1.Duration{Duration: 24 * time.Hour}),
 						},
 						Server: hcov1.CertRotateConfigServer{
-							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
-							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+							Duration:    new(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: new(metav1.Duration{Duration: 12 * time.Hour}),
 						},
 					},
 					TLSSecurityProfile: &openshiftconfigv1.TLSSecurityProfile{
@@ -2873,12 +2872,12 @@ var _ = Describe("api/v1beta1", func() {
 				original := hcov1.SecurityConfig{
 					CertConfig: hcov1.HyperConvergedCertConfig{
 						CA: hcov1.CertRotateConfigCA{
-							Duration:    ptr.To(metav1.Duration{Duration: 48 * time.Hour}),
-							RenewBefore: ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
+							Duration:    new(metav1.Duration{Duration: 48 * time.Hour}),
+							RenewBefore: new(metav1.Duration{Duration: 24 * time.Hour}),
 						},
 						Server: hcov1.CertRotateConfigServer{
-							Duration:    ptr.To(metav1.Duration{Duration: 24 * time.Hour}),
-							RenewBefore: ptr.To(metav1.Duration{Duration: 12 * time.Hour}),
+							Duration:    new(metav1.Duration{Duration: 24 * time.Hour}),
+							RenewBefore: new(metav1.Duration{Duration: 12 * time.Hour}),
 						},
 					},
 					TLSSecurityProfile: &openshiftconfigv1.TLSSecurityProfile{
@@ -2946,7 +2945,7 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should convert DeployVMConsoleProxy", func() {
 				v1Config := hcov1.DeploymentConfig{
-					DeployVMConsoleProxy: ptr.To(true),
+					DeployVMConsoleProxy: new(true),
 				}
 
 				var v1beta1Spec HyperConvergedSpec
@@ -2967,7 +2966,7 @@ var _ = Describe("api/v1beta1", func() {
 			It("should convert ApplicationAwareConfig with Enable=true", func() {
 				v1Config := hcov1.DeploymentConfig{
 					ApplicationAwareConfig: &hcov1.ApplicationAwareConfigurations{
-						Enable: ptr.To(true),
+						Enable: new(true),
 						AllowApplicationAwareClusterResourceQuota: true,
 					},
 				}
@@ -2983,7 +2982,7 @@ var _ = Describe("api/v1beta1", func() {
 			It("should convert ApplicationAwareConfig with Enable=false", func() {
 				v1Config := hcov1.DeploymentConfig{
 					ApplicationAwareConfig: &hcov1.ApplicationAwareConfigurations{
-						Enable: ptr.To(false),
+						Enable: new(false),
 					},
 				}
 
@@ -3025,9 +3024,9 @@ var _ = Describe("api/v1beta1", func() {
 						},
 					},
 					ApplicationAwareConfig: &hcov1.ApplicationAwareConfigurations{
-						Enable: ptr.To(true),
+						Enable: new(true),
 					},
-					DeployVMConsoleProxy: ptr.To(true),
+					DeployVMConsoleProxy: new(true),
 				}
 
 				var v1beta1Spec HyperConvergedSpec
@@ -3107,7 +3106,7 @@ var _ = Describe("api/v1beta1", func() {
 			It("should set Enable=true when EnableApplicationAwareQuota is true and ApplicationAwareConfig is set", func() {
 				v1beta1Spec := HyperConvergedSpec{
 					ApplicationAwareConfig:      &ApplicationAwareConfigurations{},
-					EnableApplicationAwareQuota: ptr.To(true),
+					EnableApplicationAwareQuota: new(true),
 				}
 
 				var v1Config hcov1.DeploymentConfig
@@ -3119,7 +3118,7 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should set Enable=true when EnableApplicationAwareQuota is true and ApplicationAwareConfig is nil", func() {
 				v1beta1Spec := HyperConvergedSpec{
-					EnableApplicationAwareQuota: ptr.To(true),
+					EnableApplicationAwareQuota: new(true),
 				}
 
 				var v1Config hcov1.DeploymentConfig
@@ -3131,7 +3130,7 @@ var _ = Describe("api/v1beta1", func() {
 
 			It("should set Enable=false when EnableApplicationAwareQuota is false", func() {
 				v1beta1Spec := HyperConvergedSpec{
-					EnableApplicationAwareQuota: ptr.To(false),
+					EnableApplicationAwareQuota: new(false),
 				}
 
 				var v1Config hcov1.DeploymentConfig
@@ -3159,7 +3158,7 @@ var _ = Describe("api/v1beta1", func() {
 						},
 					},
 					ApplicationAwareConfig:      &ApplicationAwareConfigurations{},
-					EnableApplicationAwareQuota: ptr.To(true),
+					EnableApplicationAwareQuota: new(true),
 				}
 
 				var v1Config hcov1.DeploymentConfig
@@ -3182,7 +3181,7 @@ var _ = Describe("api/v1beta1", func() {
 						},
 					},
 					ApplicationAwareConfig:      &ApplicationAwareConfigurations{},
-					EnableApplicationAwareQuota: ptr.To(true),
+					EnableApplicationAwareQuota: new(true),
 				}
 
 				var v1Config hcov1.DeploymentConfig
@@ -3207,10 +3206,10 @@ var _ = Describe("api/v1beta1", func() {
 						},
 					},
 					ApplicationAwareConfig: &hcov1.ApplicationAwareConfigurations{
-						Enable: ptr.To(true),
+						Enable: new(true),
 						AllowApplicationAwareClusterResourceQuota: true,
 					},
-					DeployVMConsoleProxy: ptr.To(true),
+					DeployVMConsoleProxy: new(true),
 				}
 
 				var v1beta1Spec HyperConvergedSpec

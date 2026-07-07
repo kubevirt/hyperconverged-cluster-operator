@@ -23,9 +23,9 @@ func convert_v1beta1_FeatureGates_To_v1(in *HyperConvergedFeatureGates, out *hco
 		out.Disable("decentralizedLiveMigration")
 	}
 
-	// converting the VideoConfig v1beta1 beta feature gate to v1
-	if !ptr.Deref(in.VideoConfig, true) {
-		out.Disable("videoConfig")
+	// converting the DeclarativeHotplugVolumes v1beta1 beta feature gate to v1
+	if !ptr.Deref(in.DeclarativeHotplugVolumes, true) {
+		out.Disable("declarativeHotplugVolumes")
 	}
 
 	// converting the AlignCPUs v1beta1 alpha feature gate to v1
@@ -36,11 +36,6 @@ func convert_v1beta1_FeatureGates_To_v1(in *HyperConvergedFeatureGates, out *hco
 	// converting the ContainerPathVolumes v1beta1 alpha feature gate to v1
 	if ptr.Deref(in.ContainerPathVolumes, false) {
 		out.Enable("containerPathVolumes")
-	}
-
-	// converting the DeclarativeHotplugVolumes v1beta1 alpha feature gate to v1
-	if ptr.Deref(in.DeclarativeHotplugVolumes, false) {
-		out.Enable("declarativeHotplugVolumes")
 	}
 
 	// converting the DeployKubeSecondaryDNS v1beta1 alpha feature gate to v1
@@ -80,17 +75,14 @@ func convert_v1_FeatureGates_To_v1beta1(in hcofg.HyperConvergedFeatureGates, out
 	// converting the decentralizedLiveMigration v1 beta feature gate to v1beta1
 	out.DecentralizedLiveMigration = new(in.IsEnabled("decentralizedLiveMigration"))
 
-	// converting the videoConfig v1 beta feature gate to v1beta1
-	out.VideoConfig = new(in.IsEnabled("videoConfig"))
+	// converting the declarativeHotplugVolumes v1 beta feature gate to v1beta1
+	out.DeclarativeHotplugVolumes = new(in.IsEnabled("declarativeHotplugVolumes"))
 
 	// converting the alignCPUs v1 alpha feature gate to v1beta1
 	out.AlignCPUs = new(in.IsEnabled("alignCPUs"))
 
 	// converting the containerPathVolumes v1 alpha feature gate to v1beta1
 	out.ContainerPathVolumes = new(in.IsEnabled("containerPathVolumes"))
-
-	// converting the declarativeHotplugVolumes v1 alpha feature gate to v1beta1
-	out.DeclarativeHotplugVolumes = new(in.IsEnabled("declarativeHotplugVolumes"))
 
 	// converting the deployKubeSecondaryDNS v1 alpha feature gate to v1beta1
 	out.DeployKubeSecondaryDNS = new(in.IsEnabled("deployKubeSecondaryDNS"))

@@ -258,16 +258,15 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"declarativeHotplugVolumes": {
 						SchemaProps: spec.SchemaProps{
-							Description: "DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt. When set to true, the \"DeclarativeHotplugVolumes\" feature gate is enabled instead of \"HotplugVolumes\". When set to false or nil, the \"HotplugVolumes\" feature gate is enabled (default behavior). This feature is in Developer Preview.",
-							Default:     false,
+							Description: "DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt. When set to true or nil, the \"DeclarativeHotplugVolumes\" feature gate is enabled instead of \"HotplugVolumes\" (default behavior). When set to false, the \"HotplugVolumes\" feature gate is enabled. This feature is in Technical Preview.",
+							Default:     true,
 							Type:        []string{"boolean"},
 							Format:      "",
 						},
 					},
 					"videoConfig": {
 						SchemaProps: spec.SchemaProps{
-							Description: "VideoConfig allows users to configure video device types for their virtual machines. This can be useful for workloads that require specific video capabilities or architectures. Note: This feature is in Tech Preview.",
-							Default:     true,
+							Description: "VideoConfig - the feature is GA Deprecated: this feature gate is ignored",
 							Type:        []string{"boolean"},
 							Format:      "",
 						},

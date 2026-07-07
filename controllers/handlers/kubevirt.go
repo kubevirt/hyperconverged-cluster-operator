@@ -136,7 +136,6 @@ const (
 	kvPersistentReservation      = "PersistentReservation"
 	kvAlignCPUs                  = "AlignCPUs"
 	kvDecentralizedLiveMigration = "DecentralizedLiveMigration"
-	kvVideoConfig                = "VideoConfig"
 	kvObjectGraph                = "ObjectGraph"
 	kvUtilityVolumes             = "UtilityVolumes"
 	kvIncrementalBackup          = "IncrementalBackup"
@@ -925,9 +924,6 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 	if featureGates.IsEnabled("alignCPUs") {
 		fgs = append(fgs, kvAlignCPUs)
 	}
-	if featureGates.IsEnabled("videoConfig") {
-		fgs = append(fgs, kvVideoConfig)
-	}
 
 	if featureGates.IsEnabled("objectGraph") {
 		fgs = append(fgs, kvObjectGraph)
@@ -938,10 +934,10 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 	}
 
 	// Add the appropriate volume hotplug featuregate based on DeclarativeHotplugVolumes setting
-	if featureGates.IsEnabled("declarativeHotplugVolumes") {
+	if featureGates.IsEnabled("declarativeHotplugVolumes") { // the default behavior
 		fgs = append(fgs, kvDeclarativeHotplugVolumesGate)
 	} else {
-		// Default behavior: use the original HotplugVolumes featuregate
+		// Fallback behavior: use the original HotplugVolumes featuregate
 		fgs = append(fgs, kvHotplugVolumesGate)
 	}
 

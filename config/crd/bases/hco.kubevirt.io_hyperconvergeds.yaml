@@ -2232,10 +2232,13 @@ spec:
                     Developer Preview.
                     Phase: beta
 
-                  * videoConfig:
-                    VideoConfig allows users to configure video device types for their virtual
-                    machines. This can be useful for workloads that require specific video
-                    capabilities or architectures. Note: This feature is in Tech Preview.
+                  * declarativeHotplugVolumes:
+                    DeclarativeHotplugVolumes enables the use of the declarative volume
+                    hotplug feature in KubeVirt. When set to true or nil, the
+                    "DeclarativeHotplugVolumes" feature gate is enabled and the
+                    "HotplugVolumes" feature gate is not (default behavior). When set to
+                    false, the "HotplugVolumes" featuregate is enabled in KubeVirt. This
+                    feature is in Technical Preview.
                     Phase: beta
 
                   * alignCPUs:
@@ -2248,14 +2251,6 @@ spec:
                     ContainerPathVolumes enables the use of container paths as volumes in
                     KubeVirt. This allows VMs to access files and directories from the
                     virt-launcher pod's filesystem via virtiofs.
-                    Phase: alpha
-
-                  * declarativeHotplugVolumes:
-                    DeclarativeHotplugVolumes enables the use of the declarative volume
-                    hotplug feature in KubeVirt. When set to true, the
-                    "DeclarativeHotplugVolumes" feature gate is enabled instead of
-                    "HotplugVolumes". When set to false or nil, the "HotplugVolumes" feature
-                    gate is enabled (default behavior). This feature is in Developer Preview.
                     Phase: alpha
 
                   * deployKubeSecondaryDNS:
@@ -5389,14 +5384,13 @@ spec:
               featureGates:
                 containerPathVolumes: false
                 decentralizedLiveMigration: true
-                declarativeHotplugVolumes: false
+                declarativeHotplugVolumes: true
                 deployKubeSecondaryDNS: false
                 downwardMetrics: false
                 enableMultiArchBootImageImport: false
                 incrementalBackup: false
                 objectGraph: false
                 persistentReservation: false
-                videoConfig: true
               liveMigrationConfig:
                 allowAutoConverge: false
                 allowPostCopy: false
@@ -6528,14 +6522,13 @@ spec:
                 default:
                   containerPathVolumes: false
                   decentralizedLiveMigration: true
-                  declarativeHotplugVolumes: false
+                  declarativeHotplugVolumes: true
                   deployKubeSecondaryDNS: false
                   downwardMetrics: false
                   enableMultiArchBootImageImport: false
                   incrementalBackup: false
                   objectGraph: false
                   persistentReservation: false
-                  videoConfig: true
                 description: |-
                   featureGates is a map of feature gate flags. Setting a flag to `true` will enable
                   the feature. Setting `false` or removing the feature gate, disables the feature.
@@ -6564,12 +6557,12 @@ spec:
                       This feature is in Developer Preview.
                     type: boolean
                   declarativeHotplugVolumes:
-                    default: false
+                    default: true
                     description: |-
                       DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt.
-                      When set to true, the "DeclarativeHotplugVolumes" feature gate is enabled instead of "HotplugVolumes".
-                      When set to false or nil, the "HotplugVolumes" feature gate is enabled (default behavior).
-                      This feature is in Developer Preview.
+                      When set to true or nil, the "DeclarativeHotplugVolumes" feature gate is enabled instead of "HotplugVolumes" (default behavior).
+                      When set to false, the "HotplugVolumes" feature gate is enabled.
+                      This feature is in Technical Preview.
                     type: boolean
                   deployKubeSecondaryDNS:
                     default: false
@@ -6645,11 +6638,9 @@ spec:
                     description: 'Deprecated: this feature gate is ignored.'
                     type: boolean
                   videoConfig:
-                    default: true
                     description: |-
-                      VideoConfig allows users to configure video device types for their virtual machines.
-                      This can be useful for workloads that require specific video capabilities or architectures.
-                      Note: This feature is in Tech Preview.
+                      VideoConfig - the feature is GA
+                      Deprecated: this feature gate is ignored
                     type: boolean
                   withHostPassthroughCPU:
                     description: 'Deprecated: This feature gate is ignored'

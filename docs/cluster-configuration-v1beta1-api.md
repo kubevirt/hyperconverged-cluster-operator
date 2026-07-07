@@ -232,24 +232,16 @@ heterogeneous clusters. See [Golden Images](#golden-images-in-heterogeneous-clus
 ### declarativeHotplugVolumes Feature Gate
 Set the `declarativeHotplugVolumes` feature gate to true to enable the declarative volume hotplug API in KubeVirt. By default, volume hotplug operations are performed using KubeVirt's subresource API. Changes made directly to the VirtualMachine spec require a VM restart to take effect. When enabled, volume hotplug operations can be performed declaratively by modifying the VirtualMachine spec directly. These changes are applied immediately without requiring a VM restart.
 
-**Note**: This feature is in Developer Preview.
+**Note**: This feature is in Technical Preview.
 
-**Default**: `false`
+**Default**: `true`
 
 **Graduation Status**: Alpha
 
 ### videoConfig Feature Gate
-Set the `videoConfig` feature gate to true in order to override the default video device type used by KubeVirt. By default, the video type depends on the architecture and firmware:
-* For amd64: vga for BIOS VMs, and bochs for UEFI VMs.
-* For arm64 and s390x: virtio.
+This feature gate is ignored, as the videoConfig feature is GA.
 
-Enabling this feature gate allows explicitly configuring the video type in the VirtualMachine spec.
-
-**Note**: This feature is in Tech Preview.
-
-**Default**: `true`
-
-**Graduation Status**: Beta
+**Graduation Status**: GA
 
 ### Object Graph Feature Gate
 Set the `objectGraph` feature gate to true in order to enable the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking.
