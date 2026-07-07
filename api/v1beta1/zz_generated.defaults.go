@@ -65,12 +65,8 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		in.Spec.FeatureGates.DecentralizedLiveMigration = &ptrVar1
 	}
 	if in.Spec.FeatureGates.DeclarativeHotplugVolumes == nil {
-		var ptrVar1 bool = false
-		in.Spec.FeatureGates.DeclarativeHotplugVolumes = &ptrVar1
-	}
-	if in.Spec.FeatureGates.VideoConfig == nil {
 		var ptrVar1 bool = true
-		in.Spec.FeatureGates.VideoConfig = &ptrVar1
+		in.Spec.FeatureGates.DeclarativeHotplugVolumes = &ptrVar1
 	}
 	if in.Spec.FeatureGates.ObjectGraph == nil {
 		var ptrVar1 bool = false
