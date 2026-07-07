@@ -133,7 +133,6 @@ const (
 // KubeVirt feature gates that are exposed in HCO API
 const (
 	kvDownwardMetrics            = "DownwardMetrics"
-	kvPersistentReservation      = "PersistentReservation"
 	kvAlignCPUs                  = "AlignCPUs"
 	kvDecentralizedLiveMigration = "DecentralizedLiveMigration"
 	kvObjectGraph                = "ObjectGraph"
@@ -429,6 +428,7 @@ func getKVConfig(hc *hcov1.HyperConverged) (*kubevirtcorev1.KubeVirtConfiguratio
 		MigrationConfiguration:             kvLiveMigration,
 		PermittedHostDevices:               toKvPermittedHostDevices(hc.Spec.Virtualization.PermittedHostDevices),
 		MediatedDevicesConfiguration:       toKvMediatedDevicesConfiguration(hc),
+		PersistentReservationConfiguration: toKvPersistentReservationConfiguration(hc),
 		ObsoleteCPUModels:                  obsoleteCPUs,
 		TLSConfiguration:                   hcTLSSecurityProfileToKv(tlssecprofile.GetTLSSecurityProfile(hc.Spec.Security.TLSSecurityProfile)),
 		APIConfiguration:                   rateLimiter,
@@ -644,6 +644,26 @@ func toKvMediatedDevicesConfiguration(hc *hcov1.HyperConverged) *kubevirtcorev1.
 	}
 
 	return kvMdev
+}
+
+func toKvPersistentReservationConfiguration(hc *hcov1.HyperConverged) *kubevirtcorev1.PersistentReservationConfiguration {
+	var enabled *bool
+
+	if hc.Spec.Storage != nil &&
+		hc.Spec.Storage.PersistentReservationConfiguration != nil &&
+		hc.Spec.Storage.PersistentReservationConfiguration.Enabled != nil {
+		enabled = new(*hc.Spec.Storage.PersistentReservationConfiguration.Enabled)
+	} else if hc.Spec.FeatureGates.IsEnabled("persistentReservation") {
+		enabled = new(true)
+	}
+
+	if enabled == nil {
+		return nil
+	}
+
+	return &kubevirtcorev1.PersistentReservationConfiguration{
+		Enabled: enabled,
+	}
 }
 
 func toKvNodeMediatedDevicesConfiguration(hcoNodeMdevTypesConf []hcov1.NodeMediatedDeviceTypesConfig) []kubevirtcorev1.NodeMediatedDeviceTypesConfig {
@@ -918,9 +938,6 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 
 	if featureGates.IsEnabled("downwardMetrics") {
 		fgs = append(fgs, kvDownwardMetrics)
-	}
-	if featureGates.IsEnabled("persistentReservation") {
-		fgs = append(fgs, kvPersistentReservation)
 	}
 	if featureGates.IsEnabled("alignCPUs") {
 		fgs = append(fgs, kvAlignCPUs)
