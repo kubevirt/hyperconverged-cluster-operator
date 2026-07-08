@@ -152,7 +152,11 @@ func newMutatingWebhookConfiguration() *admissionregistrationv1.MutatingWebhookC
 			TimeoutSeconds:          new(int32(10)),
 			MatchPolicy:             new(admissionregistrationv1.Equivalent),
 			ReinvocationPolicy:      new(admissionregistrationv1.NeverReinvocationPolicy),
-			ObjectSelector:          &metav1.LabelSelector{},
+			ObjectSelector: &metav1.LabelSelector{
+				MatchLabels: map[string]string{
+					kubevirtcorev1.AppLabel: "virt-launcher",
+				},
+			},
 			ClientConfig: admissionregistrationv1.WebhookClientConfig{
 				Service: &admissionregistrationv1.ServiceReference{
 					Name:      serviceName,
@@ -171,10 +175,6 @@ func newMutatingWebhookConfiguration() *admissionregistrationv1.MutatingWebhookC
 				},
 			},
 			MatchConditions: []admissionregistrationv1.MatchCondition{
-				{
-					Name:       "isVirtLauncherPod",
-					Expression: `has(object.metadata.labels) && object.metadata.labels["` + kubevirtcorev1.AppLabel + `"] == "virt-launcher"`,
-				},
 				{
 					Name:       "hasMultusAnnotation",
 					Expression: `has(object.metadata.annotations) && "k8s.v1.cni.cncf.io/networks" in object.metadata.annotations`,
