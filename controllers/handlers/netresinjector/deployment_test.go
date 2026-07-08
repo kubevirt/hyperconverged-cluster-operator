@@ -14,6 +14,7 @@ import (
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -39,6 +40,15 @@ var _ = Describe("Network Resources Injector Deployment", func() {
 
 	Context("newDeployment", func() {
 		It("should have all default values", func() {
+			origFunc := nodeinfo.IsInfrastructureHighlyAvailable
+			DeferCleanup(func() {
+				nodeinfo.IsInfrastructureHighlyAvailable = origFunc
+			})
+
+			nodeinfo.IsInfrastructureHighlyAvailable = func() bool {
+				return true
+			}
+
 			dep := newDeployment(hco)
 
 			Expect(dep.Name).To(Equal(deploymentName))
@@ -95,6 +105,20 @@ var _ = Describe("Network Resources Injector Deployment", func() {
 			Expect(dep.Spec.Template.Spec.Volumes).To(HaveLen(1))
 			Expect(dep.Spec.Template.Spec.Volumes[0].Name).To(Equal("tls"))
 			Expect(dep.Spec.Template.Spec.Volumes[0].Secret.SecretName).To(Equal(tlsSecretName))
+		})
+
+		It("should set only one replica in an SNO cluster", func() {
+			origFunc := nodeinfo.IsInfrastructureHighlyAvailable
+			DeferCleanup(func() {
+				nodeinfo.IsInfrastructureHighlyAvailable = origFunc
+			})
+
+			nodeinfo.IsInfrastructureHighlyAvailable = func() bool {
+				return false
+			}
+
+			dep := newDeployment(hco)
+			Expect(dep.Spec.Replicas).To(HaveValue(Equal(int32(1))))
 		})
 	})
 
