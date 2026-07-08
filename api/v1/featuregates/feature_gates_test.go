@@ -27,7 +27,7 @@ var _ = Describe("FeatureGate", func() {
 
 			jsonBytes, err := json.Marshal(fg)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(jsonBytes).To(MatchJSON(`{"name":"fgName"}`))
+			Expect(jsonBytes).To(MatchJSON(`{"name":"fgName", "state": "Enabled"}`))
 		})
 
 		It("should marshal a disabled feature gate", func() {
@@ -49,7 +49,7 @@ var _ = Describe("FeatureGate", func() {
 
 			jsonBytes, err := json.Marshal(fg)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(jsonBytes).To(MatchJSON(`{"name":"fgName"}`))
+			Expect(jsonBytes).To(MatchJSON(`{"name":"fgName", "state": "Enabled"}`))
 		})
 
 		It("should marshal a disabled feature gate pointer", func() {
@@ -90,7 +90,7 @@ var _ = Describe("FeatureGate", func() {
 
 			jsonBytes, err := json.Marshal(fgs)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(jsonBytes).To(MatchJSON(`[{"name":"noEnabledField"}, {"name": "enabledFG"}, {"name": "disabledFG", "state": "Disabled"}]`))
+			Expect(jsonBytes).To(MatchJSON(`[{"name":"noEnabledField"}, {"name": "enabledFG", "state": "Enabled"}, {"name": "disabledFG", "state": "Disabled"}]`))
 		})
 
 		It("should yaml marshal a FG array", func() {
@@ -112,6 +112,7 @@ var _ = Describe("FeatureGate", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(yamlBytes).To(MatchYAML(`- name: noEnabledField
 - name: enabledFG
+  state: Enabled
 - state: Disabled
   name: disabledFG`,
 			))

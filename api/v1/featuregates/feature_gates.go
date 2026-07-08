@@ -37,9 +37,9 @@ func (fg FeatureGate) MarshalJSON() ([]byte, error) {
 	builder.WriteString(fg.Name)
 	builder.WriteByte('"')
 
-	if fg.State != nil && *fg.State == Disabled {
+	if fg.State != nil {
 		builder.WriteString(`,"state":"`)
-		builder.WriteString(string(Disabled))
+		builder.WriteString(string(*fg.State))
 		builder.WriteByte('"')
 	}
 	builder.WriteByte('}')
@@ -55,7 +55,7 @@ func (fg *FeatureGate) UnmarshalJSON(bytes []byte) error {
 	}
 
 	if fg.State == nil {
-		fg.State = ptr.To(Enabled)
+		fg.State = new(Enabled)
 	}
 
 	return nil
