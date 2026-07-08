@@ -84,7 +84,7 @@ func (fgs *HyperConvergedFeatureGates) Disable(name string) {
 }
 
 func (fgs *HyperConvergedFeatureGates) set(name string, enabled State) {
-	idx := fgs.index(name)
+	idx := fgs.Index(name)
 
 	if idx == -1 {
 		*fgs = append(*fgs, FeatureGate{Name: name, State: &enabled})
@@ -121,7 +121,7 @@ func (fgs *HyperConvergedFeatureGates) IsEnabled(name string) bool {
 		return false
 	}
 
-	if idx := fgs.index(name); idx > -1 {
+	if idx := fgs.Index(name); idx > -1 {
 		state = ptr.Deref((*fgs)[idx].State, Enabled)
 	}
 
@@ -130,7 +130,7 @@ func (fgs *HyperConvergedFeatureGates) IsEnabled(name string) bool {
 
 // IsExplicitlyEnabled checks if a feature gate is explicitly set in the feature gate list
 func (fgs *HyperConvergedFeatureGates) IsExplicitlyEnabled(name string) (enabled bool, found bool) {
-	idx := fgs.index(name)
+	idx := fgs.Index(name)
 
 	if idx < 0 {
 		return false, false
@@ -139,7 +139,7 @@ func (fgs *HyperConvergedFeatureGates) IsExplicitlyEnabled(name string) (enabled
 	return ptr.Deref((*fgs)[idx].State, Enabled) == Enabled, true
 }
 
-func (fgs *HyperConvergedFeatureGates) index(name string) int {
+func (fgs *HyperConvergedFeatureGates) Index(name string) int {
 	name = strings.ToLower(name)
 	return slices.IndexFunc(*fgs, func(fg FeatureGate) bool {
 		return strings.ToLower(fg.Name) == name

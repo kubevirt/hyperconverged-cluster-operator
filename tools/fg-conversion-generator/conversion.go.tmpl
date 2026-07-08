@@ -12,20 +12,38 @@
 package v1beta1
 
 import (
-	"k8s.io/utils/ptr"
+	"slices"
 
 	hcofg "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 )
 
 func convert_v1beta1_FeatureGates_To_v1(in *HyperConvergedFeatureGates, out *hcofg.HyperConvergedFeatureGates) {
-{{- range .}}
+	var (
+		v1Idx     int
+		v1Found   bool
+		v1Enabled bool
+	)
+{{ range . -}}
 	{{- if .IsDeprecated }}
 	// the {{.FieldName}} feature gate is deprecated and should have a custom conversion logic in api/v1beta1/conversion.go
 	{{- else }}
 	// converting the {{.FieldName}} v1beta1 {{.Phase.String}} feature gate to v1
 	{{- $IsBeta := .IsBeta}}
-	if {{if $IsBeta}}!{{end}}ptr.Deref(in.{{.FieldName}}, {{if $IsBeta}}true{{else}}false{{end}}) {
-		out.{{if $IsBeta}}Disable{{else}}Enable{{end}}("{{.JSONName}}")
+	v1Idx = out.Index("{{.JSONName}}")
+	v1Found = v1Idx >= 0
+	if in.{{.FieldName}} == nil {
+		if v1Found {
+			*out = slices.Delete(*out, v1Idx, v1Idx+1)
+		}
+	} else {
+		v1Enabled = v1Found && ((*out)[v1Idx].State == nil || *((*out)[v1Idx].State) == "Enabled")
+		if (!v1Found && {{if $IsBeta}}!{{end}}*in.{{.FieldName}}) || (v1Found && v1Enabled != *in.{{.FieldName}}) {
+			if *in.{{.FieldName}} {
+				out.Enable("{{.JSONName}}")
+			} else {
+				out.Disable("{{.JSONName}}")
+			}
+		}
 	}
 	{{- end}}
 {{end -}}

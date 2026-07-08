@@ -14,6 +14,7 @@ import (
 	kubevirtv1 "kubevirt.io/api/core/v1"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	hcov1fg "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 )
 
 const v1OnlyFieldAnnotation = APIVersionGroup + "/v1-only-fields"
@@ -21,9 +22,17 @@ const v1OnlyFieldAnnotation = APIVersionGroup + "/v1-only-fields"
 const DisableMDevConfigurationFG = "disableMDevConfiguration"
 
 type v1OnlyFields struct {
-	DeployNetworkResourcesInjector *bool `json:"deployNetworkResourcesInjector,omitempty"`
-	MDevConfigEnable               *bool `json:"mdevConfigEnable,omitempty"`
-	DisableMDevConfigurationFG     *bool `json:"disableMDevConfigurationFG,omitempty"`
+	DeployNetworkResourcesInjector *bool                              `json:"deployNetworkResourcesInjector,omitempty"`
+	MDevConfigEnable               *bool                              `json:"mdevConfigEnable,omitempty"`
+	DisableMDevConfigurationFG     *bool                              `json:"disableMDevConfigurationFG,omitempty"`
+	FeatureGates                   hcov1fg.HyperConvergedFeatureGates `json:"featureGates,omitempty"`
+}
+
+func (fields *v1OnlyFields) isEmpty() bool {
+	return fields.DeployNetworkResourcesInjector == nil &&
+		fields.MDevConfigEnable == nil &&
+		fields.DisableMDevConfigurationFG == nil &&
+		fields.FeatureGates == nil
 }
 
 // Implement the conversion.Convertible interface, to be used in the conversion webhook.
@@ -547,12 +556,8 @@ func restoreV1OnlyFields(src *HyperConverged, dst *hcov1.HyperConverged) error {
 		dst.Spec.Virtualization.MediatedDevicesConfiguration.Enabled = new(*v1Fields.MDevConfigEnable)
 	}
 
-	if v1Fields.DisableMDevConfigurationFG != nil {
-		if *v1Fields.DisableMDevConfigurationFG {
-			dst.Spec.FeatureGates.Enable(DisableMDevConfigurationFG)
-		} else {
-			dst.Spec.FeatureGates.Disable(DisableMDevConfigurationFG)
-		}
+	for _, fg := range v1Fields.FeatureGates {
+		dst.Spec.FeatureGates = append(dst.Spec.FeatureGates, *fg.DeepCopy())
 	}
 
 	return nil
@@ -567,11 +572,14 @@ func storeV1OnlyFields(src *hcov1.HyperConverged, dst *HyperConverged) error {
 		v1Fields.MDevConfigEnable = src.Spec.Virtualization.MediatedDevicesConfiguration.Enabled
 	}
 
-	if fgEnabled, fgFound := src.Spec.FeatureGates.IsExplicitlyEnabled(DisableMDevConfigurationFG); fgFound {
-		v1Fields.DisableMDevConfigurationFG = new(fgEnabled)
+	if len(src.Spec.FeatureGates) > 0 {
+		v1Fields.FeatureGates = make(hcov1fg.HyperConvergedFeatureGates, len(src.Spec.FeatureGates))
+		for i, fg := range src.Spec.FeatureGates {
+			v1Fields.FeatureGates[i] = *fg.DeepCopy()
+		}
 	}
 
-	if v1Fields == (v1OnlyFields{}) {
+	if v1Fields.isEmpty() {
 		return nil
 	}
 

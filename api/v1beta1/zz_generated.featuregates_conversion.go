@@ -12,60 +12,196 @@
 package v1beta1
 
 import (
-	"k8s.io/utils/ptr"
+	"slices"
 
 	hcofg "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
 )
 
 func convert_v1beta1_FeatureGates_To_v1(in *HyperConvergedFeatureGates, out *hcofg.HyperConvergedFeatureGates) {
+	var (
+		v1Idx     int
+		v1Found   bool
+		v1Enabled bool
+	)
+
 	// converting the DecentralizedLiveMigration v1beta1 beta feature gate to v1
-	if !ptr.Deref(in.DecentralizedLiveMigration, true) {
-		out.Disable("decentralizedLiveMigration")
+	v1Idx = out.Index("decentralizedLiveMigration")
+	v1Found = v1Idx >= 0
+	if in.DecentralizedLiveMigration == nil {
+		if v1Found {
+			*out = slices.Delete(*out, v1Idx, v1Idx+1)
+		}
+	} else {
+		v1Enabled = v1Found && ((*out)[v1Idx].State == nil || *((*out)[v1Idx].State) == "Enabled")
+		if (!v1Found && !*in.DecentralizedLiveMigration) || (v1Found && v1Enabled != *in.DecentralizedLiveMigration) {
+			if *in.DecentralizedLiveMigration {
+				out.Enable("decentralizedLiveMigration")
+			} else {
+				out.Disable("decentralizedLiveMigration")
+			}
+		}
 	}
 
 	// converting the DeclarativeHotplugVolumes v1beta1 beta feature gate to v1
-	if !ptr.Deref(in.DeclarativeHotplugVolumes, true) {
-		out.Disable("declarativeHotplugVolumes")
+	v1Idx = out.Index("declarativeHotplugVolumes")
+	v1Found = v1Idx >= 0
+	if in.DeclarativeHotplugVolumes == nil {
+		if v1Found {
+			*out = slices.Delete(*out, v1Idx, v1Idx+1)
+		}
+	} else {
+		v1Enabled = v1Found && ((*out)[v1Idx].State == nil || *((*out)[v1Idx].State) == "Enabled")
+		if (!v1Found && !*in.DeclarativeHotplugVolumes) || (v1Found && v1Enabled != *in.DeclarativeHotplugVolumes) {
+			if *in.DeclarativeHotplugVolumes {
+				out.Enable("declarativeHotplugVolumes")
+			} else {
+				out.Disable("declarativeHotplugVolumes")
+			}
+		}
 	}
 
 	// converting the AlignCPUs v1beta1 alpha feature gate to v1
-	if ptr.Deref(in.AlignCPUs, false) {
-		out.Enable("alignCPUs")
+	v1Idx = out.Index("alignCPUs")
+	v1Found = v1Idx >= 0
+	if in.AlignCPUs == nil {
+		if v1Found {
+			*out = slices.Delete(*out, v1Idx, v1Idx+1)
+		}
+	} else {
+		v1Enabled = v1Found && ((*out)[v1Idx].State == nil || *((*out)[v1Idx].State) == "Enabled")
+		if (!v1Found && *in.AlignCPUs) || (v1Found && v1Enabled != *in.AlignCPUs) {
+			if *in.AlignCPUs {
+				out.Enable("alignCPUs")
+			} else {
+				out.Disable("alignCPUs")
+			}
+		}
 	}
 
 	// converting the ContainerPathVolumes v1beta1 alpha feature gate to v1
-	if ptr.Deref(in.ContainerPathVolumes, false) {
-		out.Enable("containerPathVolumes")
+	v1Idx = out.Index("containerPathVolumes")
+	v1Found = v1Idx >= 0
+	if in.ContainerPathVolumes == nil {
+		if v1Found {
+			*out = slices.Delete(*out, v1Idx, v1Idx+1)
+		}
+	} else {
+		v1Enabled = v1Found && ((*out)[v1Idx].State == nil || *((*out)[v1Idx].State) == "Enabled")
+		if (!v1Found && *in.ContainerPathVolumes) || (v1Found && v1Enabled != *in.ContainerPathVolumes) {
+			if *in.ContainerPathVolumes {
+				out.Enable("containerPathVolumes")
+			} else {
+				out.Disable("containerPathVolumes")
+			}
+		}
 	}
 
 	// converting the DeployKubeSecondaryDNS v1beta1 alpha feature gate to v1
-	if ptr.Deref(in.DeployKubeSecondaryDNS, false) {
-		out.Enable("deployKubeSecondaryDNS")
+	v1Idx = out.Index("deployKubeSecondaryDNS")
+	v1Found = v1Idx >= 0
+	if in.DeployKubeSecondaryDNS == nil {
+		if v1Found {
+			*out = slices.Delete(*out, v1Idx, v1Idx+1)
+		}
+	} else {
+		v1Enabled = v1Found && ((*out)[v1Idx].State == nil || *((*out)[v1Idx].State) == "Enabled")
+		if (!v1Found && *in.DeployKubeSecondaryDNS) || (v1Found && v1Enabled != *in.DeployKubeSecondaryDNS) {
+			if *in.DeployKubeSecondaryDNS {
+				out.Enable("deployKubeSecondaryDNS")
+			} else {
+				out.Disable("deployKubeSecondaryDNS")
+			}
+		}
 	}
 
 	// converting the DownwardMetrics v1beta1 alpha feature gate to v1
-	if ptr.Deref(in.DownwardMetrics, false) {
-		out.Enable("downwardMetrics")
+	v1Idx = out.Index("downwardMetrics")
+	v1Found = v1Idx >= 0
+	if in.DownwardMetrics == nil {
+		if v1Found {
+			*out = slices.Delete(*out, v1Idx, v1Idx+1)
+		}
+	} else {
+		v1Enabled = v1Found && ((*out)[v1Idx].State == nil || *((*out)[v1Idx].State) == "Enabled")
+		if (!v1Found && *in.DownwardMetrics) || (v1Found && v1Enabled != *in.DownwardMetrics) {
+			if *in.DownwardMetrics {
+				out.Enable("downwardMetrics")
+			} else {
+				out.Disable("downwardMetrics")
+			}
+		}
 	}
 
 	// converting the EnableMultiArchBootImageImport v1beta1 alpha feature gate to v1
-	if ptr.Deref(in.EnableMultiArchBootImageImport, false) {
-		out.Enable("enableMultiArchBootImageImport")
+	v1Idx = out.Index("enableMultiArchBootImageImport")
+	v1Found = v1Idx >= 0
+	if in.EnableMultiArchBootImageImport == nil {
+		if v1Found {
+			*out = slices.Delete(*out, v1Idx, v1Idx+1)
+		}
+	} else {
+		v1Enabled = v1Found && ((*out)[v1Idx].State == nil || *((*out)[v1Idx].State) == "Enabled")
+		if (!v1Found && *in.EnableMultiArchBootImageImport) || (v1Found && v1Enabled != *in.EnableMultiArchBootImageImport) {
+			if *in.EnableMultiArchBootImageImport {
+				out.Enable("enableMultiArchBootImageImport")
+			} else {
+				out.Disable("enableMultiArchBootImageImport")
+			}
+		}
 	}
 
 	// converting the IncrementalBackup v1beta1 alpha feature gate to v1
-	if ptr.Deref(in.IncrementalBackup, false) {
-		out.Enable("incrementalBackup")
+	v1Idx = out.Index("incrementalBackup")
+	v1Found = v1Idx >= 0
+	if in.IncrementalBackup == nil {
+		if v1Found {
+			*out = slices.Delete(*out, v1Idx, v1Idx+1)
+		}
+	} else {
+		v1Enabled = v1Found && ((*out)[v1Idx].State == nil || *((*out)[v1Idx].State) == "Enabled")
+		if (!v1Found && *in.IncrementalBackup) || (v1Found && v1Enabled != *in.IncrementalBackup) {
+			if *in.IncrementalBackup {
+				out.Enable("incrementalBackup")
+			} else {
+				out.Disable("incrementalBackup")
+			}
+		}
 	}
 
 	// converting the ObjectGraph v1beta1 alpha feature gate to v1
-	if ptr.Deref(in.ObjectGraph, false) {
-		out.Enable("objectGraph")
+	v1Idx = out.Index("objectGraph")
+	v1Found = v1Idx >= 0
+	if in.ObjectGraph == nil {
+		if v1Found {
+			*out = slices.Delete(*out, v1Idx, v1Idx+1)
+		}
+	} else {
+		v1Enabled = v1Found && ((*out)[v1Idx].State == nil || *((*out)[v1Idx].State) == "Enabled")
+		if (!v1Found && *in.ObjectGraph) || (v1Found && v1Enabled != *in.ObjectGraph) {
+			if *in.ObjectGraph {
+				out.Enable("objectGraph")
+			} else {
+				out.Disable("objectGraph")
+			}
+		}
 	}
 
 	// converting the PersistentReservation v1beta1 alpha feature gate to v1
-	if ptr.Deref(in.PersistentReservation, false) {
-		out.Enable("persistentReservation")
+	v1Idx = out.Index("persistentReservation")
+	v1Found = v1Idx >= 0
+	if in.PersistentReservation == nil {
+		if v1Found {
+			*out = slices.Delete(*out, v1Idx, v1Idx+1)
+		}
+	} else {
+		v1Enabled = v1Found && ((*out)[v1Idx].State == nil || *((*out)[v1Idx].State) == "Enabled")
+		if (!v1Found && *in.PersistentReservation) || (v1Found && v1Enabled != *in.PersistentReservation) {
+			if *in.PersistentReservation {
+				out.Enable("persistentReservation")
+			} else {
+				out.Disable("persistentReservation")
+			}
+		}
 	}
 
 	// the DisableMDevConfiguration feature gate is deprecated and should have a custom conversion logic in api/v1beta1/conversion.go
