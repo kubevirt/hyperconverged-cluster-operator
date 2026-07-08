@@ -44,6 +44,13 @@ func NewDeploymentWithNameOnly() *appsv1.Deployment {
 func newDeployment(_ *hcov1.HyperConverged) *appsv1.Deployment {
 	image := os.Getenv(hcoutil.NetworkResourcesInjectorImageEnvV)
 
+	var replicas int32
+	if nodeinfo.IsInfrastructureHighlyAvailable() {
+		replicas = int32(2)
+	} else {
+		replicas = int32(1)
+	}
+
 	selectorLabels := map[string]string{
 		hcoutil.AppLabel:          hcoutil.HyperConvergedName,
 		hcoutil.AppLabelComponent: string(hcoutil.AppComponentNetResInjector),
@@ -117,7 +124,7 @@ func newDeployment(_ *hcov1.HyperConverged) *appsv1.Deployment {
 
 	dep := NewDeploymentWithNameOnly()
 	dep.Spec = appsv1.DeploymentSpec{
-		Replicas: new(int32(2)),
+		Replicas: &replicas,
 		Selector: &metav1.LabelSelector{
 			MatchLabels: selectorLabels,
 		},

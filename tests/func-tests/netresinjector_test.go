@@ -87,6 +87,21 @@ var _ = Describe("Test Network Resources Injector", Label("NetResInjector"), Ser
 			}
 			Expect(foundControlPlaneSelector).To(BeTrue(), "should prefer control plane nodes")
 		})
+
+		DescribeTable("check replicas by cluster type", func(ctx context.Context, expectedReplicas int32) {
+			dep := &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      netResInjectorDeploymentName,
+					Namespace: tests.InstallNamespace,
+				},
+			}
+
+			Expect(cli.Get(ctx, client.ObjectKeyFromObject(dep), dep)).To(Succeed())
+			Expect(dep.Spec.Replicas).To(HaveValue(Equal(expectedReplicas)))
+		},
+			Entry("should have 2 replicas in highly available cluster", Label(tests.HighlyAvailableClusterLabel), int32(2)),
+			Entry("should have 1 replica in non-highly available cluster", Label(tests.SingleNodeLabel), int32(1)),
+		)
 	})
 
 	Context("when deployNetworkResourcesInjector is false", func() {
