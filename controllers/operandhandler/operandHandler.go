@@ -116,6 +116,10 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 				handlers.NewKVAPIServerProxyNetworkPolicyHandler(client, scheme),
 			}...)
 		}
+	} else {
+		operandList = append(operandList,
+			handlers.NewCertManagerIssuerHandler(client, scheme),
+		)
 	}
 
 	if ci.IsManagedByOLM() {
