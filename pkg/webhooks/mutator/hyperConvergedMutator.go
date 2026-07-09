@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"slices"
 
 	"github.com/go-logr/logr"
 	"gomodules.xyz/jsonpatch/v2"
@@ -231,9 +230,7 @@ func dropMdevFG(fgs hcov1fg.HyperConvergedFeatureGates, patches []jsonpatch.Json
 		return patches
 	}
 
-	idx := slices.IndexFunc(fgs, func(fg hcov1fg.FeatureGate) bool {
-		return fg.Name == disableMDevConfigurationFGName
-	})
+	idx := fgs.Index(disableMDevConfigurationFGName)
 
 	if idx < 0 {
 		return patches

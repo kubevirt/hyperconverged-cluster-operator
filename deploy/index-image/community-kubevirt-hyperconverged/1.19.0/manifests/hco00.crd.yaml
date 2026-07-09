@@ -2299,6 +2299,7 @@ spec:
                   properties:
                     name:
                       description: Name is the feature gate name
+                      maxLength: 256
                       type: string
                     state:
                       description: State determines if the feature gate is Enabled,
@@ -2310,7 +2311,11 @@ spec:
                   required:
                   - name
                   type: object
+                maxItems: 64
                 type: array
+                x-kubernetes-validations:
+                - message: feature gate names must be unique (case-insensitive)
+                  rule: self.all(x, self.exists_one(y, x.name.lowerAscii() == y.name.lowerAscii()))
               networking:
                 description: Networking contains all the configurations for networking
                 properties:

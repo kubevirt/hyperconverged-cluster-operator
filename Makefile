@@ -37,7 +37,7 @@ DO=eval
 export JOB_TYPE=prow
 endif
 
-sanity: generate gogenerate gogenerate-crd-creator generate-doc validate-no-offensive-lang goimport lint-metrics lint-monitoring
+sanity: generate gogenerate prepare-tools-crd generate-doc validate-no-offensive-lang goimport lint-metrics lint-monitoring
 	go version
 	go fmt ./...
 	go mod tidy -v
@@ -80,7 +80,7 @@ build-manifest-splitter:
 build-webhook: $(SOURCES) ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/hyperconverged-cluster-webhook ./cmd/hyperconverged-cluster-webhook
 
-build-manifests: gogenerate-crd-creator build-crd-creator build-csv-merger build-manifest-splitter build-manifest-templator
+build-manifests: prepare-tools-crd build-csv-merger build-manifest-splitter build-manifest-templator
 	DUMP_NETWORK_POLICIES=$(DUMP_NETWORK_POLICIES) ./hack/build-manifests.sh
 
 build-manifests-prev:
@@ -118,10 +118,10 @@ container-build: container-build-operator container-build-webhook container-buil
 
 build-push-multi-arch-images: build-push-multi-arch-operator-image build-push-multi-arch-webhook-image build-push-multi-arch-functest-image build-push-multi-arch-artifacts-server
 
-container-build-operator: gogenerate gogenerate-crd-creator
+container-build-operator: gogenerate prepare-tools-crd
 	. "hack/cri-bin.sh" && $$CRI_BIN build --platform=linux/$(ARCH) -f build/Dockerfile -t $(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG) --build-arg git_sha=$(SHA) .
 
-build-push-multi-arch-operator-image: gogenerate gogenerate-crd-creator
+build-push-multi-arch-operator-image: gogenerate prepare-tools-crd
 	IMAGE_NAME=$(IMAGE_REGISTRY)/$(OPERATOR_IMAGE):$(IMAGE_TAG) SHA=SHA DOCKER_FILE=build/Dockerfile ./hack/build-push-multi-arch-images.sh
 
 container-build-webhook:
@@ -245,9 +245,13 @@ bump-kubevirtci:
 gogenerate: generate
 	go generate ./pkg/upgradepatch
 
-gogenerate-crd-creator: generate
-	go generate ./tools/csv-merger
-	go generate ./tools/manifest-templator
+generate-crd: generate build-crd-creator
+	./_out/crd-creator --output-file=config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml
+	@echo "the CRD file was generated in config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml"
+
+prepare-tools-crd: generate-crd
+	cp config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml ./tools/csv-merger/generated-crd.yaml
+	cp config/crd/bases/hco.kubevirt.io_hyperconvergeds.yaml ./tools/manifest-templator/generated-crd.yaml
 
 generate: generate-feature-gates
 	./hack/generate.sh
@@ -270,10 +274,10 @@ help: ## Show this help screen
 		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo ''
 
-test-unit: gogenerate gogenerate-crd-creator
+test-unit: gogenerate prepare-tools-crd
 	./hack/unit-test.sh
 
-test-unit-coverage: gogenerate gogenerate-crd-creator
+test-unit-coverage: gogenerate prepare-tools-crd
 	./hack/unit-test-coverage.sh
 
 test-fuzz-api-conversion: generate

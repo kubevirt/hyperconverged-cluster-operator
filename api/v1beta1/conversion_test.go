@@ -520,6 +520,540 @@ var _ = Describe("api/v1beta1", func() {
 				Expect(result.DecentralizedLiveMigration).To(HaveValue(BeTrue()))
 				Expect(result.DeclarativeHotplugVolumes).To(HaveValue(BeTrue()))
 			})
+
+			It("v1-only feature gates should survive roundtrip", func() {
+				original := &hcov1.HyperConverged{
+					Spec: hcov1.HyperConvergedSpec{
+						FeatureGates: hcofg.HyperConvergedFeatureGates{
+							{Name: "implicitlyEnabled"},
+							{Name: "explicitlyEnabled", State: new(hcofg.Enabled)},
+							{Name: "disabled", State: new(hcofg.Disabled)},
+						},
+					},
+				}
+
+				v1beta1HC := &HyperConverged{}
+				Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+				result := &hcov1.HyperConverged{}
+				Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+				enabled, found := result.Spec.FeatureGates.IsExplicitlyEnabled("implicitlyEnabled")
+				Expect(found).To(BeTrue())
+				Expect(enabled).To(BeTrue())
+
+				enabled, found = result.Spec.FeatureGates.IsExplicitlyEnabled("explicitlyEnabled")
+				Expect(found).To(BeTrue())
+				Expect(enabled).To(BeTrue())
+
+				enabled, found = result.Spec.FeatureGates.IsExplicitlyEnabled("disabled")
+				Expect(found).To(BeTrue())
+				Expect(enabled).To(BeFalse())
+			})
+
+			It("v1beta1 feature gates with different cases should survive roundtrip", func() {
+				original := &hcov1.HyperConverged{
+					Spec: hcov1.HyperConvergedSpec{
+						FeatureGates: hcofg.HyperConvergedFeatureGates{
+							// enable alphas, disable betas
+							{Name: "ALIGNCPUS"}, // implicitly enable alpha
+							{Name: "DOWNWARDMETRICS", State: new(hcofg.Enabled)},             // explicitly enable alpha
+							{Name: "DECENTRALIZEDLIVEMIGRATION", State: new(hcofg.Disabled)}, // disable beta
+							{Name: "DECLARATIVEHOTPLUGVOLUMES", State: new(hcofg.Disabled)},  // disable beta
+						},
+					},
+				}
+
+				v1beta1HC := &HyperConverged{}
+				Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+				Expect(v1beta1HC.Spec.FeatureGates.AlignCPUs).To(HaveValue(BeTrue()))
+				Expect(v1beta1HC.Spec.FeatureGates.DownwardMetrics).To(HaveValue(BeTrue()))
+				Expect(v1beta1HC.Spec.FeatureGates.DecentralizedLiveMigration).To(HaveValue(BeFalse()))
+				Expect(v1beta1HC.Spec.FeatureGates.DeclarativeHotplugVolumes).To(HaveValue(BeFalse()))
+
+				result := &hcov1.HyperConverged{}
+				Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+				Expect(result.Spec.FeatureGates).To(HaveLen(4))
+				Expect(result.Spec.FeatureGates).To(ContainElements(
+					hcofg.FeatureGate{Name: "ALIGNCPUS", State: new(hcofg.Enabled)},
+					hcofg.FeatureGate{Name: "DOWNWARDMETRICS", State: new(hcofg.Enabled)},
+					hcofg.FeatureGate{Name: "DECENTRALIZEDLIVEMIGRATION", State: new(hcofg.Disabled)},
+					hcofg.FeatureGate{Name: "DECLARATIVEHOTPLUGVOLUMES", State: new(hcofg.Disabled)},
+				))
+
+				Expect(result.Spec.FeatureGates.IsEnabled("alignCPUs")).To(BeTrue())
+				Expect(result.Spec.FeatureGates.IsEnabled("downwardMetrics")).To(BeTrue())
+				Expect(result.Spec.FeatureGates.IsEnabled("decentralizedLiveMigration")).To(BeFalse())
+				Expect(result.Spec.FeatureGates.IsEnabled("DeclarativeHotplugVolumes")).To(BeFalse())
+			})
+
+			Context("v1beta1 feature gates with different casing can be modified using v1beta1 API", func() {
+				Context("beta feature gate", func() {
+					const (
+						betaFGName         = "declarativeHotplugVolumes"
+						betaFGNameAllUpper = "DECLARATIVEHOTPLUGVOLUMES"
+					)
+					It("should allow enabling a FG when FGs are nil in v1, using v1beta1", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.DeclarativeHotplugVolumes = new(true)
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(BeEmpty())
+						Expect(result.Spec.FeatureGates.IsEnabled(betaFGName)).To(BeTrue())
+					})
+
+					It("should allow disabling a FG when FGs are nil in v1, using v1beta1", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.DeclarativeHotplugVolumes = new(false)
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(1))
+						Expect(result.Spec.FeatureGates).To(ContainElement(
+							hcofg.FeatureGate{Name: betaFGName, State: new(hcofg.Disabled)},
+						))
+
+						Expect(result.Spec.FeatureGates.IsEnabled(betaFGName)).To(BeFalse())
+					})
+
+					It("should allow enabling a FG when the FG is not set in v1, using v1beta1", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{
+								FeatureGates: hcofg.HyperConvergedFeatureGates{
+									{Name: "someOtherFG", State: new(hcofg.Enabled)},
+								},
+							},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.DeclarativeHotplugVolumes = new(true)
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(1))
+						_, found := result.Spec.FeatureGates.IsExplicitlyEnabled(betaFGName)
+						Expect(found).To(BeFalse())
+						Expect(result.Spec.FeatureGates.IsEnabled(betaFGName)).To(BeTrue())
+					})
+
+					It("should allow disabling a FG when the FG is not set in v1, using v1beta1", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{
+								FeatureGates: hcofg.HyperConvergedFeatureGates{
+									{Name: "someOtherFG", State: new(hcofg.Enabled)},
+								},
+							},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.DeclarativeHotplugVolumes = new(false)
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(2))
+						Expect(result.Spec.FeatureGates).To(ContainElement(
+							hcofg.FeatureGate{Name: betaFGName, State: new(hcofg.Disabled)},
+						))
+
+						Expect(result.Spec.FeatureGates.IsEnabled(betaFGName)).To(BeFalse())
+					})
+
+					It("should allow disabling a FG when the FG already disabled in v1, with different casing", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{
+								FeatureGates: hcofg.HyperConvergedFeatureGates{
+									{Name: betaFGNameAllUpper, State: new(hcofg.Disabled)},
+								},
+							},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.DeclarativeHotplugVolumes = new(false)
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(1))
+						Expect(result.Spec.FeatureGates).To(ContainElement(hcofg.FeatureGate{Name: betaFGNameAllUpper, State: new(hcofg.Disabled)}))
+						Expect(result.Spec.FeatureGates.IsEnabled(betaFGName)).To(BeFalse())
+					})
+
+					It("should allow enabling a FG when the FG already disabled in v1, with different casing", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{
+								FeatureGates: hcofg.HyperConvergedFeatureGates{
+									{Name: betaFGNameAllUpper, State: new(hcofg.Disabled)},
+								},
+							},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.DeclarativeHotplugVolumes = new(true)
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(1))
+						Expect(result.Spec.FeatureGates).To(ContainElement(hcofg.FeatureGate{Name: betaFGNameAllUpper, State: new(hcofg.Enabled)}))
+						Expect(result.Spec.FeatureGates.IsEnabled(betaFGName)).To(BeTrue())
+					})
+
+					It("should allow disabling a FG when the FG already enabled in v1, with different casing", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{
+								FeatureGates: hcofg.HyperConvergedFeatureGates{
+									{Name: betaFGNameAllUpper, State: new(hcofg.Enabled)},
+								},
+							},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.DeclarativeHotplugVolumes = new(false)
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(1))
+						Expect(result.Spec.FeatureGates).To(ContainElement(hcofg.FeatureGate{Name: betaFGNameAllUpper, State: new(hcofg.Disabled)}))
+						Expect(result.Spec.FeatureGates.IsEnabled(betaFGName)).To(BeFalse())
+					})
+
+					It("should allow enabling a FG when the FG already enabled in v1, with different casing", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{
+								FeatureGates: hcofg.HyperConvergedFeatureGates{
+									{Name: betaFGNameAllUpper, State: new(hcofg.Enabled)},
+								},
+							},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.DeclarativeHotplugVolumes = new(true)
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(1))
+						Expect(result.Spec.FeatureGates).To(ContainElement(hcofg.FeatureGate{Name: betaFGNameAllUpper, State: new(hcofg.Enabled)}))
+						Expect(result.Spec.FeatureGates.IsEnabled(betaFGName)).To(BeTrue())
+					})
+
+					It("should remove an enabled FG if was removed in v1beta", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{
+								FeatureGates: hcofg.HyperConvergedFeatureGates{
+									{Name: "enabledFG"},
+									{Name: betaFGNameAllUpper, State: new(hcofg.Enabled)},
+									{Name: "disabledFG", State: new(hcofg.Disabled)},
+								},
+							},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.DeclarativeHotplugVolumes = nil
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(2))
+						_, found := result.Spec.FeatureGates.IsExplicitlyEnabled(betaFGNameAllUpper)
+						Expect(found).To(BeFalse())
+						_, found = result.Spec.FeatureGates.IsExplicitlyEnabled(betaFGName)
+						Expect(found).To(BeFalse())
+						Expect(result.Spec.FeatureGates.IsEnabled(betaFGName)).To(BeTrue())
+					})
+
+					It("should remove an disabled FG if was removed in v1beta", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{
+								FeatureGates: hcofg.HyperConvergedFeatureGates{
+									{Name: "enabledFG"},
+									{Name: betaFGNameAllUpper, State: new(hcofg.Disabled)},
+									{Name: "disabledFG", State: new(hcofg.Disabled)},
+								},
+							},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.DeclarativeHotplugVolumes = nil
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(2))
+						_, found := result.Spec.FeatureGates.IsExplicitlyEnabled(betaFGNameAllUpper)
+						Expect(found).To(BeFalse())
+						_, found = result.Spec.FeatureGates.IsExplicitlyEnabled(betaFGName)
+						Expect(found).To(BeFalse())
+						Expect(result.Spec.FeatureGates.IsEnabled(betaFGName)).To(BeTrue())
+					})
+				})
+
+				Context("alpha feature gate", func() {
+					const (
+						alphaFGName         = "alignCPUs"
+						alphaFGNameAllUpper = "ALIGNCPUS"
+					)
+					It("should allow enabling a FG when FGs are nil in v1, using v1beta1", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.AlignCPUs = new(true)
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(1))
+						Expect(result.Spec.FeatureGates).To(ContainElement(hcofg.FeatureGate{Name: alphaFGName, State: new(hcofg.Enabled)}))
+						Expect(result.Spec.FeatureGates.IsEnabled(alphaFGName)).To(BeTrue())
+					})
+
+					It("should allow disabling a FG when FGs are nil in v1, using v1beta1", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.AlignCPUs = new(false)
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(BeEmpty())
+
+						Expect(result.Spec.FeatureGates.IsEnabled(alphaFGName)).To(BeFalse())
+					})
+
+					It("should allow enabling a FG when the FG is not set in v1, using v1beta1", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{
+								FeatureGates: hcofg.HyperConvergedFeatureGates{
+									{Name: "someOtherFG", State: new(hcofg.Enabled)},
+								},
+							},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.AlignCPUs = new(true)
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(2))
+						Expect(result.Spec.FeatureGates).To(ContainElement(hcofg.FeatureGate{Name: alphaFGName, State: new(hcofg.Enabled)}))
+						Expect(result.Spec.FeatureGates.IsEnabled(alphaFGName)).To(BeTrue())
+					})
+
+					It("should allow disabling a FG when the FG is not set in v1, using v1beta1", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{
+								FeatureGates: hcofg.HyperConvergedFeatureGates{
+									{Name: "someOtherFG", State: new(hcofg.Enabled)},
+								},
+							},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.AlignCPUs = new(false)
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(1))
+						_, found := result.Spec.FeatureGates.IsExplicitlyEnabled(alphaFGName)
+						Expect(found).To(BeFalse())
+
+						Expect(result.Spec.FeatureGates.IsEnabled(alphaFGName)).To(BeFalse())
+					})
+
+					It("should allow disabling a FG when the FG already disabled in v1, with different casing", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{
+								FeatureGates: hcofg.HyperConvergedFeatureGates{
+									{Name: alphaFGNameAllUpper, State: new(hcofg.Disabled)},
+								},
+							},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.AlignCPUs = new(false)
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(1))
+						Expect(result.Spec.FeatureGates).To(ContainElement(hcofg.FeatureGate{Name: alphaFGNameAllUpper, State: new(hcofg.Disabled)}))
+						Expect(result.Spec.FeatureGates.IsEnabled(alphaFGName)).To(BeFalse())
+					})
+
+					It("should allow enabling a FG when the FG already disabled in v1, with different casing", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{
+								FeatureGates: hcofg.HyperConvergedFeatureGates{
+									{Name: alphaFGNameAllUpper, State: new(hcofg.Disabled)},
+								},
+							},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.AlignCPUs = new(true)
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(1))
+						Expect(result.Spec.FeatureGates).To(ContainElement(hcofg.FeatureGate{Name: alphaFGNameAllUpper, State: new(hcofg.Enabled)}))
+						Expect(result.Spec.FeatureGates.IsEnabled(alphaFGName)).To(BeTrue())
+					})
+
+					It("should allow disabling a FG when the FG already enabled in v1, with different casing", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{
+								FeatureGates: hcofg.HyperConvergedFeatureGates{
+									{Name: alphaFGNameAllUpper, State: new(hcofg.Enabled)},
+								},
+							},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.AlignCPUs = new(false)
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(1))
+						Expect(result.Spec.FeatureGates).To(ContainElement(hcofg.FeatureGate{Name: alphaFGNameAllUpper, State: new(hcofg.Disabled)}))
+						Expect(result.Spec.FeatureGates.IsEnabled(alphaFGName)).To(BeFalse())
+					})
+
+					It("should allow enabling a FG when the FG already enabled in v1, with different casing", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{
+								FeatureGates: hcofg.HyperConvergedFeatureGates{
+									{Name: alphaFGNameAllUpper, State: new(hcofg.Enabled)},
+								},
+							},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.AlignCPUs = new(true)
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(1))
+						Expect(result.Spec.FeatureGates).To(ContainElement(hcofg.FeatureGate{Name: alphaFGNameAllUpper, State: new(hcofg.Enabled)}))
+						Expect(result.Spec.FeatureGates.IsEnabled(alphaFGName)).To(BeTrue())
+					})
+
+					It("should remove an enabled FG if was removed in v1beta", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{
+								FeatureGates: hcofg.HyperConvergedFeatureGates{
+									{Name: "enabledFG"},
+									{Name: alphaFGNameAllUpper, State: new(hcofg.Enabled)},
+									{Name: "disabledFG", State: new(hcofg.Disabled)},
+								},
+							},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.AlignCPUs = nil
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(2))
+						_, found := result.Spec.FeatureGates.IsExplicitlyEnabled(alphaFGNameAllUpper)
+						Expect(found).To(BeFalse())
+						_, found = result.Spec.FeatureGates.IsExplicitlyEnabled(alphaFGName)
+						Expect(found).To(BeFalse())
+						Expect(result.Spec.FeatureGates.IsEnabled(alphaFGName)).To(BeFalse())
+					})
+
+					It("should remove an disabled FG if was removed in v1beta", func() {
+						original := &hcov1.HyperConverged{
+							Spec: hcov1.HyperConvergedSpec{
+								FeatureGates: hcofg.HyperConvergedFeatureGates{
+									{Name: "enabledFG"},
+									{Name: alphaFGNameAllUpper, State: new(hcofg.Disabled)},
+									{Name: "disabledFG", State: new(hcofg.Disabled)},
+								},
+							},
+						}
+
+						v1beta1HC := &HyperConverged{}
+						Expect(v1beta1HC.ConvertFrom(original)).To(Succeed())
+
+						v1beta1HC.Spec.FeatureGates.AlignCPUs = nil
+
+						result := &hcov1.HyperConverged{}
+						Expect(v1beta1HC.ConvertTo(result)).To(Succeed())
+
+						Expect(result.Spec.FeatureGates).To(HaveLen(2))
+						_, found := result.Spec.FeatureGates.IsExplicitlyEnabled(alphaFGNameAllUpper)
+						Expect(found).To(BeFalse())
+						_, found = result.Spec.FeatureGates.IsExplicitlyEnabled(alphaFGName)
+						Expect(found).To(BeFalse())
+						Expect(result.Spec.FeatureGates.IsEnabled(alphaFGName)).To(BeFalse())
+					})
+				})
+			})
 		})
 	})
 
@@ -757,8 +1291,8 @@ var _ = Describe("api/v1beta1", func() {
 				Entry("when the v1 field is false and the v1beta1 FG is false", false, false),
 			)
 
-			DescribeTableSubtree("should convert v1beta1 disableMDevConfiguration to v1 FG, if FG set", func(v1FG, v1beta1FG bool) {
-				annotation := fmt.Sprintf(`{"disableMDevConfigurationFG": %t}`, v1FG)
+			DescribeTableSubtree("should convert the v1beta1 disableMDevConfiguration FG, to v1 FG, if FG set", func(v1FG hcofg.State, v1beta1FG bool) {
+				annotation := fmt.Sprintf(`{"featureGates": [{"name": %q, "state": %q}]}`, DisableMDevConfigurationFG, v1FG)
 
 				It("just make sure the annotation works", func() {
 					src := &HyperConverged{
@@ -774,7 +1308,7 @@ var _ = Describe("api/v1beta1", func() {
 
 					enabled, found := dst.Spec.FeatureGates.IsExplicitlyEnabled(DisableMDevConfigurationFG)
 					Expect(found).To(BeTrue())
-					Expect(enabled).To(Equal(v1FG))
+					Expect(enabled).To(Equal(v1FG == hcofg.Enabled))
 				})
 
 				It("should modify the v1 FG", func() {
@@ -802,14 +1336,14 @@ var _ = Describe("api/v1beta1", func() {
 					Expect(enabled).To(Equal(v1beta1FG))
 				})
 			},
-				Entry("when the v1 field is true and the v1beta1 FG is true", true, true),
-				Entry("when the v1 field is false and the v1beta1 FG is true", false, true),
-				Entry("when the v1 field is true and the v1beta1 FG is false", true, false),
-				Entry("when the v1 field is false and the v1beta1 FG is false", false, false),
+				Entry("when the v1 field is true and the v1beta1 FG is true", hcofg.Enabled, true),
+				Entry("when the v1 field is false and the v1beta1 FG is true", hcofg.Disabled, true),
+				Entry("when the v1 field is true and the v1beta1 FG is false", hcofg.Enabled, false),
+				Entry("when the v1 field is false and the v1beta1 FG is false", hcofg.Disabled, false),
 			)
 
-			DescribeTableSubtree("should convert v1beta1 FG to v1 FG, if set, and override the v1 enabled field", func(v1Enabled, v1FG, v1beta1FG bool) {
-				annotation := fmt.Sprintf(`{"mdevConfigEnable": %t, "disableMDevConfigurationFG": %t}`, v1Enabled, v1FG)
+			DescribeTableSubtree("should convert v1beta1 FG to v1 FG, if set, and override the v1 enabled field", func(v1Enabled bool, v1FG hcofg.State, v1beta1FG bool) {
+				annotation := fmt.Sprintf(`{"mdevConfigEnable": %t, "featureGates": [{"name": "disableMDevConfiguration", "state": %q}]}`, v1Enabled, v1FG)
 
 				It("just make sure the annotation works", func() {
 					src := &HyperConverged{
@@ -828,7 +1362,7 @@ var _ = Describe("api/v1beta1", func() {
 
 					enabled, found := dst.Spec.FeatureGates.IsExplicitlyEnabled(DisableMDevConfigurationFG)
 					Expect(found).To(BeTrue())
-					Expect(enabled).To(Equal(v1FG))
+					Expect(enabled).To(Equal(v1FG == hcofg.Enabled))
 				})
 
 				It("should modify the v1 FG and the v1 Enabled field", func() {
@@ -856,65 +1390,14 @@ var _ = Describe("api/v1beta1", func() {
 					Expect(enabled).To(Equal(v1beta1FG))
 				})
 			},
-				Entry("when the v1 field is true, v1 enabled is true, and the v1beta1 FG is true", true, true, true),
-				Entry("when the v1 field is false, v1 enabled is true, and the v1beta1 FG is true", false, true, true),
-				Entry("when the v1 field is true, v1 enabled is false, and the v1beta1 FG is true", true, false, true),
-				Entry("when the v1 field is false, v1 enabled is false, and the v1beta1 FG is true", false, false, true),
-				Entry("when the v1 field is true, v1 enabled is true, and the v1beta1 FG is false", true, true, false),
-				Entry("when the v1 field is false, v1 enabled is true, and the v1beta1 FG is false", false, true, false),
-				Entry("when the v1 field is true, v1 enabled is false, and the v1beta1 FG is false", true, false, false),
-				Entry("when the v1 field is false, v1 enabled is false, and the v1beta1 FG is false", false, false, false),
-			)
-
-			DescribeTableSubtree("should convert v1beta1 FG to v1 enabled, if FG set", func(v1FG bool, v1beta1FG bool) {
-				annotation := fmt.Sprintf(`{"disableMDevConfigurationFG": %t}`, v1FG)
-
-				It("just make sure the annotation works", func() {
-					src := &HyperConverged{
-						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{
-								v1OnlyFieldAnnotation: annotation,
-							},
-						},
-					}
-					dst := &hcov1.HyperConverged{}
-
-					Expect(src.ConvertTo(dst)).To(Succeed())
-
-					enabled, found := dst.Spec.FeatureGates.IsExplicitlyEnabled(DisableMDevConfigurationFG)
-					Expect(found).To(BeTrue())
-					Expect(enabled).To(Equal(v1FG))
-				})
-
-				It("should modify the v1 FG", func() {
-					src := &HyperConverged{
-						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{
-								v1OnlyFieldAnnotation: annotation,
-							},
-						},
-						Spec: HyperConvergedSpec{
-							FeatureGates: HyperConvergedFeatureGates{
-								DisableMDevConfiguration: new(v1beta1FG),
-							},
-						},
-					}
-					dst := &hcov1.HyperConverged{}
-
-					Expect(src.ConvertTo(dst)).To(Succeed())
-
-					Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration).ToNot(BeNil())
-					Expect(dst.Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(Equal(!v1beta1FG)))
-
-					enabled, found := dst.Spec.FeatureGates.IsExplicitlyEnabled(DisableMDevConfigurationFG)
-					Expect(found).To(BeTrue())
-					Expect(enabled).To(Equal(v1beta1FG))
-				})
-			},
-				Entry("when the v1 field is true and the v1beta1 FG is true", true, true),
-				Entry("when the v1 field is false and the v1beta1 FG is true", false, true),
-				Entry("when the v1 field is true and the v1beta1 FG is false", true, false),
-				Entry("when the v1 field is false and the v1beta1 FG is false", false, false),
+				Entry("when the v1 field is true, v1 enabled is true, and the v1beta1 FG is true", true, hcofg.Enabled, true),
+				Entry("when the v1 field is false, v1 enabled is true, and the v1beta1 FG is true", false, hcofg.Enabled, true),
+				Entry("when the v1 field is true, v1 enabled is false, and the v1beta1 FG is true", true, hcofg.Disabled, true),
+				Entry("when the v1 field is false, v1 enabled is false, and the v1beta1 FG is true", false, hcofg.Disabled, true),
+				Entry("when the v1 field is true, v1 enabled is true, and the v1beta1 FG is false", true, hcofg.Enabled, false),
+				Entry("when the v1 field is false, v1 enabled is true, and the v1beta1 FG is false", false, hcofg.Enabled, false),
+				Entry("when the v1 field is true, v1 enabled is false, and the v1beta1 FG is false", true, hcofg.Disabled, false),
+				Entry("when the v1 field is false, v1 enabled is false, and the v1beta1 FG is false", false, hcofg.Disabled, false),
 			)
 		})
 
@@ -3305,32 +3788,42 @@ var _ = Describe("api/v1beta1", func() {
 			Entry("when the field is false, and FG is true (implicit)",
 				false,
 				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG}},
-				`{"mdevConfigEnable": false, "disableMDevConfigurationFG": true}`,
+				`{"mdevConfigEnable": false, "featureGates": [{"name": "disableMDevConfiguration"}]}`,
 			),
 			Entry("when the field is false, and FG is true",
 				false,
 				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG, State: new(hcofg.Enabled)}},
-				`{"mdevConfigEnable": false, "disableMDevConfigurationFG": true}`,
+				`{"mdevConfigEnable": false, "featureGates": [{"name": "disableMDevConfiguration", "state": "Enabled"}]}`,
 			),
 			Entry("when the field is true, and FG is false",
 				true,
 				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG, State: new(hcofg.Disabled)}},
-				`{"mdevConfigEnable": true, "disableMDevConfigurationFG": false}`,
+				`{"mdevConfigEnable": true, "featureGates": [{"name": "disableMDevConfiguration", "state": "Disabled"}]}`,
 			),
 			Entry("when the field is true, and FG is true (implicit)",
 				true,
 				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG}},
-				`{"mdevConfigEnable": true, "disableMDevConfigurationFG": true}`,
+				`{"mdevConfigEnable": true, "featureGates": [{"name": "disableMDevConfiguration"}]}`,
 			),
 			Entry("when the field is true, and FG is true",
 				true,
 				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG, State: new(hcofg.Enabled)}},
-				`{"mdevConfigEnable": true, "disableMDevConfigurationFG": true}`,
+				`{"mdevConfigEnable": true, "featureGates": [{"name": "disableMDevConfiguration", "state": "Enabled"}]}`,
 			),
 			Entry("when the field is false, and FG is false",
 				false,
 				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG, State: new(hcofg.Disabled)}},
-				`{"mdevConfigEnable": false, "disableMDevConfigurationFG": false}`,
+				`{"mdevConfigEnable": false, "featureGates": [{"name": "disableMDevConfiguration", "state": "Disabled"}]}`,
+			),
+			Entry("when the field is true, and FG is true, with different casing",
+				true,
+				hcofg.HyperConvergedFeatureGates{{Name: "DISABLEMDEVCONFIGURATIONFG", State: new(hcofg.Enabled)}},
+				`{"mdevConfigEnable": true, "featureGates": [{"name": "DISABLEMDEVCONFIGURATIONFG", "state": "Enabled"}]}`,
+			),
+			Entry("when the field is false, and FG is false, with different casing",
+				false,
+				hcofg.HyperConvergedFeatureGates{{Name: "DisableMDevConfiguratioN", State: new(hcofg.Disabled)}},
+				`{"mdevConfigEnable": false, "featureGates": [{"name": "DisableMDevConfiguratioN", "state": "Disabled"}]}`,
 			),
 		)
 
@@ -3372,25 +3865,31 @@ var _ = Describe("api/v1beta1", func() {
 			Entry("when FG list is empty", hcofg.HyperConvergedFeatureGates{}, Not(HaveKey(v1OnlyFieldAnnotation)), false, false),
 			Entry("when the disableMDevConfiguration FG is not set",
 				hcofg.HyperConvergedFeatureGates{{Name: "somethingElse"}},
+				HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(`{"featureGates": [{"name": "somethingElse"}]}`)),
+				false,
+				false,
+			),
+			Entry("when the no FG is not set",
+				nil,
 				Not(HaveKey(v1OnlyFieldAnnotation)),
 				false,
 				false,
 			),
 			Entry("when the disableMDevConfiguration FG is implicitly enabled",
-				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG}}, // `{"deployNetworkResourcesInjector": false}`,
-				HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(`{"disableMDevConfigurationFG": true}`)),
+				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG}},
+				HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(`{"featureGates": [{"name": "disableMDevConfiguration"}]}`)),
 				true,
 				true,
 			),
 			Entry("when the disableMDevConfiguration FG is explicitly enabled",
 				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG, State: new(hcofg.Enabled)}},
-				HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(`{"disableMDevConfigurationFG": true}`)),
+				HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(`{"featureGates": [{"name": "disableMDevConfiguration", "state": "Enabled"}]}`)),
 				true,
 				true,
 			),
 			Entry("when the disableMDevConfiguration FG is disabled",
 				hcofg.HyperConvergedFeatureGates{{Name: DisableMDevConfigurationFG, State: new(hcofg.Disabled)}},
-				HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(`{"disableMDevConfigurationFG": false}`)),
+				HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(`{"featureGates": [{"name": "disableMDevConfiguration", "state": "Disabled"}]}`)),
 				false,
 				true,
 			),
@@ -3405,13 +3904,21 @@ var _ = Describe("api/v1beta1", func() {
 				Enabled: new(false),
 			}
 			v1HC.Spec.FeatureGates.Enable(DisableMDevConfigurationFG)
+			v1HC.Spec.FeatureGates.Disable("aDisabledFG")
+			v1HC.Spec.FeatureGates.Enable("explicitlyEnabledFG")
+			v1HC.Spec.FeatureGates = append(v1HC.Spec.FeatureGates, hcofg.FeatureGate{Name: "implicitlyEnabledFG"})
 			v1beta1HC := &HyperConverged{}
 
 			Expect(v1beta1HC.ConvertFrom(v1HC)).To(Succeed())
 			const expectedJSONAnnotation = `{
 	"deployNetworkResourcesInjector": false,
 	"mdevConfigEnable": false,
-	"disableMDevConfigurationFG": true
+	"featureGates": [
+		{"name": "disableMDevConfiguration", "state": "Enabled"},
+		{"name": "aDisabledFG", "state": "Disabled"},
+		{"name": "explicitlyEnabledFG", "state": "Enabled"},
+		{"name": "implicitlyEnabledFG"}
+	]
 }`
 			Expect(v1beta1HC.Annotations).To(HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(expectedJSONAnnotation)))
 
@@ -3422,6 +3929,20 @@ var _ = Describe("api/v1beta1", func() {
 			Expect(roundTripHC.Spec.Deployment.DeployNetworkResourcesInjector).To(HaveValue(BeFalse()))
 			Expect(roundTripHC.Spec.Virtualization.MediatedDevicesConfiguration).ToNot(BeNil())
 			Expect(roundTripHC.Spec.Virtualization.MediatedDevicesConfiguration.Enabled).To(HaveValue(BeFalse()))
+
+			Expect(roundTripHC.Spec.FeatureGates.IsEnabled(DisableMDevConfigurationFG)).To(BeTrue())
+
+			enabled, found := roundTripHC.Spec.FeatureGates.IsExplicitlyEnabled("aDisabledFG")
+			Expect(found).To(BeTrue())
+			Expect(enabled).To(BeFalse())
+
+			enabled, found = roundTripHC.Spec.FeatureGates.IsExplicitlyEnabled("explicitlyEnabledFG")
+			Expect(found).To(BeTrue())
+			Expect(enabled).To(BeTrue())
+
+			enabled, found = roundTripHC.Spec.FeatureGates.IsExplicitlyEnabled("implicitlyEnabledFG")
+			Expect(found).To(BeTrue())
+			Expect(enabled).To(BeTrue())
 		})
 	})
 })

@@ -27,7 +27,7 @@ var _ = Describe("FeatureGate", func() {
 
 			jsonBytes, err := json.Marshal(fg)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(jsonBytes).To(MatchJSON(`{"name":"fgName"}`))
+			Expect(jsonBytes).To(MatchJSON(`{"name":"fgName", "state": "Enabled"}`))
 		})
 
 		It("should marshal a disabled feature gate", func() {
@@ -49,7 +49,7 @@ var _ = Describe("FeatureGate", func() {
 
 			jsonBytes, err := json.Marshal(fg)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(jsonBytes).To(MatchJSON(`{"name":"fgName"}`))
+			Expect(jsonBytes).To(MatchJSON(`{"name":"fgName", "state": "Enabled"}`))
 		})
 
 		It("should marshal a disabled feature gate pointer", func() {
@@ -90,7 +90,7 @@ var _ = Describe("FeatureGate", func() {
 
 			jsonBytes, err := json.Marshal(fgs)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(jsonBytes).To(MatchJSON(`[{"name":"noEnabledField"}, {"name": "enabledFG"}, {"name": "disabledFG", "state": "Disabled"}]`))
+			Expect(jsonBytes).To(MatchJSON(`[{"name":"noEnabledField"}, {"name": "enabledFG", "state": "Enabled"}, {"name": "disabledFG", "state": "Disabled"}]`))
 		})
 
 		It("should yaml marshal a FG array", func() {
@@ -112,6 +112,7 @@ var _ = Describe("FeatureGate", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(yamlBytes).To(MatchYAML(`- name: noEnabledField
 - name: enabledFG
+  state: Enabled
 - state: Disabled
   name: disabledFG`,
 			))
@@ -185,15 +186,21 @@ var _ = Describe("Feature Gates", func() {
 
 		Entry("known alpha FG; in list; enabled", featuregates.HyperConvergedFeatureGates{{Name: "downwardMetrics", State: new(featuregates.Enabled)}}, "downwardMetrics", BeTrue()),
 		Entry("known alpha FG; in list; disabled", featuregates.HyperConvergedFeatureGates{{Name: "downwardMetrics", State: new(featuregates.Disabled)}}, "downwardMetrics", BeFalse()),
-		Entry("known alpha FG; not in list; disabled", featuregates.HyperConvergedFeatureGates{{Name: "deployKubeSecondaryDNS", State: new(featuregates.Enabled)}}, "downwardMetrics", BeFalse()),
+		Entry("known alpha FG; not in list;", featuregates.HyperConvergedFeatureGates{{Name: "deployKubeSecondaryDNS", State: new(featuregates.Enabled)}}, "downwardMetrics", BeFalse()),
+
+		Entry("known alpha FG with different casing; in list; enabled", featuregates.HyperConvergedFeatureGates{{Name: "DownwardMetricS", State: new(featuregates.Enabled)}}, "downwardMetrics", BeTrue()),
+		Entry("known alpha FG with different casing; in list; disabled", featuregates.HyperConvergedFeatureGates{{Name: "DownwardMetricS", State: new(featuregates.Disabled)}}, "downwardMetrics", BeFalse()),
 
 		Entry("known beta FG; in list; enabled", featuregates.HyperConvergedFeatureGates{{Name: "declarativeHotplugVolumes", State: new(featuregates.Enabled)}}, "declarativeHotplugVolumes", BeTrue()),
 		Entry("known beta FG; in list; disabled", featuregates.HyperConvergedFeatureGates{{Name: "declarativeHotplugVolumes", State: new(featuregates.Disabled)}}, "declarativeHotplugVolumes", BeFalse()),
-		Entry("known beta FG; not in list; disabled", featuregates.HyperConvergedFeatureGates{{Name: "deployKubeSecondaryDNS", State: new(featuregates.Enabled)}}, "declarativeHotplugVolumes", BeTrue()),
+		Entry("known beta FG; not in list;", featuregates.HyperConvergedFeatureGates{{Name: "deployKubeSecondaryDNS", State: new(featuregates.Enabled)}}, "declarativeHotplugVolumes", BeTrue()),
+
+		Entry("known beta FG with different casing; in list; enabled", featuregates.HyperConvergedFeatureGates{{Name: "DeclarativeHotplugVolumeS", State: new(featuregates.Enabled)}}, "declarativeHotplugVolumes", BeTrue()),
+		Entry("known beta FG with different casing; in list; disabled", featuregates.HyperConvergedFeatureGates{{Name: "DeclarativeHotplugVolumeS", State: new(featuregates.Disabled)}}, "declarativeHotplugVolumes", BeFalse()),
 
 		Entry("known deprecated FG; in list; enabled", featuregates.HyperConvergedFeatureGates{{Name: "withHostPassthroughCPU", State: new(featuregates.Enabled)}}, "withHostPassthroughCPU", BeFalse()),
 		Entry("known deprecated FG; in list; disabled", featuregates.HyperConvergedFeatureGates{{Name: "withHostPassthroughCPU", State: new(featuregates.Disabled)}}, "withHostPassthroughCPU", BeFalse()),
-		Entry("known deprecated FG; not in list; disabled", featuregates.HyperConvergedFeatureGates{{Name: "deployKubeSecondaryDNS", State: new(featuregates.Enabled)}}, "withHostPassthroughCPU", BeFalse()),
+		Entry("known deprecated FG; not in list;", featuregates.HyperConvergedFeatureGates{{Name: "deployKubeSecondaryDNS", State: new(featuregates.Enabled)}}, "withHostPassthroughCPU", BeFalse()),
 	)
 
 	Context("check Enable", func() {

@@ -23,6 +23,7 @@ const (
 // +k8s:openapi-gen=true
 type FeatureGate struct {
 	// Name is the feature gate name
+	// +kubebuilder:validation:MaxLength=256
 	Name string `json:"name"`
 
 	// State determines if the feature gate is Enabled, or Disabled. The default value is Enabled.
@@ -36,9 +37,9 @@ func (fg FeatureGate) MarshalJSON() ([]byte, error) {
 	builder.WriteString(fg.Name)
 	builder.WriteByte('"')
 
-	if fg.State != nil && *fg.State == Disabled {
+	if fg.State != nil {
 		builder.WriteString(`,"state":"`)
-		builder.WriteString(string(Disabled))
+		builder.WriteString(string(*fg.State))
 		builder.WriteByte('"')
 	}
 	builder.WriteByte('}')
@@ -54,7 +55,7 @@ func (fg *FeatureGate) UnmarshalJSON(bytes []byte) error {
 	}
 
 	if fg.State == nil {
-		fg.State = ptr.To(Enabled)
+		fg.State = new(Enabled)
 	}
 
 	return nil
@@ -68,6 +69,8 @@ func (fg *FeatureGate) UnmarshalJSON(bytes []byte) error {
 // +k8s:openapi-gen=true
 // +k8s:conversion-gen=false
 // +k8s:deepcopy-gen=false
+// +kubebuilder:validation:MaxItems=64
+// +kubebuilder:validation:XValidation:rule="self.all(x, self.exists_one(y, x.name.lowerAscii() == y.name.lowerAscii()))",message="feature gate names must be unique (case-insensitive)"
 type HyperConvergedFeatureGates []FeatureGate
 
 // Enable enables a feature gate by its name
@@ -81,7 +84,7 @@ func (fgs *HyperConvergedFeatureGates) Disable(name string) {
 }
 
 func (fgs *HyperConvergedFeatureGates) set(name string, enabled State) {
-	idx := fgs.index(name)
+	idx := fgs.Index(name)
 
 	if idx == -1 {
 		*fgs = append(*fgs, FeatureGate{Name: name, State: &enabled})
@@ -118,7 +121,7 @@ func (fgs *HyperConvergedFeatureGates) IsEnabled(name string) bool {
 		return false
 	}
 
-	if idx := fgs.index(name); idx > -1 {
+	if idx := fgs.Index(name); idx > -1 {
 		state = ptr.Deref((*fgs)[idx].State, Enabled)
 	}
 
@@ -127,7 +130,7 @@ func (fgs *HyperConvergedFeatureGates) IsEnabled(name string) bool {
 
 // IsExplicitlyEnabled checks if a feature gate is explicitly set in the feature gate list
 func (fgs *HyperConvergedFeatureGates) IsExplicitlyEnabled(name string) (enabled bool, found bool) {
-	idx := fgs.index(name)
+	idx := fgs.Index(name)
 
 	if idx < 0 {
 		return false, false
@@ -136,8 +139,9 @@ func (fgs *HyperConvergedFeatureGates) IsExplicitlyEnabled(name string) (enabled
 	return ptr.Deref((*fgs)[idx].State, Enabled) == Enabled, true
 }
 
-func (fgs *HyperConvergedFeatureGates) index(name string) int {
+func (fgs *HyperConvergedFeatureGates) Index(name string) int {
+	name = strings.ToLower(name)
 	return slices.IndexFunc(*fgs, func(fg FeatureGate) bool {
-		return fg.Name == name
+		return strings.ToLower(fg.Name) == name
 	})
 }

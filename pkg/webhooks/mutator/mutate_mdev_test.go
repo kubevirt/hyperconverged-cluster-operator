@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -11,7 +12,6 @@ import (
 	"gomodules.xyz/jsonpatch/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -40,7 +40,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 			},
 			Spec: hcov1.HyperConvergedSpec{
 				Virtualization: hcov1.VirtualizationConfig{
-					EvictionStrategy: ptr.To(kubevirtcorev1.EvictionStrategyLiveMigrate),
+					EvictionStrategy: new(kubevirtcorev1.EvictionStrategyLiveMigrate),
 				},
 			},
 		}
@@ -1480,7 +1480,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
-							{Name: "disableMDevConfiguration"},
+							{Name: disableMDevConfigurationFGName},
 						},
 						Virtualization: nilField,
 					},
@@ -1488,7 +1488,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
-							{Name: "disableMDevConfiguration"},
+							{Name: disableMDevConfigurationFGName},
 						},
 						Virtualization: enabledField,
 					},
@@ -1503,11 +1503,11 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				},
 			),
 
-			Entry("should remove the only the disableMDevConfiguration FG is set, if it's the first FG",
+			Entry("should remove only the disableMDevConfiguration FG, if it's the first FG",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
-							{Name: "disableMDevConfiguration"},
+							{Name: disableMDevConfigurationFGName},
 							{Name: "someEnabledFG"},
 							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
 						},
@@ -1517,7 +1517,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
-							{Name: "disableMDevConfiguration"},
+							{Name: disableMDevConfigurationFGName},
 							{Name: "someEnabledFG"},
 							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
 						},
@@ -1534,12 +1534,12 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				},
 			),
 
-			Entry("should remove the only the disableMDevConfiguration FG is set, if it's not the first FG",
+			Entry("should remove only the disableMDevConfiguration FG, if it's not the first FG",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
 							{Name: "someEnabledFG"},
-							{Name: "disableMDevConfiguration"},
+							{Name: disableMDevConfigurationFGName},
 							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
 						},
 						Virtualization: nilField,
@@ -1549,7 +1549,7 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 					Spec: hcov1.HyperConvergedSpec{
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
 							{Name: "someEnabledFG"},
-							{Name: "disableMDevConfiguration"},
+							{Name: disableMDevConfigurationFGName},
 							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
 						},
 						Virtualization: enabledField,
@@ -1565,13 +1565,13 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 				},
 			),
 
-			Entry("should remove the only the disableMDevConfiguration FG is set, if it's the last FG",
+			Entry("should remove only the disableMDevConfiguration FG, if it's the last FG",
 				&hcov1.HyperConverged{
 					Spec: hcov1.HyperConvergedSpec{
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
 							{Name: "someEnabledFG"},
 							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
-							{Name: "disableMDevConfiguration"},
+							{Name: disableMDevConfigurationFGName},
 						},
 						Virtualization: nilField,
 					},
@@ -1581,7 +1581,38 @@ var _ = Describe("test HyperConverged v1 mutator", func() {
 						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
 							{Name: "someEnabledFG"},
 							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
-							{Name: "disableMDevConfiguration"},
+							{Name: disableMDevConfigurationFGName},
+						},
+						Virtualization: enabledField,
+					},
+				},
+				&expectedResponse{
+					patches: []jsonpatch.JsonPatchOperation{{
+						Operation: "remove",
+						Path:      "/spec/featureGates/2",
+					}},
+					checkAllowed: BeTrue(),
+					checkWarning: BeEmpty(),
+				},
+			),
+
+			Entry("should remove the disableMDevConfiguration FG, if it's set with different casing",
+				&hcov1.HyperConverged{
+					Spec: hcov1.HyperConvergedSpec{
+						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
+							{Name: "someEnabledFG"},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
+							{Name: strings.ToUpper(disableMDevConfigurationFGName)},
+						},
+						Virtualization: nilField,
+					},
+				},
+				&hcov1.HyperConverged{
+					Spec: hcov1.HyperConvergedSpec{
+						FeatureGates: hcov1fg.HyperConvergedFeatureGates{
+							{Name: "someEnabledFG"},
+							{Name: "someDisabledFG", State: new(hcov1fg.Disabled)},
+							{Name: strings.ToUpper(disableMDevConfigurationFGName)},
 						},
 						Virtualization: enabledField,
 					},
