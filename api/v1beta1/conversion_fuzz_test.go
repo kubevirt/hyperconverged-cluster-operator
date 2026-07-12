@@ -409,7 +409,7 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 		if len(betaFGs) > 0 && r.IntN(2) == 1 {
 			hc.Spec.FeatureGates = append(hc.Spec.FeatureGates, randFG(r, betaFGs[r.IntN(len(betaFGs))]))
 		}
-		if r.IntN(2) == 1 { //add unknown FG {
+		if r.IntN(2) == 1 { //add unknown FG
 			hc.Spec.FeatureGates = append(hc.Spec.FeatureGates, randFG(r, randMixedCasesString(r)))
 		}
 	}
