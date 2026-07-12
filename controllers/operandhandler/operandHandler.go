@@ -119,6 +119,7 @@ func NewOperandHandler(client client.Client, scheme *runtime.Scheme, ci hcoutil.
 	} else {
 		operandList = append(operandList,
 			handlers.NewCertManagerIssuerHandler(client, scheme),
+			netresinjector.NewCertManagerCertHandler(client, scheme),
 		)
 	}
 
