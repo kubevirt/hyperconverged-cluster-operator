@@ -615,6 +615,7 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			Resources: stringListToSlice("poddisruptionbudgets"),
 			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
 		},
+		roleWithAllPermissions("cert-manager.io", stringListToSlice("certificates", "issuers")),
 	}
 }
 

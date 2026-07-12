@@ -712,6 +712,19 @@ spec:
           - create
           - update
           - delete
+        - apiGroups:
+          - cert-manager.io
+          resources:
+          - certificates
+          - issuers
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - delete
+          - patch
         serviceAccountName: hyperconverged-cluster-operator
       - rules: []
         serviceAccountName: hyperconverged-cluster-cli-download
