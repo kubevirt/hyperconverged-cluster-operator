@@ -15,6 +15,7 @@ import (
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcofg "github.com/kubevirt/hyperconverged-cluster-operator/api/v1/featuregates"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/featuregatedetails"
 )
 
 // FuzzV1beta1ToV1RoundTrip verifies that converting a v1beta1 HyperConverged CR to v1 and back does not lose or
@@ -290,6 +291,11 @@ func randomV1beta1HC(r *rand.Rand) *HyperConverged {
 	return hc
 }
 
+var (
+	alphaFGs = featuregatedetails.ListAlphaFeatureGates()
+	betaFGs  = featuregatedetails.ListBetaFeatureGates()
+)
+
 // randomV1HC creates a HyperConverged v1 CR with randomly populated fields.
 //
 //nolint:gocognit
@@ -397,11 +403,14 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 
 	if r.IntN(2) == 1 {
 		hc.Spec.FeatureGates = hcofg.HyperConvergedFeatureGates{}
-		if r.IntN(2) == 1 {
-			hc.Spec.FeatureGates.Enable("downwardMetrics")
+		if len(alphaFGs) > 0 && r.IntN(2) == 1 {
+			hc.Spec.FeatureGates = append(hc.Spec.FeatureGates, randFG(r, alphaFGs[r.IntN(len(alphaFGs))]))
 		}
-		if r.IntN(2) == 1 {
-			hc.Spec.FeatureGates.Disable("decentralizedLiveMigration")
+		if len(betaFGs) > 0 && r.IntN(2) == 1 {
+			hc.Spec.FeatureGates = append(hc.Spec.FeatureGates, randFG(r, betaFGs[r.IntN(len(betaFGs))]))
+		}
+		if r.IntN(2) == 1 { //add unknown FG {
+			hc.Spec.FeatureGates = append(hc.Spec.FeatureGates, randFG(r, randMixedCasesString(r)))
 		}
 	}
 
@@ -535,4 +544,36 @@ func randPtr[T any](r *rand.Rand, value T) *T {
 		return nil
 	}
 	return &value
+}
+
+func randMixedCasesString(r *rand.Rand) string {
+	const letters = "abcdefghijklmnopqrstuvwxyz" +
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+		"0123456789"
+
+	length := r.IntN(50) + 1
+	b := make([]byte, length)
+
+	idx := r.IntN(len(letters) - 10) // not a digit
+	b[0] = letters[idx]
+
+	for i := 1; i < length; i++ {
+		idx = r.IntN(len(letters))
+		b[i] = letters[idx]
+	}
+
+	return string(b)
+}
+
+func randFG(r *rand.Rand, name string) hcofg.FeatureGate {
+	fg := hcofg.FeatureGate{Name: name}
+	switch r.IntN(3) {
+	case 0:
+	case 1:
+		fg.State = new(hcofg.Enabled)
+	case 2:
+		fg.State = new(hcofg.Disabled)
+	}
+
+	return fg
 }
