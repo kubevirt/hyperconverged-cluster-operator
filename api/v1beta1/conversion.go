@@ -24,14 +24,12 @@ const DisableMDevConfigurationFG = "disableMDevConfiguration"
 type v1OnlyFields struct {
 	DeployNetworkResourcesInjector *bool                              `json:"deployNetworkResourcesInjector,omitempty"`
 	MDevConfigEnable               *bool                              `json:"mdevConfigEnable,omitempty"`
-	DisableMDevConfigurationFG     *bool                              `json:"disableMDevConfigurationFG,omitempty"`
 	FeatureGates                   hcov1fg.HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 }
 
 func (fields *v1OnlyFields) isEmpty() bool {
 	return fields.DeployNetworkResourcesInjector == nil &&
 		fields.MDevConfigEnable == nil &&
-		fields.DisableMDevConfigurationFG == nil &&
 		fields.FeatureGates == nil
 }
 
