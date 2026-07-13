@@ -69,6 +69,22 @@ spec:
     state: Disabled
 ```
 
+The feature gate names are case-insensitive. The above example can be done also like this:
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+  namespace: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: AlignCPUs
+  - name: DecentralizedLiveMigration
+    state: Disabled
+```
+
+> **Note**: Feature gate names must be unique (case-insensitive) in the `spec.featureGates` list.
+
 ### downwardMetrics Feature Gate
 Add the `downwardMetrics` feature gate in order to allow exposing a limited set of VM and host metrics to the guest.
 The format is compatible with [vhostmd](https://github.com/vhostmd/vhostmd).
