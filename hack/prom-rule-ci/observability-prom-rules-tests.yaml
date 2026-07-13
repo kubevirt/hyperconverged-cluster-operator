@@ -446,18 +446,18 @@ tests:
               kubernetes_operator_part_of: "kubevirt"
               kubernetes_operator_component: "cnv-observability"
 
-  # VM non-recoverable OS panic
+  # VMNonRecoverableOSPanic - Case 1: First panic (metric appears from nothing, no prior baseline)
   - interval: 1m
     input_series:
       - series: 'kubevirt_vmi_guest_os_panic_total{namespace="test", name="vm-01", type="pvpanic", bugcheck_code="unknown"}'
-        values: '0 0 1 1 1 1 1'
+        values: '_ _ 1 1 1 1 1'
 
     alert_rule_test:
-      # No alert at 1m (no panics yet)
+      # No alert at 1m (no metric exists yet)
       - eval_time: 1m
         alertname: VMNonRecoverableOSPanic
         exp_alerts: []
-      # Alert fires at 4m (1 panic detected, within 1-5 range)
+      # Alert fires at 4m (counter=1, new metric detected via unless offset)
       - eval_time: 4m
         alertname: VMNonRecoverableOSPanic
         exp_alerts:
@@ -473,29 +473,115 @@ tests:
               namespace: "test"
               name: "vm-01"
 
-  # VM non-recoverable OS panic - should NOT fire above 5
+  # VMNonRecoverableOSPanic - Case 2: Multiple panics (should show integer value, no fractions)
+  - interval: 1m
+    input_series:
+      - series: 'kubevirt_vmi_guest_os_panic_total{namespace="test", name="vm-03", type="pvpanic", bugcheck_code="unknown"}'
+        values: '_ _ 3 3 3 3 3'
+
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: VMNonRecoverableOSPanic
+        exp_alerts:
+          - exp_annotations:
+              summary: "VM vm-03 in namespace test experienced a non-recoverable guest OS panic"
+              description: "The VM has experienced 3 non-recoverable guest OS panic(s) in the last 24 hours."
+              runbook_url: "https://kubevirt.io/monitoring/runbooks/VMNonRecoverableOSPanic"
+            exp_labels:
+              severity: "warning"
+              operator_health_impact: "none"
+              kubernetes_operator_part_of: "kubevirt"
+              kubernetes_operator_component: "kubevirt"
+              namespace: "test"
+              name: "vm-03"
+
+  # VMNonRecoverableOSPanic - Case 3: Should NOT fire above 5 panics
   - interval: 1m
     input_series:
       - series: 'kubevirt_vmi_guest_os_panic_total{namespace="test", name="vm-02", type="pvpanic", bugcheck_code="unknown"}'
-        values: '0 0 6 6 6 6 6'
+        values: '_ _ 6 6 6 6 6'
 
     alert_rule_test:
       - eval_time: 4m
         alertname: VMNonRecoverableOSPanic
         exp_alerts: []
 
-  # ClusterVMPanicDetected - should fire when any VM has panics (> 0)
+  # VMNonRecoverableOSPanic - Case 4: No metric exists at all (should NOT fire)
+  - interval: 1m
+    input_series: []
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: VMNonRecoverableOSPanic
+        exp_alerts: []
+
+  # VMNonRecoverableOSPanic - Case 5: New panic on old metric (increase detects 1->2 after 24h)
+  # counter=1 for 1500 steps (25h), then increases to 2
+  - interval: 1m
+    input_series:
+      - series: 'kubevirt_vmi_guest_os_panic_total{namespace="test", name="vm-05", type="pvpanic", bugcheck_code="unknown"}'
+        values: '1+0x1500 2+0x100'
+
+    alert_rule_test:
+      # Before the new panic, old metric > 24h with no increase — no alert
+      - eval_time: 1490m
+        alertname: VMNonRecoverableOSPanic
+        exp_alerts: []
+      # After counter goes from 1 to 2, increase() detects the new panic
+      - eval_time: 1510m
+        alertname: VMNonRecoverableOSPanic
+        exp_alerts:
+          - exp_annotations:
+              summary: "VM vm-05 in namespace test experienced a non-recoverable guest OS panic"
+              description: "The VM has experienced 1 non-recoverable guest OS panic(s) in the last 24 hours."
+              runbook_url: "https://kubevirt.io/monitoring/runbooks/VMNonRecoverableOSPanic"
+            exp_labels:
+              severity: "warning"
+              operator_health_impact: "none"
+              kubernetes_operator_part_of: "kubevirt"
+              kubernetes_operator_component: "kubevirt"
+              namespace: "test"
+              name: "vm-05"
+
+  # VMNonRecoverableOSPanic - Case 6: Auto-resolves after 24h with no new panics
+  - interval: 1m
+    input_series:
+      - series: 'kubevirt_vmi_guest_os_panic_total{namespace="test", name="vm-06", type="pvpanic", bugcheck_code="unknown"}'
+        values: '_ 1+0x1500'
+
+    alert_rule_test:
+      # Fires while metric is < 24h old (1h after first appearance)
+      - eval_time: 60m
+        alertname: VMNonRecoverableOSPanic
+        exp_alerts:
+          - exp_annotations:
+              summary: "VM vm-06 in namespace test experienced a non-recoverable guest OS panic"
+              description: "The VM has experienced 1 non-recoverable guest OS panic(s) in the last 24 hours."
+              runbook_url: "https://kubevirt.io/monitoring/runbooks/VMNonRecoverableOSPanic"
+            exp_labels:
+              severity: "warning"
+              operator_health_impact: "none"
+              kubernetes_operator_part_of: "kubevirt"
+              kubernetes_operator_component: "kubevirt"
+              namespace: "test"
+              name: "vm-06"
+      # Auto-resolves after 24h — offset finds the metric, unless removes it, increase()=0
+      - eval_time: 1450m
+        alertname: VMNonRecoverableOSPanic
+        exp_alerts: []
+
+  # ClusterVMPanicDetected - Case 1: First panic (new metric, For: 5m)
   - interval: 1m
     input_series:
       - series: 'kubevirt_vmi_guest_os_panic_total{namespace="ns1", name="vm-01", type="pvpanic", bugcheck_code="unknown"}'
-        values: '0 0 1 1 1 1 1 1 1 1'
+        values: '_ _ 1 1 1 1 1 1 1 1'
 
     alert_rule_test:
       # At 4m, not enough time for For: 5m
       - eval_time: 4m
         alertname: ClusterVMPanicDetected
         exp_alerts: []
-      # At 9m, 1 VM has panicked - alert should fire
+      # At 9m, 1 VM has panicked — alert fires
       - eval_time: 9m
         alertname: ClusterVMPanicDetected
         exp_alerts:
@@ -508,6 +594,31 @@ tests:
               operator_health_impact: "none"
               kubernetes_operator_part_of: "kubevirt"
               kubernetes_operator_component: "kubevirt"
+
+  # ClusterVMPanicDetected - Case 2: Auto-resolves after 24h with no new panics
+  - interval: 1m
+    input_series:
+      - series: 'kubevirt_vmi_guest_os_panic_total{namespace="ns1", name="vm-02", type="pvpanic", bugcheck_code="unknown"}'
+        values: '_ 1+0x1500'
+
+    alert_rule_test:
+      # Fires while metric is < 24h old (1h after appearance, For: 5m met)
+      - eval_time: 60m
+        alertname: ClusterVMPanicDetected
+        exp_alerts:
+          - exp_annotations:
+              summary: "VMs experienced non-recoverable guest OS panics in the last 24 hours"
+              description: "1 VM(s) across the cluster have experienced non-recoverable guest OS panics in the last 24 hours. This may indicate a cluster-wide infrastructure issue."
+              runbook_url: "https://kubevirt.io/monitoring/runbooks/ClusterVMPanicDetected"
+            exp_labels:
+              severity: "warning"
+              operator_health_impact: "none"
+              kubernetes_operator_part_of: "kubevirt"
+              kubernetes_operator_component: "kubevirt"
+      # Auto-resolves after 24h
+      - eval_time: 1450m
+        alertname: ClusterVMPanicDetected
+        exp_alerts: []
 
   - interval: 1m
     input_series:
