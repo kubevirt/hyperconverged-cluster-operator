@@ -159,19 +159,6 @@ spec:
   issuerRef:
     name: selfsigned
 ---
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: virt-network-resources-injector-cert
-  labels:
-    name: virt-network-resources-injector
-spec:
-  secretName: virt-network-resources-injector-secret
-  dnsNames:
-  - virt-network-resources-injector-service.kubevirt-hyperconverged.svc
-  issuerRef:
-    name: selfsigned
----
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
 metadata:
