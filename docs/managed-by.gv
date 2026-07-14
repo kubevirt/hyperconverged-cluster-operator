@@ -36,9 +36,6 @@ digraph "managed-by" {
 	"deployment/cluster-network-addons-operator" [label="deployment/cluster-network-addons-operator"]
 	olm [label=olm]
 	olm -> "deployment/cluster-network-addons-operator"
-	"deployment/cnv-network-resources-injector" [label="deployment/cnv-network-resources-injector"]
-	"deployment/hco-operator" [label="deployment/hco-operator"]
-	"deployment/hco-operator" -> "deployment/cnv-network-resources-injector"
 	"deployment/hco-operator" [label="deployment/hco-operator"]
 	olm [label=olm]
 	olm -> "deployment/hco-operator"
@@ -96,12 +93,6 @@ digraph "managed-by" {
 	"deployment/virt-synchronization-controller" [label="deployment/virt-synchronization-controller"]
 	"deployment/virt-operator" [label="deployment/virt-operator"]
 	"deployment/virt-operator" -> "deployment/virt-synchronization-controller"
-	"deployment/virt-template-apiserver" [label="deployment/virt-template-apiserver"]
-	"deployment/virt-operator" [label="deployment/virt-operator"]
-	"deployment/virt-operator" -> "deployment/virt-template-apiserver"
-	"deployment/virt-template-controller" [label="deployment/virt-template-controller"]
-	"deployment/virt-operator" [label="deployment/virt-operator"]
-	"deployment/virt-operator" -> "deployment/virt-template-controller"
 	"deployment/virt-template-validator" [label="deployment/virt-template-validator"]
 	"deployment/ssp-operator" [label="deployment/ssp-operator"]
 	"deployment/ssp-operator" -> "deployment/virt-template-validator"
