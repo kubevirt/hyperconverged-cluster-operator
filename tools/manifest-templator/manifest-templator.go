@@ -63,6 +63,7 @@ var (
 	waspAgentImage                = flag.String("wasp-agent-image-name", "", "wasp-agent image")
 	aieWebhookImage               = flag.String("aie-webhook-image-name", "", "AIE webhook image")
 	iommufdDevicePluginImage      = flag.String("iommufd-device-plugin-image-name", "", "IOMMUFD device plugin image")
+	observabilityControllerImage  = flag.String("observability-controller-image-name", "", "Observability controller image")
 	smbios                        = flag.String("smbios", "", "Custom SMBIOS string for KubeVirt ConfigMap")
 	machinetype                   = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap (Deprecated, use amd64-machinetype)")
 	amd64MachineType              = flag.String("amd64-machinetype", "", "Custom AMD64_MACHINETYPE string for KubeVirt ConfigMap")
@@ -450,6 +451,7 @@ func getOperatorParameters() *manifests.DeploymentOperatorParams {
 		WaspAgentImage:                *waspAgentImage,
 		AIEWebhookImage:               *aieWebhookImage,
 		IOMMUFDDevicePluginImage:      *iommufdDevicePluginImage,
+		ObservabilityControllerImage:  *observabilityControllerImage,
 		Smbios:                        *smbios,
 		Machinetype:                   *machinetype,
 		Amd64MachineType:              *amd64MachineType,

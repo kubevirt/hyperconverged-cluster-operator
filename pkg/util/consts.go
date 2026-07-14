@@ -36,6 +36,7 @@ const (
 	WaspAgentImageEnvV                      = "WASP_AGENT_IMAGE"
 	AIEWebhookImageEnvV                     = "AIE_WEBHOOK_IMAGE"
 	IOMMUFDDevicePluginImageEnvV            = "IOMMUFD_DEVICE_PLUGIN_IMAGE"
+	ObservabilityControllerImageEnvV        = "OBSERVABILITY_CONTROLLER_IMAGE"
 	DeployNetworkPoliciesEnvV               = "DEPLOY_NETWORK_POLICIES"
 	VirtIOWinDataFileEnvV                   = "DEPLOY_VIRT_IO_WIN_DATA_FILE"
 	VirtIODownloadDir                       = "virtio-win"
@@ -139,4 +140,5 @@ const (
 	AppComponentIOMMUFDDevicePlugin AppComponent = "iommufd-device-plugin"
 	AppComponentInFlightOperations  AppComponent = "inflightoperations"
 	AppComponentNetResInjector      AppComponent = "virt-network-resources-injector"
+	AppComponentObservability       AppComponent = "virt-observability-controller"
 )

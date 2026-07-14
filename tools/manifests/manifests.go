@@ -39,6 +39,7 @@ type DeploymentOperatorParams struct {
 	WaspAgentImage                string
 	AIEWebhookImage               string
 	IOMMUFDDevicePluginImage      string
+	ObservabilityControllerImage  string
 	ImagePullPolicy               string
 	ConversionContainer           string
 	VmwareContainer               string
@@ -234,6 +235,10 @@ func buildOperatorEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 		{
 			Name:  util.IOMMUFDDevicePluginImageEnvV,
 			Value: params.IOMMUFDDevicePluginImage,
+		},
+		{
+			Name:  util.ObservabilityControllerImageEnvV,
+			Value: params.ObservabilityControllerImage,
 		},
 	}, params.Env...)
 
@@ -493,6 +498,26 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			Resources: stringListToSlice("virtualmachineinstances"),
 			Verbs:     stringListToSlice("get", "list", "watch"),
 		},
+		{
+			APIGroups: stringListToSlice(kvapi.GroupName),
+			Resources: stringListToSlice("virtualmachines", "virtualmachineinstancemigrations"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
+		{
+			APIGroups: stringListToSlice("instancetype.kubevirt.io"),
+			Resources: stringListToSlice("virtualmachineinstancetypes", "virtualmachineclusterinstancetypes", "virtualmachinepreferences", "virtualmachineclusterpreferences"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
+		{
+			APIGroups: stringListToSlice("authentication.k8s.io"),
+			Resources: stringListToSlice("tokenreviews"),
+			Verbs:     stringListToSlice("create"),
+		},
+		{
+			APIGroups: stringListToSlice("authorization.k8s.io"),
+			Resources: stringListToSlice("subjectaccessreviews"),
+			Verbs:     stringListToSlice("create"),
+		},
 		roleWithAllPermissions(cdiapi.GroupName, stringListToSlice("cdis", "cdis/finalizers")),
 		roleWithAllPermissions(sspapi.GroupVersion.Group, stringListToSlice("ssps", "ssps/finalizers")),
 		roleWithAllPermissions(cnaoapi.GroupVersion.Group, stringListToSlice("networkaddonsconfigs", "networkaddonsconfigs/finalizers")),
@@ -510,6 +535,11 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			Resources: stringListToSlice("pods", "nodes"),
 			Verbs:     stringListToSlice("get", "list", "watch", "patch"),
 		},
+		{
+			APIGroups: emptyAPIGroup,
+			Resources: stringListToSlice("persistentvolumeclaims"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
 		roleWithAllPermissions("", stringListToSlice("secrets")),
 		{
 			APIGroups: emptyAPIGroup,
@@ -525,6 +555,11 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			APIGroups: stringListToSlice("apps"),
 			Resources: stringListToSlice("deployments", "replicasets", "daemonsets"),
 			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice("apps"),
+			Resources: stringListToSlice("controllerrevisions"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
 		},
 		roleWithAllPermissions("rbac.authorization.k8s.io",
 			stringListToSlice("roles", "clusterroles", "rolebindings", "clusterrolebindings")),
