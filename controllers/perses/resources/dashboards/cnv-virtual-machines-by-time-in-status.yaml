@@ -53,6 +53,7 @@ spec:
             colorMode: none
             format:
               unit: decimal
+            valueFontSize: 20
         queries:
         - kind: TimeSeriesQuery
           spec:
@@ -159,6 +160,7 @@ spec:
             colorMode: none
             format:
               unit: bytes
+            valueFontSize: 20
         queries:
         - kind: TimeSeriesQuery
           spec:
@@ -256,6 +258,7 @@ spec:
             colorMode: none
             format:
               unit: bytes
+            valueFontSize: 20
         queries:
         - kind: TimeSeriesQuery
           spec:
@@ -394,7 +397,7 @@ spec:
               name: 'value #1'
             - enableSorting: true
               format:
-                unit: relative-time
+                unit: seconds
               header: Time Since Last Migration
               name: 'value #3'
             - format:
@@ -574,7 +577,7 @@ spec:
               spec:
                 query: |-
                   sum by (namespace, name, status)(
-                    (time() - kubevirt_vmi_migration_end_time_seconds{name=~"$name", namespace=~"$namespace"})
+                    (time() - (kubevirt_vmi_migration_end_time_seconds{name=~"$name", namespace=~"$namespace"} > 0))
 
                     + on(name, namespace) group_left(status)
                     (0 * (
@@ -652,7 +655,7 @@ spec:
               spec:
                 query: |-
                   sum by (namespace, name, status)(
-                    (kubevirt_vmi_migration_end_time_seconds{name=~"$name", namespace=~"$namespace"}*1000)
+                    ((kubevirt_vmi_migration_end_time_seconds{name=~"$name", namespace=~"$namespace"} > 0)*1000)
 
                     + on(name, namespace) group_left(status)
                     (0 * (

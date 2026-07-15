@@ -131,6 +131,8 @@ spec:
             - hide: true
               name: 'value #12'
             - hide: true
+              name: 'value #13'
+            - hide: true
               name: __name__
             - hide: true
               name: clusterID

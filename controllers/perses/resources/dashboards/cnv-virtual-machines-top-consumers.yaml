@@ -301,7 +301,7 @@ spec:
               kind: PrometheusTimeSeriesQuery
               spec:
                 query: sum by (namespace,name)(rate(kubevirt_vmi_storage_read_traffic_bytes_total{namespace=~"$namespace",
-                  name=~"$topn_storage_traffic"}[10m]) + rate(kubevirt_vmi_storage_write_traffic_bytes_total{namespace=~"$namespace",
+                  name=~"$topn_storage_traffic"}[10m])) + sum by (namespace,name)(rate(kubevirt_vmi_storage_write_traffic_bytes_total{namespace=~"$namespace",
                   name=~"$topn_storage_traffic"}[10m])) > 0
     "2_1":
       kind: Panel
@@ -334,7 +334,7 @@ spec:
               kind: PrometheusTimeSeriesQuery
               spec:
                 query: sum by (namespace,name)(rate(kubevirt_vmi_storage_read_traffic_bytes_total{namespace=~"$namespace",
-                  name=~"$topn_storage_traffic"}[10m]) + rate(kubevirt_vmi_storage_write_traffic_bytes_total{namespace=~"$namespace",
+                  name=~"$topn_storage_traffic"}[10m])) + sum by (namespace,name)(rate(kubevirt_vmi_storage_write_traffic_bytes_total{namespace=~"$namespace",
                   name=~"$topn_storage_traffic"}[10m]))
                 seriesNameFormat: '{{name}} / {{namespace}}'
     "3_0":
@@ -367,7 +367,7 @@ spec:
               kind: PrometheusTimeSeriesQuery
               spec:
                 query: sum by (namespace,name)(rate(kubevirt_vmi_storage_iops_read_total{namespace=~"$namespace",
-                  name=~"$topn_storage_iops"}[10m]) + rate(kubevirt_vmi_storage_iops_write_total{namespace=~"$namespace",
+                  name=~"$topn_storage_iops"}[10m])) + sum by (namespace,name)(rate(kubevirt_vmi_storage_iops_write_total{namespace=~"$namespace",
                   name=~"$topn_storage_iops"}[10m])) > 0
     "3_1":
       kind: Panel
@@ -399,7 +399,7 @@ spec:
               kind: PrometheusTimeSeriesQuery
               spec:
                 query: sum by (namespace,name)(rate(kubevirt_vmi_storage_iops_read_total{namespace=~"$namespace",
-                  name=~"$topn_storage_iops"}[10m]) + rate(kubevirt_vmi_storage_iops_write_total{namespace=~"$namespace",
+                  name=~"$topn_storage_iops"}[10m])) + sum by (namespace,name)(rate(kubevirt_vmi_storage_iops_write_total{namespace=~"$namespace",
                   name=~"$topn_storage_iops"}[10m]))
                 seriesNameFormat: '{{name}} / {{namespace}}'
     "4_0":
@@ -433,7 +433,7 @@ spec:
               kind: PrometheusTimeSeriesQuery
               spec:
                 query: sum by (namespace,name)(rate(kubevirt_vmi_network_receive_bytes_total{namespace=~"$namespace",
-                  name=~"$topn_network_traffic"}[10m]) + rate(kubevirt_vmi_network_transmit_bytes_total{namespace=~"$namespace",
+                  name=~"$topn_network_traffic"}[10m])) + sum by (namespace,name)(rate(kubevirt_vmi_network_transmit_bytes_total{namespace=~"$namespace",
                   name=~"$topn_network_traffic"}[10m])) > 0
     "4_1":
       kind: Panel
@@ -466,7 +466,7 @@ spec:
               kind: PrometheusTimeSeriesQuery
               spec:
                 query: sum by (namespace,name)(rate(kubevirt_vmi_network_receive_bytes_total{namespace=~"$namespace",
-                  name=~"$topn_network_traffic"}[10m]) + rate(kubevirt_vmi_network_transmit_bytes_total{namespace=~"$namespace",
+                  name=~"$topn_network_traffic"}[10m])) + sum by (namespace,name)(rate(kubevirt_vmi_network_transmit_bytes_total{namespace=~"$namespace",
                   name=~"$topn_network_traffic"}[10m]))
                 seriesNameFormat: '{{name}} / {{namespace}}'
     "5_0":
@@ -565,7 +565,7 @@ spec:
               kind: PrometheusTimeSeriesQuery
               spec:
                 query: sum by (namespace,name)(avg_over_time(kubevirt_vmi_memory_swap_in_traffic_bytes{namespace=~"$namespace",
-                  name=~"$topn_memory_swap"}[10m]) + avg_over_time(kubevirt_vmi_memory_swap_out_traffic_bytes{namespace=~"$namespace",
+                  name=~"$topn_memory_swap"}[10m])) + sum by (namespace,name)(avg_over_time(kubevirt_vmi_memory_swap_out_traffic_bytes{namespace=~"$namespace",
                   name=~"$topn_memory_swap"}[10m])) > 0
     "6_1":
       kind: Panel
@@ -598,7 +598,7 @@ spec:
               kind: PrometheusTimeSeriesQuery
               spec:
                 query: sum by (namespace,name)(avg_over_time(kubevirt_vmi_memory_swap_in_traffic_bytes{namespace=~"$namespace",
-                  name=~"$topn_memory_swap"}[10m]) + avg_over_time(kubevirt_vmi_memory_swap_out_traffic_bytes{namespace=~"$namespace",
+                  name=~"$topn_memory_swap"}[10m])) + sum by (namespace,name)(avg_over_time(kubevirt_vmi_memory_swap_out_traffic_bytes{namespace=~"$namespace",
                   name=~"$topn_memory_swap"}[10m]))
                 seriesNameFormat: '{{name}} / {{namespace}}'
   variables:
@@ -644,7 +644,7 @@ spec:
             value: "50"
   - kind: ListVariable
     spec:
-      allowAllValue: false
+      allowAllValue: true
       allowMultiple: true
       defaultValue:
       - $__all
@@ -658,7 +658,7 @@ spec:
           labelName: name
   - kind: ListVariable
     spec:
-      allowAllValue: false
+      allowAllValue: true
       allowMultiple: true
       defaultValue:
       - $__all
@@ -672,7 +672,7 @@ spec:
           labelName: name
   - kind: ListVariable
     spec:
-      allowAllValue: false
+      allowAllValue: true
       allowMultiple: true
       defaultValue:
       - $__all
@@ -682,12 +682,12 @@ spec:
       plugin:
         kind: PrometheusPromQLVariable
         spec:
-          expr: topk($topn, sum by (namespace,name)(kubevirt_vmi_storage_read_traffic_bytes_total{namespace=~"$namespace"}
-            + kubevirt_vmi_storage_write_traffic_bytes_total{namespace=~"$namespace"}))
+          expr: topk($topn, sum by (namespace,name)(kubevirt_vmi_storage_read_traffic_bytes_total{namespace=~"$namespace"})
+            + sum by (namespace,name)(kubevirt_vmi_storage_write_traffic_bytes_total{namespace=~"$namespace"}))
           labelName: name
   - kind: ListVariable
     spec:
-      allowAllValue: false
+      allowAllValue: true
       allowMultiple: true
       defaultValue:
       - $__all
@@ -697,12 +697,12 @@ spec:
       plugin:
         kind: PrometheusPromQLVariable
         spec:
-          expr: topk($topn, sum by (namespace,name)(kubevirt_vmi_storage_iops_read_total{namespace=~"$namespace"}
-            + kubevirt_vmi_storage_iops_write_total{namespace=~"$namespace"}))
+          expr: topk($topn, sum by (namespace,name)(kubevirt_vmi_storage_iops_read_total{namespace=~"$namespace"})
+            + sum by (namespace,name)(kubevirt_vmi_storage_iops_write_total{namespace=~"$namespace"}))
           labelName: name
   - kind: ListVariable
     spec:
-      allowAllValue: false
+      allowAllValue: true
       allowMultiple: true
       defaultValue:
       - $__all
@@ -712,12 +712,12 @@ spec:
       plugin:
         kind: PrometheusPromQLVariable
         spec:
-          expr: topk($topn, sum by (namespace,name)(kubevirt_vmi_network_receive_bytes_total{namespace=~"$namespace"}
-            + kubevirt_vmi_network_transmit_bytes_total{namespace=~"$namespace"}))
+          expr: topk($topn, sum by (namespace,name)(kubevirt_vmi_network_receive_bytes_total{namespace=~"$namespace"})
+            + sum by (namespace,name)(kubevirt_vmi_network_transmit_bytes_total{namespace=~"$namespace"}))
           labelName: name
   - kind: ListVariable
     spec:
-      allowAllValue: false
+      allowAllValue: true
       allowMultiple: true
       defaultValue:
       - $__all
@@ -731,7 +731,7 @@ spec:
           labelName: name
   - kind: ListVariable
     spec:
-      allowAllValue: false
+      allowAllValue: true
       allowMultiple: true
       defaultValue:
       - $__all

@@ -71,6 +71,7 @@ spec:
             colorMode: none
             format:
               unit: percent-decimal
+            valueFontSize: 20
         queries:
         - kind: TimeSeriesQuery
           spec:
@@ -99,6 +100,7 @@ spec:
             colorMode: none
             format:
               unit: percent-decimal
+            valueFontSize: 20
         queries:
         - kind: TimeSeriesQuery
           spec:
@@ -127,6 +129,7 @@ spec:
             colorMode: none
             format:
               unit: percent-decimal
+            valueFontSize: 20
         queries:
         - kind: TimeSeriesQuery
           spec:
@@ -154,6 +157,7 @@ spec:
             colorMode: none
             format:
               unit: hours
+            valueFontSize: 20
         queries:
         - kind: TimeSeriesQuery
           spec:
@@ -179,6 +183,7 @@ spec:
             colorMode: none
             format:
               unit: hours
+            valueFontSize: 20
         queries:
         - kind: TimeSeriesQuery
           spec:
@@ -204,6 +209,7 @@ spec:
             colorMode: none
             format:
               unit: hours
+            valueFontSize: 20
         queries:
         - kind: TimeSeriesQuery
           spec:
