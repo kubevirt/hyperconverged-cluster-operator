@@ -1117,6 +1117,15 @@ func (r *ReconcileHyperConverged) setOperatorUpgradeableStatus(request *common.H
 }
 
 func (r *ReconcileHyperConverged) migrateBeforeUpgrade(req *common.HcoRequest) (bool, error) {
+	changed, err := removeWrongJsonPatch(req.Instance)
+	if err != nil {
+		return false, err
+	}
+
+	if changed {
+		req.Dirty = true
+	}
+
 	upgradePatched, err := r.applyUpgradePatches(req)
 	if err != nil {
 		return false, err
