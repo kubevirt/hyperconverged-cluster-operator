@@ -103,6 +103,8 @@ var (
 	kvUIProxyImage                = flag.String("kubevirt-consoleproxy-image-name", "", "KubeVirt Console Proxy image")
 	networkResourcesInjectorImage = flag.String("network-resources-injector-image-name", "", "Network Resources Injector image")
 	kvVirtIOWinImage              = flag.String("kv-virtiowin-image-name", "", "KubeVirt VirtIO Win image")
+	kvVirtIOWinDataFile           = flag.String("kv-virtiowin-data-file", "", "Path to the data file inside the VirtIO Win image")
+	kvVirtIOWinMountPath          = flag.String("kv-virtiowin-data-mount-path", "", "Absolute mount path for the VirtIO Win data file in the server container")
 	waspAgentImage                = flag.String("wasp-agent-image-name", "", "Wasp Agent image")
 	aieWebhookImage               = flag.String("aie-webhook-image-name", "", "AIE Webhook image")
 	iommufdDevicePluginImage      = flag.String("iommufd-device-plugin-image-name", "", "IOMMUFD device plugin image")
@@ -775,6 +777,8 @@ func getDeploymentParams() *components.DeploymentOperatorParams {
 		NetworkResourcesInjectorImage: *networkResourcesInjectorImage,
 		ImagePullPolicy:               "IfNotPresent",
 		VirtIOWinContainer:            *kvVirtIOWinImage,
+		VirtIOWinDataFile:             *kvVirtIOWinDataFile,
+		VirtIOWinMountPath:            *kvVirtIOWinMountPath,
 		Smbios:                        *smbios,
 		Machinetype:                   *machinetype,
 		Amd64MachineType:              *amd64MachineType,
