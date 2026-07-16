@@ -31,6 +31,8 @@ const (
 	PasstCNIImageEnvV                  = "PASST_CNI_IMAGE"
 	WaspAgentImageEnvV                 = "WASP_AGENT_IMAGE"
 	DeployNetworkPoliciesEnvV          = "DEPLOY_NETWORK_POLICIES"
+	VirtIOWinDataFileEnvV              = "DEPLOY_VIRT_IO_WIN_DATA_FILE"
+	VirtIODownloadDir                  = "virtio-win"
 	HcoValidatingWebhook               = "validate-hco.kubevirt.io"
 	HcoMutatingWebhookNS               = "mutate-ns-hco.kubevirt.io"
 	PrometheusRuleCRDName              = "prometheusrules.monitoring.coreos.com"
