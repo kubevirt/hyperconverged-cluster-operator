@@ -54,6 +54,5 @@ jobs:
             ```
           assignees: sradco
           reviewers: sradco
-          team-reviewers: owners, maintainers
           branch: update_perses_dashboards
           delete-branch: true
