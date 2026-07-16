@@ -140,6 +140,7 @@ var (
 	aaqVersion                    = flag.String("aaq-version", "", "AAQ operator version")
 	migrationOperatorVersion      = flag.String("migration-operator-version", "", "Migration operator version")
 	autopilotVersion              = flag.String("autopilot-version", "", "Autopilot version")
+	vmFileRestoreOperatorVersion  = flag.String("vm-file-restore-operator-version", "", "VM File Restore Operator version")
 	inFlightOperationsVersion     = flag.String("inflight-operations-version", "", "InFlightOperations version")
 	enableUniqueSemver            = flag.Bool("enable-unique-version", false, "Insert a skipRange annotation to support unique semver in the CSV")
 	skipsList                     = flag.String("skips-list", "",
@@ -649,8 +650,8 @@ func processCsvs(componentsWithCsvs []util.CsvWithComponent, installStrategyBase
 
 func processOneCsv(c util.CsvWithComponent, installStrategyBase *csvv1alpha1.StrategyDetailsDeployment, csvBase *csvv1alpha1.ClusterServiceVersion, ris *[]csvv1alpha1.RelatedImage) {
 	if c.Csv == "" {
-		if c.Name == "MigrationOperator" {
-			return // ignore migration operator csv
+		if c.Name == "MigrationOperator" || c.Name == "VmFileRestoreOperator" {
+			return // ignore migration operator and vm file restore operator csv
 		}
 		log.Panicf("ERROR: the %s CSV was empty", c.Name)
 	}
@@ -794,6 +795,7 @@ func getDeploymentParams() *components.DeploymentOperatorParams {
 		AaqVersion:                    *aaqVersion,
 		MigrationOperatorVersion:      *migrationOperatorVersion,
 		AutopilotVersion:              *autopilotVersion,
+		VmFileRestoreOperatorVersion:  *vmFileRestoreOperatorVersion,
 		InFlightOperationsVersion:     *inFlightOperationsVersion,
 		WaspAgentImage:                *waspAgentImage,
 		AIEWebhookImage:               *aieWebhookImage,
