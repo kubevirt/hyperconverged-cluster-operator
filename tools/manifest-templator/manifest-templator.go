@@ -79,6 +79,7 @@ var (
 	aaqVersion                    = flag.String("aaq-version", "", "AAQ operator version")
 	migrationOperatorVersion      = flag.String("migration-operator-version", "", "Migration operator version")
 	autopilotVersion              = flag.String("autopilot-version", "", "Autopilot version")
+	vmFileRestoreOperatorVersion  = flag.String("vm-file-restore-operator-version", "", "VM File Restore Operator version")
 	inFlightOperationsVersion     = flag.String("inflight-operations-version", "", "InFlightOperations version")
 	_                             = flag.String("primary-udn-binding-image-name", "", "deprecated. This flag is ignored")
 	_                             = flag.String("api-sources", "", "ignored")
@@ -467,6 +468,7 @@ func getOperatorParameters() *manifests.DeploymentOperatorParams {
 		AaqVersion:                    *aaqVersion,
 		MigrationOperatorVersion:      *migrationOperatorVersion,
 		AutopilotVersion:              *autopilotVersion,
+		VmFileRestoreOperatorVersion:  *vmFileRestoreOperatorVersion,
 		InFlightOperationsVersion:     *inFlightOperationsVersion,
 		Env:                           []corev1.EnvVar{},
 	}
