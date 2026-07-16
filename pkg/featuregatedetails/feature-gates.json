@@ -10,6 +10,11 @@
     "description": "DeclarativeHotplugVolumes enables the use of the declarative volume hotplug feature in KubeVirt. When set to true or nil, the \"DeclarativeHotplugVolumes\" feature gate is enabled and the \"HotplugVolumes\" feature gate is not (default behavior). When set to false, the \"HotplugVolumes\" featuregate is enabled in KubeVirt. This feature is in Technical Preview."
   },
   {
+    "name": "template",
+    "phase": "beta",
+    "description": "VirtualMachine Templates provide a native, in-cluster VM templating for KubeVirt. They allow you to define reusable VM blueprints with parameterized values that can be processed to create virtual machine. the \"template\" feature gate enables this feature. Note: this feature is in Tech Preview."
+  },
+  {
     "name": "alignCPUs",
     "phase": "alpha",
     "description": "Enable KubeVirt to request up to two additional dedicated CPUs in order to complete the total CPU count to an even parity when using emulator thread isolation. Note: this feature is in Developer Preview."

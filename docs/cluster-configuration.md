@@ -179,6 +179,24 @@ modifying the VirtualMachine spec directly. These changes are applied immediatel
 
 **Graduation Status**: Beta
 
+### template FeatureGate
+*VirtualMachine Templates* provide a native, in-cluster VM templating for KubeVirt. They allow you to define reusable
+virtual machine blueprints with parameterized values that can be processed to create virtual machine.
+
+Unlike external templating tools such as Helm or Kustomize, `VirtualMachineTemplates` can capture storage state (e.g.
+DataVolume snapshots and cloned disks) that external tools cannot represent. They also work on any Kubernetes cluster
+without requiring OpenShift.
+
+See more details [here](https://kubevirt.io/user-guide/user_workloads/vm_templates/)
+
+the `template` feature gate enables this feature.
+
+**Note**: this feature is in Technical Preview.
+
+**Default**: `Enabled`
+
+**Graduation Status**: Beta
+
 ### objectGraph Feature Gate
 Add the `objectGraph` feature gate in order to enable the ObjectGraph VM and
 VMI subresource in KubeVirt. This subresource returns a structured list of k8s
