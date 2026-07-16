@@ -126,6 +126,11 @@ type HyperConvergedSpec struct {
 	//   gate causes the redeployment of the virt-handler pod.
 	//   Phase: alpha
 	//
+	// * template:
+	//   Enable the deployment of virt-template components by virt-operator. Note:
+	//   this feature is in Developer Preview.
+	//   Phase: alpha
+	//
 	// * disableMDevConfiguration:
 	//   Deprecated: use spec.virtualization.mediatedDevicesConfiguration.enabled
 	//   instead. This feature gate is deprecated and will be removed in a future

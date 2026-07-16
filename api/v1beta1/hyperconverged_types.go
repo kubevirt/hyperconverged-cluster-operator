@@ -512,6 +512,13 @@ type HyperConvergedFeatureGates struct {
 	// +kubebuilder:default=false
 	// +default=false
 	ContainerPathVolumes *bool `json:"containerPathVolumes,omitempty"`
+
+	// Enable the deployment of virt-template components by virt-operator.
+	// Note: this feature is in Developer Preview.
+	// +optional
+	// +kubebuilder:default=false
+	// +default=false
+	Template *bool `json:"template,omitempty"`
 }
 
 // MediatedDevicesConfiguration holds information about MDEV types to be defined, if available

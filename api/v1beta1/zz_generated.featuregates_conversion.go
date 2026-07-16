@@ -204,6 +204,24 @@ func convert_v1beta1_FeatureGates_To_v1(in *HyperConvergedFeatureGates, out *hco
 		}
 	}
 
+	// converting the Template v1beta1 alpha feature gate to v1
+	v1Idx = out.Index("template")
+	v1Found = v1Idx >= 0
+	if in.Template == nil {
+		if v1Found {
+			*out = slices.Delete(*out, v1Idx, v1Idx+1)
+		}
+	} else {
+		v1Enabled = v1Found && ((*out)[v1Idx].State == nil || *((*out)[v1Idx].State) == "Enabled")
+		if (!v1Found && *in.Template) || (v1Found && v1Enabled != *in.Template) {
+			if *in.Template {
+				out.Enable("template")
+			} else {
+				out.Disable("template")
+			}
+		}
+	}
+
 	// the DisableMDevConfiguration feature gate is deprecated and should have a custom conversion logic in api/v1beta1/conversion.go
 }
 
@@ -237,6 +255,9 @@ func convert_v1_FeatureGates_To_v1beta1(in hcofg.HyperConvergedFeatureGates, out
 
 	// converting the persistentReservation v1 alpha feature gate to v1beta1
 	out.PersistentReservation = new(in.IsEnabled("persistentReservation"))
+
+	// converting the template v1 alpha feature gate to v1beta1
+	out.Template = new(in.IsEnabled("template"))
 
 	// the disableMDevConfiguration feature gate is deprecated and should have a custom conversion logic in api/v1beta1/conversion.go
 }

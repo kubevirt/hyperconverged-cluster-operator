@@ -144,6 +144,7 @@ const (
 	kvOptOutRoleAggregation      = "OptOutRoleAggregation"
 	kvContainerPathVolumes       = "ContainerPathVolumes"
 	kvPCINUMAAwareTopology       = "PCINUMAAwareTopology"
+	kvTemplate                   = "Template"
 )
 
 // CPU Plugin default values
@@ -968,6 +969,10 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 
 	if featureGates.IsEnabled("containerPathVolumes") {
 		fgs = append(fgs, kvContainerPathVolumes)
+	}
+
+	if featureGates.IsEnabled("template") {
+		fgs = append(fgs, kvTemplate)
 	}
 
 	return fgs
