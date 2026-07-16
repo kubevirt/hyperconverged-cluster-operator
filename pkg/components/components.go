@@ -3,6 +3,7 @@ package components
 import (
 	"encoding/json"
 	"fmt"
+	"path"
 	"strconv"
 	"time"
 
@@ -42,6 +43,8 @@ const (
 
 	kubevirtProjectName = "KubeVirt project"
 	rbacVersionV1       = "rbac.authorization.k8s.io/v1"
+
+	artifactServerMountName = "virtiowin-data"
 )
 
 var deploymentType = metav1.TypeMeta{
@@ -63,6 +66,8 @@ type DeploymentOperatorParams struct {
 	ConversionContainer      string
 	VmwareContainer          string
 	VirtIOWinContainer       string
+	VirtIOWinDataFile        string
+	VirtIOWinMountPath       string
 	Smbios                   string
 	Machinetype              string
 	Amd64MachineType         string
@@ -150,8 +155,6 @@ func GetServiceWebhook() corev1.Service {
 }
 
 func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.DeploymentSpec {
-	envs := buildEnvVars(params)
-
 	return appsv1.DeploymentSpec{
 		Replicas: ptr.To[int32](1),
 		Selector: &metav1.LabelSelector{
@@ -177,7 +180,7 @@ func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.Deployme
 						Command:         stringListToSlice(util.HCOOperatorName),
 						ReadinessProbe:  getReadinessProbe(util.ReadinessEndpointName, util.HealthProbePort),
 						LivenessProbe:   getLivenessProbe(util.LivenessEndpointName, util.HealthProbePort),
-						Env:             envs,
+						Env:             buildOperatorEnvVars(params),
 						Resources: corev1.ResourceRequirements{
 							Requests: map[corev1.ResourceName]resource.Quantity{
 								corev1.ResourceCPU:    resource.MustParse("10m"),
@@ -197,7 +200,7 @@ func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.Deployme
 	}
 }
 
-func buildEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
+func buildOperatorEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 	envs := append([]corev1.EnvVar{
 		{
 			// deprecated: left here for CI test.
@@ -320,11 +323,19 @@ func buildEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 		})
 	}
 
+	if params.VirtIOWinDataFile != "" && params.VirtIOWinMountPath != "" {
+		value := path.Join(util.VirtIODownloadDir, path.Base(params.VirtIOWinDataFile))
+		envs = append(envs, corev1.EnvVar{
+			Name:  util.VirtIOWinDataFileEnvV,
+			Value: value,
+		})
+	}
+
 	return envs
 }
 
 func GetDeploymentSpecCliDownloads(params *DeploymentOperatorParams) appsv1.DeploymentSpec {
-	return appsv1.DeploymentSpec{
+	spec := appsv1.DeploymentSpec{
 		Replicas: ptr.To[int32](1),
 		Selector: &metav1.LabelSelector{
 			MatchLabels: map[string]string{
@@ -369,6 +380,49 @@ func GetDeploymentSpecCliDownloads(params *DeploymentOperatorParams) appsv1.Depl
 			},
 		},
 	}
+
+	addVirtIOVolume(&spec, params)
+
+	return spec
+}
+
+func addVirtIOVolume(spec *appsv1.DeploymentSpec, params *DeploymentOperatorParams) {
+	const initContainerMount = "/mnt/" + artifactServerMountName
+	if params.VirtIOWinDataFile == "" || params.VirtIOWinMountPath == "" {
+		return
+	}
+
+	spec.Template.Spec.Volumes = append(spec.Template.Spec.Volumes, corev1.Volume{
+		Name:         artifactServerMountName,
+		VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}},
+	})
+	spec.Template.Spec.InitContainers = append(spec.Template.Spec.InitContainers, corev1.Container{
+		Name:            "virtiowin-data-loader",
+		Image:           params.VirtIOWinContainer,
+		ImagePullPolicy: corev1.PullPolicy(params.ImagePullPolicy),
+		Command:         []string{"cp", params.VirtIOWinDataFile, initContainerMount},
+		VolumeMounts: []corev1.VolumeMount{
+			{Name: artifactServerMountName, MountPath: initContainerMount},
+		},
+		SecurityContext:          getVirtIOWinInitContainerSecurityContext(),
+		TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("10m"),
+				corev1.ResourceMemory: resource.MustParse("32Mi"),
+			},
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("100m"),
+				corev1.ResourceMemory: resource.MustParse("64Mi"),
+			},
+		},
+	})
+
+	mountPath := path.Join(params.VirtIOWinMountPath, util.VirtIODownloadDir)
+	spec.Template.Spec.Containers[0].VolumeMounts = append(
+		spec.Template.Spec.Containers[0].VolumeMounts,
+		corev1.VolumeMount{Name: artifactServerMountName, MountPath: mountPath, ReadOnly: true},
+	)
 }
 
 func getLabels(name, hcoKvIoVersion string) map[string]string {
@@ -406,6 +460,15 @@ func GetStdContainerSecurityContext() *corev1.SecurityContext {
 			Drop: []corev1.Capability{"ALL"},
 		},
 	}
+}
+
+// getVirtIOWinInitContainerSecurityContext returns a security context for the virtiowin init
+// container. It sets runAsUser explicitly so that the pod-level runAsNonRoot constraint is met
+// even when the data-only image has no USER directive and would otherwise run as root.
+func getVirtIOWinInitContainerSecurityContext() *corev1.SecurityContext {
+	sc := GetStdContainerSecurityContext()
+	sc.RunAsUser = ptr.To[int64](1001)
+	return sc
 }
 
 // Currently we are abusing the pod readiness to signal to OLM that HCO is not ready
