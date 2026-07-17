@@ -39,7 +39,7 @@ var _ = Describe("KubeVirt Operand", func() {
 
 	const (
 		// Number of conditional featuregates always added by getFeatureGateChecks (one of the volume hotplug FGs and DecentralizedLiveMigration defaults)
-		conditionalFeatureGatesCount = 2
+		conditionalFeatureGatesCount = 3
 	)
 
 	var (
@@ -1993,6 +1993,7 @@ Version: 1.2.3`)
 							Not(ContainElement(kvObjectGraph)),
 							And(Not(ContainElement(kvIncrementalBackup)), Not(ContainElement(kvUtilityVolumes))),
 							Not(ContainElement(kvContainerPathVolumes)),
+							ContainElement(kvTemplateFG),
 						),
 						func(kv *kubevirtcorev1.KubeVirt) {
 							Expect(kv.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
@@ -2174,6 +2175,23 @@ Version: 1.2.3`)
 							}
 						},
 						Not(ContainElement(kvContainerPathVolumes)),
+					),
+					// Template
+					Entry("should add the Template feature gate if template is true in HyperConverged CR",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "template", State: new(featuregates.Enabled)},
+							}
+						},
+						ContainElement(kvTemplateFG),
+					),
+					Entry("should not add the Template feature gate if template is false in HyperConverged CR",
+						func(hc *hcov1.HyperConverged) {
+							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+								{Name: "template", State: new(featuregates.Disabled)},
+							}
+						},
+						Not(ContainElement(kvTemplateFG)),
 					),
 				)
 			})

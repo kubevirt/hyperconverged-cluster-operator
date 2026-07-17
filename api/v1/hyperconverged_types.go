@@ -76,6 +76,14 @@ type HyperConvergedSpec struct {
 	//   feature is in Technical Preview.
 	//   Phase: beta
 	//
+	// * template:
+	//   VirtualMachine Templates provide a native, in-cluster VM templating for
+	//   KubeVirt. They allow you to define reusable VM blueprints with
+	//   parameterized values that can be processed to create virtual machine. the
+	//   "template" feature gate enables this feature. Note: this feature is in
+	//   Tech Preview.
+	//   Phase: beta
+	//
 	// * alignCPUs:
 	//   Enable KubeVirt to request up to two additional dedicated CPUs in order to
 	//   complete the total CPU count to an even parity when using emulator thread

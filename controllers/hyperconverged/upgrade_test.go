@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/blang/semver/v4"
 	. "github.com/onsi/ginkgo/v2"
@@ -25,7 +26,10 @@ import (
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	kubevirtv1 "kubevirt.io/api/core/v1"
+
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
@@ -992,5 +996,192 @@ var _ = Describe("Upgrade Mode", func() {
 			Expect(foundNPs.Items).To(ContainElements(*upToDateNP1, *upToDateNP2, *nonOLMNP, *oldNPOtherNamespace))
 			Expect(foundNPs.Items).ToNot(ContainElements(*oldNP))
 		})
+	})
+
+	Context("remove wrong jsonpatch annotations", func() {
+		const (
+			wrongFGOp         = `add`
+			wrongFGPath       = "/spec/configuration/developerConfiguration/featureGates/-"
+			wrongFGName       = "Template"
+			patchTemplate     = `{"op": %q, "path": %q, "value": %q}`
+			exampleValidPatch = `{"op":"add","path":"something", "value":"something"}`
+		)
+		var (
+			wrongFGPatch    = fmt.Sprintf(patchTemplate, wrongFGOp, wrongFGPath, wrongFGName)
+			wrongFGPatchAnn = "[" + wrongFGPatch + "]"
+		)
+
+		It("sanity (not upgrade): ensure that the jsonpatch annotation adds the FG, to make sure the actual test below is valid", func(ctx context.Context) {
+			if expected.hco.Annotations == nil {
+				expected.hco.Annotations = map[string]string{}
+			}
+			expected.hco.Annotations[common.JSONPatchKVAnnotationName] = wrongFGPatchAnn
+
+			expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates = slices.DeleteFunc(
+				expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates,
+				func(fg string) bool {
+					return fg == wrongFGName
+				},
+			)
+
+			cl := commontestutils.InitClient(expected.toArray())
+			doReconcile(cl, expected.hco, nil)
+
+			kv := &kubevirtv1.KubeVirt{}
+			hco := &hcov1.HyperConverged{}
+
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(expected.hco), hco)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(expected.kv), kv)).To(Succeed())
+
+			Expect(hco.Annotations).To(HaveKeyWithValue(common.JSONPatchKVAnnotationName, wrongFGPatchAnn))
+			Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(wrongFGName)) // it came from the annotation or HCO default
+		})
+
+		It("sanity (not upgrade): ensure that the jsonpatch annotation adds the FG, when HCO FG is disabling it, to make sure the actual test below is valid", func(ctx context.Context) {
+			expected.hco.Spec.FeatureGates.Disable(wrongFGName)
+
+			if expected.hco.Annotations == nil {
+				expected.hco.Annotations = map[string]string{}
+			}
+			expected.hco.Annotations[common.JSONPatchKVAnnotationName] = wrongFGPatchAnn
+
+			expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates = slices.DeleteFunc(
+				expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates,
+				func(fg string) bool {
+					return fg == wrongFGName
+				},
+			)
+
+			cl := commontestutils.InitClient(expected.toArray())
+			doReconcile(cl, expected.hco, nil)
+
+			kv := &kubevirtv1.KubeVirt{}
+			hco := &hcov1.HyperConverged{}
+
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(expected.hco), hco)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(expected.kv), kv)).To(Succeed())
+
+			Expect(hco.Annotations).To(HaveKeyWithValue(common.JSONPatchKVAnnotationName, wrongFGPatchAnn))
+			Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement("Template")) // it came from the annotation
+		})
+
+		It("should drop the wrong jsonPatch annotation. check when the FG itself is disabled", func(ctx context.Context) {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, oldVersion)
+
+			expected.hco.Spec.FeatureGates.Disable(wrongFGName)
+
+			if expected.hco.Annotations == nil {
+				expected.hco.Annotations = map[string]string{}
+			}
+			expected.hco.Annotations[common.JSONPatchKVAnnotationName] = wrongFGPatchAnn
+
+			expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates = slices.DeleteFunc(
+				expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates,
+				func(fg string) bool {
+					return fg == wrongFGName
+				},
+			)
+
+			cl := commontestutils.InitClient(expected.toArray())
+			doReconcile(cl, expected.hco, nil)
+
+			kv := &kubevirtv1.KubeVirt{}
+			hco := &hcov1.HyperConverged{}
+
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(expected.hco), hco)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(expected.kv), kv)).To(Succeed())
+			Expect(hco.Annotations).ToNot(HaveKey(common.JSONPatchKVAnnotationName))
+			Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(wrongFGName))
+		})
+
+		It("should drop the wrong jsonPatch annotation. check when the FG itself is enabled (default)", func(ctx context.Context) {
+			UpdateVersion(&expected.hco.Status, hcoVersionName, oldVersion)
+			if expected.hco.Annotations == nil {
+				expected.hco.Annotations = map[string]string{}
+			}
+			expected.hco.Annotations[common.JSONPatchKVAnnotationName] = wrongFGPatchAnn
+
+			expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates = slices.DeleteFunc(
+				expected.kv.Spec.Configuration.DeveloperConfiguration.FeatureGates,
+				func(fg string) bool {
+					return fg == wrongFGName
+				},
+			)
+
+			cl := commontestutils.InitClient(expected.toArray())
+			doReconcile(cl, expected.hco, nil)
+
+			kv := &kubevirtv1.KubeVirt{}
+			hco := &hcov1.HyperConverged{}
+
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(expected.hco), hco)).To(Succeed())
+			Expect(cl.Get(ctx, client.ObjectKeyFromObject(expected.kv), kv)).To(Succeed())
+			Expect(hco.Annotations).ToNot(HaveKey(common.JSONPatchKVAnnotationName))
+			Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(wrongFGName))
+		})
+
+		DescribeTable("check the function result", func(modify func(hc *hcov1.HyperConverged), wasChange, annotationFound bool, expected string) {
+			hc := commontestutils.NewHco()
+			modify(hc)
+
+			changed, err := removeWrongJsonPatch(hc)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(changed).To(Equal(wasChange))
+
+			annotation, found := hc.Annotations[common.JSONPatchKVAnnotationName]
+			Expect(found).To(Equal(annotationFound))
+			if found {
+				Expect(annotation).To(MatchJSON(expected))
+			}
+		},
+			Entry("when only the wrong patch is in the annotation, should drop the annotation",
+				func(hc *hcov1.HyperConverged) {
+					hc.Annotations = map[string]string{
+						common.JSONPatchKVAnnotationName: wrongFGPatchAnn,
+					}
+				}, true, false, ""),
+			Entry("when only the wrong patch is the first patch, should remove it from the annotation",
+				func(hc *hcov1.HyperConverged) {
+					hc.Annotations = map[string]string{
+						common.JSONPatchKVAnnotationName: `[` + wrongFGPatch + `,` + exampleValidPatch + `,` + exampleValidPatch + `]`,
+					}
+				}, true, true, `[`+exampleValidPatch+`,`+exampleValidPatch+`]`),
+			Entry("when only the wrong patch is not the first patch, should remove it from the annotation",
+				func(hc *hcov1.HyperConverged) {
+					hc.Annotations = map[string]string{
+						common.JSONPatchKVAnnotationName: `[` + exampleValidPatch + `,` + wrongFGPatch + `,` + exampleValidPatch + `]`,
+					}
+				}, true, true, `[`+exampleValidPatch+`,`+exampleValidPatch+`]`),
+			Entry("when only the wrong patch is the last patch, should remove it from the annotation",
+				func(hc *hcov1.HyperConverged) {
+					hc.Annotations = map[string]string{
+						common.JSONPatchKVAnnotationName: `[` + exampleValidPatch + `,` + exampleValidPatch + `,` + wrongFGPatch + `]`,
+					}
+				}, true, true, `[`+exampleValidPatch+`,`+exampleValidPatch+`]`),
+			Entry("when the FG is not Template, should not change",
+				func(hc *hcov1.HyperConverged) {
+					hc.Annotations = map[string]string{
+						common.JSONPatchKVAnnotationName: `[{"op":"` + wrongFGOp + `", "path":"` + wrongFGPath + `", "value": "SomeOtherFG"}]`,
+					}
+				}, false, true, `[{"op":"`+wrongFGOp+`", "path":"`+wrongFGPath+`", "value": "SomeOtherFG"}]`),
+			Entry("when only the the patch is not the wrong one, don't change",
+				func(hc *hcov1.HyperConverged) {
+					hc.Annotations = map[string]string{
+						common.JSONPatchKVAnnotationName: `[{"op":"` + wrongFGOp + `", "path":"/something/else", "value": "` + wrongFGName + `"}]`,
+					}
+				}, false, true, `[{"op":"`+wrongFGOp+`", "path":"/something/else", "value": "`+wrongFGName+`"}]`),
+			Entry("when the op is not the wrong one, don't change",
+				func(hc *hcov1.HyperConverged) {
+					hc.Annotations = map[string]string{
+						common.JSONPatchKVAnnotationName: `[{"op":"replace", "path":"` + wrongFGPath + `", "value": "` + wrongFGName + `"}]`,
+					}
+				}, false, true, `[{"op":"replace", "path":"`+wrongFGPath+`", "value": "`+wrongFGName+`"}]`),
+			Entry("when the json syntax is wrong, don't change", // not an array of patches
+				func(hc *hcov1.HyperConverged) {
+					hc.Annotations = map[string]string{
+						common.JSONPatchKVAnnotationName: wrongFGPatch,
+					}
+				}, false, true, wrongFGPatch),
+		)
 	})
 })
