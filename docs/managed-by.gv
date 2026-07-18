@@ -93,6 +93,12 @@ digraph "managed-by" {
 	"deployment/virt-synchronization-controller" [label="deployment/virt-synchronization-controller"]
 	"deployment/virt-operator" [label="deployment/virt-operator"]
 	"deployment/virt-operator" -> "deployment/virt-synchronization-controller"
+	"deployment/virt-template-apiserver" [label="deployment/virt-template-apiserver"]
+	"deployment/virt-operator" [label="deployment/virt-operator"]
+	"deployment/virt-operator" -> "deployment/virt-template-apiserver"
+	"deployment/virt-template-controller" [label="deployment/virt-template-controller"]
+	"deployment/virt-operator" [label="deployment/virt-operator"]
+	"deployment/virt-operator" -> "deployment/virt-template-controller"
 	"deployment/virt-template-validator" [label="deployment/virt-template-validator"]
 	"deployment/ssp-operator" [label="deployment/ssp-operator"]
 	"deployment/ssp-operator" -> "deployment/virt-template-validator"
