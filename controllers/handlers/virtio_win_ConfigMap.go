@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"net/url"
 	"os"
 
 	log "github.com/go-logr/logr"
@@ -13,6 +14,7 @@ import (
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/downloadhost"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -20,11 +22,12 @@ const virtioWinCmName = "virtio-win"
 
 // NewVirtioWinCmHandler creates the Virtio-Win ConfigMap Handler
 func NewVirtioWinCmHandler(_ log.Logger, Client client.Client, Scheme *runtime.Scheme, hc *hcov1beta1.HyperConverged) (operands.Operand, error) {
-	virtioWincm, err := NewVirtioWinCm(hc)
+	_, err := getVirtioImageName()
 	if err != nil {
 		return nil, err
 	}
-	return operands.NewCmHandler(Client, Scheme, virtioWincm), nil
+
+	return operands.NewDynamicCmHandler(Client, Scheme, NewVirtioWinCm), nil
 }
 
 // NewVirtioWinCmReaderRoleHandler creates the Virtio-Win ConfigMap Role Handler
@@ -37,10 +40,28 @@ func NewVirtioWinCmReaderRoleBindingHandler(_ log.Logger, Client client.Client, 
 	return operands.NewRoleBindingHandler(Client, Scheme, NewVirtioWinCmReaderRoleBinding(hc)), nil
 }
 
+const (
+	virtioWinImageKey   = "virtio-win-image"
+	virtioWinImageDLKey = "virtio-win-image-download-url"
+)
+
 func NewVirtioWinCm(hc *hcov1beta1.HyperConverged) (*corev1.ConfigMap, error) {
-	virtiowinContainer := os.Getenv("VIRTIOWIN_CONTAINER")
-	if virtiowinContainer == "" {
-		return nil, errors.New("kv-virtiowin-image-name was not specified")
+	virtiowinContainer, err := getVirtioImageName()
+	if err != nil {
+		return nil, err
+	}
+
+	data := map[string]string{
+		virtioWinImageKey: virtiowinContainer,
+	}
+
+	if imageDLFilePath, envFound := os.LookupEnv(hcoutil.VirtIOWinDataFileEnvV); envFound && imageDLFilePath != "" {
+		downloadURL := url.URL{
+			Scheme: "https",
+			Host:   string(downloadhost.Get().CurrentHost),
+			Path:   imageDLFilePath,
+		}
+		data[virtioWinImageDLKey] = downloadURL.String()
 	}
 
 	return &corev1.ConfigMap{
@@ -49,9 +70,7 @@ func NewVirtioWinCm(hc *hcov1beta1.HyperConverged) (*corev1.ConfigMap, error) {
 			Labels:    operands.GetLabels(hc, hcoutil.AppComponentDeployment),
 			Namespace: hc.Namespace,
 		},
-		Data: map[string]string{
-			"virtio-win-image": virtiowinContainer,
-		},
+		Data: data,
 	}, nil
 }
 
@@ -93,4 +112,13 @@ func NewVirtioWinCmReaderRoleBinding(hc *hcov1beta1.HyperConverged) *rbacv1.Role
 			},
 		},
 	}
+}
+
+func getVirtioImageName() (string, error) {
+	virtiowinContainer := os.Getenv("VIRTIOWIN_CONTAINER")
+	if virtiowinContainer == "" {
+		return "", errors.New("kv-virtiowin-image-name was not specified")
+	}
+
+	return virtiowinContainer, nil
 }
