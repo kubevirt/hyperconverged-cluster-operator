@@ -2544,6 +2544,29 @@ Version: 1.2.3`)
 					Expect(disabled).To(ContainElement(kvPasstBinding))
 				})
 
+				It("should enable ExternalNetResourceInjection FG when deployNetworkResourcesInjector is true", func() {
+					hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(true)
+					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
+					fgs := getKvFeatureGateList(hco)
+					disabled := getKvDisabledFeatureGateList(fgs)
+					Expect(disabled).NotTo(ContainElement(kvExternalNetResourceInjection))
+				})
+
+				It("should disable ExternalNetResourceInjection FG when deployNetworkResourcesInjector is not set", func() {
+					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
+					fgs := getKvFeatureGateList(hco)
+					disabled := getKvDisabledFeatureGateList(fgs)
+					Expect(disabled).To(ContainElement(kvExternalNetResourceInjection))
+				})
+
+				It("should disable ExternalNetResourceInjection FG when deployNetworkResourcesInjector is false", func() {
+					hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(false)
+					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
+					fgs := getKvFeatureGateList(hco)
+					disabled := getKvDisabledFeatureGateList(fgs)
+					Expect(disabled).To(ContainElement(kvExternalNetResourceInjection))
+				})
+
 				It("should include all beta FG if not in the enabled list", func() {
 					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
 					fgs := getKvFeatureGateList(hco)
@@ -3336,6 +3359,31 @@ Version: 1.2.3`)
 
 				Expect(kv.Spec.Configuration.RoleAggregationStrategy).To(BeNil())
 				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvOptOutRoleAggregation))
+			})
+		})
+
+		Context("DeployNetworkResourcesInjector", func() {
+			It("should add ExternalNetResourceInjection FG when deployNetworkResourcesInjector is true", func() {
+				hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(true)
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvExternalNetResourceInjection))
+			})
+
+			It("should not add ExternalNetResourceInjection FG when deployNetworkResourcesInjector is false", func() {
+				hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(false)
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvExternalNetResourceInjection))
+			})
+
+			It("should not add ExternalNetResourceInjection FG when deployNetworkResourcesInjector is not set", func() {
+				kv, err := NewKubeVirt(hco)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(kv.Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement(kvExternalNetResourceInjection))
 			})
 		})
 

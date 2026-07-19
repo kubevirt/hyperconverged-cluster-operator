@@ -132,19 +132,20 @@ const (
 
 // KubeVirt feature gates that are exposed in HCO API
 const (
-	kvDownwardMetrics            = "DownwardMetrics"
-	kvPersistentReservation      = "PersistentReservation"
-	kvAlignCPUs                  = "AlignCPUs"
-	kvDecentralizedLiveMigration = "DecentralizedLiveMigration"
-	kvObjectGraph                = "ObjectGraph"
-	kvUtilityVolumes             = "UtilityVolumes"
-	kvIncrementalBackup          = "IncrementalBackup"
-	kvPasstBinding               = "PasstBinding"
-	kvConfigurableHypervisor     = "ConfigurableHypervisor"
-	kvOptOutRoleAggregation      = "OptOutRoleAggregation"
-	kvContainerPathVolumes       = "ContainerPathVolumes"
-	kvPCINUMAAwareTopology       = "PCINUMAAwareTopology"
-	kvTemplateFG                 = "Template"
+	kvDownwardMetrics              = "DownwardMetrics"
+	kvPersistentReservation        = "PersistentReservation"
+	kvAlignCPUs                    = "AlignCPUs"
+	kvDecentralizedLiveMigration   = "DecentralizedLiveMigration"
+	kvObjectGraph                  = "ObjectGraph"
+	kvUtilityVolumes               = "UtilityVolumes"
+	kvIncrementalBackup            = "IncrementalBackup"
+	kvPasstBinding                 = "PasstBinding"
+	kvConfigurableHypervisor       = "ConfigurableHypervisor"
+	kvOptOutRoleAggregation        = "OptOutRoleAggregation"
+	kvContainerPathVolumes         = "ContainerPathVolumes"
+	kvPCINUMAAwareTopology         = "PCINUMAAwareTopology"
+	kvTemplateFG                   = "Template"
+	kvExternalNetResourceInjection = "ExternalNetResourceInjection"
 )
 
 // CPU Plugin default values
@@ -973,6 +974,10 @@ func getFeatureGateChecks(hc *hcov1.HyperConverged) []string {
 
 	if featureGates.IsEnabled(kvTemplateFG) {
 		fgs = append(fgs, kvTemplateFG)
+	}
+
+	if ptr.Deref(hc.Spec.Deployment.DeployNetworkResourcesInjector, false) {
+		fgs = append(fgs, kvExternalNetResourceInjection)
 	}
 
 	return fgs
