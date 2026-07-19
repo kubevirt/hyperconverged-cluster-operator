@@ -979,6 +979,67 @@ var _ = Describe("HyperconvergedController", func() {
 				Expect(int(value)).To(BeEquivalentTo(42))
 
 			})
+
+			It("should set NetworkResourcesInjectorReady condition to False after initial reconcile", func() {
+				expected := getBasicDeployment()
+				cl := expected.initClient()
+
+				foundResource, _, _ := doReconcile(cl, expected.hco, nil)
+
+				cond := apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady)
+				Expect(cond).ToNot(BeNil())
+				Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+				Expect(cond.Reason).To(Equal("DeploymentNotReady"))
+			})
+
+			It("should set NetworkResourcesInjectorReady condition to True and enable ExternalNetResourceInjection FG when deployment is ready", func() {
+				expected := getBasicDeployment()
+				cl := expected.initClient()
+
+				_, r, _ := doReconcile(cl, expected.hco, nil)
+
+				dep := &appsv1.Deployment{}
+				Expect(cl.Get(context.TODO(), types.NamespacedName{
+					Name:      "virt-network-resources-injector",
+					Namespace: namespace,
+				}, dep)).To(Succeed())
+				dep.Status.ReadyReplicas = *dep.Spec.Replicas
+				dep.Status.Replicas = *dep.Spec.Replicas
+				Expect(cl.Status().Update(context.TODO(), dep)).To(Succeed())
+
+				// KV is reconciled before NRI, so the first reconcile updates the
+				// condition to True but KV still sees the old value.
+				foundResource, r, _ := doReconcile(cl, expected.hco, r)
+
+				cond := apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady)
+				Expect(cond).ToNot(BeNil())
+				Expect(cond.Status).To(Equal(metav1.ConditionTrue))
+				Expect(cond.Reason).To(Equal("DeploymentReady"))
+
+				// Second reconcile: KV now sees condition=True and enables the FG.
+				_, _, _ = doReconcile(cl, expected.hco, r)
+
+				kvList := &kubevirtcorev1.KubeVirtList{}
+				Expect(cl.List(context.TODO(), kvList)).To(Succeed())
+				Expect(kvList.Items).To(HaveLen(1))
+				Expect(kvList.Items[0].Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement("ExternalNetResourceInjection"))
+			})
+
+			It("should remove NetworkResourcesInjectorReady condition and not enable ExternalNetResourceInjection FG when deployment is disabled", func() {
+				expected := getBasicDeployment()
+				expected.hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(false)
+				cl := expected.initClient()
+
+				foundResource, _, _ := doReconcile(cl, expected.hco, nil)
+
+				cond := apimetav1.FindStatusCondition(foundResource.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady)
+				Expect(cond).To(BeNil())
+
+				kvList := &kubevirtcorev1.KubeVirtList{}
+				Expect(cl.List(context.TODO(), kvList)).To(Succeed())
+				Expect(kvList.Items).To(HaveLen(1))
+				Expect(kvList.Items[0].Spec.Configuration.DeveloperConfiguration.FeatureGates).ToNot(ContainElement("ExternalNetResourceInjection"))
+			})
 		})
 
 		Context("TLS Security Profile", func() {

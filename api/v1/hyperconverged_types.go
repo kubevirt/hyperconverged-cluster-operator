@@ -943,6 +943,10 @@ const (
 	// has been applied to the HyperConverged resource via a specialized annotation.
 	// This condition is exposed only when its value is True, and is otherwise hidden.
 	ConditionTaintedConfiguration = "TaintedConfiguration"
+
+	// ConditionNetworkResourcesInjectorReady indicates whether the network resources injector
+	// deployment is fully ready (all replicas running).
+	ConditionNetworkResourcesInjectorReady = "NetworkResourcesInjectorReady"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
