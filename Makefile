@@ -66,10 +66,14 @@ build-csv-merger: ## Build binary from source
 build-manifest-templator: ## Build binary from source
 	go build -ldflags="${LDFLAGS}" -o _out/manifest-templator ./tools/manifest-templator
 
-generate-feature-gates:
+generate-feature-gates: sort-feature-gates
 	cd api/v1beta1 && go generate .
 	go build -o _out/fg-v1-comments ./tools/fg-v1-comments
 	./_out/fg-v1-comments
+
+sort-feature-gates:
+	jq 'sort_by((if .phase == "beta" then 0 elif .phase == "alpha" then 1 else 2 end), .name)' pkg/featuregatedetails/feature-gates.json > pkg/featuregatedetails/feature-gates.temp
+	mv pkg/featuregatedetails/feature-gates.temp pkg/featuregatedetails/feature-gates.json
 
 build-crd-creator: generate
 	go build -ldflags="${LDFLAGS}" -o _out/crd-creator ./tools/crd-creator
@@ -337,6 +341,7 @@ push-builder-image: retag-builder-image
 		build-operator \
 		build-csv-merger \
 		build-manifest-templator \
+		sort-feature-gates \
 		generate-feature-gates \
 		build-crd-creator \
 		build-manifest-splitter \
