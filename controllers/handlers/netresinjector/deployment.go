@@ -2,7 +2,10 @@ package netresinjector
 
 import (
 	"os"
+	"strings"
 
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
+	"github.com/openshift/library-go/pkg/crypto"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -13,6 +16,7 @@ import (
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/operands"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
@@ -41,8 +45,11 @@ func NewDeploymentWithNameOnly() *appsv1.Deployment {
 	}
 }
 
-func newDeployment(_ *hcov1.HyperConverged) *appsv1.Deployment {
+func newDeployment(hc *hcov1.HyperConverged) *appsv1.Deployment {
 	image := os.Getenv(hcoutil.NetworkResourcesInjectorImageEnvV)
+
+	cipherNames, minTLSVersion := tlssecprofile.GetCipherSuitesAndMinTLSVersion(hc.Spec.Security.TLSSecurityProfile)
+	ianaCiphers := crypto.OpenSSLToIANACipherSuites(cipherNames)
 
 	var replicas int32
 	if nodeinfo.IsInfrastructureHighlyAvailable() {
@@ -161,15 +168,7 @@ func newDeployment(_ *hcov1.HyperConverged) *appsv1.Deployment {
 						Name:    "webhook-server",
 						Image:   image,
 						Command: []string{"webhook"},
-						Args: []string{
-							"-bind-address=0.0.0.0",
-							"-port=6443",
-							"-tls-private-key-file=" + tlsMountPath + "/tls.key",
-							"-tls-cert-file=" + tlsMountPath + "/tls.crt",
-							"-insecure=true",
-							"-logtostderr=true",
-							"-alsologtostderr=true",
-						},
+						Args:    tlsArgs(minTLSVersion, ianaCiphers),
 						Env: []corev1.EnvVar{
 							{
 								Name: "NAMESPACE",
@@ -225,4 +224,25 @@ func newDeployment(_ *hcov1.HyperConverged) *appsv1.Deployment {
 	}
 
 	return dep
+}
+
+func tlsArgs(minTLSVersion openshiftconfigv1.TLSProtocolVersion, ianaCiphers []string) []string {
+	args := []string{
+		"-bind-address=0.0.0.0",
+		"-port=6443",
+		"-tls-private-key-file=" + tlsMountPath + "/tls.key",
+		"-tls-cert-file=" + tlsMountPath + "/tls.crt",
+		"-insecure=true",
+		"-logtostderr=true",
+		"-alsologtostderr=true",
+	}
+
+	if minTLSVersion != "" {
+		args = append(args, "-tls-min-version="+string(minTLSVersion))
+	}
+	if minTLSVersion < openshiftconfigv1.VersionTLS13 && len(ianaCiphers) > 0 {
+		args = append(args, "-tls-cipher-suites="+strings.Join(ianaCiphers, ","))
+	}
+
+	return args
 }

@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -15,8 +16,19 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
+
+func mockTLSSecProfile(ciphers []string, version openshiftconfigv1.TLSProtocolVersion) {
+	origFunc := tlssecprofile.GetCipherSuitesAndMinTLSVersion
+	tlssecprofile.GetCipherSuitesAndMinTLSVersion = func(_ *openshiftconfigv1.TLSSecurityProfile) ([]string, openshiftconfigv1.TLSProtocolVersion) {
+		return ciphers, version
+	}
+	DeferCleanup(func() {
+		tlssecprofile.GetCipherSuitesAndMinTLSVersion = origFunc
+	})
+}
 
 var _ = Describe("Network Resources Injector Deployment", func() {
 	const testImage = "quay.io/kubevirt/network-resources-injector:test"
@@ -48,6 +60,8 @@ var _ = Describe("Network Resources Injector Deployment", func() {
 			nodeinfo.IsInfrastructureHighlyAvailable = func() bool {
 				return true
 			}
+
+			mockTLSSecProfile([]string{"TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384"}, openshiftconfigv1.VersionTLS12)
 
 			dep := newDeployment(hco)
 
@@ -89,6 +103,17 @@ var _ = Describe("Network Resources Injector Deployment", func() {
 			Expect(container.Image).To(Equal(testImage))
 			Expect(container.ImagePullPolicy).To(Equal(corev1.PullIfNotPresent))
 			Expect(container.Command).To(ConsistOf("webhook"))
+			Expect(container.Args).To(ConsistOf(
+				"-bind-address=0.0.0.0",
+				"-port=6443",
+				"-tls-private-key-file="+tlsMountPath+"/tls.key",
+				"-tls-cert-file="+tlsMountPath+"/tls.crt",
+				"-insecure=true",
+				"-logtostderr=true",
+				"-alsologtostderr=true",
+				"-tls-min-version=VersionTLS12",
+				"-tls-cipher-suites=TLS_AES_128_GCM_SHA256,TLS_AES_256_GCM_SHA384",
+			))
 
 			Expect(container.SecurityContext).ToNot(BeNil())
 			Expect(container.SecurityContext.AllowPrivilegeEscalation).To(HaveValue(Equal(false)))
@@ -119,6 +144,33 @@ var _ = Describe("Network Resources Injector Deployment", func() {
 
 			dep := newDeployment(hco)
 			Expect(dep.Spec.Replicas).To(HaveValue(Equal(int32(1))))
+		})
+
+		It("should not add ciphers for TLS 1.3", func() {
+			mockTLSSecProfile([]string{"TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384"}, openshiftconfigv1.VersionTLS13)
+
+			dep := newDeployment(hco)
+			container := dep.Spec.Template.Spec.Containers[0]
+			Expect(container.Args).To(ContainElement("-tls-min-version=VersionTLS13"))
+			Expect(container.Args).ToNot(ContainElement(ContainSubstring("-tls-cipher-suites")))
+		})
+
+		It("should not add TLS version or ciphers when version is empty", func() {
+			mockTLSSecProfile(nil, "")
+
+			dep := newDeployment(hco)
+			container := dep.Spec.Template.Spec.Containers[0]
+			Expect(container.Args).ToNot(ContainElement(ContainSubstring("-tls-min-version")))
+			Expect(container.Args).ToNot(ContainElement(ContainSubstring("-tls-cipher-suites")))
+		})
+
+		It("should not add ciphers when cipher list is empty", func() {
+			mockTLSSecProfile(nil, openshiftconfigv1.VersionTLS12)
+
+			dep := newDeployment(hco)
+			container := dep.Spec.Template.Spec.Containers[0]
+			Expect(container.Args).To(ContainElement("-tls-min-version=VersionTLS12"))
+			Expect(container.Args).ToNot(ContainElement(ContainSubstring("-tls-cipher-suites")))
 		})
 	})
 
