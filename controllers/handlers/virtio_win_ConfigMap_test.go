@@ -17,17 +17,20 @@ import (
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/downloadhost"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 var _ = Describe("VirtioWin", func() {
+	const virtioImage = "new-virtiowin-container-value"
+
 	Context("Virtio-Win ConfigMap", func() {
 
 		var hco *hcov1.HyperConverged
 		var req *common.HcoRequest
 
 		BeforeEach(func() {
-			os.Setenv("VIRTIOWIN_CONTAINER", "new-virtiowin-container-value")
+			os.Setenv("VIRTIOWIN_CONTAINER", virtioImage)
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
 		})
@@ -43,7 +46,7 @@ var _ = Describe("VirtioWin", func() {
 		})
 
 		It("should create if not present", func() {
-			expectedResource, err := NewVirtioWinCm()
+			expectedResource, err := NewVirtioWinCm(commontestutils.NewHco())
 			Expect(err).ToNot(HaveOccurred())
 			cl := commontestutils.InitClient([]client.Object{})
 			handler, _ := NewVirtioWinCmHandler(cl, commontestutils.GetScheme())
@@ -63,7 +66,7 @@ var _ = Describe("VirtioWin", func() {
 		})
 
 		It("should find if present", func() {
-			expectedResource, err := NewVirtioWinCm()
+			expectedResource, err := NewVirtioWinCm(commontestutils.NewHco())
 			Expect(err).ToNot(HaveOccurred())
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
@@ -81,18 +84,17 @@ var _ = Describe("VirtioWin", func() {
 		})
 
 		It("should reconcile according to env values and HCO CR", func() {
-			virtiowink := "virtio-win-image"
-			updatableKeys := [...]string{virtiowink}
-			toBeRemovedKey := "toberemoved"
+			updatableKeys := [...]string{virtioWinImageKey}
+			const toBeRemovedKey = "toberemoved"
 
-			expectedResource, err := NewVirtioWinCm()
+			expectedResource, err := NewVirtioWinCm(commontestutils.NewHco())
 			Expect(err).ToNot(HaveOccurred())
 
-			outdatedResource, err := NewVirtioWinCm()
+			outdatedResource, err := NewVirtioWinCm(commontestutils.NewHco())
 			Expect(err).ToNot(HaveOccurred())
 
 			// values we should update
-			outdatedResource.Data[virtiowink] = "old-virtiowin-container-value-we-have-to-update"
+			outdatedResource.Data[virtioWinImageKey] = "old-virtiowin-container-value-we-have-to-update"
 
 			// add values we should remove
 			outdatedResource.Data[toBeRemovedKey] = "value-we-should-remove"
@@ -112,8 +114,7 @@ var _ = Describe("VirtioWin", func() {
 			).ToNot(HaveOccurred())
 
 			for _, k := range updatableKeys {
-				Expect(foundResource.Data[k]).ToNot(Equal(outdatedResource.Data[k]))
-				Expect(foundResource.Data[k]).To(Equal(expectedResource.Data[k]))
+				Expect(foundResource.Data).To(HaveKeyWithValue(k, expectedResource.Data[k]))
 			}
 
 			Expect(foundResource.Data).ToNot(HaveKey(toBeRemovedKey))
@@ -131,7 +132,7 @@ var _ = Describe("VirtioWin", func() {
 		It("should reconcile managed labels to default without touching user added ones", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
-			outdatedResource, err := NewVirtioWinCm()
+			outdatedResource, err := NewVirtioWinCm(commontestutils.NewHco())
 			Expect(err).ToNot(HaveOccurred())
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 			for k, v := range expectedLabels {
@@ -162,7 +163,7 @@ var _ = Describe("VirtioWin", func() {
 		It("should reconcile managed labels to default without touching user added ones", func() {
 			const userLabelKey = "userLabelKey"
 			const userLabelValue = "userLabelValue"
-			outdatedResource, err := NewVirtioWinCm()
+			outdatedResource, err := NewVirtioWinCm(commontestutils.NewHco())
 			Expect(err).ToNot(HaveOccurred())
 			expectedLabels := maps.Clone(outdatedResource.Labels)
 			outdatedResource.Labels[userLabelKey] = userLabelValue
@@ -188,6 +189,98 @@ var _ = Describe("VirtioWin", func() {
 			Expect(foundResource.Labels).To(HaveKeyWithValue(userLabelKey, userLabelValue))
 		})
 
+		It("should not add the download URL if the env var is missing", func() {
+			cl := commontestutils.InitClient([]client.Object{})
+			handler, _ := NewVirtioWinCmHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+			Expect(res.Err).ToNot(HaveOccurred())
+
+			foundResource := &corev1.ConfigMap{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: virtioWinCmName, Namespace: commontestutils.Namespace},
+					foundResource),
+			).To(Succeed())
+
+			Expect(foundResource.Data).To(HaveKeyWithValue(virtioWinImageKey, virtioImage))
+			Expect(foundResource.Data).ToNot(HaveKey(virtioWinImageDLKey))
+		})
+
+		It("should not add the download URL if the env var is empty", func() {
+			Expect(os.Setenv(hcoutil.VirtIOWinDataFileEnvV, "")).To(Succeed())
+			DeferCleanup(func() {
+				Expect(os.Unsetenv(hcoutil.VirtIOWinDataFileEnvV)).To(Succeed())
+			})
+
+			cl := commontestutils.InitClient([]client.Object{})
+			handler, _ := NewVirtioWinCmHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+			Expect(res.Err).ToNot(HaveOccurred())
+
+			foundResource := &corev1.ConfigMap{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: virtioWinCmName, Namespace: commontestutils.Namespace},
+					foundResource),
+			).To(Succeed())
+
+			Expect(foundResource.Data).To(HaveKeyWithValue(virtioWinImageKey, virtioImage))
+			Expect(foundResource.Data).ToNot(HaveKey(virtioWinImageDLKey))
+		})
+
+		It("should add the download URL if the env var is set", func() {
+			origHost := downloadhost.Get()
+			DeferCleanup(func() {
+				downloadhost.Set(origHost)
+			})
+
+			downloadhost.Set(downloadhost.CLIDownloadHost{
+				DefaultHost: "default-host.com",
+				CurrentHost: "default-host.com",
+				Cert:        "crt",
+				Key:         "key",
+			})
+
+			Expect(os.Setenv(hcoutil.VirtIOWinDataFileEnvV, "virtio-win/virtio-win.iso")).To(Succeed())
+			DeferCleanup(func() {
+				Expect(os.Unsetenv(hcoutil.VirtIOWinDataFileEnvV)).To(Succeed())
+			})
+
+			cl := commontestutils.InitClient([]client.Object{})
+			handler, _ := NewVirtioWinCmHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+			Expect(res.Err).ToNot(HaveOccurred())
+
+			foundResource := &corev1.ConfigMap{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: virtioWinCmName, Namespace: commontestutils.Namespace},
+					foundResource),
+			).To(Succeed())
+
+			Expect(foundResource.Data).To(HaveKeyWithValue(virtioWinImageKey, virtioImage))
+			Expect(foundResource.Data).To(HaveKeyWithValue(virtioWinImageDLKey, "https://default-host.com/virtio-win/virtio-win.iso"))
+
+			By("should update the download URL if it was customized")
+			downloadhost.Set(downloadhost.CLIDownloadHost{
+				DefaultHost: "default-host.com",
+				CurrentHost: "cli-dl.example.com",
+				Cert:        "crt",
+				Key:         "key",
+			})
+
+			handler.Reset()
+			res = handler.Ensure(req)
+			Expect(res.Err).ToNot(HaveOccurred())
+			foundResource = &corev1.ConfigMap{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: virtioWinCmName, Namespace: commontestutils.Namespace},
+					foundResource),
+			).To(Succeed())
+
+			Expect(foundResource.Data).To(HaveKeyWithValue(virtioWinImageDLKey, "https://cli-dl.example.com/virtio-win/virtio-win.iso"))
+		})
 	})
 
 	Context("ConfigMap Reader Role", func() {
@@ -195,7 +288,7 @@ var _ = Describe("VirtioWin", func() {
 		var req *common.HcoRequest
 
 		BeforeEach(func() {
-			os.Setenv("VIRTIOWIN_CONTAINER", "new-virtiowin-container-value")
+			os.Setenv("VIRTIOWIN_CONTAINER", virtioImage)
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
 		})
@@ -246,7 +339,7 @@ var _ = Describe("VirtioWin", func() {
 		var req *common.HcoRequest
 
 		BeforeEach(func() {
-			os.Setenv("VIRTIOWIN_CONTAINER", "new-virtiowin-container-value")
+			os.Setenv("VIRTIOWIN_CONTAINER", virtioImage)
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
 		})
