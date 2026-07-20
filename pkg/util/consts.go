@@ -29,6 +29,7 @@ const (
 	KVUIProxyImageEnvV                 = "KV_CONSOLE_PROXY_IMAGE"
 	PasstImageEnvV                     = "PASST_SIDECAR_IMAGE"
 	PasstCNIImageEnvV                  = "PASST_CNI_IMAGE"
+	VirtioWinImageEnvV                 = "VIRTIOWIN_CONTAINER"
 	WaspAgentImageEnvV                 = "WASP_AGENT_IMAGE"
 	DeployNetworkPoliciesEnvV          = "DEPLOY_NETWORK_POLICIES"
 	VirtIOWinDataFileEnvV              = "DEPLOY_VIRT_IO_WIN_DATA_FILE"

@@ -30,13 +30,13 @@ var _ = Describe("VirtioWin", func() {
 		var req *common.HcoRequest
 
 		BeforeEach(func() {
-			os.Setenv("VIRTIOWIN_CONTAINER", virtioImage)
+			Expect(os.Setenv(hcoutil.VirtioWinImageEnvV, virtioImage)).To(Succeed())
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
 		})
 
 		It("should error if VIRTIOWIN_CONTAINER environment var not specified", func() {
-			os.Unsetenv("VIRTIOWIN_CONTAINER")
+			Expect(os.Unsetenv(hcoutil.VirtioWinImageEnvV)).To(Succeed())
 
 			cl := commontestutils.InitClient([]client.Object{})
 			handler, err := NewVirtioWinCmHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
@@ -288,7 +288,7 @@ var _ = Describe("VirtioWin", func() {
 		var req *common.HcoRequest
 
 		BeforeEach(func() {
-			os.Setenv("VIRTIOWIN_CONTAINER", virtioImage)
+			Expect(os.Setenv(hcoutil.VirtioWinImageEnvV, virtioImage)).To(Succeed())
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
 		})
@@ -339,7 +339,7 @@ var _ = Describe("VirtioWin", func() {
 		var req *common.HcoRequest
 
 		BeforeEach(func() {
-			os.Setenv("VIRTIOWIN_CONTAINER", virtioImage)
+			Expect(os.Setenv(hcoutil.VirtioWinImageEnvV, virtioImage)).To(Succeed())
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
 		})
