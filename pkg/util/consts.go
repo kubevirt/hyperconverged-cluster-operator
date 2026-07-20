@@ -32,6 +32,7 @@ const (
 	KVUIPluginImageEnvV                     = "KV_CONSOLE_PLUGIN_IMAGE"
 	KVUIProxyImageEnvV                      = "KV_CONSOLE_PROXY_IMAGE"
 	NetworkResourcesInjectorImageEnvV       = "NETWORK_RESOURCES_INJECTOR_IMAGE"
+	VirtioWinImageEnvV                      = "VIRTIOWIN_CONTAINER"
 	WaspAgentImageEnvV                      = "WASP_AGENT_IMAGE"
 	AIEWebhookImageEnvV                     = "AIE_WEBHOOK_IMAGE"
 	IOMMUFDDevicePluginImageEnvV            = "IOMMUFD_DEVICE_PLUGIN_IMAGE"
