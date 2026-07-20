@@ -28,6 +28,13 @@ var ignoredInterfacesForNetworkDown = []string{
 	"br-int",      // OVN integration bridge
 }
 
+// withVMLabel wraps a PromQL expression with label_replace to add a "vm"
+// typed resource label derived from the "name" label. This enables the
+// monitoring-plugin to navigate from alerts to the VM resource page.
+func withVMLabel(expr string) string {
+	return fmt.Sprintf(`label_replace(%s, "vm", "$1", "name", "(.+)")`, expr)
+}
+
 func clusterAlerts() []promv1.Rule {
 	return []promv1.Rule{
 		{
@@ -122,7 +129,7 @@ func clusterAlerts() []promv1.Rule {
 		},
 		{
 			Alert: "VMNonRecoverableOSPanic",
-			Expr: intstr.FromString(`
+			Expr: intstr.FromString(withVMLabel(`
 				floor(
 					(
 						sum by (namespace, name) (kubevirt_vmi_guest_os_panic_total)
@@ -142,7 +149,7 @@ func clusterAlerts() []promv1.Rule {
 					or
 					sum by (namespace, name) (increase(kubevirt_vmi_guest_os_panic_total[24h]))
 				) <= 5
-			`),
+			`)),
 			For: ptr.To[promv1.Duration]("1m"),
 			Annotations: map[string]string{
 				"summary":     "VM {{ $labels.name }} in namespace {{ $labels.namespace }} experienced a non-recoverable guest OS panic",

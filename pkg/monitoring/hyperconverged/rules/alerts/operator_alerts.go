@@ -1,10 +1,19 @@
 package alerts
 
 import (
+	"fmt"
+
 	promv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 )
+
+// withVMLabel wraps a PromQL expression with label_replace to add a "vm"
+// typed resource label derived from the "name" label. This enables the
+// monitoring-plugin to navigate from alerts to the VM resource page.
+func withVMLabel(expr string) string {
+	return fmt.Sprintf(`label_replace(%s, "vm", "$1", "name", "(.+)")`, expr)
+}
 
 const (
 	outOfBandUpdateAlert             = "KubeVirtCRModified"
@@ -108,11 +117,11 @@ func operatorAlerts() []promv1.Rule {
 		},
 		{
 			Alert: "DeprecatedMachineType",
-			Expr: intstr.FromString(`
+			Expr: intstr.FromString(withVMLabel(`
 			  kubevirt_vm_info
 			  * on(machine_type) group_left()
 				max(kubevirt_node_deprecated_machine_types) by (machine_type)
-			`),
+			`)),
 			For: ptr.To(promv1.Duration("5m")),
 			Annotations: map[string]string{
 				"summary":     "Virtual Machine '{{ $labels.name }}' in namespace '{{ $labels.namespace }}' is using a deprecated machine type.",

@@ -472,6 +472,7 @@ tests:
               kubernetes_operator_component: "kubevirt"
               namespace: "test"
               name: "vm-01"
+              vm: "vm-01"
 
   # VMNonRecoverableOSPanic - Case 2: Multiple panics (should show integer value, no fractions)
   - interval: 1m
@@ -494,6 +495,7 @@ tests:
               kubernetes_operator_component: "kubevirt"
               namespace: "test"
               name: "vm-03"
+              vm: "vm-03"
 
   # VMNonRecoverableOSPanic - Case 3: Should NOT fire above 5 panics
   - interval: 1m
@@ -542,6 +544,7 @@ tests:
               kubernetes_operator_component: "kubevirt"
               namespace: "test"
               name: "vm-05"
+              vm: "vm-05"
 
   # VMNonRecoverableOSPanic - Case 6: Auto-resolves after 24h with no new panics
   - interval: 1m
@@ -565,6 +568,7 @@ tests:
               kubernetes_operator_component: "kubevirt"
               namespace: "test"
               name: "vm-06"
+              vm: "vm-06"
       # Auto-resolves after 24h — offset finds the metric, unless removes it, increase()=0
       - eval_time: 1450m
         alertname: VMNonRecoverableOSPanic
