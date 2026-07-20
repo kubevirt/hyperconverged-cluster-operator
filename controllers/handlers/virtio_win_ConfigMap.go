@@ -115,7 +115,7 @@ func NewVirtioWinCmReaderRoleBinding(hc *hcov1beta1.HyperConverged) *rbacv1.Role
 }
 
 func getVirtioImageName() (string, error) {
-	virtiowinContainer := os.Getenv("VIRTIOWIN_CONTAINER")
+	virtiowinContainer := os.Getenv(hcoutil.VirtioWinImageEnvV)
 	if virtiowinContainer == "" {
 		return "", errors.New("kv-virtiowin-image-name was not specified")
 	}
