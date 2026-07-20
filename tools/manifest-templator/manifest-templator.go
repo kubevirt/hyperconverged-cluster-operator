@@ -41,6 +41,7 @@ import (
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/tools/manifests"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
 )
 
@@ -210,7 +211,7 @@ var deploymentType = metav1.TypeMeta{
 	Kind:       "Deployment",
 }
 
-func getDeploymentOperator(params *components.DeploymentOperatorParams) appsv1.Deployment {
+func getDeploymentOperator(params *manifests.DeploymentOperatorParams) appsv1.Deployment {
 	return appsv1.Deployment{
 		TypeMeta: deploymentType,
 		ObjectMeta: metav1.ObjectMeta{
@@ -219,11 +220,11 @@ func getDeploymentOperator(params *components.DeploymentOperatorParams) appsv1.D
 				"name": hcoutil.HCOOperatorName,
 			},
 		},
-		Spec: components.GetDeploymentSpecOperator(params),
+		Spec: manifests.GetDeploymentSpecOperator(params),
 	}
 }
 
-func getDeploymentWebhook(params *components.DeploymentOperatorParams) appsv1.Deployment {
+func getDeploymentWebhook(params *manifests.DeploymentOperatorParams) appsv1.Deployment {
 	deploy := appsv1.Deployment{
 		TypeMeta: deploymentType,
 		ObjectMeta: metav1.ObjectMeta{
@@ -232,14 +233,14 @@ func getDeploymentWebhook(params *components.DeploymentOperatorParams) appsv1.De
 				"name": hcoutil.HCOWebhookName,
 			},
 		},
-		Spec: components.GetDeploymentSpecWebhook(params),
+		Spec: manifests.GetDeploymentSpecWebhook(params),
 	}
 
 	injectVolumesForWebHookCerts(&deploy)
 	return deploy
 }
 
-func getDeploymentCliDownloads(params *components.DeploymentOperatorParams) appsv1.Deployment {
+func getDeploymentCliDownloads(params *manifests.DeploymentOperatorParams) appsv1.Deployment {
 	return appsv1.Deployment{
 		TypeMeta: deploymentType,
 		ObjectMeta: metav1.ObjectMeta{
@@ -248,7 +249,7 @@ func getDeploymentCliDownloads(params *components.DeploymentOperatorParams) apps
 				"name": hcoutil.CLIDownloadsName,
 			},
 		},
-		Spec: components.GetDeploymentSpecCliDownloads(params),
+		Spec: manifests.GetDeploymentSpecCliDownloads(params),
 	}
 }
 
@@ -435,8 +436,8 @@ func createService(webhook csvv1alpha1.WebhookDescription, csvStruct *csvv1alpha
 	}
 }
 
-func getOperatorParameters() *components.DeploymentOperatorParams {
-	params := &components.DeploymentOperatorParams{
+func getOperatorParameters() *manifests.DeploymentOperatorParams {
+	params := &manifests.DeploymentOperatorParams{
 		Namespace:                     *operatorNamespace,
 		Image:                         *operatorImage,
 		WebhookImage:                  *webhookImage,
@@ -626,7 +627,7 @@ func getClusterRole() rbacv1.ClusterRole {
 				"name": hcoutil.HCOOperatorName,
 			},
 		},
-		Rules: components.GetClusterPermissions(),
+		Rules: manifests.GetClusterPermissions(),
 	}
 }
 
