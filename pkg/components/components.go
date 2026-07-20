@@ -155,7 +155,7 @@ func buildOperatorEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 			},
 		},
 		{
-			Name:  "VIRTIOWIN_CONTAINER",
+			Name:  util.VirtioWinImageEnvV,
 			Value: params.VirtIOWinContainer,
 		},
 		{
