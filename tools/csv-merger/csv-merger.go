@@ -102,6 +102,8 @@ var (
 	kvUIPluginImage          = flag.String("kubevirt-consoleplugin-image-name", "", "KubeVirt Console Plugin image")
 	kvUIProxyImage           = flag.String("kubevirt-consoleproxy-image-name", "", "KubeVirt Console Proxy image")
 	kvVirtIOWinImage         = flag.String("kv-virtiowin-image-name", "", "KubeVirt VirtIO Win image")
+	kvVirtIOWinDataFile      = flag.String("kv-virtiowin-data-file", "", "Path to the data file inside the VirtIO Win image")
+	kvVirtIOWinMountPath     = flag.String("kv-virtiowin-data-mount-path", "", "Absolute mount path for the VirtIO Win data file in the server container")
 	passtImage               = flag.String("network-passt-binding-image-name", "", "Passt binding image")
 	passtCNIImage            = flag.String("network-passt-binding-cni-image-name", "", "Passt binding cni image")
 	waspAgentImage           = flag.String("wasp-agent-image-name", "", "Wasp Agent image")
@@ -311,17 +313,17 @@ type csvBaseParams struct {
 // getCSVBase returns a base HCO CSV without an InstallStrategy
 func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 	almExamples, _ := json.Marshal(
-		map[string]interface{}{
+		map[string]any{
 			"apiVersion": hcoutil.APIVersion,
 			"kind":       hcoutil.HyperConvergedKind,
-			"metadata": map[string]interface{}{
+			"metadata": map[string]any{
 				"name":      packageName,
 				"namespace": params.Namespace,
 				"annotations": map[string]string{
 					"deployOVS": "false",
 				},
 			},
-			"spec": map[string]interface{}{},
+			"spec": map[string]any{},
 		})
 
 	// Explicitly fail on unvalidated (for any reason) requests:
@@ -495,8 +497,6 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 						Kind:        hcoutil.HyperConvergedKind,
 						DisplayName: params.CrdDisplay + " Deployment",
 						Description: "Represents the deployment of " + params.CrdDisplay,
-						// TODO: move this to annotations on hyperconverged_types.go once kubebuilder
-						// properly supports SpecDescriptors as the operator-sdk already does
 						SpecDescriptors: []csvv1alpha1.SpecDescriptor{
 							{
 								DisplayName: "Infra components node affinity",
@@ -677,8 +677,8 @@ func processOneCsv(c util.CsvWithComponent, installStrategyBase *csvv1alpha1.Str
 	}
 	csvBaseAlmString := csvBase.Annotations[almExamplesAnnotation]
 	csvStructAlmString := csvStruct.Annotations[almExamplesAnnotation]
-	var baseAlmcrs []interface{}
-	var structAlmcrs []interface{}
+	var baseAlmcrs []any
+	var structAlmcrs []any
 
 	if !strings.HasPrefix(csvBaseAlmString, "[") {
 		csvBaseAlmString = "[" + csvBaseAlmString + "]"
@@ -775,6 +775,8 @@ func getDeploymentParams() *components.DeploymentOperatorParams {
 		KVUIProxyImage:            *kvUIProxyImage,
 		ImagePullPolicy:           "IfNotPresent",
 		VirtIOWinContainer:        *kvVirtIOWinImage,
+		VirtIOWinDataFile:         *kvVirtIOWinDataFile,
+		VirtIOWinMountPath:        *kvVirtIOWinMountPath,
 		Smbios:                    *smbios,
 		Machinetype:               *machinetype,
 		Amd64MachineType:          *amd64MachineType,

@@ -56,6 +56,8 @@ var (
 	webhookImage              = flag.String("webhook-image", "", "HyperConverged Cluster Webhook image")
 	cliDownloadsImage         = flag.String("cli-downloads-image", "", "Downloads Server image")
 	kvVirtIOWinImage          = flag.String("kv-virtiowin-image-name", "", "KubeVirt VirtIO Win image")
+	kvVirtIOWinDataFile       = flag.String("kv-virtiowin-data-file", "", "Path to the data file inside the VirtIO Win image")
+	kvVirtIOWinMountPath      = flag.String("kv-virtiowin-data-mount-path", "", "Absolute mount path for the VirtIO Win data file in the server container")
 	waspAgentImage            = flag.String("wasp-agent-image-name", "", "wasp-agent image")
 	aieWebhookImage           = flag.String("aie-webhook-image-name", "", "AIE webhook image")
 	iommufdDevicePluginImage  = flag.String("iommufd-device-plugin-image-name", "", "IOMMUFD device plugin image")
@@ -440,6 +442,8 @@ func getOperatorParameters() *components.DeploymentOperatorParams {
 		CliDownloadsImage:         *cliDownloadsImage,
 		ImagePullPolicy:           "IfNotPresent",
 		VirtIOWinContainer:        *kvVirtIOWinImage,
+		VirtIOWinDataFile:         *kvVirtIOWinDataFile,
+		VirtIOWinMountPath:        *kvVirtIOWinMountPath,
 		WaspAgentImage:            *waspAgentImage,
 		AIEWebhookImage:           *aieWebhookImage,
 		IOMMUFDDevicePluginImage:  *iommufdDevicePluginImage,
