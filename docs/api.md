@@ -179,7 +179,7 @@ HyperConvergedSpec defines the desired state of HyperConverged
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
 | featureGates | For feature gate details, see [here](#hco-feature-gates) | featuregates.HyperConvergedFeatureGates |  | false |
-| virtualization | Virtualization contains all the configurations for virtualization | [VirtualizationConfig](#virtualizationconfig) | {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10} | false |
+| virtualization | Virtualization contains all the configurations for virtualization | [VirtualizationConfig](#virtualizationconfig) | {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false, "allowWorkloadDisruption": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10} | false |
 | storage | Storage contains all the configurations for storage | *[StorageConfig](#storageconfig) |  | false |
 | networking | Networking contains all the configurations for networking | *[NetworkingConfig](#networkingconfig) |  | false |
 | workloadSources | WorkloadSources contains all the configurations for workload sources | [WorkloadSourcesConfig](#workloadsourcesconfig) |  | false |
@@ -243,6 +243,7 @@ LiveMigrationConfigurations - Live migration limits and timeouts are applied so 
 | network | The migrations will be performed over a dedicated multus network to minimize disruption to tenant workloads due to network saturation when VM live migrations are triggered. | *string |  | false |
 | allowAutoConverge | AllowAutoConverge allows the platform to compromise performance/availability of VMIs to guarantee successful VMI live migrations. Defaults to false | *bool | false | false |
 | allowPostCopy | When enabled, KubeVirt attempts to use post-copy live-migration in case it reaches its completion timeout while attempting pre-copy live-migration. Post-copy migrations allow even the busiest VMs to successfully live-migrate. However, events like a network failure or a failure in any of the source or destination nodes can cause the migrated VM to crash or reach inconsistency. Enable this option when evicting nodes is more important than keeping VMs alive. Defaults to false. | *bool | false | false |
+| allowWorkloadDisruption | AllowWorkloadDisruption indicates that the migration shouldn't be canceled after the acceptable completion time is exceeded. Instead, if permitted, migration will be switched to post-copy or the VMI will be paused to allow the migration to complete. Defaults to false. | *bool | false | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -442,7 +443,7 @@ VirtualizationConfig contains all the virtualization configurations
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
 | tuningPolicy | TuningPolicy allows configuring the mode in which the RateLimits of kubevirt are set. If TuningPolicy is not present the default kubevirt values are used. It can be set to `annotation` for fine-tuning the kubevirt queryPerSeconds (QPS) and burst values. QPS and burst values are taken from the annotation hco.kubevirt.io/tuningPolicy | HyperConvergedTuningPolicy |  | false |
-| liveMigrationConfig | Live migration limits and timeouts are applied so that migration processes do not overwhelm the cluster. | [LiveMigrationConfigurations](#livemigrationconfigurations) | {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false} | false |
+| liveMigrationConfig | Live migration limits and timeouts are applied so that migration processes do not overwhelm the cluster. | [LiveMigrationConfigurations](#livemigrationconfigurations) | {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false, "allowWorkloadDisruption": false} | false |
 | permittedHostDevices | PermittedHostDevices holds information about devices allowed for passthrough | *[PermittedHostDevices](#permittedhostdevices) |  | false |
 | mediatedDevicesConfiguration | MediatedDevicesConfiguration holds information about MDEV types to be defined on nodes, if available | *[MediatedDevicesConfiguration](#mediateddevicesconfiguration) |  | false |
 | workloadUpdateStrategy | WorkloadUpdateStrategy defines at the cluster level how to handle automated workload updates | [HyperConvergedWorkloadUpdateStrategy](#hyperconvergedworkloadupdatestrategy) | {"workloadUpdateMethods": {"LiveMigrate"}, "batchEvictionSize": 10, "batchEvictionInterval": "1m0s"} | false |

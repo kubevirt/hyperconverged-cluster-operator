@@ -1520,6 +1520,7 @@ var _ = Describe("api/v1beta1", func() {
 						ProgressTimeout:                   new(int64(200)),
 						AllowAutoConverge:                 new(true),
 						AllowPostCopy:                     new(false),
+						AllowWorkloadDisruption:           new(true),
 					},
 				}
 
@@ -1533,6 +1534,7 @@ var _ = Describe("api/v1beta1", func() {
 				Expect(v1beta1Spec.LiveMigrationConfig.ProgressTimeout).To(HaveValue(Equal(int64(200))))
 				Expect(v1beta1Spec.LiveMigrationConfig.AllowAutoConverge).To(HaveValue(BeTrue()))
 				Expect(v1beta1Spec.LiveMigrationConfig.AllowPostCopy).To(HaveValue(BeFalse()))
+				Expect(v1beta1Spec.LiveMigrationConfig.AllowWorkloadDisruption).To(HaveValue(BeTrue()))
 			})
 
 			It("should convert PermittedHostDevices", func() {
@@ -1920,6 +1922,7 @@ var _ = Describe("api/v1beta1", func() {
 						ProgressTimeout:                   new(int64(200)),
 						AllowAutoConverge:                 new(true),
 						AllowPostCopy:                     new(false),
+						AllowWorkloadDisruption:           new(true),
 					},
 				}
 
@@ -1933,6 +1936,7 @@ var _ = Describe("api/v1beta1", func() {
 				Expect(v1VirtConfig.LiveMigrationConfig.ProgressTimeout).To(HaveValue(Equal(int64(200))))
 				Expect(v1VirtConfig.LiveMigrationConfig.AllowAutoConverge).To(HaveValue(BeTrue()))
 				Expect(v1VirtConfig.LiveMigrationConfig.AllowPostCopy).To(HaveValue(BeFalse()))
+				Expect(v1VirtConfig.LiveMigrationConfig.AllowWorkloadDisruption).To(HaveValue(BeTrue()))
 			})
 
 			It("should convert PermittedHostDevices", func() {

@@ -101,6 +101,7 @@ func randomV1beta1HC(r *rand.Rand) *HyperConverged {
 				ProgressTimeout:                   randPtr(r, r.Int64()),
 				AllowAutoConverge:                 randPtr(r, r.IntN(2) == 1),
 				AllowPostCopy:                     randPtr(r, r.IntN(2) == 1),
+				AllowWorkloadDisruption:           randPtr(r, r.IntN(2) == 1),
 			},
 			WorkloadUpdateStrategy: hcov1.HyperConvergedWorkloadUpdateStrategy{
 				WorkloadUpdateMethods: randStringSlice(r),
@@ -315,6 +316,7 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 					ProgressTimeout:                   randPtr(r, r.Int64()),
 					AllowAutoConverge:                 randPtr(r, r.IntN(2) == 1),
 					AllowPostCopy:                     randPtr(r, r.IntN(2) == 1),
+					AllowWorkloadDisruption:           randPtr(r, r.IntN(2) == 1),
 				},
 				WorkloadUpdateStrategy: hcov1.HyperConvergedWorkloadUpdateStrategy{
 					WorkloadUpdateMethods: randStringSlice(r),

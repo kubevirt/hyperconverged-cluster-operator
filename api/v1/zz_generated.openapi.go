@@ -564,6 +564,14 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1_LiveMigrationConfigu
 							Format:      "",
 						},
 					},
+					"allowWorkloadDisruption": {
+						SchemaProps: spec.SchemaProps{
+							Description: "AllowWorkloadDisruption indicates that the migration shouldn't be canceled after the acceptable completion time is exceeded. Instead, if permitted, migration will be switched to post-copy or the VMI will be paused to allow the migration to complete. Defaults to false.",
+							Default:     false,
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
 				},
 			},
 		},

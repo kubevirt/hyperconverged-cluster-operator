@@ -103,6 +103,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		defaultLiveMigrationConfig := hcov1.LiveMigrationConfigurations{
 			AllowAutoConverge:                 new(false),
 			AllowPostCopy:                     new(false),
+			AllowWorkloadDisruption:           new(false),
 			CompletionTimeoutPerGiB:           new(int64(150)),
 			ParallelMigrationsPerCluster:      new(uint32(5)),
 			ParallelOutboundMigrationsPerNode: new(uint32(2)),
@@ -122,6 +123,7 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		},
 			Entry("when removing /spec/virtualization/liveMigrationConfig/allowAutoConverge", "/spec/virtualization/liveMigrationConfig/allowAutoConverge"),
 			Entry("when removing /spec/virtualization/liveMigrationConfig/allowPostCopy", "/spec/virtualization/liveMigrationConfig/allowPostCopy"),
+			Entry("when removing /spec/virtualization/liveMigrationConfig/allowWorkloadDisruption", "/spec/virtualization/liveMigrationConfig/allowWorkloadDisruption"),
 			Entry("when removing /spec/virtualization/liveMigrationConfig/completionTimeoutPerGiB", "/spec/virtualization/liveMigrationConfig/completionTimeoutPerGiB"),
 			Entry("when removing /spec/virtualization/liveMigrationConfig/parallelMigrationsPerCluster", "/spec/virtualization/liveMigrationConfig/parallelMigrationsPerCluster"),
 			Entry("when removing /spec/virtualization/liveMigrationConfig/parallelOutboundMigrationsPerNode", "/spec/virtualization/liveMigrationConfig/parallelOutboundMigrationsPerNode"),

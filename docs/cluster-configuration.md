@@ -326,6 +326,23 @@ alive.
 
 **default**: false
 
+#### allowWorkloadDisruption
+
+When enabled, the migration controller will not cancel migrations that exceed the
+acceptable completion time (determined by `completionTimeoutPerGiB` and the VM size).
+Instead, it will take action to force migration completion. The action depends on the
+`allowPostCopy` setting:
+
+- If `allowPostCopy` is `true`, the migration switches to post-copy mode.
+- If `allowPostCopy` is `false`, the VMI is paused until the migration completes.
+
+**Backward compatibility:** When `allowWorkloadDisruption` is not set, KubeVirt
+defaults it to the value of `allowPostCopy`. This means existing users with
+`allowPostCopy: true` will continue to get post-copy behavior without needing
+to explicitly set `allowWorkloadDisruption: true`.
+
+**default**: false
+
 #### Example
 
 ```yaml
@@ -343,6 +360,7 @@ spec:
       progressTimeout: 150
       allowAutoConverge: false
       allowPostCopy: false
+      allowWorkloadDisruption: false
 ```
 
 ### Automatic Configuration of Mediated Devices (including vGPUs)
