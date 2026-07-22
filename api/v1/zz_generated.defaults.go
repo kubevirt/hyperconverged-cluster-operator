@@ -45,11 +45,11 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		in.Spec.Virtualization.LiveMigrationConfig.ParallelMigrationsPerCluster = &ptrVar1
 	}
 	if in.Spec.Virtualization.LiveMigrationConfig.ParallelOutboundMigrationsPerNode == nil {
-		var ptrVar1 uint32 = 2
+		var ptrVar1 uint32 = 1
 		in.Spec.Virtualization.LiveMigrationConfig.ParallelOutboundMigrationsPerNode = &ptrVar1
 	}
 	if in.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB == nil {
-		var ptrVar1 int64 = 150
+		var ptrVar1 int64 = 20
 		in.Spec.Virtualization.LiveMigrationConfig.CompletionTimeoutPerGiB = &ptrVar1
 	}
 	if in.Spec.Virtualization.LiveMigrationConfig.ProgressTimeout == nil {

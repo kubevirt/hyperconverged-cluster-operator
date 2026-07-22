@@ -1,7 +1,7 @@
 {
   "hcoCRPatchList": [
     {
-      "semverRange": ">=1.18.0 <1.20.0",
+      "semverRange": "<1.19.0",
       "jsonPatch": [
         {
           "op": "test",
