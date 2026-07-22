@@ -19,5 +19,5 @@ const (
 
 // shouldDeploy checks if network-resources-injector should be deployed
 func shouldDeploy(hc *hcov1.HyperConverged) bool {
-	return ptr.Deref(hc.Spec.Deployment.DeployNetworkResourcesInjector, false)
+	return ptr.Deref(hc.Spec.Deployment.DeployNetworkResourcesInjector, true)
 }
