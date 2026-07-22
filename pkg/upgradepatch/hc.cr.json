@@ -8,8 +8,8 @@
     "virtualization": {
       "liveMigrationConfig": {
         "parallelMigrationsPerCluster": 5,
-        "parallelOutboundMigrationsPerNode": 2,
-        "completionTimeoutPerGiB": 150,
+        "parallelOutboundMigrationsPerNode": 1,
+        "completionTimeoutPerGiB": 20,
         "progressTimeout": 150,
         "allowAutoConverge": false,
         "allowPostCopy": false
