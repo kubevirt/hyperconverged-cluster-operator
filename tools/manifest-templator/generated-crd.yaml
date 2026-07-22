@@ -66,9 +66,9 @@ spec:
                 liveMigrationConfig:
                   allowAutoConverge: false
                   allowPostCopy: false
-                  completionTimeoutPerGiB: 150
+                  completionTimeoutPerGiB: 20
                   parallelMigrationsPerCluster: 5
-                  parallelOutboundMigrationsPerNode: 2
+                  parallelOutboundMigrationsPerNode: 1
                   progressTimeout: 150
                 virtualMachineOptions:
                   disableFreePageReporting: false
@@ -2758,9 +2758,9 @@ spec:
                   liveMigrationConfig:
                     allowAutoConverge: false
                     allowPostCopy: false
-                    completionTimeoutPerGiB: 150
+                    completionTimeoutPerGiB: 20
                     parallelMigrationsPerCluster: 5
-                    parallelOutboundMigrationsPerNode: 2
+                    parallelOutboundMigrationsPerNode: 1
                     progressTimeout: 150
                   virtualMachineOptions:
                     disableFreePageReporting: false
@@ -3031,9 +3031,9 @@ spec:
                     default:
                       allowAutoConverge: false
                       allowPostCopy: false
-                      completionTimeoutPerGiB: 150
+                      completionTimeoutPerGiB: 20
                       parallelMigrationsPerCluster: 5
-                      parallelOutboundMigrationsPerNode: 2
+                      parallelOutboundMigrationsPerNode: 1
                       progressTimeout: 150
                     description: |-
                       Live migration limits and timeouts are applied so that migration processes do not
@@ -3063,7 +3063,7 @@ spec:
                         pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                         type: string
                       completionTimeoutPerGiB:
-                        default: 150
+                        default: 20
                         description: |-
                           If a migrating VM is big and busy, while the connection to the destination node
                           is slow, migration may never converge. The completion timeout is calculated
@@ -3089,7 +3089,7 @@ spec:
                         format: int32
                         type: integer
                       parallelOutboundMigrationsPerNode:
-                        default: 2
+                        default: 1
                         description: Maximum number of outbound migrations per node.
                         format: int32
                         type: integer
@@ -5411,9 +5411,9 @@ spec:
               liveMigrationConfig:
                 allowAutoConverge: false
                 allowPostCopy: false
-                completionTimeoutPerGiB: 150
+                completionTimeoutPerGiB: 20
                 parallelMigrationsPerCluster: 5
-                parallelOutboundMigrationsPerNode: 2
+                parallelOutboundMigrationsPerNode: 1
                 progressTimeout: 150
               resourceRequirements:
                 vmiCPUAllocationRatio: 10
@@ -7813,9 +7813,9 @@ spec:
                 default:
                   allowAutoConverge: false
                   allowPostCopy: false
-                  completionTimeoutPerGiB: 150
+                  completionTimeoutPerGiB: 20
                   parallelMigrationsPerCluster: 5
-                  parallelOutboundMigrationsPerNode: 2
+                  parallelOutboundMigrationsPerNode: 1
                   progressTimeout: 150
                 description: |-
                   Live migration limits and timeouts are applied so that migration processes do not
@@ -7845,7 +7845,7 @@ spec:
                     pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                     type: string
                   completionTimeoutPerGiB:
-                    default: 150
+                    default: 20
                     description: |-
                       If a migrating VM is big and busy, while the connection to the destination node
                       is slow, migration may never converge. The completion timeout is calculated
@@ -7870,7 +7870,7 @@ spec:
                     format: int32
                     type: integer
                   parallelOutboundMigrationsPerNode:
-                    default: 2
+                    default: 1
                     description: Maximum number of outbound migrations per node.
                     format: int32
                     type: integer
