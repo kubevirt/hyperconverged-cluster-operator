@@ -27,12 +27,14 @@ var (
 	hppCsvFile                = flag.String("hpp-csv-file", "", "HostPath Provisioner Operator CSV yaml file")
 	aaqCsv                    = flag.String("aaq-csv", "", "Applications Aware Quota Operator CSV String")
 	aaqCsvFile                = flag.String("aaq-csv-file", "", "Applications Aware Quota Operator CSV yaml file")
-	migrationoperatorCsv      = flag.String("migration-operator-csv", "", "KubeVirt Migration Operator CSV string")
-	migrationoperatorCsvFile  = flag.String("migration-operator-csv-file", "", "KubeVirt Migration Operator CSV yaml file")
-	autopilotCsv              = flag.String("autopilot-csv", "", "Virt Platform Autopilot CSV string")
-	autopilotCsvFile          = flag.String("autopilot-csv-file", "", "Virt Platform Autopilot CSV yaml file")
-	inFlightOperationsCsv     = flag.String("inflight-operations-csv", "", "Inflight Operations Operator CSV String")
-	inFlightOperationsCsvFile = flag.String("inflight-operations-csv-file", "", "Inflight Operations Operator CSV yaml file")
+	migrationoperatorCsv            = flag.String("migration-operator-csv", "", "KubeVirt Migration Operator CSV string")
+	migrationoperatorCsvFile        = flag.String("migration-operator-csv-file", "", "KubeVirt Migration Operator CSV yaml file")
+	autopilotCsv                    = flag.String("autopilot-csv", "", "Virt Platform Autopilot CSV string")
+	autopilotCsvFile                = flag.String("autopilot-csv-file", "", "Virt Platform Autopilot CSV yaml file")
+	vmFileRestoreOperatorCsv        = flag.String("vm-file-restore-operator-csv", "", "VM File Restore Operator CSV string")
+	vmFileRestoreOperatorCsvFile    = flag.String("vm-file-restore-operator-csv-file", "", "VM File Restore Operator CSV yaml file")
+	inFlightOperationsCsv           = flag.String("inflight-operations-csv", "", "Inflight Operations Operator CSV String")
+	inFlightOperationsCsvFile       = flag.String("inflight-operations-csv-file", "", "Inflight Operations Operator CSV yaml file")
 )
 
 func GetInitialCsvList() ([]CsvWithComponent, error) {
@@ -101,6 +103,15 @@ func GetInitialCsvList() ([]CsvWithComponent, error) {
 		})
 	}
 
+	// Only add vm-file-restore-operator if CSV is not empty
+	if *vmFileRestoreOperatorCsv != "" {
+		components = append(components, CsvWithComponent{
+			Name:      "VmFileRestoreOperator",
+			Csv:       *vmFileRestoreOperatorCsv,
+			Component: hcoutil.AppComponentVmFileRestore,
+		})
+	}
+
 	return components, nil
 }
 
@@ -118,6 +129,7 @@ func getAllCSVs() error {
 		{str: aaqCsv, fileName: *aaqCsvFile, flagName: "aaq-csv"},
 		{str: migrationoperatorCsv, fileName: *migrationoperatorCsvFile, flagName: "migration-operator-csv"},
 		{str: autopilotCsv, fileName: *autopilotCsvFile, flagName: "autopilot-csv"},
+		{str: vmFileRestoreOperatorCsv, fileName: *vmFileRestoreOperatorCsvFile, flagName: "vm-file-restore-operator-csv"},
 		{str: inFlightOperationsCsv, fileName: *inFlightOperationsCsvFile, flagName: "inflight-operations-csv"},
 	} {
 		if err := fileOrString(f.str, f.fileName, f.flagName); err != nil {
@@ -130,7 +142,7 @@ func getAllCSVs() error {
 func fileOrString(str *string, fileName, csvName string) error {
 	if (*str == "") == (fileName == "") {
 		switch csvName {
-		case "migration-operator-csv", "inflight-operations-csv":
+		case "migration-operator-csv", "inflight-operations-csv", "vm-file-restore-operator-csv":
 			return nil
 		}
 
