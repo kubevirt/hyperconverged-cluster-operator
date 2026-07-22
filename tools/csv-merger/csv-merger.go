@@ -80,33 +80,35 @@ func (i *EnvVarFlags) Set(value string) error {
 }
 
 var (
-	outputMode          = flag.String("output-mode", CSVMode, "Working mode: "+validOutputModes)
-	operatorImage       = flag.String("operator-image-name", "", "HyperConverged Cluster Operator image")
-	webhookImage        = flag.String("webhook-image-name", "", "HyperConverged Cluster Webhook image")
-	cliDownloadsImage   = flag.String("cli-downloads-image-name", "", "Downloads Server image")
-	kvUIPluginImage     = flag.String("kubevirt-consoleplugin-image-name", "", "KubeVirt Console Plugin image")
-	kvUIProxyImage      = flag.String("kubevirt-consoleproxy-image-name", "", "KubeVirt Console Proxy image")
-	kvVirtIOWinImage    = flag.String("kv-virtiowin-image-name", "", "KubeVirt VirtIO Win image")
-	passtImage          = flag.String("network-passt-binding-image-name", "", "Passt binding image")
-	passtCNIImage       = flag.String("network-passt-binding-cni-image-name", "", "Passt binding cni image")
-	waspAgentImage      = flag.String("wasp-agent-image-name", "", "Wasp Agent image")
-	smbios              = flag.String("smbios", "", "Custom SMBIOS string, used by HCO to configure the SMBIOS in KubeVirt CR")
-	smbiosFile          = flag.String("smbios-file", "", "Custom SMBIOS file name, used by HCO to configure the SMBIOS in KubeVirt CR")
-	machinetype         = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap (Deprecated, use amd64-machinetype)")
-	amd64MachineType    = flag.String("amd64-machinetype", "", "Custom AMD64_MACHINETYPE string for KubeVirt ConfigMap")
-	arm64MachineType    = flag.String("arm64-machinetype", "", "Custom ARM64_MACHINETYPE string for KubeVirt ConfigMap")
-	csvVersion          = flag.String("csv-version", "", "CSV version")
-	replacesCsvVersion  = flag.String("replaces-csv-version", "", "CSV version to replace")
-	metadataDescription = flag.String("metadata-description", "", "One-Liner Description")
-	specDescription     = flag.String("spec-description", "", "Description")
-	specDescriptionFile = flag.String("spec-description-file", "", "Description file")
-	specDisplayName     = flag.String("spec-displayname", "", "Display Name")
-	icon                = flag.String("icon", defaultIcon, "The project logo, as base64 text, in image/svg+xml format")
-	namespace           = flag.String("namespace", "kubevirt-hyperconverged", "Namespace")
-	crdDisplay          = flag.String("crd-display", "KubeVirt HyperConverged Cluster", "Label show in OLM UI about the primary CRD")
-	csvOverrides        = flag.String("csv-overrides", "", "CSV-like string with punctual changes that will be recursively applied (if possible)")
-	csvOverridesFile    = flag.String("csv-overrides-file", "", "path of file with CSV-like format, with punctual changes that will be recursively applied (if possible)")
-	visibleCRDList      = flag.String("visible-crds-list", "hyperconvergeds.hco.kubevirt.io,hostpathprovisioners.hostpathprovisioner.kubevirt.io",
+	outputMode           = flag.String("output-mode", CSVMode, "Working mode: "+validOutputModes)
+	operatorImage        = flag.String("operator-image-name", "", "HyperConverged Cluster Operator image")
+	webhookImage         = flag.String("webhook-image-name", "", "HyperConverged Cluster Webhook image")
+	cliDownloadsImage    = flag.String("cli-downloads-image-name", "", "Downloads Server image")
+	kvUIPluginImage      = flag.String("kubevirt-consoleplugin-image-name", "", "KubeVirt Console Plugin image")
+	kvUIProxyImage       = flag.String("kubevirt-consoleproxy-image-name", "", "KubeVirt Console Proxy image")
+	kvVirtIOWinImage     = flag.String("kv-virtiowin-image-name", "", "KubeVirt VirtIO Win image")
+	kvVirtIOWinDataFile  = flag.String("kv-virtiowin-data-file", "", "Path to the data file inside the VirtIO Win image")
+	kvVirtIOWinMountPath = flag.String("kv-virtiowin-data-mount-path", "", "Absolute mount path for the VirtIO Win data file in the server container")
+	passtImage           = flag.String("network-passt-binding-image-name", "", "Passt binding image")
+	passtCNIImage        = flag.String("network-passt-binding-cni-image-name", "", "Passt binding cni image")
+	waspAgentImage       = flag.String("wasp-agent-image-name", "", "Wasp Agent image")
+	smbios               = flag.String("smbios", "", "Custom SMBIOS string, used by HCO to configure the SMBIOS in KubeVirt CR")
+	smbiosFile           = flag.String("smbios-file", "", "Custom SMBIOS file name, used by HCO to configure the SMBIOS in KubeVirt CR")
+	machinetype          = flag.String("machinetype", "", "Custom MACHINETYPE string for KubeVirt ConfigMap (Deprecated, use amd64-machinetype)")
+	amd64MachineType     = flag.String("amd64-machinetype", "", "Custom AMD64_MACHINETYPE string for KubeVirt ConfigMap")
+	arm64MachineType     = flag.String("arm64-machinetype", "", "Custom ARM64_MACHINETYPE string for KubeVirt ConfigMap")
+	csvVersion           = flag.String("csv-version", "", "CSV version")
+	replacesCsvVersion   = flag.String("replaces-csv-version", "", "CSV version to replace")
+	metadataDescription  = flag.String("metadata-description", "", "One-Liner Description")
+	specDescription      = flag.String("spec-description", "", "Description")
+	specDescriptionFile  = flag.String("spec-description-file", "", "Description file")
+	specDisplayName      = flag.String("spec-displayname", "", "Display Name")
+	icon                 = flag.String("icon", defaultIcon, "The project logo, as base64 text, in image/svg+xml format")
+	namespace            = flag.String("namespace", "kubevirt-hyperconverged", "Namespace")
+	crdDisplay           = flag.String("crd-display", "KubeVirt HyperConverged Cluster", "Label show in OLM UI about the primary CRD")
+	csvOverrides         = flag.String("csv-overrides", "", "CSV-like string with punctual changes that will be recursively applied (if possible)")
+	csvOverridesFile     = flag.String("csv-overrides-file", "", "path of file with CSV-like format, with punctual changes that will be recursively applied (if possible)")
+	visibleCRDList       = flag.String("visible-crds-list", "hyperconvergeds.hco.kubevirt.io,hostpathprovisioners.hostpathprovisioner.kubevirt.io",
 		"Comma separated list of all the CRDs that should be visible in OLM console")
 	relatedImagesList = flag.String("related-images-list", "",
 		"Comma separated list of all the images referred in the CSV (just the image pull URLs or eventually a set of 'image|name' collations)")
@@ -297,8 +299,8 @@ func processOneCsv(c util.CsvWithComponent, installStrategyBase *csvv1alpha1.Str
 	}
 	csvBaseAlmString := csvBase.Annotations[almExamplesAnnotation]
 	csvStructAlmString := csvStruct.Annotations[almExamplesAnnotation]
-	var baseAlmcrs []interface{}
-	var structAlmcrs []interface{}
+	var baseAlmcrs []any
+	var structAlmcrs []any
 
 	if !strings.HasPrefix(csvBaseAlmString, "[") {
 		csvBaseAlmString = "[" + csvBaseAlmString + "]"
@@ -395,6 +397,8 @@ func getDeploymentParams() *components.DeploymentOperatorParams {
 		KVUIProxyImage:           *kvUIProxyImage,
 		ImagePullPolicy:          "IfNotPresent",
 		VirtIOWinContainer:       *kvVirtIOWinImage,
+		VirtIOWinDataFile:        *kvVirtIOWinDataFile,
+		VirtIOWinMountPath:       *kvVirtIOWinMountPath,
 		Smbios:                   *smbios,
 		Machinetype:              *machinetype,
 		Amd64MachineType:         *amd64MachineType,
