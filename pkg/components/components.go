@@ -409,7 +409,7 @@ func addVirtIOVolume(spec *appsv1.DeploymentSpec, params *DeploymentOperatorPara
 		VolumeMounts: []corev1.VolumeMount{
 			{Name: artifactServerMountName, MountPath: initContainerMount},
 		},
-		SecurityContext:          getVirtIOWinInitContainerSecurityContext(),
+		SecurityContext:          GetStdContainerSecurityContext(),
 		TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
 		Resources: corev1.ResourceRequirements{
 			Requests: corev1.ResourceList{
@@ -465,15 +465,6 @@ func GetStdContainerSecurityContext() *corev1.SecurityContext {
 			Drop: []corev1.Capability{"ALL"},
 		},
 	}
-}
-
-// getVirtIOWinInitContainerSecurityContext returns a security context for the virtiowin init
-// container. It sets runAsUser explicitly so that the pod-level runAsNonRoot constraint is met
-// even when the data-only image has no USER directive and would otherwise run as root.
-func getVirtIOWinInitContainerSecurityContext() *corev1.SecurityContext {
-	sc := GetStdContainerSecurityContext()
-	sc.RunAsUser = ptr.To[int64](1001)
-	return sc
 }
 
 // Currently we are abusing the pod readiness to signal to OLM that HCO is not ready
