@@ -24,7 +24,6 @@ var _ = Describe("Network Resources Injector ClusterRole", func() {
 
 	BeforeEach(func() {
 		hco = commontestutils.NewHco()
-		hco.Spec.Deployment.DeployNetworkResourcesInjector = new(true)
 		req = commontestutils.NewReq(hco)
 	})
 
@@ -95,7 +94,6 @@ var _ = Describe("Network Resources Injector ClusterRoleBinding", func() {
 
 	BeforeEach(func() {
 		hco = commontestutils.NewHco()
-		hco.Spec.Deployment.DeployNetworkResourcesInjector = new(true)
 		req = commontestutils.NewReq(hco)
 	})
 

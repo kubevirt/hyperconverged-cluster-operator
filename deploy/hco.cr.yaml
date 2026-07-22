@@ -5,6 +5,7 @@ metadata:
   name: kubevirt-hyperconverged
 spec:
   deployment:
+    deployNetworkResourcesInjector: true
     deployVmConsoleProxy: false
     uninstallStrategy: BlockUninstallIfWorkloadsExist
   security:
