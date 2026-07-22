@@ -391,10 +391,10 @@ metadata:
   name: kubevirt-hyperconverged
 spec:
   liveMigrationConfig:
-    completionTimeoutPerGiB: 150
+    completionTimeoutPerGiB: 20
     network: migration-network
     parallelMigrationsPerCluster: 5
-    parallelOutboundMigrationsPerNode: 2
+    parallelOutboundMigrationsPerNode: 1
     progressTimeout: 150
     allowAutoConverge: false
     allowPostCopy: false

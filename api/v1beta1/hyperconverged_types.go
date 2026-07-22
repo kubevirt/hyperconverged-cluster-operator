@@ -74,7 +74,7 @@ type HyperConvergedSpec struct {
 
 	// Live migration limits and timeouts are applied so that migration processes do not
 	// overwhelm the cluster.
-	// +kubebuilder:default={"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}
+	// +kubebuilder:default={"completionTimeoutPerGiB": 20, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 1, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}
 	// +optional
 	// +k8s:conversion-gen=false
 	LiveMigrationConfig hcov1.LiveMigrationConfigurations `json:"liveMigrationConfig,omitempty"`
@@ -628,7 +628,7 @@ type HyperConverged struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}},"featureGates": {"downwardMetrics": false, "deployKubeSecondaryDNS": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false}, "liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "resourceRequirements": {"vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
+	// +kubebuilder:default={"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}},"featureGates": {"downwardMetrics": false, "deployKubeSecondaryDNS": false, "enableMultiArchBootImageImport": false, "decentralizedLiveMigration": true, "declarativeHotplugVolumes": true, "objectGraph": false, "incrementalBackup": false, "containerPathVolumes": false}, "liveMigrationConfig": {"completionTimeoutPerGiB": 20, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 1, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "resourceRequirements": {"vmiCPUAllocationRatio": 10}, "uninstallStrategy": "BlockUninstallIfWorkloadsExist", "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "enableApplicationAwareQuota": false, "enableCommonBootImageImport": true, "deployVmConsoleProxy": false}
 	// +optional
 	Spec   HyperConvergedSpec         `json:"spec,omitempty"`
 	Status hcov1.HyperConvergedStatus `json:"status,omitempty"`
