@@ -110,6 +110,9 @@ const (
 
 	// Enable updating NAD reference on a running VM
 	kvLiveUpdateNADRef = "LiveUpdateNADRef"
+
+	// Allow defining panic devices for signaling crashes in the guest
+	kvPanicDevices = "PanicDevices"
 )
 
 // KubeVirt architecture dependant feature gates.
@@ -133,6 +136,7 @@ var (
 		kvVMExportGate,
 		kvKubevirtSeccompProfile,
 		kvLiveUpdateNADRef,
+		kvPanicDevices,
 	}
 
 	// holds a list of mandatory KubeVirt feature gates. Some of them are the hard coded feature gates and some of
