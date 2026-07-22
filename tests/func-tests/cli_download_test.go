@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"net/url"
 	"slices"
 	"strings"
 	"time"
@@ -16,6 +17,7 @@ import (
 	configv1 "github.com/openshift/api/config/v1"
 	consolev1 "github.com/openshift/api/console/v1"
 	v1 "github.com/openshift/api/route/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -23,6 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/downloadhost"
+	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
@@ -59,6 +62,8 @@ var _ = Describe("[rfe_id:5100][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 
 		Expect(ccd.Spec.Links).To(HaveLen(7))
 
+		httpClient := getHTTPClient()
+
 		for _, link := range ccd.Spec.Links {
 			// virtctl for Windows for ARM 64 is still not shipped, avoid checking it
 			// TODO: remove this once ready
@@ -66,16 +71,19 @@ var _ = Describe("[rfe_id:5100][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 				continue
 			}
 			By("Checking links. Link:" + link.Href)
-			client := &http.Client{Transport: &http.Transport{
-				// ssl of the route is irrelevant
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-			}}
-			resp, err := client.Get(link.Href)
-			_ = resp.Body.Close()
+			resp, err := httpClient.Head(link.Href)
+
+			Expect(err).NotTo(HaveOccurred(), "HEAD failed for %s", link.Href)
+			Expect(resp.StatusCode).To(Equal(http.StatusOK), "non OK response for %s", link.Href)
 
 			ExpectWithOffset(1, err).ToNot(HaveOccurred())
 			ExpectWithOffset(1, resp).To(HaveHTTPStatus(http.StatusOK))
 		}
+
+		link, err := url.Parse(ccd.Spec.Links[0].Href)
+		Expect(err).ToNot(HaveOccurred())
+
+		checkVirtioWinDownload(ctx, cli, httpClient, link.Host)
 	})
 
 	Context("URL Download customization", func() {
@@ -122,9 +130,7 @@ var _ = Describe("[rfe_id:5100][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 			patch := []byte(fmt.Sprintf(`[{"op": "add", "path": "/spec/componentRoutes", "value": [{"name": "virt-downloads", "hostname": %q, "namespace": %q}]}]`, newCLIDLHost, tests.InstallNamespace))
 			Expect(cli.Patch(ctx, ingress, client.RawPatch(types.JSONPatchType, patch))).To(Succeed())
 
-			customTransport := http.DefaultTransport.(*http.Transport).Clone()
-			customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-			httpClient := &http.Client{Transport: customTransport, Timeout: time.Second * 1}
+			httpClient := getHTTPClient()
 
 			ccdKey := client.ObjectKey{Name: "virtctl-clidownloads-kubevirt-hyperconverged"}
 
@@ -144,13 +150,17 @@ var _ = Describe("[rfe_id:5100][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 					g.Expect(link.Href).To(ContainSubstring(newCLIDLHost))
 					res, err := httpClient.Head(link.Href)
 					g.Expect(err).NotTo(HaveOccurred(), "HEAD failed for %s", link.Href)
+					if res.Body != nil {
+						g.Expect(res.Body.Close()).To(Succeed())
+					}
 					g.Expect(res.StatusCode).To(Equal(http.StatusOK), "non OK response for %s", link.Href)
 				}
 			}).WithContext(ctx).
 				WithTimeout(60 * time.Second).
-				WithPolling(time.Second).
+				WithPolling(5 * time.Second).
 				Should(Succeed())
 
+			By("check route")
 			routeKey := client.ObjectKey{Name: downloadhost.CLIDownloadsServiceName, Namespace: tests.InstallNamespace}
 			Eventually(func(g Gomega, ctx context.Context) {
 				route := &v1.Route{}
@@ -160,6 +170,51 @@ var _ = Describe("[rfe_id:5100][crit:medium][vendor:cnv-qe@redhat.com][level:sys
 				WithTimeout(60 * time.Second).
 				WithPolling(time.Second).
 				Should(Succeed())
+
+			checkVirtioWinDownload(ctx, cli, httpClient, newCLIDLHost)
 		})
 	})
 })
+
+func getHTTPClient() *http.Client {
+	customTransport := http.DefaultTransport.(*http.Transport).Clone()
+	customTransport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	return &http.Client{Transport: customTransport, Timeout: time.Second * 3}
+}
+
+func checkVirtioWinDownload(ctx context.Context, cli client.Client, httpClient *http.Client, cliDLHost string) {
+	GinkgoHelper()
+
+	By("check the virtio-win iso download")
+	var hcoPods corev1.PodList
+	Expect(cli.List(ctx, &hcoPods, &client.MatchingLabels{
+		"name": "hyperconverged-cluster-operator",
+	})).To(Succeed())
+	Expect(hcoPods.Items).ToNot(BeEmpty())
+
+	pod := hcoPods.Items[0]
+	idx := slices.IndexFunc(pod.Spec.Containers[0].Env, func(env corev1.EnvVar) bool {
+		return env.Name == hcoutil.VirtIOWinDataFileEnvV
+	})
+
+	if idx < 0 {
+		GinkgoLogr.Info(fmt.Sprintf("The HCO pod does not have the %s env var; virtio-win image download is not implemented", hcoutil.VirtIOWinDataFileEnvV))
+		return
+	}
+
+	virtioWinDLPath := pod.Spec.Containers[0].Env[idx].Value
+
+	virtioWinCM := &corev1.ConfigMap{}
+	Expect(cli.Get(ctx, client.ObjectKey{Namespace: tests.InstallNamespace, Name: "virtio-win"}, virtioWinCM)).To(Succeed())
+
+	virtioWinDLPathURL, urlExists := virtioWinCM.Data["virtio-win-image-download-url"]
+	Expect(urlExists).To(BeTrue())
+	Expect(virtioWinDLPathURL).To(ContainSubstring(cliDLHost))
+	Expect(virtioWinDLPathURL).To(HaveSuffix(virtioWinDLPath))
+	res, err := httpClient.Head(virtioWinDLPathURL)
+	Expect(err).NotTo(HaveOccurred(), "HEAD failed for %s", virtioWinDLPathURL)
+	if res.Body != nil {
+		Expect(res.Body.Close()).To(Succeed())
+	}
+	Expect(res.StatusCode).To(Equal(http.StatusOK), "non OK response for %s", virtioWinDLPathURL)
+}

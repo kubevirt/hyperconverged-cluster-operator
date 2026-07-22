@@ -13,17 +13,16 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/commontestutils"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/downloadhost"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
 
 var _ = Describe("VirtioWin", func() {
-
-	var testLogger = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)).WithName("VirtioWin_test")
+	const virtioImage = "new-virtiowin-container-value"
 
 	Context("Virtio-Win ConfigMap", func() {
 
@@ -31,16 +30,16 @@ var _ = Describe("VirtioWin", func() {
 		var req *common.HcoRequest
 
 		BeforeEach(func() {
-			os.Setenv("VIRTIOWIN_CONTAINER", "new-virtiowin-container-value")
+			Expect(os.Setenv(hcoutil.VirtioWinImageEnvV, virtioImage)).To(Succeed())
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
 		})
 
 		It("should error if VIRTIOWIN_CONTAINER environment var not specified", func() {
-			os.Unsetenv("VIRTIOWIN_CONTAINER")
+			Expect(os.Unsetenv(hcoutil.VirtioWinImageEnvV)).To(Succeed())
 
 			cl := commontestutils.InitClient([]client.Object{})
-			handler, err := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler, err := NewVirtioWinCmHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
 
 			Expect(err).To(HaveOccurred())
 			Expect(handler).To(BeNil())
@@ -50,7 +49,7 @@ var _ = Describe("VirtioWin", func() {
 			expectedResource, err := NewVirtioWinCm(hco)
 			Expect(err).ToNot(HaveOccurred())
 			cl := commontestutils.InitClient([]client.Object{})
-			handler, _ := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler, _ := NewVirtioWinCmHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -71,7 +70,7 @@ var _ = Describe("VirtioWin", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedResource})
-			handler, _ := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler, _ := NewVirtioWinCmHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Err).ToNot(HaveOccurred())
@@ -85,9 +84,8 @@ var _ = Describe("VirtioWin", func() {
 		})
 
 		It("should reconcile according to env values and HCO CR", func() {
-			virtiowink := "virtio-win-image"
-			updatableKeys := [...]string{virtiowink}
-			toBeRemovedKey := "toberemoved"
+			updatableKeys := [...]string{virtioWinImageKey}
+			const toBeRemovedKey = "toberemoved"
 
 			expectedResource, err := NewVirtioWinCm(hco)
 			Expect(err).ToNot(HaveOccurred())
@@ -96,13 +94,13 @@ var _ = Describe("VirtioWin", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// values we should update
-			outdatedResource.Data[virtiowink] = "old-virtiowin-container-value-we-have-to-update"
+			outdatedResource.Data[virtioWinImageKey] = "old-virtiowin-container-value-we-have-to-update"
 
 			// add values we should remove
 			outdatedResource.Data[toBeRemovedKey] = "value-we-should-remove"
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler, _ := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler, _ := NewVirtioWinCmHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
@@ -116,8 +114,7 @@ var _ = Describe("VirtioWin", func() {
 			).ToNot(HaveOccurred())
 
 			for _, k := range updatableKeys {
-				Expect(foundResource.Data[k]).ToNot(Equal(outdatedResource.Data[k]))
-				Expect(foundResource.Data[k]).To(Equal(expectedResource.Data[k]))
+				Expect(foundResource.Data).To(HaveKeyWithValue(k, expectedResource.Data[k]))
 			}
 
 			Expect(foundResource.Data).ToNot(HaveKey(toBeRemovedKey))
@@ -144,7 +141,7 @@ var _ = Describe("VirtioWin", func() {
 			outdatedResource.Labels[userLabelKey] = userLabelValue
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler, _ := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler, _ := NewVirtioWinCmHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
@@ -173,7 +170,7 @@ var _ = Describe("VirtioWin", func() {
 			delete(outdatedResource.Labels, hcoutil.AppLabelVersion)
 
 			cl := commontestutils.InitClient([]client.Object{hco, outdatedResource})
-			handler, _ := NewVirtioWinCmHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler, _ := NewVirtioWinCmHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
 			res := handler.Ensure(req)
 			Expect(res.UpgradeDone).To(BeFalse())
 			Expect(res.Updated).To(BeTrue())
@@ -192,6 +189,98 @@ var _ = Describe("VirtioWin", func() {
 			Expect(foundResource.Labels).To(HaveKeyWithValue(userLabelKey, userLabelValue))
 		})
 
+		It("should not add the download URL if the env var is missing", func() {
+			cl := commontestutils.InitClient([]client.Object{})
+			handler, _ := NewVirtioWinCmHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
+			res := handler.Ensure(req)
+			Expect(res.Err).ToNot(HaveOccurred())
+
+			foundResource := &corev1.ConfigMap{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: virtioWinCmName, Namespace: commontestutils.Namespace},
+					foundResource),
+			).To(Succeed())
+
+			Expect(foundResource.Data).To(HaveKeyWithValue(virtioWinImageKey, virtioImage))
+			Expect(foundResource.Data).ToNot(HaveKey(virtioWinImageDLKey))
+		})
+
+		It("should not add the download URL if the env var is empty", func() {
+			Expect(os.Setenv(hcoutil.VirtIOWinDataFileEnvV, "")).To(Succeed())
+			DeferCleanup(func() {
+				Expect(os.Unsetenv(hcoutil.VirtIOWinDataFileEnvV)).To(Succeed())
+			})
+
+			cl := commontestutils.InitClient([]client.Object{})
+			handler, _ := NewVirtioWinCmHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
+			res := handler.Ensure(req)
+			Expect(res.Err).ToNot(HaveOccurred())
+
+			foundResource := &corev1.ConfigMap{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: virtioWinCmName, Namespace: commontestutils.Namespace},
+					foundResource),
+			).To(Succeed())
+
+			Expect(foundResource.Data).To(HaveKeyWithValue(virtioWinImageKey, virtioImage))
+			Expect(foundResource.Data).ToNot(HaveKey(virtioWinImageDLKey))
+		})
+
+		It("should add the download URL if the env var is set", func() {
+			origHost := downloadhost.Get()
+			DeferCleanup(func() {
+				downloadhost.Set(origHost)
+			})
+
+			downloadhost.Set(downloadhost.CLIDownloadHost{
+				DefaultHost: "default-host.com",
+				CurrentHost: "default-host.com",
+				Cert:        "crt",
+				Key:         "key",
+			})
+
+			Expect(os.Setenv(hcoutil.VirtIOWinDataFileEnvV, "virtio-win/virtio-win.iso")).To(Succeed())
+			DeferCleanup(func() {
+				Expect(os.Unsetenv(hcoutil.VirtIOWinDataFileEnvV)).To(Succeed())
+			})
+
+			cl := commontestutils.InitClient([]client.Object{})
+			handler, _ := NewVirtioWinCmHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
+			res := handler.Ensure(req)
+			Expect(res.Err).ToNot(HaveOccurred())
+
+			foundResource := &corev1.ConfigMap{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: virtioWinCmName, Namespace: commontestutils.Namespace},
+					foundResource),
+			).To(Succeed())
+
+			Expect(foundResource.Data).To(HaveKeyWithValue(virtioWinImageKey, virtioImage))
+			Expect(foundResource.Data).To(HaveKeyWithValue(virtioWinImageDLKey, "https://default-host.com/virtio-win/virtio-win.iso"))
+
+			By("should update the download URL if it was customized")
+			downloadhost.Set(downloadhost.CLIDownloadHost{
+				DefaultHost: "default-host.com",
+				CurrentHost: "cli-dl.example.com",
+				Cert:        "crt",
+				Key:         "key",
+			})
+
+			handler.Reset()
+			res = handler.Ensure(req)
+			Expect(res.Err).ToNot(HaveOccurred())
+			foundResource = &corev1.ConfigMap{}
+			Expect(
+				cl.Get(context.TODO(),
+					types.NamespacedName{Name: virtioWinCmName, Namespace: commontestutils.Namespace},
+					foundResource),
+			).To(Succeed())
+
+			Expect(foundResource.Data).To(HaveKeyWithValue(virtioWinImageDLKey, "https://cli-dl.example.com/virtio-win/virtio-win.iso"))
+		})
 	})
 
 	Context("ConfigMap Reader Role", func() {
@@ -199,15 +288,16 @@ var _ = Describe("VirtioWin", func() {
 		var req *common.HcoRequest
 
 		BeforeEach(func() {
-			os.Setenv("VIRTIOWIN_CONTAINER", "new-virtiowin-container-value")
+			Expect(os.Setenv(hcoutil.VirtioWinImageEnvV, virtioImage)).To(Succeed())
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
 		})
+
 		It("should do nothing if exists", func() {
 			expectedRole := NewVirtioWinCmReaderRole(hco)
 			cl := commontestutils.InitClient([]client.Object{hco, expectedRole})
 
-			handler, _ := NewVirtioWinCmReaderRoleHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler, _ := NewVirtioWinCmReaderRoleHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
@@ -229,7 +319,7 @@ var _ = Describe("VirtioWin", func() {
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedRole})
 
-			handler, _ := NewVirtioWinCmReaderRoleHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler, _ := NewVirtioWinCmReaderRoleHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
@@ -249,16 +339,17 @@ var _ = Describe("VirtioWin", func() {
 		var req *common.HcoRequest
 
 		BeforeEach(func() {
-			os.Setenv("VIRTIOWIN_CONTAINER", "new-virtiowin-container-value")
+			Expect(os.Setenv(hcoutil.VirtioWinImageEnvV, virtioImage)).To(Succeed())
 			hco = commontestutils.NewHco()
 			req = commontestutils.NewReq(hco)
 		})
+
 		It("should do nothing if exists", func() {
 			expectedRoleBinding := NewVirtioWinCmReaderRoleBinding(hco)
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedRoleBinding})
 
-			handler, _ := NewVirtioWinCmReaderRoleBindingHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler, _ := NewVirtioWinCmReaderRoleBindingHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
@@ -279,7 +370,7 @@ var _ = Describe("VirtioWin", func() {
 
 			cl := commontestutils.InitClient([]client.Object{hco, expectedRoleBinding})
 
-			handler, _ := NewVirtioWinCmReaderRoleBindingHandler(testLogger, cl, commontestutils.GetScheme(), hco)
+			handler, _ := NewVirtioWinCmReaderRoleBindingHandler(GinkgoLogr, cl, commontestutils.GetScheme(), hco)
 			res := handler.Ensure(req)
 			Expect(res.Err).ToNot(HaveOccurred())
 
