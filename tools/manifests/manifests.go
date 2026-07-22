@@ -1,0 +1,727 @@
+package manifests
+
+import (
+	"path"
+
+	persesv1alpha1 "github.com/rhobs/perses-operator/api/v1alpha1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+
+	cnaoapi "github.com/kubevirt/cluster-network-addons-operator/pkg/apis/networkaddonsoperator/v1"
+	kvapi "kubevirt.io/api/core"
+	aaqapi "kubevirt.io/application-aware-quota/staging/src/kubevirt.io/application-aware-quota-api/pkg/apis/core"
+	cdiapi "kubevirt.io/containerized-data-importer-api/pkg/apis/core"
+	migrationapi "kubevirt.io/kubevirt-migration-operator/api/v1alpha1"
+	sspapi "kubevirt.io/ssp-operator/api/v1beta3"
+
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+)
+
+const (
+	artifactServerMountName = "virtiowin-data"
+)
+
+type DeploymentOperatorParams struct {
+	Namespace                     string
+	Image                         string
+	WebhookImage                  string
+	CliDownloadsImage             string
+	KVUIPluginImage               string
+	KVUIProxyImage                string
+	NetworkResourcesInjectorImage string
+	WaspAgentImage                string
+	AIEWebhookImage               string
+	IOMMUFDDevicePluginImage      string
+	ImagePullPolicy               string
+	ConversionContainer           string
+	VmwareContainer               string
+	VirtIOWinContainer            string
+	VirtIOWinDataFile             string
+	VirtIOWinMountPath            string
+	Smbios                        string
+	Machinetype                   string
+	Amd64MachineType              string
+	Arm64MachineType              string
+	S390xMachineType              string
+	HcoKvIoVersion                string
+	KubevirtVersion               string
+	KvVirtLancherOsVersion        string
+	CdiVersion                    string
+	CnaoVersion                   string
+	SspVersion                    string
+	HppoVersion                   string
+	MtqVersion                    string
+	AaqVersion                    string
+	MigrationOperatorVersion      string
+	AutopilotVersion              string
+	InFlightOperationsVersion     string
+	Env                           []corev1.EnvVar
+	AddNetworkPolicyLabels        bool
+}
+
+func GetDeploymentSpecOperator(params *DeploymentOperatorParams) appsv1.DeploymentSpec {
+	return appsv1.DeploymentSpec{
+		Replicas: new(int32(1)),
+		Selector: &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"name": util.HCOOperatorName,
+			},
+		},
+		Strategy: appsv1.DeploymentStrategy{
+			Type: appsv1.RollingUpdateDeploymentStrategyType,
+		},
+		Template: corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: getLabelsWithNetworkPolicies(util.HCOOperatorName, params),
+			},
+			Spec: corev1.PodSpec{
+				ServiceAccountName: util.HCOOperatorName,
+				SecurityContext:    components.GetStdPodSecurityContext(),
+				Containers: []corev1.Container{
+					{
+						Name:            util.HCOOperatorName,
+						Image:           params.Image,
+						ImagePullPolicy: corev1.PullPolicy(params.ImagePullPolicy),
+						Command:         stringListToSlice(util.HCOOperatorName),
+						ReadinessProbe:  getReadinessProbe(util.ReadinessEndpointName, util.HealthProbePort),
+						LivenessProbe:   getLivenessProbe(util.LivenessEndpointName, util.HealthProbePort),
+						Env:             buildOperatorEnvVars(params),
+						Resources: corev1.ResourceRequirements{
+							Requests: map[corev1.ResourceName]resource.Quantity{
+								corev1.ResourceCPU:    resource.MustParse("10m"),
+								corev1.ResourceMemory: resource.MustParse("96Mi"),
+							},
+						},
+						SecurityContext:          components.GetStdContainerSecurityContext(),
+						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+						Ports: []corev1.ContainerPort{
+							getMetricsPort(),
+						},
+					},
+				},
+				PriorityClassName: "system-cluster-critical",
+			},
+		},
+	}
+}
+
+func buildOperatorEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
+	envs := append([]corev1.EnvVar{
+		{
+			// deprecated: left here for CI test.
+			Name:  util.OperatorWebhookModeEnv,
+			Value: "false",
+		},
+		{
+			Name:  util.ContainerAppName,
+			Value: util.ContainerOperatorApp,
+		},
+		{
+			Name:  "KVM_EMULATION",
+			Value: "",
+		},
+		{
+			Name:  "OPERATOR_IMAGE",
+			Value: params.Image,
+		},
+		{
+			Name:  "OPERATOR_NAME",
+			Value: util.HCOOperatorName,
+		},
+		{
+			Name:  "OPERATOR_NAMESPACE",
+			Value: params.Namespace,
+		},
+		{
+			Name: "POD_NAME",
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					FieldPath: "metadata.name",
+				},
+			},
+		},
+		{
+			Name:  util.VirtioWinImageEnvV,
+			Value: params.VirtIOWinContainer,
+		},
+		{
+			Name:  "SMBIOS",
+			Value: params.Smbios,
+		},
+		{
+			Name:  "MACHINETYPE",
+			Value: params.Machinetype,
+		},
+		{
+			Name:  "AMD64_MACHINETYPE",
+			Value: params.Amd64MachineType,
+		},
+		{
+			Name:  "ARM64_MACHINETYPE",
+			Value: params.Arm64MachineType,
+		},
+		{
+			Name:  "S390X_MACHINETYPE",
+			Value: params.S390xMachineType,
+		},
+		{
+			Name:  util.HcoKvIoVersionName,
+			Value: params.HcoKvIoVersion,
+		},
+		{
+			Name:  util.KubevirtVersionEnvV,
+			Value: params.KubevirtVersion,
+		},
+		{
+			Name:  util.CdiVersionEnvV,
+			Value: params.CdiVersion,
+		},
+		{
+			Name:  util.CnaoVersionEnvV,
+			Value: params.CnaoVersion,
+		},
+		{
+			Name:  util.SspVersionEnvV,
+			Value: params.SspVersion,
+		},
+		{
+			Name:  util.HppoVersionEnvV,
+			Value: params.HppoVersion,
+		},
+		{
+			Name:  util.AaqVersionEnvV,
+			Value: params.AaqVersion,
+		},
+		{
+			Name:  util.MigrationOperatorVersionEnvV,
+			Value: params.MigrationOperatorVersion,
+		},
+		{
+			Name:  util.AutopilotVersionEnvV,
+			Value: params.AutopilotVersion,
+		},
+		{
+			Name:  util.InFlightOperationsVersionEnvV,
+			Value: params.InFlightOperationsVersion,
+		},
+		{
+			Name:  util.KVUIPluginImageEnvV,
+			Value: params.KVUIPluginImage,
+		},
+		{
+			Name:  util.KVUIProxyImageEnvV,
+			Value: params.KVUIProxyImage,
+		},
+		{
+			Name:  util.NetworkResourcesInjectorImageEnvV,
+			Value: params.NetworkResourcesInjectorImage,
+		},
+		{
+			Name:  util.WaspAgentImageEnvV,
+			Value: params.WaspAgentImage,
+		},
+		{
+			Name:  util.AIEWebhookImageEnvV,
+			Value: params.AIEWebhookImage,
+		},
+		{
+			Name:  util.IOMMUFDDevicePluginImageEnvV,
+			Value: params.IOMMUFDDevicePluginImage,
+		},
+	}, params.Env...)
+
+	if params.KvVirtLancherOsVersion != "" {
+		envs = append(envs, corev1.EnvVar{
+			Name:  util.KvVirtLauncherOSVersionEnvV,
+			Value: params.KvVirtLancherOsVersion,
+		})
+	}
+
+	if params.AddNetworkPolicyLabels {
+		envs = append(envs, corev1.EnvVar{
+			Name:  util.DeployNetworkPoliciesEnvV,
+			Value: "true",
+		})
+	}
+
+	if params.VirtIOWinDataFile != "" && params.VirtIOWinMountPath != "" {
+		value := path.Join(util.VirtIODownloadDir, path.Base(params.VirtIOWinDataFile))
+		envs = append(envs, corev1.EnvVar{
+			Name:  util.VirtIOWinDataFileEnvV,
+			Value: value,
+		})
+	}
+
+	return envs
+}
+
+func GetDeploymentSpecCliDownloads(params *DeploymentOperatorParams) appsv1.DeploymentSpec {
+	spec := appsv1.DeploymentSpec{
+		Replicas: new(int32(1)),
+		Selector: &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"name": util.CLIDownloadsName,
+			},
+		},
+		Strategy: appsv1.DeploymentStrategy{
+			Type: appsv1.RollingUpdateDeploymentStrategyType,
+		},
+		Template: corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: GetLabels(util.CLIDownloadsName, params.HcoKvIoVersion),
+			},
+			Spec: corev1.PodSpec{
+				ServiceAccountName:           util.CLIDownloadsName,
+				AutomountServiceAccountToken: new(false),
+				SecurityContext:              components.GetStdPodSecurityContext(),
+				Containers: []corev1.Container{
+					{
+						Name:            "server",
+						Image:           params.CliDownloadsImage,
+						ImagePullPolicy: corev1.PullPolicy(params.ImagePullPolicy),
+						Resources: corev1.ResourceRequirements{
+							Requests: map[corev1.ResourceName]resource.Quantity{
+								corev1.ResourceCPU:    resource.MustParse("10m"),
+								corev1.ResourceMemory: resource.MustParse("96Mi"),
+							},
+						},
+						Ports: []corev1.ContainerPort{
+							{
+								Protocol:      corev1.ProtocolTCP,
+								ContainerPort: util.CliDownloadsServerPort,
+							},
+						},
+						SecurityContext:          components.GetStdContainerSecurityContext(),
+						ReadinessProbe:           getReadinessProbe("/health", util.CliDownloadsServerPort),
+						LivenessProbe:            getLivenessProbe("/health", util.CliDownloadsServerPort),
+						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+					},
+				},
+				PriorityClassName: "system-cluster-critical",
+			},
+		},
+	}
+
+	addVirtIOVolume(&spec, params)
+
+	return spec
+}
+
+func addVirtIOVolume(spec *appsv1.DeploymentSpec, params *DeploymentOperatorParams) {
+	const initContainerMount = "/mnt/" + artifactServerMountName
+	if params.VirtIOWinDataFile == "" || params.VirtIOWinMountPath == "" {
+		return
+	}
+
+	spec.Template.Spec.Volumes = append(spec.Template.Spec.Volumes, corev1.Volume{
+		Name:         artifactServerMountName,
+		VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}},
+	})
+	spec.Template.Spec.InitContainers = append(spec.Template.Spec.InitContainers, corev1.Container{
+		Name:            "virtiowin-data-loader",
+		Image:           params.VirtIOWinContainer,
+		ImagePullPolicy: corev1.PullPolicy(params.ImagePullPolicy),
+		Command:         []string{"cp", params.VirtIOWinDataFile, initContainerMount},
+		VolumeMounts: []corev1.VolumeMount{
+			{Name: artifactServerMountName, MountPath: initContainerMount},
+		},
+		SecurityContext:          getVirtIOWinInitContainerSecurityContext(),
+		TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+		Resources: corev1.ResourceRequirements{
+			Requests: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("10m"),
+				corev1.ResourceMemory: resource.MustParse("32Mi"),
+			},
+			Limits: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("100m"),
+				corev1.ResourceMemory: resource.MustParse("64Mi"),
+			},
+		},
+	})
+
+	mountPath := path.Join(params.VirtIOWinMountPath, util.VirtIODownloadDir)
+	spec.Template.Spec.Containers[0].VolumeMounts = append(
+		spec.Template.Spec.Containers[0].VolumeMounts,
+		corev1.VolumeMount{Name: artifactServerMountName, MountPath: mountPath, ReadOnly: true},
+	)
+}
+
+func GetLabels(name, hcoKvIoVersion string) map[string]string {
+	return map[string]string{
+		"name":                 name,
+		util.AppLabelVersion:   hcoKvIoVersion,
+		util.AppLabelPartOf:    util.HyperConvergedCluster,
+		util.AppLabelComponent: string(util.AppComponentDeployment),
+	}
+}
+
+func getLabelsWithNetworkPolicies(deploymentName string, params *DeploymentOperatorParams) map[string]string {
+	labels := GetLabels(deploymentName, params.HcoKvIoVersion)
+	if params.AddNetworkPolicyLabels {
+		labels[util.AllowEgressToDNSAndAPIServerLabel] = "true"
+		labels[util.AllowIngressToMetricsEndpointLabel] = "true"
+	}
+
+	return labels
+}
+
+// getVirtIOWinInitContainerSecurityContext returns a security context for the virtiowin init
+// container. It sets runAsUser explicitly so that the pod-level runAsNonRoot constraint is met
+// even when the data-only image has no USER directive and would otherwise run as root.
+func getVirtIOWinInitContainerSecurityContext() *corev1.SecurityContext {
+	sc := components.GetStdContainerSecurityContext()
+	sc.RunAsUser = new(int64(1001))
+	return sc
+}
+
+// Currently we are abusing the pod readiness to signal to OLM that HCO is not ready
+// for an upgrade. This has a lot of side effects, one of this is the validating webhook
+// being not able to receive traffic when exposed by a pod that is not reporting ready=true.
+// This can cause a lot of side effects if not deadlocks when the system reach a status where,
+// for any possible reason, HCO pod cannot be ready and so HCO pod cannot validate any further update or
+// delete request on HCO CR.
+// A proper solution is properly use the readiness probe only to report the pod readiness and communicate
+// status to OLM via conditions once OLM will be ready for:
+// https://github.com/operator-framework/enhancements/blob/master/enhancements/operator-conditions.md
+// in the meanwhile a quick (but dirty!) solution is to expose the same hco binary on two distinct pods:
+// the first one will run only the controller and the second one (almost always ready) just the validating
+// webhook one.
+func GetDeploymentSpecWebhook(params *DeploymentOperatorParams) appsv1.DeploymentSpec {
+	return appsv1.DeploymentSpec{
+		Replicas: new(int32(1)),
+		Selector: &metav1.LabelSelector{
+			MatchLabels: map[string]string{
+				"name": util.HCOWebhookName,
+			},
+		},
+		Strategy: appsv1.DeploymentStrategy{
+			Type: appsv1.RollingUpdateDeploymentStrategyType,
+		},
+		Template: corev1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels: getLabelsWithNetworkPolicies(util.HCOWebhookName, params),
+			},
+			Spec: corev1.PodSpec{
+				ServiceAccountName: util.HCOOperatorName,
+				SecurityContext:    components.GetStdPodSecurityContext(),
+				Containers: []corev1.Container{
+					{
+						Name:            util.HCOWebhookName,
+						Image:           params.WebhookImage,
+						ImagePullPolicy: corev1.PullPolicy(params.ImagePullPolicy),
+						Command:         stringListToSlice(util.HCOWebhookName),
+						ReadinessProbe:  getReadinessProbe(util.ReadinessEndpointName, util.HealthProbePort),
+						LivenessProbe:   getLivenessProbe(util.LivenessEndpointName, util.HealthProbePort),
+						Env:             buildWebhookEnvVars(params),
+						Resources: corev1.ResourceRequirements{
+							Requests: map[corev1.ResourceName]resource.Quantity{
+								corev1.ResourceCPU:    resource.MustParse("5m"),
+								corev1.ResourceMemory: resource.MustParse("48Mi"),
+							},
+						},
+						SecurityContext:          components.GetStdContainerSecurityContext(),
+						TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+						Ports: []corev1.ContainerPort{
+							getWebhookPort(),
+							getMetricsPort(),
+						},
+					},
+				},
+				PriorityClassName: "system-node-critical",
+			},
+		},
+	}
+}
+
+func buildWebhookEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
+	return append([]corev1.EnvVar{
+		{
+			// deprecated: left here for CI test.
+			Name:  util.OperatorWebhookModeEnv,
+			Value: "true",
+		},
+		{
+			Name:  util.ContainerAppName,
+			Value: util.ContainerWebhookApp,
+		},
+		{
+			Name:  "OPERATOR_IMAGE",
+			Value: params.WebhookImage,
+		},
+		{
+			Name:  "OPERATOR_NAME",
+			Value: util.HCOWebhookName,
+		},
+		{
+			Name:  "OPERATOR_NAMESPACE",
+			Value: params.Namespace,
+		},
+		{
+			Name: "POD_NAME",
+			ValueFrom: &corev1.EnvVarSource{
+				FieldRef: &corev1.ObjectFieldSelector{
+					FieldPath: "metadata.name",
+				},
+			},
+		},
+		{
+			Name:  util.HcoKvIoVersionName,
+			Value: params.HcoKvIoVersion,
+		},
+	}, params.Env...)
+}
+
+var (
+	emptyAPIGroup = []string{""}
+)
+
+func GetClusterPermissions() []rbacv1.PolicyRule {
+	const configOpenshiftIO = "config.openshift.io"
+	const operatorOpenshiftIO = "operator.openshift.io"
+	return []rbacv1.PolicyRule{
+		{
+			APIGroups: stringListToSlice(util.APIVersionGroup),
+			Resources: stringListToSlice("hyperconvergeds"),
+			Verbs:     stringListToSlice("get", "list", "update", "watch"),
+		},
+		{
+			APIGroups: stringListToSlice(util.APIVersionGroup),
+			Resources: stringListToSlice("hyperconvergeds/finalizers", "hyperconvergeds/status"),
+			Verbs:     stringListToSlice("get", "list", "create", "update", "watch"),
+		},
+		roleWithAllPermissions(kvapi.GroupName, stringListToSlice("kubevirts", "kubevirts/finalizers")),
+		{
+			APIGroups: stringListToSlice(kvapi.GroupName),
+			Resources: stringListToSlice("virtualmachineinstances"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
+		roleWithAllPermissions(cdiapi.GroupName, stringListToSlice("cdis", "cdis/finalizers")),
+		roleWithAllPermissions(sspapi.GroupVersion.Group, stringListToSlice("ssps", "ssps/finalizers")),
+		roleWithAllPermissions(cnaoapi.GroupVersion.Group, stringListToSlice("networkaddonsconfigs", "networkaddonsconfigs/finalizers")),
+		roleWithAllPermissions(aaqapi.GroupName, stringListToSlice("aaqs", "aaqs/finalizers")),
+		roleWithAllPermissions(migrationapi.GroupVersion.Group, stringListToSlice("migcontrollers", "migcontrollers/finalizers")),
+		roleWithAllPermissions("", stringListToSlice("configmaps")),
+		{
+			APIGroups: emptyAPIGroup,
+			Resources: stringListToSlice("events"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "patch"),
+		},
+		roleWithAllPermissions("", stringListToSlice("services")),
+		{
+			APIGroups: emptyAPIGroup,
+			Resources: stringListToSlice("pods", "nodes"),
+			Verbs:     stringListToSlice("get", "list", "watch", "patch"),
+		},
+		roleWithAllPermissions("", stringListToSlice("secrets")),
+		{
+			APIGroups: emptyAPIGroup,
+			Resources: stringListToSlice("endpoints"),
+			Verbs:     stringListToSlice("get", "list", "delete", "watch"),
+		},
+		{
+			APIGroups: emptyAPIGroup,
+			Resources: stringListToSlice("namespaces"),
+			Verbs:     stringListToSlice("get", "list", "watch", "patch", "update"),
+		},
+		{
+			APIGroups: stringListToSlice("apps"),
+			Resources: stringListToSlice("deployments", "replicasets", "daemonsets"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
+		roleWithAllPermissions("rbac.authorization.k8s.io",
+			stringListToSlice("roles", "clusterroles", "rolebindings", "clusterrolebindings")),
+		{
+			APIGroups: stringListToSlice("apiextensions.k8s.io"),
+			Resources: stringListToSlice("customresourcedefinitions"),
+			Verbs:     stringListToSlice("get", "list", "update", "patch", "watch", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice("apiextensions.k8s.io"),
+			Resources: stringListToSlice("customresourcedefinitions/status", "customresourcedefinitions/finalizers"),
+			Verbs:     stringListToSlice("get", "list", "watch", "patch", "update"),
+		},
+		roleWithAllPermissions("monitoring.coreos.com", stringListToSlice("servicemonitors", "prometheusrules")),
+		{
+			APIGroups: stringListToSlice("operators.coreos.com"),
+			Resources: stringListToSlice("clusterserviceversions"),
+			Verbs:     stringListToSlice("get", "list", "watch", "update", "patch"),
+		},
+		{
+			APIGroups: stringListToSlice("scheduling.k8s.io"),
+			Resources: stringListToSlice("priorityclasses"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "delete", "patch"),
+		},
+		{
+			APIGroups: stringListToSlice("admissionregistration.k8s.io"),
+			Resources: stringListToSlice("validatingwebhookconfigurations"),
+			Verbs:     stringListToSlice("list", "watch", "update", "patch"),
+		},
+		{
+			APIGroups: stringListToSlice("admissionregistration.k8s.io"),
+			Resources: stringListToSlice("mutatingwebhookconfigurations"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
+		roleWithAllPermissions("console.openshift.io", stringListToSlice("consoleclidownloads", "consolequickstarts")),
+		{
+			APIGroups: stringListToSlice(configOpenshiftIO),
+			Resources: stringListToSlice("clusterversions", "infrastructures", "networks"),
+			Verbs:     stringListToSlice("get", "list"),
+		},
+		{
+			APIGroups: stringListToSlice(configOpenshiftIO),
+			Resources: stringListToSlice("ingresses"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
+		{
+			APIGroups: stringListToSlice(configOpenshiftIO),
+			Resources: stringListToSlice("ingresses/status"),
+			Verbs:     stringListToSlice("update"),
+		},
+		{
+			APIGroups: stringListToSlice(configOpenshiftIO),
+			Resources: stringListToSlice("apiservers"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
+		{
+			APIGroups: stringListToSlice(operatorOpenshiftIO),
+			Resources: stringListToSlice("kubedeschedulers"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
+		{
+			APIGroups: stringListToSlice(configOpenshiftIO),
+			Resources: stringListToSlice("dnses"),
+			Verbs:     stringListToSlice("get"),
+		},
+		roleWithAllPermissions("coordination.k8s.io", stringListToSlice("leases")),
+		roleWithAllPermissions("route.openshift.io", stringListToSlice("routes")),
+		{
+			APIGroups: stringListToSlice("route.openshift.io"),
+			Resources: stringListToSlice("routes/custom-host"),
+			Verbs:     stringListToSlice("create", "update", "patch"),
+		},
+		{
+			APIGroups: stringListToSlice("operators.coreos.com"),
+			Resources: stringListToSlice("operatorconditions"),
+			Verbs:     stringListToSlice("get", "list", "watch", "update", "patch"),
+		},
+		roleWithAllPermissions("image.openshift.io", stringListToSlice("imagestreams")),
+		roleWithAllPermissions("console.openshift.io", stringListToSlice("consoleplugins")),
+		{
+			APIGroups: stringListToSlice("operator.openshift.io"),
+			Resources: stringListToSlice("consoles"),
+			Verbs:     stringListToSlice("get", "list", "watch", "update"),
+		},
+		{
+			APIGroups: stringListToSlice("monitoring.coreos.com"),
+			Resources: stringListToSlice("alertmanagers", "alertmanagers/api"),
+			Verbs:     stringListToSlice("get", "list", "create", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice(""),
+			Resources: stringListToSlice("serviceaccounts"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice("k8s.cni.cncf.io"),
+			Resources: stringListToSlice("network-attachment-definitions"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice("security.openshift.io"),
+			Resources: stringListToSlice("securitycontextconstraints"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice(networkingv1.GroupName),
+			Resources: stringListToSlice("networkpolicies"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice(admissionregistrationv1.GroupName),
+			Resources: stringListToSlice("validatingadmissionpolicies", "validatingadmissionpolicybindings"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice(persesv1alpha1.GroupVersion.Group),
+			Resources: stringListToSlice("persesdashboards", "persesdatasources"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
+		{
+			APIGroups: stringListToSlice("policy"),
+			Resources: stringListToSlice("poddisruptionbudgets"),
+			Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete"),
+		},
+		roleWithAllPermissions("cert-manager.io", stringListToSlice("certificates", "issuers")),
+	}
+}
+
+func roleWithAllPermissions(apiGroup string, resources []string) rbacv1.PolicyRule {
+	return rbacv1.PolicyRule{
+		APIGroups: stringListToSlice(apiGroup),
+		Resources: resources,
+		Verbs:     stringListToSlice("get", "list", "watch", "create", "update", "delete", "patch"),
+	}
+}
+
+func getReadinessProbe(endpoint string, port int32) *corev1.Probe {
+	return &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path: endpoint,
+				Port: intstr.IntOrString{
+					Type:   intstr.Int,
+					IntVal: port,
+				},
+				Scheme: corev1.URISchemeHTTP,
+			},
+		},
+		InitialDelaySeconds: 5,
+		PeriodSeconds:       5,
+		FailureThreshold:    1,
+	}
+}
+
+func getLivenessProbe(endpoint string, port int32) *corev1.Probe {
+	return &corev1.Probe{
+		ProbeHandler: corev1.ProbeHandler{
+			HTTPGet: &corev1.HTTPGetAction{
+				Path: endpoint,
+				Port: intstr.IntOrString{
+					Type:   intstr.Int,
+					IntVal: port,
+				},
+				Scheme: corev1.URISchemeHTTP,
+			},
+		},
+		InitialDelaySeconds: 30,
+		PeriodSeconds:       5,
+		FailureThreshold:    1,
+	}
+}
+
+func getMetricsPort() corev1.ContainerPort {
+	return corev1.ContainerPort{
+		Name:          util.MetricsPortName,
+		ContainerPort: util.MetricsPort,
+		Protocol:      corev1.ProtocolTCP,
+	}
+}
+
+func getWebhookPort() corev1.ContainerPort {
+	return corev1.ContainerPort{
+		Name:          util.WebhookPortName,
+		ContainerPort: util.WebhookPort,
+		Protocol:      corev1.ProtocolTCP,
+	}
+}
+
+func stringListToSlice(words ...string) []string {
+	return words
+}

@@ -104,7 +104,8 @@ const (
 	DeschedulerCRName    = "cluster"
 	DeschedulerNamespace = "openshift-kube-descheduler-operator"
 
-	DataImportCronEnabledAnnotation = "dataimportcrontemplate.kubevirt.io/enable"
+	DataImportCronEnabledAnnotation  = "dataimportcrontemplate.kubevirt.io/enable"
+	DisableOperandDeletionAnnotation = "console.openshift.io/disable-operand-delete"
 
 	HCOAnnotationPrefix = "hco.kubevirt.io/"
 	NPLabelPrefix       = "np.kubevirt.io/"

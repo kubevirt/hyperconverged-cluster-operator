@@ -45,8 +45,8 @@ import (
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	hcov1beta1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1beta1"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/tools/manifests"
 	"github.com/kubevirt/hyperconverged-cluster-operator/tools/util"
 )
 
@@ -265,31 +265,31 @@ func getHcoCsv() {
 }
 
 // getInstallStrategyBase returns the basics of an HCO InstallStrategy
-func getInstallStrategyBase(params *components.DeploymentOperatorParams) *csvv1alpha1.StrategyDetailsDeployment {
+func getInstallStrategyBase(params *manifests.DeploymentOperatorParams) *csvv1alpha1.StrategyDetailsDeployment {
 	return &csvv1alpha1.StrategyDetailsDeployment{
 
 		DeploymentSpecs: []csvv1alpha1.StrategyDeploymentSpec{
 			{
 				Name:  hcoDeploymentName,
-				Spec:  components.GetDeploymentSpecOperator(params),
-				Label: components.GetLabels(hcoutil.HCOOperatorName, params.HcoKvIoVersion),
+				Spec:  manifests.GetDeploymentSpecOperator(params),
+				Label: manifests.GetLabels(hcoutil.HCOOperatorName, params.HcoKvIoVersion),
 			},
 			{
 				Name:  hcoWhDeploymentName,
-				Spec:  components.GetDeploymentSpecWebhook(params),
-				Label: components.GetLabels(hcoutil.HCOWebhookName, params.HcoKvIoVersion),
+				Spec:  manifests.GetDeploymentSpecWebhook(params),
+				Label: manifests.GetLabels(hcoutil.HCOWebhookName, params.HcoKvIoVersion),
 			},
 			{
 				Name:  hcoutil.CLIDownloadsName,
-				Spec:  components.GetDeploymentSpecCliDownloads(params),
-				Label: components.GetLabels(hcoutil.CLIDownloadsName, params.HcoKvIoVersion),
+				Spec:  manifests.GetDeploymentSpecCliDownloads(params),
+				Label: manifests.GetLabels(hcoutil.CLIDownloadsName, params.HcoKvIoVersion),
 			},
 		},
 		Permissions: []csvv1alpha1.StrategyDeploymentPermissions{},
 		ClusterPermissions: []csvv1alpha1.StrategyDeploymentPermissions{
 			{
 				ServiceAccountName: hcoutil.HCOOperatorName,
-				Rules:              components.GetClusterPermissions(),
+				Rules:              manifests.GetClusterPermissions(),
 			},
 			{
 				ServiceAccountName: hcoutil.CLIDownloadsName,
@@ -393,16 +393,16 @@ func getCSVBase(params *csvBaseParams) *csvv1alpha1.ClusterServiceVersion {
 			Name:      fmt.Sprintf("%v.v%v", params.Name, params.Version.String()),
 			Namespace: params.Namespace,
 			Annotations: map[string]string{
-				"alm-examples":   string(almExamples),
-				"capabilities":   "Deep Insights",
-				"certified":      "false",
-				"categories":     "OpenShift Optional",
-				"containerImage": params.Image,
-				components.DisableOperandDeletionAnnotation: "true",
-				"createdAt":   time.Now().Format("2006-01-02 15:04:05"),
-				"description": params.MetaDescription,
-				"repository":  "https://github.com/kubevirt/hyperconverged-cluster-operator",
-				"support":     "false",
+				"alm-examples":                           string(almExamples),
+				"capabilities":                           "Deep Insights",
+				"certified":                              "false",
+				"categories":                             "OpenShift Optional",
+				"containerImage":                         params.Image,
+				hcoutil.DisableOperandDeletionAnnotation: "true",
+				"createdAt":                              time.Now().Format("2006-01-02 15:04:05"),
+				"description":                            params.MetaDescription,
+				"repository":                             "https://github.com/kubevirt/hyperconverged-cluster-operator",
+				"support":                                "false",
 				"operatorframework.io/suggested-namespace":         params.Namespace,
 				"operatorframework.io/initialization-resource":     string(almExamples),
 				"operators.openshift.io/infrastructure-features":   `["disconnected","proxy-aware"]`, // TODO: deprecated, remove once all the tools support "features.operators.openshift.io/*"
@@ -766,8 +766,8 @@ func getCsvBaseParams(version semver.Version) *csvBaseParams {
 	}
 }
 
-func getDeploymentParams() *components.DeploymentOperatorParams {
-	return &components.DeploymentOperatorParams{
+func getDeploymentParams() *manifests.DeploymentOperatorParams {
+	return &manifests.DeploymentOperatorParams{
 		Namespace:                     *namespace,
 		Image:                         *operatorImage,
 		WebhookImage:                  *webhookImage,
