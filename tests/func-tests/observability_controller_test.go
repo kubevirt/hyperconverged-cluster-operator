@@ -2,151 +2,116 @@ package tests_test
 
 import (
 	"context"
-	"crypto/tls"
-	"fmt"
-	"net/http"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	routev1 "github.com/openshift/api/route/v1"
-
-	authenticationv1 "k8s.io/api/authentication/v1"
-	v1 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/observability"
-	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/alertmanager"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
-const testName = "observability_controller"
+const (
+	observabilityControllerName       = "virt-observability-controller"
+	observabilityControllerCRBName    = "virt-observability-controller-rolebinding"
+	observabilityControllerFGName     = "deployObservabilityController"
+)
 
-var _ = Describe("Observability Controller", Label(tests.OpenshiftLabel, testName), func() {
-	var (
-		cli             client.Client
-		cliConfig       *rest.Config
-		httpClient      http.Client
-		alertmanagerURL string
-	)
+var _ = Describe("Observability Controller", Label("observability-controller"), Serial, Ordered, func() {
+	tests.FlagParse()
 
-	BeforeEach(func(ctx context.Context) {
+	var cli client.Client
+
+	BeforeAll(func(ctx context.Context) {
 		cli = tests.GetControllerRuntimeClient()
-		cliConfig = tests.GetClientConfig()
-		tests.FailIfNotOpenShift(ctx, cli, testName)
-
-		httpClient = http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}}
-
-		routeHost, err := getAlertmanagerRouteHost(ctx, cli)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(routeHost).ToNot(BeEmpty())
-		alertmanagerURL = fmt.Sprintf("https://%s", routeHost)
-
-		// Ensure we have a valid bearer token for authentication
-		if cliConfig.BearerToken == "" {
-			token, err := getServiceAccountToken(ctx)
-			Expect(err).ToNot(HaveOccurred())
-			cliConfig.BearerToken = token
-		}
 	})
 
-	AfterEach(func(ctx context.Context) {
-		tests.WaitForHCOOperatorRollout(ctx)
+	AfterAll(func(ctx context.Context) {
+		tests.RestoreDefaultFeatureGates(ctx, cli)
 	})
 
-	Context("PodDisruptionBudgetAtLimit", func() {
-		It("should be silenced", func(ctx context.Context) {
-			amAPI := alertmanager.NewAPI(httpClient, alertmanagerURL, cliConfig.BearerToken)
+	When("deployObservabilityController feature gate is enabled", func() {
+		It("should deploy observability controller resources", func(ctx context.Context) {
+			By("enabling the deployObservabilityController feature gate")
+			Expect(tests.EnableFG(ctx, cli, observabilityControllerFGName)).To(Succeed())
 
-			By("Verifying the PodDisruptionBudgetAtLimit silence exists")
-			amSilences, err := amAPI.ListSilences()
-			Expect(err).ToNot(HaveOccurred())
+			By("checking the ServiceAccount is created")
+			Eventually(func(ctx context.Context) error {
+				sa := &corev1.ServiceAccount{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      observabilityControllerName,
+						Namespace: tests.InstallNamespace,
+					},
+				}
+				return cli.Get(ctx, client.ObjectKeyFromObject(sa), sa)
+			}).WithTimeout(2 * time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
 
-			podDisruptionBudgetAtLimitSilence := observability.FindPodDisruptionBudgetAtLimitSilence(amSilences)
-			Expect(podDisruptionBudgetAtLimitSilence).ToNot(BeNil())
+			By("checking the ClusterRole is created")
+			Eventually(func(ctx context.Context) error {
+				cr := &rbacv1.ClusterRole{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: observabilityControllerName,
+					},
+				}
+				return cli.Get(ctx, client.ObjectKeyFromObject(cr), cr)
+			}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
 
-			By("Deleting the silence and waiting for it to be removed")
-			err = amAPI.DeleteSilence(podDisruptionBudgetAtLimitSilence.ID)
-			Expect(err).ToNot(HaveOccurred())
+			By("checking the ClusterRoleBinding is created")
+			Eventually(func(ctx context.Context) error {
+				crb := &rbacv1.ClusterRoleBinding{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: observabilityControllerCRBName,
+					},
+				}
+				return cli.Get(ctx, client.ObjectKeyFromObject(crb), crb)
+			}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
 
-			Eventually(func(g Gomega) {
-				amSilences, err := amAPI.ListSilences()
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(observability.FindPodDisruptionBudgetAtLimitSilence(amSilences)).To(BeNil())
-			}).WithTimeout(30 * time.Second).WithPolling(time.Second).Should(Succeed())
+			By("checking the Deployment is created")
+			Eventually(func(ctx context.Context) error {
+				dep := &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      observabilityControllerName,
+						Namespace: tests.InstallNamespace,
+					},
+				}
+				return cli.Get(ctx, client.ObjectKeyFromObject(dep), dep)
+			}).WithTimeout(2 * time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+		})
+	})
 
-			By("Restarting the HCO operator pods to force reconciliation")
-			var hcoPods v1.PodList
-			err = cli.List(ctx, &hcoPods, &client.MatchingLabels{
-				"name": "hyperconverged-cluster-operator",
-			})
-			Expect(err).ToNot(HaveOccurred())
-			Expect(hcoPods.Items).ToNot(BeEmpty())
+	When("deployObservabilityController feature gate is disabled", func() {
+		It("should remove observability controller resources", func(ctx context.Context) {
+			By("disabling the deployObservabilityController feature gate")
+			tests.RestoreDefaultFeatureGates(ctx, cli)
 
-			for _, pod := range hcoPods.Items {
-				err = cli.Delete(ctx, &pod)
-				Expect(err).ToNot(HaveOccurred())
-			}
+			By("checking the Deployment is removed")
+			Eventually(func(ctx context.Context) error {
+				dep := &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      observabilityControllerName,
+						Namespace: tests.InstallNamespace,
+					},
+				}
+				return cli.Get(ctx, client.ObjectKeyFromObject(dep), dep)
+			}).WithTimeout(2 * time.Minute).WithPolling(time.Second).WithContext(ctx).Should(
+				MatchError(ContainSubstring("not found")),
+			)
 
-			By("Waiting for the HCO operator to roll out")
-			tests.WaitForHCOOperatorRollout(ctx)
-
-			By("Waiting for the controller to recreate the silence")
-			Eventually(func(g Gomega) {
-				amSilences, err := amAPI.ListSilences()
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(observability.FindPodDisruptionBudgetAtLimitSilence(amSilences)).ToNot(BeNil())
-			}).WithTimeout(5 * time.Minute).WithPolling(10 * time.Second).Should(Succeed())
+			By("checking the ClusterRole is removed")
+			Eventually(func(ctx context.Context) error {
+				cr := &rbacv1.ClusterRole{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: observabilityControllerName,
+					},
+				}
+				return cli.Get(ctx, client.ObjectKeyFromObject(cr), cr)
+			}).WithTimeout(time.Minute).WithPolling(time.Second).WithContext(ctx).Should(
+				MatchError(ContainSubstring("not found")),
+			)
 		})
 	})
 })
-
-func getAlertmanagerRouteHost(ctx context.Context, cli client.Client) (string, error) {
-	route := &routev1.Route{}
-	err := cli.Get(ctx, types.NamespacedName{
-		Name:      "alertmanager-main",
-		Namespace: "openshift-monitoring",
-	}, route)
-	if err != nil {
-		return "", err
-	}
-
-	if len(route.Status.Ingress) > 0 {
-		return route.Status.Ingress[0].Host, nil
-	}
-
-	return "", fmt.Errorf("route has no ingress status")
-}
-
-// getServiceAccountToken uses the prometheus-k8s service account from openshift-monitoring
-// to get a token that can be used to access the Alertmanager API
-// This follows the same pattern as the monitoring_test.go
-func getServiceAccountToken(ctx context.Context) (string, error) {
-	k8sClientSet := tests.GetK8sClientSet()
-
-	treq, err := k8sClientSet.CoreV1().ServiceAccounts("openshift-monitoring").CreateToken(
-		ctx,
-		"prometheus-k8s",
-		&authenticationv1.TokenRequest{
-			Spec: authenticationv1.TokenRequestSpec{
-				// Avoid specifying any audiences so that the token will be
-				// issued for the default audience of the issuer.
-			},
-		},
-		metav1.CreateOptions{},
-	)
-	if err != nil {
-		return "", fmt.Errorf("failed to create token: %w", err)
-	}
-
-	if treq.Status.Token == "" {
-		return "", fmt.Errorf("received empty token from TokenRequest")
-	}
-
-	return treq.Status.Token, nil
-}

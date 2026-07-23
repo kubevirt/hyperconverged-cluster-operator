@@ -39,6 +39,7 @@ type DeploymentOperatorParams struct {
 	WaspAgentImage                string
 	AIEWebhookImage               string
 	IOMMUFDDevicePluginImage      string
+	ObservabilityControllerImage  string
 	ImagePullPolicy               string
 	ConversionContainer           string
 	VmwareContainer               string
@@ -234,6 +235,10 @@ func buildOperatorEnvVars(params *DeploymentOperatorParams) []corev1.EnvVar {
 		{
 			Name:  util.IOMMUFDDevicePluginImageEnvV,
 			Value: params.IOMMUFDDevicePluginImage,
+		},
+		{
+			Name:  util.ObservabilityControllerImageEnvV,
+			Value: params.ObservabilityControllerImage,
 		},
 	}, params.Env...)
 
@@ -492,6 +497,26 @@ func GetClusterPermissions() []rbacv1.PolicyRule {
 			APIGroups: stringListToSlice(kvapi.GroupName),
 			Resources: stringListToSlice("virtualmachineinstances"),
 			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
+		{
+			APIGroups: stringListToSlice(kvapi.GroupName),
+			Resources: stringListToSlice("virtualmachines", "virtualmachineinstancemigrations"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
+		{
+			APIGroups: stringListToSlice("instancetype.kubevirt.io"),
+			Resources: stringListToSlice("virtualmachineinstancetypes", "virtualmachineclusterinstancetypes", "virtualmachinepreferences", "virtualmachineclusterpreferences"),
+			Verbs:     stringListToSlice("get", "list", "watch"),
+		},
+		{
+			APIGroups: stringListToSlice("authentication.k8s.io"),
+			Resources: stringListToSlice("tokenreviews"),
+			Verbs:     stringListToSlice("create"),
+		},
+		{
+			APIGroups: stringListToSlice("authorization.k8s.io"),
+			Resources: stringListToSlice("subjectaccessreviews"),
+			Verbs:     stringListToSlice("create"),
 		},
 		roleWithAllPermissions(cdiapi.GroupName, stringListToSlice("cdis", "cdis/finalizers")),
 		roleWithAllPermissions(sspapi.GroupVersion.Group, stringListToSlice("ssps", "ssps/finalizers")),

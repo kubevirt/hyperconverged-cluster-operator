@@ -100,6 +100,12 @@ type HyperConvergedSpec struct {
 	//   Deploy KubeSecondaryDNS by CNAO
 	//   Phase: alpha
 	//
+	// * deployObservabilityController:
+	//   Deploy the virt-observability-controller component. When enabled, the
+	//   controller exposes KubeVirt metrics and manages PrometheusRule resources
+	//   independently from the KubeVirt control plane.
+	//   Phase: alpha
+	//
 	// * downwardMetrics:
 	//   Allow to expose a limited set of host metrics to guests.
 	//   Phase: alpha

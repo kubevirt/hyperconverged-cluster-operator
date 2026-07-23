@@ -233,6 +233,44 @@ See more details [below](#golden-images-in-heterogeneous-clusters).
 
 **Graduation Status**: Alpha
 
+### deployObservabilityController Feature Gate
+Add the `deployObservabilityController` feature gate to deploy the
+`virt-observability-controller` as a standalone operand managed by HCO. The
+controller is responsible for managing KubeVirt core PrometheusRules and
+exposing KubeVirt-specific metrics.
+
+When enabled, HCO creates a ServiceAccount, ClusterRole, ClusterRoleBinding,
+and Deployment for the observability controller in the HCO namespace. The
+controller's TLS configuration (minimum TLS version and cipher suites) is
+inherited from the `spec.security.tlsSecurityProfile` setting.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: deployObservabilityController
+```
+
+To disable the controller after it has been enabled, set the feature gate
+state to `Disabled`. HCO will remove all resources associated with the
+observability controller:
+
+```yaml
+spec:
+  featureGates:
+  - name: deployObservabilityController
+    state: Disabled
+```
+
+**Note**: This feature is in Developer Preview.
+
+**Default**: `Disabled`
+
+**Graduation Status**: Alpha
+
 ### The hco.kubevirt.io/deployPasstNetworkBinding annotation
 Set the `hco.kubevirt.io/deployPasstNetworkBinding` HyperConverged CR annotation to `true` so users can bind their VM using the core Passt Network binding.
 
