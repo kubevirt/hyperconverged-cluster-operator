@@ -32,6 +32,14 @@ jobs:
         with:
           go-version-file: go.mod # The Go version to download (if necessary) and use.
 
+      - name: update KV feature gates file
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.HCO_BOT_TOKEN }}
+        run: |
+          KV_VERSION=$(grep "KUBEVIRT_VERSION=" hack/config | sed -E 's|^KUBEVIRT_VERSION="(.*)"$|\1|')
+          gh release download "${KV_VERSION}" -R kubevirt/kubevirt -O pkg/internal/kvfeaturegates/kv-beta-feature-gates.json --pattern=feature-gates.json --clobber
+
       - name: Do sanity checks
         run: make sanity
 

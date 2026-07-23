@@ -53,6 +53,7 @@ jobs:
         env:
           UPDATED_COMPONENT: ${{ github.event.inputs.component }}
           UPDATED_VERSION: ${{ github.event.inputs.version }}
+          GH_TOKEN: ${{ secrets.HCO_BOT_TOKEN }}
         run: |
           curl -s https://raw.githubusercontent.com/kubevirt/hyperconverged-cluster-operator/main/automation/release-bumper/release-bumper.sh | bash
           

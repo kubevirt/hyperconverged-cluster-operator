@@ -52,7 +52,8 @@ git clone https://github.com/kubevirt/kubevirt.git
 (
   cd kubevirt
   git checkout "${latest_kubevirt_commit}"
- )
+  go run ./tools/feature-gate-report > ../pkg/internal/kvfeaturegates/kv-beta-feature-gates.json
+)
 
 # Get latest CDI
 git clone https://github.com/kubevirt/containerized-data-importer.git cdi
