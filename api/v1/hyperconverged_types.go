@@ -125,19 +125,16 @@ type HyperConvergedSpec struct {
 	//   This feature is in Developer Preview.
 	//   Phase: alpha
 	//
-	// * persistentReservation:
-	//   Enable persistent reservation of a LUN through the SCSI Persistent Reserve
-	//   commands on Kubevirt. In order to issue privileged SCSI ioctls, the VM
-	//   requires activation of the persistent reservation flag. Once this feature
-	//   gate is enabled, then the additional container with the qemu-pr-helper is
-	//   deployed inside the virt-handler pod. Enabling (or removing) the feature
-	//   gate causes the redeployment of the virt-handler pod.
-	//   Phase: alpha
-	//
 	// * disableMDevConfiguration:
 	//   Deprecated: use spec.virtualization.mediatedDevicesConfiguration.enabled
 	//   instead. This feature gate is deprecated and will be removed in a future
 	//   release.
+	//   Phase: deprecated
+	//
+	// * persistentReservation:
+	//   This feature gate has graduated to a dedicated configuration field. Use
+	//   spec.storage.persistentReservationConfiguration.enabled instead. This
+	//   feature gate is deprecated and will be removed in a future release.
 	//   Phase: deprecated
 	//
 	// +optional
@@ -318,6 +315,22 @@ type StorageConfig struct {
 	// resource
 	// +optional
 	WorkloadResourceRequirements *corev1.ResourceRequirements `json:"workloadResourceRequirements,omitempty"`
+
+	// PersistentReservationConfiguration controls the deployment of additional resources
+	// required for using SCSI persistent reservation in VMs
+	// +optional
+	// +k8s:conversion-gen=false
+	PersistentReservationConfiguration *PersistentReservationConfiguration `json:"persistentReservationConfiguration,omitempty"`
+}
+
+// PersistentReservationConfiguration holds the configuration for SCSI persistent reservation support
+// +k8s:openapi-gen=true
+type PersistentReservationConfiguration struct {
+	// Enabled controls the deployment of additional resources like the pr-helper container
+	// for enabling the use of the SCSI persistent reservation in VMs, defaults to false.
+	// +optional
+	// +k8s:conversion-gen=false
+	Enabled *bool `json:"enabled,omitempty"`
 }
 
 // NetworkingConfig contains all the networking configurations

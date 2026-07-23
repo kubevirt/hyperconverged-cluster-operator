@@ -106,29 +106,15 @@ For additional information, see here: [KubeSecondaryDNS](https://github.com/kube
 
 **Default**: `Disabled`
 
-### persistentReservation Feature Gate
-Add the `persistentReservation` feature gate in order to enable the reservation of a LUN through the SCSI Persistent Reserve commands.
+### persistentReservation Feature Gate (deprecated)
 
-SCSI protocol offers dedicated commands in order to reserve and control access to the LUNs. This can be used to prevent data corruption if the disk is shared by multiple VMs (or more in general processes).
-The SCSI persistent reservation is handled by the qemu-pr-helper. The pr-helper is a privileged daemon that can be either started by libvirt directly or managed externally.
-In case of KubeVirt, the qemu-pr-helper needs to be started externally because it requires high privileges in order to perform the persistent SCSI reservation. Afterward, the pr-helper socket is accessed by the unprivileged virt-launcher pod for enabling the SCSI persistent reservation.
-Once the feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod.
-
-VMI example:
-```yaml
-    devices:
-      disks:
-      - name: mypvcdisk
-        lun:
-          reservations: true
-```
-**Note**: An important aspect of this feature is that the SCSI persistent reservation doesn't support migration. Even if you apply the reservation to an RWX PVC provisioning SCSI devices, the restriction is due to the reservation done by the initiator on the node. The VM could be migrated but not the reservation.
-
-**Note**: this feature is in Developer Preview.
+The `persistentReservation` feature gate is deprecated. Use
+`spec.storage.persistentReservationConfiguration.enabled` instead. See
+[SCSI Persistent Reservation](#scsi-persistent-reservation) for details.
 
 **Default**: `Disabled`
 
-**Graduation Status**: Alpha
+**Graduation Status**: Deprecated
 
 ### alignCPUs Feature Gate
 Add the `alignCPUs` feature gate to enable KubeVirt
@@ -1147,6 +1133,33 @@ spec:
       - "private-registry-example-1:5000"
       - "private-registry-example-2:5000"
 ```
+
+### SCSI Persistent Reservation
+
+The `spec.storage.persistentReservationConfiguration.enabled` field enables the reservation of a LUN through the
+SCSI Persistent Reserve commands. This can be used to prevent data corruption if the disk is shared by multiple VMs.
+
+The SCSI persistent reservation is handled by the qemu-pr-helper. When enabled, an additional container with the
+qemu-pr-helper is deployed inside the virt-handler pod. Enabling or disabling this causes the redeployment of the
+virt-handler pod.
+
+#### Example: enabling SCSI persistent reservation
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  storage:
+    persistentReservationConfiguration:
+      enabled: true
+```
+
+**Migration from `persistentReservation` feature gate:** The deprecated `persistentReservation` feature gate is
+replaced by `spec.storage.persistentReservationConfiguration.enabled`. If you previously used the feature gate,
+set `enabled: true` to preserve the same behavior. When both are set, `enabled` takes precedence over the
+deprecated feature gate.
 
 ## Security Configurations
 The `spec.security` field contains all the configurations for security.

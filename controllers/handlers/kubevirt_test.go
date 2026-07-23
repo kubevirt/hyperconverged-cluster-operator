@@ -1985,7 +1985,6 @@ Version: 1.2.3`)
 							HaveLen(basicNumFgOnOpenshift),
 							ContainElements(hardCodeKvFgs),
 							ContainElement(kvHypervStrictCheck),
-							Not(ContainElement(kvPersistentReservation)),
 							Not(ContainElement(kvDownwardMetrics)),
 							ContainElement(kvDecentralizedLiveMigration),
 							Not(ContainElement(kvAlignCPUs)),
@@ -1998,23 +1997,6 @@ Version: 1.2.3`)
 						func(kv *kubevirtcorev1.KubeVirt) {
 							Expect(kv.Annotations).ToNot(HaveKey(kubevirtcorev1.EmulatorThreadCompleteToEvenParity))
 						},
-					),
-					// PersistentReservation
-					Entry("should add the PersistentReservation feature gate if PersistentReservation is true in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "persistentReservation", State: ptr.To(featuregates.Enabled)},
-							}
-						},
-						ContainElement(kvPersistentReservation),
-					),
-					Entry("should not add the PersistentReservation feature gate if PersistentReservation is false in HyperConverged CR",
-						func(hc *hcov1.HyperConverged) {
-							hc.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-								{Name: "persistentReservation", State: ptr.To(featuregates.Disabled)},
-							}
-						},
-						Not(ContainElement(kvPersistentReservation)),
 					),
 					// DownwardMetrics
 					Entry("should add the DownwardMetrics feature gate if DownwardMetrics is true in HyperConverged CR",
@@ -2203,7 +2185,6 @@ Version: 1.2.3`)
 
 					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
 						{Name: "downwardMetrics", State: ptr.To(featuregates.Enabled)},
-						{Name: "persistentReservation", State: ptr.To(featuregates.Enabled)},
 					}
 
 					cl := commontestutils.InitClient([]client.Object{hco, existingResource})
@@ -2224,7 +2205,7 @@ Version: 1.2.3`)
 					By("KV CR should contain the HC enabled managed feature gates", func() {
 						Expect(foundResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
 						Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).
-							To(ContainElements(kvDownwardMetrics, kvPersistentReservation))
+							To(ContainElement(kvDownwardMetrics))
 					})
 				})
 
@@ -2290,50 +2271,14 @@ Version: 1.2.3`)
 					Expect(fgList).To(ContainElement(kvHypervStrictCheck))
 				})
 
-				It("should keep FG if already exist", func() {
-					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(true)
-
-					// Set up HCO with PersistentReservation enabled first
-					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-						{Name: "persistentReservation", State: ptr.To(featuregates.Enabled)},
-					}
-
-					// Get the expected featuregates for this configuration
-					fgs := getKvFeatureGateList(hco)
+				It("should set PersistentReservationConfiguration when enabled via new field", func() {
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
-					existingResource.Spec.Configuration.DeveloperConfiguration.FeatureGates = fgs
 
-					cl := commontestutils.InitClient([]client.Object{hco, existingResource})
-					handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
-					res := handler.Ensure(req)
-					Expect(res.UpgradeDone).To(BeFalse())
-					Expect(res.Updated).To(BeFalse())
-					Expect(res.Overwritten).To(BeFalse())
-					Expect(res.Err).ToNot(HaveOccurred())
-
-					foundResource := &kubevirtcorev1.KubeVirt{}
-					Expect(
-						cl.Get(context.TODO(),
-							types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
-							foundResource),
-					).ToNot(HaveOccurred())
-
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).NotTo(BeNil())
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).
-						To(ContainElements(kvPersistentReservation))
-				})
-
-				It("should remove FG if it disabled in HC CR", func() {
-					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
-					existingResource, err := NewKubeVirt(hco)
-					Expect(err).ToNot(HaveOccurred())
-					existingResource.Spec.Configuration.DeveloperConfiguration = &kubevirtcorev1.DeveloperConfiguration{
-						FeatureGates: []string{kvPersistentReservation},
-					}
-
-					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
-						{Name: "persistentReservation", State: ptr.To(featuregates.Disabled)},
+					hco.Spec.Storage = &hcov1.StorageConfig{
+						PersistentReservationConfiguration: &hcov1.PersistentReservationConfiguration{
+							Enabled: ptr.To(true),
+						},
 					}
 
 					cl := commontestutils.InitClient([]client.Object{hco, existingResource})
@@ -2351,27 +2296,46 @@ Version: 1.2.3`)
 							foundResource),
 					).ToNot(HaveOccurred())
 
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvHypervStrictCheck))
+					Expect(foundResource.Spec.Configuration.PersistentReservationConfiguration).ToNot(BeNil())
+					Expect(foundResource.Spec.Configuration.PersistentReservationConfiguration.Enabled).To(HaveValue(BeTrue()))
 				})
 
-				It("should remove FG if it missing from the HC CR", func() {
-					mandatoryKvFeatureGates = getMandatoryKvFeatureGates(false)
+				It("should set PersistentReservationConfiguration via FG fallback", func() {
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
-					existingResource.Spec.Configuration.DeveloperConfiguration = &kubevirtcorev1.DeveloperConfiguration{
-						FeatureGates: []string{kvPersistentReservation},
+
+					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{
+						{Name: "persistentReservation", State: ptr.To(featuregates.Enabled)},
 					}
+
+					cl := commontestutils.InitClient([]client.Object{hco, existingResource})
+					handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
+					res := handler.Ensure(req)
+					Expect(res.UpgradeDone).To(BeFalse())
+					Expect(res.Updated).To(BeTrue())
+					Expect(res.Overwritten).To(BeFalse())
+					Expect(res.Err).ToNot(HaveOccurred())
+
+					foundResource := &kubevirtcorev1.KubeVirt{}
+					Expect(
+						cl.Get(context.TODO(),
+							types.NamespacedName{Name: existingResource.Name, Namespace: existingResource.Namespace},
+							foundResource),
+					).ToNot(HaveOccurred())
+
+					Expect(foundResource.Spec.Configuration.PersistentReservationConfiguration).ToNot(BeNil())
+					Expect(foundResource.Spec.Configuration.PersistentReservationConfiguration.Enabled).To(HaveValue(BeTrue()))
+				})
+
+				It("should not set PersistentReservationConfiguration when not configured", func() {
+					existingResource, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
 
 					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{}
 
 					cl := commontestutils.InitClient([]client.Object{hco, existingResource})
 					handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
 					res := handler.Ensure(req)
-					Expect(res.UpgradeDone).To(BeFalse())
-					Expect(res.Updated).To(BeTrue())
-					Expect(res.Overwritten).To(BeFalse())
 					Expect(res.Err).ToNot(HaveOccurred())
 
 					foundResource := &kubevirtcorev1.KubeVirt{}
@@ -2381,9 +2345,7 @@ Version: 1.2.3`)
 							foundResource),
 					).ToNot(HaveOccurred())
 
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration).ToNot(BeNil())
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElements(hardCodeKvFgs))
-					Expect(foundResource.Spec.Configuration.DeveloperConfiguration.FeatureGates).To(ContainElement(kvHypervStrictCheck))
+					Expect(foundResource.Spec.Configuration.PersistentReservationConfiguration).To(BeNil())
 				})
 
 				It("should remove FG if it the HC CR does not contain the featureGates field", func() {
@@ -2391,7 +2353,7 @@ Version: 1.2.3`)
 					existingResource, err := NewKubeVirt(hco)
 					Expect(err).ToNot(HaveOccurred())
 					existingResource.Spec.Configuration.DeveloperConfiguration = &kubevirtcorev1.DeveloperConfiguration{
-						FeatureGates: []string{kvPersistentReservation},
+						FeatureGates: []string{},
 					}
 
 					hco.Spec.FeatureGates = featuregates.HyperConvergedFeatureGates{}

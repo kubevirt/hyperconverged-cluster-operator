@@ -50,13 +50,13 @@
     "description": "ObjectGraph enables the ObjectGraph VM and VMI subresource in KubeVirt. This subresource returns a structured list of k8s objects that are related to the specified VM or VMI, enabling better dependency tracking. Note: This feature is in Developer Preview."
   },
   {
-    "name": "persistentReservation",
-    "phase": "alpha",
-    "description": "Enable persistent reservation of a LUN through the SCSI Persistent Reserve commands on Kubevirt. In order to issue privileged SCSI ioctls, the VM requires activation of the persistent reservation flag. Once this feature gate is enabled, then the additional container with the qemu-pr-helper is deployed inside the virt-handler pod. Enabling (or removing) the feature gate causes the redeployment of the virt-handler pod."
-  },
-  {
     "name": "disableMDevConfiguration",
     "phase": "deprecated",
     "description": "Deprecated: use spec.virtualization.mediatedDevicesConfiguration.enabled instead. This feature gate is deprecated and will be removed in a future release."
+  },
+  {
+    "name": "persistentReservation",
+    "phase": "deprecated",
+    "description": "This feature gate has graduated to a dedicated configuration field. Use spec.storage.persistentReservationConfiguration.enabled instead. This feature gate is deprecated and will be removed in a future release."
   }
 ]

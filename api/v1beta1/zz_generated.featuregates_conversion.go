@@ -186,25 +186,9 @@ func convert_v1beta1_FeatureGates_To_v1(in *HyperConvergedFeatureGates, out *hco
 		}
 	}
 
-	// converting the PersistentReservation v1beta1 alpha feature gate to v1
-	v1Idx = out.Index("persistentReservation")
-	v1Found = v1Idx >= 0
-	if in.PersistentReservation == nil {
-		if v1Found {
-			*out = slices.Delete(*out, v1Idx, v1Idx+1)
-		}
-	} else {
-		v1Enabled = v1Found && ((*out)[v1Idx].State == nil || *((*out)[v1Idx].State) == "Enabled")
-		if (!v1Found && *in.PersistentReservation) || (v1Found && v1Enabled != *in.PersistentReservation) {
-			if *in.PersistentReservation {
-				out.Enable("persistentReservation")
-			} else {
-				out.Disable("persistentReservation")
-			}
-		}
-	}
-
 	// the DisableMDevConfiguration feature gate is deprecated and should have a custom conversion logic in api/v1beta1/conversion.go
+
+	// the PersistentReservation feature gate is deprecated and should have a custom conversion logic in api/v1beta1/conversion.go
 }
 
 func convert_v1_FeatureGates_To_v1beta1(in hcofg.HyperConvergedFeatureGates, out *HyperConvergedFeatureGates) {
@@ -235,8 +219,7 @@ func convert_v1_FeatureGates_To_v1beta1(in hcofg.HyperConvergedFeatureGates, out
 	// converting the objectGraph v1 alpha feature gate to v1beta1
 	out.ObjectGraph = new(in.IsEnabled("objectGraph"))
 
-	// converting the persistentReservation v1 alpha feature gate to v1beta1
-	out.PersistentReservation = new(in.IsEnabled("persistentReservation"))
-
 	// the disableMDevConfiguration feature gate is deprecated and should have a custom conversion logic in api/v1beta1/conversion.go
+
+	// the persistentReservation feature gate is deprecated and should have a custom conversion logic in api/v1beta1/conversion.go
 }
