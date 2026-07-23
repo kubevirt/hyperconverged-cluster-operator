@@ -1,9 +1,8 @@
 package netresinjector
 
 import (
-	"k8s.io/utils/ptr"
-
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
+	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/common"
 )
 
 const (
@@ -17,7 +16,6 @@ const (
 	webhookConfigName  = "virt-network-resources-injector-config"
 )
 
-// shouldDeploy checks if network-resources-injector should be deployed
 func shouldDeploy(hc *hcov1.HyperConverged) bool {
-	return ptr.Deref(hc.Spec.Deployment.DeployNetworkResourcesInjector, false)
+	return common.ShouldDeployNetworkResourcesInjector(hc)
 }
