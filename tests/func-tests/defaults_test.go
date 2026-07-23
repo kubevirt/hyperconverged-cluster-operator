@@ -103,9 +103,9 @@ var _ = Describe("Check Default values", Label("defaults"), Serial, func() {
 		defaultLiveMigrationConfig := hcov1.LiveMigrationConfigurations{
 			AllowAutoConverge:                 new(false),
 			AllowPostCopy:                     new(false),
-			CompletionTimeoutPerGiB:           new(int64(150)),
+			CompletionTimeoutPerGiB:           new(int64(20)),
 			ParallelMigrationsPerCluster:      new(uint32(5)),
-			ParallelOutboundMigrationsPerNode: new(uint32(2)),
+			ParallelOutboundMigrationsPerNode: new(uint32(1)),
 			ProgressTimeout:                   new(int64(150)),
 		}
 

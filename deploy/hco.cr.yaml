@@ -21,9 +21,9 @@ spec:
     liveMigrationConfig:
       allowAutoConverge: false
       allowPostCopy: false
-      completionTimeoutPerGiB: 150
+      completionTimeoutPerGiB: 20
       parallelMigrationsPerCluster: 5
-      parallelOutboundMigrationsPerNode: 2
+      parallelOutboundMigrationsPerNode: 1
       progressTimeout: 150
     virtualMachineOptions:
       disableFreePageReporting: false

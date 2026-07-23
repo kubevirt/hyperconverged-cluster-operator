@@ -142,7 +142,7 @@ type HyperConvergedSpec struct {
 	FeatureGates featuregates.HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 
 	// Virtualization contains all the configurations for virtualization
-	// +kubebuilder:default={"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10}
+	// +kubebuilder:default={"liveMigrationConfig": {"completionTimeoutPerGiB": 20, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 1, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10}
 	// +kubebuilder:validation:XValidation:rule="!has(self.vmiCPUAllocationRatio) || self.vmiCPUAllocationRatio > 0",message="vmiCPUAllocationRatio must be greater than 0"
 	// +k8s:conversion-gen=false
 	Virtualization VirtualizationConfig `json:"virtualization,omitempty"`
@@ -184,7 +184,7 @@ type VirtualizationConfig struct {
 
 	// Live migration limits and timeouts are applied so that migration processes do not
 	// overwhelm the cluster.
-	// +kubebuilder:default={"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}
+	// +kubebuilder:default={"completionTimeoutPerGiB": 20, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 1, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}
 	// +optional
 	LiveMigrationConfig LiveMigrationConfigurations `json:"liveMigrationConfig,omitempty"`
 
@@ -521,8 +521,8 @@ type LiveMigrationConfigurations struct {
 
 	// Maximum number of outbound migrations per node.
 	// +optional
-	// +kubebuilder:default=2
-	// +default=2
+	// +kubebuilder:default=1
+	// +default=1
 	ParallelOutboundMigrationsPerNode *uint32 `json:"parallelOutboundMigrationsPerNode,omitempty"`
 
 	// Bandwidth limit of each migration, the value is quantity of bytes per second (e.g. 2048Mi = 2048MiB/sec)
@@ -540,8 +540,8 @@ type LiveMigrationConfigurations struct {
 	// higher completionTimeoutPerGiB to let workload with spikes in its memory dirty
 	// rate to converge.
 	// The format is a number.
-	// +kubebuilder:default=150
-	// +default=150
+	// +kubebuilder:default=20
+	// +default=20
 	// +optional
 	CompletionTimeoutPerGiB *int64 `json:"completionTimeoutPerGiB,omitempty"`
 
@@ -955,7 +955,7 @@ type HyperConverged struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	// +kubebuilder:default={"security": {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10},"workloadSources":{"enableCommonBootImageImport":true}, "deployment": {"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "applicationAwareConfig": {"enable": false}}}
+	// +kubebuilder:default={"security": {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 20, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 1, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10},"workloadSources":{"enableCommonBootImageImport":true}, "deployment": {"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "applicationAwareConfig": {"enable": false}}}
 	// +optional
 	Spec   HyperConvergedSpec   `json:"spec,omitempty"`
 	Status HyperConvergedStatus `json:"status,omitempty"`
