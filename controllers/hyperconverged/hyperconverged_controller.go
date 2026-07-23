@@ -1,7 +1,6 @@
 package hyperconverged
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"io/fs"
@@ -31,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -56,10 +54,10 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/controllers/reqresolver"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/monitoring/hyperconverged/metrics"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/upgradepatch"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
-	"github.com/kubevirt/hyperconverged-cluster-operator/version"
 )
 
 var (
@@ -118,8 +116,6 @@ func RegisterReconciler(mgr manager.Manager,
 func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond hcoutil.Condition) reconcile.Reconciler {
 	reqresolver.GeneratePlaceHolders()
 
-	ownVersion := cmp.Or(os.Getenv(hcoutil.HcoKvIoVersionName), version.Version)
-
 	var pwdFS fs.FS
 	pwd, err := os.Getwd()
 	if err != nil {
@@ -133,7 +129,7 @@ func newReconciler(mgr manager.Manager, ci hcoutil.ClusterInfo, upgradeableCond 
 		scheme:               mgr.GetScheme(),
 		operandHandler:       operandhandler.NewOperandHandler(mgr.GetClient(), mgr.GetScheme(), ci, hcoutil.GetEventEmitter()),
 		upgradeMode:          false,
-		ownVersion:           ownVersion,
+		ownVersion:           ownresources.Version(),
 		eventEmitter:         hcoutil.GetEventEmitter(),
 		firstLoop:            true,
 		upgradeableCondition: upgradeableCond,
@@ -486,7 +482,7 @@ func updateStatus(req *common.HcoRequest) {
 			req.Logger.Info("infrastructure became not highly available")
 		}
 
-		req.Instance.Status.InfrastructureHighlyAvailable = ptr.To(infraHighlyAvailable)
+		req.Instance.Status.InfrastructureHighlyAvailable = new(infraHighlyAvailable)
 		req.StatusDirty = true
 	}
 

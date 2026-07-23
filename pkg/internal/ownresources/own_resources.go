@@ -1,6 +1,7 @@
 package ownresources
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -15,10 +16,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/reference"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
+	"github.com/kubevirt/hyperconverged-cluster-operator/version"
 )
 
 // OwnResources holds the running POd, Deployment and CSV, if exist
@@ -28,6 +29,8 @@ var (
 	csvRef        *corev1.ObjectReference
 
 	initOnce = &sync.Once{}
+
+	ownVersion = findOwnVersion()
 )
 
 // GetPod returns the running pod, or nil if not exists
@@ -58,6 +61,14 @@ func GetCSVRef() *corev1.ObjectReference {
 
 func Init(ctx context.Context, cl client.Reader, scheme *runtime.Scheme, logger logr.Logger) {
 	initOnce.Do(doInit(ctx, cl, scheme, logger))
+}
+
+func Version() string {
+	return ownVersion
+}
+
+func findOwnVersion() string {
+	return cmp.Or(os.Getenv(hcoutil.HcoKvIoVersionName), version.Version)
 }
 
 func doInit(ctx context.Context, cl client.Reader, scheme *runtime.Scheme, logger logr.Logger) func() {
@@ -213,7 +224,7 @@ func buildOwnerReference(ownerDeployment *appsv1.Deployment) *metav1.OwnerRefere
 		Kind:               "Deployment",
 		Name:               ownerDeployment.GetName(),
 		UID:                ownerDeployment.GetUID(),
-		BlockOwnerDeletion: ptr.To(false),
-		Controller:         ptr.To(false),
+		BlockOwnerDeletion: new(false),
+		Controller:         new(false),
 	}
 }
