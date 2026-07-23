@@ -24,7 +24,6 @@ import (
 const (
 	honorWaitForFirstConsumerGate = "HonorWaitForFirstConsumer"
 	dataVolumeClaimAdoptionGate   = "DataVolumeClaimAdoption"
-	webhookPvcRenderingGate       = "WebhookPvcRendering"
 
 	cdiConfigAuthorityAnnotation = "cdi.kubevirt.io/configAuthority"
 )
@@ -106,7 +105,7 @@ func (*cdiHooks) UpdateCR(req *common.HcoRequest, Client client.Client, exists r
 }
 
 func getDefaultFeatureGates() []string {
-	return []string{honorWaitForFirstConsumerGate, dataVolumeClaimAdoptionGate, webhookPvcRenderingGate}
+	return []string{honorWaitForFirstConsumerGate, dataVolumeClaimAdoptionGate}
 }
 
 func NewCDI(hc *hcov1.HyperConverged) (*cdiv1beta1.CDI, error) {
