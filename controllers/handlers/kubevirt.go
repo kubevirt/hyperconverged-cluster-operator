@@ -102,6 +102,9 @@ const (
 
 	// Enable the installation of the KubeVirt seccomp profile
 	kvKubevirtSeccompProfile = "KubevirtSeccompProfile"
+
+	// Enable migration compression support
+	kvMigrationCompression = "MigrationCompression"
 )
 
 // KubeVirt architecture dependant feature gates.
@@ -117,6 +120,7 @@ var (
 		kvSnapshotGate,
 		kvHostDevicesGate,
 		kvKubevirtSeccompProfile,
+		kvMigrationCompression,
 	}
 
 	// holds a list of mandatory KubeVirt feature gates. Some of them are the hard coded feature gates and some of
