@@ -50,6 +50,8 @@ function main {
     git add vendor/
   fi
 
+  update_kv_json_file
+
   echo INFO: Executing "build-manifests.sh"...
   make build-manifests
 }
@@ -139,8 +141,7 @@ function get_updated_versions {
       UPDATED_VERSION=$(get_latest_release "$UPDATED_COMPONENT")
     fi
     if [[ -v COMPONENTS_REPOS[${UPDATED_COMPONENT}] ]]; then
-      HTTP_CODE=$(curl "https://api.github.com/repos/${COMPONENTS_REPOS[$UPDATED_COMPONENT]}/releases/tags/${UPDATED_VERSION}" --write-out '%{http_code}' --silent --output /dev/null)
-      if [[ ${HTTP_CODE} == "200" ]]; then
+      if gh release view -R "${COMPONENTS_REPOS[$UPDATED_COMPONENT]}" "${UPDATED_VERSION}" --json=name &> /dev/null; then
         UPDATED_VERSIONS["${UPDATED_COMPONENT}"]="${UPDATED_VERSION}"
       else
         echo "ERROR: unknown version '${UPDATED_VERSION}' for component '${UPDATED_COMPONENT}'"
@@ -168,7 +169,7 @@ function get_latest_release() {
   major=$(echo $current_version | cut -d. -f1)
   minor=$(echo $current_version | cut -d. -f2)
 
-  RELEASES=$(curl -s -L "https://api.github.com/repos/$repo/releases" | jq -r '.[] | select(.tag_name | test("^v?[0-9].*")) | .tag_name')
+  RELEASES=$(gh release list -R "${repo}" --json=name --jq '.[] | select(.name | test("^v?[0-9].*"))|.name')
   releases=(${RELEASES})
 
   semversort "${releases[*]}"
@@ -232,28 +233,24 @@ function version_weight() {
 }
 
 function update_versions() {
-  PR=$(curl -s -L https://api.github.com/repos/kubevirt/hyperconverged-cluster-operator/pulls | jq "[.[] | {title: .title, ref: .base.ref}]" )
-
   for component in "${SHOULD_UPDATED[@]}"; do
     echo INFO: Checking update for "$component";
 
     # Check if pull request for that component and version already exists
-    search_pattern=$(echo "$component.*${UPDATED_VERSIONS[$component]}" | tr -d '"')
-
-    search_pr=$(jq "[.[] | select((.title | test(\"${search_pattern}\")) and (.ref == \"${TARGET_BRANCH}\"))] | length" <<< "$PR")
-
-    if [[ $search_pr -ne 0 ]] ; then
-      echo "INFO: An existing pull request for bumping $component to version ${UPDATED_VERSIONS[$component]} has been found. \
+    search_pattern="in:title \"Bump ${component} to ${UPDATED_VERSIONS[$component]}\""
+    PR=$(gh pr list -R kubevirt/hyperconverged-cluster-operator --search="${search_pattern}" --state=open -B "${TARGET_BRANCH}" --json=number --jq '.[0]|.number')
+    if [[ -n ${PR} ]]; then
+      echo "INFO: Existing pull request ${PR} for bumping $component to version ${UPDATED_VERSIONS[$component]} has been found. \
 Continuing to next component."
       continue
-    else
-      echo "INFO: Updating $component to ${UPDATED_VERSIONS[$component]}."
-      sed -E -i "s|(${component}_VERSION=).*|\1\"${UPDATED_VERSIONS[$component]}\"|" ${CONFIG_FILE}
-      echo "$component" > updated_component.txt
-      echo "${UPDATED_VERSIONS[$component]}" > updated_version.txt
-      UPDATING='true'
-      break
     fi
+
+    echo "INFO: Updating $component to ${UPDATED_VERSIONS[$component]}."
+    sed -E -i "s|(${component}_VERSION=).*|\1\"${UPDATED_VERSIONS[$component]}\"|" ${CONFIG_FILE}
+    echo "$component" > updated_component.txt
+    echo "${UPDATED_VERSIONS[$component]}" > updated_version.txt
+    UPDATING='true'
+    break
   done;
 
   if [ "${UPDATING}" != 'true' ]; then
@@ -276,6 +273,21 @@ function update_go_mod() {
     echo "No need to update go.mod for ${UPDATED_COMPONENT}"
   fi
 
+}
+
+function update_kv_json_file() {
+  if [[ "$(cat updated_component.txt)" != "KUBEVIRT" ]]; then
+    return
+  fi
+
+  local kv_version
+  kv_version="$(cat updated_version.txt)"
+
+  if gh release download "${kv_version}" -R kubevirt/kubevirt -O pkg/internal/kvfeaturegates/kv-beta-feature-gates.json --pattern=feature-gates.json --clobber; then
+    if ! git diff --quiet pkg/internal/kvfeaturegates/kv-beta-feature-gates.json; then
+      echo "KubeVirt feature gates file was updated in pkg/internal/kvfeaturegates/kv-beta-feature-gates.json"
+    fi
+  fi
 }
 
 main
