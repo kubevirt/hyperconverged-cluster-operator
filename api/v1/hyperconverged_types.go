@@ -142,7 +142,7 @@ type HyperConvergedSpec struct {
 	FeatureGates featuregates.HyperConvergedFeatureGates `json:"featureGates,omitempty"`
 
 	// Virtualization contains all the configurations for virtualization
-	// +kubebuilder:default={"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10}
+	// +kubebuilder:default={"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false, "allowWorkloadDisruption": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10}
 	// +kubebuilder:validation:XValidation:rule="!has(self.vmiCPUAllocationRatio) || self.vmiCPUAllocationRatio > 0",message="vmiCPUAllocationRatio must be greater than 0"
 	// +k8s:conversion-gen=false
 	Virtualization VirtualizationConfig `json:"virtualization,omitempty"`
@@ -184,7 +184,7 @@ type VirtualizationConfig struct {
 
 	// Live migration limits and timeouts are applied so that migration processes do not
 	// overwhelm the cluster.
-	// +kubebuilder:default={"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}
+	// +kubebuilder:default={"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false, "allowWorkloadDisruption": false}
 	// +optional
 	LiveMigrationConfig LiveMigrationConfigurations `json:"liveMigrationConfig,omitempty"`
 
@@ -574,6 +574,16 @@ type LiveMigrationConfigurations struct {
 	// +kubebuilder:default=false
 	// +default=false
 	AllowPostCopy *bool `json:"allowPostCopy,omitempty"`
+
+	// AllowWorkloadDisruption indicates that the migration shouldn't be
+	// canceled after the acceptable completion time is exceeded. Instead, if
+	// permitted, migration will be switched to post-copy or the VMI will be
+	// paused to allow the migration to complete.
+	// Defaults to false.
+	// +optional
+	// +kubebuilder:default=false
+	// +default=false
+	AllowWorkloadDisruption *bool `json:"allowWorkloadDisruption,omitempty"`
 }
 
 // VirtualMachineOptions holds the cluster level information regarding the virtual machine.
