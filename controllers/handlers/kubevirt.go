@@ -102,6 +102,9 @@ const (
 
 	// Enable the installation of the KubeVirt seccomp profile
 	kvKubevirtSeccompProfile = "KubevirtSeccompProfile"
+
+	// Enable iteration-aware downtime ramping for live migration convergence
+	kvMigrationDowntimeTuning = "MigrationDowntimeTuning"
 )
 
 // KubeVirt architecture dependant feature gates.
@@ -117,6 +120,7 @@ var (
 		kvSnapshotGate,
 		kvHostDevicesGate,
 		kvKubevirtSeccompProfile,
+		kvMigrationDowntimeTuning,
 	}
 
 	// holds a list of mandatory KubeVirt feature gates. Some of them are the hard coded feature gates and some of
