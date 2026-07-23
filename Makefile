@@ -37,7 +37,7 @@ DO=eval
 export JOB_TYPE=prow
 endif
 
-sanity: generate gogenerate prepare-tools-crd generate-doc validate-no-offensive-lang goimport lint-metrics lint-monitoring
+sanity: generate gogenerate prepare-tools-crd generate-doc validate-no-offensive-lang goimport lint-metrics lint-monitoring update-kv-fg-file
 	go version
 	go fmt ./...
 	go mod tidy -v
@@ -50,6 +50,8 @@ goimport:
 	go install golang.org/x/tools/cmd/goimports@latest
 	goimports -w -local="kubevirt.io,github.com/kubevirt,github.com/kubevirt/hyperconverged-cluster-operator"  $(shell find . -type f -name '*.go' ! -path "*/vendor/*" ! -path "./_kubevirtci/*" ! -path "*zz_generated*" )
 
+update-kv-fg-file:
+	./hack/update-kv-fg-file.sh
 
 lint:
 	GOTOOLCHAIN=go1.26.3 go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANDCI_LINT_VERSION}
@@ -395,6 +397,7 @@ push-builder-image: retag-builder-image
 		lint-monitoring \
 		sanity \
 		goimport \
+		update-kv-fg-file \
 		bump-hco \
 		bump-kubevirtci \
 		build-push-multi-arch-operator-image \

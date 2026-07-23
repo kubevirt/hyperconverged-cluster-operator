@@ -40,19 +40,11 @@
     "state": "Alpha"
   },
   {
-    "name": "GPUsWithDRA",
-    "state": "Alpha"
-  },
-  {
     "name": "GraceIOVirtualization",
     "state": "Alpha"
   },
   {
     "name": "HostDevices",
-    "state": "Alpha"
-  },
-  {
-    "name": "HostDevicesWithDRA",
     "state": "Alpha"
   },
   {
@@ -137,6 +129,14 @@
   },
   {
     "name": "ExternalNetResourceInjection",
+    "state": "Beta"
+  },
+  {
+    "name": "GPUsWithDRA",
+    "state": "Beta"
+  },
+  {
+    "name": "HostDevicesWithDRA",
     "state": "Beta"
   },
   {
