@@ -218,6 +218,7 @@ var _ = Describe("HyperconvergedController", func() {
 					"VideoConfig",
 					"DecentralizedLiveMigration",
 					"LiveUpdateNADRef",
+					"PanicDevices",
 				}
 				// Get the KV
 				kvList := &kubevirtcorev1.KubeVirtList{}
