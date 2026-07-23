@@ -25,7 +25,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
@@ -34,6 +33,7 @@ import (
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/components"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ipstacktype"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/nodeinfo"
+	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/ownresources"
 	"github.com/kubevirt/hyperconverged-cluster-operator/pkg/tlssecprofile"
 	hcoutil "github.com/kubevirt/hyperconverged-cluster-operator/pkg/util"
 )
@@ -67,6 +67,11 @@ const ( // for network policies
 	openshiftDNSPort              = int32(5353)
 
 	apiServerPort int32 = 6443
+)
+
+const ( // managed data fields
+	ipStackTypeKey = "ipStackType"
+	hcoVersionKey  = "hcoVersion"
 )
 
 // **** Kubevirt UI Plugin Deployment Handler ****
@@ -121,7 +126,7 @@ func NewKvUIUserSettingsCMHandler(cli client.Client, Scheme *runtime.Scheme) ope
 
 // **** UI features config map Handler ****
 func NewKvUIFeaturesCMHandler(cli client.Client, Scheme *runtime.Scheme) operands.Operand {
-	return operands.NewEditableCmHandler(cli, Scheme, NewKvUIFeaturesCM(), "ipStackType")
+	return operands.NewEditableCmHandler(cli, Scheme, NewKvUIFeaturesCM(), ipStackTypeKey, hcoVersionKey)
 }
 
 // **** Kubevirt UI Console Plugin Custom Resource Handler ****
@@ -211,7 +216,7 @@ func getKvUIDeployment(hc *hcov1.HyperConverged, deploymentName string, image st
 			Namespace: hcoutil.GetOperatorNamespaceFromEnv(),
 		},
 		Spec: appsv1.DeploymentSpec{
-			Replicas: ptr.To(replicas),
+			Replicas: new(replicas),
 			Selector: &metav1.LabelSelector{
 				MatchLabels: labels,
 			},
@@ -262,7 +267,7 @@ func getKvUIDeployment(hc *hcov1.HyperConverged, deploymentName string, image st
 							VolumeSource: corev1.VolumeSource{
 								Secret: &corev1.SecretVolumeSource{
 									SecretName:  servingCertName,
-									DefaultMode: ptr.To(int32(420)),
+									DefaultMode: new(int32(420)),
 								},
 							},
 						},
@@ -432,11 +437,12 @@ var UIFeaturesConfig = map[string]string{
 	"loadBalancerEnabled":                 "true",
 	"nodePortAddress":                     "",
 	"nodePortEnabled":                     "false",
+	hcoVersionKey:                         ownresources.Version(),
 }
 
 func NewKvUIFeaturesCM() *corev1.ConfigMap {
 	data := maps.Clone(UIFeaturesConfig)
-	data["ipStackType"] = ipstacktype.Get()
+	data[ipStackTypeKey] = ipstacktype.Get()
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kvUIFeaturesCMName,
@@ -651,7 +657,7 @@ func newKVConsolePluginNetworkPolicy() *networkingv1.NetworkPolicy {
 					Ports: []networkingv1.NetworkPolicyPort{
 						{
 							Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: hcoutil.UIPluginServerPort},
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 					From: []networkingv1.NetworkPolicyPeer{
@@ -702,12 +708,12 @@ func getApiServerEgressRule() networkingv1.NetworkPolicyEgressRule {
 	return networkingv1.NetworkPolicyEgressRule{
 		Ports: []networkingv1.NetworkPolicyPort{
 			{
-				Protocol: ptr.To(corev1.ProtocolTCP),
-				Port:     ptr.To(intstr.FromInt32(dnsPort)),
+				Protocol: new(corev1.ProtocolTCP),
+				Port:     new(intstr.FromInt32(dnsPort)),
 			},
 			{
-				Protocol: ptr.To(corev1.ProtocolUDP),
-				Port:     ptr.To(intstr.FromInt32(dnsPort)),
+				Protocol: new(corev1.ProtocolUDP),
+				Port:     new(intstr.FromInt32(dnsPort)),
 			},
 		},
 		To: []networkingv1.NetworkPolicyPeer{
@@ -746,7 +752,7 @@ func newKVAPIServerProxyNetworkPolicy() *networkingv1.NetworkPolicy {
 					Ports: []networkingv1.NetworkPolicyPort{
 						{
 							Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: hcoutil.UIProxyServerPort},
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},
@@ -757,7 +763,7 @@ func newKVAPIServerProxyNetworkPolicy() *networkingv1.NetworkPolicy {
 					Ports: []networkingv1.NetworkPolicyPort{
 						{
 							Port:     &intstr.IntOrString{Type: intstr.Int, IntVal: apiServerPort},
-							Protocol: ptr.To(corev1.ProtocolTCP),
+							Protocol: new(corev1.ProtocolTCP),
 						},
 					},
 				},
