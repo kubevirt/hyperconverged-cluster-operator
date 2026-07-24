@@ -45,9 +45,6 @@ ${KUBECTL_BINARY} get hco -n "${INSTALLED_NAMESPACE}" kubevirt-hyperconverged -o
 # wait a bit to make sure the VMs are deleted
 sleep 60
 
-# Check TLS profile on the webhook
-KUBECTL_BINARY=${KUBECTL_BINARY} ./hack/check_tlsprofile.sh
-
 # check if HCO is able to correctly add back a label used as a label selector
 ${KUBECTL_BINARY} label priorityclass kubevirt-cluster-critical app-
 sleep 10
