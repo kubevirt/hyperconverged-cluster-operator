@@ -10,6 +10,8 @@ import (
 	openshiftconfigv1 "github.com/openshift/api/config/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
@@ -41,7 +43,6 @@ var _ = Describe("Network Resources Injector Deployment", func() {
 
 	BeforeEach(func() {
 		hco = commontestutils.NewHco()
-		hco.Spec.Deployment.DeployNetworkResourcesInjector = new(true)
 		req = commontestutils.NewReq(hco)
 		Expect(os.Setenv(hcoutil.NetworkResourcesInjectorImageEnvV, testImage)).To(Succeed())
 
@@ -188,6 +189,98 @@ var _ = Describe("Network Resources Injector Deployment", func() {
 			Expect(cl.List(context.Background(), foundDeps)).To(Succeed())
 			Expect(foundDeps.Items).To(HaveLen(1))
 			Expect(foundDeps.Items[0].Name).To(Equal(deploymentName))
+		})
+	})
+
+	Context("NetResInj readiness condition", func() {
+		It("should set condition to True when deployment is ready", func() {
+			dep := newDeployment(hco)
+			replicas := *dep.Spec.Replicas
+			dep.Status.ReadyReplicas = replicas
+			dep.Status.Replicas = replicas
+			cl = commontestutils.InitClient([]client.Object{hco, dep})
+
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(meta.IsStatusConditionTrue(req.Instance.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady)).To(BeTrue())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady)
+			Expect(cond.Reason).To(Equal("DeploymentReady"))
+			Expect(req.StatusDirty).To(BeTrue())
+		})
+
+		It("should set condition to False when deployment is just created", func() {
+			cl = commontestutils.InitClient([]client.Object{hco})
+
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			Expect(res.Created).To(BeTrue())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Reason).To(Equal("DeploymentNotReady"))
+		})
+
+		It("should set condition to False when deployment is not ready", func() {
+			dep := newDeployment(hco)
+			dep.Status.ReadyReplicas = 0
+			dep.Status.Replicas = *dep.Spec.Replicas
+			cl = commontestutils.InitClient([]client.Object{hco, dep})
+
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Reason).To(Equal("DeploymentNotReady"))
+		})
+
+		It("should flip condition to False when deployment becomes unready", func() {
+			meta.SetStatusCondition(&hco.Status.Conditions, metav1.Condition{
+				Type:   hcov1.ConditionNetworkResourcesInjectorReady,
+				Status: metav1.ConditionTrue,
+				Reason: "DeploymentReady",
+			})
+			req = commontestutils.NewReq(hco)
+
+			dep := newDeployment(hco)
+			dep.Status.ReadyReplicas = 0
+			dep.Status.Replicas = *dep.Spec.Replicas
+			cl = commontestutils.InitClient([]client.Object{hco, dep})
+
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady)
+			Expect(cond).ToNot(BeNil())
+			Expect(cond.Status).To(Equal(metav1.ConditionFalse))
+			Expect(cond.Reason).To(Equal("DeploymentNotReady"))
+			Expect(req.StatusDirty).To(BeTrue())
+		})
+
+		It("should remove condition when shouldDeploy is false", func() {
+			hco.Spec.Deployment.DeployNetworkResourcesInjector = new(bool)
+			meta.SetStatusCondition(&hco.Status.Conditions, metav1.Condition{
+				Type:   hcov1.ConditionNetworkResourcesInjectorReady,
+				Status: metav1.ConditionTrue,
+				Reason: "DeploymentReady",
+			})
+			req = commontestutils.NewReq(hco)
+			cl = commontestutils.InitClient([]client.Object{hco})
+
+			handler := NewDeploymentHandler(cl, commontestutils.GetScheme())
+			res := handler.Ensure(req)
+
+			Expect(res.Err).ToNot(HaveOccurred())
+			cond := meta.FindStatusCondition(req.Instance.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady)
+			Expect(cond).To(BeNil())
+			Expect(req.StatusDirty).To(BeTrue())
 		})
 	})
 

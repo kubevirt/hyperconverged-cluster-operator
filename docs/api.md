@@ -125,7 +125,7 @@ DataImportCronTemplateStatus is a copy of a dataImportCronTemplate as defined in
 | logVerbosityConfig | LogVerbosityConfig configures the verbosity level of Kubevirt's different components. The higher the value - the higher the log verbosity. | *[LogVerbosityConfiguration](#logverbosityconfiguration) |  | false |
 | applicationAwareConfig | ApplicationAwareConfig set the AAQ configurations | *[ApplicationAwareConfigurations](#applicationawareconfigurations) |  | false |
 | deployVmConsoleProxy | deploy VM console proxy resources in SSP operator | *bool | false | false |
-| deployNetworkResourcesInjector | DeployNetworkResourcesInjector enables deployment of the network-resources-injector component. When enabled, the network-resources-injector mutating webhook will be deployed to automatically inject resource requests for custom resources annotated in NetworkAttachmentDefinition. | *bool |  | false |
+| deployNetworkResourcesInjector | DeployNetworkResourcesInjector enables deployment of the network-resources-injector component. When enabled, the network-resources-injector mutating webhook will be deployed to automatically inject resource requests for custom resources annotated in NetworkAttachmentDefinition. | *bool | true | false |
 
 [Back to TOC](#table-of-contents)
 
@@ -146,7 +146,7 @@ HyperConverged is the Schema for the hyperconvergeds API
 | Field | Description | Scheme | Default | Required |
 | ----- | ----------- | ------ | ------- | -------- |
 | metadata |  | [metav1.ObjectMeta](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.36/#objectmeta-v1-meta) |  | false |
-| spec |  | [HyperConvergedSpec](#hyperconvergedspec) | {"security": {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10},"workloadSources":{"enableCommonBootImageImport":true}, "deployment": {"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "applicationAwareConfig": {"enable": false}}} | false |
+| spec |  | [HyperConvergedSpec](#hyperconvergedspec) | {"security": {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}}, "virtualization": {"liveMigrationConfig": {"completionTimeoutPerGiB": 150, "parallelMigrationsPerCluster": 5, "parallelOutboundMigrationsPerNode": 2, "progressTimeout": 150, "allowAutoConverge": false, "allowPostCopy": false}, "virtualMachineOptions": {"disableFreePageReporting": false, "disableSerialConsoleLog": false}, "vmiCPUAllocationRatio": 10},"workloadSources":{"enableCommonBootImageImport":true}, "deployment": {"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "deployNetworkResourcesInjector": true, "applicationAwareConfig": {"enable": false}}} | false |
 | status |  | [HyperConvergedStatus](#hyperconvergedstatus) |  | false |
 
 [Back to TOC](#table-of-contents)
@@ -185,7 +185,7 @@ HyperConvergedSpec defines the desired state of HyperConverged
 | networking | Networking contains all the configurations for networking | *[NetworkingConfig](#networkingconfig) |  | false |
 | workloadSources | WorkloadSources contains all the configurations for workload sources | [WorkloadSourcesConfig](#workloadsourcesconfig) |  | false |
 | security | Security contains all the security configurations | [SecurityConfig](#securityconfig) | {"certConfig": {"ca": {"duration": "48h0m0s", "renewBefore": "24h0m0s"}, "server": {"duration": "24h0m0s", "renewBefore": "12h0m0s"}}} | false |
-| deployment | Deployment contains all the configurations related to deployment of KubeVirt components | [DeploymentConfig](#deploymentconfig) | {"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "applicationAwareConfig": {"enable": false}} | false |
+| deployment | Deployment contains all the configurations related to deployment of KubeVirt components | [DeploymentConfig](#deploymentconfig) | {"uninstallStrategy": "BlockUninstallIfWorkloadsExist", "deployVmConsoleProxy": false, "deployNetworkResourcesInjector": true, "applicationAwareConfig": {"enable": false}} | false |
 
 [Back to TOC](#table-of-contents)
 

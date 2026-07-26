@@ -9,9 +9,11 @@ import (
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	hcov1 "github.com/kubevirt/hyperconverged-cluster-operator/api/v1"
 	tests "github.com/kubevirt/hyperconverged-cluster-operator/tests/func-tests"
 )
 
@@ -33,21 +35,7 @@ var _ = Describe("Test Network Resources Injector", Label("NetResInjector"), Ser
 		restoreNetResInjectorToDefault(ctx, cli)
 	})
 
-	Context("when deployNetworkResourcesInjector is not set (default false)", func() {
-		BeforeAll(func(ctx context.Context) {
-			restoreNetResInjectorToDefault(ctx, cli)
-		})
-
-		It("should not deploy the network resources injector", func(ctx context.Context) {
-			validateNetResInjectorDeleted(ctx, cli)
-		})
-	})
-
-	Context("when deployNetworkResourcesInjector is true", func() {
-		BeforeAll(func(ctx context.Context) {
-			enableNetResInjector(ctx, cli)
-		})
-
+	Context("when deployNetworkResourcesInjector is true (default)", func() {
 		It("should deploy the network resources injector", func(ctx context.Context) {
 			By("verifying the deployment exists and is ready")
 			Eventually(func(g Gomega, ctx context.Context) {
@@ -60,6 +48,9 @@ var _ = Describe("Test Network Resources Injector", Label("NetResInjector"), Ser
 				g.Expect(cli.Get(ctx, client.ObjectKeyFromObject(dep), dep)).To(Succeed())
 				g.Expect(dep.Status.ReadyReplicas).To(Equal(*dep.Spec.Replicas))
 			}).WithTimeout(5 * time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+
+			By("verifying the NetworkResourcesInjectorReady condition is True")
+			validateNetResInjCondition(ctx, cli, metav1.ConditionTrue, "DeploymentReady")
 
 			By("verifying the deployment has control plane node affinity")
 			dep := &appsv1.Deployment{
@@ -111,14 +102,53 @@ var _ = Describe("Test Network Resources Injector", Label("NetResInjector"), Ser
 
 		It("should not deploy the network resources injector", func(ctx context.Context) {
 			validateNetResInjectorDeleted(ctx, cli)
+
+			By("verifying the NetworkResourcesInjectorReady condition is removed")
+			validateNetResInjConditionAbsent(ctx, cli)
 		})
 
-		It("should delete the deployment when set back to default (false)", func(ctx context.Context) {
-			restoreNetResInjectorToDefault(ctx, cli)
-			validateNetResInjectorDeleted(ctx, cli)
+		It("should recreate the deployment when set back to true", func(ctx context.Context) {
+			enableNetResInjector(ctx, cli)
+
+			By("verifying the deployment is recreated and ready")
+			Eventually(func(g Gomega, ctx context.Context) {
+				dep := &appsv1.Deployment{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      netResInjectorDeploymentName,
+						Namespace: tests.InstallNamespace,
+					},
+				}
+				g.Expect(cli.Get(ctx, client.ObjectKeyFromObject(dep), dep)).To(Succeed())
+				g.Expect(dep.Status.ReadyReplicas).To(Equal(*dep.Spec.Replicas))
+			}).WithTimeout(5 * time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+
+			By("verifying the NetworkResourcesInjectorReady condition flips back to True")
+			validateNetResInjCondition(ctx, cli, metav1.ConditionTrue, "DeploymentReady")
 		})
 	})
 })
+
+func validateNetResInjConditionAbsent(ctx context.Context, cli client.Client) {
+	GinkgoHelper()
+	Eventually(func(g Gomega, ctx context.Context) {
+		hc, err := tests.GetHCO(ctx, cli)
+		g.Expect(err).ToNot(HaveOccurred())
+		cond := meta.FindStatusCondition(hc.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady)
+		g.Expect(cond).To(BeNil(), "condition %s should not exist when disabled", hcov1.ConditionNetworkResourcesInjectorReady)
+	}).WithTimeout(2 * time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+}
+
+func validateNetResInjCondition(ctx context.Context, cli client.Client, expectedStatus metav1.ConditionStatus, expectedReason string) {
+	GinkgoHelper()
+	Eventually(func(g Gomega, ctx context.Context) {
+		hc, err := tests.GetHCO(ctx, cli)
+		g.Expect(err).ToNot(HaveOccurred())
+		cond := meta.FindStatusCondition(hc.Status.Conditions, hcov1.ConditionNetworkResourcesInjectorReady)
+		g.Expect(cond).ToNot(BeNil(), "condition %s should exist", hcov1.ConditionNetworkResourcesInjectorReady)
+		g.Expect(cond.Status).To(Equal(expectedStatus))
+		g.Expect(cond.Reason).To(Equal(expectedReason))
+	}).WithTimeout(2 * time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+}
 
 func getNetResInjectorDeploymentErr(ctx context.Context, cli client.Client) error {
 	dep := &appsv1.Deployment{
@@ -158,12 +188,21 @@ func restoreNetResInjectorToDefault(ctx context.Context, cli client.Client) {
 	GinkgoHelper()
 	By("restoring deployNetworkResourcesInjector to default")
 
-	// Read the HyperConverged CR first to check if the field exists
 	hc, err := tests.GetHCO(ctx, cli)
 	Expect(err).ToNot(HaveOccurred())
 	if hc.Spec.Deployment.DeployNetworkResourcesInjector != nil {
-		// Field exists, remove it by setting to null in merge patch
 		patch := []byte(`{"spec":{"deployment":{"deployNetworkResourcesInjector": null}}}`)
 		tests.PatchMergeHCO(ctx, cli, patch)
 	}
+
+	Eventually(func(g Gomega, ctx context.Context) {
+		dep := &appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      netResInjectorDeploymentName,
+				Namespace: tests.InstallNamespace,
+			},
+		}
+		g.Expect(cli.Get(ctx, client.ObjectKeyFromObject(dep), dep)).To(Succeed())
+		g.Expect(dep.Status.ReadyReplicas).To(Equal(*dep.Spec.Replicas))
+	}).WithTimeout(5 * time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
 }
