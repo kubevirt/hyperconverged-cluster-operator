@@ -2761,6 +2761,7 @@ spec:
                   liveMigrationConfig:
                     allowAutoConverge: false
                     allowPostCopy: false
+                    allowWorkloadDisruption: false
                     completionTimeoutPerGiB: 150
                     parallelMigrationsPerCluster: 5
                     parallelOutboundMigrationsPerNode: 2
@@ -3034,6 +3035,7 @@ spec:
                     default:
                       allowAutoConverge: false
                       allowPostCopy: false
+                      allowWorkloadDisruption: false
                       completionTimeoutPerGiB: 150
                       parallelMigrationsPerCluster: 5
                       parallelOutboundMigrationsPerNode: 2
@@ -3058,6 +3060,15 @@ spec:
                           destination nodes can cause the migrated VM to crash or reach inconsistency.
                           Enable this option when evicting nodes is more important than keeping VMs
                           alive.
+                          Defaults to false.
+                        type: boolean
+                      allowWorkloadDisruption:
+                        default: false
+                        description: |-
+                          AllowWorkloadDisruption indicates that the migration shouldn't be
+                          canceled after the acceptable completion time is exceeded. Instead, if
+                          permitted, migration will be switched to post-copy or the VMI will be
+                          paused to allow the migration to complete.
                           Defaults to false.
                         type: boolean
                       bandwidthPerMigration:
@@ -7840,6 +7851,15 @@ spec:
                       destination nodes can cause the migrated VM to crash or reach inconsistency.
                       Enable this option when evicting nodes is more important than keeping VMs
                       alive.
+                      Defaults to false.
+                    type: boolean
+                  allowWorkloadDisruption:
+                    default: false
+                    description: |-
+                      AllowWorkloadDisruption indicates that the migration shouldn't be
+                      canceled after the acceptable completion time is exceeded. Instead, if
+                      permitted, migration will be switched to post-copy or the VMI will be
+                      paused to allow the migration to complete.
                       Defaults to false.
                     type: boolean
                   bandwidthPerMigration:

@@ -64,6 +64,10 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		var ptrVar1 bool = false
 		in.Spec.Virtualization.LiveMigrationConfig.AllowPostCopy = &ptrVar1
 	}
+	if in.Spec.Virtualization.LiveMigrationConfig.AllowWorkloadDisruption == nil {
+		var ptrVar1 bool = false
+		in.Spec.Virtualization.LiveMigrationConfig.AllowWorkloadDisruption = &ptrVar1
+	}
 	if in.Spec.Virtualization.WorkloadUpdateStrategy.WorkloadUpdateMethods == nil {
 		if err := json.Unmarshal([]byte(`["LiveMigrate"]`), &in.Spec.Virtualization.WorkloadUpdateStrategy.WorkloadUpdateMethods); err != nil {
 			panic(err)

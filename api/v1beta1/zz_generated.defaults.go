@@ -100,6 +100,10 @@ func SetObjectDefaults_HyperConverged(in *HyperConverged) {
 		var ptrVar1 bool = false
 		in.Spec.LiveMigrationConfig.AllowPostCopy = &ptrVar1
 	}
+	if in.Spec.LiveMigrationConfig.AllowWorkloadDisruption == nil {
+		var ptrVar1 bool = false
+		in.Spec.LiveMigrationConfig.AllowWorkloadDisruption = &ptrVar1
+	}
 	if in.Spec.CertConfig.CA.Duration == nil {
 		if err := json.Unmarshal([]byte(`"48h0m0s"`), &in.Spec.CertConfig.CA.Duration); err != nil {
 			panic(err)

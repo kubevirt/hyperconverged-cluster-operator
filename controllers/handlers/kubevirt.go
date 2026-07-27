@@ -781,6 +781,7 @@ func hcLiveMigrationToKv(lm hcov1.LiveMigrationConfigurations) (*kubevirtcorev1.
 		Network:                           lm.Network,
 		AllowAutoConverge:                 lm.AllowAutoConverge,
 		AllowPostCopy:                     lm.AllowPostCopy,
+		AllowWorkloadDisruption:           lm.AllowWorkloadDisruption,
 	}, nil
 }
 
