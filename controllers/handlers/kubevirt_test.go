@@ -535,7 +535,7 @@ Version: 1.2.3`)
 				Network:                           new("testNetwork"),
 				AllowAutoConverge:                 new(false),
 				AllowPostCopy:                     new(false),
-        AllowWorkloadDisruption:           new(false),
+				AllowWorkloadDisruption:           new(false),
 			}
 
 			cl := commontestutils.InitClient([]client.Object{hco, existKv})
