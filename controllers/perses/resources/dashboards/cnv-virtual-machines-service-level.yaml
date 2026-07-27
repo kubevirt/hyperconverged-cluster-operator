@@ -164,10 +164,10 @@ spec:
             plugin:
               kind: PrometheusTimeSeriesQuery
               spec:
-                query: "sum(\n(sum by (name , namespace)(\n    sum_over_time(\n    (kubevirt_vm_info{name=~\"$name\",
+                query: "sum(\n((sum by (name , namespace)(\n    sum_over_time(\n    (kubevirt_vm_info{name=~\"$name\",
                   namespace=~\"$namespace\", status_group=~\"running\"} > bool 0)
                   \n    [24h:5m]\n    )) and on(name, namespace)\n  (kubevirt_vm_info{name=~\"$name\",
-                  namespace=~\"$namespace\", status_group=~\"$status\"} > 0) *300
+                  namespace=~\"$namespace\", status_group=~\"$status\"} > 0)) *300
                   )/3600\n) or vector(0)"
     "0_4":
       kind: Panel
@@ -190,10 +190,10 @@ spec:
             plugin:
               kind: PrometheusTimeSeriesQuery
               spec:
-                query: "sum(\n(sum by (name , namespace)(\n    sum_over_time(\n    (kubevirt_vm_info{name=~\"$name\",
+                query: "sum(\n((sum by (name , namespace)(\n    sum_over_time(\n    (kubevirt_vm_info{name=~\"$name\",
                   namespace=~\"$namespace\", status_group=~\"starting|migrating|non_running\"}
                   > bool 0) \n    [24h:5m]\n    )) and on(name, namespace)\n  (kubevirt_vm_info{name=~\"$name\",
-                  namespace=~\"$namespace\", status_group=~\"$status\"} > 0) *300
+                  namespace=~\"$namespace\", status_group=~\"$status\"} > 0)) *300
                   )/3600\n) or vector(0)"
     "0_5":
       kind: Panel
@@ -216,10 +216,10 @@ spec:
             plugin:
               kind: PrometheusTimeSeriesQuery
               spec:
-                query: "sum(\n(sum by (name , namespace)(\n    sum_over_time(\n    (kubevirt_vm_info{name=~\"$name\",
+                query: "sum(\n((sum by (name , namespace)(\n    sum_over_time(\n    (kubevirt_vm_info{name=~\"$name\",
                   namespace=~\"$namespace\", status_group=~\"error\"} > bool 0) \n
                   \   [24h:5m]\n    )) and on(name, namespace)\n  (kubevirt_vm_info{name=~\"$name\",
-                  namespace=~\"$namespace\", status_group=~\"$status\"} > 0) *300
+                  namespace=~\"$namespace\", status_group=~\"$status\"} > 0)) *300
                   )/3600\n) or vector(0)"
     "0_6":
       kind: Panel
