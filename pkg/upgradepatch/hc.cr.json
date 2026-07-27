@@ -12,7 +12,8 @@
         "completionTimeoutPerGiB": 150,
         "progressTimeout": 150,
         "allowAutoConverge": false,
-        "allowPostCopy": false
+        "allowPostCopy": false,
+        "allowWorkloadDisruption": false
       },
       "workloadUpdateStrategy": {
         "workloadUpdateMethods": [

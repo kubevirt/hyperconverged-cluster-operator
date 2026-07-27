@@ -378,6 +378,7 @@ Version: 1.2.3`)).To(Succeed())
 			Expect(mc.Network).To(BeNil())
 			Expect(*mc.AllowAutoConverge).To(BeFalse())
 			Expect(*mc.AllowPostCopy).To(BeFalse())
+			Expect(mc.AllowWorkloadDisruption).To(HaveValue(BeFalse()))
 		})
 
 		It("should find if present", func() {
@@ -534,6 +535,7 @@ Version: 1.2.3`)
 				Network:                           new("testNetwork"),
 				AllowAutoConverge:                 new(false),
 				AllowPostCopy:                     new(false),
+        AllowWorkloadDisruption:           new(false),
 			}
 
 			cl := commontestutils.InitClient([]client.Object{hco, existKv})
@@ -589,6 +591,7 @@ Version: 1.2.3`)
 			Expect(mc.Network).To(BeNil())
 			Expect(*mc.AllowAutoConverge).To(BeFalse())
 			Expect(*mc.AllowPostCopy).To(BeFalse())
+			Expect(mc.AllowWorkloadDisruption).To(HaveValue(BeFalse()))
 		})
 
 		It("should use legacy MACHINETYPE env if provided", func() {
@@ -805,6 +808,7 @@ Version: 1.2.3`)
 			hco.Spec.Virtualization.LiveMigrationConfig.Network = new(network)
 			hco.Spec.Virtualization.LiveMigrationConfig.AllowAutoConverge = new(true)
 			hco.Spec.Virtualization.LiveMigrationConfig.AllowPostCopy = new(true)
+			hco.Spec.Virtualization.LiveMigrationConfig.AllowWorkloadDisruption = new(true)
 
 			cl := commontestutils.InitClient([]client.Object{hco, existKv})
 			handler := NewKubevirtHandler(cl, commontestutils.GetScheme())
@@ -831,6 +835,7 @@ Version: 1.2.3`)
 			Expect(mc.Network).To(HaveValue(Equal(network)))
 			Expect(mc.AllowAutoConverge).To(HaveValue(BeTrue()))
 			Expect(mc.AllowPostCopy).To(HaveValue(BeTrue()))
+			Expect(mc.AllowWorkloadDisruption).To(HaveValue(BeTrue()))
 
 			// ObjectReference should have been updated
 			Expect(hco.Status.RelatedObjects).ToNot(BeNil())
@@ -4383,6 +4388,7 @@ Version: 1.2.3`)
 				Network:                           new(network),
 				AllowAutoConverge:                 new(true),
 				AllowPostCopy:                     new(true),
+				AllowWorkloadDisruption:           new(true),
 			}
 			mc, err := hcLiveMigrationToKv(lmc)
 			Expect(err).ToNot(HaveOccurred())
@@ -4395,6 +4401,7 @@ Version: 1.2.3`)
 			Expect(mc.Network).To(HaveValue(Equal(network)))
 			Expect(mc.AllowAutoConverge).To(HaveValue(BeTrue()))
 			Expect(mc.AllowPostCopy).To(HaveValue(BeTrue()))
+			Expect(mc.AllowWorkloadDisruption).To(HaveValue(BeTrue()))
 		})
 
 		It("should create valid empty KV LM config from a valid empty HC LM config", func() {
@@ -4410,6 +4417,7 @@ Version: 1.2.3`)
 			Expect(mc.Network).To(BeNil())
 			Expect(mc.AllowAutoConverge).To(BeNil())
 			Expect(mc.AllowPostCopy).To(BeNil())
+			Expect(mc.AllowWorkloadDisruption).To(BeNil())
 		})
 
 		It("should return error if the value of the BandwidthPerMigration field is not valid", func() {
@@ -4422,6 +4430,7 @@ Version: 1.2.3`)
 				Network:                           new(network),
 				AllowAutoConverge:                 new(true),
 				AllowPostCopy:                     new(true),
+				AllowWorkloadDisruption:           new(true),
 			}
 			mc, err := hcLiveMigrationToKv(lmc)
 			Expect(err).To(HaveOccurred())
