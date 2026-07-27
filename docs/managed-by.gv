@@ -84,6 +84,9 @@ digraph "managed-by" {
 	"deployment/virt-exportproxy" [label="deployment/virt-exportproxy"]
 	"deployment/virt-operator" [label="deployment/virt-operator"]
 	"deployment/virt-operator" -> "deployment/virt-exportproxy"
+	"deployment/virt-network-resources-injector" [label="deployment/virt-network-resources-injector"]
+	"deployment/hco-operator" [label="deployment/hco-operator"]
+	"deployment/hco-operator" -> "deployment/virt-network-resources-injector"
 	"deployment/virt-operator" [label="deployment/virt-operator"]
 	olm [label=olm]
 	olm -> "deployment/virt-operator"

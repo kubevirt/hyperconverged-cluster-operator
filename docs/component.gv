@@ -77,6 +77,10 @@ digraph component {
 		fontname="Courier-Bold" fontsize=42 group=unassigned label=unassigned rank=same style=dashed
 		"HyperConverged/kubevirt-hyperconverged" [label="HyperConverged/kubevirt-hyperconverged"]
 	}
+	subgraph "cluster_virt-network-resources-injector" {
+		fontname="Courier-Bold" fontsize=42 group="virt-network-resources-injector" label="virt-network-resources-injector" rank=same style=dashed
+		"deployment/virt-network-resources-injector" [label="deployment/virt-network-resources-injector"]
+	}
 	edge [style=invis]
 	"deployment/virt-platform-autopilot" -> "KubeVirt/kubevirt-kubevirt-hyperconverged"
 	"KubeVirt/kubevirt-kubevirt-hyperconverged" -> "deployment/hco-operator"
@@ -90,4 +94,5 @@ digraph component {
 	"SSP/ssp-kubevirt-hyperconverged" -> "CDI/cdi-kubevirt-hyperconverged"
 	"CDI/cdi-kubevirt-hyperconverged" -> "deployment/virt-template-validator"
 	"deployment/virt-template-validator" -> "HyperConverged/kubevirt-hyperconverged"
+	"HyperConverged/kubevirt-hyperconverged" -> "deployment/virt-network-resources-injector"
 }
