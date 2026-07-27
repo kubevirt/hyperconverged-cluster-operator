@@ -92,10 +92,11 @@ func (h *netResInjDeploymentHandler) GetFullCr(hc *hcov1.HyperConverged) (client
 
 func setNetResInjCondition(req *common.HcoRequest, status metav1.ConditionStatus, reason, message string) {
 	cond := metav1.Condition{
-		Type:    hcov1.ConditionNetworkResourcesInjectorReady,
-		Status:  status,
-		Reason:  reason,
-		Message: message,
+		Type:               hcov1.ConditionNetworkResourcesInjectorReady,
+		Status:             status,
+		Reason:             reason,
+		Message:            message,
+		ObservedGeneration: req.Instance.Generation,
 	}
 	changed := meta.SetStatusCondition(&req.Instance.Status.Conditions, cond)
 	if changed {
