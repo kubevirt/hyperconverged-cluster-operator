@@ -30,6 +30,11 @@
     "description": "Deploy KubeSecondaryDNS by CNAO"
   },
   {
+    "name": "deployObservabilityController",
+    "phase": "alpha",
+    "description": "Deploy the virt-observability-controller component. When enabled, the controller exposes KubeVirt metrics and manages PrometheusRule resources independently from the KubeVirt control plane."
+  },
+  {
     "name": "downwardMetrics",
     "phase": "alpha",
     "description": "Allow to expose a limited set of host metrics to guests."
