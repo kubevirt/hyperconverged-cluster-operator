@@ -3095,6 +3095,16 @@ Version: 1.2.3`)
 					Expect(kv.Spec.Workloads).To(BeNil())
 				})
 
+				It("should not force replica=1 on DualReplica (two CP nodes, no arbiter)", func() {
+					commontestutils.DualReplicaNodeInfoMock()
+
+					kv, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(kv.Spec.Infra).ToNot(BeNil())
+					Expect(kv.Spec.Infra.Replicas).To(BeNil())
+					Expect(kv.Spec.Workloads).To(BeNil())
+				})
+
 			})
 
 			Context("Custom Workloads placement, default Infra placement", func() {
@@ -3136,6 +3146,16 @@ Version: 1.2.3`)
 					Expect(kv.Spec.Workloads.Replicas).To(BeNil())
 				})
 
+				It("should not force replica=1 on DualReplica (two CP nodes, no arbiter)", func() {
+					commontestutils.DualReplicaNodeInfoMock()
+
+					kv, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(kv.Spec.Infra).To(BeNil())
+					Expect(kv.Spec.Workloads).ToNot(BeNil())
+					Expect(kv.Spec.Workloads.Replicas).To(BeNil())
+				})
+
 			})
 
 			Context("Default Infra and Workload placement", func() {
@@ -3168,6 +3188,15 @@ Version: 1.2.3`)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).ToNot(BeNil())
 					Expect(kv.Spec.Infra.Replicas).To(HaveValue(Equal(uint8(1))))
+					Expect(kv.Spec.Workloads).To(BeNil())
+				})
+
+				It("should not force replica=1 on DualReplica (two CP nodes, no arbiter)", func() {
+					commontestutils.DualReplicaNodeInfoMock()
+
+					kv, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(kv.Spec.Infra).To(BeNil())
 					Expect(kv.Spec.Workloads).To(BeNil())
 				})
 
@@ -3208,6 +3237,17 @@ Version: 1.2.3`)
 					Expect(err).ToNot(HaveOccurred())
 					Expect(kv.Spec.Infra).ToNot(BeNil())
 					Expect(*kv.Spec.Infra.Replicas).To(Equal(uint8(1)))
+					Expect(kv.Spec.Workloads).ToNot(BeNil())
+					Expect(kv.Spec.Workloads.Replicas).To(BeNil())
+				})
+
+				It("should not force replica=1 on DualReplica (two CP nodes, no arbiter)", func() {
+					commontestutils.DualReplicaNodeInfoMock()
+
+					kv, err := NewKubeVirt(hco)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(kv.Spec.Infra).ToNot(BeNil())
+					Expect(kv.Spec.Infra.Replicas).To(BeNil())
 					Expect(kv.Spec.Workloads).ToNot(BeNil())
 					Expect(kv.Spec.Workloads.Replicas).To(BeNil())
 				})
