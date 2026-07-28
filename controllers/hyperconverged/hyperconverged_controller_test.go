@@ -24,7 +24,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/reference"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -621,10 +620,10 @@ var _ = Describe("HyperconvergedController", func() {
 
 				// now, modify KV's node placement
 				existingResource.Spec.Infra.NodePlacement.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, corev1.Toleration{
-					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
+					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: new(int64(3)),
 				})
 				existingResource.Spec.Workloads.NodePlacement.Tolerations = append(hco.Spec.Deployment.NodePlacements.Workload.Tolerations, corev1.Toleration{
-					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
+					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: new(int64(3)),
 				})
 
 				existingResource.Spec.Infra.NodePlacement.NodeSelector["key1"] = "BADvalue1"
@@ -677,10 +676,10 @@ var _ = Describe("HyperconvergedController", func() {
 
 				// now, modify KV's node placement
 				existingResource.Spec.Infra.NodePlacement.Tolerations = append(hco.Spec.Deployment.NodePlacements.Infra.Tolerations, corev1.Toleration{
-					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
+					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: new(int64(3)),
 				})
 				existingResource.Spec.Workloads.NodePlacement.Tolerations = append(hco.Spec.Deployment.NodePlacements.Workload.Tolerations, corev1.Toleration{
-					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: ptr.To[int64](3),
+					Key: "key3", Operator: "operator3", Value: "value3", Effect: "effect3", TolerationSeconds: new(int64(3)),
 				})
 
 				existingResource.Spec.Infra.NodePlacement.NodeSelector["key1"] = "BADvalue1"
@@ -1027,7 +1026,7 @@ var _ = Describe("HyperconvergedController", func() {
 
 			It("should remove NetworkResourcesInjectorReady condition and not enable ExternalNetResourceInjection FG when deployment is disabled", func() {
 				expected := getBasicDeployment()
-				expected.hco.Spec.Deployment.DeployNetworkResourcesInjector = ptr.To(false)
+				expected.hco.Spec.Deployment.DeployNetworkResourcesInjector = new(false)
 				cl := expected.initClient()
 
 				foundResource, _, _ := doReconcile(cl, expected.hco, nil)
