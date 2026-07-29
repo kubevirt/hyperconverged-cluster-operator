@@ -528,6 +528,18 @@ func randomV1HC(r *rand.Rand) *hcov1.HyperConverged {
 		hc.Spec.Deployment.DeployNetworkResourcesInjector = new(r.IntN(2) == 1)
 	}
 
+	if r.IntN(2) == 1 {
+		hc.Spec.Observability = &hcov1.ObservabilityConfig{
+			AllowedAlerts:         randStringSlice(r),
+			AllowedRecordingRules: randStringSlice(r),
+		}
+		if r.IntN(2) == 1 {
+			hc.Spec.Observability.Workloads = &hcov1.ObservabilityWorkloadsConfig{
+				AllowedMetrics: randStringSlice(r),
+			}
+		}
+	}
+
 	return hc
 }
 

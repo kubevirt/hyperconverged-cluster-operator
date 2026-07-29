@@ -2435,6 +2435,49 @@ spec:
                       Those bindings can be used when defining virtual machine interfaces.
                     type: object
                 type: object
+              observability:
+                description: Observability contains configurations for the observability
+                  controller
+                properties:
+                  allowedAlerts:
+                    description: |-
+                      AllowedAlerts defines the list of alert rule names to include.
+                      When set, only alerts matching this list will be created.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: atomic
+                    x-kubernetes-validations:
+                    - message: '''none'' cannot be combined with other values'
+                      rule: (self.size() <= 1) || !self.exists(r, (r == 'none'))
+                  allowedRecordingRules:
+                    description: |-
+                      AllowedRecordingRules defines the list of recording rule names to include.
+                      When set, only recording rules matching this list will be created.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: atomic
+                    x-kubernetes-validations:
+                    - message: '''none'' cannot be combined with other values'
+                      rule: (self.size() <= 1) || !self.exists(r, (r == 'none'))
+                  workloads:
+                    description: Workloads defines filtering configuration for workload-related
+                      metrics
+                    properties:
+                      allowedMetrics:
+                        description: |-
+                          AllowedMetrics defines the list of metric names to expose.
+                          When set, only metrics matching this list will be collected.
+                        items:
+                          type: string
+                        type: array
+                        x-kubernetes-list-type: atomic
+                        x-kubernetes-validations:
+                        - message: '''none'' cannot be combined with other values'
+                          rule: (self.size() <= 1) || !self.exists(r, (r == 'none'))
+                    type: object
+                type: object
               security:
                 default:
                   certConfig:

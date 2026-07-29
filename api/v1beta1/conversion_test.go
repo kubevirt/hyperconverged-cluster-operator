@@ -4461,6 +4461,13 @@ var _ = Describe("api/v1beta1", func() {
 			v1HC.Spec.FeatureGates.Disable("aDisabledFG")
 			v1HC.Spec.FeatureGates.Enable("explicitlyEnabledFG")
 			v1HC.Spec.FeatureGates = append(v1HC.Spec.FeatureGates, hcofg.FeatureGate{Name: "implicitlyEnabledFG"})
+			v1HC.Spec.Observability = &hcov1.ObservabilityConfig{
+				AllowedAlerts:         []string{"KubeVirtVMDown", "KubeVirtVMIExcessiveMigrations"},
+				AllowedRecordingRules: []string{"kubevirt_vmi_phase_count:sum"},
+				Workloads: &hcov1.ObservabilityWorkloadsConfig{
+					AllowedMetrics: []string{"kubevirt_vmi_memory_used_bytes"},
+				},
+			}
 			v1beta1HC := &HyperConverged{}
 
 			Expect(v1beta1HC.ConvertFrom(v1HC)).To(Succeed())
@@ -4474,7 +4481,14 @@ var _ = Describe("api/v1beta1", func() {
 		{"name": "aDisabledFG", "state": "Disabled"},
 		{"name": "explicitlyEnabledFG", "state": "Enabled"},
 		{"name": "implicitlyEnabledFG"}
-	]
+	],
+	"observability": {
+		"workloads": {
+			"allowedMetrics": ["kubevirt_vmi_memory_used_bytes"]
+		},
+		"allowedAlerts": ["KubeVirtVMDown", "KubeVirtVMIExcessiveMigrations"],
+		"allowedRecordingRules": ["kubevirt_vmi_phase_count:sum"]
+	}
 }`
 			Expect(v1beta1HC.Annotations).To(HaveKeyWithValue(v1OnlyFieldAnnotation, MatchJSON(expectedJSONAnnotation)))
 
@@ -4503,6 +4517,12 @@ var _ = Describe("api/v1beta1", func() {
 			enabled, found = roundTripHC.Spec.FeatureGates.IsExplicitlyEnabled("implicitlyEnabledFG")
 			Expect(found).To(BeTrue())
 			Expect(enabled).To(BeTrue())
+
+			Expect(roundTripHC.Spec.Observability).ToNot(BeNil())
+			Expect(roundTripHC.Spec.Observability.AllowedAlerts).To(ConsistOf("KubeVirtVMDown", "KubeVirtVMIExcessiveMigrations"))
+			Expect(roundTripHC.Spec.Observability.AllowedRecordingRules).To(ConsistOf("kubevirt_vmi_phase_count:sum"))
+			Expect(roundTripHC.Spec.Observability.Workloads).ToNot(BeNil())
+			Expect(roundTripHC.Spec.Observability.Workloads.AllowedMetrics).To(ConsistOf("kubevirt_vmi_memory_used_bytes"))
 		})
 	})
 })

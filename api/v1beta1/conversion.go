@@ -27,13 +27,15 @@ type v1OnlyFields struct {
 	MDevConfigEnable               *bool                              `json:"mdevConfigEnable,omitempty"`
 	PersistentReservationEnabled   *bool                              `json:"persistentReservationEnabled,omitempty"`
 	FeatureGates                   hcov1fg.HyperConvergedFeatureGates `json:"featureGates,omitempty"`
+	Observability                  *hcov1.ObservabilityConfig         `json:"observability,omitempty"`
 }
 
 func (fields *v1OnlyFields) isEmpty() bool {
 	return fields.DeployNetworkResourcesInjector == nil &&
 		fields.MDevConfigEnable == nil &&
 		fields.PersistentReservationEnabled == nil &&
-		fields.FeatureGates == nil
+		fields.FeatureGates == nil &&
+		fields.Observability == nil
 }
 
 // Implement the conversion.Convertible interface, to be used in the conversion webhook.
@@ -576,6 +578,10 @@ func restoreV1OnlyFields(src *HyperConverged, dst *hcov1.HyperConverged) error {
 		dst.Spec.Storage.PersistentReservationConfiguration.Enabled = new(*v1Fields.PersistentReservationEnabled)
 	}
 
+	if v1Fields.Observability != nil {
+		dst.Spec.Observability = v1Fields.Observability.DeepCopy()
+	}
+
 	return nil
 }
 
@@ -597,6 +603,10 @@ func storeV1OnlyFields(src *hcov1.HyperConverged, dst *HyperConverged) error {
 		for i, fg := range src.Spec.FeatureGates {
 			v1Fields.FeatureGates[i] = *fg.DeepCopy()
 		}
+	}
+
+	if src.Spec.Observability != nil {
+		v1Fields.Observability = src.Spec.Observability.DeepCopy()
 	}
 
 	if v1Fields.isEmpty() {

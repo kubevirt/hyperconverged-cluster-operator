@@ -208,6 +208,81 @@ var _ = Describe("Observability Controller Deployment", Label(tests.OpenshiftLab
 	})
 })
 
+var _ = Describe("Observability Controller Allowlist Configuration", Label(tests.OpenshiftLabel, "observability-controller"), Serial, Ordered, func() {
+	tests.FlagParse()
+
+	var cli client.Client
+
+	BeforeAll(func(ctx context.Context) {
+		cli = tests.GetControllerRuntimeClient()
+
+		By("enabling the deployObservabilityController feature gate")
+		Expect(tests.EnableFG(ctx, cli, observabilityControllerFGName)).To(Succeed())
+
+		By("waiting for the deployment to be created")
+		Eventually(func(ctx context.Context) error {
+			dep := &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      observabilityControllerName,
+					Namespace: tests.InstallNamespace,
+				},
+			}
+			return cli.Get(ctx, client.ObjectKeyFromObject(dep), dep)
+		}).WithTimeout(2 * time.Minute).WithPolling(time.Second).WithContext(ctx).Should(Succeed())
+	})
+
+	AfterAll(func(ctx context.Context) {
+		tests.PatchHCO(ctx, cli, []byte(`[{"op": "remove", "path": "/spec/observability"}]`))
+		tests.RestoreDefaultFeatureGates(ctx, cli)
+	})
+
+	getDeploymentArgs := func(ctx context.Context) ([]string, error) {
+		dep := &appsv1.Deployment{}
+		err := cli.Get(ctx, types.NamespacedName{
+			Name:      observabilityControllerName,
+			Namespace: tests.InstallNamespace,
+		}, dep)
+		if err != nil {
+			return nil, err
+		}
+		if len(dep.Spec.Template.Spec.Containers) == 0 {
+			return nil, fmt.Errorf("deployment has no containers")
+		}
+		return dep.Spec.Template.Spec.Containers[0].Args, nil
+	}
+
+	It("should not add allowlist flags when observability is not configured (means all)", func(ctx context.Context) {
+		Eventually(func(g Gomega, ctx context.Context) {
+			args, err := getDeploymentArgs(ctx)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(args).ToNot(ContainElement(ContainSubstring("--metrics-allowlist")))
+			g.Expect(args).ToNot(ContainElement(ContainSubstring("--alerts-allowlist")))
+			g.Expect(args).ToNot(ContainElement(ContainSubstring("--recording-rules-allowlist")))
+		}).WithTimeout(2 * time.Minute).WithPolling(2 * time.Second).WithContext(ctx).Should(Succeed())
+	})
+
+	It("should propagate specific metrics allowlist to the deployment", func(ctx context.Context) {
+		patch := []byte(`[{"op": "add", "path": "/spec/observability", "value": {"workloads": {"allowedMetrics": ["kubevirt_vmi_memory_used_bytes", "kubevirt_vmi_cpu_usage_seconds_total"]}, "allowedAlerts": ["KubeVirtVMDown"], "allowedRecordingRules": ["kubevirt_vmi_phase_count:sum"]}}]`)
+		tests.PatchHCO(ctx, cli, patch)
+
+		Eventually(func(g Gomega, ctx context.Context) {
+			args, err := getDeploymentArgs(ctx)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(args).To(ContainElement("--metrics-allowlist=kubevirt_vmi_memory_used_bytes,kubevirt_vmi_cpu_usage_seconds_total"))
+			g.Expect(args).To(ContainElement("--alerts-allowlist=KubeVirtVMDown"))
+			g.Expect(args).To(ContainElement("--recording-rules-allowlist=kubevirt_vmi_phase_count:sum"))
+		}).WithTimeout(2 * time.Minute).WithPolling(2 * time.Second).WithContext(ctx).Should(Succeed())
+	})
+
+	It("should reject mixed 'none' with other values", func(ctx context.Context) {
+		hco := tests.HCOWithNameOnly()
+		patch := client.RawPatch(types.JSONPatchType, []byte(`[{"op": "replace", "path": "/spec/observability", "value": {"allowedAlerts": ["none", "KubeVirtVMDown"]}}]`))
+		err := cli.Patch(ctx, hco, patch)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("cannot be combined"))
+	})
+})
+
 func getAlertmanagerRouteHost(ctx context.Context, cli client.Client) (string, error) {
 	route := &routev1.Route{}
 	err := cli.Get(ctx, types.NamespacedName{

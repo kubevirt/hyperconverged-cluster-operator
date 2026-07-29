@@ -1661,6 +1661,38 @@ spec:
       enabled: false
 ```
 
+## Observability Configurations
+The `spec.observability` section allows filtering which metrics, alerts, and
+recording rules the observability controller exposes. This section is only
+relevant when the `deployObservabilityController` feature gate is enabled.
+
+Each allowlist field accepts:
+- Not set or empty — allow all items
+- `["none"]` — block all items
+- `["item_a", "item_b"]` — allow only the listed items
+
+Mixing `"none"` with other values is not allowed.
+
+```yaml
+apiVersion: hco.kubevirt.io/v1
+kind: HyperConverged
+metadata:
+  name: kubevirt-hyperconverged
+spec:
+  featureGates:
+  - name: deployObservabilityController
+  observability:
+    workloads:
+      allowedMetrics:
+      - kubevirt_vmi_memory_used_bytes
+      - kubevirt_vmi_cpu_usage_seconds_total
+    allowedAlerts:
+    - KubeVirtVMDown
+    - KubeVirtVMIExcessiveMigrations
+    allowedRecordingRules:
+    - kubevirt_vmi_phase_count:sum
+```
+
 ## Deployment Configurations
 The `spec.deployment` field contains all the configurations for deployment.
 
