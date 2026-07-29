@@ -962,7 +962,7 @@ const (
 
 	// ConditionNetworkResourcesInjectorReady indicates whether the network resources injector
 	// deployment is fully ready (all replicas running).
-	ConditionNetworkResourcesInjectorReady = "NetworkResourcesInjectorReady"
+	ConditionNetworkResourcesInjectorReady = "VirtNetworkResourcesInjectorReady"
 )
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
