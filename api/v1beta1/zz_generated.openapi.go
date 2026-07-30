@@ -249,7 +249,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"decentralizedLiveMigration": {
 						SchemaProps: spec.SchemaProps{
-							Description: "DecentralizedLiveMigration enables the decentralized live migration (cross-cluster migration) feature. This feature allows live migration of VirtualMachineInstances between different clusters. This feature is in Developer Preview.",
+							Description: "DecentralizedLiveMigration enables the decentralized live migration (cross-cluster migration) feature. This feature allows live migration of VirtualMachineInstances between different clusters. This feature is in Tech Preview.",
 							Default:     true,
 							Type:        []string{"boolean"},
 							Format:      "",
@@ -280,7 +280,7 @@ func schema_kubevirt_hyperconverged_cluster_operator_api_v1beta1_HyperConvergedF
 					},
 					"incrementalBackup": {
 						SchemaProps: spec.SchemaProps{
-							Description: "IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt. When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This feature is in Tech Preview.",
+							Description: "IncrementalBackup enables changed block tracking backups and incremental backups using QEMU capabilities in KubeVirt. When enabled, this also enables the UtilityVolumes feature gate in the KubeVirt CR. Note: This feature is in Developer Preview.",
 							Default:     false,
 							Type:        []string{"boolean"},
 							Format:      "",

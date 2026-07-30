@@ -208,7 +208,7 @@ virt-launcher pod without having a matching disk in the domain. This is
 required to collect the backup output or to store changes performed during
 the backup operation, depending on the backup mode.
 
-**Note**: This feature is in Tech Preview.
+**Note**: This feature is in Developer Preview.
 
 **Default**: `Disabled`
 
