@@ -20,7 +20,7 @@ require (
 	github.com/openshift/api v0.0.1
 	github.com/openshift/cluster-kube-descheduler-operator v0.0.0-20260214173033-e860b7975c2c
 	github.com/openshift/custom-resource-status v1.1.2
-	github.com/openshift/library-go v0.0.0-20260318142011-72bf34f474bc
+	github.com/openshift/library-go v0.0.0-20260902062729-e9ec1a5c52ff
 	github.com/operator-framework/api v0.39.0
 	github.com/operator-framework/operator-lib v0.19.0
 	github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring v0.89.0
@@ -42,7 +42,7 @@ require (
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/component-helpers v0.34.3
 	k8s.io/kube-openapi v0.36.2
-	k8s.io/utils v0.0.0-20260319190234-28399d86e0b5
+	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3
 	kubevirt.io/api v1.9.0
 	kubevirt.io/application-aware-quota v1.8.0
 	kubevirt.io/containerized-data-importer-api v1.66.0
